@@ -25,6 +25,9 @@ then Windows 95 clients will NOT be able to authenticate to a Samba server.
 To re-enable plain text password capabilities AFTER applying this update
 you must create a new value in the Windows 95 registry.
 
+Either foillow the following procedure or just double click on the
+file Win95_PlainPassword.reg for an easier way to do this.
+
 Procedure:
 1)	Launch the Registry Editor as follows:
 	Click on:	/Start/Run
