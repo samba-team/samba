@@ -96,7 +96,8 @@ void sra_printsub P((unsigned char *, int, unsigned char *, int));
 
 #ifdef	KRB4
 int kerberos4_init P((Authenticator *, int));
-int kerberos4_send P((Authenticator *));
+int kerberos4_send_mutual P((Authenticator *));
+int kerberos4_send_oneway P((Authenticator *));
 void kerberos4_is P((Authenticator *, unsigned char *, int));
 void kerberos4_reply P((Authenticator *, unsigned char *, int));
 int kerberos4_status P((Authenticator *, char *, int));

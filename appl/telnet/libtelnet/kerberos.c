@@ -161,9 +161,8 @@ kerberos4_init(ap, server)
 char dst_realm_buf[REALM_SZ], *dest_realm = NULL;
 int dst_realm_sz = REALM_SZ;
 
-	int
-kerberos4_send(ap)
-	Authenticator *ap;
+static int
+kerberos4_send(char *name, Authenticator *ap)
 {
 	KTEXT_ST auth;
 	char instance[INST_SZ];
@@ -173,7 +172,7 @@ kerberos4_send(ap)
 	CREDENTIALS cred;
 	int r;
 
-	printf("[ Trying KERBEROS4 ... ]\n");
+	printf("[ Trying %s ... ]\n", name);
 	if (!UserNameRequested) {
 		if (auth_debug_mode) {
 			printf("Kerberos V4: no user name supplied\r\n");
@@ -253,6 +252,17 @@ kerberos4_send(ap)
 		printf("Sent Kerberos V4 credentials to server\r\n");
 	}
 	return(1);
+}
+int
+kerberos4_send_mutual(Authenticator *ap)
+{
+  return kerberos4_send("mutual KERBEROS4", ap);
+}
+
+int
+kerberos4_send_oneway(Authenticator *ap)
+{
+  return kerberos4_send("KERBEROS4", ap);
 }
 
 	void
