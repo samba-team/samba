@@ -1,3 +1,10 @@
+2003-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/*.[0-9]: pacify mdoclink
+
+	* lib/krb5/krb5_ccache.3: document diffrences between mit and
+	heimdal krb5_cc_gen_new ccache -> credential cache s/[\t ]+$//
+	
 2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* appl/test/gssapi_server.c (proto): start to use
