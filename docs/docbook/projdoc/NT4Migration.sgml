@@ -28,7 +28,51 @@ Blah blah objectives here.
 <title>Steps In Migration Process</title>
 
 <para>
-Document steps right here!
+This is not a definitive ste-by-step process yet - just a place holder so the info 
+is not lost.
+
+1. You will have an NT4 PDC that has the users, groups, policies and profiles to be migrated
+2. Samba-3 set up as a DC with netlogon share, profile share, etc.
+3. Process:
+	a. Create a BDC account for the samba server using NT Server Manager
+		- Samba must NOT be running
+	b. rpcclient NT4PDC -U Administrator%passwd
+		lsaquery
+
+		Note the SID returned by step b.
+
+	c. net getsid -S NT4PDC -w DOMNAME -U Administrator%passwd
+
+		Note the SID in step c.
+
+	d. net getlocalsid
+
+		Note the SID, now check that all three SIDS reported are the same!
+
+	e. net rpc join -S NT4PDC -w DOMNAME -U Administrator%passwd
+
+	f. net rpc campire -S NT4PDC -U administrator%passwd
+
+	g. pdbedit -l
+
+		Note - did the users migrate?
+
+	h. initGrps.sh DOMNAME
+
+	i. smbgroupedit -v
+
+		Now check that all groups are recognised
+
+	j. net rpc campire -S NT4PDC -U administrator%passwd
+
+	k. pdbedit -lv
+
+		Note - check that all group membership has been migrated.
+
+
+Now it is time to migrate all the profiles, then migrate all policy files.
+
+Moe later.
 </para>
 
 </sect2>
