@@ -23,6 +23,8 @@
 
 static size_t ascii_pull(char **, size_t *, char **, size_t *);
 static size_t ascii_push(char **, size_t *, char **, size_t *);
+static size_t  utf8_pull(char **, size_t *, char **, size_t *);
+static size_t  utf8_push(char **, size_t *, char **, size_t *);
 static size_t weird_pull(char **, size_t *, char **, size_t *);
 static size_t weird_push(char **, size_t *, char **, size_t *);
 static size_t iconv_copy(char **, size_t *, char **, size_t *);
@@ -38,7 +40,8 @@ static struct {
 	size_t (*push)(char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 } charsets[] = {
-	{"UCS2", iconv_copy, iconv_copy},
+	{"UCS2",  iconv_copy, iconv_copy},
+	{"UTF8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"WEIRD", weird_pull, weird_push},
 	{NULL, NULL, NULL}
@@ -347,3 +350,114 @@ static size_t iconv_copy(char **inbuf, size_t *inbytesleft,
 
 	return 0;
 }
+
+static size_t utf8_pull(char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
+		unsigned char *c = (unsigned char *)*inbuf;
+		unsigned char *uc = (unsigned char *)*outbuf;
+		int len = 1;
+
+		if ((c[0] & 0xf0) == 0xe0) {
+			if (*inbytesleft < 3) {
+				DEBUG(0,("short utf8 char\n"));
+				goto badseq;
+			}
+			uc[1] = ((c[0]&0xF)<<4) | ((c[1]>>2)&0xF);
+			uc[0] = (c[1]<<6) | (c[2]&0x3f);
+			len = 3;
+		} else if ((c[0] & 0xe0) == 0xc0) {
+			if (*inbytesleft < 2) {
+				DEBUG(0,("short utf8 char\n"));
+				goto badseq;
+			}
+			uc[1] = (c[0]>>2) & 0x7;
+			uc[0] = (c[0]<<6) | (c[1]&0x3f);
+			len = 2;
+		} else {
+			uc[0] = c[0];
+			uc[1] = 0;
+		}
+
+		(*inbuf)  += len;
+		(*inbytesleft)  -= len;
+		(*outbytesleft) -= 2;
+		(*outbuf) += 2;
+	}
+
+	if (*inbytesleft > 0) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	return 0;
+
+badseq:
+	errno = EINVAL;
+	return -1;
+}
+
+static size_t utf8_push(char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
+		unsigned char *c = (unsigned char *)*outbuf;
+		unsigned char *uc = (unsigned char *)*inbuf;
+		int len=1;
+
+		if ((uc[1] & 0xf8) == 0xd8) {
+			if (*outbytesleft < 3) {
+				DEBUG(0,("short utf8 write\n"));
+				goto toobig;
+			}
+			c[0] = 0xed;
+			c[1] = 0x9f;
+			c[2] = 0xbf;
+			len = 3;
+		} else if (uc[1] & 0xf8) {
+			if (*outbytesleft < 3) {
+				DEBUG(0,("short utf8 write\n"));
+				goto toobig;
+			}
+			c[0] = 0xe0 | (uc[1]>>4);
+			c[1] = 0x80 | ((uc[1]&0xF)<<2) | (uc[0]>>6);
+			c[2] = 0x80 | (uc[0]&0x3f);
+			len = 3;
+		} else if (uc[1] | (uc[0] & 0x80)) {
+			if (*outbytesleft < 2) {
+				DEBUG(0,("short utf8 write\n"));
+				goto toobig;
+			}
+			c[0] = 0xc0 | (uc[1]<<2) | (uc[0]>>6);
+			c[1] = 0x80 | (uc[0]&0x3f);
+			len = 2;
+		} else {
+			c[0] = uc[0];
+		}
+
+
+		(*outbuf)[0] = (*inbuf)[0];
+		(*inbytesleft)  -= 2;
+		(*outbytesleft) -= len;
+		(*inbuf)  += 2;
+		(*outbuf) += len;
+	}
+
+	if (*inbytesleft == 1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (*inbytesleft > 1) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	return 0;
+
+toobig:
+	errno = E2BIG;
+	return -1;
+}
+
