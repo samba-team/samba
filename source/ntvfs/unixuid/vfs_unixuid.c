@@ -28,7 +28,7 @@
 struct unixuid_private {
 	struct sidmap_context *sidmap;
 	struct unix_sec_ctx *last_sec_ctx;
-	struct nt_user_token *last_token;
+	struct security_token *last_token;
 };
 
 
@@ -90,11 +90,11 @@ static NTSTATUS set_unix_security(struct unix_sec_ctx *sec)
 }
 
 /*
-  form a unix_sec_ctx from the current nt_user_token
+  form a unix_sec_ctx from the current security_token
 */
 static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct smbsrv_request *req,
-					  struct nt_user_token *token,
+					  struct security_token *token,
 					  struct unix_sec_ctx **sec)
 {
 	struct unixuid_private *private = ntvfs->private_data;
@@ -108,13 +108,13 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	}
 
 	status = sidmap_sid_to_unixuid(private->sidmap, 
-				       token->user_sids[0], &(*sec)->uid);
+				       token->user_sid, &(*sec)->uid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	status = sidmap_sid_to_unixgid(private->sidmap, 
-				       token->user_sids[1], &(*sec)->gid);
+				       token->group_sid, &(*sec)->gid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -127,7 +127,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 
 	for (i=0;i<(*sec)->ngroups;i++) {
 		status = sidmap_sid_to_unixgid(private->sidmap, 
-					       token->user_sids[i+2], &(*sec)->groups[i]);
+					       token->sids[i+2], &(*sec)->groups[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -143,7 +143,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 				       struct smbsrv_request *req, struct unix_sec_ctx **sec)
 {
 	struct unixuid_private *private = ntvfs->private_data;
-	struct nt_user_token *token = req->session->session_info->nt_user_token;
+	struct security_token *token = req->session->session_info->security_token;
 	void *ctx = talloc(req, 0);
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
@@ -157,7 +157,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (req->session->session_info->nt_user_token == private->last_token) {
+	if (req->session->session_info->security_token == private->last_token) {
 		newsec = private->last_sec_ctx;
 	} else {
 		status = nt_token_to_unix_security(ntvfs, req, token, &newsec);
@@ -169,7 +169,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 			talloc_free(private->last_sec_ctx);
 		}
 		private->last_sec_ctx = newsec;
-		private->last_token = req->session->session_info->nt_user_token;
+		private->last_token = req->session->session_info->security_token;
 		talloc_steal(private, newsec);
 	}
 

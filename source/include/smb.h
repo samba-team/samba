@@ -189,23 +189,14 @@ enum smb_signing_state {SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED,
    incorrect parameters - what does it mean? maybe created temporary file? */
 #define NTCREATEX_ACTION_UNKNOWN 5
 
-/*
- * The complete list of SIDS belonging to this user.
- * Created when a vuid is registered.
- * The definition of the user_sids array is as follows :
- *
- * token->user_sids[0] = primary user SID.
- * token->user_sids[1] = primary group SID.
- * token->user_sids[2..num_sids] = supplementary group SIDS.
- */
 
-#define PRIMARY_USER_SID_INDEX 0
-#define PRIMARY_GROUP_SID_INDEX 1
-
-typedef struct nt_user_token {
-	size_t num_sids;
-	struct dom_sid **user_sids;
-} NT_USER_TOKEN;
+struct security_token {
+	struct dom_sid *user_sid;
+	struct dom_sid *group_sid;
+	uint32_t num_sids;
+	struct dom_sid **sids;
+	uint64_t privilege_mask;
+};
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
