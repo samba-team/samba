@@ -221,10 +221,10 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
 	p += 2;
-	pstrcpy(p,"WrLehDz");
+	pstrcpy_base(p,"WrLehDz", param);
 	p = skip_string(p,1);
   
-	pstrcpy(p,"B16BBDz");
+	pstrcpy_base(p,"B16BBDz", param);
 
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
@@ -233,7 +233,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += push_pstring(p, workgroup);
+	p += push_pstring_base(p, workgroup, param);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
