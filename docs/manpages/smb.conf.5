@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "06 August 2001" "" ""
+.TH "SMB.CONF" "5" "09 August 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -587,6 +587,9 @@ each parameter for details. Note that some are synonyms.
 \fIdfree command\fR
 .TP 0.2i
 \(bu
+\fIdisable spoolss\fR
+.TP 0.2i
+\(bu
 \fIdns proxy\fR
 .TP 0.2i
 \(bu
@@ -639,9 +642,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIlanman auth\fR
-.TP 0.2i
-\(bu
-\fIlanman printing only\fR
 .TP 0.2i
 \(bu
 \fIlarge readwrite\fR
@@ -2421,6 +2421,20 @@ Default: \fBdirectory security mask = 0777\fR
 
 Example: \fBdirectory security mask = 0700\fR
 .TP
+\fBdisable spoolss (G)\fR
+Enabling this parameter will disables Samba's support
+for the SPOOLSS set of MS-RPC's and will yield identical behavior
+as Samba 2.0.x. Windows NT/2000 clients will downgrade to using
+Lanman style printing commands. Windows 9x/ME will be uneffected by
+the parameter. However, this will also disable the ability to upload
+printer drivers to a Samba server via the Windows NT Add Printer
+Wizard or by using the NT printer properties dialog window. It will
+also disable the capability of Windows NT/2000 clients to download
+print drivers from the Samba host upon demand.
+\fBBe very careful about enabling this parameter.\fR
+
+Default : \fBdisable spoolss = no\fR
+.TP
 \fBdns proxy (G)\fR
 Specifies that nmbd(8)
 when acting as a WINS server and finding that a NetBIOS name has not 
@@ -3300,20 +3314,6 @@ NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS
 network client) will be able to connect to the Samba host.
 
 Default : \fBlanman auth = yes\fR
-.TP
-\fBlanman printing only (G)\fR
-Enabling this parameter will disables Samba's support
-for the SPOOLSS set of MS-RPC's and will yield identical behavior
-as Samba 2.0.x. Windows NT/2000 clients will downgrade to using 
-Lanman style printing commands. Windows 9x/ME will be uneffected by 
-the parameter. However, this will also disable the ability to upload
-printer drivers to a Samba server via the Windows NT Add Printer 
-Wizard or by using the NT printer properties dialog window. It will
-also disable the capability of Windows NT/2000 clients to download
-print drivers from the Samba host upon demand.
-\fBBe very careful about enabling this parameter.\fR 
-
-Default : \fBlanman printing only = no\fR
 .TP
 \fBlarge readwrite (G)\fR
 This parameter determines whether or not smbd

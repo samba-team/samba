@@ -614,6 +614,7 @@
 		<listitem><para><link linkend="DELETESHARECOMMAND"><parameter>delete share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEUSERSCRIPT"><parameter>delete user script</parameter></link></para></listitem>
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
@@ -632,7 +633,6 @@
 		<listitem><para><link linkend="KEEPALIVE"><parameter>keepalive</parameter></link></para></listitem>
 		<listitem><para><link linkend="KERNELOPLOCKS"><parameter>kernel oplocks</parameter></link></para></listitem>
 		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman auth</parameter></link></para></listitem>
-		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman printing only</parameter></link></para></listitem>
 		<listitem><para><link linkend="LARGEREADWRITE"><parameter>large readwrite</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
@@ -2189,6 +2189,26 @@
 		<para>Example: <command>directory security mask = 0700</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="DISABLESPOOLSS">disable spoolss (G)</term>
+		<listitem><para>Enabling this parameter will disables Samba's support
+		for the SPOOLSS set of MS-RPC's and will yield identical behavior
+		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using
+		Lanman style printing commands. Windows 9x/ME will be uneffected by
+		the parameter. However, this will also disable the ability to upload
+		printer drivers to a Samba server via the Windows NT Add Printer
+		Wizard or by using the NT printer properties dialog window.  It will
+		also disable the capability of Windows NT/2000 clients to download
+		print drivers from the Samba host upon demand.
+		<emphasis>Be very careful about enabling this parameter.</emphasis>
+		</para>
+ 
+		<para>Default : <command>disable spoolss = no</command></para>
+		</listitem>
+		</varlistentry>
 		
 		
 		
@@ -3302,28 +3322,6 @@
 		network client) will be able to connect to the Samba host.</para>
 		
 		<para>Default : <command>lanman auth = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-
-		<varlistentry>
-		<term><anchor id="LANMANPRINTINGONLY">lanman printing only (G)</term>
-		<listitem><para>Enabling this parameter will disables Samba's support
-		for the SPOOLSS set of MS-RPC's and will yield identical behavior
-		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using 
-		Lanman style printing commands. Windows 9x/ME will be uneffected by 
-		the parameter. However, this will also disable the ability to upload
-		printer drivers to a Samba server via the Windows NT Add Printer 
-		Wizard or by using the NT printer properties dialog window.  It will
-		also disable the capability of Windows NT/2000 clients to download
-		print drivers from the Samba host upon demand.
-		<emphasis>Be very careful about enabling this parameter.</emphasis>		
-		</para>
-		
-		<para>Default : <command>lanman printing only = no</command></para>
 		</listitem>
 		</varlistentry>
 
