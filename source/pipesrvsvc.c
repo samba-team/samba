@@ -205,9 +205,9 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("srvsvc TransactNamedPipe op %x\n",hdr.cancel_count));
+	DEBUG(4,("srvsvc TransactNamedPipe op %x\n",hdr.reserved));
 
-	switch (hdr.cancel_count)
+	switch (hdr.reserved)
 	{
 		case NETSHAREENUM:
 		{
@@ -261,7 +261,7 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 
 		default:
 		{
-			DEBUG(4, ("srvsvc, unknown code: %lx\n", hdr.cancel_count));
+			DEBUG(4, ("srvsvc, unknown code: %lx\n", hdr.reserved));
 			break;
 		}
 	}
