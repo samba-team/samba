@@ -751,7 +751,7 @@ main(int argc, char **argv)
 #ifdef KRB5
     if (ret && use_v5) {
 	if (port == 0)
-	    port = krb5_getportbyname(NULL, "kx", "tcp", htons(KX_PORT));
+	    port = krb5_getportbyname(NULL, "kx", "tcp", KX_PORT);
 	ret = doit_v5 (host, port, user,
 		       passive_flag, debug_flag, keepalive_flag, tcp_flag);
     }
