@@ -419,85 +419,130 @@ sub RewriteC($$$)
 
     while(<IN>) {
 
-	# Ethereal take care of this for us.  It also makes the other
-	# regular expressions easier to write and understand. 
+	#
+        # Regexps to do a first pass at removing stuff we aren't
+	# interested in for ehtereal parsers.
+	#
+
+	# Remove the NDR_CHECK() macro calls.  Ethereal take care of
+	# this for us as part of the tvbuff_t structure.
 
 	s/NDR_CHECK\((.*)\)/$1/g;
 
-	# We're not interested in ndr_print, ndr_push or ndr_size functions.
+	# We're not interested in ndr_{print,push,size} functions so
+	# just delete them.
 
 	s/^(static )?NTSTATUS (ndr_push[^\(]+).*?^\}\n\n//smg;
 	s/^void (ndr_print[^\(]+).*?^\}\n\n//smg;
 	s/^size_t (ndr_size[^\(]+).*?^\}\n\n//smg;
 
-	# Get rid of dcerpc interface structures and functions
+	# Get rid of dcerpc interface structures and functions since
+	# they are also not very interesting.
 
 	s/^static const struct dcerpc_interface_call .*?^\};\n\n//smg;	
-	s/^static const char \* const ([a-z]+)_endpoint_strings.*?^\};\n\n//smg;
+	s/^static const char \* const 
+	    ([a-z]+)_endpoint_strings.*?^\};\n\n//smgx;
 	s/^static const struct dcerpc_endpoint_list .*?^\};\n\n\n//smg;	
 	s/^const struct dcerpc_interface_table .*?^\};\n\n//smg;	
 	s/^static NTSTATUS dcerpc_ndr_([a-z]+)_init.*?^\}\n\n//smg;	
 	s/^NTSTATUS dcerpc_([a-z]+)_init.*?^\}\n\n//smg;	
 
-	# Include packet-dcerpc-foo.h instead of ndr_foo.h
+	# Rewrite includes to packet-dcerpc-foo.h instead of ndr_foo.h
 
 	s/^\#include \".*?ndr_(.*?).h\"$/\#include \"packet-dcerpc-$1.h\"/smg;
 
-	# Call ethereal wrapper for ndr_pull_ptr() function.
+	#
+	# OK start wrapping the ndr_pull functions that actually
+	# implement the NDR decoding routines.  This mainly consists
+	# of adding a couple of parameters to each function call.
+        #
 
-	s/(ndr_pull_ptr\(ndr, ([^\)]*?)\);)/ndr_pull_ptr(ndr, tree, hf_ptr, $2);/smg;
+	# Add proto tree and hf argument to ndr_pull_ptr() calls.
 
-	# Wrap ndr_pull_array_size() - generate wrapper that won't get
-	# caught by the regex for wrapping scalar values below (i.e
-	# the leading space in front of the first parameter).
+	s/(ndr_pull_ptr\(ndr, ([^\)]*?)\);)/
+	    ndr_pull_ptr(ndr, tree, hf_ptr, $2);/smgx;
 
-	s/(ndr_pull_array_(size|length)\(ndr, ([^\)]*?)\);)/ndr_pull_array_$2( ndr, tree, $3);/smg;
+	# Wrap ndr_pull_array_size() and ndr_pull_array_length()
+	# functions.  Add leading space in front of first parameter so
+	# we won't get caught by later regexps.
 
-	# Add tree argument to ndr_pull_array()
+	s/(ndr_pull_array_(size|length)\(ndr, ([^\)]*?)\);)/
+	    ndr_pull_array_$2( ndr, tree, $3);/smgx;
 
-#get_subtree(tree, \"$2\", ndr, ett_$2)
-#ndr_pull_array( ndr, NDR_SCALARS, tree, (void **)r->aces, sizeof(r->aces[0]), r->num_aces, (ndr_pull_flags_fn_t)ndr_pull_security_ace);
-	s/(ndr_pull_array\(ndr, ([^,]*?), ([^,]*?), ([^\)].*?)\);)/ndr_pull_array( ndr, $2, tree, $3, $4);/smg;
+	# Add tree argument to ndr_pull_array() and
+	# ndr_pull_array_foo() calls.
 
-	s/(ndr_pull_array_([^\(]*?)\(ndr, ([^,]*?), (r->((in|out).)?([^,]*?)), (.*?)\);)/ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smg;
+	s/(ndr_pull_array\(
+	   ndr,
+	   ([^,]*?),                                # NDR_SCALARS etc
+	   (\(void \*\*\)r->(in|out|)\.?([^,]*?)),  # Pointer to array entries
+	   ([^\)].*?)\);)/                          # All other arguments
+	   ndr_pull_array( ndr, $2, tree, $3, $6);/smgx;
+
+	s/(ndr_pull_array_([^\(]*?)\(
+	   ndr, 
+	   ([^,]*?),                                # NDR_SCALARS etc
+	   (r->((in|out).)?([^,]*?)),               # Pointer to array elements
+	   (.*?)\);)/                               # Number of elements
+	   ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smgx;
  
-	# Save ndr_pull_relative[12]() calls from being wrapped by the
-	# proceeding regexp.
+	# Save ndr_pull_relative{1,2}() calls from being wrapped by the
+	# proceeding regexp by adding a leading space.
 
-	s/ndr_pull_(relative1|relative2)\((.*?);/ndr_pull_$1( $2;/smg;
+	s/ndr_pull_(relative1|relative2)\((.*?)\);/
+	    ndr_pull_$1( $2);/smgx;
 
 	# Call ethereal wrappers for pull of scalar values in
-	# structures and functions:
+	# structures and functions, e.g
 	#
 	# ndr_pull_uint32(ndr, &r->in.access_mask);
 	# ndr_pull_uint32(ndr, &r->idx);
 
-	s/(ndr_pull_([^\)]*?)\(ndr, (&?r->((in|out)\.)?([^\)]*?))\);)/ndr_pull_$2(ndr, tree, hf_$6_$2, $3);/smg;
+	s/(ndr_pull_([^\)]*?)\(
+	   ndr, 
+	   (&?r->((in|out)\.)?         # Function args contain leading junk
+	    ([^\)]*?))                 # Element name
+	   \);)/          
+	   ndr_pull_$2(ndr, tree, hf_$6_$2, $3);/smgx;
 
-	# Pull of "internal" scalars like array sizes, levels, etcetera.
+	# Add tree and hf argument to pulls of "internal" scalars like
+	# array sizes, levels, etc.
 
-	s/(ndr_pull_(uint32|uint16)\(ndr, (&_([^\)]*?))\);)/ndr_pull_$2(ndr, tree, hf_$4, $3);/smg;
+	s/(ndr_pull_(uint32|uint16)\(
+	   ndr,
+	   (&_([^\)]*?))        # Internal arg names have leading underscore
+	   \);)/
+	   ndr_pull_$2(ndr, tree, hf_$4, $3);/smgx;
 
-	# Call ethereal wrappers for pull of buffers in structures and
-	# functions:
+	# Add subtree argument to calls dissecting structures, e.g
 	#
 	# ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->command);
 	# ndr_pull_atsvc_enum_ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr);
 
-	s/(ndr_pull_([^\)]*?)\(ndr, (NDR_[^,]*?), ([^\(].*?)\);)/ndr_pull_$2(ndr, $3, get_subtree(tree, \"$2\", ndr, ett_$2), $4);/smg;
+	s/(ndr_pull_([^\)]*?)\(
+	   ndr, 
+	   (NDR_[^,]*?), 
+	   ([^\(].*?)\);)/
+	   ndr_pull_$2(ndr, $3, get_subtree(tree, \"$2\", ndr, ett_$2), $4);/smgx;
 
-	# Add proto_tree parameter to pull functions:
+	# Add proto_tree parameter to pull function prototypes, e.g
 	#
-	# static NTSTATUS ndr_pull_atsvc_JobInfo(struct ndr_pull *ndr, int ndr_flags, struct atsvc_JobInfo *r)
+	# static NTSTATUS ndr_pull_atsvc_JobInfo(struct ndr_pull *ndr, 
+	#         int ndr_flags, struct atsvc_JobInfo *r)
 
-	s/^((static )?NTSTATUS ndr_pull_([^\(]*?)\(struct ndr_pull \*ndr, int (ndr_)?flags)/$1, proto_tree \*tree/smg;
+	s/^((static )?NTSTATUS ndr_pull_([^\(]*?)\(
+	    struct ndr_pull \*ndr, 
+	    int (ndr_)?flags)/
+	    $1, proto_tree \*tree/smgx;
 
 	# Add proto_tree parameter to ndr_pull_subcontext_flags_fn()
 
         s/(ndr_pull_subcontext_flags_fn\(ndr)(.*?);/$1, tree$2;/smg;
 
-	# Get rid of ndr_pull_error() calls.  Ethereal should take
-	# care of buffer overruns and inconsistent array sizes for us.
+	# Get rid of ndr_pull_error() calls for the moment. Ethereal
+	# should take care of buffer overruns and inconsistent array
+	# sizes for us but it would be nice to have some error text in
+	# the dissection.
 
 	s/(return ndr_pull_error([^;]*?);)/return NT_STATUS_OK; \/\/ $1/smg;
 
@@ -512,19 +557,24 @@ sub RewriteC($$$)
 	# Fix some internal variable declarations
 
         s/uint(16|32) _level/uint$1_t _level/smg;
-        s/ndr_pull_([^\(]*)\(ndr, tree, hf_level, &_level\);/ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smg;
+        s/ndr_pull_([^\(]*)\(ndr, tree, hf_level, &_level\);/
+	    ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smgx;
 				
 	# Enums
 
-        s/(^static NTSTATUS ndr_pull_(.+?), (enum .+?)\))/static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smg;
+        s/(^static NTSTATUS ndr_pull_(.+?), (enum .+?)\))/
+	    static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
 	s/uint(8|16|32) v;/uint$1_t v;/smg;
-	s/(ndr_pull_([^\)]*?)\(ndr, &v\);)/ndr_pull_$2(ndr, tree, hf, &v);/smg;
+	s/(ndr_pull_([^\)]*?)\(ndr, &v\);)/
+	    ndr_pull_$2(ndr, tree, hf, &v);/smgx;
 
-	s/(ndr_pull_([^\(]+?)\(ndr, &_level\);)/ndr_pull_$2(ndr, tree, hf_$2, &_level);/smg;
+	s/(ndr_pull_([^\(]+?)\(ndr, &_level\);)/
+	    ndr_pull_$2(ndr, tree, hf_$2, &_level);/smgx;
 
 	# Bitmaps
 
-	s/(^NTSTATUS ndr_pull_(.+?), uint32 \*r\))/NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, uint32_t *r)/smg;
+	s/(^NTSTATUS ndr_pull_(.+?), uint32 \*r\))/
+	    NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, uint32_t *r)/smgx;
 
 	pidl $_;
     }
