@@ -571,32 +571,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 				passlen2 = 0;
 		}
 		
-		if (lp_restrict_anonymous()) {
-			/* there seems to be no reason behind the
-			 * differences in MS clients formatting
-			 * various info like the domain, NativeOS, and
-			 * NativeLanMan fields. Win95 in particular
-			 * seems to have an extra null byte between
-			 * the username and the domain, or the
-			 * password length calculation is wrong, which
-			 * throws off the string extraction routines
-			 * below.  This makes the value of domain be
-			 * the empty string, which fails the restrict
-			 * anonymous check further down.  This
-			 * compensates for that, and allows browsing
-			 * to work in mixed NT and win95 environments
-			 * even when restrict anonymous is true. AAB
-			 * */
-			dump_data(100, p, 0x70);
-			DEBUG(9, ("passlen1=%d, passlen2=%d\n", passlen1, passlen2));
-			if (ra_type == RA_WIN95 && !passlen1 && !passlen2 && p[0] == 0 && p[1] == 0) {
-				DEBUG(0, ("restrict anonymous parameter used in a win95 environment!\n"));
-				DEBUG(0, ("client is win95 and broken passlen1 offset -- attempting fix\n"));
-				DEBUG(0, ("if win95 cilents are having difficulty browsing, you will be unable to use restrict anonymous\n"));
-				passlen1 = 1;
-			}
-		}
-		
 		/* Save the lanman2 password and the NT md4 password. */
 		
 		if ((doencrypt) && (passlen1 != 0) && (passlen1 != 24)) {
@@ -664,27 +638,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		*user = 0;
 	}
 	
-	if (done_sesssetup && lp_restrict_anonymous()) {
-		/* tests show that even if browsing is done over
-		 * already validated connections without a username
-		 * and password the domain is still provided, which it
-		 * wouldn't be if it was a purely anonymous
-		 * connection.  So, in order to restrict anonymous, we
-		 * only deny connections that have no session
-		 * information.  If a domain has been provided, then
-		 * it's not a purely anonymous connection. AAB */
-		if (!*user && !*domain) {
-			DEBUG(0, ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
-			
-			data_blob_free(&lm_resp);
-			data_blob_free(&nt_resp);
-			data_blob_clear_free(&plaintext_password);
-
-			END_PROFILE(SMBsesssetupX);
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
-		}
-	}
-
 	if (!make_user_info_for_reply(&user_info, 
 				      user, domain, 
 				      lm_resp, nt_resp,
