@@ -1010,13 +1010,15 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 
 	if(!prs_uint32("ptr_buflen", ps, depth, &(r_q->ptr_buflen)))
 		return False;
-	if(!prs_uint32("buflen", ps, depth, &(r_q->buflen)))
-		return False;
 
-	if(!prs_uint32("ptr_buflen2", ps, depth, &(r_q->ptr_buflen2)))
-		return False;
-	if(!prs_uint32("buflen2", ps, depth, &(r_q->buflen2)))
-		return False;
+	if (r_q->ptr_buflen) {
+		if(!prs_uint32("buflen", ps, depth, &(r_q->buflen)))
+			return False;
+		if(!prs_uint32("ptr_buflen2", ps, depth, &(r_q->ptr_buflen2)))
+			return False;
+		if(!prs_uint32("buflen2", ps, depth, &(r_q->buflen2)))
+			return False;
+	}
 
  	return True;
 }
