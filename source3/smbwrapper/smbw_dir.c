@@ -22,7 +22,8 @@
 #include "includes.h"
 #include "wrapper.h"
 
-extern pstring smb_cwd;
+extern pstring smbw_cwd;
+extern fstring smbw_prefix;
 
 static struct smbw_dir *smbw_dirs;
 
@@ -350,8 +351,11 @@ int smbw_chdir(const char *name)
 	pstring path;
 	uint32 mode = aDIR;
 	char *cwd;
+	int len;
 
 	smbw_init();
+
+	len = strlen(smbw_prefix);
 
 	if (smbw_busy) return real_chdir(name);
 
@@ -362,16 +366,19 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
+	DEBUG(4,("smbw_chdir(%s)\n", name));
+
 	/* work out what server they are after */
 	cwd = smbw_parse_path(name, server, share, path);
 
-	if (strncmp(cwd,SMBW_PREFIX,strlen(SMBW_PREFIX))) {
+	/* a special case - accept cd to /smb */
+	if (strncmp(cwd, smbw_prefix, len-1) == 0 &&
+	    cwd[len-1] == 0) {
+		goto success;
+	}
+
+	if (strncmp(cwd,smbw_prefix,strlen(smbw_prefix))) {
 		if (real_chdir(cwd) == 0) {
-			DEBUG(4,("set SMBW_CWD to %s\n", cwd));
-			pstrcpy(smb_cwd, cwd);
-			if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
-				DEBUG(4,("setenv failed\n"));
-			}
 			goto success;
 		}
 		errno = ENOENT;
@@ -398,16 +405,18 @@ int smbw_chdir(const char *name)
 		goto failed;
 	}
 
-	DEBUG(4,("set SMBW_CWD2 to %s\n", cwd));
-	pstrcpy(smb_cwd, cwd);
-	if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
+ success:
+
+	DEBUG(4,("set SMBW_CWD to %s\n", cwd));
+
+	pstrcpy(smbw_cwd, cwd);
+	if (setenv(SMBW_PWD_ENV, smbw_cwd, 1)) {
 		DEBUG(4,("setenv failed\n"));
 	}
 
 	/* we don't want the old directory to be busy */
 	real_chdir("/");
 
- success:
 	smbw_busy--;
 	return 0;
 
@@ -549,7 +558,7 @@ char *smbw_getcwd(char *buf, size_t size)
 	smbw_busy++;
 
 	if (!buf) {
-		if (size <= 0) size = strlen(smb_cwd)+1;
+		if (size <= 0) size = strlen(smbw_cwd)+1;
 		buf = (char *)malloc(size);
 		if (!buf) {
 			errno = ENOMEM;
@@ -558,13 +567,13 @@ char *smbw_getcwd(char *buf, size_t size)
 		}
 	}
 
-	if (strlen(smb_cwd) > size-1) {
+	if (strlen(smbw_cwd) > size-1) {
 		errno = ERANGE;
 		smbw_busy--;
 		return NULL;
 	}
 
-	safe_strcpy(buf, smb_cwd, size);
+	safe_strcpy(buf, smbw_cwd, size);
 
 	smbw_busy--;
 	return buf;

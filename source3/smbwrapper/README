@@ -2,6 +2,8 @@ This is a prelodable shared library that provides SMB client services
 for existing executables. Using this you can simulate a smb
 filesystem.
 
+*** This is code under development. Some things don't work yet ***
+
 Currently this code has only been tested on:
 
 - Linux 2.0 with glibc2 (RH5.1)
@@ -28,9 +30,33 @@ happens. If you set SMBW_WORKGROUP to your workgroup or have workgroup
 set in yoru smb.conf then listing /smb/ should list all SMB servers in
 your workgroup.
 
-For debugging you can set SMBW_DEBUG to an integer debug level.
+Environment variables
+---------------------
 
-This is code under development. Lots of things don't work yet.
+SMBW_USER
+ This is usually set by smbsh but you can set it manually. It
+ specifies the username you will connect to servers with.
+
+SMBW_PASSWORD
+ This is usually set by smbsh but you can set it manually. It
+ specifies the password used to connect to smb servers.
+
+SMBW_DEBUG
+ This is an integer that controls the internal debug level of smbw. It
+ defaults to 0, which means no debug info.
+
+SMBW_LOGFILE
+ The place where smbw debug logs are put. If this is not set then
+ stderr is used.
+
+SMBW_PREFIX
+ The root of the SMB filesystem. This defaults to /smb/ but you can
+ set it to any name you like.
+
+SMBW_WORKGROUP
+ This is the workgroup used for browsing (ie. listing machines in the
+ /smb/ directory). It defaults to the one set in smb.conf.
+
 
 Things that I have tried and do seem to work include:
 
