@@ -126,26 +126,17 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 lsa_reply_query_info
  ***************************************************************************/
 
-static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, DOM_SID *dom_sid, uint32 status_code)
+static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata, LSA_R_QUERY_INFO *r_q)
 {
-	LSA_R_QUERY_INFO r_q;
-
-	ZERO_STRUCT(r_q);
-
 	/* set up the LSA QUERY INFO response */
 
-	if(status_code == 0) {
-		r_q.undoc_buffer = 0x22000000; /* bizarre */
-		r_q.info_class = q_q->info_class;
-
-		init_dom_query(&r_q.dom.id5, dom_name, dom_sid);
+	if(r_q->status == 0) {
+		r_q->undoc_buffer = 0x22000000; /* bizarre */
+		r_q->info_class = q_q->info_class;
 	}
 
-	r_q.status = status_code;
-
 	/* store the response in the SMB stream */
-	if(!lsa_io_r_query("", &r_q, rdata, 0)) {
+	if(!lsa_io_r_query("", r_q, rdata, 0)) {
 		DEBUG(0,("lsa_reply_query_info: failed to marshall LSA_R_QUERY_INFO.\n"));
 		return False;
 	}
@@ -510,14 +501,16 @@ api_lsa_query_info
 static BOOL api_lsa_query_info(pipes_struct *p)
 {
 	LSA_Q_QUERY_INFO q_i;
+	LSA_R_QUERY_INFO r_q;
+	LSA_INFO_UNION *info = &r_q.dom;
 	DOM_SID domain_sid;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
-	uint32 status_code = 0;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_i);
+	ZERO_STRUCT(r_q);
 
 	/* grab the info class and policy handle */
 	if(!lsa_io_q_query("", &q_i, data, 0)) {
@@ -526,6 +519,19 @@ static BOOL api_lsa_query_info(pipes_struct *p)
 	}
 
 	switch (q_i.info_class) {
+	case 0x02:
+		{
+			unsigned int i;
+			/* fake info: We audit everything. ;) */
+			info->id2.auditing_enabled = 1;
+            info->id2.count1 = 7;
+            info->id2.count2 = 7;
+			if ((info->id2.auditsettings = (uint32 *)talloc(prs_get_mem_context(rdata),7*sizeof(uint32))) == NULL)
+				return False;
+            for (i = 0; i < 7; i++)
+                info->id2.auditsettings[i] = 3;
+            break;
+		}
 	case 0x03:
 		switch (lp_server_role())
 		{
@@ -544,19 +550,40 @@ static BOOL api_lsa_query_info(pipes_struct *p)
 			default:
 				break;
 		}
+		init_dom_query(&r_q.dom.id3, name, sid);
 		break;
 	case 0x05:
 		name = global_myname;
 		sid = &global_sam_sid;
+		init_dom_query(&r_q.dom.id5, name, sid);
+		break;
+	case 0x06:
+		switch (lp_server_role())
+		{
+			case ROLE_DOMAIN_BDC:
+				/*
+				 * only a BDC is a backup controller
+				 * of the domain, it controls.
+				 */
+				info->id6.server_role = 2;
+				break;
+			default:
+				/*
+				 * any other role is a primary
+				 * of the domain, it controls.
+				 */
+				info->id6.server_role = 3;
+				break; 
+		}
 		break;
 	default:
 		DEBUG(0,("api_lsa_query_info: unknown info level in Lsa Query: %d\n", q_i.info_class));
-		status_code = (NT_STATUS_INVALID_INFO_CLASS | 0xC0000000);
+		r_q.status = (NT_STATUS_INVALID_INFO_CLASS | 0xC0000000);
 		break;
 	}
 
 	/* construct reply.  return status is always 0x0 */
-	if(!lsa_reply_query_info(&q_i, rdata, name, sid, status_code))
+	if(!lsa_reply_query_info(&q_i, rdata, &r_q))
 		return False;
 
 	return True;

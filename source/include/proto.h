@@ -2312,6 +2312,7 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context,
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
 			     prs_struct *ps, int depth);
 void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
+BOOL lsa_io_dom_query_5(char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 		    int depth);
 void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
@@ -2398,8 +2399,6 @@ void init_owf_info(OWF_INFO *hash, uint8 data[16]);
 BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_3(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_5(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
 

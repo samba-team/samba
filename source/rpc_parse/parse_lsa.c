@@ -641,6 +641,124 @@ void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e)
 }
 
 /*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query(char *desc, DOM_QUERY *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint16("uni_dom_max_len", ps, depth, &d_q->uni_dom_max_len)) /* domain name string length * 2 */
+		return False;
+	if(!prs_uint16("uni_dom_str_len", ps, depth, &d_q->uni_dom_str_len)) /* domain name string length * 2 */
+		return False;
+
+	if(!prs_uint32("buffer_dom_name", ps, depth, &d_q->buffer_dom_name)) /* undocumented domain name string buffer pointer */
+		return False;
+	if(!prs_uint32("buffer_dom_sid ", ps, depth, &d_q->buffer_dom_sid)) /* undocumented domain SID string buffer pointer */
+		return False;
+
+	if(!smb_io_unistr2("unistr2", &d_q->uni_domain_name, d_q->buffer_dom_name, ps, depth)) /* domain name (unicode string) */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (d_q->buffer_dom_sid != 0) {
+		if(!smb_io_dom_sid2("", &d_q->dom_sid, ps, depth)) /* domain SID */
+			return False;
+	} else {
+		memset((char *)&d_q->dom_sid, '\0', sizeof(d_q->dom_sid));
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q, prs_struct *ps, int depth)
+{
+	uint32 ptr = 1;
+
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_2");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("auditing_enabled", ps, depth, &d_q->auditing_enabled))
+		return False;
+	if (!prs_uint32("ptr   ", ps, depth, &ptr))
+		return False;
+	if (!prs_uint32("count1", ps, depth, &d_q->count1))
+		return False;
+	if (!prs_uint32("count2", ps, depth, &d_q->count2))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		d_q->auditsettings = (uint32)talloc(ps->mem_ctx, d_q->count2 * sizeof(uint32));
+	}
+
+	if (d_q->auditsettings == NULL) {
+		DEBUG(1, ("lsa_io_dom_query_2: NULL auditsettings!\n"));
+		return False;
+	}
+
+	if (!prs_uint32s(False, "auditsettings", ps, depth, d_q->auditsettings, d_q->count2))
+		return False;
+
+    return True;
+}
+
+/*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_3(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	return lsa_io_dom_query("", d_q, ps, depth);
+}
+
+/*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+BOOL lsa_io_dom_query_5(char *desc, DOM_QUERY_5 *d_q, prs_struct *ps, int depth)
+{
+	return lsa_io_dom_query("", d_q, ps, depth);
+}
+
+/*******************************************************************
+ Reads or writes a dom query structure.
+********************************************************************/
+
+static BOOL lsa_io_dom_query_6(char *desc, DOM_QUERY_6 *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_6");
+	depth++;
+
+	if (!prs_uint16("server_role", ps, depth, &d_q->server_role))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 
@@ -657,13 +775,24 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 		if(!prs_uint16("info_class", ps, depth, &r_q->info_class))
 			return False;
 
+		if(!prs_align(ps))
+			return False;
+
 		switch (r_q->info_class) {
+		case 2:
+			if(!lsa_io_dom_query_2("", &r_q->dom.id2, ps, depth))
+				return False;
+			break;
 		case 3:
-			if(!smb_io_dom_query_3("", &r_q->dom.id3, ps, depth))
+			if(!lsa_io_dom_query_3("", &r_q->dom.id3, ps, depth))
 				return False;
 			break;
 		case 5:
-			if(!smb_io_dom_query_5("", &r_q->dom.id3, ps, depth))
+			if(!lsa_io_dom_query_5("", &r_q->dom.id5, ps, depth))
+				return False;
+			break;
+		case 6:
+			if(!lsa_io_dom_query_6("", &r_q->dom.id6, ps, depth))
 				return False;
 			break;
 		default:
@@ -671,6 +800,9 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 			break;
 		}
 	}
+
+	if(!prs_align(ps))
+		return False;
 
 	if(!prs_uint32("status", ps, depth, &r_q->status))
 		return False;
