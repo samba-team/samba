@@ -64,12 +64,14 @@ static int help_usage(int argc, const char **argv)
 
 int net_help_user(int argc, const char **argv)
 {
-	d_printf("\nnet <method> user [misc. options] [targets]\n\tList users\n");
-	d_printf("\nnet <method> user DELETE <name> [misc. options] [targets]"\
+	d_printf("\nnet [<method>] user [misc. options] [targets]"\
+		 "\n\tList users\n\n");
+	d_printf("net [<method>] user DELETE <name> [misc. options] [targets]"\
 		 "\n\tDelete specified user\n");
-	d_printf("\nnet <method> user INFO <name> [misc. options] [targets]"\
+	d_printf("\nnet [<method>] user INFO <name> [misc. options] [targets]"\
 		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet <method> user ADD <name> [password] [-F user flags] [misc. options]"\
+	d_printf("\nnet [<method>] user ADD <name> [password] "\
+		 "[-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 
 	net_common_methods_usage(argc, argv);
@@ -81,11 +83,12 @@ int net_help_user(int argc, const char **argv)
 
 int net_help_group(int argc, const char **argv)
 {
-	d_printf("net <method> group [misc. options] [targets]"\
+	d_printf("net [<method>] group [misc. options] [targets]"\
 		 "\n\tList user groups\n\n");
-	d_printf("net <method> group DELETE <name> [misc. options] [targets]"\
+	d_printf("net [<method>] group DELETE <name> "\
+		 "[misc. options] [targets]"\
 		 "\n\tDelete specified group\n");
-	d_printf("\nnet <method> group ADD <name> [-C comment]"\
+	d_printf("\nnet [<method>] group ADD <name> [-C comment]"\
 		 " [misc. options] [targets]\n\tCreate specified group\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
@@ -94,15 +97,27 @@ int net_help_group(int argc, const char **argv)
 	return -1;
 }
 
+
+int net_help_join(int argc, const char **argv)
+{
+	d_printf("\nnet [<method>] join [misc. options]\n"
+		 "\tjoins this server to a domain\n");
+	d_printf("Valid methods: (auto-detected if not specified)\n");
+	d_printf("\tads\t\t\t\tActive Directory (LDAP/Kerberos)\n");
+	d_printf("\trpc\t\t\t\tDCE-RPC\n");
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
 int net_help_share(int argc, const char **argv)
 {
 	d_printf(
-	 "\nnet <method> share [misc. options] [targets] \n"
+	 "\nnet [<method>] share [misc. options] [targets] \n"
 	 "\tenumerates all exported resources (network shares) "
-	 "on target server\n"
-	 "\nnet <method> share ADD <name=serverpath> [misc. options] [targets]"
-	 "\n\tAdds a share from a server (makes the export active)\n"
-	 "\nnet <method> share DELETE <sharename> [misc. options] [targets]\n"
+	 "on target server\n\n"
+	 "net [<method>] share ADD <name=serverpath> [misc. options] [targets]"
+	 "\n\tAdds a share from a server (makes the export active)\n\n"
+	 "net [<method>] share DELETE <sharename> [misc. options] [targets]\n"
 	 "\n\tDeletes a share from a server (makes the export inactive)\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
@@ -114,11 +129,12 @@ int net_help_share(int argc, const char **argv)
 
 int net_help_file(int argc, const char **argv)
 {
-	d_printf("net <method> file [misc. options] [targets]\n"\
+	d_printf("net [<method>] file [misc. options] [targets]\n"\
 		 "\tlists all open files on file server\n\n");
-	d_printf("net <method> file USER <username> [misc. options] [targets]"\
+	d_printf("net [<method>] file USER <username> "\
+		 "[misc. options] [targets]"\
 		 "\n\tlists all files opened by username on file server\n\n");
-	d_printf("net <method> file CLOSE <id> [misc. options] [targets]\n"\
+	d_printf("net [<method>] file CLOSE <id> [misc. options] [targets]\n"\
 		 "\tcloses specified file on target server\n\n");
 	d_printf("net [rap] file INFO <id> [misc. options] [targets]\n"\
 		 "\tdisplays information about the specified open file\n");
@@ -165,6 +181,7 @@ int net_help(int argc, const char **argv)
 		{"PRINTQ", net_rap_printq_usage},
 		{"USER", net_help_user},
 		{"GROUP", net_help_group},
+		{"JOIN", net_help_join},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
 		{"ADMIN", net_rap_admin_usage},
