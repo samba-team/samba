@@ -180,7 +180,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
-mkdir -p $RPM_BUILD_ROOT/var/lock/samba
+mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib
@@ -329,32 +329,32 @@ if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
 
     # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
-    if [ -e /var/lock/samba/browse.dat ]; then
-	    rm -f /var/lock/samba/browse.dat
+    if [ -e /var/cache/samba/browse.dat ]; then
+	    rm -f /var/cache/samba/browse.dat
     fi
-    if [ -e /var/lock/samba/wins.dat ]; then
-	    rm -f /var/lock/samba/wins.dat
+    if [ -e /var/cache/samba/wins.dat ]; then
+	    rm -f /var/cache/samba/wins.dat
     fi
 
 	# Remove the transient tdb files.
-	if [ -e /var/lock/samba/brlock.tdb ]; then
-		rm -f /var/lock/samba/brlock.tdb
+	if [ -e /var/cache/samba/brlock.tdb ]; then
+		rm -f /var/cache/samba/brlock.tdb
 	fi
 
-	if [ -e /var/lock/samba/unexpected.tdb ]; then
-		rm -f /var/lock/samba/unexpected.tdb
+	if [ -e /var/cache/samba/unexpected.tdb ]; then
+		rm -f /var/cache/samba/unexpected.tdb
 	fi
 
-	if [ -e /var/lock/samba/connections.tdb ]; then
-		rm -f /var/lock/samba/connections.tdb
+	if [ -e /var/cache/samba/connections.tdb ]; then
+		rm -f /var/cache/samba/connections.tdb
 	fi
 
-	if [ -e /var/lock/samba/locking.tdb ]; then
-		rm -f /var/lock/samba/locking.tdb
+	if [ -e /var/cache/samba/locking.tdb ]; then
+		rm -f /var/cache/samba/locking.tdb
 	fi
 
-	if [ -e /var/lock/samba/messages.tdb ]; then
-		rm -f /var/lock/samba/messages.tdb
+	if [ -e /var/cache/samba/messages.tdb ]; then
+		rm -f /var/cache/samba/messages.tdb
 	fi
 
 fi
@@ -444,6 +444,6 @@ fi
 %attr(-,root,root) MANDIR_MACRO/man7/*
 %attr(-,root,root) MANDIR_MACRO/man8/*
 %attr(-,root,root) %dir /etc/codepages/*
-%attr(755,root,root) %dir /var/lock/samba
+%attr(755,root,root) %dir /var/cache/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
