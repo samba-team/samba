@@ -1,8 +1,8 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_krb4)
+INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = string2key
 
@@ -12,23 +12,39 @@ libexec_PROGRAMS = hprop hpropd kdc
 
 man_MANS = kdc.8 kstash.8 hprop.8 hpropd.8
 
-hprop_SOURCES = hprop.c hprop-common.c
-hpropd_SOURCES = hpropd.c hprop-common.c
+kerberos4.h
+rx.h
 
-kdc_SOURCES = 524.c connect.c config.c kerberos4.c kerberos5.c log.c main.c misc.c kaserver.c
+hprop_SOURCES = hprop.c hprop-common.c hprop.h kadb.h 
+hpropd_SOURCES = hpropd.c hprop-common.c hprop.h
 
-if KRB4
+kstash_SOURCES = kstash.c headers.h
+
+string2key_SOURCES = string2key.c headers.h
+
+kdc_SOURCES = \
+	524.c		\
+	config.c	\
+	connect.c	\
+	kaserver.c	\
+	kdc_locl.h	\
+	kerberos4.c	\
+	kerberos4.h	\
+	kerberos5.c	\
+	log.c		\
+	main.c		\
+	misc.c		\
+	rx.h
+
+
 hprop_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_krb4) -lkdb $(LIB_krb4) \
+	$(LIB_kdb) $(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la \
 	$(DBLIB) 
-else
-hprop_LDADD = $(LDADD)
-endif
 
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \

@@ -1,14 +1,16 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
-
-INCLUDES = -I$(top_builddir)/include 
+include $(top_srcdir)/Makefile.am.common
 
 man_MANS = kpasswd.1 kpasswdd.8
 
 bin_PROGRAMS = kpasswd
 
+kpasswd_SOURCES = kpasswd.c kpasswd_locl.h
+
 libexec_PROGRAMS = kpasswdd
+
+kpasswdd_SOURCES = kpasswdd.c kpasswd_locl.h
 
 kpasswdd_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \

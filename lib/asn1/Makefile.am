@@ -1,19 +1,10 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
-
-WFLAGS=@WFLAGS@
-CFLAGS=$(WFLAGS) @CFLAGS@
+include $(top_srcdir)/Makefile.am.common
 
 YFLAGS = -d
-#YACCFLAGS = $(YFLAGS)
 
-#lib_LIBRARIES = libasn1.a
 lib_LTLIBRARIES = libasn1.la
-
-COMPILE_ET = ../com_err/compile_et
-
-SUFFIXES = .et .x .h
 
 BUILT_SOURCES =					\
 	asn1_APOptions.c			\
@@ -125,7 +116,7 @@ libasn1_la_SOURCES = \
 	timegm.c \
 	$(BUILT_SOURCES)
 
-asn1_compile_LDADD = ../roken/libroken.la @LEXLIB@
+asn1_compile_LDADD = ../roken/libroken.la $(LEXLIB)
 
 check_der_LDADD = libasn1.la ../roken/libroken.la
 
@@ -133,17 +124,7 @@ TESTS = check-der
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
-incdir = $(includedir)
-inc_DATA = asn1.h asn1_err.h
-idir = $(top_builddir)/include
-
-all-local: $(inc_DATA)
-	@for i in $(inc_DATA); do \
-		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
-			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
-			$(INSTALL_DATA) $$i $(idir)/$$i; \
-		fi ; \
-	done
+include__DATA = asn1.h asn1_err.h
 
 lex.lo: parse.h
 
@@ -154,14 +135,4 @@ asn1_files: asn1_compile $(srcdir)/k5.asn1
 
 $(libasn1_la_OBJECTS): asn1.h asn1_err.h
 
-.x.c:
-	@cmp -s $< $@ 2> /dev/null || cp $< $@
-
-.et.h:
-	$(COMPILE_ET) $<
-.et.c:
-	$(COMPILE_ET) $<
-
-asn1_err.h: asn1_err.et
-
-asn1_err.c: asn1_err.et
+EXTRA_DIST = asn1_err.et

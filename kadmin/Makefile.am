@@ -1,8 +1,8 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_readline)
+INCLUDES += $(INCLUDE_readline)
 
 sbin_PROGRAMS = kadmin
 
@@ -10,9 +10,9 @@ libexec_PROGRAMS = kadmind
 
 kadmin_SOURCES = 						\
 	ank.c cpw.c del.c dump.c ext.c get.c init.c kadmin.c	\
-	load.c mod.c rename.c util.c
+	load.c mod.c rename.c util.c kadmin_locl.h
 
-LIB_tgetent = @LIB_tgetent@
+kadmind_SOURCES = kadmind.c kadmin_locl.h
 
 COMMON_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \

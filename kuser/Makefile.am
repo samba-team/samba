@@ -1,8 +1,8 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_krb4)
+INCLUDES += $(INCLUDE_krb4)
 
 man_MANS = kinit.1 klist.1 kdestroy.1
 
@@ -14,14 +14,8 @@ kauth_SOURCES = kinit.c kauth_options.c
 
 noinst_PROGRAMS = kfoo kverify
 
-if KRB4
-AFSLIB=$(top_builddir)/lib/kafs/libkafs.a $(AIX_EXTRA_KAFS)
-else
-AFSLIB=
-endif
-
 kauth_LDADD = \
-	$(AFSLIB) \
+	$(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
