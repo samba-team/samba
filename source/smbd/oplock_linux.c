@@ -31,7 +31,6 @@ static unsigned signals_received;
 static unsigned signals_processed;
 static int fd_pending; /* the fd of the current pending SIGIO */
 
-
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
 #endif
@@ -237,6 +236,19 @@ static BOOL linux_oplock_msg_waiting(fd_set *fds)
 	return signals_processed != signals_received;
 }
 
+/****************************************************************************
+see if the kernel supports oplocks
+****************************************************************************/
+static BOOL linux_oplocks_available(void)
+{
+	int fd, ret;
+	fd = open("/dev/null", O_RDONLY);
+	if (fd == -1) return False; /* uggh! */
+	ret = fcntl(fd, F_GETLEASE, 0);
+	close(fd);
+	return ret == F_UNLCK;
+}
+
 
 /****************************************************************************
 setup kernel oplocks
@@ -245,6 +257,11 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 {
 	static struct kernel_oplocks koplocks;
         struct sigaction act;
+
+	if (!linux_oplocks_available()) {
+		DEBUG(3,("Linux kernel oplocks not available\n"));
+		return NULL;
+	}
 
         act.sa_handler = NULL;
         act.sa_sigaction = sigio_handler;
