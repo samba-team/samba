@@ -63,7 +63,7 @@ static void add_socket(struct event_context *events,
 		set_socket_options(fde.fd, "SO_KEEPALIVE"); 
 		set_socket_options(fde.fd, lp_socket_options());
       
-		if (listen(fde.fd, 10) == -1) {
+		if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
 			DEBUG(0,("Failed to listen on %s:%d - %s\n",
 				 inet_ntoa(*ifip), port, strerror(errno)));
 			close(fde.fd);

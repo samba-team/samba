@@ -4,7 +4,7 @@
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
 # Copyright Andrew Barteltt 2002
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
-# Copyright (C) 2003 James Myers <myersjj@us.ibm.com>
+# Copyright (C) 2003 James Myers <myersjj@samba.org>
 ###########################################################################
 
 prefix=@prefix@
@@ -84,7 +84,7 @@ LIBSMBCLIENT_MINOR=1
 
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I. $(CPPFLAGS) -I$(srcdir)
-FLAGS2 = -I/usr/src/newport/csm/include/linuxusp -I/usr/src/newport/csm/include/common -I/usr/src/newport/stp/include
+FLAGS2 = -I/usr/src/newport/csm/include/@STFS_CSM_INCLUDE@ -I/usr/src/newport/csm/include/common -I/usr/src/newport/stp/include
 FLAGS3 = 
 FLAGS4 = 
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4)
@@ -193,6 +193,8 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 	     libcli/util/doserr.o libcli/util/errormap.o \
 	     libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o
 
+LIBRAW_RPC_OBJ = libcli/rpc/rpcparse.o libcli/rpc/rpc_basic.o libcli/rpc/rpc_sec.o 
+
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
 	     libcli/raw/clisession.o libcli/raw/clitree.o \
@@ -202,8 +204,8 @@ LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/rawtrans.o libcli/raw/clioplock.o \
 	     libcli/raw/rawnegotiate.o libcli/raw/rawfsinfo.o \
 	     libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
-	     libcli/raw/rawioctl.o libcli/raw/rawdcerpc.o \
-	     $(LIBSAMBA_OBJ) $(LIBCLIUTIL_OBJ) \
+	     libcli/raw/rawioctl.o libcli/raw/rawacl.o libcli/raw/rawdcerpc.o \
+	     $(LIBRAW_RPC_OBJ) $(LIBSAMBA_OBJ) $(LIBCLIUTIL_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBNTLMSSP_OBJ) $(LIBNMB_OBJ) $(KRBCLIENT_OBJ)
 
 LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \

@@ -27,16 +27,16 @@
 
 static const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
-//	{ "rhosts", auth_init_rhosts },
-//	{ "hostsequiv", auth_init_hostsequiv },
+/*	{ "rhosts", auth_init_rhosts }, */
+/*	{ "hostsequiv", auth_init_hostsequiv }, */
 	{ "sam", auth_init_sam },	
 	{ "samstrict", auth_init_samstrict },
 	{ "samstrict_dc", auth_init_samstrict_dc },
 	{ "unix", auth_init_unix },
-//	{ "smbserver", auth_init_smbserver },
-//	{ "ntdomain", auth_init_ntdomain },
-//	{ "trustdomain", auth_init_trustdomain },
-//	{ "winbind", auth_init_winbind },
+/*	{ "smbserver", auth_init_smbserver }, */
+/*	{ "ntdomain", auth_init_ntdomain }, */
+/*	{ "trustdomain", auth_init_trustdomain }, */
+/*	{ "winbind", auth_init_winbind }, */
 #ifdef DEVELOPER
 	{ "name_to_ntstatus", auth_init_name_to_ntstatus },
 	{ "fixed_challenge", auth_init_fixed_challenge },
@@ -106,7 +106,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	
 	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
 	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
 	
 	SMB_ASSERT(auth_context->challenge.length == 8);
 
@@ -203,7 +203,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 					auth_context->challenge_set_by));
 
 	DEBUG(10, ("challenge is: \n"));
-	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 

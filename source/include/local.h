@@ -223,4 +223,8 @@
 
 /* Max number of simultaneous winbindd socket connections. */
 #define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
+
+/* size of listen() backlog in smbd */
+#define SMBD_LISTEN_BACKLOG 10
+
 #endif

@@ -41,15 +41,15 @@ typedef struct nttime_info
    on the wire in testsuite test code to ensure that we are
    terminating names in the same way that win2003 is. The *ONLY* time
    you should ever look at the 'private_length' field in this
-   structure is inside compliance test code, in all cases just use the
-   null terminated char* as the definitive definition of the
+   structure is inside compliance test code, in all other cases just
+   use the null terminated char* as the definitive definition of the
    string
 
    also note that this structure is only used in packets where there
    is an explicit length provided on the wire (hence the name). That
    length is placed in 'private_length'. For packets where the length
    is always determined by NULL or packet termination a normal char*
-   is used.
+   is used in the structure definition.
  */
 typedef struct {
 	uint32 private_length;
@@ -1915,4 +1915,5 @@ union smb_search_close {
 		} in;
 	} findclose;
 };
+
 
