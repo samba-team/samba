@@ -2311,6 +2311,10 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
 
+	/* set the browseable flag from the gloabl default */
+
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
 	
@@ -2378,6 +2382,9 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* the printer name is set to the service name. */
 	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
 	string_set(&ServicePtrs[i]->comment, comment);
+
+	/* set the browseable flag from the gloabl default */
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	/* Printers cannot be read_only. */
 	ServicePtrs[i]->bRead_only = False;
