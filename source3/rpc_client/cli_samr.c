@@ -150,6 +150,38 @@ BOOL get_samr_query_usergroups(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR delete group 
+****************************************************************************/
+BOOL delete_samr_dom_group(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 group_rid)
+{
+	POLICY_HND pol_open_group;
+
+	if (pol_open_domain == NULL) return False;
+
+	/* send open domain (on group rid) */
+	if (!samr_open_group(cli, pol_open_domain,
+				0x00000010, group_rid,
+				&pol_open_group))
+	{
+		return False;
+	}
+
+	/* send group delete */
+	if (!samr_delete_dom_group(cli, &pol_open_group))
+				
+	{
+		DEBUG(5,("delete_samr_dom_group: error in delete domain group\n"));
+		samr_close(cli, &pol_open_group);
+		return False;
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
 do a SAMR query group members 
 ****************************************************************************/
 BOOL get_samr_query_groupmem(struct cli_state *cli, 
@@ -182,6 +214,37 @@ BOOL get_samr_query_groupmem(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR delete alias 
+****************************************************************************/
+BOOL delete_samr_dom_alias(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 alias_rid)
+{
+	POLICY_HND pol_open_alias;
+
+	if (pol_open_domain == NULL) return False;
+
+	/* send open domain (on alias rid) */
+	if (!samr_open_alias(cli, pol_open_domain,
+				0x000f001f, alias_rid, &pol_open_alias))
+	{
+		return False;
+	}
+
+	/* send alias delete */
+	if (!samr_delete_dom_alias(cli, &pol_open_alias))
+				
+	{
+		DEBUG(5,("delete_samr_dom_alias: error in delete domain alias\n"));
+		samr_close(cli, &pol_open_alias);
+		return False;
+	}
+
+	return True;
+}
+
+
+/****************************************************************************
 do a SAMR query alias members 
 ****************************************************************************/
 BOOL get_samr_query_aliasmem(struct cli_state *cli, 
@@ -195,7 +258,7 @@ BOOL get_samr_query_aliasmem(struct cli_state *cli,
 
 	/* send open domain (on alias sid) */
 	if (!samr_open_alias(cli, pol_open_domain,
-				alias_rid,
+				0x000f001f, alias_rid,
 				&pol_open_alias))
 	{
 		return False;
@@ -842,7 +905,8 @@ BOOL samr_open_user(struct cli_state *cli,
 do a SAMR Open Alias
 ****************************************************************************/
 BOOL samr_open_alias(struct cli_state *cli, 
-				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *domain_pol,
+				uint32 flags, uint32 rid,
 				POLICY_HND *alias_pol)
 {
 	prs_struct data;
@@ -861,7 +925,7 @@ BOOL samr_open_alias(struct cli_state *cli,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_open_alias(&q_o, domain_pol, 0x000f001f, rid);
+	make_samr_q_open_alias(&q_o, domain_pol, flags, rid);
 
 	/* turn parameters into data stream */
 	samr_io_q_open_alias("", &q_o,  &data, 0);
@@ -885,6 +949,61 @@ BOOL samr_open_alias(struct cli_state *cli,
 		if (p)
 		{
 			memcpy(alias_pol, &r_o.pol, sizeof(r_o.pol));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Delete Alias Member
+****************************************************************************/
+BOOL samr_del_aliasmem(struct cli_state *cli, 
+				POLICY_HND *alias_pol, DOM_SID *sid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_DEL_ALIASMEM q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL || sid == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_DEL_ALIASMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Delete Alias Member.\n"));
+
+	/* store the parameters */
+	make_samr_q_del_aliasmem(&q_o, alias_pol, sid);
+
+	/* turn parameters into data stream */
+	samr_io_q_del_aliasmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_DEL_ALIASMEM, &data, &rdata))
+	{
+		SAMR_R_DEL_ALIASMEM r_o;
+		BOOL p;
+
+		samr_io_r_del_aliasmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_DEL_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
 			valid_pol = True;
 		}
 	}
@@ -935,6 +1054,61 @@ BOOL samr_add_aliasmem(struct cli_state *cli,
 		{
 			/* report error code */
 			DEBUG(0,("SAMR_R_ADD_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Delete Domain Alias
+****************************************************************************/
+BOOL samr_delete_dom_alias(struct cli_state *cli, 
+				POLICY_HND *alias_pol)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_DELETE_DOM_ALIAS q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL) return False;
+
+	/* delete and send a MSRPC command with api SAMR_DELETE_DOM_ALIAS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Delete Domain Alias.\n"));
+
+	/* store the parameters */
+	make_samr_q_delete_dom_alias(&q_o, alias_pol);
+
+	/* turn parameters into data stream */
+	samr_io_q_delete_dom_alias("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_DELETE_DOM_ALIAS, &data, &rdata))
+	{
+		SAMR_R_DELETE_DOM_ALIAS r_o;
+		BOOL p;
+
+		samr_io_r_delete_dom_alias("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_DELETE_DOM_ALIAS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1122,6 +1296,61 @@ BOOL samr_open_group(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR Delete Group Member
+****************************************************************************/
+BOOL samr_del_groupmem(struct cli_state *cli, 
+				POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_DEL_GROUPMEM q_o;
+	BOOL valid_pol = False;
+
+	if (group_pol == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_DEL_GROUPMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Delete Group Member.\n"));
+
+	/* store the parameters */
+	make_samr_q_del_groupmem(&q_o, group_pol, rid);
+
+	/* turn parameters into data stream */
+	samr_io_q_del_groupmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_DEL_GROUPMEM, &data, &rdata))
+	{
+		SAMR_R_DEL_GROUPMEM r_o;
+		BOOL p;
+
+		samr_io_r_del_groupmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_DEL_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Add Group Member
 ****************************************************************************/
 BOOL samr_add_groupmem(struct cli_state *cli, 
@@ -1161,6 +1390,60 @@ BOOL samr_add_groupmem(struct cli_state *cli,
 		{
 			/* report error code */
 			DEBUG(0,("SAMR_R_ADD_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Delete Domain Group
+****************************************************************************/
+BOOL samr_delete_dom_group(struct cli_state *cli, POLICY_HND *group_pol)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_DELETE_DOM_GROUP q_o;
+	BOOL valid_pol = False;
+
+	if (group_pol == NULL) return False;
+
+	/* delete and send a MSRPC command with api SAMR_DELETE_DOM_GROUP */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Delete Domain Group.\n"));
+
+	/* store the parameters */
+	make_samr_q_delete_dom_group(&q_o, group_pol);
+
+	/* turn parameters into data stream */
+	samr_io_q_delete_dom_group("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_DELETE_DOM_GROUP, &data, &rdata))
+	{
+		SAMR_R_DELETE_DOM_GROUP r_o;
+		BOOL p;
+
+		samr_io_r_delete_dom_group("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_DELETE_DOM_GROUP: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1346,6 +1629,91 @@ BOOL samr_open_domain(struct cli_state *cli,
 	prs_mem_free(&rdata  );
 
 	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Query Lookup Names
+****************************************************************************/
+BOOL samr_query_lookup_names(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 flags,
+				uint32 num_names, const char **names,
+				uint32 *num_rids,
+				uint32 rid[MAX_LOOKUP_SIDS],
+				uint32 type[MAX_LOOKUP_SIDS])
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_LOOKUP_NAMES q_o;
+	BOOL valid_query = False;
+
+	if (pol == NULL || flags == 0 || num_names == 0 || names == NULL ||
+	    num_rids == NULL || rid == NULL || type == NULL ) return False;
+
+	/* create and send a MSRPC command with api SAMR_LOOKUP_NAMES */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Query Lookup NAMES.\n"));
+
+	/* store the parameters */
+	make_samr_q_lookup_names(&q_o, pol, flags, num_names, names);
+
+	/* turn parameters into data stream */
+	samr_io_q_lookup_names("", &q_o, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_LOOKUP_NAMES, &data, &rdata))
+	{
+		SAMR_R_LOOKUP_NAMES r_o;
+		BOOL p;
+
+		samr_io_r_lookup_names("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_LOOKUP_NAMES: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			if (r_o.ptr_rids != 0 && r_o.ptr_types != 0 &&
+			    r_o.num_types1 == r_o.num_rids1)
+			{
+				int i;
+
+				valid_query = True;
+				*num_rids = r_o.num_rids1;
+
+				for (i = 0; i < r_o.num_rids1; i++)
+				{
+					rid[i] = r_o.rid[i];
+				}
+				for (i = 0; i < r_o.num_types1; i++)
+				{
+					type[i] = r_o.type[i];
+				}
+			}
+			else if (r_o.ptr_rids == 0 && r_o.ptr_types == 0)
+			{
+				valid_query = True;
+				*num_rids = 0;
+			}
+			else
+			{
+				p = False;
+			}
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
 }
 
 /****************************************************************************

@@ -224,12 +224,8 @@ static BOOL add_grpunixgrp_entry(DOMAIN_GRP *newgrp)
 }
 
 /************************************************************************
- Routine to search the grppasswd file for an entry matching the groupname.
- and then modify its group entry. We can't use the startgrppwent()/
- getgrppwent()/endgrppwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out group or NO PASS
+ Routine to search database for entry matching the groupname and/or rid.
+ and then modify its group entry. 
 ************************************************************************/
 
 static BOOL mod_grpunixgrp_entry(DOMAIN_GRP* grp)
@@ -238,6 +234,34 @@ static BOOL mod_grpunixgrp_entry(DOMAIN_GRP* grp)
 	return False;
 }
 
+/************************************************************************
+ Routine to search the grppasswd file for an entry matching the rid.
+ and then delete it.
+************************************************************************/
+
+static BOOL del_grpunixgrp_entry(uint32 rid)
+{
+	DEBUG(0, ("del_grpunixgrp_entry: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to add a member to an entry to the grppasswd file.
+*************************************************************************/
+static BOOL add_grpunixgrp_member(uint32 rid, uint32 member_rid)
+{
+	DEBUG(0, ("add_grpunixgrp_member: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to delete a member from an entry to the grppasswd file.
+*************************************************************************/
+static BOOL del_grpunixgrp_member(uint32 rid, uint32 member_rid)
+{
+	DEBUG(0, ("del_grpunixgrp_member: NOT IMPLEMENTED\n"));
+	return False;
+}
 
 static struct groupdb_ops unix_ops =
 {
@@ -253,6 +277,10 @@ static struct groupdb_ops unix_ops =
 
 	add_grpunixgrp_entry,
 	mod_grpunixgrp_entry,
+	del_grpunixgrp_entry,
+
+	add_grpunixgrp_member,
+	del_grpunixgrp_member,
 
 	iterate_getusergroupsnam      /* in groupdb.c */
 };

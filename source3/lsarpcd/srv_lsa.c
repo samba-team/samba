@@ -193,37 +193,88 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
-make_reply_lookup_names
+make_lsa_rid2s
  ***************************************************************************/
-static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
-				int num_entries,
-				DOM_SID dom_sids [MAX_LOOKUP_SIDS],
-				uint8   dom_types[MAX_LOOKUP_SIDS])
+static void make_lsa_rid2s(DOM_R_REF *ref,
+				DOM_RID2 *rid2,
+				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
+				uint32 *mapped_count)
 {
 	int i;
+	int total = 0;
+	(*mapped_count) = 0;
 
-	r_l->num_entries = 0;
-	r_l->undoc_buffer = 0;
-	r_l->num_entries2 = 0;
-
-#if 0
-	r_l->num_entries = num_entries;
-	r_l->undoc_buffer = 1;
-	r_l->num_entries2 = num_entries;
-
-	SMB_ASSERT_ARRAY(r_l->dom_rid, num_entries);
+	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
 	for (i = 0; i < num_entries; i++)
 	{
-		DOM_SID sid = dom_sids[i];
-		uint32 rid;
-		sid_split_rid(&sid, &rid);
-		make_dom_ref(&(r_l->dom_ref), dom_name, dom_sid);
-		make_dom_rid2(&(r_l->dom_rid[i]), rid, dom_types[i]);
+		uint32 status = 0x0;
+		DOM_SID find_sid;
+		DOM_SID sid;
+		uint32 rid = 0xffffffff;
+		int dom_idx = -1;
+		fstring find_name;
+		char *dom_name = NULL;
+		uint8 sid_name_use = SID_NAME_UNKNOWN;
+
+		fstrcpy(find_name, unistr2_to_str(&name[i]));
+		dom_name = strdup(find_name);
+
+		if (map_domain_name_to_sid(&sid, &dom_name))
+		{
+			sid_name_use = SID_NAME_DOMAIN;
+			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
 	}
 
-	r_l->num_entries3 = num_entries;
-#endif
+		if (lookup_name(find_name, &sid, &sid_name_use) == 0x0 &&
+		    sid_split_rid(&sid, &rid))
+		{
+			if (map_domain_sid_to_name(&sid, find_name))
+			{
+				dom_idx = make_dom_ref(ref, find_name, &sid);
+			}
+			else
+			{
+				status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+			}
+		}
+		else
+		{
+			status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		}
+
+		if (status == 0x0)
+		{
+			(*mapped_count)++;
+		}
+		else
+		{
+			dom_idx = -1;
+			rid = 0xffffffff;
+			sid_name_use = SID_NAME_UNKNOWN;
+		}
+
+		make_dom_rid2(&rid2[total], rid, sid_name_use, dom_idx);
+		total++;
+
+		if (dom_name != NULL)
+		{
+			free(dom_name);
+		}
+	}
+}
+
+/***************************************************************************
+make_reply_lookup_names
+ ***************************************************************************/
+static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
+				DOM_R_REF *ref, DOM_RID2 *rid2,
+				uint32 mapped_count, uint32 status)
+{
+	r_l->dom_ref      = ref;
+	r_l->dom_rid      = rid2;
+	r_l->mapped_count = mapped_count;
+	r_l->status       = status;
 }
 
 /***************************************************************************
@@ -340,18 +391,24 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 lsa_reply_lookup_names
  ***************************************************************************/
 static void lsa_reply_lookup_names(prs_struct *rdata,
-				int num_entries,
-				DOM_SID dom_sids [MAX_LOOKUP_SIDS],
-				uint8   dom_types[MAX_LOOKUP_SIDS])
+				UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
 {
 	LSA_R_LOOKUP_NAMES r_l;
+	DOM_R_REF ref;
+	DOM_RID2 rids[MAX_LOOKUP_SIDS];
+	uint32 mapped_count = 0;
 
 	ZERO_STRUCT(r_l);
+	ZERO_STRUCT(ref);
+	ZERO_STRUCT(rids);
 
 	/* set up the LSA Lookup RIDs response */
-	make_reply_lookup_names(&r_l, num_entries, dom_sids, dom_types);
+	make_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
+	make_reply_lookup_names(&r_l, &ref, rids, mapped_count, 0x0);
 
-	r_l.status = 0x0;
+	r_l.num_entries  = num_entries;
+	r_l.undoc_buffer = 1;
+	r_l.num_entries2 = num_entries;
 
 	/* store the response in the SMB stream */
 	lsa_io_r_lookup_names("", &r_l, rdata, 0);
@@ -476,36 +533,16 @@ api_lsa_lookup_names
 static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata )
 {
-	int i;
 	LSA_Q_LOOKUP_NAMES q_l;
-	DOM_SID dom_sids [MAX_LOOKUP_SIDS];
-	uint8   dom_types[MAX_LOOKUP_SIDS];
-
 	ZERO_STRUCT(q_l);
-	ZERO_ARRAY(dom_sids);	
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_names("", &q_l, data, 0);
 
 	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
 
-	/* convert received RIDs to strings, so we can do them. */
-	for (i = 0; i < q_l.num_entries; i++)
-	{
-		fstring name;
-		fstrcpy(name, unistr2_to_str(&q_l.uni_name[i]));
-
-		if (!lookup_name(name, &dom_sids[i], &dom_types[i]))
-		{
-			dom_types[i] = SID_NAME_UNKNOWN;
-		}
-	}
-
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_lookup_names(rdata,
-                              q_l.num_entries,
-	                      dom_sids, /* text-converted SIDs */
-	                      dom_types); /* SID_NAME_USE types */
+	lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
 /***************************************************************************

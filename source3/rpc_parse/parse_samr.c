@@ -2913,6 +2913,22 @@ void samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_s
 }
 
 /*******************************************************************
+makes a SAMR_R_CREATE_DOM_ALIAS structure.
+********************************************************************/
+void make_samr_r_create_dom_alias(SAMR_R_CREATE_DOM_ALIAS *r_u, POLICY_HND *pol,
+		uint32 rid, uint32 status)
+{
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_create_dom_alias\n"));
+
+	memcpy(&(r_u->alias_pol), pol, sizeof(*pol));
+	r_u->rid    = rid   ;
+	r_u->status = status;
+}
+
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 void samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth)
@@ -3180,6 +3196,33 @@ void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struc
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
+/*******************************************************************
+makes a SAMR_Q_LOOKUP_NAMES structure.
+********************************************************************/
+void make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
+		POLICY_HND *pol, uint32 flags,
+		uint32 num_names, const char **name)
+{
+	int i;
+	if (q_u == NULL) return;
+
+	DEBUG(5,("make_samr_q_lookup_names\n"));
+
+	memcpy(&(q_u->pol), pol, sizeof(*pol));
+
+	q_u->num_names1 = num_names;
+	q_u->flags     = flags;
+	q_u->ptr       = 0;
+	q_u->num_names2 = num_names;
+
+	for (i = 0; i < num_names; i++)
+	{
+		int len_name = name[i] != NULL ? strlen(name[i]) : 0;
+		make_uni_hdr(&(q_u->hdr_name[i]), len_name, len_name, name[i] != NULL);  /* unicode header for user_name */
+		make_unistr2(&(q_u->uni_name[i]), name[i], len_name);  /* unicode string for machine account */
+	}
+}
+
 
 /*******************************************************************
 reads or writes a structure.
@@ -3198,22 +3241,22 @@ void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("num_rids1", ps, depth, &(q_u->num_rids1));
-	prs_uint32("rid      ", ps, depth, &(q_u->rid      ));
+	prs_uint32("num_names1", ps, depth, &(q_u->num_names1));
+	prs_uint32("flags     ", ps, depth, &(q_u->flags     ));
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
-	prs_uint32("num_rids2", ps, depth, &(q_u->num_rids2));
+	prs_uint32("num_names2", ps, depth, &(q_u->num_names2));
 
-	SMB_ASSERT_ARRAY(q_u->hdr_user_name, q_u->num_rids2);
+	SMB_ASSERT_ARRAY(q_u->hdr_name, q_u->num_names2);
 
-	for (i = 0; i < q_u->num_rids2; i++)
+	for (i = 0; i < q_u->num_names2; i++)
 	{
 		prs_grow(ps);
-		smb_io_unihdr ("", &(q_u->hdr_user_name[i]), ps, depth); 
+		smb_io_unihdr ("", &(q_u->hdr_name[i]), ps, depth); 
 	}
-	for (i = 0; i < q_u->num_rids2; i++)
+	for (i = 0; i < q_u->num_names2; i++)
 	{
 		prs_grow(ps);
-		smb_io_unistr2("", &(q_u->uni_user_name[i]), q_u->hdr_user_name[i].buffer, ps, depth); 
+		smb_io_unistr2("", &(q_u->uni_name[i]), q_u->hdr_name[i].buffer, ps, depth); 
 	}
 
 	prs_align(ps);
@@ -3233,22 +3276,31 @@ void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 
 	if (status == 0x0)
 	{
-		r_u->num_entries  = num_rids;
-		r_u->undoc_buffer = 1;
-		r_u->num_entries2 = num_rids;
+		r_u->num_types1 = num_rids;
+		r_u->ptr_types  = 1;
+		r_u->num_types2 = num_rids;
 
-		SMB_ASSERT_ARRAY(r_u->dom_rid, num_rids);
+		r_u->num_rids1 = num_rids;
+		r_u->ptr_rids  = 1;
+		r_u->num_rids2 = num_rids;
+
+		SMB_ASSERT_ARRAY(r_u->rid, num_rids);
 
 		for (i = 0; i < num_rids; i++)
 		{
-			make_dom_rid3(&(r_u->dom_rid[i]), rid[i], type[i]);
+			r_u->rid [i] = rid [i];
+			r_u->type[i] = type[i];
 		}
 	}
 	else
 	{
-		r_u->num_entries  = 0;
-		r_u->undoc_buffer = 0;
-		r_u->num_entries2 = 0;
+		r_u->num_types1 = 0;
+		r_u->ptr_types  = 0;
+		r_u->num_types2 = 0;
+
+		r_u->num_rids1 = 0;
+		r_u->ptr_rids  = 0;
+		r_u->num_rids2 = 0;
 	}
 
 	r_u->status = status;
@@ -3260,6 +3312,8 @@ reads or writes a structure.
 void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth)
 {
 	int i;
+	fstring tmp;
+
 	if (r_u == NULL) return;
 
 	prs_debug(ps, depth, desc, "samr_io_r_lookup_names");
@@ -3267,20 +3321,32 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	prs_align(ps);
 
-	prs_uint32("num_entries ", ps, depth, &(r_u->num_entries ));
-	prs_uint32("undoc_buffer", ps, depth, &(r_u->undoc_buffer));
-	prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
+	prs_uint32("num_rids1", ps, depth, &(r_u->num_rids1));
+	prs_uint32("ptr_rids ", ps, depth, &(r_u->ptr_rids ));
+	prs_uint32("num_rids2", ps, depth, &(r_u->num_rids2));
 
-	if (r_u->num_entries != 0)
+	if (r_u->ptr_rids != 0 && r_u->num_rids1 != 0)
 	{
-		SMB_ASSERT_ARRAY(r_u->dom_rid, r_u->num_entries2);
-
-		for (i = 0; i < r_u->num_entries2; i++)
+		for (i = 0; i < r_u->num_rids2; i++)
 		{
 			prs_grow(ps);
-			smb_io_dom_rid3("", &(r_u->dom_rid[i]), ps, depth);
+			slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
+			prs_uint32(tmp, ps, depth, &(r_u->rid[i]));
+		}
 	}
 
+	prs_uint32("num_types1", ps, depth, &(r_u->num_types1));
+	prs_uint32("ptr_types ", ps, depth, &(r_u->ptr_types ));
+	prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
+
+	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
+	{
+		for (i = 0; i < r_u->num_types2; i++)
+		{
+			prs_grow(ps);
+			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
+			prs_uint32(tmp, ps, depth, &(r_u->type[i]));
+		}
 	}
 
 	prs_uint32("status", ps, depth, &(r_u->status));
@@ -3476,8 +3542,6 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 	usr->padding_8    = 0;            /* 0 - padding 4 bytes */
 	
 	make_unistr2(&(usr->uni_mach_acct), mach_acct, len_mach_acct);  /* unicode string for machine account */
-
-	bzero(usr->padding_9, sizeof(usr->padding_9)); /* 0 - padding 48 bytes */
 }
 
 /*******************************************************************
@@ -3526,6 +3590,7 @@ void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 
 	prs_uint8s (False, "padding_9", ps, depth, usr->padding_9, sizeof(usr->padding_9));
 }
+
 /*************************************************************************
  make_sam_user_info21
 

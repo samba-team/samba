@@ -225,11 +225,7 @@ static BOOL add_bltunixgrp_entry(LOCAL_GRP *newblt)
 
 /************************************************************************
  Routine to search the bltpasswd file for an entry matching the builtinname.
- and then modify its builtin entry. We can't use the startbltpwent()/
- getbltpwent()/endbltpwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out builtin or NO PASS
+ and then modify its builtin entry. 
 ************************************************************************/
 
 static BOOL mod_bltunixgrp_entry(LOCAL_GRP* blt)
@@ -238,6 +234,23 @@ static BOOL mod_bltunixgrp_entry(LOCAL_GRP* blt)
 	return False;
 }
 
+/************************************************************************
+ Routine to add a member to an entry to the bltpasswd file.
+*************************************************************************/
+static BOOL add_bltunixgrp_member(uint32 rid, DOM_SID *member_sid)
+{
+	DEBUG(0, ("add_bltunixgrp_member: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to delete a member from an entry to the bltpasswd file.
+*************************************************************************/
+static BOOL del_bltunixgrp_member(uint32 rid, DOM_SID *member_sid)
+{
+	DEBUG(0, ("del_bltunixgrp_member: NOT IMPLEMENTED\n"));
+	return False;
+}
 
 static struct aliasdb_ops unix_ops =
 {
@@ -253,6 +266,10 @@ static struct aliasdb_ops unix_ops =
 
 	add_bltunixgrp_entry,
 	mod_bltunixgrp_entry,
+	NULL, /* deliberately NULL: you can't delete builtin aliases */
+
+	add_bltunixgrp_member,
+	del_bltunixgrp_member,
 
 	iterate_getuserbuiltinntnam      /* in builtindb.c */
 };

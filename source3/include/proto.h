@@ -29,8 +29,11 @@ BOOL enumdomaliases(LOCAL_GRP **alss, int *num_alss);
 void *startaliasent(BOOL update);
 void endaliasent(void *vp);
 LOCAL_GRP *getaliasent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
-BOOL add_alias_entry(LOCAL_GRP *newals);
+BOOL add_alias_entry(LOCAL_GRP *newgrp);
 BOOL mod_alias_entry(LOCAL_GRP* als);
+BOOL del_alias_entry(uint32 rid);
+BOOL add_alias_member(uint32 rid, DOM_SID *member_sid);
+BOOL del_alias_member(uint32 rid, DOM_SID *member_sid);
 LOCAL_GRP *getaliasntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getaliasrid(uint32 alias_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
@@ -64,6 +67,8 @@ void endbuiltinent(void *vp);
 LOCAL_GRP *getbuiltinent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem);
 BOOL add_builtin_entry(LOCAL_GRP *newblt);
 BOOL mod_builtin_entry(LOCAL_GRP* blt);
+BOOL add_builtin_member(uint32 rid, DOM_SID *member_sid);
+BOOL del_builtin_member(uint32 rid, DOM_SID *member_sid);
 LOCAL_GRP *getbuiltinntnam(const char *name, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getbuiltinrid(uint32 builtin_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getbuiltingid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
@@ -92,7 +97,10 @@ void *startgroupent(BOOL update);
 void endgroupent(void *vp);
 DOMAIN_GRP *getgroupent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_mem);
 BOOL add_group_entry(DOMAIN_GRP *newgrp);
+BOOL del_group_entry(uint32 rid);
 BOOL mod_group_entry(DOMAIN_GRP* grp);
+BOOL add_group_member(uint32 rid, uint32 member_rid);
+BOOL del_group_member(uint32 rid, uint32 member_rid);
 DOMAIN_GRP *getgroupntnam(const char *name, DOMAIN_GRP_MEMBER **mem, int *num_mem);
 DOMAIN_GRP *getgrouprid(uint32 group_rid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
 DOMAIN_GRP *getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
@@ -335,6 +343,14 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
 /*The following definitions come from  lib/ufc.c  */
 
 char *ufc_crypt(char *key,char *salt);
+
+/*The following definitions come from  lib/unix_sec_ctxt.c  */
+
+void init_sec_ctxt(void);
+BOOL become_unix_sec_ctxt(struct unix_sec_ctxt const *ctxt);
+BOOL unbecome_unix_sec_ctxt(void);
+void become_unix_root_sec_ctxt(void) ;
+void unbecome_unix_root_sec_ctxt(void);
 
 /*The following definitions come from  lib/username.c  */
 
@@ -1501,7 +1517,7 @@ BOOL lsa_open_policy(struct cli_state *cli,
 BOOL lsa_lookup_names(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_names,
-			char **names,
+			const char **names,
 			DOM_SID **sids,
 			int *num_sids);
 BOOL lsa_lookup_sids(struct cli_state *cli,
@@ -1591,10 +1607,16 @@ BOOL create_samr_domain_group(struct cli_state *cli,
 BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
+BOOL delete_samr_dom_group(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 group_rid);
 BOOL get_samr_query_groupmem(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid, uint32 *num_mem,
 				uint32 *rid, uint32 *attr);
+BOOL delete_samr_dom_alias(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 alias_rid);
 BOOL get_samr_query_aliasmem(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid);
@@ -1633,10 +1655,15 @@ BOOL samr_open_user(struct cli_state *cli,
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);
 BOOL samr_open_alias(struct cli_state *cli, 
-				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *domain_pol,
+				uint32 flags, uint32 rid,
 				POLICY_HND *alias_pol);
+BOOL samr_del_aliasmem(struct cli_state *cli, 
+				POLICY_HND *alias_pol, DOM_SID *sid);
 BOOL samr_add_aliasmem(struct cli_state *cli, 
 				POLICY_HND *alias_pol, DOM_SID *sid);
+BOOL samr_delete_dom_alias(struct cli_state *cli, 
+				POLICY_HND *alias_pol);
 BOOL samr_create_dom_alias(struct cli_state *cli, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *alias_pol, uint32 *rid);
@@ -1646,8 +1673,11 @@ BOOL samr_open_group(struct cli_state *cli,
 				POLICY_HND *domain_pol,
 				uint32 flags, uint32 rid,
 				POLICY_HND *group_pol);
+BOOL samr_del_groupmem(struct cli_state *cli, 
+				POLICY_HND *group_pol, uint32 rid);
 BOOL samr_add_groupmem(struct cli_state *cli, 
 				POLICY_HND *group_pol, uint32 rid);
+BOOL samr_delete_dom_group(struct cli_state *cli, POLICY_HND *group_pol);
 BOOL samr_create_dom_group(struct cli_state *cli, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *group_pol, uint32 *rid);
@@ -1656,6 +1686,12 @@ BOOL samr_set_groupinfo(struct cli_state *cli,
 BOOL samr_open_domain(struct cli_state *cli, 
 				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
 				POLICY_HND *domain_pol);
+BOOL samr_query_lookup_names(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 flags,
+				uint32 num_names, const char **names,
+				uint32 *num_rids,
+				uint32 rid[MAX_LOOKUP_SIDS],
+				uint32 type[MAX_LOOKUP_SIDS]);
 BOOL samr_query_lookup_rids(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, uint32 *rids,
@@ -1745,7 +1781,7 @@ void make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 void lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 void lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, char **names);
+				int num_names, const char **names);
 void lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
 void lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
@@ -1788,7 +1824,7 @@ void make_string2(STRING2 *str, char *buf, int len);
 void smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void make_unistr2(UNISTR2 *str, char *buf, int len);
 void smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type);
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type, uint32 idx);
 void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
 void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
@@ -2215,6 +2251,8 @@ void samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struc
 void make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
 				const char *acct_desc);
 void samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
+void make_samr_r_create_dom_alias(SAMR_R_CREATE_DOM_ALIAS *r_u, POLICY_HND *pol,
+		uint32 rid, uint32 status);
 void samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
 void make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 				DOM_SID *sid);
@@ -2234,6 +2272,9 @@ void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struc
 void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 		uint32 num_sids, DOM_SID2 *sid, uint32 status);
 void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
+void make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
+		POLICY_HND *pol, uint32 flags,
+		uint32 num_names, const char **name);
 void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);
@@ -2255,7 +2296,6 @@ void make_sam_user_info11(SAM_USER_INFO_11 *usr,
 				uint32 rid_user,
 				uint32 rid_group,
 				uint16 acct_ctrl);
-void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 
 	NTTIME *logon_time,
@@ -2526,8 +2566,12 @@ void cmd_reg_get_key_sec(struct client_info *info);
 
 void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
+void cmd_sam_del_aliasmem(struct client_info *info);
+void cmd_sam_delete_dom_alias(struct client_info *info);
 void cmd_sam_add_aliasmem(struct client_info *info);
 void cmd_sam_create_dom_alias(struct client_info *info);
+void cmd_sam_del_groupmem(struct client_info *info);
+void cmd_sam_delete_dom_group(struct client_info *info);
 void cmd_sam_add_groupmem(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
 void cmd_sam_enum_users(struct client_info *info);

@@ -224,16 +224,41 @@ static BOOL add_alsunixgrp_entry(LOCAL_GRP *newals)
 
 /************************************************************************
  Routine to search the alspasswd file for an entry matching the aliasname.
- and then modify its alias entry. We can't use the startalspwent()/
- getalspwent()/endalspwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out alias or NO PASS
+ and then modify its alias entry. 
 ************************************************************************/
 
 static BOOL mod_alsunixgrp_entry(LOCAL_GRP* als)
 {
 	DEBUG(0, ("mod_alsunixgrp_entry: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to search the grppasswd file for an entry matching the rid.
+ and then delete it.
+************************************************************************/
+
+static BOOL del_alsunixgrp_entry(uint32 rid)
+{
+	DEBUG(0, ("del_alsunixgrp_entry: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to add a member to an entry to the grppasswd file.
+*************************************************************************/
+static BOOL add_alsunixgrp_member(uint32 rid, DOM_SID *member_sid)
+{
+	DEBUG(0, ("add_alsunixgrp_member: NOT IMPLEMENTED\n"));
+	return False;
+}
+
+/************************************************************************
+ Routine to delete a member from an entry to the grppasswd file.
+*************************************************************************/
+static BOOL del_alsunixgrp_member(uint32 rid, DOM_SID *member_sid)
+{
+	DEBUG(0, ("del_alsunixgrp_member: NOT IMPLEMENTED\n"));
 	return False;
 }
 
@@ -252,6 +277,10 @@ static struct aliasdb_ops unix_ops =
 
 	add_alsunixgrp_entry,
 	mod_alsunixgrp_entry,
+	del_alsunixgrp_entry,
+
+	add_alsunixgrp_member,
+	del_alsunixgrp_member,
 
 	iterate_getuseraliasntnam      /* in aliasdb.c */
 };

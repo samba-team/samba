@@ -993,24 +993,20 @@ typedef struct r_samr_query_useraliases_info
 
 
 /****************************************************************************
-SAMR_Q_LOOKUP_NAMES - do a conversion from SID to RID.
-
-the policy handle allocated by an "samr open secret" call is associated
-with a SID.  this policy handle is what is queried here, *not* the SID
-itself.  the response to the lookup rids is relative to this SID.
+SAMR_Q_LOOKUP_NAMES - do a conversion from Names to RIDs+types.
 *****************************************************************************/
 /* SAMR_Q_LOOKUP_NAMES */
 typedef struct q_samr_lookup_names_info
 {
     POLICY_HND pol;       /* policy handle */
 
-	uint32 num_rids1;      /* number of rids being looked up */
-	uint32 rid;            /* 0x0000 03e8 - RID of the server doing the query? */
+	uint32 num_names1;      /* number of names being looked up */
+	uint32 flags;           /* 0x0000 03e8 - unknown */
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
-	uint32 num_rids2;      /* number of rids being looked up */
+	uint32 num_names2;      /* number of names being looked up */
 
-	UNIHDR  hdr_user_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
-	UNISTR2 uni_user_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
+	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* unicode account name header */
+	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* unicode account name string */
 
 } SAMR_Q_LOOKUP_NAMES;
 
@@ -1018,11 +1014,17 @@ typedef struct q_samr_lookup_names_info
 /* SAMR_R_LOOKUP_NAMES */
 typedef struct r_samr_lookup_names_info
 {
-	uint32 num_entries;
-	uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint32 num_rids1;      /* number of aliases being looked up */
+	uint32 ptr_rids;       /* pointer to aliases */
+	uint32 num_rids2;      /* number of aliases being looked up */
 
-	uint32 num_entries2; 
-	DOM_RID3 dom_rid[MAX_LOOKUP_SIDS]; /* domain RIDs being looked up */
+	uint32 rid[MAX_LOOKUP_SIDS]; /* rids */
+
+	uint32 num_types1;      /* number of users in aliases being looked up */
+	uint32 ptr_types;       /* pointer to users in aliases */
+	uint32 num_types2;      /* number of users in aliases being looked up */
+
+	uint32 type[MAX_LOOKUP_SIDS]; /* SID_ENUM type */
 
 	uint32 status; /* return code */
 
@@ -1040,7 +1042,7 @@ typedef struct q_samr_lookup_rids_info
 	POLICY_HND pol;       /* policy handle */
 
 	uint32 num_rids1;      /* number of rids being looked up */
-	uint32 flags;          /* 0x0000 03e8 - RID of the server doing the query? */
+	uint32 flags;          /* 0x0000 03e8 - unknown */
 	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
 	uint32 num_rids2;      /* number of rids being looked up */
 
@@ -1227,17 +1229,17 @@ typedef struct r_samr_query_aliasmem_info
 } SAMR_R_QUERY_ALIASMEM;
 
 
-/* SAMR_Q_ADD_ALIASMEM - don't know! */
+/* SAMR_Q_ADD_ALIASMEM - add alias member */
 typedef struct q_samr_add_alias_mem_info
 {
 	POLICY_HND alias_pol;       /* policy handle */
 
-	DOM_SID sid; /* member sid to be "something"ed to do with the alias */
+	DOM_SID sid; /* member sid to be added to the alias */
 
 } SAMR_Q_ADD_ALIASMEM;
 
 
-/* SAMR_R_ADD_ALIASMEM - probably an open */
+/* SAMR_R_ADD_ALIASMEM - add alias member */
 typedef struct r_samr_add_alias_mem_info
 {
 	uint32 status;         /* return status */

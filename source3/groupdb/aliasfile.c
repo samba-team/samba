@@ -235,11 +235,7 @@ static BOOL add_alsfileals_entry(LOCAL_GRP *newals)
 
 /************************************************************************
  Routine to search the aliasdb file for an entry matching the aliasname.
- and then modify its alias entry. We can't use the startalspwent()/
- getalspwent()/endalspwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out alias or NO PASS
+ and then modify its alias entry. 
 ************************************************************************/
 
 static BOOL mod_alsfileals_entry(LOCAL_GRP* als)

@@ -572,14 +572,8 @@ uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type)
 	
 	split_domain_name(name, domain, user);
 
-	if (!strequal(domain, global_sam_name))
-	{
-		DEBUG(0,("lookup_name: remote domain %s not supported\n", domain));
-		return status;
-	}
-
-	status = (status != 0x0) ? lookup_user_name    (name, domain, sid, type) : status;
-	status = (status != 0x0) ? lookup_grp_name     (name, domain, sid, type) : status;
+	status = (status != 0x0) ? lookup_user_name    (user, domain, sid, type) : status;
+	status = (status != 0x0) ? lookup_grp_name     (user, domain, sid, type) : status;
 #if 0
 	status = (status != 0x0) ? lookup_domain_name  (domain, sid, type) : status;
 #endif
