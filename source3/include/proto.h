@@ -1960,6 +1960,12 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush(int snum);
 
+/*The following definitions come from  smbd/fileio.c  */
+
+int seek_file(files_struct *fsp,uint32 pos);
+int read_file(files_struct *fsp,char *data,uint32 pos,int n);
+int write_file(files_struct *fsp,char *data,int n);
+
 /*The following definitions come from  smbd/files.c  */
 
 files_struct *file_new(void );
@@ -2004,6 +2010,12 @@ int reply_sendtxt(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_sendend(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+
+/*The following definitions come from  smbd/negprot.c  */
+
+int reply_negprot(connection_struct *conn, 
+		  char *inbuf,char *outbuf, int dum_size, 
+		  int dum_buffsize);
 
 /*The following definitions come from  smbd/nttrans.c  */
 
@@ -2159,9 +2171,6 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action);
-int seek_file(files_struct *fsp,uint32 pos);
-int read_file(files_struct *fsp,char *data,uint32 pos,int n);
-int write_file(files_struct *fsp,char *data,int n);
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
 int find_service(char *service);
 int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line);
@@ -2174,11 +2183,6 @@ BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int tim
 BOOL reload_services(BOOL test);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
-int reply_corep(char *outbuf);
-int reply_coreplus(char *outbuf);
-int reply_lanman1(char *outbuf);
-int reply_lanman2(char *outbuf);
-int reply_nt1(char *outbuf);
 void close_cnum(connection_struct *conn, uint16 vuid);
 void exit_server(char *reason);
 char *smb_fn_name(int type);

@@ -122,8 +122,8 @@ PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
-            smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
-            smbd/groupname.o smbd/ipc.o smbd/mangle.o \
+            smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
+            smbd/groupname.o smbd/ipc.o smbd/mangle.o smbd/negprot.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
             smbd/quotas.o smbd/reply.o smbd/ssl.o smbd/trans2.o smbd/uid.o 
 
