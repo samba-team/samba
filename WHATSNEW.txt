@@ -1,8 +1,62 @@
+              WHATS NEW IN 1.9.17p5 - December 19th. 1997
+              ===========================================
+
+Update release: Samba - version 1.9.17p5.
+-----------------------------------------
+
+This is the latest stable release of Samba. This is the
+version that all production Samba servers should be running
+for all current bug-fixes.
+
+Here are a list of the fixes in this release (the fixes
+introduced between 1.9.17p4 and 1.9.17p5) :
+
+1). Addition of 'remote browse sync' parameter.
+2). Fix for bug where nmbd would not stop announcing itself
+    as a local master browser once it had lost the election.
+3). No longer fill in status fields in node status reply for
+    security.
+4). Code added to seach the nmbd name cache for the results
+    of a previous dns search.
+5). Treat WORKGROUP<1c> names correctly when registering (don't
+    treat them as a normal group name).
+6). Fix bug in the handling of the 'character set' parameter.
+7). Disable read prediction code by default - conflicts with
+    locking fixes.
+8). Fix bug with name mangling with UNIX filenames containing ':'.
+
+Reporting bugs
+--------------
+
+The Samba Team believes that this is a stable
+production release, but all software has bugs.
+If you have problems, or think you have found a
+bug please email a report to :
+
+samba-bugs@samba.anu.edu.au
+
+Stating the version number of Samba that you
+are running, and *full details* of the steps
+we need to reproduce the problem.
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+    The Samba Team.
+
+
+-------------Previous release notes-------------------------
+
               WHATS NEW IN 1.9.17p4 - October 21st. 1997
               ==========================================
 
 Update release: Samba - version 1.9.17p4.
 -----------------------------------------
+
+This will be the last officially released 1.9.17 version
+of Samba. Future official releases will be in the 1.9.18
+series (currently in beta).
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
