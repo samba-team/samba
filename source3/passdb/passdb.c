@@ -404,7 +404,7 @@ static struct smb_passwd *_getsampwuid(uid_t smb_userid)
 		DEBUG(10, ("getsampwuid: found by smb_userid: %x\n", smb_userid));
 	}
 
-	endsmbpwent(fp);
+	endsampwent(fp);
 	return pwd;
 }
 
@@ -436,7 +436,7 @@ static struct sam_passwd *_getsam21pwrid(uint32 rid)
 		DEBUG(10, ("_getsam21pwrid: found by smb_userid: %x\n", rid));
 	}
 
-	endsmbpwent(fp);
+	endsampwent(fp);
 	return pwd;
 }
 

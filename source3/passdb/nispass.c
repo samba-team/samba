@@ -392,7 +392,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 
 	/* Check the lanman password column. */
 	p = (uchar *)ENTRY_VAL(obj, NPF_LMPWD);
-	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbpwd))
+	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed LM pwd entry.\n"));
 		return False;
@@ -400,7 +400,7 @@ static BOOL make_sam_from_nisp(struct sam_passwd *pw_buf, nis_result *result)
 
 	/* Check the NT password column. */
 	p = (uchar *)ENTRY_VAL(obj, NPF_NTPWD);
-	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbntpwd))
+	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbntpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed NT pwd entry\n"));
 		return False;
