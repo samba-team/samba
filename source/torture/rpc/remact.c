@@ -32,7 +32,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct RemoteActivation r;
 	NTSTATUS status;
 	struct GUID iids[2];
-	uint16 protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
+	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
 
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = 5;

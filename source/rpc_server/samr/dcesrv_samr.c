@@ -35,7 +35,7 @@
   This is a bad temporary hack until we have at least some kind of schema
   support
 */
-static char *ldb_hexstr(TALLOC_CTX *mem_ctx, uint32 val)
+static char *ldb_hexstr(TALLOC_CTX *mem_ctx, uint32_t val)
 {
 	return talloc_asprintf(mem_ctx, "0x%.8x", val);
 }
@@ -1827,12 +1827,12 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 
 		array->count = el->num_values;
 
-		array->rids = talloc_array(mem_ctx, uint32,
+		array->rids = talloc_array(mem_ctx, uint32_t,
 					     el->num_values);
 		if (array->rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		array->unknown = talloc_array(mem_ctx, uint32,
+		array->unknown = talloc_array(mem_ctx, uint32_t,
 						el->num_values);
 		if (array->unknown == NULL)
 			return NT_STATUS_NO_MEMORY;

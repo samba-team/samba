@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "system/wait.h"
 #include "system/filesys.h"
+#include "pstring.h"
 
 /*
    The idea is that this file will eventually have wrappers around all

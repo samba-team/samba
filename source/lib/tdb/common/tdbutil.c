@@ -22,7 +22,9 @@
 #include "lib/tdb/include/tdbutil.h"
 #include "system/glob.h"
 #include "system/wait.h"
+#include "system/filesys.h"
 #include "dlinklist.h"
+#include "pstring.h"
 
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */

@@ -21,6 +21,7 @@
 /* DOS error codes.  please read doserr.h */
 
 #include "includes.h"
+#include "pstring.h"
 
 struct werror_code_struct {
 	const char *dos_errstr;

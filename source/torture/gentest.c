@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "system/time.h"
+#include "system/filesys.h"
 #include "request.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"

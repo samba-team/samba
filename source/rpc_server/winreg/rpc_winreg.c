@@ -353,7 +353,7 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r->out.type = &val->data_type;
 	r->out.length = &val->data_len;
 	if (!r->in.data) {
-		r->out.size = talloc(mem_ctx, uint32);
+		r->out.size = talloc(mem_ctx, uint32_t);
 		*r->out.size = val->data_len;
 	} else {
 		r->out.size = r->in.size;

@@ -1,5 +1,6 @@
 
 #ifdef _SAMBA_BUILD_
+#include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #else
 #include "tdb.h"

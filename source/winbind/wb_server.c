@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"

@@ -36,6 +36,10 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
+#ifdef _SAMBA_BUILD_
+#include "system/filesys.h"
+#endif
+
 static int failures;
 
 static void usage(void)

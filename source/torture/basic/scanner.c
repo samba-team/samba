@@ -20,7 +20,9 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "pstring.h"
 
 #define VERBOSE 0
 #define OP_MIN 0

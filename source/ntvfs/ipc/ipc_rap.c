@@ -53,14 +53,14 @@ static void rap_heap_restore(struct rap_string_heap *heap,
 
 struct rap_call {
 	TALLOC_CTX *mem_ctx;
-	uint16 callno;
+	uint16_t callno;
 	const char *paramdesc;
 	const char *datadesc;
 
-	uint16 status;
-	uint16 convert;
+	uint16_t status;
+	uint16_t convert;
 
-	uint16 rcv_paramlen, rcv_datalen;
+	uint16_t rcv_paramlen, rcv_datalen;
 
 	struct ndr_push *ndr_push_param;
 	struct ndr_push *ndr_push_data;
@@ -104,7 +104,7 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 	return call;
 }
 
-static NTSTATUS rap_srv_pull_word(struct rap_call *call, uint16 *result)
+static NTSTATUS rap_srv_pull_word(struct rap_call *call, uint16_t *result)
 {
 	if (*call->paramdesc++ != 'W')
 		return NT_STATUS_INVALID_PARAMETER;
@@ -112,7 +112,7 @@ static NTSTATUS rap_srv_pull_word(struct rap_call *call, uint16 *result)
 	return ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, result);
 }
 
-static NTSTATUS rap_srv_pull_dword(struct rap_call *call, uint32 *result)
+static NTSTATUS rap_srv_pull_dword(struct rap_call *call, uint32_t *result)
 {
 	if (*call->paramdesc++ != 'D')
 		return NT_STATUS_INVALID_PARAMETER;
@@ -135,7 +135,7 @@ static NTSTATUS rap_srv_pull_string(struct rap_call *call, const char **result)
 	return ndr_pull_string(call->ndr_pull_param, NDR_SCALARS, result);
 }
 
-static NTSTATUS rap_srv_pull_bufsize(struct rap_call *call, uint16 *bufsize)
+static NTSTATUS rap_srv_pull_bufsize(struct rap_call *call, uint16_t *bufsize)
 {
 	NTSTATUS result;
 

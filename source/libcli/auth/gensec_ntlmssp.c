@@ -29,7 +29,7 @@ struct gensec_ntlmssp_state {
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
-	uint32 have_features;
+	uint32_t have_features;
 };
 
 
@@ -470,7 +470,7 @@ static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_secur
 }
 
 static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
-					uint32 feature)
+					uint32_t feature)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	if (gensec_ntlmssp_state->have_features & feature) {

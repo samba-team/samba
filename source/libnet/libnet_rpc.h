@@ -53,7 +53,7 @@ union libnet_rpc_connect {
 			const char *server_name;
 			const char *dcerpc_iface_name;
 			const char *dcerpc_iface_uuid;
-			uint32 dcerpc_iface_version;
+			uint32_t dcerpc_iface_version;
 		} in;
 
 		struct _libnet_rpc_connect_out {
@@ -70,7 +70,7 @@ union libnet_rpc_connect {
 			const char *domain_name;
 			const char *dcerpc_iface_name;
 			const char *dcerpc_iface_uuid;
-			uint32 dcerpc_iface_version;
+			uint32_t dcerpc_iface_version;
 		} in;
 
 		struct _libnet_rpc_connect_out out;

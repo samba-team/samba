@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/shmem.h"
+#include "system/filesys.h"
 
 /*************************************************************************
  gets a line out of a file.

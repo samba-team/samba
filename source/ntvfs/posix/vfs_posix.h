@@ -23,6 +23,7 @@
 #ifndef _VFS_POSIX_H_
 #define _VFS_POSIX_H_
 
+#include "system/filesys.h"
 #include "smb_server/smb_server.h"
 
 /* this is the private structure for the posix vfs backend. It is used

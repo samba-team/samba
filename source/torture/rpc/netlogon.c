@@ -199,7 +199,7 @@ BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate3 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
 	struct samr_Password mach_password;
-	uint32 rid;
+	uint32_t rid;
 
 	printf("Testing ServerReqChallenge\n");
 

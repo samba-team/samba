@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "system/time.h"
-#include "system/filesys.h"
 #include "dlinklist.h"
 #include "messages.h"
 #include "librpc/gen_ndr/ndr_xattr.h"

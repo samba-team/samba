@@ -34,7 +34,7 @@ union libnet_JoinDomain {
 		struct _libnet_JoinDomain_in {
 			const char *domain_name;
 			const char *account_name;
-			uint32      acct_type;
+			uint32_t  acct_type;
 		} in;
 
 		struct _libnet_JoinDomain_out {

@@ -286,7 +286,7 @@ struct rap_shareenum_info_0 {
 struct rap_shareenum_info_1 {
 	char name[13];
 	char pad;
-	uint16 type;
+	uint16_t type;
 	char *comment;
 };
 
@@ -297,15 +297,15 @@ union rap_shareenum_info {
 
 struct rap_NetShareEnum {
 	struct {
-		uint16 level;
-		uint16 bufsize;
+		uint16_t level;
+		uint16_t bufsize;
 	} in;
 
 	struct {
-		uint16 status;
-		uint16 convert;
-		uint16 count;
-		uint16 available;
+		uint16_t status;
+		uint16_t convert;
+		uint16_t count;
+		uint16_t available;
 		union rap_shareenum_info *info;
 	} out;
 };
@@ -329,17 +329,17 @@ union rap_server_info {
 
 struct rap_NetServerEnum2 {
 	struct {
-		uint16 level;
-		uint16 bufsize;
-		uint32 servertype;
+		uint16_t level;
+		uint16_t bufsize;
+		uint32_t servertype;
 		const char *domain;
 	} in;
 
 	struct {
-		uint16 status;
-		uint16 convert;
-		uint16 count;
-		uint16 available;
+		uint16_t status;
+		uint16_t convert;
+		uint16_t count;
+		uint16_t available;
 		union rap_server_info *info;
 	} out;
 };

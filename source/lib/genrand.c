@@ -22,10 +22,11 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "system/filesys.h"
 #include "lib/crypto/crypto.h"
 
 static unsigned char hash[258];
-static uint32 counter;
+static uint32_t counter;
 
 static BOOL done_reseed = False;
 static void (*reseed_callback)(int *newseed);
@@ -147,7 +148,7 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 static int do_reseed(BOOL use_fd, int fd)
 {
 	unsigned char seed_inbuf[40];
-	uint32 v1, v2; struct timeval tval; pid_t mypid;
+	uint32_t v1, v2; struct timeval tval; pid_t mypid;
 	int reseed_data = 0;
 
 	if (use_fd) {

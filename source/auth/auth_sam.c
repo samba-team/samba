@@ -25,6 +25,7 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
+#include "pstring.h"
 
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and

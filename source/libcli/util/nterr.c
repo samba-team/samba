@@ -21,6 +21,7 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
+#include "pstring.h"
 
 typedef struct
 {

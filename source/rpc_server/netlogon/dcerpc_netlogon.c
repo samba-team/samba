@@ -252,7 +252,7 @@ static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALL
 	 *
 	 * (I think ... = 0; seems wrong here --metze)
 	 */
-	uint32 negotiate_flags = 0;  
+	uint32_t negotiate_flags = 0;  
 
 	r3.in.server_name = r->in.server_name;
 	r3.in.account_name = r->in.account_name;
@@ -271,7 +271,7 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 					 struct netr_ServerAuthenticate2 *r)
 {
 	struct netr_ServerAuthenticate3 r3;
-	uint32 rid = 0;
+	uint32_t rid = 0;
 
 	r3.in.server_name = r->in.server_name;
 	r3.in.account_name = r->in.account_name;

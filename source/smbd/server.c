@@ -29,6 +29,7 @@
 #include "dynconfig.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
+#include "system/filesys.h"
 
 
 /*

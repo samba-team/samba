@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
+#include "system/passwd.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /*

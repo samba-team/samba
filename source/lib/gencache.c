@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "system/time.h"
+#include "system/filesys.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB

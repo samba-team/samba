@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 
 /*****************************************************************
  Splits passed user or group name to domain and user/group name parts

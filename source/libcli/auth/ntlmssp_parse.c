@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 
 /*
   this is a tiny msrpc packet generator. I am only using this to

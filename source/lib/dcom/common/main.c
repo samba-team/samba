@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_remact.h"
@@ -145,7 +146,7 @@ WERROR dcom_ping(struct dcom_context *ctx)
 
 static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
 {
-	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 	struct dcerpc_pipe *p;
 	struct dcom_object_exporter *m;
 	NTSTATUS status;
@@ -268,7 +269,7 @@ WERROR dcom_get_class_object_remote(struct dcom_context *ctx, struct GUID *clsid
 	struct DUALSTRINGARRAY dualstring;
 	NTSTATUS status;
 	struct pMInterfacePointer pm;
-	uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
 	status = dcom_connect_host(ctx, &p, server);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -498,7 +499,7 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 	if (!m) {
 		struct dcerpc_pipe *po;
 		struct ResolveOxid r;
-		uint16 protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
+		uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
 		DEBUG(3, ("No binding data present yet, resolving OXID %llu\n", p->ox->oxid));
 

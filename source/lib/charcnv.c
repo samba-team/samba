@@ -22,6 +22,7 @@
 */
 #include "includes.h"
 #include "system/iconv.h"
+#include "pstring.h"
 
 /**
  * @file

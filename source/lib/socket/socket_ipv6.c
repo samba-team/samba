@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/filesys.h"
 
 static struct in6_addr interpret_addr6(const char *name)
 {

@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "system/filesys.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 

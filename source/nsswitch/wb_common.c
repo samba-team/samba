@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_client.h"
 
 /* Global variables.  These are effectively the client state information */
 

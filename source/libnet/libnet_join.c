@@ -64,8 +64,8 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	struct samr_GetUserPwInfo pwp;
 	struct samr_String samr_account_name;
 
-	uint32 acct_flags;
-	uint32 rid, access_granted;
+	uint32_t acct_flags;
+	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
 
 	/* prepare connect to the SAMR pipe of users domain PDC */

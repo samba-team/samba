@@ -27,6 +27,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
+#include "system/filesys.h"
 
 /*
   called when the process model is selected

@@ -25,6 +25,8 @@
  * @brief Exported global configurations.
  **/
 
+#include "pstring.h"
+
 extern char const *dyn_SBINDIR,
 	*dyn_BINDIR;
 

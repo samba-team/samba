@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 
 /**
  * @file dynconfig.c

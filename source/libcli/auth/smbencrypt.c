@@ -26,6 +26,7 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
+#include "pstring.h"
 
 /*
    This implements the X/Open SMB password encryption

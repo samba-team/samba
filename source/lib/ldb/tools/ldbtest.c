@@ -36,6 +36,10 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
+#ifdef _SAMBA_BUILD_
+#include "system/filesys.h"
+#endif
+
 static const char *ldb_url;
 static const char *base_dn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 

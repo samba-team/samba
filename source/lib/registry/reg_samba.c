@@ -23,7 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32 hkey, struct registry_key **k)
+static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey, struct registry_key **k)
 {
 	WERROR error;
 	const char *conf;
