@@ -165,7 +165,7 @@ Offset      Size      Contents
 
 To determine the number of values, you have to look at the owner-nk-record!
 
-Der vk-Record
+The vk-Record
 =============
 Offset      Size      Contents
 0x0000      Word      ID: ASCII-"vk" = 0x6B76
@@ -473,7 +473,7 @@ typedef struct regf_struct_s {
 	int fd;
 	struct stat sbuf;
 	char *base;
-	int modified;
+	BOOL modified;
 	NTTIME last_mod_time;
 	NK_HDR *first_key;
 	int sk_count, sk_map_size;
@@ -485,7 +485,6 @@ typedef struct regf_struct_s {
 	 * keys when we are preparing to write them to a file
 	 */
 	HBIN_BLK *blk_head, *blk_tail, *free_space;
-	TALLOC_CTX *mem_ctx;
 } REGF;
 
 DWORD str_to_dword(const char *a) {
@@ -886,7 +885,6 @@ static WERROR vk_to_val(REG_KEY *parent, VK_HDR *vk_hdr, int size, REG_VAL **val
 	char val_name[1024];
 	REGF *regf = parent->handle->backend_data;
 	int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
-	const char *val_type;
 	REG_VAL *tmp = NULL; 
 
 	if (!vk_hdr) return WERR_INVALID_PARAM;
@@ -1021,7 +1019,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 {
 	REGF *regf = h->backend_data;
 	REG_KEY *tmp = NULL, *own;
-	int name_len, clsname_len, sk_off, own_off;
+	int namlen, clsname_len, sk_off, own_off;
 	unsigned int nk_id;
 	SK_HDR *sk_hdr;
 	int type;
@@ -1037,32 +1035,32 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 
 	SMB_REG_ASSERT(size < 0);
 
-	name_len = SVAL(&nk_hdr->nam_len,0);
+	namlen = SVAL(&nk_hdr->nam_len,0);
 	clsname_len = SVAL(&nk_hdr->clsnam_len,0);
 
 	/*
 	 * The value of -size should be ge 
-	 * (sizeof(NK_HDR) - 1 + name_len)
+	 * (sizeof(NK_HDR) - 1 + namlen)
 	 * The -1 accounts for the fact that we included the first byte of 
 	 * the name in the structure. clsname_len is the length of the thing 
 	 * pointed to by clsnam_off
 	 */
 
-	if (-size < (sizeof(NK_HDR) - 1 + name_len)) {
+	if (-size < (sizeof(NK_HDR) - 1 + namlen)) {
 		DEBUG(0, ("Incorrect NK_HDR size: %d, %0X\n", -size, (int)nk_hdr));
 		DEBUG(0, ("Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
-				  sizeof(NK_HDR), name_len, clsname_len));
+				  sizeof(NK_HDR), namlen, clsname_len));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	DEBUG(2, ("NK HDR: Name len: %d, class name len: %d\n", name_len, clsname_len));
+	DEBUG(2, ("NK HDR: Name len: %d, class name len: %d\n", namlen, clsname_len));
 
 	/* Fish out the key name and process the LF list */
 
-	SMB_REG_ASSERT(name_len < sizeof(key_name));
+	SMB_REG_ASSERT(namlen < sizeof(key_name));
 
-	strncpy(key_name, nk_hdr->key_nam, name_len);
-	key_name[name_len] = '\0';
+	strncpy(key_name, nk_hdr->key_nam, namlen);
+	key_name[namlen] = '\0';
 
 	type = (SVAL(&nk_hdr->type,0)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
 	if(type == REG_ROOT_KEY && parent) {
@@ -1088,7 +1086,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 		clsnamep = (smb_ucs2_t *)LOCN(regf->base, clsnam_off);
 		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
 
-		tmp->class_name = talloc_strdup_w(regf->mem_ctx, clsnamep);
+		tmp->class_name = talloc_strdup_w(h->mem_ctx, clsnamep);
 
 		DEBUGADD(2,("  Class Name: %s\n", cls_name));
 
@@ -1572,22 +1570,17 @@ static WERROR nt_close_registry (REG_HANDLE *h)
 	regf->base = NULL;
 	close(regf->fd);    /* Ignore the error :-) */
 
-	free(regf->sk_map);
-	regf->sk_count = regf->sk_map_size = 0;
-
-	free(regf);
 	return WERR_OK;
 }
 
 static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char *credentials) 
 {
-	REGF *regf = (REGF *)malloc(sizeof(REGF));
+	REGF *regf = (REGF *)talloc_p(h->mem_ctx, REGF);
 	REGF_HDR *regf_hdr;
 	unsigned int regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
 	memset(regf, 0, sizeof(REGF));
-	regf->mem_ctx = talloc_init("regf");
 	regf->owner_sid_str = credentials;
 	h->backend_data = regf;
 
