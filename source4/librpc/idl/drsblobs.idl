@@ -15,7 +15,7 @@ interface drsblobs {
 		uint32 attribute_id;
 		uint32 version;
 		NTTIME_1sec orginating_time;
-		GUID orginating_dsa;
+		GUID orginating_dsa; /* the 'invocationId' ? */
 		uint64 orginating_usn;
 		uint64 local_usn;
 	} replPropertyMetaData1;
@@ -46,7 +46,7 @@ interface drsblobs {
 	 * w2k3 uses version 2
 	 */
 	typedef struct {
-		GUID invocation_id_guid;
+		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
 		uint64 highest_usn; /* updated after a full replication cycle */
 	} replUpToDateVector1;
 
@@ -57,7 +57,7 @@ interface drsblobs {
 	} replUpToDateVectorCtr1;
 
 	typedef struct {
-		GUID invocation_id_guid;
+		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
 		uint64 highest_usn; /* updated after a full replication cycle */
 		NTTIME_1sec last_success;
 	} replUpToDateVector2;
@@ -107,8 +107,8 @@ interface drsblobs {
 		uint64 tmp_highest_usn; /* updated after each object update */
 		uint64 reserved_usn;
 		uint64 highest_usn; /* updated after a full replication cycle */
-		GUID dsa_guid;
-		GUID invocation_id_guid;
+		GUID dsa_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
+		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
 		GUID transport_guid;
 	} repsFromTo1;
 
