@@ -95,6 +95,43 @@ static int pvfs_dir_fnum_destructor(void *p)
 	return 0;
 }
 
+/*
+  setup any EAs and the ACL on newly created files/directories
+*/
+static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
+					struct smbsrv_request *req,
+					struct pvfs_filename *name,
+					int fd,	int fnum,
+					union smb_open *io)
+{
+	NTSTATUS status;
+
+	/* setup any EAs that were asked for */
+	if (io->ntcreatex.in.ea_list) {
+		status = pvfs_setfileinfo_ea_set(pvfs, name, fd, 
+						 io->ntcreatex.in.ea_list->num_eas,
+						 io->ntcreatex.in.ea_list->eas);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	/* setup an initial sec_desc if requested */
+	if (io->ntcreatex.in.sec_desc) {
+		union smb_setfileinfo set;
+
+		set.set_secdesc.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
+
+		status = pvfs_acl_set(pvfs, req, name, fd, &set);
+	} else {
+		/* otherwise setup an inherited acl from the parent */
+		status = pvfs_acl_inherit(pvfs, req, name, fd);
+	}
+
+	return status;
+}
 
 /*
   open a directory
@@ -162,6 +199,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		/* check the security descriptor */
 		status = pvfs_access_check(pvfs, req, name, &access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, fnum);
 			return status;
 		}
 	}
@@ -200,6 +238,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		uint32_t attrib = io->generic.in.file_attr | FILE_ATTRIBUTE_DIRECTORY;
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
 		if (mkdir(name->full_name, mode) == -1) {
+			idr_remove(pvfs->idtree_fnum, fnum);
 			return pvfs_map_errno(pvfs,errno);
 		}
 
@@ -207,14 +246,21 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 
 		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 0, &name);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto cleanup_delete;
 		}
+
+		status = pvfs_open_setup_eas_acl(pvfs, req, name, -1, fnum, io);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto cleanup_delete;
+		}
+
 		create_action = NTCREATEX_ACTION_CREATED;
 	} else {
 		create_action = NTCREATEX_ACTION_EXISTED;
 	}
 
 	if (!name->exists) {
+		idr_remove(pvfs->idtree_fnum, fnum);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -236,6 +282,11 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	io->generic.out.is_directory  = 1;
 
 	return NT_STATUS_OK;
+
+cleanup_delete:
+	idr_remove(pvfs->idtree_fnum, fnum);
+	rmdir(name->full_name);
+	return status;
 }
 
 /*
@@ -462,53 +513,25 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	name->dos.attrib = attrib;
 	status = pvfs_dosattrib_save(pvfs, name, fd);
 	if (!NT_STATUS_IS_OK(status)) {
-		idr_remove(pvfs->idtree_fnum, fnum);
-		close(fd);
-		return status;
+		goto cleanup_delete;
 	}
 
-	/* setup any EAs that were asked for */
-	if (io->ntcreatex.in.ea_list) {
-		status = pvfs_setfileinfo_ea_set(pvfs, name, fd, 
-						 io->ntcreatex.in.ea_list->num_eas,
-						 io->ntcreatex.in.ea_list->eas);
-		if (!NT_STATUS_IS_OK(status)) {
-			idr_remove(pvfs->idtree_fnum, fnum);
-			close(fd);
-			return status;
-		}
-	}
 
-	/* setup an initial sec_desc is required */
-	if (io->ntcreatex.in.sec_desc) {
-		union smb_setfileinfo set;
-
-		set.set_secdesc.file.fnum = fnum;
-		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
-		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
-
-		status = pvfs_acl_set(pvfs, req, name, fd, &set);
-		if (!NT_STATUS_IS_OK(status)) {
-			idr_remove(pvfs->idtree_fnum, fnum);
-			close(fd);
-			return status;
-		}
+	status = pvfs_open_setup_eas_acl(pvfs, req, name, fd, fnum, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup_delete;
 	}
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
 	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		idr_remove(pvfs->idtree_fnum, fnum);
-		close(fd);
-		return status;
+		goto cleanup_delete;
 	}
 
 	status = pvfs_brl_locking_key(name, f->handle, &f->handle->brl_locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		idr_remove(pvfs->idtree_fnum, fnum);
-		close(fd);
-		return status;
+		goto cleanup_delete;
 	}
 
 	/* grab a lock on the open file record */
@@ -518,16 +541,17 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 			 name->full_name));
 		/* we were supposed to do a blocking lock, so something
 		   is badly wrong! */
-		idr_remove(pvfs->idtree_fnum, fnum);
-		close(fd);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto cleanup_delete;
 	}
 
 	status = odb_open_file(lck, f->handle, name->stream_id,
 			       share_access, create_options, access_mask);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
-		/* bad news, we must have hit a race */
+		/* bad news, we must have hit a race - we don't delete the file
+		   here as the most likely scenario is that someone else created 
+		   the file at the same time */
 		idr_remove(pvfs->idtree_fnum, fnum);
 		close(fd);
 		return status;
@@ -583,6 +607,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	talloc_steal(pvfs, f);
 
 	return NT_STATUS_OK;
+
+cleanup_delete:
+	idr_remove(pvfs->idtree_fnum, fnum);
+	close(fd);
+	unlink(name->full_name);
+	return status;
 }
 
 
@@ -846,6 +876,10 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return pvfs_open_directory(pvfs, req, name, io);
 	}
 
+	/* FILE_ATTRIBUTE_DIRECTORY is ignored if the above test for directory
+	   open doesn't match */
+	io->generic.in.file_attr &= ~FILE_ATTRIBUTE_DIRECTORY;
+
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 	access_mask    = io->generic.in.access_mask;
@@ -891,10 +925,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		break;
 
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (io->generic.in.file_attr & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

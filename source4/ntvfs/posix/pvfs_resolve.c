@@ -579,3 +579,54 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 	
 	return pvfs_fill_dos_info(pvfs, name, fd);
 }
+
+
+/*
+  resolve the parent of a given name
+*/
+NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
+			     const struct pvfs_filename *child,
+			     struct pvfs_filename **name)
+{
+	NTSTATUS status;
+	char *p;
+
+	*name = talloc_p(mem_ctx, struct pvfs_filename);
+	if (*name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*name)->full_name = talloc_strdup(*name, child->full_name);
+	if ((*name)->full_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	p = strrchr_m((*name)->full_name, '/');
+	if (p == NULL) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+	}
+
+	/* this handles the root directory */
+	if (p == (*name)->full_name) {
+		p[1] = 0;
+	} else {
+		p[0] = 0;
+	}
+
+	if (stat((*name)->full_name, &(*name)->st) == -1) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	(*name)->exists = True;
+	(*name)->stream_exists = True;
+	(*name)->has_wildcard = False;
+	/* we can't get the correct 'original_name', but for the purposes
+	   of this call this is close enough */
+	(*name)->original_name = talloc_reference(*name, child->original_name);
+	(*name)->stream_name = NULL;
+	(*name)->stream_id = 0;
+
+	status = pvfs_fill_dos_info(pvfs, *name, -1);
+
+	return status;
+}
