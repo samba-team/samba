@@ -31,6 +31,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  make_wks_q_query_info
  ********************************************************************/
+
 BOOL make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
 				char *server, uint16 switch_value)  
 {
@@ -43,11 +44,13 @@ BOOL make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
 }
 
 /*******************************************************************
-reads or writes a WKS_Q_QUERY_INFO structure.
+ Reads or writes a WKS_Q_QUERY_INFO structure.
 ********************************************************************/
+
 BOOL wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return False;
+	if (q_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "wks_io_q_query_info");
 	depth++;
@@ -55,7 +58,8 @@ BOOL wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int 
 	prs_align(ps);
 
 	prs_uint32("ptr_srv_name", ps, depth, &(q_u->ptr_srv_name));
-	smb_io_unistr2("", &(q_u->uni_srv_name), q_u->ptr_srv_name, ps, depth); 
+	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
+		return False;
 	prs_align(ps);
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
@@ -67,6 +71,7 @@ BOOL wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int 
 /*******************************************************************
  wks_info_100
  ********************************************************************/
+
 BOOL make_wks_info_100(WKS_INFO_100 *inf,
 				uint32 platform_id, uint32 ver_major, uint32 ver_minor,
 				char *my_name, char *domain_name)
@@ -84,11 +89,13 @@ BOOL make_wks_info_100(WKS_INFO_100 *inf,
 }
 
 /*******************************************************************
-reads or writes a WKS_INFO_100 structure.
+ Reads or writes a WKS_INFO_100 structure.
 ********************************************************************/
+
 static BOOL wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, int depth)
 {
-	if (inf == NULL) return False;
+	if (inf == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "wks_io_wks_info_100");
 	depth++;
@@ -101,10 +108,12 @@ static BOOL wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, i
 	prs_uint32("ver_major   ", ps, depth, &(inf->ver_major   )); /* 4 - major os version */
 	prs_uint32("ver_minor   ", ps, depth, &(inf->ver_minor   )); /* 0 - minor os version */
 
-	smb_io_unistr2("", &(inf->uni_compname), inf->ptr_compname, ps, depth); 
+	if(!smb_io_unistr2("", &inf->uni_compname, inf->ptr_compname, ps, depth))
+		return False;
 	prs_align(ps);
 
-	smb_io_unistr2("", &(inf->uni_lan_grp ), inf->ptr_lan_grp , ps, depth); 
+	if(!smb_io_unistr2("", &inf->uni_lan_grp, inf->ptr_lan_grp , ps, depth))
+		return False;
 	prs_align(ps);
 
 	return True;
@@ -116,6 +125,7 @@ static BOOL wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, i
  only supports info level 100 at the moment.
 
  ********************************************************************/
+
 BOOL make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				uint32 switch_value, WKS_INFO_100 *wks100,
 				int status)  
@@ -133,11 +143,13 @@ BOOL make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a structure.
 ********************************************************************/
+
 BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "wks_io_r_query_info");
 	depth++;
@@ -148,7 +160,8 @@ BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 	prs_align(ps);
 
 	prs_uint32("ptr_1       ", ps, depth, &(r_u->ptr_1       )); /* pointer 1 */
-	wks_io_wks_info_100("inf", r_u->wks100, ps, depth);
+	if(!wks_io_wks_info_100("inf", r_u->wks100, ps, depth))
+		return False;
 
 	prs_uint32("status      ", ps, depth, &(r_u->status));
 

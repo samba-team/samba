@@ -136,7 +136,7 @@ BOOL smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a DOM_SID structure.
+ Reads or writes a DOM_SID structure.
 ********************************************************************/
 
 BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth)
@@ -181,11 +181,13 @@ BOOL make_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
 }
 
 /*******************************************************************
-reads or writes a DOM_SID2 structure.
+ Reads or writes a DOM_SID2 structure.
 ********************************************************************/
-BOOL smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth)
+
+BOOL smb_io_dom_sid2(char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 {
-	if (sid == NULL) return False;
+	if (sid == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_sid2");
 	depth++;
@@ -212,11 +214,13 @@ BOOL make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer)
 }
 
 /*******************************************************************
-reads or writes a STRHDR structure.
+ Reads or writes a STRHDR structure.
 ********************************************************************/
+
 BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth)
 {
-	if (hdr == NULL) return False;
+	if (hdr == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_strhdr");
 	depth++;
@@ -272,6 +276,7 @@ BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth)
 /*******************************************************************
 creates a UNIHDR structure.
 ********************************************************************/
+
 BOOL make_uni_hdr(UNIHDR *hdr, int len)
 {
 	if (hdr == NULL)
@@ -298,11 +303,13 @@ BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str)
 }
 
 /*******************************************************************
-reads or writes a UNIHDR structure.
+ Reads or writes a UNIHDR structure.
 ********************************************************************/
+
 BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth)
 {
-	if (hdr == NULL) return False;
+	if (hdr == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_unihdr");
 	depth++;
@@ -332,19 +339,18 @@ BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len)
 }
 
 /*******************************************************************
- prs_uint16 wrapper.  call this and it sets up a pointer to where the
- uint16 should be stored, or gets the size if reading
+ prs_uint16 wrapper. Call this and it sets up a pointer to where the
+ uint16 should be stored, or gets the size if reading.
  ********************************************************************/
-BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset)
+
+BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset)
 {
-	(*offset) = ps->offset;
-	if (ps->io)
-	{
+	(*offset) = prs_offset(ps);
+	if (ps->io) {
+
 		/* reading. */
 		smb_io_hdrbuf(desc, hdr, ps, depth);
-	}
-	else
-	{
+	} else {
 		ps->offset += sizeof(uint32) * 2;
 	}
 
@@ -352,14 +358,14 @@ BOOL smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint
 }
 
 /*******************************************************************
- smb_io_hdrbuf wrapper.  call this and it retrospectively stores the size.
- does nothing on reading, as that is already handled by ...._pre()
+ smb_io_hdrbuf wrapper. Call this and it retrospectively stores the size.
+ Does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
+
+BOOL smb_io_hdrbuf_post(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
 				uint32 ptr_hdrbuf, uint32 max_len, uint32 len)
 {
-	if (!ps->io)
-	{
+	if (!ps->io) {
 		/* storing: go back and do a retrospective job.  i hate this */
 		uint32 old_offset = ps->offset;
 
@@ -373,11 +379,12 @@ BOOL smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth,
 }
 
 /*******************************************************************
-reads or writes a BUFHDR structure.
+ Reads or writes a BUFHDR structure.
 ********************************************************************/
 BOOL smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth)
 {
-	if (hdr == NULL) return False;
+	if (hdr == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_hdrbuf");
 	depth++;
@@ -452,11 +459,12 @@ BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str)
 }
 
 /*******************************************************************
-reads or writes a UNIHDR2 structure.
+ Reads or writes a UNIHDR2 structure.
 ********************************************************************/
 BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth)
 {
-	if (hdr2 == NULL) return False;
+	if (hdr2 == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_unihdr2");
 	depth++;
@@ -485,7 +493,8 @@ XXXX NOTE: UNISTR structures NEED to be null-terminated.
 ********************************************************************/
 BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth)
 {
-	if (uni == NULL) return False;
+	if (uni == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_unistr");
 	depth++;
@@ -558,13 +567,14 @@ BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len)
 }
 
 /*******************************************************************
-reads or writes a BUFFER3 structure.
-     the uni_max_len member tells you how large the buffer is.
-     the uni_str_len member tells you how much of the buffer is really used.
+ Reads or writes a BUFFER3 structure.
+   the uni_max_len member tells you how large the buffer is.
+   the uni_str_len member tells you how much of the buffer is really used.
 ********************************************************************/
 BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth)
 {
-	if (buf3 == NULL) return False;
+	if (buf3 == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_buffer3");
 	depth++;
@@ -957,11 +967,13 @@ BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 }
 
 /*******************************************************************
-reads or writes a DOM_GID structure.
+ Reads or writes a DOM_GID structure.
 ********************************************************************/
+
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth)
 {
-	if (gid == NULL) return False;
+	if (gid == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_gid");
 	depth++;
@@ -975,11 +987,12 @@ BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes an POLICY_HND structure.
+ Reads or writes an POLICY_HND structure.
 ********************************************************************/
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth)
 {
-	if (pol == NULL) return False;
+	if (pol == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_pol_hnd");
 	depth++;
@@ -992,11 +1005,13 @@ BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth)
 
 
 /*******************************************************************
-reads or writes a UNISTR3 structure.
+ Reads or writes a UNISTR3 structure.
 ********************************************************************/
+
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth)
 {
-	if (name == NULL) return False;
+	if (name == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_unistr3");
 	depth++;
@@ -1008,7 +1023,8 @@ BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth)
 	/* don't know if len is specified by uni_str_len member... */
 	/* assume unicode string is unicode-null-terminated, instead */
 
-	prs_unistr3(True, "unistr", name, ps, depth);
+	if(!prs_unistr3(True, "unistr", name, ps, depth))
+		return False;
 
 	return True;
 }

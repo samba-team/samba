@@ -3877,9 +3877,9 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!smb_io_time("driverdate", &il->driverdate, ps, depth))
 		return False;
-	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
-		return False;
 	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+		return False;
+	if(!prs_uint64("driverversion", ps, depth, &il->driverversion))
 		return False;
 	if(!prs_uint32("mfgname_ptr", ps, depth, &il->mfgname_ptr))
 		return False;
@@ -3950,8 +3950,6 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 	if(!smb_io_unistr2("provider", &il->provider, il->provider_ptr, ps, depth))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -3995,6 +3993,7 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		src = skip_unibuf(src, 2*buf5->buf_len - PTR_DIFF(src,buf5->buffer));
 		*ar = (fstring *)Realloc(*ar, sizeof(fstring)*(n+2));
 		fstrcpy((*ar)[n], f);
+		n++;
 	}
 	fstrcpy((*ar)[n], "");
 
