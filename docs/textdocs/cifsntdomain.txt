@@ -1,91 +1,110 @@
-!==
-!== cifsntdomain.txt for Samba release 1.9.18alpha4 25 Oct 1997
-!==
 NT Domain Authentication
 ------------------------
 
 Authors:	- Luke Kenneth Casson Leighton (lkcl@switchboard.net)
-		Copyright (C) 1997 Luke Kenneth Casson Leighton
+--------	  Copyright (C) 1997 Luke Kenneth Casson Leighton
 		- Paul Ashton                  (paul@argo.demon.co.uk)
-		Copyright (C) 1997 Paul Ashton
+		  Copyright (C) 1997 Paul Ashton
 
-Version:		0.017 (20oct97)
+Version:	0.019 (25oct97)
+--------
 
 Distribution:	Unlimited and encouraged, for the purposes of implementation
-		and comments.  Feedback welcomed by the authors.
+-------------	and comments.  Feedback welcomed by the authors.
 
 Liability:	Absolutely none accepted implicitly or explicitly, direct
-		or consequentially, for use, abuse, misuse, lack of use,
+----------	or consequentially, for use, abuse, misuse, lack of use,
 		misunderstandings, mistakes, omissions, mis-information for
 		anything in or not in, related to or pertaining to this
 		document or anything else that a lawyer can think of or not
 		think of.
 
 Warning:	Please bear in mind that an incorrect implementation of this
-		protocol can cause NT workstation to fail irrevocably, for
+--------	protocol can cause NT workstation to fail irrevocably, for
 		which the authors accept no liability (see above).  Please
 		contact your vendor if you have any problems.
 
 Sources:	- Packet Traces from Netmonitor (Service Pack 1 and above)
-		- Paul Ashton and Luke Leighton's other "NT Domain" doc.
+--------	- Paul Ashton and Luke Leighton's other "NT Domain" doc.
 		- CIFS documentation - cifs6.txt
 		- CIFS documentation - cifsrap2.txt
 
 Original:	http://mailhost.cb1.com/~lkcl/cifsntdomain.txt.
-		(Controlled copy maintained by lkcl@switchboard.net)
+---------	(Controlled copy maintained by lkcl@switchboard.net)
 
 Credits:	- Paul Ashton: loads of work with Net Monitor; 
-		  understanding the NT authentication system;
+--------	  understanding the NT authentication system;
 		  reference implementation of the NT domain support on which
 		  this document is originally based.
 		- Linus Nordberg: producing c-code from Paul's crypto spec.
 		- Windows Sourcer development team
 
+
 Contents:
+---------
 
-1) Introduction
+   1) Introduction
 
-2) Structures and notes
+   2) Structures and notes
 
-   2.1) Notes
-   2.2) Structures
+      2.1) Notes
+      2.2) Structures
 
-3) Transact Named Pipe Header/Tail
+   3) Transact Named Pipe Header/Tail
 
-   3.1) Header
-   3.2) Tail
+      3.1) Header
+      3.2) Tail
 
-4) NTLSA Transact Named Pipe
+   4) NTLSA Transact Named Pipe
 
-   4.1) LSA Open Policy
-   4.2) LSA Query Info Policy
-   4.3) LSA Enumerate Trusted Domains
-   4.4) LSA Open Secret
-   4.5) LSA Close
-   4.6) LSA Lookup SIDS
-   4.7) LSA Lookup Names
+      4.1) LSA Open Policy
+      4.2) LSA Query Info Policy
+      4.3) LSA Enumerate Trusted Domains
+      4.4) LSA Open Secret
+      4.5) LSA Close
+      4.6) LSA Lookup SIDS
+      4.7) LSA Lookup Names
 
-5) NETLOGON rpc Transact Named Pipe
+   5) NETLOGON rpc Transact Named Pipe
 
-   5.1) LSA Request Challenge
-   5.2) LSA Authenticate 2
-   5.3) LSA Server Password Set
-   5.4) LSA SAM Logon
-   5.5) LSA SAM Logoff
+      5.1) LSA Request Challenge
+      5.2) LSA Authenticate 2
+      5.3) LSA Server Password Set
+      5.4) LSA SAM Logon
+      5.5) LSA SAM Logoff
 
-6) \\MAILSLOT\NET\NTLOGON
+   6) \\MAILSLOT\NET\NTLOGON
 
-   6.1) Query for PDC
-   6.2) SAM Logon
+      6.1) Query for PDC
+      6.2) SAM Logon
 
-7) SRVSVC Transact Named Pipe
+   7) SRVSVC Transact Named Pipe
 
-   7.1) Net Share Enum
-   7.2) Net Server Get Info
+      7.1) Net Share Enum
+      7.2) Net Server Get Info
+
 
 Appendix:
+---------
 
-A1) Cryptographic side of NT Domain Authentication
+   A1) Cryptographic side of NT Domain Authentication
+   
+       A1.1) Definitions
+       A1.2) Protocol
+       A1.3) Comments
+
+   A2) SIDs and RIDs
+
+       A2.1) Well-known SIDs
+
+             A2.1.1) Universal well-known SIDs
+             A2.1.2) NT well-known SIDs
+
+       A2.2) Well-known RIDS
+      
+             A2.2.1) Well-known RID users
+             A2.2.2) Well-known RID groups
+             A2.2.3) Well-known RID aliases
 
 
 
@@ -346,9 +365,12 @@ include, but are not limited to:
     char[16]      rc4 NT OWF Password
     UNISTR2       domain name unicode string
     UNISTR2       user name unicode string
-    UNISTR2       workgroup name unicode string
+    UNISTR2       workstation name unicode string
 
 - SAM_INFO (sam logon/logoff id info structure) :
+
+  Note: presumably, the return credentials is supposedly for the server to
+        verify that the credential chain hasn't been compromised.
 
         CLNT_INFO2  client identification/authentication info
         VOID*       pointer to return credentials.
@@ -393,6 +415,8 @@ include, but are not limited to:
 
 - USER_INFO (user logon info) :
 
+    Note: it would be nice to know what the 16 byte user session key is for.
+
         NTTIME            logon time
         NTTIME            logoff time
         NTTIME            kickoff time
@@ -416,7 +440,7 @@ include, but are not limited to:
         VOID*             undocumented buffer pointer to groups.
 
         UINT32            user flags
-        char[16]          unused user session key
+        char[16]          user session key
 
         UNIHDR            logon server unicode string header
         UNIHDR            logon domain unicode string header
@@ -554,7 +578,7 @@ The start of each of the NTLSA and NETLOGON named pipes begins with:
 10  UINT32        allocation hint - data size (bytes) minus header and tail.
 14  UINT16        0 - presentation context identifier
 16  UINT8         0 - cancel count
-17  UINT8         0 - reserved
+17  UINT8         in replies: 0 - reserved; in requests: opnum - see #defines.
 18  ......        start of data (goes on for allocation_hint bytes)
 
 
@@ -1033,11 +1057,12 @@ Appendix
 A1) Cryptographic side of NT Domain Authentication
 --------------------------------------------------
 
-Definitions
------------
 
-Add(A1,A2): Intel byte ordered addition of corresponding 4 byte
-            words in arrays A1 and A2
+A1.1) Definitions
+-----------------
+
+Add(A1,A2): Intel byte ordered addition of corresponding 4 byte words
+in arrays A1 and A2
 
 E(K,D): DES ECB encryption of 8 byte data D using 7 byte key K
 
@@ -1045,20 +1070,170 @@ lmowf(): Lan man hash
 
 ntowf(): NT hash
 
-PW: md4(machine_password) =3D=3D md4(lsadump $machine.acc)
-                          =3D=3D pwdump(machine$)
-              (initially) =3D=3D md4(lmowf(unicode(machine)))
+PW: md4(machine_password) == md4(lsadump $machine.acc) ==
+pwdump(machine$) (initially) == md4(lmowf(unicode(machine)))
 
-RC4(K,Lk,D,Ld): RC4 encryption of data D of length Ld with key K
-                of length Lk
+RC4(K,Lk,D,Ld): RC4 encryption of data D of length Ld with key K of
+length Lk
 
-v[m..n(,l)]: subset of v from bytes m to n, optionally padded
-             with zeroes to length l
+v[m..n(,l)]: subset of v from bytes m to n, optionally padded with
+zeroes to length l
 
 Cred(K,D): E(K[7..7,7],E(K[0..6],D)) computes a credential
 
 Time(): 4 byte current time
 
-Cc,Cs: 8 byte client and server challenges
-Rc,Rs: 8 byte client and server credentials
+Cc,Cs: 8 byte client and server challenges Rc,Rs: 8 byte client and
+server credentials
+
+
+A1.2) Protocol
+--------------
+
+C->S ReqChal,Cc S->C Cs
+
+C & S compute session key Ks = E(PW[9..15],E(PW[0..6],Add(Cc,Cs)))
+
+C: Rc = Cred(Ks,Cc) C->S Authenticate,Rc S: Rs = Cred(Ks,Cs),
+assert(Rc == Cred(Ks,Cc)) S->C Rs C: assert(Rs == Cred(Ks,Cs))
+
+On joining the domain the client will optionally attempt to change its
+password and the domain controller may refuse to update it depending
+on registry settings. This will also occur weekly afterwards.
+
+C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S ServerPasswordSet,Rc',Tc,
+rc4(Ks[0..7,16],lmowf(randompassword()) C: Rc = Cred(Ks,Rc+Tc+1) S:
+assert(Rc' == Cred(Ks,Rc+Tc)), Ts = Time() S: Rs' = Cred(Ks,Rs+Tc+1)
+S->C Rs',Ts C: assert(Rs' == Cred(Ks,Rs+Tc+1)) S: Rs = Rs'
+
+User: U with password P wishes to login to the domain (incidental data
+such as workstation and domain omitted)
+
+C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S NetLogonSamLogon,Rc',Tc,U,
+rc4(Ks[0..7,16],16,ntowf(P),16), rc4(Ks[0..7,16],16,lmowf(P),16) S:
+assert(Rc' == Cred(Ks,Rc+Tc)) assert(passwords match those in SAM) S:
+Ts = Time()
+
+S->C Cred(Ks,Cred(Ks,Rc+Tc+1)),userinfo(logon script,UID,SIDs,etc) C:
+assert(Rs == Cred(Ks,Cred(Rc+Tc+1)) C: Rc = Cred(Ks,Rc+Tc+1)
+
+
+A1.3) Comments
+--------------
+
+On first joining the domain the session key could be computed by
+anyone listening in on the network as the machine password has a well
+known value. Until the machine is rebooted it will use this session
+key to encrypt NT and LM one way functions of passwords which are
+password equivalents. Any user who logs in before the machine has been
+rebooted a second time will have their password equivalent exposed. Of
+course the new machine password is exposed at this time anyway.
+
+None of the returned user info such as logon script, profile path and
+SIDs *appear* to be protected by anything other than the TCP checksum.
+
+The server time stamps appear to be ignored.
+
+The client sends a ReturnAuthenticator in the SamLogon request which I
+can't find a use for.  However its time is used as the timestamp
+returned by the server.
+
+The password OWFs should NOT be sent over the network reversibly
+encrypted. They should be sent using RC4(Ks,md4(owf)) with the server
+computing the same function using the owf values in the SAM.
+
+
+A2) SIDs and RIDs
+-----------------
+
+SIDs and RIDs are well documented elsewhere.
+
+A SID is an NT Security ID (see DOM_SID structure).  They are of the form:
+
+	S-revision-NN-SubAuth1-SubAuth2-SubAuth3... 
+	S-revision-0xNNNNNNNNNNNN-SubAuth1-SubAuth2-SubAuth3...
+
+currently, the SID revision is 1.
+The Sub-Authorities are known as Relative IDs (RIDs).
+
+
+A2.1) Well-known SIDs
+---------------------
+
+
+A2.1.1) Universal well-known SIDs
+---------------------------------
+
+	Null SID                     S-1-0-0
+	World                        S-1-1-0
+	Local                        S-1-2-0
+	Creator Owner ID             S-1-3-0
+	Creator Group ID             S-1-3-1
+	Creator Owner Server ID      S-1-3-2
+	Creator Group Server ID      S-1-3-3
+	
+	(Non-unique IDs)             S-1-4
+
+
+A2.1.2) NT well-known SIDs
+--------------------------
+
+	NT Authority          S-1-5
+	Dialup                S-1-5-1
+
+	Network               S-1-5-2
+	Batch                 S-1-5-3
+	Interactive           S-1-5-4
+	Service               S-1-5-6
+	AnonymousLogon        S-1-5-7       (aka null logon session)
+	Proxy                 S-1-5-8
+	ServerLogon           S-1-5-8       (aka domain controller account)
+	
+	(Logon IDs)           S-1-5-5-X-Y
+	
+	(NT non-unique IDs)   S-1-5-0x15-...
+	
+	(Built-in domain)     s-1-5-0x20
+	
+
+
+A2.2) Well-known RIDS
+---------------------
+
+A RID is a sub-authority value, as part of either a SID, or in the case
+of Group RIDs, part of the DOM_GID structure, in the USER_INFO_1
+structure, in the LSA SAM Logon response.
+
+
+A2.2.1) Well-known RID users
+----------------------------
+
+	DOMAIN_USER_RID_ADMIN          0x0000 01F4
+	DOMAIN_USER_RID_GUEST          0x0000 01F5
+
+
+
+A2.2.2) Well-known RID groups
+----------------------------
+
+	DOMAIN_GROUP_RID_ADMINS        0x0000 0200
+	DOMAIN_GROUP_RID_USERS         0x0000 0201
+	DOMAIN_GROUP_RID_GUESTS        0x0000 0202
+
+
+
+A2.2.3) Well-known RID aliases
+------------------------------
+
+	DOMAIN_ALIAS_RID_ADMINS        0x0000 0220
+	DOMAIN_ALIAS_RID_USERS         0x0000 0221
+	DOMAIN_ALIAS_RID_GUESTS        0x0000 0222
+	DOMAIN_ALIAS_RID_POWER_USERS   0x0000 0223
+
+	DOMAIN_ALIAS_RID_ACCOUNT_OPS   0x0000 0224
+	DOMAIN_ALIAS_RID_SYSTEM_OPS    0x0000 0225
+	DOMAIN_ALIAS_RID_PRINT_OPS     0x0000 0226
+	DOMAIN_ALIAS_RID_BACKUP_OPS    0x0000 0227
+
+	DOMAIN_ALIAS_RID_REPLICATOR    0x0000 0228
 
