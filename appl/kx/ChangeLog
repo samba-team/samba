@@ -1,3 +1,7 @@
+Mon Sep 28 18:04:03 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* common.c (try_pipe): return -1 if I_PUSH fails with ENOSYS
+
 Sat Sep 26 17:34:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c: create sockets before setuid to handle Solaris' strange
