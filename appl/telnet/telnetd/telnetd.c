@@ -176,6 +176,11 @@ main(int argc, char **argv)
     highpty = getnpty();
 #endif /* CRAY */
 
+    if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+	print_version(NULL);
+	exit(0);
+    }
+
     while ((ch = getopt(argc, argv, valid_opts)) != -1) {
 	switch(ch) {
 

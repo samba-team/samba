@@ -241,6 +241,9 @@ init_words (int argc, char **argv)
 		if (appres.file == NULL)
 		    errx (1, "cannot allocate memory for message");
 	    }
+	} else if(strcmp(argv[i], "--version") == 0) {
+	    print_version(NULL);
+	    exit(0);
 	} else {
 	    int j;
 	    int len = 1;

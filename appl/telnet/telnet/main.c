@@ -170,6 +170,11 @@ main(int argc, char **argv)
 	 */
 	autologin = -1;
 
+	if (argc == 2 && strcmp(argv[1], "--version") == 0) {
+	    print_version(NULL);
+	    exit(0);
+	}
+
 	while((ch = getopt(argc, argv,
 			   "78DEKLS:X:abcde:fFk:l:n:rxG")) != -1) {
 		switch(ch) {
