@@ -1608,7 +1608,7 @@ struct checksum_type checksum_none = {
     "none", 
     1, 
     0, 
-    0, 
+    0,
     NONE_checksum, 
     NULL
 };
@@ -3860,6 +3860,39 @@ krb5_get_wrapped_length (krb5_context context,
 	return wrapped_length_dervied (context, crypto, data_len);
     else
 	return wrapped_length (context, crypto, data_len);
+}
+
+krb5_error_code
+krb5_random_to_key(krb5_context context,
+		   krb5_enctype type,
+		   const void *data,
+		   size_t size,
+		   krb5_keyblock *key)
+{
+    krb5_error_code ret;
+    struct encryption_type *et = _find_enctype(type);
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    if (et->keytype->size > size) {
+	krb5_set_error_string(context, "encryption key %s needs %d bytes "
+			      "of random to make an encryption key out of it",
+			      et->name, et->keytype->size);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    ret = krb5_data_alloc(&key->keyvalue, et->keytype->size);
+    if(ret) 
+	return ret;
+    key->keytype = type;
+    memcpy(key->keyvalue.data, data, et->keytype->size);
+#if 0
+    if (et->random_to_key)
+ 	ret = (*et->random_to_key)(context, key, data, size);
+#endif
+
+    return 0;
 }
 
 #ifdef CRYPTO_DEBUG
