@@ -30,6 +30,9 @@
 /* this one is for storing trusted domain account password */
 #define SECRETS_DOMTRUST_ACCT_PASS "SECRETS/$DOMTRUST.ACC"
 
+/* Store the principal name used for Kerberos DES key salt under this key name. */
+#define SECRETS_SALTING_PRINCIPAL "SECRETS/SALTING_PRINCIPAL"
+
 /* The domain sid and our sid are stored here even though they aren't
    really secret. */
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
