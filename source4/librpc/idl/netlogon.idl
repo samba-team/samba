@@ -1014,6 +1014,11 @@ interface netlogon
 		[out,switch_is(level)] netr_DomainInfo info
 		);
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint16 data[256];
+		uint32 length;
+	} netr_CryptPassword;
+
 	/*****************/
 	/* Function 0x1e */
 	NTSTATUS netr_ServerPasswordSet2(
@@ -1022,7 +1027,7 @@ interface netlogon
 		[in]  netr_SchannelType secure_channel_type,
 		[in]  unistr computer_name,
 		[in]  netr_Authenticator credential,
-		[in]  samr_CryptPassword new_password,
+		[in]  netr_CryptPassword new_password,
 		[out] netr_Authenticator return_authenticator
 		);
 
