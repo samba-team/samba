@@ -156,7 +156,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 {
     krb5_error_code ret;
     krb5_creds *out_creds;
-    krb5_addresses addrs;
+    krb5_addresses addrs, *paddrs;
     KRB_CRED cred;
     KrbCredInfo *krb_cred_info;
     EncKrbCredPart enc_krb_cred_part;
@@ -168,23 +168,33 @@ krb5_get_forwarded_creds (krb5_context	    context,
     struct addrinfo *ai;
     int save_errno;
     krb5_keyblock *key;
-    krb5_creds *krbtgt;
+    krb5_creds *ticket;
+    char *realm;
+
+    if (in_creds->client && in_creds->client->realm)
+	realm = in_creds->client->realm;
+    else
+	realm = in_creds->server->realm;
 
     addrs.len = 0;
     addrs.val = NULL;
-
-    ret = _krb5_get_krbtgt (context,
-			    ccache,
-			    in_creds->server->realm,
-			    &krbtgt);
-    if(ret)
-	return ret;
+    paddrs = &addrs;
 
     /*
      * If tickets are address-less, forward address-less tickets.
      */
 
-    if (krbtgt->addresses.len != 0) {
+    ret = _krb5_get_krbtgt (context,
+			    ccache,
+			    realm,
+			    &ticket);
+    if(ret == 0) {
+	if (ticket->addresses.len == 0)
+	    paddrs = NULL;
+	krb5_free_creds (context, ticket);
+    }
+    
+    if (paddrs != NULL) {
 
 	ret = getaddrinfo (hostname, NULL, NULL, &ai);
 	if (ret) {
@@ -199,14 +209,13 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	if (ret)
 	    return ret;
     }
-    krb5_free_creds (context, krbtgt);
     
     kdc_flags.i = flags;
 
     ret = krb5_get_kdc_cred (context,
 			     ccache,
 			     kdc_flags,
-			     addrs.len != 0 ? &addrs : NULL,
+			     paddrs,
 			     NULL,
 			     in_creds,
 			     &out_creds);
