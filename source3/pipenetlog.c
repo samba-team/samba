@@ -200,12 +200,12 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = num_other_sids != 0 ? 1 : 0; 
 	
-	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   , 0);
-	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   , 0);
-	make_unistr2(&(usr->uni_logon_script), logon_script, len_logon_script, 0);
-	make_unistr2(&(usr->uni_profile_path), profile_path, len_profile_path, 0);
-	make_unistr2(&(usr->uni_home_dir    ), home_dir    , len_home_dir    , 0);
-	make_unistr2(&(usr->uni_dir_drive   ), dir_drive   , len_dir_drive   , 0);
+	make_unistr2(&(usr->uni_user_name   ), user_name   , len_user_name   );
+	make_unistr2(&(usr->uni_full_name   ), full_name   , len_full_name   );
+	make_unistr2(&(usr->uni_logon_script), logon_script, len_logon_script);
+	make_unistr2(&(usr->uni_profile_path), profile_path, len_profile_path);
+	make_unistr2(&(usr->uni_home_dir    ), home_dir    , len_home_dir    );
+	make_unistr2(&(usr->uni_dir_drive   ), dir_drive   , len_dir_drive   );
 
 	usr->num_groups2 = num_groups;
 	for (i = 0; i < num_groups; i++)
@@ -213,8 +213,8 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 		usr->gids[i] = gids[i];
 	}
 
-	make_unistr2(&(usr->uni_logon_srv), logon_srv, len_logon_srv, 0);
-	make_unistr2(&(usr->uni_logon_dom), logon_dom, len_logon_dom, 0);
+	make_unistr2(&(usr->uni_logon_srv), logon_srv, len_logon_srv);
+	make_unistr2(&(usr->uni_logon_dom), logon_dom, len_logon_dom);
 
 	make_dom_sid(&(usr->dom_sid), dom_sid);
 	make_dom_sid(&(usr->other_sids[0]), other_sids);
@@ -304,11 +304,10 @@ static BOOL update_dcinfo(int cnum, uint16 vuid,
 	/* create a server challenge for the client */
 	/* PAXX: set these to random values. */
 	/* lkcl: paul, you mentioned that it doesn't really matter much */
-	for (i = 0; i < 8; i++)
-	{
-		dc->srv_chal.data[i] = 0xA5;
-		dc->srv_cred.data[i] = 0xA5;
-	}
+	dc->srv_chal.data[0] = 0x11111111;
+	dc->srv_chal.data[1] = 0x11111111;
+	dc->srv_cred.data[0] = 0x11111111;
+	dc->srv_cred.data[1] = 0x11111111;
 
 	/* from client / server challenges and md4 password, generate sess key */
 	cred_session_key(&(dc->clnt_chal), &(dc->srv_chal),
@@ -335,8 +334,8 @@ static void api_lsa_req_chal( int cnum, uint16 vuid,
 
 	strcat(mach_acct, "$");
 
-	DEBUG(6,("q_r.clnt_chal.data(%d) :", sizeof(q_r.clnt_chal.data)));
-	dump_data(6, q_r.clnt_chal.data, 8);
+	DEBUG(6,("q_r.clnt_chal.data: %lx %lx\n",
+	         q_r.clnt_chal.data[0], q_r.clnt_chal.data[1]));
 
 	update_dcinfo(cnum, vuid, &(vuser->dc), &(q_r.clnt_chal), mach_acct);
 
@@ -352,6 +351,7 @@ static void api_lsa_auth_2( user_struct *vuser,
 {
 	LSA_Q_AUTH_2 q_a;
 
+	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
 	srv_time.time = 0;
@@ -364,14 +364,15 @@ static void api_lsa_auth_2( user_struct *vuser,
                 &(vuser->dc.clnt_cred), srv_time);
 
 	/* create server challenge for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &(vuser->dc.srv_chal));
+	cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred), srv_time, &srv_cred);
 
-	/* update the client credentials (copy server challenge) for use next time */
-	memcpy(vuser->dc.clnt_cred.data, vuser->dc.srv_chal.data, sizeof(vuser->dc.clnt_cred.data));
+	/* update the client credentials for use next time */
+	memcpy(vuser->dc.clnt_cred.data, &(srv_cred.data), sizeof(srv_cred.data));
+	memcpy(vuser->dc.srv_cred .data, &(srv_cred.data), sizeof(srv_cred.data));
 
 	/* construct reply. */
 	*rdata_len = lsa_reply_auth_2(&q_a, *rdata + 0x18, *rdata,
-					&(vuser->dc.srv_chal), 0x0);
+					&srv_cred, 0x0);
 }
 
 

@@ -31,11 +31,12 @@ Output:
       8 byte session key
 ****************************************************************************/
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		       char *session_key)
+		       uint32 session_key[2])
 {
 	uint32 sum[2];
 	char sum2[8];
 	char buf[8];
+	char netsesskey[8];
 
 	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
 	sum[1] = IVAL(clnt_chal->data, 4) + IVAL(srv_chal->data, 4);
@@ -44,22 +45,18 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	SIVAL(sum2,4,sum[1]);
 
 	smbhash(pass  , sum2, buf);
-	smbhash(pass+9, buf , session_key);
+	smbhash(pass+9, buf , netsesskey);
 
-	/* debug output*/
+	session_key[0] = IVAL(netsesskey, 0);
+	session_key[1] = IVAL(netsesskey, 4);
+
+	/* debug output */
 	DEBUG(4,("cred_session_key\n"));
 
-	DEBUG(5,("	clnt_chal: "));
-	dump_data(5, clnt_chal->data, 8);
-
-	DEBUG(5,("	srv_chal: "));
-	dump_data(5, srv_chal->data, 8);
-
-	DEBUG(5,("	clnt_chal+srv_chal: "));
-	dump_data(5, sum2, 8);
-
-	DEBUG(5,("	session_key: "));
-	dump_data(5, session_key, 16);
+	DEBUG(5,("	clnt_chal: %lx %lx\n", clnt_chal->data[0], clnt_chal->data[1]));
+	DEBUG(5,("	srv_chal : %lx %lx\n", srv_chal ->data[0], srv_chal ->data[1]));
+	DEBUG(5,("	clnt+srv : %lx %lx\n", sum            [0], sum            [1]));
+	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
 }
 
 
@@ -74,35 +71,36 @@ Input:
 Output:
       8 byte credential
 ****************************************************************************/
-void cred_create(char *session_key, DOM_CHAL *stored_cred, UTIME timestamp, 
+void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred)
 {
 	char key2[7];
 	char buf[8];
+	char calc_cred[8];
 	char timecred[8];
+	char netsesskey[8];
 
-	memcpy(timecred, stored_cred->data, 8);
-	SIVAL(timecred, 0, IVAL(stored_cred, 0) + timestamp.time);
+	SIVAL(netsesskey, 0, session_key[0]);
+	SIVAL(netsesskey, 4, session_key[1]);
 
-	smbhash(session_key, timecred, buf);
+	SIVAL(timecred, 0, IVAL(stor_cred, 0) + timestamp.time);
+	SIVAL(timecred, 4, IVAL(stor_cred, 4));
+
+	smbhash(netsesskey, timecred, buf);
 	memset(key2, 0, 7);
-	key2[0] = session_key[7];
-	smbhash(key2, buf, cred->data);
+	key2[0] = netsesskey[7];
+	smbhash(key2, buf, calc_cred);
+
+	cred->data[0] = IVAL(calc_cred, 0);
+	cred->data[1] = IVAL(calc_cred, 4);
 
 	/* debug output*/
 	DEBUG(4,("cred_create\n"));
 
-	DEBUG(5,("	session_key: "));
-	dump_data(5, session_key, 16);
-
-	DEBUG(5,("	stored_cred: "));
-	dump_data(5, stored_cred->data, 8);
-
-	DEBUG(5,("	timecred: "));
-	dump_data(5, timecred, 8);
-
-	DEBUG(5,("	cred: "));
-	dump_data(5, cred->data, 8);
+	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
+	DEBUG(5,("	stor_cred: %lx %lx\n", stor_cred->data[0], stor_cred->data[1]));
+	DEBUG(5,("	timecred : %lx %lx\n", IVAL(timecred, 0),  IVAL(timecred, 4)));
+	DEBUG(5,("	calc_cred: %lx %lx\n", cred     ->data[0], cred     ->data[1]));
 }
 
 
@@ -119,7 +117,7 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 		UTIME timestamp)
 {
 	DOM_CHAL cred2;
@@ -129,11 +127,9 @@ int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
 	/* debug output*/
 	DEBUG(4,("cred_assert\n"));
 
+	DEBUG(5,("	challenge : %lx %lx\n", cred->data[0], cred->data[1]));
+	DEBUG(5,("	calculated: %lx %lx\n", cred2.data[0], cred2.data[1]));
 	DEBUG(5,("	challenge: "));
-	dump_data(5, cred->data, 8);
-
-	DEBUG(5,("	calculated: "));
-	dump_data(5, cred2.data, 8);
 
 	return memcmp(cred->data, cred2.data, 8) == 0;
 }
