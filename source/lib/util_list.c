@@ -88,20 +88,22 @@ GENERIC_LIST *generic_list_new(void)
 	return l;
 }
 
+void generic_list_destroy(GENERIC_LIST *l)
+{
+	/* should go through and drop the items */
+	safe_free(l);
+}
+
 /*****************************************************************
  Insert some data into the list (appended to the end of the list)
  *****************************************************************/
-GENERIC_LIST *generic_list_append(GENERIC_LIST *l, 
-				  void *item, uint8 type)
+BOOL generic_list_append(GENERIC_LIST *l, void *item, uint8 type)
 {
 	if (! l)
 	{
 		DEBUG(1, ("generic_list_append: NULL list\n"));
-		l = generic_list_new();
+		return False;
 	}
-
-	if (! l)
-		return l;
 
 	/* check for an emtpy list first */
 	if (l->length == 0) 
@@ -109,7 +111,7 @@ GENERIC_LIST *generic_list_append(GENERIC_LIST *l,
 		if ((l->head = malloc(sizeof(struct _list_node))) == NULL)
 		{
 			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
-			return l;
+			return False;
 		}
 		l->head->data = item;
 		l->head->type = type;
@@ -124,7 +126,7 @@ GENERIC_LIST *generic_list_append(GENERIC_LIST *l,
 		if ((l->tail->next = malloc(sizeof(struct _list_node))) == NULL)
 		{
 			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
-			return l;
+			return False;
 		}
 		l->tail = l->tail->next;
 		l->tail->next = NULL;
@@ -133,8 +135,52 @@ GENERIC_LIST *generic_list_append(GENERIC_LIST *l,
 		l->length++;
 	}
 	
-	/* return the list pointer in case this was the first node */
-	return l;
+	return True;
+}
+
+/*****************************************************************
+ Insert some data into the list (prepend at the beginning of the list)
+ *****************************************************************/
+BOOL generic_list_prepend(GENERIC_LIST *l, void *item, uint8 type)
+{
+	if (! l)
+	{
+		DEBUG(1, ("generic_list_append: NULL list\n"));
+		return False;
+	}
+
+	/* check for an emtpy list first */
+	if (l->length == 0) 
+	{
+		if ((l->head = malloc(sizeof(struct _list_node))) == NULL)
+		{
+			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
+			return False;
+		}
+		l->head->data = item;
+		l->head->type = type;
+		l->head->next = NULL;
+		l->length++;
+		l->tail = l->head;
+	}
+	
+	/* we already have an existing list */
+	else
+	{
+		struct _list_node *n;
+		if ((n = malloc(sizeof(struct _list_node))) == NULL)
+		{
+			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
+			return False;
+		}
+		n->next = l->head;
+		l->head = n;
+		n->data = item;
+		n->type = type;
+		l->length++;
+	}
+	
+	return True;
 }
 
 /****************************************************************

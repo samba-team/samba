@@ -649,8 +649,9 @@ void file_lines_slashcont(char **lines);
 /*The following definitions come from  lib/util_list.c  */
 
 GENERIC_LIST *generic_list_new(void);
-GENERIC_LIST *generic_list_append(GENERIC_LIST *l, 
-				  void *item, uint8 type);
+void generic_list_destroy(GENERIC_LIST *l);
+BOOL generic_list_append(GENERIC_LIST *l, void *item, uint8 type);
+BOOL generic_list_prepend(GENERIC_LIST *l, void *item, uint8 type);
 void *generic_list_first(GENERIC_LIST *l, uint8 *type);
 void *generic_list_locate (GENERIC_LIST *l, void *search,
 				  BOOL(*cmp)(const void*,const void*));
