@@ -1411,7 +1411,12 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 
 	(void)map_username(user);
 
-	if(!(pass = sys_getpwnam(user))) {
+	/*
+	 * Must call Get_Pwnam to map uppercase names to lowercase names
+	 * when needed!
+	 */
+
+	if(!(pass = Get_Pwnam(user,false))) {
 		/*
 		 * Maybe it was a group ?
 		 */
