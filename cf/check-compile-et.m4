@@ -10,16 +10,23 @@ if test "${COMPILE_ET}" = "compile_et"; then
 
 dnl We have compile_et.  Now let's see if it supports `prefix' and `index'.
 AC_MSG_CHECKING(whether compile_et has the features we need)
-cat > conftest.et <<'EOF'
+cat > conftest_et.et <<'EOF'
 error_table conf
 prefix CONFTEST
+index 1
 error_code CODE1, "CODE1"
 index 128
 error_code CODE2, "CODE2"
 end
 EOF
-if ${COMPILE_ET} conftest.et >/dev/null 2>&1; then
-        krb_cv_compile_et="yes"
+if ${COMPILE_ET} conftest_et.et >/dev/null 2>&1; then
+  dnl Check that the `prefix' and `index' directives were honored.
+  AC_TRY_RUN([
+#include <com_err.h>
+#include <string.h>
+#include "conftest_et.h"
+int main(){return (CONFTEST_CODE2 - CONFTEST_CODE1) != 127;}
+  ], [krb_cv_compile_et="yes"],[])
 fi
 AC_MSG_RESULT(${krb_cv_compile_et})
 rm -fr conftest*
@@ -29,6 +36,7 @@ if test "${krb_cv_compile_et}" = "yes"; then
   dnl Since compile_et seems to work, let's check libcom_err
   krb_cv_save_LIBS="${LIBS}"
   LIBS="${LIBS} -lcom_err"
+  dnl XXX Some systems have <et/com_err.h>.
   if test -d "/usr/include/et"; then
     CPPFLAGS="-I/usr/include/et ${CPPFLAGS}"
   fi
