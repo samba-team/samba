@@ -1,3 +1,7 @@
+Mon Dec 29 23:31:10 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* roken.h.in: Include <err.h>, to get linux __progname.
+
 Sun Dec 21 09:45:18 1997  Assar Westerlund  <assar@sics.se>
 
 	* parse_time.c (print_time_table): new function
