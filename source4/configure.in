@@ -1990,6 +1990,7 @@ sinclude(auth/config.m4)
 sinclude(passdb/config.m4)
 sinclude(ntvfs/config.m4)
 sinclude(rpc_server/config.m4)
+sinclude(torture/config.m4)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
