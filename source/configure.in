@@ -1689,7 +1689,9 @@ dnl ])
            if test x"$jm_cv_lib_iconv" != x; then
               LIBS="$LIBS -l$jm_cv_lib_iconv"
            fi
+	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
 	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   LIB_ADD_DIR(LDFLAGS, "$i/lib")
 	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
