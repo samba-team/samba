@@ -1911,6 +1911,7 @@ BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_nt_smb_support(void);
 BOOL lp_nt_pipe_support(void);
+BOOL lp_nt_status_support(void);
 BOOL lp_stat_cache(void);
 BOOL lp_allow_trusted_domains(void);
 BOOL lp_restrict_anonymous(void);

@@ -912,8 +912,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 
-#if 1 /* JRATEST */
-	/* W2K sends back 42 words here ! */
+#if 0 
+	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
 	set_message(outbuf,42,0,True);
 #else
 	set_message(outbuf,34,0,True);
@@ -1902,9 +1902,8 @@ due to being in oplock break state.\n" ));
     }
   }
 
-  if (Protocol >= PROTOCOL_NT1) {
-    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
-  }
+  if (Protocol >= PROTOCOL_NT1)
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
 
   /* Now we must call the relevant NT_TRANS function */
   switch(function_code) {

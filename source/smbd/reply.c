@@ -1215,9 +1215,8 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     put_dos_date3(outbuf,smb_vwv1,mtime);
   SIVAL(outbuf,smb_vwv3,(uint32)size);
 
-  if (Protocol >= PROTOCOL_NT1) {
-	  SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | 0x40); /* IS_LONG_NAME */
-  }
+  if (Protocol >= PROTOCOL_NT1)
+	  SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
   
   DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
   
@@ -1479,9 +1478,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SCVAL(smb_buf(outbuf),0,5);
   SSVAL(smb_buf(outbuf),1,numentries*DIR_STRUCT_SIZE);
 
-  if (Protocol >= PROTOCOL_NT1) {
-    SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | 0x40); /* IS_LONG_NAME */
-  }
+  if (Protocol >= PROTOCOL_NT1)
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 
   outsize += DIR_STRUCT_SIZE*numentries;
   smb_setlen(outbuf,outsize - 4);

@@ -1929,16 +1929,24 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			break;
 		}
 		
+#if 0
+	/*
+	 * NT4 server just returns "invalid query" to this - if we try to answer 
+	 * it then NTws gets a BSOD! (tridge).
+	 * W2K seems to want this. JRA.
+	 */ 
+	case SMB_QUERY_FILE_STREAM_INFO:
+#endif
 	case SMB_FILE_STREAM_INFORMATION:
 		if (mode & aDIR) {
 			data_size = 0;
 		} else {
-			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
-			SIVAL(pdata,0,0); /* ??? */
+			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 14, False);
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			SIVAL(pdata,0,0); /* Next stream (none). */
 			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 			SOFF_T(pdata,8,size);
-			SIVAL(pdata,16,allocation_size);
-			SIVAL(pdata,20,0); /* ??? */
+			SOFF_T(pdata,16,allocation_size);
 			data_size = 24 + byte_len;
 		}
 		break;
@@ -1967,25 +1975,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		SIVAL(pdata,4,0);
 		data_size = 8;
 		break;
-
-#if 0
-	/*
-	 * NT4 server just returns "invalid query" to this - if we try to answer 
-	 * it then NTws gets a BSOD! (tridge).
-	 * W2K seems to want this. JRA.
-	 */
-
-	case SMB_QUERY_FILE_STREAM_INFO:
-		if (get_remote_arch() != RA_WIN2K)
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
-		data_size = 24 + l;
-		SIVAL(pdata,0,pos);
-		SIVAL(pdata,4,size);
-		SIVAL(pdata,12,allocation_size);
-		SIVAL(pdata,20,l);	
-		pstrcpy(pdata+24,fname);
-		break;
-#endif
 
 	/*
 	 * CIFS UNIX Extensions.
@@ -3232,9 +3221,8 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,int length,in
 		}
 	}
 	
-	if (Protocol >= PROTOCOL_NT1) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
-	}
+	if (Protocol >= PROTOCOL_NT1)
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
 
 	/* Now we must call the relevant TRANS2 function */
 	switch(tran_call)  {
