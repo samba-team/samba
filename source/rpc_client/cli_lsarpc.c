@@ -1110,12 +1110,12 @@ NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /** Get a privilege value given its name */
 
-NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_lsa_lookup_priv_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 POLICY_HND *pol, const char *name, LUID *luid)
 {
 	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUPPRIVVALUE q;
-	LSA_R_LOOKUPPRIVVALUE r;
+	LSA_Q_LOOKUP_PRIV_VALUE q;
+	LSA_R_LOOKUP_PRIV_VALUE r;
 	NTSTATUS result;
 
 	ZERO_STRUCT(q);
@@ -1128,9 +1128,9 @@ NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_lsa_q_lookupprivvalue(&q, pol, name);
+	init_lsa_q_lookup_priv_value(&q, pol, name);
 
-	if (!lsa_io_q_lookupprivvalue("", &q, &qbuf, 0) ||
+	if (!lsa_io_q_lookup_priv_value("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPPRIVVALUE, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -1138,7 +1138,7 @@ NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	if (!lsa_io_r_lookupprivvalue("", &r, &rbuf, 0)) {
+	if (!lsa_io_r_lookup_priv_value("", &r, &rbuf, 0)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}

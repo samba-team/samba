@@ -3,7 +3,7 @@
    Privileges handling functions
    Copyright (C) Jean François Micouleau	1998-2001
    Copyright (C) Simo Sorce			2002-2003
-   Copyright (C) Gerald (Jerry) Carter          2004
+   Copyright (C) Gerald (Jerry) Carter          2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,6 +40,43 @@ const SE_PRIV se_add_users       = SE_ADD_USERS;
 const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
 const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 
+/********************************************************************
+ This is a list of privileges reported by a WIndows 2000 SP4 AD DC
+ just for reference purposes:
+
+            SeCreateTokenPrivilege  Create a token object
+     SeAssignPrimaryTokenPrivilege  Replace a process level token
+             SeLockMemoryPrivilege  Lock pages in memory
+          SeIncreaseQuotaPrivilege  Increase quotas
+         SeMachineAccountPrivilege  Add workstations to domain
+                    SeTcbPrivilege  Act as part of the operating system
+               SeSecurityPrivilege  Manage auditing and security log
+          SeTakeOwnershipPrivilege  Take ownership of files or other objects
+             SeLoadDriverPrivilege  Load and unload device drivers
+          SeSystemProfilePrivilege  Profile system performance
+             SeSystemtimePrivilege  Change the system time
+   SeProfileSingleProcessPrivilege  Profile single process
+   SeIncreaseBasePriorityPrivilege  Increase scheduling priority
+         SeCreatePagefilePrivilege  Create a pagefile
+        SeCreatePermanentPrivilege  Create permanent shared objects
+                 SeBackupPrivilege  Back up files and directories
+                SeRestorePrivilege  Restore files and directories
+               SeShutdownPrivilege  Shut down the system
+                  SeDebugPrivilege  Debug programs
+                  SeAuditPrivilege  Generate security audits
+      SeSystemEnvironmentPrivilege  Modify firmware environment values
+           SeChangeNotifyPrivilege  Bypass traverse checking
+         SeRemoteShutdownPrivilege  Force shutdown from a remote system
+                 SeUndockPrivilege  Remove computer from docking station
+              SeSyncAgentPrivilege  Synchronize directory service data
+       SeEnableDelegationPrivilege  Enable computer and user accounts to be trusted for delegation
+           SeManageVolumePrivilege  Perform volume maintenance tasks
+            SeImpersonatePrivilege  Impersonate a client after authentication
+           SeCreateGlobalPrivilege  Create global objects
+
+********************************************************************/
+
+
 PRIVS privs[] = {
 #if 0	/* usrmgr will display these twice if you include them.  We don't 
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
@@ -57,38 +94,6 @@ PRIVS privs[] = {
 
 	{SE_END,			"",					""}
 };
-
-#if 0	/* not needed currently */
-PRIVS privs[] = {
-	{SE_ASSIGN_PRIMARY_TOKEN,	"SeAssignPrimaryTokenPrivilege",	"Assign Primary Token"},
-	{SE_CREATE_TOKEN,		"SeCreateTokenPrivilege",		"Create Token"},
-	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
-	{SE_INCREASE_QUOTA,		"SeIncreaseQuotaPrivilege",		"Increase Quota"},
-	{SE_UNSOLICITED_INPUT,		"SeUnsolicitedInputPrivilege",		"Unsolicited Input"},
-	{SE_TCB,			"SeTcbPrivilege",			"Act as part of the operating system"},
-	{SE_SECURITY,			"SeSecurityPrivilege",			"Security Privilege"},
-	{SE_TAKE_OWNERSHIP,		"SeTakeOwnershipPrivilege",		"Take Ownership Privilege"},
-	{SE_LOAD_DRIVER,		"SeLocalDriverPrivilege",		"Local Driver Privilege"},
-	{SE_SYSTEM_PROFILE,		"SeSystemProfilePrivilege",		"System Profile Privilege"},
-	{SE_SYSTEM_TIME,		"SeSystemtimePrivilege",		"System Time"},
-	{SE_PROF_SINGLE_PROCESS,	"SeProfileSingleProcessPrivilege",	"Profile Single Process Privilege"},
-	{SE_INC_BASE_PRIORITY,		"SeIncreaseBasePriorityPrivilege",	"Increase Base Priority Privilege"},
-	{SE_CREATE_PAGEFILE,		"SeCreatePagefilePrivilege",		"Create Pagefile Privilege"},
-	{SE_CREATE_PERMANENT,		"SeCreatePermanentPrivilege",		"Create Permanent"},
-	{SE_BACKUP,			"SeBackupPrivilege",			"Backup Privilege"},
-	{SE_RESTORE,			"SeRestorePrivilege",			"Restore Privilege"},
-	{SE_SHUTDOWN,			"SeShutdownPrivilege",			"Shutdown Privilege"},
-	{SE_DEBUG,			"SeDebugPrivilege",			"Debug Privilege"},
-	{SE_AUDIT,			"SeAuditPrivilege",			"Audit"},
-	{SE_SYSTEM_ENVIRONMENT,		"SeSystemEnvironmentPrivilege",		"System Environment Privilege"},
-	{SE_CHANGE_NOTIFY,		"SeChangeNotifyPrivilege",		"Change Notify"},
-	{SE_UNDOCK,			"SeUndockPrivilege",			"Undock"},
-	{SE_SYNC_AGENT,			"SeSynchronizationAgentPrivilege",	"Synchronization Agent"},
-	{SE_ENABLE_DELEGATION,		"SeEnableDelegationPrivilege",		"Enable Delegation"},
-	{SE_ALL_PRIVS,			"SeAllPrivileges",			"All Privileges"}
-	{SE_END,			"",					""}
-};
-#endif
 
 typedef struct priv_sid_list {
 	SE_PRIV privilege;
@@ -175,6 +180,24 @@ static BOOL se_priv_empty( const SE_PRIV *mask )
 	}
 	
 	return se_priv_equal( &p1, &se_priv_none );
+}
+
+/*********************************************************************
+ Lookup the SE_PRIV value for a privilege name 
+*********************************************************************/
+
+BOOL se_priv_from_name( const char *name, SE_PRIV *mask )
+{
+	int i;
+
+	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
+		if ( strequal( privs[i].name, name ) ) {
+			se_priv_copy( mask, &privs[i].se_priv );
+			return True;
+		}
+	}
+
+	return False;
 }
 
 /***************************************************************************
@@ -369,11 +392,9 @@ LUID_ATTR get_privilege_luid( SE_PRIV *mask )
 	
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 	
-		/* just use the index+1 (so its non-zero) into the 
-		   array as the lower portion of the LUID */
-	
 		if ( se_priv_equal( &privs[i].se_priv, mask ) ) {
 			priv_luid.luid.low = GENERATE_LUID_LOW(i);
+			break;
 		}
 	}
 
@@ -664,9 +685,6 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
 {
 	int i;
 
-	/* don't crash if the source pointer is NULL (since we don't
-	   do priviledges now anyways) */
-
 	if ( !old_la )
 		return NT_STATUS_OK;
 
@@ -729,26 +747,6 @@ char* luid_to_privilege_name(const LUID *set)
 	fstrcpy( name, privs[set->low - 1].name );
 	
 	return name;
-}
-
-/****************************************************************************
- Convert an LUID to a 32-bit mask
-****************************************************************************/
-
-SE_PRIV* luid_to_privilege_mask(const LUID *set)
-{
-	static SE_PRIV mask;
-	int max = count_all_privileges();
-	
-	if (set->high != 0)
-		return NULL;
-
-	if ( set->low > max )
-		return NULL;
-
-	se_priv_copy( &mask, &privs[set->low - 1].se_priv );
-
-	return &mask;
 }
 
 /*******************************************************************

@@ -1981,20 +1981,38 @@ BOOL lsa_io_r_setsystemaccount(const char *desc, LSA_R_SETSYSTEMACCOUNT  *r_c, p
 }
 
 
-void init_lsa_q_lookupprivvalue(LSA_Q_LOOKUPPRIVVALUE *trn, POLICY_HND *hnd, const char *name)
+static void init_lsa_string( LSA_STRING *uni, const char *string )
 {
-	memcpy(&trn->pol, hnd, sizeof(trn->pol));
-	init_unistr2(&trn->uni2_right, name, UNI_FLAGS_NONE);
-	init_uni_hdr(&trn->hdr_right, &trn->uni2_right);
+	init_unistr2(&uni->unistring, string, UNI_FLAGS_NONE);
+	init_uni_hdr(&uni->hdr, &uni->unistring);
+}
+
+void init_lsa_q_lookup_priv_value(LSA_Q_LOOKUP_PRIV_VALUE *q_u, POLICY_HND *hnd, const char *name)
+{
+	memcpy(&q_u->pol, hnd, sizeof(q_u->pol));
+	init_lsa_string( &q_u->privname, name );
+}
+
+BOOL smb_io_lsa_string( const char *desc, LSA_STRING *string, prs_struct *ps, int depth )
+{
+	prs_debug(ps, depth, desc, "smb_io_lsa_string");
+	depth++;
+
+	if(!smb_io_unihdr ("hdr", &string->hdr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("unistring", &string->unistring, string->hdr.buffer, ps, depth))
+		return False;
+	
+	return True;
 }
 
 /*******************************************************************
- Reads or writes an LSA_Q_LOOKUPPRIVVALUE  structure.
+ Reads or writes an LSA_Q_LOOKUP_PRIV_VALUE  structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookupprivvalue(const char *desc, LSA_Q_LOOKUPPRIVVALUE  *r_c, prs_struct *ps, int depth)
+BOOL lsa_io_q_lookup_priv_value(const char *desc, LSA_Q_LOOKUP_PRIV_VALUE  *r_c, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "lsa_io_q_lookupprivvalue");
+	prs_debug(ps, depth, desc, "lsa_io_q_lookup_priv_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2002,21 +2020,19 @@ BOOL lsa_io_q_lookupprivvalue(const char *desc, LSA_Q_LOOKUPPRIVVALUE  *r_c, prs
  
 	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
 		return False;
-	if(!smb_io_unihdr ("hdr_name", &r_c->hdr_right, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni2_right", &r_c->uni2_right, r_c->hdr_right.buffer, ps, depth))
+	if(!smb_io_lsa_string("privname", &r_c->privname, ps, depth))
 		return False;
 
 	return True;
 }
 
 /*******************************************************************
- Reads or writes an  LSA_R_LOOKUPPRIVVALUE structure.
+ Reads or writes an  LSA_R_LOOKUP_PRIV_VALUE structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookupprivvalue(const char *desc, LSA_R_LOOKUPPRIVVALUE  *r_c, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_priv_value(const char *desc, LSA_R_LOOKUP_PRIV_VALUE  *r_c, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "lsa_io_r_lookupprivvalue");
+	prs_debug(ps, depth, desc, "lsa_io_r_lookup_priv_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -2270,7 +2286,6 @@ BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *r_c,
 
 	return True;
 }
-
 
 /*******************************************************************
  Inits an LSA_Q_ENUM_ACCT_RIGHTS structure.
