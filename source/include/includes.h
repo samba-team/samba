@@ -1372,4 +1372,7 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 #undef HAVE_MMAP
 #endif
 
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
+
 #endif /* _INCLUDES_H */

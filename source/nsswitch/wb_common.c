@@ -26,6 +26,9 @@
 
 #include "winbind_client.h"
 
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
+
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
@@ -606,14 +609,14 @@ NSS_STATUS winbindd_request(int req_type,
 
 BOOL winbind_off( void )
 {
-	static char *s = WINBINDD_DONT_ENV "=1";
+        static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");
 
 	return putenv(s) != -1;
 }
 
 BOOL winbind_on( void )
 {
-	static char *s = WINBINDD_DONT_ENV "=0";
+	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=0");
 
 	return putenv(s) != -1;
 }

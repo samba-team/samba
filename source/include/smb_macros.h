@@ -43,7 +43,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((void *) (x)); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
 #endif
 
 /* zero a structure */
