@@ -54,6 +54,15 @@ struct TDB_DATA ltdb_key(struct ldb_context *ldb, const char *dn)
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
 	  case sensitive attributes
+
+	  there are 3 cases dealt with in this code:
+
+	  1) if the dn doesn't start with @INDEX: then uppercase whole dn
+	  2) if the dn starts with @INDEX:attr and 'attr' is a case insensitive
+	     attribute then uppercase whole dn
+	  3) if the dn starts with @INDEX:attr and 'attr' is a case sensitive
+	     attribute then uppercase up to the value of the attribute, but 
+	     not the value itself
 	*/
 	if (strncmp(dn, prefix, strlen(prefix)) == 0 &&
 	    (s = strchr(dn+strlen(prefix), ':'))) {
