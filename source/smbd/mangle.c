@@ -590,7 +590,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
  * ************************************************************************** **
  */
 BOOL check_mangled_cache( char *s )
-  {
+{
   ubi_cacheEntryPtr FoundPtr;
   char             *ext_start = NULL;
   char             *found_name;
@@ -604,25 +604,26 @@ BOOL check_mangled_cache( char *s )
 
   /* If we didn't find the name *with* the extension, try without. */
   if( !FoundPtr )
-    {
+  {
     ext_start = strrchr( s, '.' );
     if( ext_start )
-      {
+    {
       if((saved_ext = strdup(ext_start)) == NULL)
         return False;
 
       *ext_start = '\0';
       FoundPtr = ubi_cacheGet( mangled_cache, (ubi_trItemPtr)s );
-      }
+      *ext_start = '.';
     }
+  }
 
   /* Okay, if we haven't found it we're done. */
   if( !FoundPtr )
-    {
+  {
     if(saved_ext)
       free(saved_ext);
     return( False );
-    }
+  }
 
   /* If we *did* find it, we need to copy it into the string buffer. */
   found_name = (char *)(FoundPtr + 1);
@@ -632,15 +633,15 @@ BOOL check_mangled_cache( char *s )
 
   (void)pstrcpy( s, found_name );
   if( saved_ext )
-    {
+  {
     (void)pstrcat( s, saved_ext );
     free(saved_ext);
-    }
+  }
 
   DEBUG( 3, ("as %s\n", s) );
 
   return( True );
-  } /* check_mangled_cache */
+} /* check_mangled_cache */
 
 
 /* ************************************************************************** **
