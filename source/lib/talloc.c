@@ -395,8 +395,7 @@ char *talloc_strndup(void *t, const char *p, size_t n)
 	return ret;
 }
 
-static char *talloc_vasprintf(void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-static char *talloc_vasprintf(void *t, const char *fmt, va_list ap)
+char *talloc_vasprintf(void *t, const char *fmt, va_list ap)
 {	
 	int len;
 	char *ret;
