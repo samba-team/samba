@@ -840,7 +840,7 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 		if (ntpass_ok)
 		{
 			ntpword[0] = '\0';
-			*ntpasslen=1;
+			*ntpasslen=0;
 		}
 
 		return True;
@@ -2403,7 +2403,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
 		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
-		if (cli->capabilities & 1) {
+		if (cli->capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
@@ -2550,6 +2550,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	}
 
 	cli->initialised = 1;
+	cli->capabilities = CAP_DFS;
 
 	return cli;
 }
@@ -2795,7 +2796,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
 		fstring passwd, ntpasswd;
-		int pass_len, ntpass_len;
+		int pass_len = 0, ntpass_len = 0;
 
 		if (cli->pwd.null_pwd)
 		{
