@@ -451,10 +451,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <para>
 <indexterm><primary>pdbedit</primary></indexterm>
 Samba provides two tools for management of user and machine accounts. These tools are
-called <command>smbpasswd</command> and <command>pdbedit</command>. A third tool is under
-development but is not expected to ship in time for Samba-3.0.0. The new tool will be a TCL/TK
-GUI tool that looks much like the MS Windows NT4 Domain User Manager. Hopefully this will
-be announced in time for the Samba-3.0.1 release.
+called <command>smbpasswd</command> and <command>pdbedit</command>. 
 </para>
 	<sect2>
 	<title>The <emphasis>smbpasswd</emphasis> Command</title>
