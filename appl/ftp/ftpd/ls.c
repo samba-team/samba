@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -177,9 +177,10 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 
     {
 	time_t t = time(NULL);
-	struct tm *tm = localtime(&st->st_mtime);
-	if((t - st->st_mtime > 6*30*24*60*60) ||
-	   (st->st_mtime - t > 6*30*24*60*60))
+	time_t st_mtime = st->st_mtime;
+	struct tm *tm = localtime(&st_mtime);
+	if((t - st_mtime > 6*30*24*60*60) ||
+	   (st_mtime - t > 6*30*24*60*60))
 	    strftime(buf, sizeof(buf), "%b %e  %Y", tm);
 	else
 	    strftime(buf, sizeof(buf), "%b %e %H:%M", tm);
