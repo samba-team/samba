@@ -552,7 +552,7 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 
-NTLM_AUTH_OBJ = utils/ntlm_auth.o $(POPT_LIB_OBJ)
+NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSMB_OBJ) $(POPT_LIB_OBJ)
 
 ######################################################################
 # now the rules...
