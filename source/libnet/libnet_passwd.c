@@ -265,15 +265,220 @@ NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 
 /*
  * set a password with DCERPC/SAMR calls
+ *
+ * is it correct to contact the the pdc of the domain of the user who's password should be set?
  */
 static NTSTATUS libnet_SetPassword_rpc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	union libnet_rpc_connect c;
+	struct samr_Connect sc;
+	struct policy_handle p_handle;
+	struct samr_LookupDomain ld;
+	struct samr_Name d_name;
+	struct samr_OpenDomain od;
+	struct policy_handle d_handle;
+	struct samr_LookupNames ln;
+	struct samr_OpenUser ou;
+	struct policy_handle u_handle;
+	struct samr_SetUserInfo sui;
+	union samr_UserInfo u_info;
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	uint8_t confounder[16];	
+	struct MD5Context md5;
+
+	/* prepare connect to the SAMR pipe of the */
+	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
+	c.pdc.in.domain_name		= r->rpc.in.domain_name;
+	c.pdc.in.dcerpc_iface_name	= DCERPC_SAMR_NAME;
+	c.pdc.in.dcerpc_iface_uuid	= DCERPC_SAMR_UUID;
+	c.pdc.in.dcerpc_iface_version	= DCERPC_SAMR_VERSION;
+
+	/* do connect to the SAMR pipe of the */
+	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(status));
+		return status;
+	}
+
+	/* do a samr_Connect to get a policy handle */
+	ZERO_STRUCT(p_handle);
+	sc.in.system_name = 0;
+	sc.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	sc.out.handle = &p_handle;
+
+	status = dcerpc_samr_Connect(c.pdc.out.dcerpc_pipe, mem_ctx, &sc);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_Connect failed: %s\n",
+						nt_errstr(status));
+		goto disconnect;
+	}
+
+	/* check result of samr_connect */
+	if (!NT_STATUS_IS_OK(sc.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_Connect failed: %s\n", 
+						nt_errstr(sc.out.result));
+		goto disconnect;
+	}
+
+	/* do a samr_LookupDomain */
+	d_name.name = r->rpc.in.domain_name;
+	ld.in.handle = &p_handle;
+	ld.in.domain = &d_name;
+
+	status = dcerpc_samr_LookupDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &ld);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupDomain for [%s] failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(status));
+		goto disconnect;
+	}
+
+	/* check result of samr_LookupDomain */
+	if (!NT_STATUS_IS_OK(ld.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupDomain for [%s] failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(ld.out.result));
+		goto disconnect;
+	}
+
+	/* do a samr_OpenDomain to get a domain handle */
+	ZERO_STRUCT(d_handle);
+	od.in.handle = &p_handle;
+	od.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	od.in.sid = ld.out.sid;
+	od.out.domain_handle = &d_handle;
+
+	status = dcerpc_samr_OpenDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &od);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_OpenDomain for [%s] failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(status));
+		goto disconnect;
+	}
+
+	/* check result of samr_LookupDomain */
+	if (!NT_STATUS_IS_OK(od.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_OpenDomain for [%s] failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(od.out.result));
+		goto disconnect;
+	}
+
+	/* do a samr_LookupNames for the account_name to get the RID */
+	ln.in.handle = &d_handle;
+	ln.in.num_names = 1;
+	ln.in.names = talloc_array_p(mem_ctx, struct samr_Name, 1);
+	if (!ln.in.names) {
+		r->rpc.out.error_string = "Out of Memory";
+		return NT_STATUS_NO_MEMORY;
+	}
+	ln.in.names[0].name = r->rpc.in.account_name;
+
+	status = dcerpc_samr_LookupNames(c.pdc.out.dcerpc_pipe, mem_ctx, &ln);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupNames for [%s] failed: %s\n",
+						r->rpc.in.account_name, nt_errstr(status));
+		goto disconnect;
+	}
+
+	/* check result of samr_LookupDomain */
+	if (!NT_STATUS_IS_OK(ln.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupNames for [%s] failed: %s\n",
+						r->rpc.in.account_name, nt_errstr(ln.out.result));
+		goto disconnect;
+	}
+
+	/* check if we got one RID for the user */
+	if (ln.out.rids.count != 1) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"samr_LookupNames for [%s] returns %d RIDs\n",
+						r->rpc.in.account_name, ln.out.rids.count);
+		goto disconnect;	
+	}
+
+	/* do samr_OpenUser to get the user handle */
+	ZERO_STRUCT(u_handle);
+	ou.in.handle = &d_handle;
+	ou.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	ou.in.rid = ln.out.rids.ids[0];
+	ou.out.acct_handle = &u_handle;
+
+	status = dcerpc_samr_OpenUser(c.pdc.out.dcerpc_pipe, mem_ctx, &ou);
+
+	/* prepare password set with samr_UserInfo26 */
+	encode_pw_buffer(u_info.info26.password.data, r->rpc.in.newpassword, STR_UNICODE);
+	u_info.info26.pw_len = strlen(r->rpc.in.newpassword);
+
+	status = dcerpc_fetch_session_key(c.pdc.out.dcerpc_pipe, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"dcerpc_fetch_session_key failed: %s\n",
+						nt_errstr(status));
+		goto disconnect;
+	}
+
+	generate_random_buffer((uint8_t *)confounder, 16);
+
+	MD5Init(&md5);
+	MD5Update(&md5, confounder, 16);
+	MD5Update(&md5, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &md5);
+
+	arcfour_crypt_blob(u_info.info26.password.data, 516, &confounded_session_key);
+	memcpy(&u_info.info26.password.data[516], confounder, 16);
+
+	sui.in.handle = &u_handle;
+	sui.in.info = &u_info;
+	sui.in.level = 26;
+
+	status = dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"SetUserInfo level 26 for [%s] failed: %s\n",
+						r->rpc.in.account_name, nt_errstr(status));
+		goto UserInfo25;
+	}
+
+	/* check result of samr_LookupDomain */
+	if (!NT_STATUS_IS_OK(sui.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"SetUserInfo level 26 for [%s] failed: %s\n",
+						r->rpc.in.account_name, nt_errstr(sui.out.result));
+		goto UserInfo25;
+	}
+
+UserInfo25:
+
+disconnect:
+	/* close connection */
+	dcerpc_pipe_close(c.pdc.out.dcerpc_pipe);
+
+	return status;
 }
 
 static NTSTATUS libnet_SetPassword_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	NTSTATUS status;
+	union libnet_SetPassword r2;
+
+	r2.rpc.level		= LIBNET_SET_PASSWORD_RPC;
+	r2.rpc.in.account_name	= r->generic.in.account_name;
+	r2.rpc.in.domain_name	= r->generic.in.domain_name;
+	r2.rpc.in.newpassword	= r->generic.in.newpassword;
+
+	status = libnet_SetPassword(ctx, mem_ctx, &r2);
+
+	r->generic.out.error_string = r2.rpc.out.error_string;
+
+	return status;
 }
 
 NTSTATUS libnet_SetPassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
