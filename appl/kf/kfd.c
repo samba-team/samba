@@ -260,10 +260,10 @@ proto (int sock, const char *service)
 	       (char *)(remotename.data),ccname);
   out:
     if (status) {
-	strcpy(ret_string, "no");
+	strlcpy(ret_string, "no", sizeof(ret_string));
 	krb5_warnx(context, "failed");
     } else  {
-	strcpy(ret_string, "ok");
+	strlcpy(ret_string, "ok", sizeof(ret_string));
     }
 
     krb5_data_free (&tk_file);
