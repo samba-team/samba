@@ -119,12 +119,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
 
     kdc_flags.i = flags;
 
-    out_creds = calloc(1, sizeof(*out_creds));
-    if (out_creds == NULL) {
-	krb5_free_addresses(context, &addrs);
-	return ENOMEM;
-    }
-
     ret = krb5_get_kdc_cred (context,
 			     ccache,
 			     kdc_flags,
