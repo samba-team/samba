@@ -952,13 +952,5 @@ Possible causes include:
 
 </sect2>
 
-<sect2>
-	<title>I can't join a Windows 2003 PDC</title>
-
-	<para>Windows 2003 requires SMB signing. Client side SMB signing has 
-		only been implemented partially in Samba 3.0. Set <smbconfoption><name>client use spnego</name><value>no</value></smbconfoption> when communicating 
-		with a windows 2003 server. </para>
-</sect2>
-
 </sect1>
 </chapter>
