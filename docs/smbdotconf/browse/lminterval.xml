@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If Samba is set to produce Lanman announce 
 	broadcasts needed by OS/2 clients (see the <link linkend="LMANNOUNCE">

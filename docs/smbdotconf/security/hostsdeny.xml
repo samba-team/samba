@@ -2,7 +2,7 @@
                  context="S"
 				 type="list"
                  basic="1" advanced="1" print="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>deny hosts</synonym>
 <description>
     <para>The opposite of <parameter moreinfo="none">hosts allow</parameter> 

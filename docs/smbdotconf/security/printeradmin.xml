@@ -2,7 +2,7 @@
                  context="S"
 				 type="list"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This lists users who can do anything to printers

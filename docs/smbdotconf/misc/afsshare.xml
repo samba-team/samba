@@ -2,7 +2,7 @@
 	         context="S"
 			 type="boolean"
 		 advanced="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls whether special AFS features are enabled
 	for this share. If enabled, it assumes that the directory exported via

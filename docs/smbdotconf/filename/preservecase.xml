@@ -1,7 +1,7 @@
 <samba:parameter name="preserve case"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para> This controls if new filenames are created
 	with the case that the client passes, or if they are forced to 

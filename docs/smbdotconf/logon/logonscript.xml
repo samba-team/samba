@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the batch file (.bat) or 
 	NT command file (.cmd) to be downloaded and run on a machine when 

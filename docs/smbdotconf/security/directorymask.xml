@@ -1,7 +1,7 @@
 <samba:parameter name="directory mask"
 	context="S"
 	type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>directory mode</synonym>
 <description>
     <para>This parameter is the octal modes which are 

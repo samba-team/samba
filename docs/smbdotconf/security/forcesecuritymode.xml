@@ -1,7 +1,7 @@
 <samba:parameter name="force security mode"
                  context="S"
 				 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter controls what UNIX permission 
     bits can be modified when a Windows NT client is manipulating 

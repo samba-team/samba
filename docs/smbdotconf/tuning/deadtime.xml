@@ -2,7 +2,7 @@
                  context="G"
                  developer="1"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a decimal integer) 
     represents the number of minutes of inactivity before a connection 

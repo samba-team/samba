@@ -2,7 +2,7 @@
 	context="S"
 	type="string"
 		 print="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>printcap</synonym>
 <description>
     <para>This parameter may be used to override the 

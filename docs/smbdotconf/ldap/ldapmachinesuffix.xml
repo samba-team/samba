@@ -2,7 +2,7 @@
                  context="G"
 		 advanced="1" developer="1"
 		 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>It specifies where machines should be added to the ldap tree.</para>
 </description>

@@ -1,7 +1,7 @@
 <samba:parameter name="msdfs root"
                  context="S"
 				 tye="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If set to <constant>yes</constant>, Samba treats the
 	share as a Dfs root and allows clients to browse the

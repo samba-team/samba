@@ -2,7 +2,7 @@
                  context="G"
 		 type="boolean"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	Windows allows specifying how a file will be shared with 

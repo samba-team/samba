@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
                  developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This specifies what type of server <citerefentry><refentrytitle>nmbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> will announce itself as, to a network neighborhood browse 

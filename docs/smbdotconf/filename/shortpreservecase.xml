@@ -1,7 +1,7 @@
 <samba:parameter name="short preserve case"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This boolean parameter controls if new files 
 	which conform to 8.3 syntax, that is all in upper case and of 

@@ -1,7 +1,7 @@
 <samba:parameter name="kernel oplocks"
 				 type="boolean"
                  context="G"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>For UNIXes that support kernel based <link linkend="OPLOCKS">
 	<parameter moreinfo="none">oplocks</parameter></link>

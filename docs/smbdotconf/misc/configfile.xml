@@ -2,7 +2,7 @@
                  context="G"
 				 type="string"
 		 hide="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This allows you to override the config file 
 	to use, instead of the default (usually <filename moreinfo="none">smb.conf</filename>). 

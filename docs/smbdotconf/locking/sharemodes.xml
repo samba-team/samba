@@ -1,7 +1,7 @@
 <samba:parameter name="share modes"
 	type="boolean"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This enables or disables the honoring of 
 	the <parameter moreinfo="none">share modes</parameter> during a file open. These 

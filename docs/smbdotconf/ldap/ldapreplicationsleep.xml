@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>When Samba is asked to write to a read-only LDAP
 replica, we are redirected to talk to the read-write master server.

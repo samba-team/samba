@@ -1,7 +1,7 @@
 <samba:parameter name="hide special files"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter prevents clients from seeing
 	special files such as sockets, devices and fifo's in directory 

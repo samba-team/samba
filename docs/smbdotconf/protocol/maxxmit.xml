@@ -2,7 +2,7 @@
                  context="G"
 				 type="integer"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option controls the maximum packet size 
     that will be negotiated by Samba. The default is 65535, which 

@@ -1,7 +1,7 @@
 <samba:parameter name="allocation roundup size"
                  context="S"
 		 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter allows an administrator to tune the 
     allocation size reported to Windows clients.  The default 

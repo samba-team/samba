@@ -1,7 +1,7 @@
 <samba:parameter name="level2 oplocks"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls whether Samba supports
 	level2 (read-only) oplocks on a share.</para>
