@@ -22,44 +22,29 @@
 
 
 /***************************************************************************
-auto-load printer services
-***************************************************************************/
-void add_all_printers(void)
-{
-	int printers = lp_servicenumber(PRINTERS_NAME);
-
-	if (printers < 0) return;
-
-	pcap_printer_fn(lp_add_one_printer);
-}
-
-/***************************************************************************
 auto-load some homes and printer services
 ***************************************************************************/
 static void add_auto_printers(void)
 {
 	const char *p;
-	int printers;
-	char *str = SMB_STRDUP(lp_auto_services());
+	int pnum = lp_servicenumber(PRINTERS_NAME);
+	char *str;
 
-	if (!str) return;
-
-	printers = lp_servicenumber(PRINTERS_NAME);
-
-	if (printers < 0) {
-		SAFE_FREE(str);
+	if (pnum < 0)
 		return;
-	}
-	
-	for (p=strtok(str,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
-		if (lp_servicenumber(p) >= 0) continue;
+
+	if ((str = SMB_STRDUP(lp_auto_services())) == NULL)
+		return;
+
+	for (p = strtok(str, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+		if (lp_servicenumber(p) >= 0)
+			continue;
 		
-		if (pcap_printername_ok(p,NULL)) {
-			lp_add_printer(p,printers);
-		}
+		if (pcap_printername_ok(p))
+			lp_add_printer(p, pnum);
 	}
 
-    SAFE_FREE(str);
+	SAFE_FREE(str);
 }
 
 /***************************************************************************
@@ -67,7 +52,12 @@ load automatic printer services
 ***************************************************************************/
 void load_printers(void)
 {
+	if (!pcap_cache_loaded())
+		pcap_cache_reload();
+
 	add_auto_printers();
-	if (lp_load_printers())
-		add_all_printers();
+
+	/* load all printcap printers */
+	if (lp_load_printers() && lp_servicenumber(PRINTERS_NAME) >= 0)
+		pcap_printer_fn(lp_add_one_printer);
 }
