@@ -94,11 +94,12 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
 						 *state) 
 {
-	uint32 name_type, user_rid, group_rid;
+	uint32 user_rid, group_rid;
 	SAM_USERINFO_CTR *user_info;
 	DOM_SID user_sid;
 	fstring name_domain, name_user, name, gecos_name;
 	struct winbindd_domain *domain;
+	enum SID_NAME_USE name_type;
 	
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));

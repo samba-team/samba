@@ -101,7 +101,7 @@ struct winbindd_request {
 			fstring pass;
 		} auth;              /* pam_winbind auth module */
                 struct {
-                        char chal[8];
+                        unsigned char chal[8];
                         fstring user;
                         fstring lm_resp;
                         uint16 lm_resp_len;

@@ -704,40 +704,7 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#ifdef HAVE_NSS_COMMON_H
-
-/* Sun Solaris */
-
-#include <nss_common.h>
-#include <nss_dbdefs.h>
-#include <nsswitch.h>
-
-typedef nss_status_t NSS_STATUS;
-
-#define NSS_STATUS_SUCCESS     NSS_SUCCESS
-#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
-#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
-#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
-
-#elif HAVE_NSS_H
-
-/* GNU */
-
-#include <nss.h>
-
-typedef enum nss_status NSS_STATUS;
-
-#else /* Nothing's defined. Neither gnu nor sun */
-
-typedef enum
-{
-  NSS_STATUS_SUCCESS,
-  NSS_STATUS_NOTFOUND,
-  NSS_STATUS_UNAVAIL,
-  NSS_STATUS_TRYAGAIN
-} NSS_STATUS;
-
-#endif
+#include "nsswitch/nss.h"
 
 /***** automatically generated prototypes *****/
 #include "proto.h"
