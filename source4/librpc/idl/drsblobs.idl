@@ -6,6 +6,11 @@
   helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {
+	/*
+	 * replPropertyMetaData
+	 * w2k  uses version 1
+	 * w2k3 uses version 1
+	 */
 	typedef struct {
 		uint32 attribute_id;
 		uint32 version;
@@ -13,17 +18,69 @@ interface drsblobs {
 		GUID orginating_dsa;
 		uint64 orginating_usn;
 		uint64 local_usn;
-	} replPropertyMetaData;
+	} replPropertyMetaData1;
 
 	typedef struct {
-		uint32 unknown1; /* version ? */
-		uint32 unknown2;
+		uint32 unknown1;
 		uint32 count;
-		uint32 unknown3;
-		replPropertyMetaData array[count];
+		uint32 unknown2;
+		replPropertyMetaData1 array[count];
+	} replPropertyMetaDataCtr1;
+
+	typedef [nodiscriminant] union {
+		[case(1)] replPropertyMetaDataCtr1 ctr1;
 	} replPropertyMetaDataCtr;
+	
+	typedef [public] struct {
+		uint32 version;
+		[switch_is(version)] replPropertyMetaDataCtr ctr;
+	} replPropertyMetaDataBlob;
 
 	void decode_replPropertyMetaData(
-		[in] replPropertyMetaDataCtr ctr
+		[in] replPropertyMetaDataBlob blob
+		);
+
+	/*
+	 * replUpToDateVector
+	 * w2k  uses version 1
+	 * w2k3 uses version 2
+	 */
+	typedef struct {
+		GUID dsa;
+		uint64 usn;
+	} replUpToDateVector1;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 count;
+		uint32 unknown2;
+		replUpToDateVector1 array[count];
+	} replUpToDateVectorCtr1;
+
+	typedef struct {
+		GUID dsa;
+		uint64 usn;
+		NTTIME_1sec time;
+	} replUpToDateVector2;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 count;
+		uint32 unknown2;
+		replUpToDateVector2 array[count];
+	} replUpToDateVectorCtr2;
+
+	typedef [nodiscriminant] union {
+		[case(1)] replUpToDateVectorCtr1 ctr1;
+		[case(2)] replUpToDateVectorCtr2 ctr2;
+	} replUpToDateVectorCtr;
+
+	typedef [public] struct {
+		uint32 version;
+		[switch_is(version)] replUpToDateVectorCtr ctr;
+	} replUpToDateVectorBlob;
+
+	void decode_replUpToDateVector(
+		[in] replUpToDateVectorBlob blob
 		);
 }
