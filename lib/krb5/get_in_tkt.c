@@ -22,6 +22,10 @@ decrypt_tkt (krb5_context context,
     ret = decode_EncASRepPart(data.data,
 			      data.length,
 			      &dec_rep->part2);
+    if (ret < 0)
+      ret = decode_EncTGSRepPart(data.data,
+				 data.length,
+				 &dec_rep->part2);
     krb5_data_free (&data);
     if (ret < 0)
       return ASN1_PARSE_ERROR;
