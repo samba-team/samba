@@ -49,7 +49,7 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	NTSTATUS status;
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
-	const char *myaddress = iface_n_ip(0);
+	const char *myaddress = iface_best_ip(address);
 
 	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
 
@@ -114,7 +114,7 @@ static BOOL nbt_refresh_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	NTSTATUS status;
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
-	const char *myaddress = iface_n_ip(0);
+	const char *myaddress = iface_best_ip(address);
 
 	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
 

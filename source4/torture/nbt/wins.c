@@ -60,7 +60,7 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	NTSTATUS status;
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
-	const char *myaddress = talloc_strdup(mem_ctx, iface_n_ip(0));
+	const char *myaddress = talloc_strdup(mem_ctx, iface_best_ip(address));
 
 	/* we do the listen here to ensure the WINS server receives the packets from
 	   the right IP */

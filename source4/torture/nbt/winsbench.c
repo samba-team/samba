@@ -231,7 +231,7 @@ static BOOL bench_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, const char *a
 	state->num_names = torture_entries;
 	state->registered = talloc_zero_array(state, BOOL, state->num_names);
 	state->wins_server = address;
-	state->my_ip = talloc_strdup(mem_ctx, iface_n_ip(0));
+	state->my_ip = talloc_strdup(mem_ctx, iface_best_ip(address));
 	state->ttl = timelimit;
 
 	socket_listen(nbtsock->sock, state->my_ip, 0, 0, 0);
