@@ -46,6 +46,7 @@ typedef struct krb5_mcache {
     struct krb5_mcache *next;
 } krb5_mcache;
 
+static HEIMDAL_MUTEX mcc_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static struct krb5_mcache *mcc_head;
 
 #define	MCACHE(X)	((krb5_mcache *)(X)->data.data)
@@ -64,7 +65,7 @@ mcc_get_name(krb5_context context,
 static krb5_mcache *
 mcc_alloc(const char *name)
 {
-    krb5_mcache *m;
+    krb5_mcache *m, *m_c;
 
     ALLOC(m, 1);
     if(m == NULL)
@@ -77,11 +78,24 @@ mcc_alloc(const char *name)
 	free(m);
 	return NULL;
     }
+    /* check for dups first */
+    HEIMDAL_MUTEX_lock(&mcc_mutex);
+    for (m_c = mcc_head; m_c != NULL; m_c = m_c->next)
+	if (strcmp(m->name, m_c->name) == 0)
+	    break;
+    if (m_c) {
+	free(m->name);
+	free(m);
+	HEIMDAL_MUTEX_unlock(&mcc_mutex);
+	return NULL;
+    }
+
     m->refcnt = 1;
     m->primary_principal = NULL;
     m->creds = NULL;
     m->next = mcc_head;
     mcc_head = m;
+    HEIMDAL_MUTEX_unlock(&mcc_mutex);
     return m;
 }
 
@@ -90,9 +104,11 @@ mcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 {
     krb5_mcache *m;
 
+    HEIMDAL_MUTEX_lock(&mcc_mutex);
     for (m = mcc_head; m != NULL; m = m->next)
 	if (strcmp(m->name, res) == 0)
 	    break;
+    HEIMDAL_MUTEX_unlock(&mcc_mutex);
 
     if (m != NULL) {
 	m->refcnt++;
@@ -172,12 +188,14 @@ mcc_destroy(krb5_context context,
     if (!MISDEAD(m)) {
 	/* if this is an active mcache, remove it from the linked
            list, and free all data */
+	HEIMDAL_MUTEX_lock(&mcc_mutex);
 	for(n = &mcc_head; n && *n; n = &(*n)->next) {
 	    if(m == *n) {
 		*n = m->next;
 		break;
 	    }
 	}
+	HEIMDAL_MUTEX_unlock(&mcc_mutex);
 	krb5_free_principal (context, m->primary_principal);
 	m->primary_principal = NULL;
 	
