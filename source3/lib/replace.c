@@ -171,7 +171,7 @@ Corrections by richard.kettlewell@kewill.com
 	char   *gr;
 	
 	if((grouplst = (gid_t *)malloc(sizeof(gid_t) * max_gr)) == NULL) {
-		DEBUG(0,("initgroups: malloc fail !\n");
+		DEBUG(0,("initgroups: malloc fail !\n"));
 		return -1;
 	}
 
