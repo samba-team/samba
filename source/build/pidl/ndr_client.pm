@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2003
 # released under the GNU GPL
 
-package IdlClient;
+package NdrClient;
 
 use strict;
 
