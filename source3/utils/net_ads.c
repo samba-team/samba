@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../utils/net.h"
 
 #ifdef HAVE_ADS
 
@@ -54,7 +55,6 @@ int net_ads_usage(int argc, const char **argv)
 static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	extern char *opt_host;
 
 	ads = ads_init(NULL, opt_host, NULL, NULL);
 	ads_connect(ads);
@@ -80,10 +80,6 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
-	extern char *opt_password;
-	extern char *opt_user_name;
-	extern char *opt_host;
-	extern BOOL opt_user_specified;
 	
 	ads = ads_init(NULL, opt_host, NULL, NULL);
 
@@ -173,7 +169,6 @@ static int ads_user_add(int argc, const char **argv)
 	ADS_STATUS status;
 	void *res=NULL;
 	int rc = -1;
-	extern char *opt_comment;
 
 	if (argc < 1) return net_ads_user_usage(argc, argv);
 	
@@ -291,7 +286,6 @@ int net_ads_user(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *shortattrs[] = {"sAMAccountName", NULL};
 	const char *longattrs[] = {"sAMAccountName", "description", NULL};
-	extern int opt_long_list_entries;
 	char *disp_fields[2] = {NULL, NULL};
 	
 	if (argc == 0) {
@@ -301,13 +295,12 @@ int net_ads_user(int argc, const char **argv)
 			d_printf("\nUser name             Comment"\
 				 "\n-----------------------------\n");
 
-		rc = ads_do_search_all2(ads, ads->bind_path, 
-					LDAP_SCOPE_SUBTREE,
-					"(objectclass=user)", 
-					opt_long_list_entries ?
-					longattrs : shortattrs,
-					"sAMAccountName", usergrp_display, 
-					disp_fields);
+		rc = ads_do_search_all_fn(ads, ads->bind_path, 
+					  LDAP_SCOPE_SUBTREE,
+					  "(objectclass=user)", 
+					  opt_long_list_entries ? longattrs :
+					  shortattrs, usergrp_display, 
+					  disp_fields);
 		ads_destroy(&ads);
 		return 0;
 	}
@@ -321,7 +314,6 @@ static int net_ads_group(int argc, const char **argv)
 	ADS_STATUS rc;
 	const char *shortattrs[] = {"sAMAccountName", NULL};
 	const char *longattrs[] = {"sAMAccountName", "description", NULL};
-	extern int opt_long_list_entries;
 	char *disp_fields[2] = {NULL, NULL};
 
 	if (!(ads = ads_startup())) return -1;
@@ -329,10 +321,10 @@ static int net_ads_group(int argc, const char **argv)
 	if (opt_long_list_entries)
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
-	rc = ads_do_search_all2(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
-				"(objectclass=group)", opt_long_list_entries ?
-				longattrs : shortattrs, "sAMAccountName",
-				usergrp_display, disp_fields);
+	rc = ads_do_search_all_fn(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
+				  "(objectclass=group)", opt_long_list_entries
+				  ? longattrs : shortattrs, usergrp_display, 
+				  disp_fields);
 
 	ads_destroy(&ads);
 	return 0;
@@ -368,8 +360,6 @@ static int net_ads_leave(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
 	extern pstring global_myname;
-	extern char *opt_user_name;
-	extern char *opt_password;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -640,8 +630,6 @@ static int net_ads_printer(int argc, const char **argv)
 static int net_ads_password(int argc, const char **argv)
 {
     ADS_STRUCT *ads;
-    extern char *opt_user_name;
-    extern char *opt_password;
     char *auth_principal = opt_user_name;
     char *auth_password = opt_password;
     char *realm = NULL;
