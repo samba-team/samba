@@ -3,6 +3,11 @@ dnl $Id$
 dnl
 
 AC_DEFUN(KRB_AIX,[
+
+AC_ARG_ENABLE(dynamic-afs,
+	AC_HELP_STRING([--disable-dynamic-afs],
+		[do not use loaded AFS library with AIX]))
+
 aix=no
 case "$host" in 
 *-*-aix3*)
@@ -14,13 +19,12 @@ case "$host" in
 esac
 AM_CONDITIONAL(AIX, test "$aix" != no)dnl
 AM_CONDITIONAL(AIX4, test "$aix" = 4)
-aix_dynamic_afs=yes
-AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$aix_dynamic_afs" = yes)dnl
+AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$enable_dynamic_afs" != no)dnl
 
 AC_FIND_FUNC_NO_LIBS(dlopen, dl)
 
 if test "$aix" != no; then
-	if test "$aix_dynamic_afs" = yes; then
+	if test "$enable_dynamic_afs" != no; then
 		if test "$ac_cv_funclib_dlopen" = yes; then
 			AIX_EXTRA_KAFS=
 		elif test "$ac_cv_funclib_dlopen" != no; then
