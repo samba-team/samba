@@ -10,7 +10,7 @@ RCSID("$Id$");
 /*
  *  sendline:   Send a line of a multi-line response to a client.
  */
-void
+static int
 pop_sendline(POP *p, char *buffer)
 {
     char        *   bp;
@@ -34,6 +34,7 @@ pop_sendline(POP *p, char *buffer)
     /*  Put a <CR><NL> if a newline was removed from the buffer */
     if (bp)
       fputs ("\r\n",p->output);
+    return bp != NULL;
 }
 
 /* 
@@ -54,6 +55,7 @@ pop_send(POP *p)
     int			    return_path_sent;
     int			    return_path_linlen;
 #endif
+    int			sent_nl = 0;
 
     /*  Convert the first parameter into an integer */
     msg_num = atoi(p->pop_parm[1]);
@@ -135,7 +137,7 @@ pop_send(POP *p)
 	/* Don't send existing Return-Path-header if already sent own */
 	if (!return_path_sent || strncasecmp(buffer, "Return-Path:", 12) != 0)
 #endif
-	    pop_sendline (p,buffer);
+	    sent_nl = pop_sendline (p,buffer);
         /*  A single newline (blank line) signals the 
             end of the header.  sendline() converts this to a NULL, 
             so that's what we look for. */
@@ -146,19 +148,23 @@ pop_send(POP *p)
     /*  Send the message body */
     {
 	int blank_line = 0;
-	while (fgets(buffer, MAXMSGLINELEN, p->drop)) {
+	while (fgets(buffer, MAXMSGLINELEN-1, p->drop)) {
 	    /*  Look for the start of the next message */
 	    if (!IS_MAILDIR(p) && blank_line && strncmp(buffer,"From ",5) == 0)
 		break;
 	    blank_line = (strncmp(buffer, "\n", 1) == 0);
 	    /*  Decrement the lines sent (for a TOP command) */
 	    if (msg_lines >= 0 && msg_lines-- == 0) break;
-	    pop_sendline(p,buffer);
+	    sent_nl = pop_sendline(p,buffer);
 	    if (hangup)
 		return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
 	}
-	/* some braindamaged pop-clients need a blank line at the end
-	   of the message */
+	/* add missing newline at end */
+	if(!sent_nl)
+	    fputs("\r\n", p->output);
+	/* some pop-clients want a blank line at the end of the
+           message, we always add one here, but what the heck -- in
+           outer (white) space, no one can hear you scream */
 	if(IS_MAILDIR(p))
 	    fputs("\r\n", p->output);
     }
