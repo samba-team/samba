@@ -355,7 +355,7 @@ BOOL dptr_fill(char *buf1,unsigned int key)
     return(False);
   }
   offset = TellDir(p);
-  DEBUG(6,("fill on key %ld dirptr 0x%lx now at %d\n",key,
+  DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
 	   (long)p,(int)offset));
   buf[0] = key;
   SIVAL(buf,1,offset | DPTR_MASK);
