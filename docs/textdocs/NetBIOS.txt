@@ -1,5 +1,5 @@
 !==
-!== NetBIOS.txt for Samba release 2.0.0-alpha6 19 Sep 1998
+!== NetBIOS.txt for Samba release 2.0.0-alpha10 09 Oct 1998
 !==
 Contributor:    lkcl - samba-bugs@arvidsjaur.anu.edu.au
                 Copyright 1997  Luke Kenneth Casson Leighton 
