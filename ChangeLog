@@ -1,5 +1,8 @@
 2001-02-07  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: aix dce: fix misquotes, from Ake Sandgren
+	<ake@cs.umu.se>
+
 	* configure.in (dpagaix_LDFLAGS): try to add export file
 
 2001-02-05  Assar Westerlund  <assar@sics.se>
