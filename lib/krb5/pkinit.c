@@ -446,7 +446,7 @@ build_auth_pack(krb5_context context,
 
     if (ret == 0 && dh) {
 	DomainParameters dp;
-	ASN1_INTEGER *dh_pub_key;
+	heim_integer dh_pub_key;
 	krb5_data buf;
 	size_t size;
 
@@ -488,21 +488,27 @@ build_auth_pack(krb5_context context,
 	if (size != a->clientPublicValue->algorithm.parameters.length)
 	    krb5_abortx(context, "Internal ASN1 encoder error");
 
-	dh_pub_key = BN_to_ASN1_INTEGER(dh->pub_key, NULL);
-	if (dh_pub_key == NULL) {
-	    krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
-				  ERR_error_string(ERR_get_error(), NULL));
-	    return ENOMEM;
-	}
-	OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER, buf.data, buf.length,
-				   dh_pub_key, ret);
-	ASN1_INTEGER_free(dh_pub_key);
-	if (ret) {
-	    krb5_set_error_string(context,
-				  "ASN.1 encoding of ASN1_INTEGER failed (%s)",
-				  ERR_error_string(ERR_get_error(), NULL));
+	ret = BN_to_integer(context, dh->pub_key, &dh_pub_key);
+	if (ret)
+	    return ret;
+
+	buf.length = length_heim_integer(&dh_pub_key);
+	buf.data = malloc(buf.length);
+	if (buf.data == NULL) {
+	    free_heim_integer(&dh_pub_key);
+	    krb5_set_error_string(context, "malloc - out of memory");
 	    return ret;
 	}
+	ret = der_put_heim_integer((char *)buf.data + buf.length - 1,
+				   buf.length, &dh_pub_key, &size);
+	free_heim_integer(&dh_pub_key);
+	if (ret) {
+	    free(buf.data);
+	    return ret;
+	}
+	if (size != buf.length)
+	    krb5_abortx(context, "asn1 internal error");
+
 	a->clientPublicValue->subjectPublicKey.length = buf.length * 8;
 	a->clientPublicValue->subjectPublicKey.data = buf.data;
     }
