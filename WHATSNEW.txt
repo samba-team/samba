@@ -1,6 +1,6 @@
                  =================================
                  Release Notes for Samba 3.0.3pre2
-                          XXXX XX, 2004
+                          April 5, 2004
                  =================================
 
 This is a preview release of the Samba 3.0.3 code base and is
@@ -14,61 +14,103 @@ exact updates.
 
 Common bugs fixed in this preview release include:
 
-  o <FILL IN>
+  o Substitution errors for %[UuGg] in smb.conf.
+  o winbindd crashes when using ADS security mode.
+  o SMB signing errors.
+
+New features introduced in this preview release include:
+
+  o Experimental support for storing DOS attribute on files 
+    and folders in Extended Attributes.
 
 
 ######################################################################
 Changes
 #######
+smb.conf changes
+----------------
 
+    Parameter Name              Action
+    --------------              ------
+    unicode                     Removed
+    ea support                  New
+    store dos attributes        New
+
+    
 commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 1064: Ensure truncate attribute checking is done correctly 
+      on "hidden" dot files.
+    * Fix bug in anonymous dfs self-referrals again.
+    * Fix get/set of EA's in client library
+    * Added support for OS/2 EA's in smbd server.
+    * Added 'ea support' parameter to smb.conf.
+    * Added 'store dos attributes' parameter to smb.conf.
+    * Fix wildcard identical rename.
+    * Fix reply_ctemp - make compatible with w2k3.
+    * Fix wildcard unlink.
+    * Fix wildcard src with wildcard dest renames.  
 
 
 o   Andrew Bartlet <abartlet@samba.org>
+    * Remove 'unicode' smb.conf option.
+    * BUG 1138: Fix support for 'optional' SMB signing and other 
+      signing bugs.
+    * BUG 169: Fix NTLMv2-only behavior.
 
 
-o   Alexander Bokovoy <ab@samba.org>
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 1152: Allow python modules to build despite libraries added 
+      to LDFLAGS instead of LDPATH.
 
 
 o   Gerald Carter <jerry@samba.org>
     * BUG 417, 1128: Ensure that the current_user_info is set
-      constistenly so that %[UuGg] is expanded correctly.
+      consistently so that %[UuGg] is expanded correctly.
     * BUG 1195: Fix crash in winbindd when the ADS server is 
       unavailable.
     * BUG 1185: Set reconnect time to be the same as the 
       'winbind cache time'.
+    * Ensure that we return the sec_desc in smb_io_printer_info_2.
+    * Change Samba printers Win32 attribute to PRINTER_ATTRIBUTE_LOCAL.
+    * BUG 1095: Honor the '-l' option in smbclient.
+    * BUG 1023: surround get_group_from_gid() with become_unbecome_root() 
+      block.
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Fix credential file mounting for cifs vfs.
+
+
+o   Richard Garnish <rabies@meep.org>
+    * Correct blocking condition in smbd's use of accept() on IRIX.
 
 
 o   Volker Lendecke <vl@samba.org>
     * Implement wbinfo -k: Have winbind generate an AFS token after
-      authenticating the user
+      authenticating the user.
+    * Add expand_msdfs VFS module for providing referrals based on the
+      the client's IP address.
+    * Implement client side NETLOGON GetDCName function.
 
 
-o   Herb Lewis <herb@samba.org>
+o   Jianliang Lu <j.lu@tiesse.com>
+    * NTLMv2 fixes.
 
-
+    
 o   Jim McDonough <jmcd@us.ibm.com>
-
-
-o   Tim Potter <tpot@samba.org>
-      
-
-o   Simo Source <idra@samba.org>
-
-
-o   Richard Sharpe <rsharpe@samba.org>
+    * BUG 1208 (partial): Improvements for working with expired krb5 
+      tickets in winbindd.
+    * Use timegm, or our already existing replacement instead of 
+      timezone (spotted by Andrzej Tobola <san@iem.pw.edu.pl>).
 
 
 o   Andrew Tridgell <tridge@samba.org>
+    * Change tdb license to LGPL (see source/tdb/tdb.c).
     
     
-o   Jelmer Vernooij <jelmer@samba.org>
-
-
-     
 Changes for older versions follow below:
 
         --------------------------------------------------
