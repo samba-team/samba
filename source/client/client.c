@@ -190,6 +190,13 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
+		/*
+		 * The message is in UNIX codepage format. Convert to
+		 * DOS before sending.
+		 */
+
+		unix_to_dos(msg, True);
+
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
 			return;
