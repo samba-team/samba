@@ -786,6 +786,7 @@ winbindd_proto:
 
 delheaders:
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
+	@/bin/rm -f include/proto.h include/build_env.h 
 
 # we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
 .headers.stamp: include/proto.h include/build_env.h
@@ -795,11 +796,11 @@ $(PROTO_OBJ) : .headers.stamp
 
 include/proto.h:
 	@echo rebuilding include/proto.h
-	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
+	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
 
 include/build_env.h:
 	@echo rebuilding include/build_env.h
-	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > include/build_env.h
+	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
 headers: delheaders include/proto.h include/build_env.h
 
