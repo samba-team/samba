@@ -2650,6 +2650,22 @@ static int do_host_query(char *query_host)
 		return 1;
 
 	browse_host(True);
+
+	if (port != 139) {
+
+		/* Workgroups simply don't make sense over anything
+		   else but port 139... */
+
+		cli_shutdown(cli);
+		port = 139;
+		cli = do_connect(query_host, "IPC$");
+	}
+
+	if (cli == NULL) {
+		d_printf("NetBIOS over TCP disabled -- no workgroup available\n");
+		return 1;
+	}
+
 	list_servers(lp_workgroup());
 
 	cli_shutdown(cli);
