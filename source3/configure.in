@@ -142,14 +142,25 @@ if test x"$ac_cv_func_pam_authenticate" = x"no"; then
 	AC_DEFINE(HAVE_PAM_AUTHENTICATE)])
 fi
 
-
 ###############################################
-# test for where we get readline() from
+# readline requires some curses routines
 if test "$ac_cv_header_readline_h" = "yes" ||
    test "$ac_cv_header_readline_readline_h" = "yes"; then
+  AC_CHECK_FUNCS(tputs)
+  AC_CHECK_LIB(curses, tputs, [LIBS="$LIBS -lcurses"])
   AC_CHECK_LIB(readline,readline)
+  AC_CACHE_CHECK([for filename_completion_function proto],samba_cv_have_fcf_proto,[
+  AC_TRY_COMPILE([#include <stdio.h>
+#ifdef HAVE_READLINE_H
+#include <readline.h>
+#else
+#include <readline/readline.h>
+#endif],[filename_completion_function],
+  samba_cv_have_fcf_proto=yes,samba_cv_have_fcf_proto=no)])
+  if test x"$samba_cv_have_fcf_proto" = x"yes"; then
+    AC_DEFINE(HAVE_READLINE_FCF_PROTO)
+  fi
 fi
-
 
 # The following test taken from the cvs sources
 # If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
