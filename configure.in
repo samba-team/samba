@@ -39,7 +39,7 @@ if test "$GCC" = "yes"; then
 fi
 AC_SUBST(WFLAGS)
 AC_SUBST(WFLAGS_NOUNUSED)
-CFLAGS="-g"
+test -z "$CFLAGS" && CFLAGS="-g"
 
 berkeley_db=db
 AC_ARG_WITH(berkeley-db,
@@ -254,6 +254,42 @@ AC_FIND_FUNC(gethostbyname2, inet6 ip6)
 AC_FIND_FUNC(inet_ntop, inet6 ip6)
 AC_CHECK_FUNCS(inet_pton)
 
+AC_FIND_FUNC(res_search, resolv,
+[
+#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif
+],
+[0,0,0,0,0])
+
+AC_FIND_FUNC(dn_expand, resolv,
+[
+#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif
+],
+[0,0,0,0,0])
+
 dnl Checks for library functions.
 
 AC_BROKEN_SNPRINTF
@@ -270,11 +306,11 @@ if test "$LIB_dbopen" != "$LIB_dbm_firstkey"; then
 fi
 AC_SUBST(DBLIB)dnl
 
-AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf dn_expand fcntl)
+AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf fcntl)
 AC_CHECK_FUNCS(gethostname getlogin)
 AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
 AC_CHECK_FUNCS(grantpt innetgr mktime ptsname rand random)
-AC_CHECK_FUNCS(revoke res_search select setitimer setlogin setpcred setpgid)
+AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
 AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
 AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
 AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
