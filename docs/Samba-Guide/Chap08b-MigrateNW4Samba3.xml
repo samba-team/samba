@@ -48,7 +48,7 @@
 	of choice is much dependant on the tools that the administrator finds most natural to use.
 	The old-hand NetWare guru will likely want to use the tools like the NetWare NLM for
 	<command>rsync</command> to migrate files from the NetWare server to the Samba server.
-	The UNIX administrator might prefer tools that are part of the Mars_NWE (Martin Stovers NetWare
+	The UNIX administrator might prefer tools that are part of the Mars_NWE (Martin Stovers' NetWare
 	Emulator) open source package. The MS Windows network administrator will likely make use of the
 	NWConv utility that is a part of Windows NT4 Server. Whatever your tool of choice,
 	migration will be filled with joyous and challenging moments - though probably not
@@ -186,7 +186,8 @@
 	<indexterm><primary>RPM</primary></indexterm>
 	<indexterm><primary>tree</primary></indexterm>
 	Building the LDAP database took a while, and a lot of trial and error. Following
-	LDAP System Administration's guidance, I installed OpenLDAP (from RPM later I compiled
+	the guidance I obtained from Jerry Carter's book <quote>LDAP System 
+	Administration</quote>, I installed OpenLDAP (from RPM; later I compiled
 	a more current version from source) and built my initial LDAP tree.
 	</para>
 
@@ -210,6 +211,12 @@
 	files on our mail server, and create a LDIF file from which the information could be
 	imported into LDAP. This would allow use of LDAP for Linux authentication, IMAP, POP3,
 	and SMTP.
+	</para>
+
+	<para>
+	Given that a decision had been made to use Courier-IMAP the schema <quote>courier.schema</quote>
+	from the Courier-IMAP source tarball is ncessary to resolve Courier-specific LDAP directory
+	needs.
 	</para>
 
 	</sect2>
@@ -330,7 +337,6 @@ index   sn                      eq,sub
 index   uid                     eq,sub
 index   uidNumber               eq
 index   gidNumber               eq
-index   memberUID               eq
 index   sambaSID                eq
 index   sambaPrimaryGroupSID    eq
 index   sambaDomainName         eq
@@ -1214,199 +1220,184 @@ kxrpc.exe &lt;-- Probably useless as it has to run on the server and can
 	</para>
 
 <example id="ch8kix">
-<title>Kixstart Control File &smbmdash; Part A</title>
+<title>Kixstart Control File &smbmdash; File: logon.kix</title>
 <screen>
-break on
+; This script just calls the other scripts.
 
-$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Abmas")
-IF NOT $RETURNCODE = 0
-; Add key for Abmas-specific things on the first login
-  ADDKEY("HKEY_CURRENT_USER\Abmas")
-  ; The following key gets deleted at the end of the first login
-  ADDKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
+; First we want to get things done for everyone.
+
+; Second, we do first-time login stuff.
+
+; Third, we go through the group-oriented scripts one at a time.
+
+
+; We want to check for group membership here to avoid the overhead of running
+; scripts which don't apply.
+call "\\massive\netlogon\scripts\main.kix"
+call "\\massive\netlogon\scripts\setup.kix"
+IF INGROUP("MEGANET2\ACCT")
+  call "scripts\acct.kix"
 ENDIF
-
-SETTITLE("Logging on @USERID to @LDOMAIN at @TIME")
-
-; Set the time on the workstation
-$Timeserver = "\\corpsrv"
-Settime $TimeServer
-
-
-; Make sure they don't get someone else's home directory
-USE H: /DELETE
-
-; We need the home directory set up for the rest of the script to work
-USE H: @HOMESHR ; connect to user's home share
-IF @ERROR = 0
-  H:
-  CD @HOMEDIR ; change directory to user's home directory
+IF INGROUP("MEGANET2\ENGR","MEGANET2\RECEPTIONIST")
+call "\\massive\netlogon\scripts\engr.kix"
 ENDIF
-
-; People with laptops need My Documents to be in their profile.  People with
-; desktops can have My Documents redirected to their home directory to avoid
-; long delays with logging out and out-of-sync files.
-; The way that profiles are stored (per architecture) is taken advantage of here.
-
-; Check to see if this is the first login -- doesn't make sense to do this
-; at the very first login
-
-$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
-IF NOT $RETURNCODE = 0
+IF INGROUP("MEGANET2\FURN")
+  call "\\massive\netlogon\scripts\furn.kix"
+ENDIF
+IF INGROUP("MEGANET2\TRUSS")
+  call "\\massive\netlogon\scripts\truss.kix"
+ENDIF
 </screen>
 </example>
 
 <example id="ch8kix2">
-<title>Kixstart Control File &smbmdash; Part B</title>
+<title>Kixstart Control File &smbmdash; File: main.kix</title>
 <screen>
-  IF NOT INGROUP("MASSIVE\Laptop")
-    $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\Abmas\profile_copied")
-    IF NOT $RETURNCODE = 0
-      IF EXIST("\\corpsrv\profiles\@userID\WinXP")
-        copy "\\corpsrv\profiles\@userID\WinXP\My Documents\*"
-"\\corpsrv\@userID\"
-      ENDIF
-      IF EXIST("\\corpsrv\profiles\@userID\Win2K")
-        copy "\\corpsrv\profiles\@userID\Win2K\My Documents\*"
-"\\corpsrv\@userID\"
-      ENDIF
-      IF EXIST("\\corpsrv\profiles\@userID\WinNT")
-        copy "\\corpsrv\profiles\@userID\WinNT\My Documents\*"
-"\\corpsrv\@userID\"
-      ENDIF
+break on
 
-      ADDKEY("HKEY_CURRENT_USER\Abmas\profile_copied")
-	WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\
-CurrentVersion\Explorer\User Shell Folders", "Personal",
-"\\corpsrv\@userID","REG_SZ")
-	WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\
-CurrentVersion\Explorer\User Shell Folders", "My Pictures",
-"\\corpsrv\@userID\My Pictures", "REG_SZ")
-	IF @PRODUCTTYPE="Windows 2000 Professional" or
-@PRODUCTTYPE="Windows XP Professional"
-	WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\
-CurrentVersion\Explorer\User Shell Folders", "My Videos",
-"\\corpsrv\@userID\My Videos", "REG_SZ")
-	WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\Windows\
-CurrentVersion\Explorer\User Shell Folders", "My Music",
-"\\corpsrv\@userID\My Music", "REG_SZ")
-	WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
-Windows\CurrentVersion\Explorer\User Shell Folders", "My eBooks",
-"\\corpsrv\@userID\My eBooks", "REG_SZ")
-      ENDIF
-</screen>
-</example>
-
-<example id="ch8kix3">
-<title>Kixstart Control File &smbmdash; Part C</title>
-<screen>
-      $SELECTION =MESSAGEBOX("Changes were made to your registry.
-You must now log out. Please save any open files and click OK",
-"Log Out Necessary", 0)
-      IF $SELECTION = 1
-      IF $SELECTION = 1
-        LOGOFF(Force)
-      ENDIF
-    ENDIF
-  ENDIF
-ENDIF
-
+; Choose whether to hide the login window or not
 IF INGROUP("MEGANET2\Domain Admins")
-  USE Z: \\corpsrv\everything
+  USE Z: \\massive\everything
   SETCONSOLE("show")
 ELSE
   ; Nobody cares about seeing the login script except admins
   SETCONSOLE("hide")
 ENDIF
 
+; Delete all previously connected shares
+USE * /delete
 
-IF INGROUP("MASSIVE\Acct_Admin","MASSIVE\HR")
-  USE I: \\MEGANET2\HR_PR
-  ; Eventually ABRA mapping will be here
+SETTITLE("Logging on @USERID to @LDOMAIN at @TIME")
+
+; Set the time on the workstation
+$Timeserver = "\\massive"
+Settime $TimeServer
+
+; Map the home directory
+USE H: @HOMESHR ; connect to user's home share
+IF @ERROR = 0
+
+  H:
+  CD @HOMEDIR ; change directory to user's home directory
 ENDIF
 
-IF INGROUP("MEGANET2\Acct")
-; Set up printer
-$RETURNVALUE = existkey("HKEY_CURRENT_USER\Printers\,,corpsrv,acct_hp8500")
-IF NOT $RETURNVALUE = 0
-  ADDPRINTERCONNECTION("\\corpsrv\acct_hp8500")
-  SETDEFAULTPRINTER("\\corpsrv\acct_hp8500")
-ENDIF
-; Set up drive mappings
-  USE M: \\corpsrv\ACCT
+; Everyone gets the N drive
+USE N: \\massive\network
+</screen>
+</example>
 
+<example id="ch8kix3">
+<title>Kixstart Control File &smbmdash; File: setup.kix, Part A</title>
+<screen>
+; My setup.kix is where all of the redirection stuff happens.  Note that with 
+; the use of registry keys, ths only happens the first time they log in ,or if 
+; I delete the pertinent registry keys which triggers it to happen again:
+
+; Check to see if we have written the Borkholder subkey before
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder")
+IF NOT $RETURNCODE = 0
+; Add key for Borkholder-specific things on the first login
+  ADDKEY("HKEY_CURRENT_USER\Borkholder")
+  ; The following key gets deleted at the end of the first login
+  ADDKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+ENDIF
+
+; People with laptops need My Documents to be in their profile.  People with
+; desktops can have My Documents redirected to their home directory to avoid
+; long delays with logging out and out-of-sync files.
+
+; Check to see if this is the first login -- doesn't make sense to do this
+; at the very first login
+
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+IF NOT $RETURNCODE = 0
+
+; We don't want to do this stuff for people with laptops or people in the FURN
+; group.  (They store their profiles in a different server)
+
+  IF NOT INGROUP("MASSIVE\Laptop","MASSIVE\FURN")
+    $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+
+; A  crude way to tell what OS our profile is for and copy the "My Documents"
+; to the redirected folder on the server.  It works because the profiles
+; are stored as \\server\profiles\user\architecture
+    IF NOT $RETURNCODE = 0
+      IF EXIST("\\massive\profiles\@userID\WinXP")
+        copy "\\massive\profiles\@userID\WinXP\My Documents\*" 
+"\\massive\@userID\"
+      ENDIF
+      IF EXIST("\\massive\profiles\@userID\Win2K")
+        copy "\\massive\profiles\@userID\Win2K\My Documents\*" 
+"\\massive\@userID\"
+      ENDIF
+      IF EXIST("\\massive\profiles\@userID\WinNT")
+        copy "\\massive\profiles\@userID\WinNT\My Documents\*" 
+"\\massive\@userID\"
+      ENDIF
+</screen>
+</example>
+
+<example id="ch8kix3b">
+<title>Kixstart Control File &smbmdash; File: setup.kix, Part B</title>
+<screen>
+; Now we will write the registry values to redirect the locations of "My 
+Documents"
+; and other folders.
+      ADDKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
+Windows\CurrentVersion\Explorer\User 
+Shell Folders", "Personal","\\massive\@userID","REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
+Windows\CurrentVersion\Explorer\User 
+Shell Folders", "My Pictures", "\\massive\@userID\My Pictures", "REG_SZ")
+      IF @PRODUCTTYPE="Windows 2000 Professional" or @PRODUCTTYPE="Windows XP
+Professional"
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
+Windows\CurrentVersion\Explorer\User 
+Shell Folders", "My Videos", "\\massive\@userID\My Videos", "REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
+Windows\CurrentVersion\Explorer\User 
+Shell Folders", "My Music", "\\massive\@userID\My Music", "REG_SZ")
+      WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
+Windows\CurrentVersion\Explorer\User 
+Shell Folders", "My eBooks", "\\massive\@userID\My eBooks", "REG_SZ")
+      ENDIF
+    ENDIF
+  ENDIF
+
+; Now we will delete the FIRST_LOGIN subkey that we made before.
+; Note - to run this script again you will want to delete the HKCU\Borkholder
+; subkey, log out, and log back in.
+$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+IF $RETURNVALUE = 0
+  DELKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
 ENDIF
 </screen>
 </example>
 
 <example id="ch8kix4">
-<title>Kixstart Control File &smbmdash; Part D</title>
+<title>Kixstart Control File &smbmdash; File: acct.kix</title>
 <screen>
-IF INGROUP("MEGANET2\Engr","MEGANET2\Truss","MEGANET2\Receptionist")
-$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Printers\,,corpsrv,engr_hp1300")
+; And here is one group-oriented script to show what can be
+; done that way: acct.kix:
+
+IF INGROUP("MASSIVE\Acct_Admin","MASSIVE\HR")
+  USE I: \\MEGANET2\HR_PR
+ENDIF
+
+; Set up printer
+$RETURNVALUE = existkey("HKEY_CURRENT_USER\Printers\,,massive,acct_hp8500")
 IF NOT $RETURNVALUE = 0
-  ADDPRINTERCONNECTION("\\corpsrv\engr_hp1300")
+  ADDPRINTERCONNECTION("\\massive\acct_hp8500")
+  SETDEFAULTPRINTER("\\massive\acct_hp8500")
 ENDIF
-USE LPT3: "\\corpsrv\engr_legacy_printer"
-; Make sure the user can run MATLIST -- they need a .get file and it gets
-; created automatically if they don't have one (copied from one that works)
-  IF NOT EXIST("\\corpsrv\data\batch\paths\@USERID.get")
-    copy \\corpsrv\data\batch\paths\jenny.get
-\\corpsrv\data\batch\paths\@USERID.get
+; Set up drive mappings
+  USE M: \\massive\ACCT
+  IF INGROUP("MEGANET2\ABRA")
+    USE T: \\trussrv\abra
   ENDIF
-
-; The program was written to use a variable that exists
-; in Novell but not NT, so we set it here
-  SET "LINAME=@USERID"
-  ?  "LINAME set to @USERID" ; for MATLIST program -- look in
-%L\DATA\BATCH\PATHS\username.get
-
-; Set up drive mappings here (X will go away eventually)
-  USE L: \\corpsrv\engr
-  USE G: \\corpsrv\apps
-  USE Q: \\corpsrv\data
-  USE U: \\corpsrv\utils
-  use X: \\corpsrv\X
-
-;SET "PATH=L:\ENGINEER\MATLST;u:;h:;g:\ifsapp\runtime;
-c:\orawin95\bin;%PATH%;"
-ENDIF
 </screen>
 </example>
-
-<example id="ch8kix5">
-<title>Kixstart Control File &smbmdash; Part E</title>
-<screen>
-IF INGROUP("MEGANET2\Truss")
-  ; Don't set up a default printer, they choose which one they want
-$RETURNVALUE =
-EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp4")
-  IF NOT $RETURNVALUE = 0
-    ADDPRINTERCONNECTION("\\corpsrv\truss_hp4")
-  ENDIF
-  $RETURNVALUE =
-EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp5n")
-  IF NOT $RETURNVALUE = 0
-    ADDPRINTERCONNECTION("\\corpsrv\truss_hp5n")
-  ENDIF
-  $RETURNVALUE =
-EXISTKEY("HKEY_CURRENT_USER\Printers\Connections\,,corpsrv,truss_hp4050")
-  IF NOT $RETURNVALUE = 0
-    ADDPRINTERCONNECTION("\\corpsrv\truss_hp4050")
-  ENDIF
-
-ENDIF
-
-; Everyone gets the N drive
-USE N: \\corpsrv\network
-
-$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
-IF $RETURNVALUE = 0
-  DELKEY("HKEY_CURRENT_USER\Abmas\FIRST_LOGIN")
-ENDIF
-</screen>
-</example>
-
 
 	<para>
 	As you can see in the script, I redirect the My Documents to the user's home
