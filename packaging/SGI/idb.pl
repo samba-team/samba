@@ -88,7 +88,7 @@ chdir $curdir;
 
 open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
-print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update)\n";
+print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update) removeop(\"chroot \$rbase /usr/samba/scripts/removeswat.sh\")\n";
 print IDB "f 0755 root sys etc/init.d/samba packaging/SGI/samba.rc samba.sw.base\n";
 print IDB "l 0000 root sys etc/rc0.d/K39samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
 print IDB "l 0000 root sys etc/rc2.d/S81samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
