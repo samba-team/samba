@@ -631,18 +631,19 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 	canon_ace *current_ace = NULL;
 	BOOL got_dir_allow = False;
 	BOOL got_file_allow = False;
-	int i;
+	int i, j;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
 
+	/*
+	 * Convert the incoming ACL into a more regular form.
+	 */
+
 	for(i = 0; i < dacl->num_aces; i++) {
-		enum SID_NAME_USE sid_type;
 		SEC_ACE *psa = &dacl->ace[i];
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
-			free_canon_ace_list(file_ace);
-			free_canon_ace_list(dir_ace);
 			DEBUG(3,("create_canon_ace_lists: unable to set anything but an ALLOW or DENY ACE.\n"));
 			return False;
 		}
@@ -664,6 +665,50 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		if(psa->info.mask != UNIX_ACCESS_NONE)
 			psa->info.mask &= ~UNIX_ACCESS_NONE;
+	}
+
+	/*
+	 * Deal with the fact that NT 4.x re-writes the canonical format
+	 * that we return for default ACLs. If a directory ACE is identical
+	 * to a inherited directory ACE then NT changes the bits so that the
+	 * first ACE is set to OI|IO and the second ACE for this SID is set
+	 * to CI. We need to repair this. JRA.
+	 */
+
+	for(i = 0; i < dacl->num_aces; i++) {
+		SEC_ACE *psa1 = &dacl->ace[i];
+
+		for (j = i + 1; j < dacl->num_aces; j++) {
+			SEC_ACE *psa2 = &dacl->ace[j];
+
+			if (psa1->info.mask != psa2->info.mask)
+				continue;
+
+			if (!sid_equal(&psa1->sid, &psa2->sid))
+				continue;
+
+			/*
+			 * Ok - permission bits and SIDs are equal.
+			 * Check if flags were re-written.
+			 */
+
+			if (psa1->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+
+				psa1->flags |= (psa2->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
+				psa2->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
+				
+			} else if (psa2->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+
+				psa2->flags |= (psa1->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
+				psa1->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
+				
+			}
+		}
+	}
+
+	for(i = 0; i < dacl->num_aces; i++) {
+		enum SID_NAME_USE sid_type;
+		SEC_ACE *psa = &dacl->ace[i];
 
 		/*
 		 * Create a cannon_ace entry representing this NT DACL ACE.
