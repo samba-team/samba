@@ -1886,6 +1886,7 @@ BOOL domain_client_validate( char *user, char *domain,
   struct in_addr dest_ip;
   struct cli_state cli;
   BOOL connected_ok = False;
+  int fnum;
 
   /* 
    * Check that the requested domain is not our own machine name.
@@ -2036,6 +2037,18 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Ok - we have an anonymous connection to the IPC$ share.
    * Now start the NT Domain stuff :-).
    */
+
+  /*
+   * First, open the pipe to \PIPE\NETLOGON.
+   */
+
+  if((fnum = cli_open(&cli, PIPE_NETLOGON, O_CREAT, DENY_NONE)) == -1) {
+    DEBUG(0,("domain_client_validate: cli_open on %s on machine %s failed. Error was :%s.\n",
+           PIPE_NETLOGON, remote_machine, cli_errstr(&cli)));
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
 
   return False;
 }
