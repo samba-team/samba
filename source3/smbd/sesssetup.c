@@ -242,6 +242,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	/* lookup the passwd struct, create a new user if necessary */
 
+	map_username( user );
+
 	pw = smb_getpwnam( user, real_username, True );
 	
 	if (!pw) {
