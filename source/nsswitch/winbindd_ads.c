@@ -32,74 +32,6 @@ static char *primary_realm;
 
 
 /*
-  a wrapper around ldap_search_s that retries depending on the error code
-  this is supposed to catch dropped connections and auto-reconnect
-*/
-ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			       const char *exp,
-			       const char **attrs, void **res)
-{
-	ADS_STATUS status;
-	int count = 3;
-	char *bp;
-
-	if (!ads->ld &&
-	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
-		return ADS_ERROR(LDAP_SERVER_DOWN);
-	}
-
-	bp = strdup(bind_path);
-
-	while (count--) {
-		status = ads_do_search_all(ads, bp, scope, exp, attrs, res);
-		if (ADS_ERR_OK(status)) {
-			DEBUG(5,("Search for %s gave %d replies\n",
-				 exp, ads_count_replies(ads, *res)));
-			free(bp);
-			return status;
-		}
-
-		if (*res) ads_msgfree(ads, *res);
-		*res = NULL;
-		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
-			 ads->config.realm, ads_errstr(status)));
-		if (ads->ld) {
-			ldap_unbind(ads->ld); 
-		}
-		ads->ld = NULL;
-		status = ads_connect(ads);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
-				 ads_errstr(status)));
-			ads_destroy(&ads);
-			free(bp);
-			return status;
-		}
-	}
-	free(bp);
-
-	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(status)));
-	return status;
-}
-
-
-ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res, 
-			    const char *exp, 
-			    const char **attrs)
-{
-	return ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
-				   exp, attrs, res);
-}
-
-ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
-			       const char *dn, 
-			       const char **attrs)
-{
-	return ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
-				   "(objectclass=*)", attrs, res);
-}
-
-/*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
 */
@@ -166,37 +98,6 @@ static void sid_from_rid(struct winbindd_domain *domain, uint32 rid, DOM_SID *si
 	sid_append_rid(sid, rid);
 }
 
-/* turn a sAMAccountType into a SID_NAME_USE */
-static enum SID_NAME_USE ads_atype_map(uint32 atype)
-{
-	switch (atype & 0xF0000000) {
-	case ATYPE_GLOBAL_GROUP:
-		return SID_NAME_DOM_GRP;
-	case ATYPE_ACCOUNT:
-		return SID_NAME_USER;
-	default:
-		DEBUG(1,("hmm, need to map account type 0x%x\n", atype));
-	}
-	return SID_NAME_UNKNOWN;
-}
-
-/* 
-   in order to support usernames longer than 21 characters we need to 
-   use both the sAMAccountName and the userPrincipalName attributes 
-   It seems that not all users have the userPrincipalName attribute set
-*/
-static char *pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
-{
-	char *ret, *p;
-
-	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
-	if (ret && (p = strchr(ret, '@'))) {
-		*p = 0;
-		return ret;
-	}
-	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
-}
-
 
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
@@ -254,7 +155,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		name = pull_username(ads, mem_ctx, msg);
+		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -341,7 +242,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				     &account_type) ||
 		    !(account_type & ATYPE_GLOBAL_GROUP)) continue;
 
-		name = pull_username(ads, mem_ctx, msg);
+		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
 		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -371,63 +272,21 @@ done:
 	return status;
 }
 
-
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
 {
-	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"objectSid", "sAMAccountType", NULL};
-	int count;
-	ADS_STATUS rc;
-	void *res = NULL;
-	char *exp;
-	uint32 t;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	ADS_STRUCT *ads;
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	if (!ads) 
+		return NT_STATUS_UNSUCCESSFUL;
 
-	/* accept either the win2000 or the pre-win2000 username */
-	asprintf(&exp, "(|(sAMAccountName=%s)(userPrincipalName=%s@%s))", 
-		 name, name, ads->config.realm);
-	rc = ads_search_retry(ads, &res, exp, attrs);
-	free(exp);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("name_to_sid ads_search: %s\n", ads_errstr(rc)));
-		goto done;
-	}
-
-	count = ads_count_replies(ads, res);
-	if (count != 1) {
-		DEBUG(1,("name_to_sid: %s not found\n", name));
-		goto done;
-	}
-
-	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
-		DEBUG(1,("No sid for %s !?\n", name));
-		goto done;
-	}
-
-	if (!ads_pull_uint32(ads, res, "sAMAccountType", &t)) {
-		DEBUG(1,("No sAMAccountType for %s !?\n", name));
-		goto done;
-	}
-
-	*type = ads_atype_map(t);
-
-	status = NT_STATUS_OK;
-
-	DEBUG(3,("ads name_to_sid mapped %s\n", name));
-
-done:
-	if (res) ads_msgfree(ads, res);
-
-	return status;
+	return ads_name_to_sid(ads, name, sid, type);
 }
 
 /* convert a sid to a user or group name */
@@ -438,46 +297,12 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = {"userPrincipalName", 
-			       "sAMAccountName",
-			       "sAMAccountType", NULL};
-	ADS_STATUS rc;
-	void *msg = NULL;
-	char *exp;
-	char *sidstr;
-	uint32 atype;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
 	DEBUG(3,("ads: sid_to_name\n"));
-
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	if (!ads) 
+		return NT_STATUS_UNSUCCESSFUL;
 
-	sidstr = sid_binstring(sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
-	rc = ads_search_retry(ads, &msg, exp, attrs);
-	free(exp);
-	free(sidstr);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("sid_to_name ads_search: %s\n", ads_errstr(rc)));
-		goto done;
-	}
-
-	if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
-		goto done;
-	}
-
-	*name = pull_username(ads, mem_ctx, msg);
-	*type = ads_atype_map(atype);
-
-	status = NT_STATUS_OK;
-
-	DEBUG(3,("ads sid_to_name mapped %s\n", *name));
-
-done:
-	if (msg) ads_msgfree(ads, msg);
-
-	return status;
+	return ads_sid_to_name(ads, mem_ctx, sid, name, type);
 }
 
 
@@ -504,7 +329,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	(*name) = pull_username(ads, mem_ctx, res);
+	(*name) = ads_pull_username(ads, mem_ctx, res);
 
 	if (!ads_pull_uint32(ads, res, "sAMAccountType", &atype)) {
 		goto failed;
@@ -566,7 +391,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	info->acct_name = pull_username(ads, mem_ctx, msg);
+	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
 		DEBUG(1,("No sid for %d !?\n", user_rid));

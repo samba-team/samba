@@ -114,7 +114,14 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	char *s;
 	int ret;
 
-	asprintf(&s, "%s@%s", ads->auth.user_name, ads->auth.realm);
+	if (asprintf(&s, "%s@%s", ads->auth.user_name, ads->auth.realm) == -1) {
+		return KRB5_CC_NOMEM;
+	}
+
+	if (!ads->auth.password) {
+		return KRB5_LIBOS_CANTREADPWD;
+	}
+	
 	ret = kerberos_kinit_password(s, ads->auth.password, ads->auth.time_offset);
 
 	if (ret) {
