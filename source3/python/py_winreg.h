@@ -21,9 +21,6 @@
 #ifndef _PY_WINREG_H
 #define _PY_WINREG_H
 
-#include "includes.h"
-#include "Python.h"
-
 #include "python/py_common.h"
 
 #endif /* _PY_WINREG_H */
