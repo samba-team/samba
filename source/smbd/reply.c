@@ -1661,23 +1661,26 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 /*******************************************************************
 check if a user is allowed to delete a file
 ********************************************************************/
-static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
+static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 {
-  SMB_STRUCT_STAT sbuf;
-  int fmode;
+	SMB_STRUCT_STAT sbuf;
+	int fmode;
 
-  if (!CAN_WRITE(conn)) return(False);
+	if (!CAN_WRITE(conn)) return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-  if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0) return(False);
-  fmode = dos_mode(conn,fname,&sbuf);
-  if (fmode & aDIR) return(False);
-  if (!lp_delete_readonly(SNUM(conn))) {
-    if (fmode & aRONLY) return(False);
-  }
-  if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
-    return(False);
-  if (!check_file_sharing(conn,fname,False)) return(False);
-  return(True);
+	if (conn->vfs_ops.lstat(conn,fname,&sbuf) != 0) return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	fmode = dos_mode(conn,fname,&sbuf);
+	if (fmode & aDIR) return NT_STATUS_FILE_IS_A_DIRECTORY;
+	if (!lp_delete_readonly(SNUM(conn))) {
+		if (fmode & aRONLY) return NT_STATUS_CANNOT_DELETE;
+	}
+	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
+		return NT_STATUS_CANNOT_DELETE;
+
+	if (!check_file_sharing(conn,fname,False)) return NT_STATUS_SHARING_VIOLATION;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1729,9 +1732,9 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		if (!can_delete(directory,conn,dirtype)) {
-			return NT_STATUS_SHARING_VIOLATION;
-		}
+		error = can_delete(directory,conn,dirtype);
+		if (!NT_STATUS_IS_OK(error)) return error;
+
 		if (vfs_unlink(conn,directory) == 0) {
 			count++;
 		}
@@ -1761,9 +1764,9 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				
 				if(!mask_match(fname, mask, case_sensitive)) continue;
 				
-				error = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				if (!can_delete(fname,conn,dirtype)) continue;
+				error = can_delete(fname,conn,dirtype);
+				if (!NT_STATUS_IS_OK(error)) continue;
 				if (vfs_unlink(conn,fname) == 0) count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
