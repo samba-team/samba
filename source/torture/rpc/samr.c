@@ -823,7 +823,6 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomains r;
 	uint32 resume_handle = 0;
-	uint32 num_entries=0;
 	int i;
 	BOOL ret = True;
 
@@ -831,7 +830,6 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.resume_handle = &resume_handle;
 	r.in.buf_size = (uint32)-1;
 	r.out.resume_handle = &resume_handle;
-	r.out.num_entries = &num_entries;
 
 	status = dcerpc_samr_EnumDomains(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -904,7 +902,7 @@ BOOL torture_rpc_samr(int dummy)
 		return False;
 	}
 	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH | DCERPC_DEBUG_VALIDATE_BOTH;
 
 	if (!test_Connect(p, mem_ctx, &handle)) {
 		ret = False;
@@ -921,6 +919,8 @@ BOOL torture_rpc_samr(int dummy)
 	if (!test_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
+
+	talloc_destroy(mem_ctx);
 
         torture_rpc_close(p);
 

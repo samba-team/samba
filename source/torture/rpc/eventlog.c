@@ -101,6 +101,8 @@ BOOL torture_rpc_eventlog(int dummy)
 		return False;
 	}
 
+	talloc_destroy(mem_ctx);
+
         torture_rpc_close(p);
 
 	return ret;

@@ -539,7 +539,7 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH | DCERPC_DEBUG_VALIDATE_BOTH;
 
 	if (!test_OpenPolicy(p, mem_ctx)) {
 		ret = False;
@@ -574,6 +574,8 @@ BOOL torture_rpc_lsa(int dummy)
 	if (!test_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
+
+	talloc_destroy(mem_ctx);
 
         torture_rpc_close(p);
 

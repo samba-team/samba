@@ -385,6 +385,8 @@ BOOL torture_rpc_winreg(int dummy)
 		    }
 	}
 
+	talloc_destroy(mem_ctx);
+
         torture_rpc_close(p);
 
 	return ret;

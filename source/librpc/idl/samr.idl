@@ -44,7 +44,7 @@
 	/* Function: 0x03 */
 
 	typedef struct {
-		uint32 sd_size;
+		[value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} samr_SdBuf;
 
@@ -91,7 +91,7 @@
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 buf_size,
 		[out]         samr_SamArray *sam,
-		[out,ref]     uint32 *num_entries
+		[out]         uint32 num_entries
 		);
 
 
@@ -224,7 +224,7 @@
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 max_size,
 		[out]         samr_SamArray *sam,
-		[out,ref]     uint32 num_entries
+		[out]         uint32 num_entries
 		);
 
 	/************************/
@@ -245,7 +245,7 @@
 		[in]          uint32 acct_flags,
 		[in]          uint32 max_size,
 		[out]         samr_SamArray *sam,
-		[out,ref]     uint32 num_entries
+		[out]         uint32 num_entries
 		);
 
 	/************************/
@@ -259,7 +259,7 @@
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 max_size,
 		[out]         samr_SamArray *sam,
-		[out,ref]     uint32 num_entries
+		[out]         uint32 num_entries
 		);
 
 	/************************/

@@ -73,7 +73,7 @@ struct ndr_push {
 	struct ndr_ofs_list *ofs_list;
 
 	/* this list is used by the [relative] code to find the offsets */
-	struct ndr_ofs_list *relative_list;
+	struct ndr_ofs_list *relative_list, *relative_list_end;
 };
 
 struct ndr_push_save {
@@ -101,6 +101,8 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_NULLTERM (1<<6)
 #define LIBNDR_STRING_FLAGS      (0x7C)
 
+#define LIBNDR_FLAG_REF_ALLOC    (1<<10)
+
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
 #define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
@@ -119,7 +121,10 @@ enum ndr_err_code {
 	NDR_ERR_CHARCNV,
 	NDR_ERR_LENGTH,
 	NDR_ERR_SUBCONTEXT,
-	NDR_ERR_STRING
+	NDR_ERR_STRING,
+	NDR_ERR_VALIDATE,
+	NDR_ERR_BUFSIZE,
+	NDR_ERR_ALLOC
 };
 
 /*
@@ -137,7 +142,7 @@ enum ndr_err_code {
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
-		return NT_STATUS_BUFFER_TOO_SMALL; \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u", n); \
 	} \
 } while(0)
 
@@ -146,7 +151,7 @@ enum ndr_err_code {
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
 	if (ndr->offset >= ndr->data_size) { \
-		return NT_STATUS_BUFFER_TOO_SMALL; \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", n); \
 	} \
 } while(0)
 
@@ -154,7 +159,7 @@ enum ndr_err_code {
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
-		uint32 _pad = (ndr->offset & (n-1)); \
+		uint32 _pad = ((ndr->offset + (n-1)) & ~(n-1)) - ndr->offset; \
 		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, 0)); \
 	} \
 } while(0)
@@ -171,7 +176,9 @@ enum ndr_err_code {
 
 #define NDR_ALLOC_SIZE(ndr, s, size) do { \
 	                       (s) = talloc(ndr->mem_ctx, size); \
-                               if (!(s)) return NT_STATUS_NO_MEMORY; \
+                               if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
+							       "Alloc %u failed\n", \
+							       size); \
                            } while (0)
 
 #define NDR_ALLOC(ndr, s) NDR_ALLOC_SIZE(ndr, s, sizeof(*(s)))
@@ -182,11 +189,25 @@ enum ndr_err_code {
 					(s) = NULL; \
 				} else { \
 					(s) = talloc(ndr->mem_ctx, (n) * elsize); \
-					if (!(s)) return NT_STATUS_NO_MEMORY; \
+                               		if (!(s)) return ndr_pull_error(ndr, \
+									NDR_ERR_ALLOC, \
+									"Alloc %u * %u failed\n", \
+									n, elsize); \
 				} \
                            } while (0)
 
 #define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
+
+
+#define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
+	                       (s) = talloc(ndr->mem_ctx, size); \
+                               if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, \
+							       "push alloc %u failed\n",\
+							       size); \
+                           } while (0)
+
+#define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
+
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
 typedef NTSTATUS (*ndr_push_fn_t)(struct ndr_push *, void *);

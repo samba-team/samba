@@ -731,6 +731,139 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 
 /*
+  this is a paranoid NDR validator. For every packet we push onto the wire
+  we pull it back again, then push it again. Then we compare the raw NDR data
+  for that to the NDR we initially generated. If they don't match then we know
+  we must have a bug in either the pull or push side of our code
+*/
+static NTSTATUS dcerpc_ndr_validate_in(TALLOC_CTX *mem_ctx,
+				       DATA_BLOB blob,
+				       size_t struct_size,
+				       NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
+				       NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *))
+{
+	void *st;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	NTSTATUS status;
+	DATA_BLOB blob2;
+
+	st = talloc(mem_ctx, struct_size);
+	if (!st) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!pull) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_pull(pull, NDR_IN, st);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
+				      "Error in input validation pull - %s",
+				      nt_errstr(status));
+	}
+
+	push = ndr_push_init_ctx(mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}	
+
+	status = ndr_push(push, NDR_IN, st);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ndr_push_error(push, NDR_ERR_VALIDATE, 
+				      "Error in input validation push - %s",
+				      nt_errstr(status));
+	}
+
+	blob2 = ndr_push_blob(push);
+
+	if (!data_blob_equal(&blob, &blob2)) {
+		return ndr_push_error(push, NDR_ERR_VALIDATE, 
+				      "Error in input validation data - %s",
+				      nt_errstr(status));
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  this is a paranoid NDR input validator. For every packet we pull
+  from the wire we push it back again then pull and push it
+  again. Then we compare the raw NDR data for that to the NDR we
+  initially generated. If they don't match then we know we must have a
+  bug in either the pull or push side of our code
+*/
+static NTSTATUS dcerpc_ndr_validate_out(TALLOC_CTX *mem_ctx,
+					void *struct_ptr,
+					size_t struct_size,
+					NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
+					NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *))
+{
+	void *st;
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	NTSTATUS status;
+	DATA_BLOB blob, blob2;
+
+	st = talloc(mem_ctx, struct_size);
+	if (!st) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(st, struct_ptr, struct_size);
+
+	push = ndr_push_init_ctx(mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}	
+
+	status = ndr_push(push, NDR_OUT, struct_ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ndr_push_error(push, NDR_ERR_VALIDATE, 
+				      "Error in output validation push - %s",
+				      nt_errstr(status));
+	}
+
+	blob = ndr_push_blob(push);
+
+	pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!pull) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+	status = ndr_pull(pull, NDR_OUT, st);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ndr_pull_error(pull, NDR_ERR_VALIDATE, 
+				      "Error in output validation pull - %s",
+				      nt_errstr(status));
+	}
+
+	push = ndr_push_init_ctx(mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}	
+
+	status = ndr_push(push, NDR_OUT, st);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ndr_push_error(push, NDR_ERR_VALIDATE, 
+				      "Error in output validation push2 - %s",
+				      nt_errstr(status));
+	}
+
+	blob2 = ndr_push_blob(push);
+
+	if (!data_blob_equal(&blob, &blob2)) {
+		return ndr_push_error(push, NDR_ERR_VALIDATE, 
+				      "Error in output validation data - %s",
+				      nt_errstr(status));
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
   a useful helper function for synchronous rpc requests 
 
   this can be used when you have ndr push/pull functions in the
@@ -739,9 +872,10 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    uint32 opnum,
 			    TALLOC_CTX *mem_ctx,
-			    NTSTATUS (*ndr_push)(struct ndr_push *, void *),
-			    NTSTATUS (*ndr_pull)(struct ndr_pull *, void *),
-			    void *struct_ptr)
+			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
+			    NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *),
+			    void *struct_ptr,
+			    size_t struct_size)
 {
 	struct ndr_push *push;
 	struct ndr_pull *pull;
@@ -756,13 +890,21 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	}
 
 	/* push the structure into a blob */
-	status = ndr_push(push, struct_ptr);
+	status = ndr_push(push, NDR_IN, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
 	/* retrieve the blob */
 	request = ndr_push_blob(push);
+
+	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
+		status = dcerpc_ndr_validate_in(mem_ctx, request, struct_size, 
+						ndr_push, ndr_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
+	}
 
 	DEBUG(10,("rpc request data:\n"));
 	dump_data(10, request.data, request.length);
@@ -783,9 +925,17 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	dump_data(10, pull->data, pull->data_size);
 
 	/* pull the structure from the blob */
-	status = ndr_pull(pull, struct_ptr);
+	status = ndr_pull(pull, NDR_OUT, struct_ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
+	}
+
+	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
+		status = dcerpc_ndr_validate_out(mem_ctx, struct_ptr, struct_size, 
+						 ndr_push, ndr_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
 	}
 
 	if (pull->offset != pull->data_size) {
