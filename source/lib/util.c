@@ -797,6 +797,23 @@ char *myhostname(TALLOC_CTX *mem_ctx)
 
 }
 
+/**********************************************************************
+ Converts a name to a fully qalified domain name.
+***********************************************************************/
+
+char *name_to_fqdn(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct hostent *hp = sys_gethostbyname(name);
+	if ( hp && hp->h_name && *hp->h_name ) {
+		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
+		return talloc_strdup(mem_ctx, hp->h_name);
+	} else {
+		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
+		return talloc_strdup(mem_ctx, name);
+	}
+}
+
+
 /*****************************************************************
  A useful function for returning a path in the Samba lock directory.
 *****************************************************************/  
