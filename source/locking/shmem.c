@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Shared memory functions
-   Copyright (C) Erik Devriendt 1996-1997
+   Copyright (C) Erik Devriendt 1996-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

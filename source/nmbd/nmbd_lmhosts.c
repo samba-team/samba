@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Jeremy Allison 1994-1997
+   Copyright (C) Jeremy Allison 1994-1998
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

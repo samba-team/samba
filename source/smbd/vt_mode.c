@@ -2,7 +2,7 @@
 /*
 support vtp-sessions
 
-written by Christian A. Lademann <cal@zls.com>
+(C) written by Christian A. Lademann <cal@zls.com>
 */
 
 /*
