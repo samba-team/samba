@@ -112,14 +112,17 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
 uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	uint8 *nt_pw, *lm_pw;
+	uint16	acct_ctrl;
 
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	
 	/* Quit if the account was disabled. */
-	if(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
+	if(acct_ctrl & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", user_info->smb_username.str));
 		return(NT_STATUS_ACCOUNT_DISABLED);
 	}
 
-	if (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ) 
+	if (acct_ctrl & ACB_PWNOTREQ) 
 	{
 		if (lp_null_passwords()) 
 		{
@@ -155,7 +158,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 			{
 				return NT_STATUS_NOPROBLEMO;
 			}
-			DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
+			DEBUG(4,("smb_password_ok: NTLMv2 password check failed\n"));
 
 		} else if (lp_ntlm_auth() && (user_info->nt_resp.len == 24 )) {
 				/* We have the NT MD4 hash challenge available - see if we can
@@ -195,8 +198,8 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 
 /****************************************************************************
 check if a username/password is OK assuming the password is a 24 byte
-SMB hash
-return True if the password is correct, False otherwise
+SMB hash supplied in the user_info structure
+return an NT_STATUS constant.
 ****************************************************************************/
 
 uint32 check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)

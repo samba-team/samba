@@ -203,7 +203,7 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest, char* full_name)
+		  char *domain,BOOL guest, char *full_name)
 {
 	user_struct *vuser = NULL;
 
