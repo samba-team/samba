@@ -614,6 +614,21 @@ static void save_specifics(NT_PRINTER_PARAM *param, int fd)
 	}
 }
 
+
+/****************************************************************************
+delete a printer - this just deletes the printer info file, any open
+handles are not affected
+****************************************************************************/
+uint32 del_a_printer(char *portname)
+{
+	pstring file;
+		
+	slprintf(file, sizeof(file), "%s/NTprinter_%s",
+	         lp_nt_drivers_file(), portname);
+	if (unlink(file) != 0) return 2;
+	return 0;
+}
+
 /****************************************************************************
 ****************************************************************************/
 static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)

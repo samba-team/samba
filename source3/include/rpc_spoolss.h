@@ -29,7 +29,6 @@
 
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_OPENPRINTER				0x01
-#define SPOOLSS_DELETEPRINTER				0x06
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_DELETEPRINTERDRIVER			0x0d
 #define SPOOLSS_ADDPRINTPROCESSOR			0x0e
@@ -73,6 +72,7 @@
 #define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_ENUMJOBS				0x04
 #define SPOOLSS_ADDPRINTER				0x05
+#define SPOOLSS_DELETEPRINTER				0x06
 #define SPOOLSS_SETPRINTER				0x07
 #define SPOOLSS_GETPRINTER				0x08
 #define SPOOLSS_ADDPRINTERDRIVER			0x09
@@ -1349,6 +1349,19 @@ typedef struct spool_r_addprinter
 	uint32 status;
 }
 SPOOL_R_ADDPRINTER;
+
+typedef struct spool_q_deleteprinter
+{
+	POLICY_HND handle;
+}
+SPOOL_Q_DELETEPRINTER;
+
+typedef struct spool_r_deleteprinter
+{
+	POLICY_HND handle;
+	uint32 status;
+}
+SPOOL_R_DELETEPRINTER;
 
 
 typedef struct spool_q_addprinterex

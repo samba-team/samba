@@ -201,6 +201,27 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 }	
 
 /****************************************************************************
+  delete a printer given a handle
+****************************************************************************/
+static BOOL delete_printer_handle(POLICY_HND *hnd)
+{
+	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
+
+	if (!OPEN_HANDLE(Printer))
+	{
+		DEBUG(3,("Error closing printer handle\n"));
+		return False;
+	}
+
+	if (del_a_printer(Printer->dev.printername) != 0) {
+		DEBUG(3,("Error deleting printer %s\n", Printer->dev.printername));
+		return False;
+	}
+
+	return True;
+}	
+
+/****************************************************************************
   return the snum of a printer corresponding to an handle
 ****************************************************************************/
 static BOOL get_printer_snum(const POLICY_HND *hnd, int *number)
@@ -617,6 +638,17 @@ static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 uint32 _spoolss_closeprinter(POLICY_HND *handle)
 {
 	if (!close_printer_handle(handle))
+		return ERROR_INVALID_HANDLE;	
+		
+	return NT_STATUS_NO_PROBLEMO;
+}
+
+/********************************************************************
+ * api_spoolss_deleteprinter
+ ********************************************************************/
+uint32 _spoolss_deleteprinter(POLICY_HND *handle)
+{
+	if (!delete_printer_handle(handle))
 		return ERROR_INVALID_HANDLE;	
 		
 	return NT_STATUS_NO_PROBLEMO;
