@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE book PUBLIC "-//Samba//DTD Samba XML V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc" [
 
   <!-- entities files to use -->
   <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
