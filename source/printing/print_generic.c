@@ -213,7 +213,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;
-	ZERO_STRUCT(status);
+	ZERO_STRUCTP(status);
 	if (numlines)
 		queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(numlines+1));
 
