@@ -15,7 +15,7 @@ libkrb5_a_SOURCES = address.c asn1_glue.c auth_context.c \
 	keytab.c krbhst.c misc.c mk_priv.c mk_rep.c mk_req.c mk_req_ext.c \
 	mk_safe.c principal.c principal_p.c rd_priv.c rd_rep.c rd_req.c \
 	rd_safe.c send_to_kdc.c sendauth.c store.c store_emem.c store_fd.c \
-	store_mem.c str2key.c net_write.c net_read.c recvauth.c \
+	store_mem.c str2key.c net_write.c net_read.c recvauth.c verify_user.c \
 	error/error.c error/krb5_err.c error/asn1_err.c error/hdb_err.c
 
 config_file.c: config_file.y
