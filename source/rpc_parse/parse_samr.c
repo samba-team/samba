@@ -4799,8 +4799,6 @@ static BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
 	if (u == NULL)
 		return False;
 
-	DEBUG(0, ("possible security breach!\n"));
-
 	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
 	depth++;
 
