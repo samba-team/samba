@@ -581,29 +581,27 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 
 	switch (r->in.validation_level) {
 	case 2:
-		sam2 = talloc_p(mem_ctx, struct netr_SamInfo2);
+		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
 		NT_STATUS_HAVE_NO_MEMORY(sam2);
-		ZERO_STRUCTP(sam2);
 		sam2->base = *sam;
 		r->out.validation.sam2 = sam2;
 		break;
 
 	case 3:
-		sam3 = talloc_p(mem_ctx, struct netr_SamInfo3);
+		sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 		NT_STATUS_HAVE_NO_MEMORY(sam3);
-		ZERO_STRUCTP(sam3);
 		sam3->base = *sam;
 		r->out.validation.sam3 = sam3;
 		break;
 
 	case 6:
-		sam6 = talloc_p(mem_ctx, struct netr_SamInfo6);
+		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 		NT_STATUS_HAVE_NO_MEMORY(sam6);
-		ZERO_STRUCTP(sam6);
 		sam6->base = *sam;
 		sam6->forest.string = lp_realm();
 		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s", 
 							 sam->account_name.string, sam6->forest.string);
+		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
 		r->out.validation.sam6 = sam6;
 		break;
 
@@ -626,34 +624,33 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct netr_LogonSamLogonWithFlags *r)
 {
+	struct server_pipe_state *pipe_state = dce_call->context->private;
 	NTSTATUS nt_status;
 	struct netr_LogonSamLogonEx r2;
 
-	struct server_pipe_state *pipe_state = dce_call->context->private;
+	struct netr_Authenticator *return_authenticator;
 
-	r->out.return_authenticator = talloc_p(mem_ctx, struct netr_Authenticator);
-	if (!r->out.return_authenticator) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
+	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
-	nt_status = netr_creds_server_step_check(pipe_state, r->in.credential, r->out.return_authenticator);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
+	nt_status = netr_creds_server_step_check(pipe_state, r->in.credential, return_authenticator);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	ZERO_STRUCT(r2);
 
-	r2.in.server_name = r->in.server_name;
-	r2.in.workstation = r->in.workstation;
-	r2.in.logon_level = r->in.logon_level;
-	r2.in.logon = r->in.logon;
-	r2.in.validation_level = r->in.validation_level;
-	r2.in.flags = r->in.flags;
+	r2.in.server_name	= r->in.server_name;
+	r2.in.workstation	= r->in.workstation;
+	r2.in.logon_level	= r->in.logon_level;
+	r2.in.logon		= r->in.logon;
+	r2.in.validation_level	= r->in.validation_level;
+	r2.in.flags		= r->in.flags;
 
 	nt_status = netr_LogonSamLogonEx(dce_call, mem_ctx, &r2);
 
-	r->out.validation = r2.out.validation;
-	r->out.authoritative = r2.out.authoritative;
+	r->out.return_authenticator	= return_authenticator;
+	r->out.validation		= r2.out.validation;
+	r->out.authoritative		= r2.out.authoritative;
+	r->out.flags			= r2.out.flags;
 	r->out.flags = r2.out.flags;
 
 	return nt_status;
