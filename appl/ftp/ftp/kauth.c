@@ -109,7 +109,8 @@ void kauth(int argc, char **argv)
     des_pcbc_encrypt((des_cblock*)tkt.dat, (des_cblock*)tktcopy.dat,
 		     tkt.length,
 		     schedule, &key, DES_DECRYPT);
-    if (strcmp ((char*)tktcopy.dat + 8, "krbtgt") != 0) {
+    if (strcmp ((char*)tktcopy.dat + 8,
+		KRB_TICKET_GRANTING_TICKET) != 0) {
         afs_string_to_key (passwd, krb_realmofhost(hostname), &key);
 	des_key_sched (&key, schedule);
 	des_pcbc_encrypt((des_cblock*)tkt.dat, (des_cblock*)tktcopy.dat,
