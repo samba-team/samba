@@ -544,6 +544,8 @@ static void sort_acl(SEC_ACL *the_acl)
 	int i, ace_ndx = 0;
 	BOOL do_denied = True;
 
+	if (!the_acl) return;
+
 	tmp_ace = (SEC_ACE *)malloc(sizeof(SEC_ACE) * the_acl->num_aces);
 
 	if (!tmp_ace) return;
