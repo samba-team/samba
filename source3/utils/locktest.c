@@ -41,11 +41,12 @@ static BOOL use_oplocks;
 */
 
 #define READ_PCT 50
-#define LOCK_PCT 25
-#define UNLOCK_PCT 65
+#define LOCK_PCT 35
+#define UNLOCK_PCT 55
 #define RANGE_MULTIPLE 1
-#define NCONNECTIONS 2
-#define NFILES 2
+#define NSERVERS 2
+#define NCONNECTIONS 6
+#define NFILES 4
 #define LOCK_TIMEOUT 0
 
 #define NASTY_POSIX_LOCK_HACK 0
@@ -93,6 +94,14 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 	       (double)start, (double)start+size-1,(double)size);
 
 }
+
+
+static void show_locks(void)
+{
+	brl_forall(print_brl);
+	system("cat /proc/locks");
+}
+
 
 /***************************************************** 
 return a connection to a server
@@ -195,15 +204,12 @@ struct cli_state *connect_one(char *share)
 }
 
 
-static void reconnect(struct cli_state *cli[2][2], int fnum[2][2][2],
-		      char *share1, char *share2)
+static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
+		      char *share[NSERVERS])
 {
 	int server, conn, f;
-	char *share[2];
-	share[0] = share1;
-	share[1] = share2;
 
-	for (server=0;server<2;server++)
+	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++) {
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
@@ -224,8 +230,8 @@ static void reconnect(struct cli_state *cli[2][2], int fnum[2][2][2],
 
 
 
-static BOOL test_one(struct cli_state *cli[2][2], 
-		     int fnum[2][2][2],
+static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
 	unsigned conn = rec->conn;
@@ -235,7 +241,8 @@ static BOOL test_one(struct cli_state *cli[2][2],
 	unsigned r1 = rec->r1;
 	unsigned r2 = rec->r2;
 	unsigned op;
-	BOOL ret1, ret2;
+	int server;
+	BOOL ret[NSERVERS];
 
 	if (r1 < READ_PCT) {
 		op = READ_LOCK; 
@@ -245,70 +252,64 @@ static BOOL test_one(struct cli_state *cli[2][2],
 
 	if (r2 < LOCK_PCT) {
 		/* set a lock */
-		ret1 = cli_lock(cli[0][conn], 
-				fnum[0][conn][f],
-				start, len, LOCK_TIMEOUT, op);
-		ret2 = cli_lock(cli[1][conn], 
-				fnum[1][conn][f],
-				start, len, LOCK_TIMEOUT, op);
-		if (showall || ret1 != ret2) {
+		for (server=0;server<NSERVERS;server++) {
+			ret[server] = cli_lock(cli[server][conn], 
+					fnum[server][conn][f],
+					start, len, LOCK_TIMEOUT, op);
+		}
+		if (showall || ret[0] != ret[1]) {
 			printf("lock   conn=%u f=%u range=%u:%u(%u) op=%s -> %u:%u\n",
 			       conn, f, 
 			       start, start+len-1, len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
-			       ret1, ret2);
+			       ret[0], ret[1]);
 		}
-		if (showall) brl_forall(print_brl);
-		if (ret1 != ret2) return False;
+		if (showall || ret[0] != ret[1]) show_locks();
+		if (ret[0] != ret[1]) return False;
 	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 		/* unset a lock */
-		ret1 = cli_unlock(cli[0][conn], 
-				  fnum[0][conn][f],
-				  start, len);
-		ret2 = cli_unlock(cli[1][conn], 
-				  fnum[1][conn][f],
-				  start, len);
-		if (showall || (!hide_unlock_fails && (ret1 != ret2))) {
+		for (server=0;server<NSERVERS;server++) {
+			ret[server] = cli_unlock(cli[server][conn], 
+						 fnum[server][conn][f],
+						 start, len);
+		}
+		if (showall || (!hide_unlock_fails && (ret[0] != ret[1]))) {
 			printf("unlock conn=%u f=%u range=%u:%u(%u)       -> %u:%u\n",
 			       conn, f, 
 			       start, start+len-1, len,
-			       ret1, ret2);
+			       ret[0], ret[1]);
 		}
-		if (showall) brl_forall(print_brl);
-		if (!hide_unlock_fails && ret1 != ret2) return False;
+		if (showall || ret[0] != ret[1]) show_locks();
+		if (!hide_unlock_fails && ret[0] != ret[1]) return False;
 	} else {
 		/* reopen the file */
-		cli_close(cli[0][conn], fnum[0][conn][f]);
-		cli_close(cli[1][conn], fnum[1][conn][f]);
-		fnum[0][conn][f] = cli_open(cli[0][conn], FILENAME,
-					    O_RDWR|O_CREAT,
-					    DENY_NONE);
-		fnum[1][conn][f] = cli_open(cli[1][conn], FILENAME,
-					    O_RDWR|O_CREAT,
-					    DENY_NONE);
-		if (fnum[0][conn][f] == -1) {
-			printf("failed to reopen on share1\n");
-			return False;
+		for (server=0;server<NSERVERS;server++) {
+			cli_close(cli[server][conn], fnum[server][conn][f]);
 		}
-		if (fnum[1][conn][f] == -1) {
-			printf("failed to reopen on share2\n");
-			return False;
+		for (server=0;server<NSERVERS;server++) {
+			fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
+							 O_RDWR|O_CREAT,
+							 DENY_NONE);
+			if (fnum[server][conn][f] == -1) {
+				printf("failed to reopen on share%d\n", server);
+				return False;
+			}
 		}
 		if (showall) {
 			printf("reopen conn=%u f=%u\n",
 			       conn, f);
-			brl_forall(print_brl);
+			show_locks();
 		}
 	}
 	return True;
 }
 
-static void close_files(struct cli_state *cli[2][2], 
-			int fnum[2][2][2])
+static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+			int fnum[NSERVERS][NCONNECTIONS][NFILES])
 {
 	int server, conn, f; 
 
-	for (server=0;server<2;server++)
+	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		if (fnum[server][conn][f] != -1) {
@@ -316,16 +317,17 @@ static void close_files(struct cli_state *cli[2][2],
 			fnum[server][conn][f] = -1;
 		}
 	}
-	cli_unlink(cli[0][0], FILENAME);
-	cli_unlink(cli[1][0], FILENAME);
+	for (server=0;server<NSERVERS;server++) {
+		cli_unlink(cli[server][0], FILENAME);
+	}
 }
 
-static void open_files(struct cli_state *cli[2][2], 
-		       int fnum[2][2][2])
+static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+		       int fnum[NSERVERS][NCONNECTIONS][NFILES])
 {
 	int server, conn, f; 
 
-	for (server=0;server<2;server++)
+	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		fnum[server][conn][f] = cli_open(cli[server][conn], FILENAME,
@@ -340,8 +342,8 @@ static void open_files(struct cli_state *cli[2][2],
 }
 
 
-static int retest(struct cli_state *cli[2][2], 
-		   int fnum[2][2][2],
+static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+		   int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		   int n)
 {
 	int i;
@@ -364,10 +366,10 @@ static int retest(struct cli_state *cli[2][2],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static void test_locks(char *share1, char *share2)
+static void test_locks(char *share[NSERVERS])
 {
-	struct cli_state *cli[2][2];
-	int fnum[2][2][2];
+	struct cli_state *cli[NSERVERS][NCONNECTIONS];
+	int fnum[NSERVERS][NCONNECTIONS][NFILES];
 	int n, i, n1; 
 
 	ZERO_STRUCT(fnum);
@@ -392,7 +394,7 @@ static void test_locks(char *share1, char *share2)
 		}
 	}
 
-	reconnect(cli, fnum, share1, share2);
+	reconnect(cli, fnum, share);
 	open_files(cli, fnum);
 	n = retest(cli, fnum, numops);
 
@@ -403,7 +405,7 @@ static void test_locks(char *share1, char *share2)
 		n1 = n;
 
 		close_files(cli, fnum);
-		reconnect(cli, fnum, share1, share2);
+		reconnect(cli, fnum, share);
 		open_files(cli, fnum);
 
 		for (i=0;i<n-1;i++) {
@@ -430,7 +432,7 @@ static void test_locks(char *share1, char *share2)
 	}
 
 	close_files(cli, fnum);
-	reconnect(cli, fnum, share1, share2);
+	reconnect(cli, fnum, share);
 	open_files(cli, fnum);
 	showall = True;
 	n1 = retest(cli, fnum, n);
@@ -473,13 +475,13 @@ static void usage(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	char *share1, *share2;
+	char *share[NSERVERS];
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
 	int opt;
 	char *p;
-	int seed;
+	int seed, server;
 	static pstring servicesf = CONFIGFILE;
 
 	setlinebuf(stdout);
@@ -491,16 +493,15 @@ static void usage(void)
 		exit(1);
 	}
 
-	share1 = argv[1];
-	share2 = argv[2];
-
-	all_string_sub(share1,"/","\\",0);
-	all_string_sub(share2,"/","\\",0);
-
 	setup_logging(argv[0],True);
 
-	argc -= 2;
-	argv += 2;
+	for (server=0;server<NSERVERS;server++) {
+		share[server] = argv[1+server];
+		all_string_sub(share[server],"/","\\",0);
+	}
+
+	argc -= NSERVERS;
+	argv += NSERVERS;
 
 	TimeInit();
 	charset_initialise();
@@ -560,7 +561,7 @@ static void usage(void)
 	srandom(seed);
 
 	locking_init(1);
-	test_locks(share1, share2);
+	test_locks(share);
 
 	return(0);
 }
