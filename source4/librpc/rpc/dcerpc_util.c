@@ -1003,7 +1003,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 
 	status = dcerpc_pipe_open_tcp(p, binding->host, port);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to connect to %s:%d\n", binding->host, port));
+		DEBUG(0,("Failed to connect to %s:%d - %s\n", 
+			 binding->host, port, nt_errstr(status)));
                 return status;
         }
 
