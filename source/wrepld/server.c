@@ -166,9 +166,11 @@ void exit_server(const char *reason)
 static void usage(char *pname)
 {
 
-	d_printf("Usage: %s [-DaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	d_printf("Usage: %s [-DFSaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	d_printf("       [-O socket options] [-s services file]\n");
 	d_printf("\t-D                    Become a daemon (default)\n");
+	d_printf("\t-F                    Run daemon in foreground (for daemontools, etc)\n");
+	d_printf("\t-S                    Log to stdout\n");
 	d_printf("\t-a                    Append to log file (default)\n");
 	d_printf("\t-i                    Run interactive (not a daemon)\n" );
 	d_printf("\t-o                    Overwrite log file, don't append\n");
@@ -523,6 +525,8 @@ static void process(void)
 	BOOL is_daemon = False;
 	BOOL interactive = False;
 	BOOL specified_logfile = False;
+	BOOL Fork = True;
+	BOOL log_stdout = False;
 	int opt;
 	pstring logfile;
 
@@ -536,8 +540,14 @@ static void process(void)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?Vaiof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "FSO:l:s:d:Dp:h?Vaiof:")) )
 		switch (opt)  {
+		case 'F':
+			Fork = False;
+			break;
+		case 'S':
+			log_stdout = True;
+			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
 			break;
@@ -554,6 +564,8 @@ static void process(void)
 
 		case 'i':
 			interactive = True;
+			Fork = False;
+			log_stdout = True;
 			break;
 
 		case 'D':
@@ -586,6 +598,11 @@ static void process(void)
 			usage(argv[0]);
 			exit(1);
 		}
+	if (log_stdout && Fork) {
+		d_printf("Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n");
+		usage(argv[0]);
+		exit(1);
+	}
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */
@@ -604,7 +621,7 @@ static void process(void)
 
 	set_remote_machine_name("wrepld");
 
-	setup_logging(argv[0],interactive);
+	setup_logging(argv[0],log_stdout);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
@@ -682,7 +699,7 @@ static void process(void)
 
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
-		become_daemon();
+		become_daemon(Fork);
 	}
 
 #if HAVE_SETPGID

@@ -16,6 +16,8 @@
 	<cmdsynopsis>
 		<command>smbd</command>
 		<arg choice="opt">-D</arg>
+		<arg choice="opt">-F</arg>
+		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
@@ -87,12 +89,36 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>-F</term>
+		<listitem><para>If specified, this parameter causes
+		the main <command>smbd</command> process to not daemonize,
+		i.e. double-fork and disassociate with the terminal.
+		Child processes are still created as normal to service
+		each connection request, but the main process does not
+		exit. This operation mode is suitable for running
+		<command>smbd</command> under process supervisors such
+		as <command>supervise</command> and <command>svscan</command>
+		from Daniel J. Bernstein's <command>daemontools</command>
+		package, or the AIX process monitor.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-S</term>
+		<listitem><para>If specified, this parameter causes
+		<command>smbd</command> to log to standard output rather
+		than a file.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-i</term>
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit deamon mode when run from the
-		command line.
+		command line. <command>smbd</command> also logs to standard
+		output, as if the <command>-S</command> parameter had been
+		given. </para></listitem>
 		</para></listitem>
 		</varlistentry>
 		
