@@ -186,6 +186,8 @@ LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
 READLINE_OBJ = lib/readline.o
 
+# Also depends on  $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
+# Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
@@ -284,7 +286,8 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
-DEVEL_HELP_OBJ = modules/weird.o
+DEVEL_HELP_WEIRD_OBJ = modules/weird.o
+DEVEL_HELP_CP850_OBJ = modules/CP850.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -521,7 +524,7 @@ NSSTEST_OBJ = torture/nsstest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
-SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_OBJ) $(UBIQX_OBJ) $(POPT_LIB_OBJ)
+SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_OBJ) $(UBIQX_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
@@ -1058,9 +1061,14 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.po
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.po \
 		@SONAMEFLAG@`basename $@`
 
-bin/weird.@SHLIBEXT@: $(DEVEL_HELP_OBJ:.o=.po)
+bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.po)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ:.o=.po) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.po) \
+		@SONAMEFLAG@`basename $@`
+
+bin/CP850.@SHLIBEXT@: $(DEVEL_HELP_CP850_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP850_OBJ:.o=.po) \
 		@SONAMEFLAG@`basename $@`
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.po)

@@ -24,7 +24,7 @@
 #include "includes.h"
 
 static int
-process_block (smb_iconv_t cd, char *addr, size_t len, FILE *output)
+process_block (smb_iconv_t cd, const char *addr, size_t len, FILE *output)
 {
 #define OUTBUF_SIZE	32768
   const char *start = addr;
@@ -37,7 +37,7 @@ process_block (smb_iconv_t cd, char *addr, size_t len, FILE *output)
     {
       outptr = outbuf;
       outlen = OUTBUF_SIZE;
-      n = smb_iconv (cd, &addr, &len, &outptr, &outlen);
+      n = smb_iconv (cd,  &addr, &len, &outptr, &outlen);
 
       if (outptr != outbuf)
 	{
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	char *from = "";
 	char *to = "";
 	char *output = NULL;
-	char *preload = NULL;
+	const char *preload_modules[] = {NULL, NULL};
 	FILE *out = stdout;
 	int fd;
 	smb_iconv_t cd;
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 		{ "from-code", 'f', POPT_ARG_STRING, &from, 0, "Encoding of original text" },
 		{ "to-code", 't', POPT_ARG_STRING, &to, 0, "Encoding for output" },
 		{ "output", 'o', POPT_ARG_STRING, &output, 0, "Write output to this file" },
-		{ "preload-modules", 'p', POPT_ARG_STRING, &preload, 0, "Modules to load" },
+		{ "preload-modules", 'p', POPT_ARG_STRING, &preload_modules[0], 0, "Modules to load" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -202,12 +202,12 @@ int main(int argc, char *argv[])
 	   facilities.  See lib/debug.c */
 	setup_logging("smbiconv", True);
 
-	if(preload)smb_load_modules(str_list_make(preload, NULL));
+	if (preload_modules[0]) smb_load_modules(preload_modules);
 
 	if(output) {
-		output = fopen(output, "w");
+		out = fopen(output, "w");
 
-		if(!output) {
+		if(!out) {
 			DEBUG(0, ("Can't open output file '%s': %s, exiting...\n", output, strerror(errno)));
 			return 1;
 		}
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Loop thru all arguments */
-		process_fd(cd, fd, stdout);
+		process_fd(cd, fd, out);
 
 		close(fd);
 	}
