@@ -3032,7 +3032,6 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 	for (i=0;i<nprocs;i++) {
 		waitpid(0, &status, 0);
-		printf("*");
 	}
 
 	printf("\n");
