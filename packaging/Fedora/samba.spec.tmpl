@@ -214,6 +214,13 @@ if [ "$1" -ge "1" ]; then
 	%{initdir}/smb condrestart >/dev/null 2>&1
 fi	
 
+
+%post swat
+# Add swat entry to /etc/services if not already there.
+if [ ! "`grep ^\s**swat /etc/services`" ]; then
+        echo 'swat        901/tcp     # Add swat service used via inetd' >> /etc/services
+fi
+
 %post common
 /sbin/chkconfig --add winbind
 /sbin/ldconfig
