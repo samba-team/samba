@@ -2103,6 +2103,7 @@ static void usage(void)
 
 	printf("Usage: smbtorture //server/share <options> TEST1 TEST2 ...\n");
 
+	printf("\t-d debuglevel\n");
 	printf("\t-U user%%pass\n");
 	printf("\t-N numprocs\n");
 	printf("\t-n my_netbios_name\n");
@@ -2182,7 +2183,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:L")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
@@ -2195,6 +2196,9 @@ static void usage(void)
 			break;
 		case 'o':
 			numops = atoi(optarg);
+			break;
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
 			break;
 		case 'O':
 			sockops = optarg;
