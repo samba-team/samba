@@ -313,11 +313,11 @@ int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
  Useful function to find a print job in the database.
 ****************************************************************************/
 
-static struct printjob *print_job_find(int snum, uint32 jobid)
+static struct printjob *print_job_find(const char *printer_name, uint32 jobid)
 {
 	static struct printjob 	pjob;
 	TDB_DATA 		ret;
-	struct tdb_print_db 	*pdb = get_print_db_byname(lp_const_servicename(snum));
+	struct tdb_print_db 	*pdb = get_print_db_byname(printer_name);
 	
 
 	if (!pdb)
@@ -567,7 +567,8 @@ done:
 
 void pjob_delete(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	uint32 job_status = 0;
 	struct tdb_print_db *pdb = get_print_db_byname(lp_const_servicename(snum));
 
@@ -634,7 +635,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 
 	/* Preserve the timestamp on an existing unix print job */
 
-	old_pj = print_job_find(snum, jobid);
+	old_pj = print_job_find(lp_const_servicename(snum), jobid);
 
 	ZERO_STRUCT(pj);
 
@@ -795,7 +796,7 @@ static void print_cache_flush(int snum)
  Check if someone already thinks they are doing the update.
 ****************************************************************************/
 
-static pid_t get_updating_pid(fstring printer_name)
+static pid_t get_updating_pid(const char *printer_name)
 {
 	fstring keystr;
 	TDB_DATA data, key;
@@ -970,11 +971,18 @@ static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
 	}
 }
 
+struct print_queue_update_context {
+	int snum;		/* This can not be relied upon, to be removed */
+	fstring printer_name;
+	enum printing_types printing_type;
+	fstring lpqcommand;
+};
+
 /****************************************************************************
  Update the internal database from the system print queue for a queue.
 ****************************************************************************/
 
-static void print_queue_update_internal(int snum)
+static void print_queue_update_internal(struct print_queue_update_context *ctx)
 {
 	int i, qcount;
 	print_queue_struct *queue = NULL;
@@ -982,14 +990,13 @@ static void print_queue_update_internal(int snum)
 	print_status_struct old_status;
 	struct printjob *pjob;
 	struct traverse_struct tstruct;
-	fstring keystr, printer_name, cachestr;
+	fstring keystr, cachestr;
 	TDB_DATA data, key;
 	TDB_DATA jcdata;
 	struct tdb_print_db *pdb;
-	struct printif *current_printif = get_printer_fns( snum );
+	struct printif *current_printif = get_printer_fns( ctx->snum );
 
-	fstrcpy(printer_name, lp_const_servicename(snum));
-	pdb = get_print_db_byname(printer_name);
+	pdb = get_print_db_byname(ctx->printer_name);
 	if (!pdb)
 		return;
 
@@ -998,17 +1005,18 @@ static void print_queue_update_internal(int snum)
 	 * This is essentially a mutex on the update.
 	 */
 
-	if (get_updating_pid(printer_name) != -1) {
+	if (get_updating_pid(ctx->printer_name) != -1) {
 		release_print_db(pdb);
 		return;
 	}
 
 	/* Lock the queue for the database update */
 
-	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", ctx->printer_name);
 	/* Only wait 10 seconds for this. */
 	if (tdb_lock_bystring(pdb->tdb, keystr, 10) == -1) {
-		DEBUG(0,("print_queue_update: Failed to lock printer %s database\n", printer_name));
+		DEBUG(0,("print_queue_update: Failed to lock printer %s "
+			 "database\n", ctx->printer_name));
 		release_print_db(pdb);
 		return;
 	}
@@ -1019,7 +1027,7 @@ static void print_queue_update_internal(int snum)
 	 * the winner.
 	 */
 
-	if (get_updating_pid(printer_name) != -1) {
+	if (get_updating_pid(ctx->printer_name) != -1) {
 		/*
 		 * Someone else is doing the update, exit.
 		 */
@@ -1033,7 +1041,7 @@ static void print_queue_update_internal(int snum)
 	 */
 
 	/* Tell others we're doing the update. */
-	set_updating_pid(printer_name, False);
+	set_updating_pid(ctx->printer_name, False);
 
 	/*
 	 * Allow others to enter and notice we're doing
@@ -1048,16 +1056,16 @@ static void print_queue_update_internal(int snum)
 	 * if the lpq takes a long time.
 	 */
 
-	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", printer_name);
+	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", ctx->printer_name);
 	tdb_store_int32(pdb->tdb, cachestr, (int)time(NULL));
 
         /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
 
-	qcount = (*(current_printif->queue_get))(snum, &queue, &status);
+	qcount = (*(current_printif->queue_get))(ctx->snum, &queue, &status);
 
 	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
-		"s" : "", printer_name));
+		"s" : "", ctx->printer_name));
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
@@ -1083,24 +1091,24 @@ static void print_queue_update_internal(int snum)
 
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
-			print_unix_job(snum, &queue[i], jobid);
+			print_unix_job(ctx->snum, &queue[i], jobid);
 			continue;
 		}
 
 		/* we have an active SMB print job - update its status */
-		pjob = print_job_find(snum, jobid);
+		pjob = print_job_find(ctx->printer_name, jobid);
 		if (!pjob) {
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
-			print_unix_job(snum, &queue[i], jobid);
+			print_unix_job(ctx->snum, &queue[i], jobid);
 			continue;
 		}
 
 		pjob->sysjob = queue[i].job;
 		pjob->status = queue[i].status;
-		pjob_store(snum, jobid, pjob);
-		check_job_changed(snum, jcdata, jobid);
+		pjob_store(ctx->snum, jobid, pjob);
+		check_job_changed(ctx->snum, jcdata, jobid);
 	}
 
 	SAFE_FREE(jcdata.dptr);
@@ -1109,7 +1117,7 @@ static void print_queue_update_internal(int snum)
            system queue */
 	tstruct.queue = queue;
 	tstruct.qcount = qcount;
-	tstruct.snum = snum;
+	tstruct.snum = ctx->snum;
 	tstruct.total_jobs = 0;
 	tstruct.lpq_time = time(NULL);
 
@@ -1121,17 +1129,18 @@ static void print_queue_update_internal(int snum)
 	SAFE_FREE(tstruct.queue);
 
 	DEBUG(10,("print_queue_update: printer %s INFO/total_jobs = %d\n",
-				printer_name, tstruct.total_jobs ));
+				ctx->printer_name, tstruct.total_jobs ));
 
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
-	get_queue_status(snum, &old_status);
+	get_queue_status(ctx->snum, &old_status);
 	if (old_status.qcount != qcount)
-		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
-					old_status.qcount, qcount, printer_name ));
+		DEBUG(10,("print_queue_update: queue status change %d jobs -> "
+			  "%d jobs for printer %s\n", old_status.qcount,
+			  qcount, ctx->printer_name ));
 
 	/* store the new queue status structure */
-	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", ctx->printer_name);
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
@@ -1145,11 +1154,11 @@ static void print_queue_update_internal(int snum)
 	 * as little as possible...
 	 */
 
-	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", ctx->printer_name);
 	tdb_store_int32(pdb->tdb, keystr, (int32)time(NULL));
 
 	/* Delete our pid from the db. */
-	set_updating_pid(printer_name, True);
+	set_updating_pid(ctx->printer_name, True);
 	release_print_db(pdb);
 }
 
@@ -1158,9 +1167,15 @@ this is the receive function of the background lpq updater
 ****************************************************************************/
 static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
 {
-	int snum;
-	snum=*((int *)buf);
-	print_queue_update_internal(snum);
+	struct print_queue_update_context *ctx;
+
+	if (len != sizeof(struct print_queue_update_context)) {
+		DEBUG(1, ("Got invalid print queue update message\n"));
+		return;
+	}
+
+	ctx = (struct print_queue_update *)buf;
+	print_queue_update_internal(ctx);
 }
 
 static pid_t background_lpq_updater_pid = -1;
@@ -1225,19 +1240,26 @@ update the internal database from the system print queue for a queue
 ****************************************************************************/
 static void print_queue_update(int snum)
 {
+	struct print_queue_update_context ctx;
+
+	ctx.snum = snum;
+	fstrcpy(ctx.printer_name, lp_const_servicename(snum));
+	ctx.printing_type = lp_printing(snum);
+	fstrcpy(ctx.lpqcommand, lp_lpqcommand(snum));
+	
 	/* 
-	 * Make sure that the backgroup queueu process exists.  
+	 * Make sure that the backgroup queue process exists.  
 	 * Otherwise just do the update ourselves 
 	 */
 	   
 	if ( background_lpq_updater_pid != -1 ) {
 		become_root();
 		message_send_pid(background_lpq_updater_pid,
-				 MSG_PRINTER_UPDATE, &snum, sizeof(snum),
+				 MSG_PRINTER_UPDATE, &ctx, sizeof(ctx),
 				 False);
 		unbecome_root();
 	} else
-		print_queue_update_internal( snum );
+		print_queue_update_internal( &ctx );
 }
 
 /****************************************************************************
@@ -1443,7 +1465,8 @@ BOOL print_job_exists(int snum, uint32 jobid)
 
 int print_job_fd(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	if (!pjob)
 		return -1;
 	/* don't allow another process to get this info - it is meaningless */
@@ -1460,7 +1483,8 @@ int print_job_fd(int snum, uint32 jobid)
 
 char *print_job_fname(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	if (!pjob || pjob->spooled || pjob->pid != local_pid)
 		return NULL;
 	return pjob->filename;
@@ -1475,7 +1499,8 @@ char *print_job_fname(int snum, uint32 jobid)
 
 NT_DEVICEMODE *print_job_devmode(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	
 	if ( !pjob )
 		return NULL;
@@ -1499,7 +1524,8 @@ BOOL print_job_set_place(int snum, uint32 jobid, int place)
 
 BOOL print_job_set_name(int snum, uint32 jobid, char *name)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	if (!pjob || pjob->pid != local_pid)
 		return False;
 
@@ -1569,7 +1595,8 @@ static BOOL remove_from_jobs_changed(int snum, uint32 jobid)
 
 static BOOL print_job_delete1(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	int result = 0;
 	struct printif *current_printif = get_printer_fns( snum );
 
@@ -1625,7 +1652,8 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 
 static BOOL is_owner(struct current_user *user, int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	user_struct *vuser;
 
 	if (!pjob || !user)
@@ -1709,7 +1737,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	int ret = -1;
 	struct printif *current_printif = get_printer_fns( snum );
 	
@@ -1760,7 +1789,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR *errcode)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 	
@@ -1808,7 +1838,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 {
 	int return_code;
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 
 	if (!pjob)
 		return -1;
@@ -2144,7 +2175,8 @@ to open spool file %s.\n", pjob.filename));
 
 void print_job_endpage(int snum, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	if (!pjob)
 		return;
 	/* don't allow another process to get this info - it is meaningless */
@@ -2163,7 +2195,8 @@ void print_job_endpage(int snum, uint32 jobid)
 
 BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 {
-	struct printjob *pjob = print_job_find(snum, jobid);
+	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
+					       jobid);
 	int ret;
 	SMB_STRUCT_STAT sbuf;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2312,7 +2345,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 		jobid = IVAL(cgdata.dptr, i*4);
 		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
-		pjob = print_job_find(snum, jobid);
+		pjob = print_job_find(lp_const_servicename(snum), jobid);
 		if (!pjob) {
 			DEBUG(5,("get_stored_queue_info: failed to find changed job = %u\n", (unsigned int)jobid));
 			remove_from_jobs_changed(snum, jobid);
