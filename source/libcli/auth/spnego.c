@@ -579,7 +579,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.end		= gensec_spnego_end
 };
 
-NTSTATUS gensec_spengo_init(void)
+NTSTATUS gensec_spnego_init(void)
 {
 	NTSTATUS ret;
 	ret = register_backend("gensec", &gensec_spnego_security_ops);

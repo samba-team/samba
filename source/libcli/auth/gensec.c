@@ -498,7 +498,7 @@ BOOL gensec_init(void)
 	static BOOL initialised;
 	NTSTATUS status;
 
-	/* this is *completly* the wrong way to do this */
+	/* this is *completely* the wrong way to do this */
 	if (initialised) {
 		return True;
 	}
@@ -508,12 +508,7 @@ BOOL gensec_init(void)
 		return False;
 	}
 
-	/* FIXME: Perhaps panic if a basic backend, such as NTLMSSP, fails to initialise? */
-	gensec_ntlmssp_init();
-#if 0
-	gensec_krb5_init();
-#endif
-	gensec_spnego_init();
+	static_init_gensec;
 	gensec_dcerpc_schannel_init();
 
 	initialised = True;

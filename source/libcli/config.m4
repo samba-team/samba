@@ -46,7 +46,5 @@ SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		libcli/nmblib.o
 		libcli/namequery.o])
 
-SMB_SUBSYSTEM_MK(LIBCLI_AUTH,libcli/config.mk)
-
 SMB_SUBSYSTEM(LIBCLI,[],[],[],
 		[LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB])
