@@ -21,7 +21,7 @@
 */
 
 /**
- * @group swat SWAT
+ * @defgroup swat SWAT - Samba Web Administration Tool
  * @{ 
  * @file swat.c
  *

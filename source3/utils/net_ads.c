@@ -53,6 +53,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\t lookup, add, or remove directory entry for a printer\n"\
 "\nnet ads search"\
 "\n\tperform a raw LDAP search and dump the results\n"
+"\nnet ads dn"\
+"\n\tperform a raw LDAP search and dump attributes of a particular DN\n"
 		);
 	return -1;
 }
@@ -131,7 +133,6 @@ static ADS_STRUCT *ads_startup(void)
 
 	if (opt_user_specified) {
 		need_password = True;
-		use_in_memory_ccache();
 	}
 
 retry:
@@ -142,8 +143,10 @@ retry:
 		free(prompt);
 	}
 
-	if (opt_password)
+	if (opt_password) {
+		use_in_memory_ccache();
 		ads->auth.password = strdup(opt_password);
+	}
 
 	ads->auth.user_name = strdup(opt_user_name);
 
@@ -1002,9 +1005,68 @@ static int net_ads_search(int argc, const char **argv)
 	exp = argv[0];
 	attrs = (argv + 1);
 
-	rc = ads_do_search_all(ads, ads->config.bind_path, 
+	rc = ads_do_search_all(ads, ads->config.bind_path,
 			       LDAP_SCOPE_SUBTREE,
 			       exp, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("search failed: %s\n", ads_errstr(rc));
+		return -1;
+	}	
+
+	d_printf("Got %d replies\n\n", ads_count_replies(ads, res));
+
+	/* dump the results */
+	ads_dump(ads, res);
+
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return 0;
+}
+
+
+/*
+  help for net ads search
+*/
+static int net_ads_dn_usage(int argc, const char **argv)
+{
+	d_printf(
+		"\nnet ads dn <dn> <attributes...>\n"\
+		"\nperform a raw LDAP search on a ADS server and dump the results\n"\
+		"The DN standard LDAP DN, and the attributes are a list of LDAP fields \n"\
+		"to show in the results\n\n"\
+		"Example: net ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' sAMAccountName\n\n"
+		);
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
+
+/*
+  general ADS search function. Useful in diagnosing problems in ADS
+*/
+static int net_ads_dn(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	const char *dn;
+	const char **attrs;
+	void *res = NULL;
+
+	if (argc < 1) {
+		return net_ads_dn_usage(argc, argv);
+	}
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+
+	dn = argv[0];
+	attrs = (argv + 1);
+
+	rc = ads_do_search_all(ads, dn, 
+			       LDAP_SCOPE_BASE,
+			       "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("search failed: %s\n", ads_errstr(rc));
 		return -1;
@@ -1057,6 +1119,7 @@ int net_ads(int argc, const char **argv)
 		{"CHOSTPASS", net_ads_change_localhost_pass},
 		{"PRINTER", net_ads_printer},
 		{"SEARCH", net_ads_search},
+		{"DN", net_ads_dn},
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
 		{"HELP", net_ads_help},
