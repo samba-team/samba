@@ -1121,7 +1121,7 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 	const char *p = url;
 
 	/* skip leading "URL:" (if any) */
-	if ( strnequal( p, "URL:", 4 ) ) {
+	if (strncasecmp( p, "URL:", 4) == 0) {
 		p += 4;
 	}
 
