@@ -141,7 +141,7 @@ NTSTATUS dcerpc_$name\_init(void)
 	ep_server.interface_by_uuid = $name\_op_interface_by_uuid;
 	ep_server.interface_by_name = $name\_op_interface_by_name;
 
-	/* register ourselves with the NTVFS subsystem. */
+	/* register ourselves with the DCERPC subsystem. */
 	ret = register_backend(\"dcerpc\", &ep_server);
 
 	if (!NT_STATUS_IS_OK(ret)) {

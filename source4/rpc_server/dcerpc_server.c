@@ -233,7 +233,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		DLIST_ADD(dce_ctx->endpoint_list, ep);
 	}
 
-	DEBUG(3,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
+	DEBUG(4,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
 		iface->ndr->name, ep_name));
 
 	return NT_STATUS_OK;
@@ -1019,7 +1019,7 @@ static NTSTATUS decrpc_register_ep_server(void *_ep_server)
 	
 	if (dcesrv_ep_server_byname(ep_server->name) != NULL) {
 		/* its already registered! */
-		DEBUG(1,("DCERPC endpoint server '%s' already registered\n", 
+		DEBUG(0,("DCERPC endpoint server '%s' already registered\n", 
 			 ep_server->name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
@@ -1034,7 +1034,7 @@ static NTSTATUS decrpc_register_ep_server(void *_ep_server)
 
 	num_ep_servers++;
 
-	DEBUG(1,("DCERPC module '%s' registered\n", 
+	DEBUG(3,("DCERPC endpoint server '%s' registered\n", 
 		 ep_server->name));
 
 	return NT_STATUS_OK;
@@ -1095,6 +1095,6 @@ BOOL dcesrv_init(void)
 	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPER, fails to initialise? */
 	static_init_dcerpc;
 
-	DEBUG(1,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
+	DEBUG(3,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
 	return True;
 }

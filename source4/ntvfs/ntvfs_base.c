@@ -48,7 +48,7 @@ static NTSTATUS ntvfs_register(void *_ops)
 	
 	if (ntvfs_backend_byname(ops->name, ops->type) != NULL) {
 		/* its already registered! */
-		DEBUG(2,("NTVFS backend '%s' for type %d already registered\n", 
+		DEBUG(0,("NTVFS backend '%s' for type %d already registered\n", 
 			 ops->name, (int)ops->type));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
@@ -62,6 +62,9 @@ static NTSTATUS ntvfs_register(void *_ops)
 	backends[num_backends].ops->name = smb_xstrdup(ops->name);
 
 	num_backends++;
+
+	DEBUG(3,("NTVFS backend '%s' for type %d registered\n", 
+		 ops->name,ops->type));
 
 	return NT_STATUS_OK;
 }
@@ -130,9 +133,6 @@ BOOL ntvfs_init(void)
 NTSTATUS ntvfs_init_connection(struct request_context *req)
 {
 	const char *handler = lp_ntvfs_handler(req->conn->service);
-	
-	if (strequal(handler, "default"))
-		handler = "ipc";
 
 	req->conn->ntvfs_ops = ntvfs_backend_byname(handler, req->conn->type);
 

@@ -21,6 +21,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef SAMBA_DCERPC_SERVER_H
+#define SAMBA_DCERPC_SERVER_H
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct dcesrv_critical_sizes.
@@ -183,3 +186,5 @@ struct dcesrv_critical_sizes {
 	int sizeof_dcesrv_auth;
 	int sizeof_dcesrv_handle;
 };
+
+#endif /* SAMBA_DCERPC_SERVER_H */
