@@ -1,3 +1,7 @@
+2005-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c: use NULL as last argument to execl, not 0
+
 2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* xnlock.c: get_v4_tgt only used when compileing with kerberos 4
