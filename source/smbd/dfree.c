@@ -115,10 +115,19 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 		} else {
 			DEBUG (0, ("disk_free: sys_popen() failed for command %s. Error was : %s\n",
 				syscmd, strerror(errno) ));
-			sys_fsusage(path, dfree, dsize);
+			if (sys_fsusage(path, dfree, dsize) != 0) {
+				DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
+					strerror(errno) ));
+				return (SMB_BIG_UINT)-1;
+			}
 		}
-	} else
-		sys_fsusage(path, dfree, dsize);
+	} else {
+		if (sys_fsusage(path, dfree, dsize) != 0) {
+			DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
+				strerror(errno) ));
+			return (SMB_BIG_UINT)-1;
+		}
+	}
 
 	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
 		(*bsize) = bsize_q;
