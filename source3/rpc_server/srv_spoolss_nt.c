@@ -2393,9 +2393,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
-		fstring string;
-
-		fstrcpy(string, string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		const char *string="C:\\PRINTERS";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
@@ -2411,7 +2409,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	}
 
 	if (!StrCaseCmp(value, "Architecture")) {			
-		pstring string="Windows NT x86";
+		const char *string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
@@ -7912,6 +7910,11 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		return WERR_BADFID;
 	}
 
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+		DEBUG(10,("_spoolss_setprinterdata: Not implemented for server handles yet\n"));
+		return WERR_INVALID_PARAM;
+	}
+
 	if (!get_printer_snum(p,handle, &snum))
 		return WERR_BADFID;
 
@@ -8698,7 +8701,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	/* Is the handle to a printer or to the server? */
 
 	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
-		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
+		DEBUG(10,("_spoolss_getprinterdataex: Not implemented for server handles yet\n"));
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -8780,8 +8783,13 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
            SetPrinterData if key is "PrinterDriverData" */
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_setprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
+	}
+
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER ) {
+		DEBUG(10,("_spoolss_setprinterdataex: Not implemented for server handles yet\n"));
+		return WERR_INVALID_PARAM;
 	}
 
 	if ( !get_printer_snum(p,handle, &snum) )
