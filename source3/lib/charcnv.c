@@ -214,14 +214,14 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 	outbuf = NULL;
 convert:
 	destlen = destlen * 2;
-	ob = (char *)realloc(outbuf, destlen);
+	ob = (char *)Realloc(outbuf, destlen);
 	if (!ob) {
 		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
 		SAFE_FREE(outbuf);
 		return (size_t)-1;
-	}
-	else
+	} else {
 		outbuf = ob;
+	}
 	i_len = srclen;
 	o_len = destlen;
 	retval = smb_iconv(descriptor,
