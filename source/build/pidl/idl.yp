@@ -191,14 +191,14 @@ array_len:
 
 property_list: 
     #empty
-    | property_list '[' properties ']' { util::FlattenArray([$_[1],$_[3]]); }
+    | property_list '[' properties ']' { util::FlattenHash([$_[1],$_[3]]); }
 ;
 
-properties: property          { [ $_[1] ] }
-    | properties ',' property { push(@{$_[1]}, $_[3]); $_[1] }
+properties: property          { $_[1] }
+    | properties ',' property { util::FlattenHash([$_[1], $_[3]]); }
 ;
 
-property: identifier
+property: identifier                   {{ "$_[1]" => "1"     }}
           | identifier '(' anytext ')' {{ "$_[1]" => "$_[3]" }}
 ;
 
