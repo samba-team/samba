@@ -3252,7 +3252,9 @@ done:
 
 
 /**
- * Init LDAP structures passed to ldap calls from trust password structure.
+ * Init LDAP structures passed to ldap calls from trust password structure. Fill out
+ * every field if in case of new ldap entry (entry parameter is NULL) or only those
+ * that have changed, when compared to existing ldap entry (entry parameter is not NULL).
  *
  * @param ldap_state LDAP state structure required by ldap calls
  * @param entry LDAPMessage existing entry structure returned from ldap calls (if any)
@@ -3319,10 +3321,16 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	if (entry) {
 		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 						   attr_sid, attr_val, sizeof(attr_val));
-		if (ret)
-			if (strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
+		if (ret) {
+			/* pattern of "empty sid compare" */
+			DOM_SID empty;
+			memset(&empty, 0, sizeof(empty));
+
+			if (memcmp((void*)sid, (void*)&empty, sizeof(DOM_SID)) &&
+			    strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_sid, sidstr);
+		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_sid, sidstr);

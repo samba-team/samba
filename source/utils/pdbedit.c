@@ -834,7 +834,8 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 			printf("Error: incorrect SID specified !\n");
 			return -1;
 		}
-	}
+	} else
+		memset(&trust.private.domain_sid, 0, sizeof(trust.private.domain_sid));
 
 	/* flags */
 	trust.private.flags = (flag) ? trustpw_flag(flag) : 0;
