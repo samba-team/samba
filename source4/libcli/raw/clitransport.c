@@ -350,7 +350,8 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	}
 
 	if (!req) {
-		DEBUG(1,("Discarding unmatched reply with mid %d\n", mid));
+		DEBUG(1,("Discarding unmatched reply with mid %d op %d\n", 
+			 mid, CVAL(hdr, HDR_COM)));
 		goto error;
 	}
 
