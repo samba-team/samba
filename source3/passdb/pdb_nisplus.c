@@ -47,8 +47,6 @@
 #include <rpcsvc/nis.h>
 
 extern int      DEBUGLEVEL;
-extern pstring	samlogon_user;
-extern BOOL	sam_logon_in_ssb;
 
 struct nisp_enum_info
 {
@@ -322,10 +320,6 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 
   /* values, must exist for user */
   if( !(pdb_get_acct_ctrl(pw_buf) & ACB_WSTRUST) ) {
-    /* FIXME!!  This doesn't belong here. 
-       Should be set in net_sam_logon() 
-       --jerry */
-    pstrcpy(samlogon_user, pdb_get_username(pw_buf));
     
     get_single_attribute(obj, NPF_HOME_DIR, home_dir, sizeof(pstring));
     if( !(home_dir && *home_dir) ) {
