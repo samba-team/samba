@@ -33,6 +33,6 @@ int main(int argc, char *argv[])
 	ps.io = UNMARSHALL;
 	ret = TEST_FUNC(desc, &q_u, &ps, 1);
 	printf("\nret=%s\n\n\n", ret?"OK":"Bad");
-	dump_data(0, ps.data_p, ps.buffer_size);
+	dump_data(0, ps.data_p, ps.grow_size);
 	return !ret;
 }
