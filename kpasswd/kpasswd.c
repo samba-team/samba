@@ -209,7 +209,7 @@ process_reply (krb5_context context,
 
 	krb5_free_ap_rep_enc_part (context, ap_rep);
 
-	priv_data.data   = ap_rep_data.data + ap_rep_data.length;
+	priv_data.data   = (u_char*)ap_rep_data.data + ap_rep_data.length;
 	priv_data.length = len - ap_rep_data.length - 6;
 
 	krb5_data_zero (&result_data);
