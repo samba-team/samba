@@ -56,11 +56,39 @@ NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union 
 	return NT_STATUS_INVALID_LEVEL;
 }
 
-/* connect to a dcerpc interface of a domains PDC */
-static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+/* connect to a dcerpc interface of a server */
+static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	NTSTATUS status;
 	const char *binding = NULL;
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",
+					r->standard.in.server_name);
+
+	status = dcerpc_pipe_connect(&r->standard.out.dcerpc_pipe,
+					binding,
+					r->standard.in.dcerpc_iface_uuid,
+					r->standard.in.dcerpc_iface_version,
+					ctx->user.domain_name,
+					ctx->user.account_name,
+					ctx->user.password); 
+	if (!NT_STATUS_IS_OK(status)) {
+		r->standard.out.error_string = talloc_asprintf(mem_ctx, 
+						"dcerpc_pipe_connect to pipe %s failed with %s\n",
+						r->standard.in.dcerpc_iface_name, binding);
+		return status;
+	}
+
+	r->standard.out.error_string = NULL;
+
+	return status;
+}
+
+/* connect to a dcerpc interface of a time server */
+static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+{
+	NTSTATUS status;
+	union libnet_rpc_connect r2;
 	union libnet_find_pdc f;
 
 	f.generic.level			= LIBNET_FIND_PDC_GENERIC;
@@ -71,16 +99,16 @@ static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *m
 		return status;
 	}
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",
-					f.generic.out.pdc_name);
+	r2.standard.level			= LIBNET_RPC_CONNECT_STANDARD;
+	r2.standard.in.server_name		= f.generic.out.pdc_name;
+	r2.standard.in.dcerpc_iface_name	= r->standard.in.dcerpc_iface_name;
+	r2.standard.in.dcerpc_iface_uuid	= r->standard.in.dcerpc_iface_uuid;
+	r2.standard.in.dcerpc_iface_version	= r->standard.in.dcerpc_iface_version;
+	
+	status = libnet_rpc_connect(ctx, mem_ctx, &r2);
 
-	status = dcerpc_pipe_connect(&r->pdc.out.dcerpc_pipe,
-					binding,
-					r->pdc.in.dcerpc_iface_uuid,
-					r->pdc.in.dcerpc_iface_version,
-					ctx->user.domain_name,
-					ctx->user.account_name,
-					ctx->user.password); 
+	r->pdc.out.dcerpc_pipe		= r2.standard.out.dcerpc_pipe;
+	r->pdc.out.error_string		= r2.standard.out.error_string;
 
 	return status;
 }
@@ -89,6 +117,8 @@ static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *m
 NTSTATUS libnet_rpc_connect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
 {
 	switch (r->pdc.level) {
+		case LIBNET_RPC_CONNECT_STANDARD:
+			return libnet_rpc_connect_standard(ctx, mem_ctx, r);
 		case LIBNET_RPC_CONNECT_PDC:
 			return libnet_rpc_connect_pdc(ctx, mem_ctx, r);
 	}
