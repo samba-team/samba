@@ -1,6 +1,6 @@
                  =================================
-                 Release Notes for Samba 3.0.8pre1
-                           Sept 24, 2004
+                 Release Notes for Samba 3.0.8pre2
+                           Oct 25, 2004
                  =================================
 
 This is a preview release of the Samba 3.0.8 code base.
@@ -8,6 +8,232 @@ It is *not* intended for production use but rather is
 provided to allow people to test the bug fixes and new 
 features in the upcoming 3.0.8 release.  Use at your own 
 risk.
+
+Common bugs fixed in 3.0.8pre2 include:
+
+  o 
+  
+New features included in the 3.0.8pre1 release are:
+
+  o 
+
+    
+Change in Username Map
+----------------------
+
+
+
+  
+######################################################################
+Changes
+#######
+
+Changes since 3.0.8pre1
+-----------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name              	Action
+    --------------              	------
+    force printername			New
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Ensure we set errno = E2BIG when we overflow in the 
+      fast-path character conversion code.
+    * Fix the roundup problem (returning 1mb roundup) for 
+      non-Windows clients.
+    * Added 'stat' command to smbclient to exercise the 
+      UNIX_FILE_BASIC info level.
+    * Fix bug where we could incorrectly set sparse attribute.
+    * Fix incorrect locks/unlocks in tdb_lockkeys()/tdb_unlockkeys()
+      (reported by Taj Khattra <taj.khattra@gmail.com>).
+    * Remove locked keys tdb code.
+    * BUG 1886: Prevent delete on close being set for readonly files 
+      (and return the correct error code).
+    * Ensure we pass most of the new lock tests except for the cancel 
+      lock which is yet to be addedd (merged from Samba 4 branch).
+    * BUG 1947: Fix incorrect use of getpwnam() etc. interface.
+    * BUG 1956: Ensure errno is saved and restored consistently on a normal_close.
+  
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix NTLMv2 for use with pam_winbind.
+    * Remove conversion to and from UTF8 on the winbind pipe.
+    * Allow 'require_membership_of' and 'require-membership-of'.
+    * Fix the error code for 'you didn't specify a domain' in 
+      ntlm_auth.
+    * Use sys_getgroups() rather than scnanning all groups 
+      when generating SAMR replies.
+
+
+o   Gerald Carter <jerry@samba.org>
+    * BUG 1519: Match Windows 2000 behavior when opening a 
+      printer using a servername in the form of an IP address or 
+      DNS name.
+    * BUG 1907: remove extra slashes from the printer name in 
+      getprinterdriverdir_1().  
+    * Fix standard_sub_snum() to use the current user's gid.
+    * Fix background queue update bug (based on Volker's initial work 
+      in 3.1.0).
+    * Add 'force printername' service parameter for people that want 
+      to enforce printername == sharename for spoolss printing.
+    * Ensure consistent usage of the username map.  Use the fully 
+      qualified DOMAIN\user format for 'security = domain|ads' and 
+      apply after authentication has succeeded.
+    * Cosmetic fix for getent output -- lowercase the username only 
+      and not the complete domain\username string.
+
+    
+o   Darren Chew <darrenc@vicscouts.asn.au>
+    * Solaris packaging fixes.
+    
+
+o   Guenther Deschner <gd@samba.org> 
+    * Fix typos in net's usage-output.
+    * Fix the paranoia-check to ensure the ldap-attribute and the
+      smb.conf-parameter for samba's "algorithmic rid base" in ldapsam 
+      are identical.
+    * Fix several bugs in the _samr_query_useraliases() rpc reply.
+    * Check correct string length when verifying password-policies 
+      and using extended characters (Thanks to Uwe Morgenroth from CC 
+      Compunet and Volker).
+    * Make 'password history'-behaviour in ldapsam more consistent. 
+    * Adding "Windows x64" as architecture string and driverdir "x64" 
+      for the 64bit AMD platform.
+    * BUG 1343: Readd WKGUID-binding to match the correct default-
+      locations of new User-, Group- and Machine-Accounts in Active 
+      Directory (this got lost during the last trunk-merge).
+    * Fix printer-migration w.r.t. to new naming-convention for
+      policy-handles.
+    * Allow to migrate win2k3/xp-drivers as well. 
+    * Add client-side support of triggering ads printer publishing 
+      over msrpc setprinter calls inside the net-tool. 
+    * Add the idmap_rid module (written in conjunction with 
+      Sumit Bose <sbose@suse.de>).
+
+
+o   Rob Foehl <rwf@loonybin.net>
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Fix ip address override in mount.cifs mount helper and clean 
+      up warning messages from the sparse tool and expand syntax help.
+    * Strip guest mount option off before sending to kernel mount 
+      routine to avoid logging spurious message.
+
+
+o   Satoh Fumiyasu <fumiya@samba.gr.jp>
+    * BUG 1732: Limit share names returned by RAP based on windows 
+      character width, not unix character width.
+
+
+o   Brett Funderburg
+    * Pass create options parameter to nt_create_andx() function
+      from the python bindings.
+    * BUG 1864: Add sd->type field to security descriptor Python 
+      representation.
+    * Return an error if a Netapp filer returns NT_STATUS_ACCESS_DENIED
+      when trying to return the security descriptor for a file.
+
+ 
+o   Michael Gravey <michel.gravey@optogone.com>
+    * BUG 1776: Fix warnings when building modules caused by 
+      certain versions of GNU ld not using the the default 
+      --allow-shlib-undefined flag.
+
+
+o   Chris Hertel <crh@samba.org>
+    * Fix bug where an invalid MAC address would be printed by 
+      a node status lookup from nmblookup.
+
+      
+o   Uli Iske <iske@elkb.de>
+    * Update the DNS/eDirectory LDAP schema file.
+
+
+o   Björn Jacke <bjacke@sernet.de>
+    * BUG 1766: Unify charset-handling in Content-Type:-headers to 
+      UTF-8.  Reformat msgstr in msg-files to UTF-8.
+    * Do not use display charset for swat output.
+    * Convert the share names correctly from unix encoding to web 
+      encoding and vice vera. 
+    * Convert files from statuspage from unix charset to UTF-8.
+
+
+o   Tom Lackemann <cessnatomny@yahoo.com>
+    BUG 1954: Fix memory leak in posix acl code.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 1545, 1823: Only issue the ldap extended password change 
+      operation if the ldap server supports it.  Also ignore object 
+      class violation errors from the extended operation.
+    * Optimization for 'idmap backend = ldap': When asking sid2id 
+      for the wrong type, don't ask ldap when we have the opposite mapping 
+      in the local tdb.
+    * Fix ldapsam_compat homeDrive.
+    * Add usersidlist and allowedusers subcommands to the net tool
+      in order to support scanning a file server's share and list 
+      all users who have permission to connect there.
+    * Allow for multiple DC's to be named as #1c names in lmhosts.
+
+
+o   Love <lha@stacken.kth.se>
+    * BUG 1955: Inconsistent error return.
+
+
+o   Sorin Manolache <sorinm@gmail.com>
+    * Memory leak fix.
+
+
+o   Bill McGonigle <bill+samba@bfccomputing.com>
+    BUG 1926: Type in debug message.
+
+
+o   Sean McGrath
+    * BUG 1822: Add -D_REENTRANT to CPPFLAGS and -lthread to LDFLAGS
+      for libsmbclient.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Fix bug in Python printerdata wrapper.
+    * BUG 1762: nss_winbind fixes on AIX 5.x (patch from 
+      <bugzilla-samba@thewrittenword.com>).
+    * Fix parameter confusion in priming of name-to-sid cache
+      (Found by Qiao Yang).
+    * BUG 1888: Remove '..' from all pre-processor commands.
+    * BUG 1903: Change some #if DEBUG_PASSWORD's to #ifdef 
+      DEBUG_PASSWORD.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Ensure cli_write() can support writes >= 65536 bytes.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix memory corruption bug caused in freeing static memory.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Reduces the number of tdb locking calls made on file IO.
+    
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Complain if 'password chat' doesn't contain the %u variable
+      (based on a patch by Ronan Waide).
+
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+                 =================================
+                 Release Notes for Samba 3.0.8pre1
+                           Sept 24, 2004
+                 =================================
 
 Common bugs fixed in 3.0.8pre1 include:
 
@@ -32,12 +258,6 @@ directories and/or files based on the username (%u and %U) to lower
 case (e.g. mv $name `echo $name | tr '[A-Z]' '[a-z]'`).  This may 
 include mail spool files, home directories, valid user lines in 
 smb.conf, etc....
-
-
-  
-######################################################################
-Changes
-#######
 
 Changes since 3.0.7
 -------------------
@@ -224,8 +444,6 @@ o   Igor Zhbanov <bsg@uniyar.ac.ru>
     * BUG 1797: Prevent winbind and nmbd from ignoring the "-l" 
       option.
 
-
-Changes for older versions follow below:
 
       --------------------------------------------------
                   =============================
