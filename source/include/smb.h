@@ -36,13 +36,12 @@
 #define SMB_PORT 139
 #define SMB_PORT2 445
 
+#ifndef _BOOL
+#define _BOOL			/* So we don't typedef BOOL again in vfs.h */
 #define False (0)
 #define True (1)
 #define Auto (2)
-
-#ifndef _BOOL
 typedef int BOOL;
-#define _BOOL			/* So we don't typedef BOOL again in vfs.h */
 #endif
 
 /* limiting size of ipc replies */
