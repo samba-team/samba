@@ -88,6 +88,21 @@ parse_ports(krb5_context context, const char *str)
     }
 }
 
+static pid_t pgrp;
+int term_flag;
+
+void
+wait_term(int sig)
+{
+    term_flag = 1;
+}
+
+void
+terminate(int sig)
+{
+    killpg(pgrp, sig);
+}
+
 static int
 wait_for_connection(krb5_context context,
 		    int *socks, int num_socks)
@@ -102,6 +117,14 @@ wait_for_connection(krb5_context context,
 	FD_SET(socks[i], &orig_read_set);
 	max_fd = max(max_fd, socks[i]);
     }
+    
+    signal(SIGTERM, terminate);
+
+    if(setpgid(0, getpid()) < 0)
+	err(1, "setpgid");
+
+    pgrp = getpid();
+
     while (1) {
 	read_set = orig_read_set;
 	e = select(max_fd + 1, &read_set, NULL, NULL, NULL);
@@ -139,6 +162,7 @@ wait_for_connection(krb5_context context,
 		    
 		    pid = fork();
 		    if(pid == 0) {
+			signal(SIGTERM, wait_term);
 			for(i = 0; i < num_socks; i++)
 			    close(socks[i]);
 			dup2(s, STDIN_FILENO);
