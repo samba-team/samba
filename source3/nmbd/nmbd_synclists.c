@@ -51,7 +51,7 @@ static FILE *fp;
 /*******************************************************************
   This is the NetServerEnum callback.
   ******************************************************************/
-static void callback(char *sname, uint32 stype, char *comment)
+static void callback(const char *sname, uint32 stype, const char *comment)
 {
 	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
