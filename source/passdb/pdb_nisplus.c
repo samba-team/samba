@@ -484,6 +484,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
   static fstring pwdmchg_t;               /* from SAM */
   static fstring full_name;               /* from SAM */
   static fstring acct_desc;               /* from SAM */
+  static char empty[1];                   /* just an empty string */
 
 
   name = pdb_get_username(sampass);
@@ -764,7 +765,6 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 			   pdb_get_hours_len(sampass)-1, EN_MODIFIED);
     }  
   } else {
-    char empty[1];
     char *homedir, *dirdrive, *logon_script, *profile_path, *workstations;
 
     *empty = '\0'; /* empty string */
