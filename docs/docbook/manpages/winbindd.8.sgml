@@ -57,6 +57,15 @@
 
 	<variablelist>
 		<varlistentry>
+		<term>hosts</term>
+		<listitem><para>User information traditionally stored in 
+		the <filename>hosts(5)</filename> file and used by 
+		<command>gethostbyname(3)</command> functions. Names are
+		resolved through the WINS server or by broadcast.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>passwd</term>
 		<listitem><para>User information traditionally stored in 
 		the <filename>passwd(5)</filename> file and used by 
@@ -81,6 +90,12 @@
 passwd:         files winbind
 group:          files winbind
 	</programlisting></para>  
+
+	<para>The following simple configuration in the
+	<filename>/etc/nsswitch.conf</filename> file can be used to initially
+	resolve hostnames from <filename>/etc/hosts</filename> and then from the
+	WINS server.</para>
+
 </refsect1>
 
 

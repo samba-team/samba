@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCLIENT" "1" "28 January 2002" "" ""
+.TH "SMBCLIENT" "1" "08 May 2002" "" ""
 .SH NAME
 smbclient \- ftp-like client to access SMB/CIFS resources  on servers
 .SH SYNOPSIS
@@ -327,9 +327,9 @@ is 65520 bytes. Setting this value smaller (to 1200 bytes) has been
 observed to speed up file transfers to and from a Win9x server. 
 .TP
 \fB-W WORKGROUP\fR
-Override the default workgroup specified in the 
-workgroup parameter of the \fIsmb.conf\fR file 
-for this connection. This may be needed to connect to some 
+Override the default workgroup (domain) specified
+in the workgroup parameter of the \fIsmb.conf\fR
+file for this connection. This may be needed to connect to some
 servers. 
 .TP
 \fB-T tar options\fR
@@ -513,6 +513,26 @@ If \fIshell command\fR is specified, the !
 command will execute a shell locally and run the specified shell 
 command. If no command is specified, a local shell will be run. 
 .TP
+\fBaltname file\fR
+The client will request that the server return
+the "alternate" name (the 8.3 name) for a file or directory.
+.TP
+\fBcancel jobid0 [jobid1] ... [jobidN]\fR
+The client will request that the server cancel
+the printjobs identified by the given numeric print job ids.
+.TP
+\fBchmod file mode in octal\fR
+This command depends on the server supporting the CIFS
+UNIX extensions and will fail if the server does not. The client requests that the server
+change the UNIX permissions to the given octal mode, in standard UNIX format.
+.TP
+\fBchown file uid gid\fR
+This command depends on the server supporting the CIFS
+UNIX extensions and will fail if the server does not. The client requests that the server
+change the UNIX user and group ownership to the given decimal values. Note there is
+currently no way to remotely look up the UNIX uid and gid values for a given name.
+This may be addressed in future versions of the CIFS UNIX extensions.
+.TP
 \fBcd [directory name]\fR
 If "directory name" is specified, the current 
 working directory on the server will be changed to the directory 
@@ -554,6 +574,12 @@ reason the specified directory is inaccessible.
 
 If no directory name is specified, the name of the 
 current working directory on the local machine will be reported. 
+.TP
+\fBlink source destination\fR
+This command depends on the server supporting the CIFS
+UNIX extensions and will fail if the server does not. The client requests that the server
+create a hard link between the source and destination files. The source file
+must not exist.
 .TP
 \fBlowercase\fR
 Toggle lowercasing of filenames for the get and 
@@ -674,6 +700,21 @@ working directory on the server.
 Remove the specified directory (user access 
 privileges permitting) from the server. 
 .TP
+\fBsetmode <filename> <perm=[+|\\-]rsha>\fR
+A version of the DOS attrib command to set 
+file permissions. For example: 
+
+\fBsetmode myfile +r \fR
+
+would make myfile read only. 
+.TP
+\fBsymlink source destination\fR
+This command depends on the server supporting the CIFS
+UNIX extensions and will fail if the server does not. The client requests that the server
+create a symbolic hard link between the source and destination files. The source file
+must not exist. Note that the server will not create a link to any path that lies 
+outside the currently connected share. This is enforced by the Samba server.
+.TP
 \fBtar <c|x>[IXbgNa]\fR
 Performs a tar operation - see the \fI-T
 \fRcommand line option above. Behavior may be affected 
@@ -693,14 +734,6 @@ archive bit setting (this is the default mode). In incremental mode,
 tar will only back up files with the archive bit set. In reset mode, 
 tar will reset the archive bit on all files it backs up (implies 
 read/write share). 
-.TP
-\fBsetmode <filename> <perm=[+|\\-]rsha>\fR
-A version of the DOS attrib command to set 
-file permissions. For example: 
-
-\fBsetmode myfile +r \fR
-
-would make myfile read only. 
 .SH "NOTES"
 .PP
 Some servers are fussy about the case of supplied usernames, 

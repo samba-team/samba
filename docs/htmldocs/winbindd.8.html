@@ -109,6 +109,22 @@ CLASS="FILENAME"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
+>hosts</DT
+><DD
+><P
+>User information traditionally stored in 
+		the <TT
+CLASS="FILENAME"
+>hosts(5)</TT
+> file and used by 
+		<B
+CLASS="COMMAND"
+>gethostbyname(3)</B
+> functions. Names are
+		resolved through the WINS server or by broadcast.
+		</P
+></DD
+><DT
 >passwd</DT
 ><DD
 ><P
@@ -169,11 +185,22 @@ group:          files winbind
 ></TR
 ></TABLE
 ></P
+><P
+>The following simple configuration in the
+	<TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> file can be used to initially
+	resolve hostnames from <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> and then from the
+	WINS server.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN48"
+NAME="AEN57"
 ></A
 ><H2
 >OPTIONS</H2
@@ -212,7 +239,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN61"
+NAME="AEN70"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -243,7 +270,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN67"
+NAME="AEN76"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -532,7 +559,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN158"
+NAME="AEN167"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -710,7 +737,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN197"
+NAME="AEN206"
 ></A
 ><H2
 >NOTES</H2
@@ -768,7 +795,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN222"
 ></A
 ><H2
 >SIGNALS</H2
@@ -819,7 +846,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN230"
+NAME="AEN239"
 ></A
 ><H2
 >FILES</H2
@@ -895,7 +922,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN259"
+NAME="AEN268"
 ></A
 ><H2
 >VERSION</H2
@@ -906,7 +933,7 @@ NAME="AEN259"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN262"
+NAME="AEN271"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -934,7 +961,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN269"
+NAME="AEN278"
 ></A
 ><H2
 >AUTHOR</H2

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "24 April 2002" "" ""
+.TH "SMB.CONF" "5" "08 May 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -463,8 +463,9 @@ if it will allow a connection to a specified service. If all the
 steps fail, then the connection request is rejected. However, if one of the 
 steps succeeds, then the following steps are not checked.
 .PP
-If the service is marked "guest only = yes" then
-steps 1 to 5 are skipped.
+If the service is marked "guest only = yes" and the
+server is running with share-level security ("security = share")
+then steps 1 to 5 are skipped.
 .IP 1. 
 If the client has passed a username/password 
 pair and that username/password pair is validated by the UNIX 
@@ -684,6 +685,15 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIlock directory\fR
+.TP 0.2i
+\(bu
+\fIlock spin count\fR
+.TP 0.2i
+\(bu
+\fIlock spin time\fR
+.TP 0.2i
+\(bu
+\fIpid directory\fR
 .TP 0.2i
 \(bu
 \fIlog file\fR
@@ -1186,6 +1196,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIinclude\fR
+.TP 0.2i
+\(bu
+\fIinherit acls\fR
 .TP 0.2i
 \(bu
 \fIinherit permissions\fR
@@ -3102,6 +3115,17 @@ Default: \fBno file included\fR
 
 Example: \fBinclude = /usr/local/samba/lib/admin_smb.conf
 \fR.TP
+\fBinherit acls (S)\fR
+This parameter can be used to ensure
+that if default acls exist on parent directories,
+they are always honored when creating a subdirectory.
+The default behavior is to use the mode specified
+when creating the directory. Enabling this option
+sets the mode to 0777, thus guaranteeing that 
+default directory acls are propagated.
+
+Default: \fBinherit acls = no\fR
+.TP
 \fBinherit permissions (S)\fR
 The permissions on new files and directories 
 are normally governed by \fI create mask\fR,  \fIdirectory mask\fR, \fIforce create mode\fR
@@ -3469,6 +3493,26 @@ Default: \fBlock directory = ${prefix}/var/locks\fR
 
 Example: \fBlock directory = /var/run/samba/locks\fR
 .TP
+\fBlock spin count (G)\fR
+This parameter controls the number of times
+that smbd should attempt to gain a byte range lock on the 
+behalf of a client request. Experiments have shown that
+Windows 2k servers do not reply with a failure if the lock
+could not be immediately granted, but try a few more times
+in case the lock could later be aquired. This behavior
+is used to support PC database formats such as MS Access
+and FoxPro.
+
+Default: \fBlock spin count = 2\fR
+.TP
+\fBlock spin time (G)\fR
+The time in microseconds that smbd should 
+pause before attempting to gain a failed lock. See
+\fIlock spin 
+count\fR for more details.
+
+Default: \fBlock spin time = 10\fR
+.TP
 \fBlocking (S)\fR
 This controls whether or not locking will be 
 performed by the server in response to lock requests from the 
@@ -3712,8 +3756,8 @@ This command should be a program or script which
 takes a printer name as its only parameter and outputs printer 
 status information.
 
-Currently eight styles of printer status information 
-are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+Currently nine styles of printer status information 
+are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 This covers most UNIX systems. You control which type is expected 
 using the \fIprinting =\fR option.
 
@@ -3729,7 +3773,10 @@ command.
 
 Note that it is good practice to include the absolute path 
 in the \fIlpq command\fR as the \fB$PATH
-\fRmay not be available to the server.
+\fRmay not be available to the server. When compiled with
+the CUPS libraries, no \fIlpq command\fR is
+needed because smbd will make a library call to obtain the 
+print queue listing.
 
 See also the \fIprinting
 \fRparameter.
@@ -5008,6 +5055,14 @@ Default: \fBnone\fR
 
 Example: \fBpath = /home/fred\fR
 .TP
+\fBpid directory (G)\fR
+This option specifies the directory where pid 
+files will be placed. 
+
+Default: \fBpid directory = ${prefix}/var/locks\fR
+
+Example: \fBpid directory = /var/run/\fR
+.TP
 \fBposix locking (S)\fR
 The \fBsmbd(8)\fR
 daemon maintains an database of file locks obtained by SMB clients.
@@ -5137,13 +5192,22 @@ spool file when it has been processed, otherwise you will need to
 manually remove old spool files.
 
 The print command is simply a text string. It will be used 
-verbatim, with two exceptions: All occurrences of \fI%s
-\fRand \fI%f\fR will be replaced by the 
-appropriate spool file name, and all occurrences of \fI%p
-\fRwill be replaced by the appropriate printer name. The 
-spool file name is generated automatically by the server. The 
-\fI%J\fR macro can be used to access the job 
+verbatim after macro substitutions have been made:
+
+s, %p - the path to the spool
+file name
+
+%p - the appropriate printer 
+name
+
+%J - the job 
 name as transmitted by the client.
+
+%c - The number of printed pages
+of the spooled job (if known).
+
+%z - the size of the spooled
+print job (in bytes)
 
 The print command \fBMUST\fR contain at least 
 one occurrence of \fI%s\fR or \fI%f
@@ -5189,6 +5253,16 @@ For \fBprinting = SOFTQ :\fR
 
 \fBprint command = lp -d%p -s %s; rm %s\fR
 
+For printing = CUPS : If SAMBA is compiled against
+libcups, then printcap = cups 
+uses the CUPS API to
+submit jobs, etc. Otherwise it maps to the System V
+commands with the -oraw option for printing, i.e. it
+uses \fBlp -c -d%p -oraw; rm %s\fR. 
+With \fBprinting = cups\fR,
+and if SAMBA is compiled against libcups, any manually 
+set print command will be ignored.
+
 Example: \fBprint command = /usr/local/samba/bin/myprintscript
 %p %s\fR
 .TP
@@ -5217,7 +5291,11 @@ compiled-in default printcap name used by the server (usually \fI /etc/printcap\
 why you might want to do this.
 
 To use the CUPS printing interface set \fBprintcap name = cups
-\fR\&.
+\fR\&. This should be supplemented by an addtional setting 
+printing = cups in the [global] 
+section. \fBprintcap name = cups\fR will use the 
+"dummy" printcap created by CUPS, as specified in your CUPS
+configuration file.
 
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
@@ -7042,7 +7120,7 @@ that Samba has to do in order to perform the link checks.
 
 Default: \fBwide links = yes\fR
 .TP
-\fBwinbind cache time\fR
+\fBwinbind cache time (G)\fR
 This parameter specifies the number of seconds the
 winbindd(8)daemon will cache 
 user and group information before querying a Windows NT server 
@@ -7050,7 +7128,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum users\fR
+\fBwinbind enum users (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7069,7 +7147,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum groups\fR
+\fBwinbind enum groups (G)\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
@@ -7085,7 +7163,7 @@ enumeration may cause some programs to behave oddly.
 
 Default: \fBwinbind enum groups = yes \fR
 .TP
-\fBwinbind gid\fR
+\fBwinbind gid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of group ids should have no 
 existing local or NIS groups within it as strange conflicts can 
@@ -7095,7 +7173,7 @@ Default: \fBwinbind gid = <empty string>
 \fR
 Example: \fBwinbind gid = 10000-20000\fR
 .TP
-\fBwinbind separator\fR
+\fBwinbind separator (G)\fR
 This parameter allows an admin to define the character 
 used when listing a username of the form of \fIDOMAIN
 \fR\\\fIuser\fR. This parameter 
@@ -7106,11 +7184,11 @@ Please note that setting this parameter to + causes problems
 with group membership at least on glibc systems, as the character +
 is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = \\\\\fR
+Default: \fBwinbind separator = '\\'\fR
 
-Example: \fBwinbind separator = /\fR
+Example: \fBwinbind separator = +\fR
 .TP
-\fBwinbind uid\fR
+\fBwinbind uid (G)\fR
 The winbind gid parameter specifies the range of group 
 ids that are allocated by the  winbindd(8)daemon. This range of ids should have no 
 existing local or NIS users within it as strange conflicts can 

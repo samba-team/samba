@@ -324,6 +324,14 @@ to control access and authenticate users on your Linux box using
 the winbind services which come with SAMBA 2.2.2.
 </para>
 
+<para>
+There is also some Solaris specific information in 
+<filename>docs/textdocs/Solaris-Winbind-HOWTO.txt</filename>.
+Future revisions of this document will incorporate that
+information.
+</para>
+
+
 
 <sect2>
 <title>Introduction</title>

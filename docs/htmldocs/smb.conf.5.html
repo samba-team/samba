@@ -785,8 +785,9 @@ NAME="AEN236"
 	steps fail, then the connection request is rejected.  However, if one of the 
 	steps succeeds, then the following steps are not checked.</P
 ><P
->If the service is marked "guest only = yes" then
-	steps 1 to 5 are skipped.</P
+>If the service is marked "guest only = yes" and the
+	server is running with share-level security ("security = share")
+	then steps 1 to 5 are skipped.</P
 ><P
 ></P
 ><OL
@@ -1577,6 +1578,42 @@ HREF="#LOCKDIRECTORY"
 CLASS="PARAMETER"
 ><I
 >lock directory</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin count</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LOCKSPINTIME"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin time</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#PIDDIRECTORY"
+><TT
+CLASS="PARAMETER"
+><I
+>pid directory</I
 ></TT
 ></A
 ></P
@@ -3026,7 +3063,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN979"
+NAME="AEN991"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3584,6 +3621,18 @@ HREF="#INCLUDE"
 CLASS="PARAMETER"
 ><I
 >include</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#INHERITACLS"
+><TT
+CLASS="PARAMETER"
+><I
+>inherit acls</I
 ></TT
 ></A
 ></P
@@ -4493,7 +4542,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1467"
+NAME="AEN1483"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -8927,6 +8976,28 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="INHERITACLS"
+></A
+>inherit acls (S)</DT
+><DD
+><P
+>This parameter can be used to ensure
+		that if default acls exist on parent directories,
+		they are always honored when creating a subdirectory.
+		The default behavior is to use the mode specified
+		when creating the directory.  Enabling this option
+		sets the mode to 0777, thus guaranteeing that 
+		default directory acls are propagated.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>inherit acls = no</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="INHERITPERMISSIONS"
 ></A
 >inherit permissions (S)</DT
@@ -9945,6 +10016,56 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LOCKSPINCOUNT"
+></A
+>lock spin count (G)</DT
+><DD
+><P
+>This parameter controls the number of times
+		that smbd should attempt to gain a byte range lock on the 
+		behalf of a client request.  Experiments have shown that
+		Windows 2k servers do not reply with a failure if the lock
+		could not be immediately granted, but try a few more times
+		in case the lock could later be aquired.  This behavior
+		is used to support PC database formats such as MS Access
+		and FoxPro.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin count = 2</B
+>
+		</P
+></DD
+><DT
+><A
+NAME="LOCKSPINTIME"
+></A
+>lock spin time (G)</DT
+><DD
+><P
+>The time in microseconds that smbd should 
+		pause before attempting to gain a failed lock.  See
+		<A
+HREF="#LOCKSPINCOUNT"
+><TT
+CLASS="PARAMETER"
+><I
+>lock spin 
+		count</I
+></TT
+></A
+> for more details.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>lock spin time = 10</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="LOCKING"
 ></A
 >locking (S)</DT
@@ -10474,8 +10595,8 @@ CLASS="COMMAND"
 		takes a printer name as its only parameter and outputs printer 
 		status information.</P
 ><P
->Currently eight styles of printer status information 
-		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+>Currently nine styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX, CUPS, and SOFTQ. 
 		This covers most UNIX systems. You control which type is expected 
 		using the <TT
 CLASS="PARAMETER"
@@ -10509,7 +10630,15 @@ CLASS="PARAMETER"
 CLASS="ENVAR"
 >$PATH
 		</TT
-> may not be available to the server.</P
+> may not be available to the server.  When compiled with
+		the CUPS libraries, no <TT
+CLASS="PARAMETER"
+><I
+>lpq command</I
+></TT
+> is
+		needed because smbd will make a library call to obtain the 
+		print queue listing.</P
 ><P
 >See also the <A
 HREF="#PRINTING"
@@ -13603,6 +13732,27 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="PIDDIRECTORY"
+></A
+>pid directory (G)</DT
+><DD
+><P
+>This option specifies the directory where pid 
+		files will be placed.  </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>pid directory = ${prefix}/var/locks</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pid directory = /var/run/</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="POSIXLOCKING"
 ></A
 >posix locking (S)</DT
@@ -13931,33 +14081,22 @@ CLASS="COMMAND"
 		manually remove old spool files.</P
 ><P
 >The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <TT
-CLASS="PARAMETER"
-><I
->%s
-		</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->%f</I
-></TT
-> will be replaced by the 
-		appropriate spool file name, and all occurrences of <TT
-CLASS="PARAMETER"
-><I
->%p
-		</I
-></TT
-> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<TT
-CLASS="PARAMETER"
-><I
->%J</I
-></TT
-> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</P
+><P
+>s, %p - the path to the spool
+		file name</P
+><P
+>%p - the appropriate printer 
+		name</P
+><P
+>%J - the job 
 		name as transmitted by the client.</P
+><P
+>%c - The number of printed pages
+		of the spooled job (if known).</P
+><P
+>%z - the size of the spooled
+		print job (in bytes)</P
 ><P
 >The print command <EM
 >MUST</EM
@@ -14065,6 +14204,25 @@ CLASS="COMMAND"
 >print command = lp -d%p -s %s; rm %s</B
 ></P
 ><P
+>For printing = CUPS :   If SAMBA is compiled against
+		libcups, then <A
+HREF="#PRINTING"
+>printcap = cups</A
+> 
+		uses the CUPS API to
+		submit jobs, etc.  Otherwise it maps to the System V
+		commands with the -oraw option for printing, i.e. it
+		uses <B
+CLASS="COMMAND"
+>lp -c -d%p -oraw; rm %s</B
+>.   
+		With <B
+CLASS="COMMAND"
+>printing = cups</B
+>,
+		and if SAMBA is compiled against libcups, any manually 
+		set print command will be ignored.</P
+><P
 >Example: <B
 CLASS="COMMAND"
 >print command = /usr/local/samba/bin/myprintscript
@@ -14159,7 +14317,18 @@ HREF="#AEN79"
 CLASS="COMMAND"
 >printcap name = cups
 		</B
->.</P
+>. This should be supplemented by an addtional setting 
+		<A
+HREF="#PRINTING"
+>printing = cups</A
+> in the [global] 
+		section.  <B
+CLASS="COMMAND"
+>printcap name = cups</B
+> will use the  
+		"dummy" printcap created by CUPS, as specified in your CUPS
+		configuration file.
+		</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -18464,7 +18633,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDCACHETIME"
 ></A
->winbind cache time</DT
+>winbind cache time (G)</DT
 ><DD
 ><P
 >This parameter specifies the number of seconds the
@@ -18485,8 +18654,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMUSERS"
 ></A
->winbind enum
-		users</DT
+>winbind enum users (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18537,8 +18705,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDENUMGROUPS"
 ></A
->winbind enum
-		groups</DT
+>winbind enum groups (G)</DT
 ><DD
 ><P
 >On large installations using
@@ -18588,7 +18755,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDGID"
 ></A
->winbind gid</DT
+>winbind gid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -18615,7 +18782,7 @@ CLASS="COMMAND"
 ><A
 NAME="WINBINDSEPARATOR"
 ></A
->winbind separator</DT
+>winbind separator (G)</DT
 ><DD
 ><P
 >This parameter allows an admin to define the character 
@@ -18645,21 +18812,21 @@ CLASS="FILENAME"
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</P
 ><P
->Example: <B
+>Default: <B
 CLASS="COMMAND"
->winbind separator = \\</B
+>winbind separator = '\'</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = /</B
+>winbind separator = +</B
 ></P
 ></DD
 ><DT
 ><A
 NAME="WINBINDUID"
 ></A
->winbind uid</DT
+>winbind uid (G)</DT
 ><DD
 ><P
 >The winbind gid parameter specifies the range of group 
@@ -19079,7 +19246,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6045"
+NAME="AEN6101"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19109,7 +19276,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6051"
+NAME="AEN6107"
 ></A
 ><H2
 >VERSION</H2
@@ -19120,7 +19287,7 @@ NAME="AEN6051"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6054"
+NAME="AEN6110"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19199,7 +19366,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6074"
+NAME="AEN6130"
 ></A
 ><H2
 >AUTHOR</H2
