@@ -255,7 +255,7 @@ ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
 	    buf[0] = '\0';
 	    for(i = 0; i < addr->address.length; i++) {
 		snprintf(buf2, sizeof(buf2), "%02x", p[i]);
-		if(i > 0)
+		if(i > 0 && (i & 1) == 0)
 		    strcat_truncate(buf, ":", sizeof(buf));
 		strcat_truncate(buf, buf2, sizeof(buf));
 	    }
@@ -399,8 +399,22 @@ krb5_print_address (const krb5_address *addr,
 {
     struct addr_operations *a = find_atype(addr->addr_type);
 
-    if (a == NULL)
-	return KRB5_PROG_ATYPE_NOSUPP;
+    if (a == NULL) {
+	char *s;
+	size_t l;
+	int i;
+	s = str;
+	l = snprintf(s, len, "TYPE_%d:", addr->addr_type);
+	s += l;
+	len -= len;
+	for(i = 0; i < addr->address.length; i++) {
+	    l = snprintf(s, len, "%02x", ((char*)addr->address.data)[i]);
+	    len -= l;
+	    s += l;
+	}
+	*ret_len = s - str;
+	return 0;
+    }
     *ret_len = (*a->print_addr)(addr, str, len);
     return 0;
 }
