@@ -119,7 +119,7 @@ libkrb5_la_SOURCES = \
 
 EXTRA_libkrb5_la_SOURCES = keytab_krb4.c
 
-libkrb5_la_LDFLAGS = -version-info 9:1:0
+libkrb5_la_LDFLAGS = -version-info 9:2:0
 
 $(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
