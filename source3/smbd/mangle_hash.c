@@ -127,8 +127,7 @@ static BOOL          ct_initialized = False;
 
 static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
 static BOOL          mc_initialized   = False;
-#define MANGLED_CACHE_MAX_ENTRIES 0
-#define MANGLED_CACHE_MAX_MEMORY  16384
+#define MANGLED_CACHE_MAX_ENTRIES 1024
 
 
 /* -------------------------------------------------------------------------- **
