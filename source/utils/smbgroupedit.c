@@ -45,11 +45,13 @@ static void usage(void)
 	printf("  -a group             create new group\n");
 	printf("    -n group           NT group name\n");
 	printf("    -p privilege       only local\n");
+	printf("    -d description     group description\n");
 	printf("  -v                   list groups\n");
 	printf("    -l                 long list (include details)\n");
 	printf("    -s                 short list (default)\n");
 	printf("  -c SID               change group\n");
 	printf("     -u unix group\n");
+	printf("     -d description    group description\n");
 	printf("  -x group             delete this group\n");
 	printf("\n");
 	printf("    -t[b|d|l]          type: builtin, domain, local \n");
