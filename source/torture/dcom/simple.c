@@ -53,14 +53,13 @@ BOOL torture_dcom_simple(void)
 	}
 	
 	ZERO_STRUCT(r_read);
-	status = dcerpc_IStream_Read(interfaces[0].pipe, &interfaces[0].ipid, mem_ctx, &r_read);
+	status = dcerpc_IStream_Read(interfaces[0].pipe, NULL, mem_ctx, &r_read);
 	if (NT_STATUS_IS_ERR(error)) {
 		printf("IStream::Read() failed - %s\n", win_errstr(error));
 		return False;
 	}
 
-	
-	status = dcerpc_IStream_Write(interfaces[0].pipe, &interfaces[0].ipid, mem_ctx, &r_write);
+	status = dcerpc_IStream_Write(interfaces[0].pipe, NULL, mem_ctx, &r_write);
 	if (NT_STATUS_IS_ERR(error)) {
 		printf("IStream::Write() failed - %s\n", win_errstr(error));
 		return False;
