@@ -603,7 +603,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	if (IS_BITS_SET(cli->sec_mode, USE_CHALLENGE_RESPONSE))
+	if (IS_BITS_SET_ALL(cli->sec_mode, USE_CHALLENGE_RESPONSE))
 	{
 		DEBUG(5,("cli_session_setup: using challenge-response mode\n"));
 
@@ -666,7 +666,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	}
 
 	/* if in share level security then don't send a password now */
-	if (!IS_BITS_SET(cli->sec_mode, USE_USER_LEVEL_SECURITY))
+	if (!IS_BITS_SET_ALL(cli->sec_mode, USE_USER_LEVEL_SECURITY))
 	{
 		DEBUG(5,("cli_session_setup: using share-level security mode\n"));
 		fstrcpy(pword, "");
@@ -770,14 +770,14 @@ BOOL cli_send_tconX(struct cli_state *cli, int *t_idx,
 	(*t_idx) = cli->num_tcons;
 	cli->num_tcons++;
 
-	if (!IS_BITS_SET(cli->sec_mode, USE_USER_LEVEL_SECURITY))
+	if (!IS_BITS_SET_ALL(cli->sec_mode, USE_USER_LEVEL_SECURITY))
 	{
 		DEBUG(5,("cli_send_tconX: using share-level security mode\n"));
 		passlen = 1;
 		pass = "";
 	}
 
-	if (IS_BITS_SET(cli->sec_mode, USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
+	if (IS_BITS_SET_ALL(cli->sec_mode, USE_CHALLENGE_RESPONSE) && *pass && passlen != 24)
 	{
 		DEBUG(5,("cli_send_tconX: using challenge-response mode\n"));
 		passlen = 24;

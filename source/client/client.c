@@ -39,16 +39,22 @@ extern pstring debugf;
 extern int DEBUGLEVEL;
 
 
-#define SEPARATORS " \t\n\r"
-
 extern file_info def_finfo;
-
-#define USENMB
 
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
 extern int coding_system;
+
+static int process_tok(fstring tok);
+static void cmd_help(struct client_info *info);
+static void cmd_quit(struct client_info *info);
+
+struct cli_state smb_cli;
+int smb_tidx;
+
+struct cli_state ipc_cli;
+int ipc_tidx;
 
 static BOOL setup_term_code (char *code)
 {
@@ -64,11 +70,13 @@ static BOOL setup_term_code (char *code)
 }
 
 
-/* This defines the commands supported by this client */
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
 struct
 {
   char *name;
-  void (*fn)();
+  void (*fn)(struct client_info*);
   char *description;
 } commands[] = 
 {
@@ -128,6 +136,45 @@ struct
 };
 
 
+/****************************************************************************
+do a (presumably graceful) quit...
+****************************************************************************/
+static void cmd_quit(struct client_info *info)
+{
+	client_smb_stop();
+	client_ipc_stop();
+
+#if 0
+	client_nt_stop();
+#endif
+
+	exit(0);
+}
+
+/****************************************************************************
+help
+****************************************************************************/
+static void cmd_help(struct client_info *info)
+{
+  int i=0,j;
+  fstring buf;
+
+  if (next_token(NULL,buf,NULL))
+    {
+      if ((i = process_tok(buf)) >= 0)
+	DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
+    }
+  else
+    while (commands[i].description)
+      {
+	for (j=0; commands[i].description && (j<5); j++) {
+	  DEBUG(0,("%-15s",commands[i].name));
+	  i++;
+	}
+	DEBUG(0,("\n"));
+      }
+}
+
 /*******************************************************************
   lookup a command string in the list of commands, including 
   abbreviations
@@ -163,30 +210,6 @@ static int process_tok(fstring tok)
 }
 
 /****************************************************************************
-help
-****************************************************************************/
-void cmd_help(struct cli_state *cli, struct client_info *info)
-{
-  int i=0,j;
-  fstring buf;
-
-  if (next_token(NULL,buf,NULL))
-    {
-      if ((i = process_tok(buf)) >= 0)
-	DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
-    }
-  else
-    while (commands[i].description)
-      {
-	for (j=0; commands[i].description && (j<5); j++) {
-	  DEBUG(0,("%-15s",commands[i].name));
-	  i++;
-	}
-	DEBUG(0,("\n"));
-      }
-}
-
-/****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
 #ifdef CLIX
@@ -198,10 +221,6 @@ static void wait_keyboard(struct cli_state *cli, int t_idx)
   fd_set fds;
   int selrtn;
   struct timeval timeout;
-  
-#ifdef CLIX
-  int delay = 0;
-#endif
   
   while (1) 
     {
@@ -246,34 +265,20 @@ static void wait_keyboard(struct cli_state *cli, int t_idx)
       if (FD_ISSET(cli->fd,&fds))
   	receive_smb(cli->fd,cli->inbuf,0);
       
-#ifdef CLIX
-      delay++;
-      if (delay > 100000)
-	{
-	  delay = 0;
-	  cli_chkpath(cli, t_idx, "\\");
-	}
-#else
-      cli_chkpath(cli, t_idx, "\\");
-#endif
-    }  
+	client_check_connection();
+  }
 }
 
 
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static BOOL process(struct cli_state *cli, int t_idx,
-				struct client_info *info,
-				char *cmd_str)
+static BOOL process( struct client_info *info, char *cmd_str)
 {
   extern FILE *dbf;
   pstring line;
-  char *cmd;
+  char *cmd = cmd_str;
 
-  if (*info->base_dir) do_cd(cli, t_idx, info, info->base_dir);
-
-  cmd = cmd_str;
   if (cmd[0] != '\0') while (cmd[0] != '\0')
     {
       char *p;
@@ -304,7 +309,7 @@ static BOOL process(struct cli_state *cli, int t_idx,
       }
 
       if ((i = process_tok(tok)) >= 0)
-	commands[i].fn(cli, info);
+	commands[i].fn(info);
       else if (i == -2)
 	DEBUG(0,("%s: command abbreviation ambiguous\n", CNV_LANG(tok)));
       else
@@ -315,19 +320,19 @@ static BOOL process(struct cli_state *cli, int t_idx,
       fstring tok;
       int i;
 
-      bzero(cli->outbuf,smb_size);
+      bzero(&smb_cli.outbuf,smb_size);
 
       /* display a prompt */
       DEBUG(0,("smb: %s> ", CNV_LANG(info->cur_dir)));
       fflush(dbf);
 
 #ifdef CLIX
-      line[0] = wait_keyboard(cli, t_idx);
+      line[0] = wait_keyboard(&smb_cli, smb_tidx);
       /* this might not be such a good idea... */
       if ( line[0] == EOF)
 	break;
 #else
-      wait_keyboard(cli, t_idx);
+      wait_keyboard(&smb_cli, smb_tidx);
 #endif
   
       /* and get a response */
@@ -355,7 +360,7 @@ static BOOL process(struct cli_state *cli, int t_idx,
       }
 
       if ((i = process_tok(tok)) >= 0)
-	commands[i].fn(cli, info);
+	commands[i].fn(info);
       else if (i == -2)
 	DEBUG(0,("%s: command abbreviation ambiguous\n", CNV_LANG(tok)));
       else
@@ -415,7 +420,6 @@ enum client_action
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
-	BOOL anonymous = False;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	char *p;
@@ -424,23 +428,15 @@ enum client_action
 	int myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
 	int ret = 0;
-	int t_idx = -1;
 
-	struct cli_state smb_cli;
 	struct client_info cli_info;
 
-	int name_type = 0x20;
-
 	pstring password;
-
-	pstring service;
-	pstring share;
-	fstring svc_type;
 	pstring tmp;
 
-	strcpy(svc_type, "A:");
-
-	bzero(&smb_cli, sizeof(smb_cli));
+	client_smb_init();
+	client_ipc_init();
+	client_nt_init();
 
 #ifdef KANJI
 	strcpy(term_code, KANJI);
@@ -467,6 +463,7 @@ enum client_action
 	cli_info.abort_mget = True;
 
 	cli_info.dest_ip.s_addr = 0;
+	cli_info.name_type = 0x20;
 
 	strcpy(cli_info.cur_dir , "\\");
 	strcpy(cli_info.file_sel, "");
@@ -475,6 +472,10 @@ enum client_action
 	strcpy(cli_info.username, "");
 	strcpy(cli_info.myhostname, "");
 	strcpy(cli_info.dest_host, "");
+
+	strcpy(cli_info.svc_type, "A:");
+	strcpy(cli_info.share, "");
+	strcpy(cli_info.service, "");
 
 	strcpy(cli_info.dom.level3_sid, "");
 	strcpy(cli_info.dom.level3_dom, "");
@@ -549,24 +550,24 @@ enum client_action
 	if (*argv[1] != '-')
 	{
 
-		strcpy(service, argv[1]);  
+		strcpy(cli_info.service, argv[1]);  
 		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace( service, '/','\\');
+		string_replace( cli_info.service, '/','\\');
 		argc--;
 		argv++;
 
-		if (count_chars(service,'\\') < 3)
+		if (count_chars(cli_info.service,'\\') < 3)
 		{
 			usage(pname);
-			printf("\n%s: Not enough '\\' characters in service\n",service);
+			printf("\n%s: Not enough '\\' characters in service\n", cli_info.service);
 			exit(1);
 		}
 
 		/*
-		if (count_chars(service,'\\') > 3)
+		if (count_chars(cli_info.service,'\\') > 3)
 		{
 			usage(pname);
-			printf("\n%s: Too many '\\' characters in service\n",service);
+			printf("\n%s: Too many '\\' characters in service\n", cli_info.service);
 			exit(1);
 		}
 		*/
@@ -608,7 +609,7 @@ enum client_action
 
 			case 'M':
 			{
-				name_type = 0x03; /* messages sent to NetBIOS name type 0x3 */
+				cli_info.name_type = 0x03; /* messages sent to NetBIOS name type 0x3 */
 				strcpy(cli_info.dest_host,optarg);
 				strupper(cli_info.dest_host);
 				cli_action = CLIENT_MESSAGE;
@@ -699,7 +700,7 @@ enum client_action
 
 			case 'P':
 			{
-				strcpy(svc_type, "LPT1:");
+				strcpy(cli_info.svc_type, "LPT1:");
 				break;
 			}
 
@@ -797,61 +798,44 @@ enum client_action
 
 	if (cli_action == CLIENT_IPC || cli_action == CLIENT_QUERY)
 	{
-		strcpy(share, "IPC$");
-		strcpy(svc_type, "IPC");
+		strcpy(cli_info.share, "IPC$");
+		strcpy(cli_info.svc_type, "IPC");
 	}
 	else
 	{
 		/* extract destination host (if there isn't one) and share from service */
-		pstrcpy(tmp, service);
+		pstrcpy(tmp, cli_info.service);
 		p = strtok(tmp, "\\/");
 		if (cli_info.dest_host[0] == 0)
 		{
 			strcpy(cli_info.dest_host, p);
 		}
 		p = strtok(NULL, "\\/");
-		strcpy(share, p);
+		strcpy(cli_info.share, p);
 
 		if (cli_info.dest_host[0] == 0)
 		{
-			DEBUG(0,("Could not get host name from service %s\n", service));
+			DEBUG(0,("Could not get host name from service %s\n", cli_info.service));
 			return 1;
 		}
 
-		if (share[0] == 0)
+		if (cli_info.share[0] == 0)
 		{
-			DEBUG(0,("Could not get share name from service %s\n", service));
+			DEBUG(0,("Could not get share name from service %s\n", cli_info.service));
 			return 1;
 		}
 	}
 
-	if (cli_info.username[0] == 0)
-	{
-		anonymous = True;
-	}
+	fstrcpy(cli_info.mach_acct, cli_info.myhostname);
+	strupper(cli_info.mach_acct);
+	strcat(cli_info.mach_acct, "$");
 
-	if (!cli_establish_connection(&smb_cli, &t_idx,
-			cli_info.dest_host, name_type, &cli_info.dest_ip,
-		     cli_info.myhostname,
-		   (got_pass || anonymous) ? NULL : "Enter Password:",
-		   cli_info.username, !anonymous ? password : NULL, cli_info.workgroup,
-	       share, svc_type,
-	       False, True, !anonymous))
-	{
-		cli_shutdown(&smb_cli);
-		return 1;
-	}
+	/* establish connections.  nothing to stop these being re-established */
+	if (!got_pass) password[0] = 0;
 
-	if (cli_action == CLIENT_IPC)
-	{
-		strupper(cli_info.myhostname);
-		fstrcpy(cli_info.mach_acct, cli_info.myhostname);
-		strupper(cli_info.mach_acct);
-		strcat(cli_info.mach_acct, "$");
-
-		DEBUG(5,("IPC$ connection[%s].  Host:%s Mac-acct:%s\n",
-			cli_info.workgroup, cli_info.dest_host, cli_info.mach_acct));
-	}
+	client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
+	client_ipc_connect(&cli_info, NULL             , NULL    , cli_info.workgroup);
+	client_smb_connect(&cli_info, cli_info.username, password, cli_info.workgroup);
 
 	ret = 0;
 
@@ -859,12 +843,12 @@ enum client_action
 	{
 		case CLIENT_QUERY:
 		{
-			client_browse_host(&smb_cli, t_idx, cli_info.workgroup, True);
+			client_browse_host(&ipc_cli, ipc_tidx, cli_info.workgroup, True);
 			break;
 		}
 		case CLIENT_MESSAGE:
 		{
-			client_send_message(&smb_cli, t_idx, cli_info.username, cli_info.dest_host);
+			client_send_message(&ipc_cli, ipc_tidx, cli_info.username, cli_info.dest_host);
 			break;
 		}
 
@@ -874,10 +858,10 @@ enum client_action
 
 			if (*cli_info.base_dir)
 			{
-				do_cd(&smb_cli, t_idx, &cli_info, cli_info.base_dir);
+				do_cd(&smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
 			}
 
-			ret = process_tar(&smb_cli, t_idx, &cli_info);
+			ret = process_tar(&cli_info);
 
 			break;
 		}
@@ -885,7 +869,11 @@ enum client_action
 		case CLIENT_IPC:
 		case CLIENT_SVC:
 		{
-			ret = process(&smb_cli, t_idx, &cli_info, cmd_str) ? 0 : 1;
+			if (*cli_info.base_dir)
+			{
+				do_cd(&smb_cli, smb_tidx, &cli_info, cli_info.base_dir);
+			}
+			ret = process(&cli_info, cmd_str) ? 0 : 1;
 			break;
 		}
 
@@ -897,7 +885,9 @@ enum client_action
 		}
 	}
 
-	cli_shutdown(&smb_cli);
+	client_smb_stop();
+	client_ipc_stop();
+	client_nt_stop();
 
 	return(0);
 }
