@@ -800,7 +800,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 
 time_t interpret_long_unix_date(char *p)
 {
-	DEBUG(1,("interpret_long_unix_date\n"));
+	DEBUG(10,("interpret_long_unix_date\n"));
 	if(IVAL(p,0) == SMB_TIME_NO_CHANGE_LO &&
 	   IVAL(p,4) == SMB_TIME_NO_CHANGE_HI) {
 		return -1;
@@ -1348,7 +1348,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	*directory = *mask = 0;
 
 	DEBUG(3,("call_trans2findfirst: dirtype = %d, maxentries = %d, close_after_first=%d, \
-close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
+close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
 		info_level, max_data_bytes));
   
