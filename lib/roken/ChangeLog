@@ -1,5 +1,7 @@
 2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken-common.h: add simple_execve_timed
+	
 	* roken-common.h: add timed simple_exec
 	
 	* simple_exec.c: add timed simple_exec
