@@ -23,6 +23,9 @@
 
 #define PIDMAP		struct PidMap
 
+/* how long to wait for start/stops to take effect */
+#define SLEEP_TIME 3
+
 PIDMAP {
 	PIDMAP	*next, *prev;
 	pid_t	pid;
@@ -158,6 +161,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 		slprintf(buf,sizeof(buf)-1,"kill_%d", (int)crec.pid);
 		if (cgi_variable(buf)) {
 			kill_pid(crec.pid);
+			sleep(SLEEP_TIME);
 		}
 	}
 	return 0;
@@ -221,48 +225,62 @@ void status_page(void)
 	int refresh_interval=30;
 	TDB_CONTEXT *tdb;
 	int nr_running=0;
+	BOOL waitup = False;
 
 	smbd_pid = pidfile_pid("smbd");
 
 	if (cgi_variable("smbd_restart") || cgi_variable("all_restart")) {
 		stop_smbd();
 		start_smbd();
+		waitup=True;
 	}
 
 	if (cgi_variable("smbd_start") || cgi_variable("all_start")) {
 		start_smbd();
+		waitup=True;
 	}
 
 	if (cgi_variable("smbd_stop") || cgi_variable("all_stop")) {
 		stop_smbd();
+		waitup=True;
 	}
 
 	if (cgi_variable("nmbd_restart") || cgi_variable("all_restart")) {
 		stop_nmbd();
 		start_nmbd();
+		waitup=True;
 	}
 	if (cgi_variable("nmbd_start") || cgi_variable("all_start")) {
 		start_nmbd();
+		waitup=True;
 	}
 
 	if (cgi_variable("nmbd_stop")|| cgi_variable("all_stop")) {
 		stop_nmbd();
+		waitup=True;
 	}
 
 #ifdef WITH_WINBIND
 	if (cgi_variable("winbindd_restart") || cgi_variable("all_restart")) {
 		stop_winbindd();
 		start_winbindd();
+		waitup=True;
 	}
 
 	if (cgi_variable("winbindd_start") || cgi_variable("all_start")) {
 		start_winbindd();
+		waitup=True;
 	}
 
 	if (cgi_variable("winbindd_stop") || cgi_variable("all_stop")) {
 		stop_winbindd();
+		waitup=True;
 	}
 #endif
+	/* wait for daemons to start/stop */
+	if (waitup)
+		sleep(SLEEP_TIME);
+	
 	if (cgi_variable("autorefresh")) {
 		autorefresh = 1;
 	} else if (cgi_variable("norefresh")) {
@@ -333,20 +351,7 @@ void status_page(void)
 	    } else {
 		d_printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n", _("Start nmbd"));
 	    }
-	    d_printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
-#ifndef WITH_WINBIND
-	    if (nr_running >= 1) {
-	        /* stop, restart all */
-		d_printf("</tr><tr><td></td><td></td>\n");
-		d_printf("<td><input type=submit name=\"all_stop\" value=\"%s\"></td>\n", _("Stop All"));
-		d_printf("<td><input type=submit name=\"all_restart\" value=\"%s\"></td>\n", _("Restart All"));
-	    }
-	    else if (nr_running == 0) {
-	    	/* start all */
-		d_printf("</tr><tr><td></td><td></td>\n");
-		d_printf("<td><input type=submit name=\"all_start\" value=\"%s\"></td>\n", _("Start All"));
-	    }    
-#endif	    
+	    d_printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));    
 	}
 	d_printf("</tr>\n");
 
@@ -361,22 +366,23 @@ void status_page(void)
 		d_printf("<td><input type=submit name=\"winbindd_start\" value=\"%s\"></td>\n", _("Start winbindd"));
 	    }
 	    d_printf("<td><input type=submit name=\"winbindd_restart\" value=\"%s\"></td>\n", _("Restart winbindd"));
+	}
+	d_printf("</tr>\n");
+#endif
+
+	if (geteuid() == 0) {
+	    d_printf("<tr><td></td><td></td>\n");
 	    if (nr_running >= 1) {
 	        /* stop, restart all */
-		d_printf("</tr><tr><td></td><td></td>\n");
 		d_printf("<td><input type=submit name=\"all_stop\" value=\"%s\"></td>\n", _("Stop All"));
 		d_printf("<td><input type=submit name=\"all_restart\" value=\"%s\"></td>\n", _("Restart All"));
 	    }
 	    else if (nr_running == 0) {
 	    	/* start all */
-		d_printf("</tr><tr><td></td><td></td>\n");
 		d_printf("<td><input type=submit name=\"all_start\" value=\"%s\"></td>\n", _("Start All"));
 	    }
-		
+	    d_printf("</tr>\n");
 	}
-	d_printf("</tr>\n");
-#endif
-
 	d_printf("</table>\n");
 	fflush(stdout);
 
