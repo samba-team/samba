@@ -6,20 +6,20 @@ SRCDIR=${SRCDIR:-/usr/src/OpenLinux/SOURCES}
 USERID=`id -u`
 GRPID=`id -g`
 
-if ( z$1 == "zdevel" ) then
-        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba; mv samba samba-PVERSION )
-        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERIONS; mv samba-PVERSION samba )
+if [ z$1 = "zdevel" ]; then
+        ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba; mv samba samba-PVERSION; ls -al )
+        ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION; mv samba-PVERSION samba )
 else
         ( cd ../../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-PVERSION )
         ( cd ../../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
-done
+fi
 
-cp -a *.spec *.spec-lsb $SPECDIR
+cp -af *.spec *.spec-lsb $SPECDIR
 for src in *.patch; do
   trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
   cp -a $src $SRCDIR/$trg
 done
 cd $SPECDIR
-mv samba2.spec samba2.spec-nonlsb
-ln samba2.spec-lsb samba2.spec
+mv -f samba2.spec samba2.spec-nonlsb
+ln -f samba2.spec-lsb samba2.spec
 rpm -ba -v samba2.spec
