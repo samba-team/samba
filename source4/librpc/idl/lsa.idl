@@ -55,7 +55,7 @@
 	/******************/
 	/* Function: 0x03 */
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
@@ -216,7 +216,7 @@
 		dom_sid2 *sid;
 	} lsa_SidPtr;
 	
-	typedef struct {
+	typedef [public] struct {
 		uint32 num_sids;
 		[size_is(num_sids)] lsa_SidPtr *sids;
 	} lsa_SidArray;

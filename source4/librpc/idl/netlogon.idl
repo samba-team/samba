@@ -336,7 +336,7 @@ interface netlogon
 		uint16 CodePage;
 		USER_PRIVATE_INFO user_private_info;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -358,7 +358,7 @@ interface netlogon
 		NTTIME domain_modify_time;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -374,7 +374,7 @@ interface netlogon
 		netr_GroupMembership group_membership;
 		netr_String comment;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -412,7 +412,7 @@ interface netlogon
 		netr_String alias_name;
 		uint32 rid;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -424,12 +424,7 @@ interface netlogon
 	} DELTA_ALIAS;
 
 	typedef struct {
-		uint32 count;
-		[size_is(count)] dom_sid2 *sids;
-	} netr_SidArray;
-
-	typedef struct {
-		netr_SidArray sids;
+		lsa_SidArray sids;
 		uint32 unknown1;
 		uint32 unknown2;
 		uint32 unknown3;
@@ -457,7 +452,7 @@ interface netlogon
 		NTTIME db_modify_time;
 		NTTIME db_create_time;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -473,7 +468,7 @@ interface netlogon
 		uint32 num_controllers;
 		[size_is(num_controllers)] netr_String *controller_names;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -491,7 +486,7 @@ interface netlogon
 		[size_is(privilege_entries)] netr_String *privilege_name;
 		QUOTA_LIMITS quotalimits;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -514,7 +509,7 @@ interface netlogon
 		CIPHER_VALUE old_cipher;
 		NTTIME old_cipher_set_time;
 		uint32 SecurityInformation;
-		security_descriptor sec_desc;
+		sec_desc_buf sdbuf;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
