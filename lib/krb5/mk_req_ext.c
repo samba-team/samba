@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,6 +62,12 @@ krb5_mk_req_internal(krb5_context context,
   if(ret)
       return ret;
       
+  if(ac->local_subkey == NULL && (ap_req_options & AP_OPTS_USE_SUBKEY)) {
+      ret = krb5_auth_con_generatelocalsubkey(context, ac, &in_creds->session);
+      if(ret)
+	  return ret;
+  }
+
 #if 0
   {
       /* This is somewhat bogus since we're possibly overwriting a
