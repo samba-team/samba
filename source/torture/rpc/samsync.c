@@ -706,7 +706,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 	o.in.handle = samsync_state->lsa_handle;
 	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	o.in.name.name = name;
+	o.in.name.string = name;
 	o.out.sec_handle = &sec_handle;
 
 	status = dcerpc_lsa_OpenSecret(samsync_state->p_lsa, mem_ctx, &o);
@@ -781,6 +781,10 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct samsync_trusted_domain *new = talloc_p(samsync_state, struct samsync_trusted_domain);
 	struct lsa_OpenTrustedDomain t;
 	struct policy_handle trustdom_handle;
+	struct lsa_QueryInfoTrustedDomain q;
+	union lsa_TrustedDomainInfo info[4];
+	int levels [] = {1, 3};
+	int i;
 
 	new->name = talloc_reference(new, trusted_domain->domain_name.string);
 	new->sid = talloc_reference(new, dom_sid);
@@ -795,7 +799,21 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 		printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
 		return False;
 	}
+	
+	for (i=0; i< ARRAY_SIZE(levels); i++) {
+		q.in.trustdom_handle = &trustdom_handle;
+		q.in.level = levels[i];
+		q.out.info = &info[levels[i]];
+		status = dcerpc_lsa_QueryInfoTrustedDomain(samsync_state->p_lsa, mem_ctx, &q);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryInfoTrustedDomain level %d failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			return False;
+		}
+	}
 
+	TEST_STRING_EQUAL(info[1].info1.domain_name, trusted_domain->domain_name);
+	TEST_INT_EQUAL(info[3].info3.flags, trusted_domain->flags);
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
 
 	DLIST_ADD(samsync_state->trusted_domains, new);
@@ -868,7 +886,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 			return False;
 		}
 		for (j=0;j<account->privilege_entries; j++) {
-			if (strcmp(r.out.name->name, account->privilege_name[j].string) == 0) {
+			if (strcmp(r.out.name->string, account->privilege_name[j].string) == 0) {
 				found_priv_in_lsa[j] = True;
 				break;
 			}
