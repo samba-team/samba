@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -166,40 +166,96 @@ out:
  */
 
 kadm5_ret_t
-_kadm5_set_keys2(hdb_entry *ent, 
+_kadm5_set_keys2(kadm5_server_context *context,
+		 hdb_entry *ent, 
 		 int16_t n_key_data, 
 		 krb5_key_data *key_data)
 {
     krb5_error_code ret;
     int i;
+    unsigned len;
+    Key *keys;
 
-    ent->keys.len = n_key_data;
-    ent->keys.val = malloc(ent->keys.len * sizeof(*ent->keys.val));
-    if(ent->keys.val == NULL)
+    len  = n_key_data;
+    keys = malloc (len * sizeof(*keys));
+    if (keys == NULL)
 	return ENOMEM;
+
+    init_keys (keys, len);
+
     for(i = 0; i < n_key_data; i++) {
-	ent->keys.val[i].mkvno = NULL;
-	ent->keys.val[i].key.keytype = key_data[i].key_data_type[0];
-	ret = krb5_data_copy(&ent->keys.val[i].key.keyvalue,
+	keys[i].mkvno = NULL;
+	keys[i].key.keytype = key_data[i].key_data_type[0];
+	ret = krb5_data_copy(&keys[i].key.keyvalue,
 			     key_data[i].key_data_contents[0],
 			     key_data[i].key_data_length[0]);
 	if(ret)
-	    return ret;
+	    goto out;
 	if(key_data[i].key_data_ver == 2) {
 	    Salt *salt;
+
 	    salt = malloc(sizeof(*salt));
-	    if(salt == NULL)
-		return ENOMEM;
-	    ent->keys.val[i].salt = salt;
+	    if(salt == NULL) {
+		ret = ENOMEM;
+		goto out;
+	    }
+	    keys[i].salt = salt;
 	    salt->type = key_data[i].key_data_type[1];
 	    krb5_data_copy(&salt->salt, 
 			   key_data[i].key_data_contents[1],
 			   key_data[i].key_data_length[1]);
 	} else
-	    ent->keys.val[i].salt = NULL;
+	    keys[i].salt = NULL;
     }
+    free_keys (context, ent->keys.len, ent->keys.val);
+    ent->keys.len = len;
+    ent->keys.val = keys;
     ent->kvno++;
     return 0;
+ out:
+    free_keys (context, len, keys);
+    return ret;
+}
+
+/*
+ * Set the keys of `ent' to `n_keys, keys'
+ */
+
+kadm5_ret_t
+_kadm5_set_keys3(kadm5_server_context *context,
+		 hdb_entry *ent,
+		 int n_keys,
+		 krb5_keyblock *keyblocks)
+{
+    krb5_error_code ret;
+    int i;
+    unsigned len;
+    Key *keys;
+
+    len  = n_keys;
+    keys = malloc (len * sizeof(*keys));
+    if (keys == NULL)
+	return ENOMEM;
+
+    init_keys (keys, len);
+
+    for(i = 0; i < n_keys; i++) {
+	keys[i].mkvno = NULL;
+	ret = krb5_copy_keyblock_contents (context->context,
+					   &keyblocks[i],
+					   &keys[i].key);
+	if(ret)
+	    goto out;
+	keys[i].salt = NULL;
+    }
+    free_keys (context, ent->keys.len, ent->keys.val);
+    ent->keys.len = len;
+    ent->keys.val = keys;
+    ent->kvno++;
+    return 0;
+ out:
+    free_keys (context, len, keys);
+    return ret;
 }
 
 /*
