@@ -107,9 +107,9 @@ krb5_error_code do_version4(krb5_context, unsigned char*, size_t, krb5_data*,
 
 void loop (krb5_context);
 
-void kdc_log(int, const char *fmt, ...);
-char* kdc_log_msg_va(int, const char*, va_list);
-char* kdc_log_msg(int, const char*, ...);
+void kdc_log(krb5_context, int, const char *fmt, ...);
+char* kdc_log_msg_va(krb5_context, int, const char*, va_list);
+char* kdc_log_msg(krb5_context, int, const char*, ...);
 
 Key *unseal_key(Key *key);
 
