@@ -72,3 +72,24 @@ AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
 if test x"$samba_cv_immediate_structures" = x"yes"; then
    AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
 fi
+
+AC_MSG_CHECKING([for test routines])
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+	    AC_MSG_RESULT(yes),
+	    AC_MSG_ERROR([cant find test code. Aborting config]),
+	    AC_MSG_WARN([cannot run when cross-compiling]))
+
+#
+# Check if the compiler can handle the options we selected by
+# --enable-*developer and --enable-debug
+#
+if test -n "$DEVELOPER_CFLAGS"; then
+	OLD_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+	AC_MSG_CHECKING([that the C compiler can use the DEVELOPER_CFALGS])
+	AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+		AC_MSG_RESULT(yes),
+		DEVELOPER_CFLAGS=""; AC_MSG_RESULT(no),
+		AC_MSG_WARN([cannot run when cross-compiling]))
+	CFLAGS="${OLD_CFLAGS}"
+fi

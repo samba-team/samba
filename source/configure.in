@@ -62,6 +62,10 @@ if test "${ac_cv_prog_CC}" = "insure"; then
 fi
 
 #################################################
+# add DEVELOPER_CFLAGS only for the real build
+CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+
+#################################################
 # final configure stuff
 
 AC_MSG_CHECKING([configure summary])

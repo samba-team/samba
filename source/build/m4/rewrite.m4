@@ -999,11 +999,6 @@ if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
     AC_DEFINE(HAVE_IRIX_SPECIFIC_CAPABILITIES,1,[Whether IRIX specific capabilities are available])
 fi
 
-AC_MSG_CHECKING([for test routines])
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
-           AC_MSG_RESULT(yes),
-	   AC_MSG_ERROR([cant find test code. Aborting config]),
-	   AC_MSG_WARN([cannot run when cross-compiling]))
 
 AC_CACHE_CHECK([for ftruncate extend],samba_cv_HAVE_FTRUNCATE_EXTEND,[
 AC_TRY_RUN([#include "${srcdir-.}/build/tests/ftruncate.c"],
