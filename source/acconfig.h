@@ -19,6 +19,7 @@
 #undef SUNOS4
 #undef LINUX
 #undef AIX
+#undef BSD
 #undef IRIX
 #undef HPUX
 #undef QNX
