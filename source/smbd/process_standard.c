@@ -89,7 +89,7 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 /* called when a SMB connection goes down */
 static void standard_terminate_connection(struct server_connection *conn, const char *reason) 
 {
-	DEBUG(0,("single_terminate_connection: reason[%s]\n",reason));
+	DEBUG(2,("single_terminate_connection: reason[%s]\n",reason));
 
 	if (conn) {
 		if (conn->service) {
