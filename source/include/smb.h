@@ -433,9 +433,10 @@ typedef struct files_struct
 } files_struct;
 
 /* used to hold an arbitrary blob of data */
-typedef struct {
+typedef struct data_blob {
 	uint8 *data;
 	size_t length;
+	void (*free)(struct data_blob *data_blob);
 } DATA_BLOB;
 
 /*
