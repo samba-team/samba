@@ -16,6 +16,12 @@
 2000-10-08  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (*): check that fds are not too large to select on
+	* ftp/main.c (cmdscanner): print a newline upon EOF
+
+2000-09-19  Assar Westerlund  <assar@sics.se>
+
+	* ftp/security.h: add some attributes to prototypes of sec*
+	* ftp/extern.h (command): add attributes
 
 2000-08-31  Johan Danielsson  <joda@pdc.kth.se>
 
