@@ -478,8 +478,9 @@ init_as_req (krb5_context context,
 		}
 		a->padata->val = tmp;
 		for(j = 0; j < preauth->val[i].info.len; j++) {
-		    krb5_keytype keytype = preauth->val[i].info.val[j].keytype;
-		    if(preauth->val[i].info.val[j].salttype == 
+		    krb5_keytype keytype = preauth->val[i].info.val[j].etype;
+		    if(preauth->val[i].info.val[j].salttype && 
+		       *preauth->val[i].info.val[j].salttype == 
 		       KRB5_PA_AFS3_SALT) {
 			if(keytype != KEYTYPE_DES) {
 			    ret = KRB5_PROG_KEYTYPE_NOSUPP;

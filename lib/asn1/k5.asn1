@@ -155,13 +155,13 @@ PA-DATA ::= SEQUENCE {
 	padata-value[2]		OCTET STRING
 }
 
-PA-KEY-INFO-ENTRY ::= SEQUENCE {
-	keytype[0]		INTEGER,
-	salttype[1]		INTEGER,
-	salt[2]			OCTET STRING OPTIONAL
+ETYPE-INFO-ENTRY ::= SEQUENCE {
+	etype[0]		INTEGER,
+	salt[1]			OCTET STRING OPTIONAL,
+	salttype[2]		INTEGER OPTIONAL
 }
 
-PA-KEY-INFO ::= SEQUENCE OF PA-KEY-INFO-ENTRY
+ETYPE-INFO ::= SEQUENCE OF ETYPE-INFO-ENTRY
 
 METHOD-DATA ::= SEQUENCE OF PA-DATA
 
@@ -363,7 +363,6 @@ pa-pk-as-rep		INTEGER ::= 15 -- (pkinit)
 pa-pk-as-sign		INTEGER ::= 16 -- (pkinit)
 pa-pk-key-req		INTEGER ::= 17 -- (pkinit)
 pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
-pa-key-info		INTEGER ::= 19
 -- checksumtypes
 
 CRC32 			INTEGER ::= 1

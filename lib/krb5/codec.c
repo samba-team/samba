@@ -199,38 +199,38 @@ krb5_encode_EncKrbCredPart (krb5_context context,
 }
 
 krb5_error_code
-krb5_decode_PA_KEY_INFO (krb5_context context,
-			 const void *data,
-			 size_t length,
-			 PA_KEY_INFO *t,
-			 size_t *len)
+krb5_decode_ETYPE_INFO (krb5_context context,
+			const void *data,
+			size_t length,
+			ETYPE_INFO *t,
+			size_t *len)
 {
     krb5_error_code ret;
     int i;
-    ret = decode_PA_KEY_INFO((void*)data, length, t, len);
+    ret = decode_ETYPE_INFO((void*)data, length, t, len);
     if(ret)
 	return ret;
     for(i = 0; i < t->len; i++) {
-	if((ret = krb5_decode_keytype(context, &t->val[i].keytype, 1)))
+	if((ret = krb5_decode_keytype(context, &t->val[i].etype, 1)))
 	    break;
     }
     return ret;
 }
 
 krb5_error_code
-krb5_encode_PA_KEY_INFO (krb5_context context,
-			 void *data,
-			 size_t length,
-			 PA_KEY_INFO *t,
-			 size_t *len)
+krb5_encode_ETYPE_INFO (krb5_context context,
+			void *data,
+			size_t length,
+			ETYPE_INFO *t,
+			size_t *len)
 {
     krb5_error_code ret;
     int i;
     /* XXX this will break, since we need one key-info for each enctype */
     /* XXX or do we? */
     for(i = 0; i < t->len; i++)
-	if((ret = krb5_decode_keytype(context, &t->val[i].keytype, 0)))
+	if((ret = krb5_decode_keytype(context, &t->val[i].etype, 0)))
 	    break;
     if(ret) return ret;
-    return encode_PA_KEY_INFO (data, length, t, len);
+    return encode_ETYPE_INFO (data, length, t, len);
 }

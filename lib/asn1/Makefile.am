@@ -32,6 +32,8 @@ BUILT_SOURCES =					\
 	asn1_EncTicketPart.c			\
 	asn1_EncryptedData.c			\
 	asn1_EncryptionKey.c			\
+	asn1_ETYPE_INFO.c			\
+	asn1_ETYPE_INFO_ENTRY.c			\
 	asn1_HostAddress.c			\
 	asn1_HostAddresses.c			\
 	asn1_KDCOptions.c			\
@@ -49,8 +51,6 @@ BUILT_SOURCES =					\
 	asn1_METHOD_DATA.c			\
 	asn1_PA_DATA.c				\
 	asn1_PA_ENC_TS_ENC.c			\
-	asn1_PA_KEY_INFO.c			\
-	asn1_PA_KEY_INFO_ENTRY.c		\
 	asn1_Principal.c			\
 	asn1_PrincipalName.c			\
 	asn1_Realm.c				\
@@ -80,6 +80,8 @@ foo =						\
 	asn1_EncTicketPart.x			\
 	asn1_EncryptedData.x			\
 	asn1_EncryptionKey.x			\
+	asn1_ETYPE_INFO.x			\
+	asn1_ETYPE_INFO_ENTRY.x			\
 	asn1_HostAddress.x			\
 	asn1_HostAddresses.x			\
 	asn1_KDCOptions.x			\
@@ -97,8 +99,6 @@ foo =						\
 	asn1_METHOD_DATA.x			\
 	asn1_PA_DATA.x				\
 	asn1_PA_ENC_TS_ENC.x			\
-	asn1_PA_KEY_INFO.x			\
-	asn1_PA_KEY_INFO_ENTRY.x		\
 	asn1_Principal.x			\
 	asn1_PrincipalName.x			\
 	asn1_Realm.x				\

@@ -242,8 +242,8 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 {
     krb5_error_code ret;
     int i;
-    PA_KEY_INFO pa;
-    PA_KEY_INFO_ENTRY *tmp;
+    ETYPE_INFO pa;
+    ETYPE_INFO_ENTRY *tmp;
     unsigned char *buf;
     size_t len;
     
@@ -264,23 +264,24 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	for(e = etypes; *e; e++){
 	    tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
 	    if(tmp == NULL) {
-		free_PA_KEY_INFO(&pa);
+		free_ETYPE_INFO(&pa);
 		return ret;
 	    }
 	    pa.val = tmp;
-	    pa.val[pa.len].keytype = *e;
+	    pa.val[pa.len].etype = *e;
+	    ALLOC(pa.val[pa.len].salttype);
 	    if(client->keys.val[i].salt){
-		pa.val[pa.len].salttype = client->keys.val[i].salt->type;
+		*pa.val[pa.len].salttype = client->keys.val[i].salt->type;
 		ALLOC(pa.val[pa.len].salt);
 		ret = copy_octet_string(&client->keys.val[i].salt->salt,
 					pa.val[pa.len].salt);
 		if(tmp == NULL) {
-		    free_PA_KEY_INFO(&pa);
+		    free_ETYPE_INFO(&pa);
 		    return ret;
 		}
 	    }
 	    else {
-		pa.val[pa.len].salttype = pa_pw_salt;
+		*pa.val[pa.len].salttype = pa_pw_salt;
 		pa.val[pa.len].salt = NULL;
 	    }
 	    pa.len++;
@@ -288,10 +289,10 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	if(context->ktype_is_etype)
 	    free(etypes);
     }
-    len = length_PA_KEY_INFO(&pa);
+    len = length_ETYPE_INFO(&pa);
     buf = malloc(len);
-    ret = encode_PA_KEY_INFO(buf + len - 1, len, &pa, &len);
-    free_PA_KEY_INFO(&pa);
+    ret = encode_ETYPE_INFO(buf + len - 1, len, &pa, &len);
+    free_ETYPE_INFO(&pa);
     if(ret) {
 	free(buf);
 	return ret;
@@ -301,7 +302,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	free(buf);
 	return ret;
     }
-    md->val[md->len - 1].padata_type = pa_key_info;
+    md->val[md->len - 1].padata_type = pa_etype_info;
     md->val[md->len - 1].padata_value.length = len;
     md->val[md->len - 1].padata_value.data = buf;
     return 0;
