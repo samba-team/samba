@@ -62,8 +62,14 @@ kadm5_s_init_with_password_ctx(krb5_context context,
 			      ctx->db, NULL); /* XXX get from conf */
     if(ret)
 	return ret;
+
+    ctx->acl_file = HDB_DB_DIR "/kadmind.acl";  /* XXX get from conf */
     
     ret = krb5_parse_name(ctx->context, client_name, &ctx->caller);
+    if(ret)
+	return ret;
+
+    ret = _kadm5_acl_init(ctx);
     if(ret)
 	return ret;
     
