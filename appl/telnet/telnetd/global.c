@@ -102,14 +102,6 @@ int	SYNCHing;		/* we are in TELNET SYNCH mode */
 # endif
 #endif
 
-
-#if	defined(ENCRYPTION)
-void	(*encrypt_output) P((unsigned char *, int));
-int	(*decrypt_input) P((int));
-char	*nclearto;
-#endif
-
-
 /*
  * The following are some clocks used to decide how to interpret
  * the relationship between various variables.

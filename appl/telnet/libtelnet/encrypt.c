@@ -79,6 +79,7 @@ RCSID("$Id$");
  */
 void	(*encrypt_output) P((unsigned char *, int));
 int	(*decrypt_input) P((int));
+char	*nclearto;
 
 int encrypt_debug_mode = 0;
 static int decrypt_mode = 0;
