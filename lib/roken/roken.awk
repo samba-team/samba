@@ -1,10 +1,10 @@
 # $Id$
 
 BEGIN {
-	print "#include <stdio.h>"
 	print "#ifdef HAVE_CONFIG_H"
 	print "#include <config.h>"
 	print "#endif"
+	print "#include <stdio.h>"
 	print ""
 	print "int main()"
 	print "{"
