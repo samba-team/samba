@@ -135,7 +135,9 @@ RCSID("$Id$");
 #include <kafs.h>
 #include "roken.h"
 
+#ifdef OTP
 #include <otp.h>
+#endif
 
 #ifdef SOCKS
 #include <socks.h>
@@ -274,8 +276,10 @@ parse_auth_level(char *str)
 	p = strtok_r(NULL, ",", &foo)) {
 	if(strcmp(p, "user") == 0)
 	    ;
+#ifdef OTP
 	else if(strcmp(p, "otp") == 0)
 	    ret |= AUTH_PLAIN|AUTH_OTP;
+#endif
 	else if(strcmp(p, "ftp") == 0 ||
 		strcmp(p, "safe") == 0)
 	    ret |= AUTH_FTP;
@@ -551,7 +555,9 @@ sgetpwnam(char *name)
 static int login_attempts;	/* number of failed login attempts */
 static int askpasswd;		/* had user command, ask for passwd */
 static char curname[10];	/* current USER name */
+#ifdef OTP
 OtpContext otp_ctx;
+#endif
 
 /*
  * USER command.
@@ -635,20 +641,28 @@ user(char *name)
 	else {
 		char ss[256];
 
+#ifdef OTP
 		if (otp_challenge(&otp_ctx, name, ss, sizeof(ss)) == 0) {
 			reply(331, "Password %s for %s required.",
 			      ss, name);
 			askpasswd = 1;
-		} else if ((auth_level & AUTH_OTP) == 0) {
+		} else
+#endif
+		if ((auth_level & AUTH_OTP) == 0) {
 		    reply(331, "Password required for %s.", name);
 		    askpasswd = 1;
 		} else {
 		    char *s;
 		    
+#ifdef OTP
 		    if (s = otp_error (&otp_ctx))
 			lreply(530, "OTP: %s", s);
+#endif
 		    reply(530,
-			  "Only authorized, anonymous and OTP "
+			  "Only authorized, anonymous"
+#ifdef OTP
+			  " and OTP "
+#endif
 			  "login allowed.");
 		}
 
@@ -868,9 +882,12 @@ pass(char *passwd)
 	if (!guest) {		/* "ftp" is only account allowed no password */
 		if (pw == NULL)
 			rval = 1;	/* failure below */
+#ifdef OTP
 		else if (otp_verify_user (&otp_ctx, passwd) == 0) {
 		    rval = 0;
-		} else if((auth_level & AUTH_OTP) == 0) {
+		}
+#endif
+		else if((auth_level & AUTH_OTP) == 0) {
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
@@ -884,8 +901,10 @@ pass(char *passwd)
 		} else {
 		    char *s;
 		    
+#ifdef OTP
 		    if (s = otp_error(&otp_ctx))
 			lreply(530, "OTP: %s", s);
+#endif
 		}
 		memset (passwd, 0, strlen(passwd));
 
