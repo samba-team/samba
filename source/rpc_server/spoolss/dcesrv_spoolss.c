@@ -143,14 +143,37 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return WERR_UNKNOWN_LEVEL;
 }
 
-
+static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_OpenPrinterEx *r);
 /* 
   spoolss_OpenPrinter 
 */
 static WERROR spoolss_OpenPrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_OpenPrinter *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	WERROR status;
+	struct spoolss_OpenPrinterEx *r2;
+
+	r2 = talloc(mem_ctx, struct spoolss_OpenPrinterEx);
+	W_ERROR_HAVE_NO_MEMORY(r2);
+
+	r2->in.printername	= r->in.printername;
+	r2->in.datatype		= r->in.datatype;
+	r2->in.devmode_ctr	= r->in.devmode_ctr;
+	r2->in.access_mask	= r->in.access_mask;
+	r2->in.level		= 1;
+	r2->in.userlevel.level1	= NULL;
+
+	r2->out.handle		= r->out.handle;
+
+	/* TODO: we should take care about async replies here,
+	         if spoolss_OpenPrinterEx() would be async!
+	 */
+	status = spoolss_OpenPrinterEx(dce_call, mem_ctx, r2);
+
+	r->out.handle		= r2->out.handle;
+
+	return status;
 }
 
 
@@ -836,49 +859,46 @@ static WERROR spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 
 static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call, 
 					   TALLOC_CTX *mem_ctx,
-					   struct spoolss_OpenPrinterEx *r)
+					   struct spoolss_OpenPrinterEx *r,
+					   const char *server_name)
 {
-	struct spoolss_openprinter_state *state;
+	struct spoolss_handle_server *state;
 	struct dcesrv_handle *handle;
+	BOOL ret;
 
-	/* Check printername is our name */
-
-	if (!strequal(r->in.printername + 2, lp_netbios_name()))
-		return WERR_INVALID_PRINTER_NAME;
+	/* Check printername is our name or our ip address
+	 */
+	ret = strequal(server_name, lp_netbios_name());
+	if (!ret) {
+		/* TODO:
+		ret = strequal(server_name, ...our_ip...);*/
+		if (!ret) {
+			return WERR_INVALID_PRINTER_NAME;
+		}
+	}
 
 	handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_SERVER);
-	if (!handle) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(handle);
 
-	state = talloc(handle, struct spoolss_openprinter_state);
-	if (!state) {
-		return WERR_OK;
-	}
+	state = talloc(handle, struct spoolss_handle_server);
+	W_ERROR_HAVE_NO_MEMORY(state);
 
 	handle->data = state;
 
-	state->access_mask = r->in.access_mask;
-	*r->out.handle = handle->wire_handle;
+	state->handle_type	= SPOOLSS_HANDLE_SERVER;
+	state->access_mask	= r->in.access_mask;
+
+	*r->out.handle	= handle->wire_handle;
 
 	return WERR_OK;	
 }
 
 static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call, 
 					    TALLOC_CTX *mem_ctx,
-					    struct spoolss_OpenPrinterEx *r)
+					    struct spoolss_OpenPrinterEx *r,
+					    const char *printer_name)
 {
-	char *server = talloc_strdup(mem_ctx, r->in.printername + 2);
-	char *pos, *printer;
-
-	pos = strchr(server, '\\');
-	*pos = 0;
-	printer = talloc_strdup(mem_ctx, pos + 1);
-
-	if (!strequal(server, lp_netbios_name()))
-		return WERR_INVALID_PRINTER_NAME;
-
-	DEBUG(0, ("looking for server %s, printer %s\n", server, printer));
+	DEBUG(0, ("looking for printer %s\n", printer_name));
 	
 	return WERR_INVALID_PRINTER_NAME;
 }
@@ -889,17 +909,40 @@ static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call,
 static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_OpenPrinterEx *r)
 {
+	const char *p;
+	const char *printer = r->in.printername;
 	ZERO_STRUCTP(r->out.handle);
-	
-	/* Printername must start with \\ */
 
-	if (strncmp(r->in.printername, "\\\\", 2) == 0)
-		return WERR_INVALID_PARAM;
+	/* just "\\" is invalid */
+	if (strequal(r->in.printername, "\\\\")) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
 
-	if (strchr_m(r->in.printername + 2, '\\'))
-		return spoolss_OpenPrinterEx_server(dce_call, mem_ctx, r);
-	
-	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r);
+	if (strncmp(r->in.printername, "\\\\", 2) == 0) {
+		/* here we know we have "\\" in front not followed
+		 * by '\0', now see if we have another "\" in the string
+		 */
+		p = strchr_m(r->in.printername + 2, '\\');
+		if (!p) {
+			/* there's no other "\", so it's ("\\%s",server)
+			 */
+			const char *server = r->in.printername + 2;
+			DEBUG(0,("print server: [%s][%s]\n", r->in.printername, server));
+			return spoolss_OpenPrinterEx_server(dce_call, mem_ctx, r, server);
+		}
+		/* here we know that we have ("\\%s\",server),
+		 * if we have '\0' as next then it's an invalid name
+		 * otherwise the printer_name
+		 */
+		p++;
+		if (p[0] == '\0') {
+			return WERR_INVALID_PRINTER_NAME;
+		}
+		printer = p;
+	}
+
+	DEBUG(0,("printer: [%s][%s]\n", r->in.printername, printer));
+	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r, printer);
 }
 
 
