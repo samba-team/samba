@@ -438,8 +438,26 @@ reboot and as part of the user logon:
 <title>Common Errors</title>
 
 <para>
-Stuffgoes here.
+Policy related problems can be very difficult to diagnose and even more difficult to rectify. The following
+collection demonstrates only basic issues.
 </para>
+
+<sect2>
+<title>Policy Does Not Work</title>
+
+<para>
+Question: We have created the <filename>config.pol</filename> file and put it in the <emphasis>NETLOGON</emphasis> share.
+It has made no difference to our Win XP Pro machines, they just don't see it. IT worked fine with Win 98 but does not
+work any longer since we upgraded to Win XP Pro. Any hints?
+</para>
+
+<para>
+<emphasis>ANSWER:</emphasis> Policy files are NOT portable between Windows 9x / Me and MS Windows NT4 / 200x / XP based
+platforms. You need to use the NT4 Group Policy Editor to create a file called <filename>NTConfig.POL</filename> so that
+it is in the correct format for your MS Windows XP Pro clients.
+</para>
+
+</sect2>
 
 </sect1>
 
