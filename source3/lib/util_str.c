@@ -1585,7 +1585,7 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 /**
  * Decode a base64 string in-place - wrapper for the above
  **/
-void base64_decode(char *s)
+void base64_decode_inplace(char *s)
 {
 	DATA_BLOB decoded = base64_decode_data_blob(s);
 	memcpy(s, decoded.data, decoded.length);
