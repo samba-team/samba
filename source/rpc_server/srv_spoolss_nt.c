@@ -1718,15 +1718,11 @@ static void spoolss_notify_status(int snum,
 				  NT_PRINTER_INFO_LEVEL *printer,
 				  TALLOC_CTX *mem_ctx)
 {
-	int count;
-
-	print_queue_struct *q=NULL;
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	count = print_queue_status(snum, &q, &status);
+	print_queue_length(snum, &status);
 	data->notify_data.value[0]=(uint32) status.status;
-	safe_free(q);
 }
 
 /*******************************************************************
@@ -1738,12 +1734,7 @@ static void spoolss_notify_cjobs(int snum,
 				 NT_PRINTER_INFO_LEVEL *printer, 
 				 TALLOC_CTX *mem_ctx)
 {
-	print_queue_struct *q=NULL;
-	print_status_struct status;
-
-	memset(&status, 0, sizeof(status));
-	data->notify_data.value[0] = print_queue_status(snum, &q, &status);
-	safe_free(q);
+	data->notify_data.value[0] = print_queue_length(snum, NULL);
 }
 
 /*******************************************************************
@@ -2367,6 +2358,7 @@ uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
 	}
 
 	DEBUG(4,("Printer type %x\n",Printer->printer_type));
+
 
 	/* jfm: the change value isn't used right now.
 	 * 	we will honour it when
