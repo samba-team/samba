@@ -155,11 +155,12 @@ krb5_verify_init_creds(krb5_context context,
     if (ret) {
 	const char *p;
 
-	if (options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL
-	    || krb5_config_get_bool (context->cf,
-				     "libdefaults",
-				     "verify_ap_req_nofail",
-				     NULL)) {
+	if (((options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL) && 
+	     options->ap_req_nofail == 1) || 
+	    krb5_config_get_bool (context->cf,
+				  "libdefaults",
+				  "verify_ap_req_nofail",
+				  NULL)) {
 	    goto cleanup;
 	} else {
 	    ret = 0;
