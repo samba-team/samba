@@ -677,7 +677,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 	/*
 	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
-     * of header. Don't print the error if this fits.... JRA.
+	 * of header. Don't print the error if this fits.... JRA.
 	 */
 
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {

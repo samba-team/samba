@@ -412,7 +412,6 @@ static int map_share_mode( char *fname, uint32 create_options,
 	 */
 
 	if(*desired_access & DELETE_ACCESS) {
-		smb_open_mode |= DELETE_ACCESS_REQUESTED;
 		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
 	}
 
@@ -681,7 +680,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -752,7 +751,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -1177,7 +1176,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * CreateDirectory() call.
      */
 
-    fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+    fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
     if(!fsp) {
       restore_case_semantics(file_attributes);
@@ -1214,7 +1213,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			}
 	
 			oplock_request = 0;
-			fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+			fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 			if(!fsp) {
 				restore_case_semantics(file_attributes);
