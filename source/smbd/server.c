@@ -30,6 +30,9 @@ char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
+int am_parent = 1;
+int atexit_set = 0;
+
 BOOL share_mode_pending = False;
 
 /* the last message the was processed */
@@ -87,7 +90,20 @@ static int find_free_connection(int hash);
 #define IS_DOS_SYSTEM(test_mode) (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode) (((test_mode) & aHIDDEN) != 0)
 
-
+/****************************************************************************
+  when exiting, take the whole family
+****************************************************************************/
+void  *dflt_sig(void)
+{
+  exit_server("caught signal");
+}
+/****************************************************************************
+  Send a SIGTERM to our process group.
+*****************************************************************************/
+void  killkids(void)
+{
+  if(am_parent) kill(0,SIGTERM);
+}
 
 /****************************************************************************
   change a dos mode to a unix mode
@@ -684,6 +700,12 @@ BOOL check_name(char *name,int cnum)
   BOOL ret;
 
   errno = 0;
+
+  if( is_vetoed_path(name)) 
+    {
+      DEBUG(5,("file path name %s vetoed\n",name));
+      return(0);
+    }
 
   ret = reduce_name(name,Connections[cnum].connectpath,lp_widelinks(SNUM(cnum)));
   if (!ret)
@@ -1673,6 +1695,9 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 	  return False;
 	}
       
+      if(atexit_set == 0)
+        atexit(&killkids);
+
       /* now accept incoming connections - forking a new process
 	 for each incoming connection */
       DEBUG(2,("waiting for a connection\n"));
@@ -1707,6 +1732,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 
 	      /* close our standard file descriptors */
 	      close_low_fds();
+              am_parent = 0;
   
 	      set_socket_options(Client,"SO_KEEPALIVE");
 	      set_socket_options(Client,user_socket_options);
@@ -3584,6 +3610,7 @@ static void usage(char *pname)
   int port = SMB_PORT;
   int opt;
   extern char *optarg;
+  char pidFile[100] = { 0 };
 
 #ifdef NEED_AUTH_PARAMETERS
   set_auth_parameters(argc,argv);
@@ -3615,6 +3642,7 @@ static void usage(char *pname)
 #endif
 
   fault_setup(exit_server);
+  signal(SIGTERM , SIGNAL_CAST dflt_sig);
 
   /* we want total control over the permissions on created files,
      so set our umask to 0 */
@@ -3631,9 +3659,12 @@ static void usage(char *pname)
       argc--;
     }
 
-  while ((opt = getopt(argc, argv, "O:i:l:s:d:Dp:hPa")) != EOF)
+  while ((opt = getopt(argc, argv, "O:i:l:s:d:Dp:hPaf:")) != EOF)
     switch (opt)
       {
+      case 'f':
+        strncpy(pidFile, optarg, sizeof(pidFile));
+        break;
       case 'O':
 	strcpy(user_socket_options,optarg);
 	break;
@@ -3728,6 +3759,31 @@ static void usage(char *pname)
     {
       DEBUG(3,("%s becoming a daemon\n",timestring()));
       become_daemon();
+    }
+
+  if (*pidFile)
+    {
+      int     fd;
+      char    buf[20];
+
+      if ((fd = open(pidFile,
+         O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
+        {
+           DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
+           exit(1);
+        }
+      if(fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False)
+        {
+          DEBUG(0,("ERROR: smbd is already running\n"));
+          exit(1);
+        }
+      sprintf(buf, "%u\n", (unsigned int) getpid());
+      if (write(fd, buf, strlen(buf)) < 0)
+        {
+          DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));
+          exit(1);
+        }
+      /* Leave pid file open & locked for the duration... */
     }
 
   if (!open_sockets(is_daemon,port))
