@@ -118,6 +118,9 @@ char	wtmpf[]	= "/etc/wtmp";
 #undef	t_werasc
 #undef	t_lnextc
 #endif
+#ifdef HAVE_SYS_TERMIO_H
+#include <sys/termio.h>
+#endif
 
 # ifndef	TCSANOW
 #  ifdef TCSETS
