@@ -61,12 +61,12 @@ dit(bf(-r)) Restore. Files are restored to the share from the tar
 file.
 
 dit(bf(-l log level)) Log (debug) level. Corresponds to the
-url(bf(-d))(smbclient.1.html#minus_d) flag of url(bf(smbclient
+url(bf(-d))(smbclient.1.html#minusd) flag of url(bf(smbclient
 (1)))(smbclient.1.html).
 
 enddit()
 
-label(ENVIRONMENT_VARIABLES)
+label(ENVIRONMENTVARIABLES)
 manpagesection(ENVIRONMENT VARIABLES)
 
 The TAPE variable specifies the default tape device to write to. May

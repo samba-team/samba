@@ -34,7 +34,7 @@ should have a fully-qualified path.
 
 enddit()
 
-label(ENVIRONMENT_VARIABLES)
+label(ENVIRONMENTVARIABLES)
 manpagesection(ENVIRONMENT VARIABLES)
 
 The em(PATH) variable set for the environment in which bf(smbrun) is
