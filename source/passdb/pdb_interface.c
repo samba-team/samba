@@ -222,8 +222,9 @@ static void free_pdb_context(struct pdb_context **context)
 	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
 
 	while (pdb_selected){
-		if (pdb_selected->free_private_data)
-			pdb_selected->free_private_data(pdb_selected->private_data);
+		if (pdb_selected->free_private_data) {
+			pdb_selected->free_private_data(&(pdb_selected->private_data));
+		}
 		pdb_selected = pdb_selected->next;
 	}
 
@@ -258,19 +259,20 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 		if (strequal(builtin_pdb_init_functions[i].name, module_name))
 		{
 			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
-			if (NT_STATUS_IS_OK(nt_status 
-					    = builtin_pdb_init_functions[i].init(context, methods, module_location))) {
+			nt_status = builtin_pdb_init_functions[i].init(context, methods, module_location);
+			if (NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
-				return nt_status;
 			} else {
 				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
-				return nt_status;
 			}
-			break;
+			SAFE_FREE(module_name);
+			return nt_status;
+			break; /* unreached */
 		}
 	}
 
 	/* No such backend found */
+	SAFE_FREE(module_name);
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
@@ -332,8 +334,7 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected)
 		/* Try to initialise pdb */
 		DEBUG(5,("Trying to load: %s\n", selected[i]));
 		if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))) {
-			DEBUG(5, ("Loading %s failed!\n", selected[i]));
-			SAFE_FREE(curmethods);
+			DEBUG(1, ("Loading %s failed!\n", selected[i]));
 			free_pdb_context(context);
 			return nt_status;
 		}
