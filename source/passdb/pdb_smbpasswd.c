@@ -517,7 +517,6 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
   int new_entry_length;
   char *new_entry;
   char *p;
-  int i;
 
   new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + NEW_PW_FORMAT_SPACE_PADDED_LEN + 1 + 13 + 2;
 
@@ -527,38 +526,16 @@ static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
   }
 
   slprintf(new_entry, new_entry_length - 1, "%s:%u:", newpwd->smb_name, (unsigned)newpwd->smb_userid);
-  p = &new_entry[strlen(new_entry)];
 
-  if(newpwd->smb_passwd != NULL) {
-    for( i = 0; i < 16; i++) {
-      slprintf((char *)&p[i*2], new_entry_length - (p - new_entry) - 1, "%02X", newpwd->smb_passwd[i]);
-    }
-  } else {
-    i=0;
-    if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      safe_strcpy((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
-    else
-      safe_strcpy((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
-  }
+  p = new_entry+strlen(new_entry);
   
-  p += 32;
+  pdb_sethexpwd(p, newpwd->smb_passwd, newpwd->acct_ctrl);
 
-  *p++ = ':';
+  p+=strlen(p); *p = ':'; p++;
 
-  if(newpwd->smb_nt_passwd != NULL) {
-    for( i = 0; i < 16; i++) {
-      slprintf((char *)&p[i*2], new_entry_length - 1 - (p - new_entry), "%02X", newpwd->smb_nt_passwd[i]);
-    }
-  } else {
-    if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      safe_strcpy((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
-    else
-      safe_strcpy((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
-  }
+  pdb_sethexpwd(p, newpwd->smb_nt_passwd, newpwd->acct_ctrl);
 
-  p += 32;
-
-  *p++ = ':';
+  p+=strlen(p); *p = ':'; p++;
 
   /* Add the account encoding and the last change time. */
   slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
@@ -966,30 +943,12 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
   /* Entry is correctly formed. */
 
   /* Create the 32 byte representation of the new p16 */
-  if(pwd->smb_passwd != NULL) {
-    for (i = 0; i < 16; i++) {
-      slprintf(&ascii_p16[i*2], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_passwd[i]);
-    }
-  } else {
-    if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      fstrcpy(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
-    else
-      fstrcpy(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-  }
+  pdb_sethexpwd(ascii_p16, pwd->smb_passwd, pwd->acct_ctrl);
 
   /* Add on the NT md4 hash */
   ascii_p16[32] = ':';
   wr_len = 66;
-  if (pwd->smb_nt_passwd != NULL) {
-    for (i = 0; i < 16; i++) {
-      slprintf(&ascii_p16[(i*2)+33], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_nt_passwd[i]);
-    }
-  } else {
-    if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      fstrcpy(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
-    else
-      fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-  }
+  pdb_sethexpwd(ascii_p16+33, pwd->smb_nt_passwd, pwd->acct_ctrl);
   ascii_p16[65] = ':';
   ascii_p16[66] = '\0'; /* null-terminate the string so that strlen works */
 
