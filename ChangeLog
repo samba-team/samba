@@ -1,3 +1,16 @@
+Sun Jul 27 04:44:31 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/kerberos4.c: Add version 4 protocol handler. The requrement
+ 	for this to work is that all involved principals has a des key in
+ 	the database, and that the client has a version 4 (un-)salted
+ 	key. Furthermore krb5_425_conv_principal has to do it's job, as
+ 	present it's not very clever.
+
+	* lib/krb5/principal.c: Quick patch to make 425_conv work
+ 	somewhat.
+
+	* lib/hdb/hdb.c: Add keytype->key and next key functions.
+
 Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Unseal keys from database before use.
