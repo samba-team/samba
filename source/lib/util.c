@@ -1168,7 +1168,7 @@ BOOL get_file_match(const char* dirname, const char* regexp,
 
 	if (dirp == NULL)
 	{
-		DEBUG(2,("Error opening directory [%s]\n",dirp)); 
+		DEBUG(2,("Error opening directory [%s]\n",dirname)); 
 		return False;
 	}
 	

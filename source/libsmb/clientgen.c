@@ -1039,7 +1039,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	return cli_calc_session_pwds(cli, myhostname, pword, ntpword,
 				pass, &passlen,
-				ntpass, &ntpasslen, cli->sess_key,
+				ntpass, &ntpasslen, cli->nt.sess_key,
 	                        cli->use_ntlmv2) &&
 	       cli_session_setup_x(cli, user, pass, passlen, ntpass, ntpasslen,
 				user_domain);
@@ -3341,7 +3341,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 
 		pwd_get_lm_nt_owf(&(cli->usr.pwd), lm_sess_pwd, nt_sess_pwd,
-		                  &nt_sess_pwd_len, cli->sess_key);
+		                  &nt_sess_pwd_len, cli->nt.sess_key);
 
 		/* attempt encrypted session */
 		if (!cli_session_setup_x(cli, cli->usr.user_name,

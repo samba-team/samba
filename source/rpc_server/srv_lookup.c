@@ -78,9 +78,7 @@ int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids)
 		uint8  attr  = mem[count].attr;
 		char   *name = mem[count].name;
 
-		become_root(True);
-		status = lookup_name(name, &sid, &type);
-		unbecome_root(True);
+		status = lookup_lsa_name(global_sam_name, name, &sid, &type);
 
 		if (status == 0x0 && !sid_front_equal(&global_sam_sid, &sid))
 		{
@@ -565,4 +563,3 @@ uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type)
 
 	return status;
 }
-

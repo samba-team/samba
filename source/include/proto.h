@@ -1910,6 +1910,8 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
 BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
+struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con);
+struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
 BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
@@ -1927,6 +1929,10 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
+BOOL rpc_api_write(struct cli_connection *con, prs_struct *data);
+BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata);
+BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
+				prs_struct *rdata);
 
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
@@ -2005,7 +2011,7 @@ BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
-void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred);
+void gen_next_creds( struct ntdom_info *nt, DOM_CRED *new_clnt_cred);
 BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level);
 uint32 cli_net_auth2(const char *srv_name,
 				const char *trust_acct, 
@@ -2036,6 +2042,10 @@ BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
+BOOL rpc_api_pipe(struct cli_connection *con, prs_struct *data, prs_struct *rdata);
+BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+			prs_struct *data, prs_struct *rdata);
+BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata);
 BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
@@ -2043,8 +2053,13 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				prs_struct *rhdr,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp);
-BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
-                      prs_struct *data, prs_struct *rdata);
+BOOL rpc_api_pipe_req(struct cli_connection *con,
+				uint8 op_num,
+				prs_struct *data, prs_struct *rdata);
+BOOL rpc_pipe_bind(struct cli_connection *con, 
+				const char *pipe_name,
+				RPC_IFACE *abstract, RPC_IFACE *transfer, 
+				char *my_name);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
 		uint16* fnum);
@@ -2295,6 +2310,10 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
 
+uint32 lookup_lsa_name(const char *domain,
+				char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_lsa_sid(const char *domain,
+				DOM_SID *sid, char *name, uint8 *type);
 BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,
@@ -2310,6 +2329,10 @@ BOOL check_domain_security(char *orig_user, char *domain,
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
+uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
+				char *name, uint32 *rid, uint8 *type);
+uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
+				uint32 rid, char *name, uint8 *type);
 BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,

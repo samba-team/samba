@@ -200,107 +200,6 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	return num;
 }
 
-static uint32 lookup_remote_name(const char *domain,
-				char *name, DOM_SID *sid, uint8 *type)
-{
-	fstring srv_name;
-	BOOL res3 = True;
-	BOOL res4 = True;
-	char **names = NULL;
-	uint8 *types = NULL;
-	int num_names = 0;
-	DOM_SID *sids = NULL; 
-	int num_sids = 0;
-	POLICY_HND lsa_pol;
-
-	if (!get_any_dc_name(domain, srv_name))
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	num_names = 1;
-	names = &name;
-
-	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True) : False;
-
-	/* send lsa lookup sids call */
-	res4 = res3 ? lsa_lookup_names(&lsa_pol,
-				       num_names, names, 
-				       &sids, &types, &num_sids) : False;
-
-	res3 = res3 ? lsa_close(&lsa_pol) : False;
-
-	res4 = num_sids < 2 ? False : res4;
-
-	if (!res4)
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-	sid_copy(sid, &sids[0]);
-	*type = types[0];
-
-	if (types != NULL)
-	{
-		free(types);
-	}
-	
-	if (sids != NULL)
-	{
-		free(sids);
-	}
-	
-	return 0x0;
-}
-
-/****************************************************************************
-lookup in a sam database
-****************************************************************************/
-static uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
-				char *name, uint32 *rid, uint8 *type)
-{
-	fstring srv_name;
-	BOOL res = True;
-	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	char *names[1];
-	uint32 rids [MAX_LOOKUP_SIDS];
-	uint32 types[MAX_LOOKUP_SIDS];
-	uint32 num_rids;
-	POLICY_HND sam_pol;
-	POLICY_HND pol_dom;
-
-	if (!get_any_dc_name(domain, srv_name))
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
-
-	/* connect to the domain */
-	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
-
-	names[0] = name;
-
-	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
-	            1, names,
-	            &num_rids, rids, types) : False;
-
-	res  = res  ? samr_close(&pol_dom) : False;
-	res  = res  ? samr_close(&sam_pol) : False;
-
-	if (!res1 || num_rids != 1)
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	*rid = rids[0];
-	*type = (uint8)(types[0]);
-
-	return 0x0;
-}
-
 /***************************************************************************
 make_lsa_rid2s
  ***************************************************************************/
@@ -371,7 +270,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 				sid_to_string(tmp, &find_sid);
 				DEBUG(10,("lookup remote name: %s %s\n",
 				           tmp, find_name));
-				status = lookup_remote_name(dom_name, find_name,
+				status = lookup_lsa_name(dom_name, find_name,
 							    &sid, &sid_name_use);
 				if (status == 0x0 &&
 				   (!sid_split_rid(&sid, &rid) ||
@@ -435,125 +334,6 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	}
 }
 
-/****************************************************************************
-lookup in a sam database
-****************************************************************************/
-static uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
-				uint32 rid, char *name, uint8 *type)
-{
-	fstring srv_name;
-	int i;
-	BOOL res = True;
-	BOOL res1 = True;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	char **names = NULL;
-	uint32 *rid_mem;
-	uint32 *types = NULL;
-	uint32 num_names;
-	POLICY_HND sam_pol;
-	POLICY_HND pol_dom;
-
-	if (!get_any_dc_name(domain, srv_name))
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	/* establish a connection. */
-	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
-
-	/* connect to the domain */
-	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
-
-	rid_mem = (uint32*)malloc(1 * sizeof(rid_mem[0]));
-
-	if (rid_mem == NULL)
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	for (i = 0; i < 1; i++)
-	{
-		rid_mem[i] = rid;
-	}
-
-	res1 = res ? samr_query_lookup_rids( &pol_dom, 0x3e8,
-			1, rid_mem, 
-			&num_names, &names, &types) : False;
-
-	res  = res  ? samr_close(&pol_dom) : False;
-	res  = res  ? samr_close(&sam_pol) : False;
-
-	if (!res1 || num_names != 1)
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	fstrcpy(name, names[0]);
-	*type = types[0];
-
-	free_char_array(num_names, names);
-	
-	if (types != NULL)
-	{
-		free(types);
-	}
-
-	return 0x0;
-}
-
-/****************************************************************************
-lookup sids
-****************************************************************************/
-static uint32 lookup_remote_sids(const char *domain,
-				DOM_SID *sid, char *name, uint8 *type)
-{
-	POLICY_HND lsa_pol;
-	fstring srv_name;
-	DOM_SID **sids = NULL;
-	uint32 num_sids = 0;
-	char **names = NULL;
-	int num_names = 0;
-	uint8 *types = NULL;
-
-	BOOL res = True;
-	BOOL res1 = True;
-
-	if (!get_any_dc_name(domain, srv_name))
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	add_sid_to_array(&num_sids, &sids, sid);
-
-	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name, &lsa_pol, True) : False;
-
-	/* send lsa lookup sids call */
-	res1 = res ? lsa_lookup_sids( &lsa_pol,
-	                               num_sids, sids,
-	                               &names, &types, &num_names) : False;
-
-	res = res ? lsa_close(&lsa_pol) : False;
-
-	if (!res1 || names == NULL || types == NULL)
-	{
-		return NT_STATUS_NONE_MAPPED | 0xC0000000;
-	}
-
-	fstrcpy(name, names[0]);
-	*type = types[0];
-
-	free_sid_array(num_sids, sids);
-	free_char_array(num_names, names);
-	
-	if (types != NULL)
-	{
-		free(types);
-	}
-
-	return 0x0;
-}
-
 /***************************************************************************
 resolve_names
  ***************************************************************************/
@@ -599,7 +379,7 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 			}
 			else
 			{
-				status = lookup_remote_sids(dom_name,
+				status = lookup_lsa_sid(dom_name,
 				             &tmp_sid,
 				             name, &sid_name_use);
 			}

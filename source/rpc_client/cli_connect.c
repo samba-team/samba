@@ -30,14 +30,29 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring global_myname;
 
+enum { MSRPC_NONE, MSRPC_LOCAL, MSRPC_SMB };
+
+struct msrpc_smb
+{
+	struct cli_state *cli;
+	uint16 fnum;
+};
+
 struct cli_connection
 {
 	uint32 num_connections;
 	char *srv_name;
 	char *pipe_name;
-	struct ntuser_creds usr_creds;
-	struct cli_state *cli;
-	uint16 fnum;
+	struct user_creds usr_creds;
+
+	int type;
+
+	union
+	{
+		struct msrpc_smb *smb;
+		struct msrpc_state *local;
+		void* cli;
+	} msrpc;
 };
 
 static struct cli_connection **con_list = NULL;
@@ -86,6 +101,11 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 	}
 
 	memset(con, 0, sizeof(*con));
+	con->type = MSRPC_NONE;
+	copy_user_creds(&con->usr_creds, NULL);
+	copy_nt_creds(&con->usr_creds.ntc, usr_creds);
+	con->usr_creds.ptr_ntc = 1;
+	con->usr_creds.reuse = reuse;
 
 	if (srv_name != NULL)
 	{
@@ -96,13 +116,63 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	con->cli = cli_net_use_add(srv_name, usr_creds, True, reuse);
+	if (strequal(srv_name, "\\\\.") ||
+	    strequal(&srv_name[2], global_myname))
+	{
+		con->type = MSRPC_LOCAL;
+		con->usr_creds.reuse = False;
+		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con->usr_creds, False);
+	}
+	else
+	{
+		con->type = MSRPC_SMB;
+		con->msrpc.smb = malloc(sizeof(*con->msrpc.smb));
+		if (con->msrpc.smb == NULL)
+		{
+			cli_connection_free(con);
+		}
+		else
+		{
+			con->msrpc.smb->cli = cli_net_use_add(srv_name, &con->usr_creds.ntc, True, reuse);
+			if (con->msrpc.smb->cli != NULL)
+			{
+				if (!cli_nt_session_open(con->msrpc.smb->cli,
+						       pipe_name,
+						       &con->msrpc.smb->fnum))
+				{
+					cli_connection_free(con);
+					con->msrpc.cli = NULL;
+				}
+			}
+			else
+			{
+				cli_connection_free(con);
+				con->msrpc.cli = NULL;
+			}
+		}
+	}
+		
+	if (con->msrpc.cli != NULL)
+	{
+		RPC_IFACE abstract;
+		RPC_IFACE transfer;
 
-	if (con->cli == NULL)
+		if (!rpc_pipe_bind(con, pipe_name,
+				   &abstract, &transfer,
+				   global_myname))
+		{
+			DEBUG(0,("rpc_pipe_bind failed\n"));
+			cli_connection_free(con);
+			con->msrpc.cli = NULL;
+		}
+	}
+
+	if (con->msrpc.cli == NULL)
 	{
 		cli_connection_free(con);
 		return NULL;
 	}
+
 	add_con_to_array(&num_cons, &con_list, con);
 	return con;
 }
@@ -115,28 +185,60 @@ void cli_connection_free(struct cli_connection *con)
 	BOOL closed;
 	int i;
 
-	if (con->cli != NULL)
+	if (con->msrpc.cli != NULL)
 	{
-		cli_nt_session_close(con->cli, con->fnum);
-		cli_net_use_del(con->srv_name, &con->usr_creds, False, &closed);
+		switch (con->type)
+		{
+			case MSRPC_LOCAL:
+			{
+				msrpc_use_del(con->srv_name, NULL, False, &closed);
+				break;
+			}
+			case MSRPC_SMB:
+			{
+				cli_nt_session_close(con->msrpc.smb->cli,
+				                     con->msrpc.smb->fnum);
+				cli_net_use_del(con->srv_name, &con->usr_creds.ntc, False, &closed);
+				break;
+			}
+		}
 	}
 
 	if (closed)
 	{
 		for (i = 0; i < num_cons; i++)
 		{
-			if (con_list[i] != NULL &&
-			    con != con_list[i] &&
-			    con_list[i]->cli == con->cli)
+			struct cli_connection *c = con_list[i];
+			if (c != NULL &&
+			    con != c &&
+			    c->msrpc.cli == con->msrpc.cli)
 			{
-				/* WHOOPS! fnum already open: too bad!!! */
-				con_list[i]->cli = NULL;
-				con_list[i]->fnum = 0xffff;
+				/* WHOOPS! fnum already open: too bad!!!
+				   get rid of all other connections that
+				   were using that connection
+				 */
+				switch (c->type)
+				{
+					case MSRPC_LOCAL:
+					{
+						c->msrpc.local = NULL;
+						break;
+					}
+					case MSRPC_SMB:
+					{
+						c->msrpc.smb->cli = NULL;
+						c->msrpc.smb->fnum = 0xffff;
+					}
+				}
 			}
 		}
 	}
 
-	con->cli = NULL;
+	if (con->msrpc.cli != NULL)
+	{
+		free(con->msrpc.cli);
+	}
+	con->msrpc.cli = NULL;
 
 	if (con->srv_name != NULL)
 	{
@@ -193,9 +295,6 @@ BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 	{
 		return False;
 	}
-
-	res = res ? cli_nt_session_open((*con)->cli, pipe_name,
-	                               &(*con)->fnum) : False;
 
 	return res;
 }
@@ -254,13 +353,70 @@ policy handle.
 ****************************************************************************/
 BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
 {
+	char *src_key = NULL;
+
 	if (con == NULL)
 	{
 		return False;
 	}
-	memcpy(usr_sess_key, con->cli->usr.pwd.sess_key, 16);
+	switch (con->type)
+	{
+		case MSRPC_LOCAL:
+		{
+			src_key = con->msrpc.local->usr.ntc.pwd.sess_key;
+			break;
+		}
+		case MSRPC_SMB:
+		{
+			src_key = con->msrpc.smb->cli->usr.pwd.sess_key;
+			break;
+		}
+		default:
+		{
+			return False;
+		}
+	}
+	memcpy(usr_sess_key, src_key, 16);
 
 	return True;
+}
+
+/****************************************************************************
+ get nt creds associated with an msrpc session.
+****************************************************************************/
+struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con)
+{
+	switch (con->type)
+	{
+		case MSRPC_LOCAL:
+		{
+			return &con->msrpc.local->usr.ntc;
+		}
+		case MSRPC_SMB:
+		{
+			return &con->msrpc.smb->cli->usr;
+		}
+	}
+	return NULL;
+}
+
+/****************************************************************************
+ get nt creds (HACK ALERT!) associated with an msrpc session.
+****************************************************************************/
+struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con)
+{
+	switch (con->type)
+	{
+		case MSRPC_LOCAL:
+		{
+			return &con->msrpc.local->nt;
+		}
+		case MSRPC_SMB:
+		{
+			return &con->msrpc.smb->cli->nt;
+		}
+	}
+	return NULL;
 }
 
 /****************************************************************************
@@ -269,34 +425,52 @@ policy handle.
 ****************************************************************************/
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16])
 {
+	struct ntdom_info *nt;
 	if (con == NULL)
 	{
 		return False;
 	}
-	memcpy(sess_key, con->cli->sess_key, sizeof(con->cli->sess_key));
+	nt = cli_conn_get_ntinfo(con);
+	memcpy(sess_key, nt->sess_key, sizeof(nt->sess_key));
 
 	return True;
 }
 
 /****************************************************************************
-get a user session key associated with a connection associated with a
+get a server name associated with a connection associated with a
 policy handle.
 ****************************************************************************/
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 {
+	char *desthost = NULL;
+
 	if (con == NULL)
 	{
 		return False;
 	}
 
-	if (strnequal("\\\\", con->cli->desthost, 2))
+	switch (con->type)
 	{
-		fstrcpy(srv_name, con->cli->desthost);
+		case MSRPC_SMB:
+		{
+			desthost = con->msrpc.smb->cli->desthost;
+			break;
+		}
+		case MSRPC_LOCAL:
+		{
+			desthost = con->srv_name;
+			break;
+		}
+	}
+
+	if (strnequal("\\\\", desthost, 2))
+	{
+		fstrcpy(srv_name, desthost);
 	}
 	else
 	{
 		fstrcpy(srv_name, "\\\\");
-		fstrcat(srv_name, con->cli->desthost);
+		fstrcat(srv_name, desthost);
 	}
 	
 	return True;
@@ -357,7 +531,8 @@ policy handle.
 void cli_con_gen_next_creds(struct cli_connection *con,
 				DOM_CRED *new_clnt_cred)
 {
-	gen_next_creds(con->cli, new_clnt_cred);
+	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+	gen_next_creds(nt, new_clnt_cred);
 }
 
 /****************************************************************************
@@ -367,7 +542,8 @@ policy handle.
 void cli_con_get_cli_cred(struct cli_connection *con,
 				DOM_CRED *clnt_cred)
 {
-	memcpy(clnt_cred, &con->cli->clnt_cred, sizeof(*clnt_cred));
+	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+	memcpy(clnt_cred, &nt->clnt_cred, sizeof(*clnt_cred));
 }
 
 /****************************************************************************
@@ -377,8 +553,8 @@ policy handle.
 BOOL cli_con_deal_with_creds(struct cli_connection *con,
 				DOM_CRED *rcv_srv_cred)
 {
-	return clnt_deal_with_creds(con->cli->sess_key, &con->cli->clnt_cred,
-				rcv_srv_cred);
+	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+	return clnt_deal_with_creds(nt->sess_key, &nt->clnt_cred, rcv_srv_cred);
 }
 
 /****************************************************************************
@@ -389,14 +565,17 @@ BOOL cli_con_set_creds(const char* srv_name, const uchar sess_key[16],
 				DOM_CRED *cred)
 {
 	struct cli_connection *con = NULL;
+	struct ntdom_info *nt;
 
 	if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
 	{
 		return False;
 	}
 
-	memcpy(con->cli->sess_key, sess_key, 16);
-	memcpy(&con->cli->clnt_cred, cred, sizeof(*cred));
+	nt = cli_conn_get_ntinfo(con);
+
+	memcpy(nt->sess_key, sess_key, 16);
+	memcpy(&nt->clnt_cred, cred, sizeof(*cred));
 
 	return True;
 }
@@ -423,5 +602,80 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
-	return rpc_api_pipe_req(con->cli, con->fnum, op_num, data, rdata);
+	return rpc_api_pipe_req(con, op_num, data, rdata);
+}
+
+/****************************************************************************
+ write to a pipe
+****************************************************************************/
+BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
+{
+	switch (con->type)
+	{
+		case MSRPC_SMB:
+		{
+			struct cli_state *cli = con->msrpc.smb->cli;
+			int fnum = con->msrpc.smb->fnum;
+			return cli_write(cli, fnum, 0x0008, 
+			          data->data->data, 0,
+			          data->data->data_used) > 0;
+		}
+		case MSRPC_LOCAL:
+		{
+			data->offset = data->data->data_size;
+			prs_link(NULL, data, NULL);
+			return msrpc_send_prs(con->msrpc.local, data);
+		}
+	}
+	return False;
+}
+
+BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
+{
+	switch (con->type)
+	{
+		case MSRPC_SMB:
+		{
+			struct cli_state *cli = con->msrpc.smb->cli;
+			int fnum = con->msrpc.smb->fnum;
+			return cli_rcv_pdu(cli, fnum, rdata);
+		}
+		case MSRPC_LOCAL:
+		{
+			BOOL ret;
+			ret = msrpc_receive_prs(con->msrpc.local, rdata);
+			rdata->offset = 0;
+			rdata->data->offset.start = 0;
+			rdata->data->offset.end = rdata->data->data_used;
+			return ret;
+		}
+	}
+	return False;
+}
+
+BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
+				prs_struct *rdata)
+{
+	switch (con->type)
+	{
+		case MSRPC_SMB:
+		{
+			struct cli_state *cli = con->msrpc.smb->cli;
+			int fnum = con->msrpc.smb->fnum;
+			return cli_send_and_rcv_pdu(cli, fnum, data, rdata);
+		}
+		case MSRPC_LOCAL:
+		{
+			BOOL ret;
+			data->offset = data->data->data_size;
+			prs_link(NULL, data, NULL);
+			ret = msrpc_send_prs(con->msrpc.local, data) &&
+			      msrpc_receive_prs(con->msrpc.local, rdata);
+			rdata->offset = 0;
+			rdata->data->offset.start = 0;
+			rdata->data->offset.end = rdata->data->data_used;
+			return ret;
+		}
+	}
+	return False;
 }

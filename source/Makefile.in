@@ -254,6 +254,7 @@ WINREGD_OBJ1 = winregd/winregd.o \
 
 NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		rpc_server/srv_netlog.o \
+		rpc_client/msrpc_lsarpc.o   \
 		rpc_server/srv_lookup.o \
 		rpc_client/cli_lsarpc.o   \
                 rpc_parse/parse_lsa.o \
@@ -261,6 +262,7 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 
 SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_lookup.o \
+		rpc_client/msrpc_lsarpc.o   \
                 rpc_parse/parse_samr.o \
 		rpc_client/cli_lsarpc.o   \
                 rpc_parse/parse_lsa.o \
@@ -274,6 +276,8 @@ SVCCTLD_OBJ1 = svcctld/svcctld.o \
 LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
                 rpc_parse/parse_samr.o \
 		rpc_client/cli_lsarpc.o   \
+		rpc_client/msrpc_lsarpc.o   \
+		rpc_client/msrpc_samr.o   \
 		rpc_client/cli_samr.o   \
                 rpc_parse/parse_lsa.o \
 		lsarpcd/srv_lsa.o \

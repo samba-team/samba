@@ -208,6 +208,7 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 	/* reuse an existing connection requested, and one was not found */
 	if (usr_creds != NULL && usr_creds->reuse && !redir)
 	{
+		DEBUG(0,("msrpc_use_add: reuse requested, but one not found\n"));
 		return False;
 	}
 
@@ -220,7 +221,7 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 
 	if (!msrpc_establish_connection(cli->cli, pipe_name))
 	{
-		DEBUG(0,("msrpc_net_use_add: connection failed\n"));
+		DEBUG(0,("msrpc_use_add: connection failed\n"));
 		cli->cli = NULL;
 		msrpc_use_free(cli);
 		return NULL;

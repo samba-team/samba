@@ -35,18 +35,18 @@ extern int DEBUGLEVEL;
 Generate the next creds to use.
 ****************************************************************************/
 
-void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
+void gen_next_creds( struct ntdom_info *nt, DOM_CRED *new_clnt_cred)
 {
   /*
    * Create the new client credentials.
    */
 
-  cli->clnt_cred.timestamp.time = time(NULL);
+  nt->clnt_cred.timestamp.time = time(NULL);
 
-  memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
+  memcpy(new_clnt_cred, &nt->clnt_cred, sizeof(*new_clnt_cred));
 
   /* Calculate the new credentials. */
-  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+  cred_create(nt->sess_key, &(nt->clnt_cred.challenge),
               new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
 
 }

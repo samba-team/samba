@@ -114,19 +114,9 @@ struct cli_state
 	int win95;
 	uint32 capabilities;
 
-	/*
-	 * Only used in NT domain calls.
-	 */
+	struct ntdom_info nt;
 
 	uint32 nt_error;                   /* NT RPC error code. */
-	unsigned char sess_key[16];        /* Current session key. */
-	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
-	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
-	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
-	DOM_CRED clnt_cred;                /* Client credential. */
-	uint16 max_xmit_frag;
-	uint16 max_recv_frag;
 };
 
 struct cli_connection;

@@ -217,7 +217,11 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	fstring dest_host;
 	struct in_addr ip;
 
-	struct cli_use *cli = cli_find(srv_name, usr_creds, reuse); 
+	struct cli_use *cli;
+
+	DEBUG(10,("cli_net_use_add\n"));
+
+	cli = cli_find(srv_name, usr_creds, reuse); 
 
 	if (cli != NULL)
 	{
@@ -267,7 +271,7 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 		return NULL;
 	}
 
-	cli->cli->ntlmssp_cli_flgs = 0x0;
+	cli->cli->nt.ntlmssp_cli_flgs = 0x0;
 
 	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;

@@ -33,6 +33,120 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
+/****************************************************************************
+lookup in a sam database
+****************************************************************************/
+uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
+				char *name, uint32 *rid, uint8 *type)
+{
+	fstring srv_name;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	char *names[1];
+	uint32 rids [MAX_LOOKUP_SIDS];
+	uint32 types[MAX_LOOKUP_SIDS];
+	uint32 num_rids;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	if (!get_any_dc_name(domain, srv_name))
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
+
+	names[0] = name;
+
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
+	            1, names,
+	            &num_rids, rids, types) : False;
+
+	res  = res  ? samr_close(&pol_dom) : False;
+	res  = res  ? samr_close(&sam_pol) : False;
+
+	if (!res1 || num_rids != 1)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	*rid = rids[0];
+	*type = (uint8)(types[0]);
+
+	return 0x0;
+}
+
+/****************************************************************************
+lookup in a sam database
+****************************************************************************/
+uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
+				uint32 rid, char *name, uint8 *type)
+{
+	fstring srv_name;
+	int i;
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	char **names = NULL;
+	uint32 *rid_mem;
+	uint32 *types = NULL;
+	uint32 num_names;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	if (!get_any_dc_name(domain, srv_name))
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
+
+	rid_mem = (uint32*)malloc(1 * sizeof(rid_mem[0]));
+
+	if (rid_mem == NULL)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	for (i = 0; i < 1; i++)
+	{
+		rid_mem[i] = rid;
+	}
+
+	res1 = res ? samr_query_lookup_rids( &pol_dom, 0x3e8,
+			1, rid_mem, 
+			&num_names, &names, &types) : False;
+
+	res  = res  ? samr_close(&pol_dom) : False;
+	res  = res  ? samr_close(&sam_pol) : False;
+
+	if (!res1 || num_names != 1)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	fstrcpy(name, names[0]);
+	*type = types[0];
+
+	free_char_array(num_names, names);
+	
+	if (types != NULL)
+	{
+		free(types);
+	}
+
+	return 0x0;
+}
+
 BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
@@ -1082,7 +1196,7 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 		{
 			return False;
 		}
-		p16->acb_info = usr16.acb_info;
+		p16->acb_info = acb_info;
 
 		res1 = set_samr_set_userinfo2( pol_dom, 0x10, *rid, (void*)p16);
 	}
