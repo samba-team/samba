@@ -157,6 +157,8 @@ krb5_verify(struct passwd *pwd, const char *password)
     return ret;
 }
 
+#ifdef KRB4
+
 static void
 krb5_get_afs_tokens (struct passwd *pwd)
 {
@@ -198,6 +200,9 @@ krb5_get_afs_tokens (struct passwd *pwd)
     krb5_cc_close (context, ccache);
     krb5_free_context (context);
 }
+
+#endif /* KRB4 */
+
 #endif /* KRB5 */
 
 #ifdef KRB4
@@ -398,12 +403,12 @@ do_login(struct passwd *pwd)
 	pwd->pw_dir = "/";
 	fprintf(stderr, "Logging in with home = \"/\".\n");
     }
+#ifdef KRB4
 #ifdef KRB5
     krb5_get_afs_tokens (pwd);
 #endif
-#ifdef KRB4
     krb4_get_afs_tokens (pwd);
-#endif
+#endif /* KRB4 */
 
     add_env("HOME", pwd->pw_dir);
     add_env("USER", pwd->pw_name);
