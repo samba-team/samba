@@ -357,7 +357,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
 
 			retlen = vfs_ops->write(fsp,fsp->fd,zero_space,current_len_to_write);
-			if (retlen != current_len_to_write) {
+			if (retlen <= 0) {
 				/* Write fail - return to original size. */
 				int save_errno = errno;
 				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
@@ -370,7 +370,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
 					fsp->fsp_name, (double)current_len_to_write ));
 
-			len_to_write -= current_len_to_write;
+			len_to_write -= retlen;
 		}
 		set_filelen_write_cache(fsp, len);
 	}
