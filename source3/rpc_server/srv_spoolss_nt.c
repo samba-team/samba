@@ -526,7 +526,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	
 	/* Add to the internal list. */
 	DLIST_ADD(printers_list, new_printer);
-
+	
 	new_printer->notify.option=NULL;
 				
 	if ( !(new_printer->ctx = talloc_init("Printer Entry [0x%x]", (uint32)hnd)) ) {
@@ -534,7 +534,7 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 		close_printer_handle(p, hnd);
 		return False;
 	}
-
+	
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
 		return False;
@@ -2623,7 +2623,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	/*
 	 * If it's the first connection, contact the client
-	 * and connect to the IPC$ share anonumously
+	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
 		fstring unix_printer;
