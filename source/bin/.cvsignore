@@ -2,6 +2,7 @@
 .dummy
 .libs
 debug2html
+editreg
 locktest
 locktest2
 make_printerdef
@@ -36,6 +37,7 @@ smbtorture
 smbtree
 smbumount
 swat
+t_stringoverflow
 talloctort
 tdbbackup
 testparm
@@ -44,4 +46,3 @@ vfstest
 wbinfo
 winbindd
 wrepld
-editreg
