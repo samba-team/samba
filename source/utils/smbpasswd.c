@@ -57,7 +57,7 @@ char *get_error_message(struct cli_state *cli)
   if(errclass != 0) 
     return cli_errstr(cli);
 
-  sprintf(error_message, "code %d", cli->error);
+  slprintf(error_message, sizeof(fstring) - 1, "code %d", cli->error);
       
   for(i = 0; pw_change_errmap[i].message != NULL; i++) {
     if (pw_change_errmap[i].err == cli->error) {
@@ -626,17 +626,17 @@ Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
         exit(1);
       }
 
-      sprintf(new_entry, "%s:%u:", pwd->pw_name, (unsigned)pwd->pw_uid);
+      slprintf(new_entry, new_entry_length - 1, "%s:%u:", pwd->pw_name, (unsigned)pwd->pw_uid);
       p = &new_entry[strlen(new_entry)];
       for( i = 0; i < 16; i++)
-        sprintf(&p[i*2], "%02X", new_p16[i]);
+        slprintf(&p[i*2], new_entry_length - (p - new_entry) - (i*2) - 1, "%02X", new_p16[i]);
       p += 32;
       *p++ = ':';
       for( i = 0; i < 16; i++)
-        sprintf(&p[i*2], "%02X", new_nt_p16[i]);
+        slprintf(&p[i*2], new_entry_length - (p - new_entry) - (i*2) - 1,"%02X", new_nt_p16[i]);
       p += 32;
       *p++ = ':';
-      sprintf(p, "%s:%s:%s\n", pwd->pw_gecos, 
+      slprintf(p, new_entry_length - (p - new_entry) - 1, "%s:%s:%s\n", pwd->pw_gecos, 
               pwd->pw_dir, pwd->pw_shell);
       if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
@@ -667,13 +667,13 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 
   /* Create the 32 byte representation of the new p16 */
   for (i = 0; i < 16; i++) {
-    sprintf(&ascii_p16[i * 2], "%02X", (uchar) new_p16[i]);
+    slprintf(&ascii_p16[i * 2], sizeof(ascii_p16) - (i*2) - 1, "%02X", (uchar) new_p16[i]);
   }
   if(got_valid_nt_entry) {
     /* Add on the NT md4 hash */
     ascii_p16[32] = ':';
     for (i = 0; i < 16; i++) {
-      sprintf(&ascii_p16[(i * 2)+33], "%02X", (uchar) new_nt_p16[i]);
+      slprintf(&ascii_p16[(i * 2)+33], sizeof(ascii_p16) - (i*2) - 32, "%02X", (uchar) new_nt_p16[i]);
     }
   }
   /*

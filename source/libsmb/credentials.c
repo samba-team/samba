@@ -31,7 +31,7 @@ represent a credential as a string
 char *credstr(uchar *cred)
 {
 	static fstring buf;
-	sprintf(buf,"%02X%02X%02X%02X%02X%02X%02X%02X",
+	slprintf(buf,sizeof(buf)-1,"%02X%02X%02X%02X%02X%02X%02X%02X",
 		cred[0], cred[1], cred[2], cred[3], 
 		cred[4], cred[5], cred[6], cred[7]);
 	return buf;

@@ -52,9 +52,9 @@ extern pstring myhostname;
   charset_initialise();
 
   if (argc < 2)
-    strcpy(configfile,CONFIGFILE);
+    pstrcpy(configfile,CONFIGFILE);
   else
-    strcpy(configfile,argv[1]);
+    pstrcpy(configfile,argv[1]);
 
   dbf = stdout;
   DEBUGLEVEL = 2;

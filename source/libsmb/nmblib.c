@@ -253,7 +253,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
     buf1[0] = '*';
     buf1[15] = name->name_type;
   } else {
-    sprintf(buf1,"%-15.15s%c",name->name,name->name_type);
+    slprintf(buf1,sizeof(buf1)-1,"%-15.15s%c",name->name,name->name_type);
   }
 
   buf[offset] = 0x20;
@@ -271,7 +271,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   if (name->scope[0]) {
     /* XXXX this scope handling needs testing */
     ret += strlen(name->scope) + 1;
-    strcpy(&buf[offset+1],name->scope);  
+    pstrcpy(&buf[offset+1],name->scope);  
   
     p = &buf[offset+1];
     while ((p = strchr(p,'.'))) {

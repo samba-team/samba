@@ -192,7 +192,7 @@ static void LsarpcTNP1(char *data,char **rdata, int *rdata_len)
   SIVAL(*rdata,0x10,dword2);
   SIVAL(*rdata,0x14,0x15);
   SSVAL(*rdata,0x18,sizeof(pname));
-  strcpy(*rdata + 0x1a,pname);
+  pstrcpy(*rdata + 0x1a,pname);
   SIVAL(*rdata,0x28,1);
   memcpy(*rdata + 0x30, data + 0x34, 0x14);
 }

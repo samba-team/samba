@@ -178,14 +178,14 @@ void reopen_logs(void)
   
   if (DEBUGLEVEL > 0)
     {
-      strcpy(fname,debugf);
+      pstrcpy(fname,debugf);
       if (lp_loaded() && (*lp_logfile()))
-	strcpy(fname,lp_logfile());
+	pstrcpy(fname,lp_logfile());
 
       if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
 	{
 	  int oldumask = umask(022);
-	  strcpy(debugf,fname);
+	  pstrcpy(debugf,fname);
 	  if (dbf) fclose(dbf);
 	  if (append_log)
 	    dbf = fopen(debugf,"a");
@@ -767,7 +767,7 @@ int name_mangle( char *In, char *Out, char name_type )
   if( '*' == In[0] )
     buf[0] = '*';
   else
-    (void)sprintf( buf, "%-15.15s%c", In, name_type );
+    (void)slprintf( buf, sizeof(buf)-1, "%-15.15s%c", In, name_type );
 
   /* Place the length of the first field into the output buffer. */
   p[0] = 32;
@@ -869,16 +869,16 @@ return a string representing an attribute for a file
 ********************************************************************/
 char *attrib_string(int mode)
 {
-  static char attrstr[10];
+  static fstring attrstr;
 
   attrstr[0] = 0;
 
-  if (mode & aVOLID) strcat(attrstr,"V");
-  if (mode & aDIR) strcat(attrstr,"D");
-  if (mode & aARCH) strcat(attrstr,"A");
-  if (mode & aHIDDEN) strcat(attrstr,"H");
-  if (mode & aSYSTEM) strcat(attrstr,"S");
-  if (mode & aRONLY) strcat(attrstr,"R");	  
+  if (mode & aVOLID) fstrcat(attrstr,"V");
+  if (mode & aDIR) fstrcat(attrstr,"D");
+  if (mode & aARCH) fstrcat(attrstr,"A");
+  if (mode & aHIDDEN) fstrcat(attrstr,"H");
+  if (mode & aSYSTEM) fstrcat(attrstr,"S");
+  if (mode & aRONLY) fstrcat(attrstr,"R");	  
 
   return(attrstr);
 }
@@ -1244,8 +1244,8 @@ void unix_format(char *fname)
   if (*fname == '/')
     {
       pstrcpy(namecopy,fname);
-      strcpy(fname,".");
-      strcat(fname,namecopy);
+      pstrcpy(fname,".");
+      pstrcat(fname,namecopy);
     }  
 }
 
@@ -1441,7 +1441,7 @@ void dos_clean_name(char *s)
 	*p = 0;
       else
 	*s = 0;
-      strcat(s,s1);
+      pstrcat(s,s1);
     }  
 
   trim_string(s,NULL,"\\..");
@@ -1465,7 +1465,7 @@ void unix_clean_name(char *s)
   if(strncmp(s, "./", 2) == 0) {
     trim_string(s, "./", NULL);
     if(*s == 0)
-      strcpy(s,"./");
+      pstrcpy(s,"./");
   }
 
   while ((p = strstr(s,"/../")) != NULL)
@@ -1479,7 +1479,7 @@ void unix_clean_name(char *s)
 	*p = 0;
       else
 	*s = 0;
-      strcat(s,s1);
+      pstrcat(s,s1);
     }  
 
   trim_string(s,NULL,"/..");
@@ -1572,7 +1572,7 @@ char *GetWd(char *str)
 		    st.st_dev == st2.st_dev &&
 		    (st2.st_mode & S_IFMT) == S_IFDIR)
 		  {
-		    strcpy (str, ino_list[i].text);
+		    pstrcpy (str, ino_list[i].text);
 
 		    /* promote it for future use */
 		    array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
@@ -1599,7 +1599,7 @@ char *GetWd(char *str)
       return (NULL);
     }
 
-  strcpy(str,s);
+  pstrcpy(str,s);
 
   DEBUG(5,("GetWd %s, inode %d, dev %x\n",s,(int)st.st_ino,(int)st.st_dev));
 
@@ -1650,7 +1650,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 	}
 
       if (strlen(s) == 0)
-        strcpy(s,"./");
+        pstrcpy(s,"./");
 
       return(True);
     }
@@ -1711,8 +1711,8 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 
   if (p && (p != base_name))
     {
-      strcat(newname,"/");
-      strcat(newname,p+1);
+      pstrcat(newname,"/");
+      pstrcat(newname,p+1);
     }
 
   {
@@ -1741,7 +1741,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   ChDir(wd);
 
   if (strlen(s) == 0)
-    strcpy(s,"./");
+    pstrcpy(s,"./");
 
   DEBUG(3,("reduced to %s\n",s));
   return(True);
@@ -1796,7 +1796,7 @@ void expand_mask(char *Mask,BOOL doext)
     }
   else
     {
-      strcpy(mext,"");
+      pstrcpy(mext,"");
       if (strlen(mbeg) > 8)
 	{
 	  pstrcpy(mext,mbeg + 8);
@@ -1805,12 +1805,12 @@ void expand_mask(char *Mask,BOOL doext)
     }
 
   if (*mbeg == 0)
-    strcpy(mbeg,"????????");
+    pstrcpy(mbeg,"????????");
   if ((*mext == 0) && doext && !hasdot)
-    strcpy(mext,"???");
+    pstrcpy(mext,"???");
 
   if (strequal(mbeg,"*") && *mext==0) 
-    strcpy(mext,"*");
+    pstrcpy(mext,"*");
 
   /* expand *'s */
   expand_one(mbeg,8);
@@ -1818,10 +1818,10 @@ void expand_mask(char *Mask,BOOL doext)
     expand_one(mext,3);
 
   pstrcpy(Mask,dirpart);
-  if (*dirpart || absolute) strcat(Mask,"\\");
-  strcat(Mask,mbeg);
-  strcat(Mask,".");
-  strcat(Mask,mext);
+  if (*dirpart || absolute) pstrcat(Mask,"\\");
+  pstrcat(Mask,mbeg);
+  pstrcat(Mask,".");
+  pstrcat(Mask,mext);
 
   DEBUG(6,("Mask expanded to [%s]\n",Mask));
 }  
@@ -2763,7 +2763,7 @@ int name_extract(char *buf,int ofs,char *name)
 {
   char *p = name_ptr(buf,ofs);
   int d = PTR_DIFF(p,buf+ofs);
-  strcpy(name,"");
+  pstrcpy(name,"");
   if (d < -50 || d > 50) return(0);
   return(name_interpret(p,name));
 }
@@ -2907,7 +2907,7 @@ BOOL string_init(char **dest,char *src)
 	      return False;
       }
 
-      strcpy(*dest,src);
+      pstrcpy(*dest,src);
     }
   return(True);
 }
@@ -3051,12 +3051,12 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   StrnCpy(p2,str,sizeof(pstring)-1);
 
   if (!strchr(p2,'.')) {
-    strcat(p2,".");
+    pstrcat(p2,".");
   }
 
 /*
   if (!strchr(p1,'.')) {
-    strcat(p1,".");
+    pstrcat(p1,".");
   }
 */
 
@@ -3071,7 +3071,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   /* Remove any *? and ** as they are meaningless */
   for(p = p1; *p; p++)
     while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
-      (void)strcpy( &p[1], &p[2]);
+      (void)pstrcpy( &p[1], &p[2]);
 
   if (strequal(p1,"*")) return(True);
 
@@ -3304,11 +3304,11 @@ char *dirname_dos(char *path,char *buf)
   char *p = strrchr(path,'\\');
 
   if (!p)
-    strcpy(buf,path);
+    pstrcpy(buf,path);
   else
     {
       *p = 0;
-      strcpy(buf,path);
+      pstrcpy(buf,path);
       *p = '\\';
     }
 
@@ -3324,9 +3324,9 @@ static char *filename_dos(char *path,char *buf)
   char *p = strrchr(path,'\\');
 
   if (!p)
-    strcpy(buf,path);
+    pstrcpy(buf,path);
   else
-    strcpy(buf,p+1);
+    pstrcpy(buf,p+1);
 
   return(buf);
 }
@@ -3364,10 +3364,11 @@ duplicate a string
  char *strdup(char *s)
 {
   char *ret = NULL;
+  int len;
   if (!s) return(NULL);
-  ret = (char *)malloc(strlen(s)+1);
+  ret = (char *)malloc((len = strlen(s))+1);
   if (!ret) return(NULL);
-  strcpy(ret,s);
+  safe_strcpy(ret,s,len);
   return(ret);
 }
 #endif
@@ -3738,7 +3739,7 @@ char *client_name(void)
   if (global_client_name_done) 
     return name_buf;
 
-  strcpy(name_buf,"UNKNOWN");
+  pstrcpy(name_buf,"UNKNOWN");
 
   if (Client == -1) {
 	  return name_buf;
@@ -3759,7 +3760,7 @@ char *client_name(void)
     StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
     if (!matchname(name_buf, sockin->sin_addr)) {
       DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr()));
-      strcpy(name_buf,"UNKNOWN");
+      pstrcpy(name_buf,"UNKNOWN");
     }
   }
   global_client_name_done = True;
@@ -3779,7 +3780,7 @@ char *client_addr(void)
   if (global_client_addr_done) 
     return addr_buf;
 
-  strcpy(addr_buf,"0.0.0.0");
+  fstrcpy(addr_buf,"0.0.0.0");
 
   if (Client == -1) {
 	  return addr_buf;
@@ -3966,7 +3967,7 @@ char *automount_path(char *user_name)
 		{
 		  DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
 		        home_path_start?(home_path_start+1):""));
-		  strcpy(server_path, home_path_start+1);
+		  pstrcpy(server_path, home_path_start+1);
 		}
 	}
 #else
@@ -4019,7 +4020,7 @@ void standard_sub_basic(char *str)
                         case 'U' : string_sub(p,"%U", username); break;
 			case 'd' :
 			{
-				sprintf(pidstr,"%d",(int)getpid());
+				slprintf(pidstr,sizeof(pidstr)-1,"%d",(int)getpid());
 				string_sub(p,"%d", pidstr);
 				break;
 			}
@@ -4173,7 +4174,7 @@ char *uidtoname(int uid)
   static char name[40];
   struct passwd *pass = getpwuid(uid);
   if (pass) return(pass->pw_name);
-  sprintf(name,"%d",uid);
+  slprintf(name,sizeof(name)-1,"%d",uid);
   return(name);
 }
 
@@ -4185,7 +4186,7 @@ char *gidtoname(int gid)
   static char name[40];
   struct group *grp = getgrgid(gid);
   if (grp) return(grp->gr_name);
-  sprintf(name,"%d",gid);
+  slprintf(name,sizeof(name)-1,"%d",gid);
   return(name);
 }
 
@@ -4589,23 +4590,23 @@ void set_remote_arch(enum remote_arch_types type)
   switch( type )
   {
   case RA_WFWG:
-    strcpy(remote_arch, "WfWg");
+    fstrcpy(remote_arch, "WfWg");
     return;
   case RA_OS2:
-    strcpy(remote_arch, "OS2");
+    fstrcpy(remote_arch, "OS2");
     return;
   case RA_WIN95:
-    strcpy(remote_arch, "Win95");
+    fstrcpy(remote_arch, "Win95");
     return;
   case RA_WINNT:
-    strcpy(remote_arch, "WinNT");
+    fstrcpy(remote_arch, "WinNT");
     return;
   case RA_SAMBA:
-    strcpy(remote_arch,"Samba");
+    fstrcpy(remote_arch,"Samba");
     return;
   default:
     ra_type = RA_UNKNOWN;
-    strcpy(remote_arch, "UNKNOWN");
+    fstrcpy(remote_arch, "UNKNOWN");
     break;
   }
 }
@@ -4782,64 +4783,67 @@ int unistrcpy(char *dst, char *src)
 	return num_wchars;
 }
 
-
 /*******************************************************************
-safe string copy into a fstring
+safe string copy into a known length string. maxlength does not
+include the terminating zero.
 ********************************************************************/
-void fstrcpy(char *dest, char *src)
+char *safe_strcpy(char *dest, char *src, int maxlength)
 {
-    int maxlength = sizeof(fstring) - 1;
     int len;
+
     if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
-        return;
+        DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
+        return NULL;
     }
 
     if (!src) {
         *dest = 0;
-        return;
-    }  
+        return dest;
+    } 
 
     len = strlen(src);
 
     if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in fstrcpy [%.50s]\n",
-		     len-maxlength, src));
-	    len = maxlength;
+            DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
+                     len-maxlength, src));
+            len = maxlength;
     }
-      
+
     memcpy(dest, src, len);
     dest[len] = 0;
-}   
+    return dest;
+} 
 
 /*******************************************************************
-safe string copy into a pstring
+safe string cat into a string. maxlength does not
+include the terminating zero.
 ********************************************************************/
-void pstrcpy(char *dest, char *src)
+char *safe_strcat(char *dest, char *src, int maxlength)
 {
-    int maxlength = sizeof(pstring) - 1;
-    int len;
+    int src_len, dest_len;
+
     if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
-        return;
+        DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
+        return NULL;
     }
 
     if (!src) {
-        *dest = 0;
-        return;
-    }  
-
-    len = strlen(src);
-
-    if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in pstrcpy [%.50s]\n",
-		     len-maxlength, src));
-	    len = maxlength;
+        return dest;
     }
-      
-    memcpy(dest, src, len);
-    dest[len] = 0;
-}  
+
+    src_len = strlen(src);
+    dest_len = strlen(dest);
+
+    if (src_len + dest_len > maxlength) {
+            DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
+                     src_len + dest_len - maxlength, src));
+            src_len = maxlength - dest_len;
+    }
+
+    memcpy(&dest[dest_len], src, src_len);
+    dest[dest_len + src_len] = 0;
+    return dest;
+}
 
 
 /*******************************************************************

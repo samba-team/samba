@@ -276,7 +276,7 @@ in workgroup %s on subnet %s\n",
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  strcpy(userdata->data, work->work_group);
+  pstrcpy(userdata->data, work->work_group);
 
   /* Deregister any browser names we may have. */
   make_nmb_name(&nmbname, MSBROWSE, 0x1, scope);
@@ -528,7 +528,7 @@ in workgroup %s on subnet %s\n",
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  strcpy(userdata->data, work->work_group);
+  pstrcpy(userdata->data, work->work_group);
 
   /* Register the special browser group name. */
   register_name(subrec, MSBROWSE, 0x01, samba_nb_type|NB_GROUP,

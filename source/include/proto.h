@@ -445,7 +445,7 @@ BOOL is_8_3(char *fname, BOOL check_case);
 void reset_mangled_stack( int size );
 BOOL check_mangled_stack(char *s);
 BOOL is_mangled( char *s );
-void mangle_name_83(char *s);
+void mangle_name_83(char *s, int s_len);
 BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
 /*The following definitions come from  md4.c  */
@@ -479,9 +479,8 @@ int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
 		 void (*fn)(struct packet_struct *));
-struct in_addr *name_query(int fd,char *name,int name_type, 
-                           BOOL bcast,BOOL recurse, struct in_addr to_ip, 
-                           int *count, void (*fn)(struct packet_struct *));
+struct in_addr *name_query(int fd,char *name,int name_type, BOOL bcast,BOOL recurse,
+         struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *));
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -1302,6 +1301,11 @@ struct shmem_ops *smb_shm_open(int ronly);
 
 struct shmem_ops *sysv_shm_open(int ronly);
 
+/*The following definitions come from  slprintf.c  */
+
+int vslprintf(char *str, int n, char *format, va_list ap);
+int slprintf(char *str, int n, char *format, ...);
+
 /*The following definitions come from  smbdes.c  */
 
 void E_P16(unsigned char *p14,unsigned char *p16);
@@ -1330,11 +1334,6 @@ int pw_file_unlock(int fd);
 struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
 BOOL add_smbpwd_entry(struct smb_passwd* pwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
-
-/*The following definitions come from  snprintf.c  */
-
-int vslprintf(char *str, int n, char *format, va_list ap);
-int slprintf(char *str, int n, char *format, ...);
 
 /*The following definitions come from  status.c  */
 
@@ -1551,8 +1550,8 @@ int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);
-void fstrcpy(char *dest, char *src);
-void pstrcpy(char *dest, char *src);
+char *safe_strcpy(char *dest, char *src, int maxlength);
+char *safe_strcat(char *dest, char *src, int maxlength);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);

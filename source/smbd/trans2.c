@@ -325,7 +325,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   if(p != NULL)
     {
       if(p[1] == '\0')
-	strcpy(mask,"*.*");
+	pstrcpy(mask,"*.*");
       else
 	pstrcpy(mask, p+1);
     }
@@ -368,8 +368,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
 	  pstrcpy(pathreal,Connections[cnum].dirpath);
           if(needslash)
-  	    strcat(pathreal,"/");
-	  strcat(pathreal,dname);
+  	    pstrcat(pathreal,"/");
+	  pstrcat(pathreal,dname);
 	  if (sys_stat(pathreal,&sbuf) != 0) 
 	    {
 	      DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
@@ -417,7 +417,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,l1_cbFileAlloc,ROUNDUP(size,1024));
       SSVAL(p,l1_attrFile,mode);
       SCVAL(p,l1_cchName,strlen(fname));
-      strcpy(p + l1_achName, fname);
+      pstrcpy(p + l1_achName, fname);
       nameptr = p + l1_achName;
       p += l1_achName + strlen(fname) + 1;
       break;
@@ -436,7 +436,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SSVAL(p,l2_attrFile,mode);
       SIVAL(p,l2_cbList,0); /* No extended attributes */
       SCVAL(p,l2_cchName,strlen(fname));
-      strcpy(p + l2_achName, fname);
+      pstrcpy(p + l2_achName, fname);
       nameptr = p + l2_achName;
       p += l2_achName + strlen(fname) + 1;
       break;
@@ -451,7 +451,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SSVAL(p,24,mode);
       SIVAL(p,26,4);
       CVAL(p,30) = strlen(fname);
-      strcpy(p+31, fname);
+      pstrcpy(p+31, fname);
       nameptr = p+31;
       p += 31 + strlen(fname) + 1;
       break;
@@ -469,7 +469,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,20,ROUNDUP(size,1024));
       SSVAL(p,24,mode);
       CVAL(p,32) = strlen(fname);
-      strcpy(p + 33, fname);
+      pstrcpy(p + 33, fname);
       nameptr = p+33;
       p += 33 + strlen(fname) + 1;
       break;
@@ -490,7 +490,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-	strcpy(p+2,fname);
+	pstrcpy(p+2,fname);
 	if (!name_map_mangle(p+2,True,SNUM(cnum)))
 	  (p+2)[12] = 0;
       } else
@@ -499,7 +499,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SSVAL(p,0,strlen(p+2));
       p += 2 + 24;
       /* nameptr = p;  */
-      strcpy(p,fname); p += strlen(p);
+      pstrcpy(p,fname); p += strlen(p);
       p = pdata + len;
       break;
 
@@ -516,7 +516,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,0,size); p += 8;
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
-      strcpy(p,fname);
+      pstrcpy(p,fname);
       p = pdata + len;
       break;
       
@@ -535,7 +535,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
-      strcpy(p,fname);
+      pstrcpy(p,fname);
       p = pdata + len;
       break;
 
@@ -545,7 +545,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,0,len); p += 4;
       SIVAL(p,0,reskey); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
-      strcpy(p,fname);
+      pstrcpy(p,fname);
       p = pdata + len;
       break;
 
@@ -651,10 +651,10 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
 
   p = strrchr(directory,'/');
   if(p == NULL) {
-    strcpy(mask,directory);
-    strcpy(directory,"./");
+    pstrcpy(mask,directory);
+    pstrcpy(directory,"./");
   } else {
-    strcpy(mask,p+1);
+    pstrcpy(mask,p+1);
     *p = 0;
   }
 
@@ -686,7 +686,7 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   }
   
   /* a special case for 16 bit apps */
-  if (strequal(mask,"????????.???")) strcpy(mask,"*");
+  if (strequal(mask,"????????.???")) pstrcpy(mask,"*");
 
   /* handle broken clients that send us old 8.3 format */
   string_sub(mask,"????????","*");
@@ -863,8 +863,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
     DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
     return (ERROR(ERRDOS,ERRnofiles));
   }
-  strcpy(mask, p);
-  strcpy(directory,Connections[cnum].dirpath);
+  pstrcpy(mask, p);
+  pstrcpy(directory,Connections[cnum].dirpath);
 
   /* Get the attr mask from the dptr */
   dirtype = dptr_attr(dptr_num);
@@ -1060,7 +1060,7 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
     case SMB_QUERY_FS_LABEL_INFO:
       data_len = 4 + strlen(vname);
       SIVAL(pdata,0,strlen(vname));
-      strcpy(pdata+4,vname);      
+      pstrcpy(pdata+4,vname);      
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
       data_len = 18 + 2*strlen(vname);

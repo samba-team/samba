@@ -246,7 +246,7 @@ static void push_mangled_name(char *s)
   /* If name <s> wasn't already there, add it to the top of the stack. */
   memmove( mangled_stack[1], mangled_stack[0],
            sizeof(fstring) * MIN(mangled_stack_len, mangled_stack_size-1) );
-  strcpy( mangled_stack[0], s );
+  fstrcpy( mangled_stack[0], s );
   mangled_stack_len = MIN( mangled_stack_size, mangled_stack_len+1 );
 
   /* Hmmm...
@@ -288,22 +288,22 @@ BOOL check_mangled_stack(char *s)
 
   for( i=0; i<mangled_stack_len; i++ )
     {
-    strcpy(tmpname,mangled_stack[i]);
-    mangle_name_83(tmpname);
+    pstrcpy(tmpname,mangled_stack[i]);
+    mangle_name_83(tmpname,sizeof(tmpname)-1);
     if( strequal(tmpname,s) )
       {
-      strcpy(s,mangled_stack[i]);
+      fstrcpy(s,mangled_stack[i]);
       break;
       }
     if( check_extension && !strchr(mangled_stack[i],'.') )
       {
       pstrcpy(tmpname,mangled_stack[i]);
-      strcat(tmpname,extension);
-      mangle_name_83(tmpname);
+      pstrcat(tmpname,extension);
+      mangle_name_83(tmpname, sizeof(tmpname)-1);
       if( strequal(tmpname,s) )
         {
-        strcpy(s,mangled_stack[i]);
-        strcat(s,extension);
+        fstrcpy(s,mangled_stack[i]);
+        fstrcat(s,extension);
         break;
         }          
       }
@@ -521,7 +521,7 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
 /****************************************************************************
 do the actual mangling to 8.3 format
 ****************************************************************************/
-void mangle_name_83(char *s)
+void mangle_name_83(char *s, int s_len)
   {
   int csum = str_checksum(s);
   char *p;
@@ -554,7 +554,7 @@ void mangle_name_83(char *s)
   if( p )
     {
     if (p == s)
-      strcpy(extension,"___");
+      fstrcpy(extension,"___");
     else
       {
       *p++ = 0;
@@ -624,12 +624,12 @@ void mangle_name_83(char *s)
 
   csum = csum % (36*36);
 
-  sprintf(s,"%s%c%c%c",base,magic_char,base36(csum/36),base36(csum%36));
+  slprintf(s, s_len - 1, "%s%c%c%c",base,magic_char,base36(csum/36),base36(csum%36));
 
   if( *extension )
     {
-    strcat(s,".");
-    strcat(s,extension);
+    fstrcat(s,".");
+    fstrcat(s,extension);
     }
   DEBUG(5,("%s\n",s));
 
@@ -701,7 +701,7 @@ BOOL name_map_mangle(char *OutName,BOOL need83,int snum)
 
     /* mangle it into 8.3 */
     push_mangled_name(OutName);  
-    mangle_name_83(OutName);
+    mangle_name_83(OutName,sizeof(pstring)-1);
     }
   
   return(True);

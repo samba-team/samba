@@ -133,7 +133,7 @@ static BOOL dump_core(void)
   pstrcpy( dname, debugf );
   if ((p=strrchr(dname,'/')))
     *p=0;
-  strcat( dname, "/corefiles" );
+  pstrcat( dname, "/corefiles" );
   mkdir( dname, 0700 );
   sys_chown( dname, getuid(), getgid() );
   chmod( dname, 0700 );
@@ -209,7 +209,7 @@ BOOL reload_services(BOOL test)
   BOOL ret;
   extern fstring remote_machine;
 
-  strcpy( remote_machine, "nmb" );
+  fstrcpy( remote_machine, "nmb" );
 
   if ( lp_loaded() )
   {
@@ -563,14 +563,14 @@ int main(int argc,char *argv[])
 
   TimeInit();
 
-  strcpy( debugf, NMBLOGFILE );
+  pstrcpy( debugf, NMBLOGFILE );
 
   setup_logging( argv[0], False );
 
   charset_initialise();
 
 #ifdef LMHOSTSFILE
-  strcpy( host_file, LMHOSTSFILE );
+  pstrcpy( host_file, LMHOSTSFILE );
 #endif
 
   /* this is for people who can't start the program correctly */
@@ -727,7 +727,7 @@ int main(int argc,char *argv[])
       DEBUG(0,("ERROR: nmbd is already running\n"));
       exit(1);
     }
-    sprintf(buf, "%u\n", (unsigned int) getpid());
+    slprintf(buf, sizeof(buf)-1, "%u\n", (unsigned int) getpid());
     if (write(fd, buf, strlen(buf)) < 0)
     {
       DEBUG(0,("ERROR: can't write to %s: %s\n", pidFile, strerror(errno)));

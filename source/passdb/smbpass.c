@@ -364,7 +364,7 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 
 	int fd;
 	int new_entry_length;
-	char *new_entry;
+	unsigned char *new_entry;
 	long offpos;
 
 	if (!*pfile)
@@ -512,12 +512,12 @@ Error was %s\n",
 		return False;
 	}
 
-	sprintf(new_entry, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
+	slprintf(new_entry, new_entry_length - 1, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
 	p = (unsigned char *)&new_entry[strlen(new_entry)];
 
 	for( i = 0; i < 16; i++)
 	{
-		sprintf((char *)&p[i*2], "%02X", pwd->smb_passwd[i]);
+		slprintf((char *)&p[i*2], new_entry_length - (p - new_entry) - 1,"%02X", pwd->smb_passwd[i]);
 	}
 	p += 32;
 
@@ -525,12 +525,12 @@ Error was %s\n",
 
 	for( i = 0; i < 16; i++)
 	{
-		sprintf((char *)&p[i*2], "%02X", pwd->smb_nt_passwd[i]);
+		slprintf((char *)&p[i*2], new_entry_length - (p - new_entry) - 1, "%02X", pwd->smb_nt_passwd[i]);
 	}
 	p += 32;
 
 	*p++ = ':';
-	sprintf((char *)p,"\n");
+	slprintf((char *)p, new_entry_length - (p - new_entry) - 1, "\n");
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|\n", 
@@ -841,7 +841,8 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 	/* Create the 32 byte representation of the new p16 */
 	for (i = 0; i < 16; i++)
 	{
-		sprintf(&ascii_p16[i*2], "%02X", (uchar) pwd->smb_passwd[i]);
+		slprintf(&ascii_p16[i*2], sizeof(ascii_p16) - (i*2) - 1, 
+                        "%02X", (uchar) pwd->smb_passwd[i]);
 	}
 	/* Add on the NT md4 hash */
 	ascii_p16[32] = ':';
@@ -850,13 +851,14 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 	{
 		for (i = 0; i < 16; i++)
 		{
-			sprintf(&ascii_p16[(i*2)+33], "%02X", (uchar) pwd->smb_nt_passwd[i]);
+			slprintf(&ascii_p16[(i*2)+33], sizeof(ascii_p16) - (i*2) - 32, 
+                                 "%02X", (uchar) pwd->smb_nt_passwd[i]);
 		}
 	}
 	else	
 	{
 		/* No NT hash - write out an 'invalid' string. */
-		strcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 	}
 
 #ifdef DEBUG_PASSWORD

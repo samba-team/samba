@@ -28,9 +28,9 @@
 
 char *files_to_copy;
 char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype;
-char buffer[50][255];
-char sbuffer[50][255];
-char sub_dir[50][2][255];
+char buffer[50][sizeof(pstring)];
+char sbuffer[50][sizeof(pstring)];
+char sub_dir[50][2][sizeof(pstring)];
 
 void usage(char *name)
 {
@@ -42,31 +42,31 @@ char *myfgets(char *s, int n, FILE *stream)
   char *LString1;
   char *LString2;
   char *temp;
-  char String[255];
-  char NewString[255];
+  pstring String;
+  pstring NewString;
   int i;
 
   fgets(s,n,stream);
   while ((LString1 = strchr(s,'%')) != NULL) {
     if (!(LString2 = strchr(LString1+1,'%'))) break;
     *LString2 = '\0';
-    strcpy(String,LString1+1);
+    pstrcpy(String,LString1+1);
     i = 0;
     while(*sbuffer[i]!='\0') {
       if (strncmp(sbuffer[i],String,strlen(String))==0)
       {
-	strcpy(String,sbuffer[i]);
+	pstrcpy(String,sbuffer[i]);
 	if ((temp = strchr(String,'=')) != NULL) ++temp;
-	strcpy(String,temp);
+	pstrcpy(String,temp);
 	break;
       }
       i++;	
     }
     *LString1 = '\0';
-    strcpy(NewString,s);
-    strcat(NewString,String);
-    strcat(NewString,LString2+1);
-    strcpy(s, NewString);
+    pstrcpy(NewString,s);
+    pstrcat(NewString,String);
+    pstrcat(NewString,LString2+1);
+    pstrcpy(s, NewString);
   }
   return(s);
 }
@@ -82,15 +82,15 @@ char *scan(char *chaine,char **entry)
   char *temp;
   int i=0;
  
-  *entry=(char *)malloc(255*sizeof(char));
-  value=(char *)malloc(255*sizeof(char));
-  strcpy(*entry,chaine);
+  *entry=(char *)malloc(sizeof(pstring));
+  value=(char *)malloc(sizeof(pstring));
+  pstrcpy(*entry,chaine);
   temp=chaine;
   while( temp[i]!='=' && temp[i]!='\0') {
  	i++;
   }
   (*entry)[i]='\0'; 
-  strcpy(value,temp+i+1);      
+  pstrcpy(value,temp+i+1);      
   return (value);
 }
 
@@ -107,12 +107,12 @@ void build_subdir(void)
 #endif      
 
     if (strcmp(data,"11")==0) {
-      strcpy(sub_dir[i][0],entry);
-      strcpy(sub_dir[i][1],"");
+      pstrcpy(sub_dir[i][0],entry);
+      pstrcpy(sub_dir[i][1],"");
     }
     if (strcmp(data,"23")==0) {
-      strcpy(sub_dir[i][0],entry);
-      strcpy(sub_dir[i][1],"color\\");
+      pstrcpy(sub_dir[i][0],entry);
+      pstrcpy(sub_dir[i][1],"color\\");
     }
 #ifdef DEBUGIT
     fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
@@ -131,12 +131,12 @@ void lookup_strings(FILE *fichier)
   int found=0,pointeur=0,i=0;
   char *temp,*temp2;
   
-  temp=(char *)malloc(255*sizeof(char));
-  temp2=(char *)malloc(255*sizeof(char));
+  temp=(char *)malloc(sizeof(pstring));
+  temp2=(char *)malloc(sizeof(pstring));
   
   *sbuffer[0]='\0';
   
-  strcpy(temp2,"[Strings]");
+  pstrcpy(temp2,"[Strings]");
   
   rewind(fichier);
 #ifdef DEBUGIT
@@ -158,7 +158,7 @@ void lookup_strings(FILE *fichier)
 		*sbuffer[pointeur]='\0';
 	}
 	else {
-		strcpy(sbuffer[pointeur],temp);
+		pstrcpy(sbuffer[pointeur],temp);
 		i=strlen(sbuffer[pointeur])-1;
 		while (sbuffer[pointeur][i]=='\r' || sbuffer[pointeur][i]=='\n')
 			sbuffer[pointeur][i--]='\0';
@@ -181,14 +181,14 @@ void lookup_entry(FILE *fichier,char *chaine)
   int found=0,pointeur=0,i=0;
   char *temp,*temp2;
   
-  temp=(char *)malloc(255*sizeof(char));
-  temp2=(char *)malloc(255*sizeof(char));
+  temp=(char *)malloc(sizeof(pstring));
+  temp2=(char *)malloc(sizeof(pstring));
   
   *buffer[0]='\0';
   
-  strcpy(temp2,"[");
-  strcat(temp2,chaine);
-  strcat(temp2,"]");
+  pstrcpy(temp2,"[");
+  pstrcat(temp2,chaine);
+  pstrcat(temp2,"]");
   
   rewind(fichier);
 #ifdef DEBUGIT
@@ -210,7 +210,7 @@ void lookup_entry(FILE *fichier,char *chaine)
 		*buffer[pointeur]='\0';
 	}
 	else {
-		strcpy(buffer[pointeur],temp);
+		pstrcpy(buffer[pointeur],temp);
 		i=strlen(buffer[pointeur])-1;
 		while (buffer[pointeur][i]=='\r' || buffer[pointeur][i]=='\n')
 			buffer[pointeur][i--]='\0';
@@ -232,9 +232,9 @@ char *find_desc(FILE *fichier,char *text)
 
   int found=0;
 
-  chaine=(char *)malloc(255*sizeof(char));
-  long_desc=(char *)malloc(40*sizeof(char));
-  short_desc=(char *)malloc(40*sizeof(char));
+  chaine=(char *)malloc(sizeof(pstring));
+  long_desc=(char *)malloc(sizeof(pstring));
+  short_desc=(char *)malloc(sizeof(pstring));
   if (!chaine || !long_desc || !short_desc) {
     fprintf(stderr,"Unable to malloc memory\n");
     exit(1);
@@ -267,7 +267,7 @@ char *find_desc(FILE *fichier,char *text)
   free(chaine);
   if (!found || !crap) return(NULL);
   while(*crap==' ') crap++;
-  strcpy(short_desc,crap);
+  pstrcpy(short_desc,crap);
   return(short_desc);
 }
 
@@ -276,7 +276,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
   char *part;
   char *mpart;
   int i;
-  char direc[255];
+  pstring direc;
 #ifdef DEBUGIT
   fprintf(stderr,"In scan_copyfiles Lookup up of %s\n",chaine);
 #endif 
@@ -290,19 +290,19 @@ void scan_copyfiles(FILE *fichier, char *chaine)
     */
     if (*part=='@') {
       if (strlen(files_to_copy) != 0)
-        strcat(files_to_copy,",");
-      strcat(files_to_copy,&part[1]);
+        pstrcat(files_to_copy,",");
+      pstrcat(files_to_copy,&part[1]);
       fprintf(stderr,"%s\n",&part[1]);
     } else {
       lookup_entry(fichier,part);
       i=0;
-      strcpy(direc,"");
+      pstrcpy(direc,"");
       while (*sub_dir[i][0]!='\0') {
 #ifdef DEBUGIT
  	fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
 #endif      
       	if (strcmp(sub_dir[i][0],part)==0)
-		strcpy(direc,sub_dir[i][1]);
+		pstrcpy(direc,sub_dir[i][1]);
 	i++;
       }	
       i=0;
@@ -331,7 +331,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
 	  part = strchr(buffer[i],',');
 	  if (part) {
 	    if ((mpart = strrchr(part+1,','))!=NULL) {
-		strcpy(buffer[i],mpart+1);
+		pstrcpy(buffer[i],mpart+1);
 	    } else
 		*part = '\0';
             while (--part > buffer[i])
@@ -340,9 +340,9 @@ void scan_copyfiles(FILE *fichier, char *chaine)
 	  }
 	}
         if (strlen(files_to_copy) != 0)
-          strcat(files_to_copy,",");
-	strcat(files_to_copy,direc);
-	strcat(files_to_copy,buffer[i]);
+          pstrcat(files_to_copy,",");
+	pstrcat(files_to_copy,direc);
+	pstrcat(files_to_copy,buffer[i]);
 	fprintf(stderr,"%s%s\n",direc,buffer[i]);
 	i++;
       } 
@@ -364,8 +364,8 @@ void scan_short_desc(FILE *fichier, char *short_desc)
   helpfile=0;
   languagemonitor=0;
   datatype="RAW";
-  chaine=(char *)malloc(255*sizeof(char));
-  temp=(char *)malloc(255*sizeof(char));
+  chaine=(char *)malloc(sizeof(pstring));
+  temp=(char *)malloc(sizeof(pstring));
   
   driverfile=short_desc;
   datafile=short_desc;
@@ -422,7 +422,7 @@ void scan_short_desc(FILE *fichier, char *short_desc)
   if (languagemonitor) {
 	temp = strtok(languagemonitor,",");
 	if (*temp == '"') ++temp;
-	strcpy(languagemonitor,temp);
+	pstrcpy(languagemonitor,temp);
 	if ((temp = strchr(languagemonitor,'"'))!=NULL) *temp = '\0';
   }
 

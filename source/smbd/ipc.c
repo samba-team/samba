@@ -441,7 +441,7 @@ static void PackDriverData(struct pack_desc* desc)
   SIVAL(drivdata,0,sizeof drivdata); /* cb */
   SIVAL(drivdata,4,1000);	/* lVersion */
   memset(drivdata+8,0,32);	/* szDeviceName */
-  strcpy(drivdata+8,"NULL");
+  fstrcpy(drivdata+8,"NULL");
   PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
@@ -600,7 +600,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     FILE *f;
     pstring fname;
 
-    strcpy(fname,lp_driverfile());
+    pstrcpy(fname,lp_driverfile());
     f=fopen(fname,"r");
     if (!f) {
       DEBUG(3,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
@@ -698,7 +698,7 @@ int get_printerdrivernumber(int snum)
   FILE *f;
   pstring fname;
 
-  strcpy(fname,lp_driverfile());
+  pstrcpy(fname,lp_driverfile());
 
   DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
   f=fopen(fname,"r");
@@ -943,8 +943,8 @@ static int get_server_info(uint32 servertype,
 
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
-  strcat(fname,"/");
-  strcat(fname,SERVER_LIST);
+  pstrcat(fname,"/");
+  pstrcat(fname,SERVER_LIST);
 
   f = fopen(fname,"r");
 
@@ -986,7 +986,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->comment, NULL)) continue;
     if (!next_token(&ptr,s->domain , NULL)) {
       /* this allows us to cope with an old nmbd */
-      strcpy(s->domain,myworkgroup); 
+      pstrcpy(s->domain,myworkgroup); 
     }
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
@@ -2031,18 +2031,18 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
-  strcpy(p2,local_machine);
+  pstrcpy(p2,local_machine);
   strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,sesssetup_user);
+  pstrcpy(p2,sesssetup_user);
   p2 = skip_string(p2,1);
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
-  strcpy(p2,myworkgroup);
+  pstrcpy(p2,myworkgroup);
   strupper(p2);
   p2 = skip_string(p2,1);
   p += 4;
@@ -2052,12 +2052,12 @@ static BOOL api_NetWkstaGetInfo(int cnum,uint16 vuid, char *param,char *data,
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,myworkgroup);	/* don't know.  login domain?? */
+  pstrcpy(p2,myworkgroup);	/* don't know.  login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* don't know */
-  strcpy(p2,"");
+  pstrcpy(p2,"");
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2294,16 +2294,16 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	if (uLevel >= 10)
 	{
 		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
-		strcpy(p2,"Comment");
+		pstrcpy(p2,"Comment");
 		p2 = skip_string(p2,1);
 
 		SIVAL(p,usri11_usr_comment,PTR_DIFF(p2,p)); /* user_comment */
-		strcpy(p2,"UserComment");
+		pstrcpy(p2,"UserComment");
 		p2 = skip_string(p2,1);
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		strcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));	/* simeon */
+		pstrcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));	/* simeon */
 		p2 = skip_string(p2,1);
 	}
 
@@ -2313,22 +2313,22 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		strcpy(p2, lp_logon_path());
+		pstrcpy(p2, lp_logon_path());
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
-		strcpy(p2,"");
+		pstrcpy(p2,"");
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_last_logon,0);		/* last logon */
 		SIVAL(p,usri11_last_logoff,0);		/* last logoff */
 		SSVALS(p,usri11_bad_pw_count,-1);	/* bad pw counts */
 		SSVALS(p,usri11_num_logons,-1);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
-		strcpy(p2,"\\\\*");
+		pstrcpy(p2,"\\\\*");
 		p2 = skip_string(p2,1);
 		SSVAL(p,usri11_country_code,0);		/* country code */
 
 		SIVAL(p,usri11_workstations,PTR_DIFF(p2,p)); /* workstations */
-		strcpy(p2,"");
+		pstrcpy(p2,"");
 		p2 = skip_string(p2,1);
 
 		SIVALS(p,usri11_max_storage,-1);		/* max storage */
@@ -2349,7 +2349,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		SSVAL(p,42,
 		Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		strcpy(p2,lp_logon_path());
+		pstrcpy(p2,lp_logon_path());
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2359,11 +2359,11 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		{
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			strcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));
+   			pstrcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));
 			p2 = skip_string(p2,1);
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
-			strcpy(p2,"");
+			pstrcpy(p2,"");
 			p2 = skip_string(p2,1);
 			SIVAL(p,76,0);		/* workstations */
 			SIVAL(p,80,0);		/* last_logon */
@@ -2377,7 +2377,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 			SSVALS(p,102,-1);	/* bad_pw_count */
 			SSVALS(p,104,-1);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
-			strcpy(p2,"\\\\%L");
+			pstrcpy(p2,"\\\\%L");
 			standard_sub_basic(p2);
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
@@ -2428,10 +2428,10 @@ static BOOL api_NetUserGetGroups(int cnum,uint16 vuid, char *param,char *data,
   p = *rdata;
 
   /* XXXX we need a real SAM database some day */
-  strcpy(p,"Users"); p += 21; count++;
-  strcpy(p,"Domain Users"); p += 21; count++;
-  strcpy(p,"Guests"); p += 21; count++;
-  strcpy(p,"Domain Guests"); p += 21; count++;
+  pstrcpy(p,"Users"); p += 21; count++;
+  pstrcpy(p,"Domain Users"); p += 21; count++;
+  pstrcpy(p,"Guests"); p += 21; count++;
+  pstrcpy(p,"Domain Guests"); p += 21; count++;
 
   *rdata_len = PTR_DIFF(p,*rdata);
 
@@ -2490,8 +2490,8 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
     PACKI(&desc,"D",-1);		/* password must change */
     {
       fstring mypath;
-      strcpy(mypath,"\\\\");
-      strcat(mypath,local_machine);
+      fstrcpy(mypath,"\\\\");
+      fstrcat(mypath,local_machine);
       strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
@@ -3093,8 +3093,8 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
         fstring ack_pipe_name;
 
         /* name has to be \PIPE\xxxxx */
-        strcpy(ack_pipe_name, "\\PIPE\\");
-        strcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
+        pstrcpy(ack_pipe_name, "\\PIPE\\");
+        pstrcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
 
         /* make a bind acknowledgement */
         make_rpc_hdr_ba(&hdr_ba,

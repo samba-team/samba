@@ -68,7 +68,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
     return;
   }
 
-  strcpy(my_name, myname);
+  pstrcpy(my_name, myname);
   strupper(my_name);
 
   code = SVAL(buf,0);
@@ -89,7 +89,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       token = SVAL(q,3);
 
       reply_code = 0x6;
-      strcpy(reply_name,my_name); 
+      fstrcpy(reply_name,my_name); 
       add_slashes = True;
 
       DEBUG(3,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
@@ -98,9 +98,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q = outbuf;
       SSVAL(q, 0, 6); q += 2;
 
-      strcpy(reply_name, "\\\\");
-      strcat(reply_name, my_name);
-      strcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
+      fstrcpy(reply_name, "\\\\");
+      fstrcat(reply_name, my_name);
+      fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
       SSVAL(q, 0, token); q += 2;
 
@@ -137,8 +137,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       q = outbuf;
       SSVAL(q, 0, QUERYFORPDC_R); q += 2;
 
-      strcpy(reply_name,my_name);
-      strcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
+      fstrcpy(reply_name,my_name);
+      fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
@@ -198,8 +198,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       pstrcpy(ascuser, unistr(uniuser));
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
-      strcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
-      strcpy(reply_name+2,my_name); 
+      fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
+      fstrcpy(reply_name+2,my_name); 
 
       smb_pass = get_smbpwd_entry(ascuser, 0);
 

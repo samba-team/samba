@@ -698,9 +698,9 @@ static void init_globals(void)
   string_set(&Globals.szRootdir, "/");
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
-  sprintf(s,"Samba %s",VERSION);
+  slprintf(s,sizeof(s)-1,"Samba %s",VERSION);
   string_set(&Globals.szServerString,s);
-  sprintf(s,"%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
+  slprintf(s,sizeof(s)-1,"%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
   string_set(&Globals.szAnnounceVersion,s);
 
   string_set(&Globals.szLogonDrive, "");
@@ -1780,11 +1780,11 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
        break;
 
      case P_GSTRING:
-       strcpy((char *)parm_ptr,pszParmValue);
+       pstrcpy((char *)parm_ptr,pszParmValue);
        break;
 
      case P_UGSTRING:
-       strcpy((char *)parm_ptr,pszParmValue);
+       pstrcpy((char *)parm_ptr,pszParmValue);
        strupper((char *)parm_ptr);
        break;
 
@@ -1877,30 +1877,30 @@ static void parameter_string(struct parm_struct *p,void *ptr,char *s)
 	case P_ENUM:
 		for (i=0;p->enum_list[i].name;i++) {
 			if (*(int *)ptr == p->enum_list[i].value) {
-				sprintf(s,"%s",p->enum_list[i].name);
+				slprintf(s,sizeof(pstring)-1,"%s",p->enum_list[i].name);
 				break;
 			}
 		}
 		break;
 
 	case P_BOOL:
-		sprintf(s, "%s",BOOLSTR(*(BOOL *)ptr));
+		slprintf(s, sizeof(pstring)-1, "%s",BOOLSTR(*(BOOL *)ptr));
 		break;
 		
 	case P_BOOLREV:
-		sprintf(s, "%s",BOOLSTR(! *(BOOL *)ptr));
+		slprintf(s, sizeof(pstring)-1, "%s",BOOLSTR(! *(BOOL *)ptr));
 		break;
 		
 	case P_INTEGER:
-		sprintf(s, "%d",*(int *)ptr);
+		slprintf(s, sizeof(pstring)-1, "%d",*(int *)ptr);
 		break;
 		
 	case P_CHAR:
-		sprintf(s, "%c",*(char *)ptr);
+		slprintf(s, sizeof(pstring)-1, "%c",*(char *)ptr);
 		break;
 		
 	case P_OCTAL:
-		sprintf(s, "0%o",*(int *)ptr);
+		slprintf(s, sizeof(pstring)-1, "0%o",*(int *)ptr);
 		break;
 		
 	case P_GSTRING:
@@ -2076,7 +2076,7 @@ int lp_next_parameter(int snum, int *i, char *label,
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 || 
 			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
-				strcpy(label, parm_table[*i].label);
+				pstrcpy(label, parm_table[*i].label);
 				parameter_string(&parm_table[*i],
 						 parm_table[*i].ptr,
 						 value);
@@ -2099,7 +2099,7 @@ int lp_next_parameter(int snum, int *i, char *label,
 				    !equal_parameter(parm_table[*i].type,
 						     ((char *)pService) + pdiff,
 						     ((char *)&sDefault) + pdiff)) {
-					strcpy(label, parm_table[*i].label);
+					pstrcpy(label, parm_table[*i].label);
 					parameter_string(&parm_table[*i],
 							 ((char *)pService) + pdiff,
 							 value);

@@ -200,9 +200,9 @@ static codepage_p load_client_codepage( int client_codepage )
     return NULL;
   }
 
-  strcpy(codepage_file_name, CODEPAGEDIR);
-  strcat(codepage_file_name, "/");
-  strcat(codepage_file_name, "codepage.");
+  pstrcpy(codepage_file_name, CODEPAGEDIR);
+  pstrcat(codepage_file_name, "/");
+  pstrcat(codepage_file_name, "codepage.");
   slprintf(&codepage_file_name[strlen(codepage_file_name)], 
 	   sizeof(pstring)-(strlen(codepage_file_name)+1),
 	   "%03d",

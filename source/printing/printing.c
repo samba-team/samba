@@ -81,8 +81,8 @@ static char *build_print_command(int cnum, char *command, char *syscmd, char *fi
     if (iOffset==0 || syscmd[iOffset-1] != '/') {
       StrnCpy(filename,Connections[cnum].connectpath,sizeof(filename)-1);
       trim_string(filename,"","/");
-      strcat(filename,"/");
-      strcat(filename,filename1);
+      pstrcat(filename,"/");
+      pstrcat(filename,filename1);
     }
     else
       pstrcpy(filename,filename1);
@@ -249,7 +249,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 
   /* if the fname contains a space then use STDIN */
   if (strchr(tok[FILETOK],' '))
-    strcpy(tok[FILETOK],"STDIN");
+    fstrcpy(tok[FILETOK],"STDIN");
 
   /* only take the last part of the filename */
   {
@@ -257,7 +257,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     char *p = strrchr(tok[FILETOK],'/');
     if (p)
       {
-	strcpy(tmp,p+1);
+	fstrcpy(tmp,p+1);
 	fstrcpy(tok[FILETOK],tmp);
       }
   }
@@ -420,7 +420,7 @@ A long spool-path will just waste significant chars of the file name.
   /* if the fname contains a space then use STDIN */
   /* I do not understand how this would be possible. Magnus. */
   if (strchr(tok[LPRNG_FILETOK],' '))
-    strcpy(tok[LPRNG_FILETOK],"STDIN");
+    fstrcpy(tok[LPRNG_FILETOK],"STDIN");
 
   /* only take the last part of the filename */
   {
@@ -493,7 +493,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
           buf->size = atoi(tok[4]) * 1024;
           /* if the fname contains a space then use STDIN */
           if (strchr(tok[2],' '))
-            strcpy(tok[2],"STDIN");
+            fstrcpy(tok[2],"STDIN");
 
           /* only take the last part of the filename */
           {
@@ -527,7 +527,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       buf->size = atoi(tok[8]) * 1024;
       /* if the fname contains a space then use STDIN */
       if (strchr(tok[4],' '))
-        strcpy(tok[4],"STDIN");
+        fstrcpy(tok[4],"STDIN");
 
       /* only take the last part of the filename */
       {
@@ -604,7 +604,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     
     /* if the fname contains a space then use STDIN */
     if (strchr(tok[0],' '))
-      strcpy(tok[0],"STDIN");
+      fstrcpy(tok[0],"STDIN");
     
     buf->size = atoi(tok[1]);
     StrnCpy(buf->file,tok[0],sizeof(buf->file)-1);
@@ -816,7 +816,7 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 
   /* if the fname contains a space then use STDIN */
   if (strchr(tok[6],' '))
-    strcpy(tok[6],"STDIN");
+    fstrcpy(tok[6],"STDIN");
 
   /* only take the last part of the filename */
   {
@@ -1081,7 +1081,7 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
   }
 
   if (status) {
-    strcpy(status->message,"");
+    fstrcpy(status->message,"");
     status->status = LPSTAT_OK;
   }
       
@@ -1142,7 +1142,7 @@ void del_printqueue(int cnum,int snum,int jobid)
       return;
     }
     
-  sprintf(jobstr,"%d",jobid);
+  slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lprm_command);
   string_sub(syscmd,"%p",printername);
@@ -1180,7 +1180,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
       return;
     }
     
-  sprintf(jobstr,"%d",jobid);
+  slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lpstatus_command);
   string_sub(syscmd,"%p",printername);

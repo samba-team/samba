@@ -54,10 +54,10 @@ static void show_connections(void)
 		return;
 	}
 
-	strcpy(fname,lp_lockdir());
+	pstrcpy(fname,lp_lockdir());
 	standard_sub_basic(fname);
 	trim_string(fname,"","/");
-	strcat(fname,"/STATUS..LCK");
+	pstrcat(fname,"/STATUS..LCK");
 
 	f = fopen(fname,"r");
 	if (!f) {

@@ -436,7 +436,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
     new_mode_p->share_mode_entries = 0;
-    strcpy(new_mode_p->file_name, fs_p->name);
+    pstrcpy(new_mode_p->file_name, fs_p->name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
     new_mode_p->next_offset = mode_array[hash_entry];

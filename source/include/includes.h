@@ -261,6 +261,7 @@ Here come some platform specific sections
 #include <sys/acct.h>
 #include <sys/vfs.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -289,6 +290,7 @@ typedef unsigned short mode_t;
 #define USE_SYSV_IPC
 /* SunOS doesn't have POSIX atexit */
 #define atexit on_exit
+#define NOSTRCASECMP
 #endif
 
 
@@ -555,6 +557,7 @@ char *mktemp(char *); /* No standard include */
 #define O_SYNC 0
 #endif /* defined(O_FSYNC) */
 #endif /* !defined(O_SYNC) */
+#define HAVE_VSNPRINTF
 #endif /* FreeBSD */
 
 #ifdef __OpenBSD__
@@ -1349,9 +1352,25 @@ extern int errno;
 #define strncasecmp(s1,s2,n) StrnCaseCmp(s1,s2,n)
 #endif
 
-#ifndef strcpy
-#define strcpy(dest,src) StrCpy(dest,src)
-#endif
+#ifdef strcpy
+#undef strcpy
+#endif /* strcpy */
+#define strcpy(dest,src) __ERROR__XX__NEVER_USE_STRCPY___;
+   
+#ifdef strcat
+#undef strcat
+#endif /* strcat */
+#define strcat(dest,src) __ERROR__XX__NEVER_USE_STRCAT___;
+   
+#ifdef sprintf
+#undef sprintf
+#endif /* sprintf */
+#define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
+
+#define pstrcpy(d,s) safe_strcpy((d),(s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
 #if MEM_MAN
 #include "mem_man/mem_man.h"

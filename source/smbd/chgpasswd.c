@@ -75,7 +75,7 @@ static int findpty(char **slave)
     return (master);
   }
 #else /* defined(SVR4) || defined(SUNOS5) */
-  strcpy( line, "/dev/ptyXX" );
+  safe_strcpy( line, "/dev/ptyXX", sizeof(line)-1 );
 
   dirp = OpenDir(-1, "/dev", True);
   if (!dirp) return(-1);

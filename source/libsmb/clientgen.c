@@ -87,7 +87,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 		SSVAL(cli->outbuf,smb_setup+i*2,setup[i]);
 	p = smb_buf(cli->outbuf);
 	if (trans==SMBtrans) {
-		strcpy(p,name);			/* name[] */
+		pstrcpy(p,name);			/* name[] */
 	} else {
 		*p++ = 0;  /* put in a null smb_name */
 		*p++ = 'D'; *p++ = ' ';	/* observed in OS/2 */
@@ -272,16 +272,16 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	p = param;
 	SSVAL(p,0,132); /* api number */
 	p += 2;
-	strcpy(p,"OOWb54WrLh");
+	pstrcpy(p,"OOWb54WrLh");
 	p = skip_string(p,1);
-	strcpy(p,"WB21BWDWWDDDDDDDzzzD");
+	pstrcpy(p,"WB21BWDWWDDDDDDDzzzD");
 	p = skip_string(p,1);
 	SSVAL(p,0,1);
 	p += 2;
-	strcpy(p,user);
+	pstrcpy(p,user);
 	strupper(p);
 	p += 21; p++; p += 15; p++; 
-	strcpy(p, workstation); 
+	pstrcpy(p, workstation); 
 	strupper(p);
 	p += 16;
 	SSVAL(p, 0, BUFFER_SIZE);
@@ -336,10 +336,10 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
 	p += 2;
-	strcpy(p,"WrLehDz");
+	pstrcpy(p,"WrLehDz");
 	p = skip_string(p,1);
   
-	strcpy(p,"B16BBDz");
+	pstrcpy(p,"B16BBDz");
   
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
@@ -458,7 +458,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen);
 		p += passlen;
-		strcpy(p,user);
+		pstrcpy(p,user);
 		strupper(p);
 	} else {
 		set_message(cli->outbuf,13,0,True);
@@ -477,14 +477,14 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpass,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		strcpy(p,user);
+		pstrcpy(p,user);
 		strupper(p);
 		p = skip_string(p,1);
-		strcpy(p,workgroup);
+		pstrcpy(p,workgroup);
 		strupper(p);
 		p = skip_string(p,1);
-		strcpy(p,"Unix");p = skip_string(p,1);
-		strcpy(p,"Samba");p = skip_string(p,1);
+		pstrcpy(p,"Unix");p = skip_string(p,1);
+		pstrcpy(p,"Samba");p = skip_string(p,1);
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 
@@ -561,9 +561,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	strcpy(p,fullshare);
+	pstrcpy(p,fullshare);
 	p = skip_string(p,1);
-	strcpy(p,dev);
+	pstrcpy(p,dev);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
@@ -618,10 +618,10 @@ BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
 
         p = smb_buf(cli->outbuf);
         *p++ = 4;
-        strcpy(p,fname_src);
+        pstrcpy(p,fname_src);
         p = skip_string(p,1);
         *p++ = 4;
-        strcpy(p,fname_dst);
+        pstrcpy(p,fname_dst);
 
         send_smb(cli->fd,cli->outbuf);
         if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -655,7 +655,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
   
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	strcpy(p,fname);
+	pstrcpy(p,fname);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -688,7 +688,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	strcpy(p,dname);
+	pstrcpy(p,dname);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -720,7 +720,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
-	strcpy(p,dname);
+	pstrcpy(p,dname);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -785,7 +785,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
   
 	p = smb_buf(cli->outbuf);
-	strcpy(p,fname);
+	pstrcpy(p,fname);
 	p = skip_string(p,1);
 
 	send_smb(cli->fd,cli->outbuf);
@@ -1012,7 +1012,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 
 	p = smb_buf(cli->outbuf);
 	*p = 4;
-	strcpy(p+1, fname);
+	pstrcpy(p+1, fname);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -1061,7 +1061,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 
 	p = smb_buf(cli->outbuf);
 	*p = 4;
-	strcpy(p+1, fname);
+	pstrcpy(p+1, fname);
 	p = skip_string(p,1);
 	*p = 4;
 
@@ -1273,9 +1273,9 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   SSVAL(p,0,214); /* SamOEMChangePassword command. */
   p += 2;
-  strcpy(p, "zsT");
+  pstrcpy(p, "zsT");
   p = skip_string(p,1);
-  strcpy(p, "B516B16");
+  pstrcpy(p, "B516B16");
   p = skip_string(p,1);
   fstrcpy(p,user);
   p = skip_string(p,1);
@@ -1361,7 +1361,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++) {
 		*p++ = 2;
-		strcpy(p,prots[numprots].name);
+		pstrcpy(p,prots[numprots].name);
 		p += strlen(p) + 1;
 	}
 

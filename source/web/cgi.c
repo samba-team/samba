@@ -294,17 +294,17 @@ char *quotedup(char *s)
 	for (i=0;i<len;i++) {
 		switch (s[i]) {
 		case '<':
-			strcpy(d, "&lt;");
+			safe_strcpy(d, "&lt;", len + n*6 - (d - ret));
 			d += 4;
 			break;
 
 		case '>':
-			strcpy(d, "&gt;");
+			safe_strcpy(d, "&gt;", len + n*6 - (d - ret));
 			d += 4;
 			break;
 
 		case '&':
-			strcpy(d, "&amp;");
+			safe_strcpy(d, "&amp;", len + n*6 - (d - ret));
 			d += 5;
 			break;
 
@@ -385,7 +385,7 @@ char *quotequotes(char *s)
 	for (i=0;i<len;i++) {
 		switch (s[i]) {
 		case '"':
-			strcpy(d, "&quot;");
+			safe_strcpy(d, "&quot;", len + n*6 - (d - ret));
 			d += 6;
 			break;
 

@@ -50,7 +50,7 @@ extern int	DEBUGLEVEL;
 extern char	*InBuffer, *OutBuffer;
 extern int	done_become_user;
 
-char	master_name [64], slave_name [64];
+fstring	master_name, slave_name;
 int		master, slave, i, o, e;
 
 int		ms_type = MS_NONE,
@@ -202,8 +202,8 @@ int	VT_Start(void)
 #endif
 
 	if(ms_poll == MS_VTY || ms_poll == 0) {
-		strcpy(master_name, MASTER_TMPL);
-		strcpy(slave_name, SLAVE_TMPL);
+		fstrcpy(master_name, MASTER_TMPL);
+		fstrcpy(slave_name, SLAVE_TMPL);
 
 		for(X = LETTER1; *X && master < 0; X++)
 			for(Y = LETTER2; *Y && master < 0; Y++) {
@@ -242,9 +242,9 @@ int	VT_Start(void)
 		int	i;
 
 		for(i = MIN_I; i <= MAX_I && master < 0; i++) {
-			sprintf(master_name, MASTER_TMPL, i);
+			slprintf(master_name, sizeof(master_name) - 1, MASTER_TMPL, i);
 			if((master = open(master_name, O_RDWR)) >= 0) {
-				sprintf(slave_name, SLAVE_TMPL, i);
+				slprintf(slave_name, sizeof(slave_name) - 1, SLAVE_TMPL, i);
 				if((slave = open(slave_name, O_RDWR)) < 0)
 					close(master);
 			}

@@ -240,7 +240,7 @@ static BOOL chkpath(char *path,BOOL report)
   pstring inbuf,outbuf;
   char *p;
 
-  strcpy(path2,path);
+  pstrcpy(path2,path);
   trim_string(path2,NULL,"\\");
   if (!*path2) *path2 = '\\';
 
@@ -252,7 +252,7 @@ static BOOL chkpath(char *path,BOOL report)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p,path2);
+  pstrcpy(p,path2);
 
 #if 0
   {
@@ -294,10 +294,10 @@ static void send_message(char *inbuf,char *outbuf)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p,username);
+  pstrcpy(p,username);
   p = skip_string(p,1);
   *p++ = 4;
-  strcpy(p,desthost);
+  pstrcpy(p,desthost);
   p = skip_string(p,1);
 
   set_message(outbuf,0,PTR_DIFF(p,smb_buf(outbuf)),False);
@@ -423,24 +423,24 @@ static void do_cd(char *newdir)
       
   /* Save the current directory in case the
      new directory is invalid */
-  strcpy(saved_dir, cur_dir);
+  pstrcpy(saved_dir, cur_dir);
   if (*p == '\\')
-    strcpy(cur_dir,p);
+    pstrcpy(cur_dir,p);
   else
-    strcat(cur_dir,p);
+    pstrcat(cur_dir,p);
   if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
-    strcat(cur_dir, "\\");
+    pstrcat(cur_dir, "\\");
   }
   dos_clean_name(cur_dir);
-  strcpy(dname,cur_dir);
-  strcat(cur_dir,"\\");
+  pstrcpy(dname,cur_dir);
+  pstrcat(cur_dir,"\\");
   dos_clean_name(cur_dir);
 
   if (!strequal(cur_dir,"\\"))
     if (!chkpath(dname,True))
-      strcpy(cur_dir,saved_dir);
+      pstrcpy(cur_dir,saved_dir);
 
-  strcpy(cd_path,cur_dir);
+  pstrcpy(cd_path,cur_dir);
 }
 
 /****************************************************************************
@@ -505,7 +505,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
   uint16 setup;
   pstring param;
 
-  strcpy(mask,Mask);
+  pstrcpy(mask,Mask);
 
   while (ff_eos == 0)
     {
@@ -524,7 +524,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
 	  SSVAL(param,4,8+4+2);	/* resume required + close on end + continue */
 	  SSVAL(param,6,info_level); 
 	  SIVAL(param,8,0);
-	  strcpy(param+12,mask);
+	  pstrcpy(param+12,mask);
 	}
       else
 	{
@@ -534,7 +534,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
 	  SSVAL(param,4,info_level); 
 	  SIVAL(param,6,ff_resume_key); /* ff_resume_key */
 	  SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
-	  strcpy(param+12,mask);
+	  pstrcpy(param+12,mask);
 
 	  DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
 		   ff_dir_handle,ff_resume_key,ff_lastname,mask));
@@ -584,16 +584,16 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
 	    case 260:
 	      ff_resume_key =0;
 	      StrnCpy(mask,p+ff_lastname,resp_data_len-ff_lastname);
-	      /* strcpy(mask,p+ff_lastname+94); */
+	      /* pstrcpy(mask,p+ff_lastname+94); */
 	      break;
 	    case 1:
-	      strcpy(mask,p + ff_lastname + 1);
+	      pstrcpy(mask,p + ff_lastname + 1);
 	      ff_resume_key = 0;
 	      break;
 	    }
 	}
       else
-	strcpy(mask,"");
+	pstrcpy(mask,"");
   
       /* and add them to the dirlist pool */
       dirlist = Realloc(dirlist,dirlist_len + resp_data_len);
@@ -667,7 +667,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
 
   bzero(status,21);
 
-  strcpy(mask,Mask);
+  pstrcpy(mask,Mask);
   
   while (1)
     {
@@ -694,9 +694,9 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
       *p++ = 4;
       
       if (first)
-	strcpy(p,mask);
+	pstrcpy(p,mask);
       else
-	strcpy(p,"");
+	pstrcpy(p,"");
       p += strlen(p) + 1;
       
       *p++ = 5;
@@ -751,7 +751,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
       p = smb_buf(outbuf);
       *p++ = 4;
       
-      strcpy(p,"");
+      pstrcpy(p,"");
       p += strlen(p) + 1;
       
       *p++ = 5;
@@ -859,7 +859,7 @@ static int interpret_short_filename(char *p,file_info *finfo)
   finfo->ctime = make_unix_date(p+22);
   finfo->mtime = finfo->atime = finfo->ctime;
   finfo->size = IVAL(p,26);
-  strcpy(finfo->name,p+30);
+  pstrcpy(finfo->name,p+30);
   
   return(DIR_STRUCT_SIZE);
 }
@@ -886,7 +886,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 	  finfo->mtime = make_unix_date2(p+12);
 	  finfo->size = IVAL(p,16);
 	  finfo->mode = CVAL(p,24);
-	  strcpy(finfo->name,p+27);
+	  pstrcpy(finfo->name,p+27);
 	}
       return(28 + CVAL(p,26));
 
@@ -899,7 +899,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 	  finfo->mtime = make_unix_date2(p+12);
 	  finfo->size = IVAL(p,16);
 	  finfo->mode = CVAL(p,24);
-	  strcpy(finfo->name,p+31);
+	  pstrcpy(finfo->name,p+31);
 	}
       return(32 + CVAL(p,30));
 
@@ -913,7 +913,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 	  finfo->mtime = make_unix_date2(p+16);
 	  finfo->size = IVAL(p,20);
 	  finfo->mode = CVAL(p,28);
-	  strcpy(finfo->name,p+33);
+	  pstrcpy(finfo->name,p+33);
 	}
       return(SVAL(p,4)+4);
 
@@ -926,7 +926,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 	  finfo->mtime = make_unix_date2(p+16);
 	  finfo->size = IVAL(p,20);
 	  finfo->mode = CVAL(p,28);
-	  strcpy(finfo->name,p+37);
+	  pstrcpy(finfo->name,p+37);
 	}
       return(SVAL(p,4)+4);
 
@@ -994,22 +994,22 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 	    fn(finfo);
 	  }
 
-	  strcpy(sav_dir,cur_dir);
-	  strcat(cur_dir,finfo->name);
-	  strcat(cur_dir,"\\");
-	  strcpy(mask2,cur_dir);
+	  pstrcpy(sav_dir,cur_dir);
+	  pstrcat(cur_dir,finfo->name);
+	  pstrcat(cur_dir,"\\");
+	  pstrcpy(mask2,cur_dir);
 
 	  if (!fn)
 	    DEBUG(0,("\n%s\n",CNV_LANG(cur_dir)));
 
-	  strcat(mask2,"*");
+	  pstrcat(mask2,"*");
 
 	  if (longdir)
 	    do_long_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);      
 	  else
 	    do_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);
 
-	  strcpy(cur_dir,sav_dir);
+	  pstrcpy(cur_dir,sav_dir);
 	}
       else
 	{
@@ -1031,19 +1031,19 @@ static void cmd_dir(char *inbuf,char *outbuf)
   char *p=buf;
 
   dir_total = 0;
-  strcpy(mask,cur_dir);
+  pstrcpy(mask,cur_dir);
   if(mask[strlen(mask)-1]!='\\')
-    strcat(mask,"\\");
+    pstrcat(mask,"\\");
 
   if (next_token(NULL,buf,NULL))
     {
       if (*p == '\\')
-	strcpy(mask,p);
+	pstrcpy(mask,p);
       else
-	strcat(mask,p);
+	pstrcat(mask,p);
     }
   else {
-    strcat(mask,"*");
+    pstrcat(mask,"*");
   }
 
   do_dir(inbuf,outbuf,mask,attribute,NULL,recurse,False);
@@ -1109,7 +1109,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
   SSVAL(outbuf,smb_vwv12,0xffff);
   
   p = smb_buf(outbuf);
-  strcpy(p,rname);
+  pstrcpy(p,rname);
   p = skip_string(p,1);
 
   /* do a chained openX with a readX? */
@@ -1162,7 +1162,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
       return;
     }
 
-  strcpy(finfo.name,rname);
+  pstrcpy(finfo.name,rname);
 
   if (!finfo1)
     {
@@ -1423,7 +1423,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
     SIVALS(outbuf,smb_vwv1,0);
     p = smb_buf(outbuf);
     *p++ = 4;
-    strcpy(p,rname);
+    pstrcpy(p,rname);
     p += strlen(p)+1;
     *p++ = 4;
     *p = 0;
@@ -1460,8 +1460,8 @@ static void cmd_get(char *dum_in, char *dum_out)
   pstring rname;
   char *p;
 
-  strcpy(rname,cur_dir);
-  strcat(rname,"\\");
+  pstrcpy(rname,cur_dir);
+  pstrcat(rname,"\\");
 
   p = rname + strlen(rname);
 
@@ -1469,7 +1469,7 @@ static void cmd_get(char *dum_in, char *dum_out)
     DEBUG(0,("get <filename>\n"));
     return;
   }
-  strcpy(lname,p);
+  pstrcpy(lname,p);
   dos_clean_name(rname);
     
   next_token(NULL,lname,NULL);
@@ -1519,10 +1519,10 @@ static void do_mget(file_info *finfo)
 	  return;
 	}
 
-      strcpy(saved_curdir,cur_dir);
+      pstrcpy(saved_curdir,cur_dir);
 
-      strcat(cur_dir,finfo->name);
-      strcat(cur_dir,"\\");
+      pstrcat(cur_dir,finfo->name);
+      pstrcat(cur_dir,"\\");
 
       unix_format(finfo->name);
       {
@@ -1533,7 +1533,7 @@ static void do_mget(file_info *finfo)
 	    sys_mkdir(finfo->name,0777) != 0) 
 	  {
 	    DEBUG(0,("failed to create directory %s\n",CNV_LANG(finfo->name)));
-	    strcpy(cur_dir,saved_curdir);
+	    pstrcpy(cur_dir,saved_curdir);
 	    free(inbuf);free(outbuf);
 	    return;
 	  }
@@ -1541,25 +1541,25 @@ static void do_mget(file_info *finfo)
 	if (sys_chdir(finfo->name) != 0)
 	  {
 	    DEBUG(0,("failed to chdir to directory %s\n",CNV_LANG(finfo->name)));
-	    strcpy(cur_dir,saved_curdir);
+	    pstrcpy(cur_dir,saved_curdir);
 	    free(inbuf);free(outbuf);
 	    return;
 	  }
       }       
 
-      strcpy(mget_mask,cur_dir);
-      strcat(mget_mask,"*");
+      pstrcpy(mget_mask,cur_dir);
+      pstrcat(mget_mask,"*");
       
       do_dir((char *)inbuf,(char *)outbuf,
 	     mget_mask,aSYSTEM | aHIDDEN | aDIR,do_mget,False, False);
       chdir("..");
-      strcpy(cur_dir,saved_curdir);
+      pstrcpy(cur_dir,saved_curdir);
       free(inbuf);free(outbuf);
     }
   else
     {
-      strcpy(rname,cur_dir);
-      strcat(rname,finfo->name);
+      pstrcpy(rname,cur_dir);
+      pstrcat(rname,finfo->name);
       do_get(rname,finfo->name,finfo);
     }
 }
@@ -1572,12 +1572,12 @@ static void cmd_more(char *dum_in, char *dum_out)
   fstring rname,lname,tmpname,pager_cmd;
   char *pager;
 
-  strcpy(rname,cur_dir);
-  strcat(rname,"\\");
+  pstrcpy(rname,cur_dir);
+  pstrcat(rname,"\\");
   slprintf(tmpname,
 	   sizeof(fstring)-1,
 	   "%s/smbmore.%d",tmpdir(),(int)getpid());
-  strcpy(lname,tmpname);
+  pstrcpy(lname,tmpname);
 
   if (!next_token(NULL,rname+strlen(rname),NULL)) {
     DEBUG(0,("more <filename>\n"));
@@ -1616,23 +1616,23 @@ static void cmd_mget(char *inbuf,char *outbuf)
 
   while (next_token(NULL,p,NULL))
     {
-      strcpy(mget_mask,cur_dir);
+      pstrcpy(mget_mask,cur_dir);
       if(mget_mask[strlen(mget_mask)-1]!='\\')
-	strcat(mget_mask,"\\");
+	pstrcat(mget_mask,"\\");
 
       if (*p == '\\')
-	strcpy(mget_mask,p);
+	pstrcpy(mget_mask,p);
       else
-	strcat(mget_mask,p);
+	pstrcat(mget_mask,p);
       do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 
   if (! *mget_mask)
     {
-      strcpy(mget_mask,cur_dir);
+      pstrcpy(mget_mask,cur_dir);
       if(mget_mask[strlen(mget_mask)-1]!='\\')
-	strcat(mget_mask,"\\");
-      strcat(mget_mask,"*");
+	pstrcat(mget_mask,"\\");
+      pstrcat(mget_mask,"*");
       do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 }
@@ -1664,7 +1664,7 @@ static BOOL do_mkdir(char *name)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,name);
+  pstrcpy(p,name);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -1692,7 +1692,7 @@ static void cmd_mkdir(char *inbuf,char *outbuf)
   fstring buf;
   char *p=buf;
   
-  strcpy(mask,cur_dir);
+  pstrcpy(mask,cur_dir);
 
   if (!next_token(NULL,p,NULL))
     {
@@ -1700,7 +1700,7 @@ static void cmd_mkdir(char *inbuf,char *outbuf)
 	DEBUG(0,("mkdir <dirname>\n"));
       return;
     }
-  strcat(mask,p);
+  pstrcat(mask,p);
 
   if (recurse)
     {
@@ -1708,17 +1708,17 @@ static void cmd_mkdir(char *inbuf,char *outbuf)
       pstring ddir2;
       *ddir2 = 0;
 
-      strcpy(ddir,mask);
+      pstrcpy(ddir,mask);
       trim_string(ddir,".",NULL);
       p = strtok(ddir,"/\\");
       while (p)
 	{
-	  strcat(ddir2,p);
+	  pstrcat(ddir2,p);
 	  if (!chkpath(ddir2,False))
 	    {		  
 	      do_mkdir(ddir2);
 	    }
-	  strcat(ddir2,"\\");
+	  pstrcat(ddir2,"\\");
 	  p = strtok(NULL,"/\\");
 	}	 
     }
@@ -1847,7 +1847,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,rname);
+  pstrcpy(p,rname);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -1969,8 +1969,8 @@ static void cmd_put(char *dum_in, char *dum_out)
   file_info finfo;
   finfo = def_finfo;
   
-  strcpy(rname,cur_dir);
-  strcat(rname,"\\");
+  pstrcpy(rname,cur_dir);
+  pstrcat(rname,"\\");
   
   
   if (!next_token(NULL,p,NULL))
@@ -1978,12 +1978,12 @@ static void cmd_put(char *dum_in, char *dum_out)
       DEBUG(0,("put <filename>\n"));
       return;
     }
-  strcpy(lname,p);
+  pstrcpy(lname,p);
   
   if (next_token(NULL,p,NULL))
-    strcat(rname,p);      
+    pstrcat(rname,p);      
   else
-    strcat(rname,lname);
+    pstrcat(rname,lname);
 
   dos_clean_name(rname);
 
@@ -2012,7 +2012,7 @@ static BOOL seek_list(FILE *f,char *name)
       trim_string(s,"./",NULL);
       if (strncmp(s,name,strlen(name)) != 0)
 	{
-	  strcpy(name,s);
+	  pstrcpy(name,s);
 	  return(True);
 	}
     }
@@ -2026,7 +2026,7 @@ static BOOL seek_list(FILE *f,char *name)
   ****************************************************************************/
 static void cmd_select(char *dum_in, char *dum_out)
 {
-  strcpy(fileselection,"");
+  pstrcpy(fileselection,"");
   next_token(NULL,fileselection,NULL);
 }
 
@@ -2082,16 +2082,16 @@ static void cmd_mput(char *dum_in, char *dum_out)
 		       "Put directory %s? ",lname);
 	      if (prompt && !yesno(quest)) 
 		{
-		  strcat(lname,"/");
+		  pstrcat(lname,"/");
 		  if (!seek_list(f,lname))
 		    break;
 		  goto again1;		    
 		}
 	      
-	      strcpy(rname,cur_dir);
-	      strcat(rname,lname);
+	      pstrcpy(rname,cur_dir);
+	      pstrcat(rname,lname);
 	      if (!chkpath(rname,False) && !do_mkdir(rname)) {
-		strcat(lname,"/");
+		pstrcat(lname,"/");
 		if (!seek_list(f,lname))
 		  break;
 		goto again1;		    		  
@@ -2105,8 +2105,8 @@ static void cmd_mput(char *dum_in, char *dum_out)
 		       "Put file %s? ",lname);
 	      if (prompt && !yesno(quest)) continue;
 
-	      strcpy(rname,cur_dir);
-	      strcat(rname,lname);
+	      pstrcpy(rname,cur_dir);
+	      pstrcat(rname,lname);
 	    }
 	  dos_format(rname);
 
@@ -2139,9 +2139,9 @@ static void do_cancel(int job)
   p = param;
   SSVAL(p,0,81);		/* DosPrintJobDel() */
   p += 2;
-  strcpy(p,"W");
+  pstrcpy(p,"W");
   p = skip_string(p,1);
-  strcpy(p,"");
+  pstrcpy(p,"");
   p = skip_string(p,1);
   SSVAL(p,0,job);     
   p += 2;
@@ -2221,13 +2221,13 @@ static void cmd_print(char *inbuf,char *outbuf )
       return;
     }
 
-  strcpy(rname,lname);
+  pstrcpy(rname,lname);
   p = strrchr(rname,'/');
   if (p)
     {
       pstring tname;
-      strcpy(tname,p+1);
-      strcpy(rname,tname);
+      pstrcpy(tname,p+1);
+      pstrcpy(rname,tname);
     }
 
   if ((int)strlen(rname) > 14)
@@ -2236,7 +2236,7 @@ static void cmd_print(char *inbuf,char *outbuf )
   if (strequal(lname,"-"))
     {
       f = stdin;
-      strcpy(rname,"stdin");
+      pstrcpy(rname,"stdin");
     }
   
   dos_clean_name(rname);
@@ -2253,7 +2253,7 @@ static void cmd_print(char *inbuf,char *outbuf )
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,rname);
+  pstrcpy(p,rname);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -2391,13 +2391,13 @@ static void cmd_queue(char *inbuf,char *outbuf )
       {
 	switch (CVAL(p,4))
 	  {
-	  case 0x01: sprintf(status,"held or stopped"); break;
-	  case 0x02: sprintf(status,"printing"); break;
-	  case 0x03: sprintf(status,"awaiting print"); break;
-	  case 0x04: sprintf(status,"in intercept"); break;
-	  case 0x05: sprintf(status,"file had error"); break;
-	  case 0x06: sprintf(status,"printer error"); break;
-	  default: sprintf(status,"unknown"); break;
+	  case 0x01: safe_strcpy(status,"held or stopped",sizeof(status)-1); break;
+	  case 0x02: safe_strcpy(status,"printing",sizeof(status)-1); break;
+	  case 0x03: safe_strcpy(status,"awaiting print",sizeof(status)-1); break;
+	  case 0x04: safe_strcpy(status,"in intercept",sizeof(status)-1); break;
+	  case 0x05: safe_strcpy(status,"file had error",sizeof(status)-1); break;
+	  case 0x06: safe_strcpy(status,"printer error",sizeof(status)-1); break;
+	  default: safe_strcpy(status,"unknown",sizeof(status)-1); break;
 	  }
 
 	DEBUG(0,("%-6d   %-16.16s  %-9d    %s\n",
@@ -2432,16 +2432,16 @@ static void cmd_p_queue_4(char *inbuf,char *outbuf )
   p = param;
   SSVAL(p,0,76);                        /* API function number 76 (DosPrintJobEnum) */
   p += 2;
-  strcpy(p,"zWrLeh");                   /* parameter description? */
+  pstrcpy(p,"zWrLeh");                   /* parameter description? */
   p = skip_string(p,1);
-  strcpy(p,"WWzWWDDzz");                /* returned data format */
+  pstrcpy(p,"WWzWWDDzz");                /* returned data format */
   p = skip_string(p,1);
-  strcpy(p,strrchr(service,'\\')+1);    /* name of queue */
+  pstrcpy(p,strrchr(service,'\\')+1);    /* name of queue */
   p = skip_string(p,1);
   SSVAL(p,0,2);                 /* API function level 2, PRJINFO_2 data structure */
   SSVAL(p,2,1000);                      /* size of bytes of returned data buffer */
   p += 4;
-  strcpy(p,"");                         /* subformat */
+  pstrcpy(p,"");                         /* subformat */
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintJobEnum()...\n"));
@@ -2469,7 +2469,7 @@ static void cmd_p_queue_4(char *inbuf,char *outbuf )
           time_t JobTime;
           char PrinterName[20];
              
-          strcpy(PrinterName,strrchr(service,'\\')+1);       /* name of queue */
+          safe_strcpy(PrinterName,strrchr(service,'\\')+1,sizeof(PrinterName)-1);       /* name of queue */
           strlower(PrinterName);                             /* in lower case */
 
           p = rdata;                          /* received data */
@@ -2539,16 +2539,16 @@ static void cmd_qinfo(char *inbuf,char *outbuf )
   p = param;
   SSVAL(p,0,70); 			/* API function number 70 (DosPrintQGetInfo) */
   p += 2;
-  strcpy(p,"zWrLh");			/* parameter description? */
+  pstrcpy(p,"zWrLh");			/* parameter description? */
   p = skip_string(p,1);
-  strcpy(p,"zWWWWzzzzWWzzl");		/* returned data format */
+  pstrcpy(p,"zWWWWzzzzWWzzl");		/* returned data format */
   p = skip_string(p,1);
-  strcpy(p,strrchr(service,'\\')+1);	/* name of queue */
+  pstrcpy(p,strrchr(service,'\\')+1);	/* name of queue */
   p = skip_string(p,1);
   SSVAL(p,0,3);				/* API function level 3, just queue info, no job info */
   SSVAL(p,2,1000);			/* size of bytes of returned data buffer */
   p += 4;
-  strcpy(p,"");				/* subformat */
+  pstrcpy(p,"");				/* subformat */
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintQueueGetInfo()...\n"));
@@ -2634,8 +2634,8 @@ static void do_del(file_info *finfo)
   char *inbuf,*outbuf;
   pstring mask;
 
-  strcpy(mask,cur_dir);
-  strcat(mask,finfo->name);
+  pstrcpy(mask,cur_dir);
+  pstrcat(mask,finfo->name);
 
   if (finfo->mode & aDIR) 
     return;
@@ -2660,7 +2660,7 @@ static void do_del(file_info *finfo)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,mask);
+  pstrcpy(p,mask);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -2684,14 +2684,14 @@ static void cmd_del(char *inbuf,char *outbuf )
   if (recurse)
     attribute |= aDIR;
   
-  strcpy(mask,cur_dir);
+  pstrcpy(mask,cur_dir);
     
   if (!next_token(NULL,buf,NULL))
     {
       DEBUG(0,("del <filename>\n"));
       return;
     }
-  strcat(mask,buf);
+  pstrcat(mask,buf);
 
   do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_del,False,False);
 }
@@ -2706,14 +2706,14 @@ static void cmd_rmdir(char *inbuf,char *outbuf )
   fstring buf;
   char *p;
   
-  strcpy(mask,cur_dir);
+  pstrcpy(mask,cur_dir);
   
   if (!next_token(NULL,buf,NULL))
     {
       DEBUG(0,("rmdir <dirname>\n"));
       return;
     }
-  strcat(mask,buf);
+  pstrcat(mask,buf);
 
   bzero(outbuf,smb_size);
   set_message(outbuf,0,2 + strlen(mask),True);
@@ -2725,7 +2725,7 @@ static void cmd_rmdir(char *inbuf,char *outbuf )
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,mask);
+  pstrcpy(p,mask);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -2747,16 +2747,16 @@ static void cmd_rename(char *inbuf,char *outbuf )
   fstring buf,buf2;
   char *p;
   
-  strcpy(src,cur_dir);
-  strcpy(dest,cur_dir);
+  pstrcpy(src,cur_dir);
+  pstrcpy(dest,cur_dir);
   
   if (!next_token(NULL,buf,NULL) || !next_token(NULL,buf2,NULL))
     {
       DEBUG(0,("rename <src> <dest>\n"));
       return;
     }
-  strcat(src,buf);
-  strcat(dest,buf2);
+  pstrcat(src,buf);
+  pstrcat(dest,buf2);
 
   bzero(outbuf,smb_size);
   set_message(outbuf,1,4 + strlen(src) + strlen(dest),True);
@@ -2768,10 +2768,10 @@ static void cmd_rename(char *inbuf,char *outbuf )
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,src);
+  pstrcpy(p,src);
   p = skip_string(p,1);
   *p++ = 4;      
-  strcpy(p,dest);
+  pstrcpy(p,dest);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -2887,13 +2887,13 @@ static void cmd_printmode(char *dum_in, char *dum_out)
   switch(printmode)
     {
     case 0: 
-      strcpy(mode,"text");
+      fstrcpy(mode,"text");
       break;
     case 1: 
-      strcpy(mode,"graphics");
+      fstrcpy(mode,"graphics");
       break;
     default: 
-      sprintf(mode,"%d",printmode);
+      slprintf(mode,sizeof(mode)-1,"%d",printmode);
       break;
     }
 
@@ -2938,9 +2938,9 @@ static BOOL browse_host(BOOL sort)
   p = param;
   SSVAL(p,0,0); /* api number */
   p += 2;
-  strcpy(p,"WrLeh");
+  pstrcpy(p,"WrLeh");
   p = skip_string(p,1);
-  strcpy(p,"B13BWz");
+  pstrcpy(p,"B13BWz");
   p = skip_string(p,1);
   SSVAL(p,0,1);
   SSVAL(p,2,BUFFER_SIZE);
@@ -2982,13 +2982,13 @@ static BOOL browse_host(BOOL sort)
 	      switch (type)
 		{
 		case STYPE_DISKTREE:
-		  strcpy(typestr,"Disk"); break;
+		  fstrcpy(typestr,"Disk"); break;
 		case STYPE_PRINTQ:
-		  strcpy(typestr,"Printer"); break;	      
+		  fstrcpy(typestr,"Printer"); break;	      
 		case STYPE_DEVICE:
-		  strcpy(typestr,"Device"); break;
+		  fstrcpy(typestr,"Device"); break;
 		case STYPE_IPC:
-		  strcpy(typestr,"IPC"); break;      
+		  fstrcpy(typestr,"IPC"); break;      
 		}
 
 	      printf("\t%-15.15s%-10.10s%s\n",
@@ -3030,9 +3030,9 @@ static void server_info(void)
   p = param;
   SSVAL(p,0,63); 		/* NetServerGetInfo()? */
   p += 2;
-  strcpy(p,"WrLh");
+  pstrcpy(p,"WrLh");
   p = skip_string(p,1);
-  strcpy(p,"zzzBBzz");
+  pstrcpy(p,"zzzBBzz");
   p = skip_string(p,1);
   SSVAL(p,0,10); /* level 10 */
   SSVAL(p,2,1000);
@@ -3092,10 +3092,10 @@ static BOOL list_servers(char *wk_grp)
   SSVAL(p,0,0x68); /* api number */
   p += 2;
 
-  strcpy(p,generic_request?"WrLehDO":"WrLehDz");
+  pstrcpy(p,generic_request?"WrLehDO":"WrLehDz");
   p = skip_string(p,1);
 
-  strcpy(p,"B16BBDz");
+  pstrcpy(p,"B16BBDz");
 
   p = skip_string(p,1);
   SSVAL(p,0,uLevel);
@@ -3106,7 +3106,7 @@ static BOOL list_servers(char *wk_grp)
   p += 4;
 
   if (!generic_request) {
-    strcpy(p, wk_grp);
+    pstrcpy(p, wk_grp);
     p = skip_string(p,1);
   }
 
@@ -3551,7 +3551,7 @@ static void usage(char *pname)
   int save_debuglevel = -1;
 
 #ifdef KANJI
-  strcpy(term_code, KANJI);
+  pstrcpy(term_code, KANJI);
 #else /* KANJI */
   *term_code = 0;
 #endif /* KANJI */
@@ -3577,7 +3577,7 @@ static void usage(char *pname)
 
   if (getenv("USER"))
   {
-    strcpy(username,getenv("USER"));
+    pstrcpy(username,getenv("USER"));
 
     /* modification to support userid%passwd syntax in the USER var
        25.Aug.97, jdblair@uab.edu */
@@ -3585,7 +3585,7 @@ static void usage(char *pname)
     if ((p=strchr(username,'%')))
     {
       *p = 0;
-      strcpy(password,p+1);
+      pstrcpy(password,p+1);
       got_pass = True;
       memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
     }
@@ -3596,11 +3596,11 @@ static void usage(char *pname)
   25.Aug.97, jdblair@uab.edu */
 
   if (getenv("PASSWD"))
-    strcpy(password,getenv("PASSWD"));
+    pstrcpy(password,getenv("PASSWD"));
 
   if (*username == 0 && getenv("LOGNAME"))
     {
-      strcpy(username,getenv("LOGNAME"));
+      pstrcpy(username,getenv("LOGNAME"));
       strupper(username);
     }
 
@@ -3613,7 +3613,7 @@ static void usage(char *pname)
   if (*argv[1] != '-')
     {
 
-      strcpy(service,argv[1]);  
+      pstrcpy(service,argv[1]);  
       /* Convert any '/' characters in the service name to '\' characters */
       string_replace( service, '/','\\');
       argc--;
@@ -3638,7 +3638,7 @@ static void usage(char *pname)
       if (argc > 1 && (*argv[1] != '-'))
 	{
 	  got_pass = True;
-	  strcpy(password,argv[1]);  
+	  pstrcpy(password,argv[1]);  
 	  memset(argv[1],'X',strlen(argv[1]));
 	  argc--;
 	  argv++;
@@ -3653,19 +3653,19 @@ static void usage(char *pname)
 	max_protocol = interpret_protocol(optarg,max_protocol);
 	break;
       case 'O':
-	strcpy(user_socket_options,optarg);
+	pstrcpy(user_socket_options,optarg);
 	break;	
       case 'R':
         pstrcpy(new_name_resolve_order, optarg);
         break;
       case 'S':
-	strcpy(desthost,optarg);
+	pstrcpy(desthost,optarg);
 	strupper(desthost);
 	nt_domain_logon = True;
 	break;
       case 'M':
 	name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
-	strcpy(desthost,optarg);
+	pstrcpy(desthost,optarg);
 	strupper(desthost);
 	message = True;
 	break;
@@ -3673,7 +3673,7 @@ static void usage(char *pname)
 	iface_set_default(NULL,optarg,NULL);
 	break;
       case 'D':
-	strcpy(base_directory,optarg);
+	pstrcpy(base_directory,optarg);
 	break;
       case 'T':
 	if (!tar_parseargs(argc, argv, optarg, optind)) {
@@ -3682,20 +3682,20 @@ static void usage(char *pname)
 	}
 	break;
       case 'i':
-	strcpy(scope,optarg);
+	pstrcpy(scope,optarg);
 	break;
       case 'L':
 	got_pass = True;
-	strcpy(query_host,optarg);
+	pstrcpy(query_host,optarg);
 	break;
       case 'U':
 	{
 	  char *lp;
-	strcpy(username,optarg);
+	pstrcpy(username,optarg);
 	if ((lp=strchr(username,'%')))
 	  {
 	    *lp = 0;
-	    strcpy(password,lp+1);
+	    pstrcpy(password,lp+1);
 	    got_pass = True;
 	    memset(strchr(optarg,'%')+1,'X',strlen(password));
 	  }
@@ -3703,7 +3703,7 @@ static void usage(char *pname)
 	    
 	break;
       case 'W':
-	strcpy(workgroup,optarg);
+	pstrcpy(workgroup,optarg);
 	break;
       case 'E':
 	dbf = stderr;
@@ -3716,7 +3716,7 @@ static void usage(char *pname)
 	}
 	break;
       case 'n':
-	strcpy(myname,optarg);
+	pstrcpy(myname,optarg);
 	break;
       case 'N':
 	got_pass = True;
@@ -3746,10 +3746,10 @@ static void usage(char *pname)
 	exit(0);
 	break;
       case 's':
-	strcpy(servicesf, optarg);
+	pstrcpy(servicesf, optarg);
 	break;
       case 't':
-        strcpy(term_code, optarg);
+        pstrcpy(term_code, optarg);
 	break;
       default:
 	usage(pname);
@@ -3787,7 +3787,7 @@ static void usage(char *pname)
   interpret_coding_system(term_code);
 
   if (*workgroup == 0)
-    strcpy(workgroup,lp_workgroup());
+    pstrcpy(workgroup,lp_workgroup());
 
   load_interfaces();
   get_myname((*myname)?NULL:myname,NULL);  

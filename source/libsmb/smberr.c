@@ -165,18 +165,18 @@ char *smb_errstr(char *inbuf)
 	      if (num == err[j].code)
 		{
 		  if (DEBUGLEVEL > 0)
-		    sprintf(ret,"%s - %s (%s)",err_classes[i].class,
+		    slprintf(ret,sizeof(pstring)-1,"%s - %s (%s)",err_classes[i].class,
 			    err[j].name,err[j].message);
 		  else
-		    sprintf(ret,"%s - %s",err_classes[i].class,err[j].name);
+		    slprintf(ret,sizeof(pstring)-2,"%s - %s",err_classes[i].class,err[j].name);
 		  return ret;
 		}
 	  }
 
-	sprintf(ret,"%s - %d",err_classes[i].class,num);
+	slprintf(ret,sizeof(pstring)-1,"%s - %d",err_classes[i].class,num);
 	return ret;
       }
   
-  sprintf(ret,"Error: Unknown error (%d,%d)",class,num);
+  slprintf(ret,sizeof(pstring)-1,"Error: Unknown error (%d,%d)",class,num);
   return(ret);
 }
