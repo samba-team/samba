@@ -239,6 +239,28 @@ BOOL asn1_read_uint8(ASN1_DATA *data, uint8_t *v)
 	return asn1_read(data, v, 1);
 }
 
+/* read from a ASN1 buffer, advancing the buffer pointer */
+BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
+{
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
+		data->has_error = True;
+		return False;
+	}
+
+	if (data->ofs + len > data->length) {
+		data->has_error = True;
+		return False;
+	}
+	memcpy(p, data->data + data->ofs, len);
+	return True;
+}
+
+/* read a uint8_t from a ASN1 buffer */
+BOOL asn1_peek_uint8(ASN1_DATA *data, uint8_t *v)
+{
+	return asn1_peek(data, v, 1);
+}
+
 /* start reading a nested asn1 structure */
 BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 {

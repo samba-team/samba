@@ -35,8 +35,13 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		int i;
+		uint8_t context;
+		if (!asn1_peek_uint8(asn1, &context)) {
+			asn1->has_error = True;
+			break;
+		}
 
-		switch (asn1->data[asn1->ofs]) {
+		switch (context) {
 		/* Read mechTypes */
 		case ASN1_CONTEXT(0):
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
@@ -70,8 +75,14 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 			break;
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
+		{
+			uint8_t type_peek;
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
+			if (!asn1_peek_uint8(asn1, &type_peek)) {
+				asn1->has_error = True;
+				break;
+			}
+			if (type_peek == ASN1_OCTET_STRING) {
 				asn1_read_OctetString(asn1,
 						      &token->mechListMIC);
 			} else {
@@ -90,6 +101,7 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 			}
 			asn1_end_tag(asn1);
 			break;
+		}
 		default:
 			asn1->has_error = True;
 			break;
@@ -173,7 +185,13 @@ static BOOL read_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token
 	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
-		switch (asn1->data[asn1->ofs]) {
+		uint8_t context;
+		if (!asn1_peek_uint8(asn1, &context)) {
+			asn1->has_error = True;
+			break;
+		}
+
+		switch (context) {
 		case ASN1_CONTEXT(0):
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_ENUMERATED);
@@ -257,22 +275,27 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 
 	asn1_load(&asn1, data);
 
-	switch (asn1.data[asn1.ofs]) {
-	case ASN1_APPLICATION(0):
-		asn1_start_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_check_OID(&asn1, OID_SPNEGO);
-		if (read_negTokenInit(&asn1, &token->negTokenInit)) {
-			token->type = SPNEGO_NEG_TOKEN_INIT;
+	uint8_t context;
+	if (!asn1_peek_uint8(asn1, &context)) {
+		asn1->has_error = True;
+	} else {
+		switch (context) {
+		case ASN1_APPLICATION(0):
+			asn1_start_tag(&asn1, ASN1_APPLICATION(0));
+			asn1_check_OID(&asn1, OID_SPNEGO);
+			if (read_negTokenInit(&asn1, &token->negTokenInit)) {
+				token->type = SPNEGO_NEG_TOKEN_INIT;
+			}
+			asn1_end_tag(&asn1);
+			break;
+		case ASN1_CONTEXT(1):
+			if (read_negTokenTarg(&asn1, &token->negTokenTarg)) {
+				token->type = SPNEGO_NEG_TOKEN_TARG;
+			}
+			break;
+		default:
+			break;
 		}
-		asn1_end_tag(&asn1);
-		break;
-	case ASN1_CONTEXT(1):
-		if (read_negTokenTarg(&asn1, &token->negTokenTarg)) {
-			token->type = SPNEGO_NEG_TOKEN_TARG;
-		}
-		break;
-	default:
-		break;
 	}
 
 	if (!asn1.has_error) ret = asn1.ofs;
