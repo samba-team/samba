@@ -24,6 +24,7 @@
 
 #define TEST_USERNAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"
+#define TEST_GROUPNAME "samrtorturetestgroup"
 #define TEST_MACHINENAME "samrtorturetestmach$"
 #define TEST_DOMAINNAME "samrtorturetestdom$"
 
@@ -474,6 +475,51 @@ failed:
 	printf("DeleteUser_byname(%s) failed - %s\n", name, nt_errstr(status));
 	return False;
 }
+
+
+static BOOL test_DeleteGroup_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				    struct policy_handle *handle, const char *name)
+{
+	NTSTATUS status;
+	struct samr_LookupNames n;
+	struct samr_OpenGroup r;
+	struct samr_DeleteDomainGroup d;
+	struct policy_handle group_handle;
+	struct samr_Name sname;
+
+	init_samr_Name(&sname, name);
+
+	n.in.handle = handle;
+	n.in.num_names = 1;
+	n.in.names = &sname;
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	r.in.handle = handle;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = n.out.rids.ids[0];
+	r.out.acct_handle = &group_handle;
+	status = dcerpc_samr_OpenGroup(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	d.in.handle = &group_handle;
+	d.out.handle = &group_handle;
+	status = dcerpc_samr_DeleteDomainGroup(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	return True;
+
+failed:
+	printf("DeleteGroup_byname(%s) failed - %s\n", name, nt_errstr(status));
+	return False;
+}
+
 
 static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				   struct policy_handle *domain_handle, const char *name)
@@ -1329,6 +1375,69 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_DeleteDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				   struct policy_handle *group_handle)
+{
+    	struct samr_DeleteDomainGroup d;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("Testing DeleteDomainGroup\n");
+
+	d.in.handle = group_handle;
+	d.out.handle = group_handle;
+
+	status = dcerpc_samr_DeleteDomainGroup(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteDomainGroup failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
+static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *domain_handle, struct policy_handle *group_handle)
+{
+	NTSTATUS status;
+	struct samr_CreateDomainGroup r;
+	uint32 rid;
+	struct samr_Name name;
+	BOOL ret = True;
+
+	init_samr_Name(&name, TEST_GROUPNAME);
+
+	r.in.handle = domain_handle;
+	r.in.name = &name;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.group_handle = group_handle;
+	r.out.rid = &rid;
+
+	printf("Testing CreateDomainGroup(%s)\n", r.in.name->name);
+
+	status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Server refused create of '%s'\n", r.in.name->name);
+		ZERO_STRUCTP(group_handle);
+		return True;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_GROUP_EXISTS)) {
+		if (!test_DeleteGroup_byname(p, mem_ctx, domain_handle, r.in.name->name)) {
+			return False;
+		}
+		status = dcerpc_samr_CreateDomainGroup(p, mem_ctx, &r);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateDomainGroup failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
 
 static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle, struct dom_sid *sid)
@@ -1338,6 +1447,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle domain_handle;
 	struct policy_handle user_handle;
 	struct policy_handle alias_handle;
+	struct policy_handle group_handle;
 	BOOL ret = True;
 
 	ZERO_STRUCT(user_handle);
@@ -1365,6 +1475,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid)) {
+		ret = False;
+	}
+
+	if (!test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle)) {
 		ret = False;
 	}
 
@@ -1402,7 +1516,12 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!policy_handle_empty(&alias_handle) &&
-	    !test_DeleteAlias(p,mem_ctx, &alias_handle)) {
+	    !test_DeleteAlias(p, mem_ctx, &alias_handle)) {
+		ret = False;
+	}
+
+	if (!policy_handle_empty(&group_handle) &&
+	    !test_DeleteDomainGroup(p, mem_ctx, &group_handle)) {
 		ret = False;
 	}
 
