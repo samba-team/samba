@@ -410,6 +410,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 	POLICY_HND dom_pol;
 	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 access_desired = 0x000f000f;
 
 	DOM_SID sid;
 	uint32 count=0;
@@ -451,6 +452,52 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
  done:
 	return result;
 }
+
+
+/* Enumerate the privileges of an SID via LsaEnumerateAccountRights */
+
+static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli, 
+					 TALLOC_CTX *mem_ctx, int argc, 
+					 char **argv) 
+{
+	POLICY_HND dom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DOM_SID sid;
+	uint32 count;
+	char **rights;
+
+	int i;
+
+	if (argc != 2 ) {
+		printf("Usage: %s SID\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	string_to_sid(&sid, argv[1]);
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, sid, &count, &rights);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	printf("found %d privileges for SID %s\n", count, argv[1]);
+
+	for (i = 0; i < count; i++) {
+		printf("\t%s\n", rights[i]);
+	}
+
+ done:
+	return result;
+}
+
 
 /* Get a privilege value given its name */
 
@@ -538,6 +585,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "getdispname",         cmd_lsa_get_dispname,       PI_LSARPC, "Get the privilege name",               "" },
 	{ "lsaenumsid",          cmd_lsa_enum_sids,          PI_LSARPC, "Enumerate the LSA SIDS",               "" },
 	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
+	{ "lsaenumacctrights",   cmd_lsa_enum_acct_rights,   PI_LSARPC, "Enumerate the rights of an SID",   "" },
 	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
 	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PI_LSARPC, "Query LSA security object", "" },
 

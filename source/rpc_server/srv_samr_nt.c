@@ -1180,6 +1180,18 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
 		case 0x1:
+			/* When playing with usrmgr, this is necessary
+                           if you want immediate refresh after editing
+                           a user. I would like to do this after the
+                           setuserinfo2, but we do not have access to
+                           the domain handle in that call, only to the
+                           user handle. Where else does this hurt?
+			   -- Volker
+			*/
+#if 0
+			/* We cannot do this here - it kills performace. JRA. */
+			free_samr_users(info);
+#endif
 		case 0x2:
 		case 0x4:
 			become_root();		

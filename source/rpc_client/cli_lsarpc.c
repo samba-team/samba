@@ -1150,6 +1150,63 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+
+/* Enumerate account rights This is similar to enum_privileges but
+   takes a SID directly, avoiding the open_account call.
+*/
+
+NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *pol, DOM_SID sid,
+				     uint32 *count, char ***privs_name)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUM_ACCT_RIGHTS q;
+	LSA_R_ENUM_ACCT_RIGHTS r;
+	NTSTATUS result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+	init_q_enum_acct_rights(&q, pol, 2, &sid);
+
+	if (!lsa_io_q_enum_acct_rights("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUMACCTRIGHTS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!lsa_io_r_enum_acct_rights("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*count = r.count;
+	if (! *count) {
+		goto done;
+	}
+
+	*privs_name = (char **)talloc(mem_ctx, (*count) * sizeof(char **));
+	for (i=0;i<*count;i++) {
+		pull_ucs2_talloc(mem_ctx, &(*privs_name)[i], r.rights.strings[i].string.buffer);
+	}
+
+done:
+
+	return result;
+}
+
+
 #if 0
 
 /** An example of how to use the routines in this file.  Fetch a DOMAIN

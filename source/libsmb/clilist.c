@@ -324,8 +324,10 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
 	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
-	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
-		fstrcpy(finfo->short_name,finfo->name);
+	if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
+		strncpy(finfo->short_name,finfo->name, sizeof(finfo->short_name)-1);
+		finfo->short_name[sizeof(finfo->short_name)-1] = '\0';
+	}
 	
 	return(DIR_STRUCT_SIZE);
 }

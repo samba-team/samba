@@ -390,6 +390,84 @@ static int net_getdomainsid(int argc, const char **argv)
 	return 0;
 }
 
+static uint32 get_maxrid(void)
+{
+	SAM_ACCOUNT *pwd = NULL;
+	uint32 max_rid = 0;
+	GROUP_MAP *map = NULL;
+	int num_entries = 0;
+	int i;
+
+	if (!pdb_setsampwent(False)) {
+		DEBUG(0, ("load_sampwd_entries: Unable to open passdb.\n"));
+		return 0;
+	}
+
+	for (; (NT_STATUS_IS_OK(pdb_init_sam(&pwd))) 
+		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
+		uint32 rid;
+
+		if (!sid_peek_rid(pdb_get_user_sid(pwd), &rid)) {
+			DEBUG(0, ("can't get RID for user '%s'\n",
+				  pdb_get_username(pwd)));
+			pdb_free_sam(&pwd);
+			continue;
+		}
+
+		if (rid > max_rid)
+			max_rid = rid;
+
+		DEBUG(1,("%d is user '%s'\n", rid, pdb_get_username(pwd)));
+		pdb_free_sam(&pwd);
+	}
+
+	pdb_endsampwent();
+	pdb_free_sam(&pwd);
+
+	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries,
+				    ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+		return max_rid;
+
+	for (i = 0; i < num_entries; i++) {
+		uint32 rid;
+
+		if (!sid_peek_check_rid(get_global_sam_sid(), &map[i].sid,
+					&rid)) {
+			DEBUG(3, ("skipping map for group '%s', SID %s\n",
+				  map[i].nt_name,
+				  sid_string_static(&map[i].sid)));
+			continue;
+		}
+		DEBUG(1,("%d is group '%s'\n", rid, map[i].nt_name));
+
+		if (rid > max_rid)
+			max_rid = rid;
+	}
+
+	SAFE_FREE(map);
+
+	return max_rid;
+}
+
+static int net_maxrid(int argc, const char **argv)
+{
+	uint32 rid;
+
+	if (argc != 0) {
+	        DEBUG(0, ("usage: net initrid\n"));
+		return 1;
+	}
+
+	if ((rid = get_maxrid()) == 0) {
+		DEBUG(0, ("can't get current maximum rid\n"));
+		return 1;
+	}
+
+	d_printf("Currently used maximum rid: %d\n", rid);
+
+	return 0;
+}
+
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
@@ -417,6 +495,7 @@ static struct functable net_func[] = {
 	{"GETLOCALSID", net_getlocalsid},
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
+	{"MAXRID", net_maxrid},
 
 	{"HELP", net_help},
 	{NULL, NULL}

@@ -2236,3 +2236,63 @@ BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *r_c,
 
 	return True;
 }
+
+
+/*******************************************************************
+ Inits an LSA_Q_ENUM_ACCT_RIGHTS structure.
+********************************************************************/
+void init_q_enum_acct_rights(LSA_Q_ENUM_ACCT_RIGHTS *q_q, 
+			     POLICY_HND *hnd, 
+			     uint32 count, 
+			     DOM_SID *sid)
+{
+	DEBUG(5, ("init_q_enum_acct_rights\n"));
+
+	q_q->pol = *hnd;
+	q_q->count = count;
+	q_q->sid = *sid;
+}
+
+/*******************************************************************
+reads or writes a LSA_Q_ENUM_ACCT_RIGHTS structure.
+********************************************************************/
+BOOL lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
+{
+	if (q_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_enum_acct_rights");
+	depth++;
+
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("count   ", ps, depth, &q_q->count))
+		return False;
+
+	if(!smb_io_dom_sid("sid", &q_q->sid, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
+********************************************************************/
+BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_enum_acct_rights");
+	depth++;
+
+	if(!prs_uint32("count   ", ps, depth, &r_c->count))
+		return False;
+
+	if(!smb_io_unistr_array("rights", &r_c->rights, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
