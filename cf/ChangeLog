@@ -1,3 +1,7 @@
+2004-04-13  Love  <lha@stacken.kth.se>
+
+	* win32.m4: add rk_WIN32_EXPORT
+	
 2004-02-12  Love  <lha@stacken.kth.se>
 
 	* configure.in: rename AC_WFLAGS to rk_WFLAGS
