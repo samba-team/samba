@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
 
 static const struct dcerpc_interface_table *find_pipe(const char *pipe_name)

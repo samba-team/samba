@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 BOOL torture_ntlmssp_self_check(void) 
 {

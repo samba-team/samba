@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

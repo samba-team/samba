@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "byteorder.h"
+#include "auth/auth.h"
 
 /*
    This implements the X/Open SMB password encryption

@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/iconv.h"
+#include "auth/auth.h"
 
 /****************************************************************************
  *

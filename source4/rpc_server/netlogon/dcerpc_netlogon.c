@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_server/common/common.h"
+#include "librpc/gen_ndr/ndr_dcom.h"
+#include "auth/auth.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;

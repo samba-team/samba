@@ -72,12 +72,10 @@
 /** Feel free to add definitions for other compilers here. */
 #endif
 
-#include <unistd.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <stddef.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -87,51 +85,13 @@
 #include <string.h>
 #endif
 
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-#ifdef HAVE_MEMORY_H
-#include <memory.h>
-#endif
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#else
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-#endif
-
-#include <sys/stat.h>
-
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-
 #include <signal.h>
-
 #include <errno.h>
-
-#ifdef HAVE_SYS_MODE_H
-/* apparently AIX needs this for S_ISLNK */
-#ifndef S_ISLNK
-#include <sys/mode.h>
-#endif
-#endif
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #else
 #include <varargs.h>
-#endif
-
-#ifdef HAVE_STROPTS_H
-#include <stropts.h>
 #endif
 
 /* we support ADS if we want it and have krb5 and ldap libs */
@@ -220,10 +180,6 @@ struct ipv4_addr {
 #define UINT16_MAX 65535
 #endif
 
-/*
- * Type for stat structure.
- */
-
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -299,12 +255,6 @@ extern int errno;
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/tables.h"
-
-#include "libcli/auth/ntlmssp.h"
-#include "libcli/auth/credentials.h"
-#include "libcli/auth/gensec.h"
-#include "libcli/auth/spnego.h"
-#include "auth/auth.h"
 
 #include "smb_interfaces.h"
 #include "smbd/server.h"
@@ -491,103 +441,9 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define MSG_WAITALL 0
 #endif
 
-/* default socket options. Dave Miller thinks we should default to TCP_NODELAY
-   given the socket IO pattern that Samba uses */
-#ifdef TCP_NODELAY
-#define DEFAULT_SOCKET_OPTIONS "TCP_NODELAY"
-#else
-#define DEFAULT_SOCKET_OPTIONS ""
-#endif
-
 /* Load header file for dynamic linking stuff */
-
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
-#endif
-
-/* dmalloc -- free heap debugger (dmalloc.org).  This should be near
- * the *bottom* of include files so as not to conflict. */
-#ifdef ENABLE_DMALLOC
-#  include <dmalloc.h>
-#endif
-
-
-/* Some POSIX definitions for those without */
- 
-#ifndef S_IFDIR
-#define S_IFDIR         0x4000
-#endif
-#ifndef S_ISDIR
-#define S_ISDIR(mode)   ((mode & 0xF000) == S_IFDIR)
-#endif
-#ifndef S_IRWXU
-#define S_IRWXU 00700           /* read, write, execute: owner */
-#endif
-#ifndef S_IRUSR
-#define S_IRUSR 00400           /* read permission: owner */
-#endif
-#ifndef S_IWUSR
-#define S_IWUSR 00200           /* write permission: owner */
-#endif
-#ifndef S_IXUSR
-#define S_IXUSR 00100           /* execute permission: owner */
-#endif
-#ifndef S_IRWXG
-#define S_IRWXG 00070           /* read, write, execute: group */
-#endif
-#ifndef S_IRGRP
-#define S_IRGRP 00040           /* read permission: group */
-#endif
-#ifndef S_IWGRP
-#define S_IWGRP 00020           /* write permission: group */
-#endif
-#ifndef S_IXGRP
-#define S_IXGRP 00010           /* execute permission: group */
-#endif
-#ifndef S_IRWXO
-#define S_IRWXO 00007           /* read, write, execute: other */
-#endif
-#ifndef S_IROTH
-#define S_IROTH 00004           /* read permission: other */
-#endif
-#ifndef S_IWOTH
-#define S_IWOTH 00002           /* write permission: other */
-#endif
-#ifndef S_IXOTH
-#define S_IXOTH 00001           /* execute permission: other */
-#endif
-
-/* For sys_adminlog(). */
-#ifndef LOG_EMERG
-#define LOG_EMERG       0       /* system is unusable */
-#endif
-
-#ifndef LOG_ALERT
-#define LOG_ALERT       1       /* action must be taken immediately */
-#endif
-
-#ifndef LOG_CRIT
-#define LOG_CRIT        2       /* critical conditions */
-#endif
-
-#ifndef LOG_ERR
-#define LOG_ERR         3       /* error conditions */
-#endif
-
-#ifndef LOG_WARNING
-#define LOG_WARNING     4       /* warning conditions */
-#endif
-
-#ifndef LOG_NOTICE
-#define LOG_NOTICE      5       /* normal but significant condition */
-#endif
-
-#ifndef LOG_INFO
-#define LOG_INFO        6       /* informational */
-#endif
-
-#ifndef LOG_DEBUG
-#define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
 extern int DEBUGLEVEL;
@@ -629,25 +485,6 @@ time_t timegm(struct tm *tm);
 
 #if defined(VALGRIND)
 #define strlen(x) valgrind_strlen(x)
-#endif
-
-/*
- * Veritas File System.  Often in addition to native.
- * Quotas different.
- */
-#if defined(HAVE_SYS_FS_VX_QUOTA_H)
-#define VXFS_QUOTA
-#endif
-
-#if HAVE_SYS_ATTRIBUTES_H
-#include <sys/attributes.h>
-#endif
-
-/* mutually exclusive (SuSE 8.2) */
-#if HAVE_ATTR_XATTR_H
-#include <attr/xattr.h>
-#elif HAVE_SYS_XATTR_H
-#include <sys/xattr.h>
 #endif
 
 #define TALLOC_ABORT(reason) smb_panic(reason)

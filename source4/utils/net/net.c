@@ -42,6 +42,7 @@
 /*****************************************************/
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 
 /*
   run a function from a function table. If not found then

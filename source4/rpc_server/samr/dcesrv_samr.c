@@ -1054,7 +1054,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 } while (0)
 
 #define SET_LHOURS(msg, field, attr) do { \
-	if (samdb_msg_add_logon_hours(a_state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if (samdb_msg_add_logon_hours(a_state->sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
 		return NT_STATUS_NO_MEMORY; \
 	} \
 } while (0)

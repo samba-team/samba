@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 /*
   close the socket and shutdown a server_context

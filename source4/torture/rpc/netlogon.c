@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "auth/auth.h"
 
 
 static const char *machine_password;
