@@ -422,7 +422,6 @@ void msrpcd_process(int c, msrpc_pipes_struct *p)
     fstrcpy(remote_machine, p->name);
     fstrcpy(local_machine, global_myname);
     local_machine[15] = 0;
-    strlower(remote_machine);
     strlower(local_machine);
 
     DEBUG(2, ("msrpc_process: client_name: %s my_name: %s\n",
