@@ -126,7 +126,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
  * provide the equivalent of pcap_printername_ok() for SVID/XPG4 conforming
  * systems.
  */
-int sysv_printername_ok(char *name)
+int sysv_printername_ok(const char *name)
 {
 	printer_t *tmp;
 

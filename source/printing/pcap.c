@@ -241,12 +241,9 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 Scan printcap file pszPrintcapname for a printer called pszPrintername. 
 Return True if found, else False. Returns False on error, too, after logging 
 the error at level 0. For generality, the printcap name may be passed - if
-passed as NULL, the configuration will be queried for the name. pszPrintername
-must be in DOS codepage.
-The xxx_printername_ok functions need fixing to understand they are being
-given a DOS codepage. FIXME !! JRA.
+passed as NULL, the configuration will be queried for the name. 
 ***************************************************************************/
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
+BOOL pcap_printername_ok(const char *pszPrintername, const char *pszPrintcapname)
 {
   char *line=NULL;
   char *psz;
@@ -305,8 +302,6 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 
 	  if (strequal(p,pszPrintername))
 	    {
-	      /* normalise the case */
-	      pstrcpy(pszPrintername,p);
 	      SAFE_FREE(line);
 	      x_fclose(pfile);
 	      return(True);	      

@@ -2081,6 +2081,8 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	time_t u_logout;
 	NTTIME nt_logout;
 
+	uint32 account_policy_temp;
+
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
@@ -2098,12 +2100,22 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	
 	switch (q_u->switch_value) {
 		case 0x01:
-			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
-			account_policy_get(AP_PASSWORD_HISTORY, &pass_hist);
-			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &flag);
-			account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&u_expire);
-			account_policy_get(AP_MIN_PASSWORD_AGE, (int *)&u_min_age);
+			
+			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			min_pass_len = account_policy_temp;
 
+			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
+			pass_hist = account_policy_temp;
+
+			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			flag = account_policy_temp;
+
+			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			u_expire = account_policy_temp;
+
+			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			u_min_age = account_policy_temp;
+			
 			unix_to_nt_time_abs(&nt_expire, u_expire);
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
@@ -2149,10 +2161,15 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info7(&ctr->info.inf7);
 			break;
 		case 0x0c:
-			account_policy_get(AP_LOCK_ACCOUNT_DURATION, (int *)&u_lock_duration);
-			account_policy_get(AP_RESET_COUNT_TIME, (int *)&u_reset_time);
-			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &lockout);
-	
+			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			u_lock_duration = account_policy_temp;
+
+			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
+			u_reset_time = account_policy_temp;
+
+			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			lockout = account_policy_temp;
+
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
 			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
 	

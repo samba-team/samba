@@ -230,7 +230,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-			if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		if (!(str_list_copy(&search_attrs, attrs)))
 		{
 			rc = LDAP_NO_MEMORY;
 			goto done;
@@ -453,7 +453,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
-		if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		if (!(str_list_copy(&search_attrs, attrs)))
 		{
 			rc = LDAP_NO_MEMORY;
 			goto done;

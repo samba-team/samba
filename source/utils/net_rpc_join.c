@@ -80,8 +80,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	fstring domain;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
-	const char *acct_name;
-	
+	char *acct_name;
+	const char *const_acct_name;
+
 	/* Connect to remote machine */
 
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
@@ -162,7 +163,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
 						  &domain_pol, flags,
-						  1, &acct_name, &num_rids,
+						  1, &const_acct_name, 
+						  &num_rids,
 						  &user_rids, &name_types),
 			    ("error looking up rid for user %s: %s\n",
 			     acct_name, nt_errstr(result)));
