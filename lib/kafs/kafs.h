@@ -15,6 +15,8 @@
 #define VIOCSETTOK _VICEIOCTL(3)
 #define VIOCUNLOG  _VICEIOCTL(9)
 
+#define VIOC_FILE_CELL_NAME _VICEIOCTL(30)
+
 struct ViceIoctl {
   caddr_t in, out;
   short in_size;
