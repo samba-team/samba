@@ -1957,7 +1957,7 @@ with_ads_support=yes
 AC_MSG_CHECKING([whether to use Active Directory])
 
 AC_ARG_WITH(ads,
-[   --with-ads  Active Directory support (default yes)],
+[  --with-ads              Active Directory support (default yes)],
 [ case "$withval" in
     no)
 	with_ads_support=no
@@ -2057,7 +2057,7 @@ with_ldap_support=yes
 AC_MSG_CHECKING([whether to use LDAP])
 
 AC_ARG_WITH(ldap,
-[   --with-ldap  LDAP support (default yes)],
+[  --with-ldap             LDAP support (default yes)],
 [ case "$withval" in
     no)
 	with_ldap_support=no
@@ -2239,7 +2239,7 @@ fi
 # check for a LDAP password database configuration backwards compatibility
 AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
 AC_ARG_WITH(ldapsam,
-[  --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)],
+[  --with-ldapsam          Include LDAP SAM 2.2 compatible configuration (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -2756,7 +2756,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 with_sendfile_support=yes
 AC_MSG_CHECKING(whether to check to support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support      Check for sendfile support (default=yes)],
+[  --with-sendfile-support Check for sendfile support (default=yes)],
 [ case "$withval" in
   yes)
 
