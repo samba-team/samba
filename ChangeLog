@@ -1,5 +1,7 @@
 Wed Jul 16 03:37:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/principal.c (krb5_free_principal): Check for NULL.
+
 	* lib/krb5/send_to_kdc.c: Check for NULL return from
  	gethostbyname.
 
