@@ -74,6 +74,8 @@ rewrite the lookup of KDCs to handle kerberos-<n> and not do any DNS
 requests if the information can be found locally.  this requires stop
 using krb5_get_krbhst.
 
+pay attention to priority and weight from SRV rr
+
 the replay cache is, in its current state, not very useful
 
 always generates a new subkey in an authenticator
