@@ -203,13 +203,24 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname)
 
 	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
 
-	if (*fname == UCS2_CHAR('.')) return NT_STATUS_UNSUCCESSFUL;
+	/* . and .. are valid names. */
+	if (strcmp_wa(fname, ".")==0 || strcmp_wa(fname, "..")==0)
+		return NT_STATUS_OK;
+
+	/* Name cannot start with '.' */
+	if (*fname == UCS2_CHAR('.'))
+		return NT_STATUS_UNSUCCESSFUL;
 	
 	ret = has_valid_chars(fname);
 	if (NT_STATUS_IS_ERR(ret)) return ret;
 
 	str = strdup_w(fname);
 	p = strchr_w(str, UCS2_CHAR('.'));
+	if (p && p[1] == UCS2_CHAR(0)) {
+		/* Name cannot end in '.' */
+		SAFE_FREE(str);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 	if (p) *p = 0;
 	strupper_w(str);
 	p = &(str[1]);
@@ -730,6 +741,9 @@ static BOOL name_map(char *OutName, BOOL need83, BOOL cache83)
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		return False;
 	}
+
+	if( !need83 && NT_STATUS_IS_ERR(is_valid_name(OutName_ucs2)))
+		need83 = True;
 
 	/* check if it's already in 8.3 format */
 	if (need83 && !NT_STATUS_IS_OK(is_8_3_w(OutName_ucs2))) {
