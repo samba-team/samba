@@ -219,6 +219,8 @@ typedef enum krb5_keytype {
     KEYTYPE_NULL	= 0,
     KEYTYPE_DES		= 1,
     KEYTYPE_DES3	= 7,
+    KEYTYPE_AES128	= 17,
+    KEYTYPE_AES256	= 18,
     KEYTYPE_ARCFOUR	= 23
 } krb5_keytype;
 
