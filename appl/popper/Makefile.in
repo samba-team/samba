@@ -24,19 +24,21 @@ PROG_BIN	=
 PROG_LIBEXEC	= popper
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
-SOURCES = pop_dele.c pop_dropcopy.c pop_dropinfo.c \
-			pop_get_command.c pop_get_subcommand.c pop_init.c \
-			pop_last.c pop_list.c pop_log.c pop_lower.c \
-			pop_msg.c pop_parse.c pop_pass.c pop_quit.c \
-			pop_rset.c pop_send.c pop_stat.c pop_updt.c \
-			pop_user.c pop_xtnd.c pop_xmit.c pop_uidl.c popper.c
+SOURCES = \
+	pop_dele.c pop_dropcopy.c pop_dropinfo.c \
+	pop_get_command.c pop_get_subcommand.c pop_init.c \
+	pop_last.c pop_list.c pop_log.c \
+	pop_msg.c pop_parse.c pop_pass.c pop_quit.c \
+	pop_rset.c pop_send.c pop_stat.c pop_updt.c \
+	pop_user.c pop_xtnd.c pop_xmit.c pop_uidl.c popper.c
 
-OBJECTS = pop_dele.o pop_dropcopy.o pop_dropinfo.o \
-			pop_get_command.o pop_get_subcommand.o pop_init.o \
-			pop_last.o pop_list.o pop_log.o pop_lower.o \
-			pop_msg.o pop_parse.o pop_pass.o pop_quit.o \
-			pop_rset.o pop_send.o pop_stat.o pop_updt.o \
-			pop_user.o pop_xtnd.o pop_xmit.o pop_uidl.o popper.o
+OBJECTS = \
+	pop_dele.o pop_dropcopy.o pop_dropinfo.o \
+	pop_get_command.o pop_get_subcommand.o pop_init.o \
+	pop_last.o pop_list.o pop_log.o pop_msg.o \
+	pop_parse.o pop_pass.o pop_quit.o pop_rset.o \
+	pop_send.o pop_stat.o pop_updt.o pop_user.o \
+	pop_xtnd.o pop_xmit.o pop_uidl.o popper.o
 
 all: $(PROGS)
 
