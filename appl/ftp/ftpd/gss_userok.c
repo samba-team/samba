@@ -88,7 +88,8 @@ gss_userok(void *app_data, char *username)
 	       goto fail;
 	   }
 
-           asprintf (&ticketfile, "%s%u", KRB5_DEFAULT_CCROOT, pw->pw_uid);
+           asprintf (&ticketfile, "%s%u", KRB5_DEFAULT_CCROOT,
+		     (unsigned)pw->pw_uid);
         
            ret = krb5_cc_resolve(gssapi_krb5_context, ticketfile, &ccache);
            if (ret)
