@@ -276,6 +276,7 @@ typedef struct
 	BOOL bUseSpnego;
 	BOOL bClientLanManAuth;
 	BOOL bClientNTLMv2Auth;
+	BOOL bClientPlaintextAuth;
 	BOOL bClientUseSpnego;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
@@ -567,6 +568,7 @@ static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
+static void set_allowed_client_auth(void);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
@@ -778,6 +780,7 @@ static struct parm_struct parm_table[] = {
 	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, &Globals.bClientNTLMv2Auth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client lanman auth", P_BOOL, P_GLOBAL, &Globals.bClientLanManAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client plaintext auth", P_BOOL, P_GLOBAL, &Globals.bClientPlaintextAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"username", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"user", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_HIDE},
@@ -1386,6 +1389,7 @@ static void init_globals(void)
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
+	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
 	
@@ -1695,6 +1699,7 @@ FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
+FN_GLOBAL_BOOL(lp_client_plaintext_auth, &Globals.bClientPlaintextAuth)
 FN_GLOBAL_BOOL(lp_client_lanman_auth, &Globals.bClientLanManAuth)
 FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &Globals.bClientNTLMv2Auth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
@@ -3821,6 +3826,19 @@ static void set_server_role(void)
 	}
 }
 
+/***********************************************************
+ If we should send plaintext/LANMAN passwords in the clinet
+************************************************************/
+static void set_allowed_client_auth(void)
+{
+	if (Globals.bClientNTLMv2Auth) {
+		Globals.bClientLanManAuth = False;
+	}
+	if (!Globals.bClientLanManAuth) {
+		Globals.bClientPlaintextAuth = False;
+	}
+}
+
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
@@ -3888,6 +3906,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	set_server_role();
 	set_default_server_announce_type();
+	set_allowed_client_auth();
 
 	bLoaded = True;
 
