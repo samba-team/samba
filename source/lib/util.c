@@ -1751,13 +1751,15 @@ BOOL is_myworkgroup(const char *s)
    Win2k => "Windows 2000 5.0"
    NT4   => "Windows NT 4.0" 
    Win9x => "Windows 4.0"
+ Windows 2003 doesn't set the native lan manager string but 
+ they do set the domain to "Windows 2003 5.2" (probably a bug).
 ********************************************************************/
 
 void ra_lanman_string( const char *native_lanman )
 {		 
-	if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
+	if ( strcmp( native_lanman, "Windows 2002 5.1" ) == 0 )
 		set_remote_arch( RA_WINXP );
-	else if ( 0 == strcmp( native_lanman, "Windows .NET 5.2" ) )
+	else if ( strcmp( native_lanman, "Windows Server 2003 5.2" ) == 0 )
 		set_remote_arch( RA_WIN2K3 );
 }
 
@@ -1772,33 +1774,35 @@ void set_remote_arch(enum remote_arch_types type)
 	switch( type ) {
 	case RA_WFWG:
 		fstrcpy(remote_arch, "WfWg");
-		return;
+		break;
 	case RA_OS2:
 		fstrcpy(remote_arch, "OS2");
-		return;
+		break;
 	case RA_WIN95:
 		fstrcpy(remote_arch, "Win95");
-		return;
+		break;
 	case RA_WINNT:
 		fstrcpy(remote_arch, "WinNT");
-		return;
+		break;
 	case RA_WIN2K:
 		fstrcpy(remote_arch, "Win2K");
-		return;
+		break;
 	case RA_WINXP:
 		fstrcpy(remote_arch, "WinXP");
-		return;
+		break;
 	case RA_WIN2K3:
 		fstrcpy(remote_arch, "Win2K3");
-		return;
+		break;
 	case RA_SAMBA:
 		fstrcpy(remote_arch,"Samba");
-		return;
+		break;
 	default:
 		ra_type = RA_UNKNOWN;
 		fstrcpy(remote_arch, "UNKNOWN");
 		break;
 	}
+
+	DEBUG(10,("set_remote_arch: Client arch is \'%s\'\n", remote_arch));
 }
 
 /*******************************************************************
