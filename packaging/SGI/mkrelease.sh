@@ -1,18 +1,44 @@
 #!/bin/sh
 
 # This file goes through all the necessary steps to build a release package.
-# You may specify a OS major version number (4, 5, or 6) to specify which
-# OS release to build. If no version number is given it will default to 6.
+# syntax:
+#     mkrelease.sh [5] [clean] [targets ....]
+#
+# You may specify 5 to build for IRIX 5.3
+#
+# You can specify clean to do a make clean before building. Make clean
+# will also run configure and generate the required Makefile.
+#
+# You can specify which targets to build. If targets are specified, the
+# specified targets will be built but inst packages will not be generated.
 
 doclean=""
 SGI_ABI=-n32
 CC=cc
-export SGI_ABI CC
+
+if [ ! -f ../../source/Makefile ]; then
+  doclean="clean"
+fi
 
 if [ "$1" = "clean" ]; then
   doclean=$1
   shift
+elif [ "$1" = "5" ]; then
+  SGI_ABI=-32
+  shift
 fi
+
+# check again in case they put the args in the wrong order
+
+if [ "$1" = "clean" ]; then
+  doclean=$1
+  shift
+elif [ "$1" = "5" ]; then
+  SGI_ABI=-32
+  shift
+fi
+
+export SGI_ABI CC
 
 if [ "$doclean" = "clean" ]; then
   cd ../../source
@@ -36,14 +62,14 @@ if [ "$doclean" = "clean" ]; then
 fi
 
 cd ../../source
-if [ "$doclean" = "clean" -o ! -f Makefile ]; then
+if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
   chmod +x configure
   chmod +x configure.developer
   chmod +x config.guess
   chmod +x config.status
   chmod +x config.sub
-  ./configure --prefix=/usr --mandir=/usr/src/man
+  ./configure --prefix=/usr --mandir=/usr/src/man --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then
     echo "Error $errstat creating Makefile\n";
@@ -56,14 +82,7 @@ fi
 #
 echo Making binaries
 
-if [ "$1" = "5" ]; then
-  myflags="CFLAGS=-O -g3"
-  shift
-else
-  myflags="CFLAGS=-O -g3"
-fi
-
-make "$myflags" $*
+make "CFLAGS=-O -g3" $*
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
@@ -71,6 +90,13 @@ if [ $errstat -ne 0 ]; then
 fi
 
 cd ../packaging/SGI
+
+#
+# Don't generate packages if targets were specified
+#
+if [ "$1" != "" ]; then
+  exit 0;
+fi
 
 # generate the packages
 #
