@@ -15,7 +15,7 @@
 [ 
 	uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
 	helpstring("Object Exporter ID Resolver"),
-	endpoints(epmapper, TCP-135),
+	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]"),
 	pointer_default(unique)
 ]
 interface IOXIDResolver

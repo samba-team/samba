@@ -6,7 +6,7 @@
 
 [ uuid(338cd001-2244-31f1-aaaa-900038001003),
   version(1.0),
-  endpoints(winreg,TCP-0),
+  endpoint("ncacn_np:[\\pipe\\winreg]","ncacn_ip_tcp:"),
   pointer_default(unique),
   helpstring("Remote Registry Service")
 ] interface winreg

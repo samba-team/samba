@@ -1482,20 +1482,18 @@ sub FunctionTable($)
 	}
 	pidl "\t{ NULL, 0, NULL, NULL }\n};\n\n";
 
-	my $endpoints;
-
-	if (! defined $interface->{PROPERTIES}->{endpoints}) {
-		$interface->{PROPERTIES}->{endpoints} = $interface->{NAME};
+	# If no endpoint is set, default to the interface name as a named pipe
+	if (! defined $interface->{PROPERTIES}->{endpoint}) {
+		$interface->{PROPERTIES}->{endpoint} = "\"ncacn_np:[\\\\pipe\\\\" . $interface->{NAME} . "]\"";
 	}
 
-	my @e = split / /, $interface->{PROPERTIES}->{endpoints};
+	my @e = split / /, $interface->{PROPERTIES}->{endpoint};
 	my $endpoint_count = $#e + 1;
 
-	pidl "static const char * const $interface->{NAME}\_endpoint_strings[] = {\n\t";
-	for (my $i=0; $i < $#e; $i++) {
-		pidl "\"$e[$i]\", ";
+	pidl "static const char * const $interface->{NAME}\_endpoint_strings[] = {\n";
+	foreach my $ep (@e) {
+		pidl "\t$ep, \n";
 	}
-	pidl "\"$e[$#e]\"\n";
 	pidl "};\n\n";
 
 	pidl "static const struct dcerpc_endpoint_list $interface->{NAME}\_endpoints = {\n";
