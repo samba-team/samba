@@ -112,6 +112,10 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->capabilities & CAP_STATUS32) {
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		}
+		if (cli->use_spnego) {
+			/* once we have NTLMSSP we can enable this unconditionally */
+			flags2 |= FLAGS2_EXTENDED_SECURITY;
+		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
@@ -215,15 +219,17 @@ void cli_shutdown(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
+	data_blob_free(cli->secblob);
+
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);
 
 #ifdef WITH_SSL
-    if (cli->fd != -1)
-      sslutil_disconnect(cli->fd);
+	if (cli->fd != -1)
+		sslutil_disconnect(cli->fd);
 #endif /* WITH_SSL */
 	if (cli->fd != -1) 
-      close(cli->fd);
+		close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }
 

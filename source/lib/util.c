@@ -1893,6 +1893,32 @@ BOOL unix_wild_match(char *pattern, char *string)
 	return unix_do_match(p2, s2) == 0;	
 }
 
+/*******************************************************************
+ construct a data blob, must be freed with data_blob_free()
+*******************************************************************/
+DATA_BLOB data_blob(void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!p) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	ret.data = memdup(p, length);
+	ret.length = length;
+	return ret;
+}
+
+/*******************************************************************
+free a data blob
+*******************************************************************/
+void data_blob_free(DATA_BLOB d)
+{
+	SAFE_FREE(d.data);
+}
+
+
 #ifdef __INSURE__
 
 /*******************************************************************

@@ -1230,6 +1230,7 @@ char *strdup(char *s);
    
 #define FLAGS2_LONG_PATH_COMPONENTS   0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_EXTENDED_SECURITY      0x0800 
 #define FLAGS2_DFS_PATHNAMES          0x1000
 #define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
@@ -1551,6 +1552,13 @@ typedef struct user_struct
 
 	int session_id; /* used by utmp and pam session code */
 } user_struct;
+
+/* used to hold an arbitrary blob of data */
+typedef struct {
+	uint8 *data;
+	size_t length;
+} DATA_BLOB;
+
 
 #include "ntdomain.h"
 

@@ -128,8 +128,8 @@ static int reply_lanman2(char *outbuf)
 	  if (!cli) {
 		  generate_next_challenge(cryptkey);
 	  } else {
-		  memcpy(cryptkey, cli->cryptkey, 8);
-		  set_challenge(cli->cryptkey);
+		  memcpy(cryptkey, cli->secblob.data, 8);
+		  set_challenge(cryptkey);
 	  }
   }
 
@@ -191,8 +191,8 @@ static int reply_nt1(char *outbuf)
 		if (!cli) {
 			generate_next_challenge(cryptkey);
 		} else {
-			memcpy(cryptkey, cli->cryptkey, 8);
-			set_challenge(cli->cryptkey);
+			memcpy(cryptkey, cli->secblob.data, 8);
+			set_challenge(cryptkey);
 		}
 	}
 

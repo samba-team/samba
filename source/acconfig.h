@@ -180,3 +180,4 @@
 #undef HAVE_STPCPY
 #undef I18N_SWAT
 #undef I18N_DEFAULT_PREF_LANG
+#undef HAVE_KRB5

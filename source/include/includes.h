@@ -661,7 +661,7 @@ extern int errno;
 
 #include "msdfs.h"
 
-#include "profile.h"
+#include "smbprofile.h"
 
 #include "mapping.h"
 
@@ -671,6 +671,8 @@ extern int errno;
 #include "auth.h"
 
 #include "session.h"
+
+#include "asn1.h"
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256

@@ -92,7 +92,7 @@ struct cli_state {
 	struct in_addr dest_ip;
 
 	struct pwd_info pwd;
-	unsigned char cryptkey[8];
+	DATA_BLOB secblob; /* cryptkey or negTokenInit */
 	uint32 sesskey;
 	int serverzone;
 	uint32 servertime;
@@ -128,6 +128,7 @@ struct cli_state {
 	uint16 max_recv_frag;
 	vuser_key key;
 	uint32 ntlmssp_flags;
+	BOOL use_spnego; /* until we do NTLMSSP we need to make this optional */
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
