@@ -151,7 +151,8 @@ static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	/* resolve the cifs name to a posix name */
-	status = pvfs_resolve_name(pvfs, req, cp->in.path, 0, &name);
+	status = pvfs_resolve_name(pvfs, req, cp->in.path, 
+				   PVFS_RESOLVE_NO_WILDCARD, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

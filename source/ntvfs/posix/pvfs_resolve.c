@@ -116,7 +116,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		/* check if this component exists as-is */
 		if (stat(test_name, &name->st) == 0) {
 			if (i<num_components-1 && !S_ISDIR(name->st.st_mode)) {
-				return NT_STATUS_NOT_A_DIRECTORY;
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
 			talloc_free(partial_name);
 			partial_name = test_name;
@@ -193,7 +193,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       uint_t flags, struct pvfs_filename *name)
 {
 	char *ret, *p, *p_start;
-	size_t len;
 
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
@@ -218,18 +217,10 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	p = ret + strlen(pvfs->base_directory) + 1;
 
-	len = strlen(cifs_name);
-	if (len>0 && p[len-1] == '\\') {
-		p[len-1] = 0;
-		len--;
-	}
-	if (len>1 && p[len-1] == '.' && p[len-2] == '\\') {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
 	/* now do an in-place conversion of '\' to '/', checking
 	   for legal characters */
 	p_start = p;
+
 	while (*p) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(p, &c_size);
@@ -240,7 +231,11 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 				   of a name */
 				return NT_STATUS_ILLEGAL_CHARACTER;
 			}
-			*p = '/';
+			if (p > p_start && p[1] == 0) {
+				*p = 0;
+			} else {
+				*p = '/';
+			}
 			break;
 		case ':':
 			if (!(flags & PVFS_RESOLVE_STREAMS)) {
@@ -258,7 +253,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '?':
 		case '"':
 			if (flags & PVFS_RESOLVE_NO_WILDCARD) {
-				return NT_STATUS_ILLEGAL_CHARACTER;
+				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			name->has_wildcard = True;
 			break;
@@ -297,30 +292,26 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
   reduce a name that contains .. components or repeated \ separators
   return NULL if it can't be reduced
 */
-const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
+static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t flags)
 {
 	codepoint_t c;
 	size_t c_size, len;
-	int i, num_components;
+	int i, num_components, err_count;
 	char **components;
 	char *p, *s, *ret;
 
-	s = talloc_strdup(mem_ctx, fname);
-	if (s == NULL) return NULL;
+	s = talloc_strdup(mem_ctx, *fname);
+	if (s == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (num_components=1, p=s; *p; p += c_size) {
 		c = next_codepoint(p, &c_size);
 		if (c == '\\') num_components++;
 	}
-	if (num_components < 2) {
-		talloc_free(s);
-		return NULL;
-	}
 
 	components = talloc_array_p(s, char *, num_components+1);
 	if (components == NULL) {
 		talloc_free(s);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	components[0] = s;
@@ -333,16 +324,40 @@ const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
 	}
 	components[i+1] = NULL;
 
+	/*
+	  rather bizarre!
+
+	  '.' components are not allowed, but the rules for what error
+	  code to give don't seem to make sense. This is a close
+	  approximation.
+	*/
+	for (err_count=i=0;components[i];i++) {
+		if (strcmp(components[i], "") == 0) {
+			continue;
+		}
+		if (strcmp(components[i], ".") == 0 || err_count) {
+			err_count++;
+		}
+	}
+	if (err_count) {
+		if (!(flags & PVFS_RESOLVE_NO_WILDCARD)) err_count--;
+
+		if (err_count==1) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		} else {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+	}
+
 	/* remove any null components */
 	for (i=0;components[i];i++) {
-		if (strcmp(components[i], "") == 0 ||
-		    strcmp(components[i], ".") == 0) {
+		if (strcmp(components[i], "") == 0) {
 			memmove(&components[i], &components[i+1], 
 				sizeof(char *)*(num_components-i));
 			i--;
 		}
 		if (strcmp(components[i], "..") == 0) {
-			if (i < 1) return NULL;
+			if (i < 1) return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			memmove(&components[i-1], &components[i+1], 
 				sizeof(char *)*(num_components-(i+1)));
 			i -= 2;
@@ -351,7 +366,8 @@ const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
 
 	if (components[0] == NULL) {
 		talloc_free(s);
-		return talloc_strdup(mem_ctx, "\\");
+		*fname = talloc_strdup(mem_ctx, "\\");
+		return NT_STATUS_OK;
 	}
 
 	for (len=i=0;components[i];i++) {
@@ -362,7 +378,7 @@ const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
 	ret = talloc(mem_ctx, len+1);
 	if (ret == NULL) {
 		talloc_free(s);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (len=0,i=0;components[i];i++) {
@@ -374,8 +390,10 @@ const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
 	ret[len] = 0;
 
 	talloc_free(s);
+
+	*fname = ret;
 	
-	return ret;
+	return NT_STATUS_OK;
 }
 
 
@@ -408,10 +426,11 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
 		/* it might contain .. components which need to be reduced */
-		cifs_name = pvfs_reduce_name(*name, cifs_name);
-		if (cifs_name) {
-			status = pvfs_unix_path(pvfs, cifs_name, flags, *name);
+		status = pvfs_reduce_name(*name, &cifs_name, flags);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
+		status = pvfs_unix_path(pvfs, cifs_name, flags, *name);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
