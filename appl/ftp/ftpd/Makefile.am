@@ -43,6 +43,8 @@ gssapi.c:
 
 CLEANFILES = security.c security.h krb4.c gssapi.c ftpcmd.c
 
+man_MANS = ftpd.8 ftpusers.5
+
 LDADD = ../common/libcommon.a \
 	$(LIB_kafs) \
 	$(LIB_gssapi) \

@@ -51,6 +51,8 @@ EXTRA_kxd_SOURCES = writeauth.c
 
 EXTRA_DIST = rxterm.in rxtelnet.in tenletxr.in
 
+man_MANS = kx.1 rxtelnet.1 rxterm.1 tenletxr.1 kxd.8
+
 rxterm: rxterm.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@
 	chmod +x $@
