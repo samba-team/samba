@@ -748,6 +748,20 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 			      int *returned, PORT_INFO_CTR *ctr);
 uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 			      uint32 level, PRINTER_INFO_CTR *ctr);
+uint32 cli_spoolss_getprinterdriver (
+	struct cli_state 	*cli, 
+	POLICY_HND 		*pol, 
+	uint32 			level,
+	char* 			env,
+	PRINTER_DRIVER_CTR  	*ctr
+);
+uint32 cli_spoolss_enumprinterdrivers (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	char* 			env,
+	uint32			*returned,
+	PRINTER_DRIVER_CTR  	*ctr
+);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
@@ -3256,7 +3270,7 @@ BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *
 BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth);
-BOOL new_spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 const char *name,
                                 const char *environment,
