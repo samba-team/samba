@@ -2763,7 +2763,11 @@ struct
 } api_fd_commands [] =
   {
     { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
+#ifdef NTDOMAIN
+    { "TransactNmPipe",	"lsarpc",	0x26,	api_ntLsarpcTNP },
+#else
     { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
+#endif
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
   };
 
