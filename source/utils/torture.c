@@ -92,8 +92,8 @@ static BOOL open_connection(struct cli_state *c)
 
 	ZERO_STRUCTP(c);
 
-	make_nmb_name(&calling, myname, 0x0, "");
-	make_nmb_name(&called , host, 0x20, "");
+	make_nmb_name(&calling, myname, 0x0);
+	make_nmb_name(&called , host, 0x20);
 
 	ip = ipzero;
 
@@ -168,7 +168,7 @@ static BOOL check_error(struct cli_state *c,
 
 static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(c, fnum, offset, len, -1)) {
+	while (!cli_lock(c, fnum, offset, len, -1, F_WRLCK)) {
 		if (!check_error(c, ERRDOS, ERRlock, 0)) return False;
 	}
 	return True;
@@ -242,7 +242,7 @@ static BOOL rw_torture(struct cli_state *c)
 			printf("unlink failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1)) {
+		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1, F_WRLCK)) {
 			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
@@ -436,13 +436,13 @@ static void run_locktest1(int dummy)
 		return;
 	}
 
-	if (!cli_lock(&cli1, fnum1, 0, 4, 0)) {
+	if (!cli_lock(&cli1, fnum1, 0, 4, 0, F_WRLCK)) {
 		printf("lock1 failed (%s)\n", cli_errstr(&cli1));
 		return;
 	}
 
 
-	if (cli_lock(&cli2, fnum3, 0, 4, 0)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 0, F_WRLCK)) {
 		printf("lock2 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -452,7 +452,7 @@ static void run_locktest1(int dummy)
 
 	printf("Testing lock timeouts\n");
 	t1 = time(NULL);
-	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000, F_WRLCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -469,7 +469,7 @@ static void run_locktest1(int dummy)
 		return;
 	}
 
-	if (cli_lock(&cli2, fnum3, 0, 4, 0)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 0, F_WRLCK)) {
 		printf("lock4 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -550,12 +550,12 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 1);
 
-	if (!cli_lock(&cli, fnum1, 0, 4, 0)) {
+	if (!cli_lock(&cli, fnum1, 0, 4, 0, F_WRLCK)) {
 		printf("lock1 failed (%s)\n", cli_errstr(&cli));
 		return;
 	}
 
-	if (cli_lock(&cli, fnum2, 0, 4, 0)) {
+	if (cli_lock(&cli, fnum2, 0, 4, 0, F_WRLCK)) {
 		printf("lock2 succeeded! This is a locking bug\n");
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
@@ -563,11 +563,11 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 2);
 
-	if (cli_unlock(&cli, fnum1, 0, 4, 0)) {
+	if (cli_unlock(&cli, fnum1, 0, 4, 0, F_WRLCK)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
 	}
 
-	if (cli_lock(&cli, fnum3, 0, 4, 0)) {
+	if (cli_lock(&cli, fnum3, 0, 4, 0, F_WRLCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
@@ -633,14 +633,14 @@ static void run_locktest3(int dummy)
 
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
-		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0)) {
+		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
 			printf("lock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
 			return;
 		}
 
-		if (!cli_lock(&cli2, fnum2, offset-2, 1, 0)) {
+		if (!cli_lock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
 			printf("lock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
@@ -651,22 +651,22 @@ static void run_locktest3(int dummy)
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
 
-		if (cli_lock(&cli1, fnum1, offset-2, 1, 0)) {
+		if (cli_lock(&cli1, fnum1, offset-2, 1, 0, F_WRLCK)) {
 			printf("error: lock1 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli2, fnum2, offset-1, 1, 0)) {
+		if (cli_lock(&cli2, fnum2, offset-1, 1, 0, F_WRLCK)) {
 			printf("error: lock2 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli1, fnum1, offset-1, 1, 0)) {
+		if (cli_lock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
 			printf("error: lock3 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli2, fnum2, offset-2, 1, 0)) {
+		if (cli_lock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
 			printf("error: lock4 %d succeeded!\n", i);
 			return;
 		}
@@ -675,14 +675,14 @@ static void run_locktest3(int dummy)
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
 
-		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0)) {
+		if (!cli_unlock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
 			printf("unlock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
 			return;
 		}
 
-		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0)) {
+		if (!cli_unlock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
 			printf("unlock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
@@ -709,6 +709,203 @@ static void run_locktest3(int dummy)
 	printf("finished locktest3\n");
 }
 
+
+/*
+  looks at overlapping locks
+*/
+static void run_locktest4(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\lockt4.lck";
+	int fnum1, fnum2;
+	BOOL ret;
+	char buf[1000];
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting locktest4\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum2 = cli_open(&cli2, fname, O_RDWR, DENY_NONE);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (cli_write(&cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
+		printf("Failed to create file\n");
+		goto fail;
+	}
+
+	      cli_lock(&cli1, fnum1, 0, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 2, 4, 0, F_WRLCK);
+	printf("the same process %s set overlapping write locks\n", ret?"can":"cannot");
+	    
+	      cli_lock(&cli1, fnum1, 10, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 12, 4, 0, F_RDLCK);
+	printf("the same process %s set overlapping read locks\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 20, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli2, fnum2, 22, 4, 0, F_WRLCK);
+	printf("a different connection %s set overlapping write locks\n", ret?"can":"cannot");
+	    
+	      cli_lock(&cli1, fnum1, 30, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli2, fnum2, 32, 4, 0, F_RDLCK);
+	printf("a different connection %s set overlapping read locks\n", ret?"can":"cannot");
+	
+	cli_setpid(&cli1, 1);
+	      cli_lock(&cli1, fnum1, 40, 4, 0, F_WRLCK);
+	cli_setpid(&cli1, 2);
+	ret = cli_lock(&cli1, fnum1, 42, 4, 0, F_WRLCK);
+	printf("a different pid %s set overlapping write locks\n", ret?"can":"cannot");
+	    
+	cli_setpid(&cli1, 1);
+	      cli_lock(&cli1, fnum1, 50, 4, 0, F_RDLCK);
+	cli_setpid(&cli1, 2);
+	ret = cli_lock(&cli1, fnum1, 52, 4, 0, F_RDLCK);
+	printf("a different pid %s set overlapping read locks\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 60, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 60, 4, 0, F_RDLCK);
+	printf("the same process %s set the same read lock twice\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 70, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 70, 4, 0, F_WRLCK);
+	printf("the same process %s set the same write lock twice\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 80, 4, 0, F_RDLCK);
+	ret = cli_lock(&cli1, fnum1, 80, 4, 0, F_WRLCK);
+	printf("the same process %s override a read lock with a write lock\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 90, 4, 0, F_WRLCK);
+	ret = cli_lock(&cli1, fnum1, 90, 4, 0, F_RDLCK);
+	printf("the same process %s override a write lock with a read lock\n", ret?"can":"cannot");
+
+	cli_setpid(&cli1, 1);
+	      cli_lock(&cli1, fnum1, 100, 4, 0, F_WRLCK);
+	cli_setpid(&cli1, 2);
+	ret = cli_lock(&cli1, fnum1, 100, 4, 0, F_RDLCK);
+	printf("a different pid %s override a write lock with a read lock\n", ret?"can":"cannot");
+
+	      cli_lock(&cli1, fnum1, 110, 4, 0, F_RDLCK);
+	      cli_lock(&cli1, fnum1, 112, 4, 0, F_RDLCK);
+        ret = cli_unlock(&cli1, fnum1, 110, 6, 0, F_RDLCK);
+	printf("the same process %s coalesce read locks\n", ret?"can":"cannot");
+
+
+	cli_lock(&cli1, fnum1, 120, 4, 0, F_WRLCK);
+        ret = (cli_read(&cli2, fnum2, buf, 120, 4) == 4);
+	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
+
+	cli_lock(&cli1, fnum1, 130, 4, 0, F_RDLCK);
+        ret = (cli_write(&cli2, fnum2, 0, buf, 130, 4) == 4);
+	printf("this server %s strict read locking\n", ret?"doesn't do":"does");
+
+
+
+ fail:
+	cli_close(&cli1, fnum1);
+	cli_close(&cli1, fnum2);
+	cli_unlink(&cli1, fname);
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("finished locktest4\n");
+}
+
+
+/*
+  this produces a matrix of deny mode behaviour
+ */
+static void run_denytest(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	int fnum1, fnum2;
+	int f, d1, d2, o1, o2, x=0;
+	char *fnames[] = {"denytest.exe", "denytest.dat", NULL};
+	struct {
+		int v;
+		char *name; 
+	} deny_modes[] = {
+		{DENY_DOS, "DENY_DOS"},
+		{DENY_ALL, "DENY_ALL"},
+		{DENY_WRITE, "DENY_WRITE"},
+		{DENY_READ, "DENY_READ"},
+		{DENY_NONE, "DENY_NONE"},
+		{DENY_FCB, "DENY_FCB"},
+		{-1, NULL}};
+	struct {
+		int v;
+		char *name; 
+	} open_modes[] = {
+		{O_RDWR, "O_RDWR"},
+		{O_RDONLY, "O_RDONLY"},
+		{O_WRONLY, "O_WRONLY"},
+		{-1, NULL}};
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting denytest\n");
+
+	for (f=0;fnames[f];f++) {
+		cli_unlink(&cli1, fnames[f]);
+
+		fnum1 = cli_open(&cli1, fnames[f], O_RDWR|O_CREAT, DENY_NONE);
+		cli_write(&cli1, fnum1, 0, fnames[f], 0, strlen(fnames[f]));
+		cli_close(&cli1, fnum1);
+
+		for (d1=0;deny_modes[d1].name;d1++) 
+		for (o1=0;open_modes[o1].name;o1++) 
+		for (d2=0;deny_modes[d2].name;d2++) 
+		for (o2=0;open_modes[o2].name;o2++) {
+			fnum1 = cli_open(&cli1, fnames[f], 
+					 open_modes[o1].v, 
+					 deny_modes[d1].v);
+			fnum2 = cli_open(&cli2, fnames[f], 
+					 open_modes[o2].v, 
+					 deny_modes[d2].v);
+
+			printf("%s %8s %10s    %8s %10s     ",
+			       fnames[f],
+			       open_modes[o1].name,
+			       deny_modes[d1].name,
+			       open_modes[o2].name,
+			       deny_modes[d2].name);
+
+			if (fnum1 == -1) {
+				printf("X");
+			} else if (fnum2 == -1) {
+				printf("-");
+			} else {
+				if (cli_read(&cli2, fnum2, (void *)&x, 0, 1) == 1) {
+					printf("R");
+				}
+				if (cli_write(&cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
+					printf("W");
+				}
+			}
+
+			printf("\n");
+			cli_close(&cli1, fnum1);
+			cli_close(&cli2, fnum2);
+		}
+		
+		cli_unlink(&cli1, fnames[f]);
+	}
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+	
+	printf("finshed denytest\n");
+}
 
 /*
 test whether fnums and tids open on one VC are available on another (a major
@@ -1101,10 +1298,9 @@ static void run_trans2test(int dummy)
  */
 static void run_oplock(int dummy)
 {
-	static struct cli_state cli1, cli2;
+	static struct cli_state cli1;
 	char *fname = "\\lockt1.lck";
-	char *fname2 = "\\lockt2.lck";
-	int fnum1, fnum2;
+	int fnum1;
 
 	printf("starting oplock test\n");
 
@@ -1291,6 +1487,7 @@ static struct {
 	{"LOCK1",  run_locktest1,  0},
 	{"LOCK2",  run_locktest2,  0},
 	{"LOCK3",  run_locktest3,  0},
+	{"LOCK4",  run_locktest4,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
@@ -1302,6 +1499,7 @@ static struct {
 	{"NBWNT",  run_nbwnt, 0},
 	{"OPLOCK",  run_oplock, 0},
 	{"DIR",  run_dirtest, 0},
+	{"DENY",  run_denytest, 0},
 	{NULL, NULL, 0}};
 
 

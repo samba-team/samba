@@ -52,7 +52,8 @@ static BOOL cli_receive_smb(struct cli_state *cli)
 	
 	if (ret) {
 		/* it might be an oplock break request */
-		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
+		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
 			if (cli->use_oplocks) cli_process_oplock(cli);
@@ -1231,18 +1232,13 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 
 /****************************************************************************
 open a file
+WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;
 	unsigned accessmode=0;
-
-	/* you must open for RW not just write - otherwise getattrE doesn't
-	   work! */
-	if ((flags & O_ACCMODE) == O_WRONLY && strncmp(cli->dev, "LPT", 3)) {
-		flags = (flags & ~O_ACCMODE) | O_RDWR;
-	}
 
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
@@ -1266,6 +1262,10 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= (1<<14);
 	}
 #endif /* O_SYNC */
+
+	if (share_mode == DENY_FCB) {
+		accessmode = 0xFF;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -1344,7 +1344,8 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 /****************************************************************************
   lock a file
 ****************************************************************************/
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_lock(struct cli_state *cli, int fnum, 
+	      uint32 offset, uint32 len, int timeout, int locktype)
 {
 	char *p;
         int saved_timeout = cli->timeout;
@@ -1360,7 +1361,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	CVAL(cli->outbuf,smb_vwv3) = 0;
+	CVAL(cli->outbuf,smb_vwv3) = (locktype == F_RDLCK? 1 : 0);
 	SIVALS(cli->outbuf, smb_vwv4, timeout);
 	SSVAL(cli->outbuf,smb_vwv6,0);
 	SSVAL(cli->outbuf,smb_vwv7,1);
@@ -1390,7 +1391,8 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 /****************************************************************************
   unlock a file
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_unlock(struct cli_state *cli, int fnum, 
+		uint32 offset, uint32 len, int timeout, int locktype)
 {
 	char *p;
 
@@ -1405,7 +1407,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	CVAL(cli->outbuf,smb_vwv3) = 0;
+	CVAL(cli->outbuf,smb_vwv3) = (locktype == F_RDLCK? 1 : 0);
 	SIVALS(cli->outbuf, smb_vwv4, timeout);
 	SSVAL(cli->outbuf,smb_vwv6,1);
 	SSVAL(cli->outbuf,smb_vwv7,0);
