@@ -224,6 +224,48 @@ static void net_reply_sam_logoff(NET_Q_SAM_LOGOFF *q_s, prs_struct *rdata,
 
 }
 
+/*************************************************************************
+ net_reply_sam_sync:
+ *************************************************************************/
+static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
+				DOM_CRED *srv_creds, uint32 status)
+{
+	NET_R_SAM_SYNC r_s;
+	int i = 0;
+	struct sam_passwd *pwd;
+	void *vp;
+
+	memcpy(&(r_s.srv_creds), srv_creds, sizeof(r_s.srv_creds));
+	r_s.sync_context = 1;
+	r_s.ptr_deltas = 0;
+
+	if ((status == 0x0) && ((vp = startsmbpwent(False)) != NULL))
+	{
+		/* Give the poor BDC some accounts */
+
+		while (((pwd = getsam21pwent(vp)) != NULL) && (i < MAX_SAM_DELTAS))
+		{
+			make_sam_delta_hdr(&r_s.hdr_deltas[i], 5, pwd->user_rid);
+			make_sam_account_info(&r_s.deltas[i].account_info,
+				 pwd->nt_name, pwd->full_name, pwd->user_rid,
+				 pwd->group_rid, pwd->home_dir, pwd->dir_drive,
+				 pwd->logon_script, pwd->acct_desc,
+				 pwd->acct_ctrl, pwd->profile_path);
+		}
+
+		endsmbpwent(vp);
+
+		r_s.ptr_deltas = r_s.ptr_deltas2 = 1;
+		r_s.num_deltas = r_s.num_deltas2 = i;
+	}
+
+	r_s.status = status;
+
+	/* store the response in the SMB stream */
+	net_io_r_sam_sync("", &r_s, rdata, 0);
+
+}
+
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
@@ -486,6 +528,41 @@ static void api_net_sam_logoff( uint16 vuid,
 					&srv_cred,
 	                0x0);
 }
+
+/*************************************************************************
+ api_net_sam_sync:
+ *************************************************************************/
+static void api_net_sam_sync( uint16 vuid,
+                               prs_struct *data,
+                               prs_struct *rdata)
+{
+	NET_Q_SAM_SYNC q_s;
+	DOM_CRED srv_creds;
+	user_struct *vuser;
+	uint32 status = 0x0;
+
+	if ((vuser = get_valid_user_struct(vuid)) == NULL)
+		return;
+
+	/* grab the challenge... */
+	net_io_q_sam_sync("", &q_s, data, 0);
+
+	/* checks and updates credentials.  creates reply credentials */
+	if (deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	                &(q_s.cli_creds), &srv_creds))
+	{
+		memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred),
+		       sizeof(vuser->dc.clnt_cred));
+	}
+	else
+	{
+		status = 0xC0000000 | NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
+	}
+
+	/* construct reply. */
+	net_reply_sam_sync(&q_s, rdata, &srv_creds, status);
+}
+
 
 /*************************************************************************
  net_login_interactive:
@@ -881,6 +958,7 @@ static struct api_struct api_net_cmds [] =
 	{ "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
 	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
 	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
+	{ "NET_SAM_SYNC"      , NET_SAM_SYNC      , api_net_sam_sync       },
     {  NULL               , 0                 , NULL                   }
 };
 
