@@ -719,15 +719,9 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 
 	/* check if it's a mapped group */
 	if (get_group_map_from_ntname(user, &map, MAPPING_WITHOUT_PRIV)) {
-		if (map.gid!=-1) {
-			/* yes it's a mapped group to a valid unix group */
-			sid_copy(&local_sid, &map.sid);
-			*psid_name_use = map.sid_name_use;
-		}
-		else {
-       			/* it's a correct name but not mapped so it points to nothing*/
-			return False;
-		}
+		/* yes it's a mapped group */
+		sid_copy(&local_sid, &map.sid);
+		*psid_name_use = map.sid_name_use;
 	} else {
 		/* it's not a mapped group */
 		grp = getgrnam(user);
@@ -807,22 +801,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	DOM_SID dom_sid;
-	uint32 rid;
 	fstring str;
 	SAM_ACCOUNT *sam_user = NULL;
 
 	*name_type = SID_NAME_UNKNOWN;
-
-	sid_copy(&dom_sid, psid);
-	sid_split_rid(&dom_sid, &rid);
-
-	/*
-	 * We can only convert to a uid if this is our local
-	 * Domain SID (ie. we are the controling authority).
-	 */
-	if (!sid_equal(get_global_sam_sid(), &dom_sid))
-		return False;
 
 	if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
 		return False;
@@ -835,12 +817,38 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		}
 		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 			  (unsigned int)*puid, pdb_get_username(sam_user)));
-	} else {
-		DEBUG(5,("local_sid_to_uid: SID %s not mapped becouse RID was not found in passdb.\n", sid_to_string( str, psid)));
 		pdb_free_sam(&sam_user);
+	} else {
+
+		DOM_SID dom_sid;
+		uint32 rid;
+		GROUP_MAP map;
+
+		pdb_free_sam(&sam_user);  
+
+		if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
+			DEBUG(3, ("local_sid_to_uid: SID '%s' is a group, not a user... \n", sid_to_string(str, psid)));
+			/* It's a group, not a user... */
+			return False;
+		}
+
+		sid_copy(&dom_sid, psid);
+		if (!sid_peek_check_rid(get_global_sam_sid(), psid, &rid)) {
+			DEBUG(3, ("sid_peek_rid failed - sid '%s' is not in our domain\n", sid_to_string(str, psid)));
+			return False;
+		}
+
+		if (!pdb_rid_is_user(rid)) {
+			DEBUG(3, ("local_sid_to_uid: sid '%s' cannot be mapped to a uid algorithmicly becous it is a group\n", sid_to_string(str, psid)));
+			return False;
+		}
+		
+		*puid = fallback_pdb_user_rid_to_uid(rid);
+
+		DEBUG(5,("local_sid_to_uid: SID %s algorithmicly mapped to %ld mapped becouse SID was not found in passdb.\n", 
+			 sid_to_string(str, psid), (signed long int)(*puid)));
 		return False;
 	}
-	pdb_free_sam(&sam_user);
 
 	*name_type = SID_NAME_USER;
 
@@ -873,15 +881,10 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	DOM_SID dom_sid;
-	uint32 rid;
 	fstring str;
 	GROUP_MAP map;
 
 	*name_type = SID_NAME_UNKNOWN;
-
-	sid_copy(&dom_sid, psid);
-	sid_split_rid(&dom_sid, &rid);
 
 	/*
 	 * We can only convert to a gid if this is our local
@@ -890,35 +893,45 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	 * Or in the Builtin SID too. JFM, 11/30/2001
 	 */
 
-	if (!sid_equal(get_global_sam_sid(), &dom_sid))
-		return False;
-
 	if (get_group_map_from_sid(*psid, &map, MAPPING_WITHOUT_PRIV)) {
 		
 		/* the SID is in the mapping table but not mapped */
 		if (map.gid==-1)
 			return False;
 
-		if (!sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid)){
-			DEBUG(0,("local_sid_to_gid: sid_peek_check_rid return False! SID: %s\n",
-				sid_string_static(&map.sid)));
-			return False;
-		}
 		*pgid = map.gid;
 		*name_type = map.sid_name_use;
-		DEBUG(10,("local_sid_to_gid: mapped SID %s (%s) -> gid (%u).\n", sid_to_string( str, psid),
+		DEBUG(10,("local_sid_to_gid: mapped SID %s (%s) -> gid (%u).\n", 
+			  sid_to_string( str, psid),
 			  map.nt_name, (unsigned int)*pgid));
 
 	} else {
+		uint32 rid;
+		SAM_ACCOUNT *sam_user = NULL;
+		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user)))
+			return False;
+		
+		if (pdb_getsampwsid(sam_user, psid)) {
+			return False;
+			pdb_free_sam(&sam_user);
+		}
+
+		pdb_free_sam(&sam_user);
+
+		if (!sid_peek_rid(psid, &rid)) {
+			DEBUG(2, ("sid_peek_rid failed!  what kind of sid is this? '%s'\n", sid_to_string(str, psid)));
+			return False;
+		}
+
 		if (pdb_rid_is_user(rid))
 			return False;
-
+		
 		*pgid = pdb_group_rid_to_gid(rid);
 		*name_type = SID_NAME_ALIAS;
 		DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u).\n", sid_to_string( str, psid),
 			  (unsigned int)*pgid));
 	}
-
+	
 	return True;
 }
 
