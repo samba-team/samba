@@ -26,6 +26,7 @@
 
 
 /* winreg pipe defines */
+#define REG_OPEN_HKCR       0x00
 #define REG_OPEN_HKLM       0x02
 #define REG_OPEN_HKU        0x04
 #define REG_FLUSH_KEY       0x0B
@@ -44,11 +45,32 @@
 #define REG_CLOSE           0x05
 #define REG_SHUTDOWN        0x18
 
-#define HKEY_LOCAL_MACHINE 0x80000000
+#define HKEY_CLASSES_ROOT  0x80000000
+#define HKEY_CURRENT_USER  0x80000001
+#define HKEY_LOCAL_MACHINE 0x80000002
 #define HKEY_USERS         0x80000003
 
+/* REG_Q_OPEN_HKCR   */
+typedef struct q_reg_open_hkcr_info
+{
+	uint32 ptr;
+	uint16 unknown_0; /* 0x5428      - 16 bit unknown */
+	uint16 unknown_1; /* random.  changes */
+	uint32 level;     /* 0x0200 0000 */
+
+} REG_Q_OPEN_HKCR;
+
+/* REG_R_OPEN_HKCR   */
+typedef struct r_reg_open_hkcr_info
+{
+	POLICY_HND pol;       /* policy handle */
+	uint32 status;         /* return status */
+
+} REG_R_OPEN_HKCR;
+
+
 /* REG_Q_OPEN_HKLM   */
-typedef struct q_reg_open_policy_info
+typedef struct q_reg_open_hklm_info
 {
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
@@ -58,7 +80,7 @@ typedef struct q_reg_open_policy_info
 } REG_Q_OPEN_HKLM  ;
 
 /* REG_R_OPEN_HKLM   */
-typedef struct r_reg_open_policy_info
+typedef struct r_reg_open_hklm_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
@@ -67,7 +89,7 @@ typedef struct r_reg_open_policy_info
 
 
 /* REG_Q_OPEN_HKU */
-typedef struct q_reg_open_unk4_info
+typedef struct q_reg_open_hku_info
 {
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
@@ -77,7 +99,7 @@ typedef struct q_reg_open_unk4_info
 } REG_Q_OPEN_HKU;
 
 /* REG_R_OPEN_HKU */
-typedef struct r_reg_open_unk4_info
+typedef struct r_reg_open_hku_info
 {
 	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */

@@ -1816,6 +1816,8 @@ void cli_nt_session_close(struct cli_state *cli, uint16 nt_pipe_fnum);
 
 BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char *key_name,
 				POLICY_HND *reg_hnd);
+BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
 BOOL do_reg_open_hklm(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL do_reg_open_hku(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
@@ -2334,6 +2336,10 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
+BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
+				uint16 unknown_0, uint32 level);
+BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth);
+BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level);
 BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
@@ -3245,7 +3251,7 @@ BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 uint32 msrpc_sam_enum_groups(struct client_info *info,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				BOOL request_member_info,
+				void(*grp_mem_fn)(uint32, char*, uint32, uint32*, char**, uint32*),
 				BOOL request_group_info);
 void cmd_sam_enum_groups(struct client_info *info);
 

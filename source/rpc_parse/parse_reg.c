@@ -30,6 +30,64 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 creates a structure.
 ********************************************************************/
+BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
+				uint16 unknown_0, uint32 level)
+{
+	q_o->ptr = 1;
+	q_o->unknown_0 = unknown_0;
+	q_o->unknown_1 = 0x0; /* random - changes */
+	q_o->level = level;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_open_hkcr");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("ptr      ", ps, depth, &(r_q->ptr      ));
+	if (r_q->ptr != 0)
+	{
+		prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0));
+		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
+		prs_uint32("level    ", ps, depth, &(r_q->level    ));
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth)
+{
+	if (r_r == NULL) return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_open_hkcr");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_pol_hnd("", &(r_r->pol), ps, depth);
+
+	prs_uint32("status", ps, depth, &(r_r->status));
+
+	return True;
+}
+
+
+/*******************************************************************
+creates a structure.
+********************************************************************/
 BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 				uint16 unknown_0, uint32 level)
 {
