@@ -636,7 +636,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-int vfs_ChDir(connection_struct *conn, char *path)
+int vfs_ChDir(connection_struct *conn, const char *path)
 {
 	int res;
 	static pstring LastDir="";
@@ -784,7 +784,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 /* check if the file 'nmae' is a symlink, in that case check that it point to
    a file that reside under the 'dir' tree */
 
-static BOOL readlink_check(connection_struct *conn, char *dir, char *name)
+static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
 {
 	BOOL ret = True;
 	pstring flink;
