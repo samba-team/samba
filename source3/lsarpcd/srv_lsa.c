@@ -88,14 +88,15 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 	fstring sid_str;
 	int domlen = strlen(dom_name);
 
+	d_q->uni_dom_str_len = (domlen+1) * 2;
 	d_q->uni_dom_max_len = domlen * 2;
-	d_q->uni_dom_str_len = domlen * 2;
 
 	d_q->buffer_dom_name = domlen  != 0    ? 1 : 0; /* domain buffer pointer */
 	d_q->buffer_dom_sid  = dom_sid != NULL ? 1 : 0; /* domain sid pointer */
 
 	/* this string is supposed to be character short */
 	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
+	d_q->uni_domain_name.uni_max_len++;
 
 	sid_to_string(sid_str, dom_sid);
 	make_dom_sid2(&(d_q->dom_sid), dom_sid);
