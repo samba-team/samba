@@ -1098,7 +1098,7 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
     (regf->sk_map)[0].key_sec_desc = tmp;
   }
   else { /* Simply allocate a new slot, unless we have to expand the list */ 
-    int index = regf->sk_count;
+    int ndx = regf->sk_count;
     if (regf->sk_count >= regf->sk_map_size) {
       regf->sk_map = (SK_MAP *)realloc(regf->sk_map, 
 				       (regf->sk_map_size + 10)*sizeof(SK_MAP));
@@ -1107,12 +1107,12 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
 	return NULL;
       }
       /*
-       * Index already points at the first entry of the new block
+       * ndx already points at the first entry of the new block
        */
       regf->sk_map_size += 10;
     }
-    (regf->sk_map)[index].sk_off = sk_off;
-    (regf->sk_map)[index].key_sec_desc = tmp;
+    (regf->sk_map)[ndx].sk_off = sk_off;
+    (regf->sk_map)[ndx].key_sec_desc = tmp;
     regf->sk_count++;
     if (regf->sk_map[2].key_sec_desc == 0x19) { /* Take us over */
       fprintf(stderr, "%0x\n", regf->sk_map[7].key_sec_desc->sec_desc);
