@@ -52,7 +52,7 @@ des_cblock iv;
  *
  */
 
-static int input;		/* Read from stdin */
+static int input = 1;		/* Read from stdin */
 
 static int
 loop (int s, int errsock)
@@ -425,6 +425,7 @@ static int
 doit_broken (int argc,
 	     char **argv,
 	     int optind,
+	     char *host,
 	     char *remote_user,
 	     char *local_user,
 	     int port,
@@ -439,11 +440,10 @@ doit_broken (int argc,
     if (priv_socket1 < 0 || priv_socket2 < 0)
 	errx (1, "unable to bind reserved port: is rsh setuid root?");
 
-    hostent = roken_gethostbyname (argv[optind]);
+    hostent = roken_gethostbyname (host);
     if (hostent == NULL)
 	errx (1, "gethostbyname '%s' failed: %s",
-	      argv[optind],
-	      hstrerror(h_errno));
+	      host, hstrerror(h_errno));
 
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -469,16 +469,20 @@ doit_broken (int argc,
 		err (1, "fork");
 	    else if(pid == 0) {
 		char **new_argv;
-		int i;
+		int i = 0;
 
 		new_argv = malloc((argc + 2) * sizeof(*new_argv));
 		if (new_argv == NULL)
 		    errx (1, "malloc: out of memory");
-		new_argv[0] = argv[0];
-		new_argv[1] = "-K";
-		for(i = 1; i < argc; ++i)
-		    new_argv[i + 1] = argv[i];
-		new_argv[optind + 1] = inet_ntoa(**h);
+		new_argv[i] = argv[i];
+		++i;
+		if (optind == i)
+		    new_argv[i++] = inet_ntoa(**h);
+		new_argv[i++] = "-K";
+		for(; i <= argc; ++i)
+		    new_argv[i] = argv[i - 1];
+		if (optind > 1)
+		    new_argv[optind + 1] = inet_ntoa(**h);
 		new_argv[argc + 1] = NULL;
 		execv(PATH_RSH, new_argv);
 		err(1, "execv(%s)", PATH_RSH);
@@ -615,6 +619,8 @@ main(int argc, char **argv)
     size_t cmd_len;
     struct passwd *pwd;
     char *local_user;
+    char *host;
+    int host_index = -1;
 
     priv_port1 = priv_port2 = IPPORT_RESERVED-1;
     priv_socket1 = rresvport(&priv_port1);
@@ -622,6 +628,11 @@ main(int argc, char **argv)
     setuid(getuid());
     
     set_progname (argv[0]);
+
+    if (argc >= 2 && argv[1][0] != '-') {
+	host = argv[host_index = 1];
+	optind = 1;
+    }
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
@@ -648,8 +659,11 @@ main(int argc, char **argv)
 	return 0;
     }
 	
-    if (argc - optind < 2)
-	usage (1);
+    if (host == NULL)
+	if (argc - optind < 2)
+	    usage (1);
+	else
+	    host = argv[host_index = optind++];
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
@@ -674,7 +688,7 @@ main(int argc, char **argv)
     if (user == NULL)
 	user = local_user;
 
-    cmd_len = construct_command(&cmd, argc - optind - 1, argv + optind + 1);
+    cmd_len = construct_command(&cmd, argc - optind, argv + optind);
 
     /*
      * Try all different authentication methods
@@ -689,7 +703,7 @@ main(int argc, char **argv)
 	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB5;
-	ret = doit (argv[optind], user, local_user, tmp_port, cmd, cmd_len);
+	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len);
     }
 #ifdef KRB4
     if (ret && use_v4) {
@@ -703,7 +717,7 @@ main(int argc, char **argv)
 	    tmp_port = krb5_getportbyname (context, "kshell", "tcp", 544);
 
 	auth_method = AUTH_KRB4;
-	ret = doit (argv[optind], user, local_user, tmp_port, cmd, cmd_len);
+	ret = doit (host, user, local_user, tmp_port, cmd, cmd_len);
     }
 #endif
     if (ret && use_broken) {
@@ -714,7 +728,7 @@ main(int argc, char **argv)
 	else
 	    tmp_port = krb5_getportbyname(context, "shell", "tcp", 514);
 	auth_method = AUTH_BROKEN;
-	ret = doit_broken (argc, argv, optind,
+	ret = doit_broken (argc, argv, host_index, host,
 			   user, local_user,
 			   tmp_port,
 			   priv_socket1,
