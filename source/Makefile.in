@@ -166,8 +166,9 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) $(PASSDB_OBJ) \
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
              $(UBIQX_OBJ) $(LIB_OBJ)
 
-TESTPARM_OBJ = utils/testparm.o smbd/access.o $(PARAM_OBJ) $(PASSDB_OBJ) \
-               $(UBIQX_OBJ) $(LIB_OBJ)
+TESTPARM_OBJ = utils/testparm.o \
+               smbd/access.o \
+               $(PARAM_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) \
                $(LIB_OBJ)
@@ -180,6 +181,9 @@ CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
+
+SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
+                 $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)
 
@@ -244,22 +248,10 @@ bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LIBS)
 
+bin/smbtorture: $(SMBTORTURE_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LIBS)
 
-smbmount: $(MOUNT_OBJ) 
-	@echo Linking smbmount
-	@$(CC) $(FLAGS) -o smbmount $(MOUNT_OBJ) $(LIBS)
-
-smbmnt: $(MNT_OBJ)
-	@echo Linking smbmnt
-	@$(CC) $(FLAGS) -o smbmnt $(MNT_OBJ)
-
-smbumount: $(UMOUNT_OBJ)
-	@echo Linking smbumount
-	@$(CC) $(FLAGS) -o smbumount $(UMOUNT_OBJ)
-
-smbtorture: torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL)
-	@echo Linking smbtorture
-	@$(CC) $(FLAGS) -o smbtorture torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 
