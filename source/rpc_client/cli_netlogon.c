@@ -247,7 +247,7 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli,
 
         /******************* Request Challenge ********************/
 
-        generate_random_buffer(clnt_chal.data, 8, False);
+        generate_random_buffer(clnt_chal.data, 8);
 	
         /* send a client challenge; receive a server challenge */
         result = cli_net_req_chal(cli, &clnt_chal, &srv_chal);
@@ -580,7 +580,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                 unsigned char local_lm_response[24];
                 unsigned char local_nt_response[24];
 
-                generate_random_buffer(chal, 8, False);
+                generate_random_buffer(chal, 8);
 
                 SMBencrypt(password, chal, local_lm_response);
                 SMBNTencrypt(password, chal, local_nt_response);

@@ -190,7 +190,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* do password magic */
 	
-	generate_random_buffer(chal, 8, False);
+	generate_random_buffer(chal, 8);
 	SMBencrypt(state->request.data.auth.pass, chal, local_lm_response);
 		
 	SMBNTencrypt(state->request.data.auth.pass, chal, local_nt_response);

@@ -1097,7 +1097,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		RPC_AUTH_VERIFIER auth_verifier;
 		RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
 
-		generate_random_buffer(p->challenge, 8, False);
+		generate_random_buffer(p->challenge, 8);
 
 		/*** Authentication info ***/
 
