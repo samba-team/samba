@@ -8,7 +8,7 @@ manpagename(smbstatus)(report on current Samba connections)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(smbstatus) [link(-b)(minusb)] [link(-d)(minusd)] [link(-L)(minusL)] [link(-p)(minusp)] [link(-S)(minusS)] [link(-s configuration file)(minuss)] [link(-u username)(minusu)]
+bf(smbstatus) [link(-P)(minusP)] [link(-b)(minusb)] [link(-d)(minusd)] [link(-L)(minusL)] [link(-p)(minusp)] [link(-S)(minusS)] [link(-s configuration file)(minuss)] [link(-u username)(minusu)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -22,6 +22,10 @@ label(OPTIONS)
 manpageoptions()
 
 startdit()
+
+label(minusP)
+dit(bf(-P)) If samba has been compiled with the profiling option,
+print only the contents of the profiling shared memory area.
 
 label(minusb)
 dit(bf(-b)) gives brief output.

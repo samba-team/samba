@@ -5,7 +5,7 @@ smbstatus \- report on current Samba connections
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBsmbstatus\fP [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
+\fBsmbstatus\fP [-P] [-b] [-d] [-L] [-p] [-S] [-s configuration file] [-u username]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -16,6 +16,10 @@ connections\&.
 .PP 
 .SH "OPTIONS" 
 .PP 
+.IP 
+.IP "\fB-P\fP" 
+If samba has been compiled with the profiling option,
+print only the contents of the profiling shared memory area\&.
 .IP 
 .IP "\fB-b\fP" 
 gives brief output\&.
