@@ -141,6 +141,47 @@ recv_krb4_auth (int s, u_char *buf,
 }
 #endif /* KRB4 */
 
+static void
+recv_krb5_creds (int s,
+		 krb5_auth_context auth_context,
+		 char *username,
+		 krb5_principal client)
+{
+    krb5_error_code ret;
+    krb5_ccache ccache;
+    krb5_data data;
+    char ccname[MAXPATHLEN];
+    struct passwd *pwd;
+
+    krb5_data_zero (&data);
+    ret = krb5_read_message (context,
+			     (void *)&s,
+			     &data);
+    if (ret || data.length == 0)
+	return;
+
+    pwd = getpwnam (username);
+    if (pwd == NULL)
+	goto out;
+
+    snprintf (ccname, sizeof(ccname),
+	      "FILE:/tmp/krb5cc_%u", pwd->pw_uid);
+    ret = krb5_cc_resolve (context, ccname, &ccache);
+    if (ret)
+	goto out;
+    ret = krb5_cc_initialize (context, ccache, client);
+    if (ret)
+	goto out;
+    ret = krb5_rd_cred (context, auth_context, ccache, &data);
+    krb5_cc_close (context, ccache);
+    if (ret)
+	goto out;
+    chown (ccname + 5, pwd->pw_uid, -1);
+
+out:
+    krb5_data_free (&data);
+}
+
 static int
 recv_krb5_auth (int s, u_char *buf,
 		struct sockaddr_in thisaddr,
@@ -184,6 +225,11 @@ recv_krb5_auth (int s, u_char *buf,
     read_str (s, cmd, COMMAND_SZ, "command");
     read_str (s, server_username, USERNAME_SZ, "remote username");
 
+    status = krb5_auth_con_getkey (context, auth_context, &keyblock);
+    if (status)
+	syslog_and_die ("krb5_auth_con_getkey: %s",
+			krb5_get_err_text(context, status));
+
     status = krb5_auth_getauthenticator (context,
 					 auth_context,
 					 &authenticator);
@@ -200,7 +246,7 @@ recv_krb5_auth (int s, u_char *buf,
     status = krb5_verify_checksum (context,
 				   cksum_data.data,
 				   cksum_data.length,
-				   NULL,
+				   keyblock,
 				   authenticator->cksum);
     if (status)
 	syslog_and_die ("krb5_verify_checksum: %s",
@@ -209,13 +255,7 @@ recv_krb5_auth (int s, u_char *buf,
     free (cksum_data.data);
     krb5_free_authenticator (context, &authenticator);
 
-    status = krb5_auth_con_getkey (context, auth_context, &keyblock);
-    if (status)
-	syslog_and_die ("krb5_auth_con_getkey: %s",
-			krb5_get_err_text(context, status));
-
-    /* discard forwarding information */
-    net_read (s, buf, 4);
+    recv_krb5_creds (s, auth_context, server_username, ticket->client);
 
     if(!krb5_kuserok (context,
 		     ticket->client,
