@@ -208,7 +208,7 @@ void remove_my_servers(void)
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type)
 {
-	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX;
+	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|DFLT_SERVER_TYPE;
 	BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
 	
 	if (wins_iface && server_type != 0)
@@ -237,11 +237,6 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			}
 		}
 
-		if (AM_DOMCTL(work))
-		{
-			/* XXXX announce to backup domain masters? */
-		}
-
 		/* XXXX any other kinds of announcements we need to consider here?
 		   e.g local master browsers... no. local master browsers do
 		   local master announcements to their domain master. they even
@@ -268,10 +263,6 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			/* XXXX should we do a domain-announce-kill? */
 			if (server_type != 0)
 			{
-				if (AM_DOMCTL(work))
-				{
-					domain_type |= SV_TYPE_DOMAIN_CTRL;
-				}
 				do_announce_host(ANN_DomainAnnouncement,
 							name    , 0x00, d->myip,
 							MSBROWSE, 0x01, d->bcast_ip,
@@ -490,8 +481,7 @@ void announce_remote(void)
   pstring s2;
   struct in_addr addr;
   char *comment,*workgroup;
-  int stype = SV_TYPE_WORKSTATION | SV_TYPE_SERVER | SV_TYPE_PRINTQ_SERVER |
-    SV_TYPE_SERVER_UNIX;
+  int stype = DFLT_SERVER_TYPE;
 
   if (last_time && t < last_time + REMOTE_ANNOUNCE_INTERVAL)
     return;

@@ -1666,8 +1666,7 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
       struct srv_info_struct *servers=NULL;
       int i,count;
       pstring comment;
-      uint32 servertype=SV_TYPE_SERVER_UNIX|SV_TYPE_WORKSTATION|
-	SV_TYPE_SERVER|SV_TYPE_TIME_SOURCE;
+      uint32 servertype=DFLT_SERVER_TYPE;
 
       strcpy(comment,lp_serverstring());
 
