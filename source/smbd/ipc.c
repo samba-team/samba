@@ -2765,10 +2765,13 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   char *rparam = NULL;
   int rdata_len = 0;
   int rparam_len = 0;
-  BOOL reply=False;
+
+  BOOL reply = False;
+
   int i;
   int fd;
   int subcommand;
+  pstring pipe_name;
   
   DEBUG(5,("api_fd_reply\n"));
   /* First find out the name of this file. */
@@ -2781,19 +2784,28 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   /* Get the file handle and hence the file name. */
   fd = setup[1];
   subcommand = setup[0];
-  
+  if (fd >= 0 && fd < MAX_OPEN_FILES)
+  {
+    pstrcpy(pipe_name, Files[fd].name);
+  }
+  else
+  {
+    pipe_name[0] = 0;
+    DEBUG(1,("api_fd_reply: INVALID FILE HANDLE: %x\n", fd));
+  }
+
   DEBUG(3,("Got API command %d on pipe %s (fd %x)",
-            subcommand,Files[fd].name, fd));
+            subcommand, pipe_name, fd));
   DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
 	   tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
   
-  for (i=0;api_fd_commands[i].name;i++)
+  for (i = 0; api_fd_commands[i].name; i++)
   {
-    if (strequal(api_fd_commands[i].pipename, Files[fd].name) &&
+    if (strequal(api_fd_commands[i].pipename, pipe_name) &&
 	    api_fd_commands[i].subcommand == subcommand &&
 	    api_fd_commands[i].fn)
     {
-	  DEBUG(3,("Doing %s\n",api_fd_commands[i].name));
+	  DEBUG(3,("Doing %s\n", api_fd_commands[i].name));
 	  break;
     }
   }
