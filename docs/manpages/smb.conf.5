@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "23 February 2001" "" ""
+.TH "SMB.CONF" "5" "19 April 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -13,7 +13,7 @@ file for the Samba suite. \fIsmb.conf\fR contains
 runtime configuration information for the Samba programs. The
 \fIsmb.conf\fR file is designed to be configured and 
 administered by the \fBswat(8)\fR
- <URL:swat.8.html> program. The complete description of the file format and 
+program. The complete description of the file format and 
 possible parameters held within are here for reference purposes.
 .SH "FILE FORMAT"
 .PP
@@ -65,7 +65,7 @@ given plus a description of the access rights which are granted
 to the user of the service. Some housekeeping options are 
 also specifiable.
 .PP
-Sections are either filespace services (used by the 
+Sections are either file share services (used by the 
 client as an extension of their native file systems) or 
 printable services (used by the client to access print services 
 on the host running the server).
@@ -123,7 +123,7 @@ elsewhere):
 parameters in this section apply to the server 
 as a whole, or are defaults for sections which do not 
 specifically define certain items. See the notes 
-under paraMETERS for more information.
+under PARAMETERS for more information.
 .SS "THE  HOMES  SECTION"
 .PP
 If a section called homes is included in the 
@@ -289,7 +289,7 @@ printers are defined on the system you may be able to use
 of printers. See the "printcap name" option 
 for more details.
 .PP
-.SH "PARAMETRS"
+.SH "PARAMETERS"
 .PP
 parameters define the specific attributes of sections.
 .PP
@@ -349,7 +349,7 @@ by %u.
 the Samba version.
 .TP
 \fB%h\fR
-the internet hostname that Samba is running 
+the Internet hostname that Samba is running 
 on.
 .TP
 \fB%m\fR
@@ -362,7 +362,7 @@ to change your config based on what the client calls you. Your
 server can have a "dual personality".
 .TP
 \fB%M\fR
-the internet name of the client machine.
+the Internet name of the client machine.
 .TP
 \fB%N\fR
 the name of your NIS home directory server. 
@@ -455,10 +455,10 @@ NT server, in that it is case insensitive but case preserving.
 .SH "NOTE ABOUT USERNAME/PASSWORD VALIDATION"
 .PP
 There are a number of ways in which a user can connect 
-to a service. The server follows the following steps in determining 
+to a service. The server uses the following steps in determining 
 if it will allow a connection to a specified service. If all the 
-steps fail then the connection request is rejected. If one of the 
-steps pass then the following steps are not checked.
+steps fail, then the connection request is rejected. However, if one of the 
+steps succeeds, then the following steps are not checked.
 .PP
 If the service is marked "guest only = yes" then
 steps 1 to 5 are skipped.
@@ -503,841 +503,939 @@ Here is a list of all global parameters. See the section of
 each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
-\fIadd user script\fR 
+\fIadd user script\fR
 .TP 0.2i
 \(bu
-\fIallow trusted domains\fR 
+\fIaddprinter command\fR
 .TP 0.2i
 \(bu
-\fIannounce as\fR 
+\fIallow trusted domains\fR
 .TP 0.2i
 \(bu
-\fIannounce version\fR 
+\fIannounce as\fR
 .TP 0.2i
 \(bu
-\fIauto services\fR 
+\fIannounce version\fR
 .TP 0.2i
 \(bu
-\fIbind interfaces only\fR 
+\fIauto services\fR
+.TP 0.2i
+\(bu
+\fIbind interfaces only\fR
 .TP 0.2i
 \(bu
 \fIbrowse list\fR
 .TP 0.2i
 \(bu
-\fIchange notify timeout\fR 
+\fIchange notify timeout\fR
 .TP 0.2i
 \(bu
-\fIcharacter set\fR 
+\fIcharacter set\fR
 .TP 0.2i
 \(bu
-\fIclient code page\fR 
+\fIclient code page\fR
+.TP 0.2i
+\(bu
+\fIcode page directory\fR
 .TP 0.2i
 \(bu
 \fIcoding system\fR
 .TP 0.2i
 \(bu
-\fIconfig file\fR 
+\fIconfig file\fR
 .TP 0.2i
 \(bu
-\fIdeadtime\fR 
+\fIdeadtime\fR
 .TP 0.2i
 \(bu
-\fIdebug hires timestamp\fR 
+\fIdebug hires timestamp\fR
 .TP 0.2i
 \(bu
-\fIdebug pid\fR 
+\fIdebug pid\fR
 .TP 0.2i
 \(bu
 \fIdebug timestamp\fR
 .TP 0.2i
 \(bu
-\fIdebug uid\fR 
+\fIdebug uid\fR
 .TP 0.2i
 \(bu
-\fIdebug level\fR 
+\fIdebuglevel\fR
 .TP 0.2i
 \(bu
-\fIdefault\fR 
+\fIdefault\fR
 .TP 0.2i
 \(bu
-\fIdefault service\fR 
+\fIdefault service\fR
 .TP 0.2i
 \(bu
-\fIdelete user script\fR 
+\fIdelete user script\fR
 .TP 0.2i
 \(bu
-\fIdfree command\fR 
+\fIdeleteprinter command\fR
 .TP 0.2i
 \(bu
-\fIdns proxy\fR 
+\fIdfree command\fR
 .TP 0.2i
 \(bu
-\fIdomain admin group\fR 
+\fIdns proxy\fR
 .TP 0.2i
 \(bu
-\fIdomain admin users\fR 
+\fIdomain admin group\fR
+.TP 0.2i
+\(bu
+\fIdomain admin users\fR
 .TP 0.2i
 \(bu
 \fIdomain groups\fR
 .TP 0.2i
 \(bu
-\fIdomain guest group\fR 
+\fIdomain guest group\fR
 .TP 0.2i
 \(bu
-\fIdomain guest users\fR 
+\fIdomain guest users\fR
 .TP 0.2i
 \(bu
-\fIdomain logons\fR 
+\fIdomain logons\fR
 .TP 0.2i
 \(bu
-\fIdomain master\fR 
+\fIdomain master\fR
 .TP 0.2i
 \(bu
-\fIencrypt passwords\fR 
+\fIencrypt passwords\fR
 .TP 0.2i
 \(bu
-\fIgetwd cache\fR 
+\fIenhanced browsing\fR
 .TP 0.2i
 \(bu
-\fIhide local users\fR 
+\fIenumports command\fR
 .TP 0.2i
 \(bu
-\fIhomedir map\fR 
+\fIgetwd cache\fR
 .TP 0.2i
 \(bu
-\fIhosts equiv\fR 
+\fIhide local users\fR
+.TP 0.2i
+\(bu
+\fIhomedir map\fR
+.TP 0.2i
+\(bu
+\fIhost msdfs\fR
+.TP 0.2i
+\(bu
+\fIhosts equiv\fR
 .TP 0.2i
 \(bu
 \fIinterfaces\fR
 .TP 0.2i
 \(bu
-\fIkeepalive\fR 
+\fIkeepalive\fR
 .TP 0.2i
 \(bu
-\fIkernel oplocks\fR 
+\fIkernel oplocks\fR
 .TP 0.2i
 \(bu
-\fIlm announce\fR 
+\fIlanman auth\fR
 .TP 0.2i
 \(bu
-\fIlm interval\fR 
+\fIlm announce\fR
+.TP 0.2i
+\(bu
+\fIlm interval\fR
 .TP 0.2i
 \(bu
 \fIload printers\fR
 .TP 0.2i
 \(bu
-\fIlocal master\fR 
+\fIlocal master\fR
 .TP 0.2i
 \(bu
-\fIlock dir\fR 
+\fIlock dir\fR
 .TP 0.2i
 \(bu
-\fIlock directory\fR 
+\fIlock directory\fR
 .TP 0.2i
 \(bu
-\fIlog file\fR 
+\fIlog file\fR
 .TP 0.2i
 \(bu
-\fIlog level\fR 
+\fIlog level\fR
 .TP 0.2i
 \(bu
 \fIlogon drive\fR
 .TP 0.2i
 \(bu
-\fIlogon home\fR 
+\fIlogon home\fR
 .TP 0.2i
 \(bu
-\fIlogon path\fR 
+\fIlogon path\fR
 .TP 0.2i
 \(bu
-\fIlogon script\fR 
+\fIlogon script\fR
 .TP 0.2i
 \(bu
-\fIlpq cache time\fR 
+\fIlpq cache time\fR
 .TP 0.2i
 \(bu
-\fImachine password timeout\fR 
+\fImachine password timeout\fR
 .TP 0.2i
 \(bu
-\fImangled stack\fR 
+\fImangled stack\fR
 .TP 0.2i
 \(bu
-\fImap to guest\fR 
+\fImap to guest\fR
 .TP 0.2i
 \(bu
-\fImax disk size\fR 
+\fImax disk size\fR
 .TP 0.2i
 \(bu
-\fImax log size\fR 
+\fImax log size\fR
 .TP 0.2i
 \(bu
-\fImax mux\fR 
+\fImax mux\fR
 .TP 0.2i
 \(bu
-\fImax open files\fR 
+\fImax open files\fR
 .TP 0.2i
 \(bu
-\fImax packet\fR 
+\fImax protocol\fR
 .TP 0.2i
 \(bu
-\fImax ttl\fR 
+\fImax smbd processes\fR
 .TP 0.2i
 \(bu
-\fImax wins ttl\fR 
+\fImax ttl\fR
 .TP 0.2i
 \(bu
-\fImax xmit\fR 
+\fImax wins ttl\fR
 .TP 0.2i
 \(bu
-\fImessage command\fR 
+\fImax xmit\fR
 .TP 0.2i
 \(bu
-\fImin passwd length\fR 
+\fImessage command\fR
 .TP 0.2i
 \(bu
-\fImin password length\fR 
+\fImin passwd length\fR
 .TP 0.2i
 \(bu
-\fImin wins ttl\fR 
+\fImin password length\fR
 .TP 0.2i
 \(bu
-\fIname resolve order\fR 
+\fImin protocol\fR
 .TP 0.2i
 \(bu
-\fInetbios aliases\fR 
+\fImin wins ttl\fR
 .TP 0.2i
 \(bu
-\fInetbios name\fR 
+\fIname resolve order\fR
 .TP 0.2i
 \(bu
-\fInetbios scope\fR 
+\fInetbios aliases\fR
 .TP 0.2i
 \(bu
-\fInis homedir\fR 
+\fInetbios name\fR
 .TP 0.2i
 \(bu
-\fInt acl support\fR 
+\fInetbios scope\fR
 .TP 0.2i
 \(bu
-\fInt pipe support\fR 
+\fInis homedir\fR
 .TP 0.2i
 \(bu
-\fInt smb support\fR 
+\fInt acl support\fR
 .TP 0.2i
 \(bu
-\fInull passwords\fR 
+\fInt pipe support\fR
 .TP 0.2i
 \(bu
-\fIole locking compatibility\fR
+\fInt smb support\fR
 .TP 0.2i
 \(bu
-\fIoplock break wait time\fR 
+\fInull passwords\fR
 .TP 0.2i
 \(bu
-\fIos level\fR 
+\fIoplock break wait time\fR
 .TP 0.2i
 \(bu
-\fIpanic action\fR 
+\fIos level\fR
+.TP 0.2i
+\(bu
+\fIos2 driver map\fR
+.TP 0.2i
+\(bu
+\fIpanic action\fR
 .TP 0.2i
 \(bu
 \fIpasswd chat\fR
 .TP 0.2i
 \(bu
-\fIpasswd chat debug\fR 
+\fIpasswd chat debug\fR
 .TP 0.2i
 \(bu
-\fIpasswd program\fR 
+\fIpasswd program\fR
 .TP 0.2i
 \(bu
-\fIpassword level\fR 
+\fIpassword level\fR
 .TP 0.2i
 \(bu
-\fIpassword server\fR 
+\fIpassword server\fR
 .TP 0.2i
 \(bu
-\fIprefered master\fR 
+\fIprefered master\fR
 .TP 0.2i
 \(bu
-\fIpreferred master\fR 
+\fIpreferred master\fR
 .TP 0.2i
 \(bu
-\fIpreload\fR 
+\fIpreload\fR
 .TP 0.2i
 \(bu
-\fIprintcap\fR 
+\fIprintcap\fR
 .TP 0.2i
 \(bu
-\fIprintcap name\fR 
+\fIprintcap name\fR
 .TP 0.2i
 \(bu
-\fIprinter driver file\fR 
+\fIprinter driver file\fR
 .TP 0.2i
 \(bu
-\fIprivate dir\fR 
+\fIprotocol\fR
 .TP 0.2i
 \(bu
-\fIprotocol\fR 
+\fIread bmpx\fR
 .TP 0.2i
 \(bu
-\fIread bmpx\fR 
+\fIread raw\fR
 .TP 0.2i
 \(bu
-\fIread prediction\fR 
+\fIread size\fR
 .TP 0.2i
 \(bu
-\fIread raw\fR 
+\fIremote announce\fR
 .TP 0.2i
 \(bu
-\fIread size\fR 
+\fIremote browse sync\fR
 .TP 0.2i
 \(bu
-\fIremote announce\fR 
+\fIrestrict anonymous\fR
 .TP 0.2i
 \(bu
-\fIremote browse sync\fR 
+\fIroot\fR
 .TP 0.2i
 \(bu
-\fIrestrict anonymous\fR 
+\fIroot dir\fR
 .TP 0.2i
 \(bu
-\fIroot\fR 
+\fIroot directory\fR
 .TP 0.2i
 \(bu
-\fIroot dir\fR 
+\fIsecurity\fR
 .TP 0.2i
 \(bu
-\fIroot directory\fR 
+\fIserver string\fR
 .TP 0.2i
 \(bu
-\fIsecurity\fR 
+\fIshow add printer wizard\fR
 .TP 0.2i
 \(bu
-\fIserver string\fR 
+\fIsmb passwd file\fR
 .TP 0.2i
 \(bu
-\fIshared mem size\fR 
+\fIsocket address\fR
 .TP 0.2i
 \(bu
-\fIsmb passwd file\fR 
+\fIsocket options\fR
 .TP 0.2i
 \(bu
-\fIsmbrun\fR 
+\fIsource environment\fR
 .TP 0.2i
 \(bu
-\fIsocket address\fR 
+\fIssl\fR
 .TP 0.2i
 \(bu
-\fIsocket options\fR 
+\fIssl CA certDir\fR
 .TP 0.2i
 \(bu
-\fIsource environment\fR 
+\fIssl CA certFile\fR
 .TP 0.2i
 \(bu
-\fIssl\fR 
+\fIssl ciphers\fR
 .TP 0.2i
 \(bu
-\fIssl CA certDir\fR 
-.TP 0.2i
-\(bu
-\fIssl CA certFile\fR 
-.TP 0.2i
-\(bu
-\fIssl ciphers\fR 
-.TP 0.2i
-\(bu
-\fIssl client cert\fR 
+\fIssl client cert\fR
 .TP 0.2i
 \(bu
 \fIssl client key\fR
 .TP 0.2i
 \(bu
-\fIssl compatibility\fR 
+\fIssl compatibility\fR
 .TP 0.2i
 \(bu
-\fIssl hosts\fR 
+\fIssl hosts\fR
 .TP 0.2i
 \(bu
-\fIssl hosts resign\fR 
+\fIssl hosts resign\fR
 .TP 0.2i
 \(bu
 \fIssl require clientcert\fR
 .TP 0.2i
 \(bu
-\fIssl require servercert\fR 
+\fIssl require servercert\fR
 .TP 0.2i
 \(bu
-\fIssl server cert\fR 
+\fIssl server cert\fR
 .TP 0.2i
 \(bu
-\fIssl server key\fR 
+\fIssl server key\fR
 .TP 0.2i
 \(bu
-\fIssl version\fR 
+\fIssl version\fR
 .TP 0.2i
 \(bu
-\fIstat cache\fR 
+\fIstat cache\fR
 .TP 0.2i
 \(bu
-\fIstat cache size\fR 
+\fIstat cache size\fR
 .TP 0.2i
 \(bu
-\fIstrip dot\fR 
+\fIstrip dot\fR
 .TP 0.2i
 \(bu
-\fIsyslog\fR 
+\fIsyslog\fR
 .TP 0.2i
 \(bu
-\fIsyslog only\fR 
+\fIsyslog only\fR
 .TP 0.2i
 \(bu
 \fItemplate homedir\fR
 .TP 0.2i
 \(bu
-\fItemplate shell\fR 
+\fItemplate shell\fR
 .TP 0.2i
 \(bu
-\fItime offset\fR 
+\fItime offset\fR
 .TP 0.2i
 \(bu
-\fItime server\fR 
+\fItime server\fR
 .TP 0.2i
 \(bu
-\fItimestamp logs\fR 
+\fItimestamp logs\fR
 .TP 0.2i
 \(bu
-\fIunix password sync\fR 
+\fItotal print jobs\fR
 .TP 0.2i
 \(bu
-\fIunix realname\fR 
+\fIunix password sync\fR
 .TP 0.2i
 \(bu
-\fIupdate encrypted\fR 
+\fIupdate encrypted\fR
 .TP 0.2i
 \(bu
-\fIuse rhosts\fR 
+\fIuse rhosts\fR
 .TP 0.2i
 \(bu
-\fIusername level\fR 
+\fIusername level\fR
 .TP 0.2i
 \(bu
-\fIusername map\fR 
+\fIusername map\fR
 .TP 0.2i
 \(bu
-\fIutmp directory\fR 
+\fIutmp directory\fR
 .TP 0.2i
 \(bu
-\fIvalid chars\fR 
+\fIvalid chars\fR
 .TP 0.2i
 \(bu
-\fIwinbind cache time\fR 
+\fIwinbind cache time\fR
 .TP 0.2i
 \(bu
-\fIwinbind gid\fR 
+\fIwinbind gid\fR
 .TP 0.2i
 \(bu
-\fIwinbind uid\fR 
+\fIwinbind separator\fR
 .TP 0.2i
 \(bu
-\fIwins hook\fR 
+\fIwinbind uid\fR
 .TP 0.2i
 \(bu
-\fIwins proxy\fR 
+\fIwins hook\fR
 .TP 0.2i
 \(bu
-\fIwins server\fR 
+\fIwins proxy\fR
 .TP 0.2i
 \(bu
-\fIwins support\fR 
+\fIwins server\fR
 .TP 0.2i
 \(bu
-\fIworkgroup\fR 
+\fIwins support\fR
 .TP 0.2i
 \(bu
-\fIwrite raw\fR 
+\fIworkgroup\fR
+.TP 0.2i
+\(bu
+\fIwrite raw\fR
 .SH "COMPLETE LIST OF SERVICE PARAMETERS"
 .PP
-Here is a list of all service parameters. See the section of 
+Here is a list of all service parameters. See the section on 
 each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
-\fIadmin users\fR 
+\fIadmin users\fR
 .TP 0.2i
 \(bu
-\fIallow hosts\fR 
+\fIallow hosts\fR
 .TP 0.2i
 \(bu
-\fIalternate permissions\fR 
-.TP 0.2i
-\(bu
-\fIavailable\fR 
+\fIavailable\fR
 .TP 0.2i
 \(bu
 \fIblocking locks\fR
 .TP 0.2i
 \(bu
-\fIbrowsable\fR 
+\fIbrowsable\fR
 .TP 0.2i
 \(bu
-\fIbrowseable\fR 
+\fIbrowseable\fR
 .TP 0.2i
 \(bu
-\fIcase sensitive\fR 
+\fIcase sensitive\fR
 .TP 0.2i
 \(bu
-\fIcasesignames\fR 
+\fIcasesignames\fR
 .TP 0.2i
 \(bu
-\fIcomment\fR 
+\fIcomment\fR
 .TP 0.2i
 \(bu
-\fIcopy\fR 
+\fIcopy\fR
 .TP 0.2i
 \(bu
-\fIcreate mask\fR 
+\fIcreate mask\fR
 .TP 0.2i
 \(bu
-\fIcreate mode\fR 
+\fIcreate mode\fR
 .TP 0.2i
 \(bu
-\fIdefault case\fR 
+\fIdefault case\fR
 .TP 0.2i
 \(bu
-\fIdelete readonly\fR 
+\fIdelete readonly\fR
 .TP 0.2i
 \(bu
-\fIdelete veto files\fR 
+\fIdelete veto files\fR
 .TP 0.2i
 \(bu
-\fIdeny hosts\fR 
+\fIdeny hosts\fR
 .TP 0.2i
 \(bu
-\fIdirectory\fR 
+\fIdirectory\fR
 .TP 0.2i
 \(bu
-\fIdirectory mask\fR 
+\fIdirectory mask\fR
 .TP 0.2i
 \(bu
-\fIdirectory mode\fR 
+\fIdirectory mode\fR
 .TP 0.2i
 \(bu
 \fIdirectory security mask\fR
 .TP 0.2i
 \(bu
-\fIdont descend\fR 
+\fIdont descend\fR
 .TP 0.2i
 \(bu
-\fIdos filetime resolution\fR 
+\fIdos filemode\fR
 .TP 0.2i
 \(bu
-\fIdos filetimes\fR 
+\fIdos filetime resolution\fR
 .TP 0.2i
 \(bu
-\fIexec\fR 
+\fIdos filetimes\fR
 .TP 0.2i
 \(bu
-\fIfake directory create times\fR 
+\fIexec\fR
 .TP 0.2i
 \(bu
-\fIfake oplocks\fR 
+\fIfake directory create times\fR
 .TP 0.2i
 \(bu
-\fIfollow symlinks\fR 
+\fIfake oplocks\fR
 .TP 0.2i
 \(bu
-\fIforce create mode\fR 
+\fIfollow symlinks\fR
 .TP 0.2i
 \(bu
-\fIforce directory mode\fR 
+\fIforce create mode\fR
 .TP 0.2i
 \(bu
-\fIforce directory security mode\fR 
+\fIforce directory mode\fR
 .TP 0.2i
 \(bu
-\fIforce group\fR 
+\fIforce directory security mode\fR
 .TP 0.2i
 \(bu
-\fIforce security mode\fR 
+\fIforce group\fR
 .TP 0.2i
 \(bu
-\fIforce user\fR 
+\fIforce security mode\fR
 .TP 0.2i
 \(bu
-\fIfstype\fR 
+\fIforce user\fR
 .TP 0.2i
 \(bu
-\fIgroup\fR 
+\fIfstype\fR
 .TP 0.2i
 \(bu
-\fIguest account\fR 
+\fIgroup\fR
 .TP 0.2i
 \(bu
-\fIguest ok\fR 
+\fIguest account\fR
 .TP 0.2i
 \(bu
-\fIguest only\fR 
+\fIguest ok\fR
+.TP 0.2i
+\(bu
+\fIguest only\fR
 .TP 0.2i
 \(bu
 \fIhide dot files\fR
 .TP 0.2i
 \(bu
-\fIhide files\fR 
+\fIhide files\fR
 .TP 0.2i
 \(bu
-\fIhosts allow\fR 
+\fIhosts allow\fR
 .TP 0.2i
 \(bu
-\fIhosts deny\fR 
+\fIhosts deny\fR
 .TP 0.2i
 \(bu
-\fIinclude\fR 
+\fIinclude\fR
 .TP 0.2i
 \(bu
-\fIinherit permissions\fR 
+\fIinherit permissions\fR
 .TP 0.2i
 \(bu
-\fIinvalid users\fR 
+\fIinvalid users\fR
 .TP 0.2i
 \(bu
-\fIlevel2 oplocks\fR 
+\fIlevel2 oplocks\fR
 .TP 0.2i
 \(bu
-\fIlocking\fR 
+\fIlocking\fR
 .TP 0.2i
 \(bu
-\fIlppause command\fR 
+\fIlppause command\fR
 .TP 0.2i
 \(bu
-\fIlpq command\fR 
+\fIlpq command\fR
 .TP 0.2i
 \(bu
-\fIlpresume command\fR 
+\fIlpresume command\fR
 .TP 0.2i
 \(bu
-\fIlprm command\fR 
+\fIlprm command\fR
 .TP 0.2i
 \(bu
-\fImagic output\fR 
+\fImagic output\fR
 .TP 0.2i
 \(bu
-\fImagic script\fR 
+\fImagic script\fR
 .TP 0.2i
 \(bu
-\fImangle case\fR 
+\fImangle case\fR
 .TP 0.2i
 \(bu
-\fImangle locks\fR 
+\fImangled map\fR
 .TP 0.2i
 \(bu
-\fImangled map\fR 
+\fImangled names\fR
 .TP 0.2i
 \(bu
-\fImangled names\fR 
+\fImangling char\fR
 .TP 0.2i
 \(bu
-\fImangling char\fR 
-.TP 0.2i
-\(bu
-\fImap archive\fR 
+\fImap archive\fR
 .TP 0.2i
 \(bu
 \fImap hidden\fR
 .TP 0.2i
 \(bu
-\fImap system\fR 
+\fImap system\fR
 .TP 0.2i
 \(bu
-\fImax connections\fR 
+\fImax connections\fR
 .TP 0.2i
 \(bu
-\fImin print space\fR 
+\fImax print jobs\fR
 .TP 0.2i
 \(bu
-\fIonly guest\fR 
+\fImin print space\fR
 .TP 0.2i
 \(bu
-\fIonly user\fR 
+\fImsdfs root\fR
 .TP 0.2i
 \(bu
-\fIoplock contention limit\fR 
+\fIonly guest\fR
 .TP 0.2i
 \(bu
-\fIoplocks\fR 
+\fIonly user\fR
 .TP 0.2i
 \(bu
-\fIpath\fR 
+\fIoplock contention limit\fR
 .TP 0.2i
 \(bu
-\fIpostexec\fR 
+\fIoplocks\fR
 .TP 0.2i
 \(bu
-\fIpostscript\fR 
+\fIpath\fR
 .TP 0.2i
 \(bu
-\fIpreexec\fR 
+\fIposix locking\fR
 .TP 0.2i
 \(bu
-\fIpreexec close\fR 
+\fIpostexec\fR
 .TP 0.2i
 \(bu
-\fIpreserve case\fR 
+\fIpostscript\fR
 .TP 0.2i
 \(bu
-\fIprint command\fR 
+\fIpreexec\fR
 .TP 0.2i
 \(bu
-\fIprint ok\fR 
+\fIpreexec close\fR
 .TP 0.2i
 \(bu
-\fIprintable\fR 
+\fIpreserve case\fR
 .TP 0.2i
 \(bu
-\fIprinter\fR 
+\fIprint command\fR
 .TP 0.2i
 \(bu
-\fIprinter admin\fR 
+\fIprint ok\fR
 .TP 0.2i
 \(bu
-\fIprinter driver\fR 
+\fIprintable\fR
 .TP 0.2i
 \(bu
-\fIprinter driver location\fR 
+\fIprinter\fR
 .TP 0.2i
 \(bu
-\fIprinter name\fR 
+\fIprinter admin\fR
+.TP 0.2i
+\(bu
+\fIprinter driver\fR
+.TP 0.2i
+\(bu
+\fIprinter driver location\fR
+.TP 0.2i
+\(bu
+\fIprinter name\fR
 .TP 0.2i
 \(bu
 \fIprinting\fR
 .TP 0.2i
 \(bu
-\fIpublic\fR 
+\fIpublic\fR
 .TP 0.2i
 \(bu
-\fIqueuepause command\fR 
+\fIqueuepause command\fR
 .TP 0.2i
 \(bu
-\fIqueueresume command\fR 
+\fIqueueresume command\fR
 .TP 0.2i
 \(bu
-\fIread list\fR 
+\fIread list\fR
 .TP 0.2i
 \(bu
 \fIread only\fR
 .TP 0.2i
 \(bu
-\fIroot postexec\fR 
+\fIroot postexec\fR
 .TP 0.2i
 \(bu
-\fIroot preexec\fR 
+\fIroot preexec\fR
 .TP 0.2i
 \(bu
-\fIroot preexec close\fR 
+\fIroot preexec close\fR
 .TP 0.2i
 \(bu
-\fIsecurity mask\fR 
+\fIsecurity mask\fR
 .TP 0.2i
 \(bu
 \fIset directory\fR
 .TP 0.2i
 \(bu
-\fIshare modes\fR 
+\fIshare modes\fR
 .TP 0.2i
 \(bu
-\fIshort preserve case\fR 
+\fIshort preserve case\fR
 .TP 0.2i
 \(bu
-\fIstatus\fR 
+\fIstatus\fR
 .TP 0.2i
 \(bu
-\fIstrict locking\fR 
+\fIstrict locking\fR
 .TP 0.2i
 \(bu
 \fIstrict sync\fR
 .TP 0.2i
 \(bu
-\fIsync always\fR 
+\fIsync always\fR
 .TP 0.2i
 \(bu
-\fIuser\fR 
+\fIuser\fR
 .TP 0.2i
 \(bu
-\fIusername\fR 
+\fIusername\fR
 .TP 0.2i
 \(bu
-\fIusers\fR 
+\fIusers\fR
 .TP 0.2i
 \(bu
-\fIutmp\fR 
+\fIutmp\fR
 .TP 0.2i
 \(bu
-\fIvalid users\fR 
+\fIvalid users\fR
 .TP 0.2i
 \(bu
-\fIveto files\fR 
+\fIveto files\fR
 .TP 0.2i
 \(bu
-\fIveto oplock files\fR 
+\fIveto oplock files\fR
 .TP 0.2i
 \(bu
-\fIvolume\fR 
+\fIvfs object\fR
 .TP 0.2i
 \(bu
-\fIwide links\fR 
+\fIvfs options\fR
 .TP 0.2i
 \(bu
-\fIwritable\fR 
+\fIvolume\fR
 .TP 0.2i
 \(bu
-\fIwrite cache size\fR 
+\fIwide links\fR
+.TP 0.2i
+\(bu
+\fIwritable\fR
+.TP 0.2i
+\(bu
+\fIwrite cache size\fR
 .TP 0.2i
 \(bu
 \fIwrite list\fR
 .TP 0.2i
 \(bu
-\fIwrite ok\fR 
+\fIwrite ok\fR
 .TP 0.2i
 \(bu
-\fIwriteable\fR 
+\fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
 .TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
 be run \fBAS ROOT\fR by smbd(8)
- <URL:smbd.8.html> under special circumstances decribed below.
+under special circumstances described below.
 
 Normally, a Samba server requires that UNIX users are 
 created for all users accessing files on this server. For sites 
 that use Windows NT account databases as their primary user database 
 creating these users and keeping the user list in sync with the 
-Windows NT PDC is an onerous task. This option allows smbd <URL:smbd.8.html> to create the required UNIX users 
+Windows NT PDC is an onerous task. This option allows smbdto create the required UNIX users 
 \fBON DEMAND\fR when a user accesses the Samba server.
 
-In order to use this option, smbd <URL:smbd.8.html> 
-must be set to \fIsecurity=server\fR or \fI security=domain\fR and \fIadd user script\fR
+In order to use this option, smbdmust be set to \fIsecurity=server\fR or \fI security=domain\fR and \fIadd user script\fR
 must be set to a full pathname for a script that will create a UNIX 
 user given one argument of \fI%u\fR, which expands into 
 the UNIX user name to create.
 
 When the Windows user attempts to access the Samba server, 
-at login (session setup in the SMB protocol) time,  smbd <URL:smbd.8.html> contacts the \fIpassword server\fR and 
+at login (session setup in the SMB protocol) time,  smbdcontacts the \fIpassword server\fR and 
 attempts to authenticate the given user with the given password. If the 
-authentication succeeds then smbd <URL:smbd.8.html> 
+authentication succeeds then \fBsmbd\fR 
 attempts to find a UNIX user in the UNIX password database to map the 
 Windows user into. If this lookup fails, and \fIadd user script
-\fRis set then smbd <URL:smbd.8.html> will
+\fRis set then \fBsmbd\fR will
 call the specified script \fBAS ROOT\fR, expanding 
 any \fI%u\fR argument to be the user name to create.
 
-If this script successfully creates the user then smbd <URL:smbd.8.html> will continue on as though the UNIX user
+If this script successfully creates the user then \fBsmbd
+\fRwill continue on as though the UNIX user
 already existed. In this way, UNIX users are dynamically created to
 match existing Windows NT accounts.
 
-See also \fI security\fR <URL:smb.conf.5.html#security>,  \fIpassword server\fR <URL:smb.conf.5.html#passwordserver>, \fIdelete user 
-script\fR <URL:smb.conf.5.html#deleteuserscript>.
+See also \fI security\fR,  \fIpassword server\fR, 
+\fIdelete user 
+script\fR.
 
 Default: \fBadd user script = <empty string>
 \fR
 Example: \fBadd user script = /usr/local/samba/bin/add_user 
 %u\fR
+.TP
+\fBaddprinter command (G)\fR
+With the introduction of MS-RPC based printing
+support for Windows NT/2000 clients in Samba 2.2, The MS Add
+Printer Wizard (APW) icon is now also available in the 
+"Printers..." folder displayed a share listing. The APW
+allows for printers to be add remotely to a Samba or Windows 
+NT/2000 print server.
+
+For a Samba host this means that the printer must be 
+physically added to underlying printing system. The \fI addprinter command\fR defines a script to be run which 
+will perform the necessary operations for adding the printer
+to the print system and to add the appropriate service definition 
+to the \fIsmb.conf\fR file in order that it can be 
+shared by \fBsmbd(8)\fR
+.
+
+The \fIaddprinter command\fR is
+automatically invoked with the following parameter (in 
+order:
+.RS
+.TP 0.2i
+\(bu
+\fIprinter name\fR
+.TP 0.2i
+\(bu
+\fIshare name\fR
+.TP 0.2i
+\(bu
+\fIport name\fR
+.TP 0.2i
+\(bu
+\fIdriver name\fR
+.TP 0.2i
+\(bu
+\fIlocation\fR
+.TP 0.2i
+\(bu
+\fIWindows 9x driver location\fR
+.RE
+.PP
+All parameters are filled in from the PRINTER_INFO_2 structure sent 
+by the Windows NT/2000 client with one exception. The "Windows 9x
+driver location" parameter is included for backwards compatibility
+only. The remaining fields in the structure are generated from answers
+to the APW questions.
+.PP
+.PP
+Once the \fIaddprinter command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to determine if the share defined by the APW
+exists. If the sharename is still invalid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+.PP
+.PP
+See also \fI deleteprinter command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBaddprinter command = /usr/bin/addprinter
+\fR.PP
 .TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
@@ -1353,11 +1451,11 @@ Default: \fBno admin users\fR
 Example: \fBadmin users = jason\fR
 .TP
 \fBallow hosts (S)\fR
-Synonym for  \fIhosts allow\fR <URL:smb.conf.5.html#hostsallow>.
+Synonym for  \fIhosts allow\fR.
 .TP
 \fBallow trusted domains (G)\fR
-This option only takes effect when the security <URL:smb.conf.5.html> option is set to 
-\fIserver\fR or \fIdomain\fR. 
+This option only takes effect when the \fIsecurity\fR option is set to 
+server or domain. 
 If it is set to no, then attempts to connect to a resource from 
 a domain or workgroup other than the one which smbd is running 
 in will fail, even if that domain is trusted by the remote server 
@@ -1376,10 +1474,9 @@ Default: \fBallow trusted domains = yes\fR
 .TP
 \fBannounce as (G)\fR
 This specifies what type of server 
-\fBnmbd\fR <URL:nmbd.8.html> 
-will announce itself as, to a network neighborhood browse 
+\fBnmbd\fRwill announce itself as, to a network neighborhood browse 
 list. By default this is set to Windows NT. The valid options 
-are : "NT" (which is a synonym for "NT Server"), "NT Server", 
+are : "NT Server" (which can also be written as "NT"), 
 "NT Workstation", "Win95" or "WfW" meaning Windows NT Server, 
 Windows NT Workstation, Windows 95 and Windows for Workgroups 
 respectively. Do not change this parameter unless you have a 
@@ -1402,17 +1499,7 @@ Default: \fBannounce version = 4.2\fR
 Example: \fBannounce version = 2.0\fR
 .TP
 \fBauto services (G)\fR
-This is a list of services that you want to be 
-automatically added to the browse lists. This is most useful 
-for homes and printers services that would otherwise not be 
-visible.
-
-Note that if you just want all printers in your 
-printcap file loaded then the  \fIload printers\fR <URL:smb.conf.5.html#loadprinters> option is easier.
-
-Default: \fBno auto services\fR
-
-Example: \fBauto services = fred lp colorlp\fR
+This is a synonym for the  \fIpreload\fR.
 .TP
 \fBavailable (S)\fR
 This parameter lets you "turn off" a service. If 
@@ -1425,8 +1512,8 @@ Default: \fBavailable = yes\fR
 \fBbind interfaces only (G)\fR
 This global parameter allows the Samba admin 
 to limit what interfaces on a machine will serve smb requests. If 
-affects file service smbd(8) <URL:smbd.8.html> and 
-name service nmbd(8) <URL:nmbd.8.html> in slightly 
+affects file service smbd(8)and 
+name service nmbd(8)in slightly 
 different ways.
 
 For name service it causes \fBnmbd\fR to bind 
@@ -1446,8 +1533,7 @@ send packets that arrive through any interfaces not listed in the
 does defeat this simple check, however so it must not be used
 seriously as a security feature for \fBnmbd\fR.
 
-For file service it causes smbd(8) <URL:smbd.8.html>
-to bind only to the interface list given in the  interfaces parameter. This restricts the networks that 
+For file service it causes smbd(8)to bind only to the interface list given in the  interfaces parameter. This restricts the networks that 
 \fBsmbd\fR will serve to packets coming in those 
 interfaces. Note that you should not use this parameter for machines 
 that are serving PPP or other intermittent or non-broadcast network 
@@ -1455,8 +1541,7 @@ interfaces as it will not cope with non-permanent interfaces.
 
 If \fIbind interfaces only\fR is set then 
 unless the network address \fB127.0.0.1\fR is added 
-to the \fIinterfaces\fR parameter list \fBsmbpasswd(8)\fR <URL:smbpasswd.8.html> 
-and \fBswat(8)\fR <URL:swat.8.html> may 
+to the \fIinterfaces\fR parameter list \fBsmbpasswd(8)\fRand \fBswat(8)\fRmay 
 not work as expected due to the reasons covered below.
 
 To change a users SMB password, the \fBsmbpasswd\fR
@@ -1467,7 +1552,7 @@ network address \fB127.0.0.1\fR is added to the
 \fIinterfaces\fR parameter list then \fB smbpasswd\fR will fail to connect in it's default mode. 
 \fBsmbpasswd\fR can be forced to use the primary IP interface 
 of the local host by using its  \fI-r remote machine\fR
- <URL:smbpasswd.8.html#minusr> parameter, with \fIremote machine\fR set 
+parameter, with \fIremote machine\fR set 
 to the IP name of the primary interface of the local host.
 
 The \fBswat\fR status page tries to connect with
@@ -1480,7 +1565,7 @@ and \fBnmbd\fR.
 Default: \fBbind interfaces only = no\fR
 .TP
 \fBblocking locks (S)\fR
-This parameter controls the behavior of smbd(8) <URL:smbd.8.html> when given a request by a client 
+This parameter controls the behavior of smbd(8)when given a request by a client 
 to obtain a byte range lock on a region of an open file, and the 
 request has a time limit associated with it.
 
@@ -1500,7 +1585,7 @@ Default: \fBblocking locks = yes\fR
 See the \fI browseable\fR.
 .TP
 \fBbrowse list (G)\fR
-This controls whether  \fBsmbd(8)\fR <URL:smbd.8.html> will serve a browse list to 
+This controls whether  \fBsmbd(8)\fRwill serve a browse list to 
 a client doing a \fBNetServerEnum\fR call. Normally 
 set to true. You should never need to change 
 this.
@@ -1515,6 +1600,8 @@ Default: \fBbrowseable = yes\fR
 .TP
 \fBcase sensitive (S)\fR
 See the discussion in the section NAME MANGLING.
+
+Default: \fBcase sensitive = no\fR
 .TP
 \fBcasesignames (S)\fR
 Synonym for case 
@@ -1524,7 +1611,7 @@ sensitive.
 This SMB allows a client to tell a server to 
 "watch" a particular directory for any changes and only reply to
 the SMB request when a change has occurred. Such constant scanning of
-a directory is expensive under UNIX, hence an  \fBsmbd(8)\fR <URL:smbd.8.html> daemon only performs such a scan 
+a directory is expensive under UNIX, hence an  \fBsmbd(8)\fRdaemon only performs such a scan 
 on each requested directory once every \fIchange notify 
 timeout\fR seconds.
 
@@ -1604,12 +1691,11 @@ page a Windows or DOS client is using, open a DOS command prompt
 and type the command \fBchcp\fR. This will output 
 the code page. The default for USA MS-DOS, Windows 95, and
 Windows NT releases is code page 437. The default for western 
-european releases of the above operating systems is code page 850.
+European releases of the above operating systems is code page 850.
 
-This parameter tells smbd(8) <URL:smbd.8.html> 
-which of the \fIcodepage.XXX
+This parameter tells smbd(8)which of the \fIcodepage.XXX
 \fRfiles to dynamically load on startup. These files,
-described more fully in the manual page  \fBmake_smbcodepage(1)\fR <URL:make_smbcodepage.1.html>, tell \fB smbd\fR how to map lower to upper case characters to provide 
+described more fully in the manual page  \fBmake_smbcodepage(1)\fR, tell \fB smbd\fR how to map lower to upper case characters to provide 
 the case insensitivity of filenames that Windows clients expect.
 
 Samba currently ships with the following code page files :
@@ -1670,7 +1756,7 @@ to 850.
 .PP
 .PP
 See also : \fIvalid 
-chars\fR
+chars\fR,  \fIcode page directory\fR
 .PP
 .PP
 Default: \fBclient code page = 850\fR
@@ -1679,6 +1765,17 @@ Default: \fBclient code page = 850\fR
 Example: \fBclient code page = 936\fR
 .PP
 .TP
+\fBcode page directory (G)\fR
+Define the location of the various client code page
+files.
+
+See also \fIclient
+code page\fR
+
+Default: \fBcode page directory = ${prefix}/lib/codepages
+\fR
+Example: \fBcode page directory = /usr/share/samba/codepages
+\fR.TP
 \fBcodingsystem (G)\fR
 This parameter is used to determine how incoming 
 Shift-JIS Japanese characters are mapped from the incoming \fIclient code page\fR
@@ -1721,6 +1818,8 @@ Shift-JIS character to the 3 byte hex representation used by
 the Columbia AppleTalk Program (CAP), i.e. :AB. 
 This is used for compatibility between Samba and CAP.
 .RE
+.PP
+Default: \fBcoding system = <empty value>\fR
 .PP
 .TP
 \fBcomment (S)\fR
@@ -1766,7 +1865,7 @@ create similar services easily. Note that the service being
 copied must occur earlier in the configuration file than the 
 service doing the copying.
 
-Default: \fBnone\fR
+Default: \fBno value\fR
 
 Example: \fBcopy = otherservice\fR
 .TP
@@ -1840,14 +1939,6 @@ effect.
 
 Default: \fBdebug hires timestamp = no\fR
 .TP
-\fBdebug timestamp (G)\fR
-Samba 2.2 debug log messages are timestamped 
-by default. If you are running at a high  \fIdebug level\fR these timestamps
-can be distracting. This boolean parameter allows timestamping 
-to be turned off.
-
-Default: \fBdebug timestamp = yes\fR
-.TP
 \fBdebug pid (G)\fR
 When using only one log file for more then one 
 forked smbd-process there may be hard to follow which process 
@@ -1858,6 +1949,14 @@ Note that the parameter \fI debug timestamp\fR must be on for this to have an
 effect.
 
 Default: \fBdebug pid = no\fR
+.TP
+\fBdebug timestamp (G)\fR
+Samba 2.2 debug log messages are timestamped 
+by default. If you are running at a high  \fIdebug level\fR these timestamps
+can be distracting. This boolean parameter allows timestamping 
+to be turned off.
+
+Default: \fBdebug timestamp = yes\fR
 .TP
 \fBdebug uid (G)\fR
 Samba is sometimes run as root and sometime 
@@ -1870,7 +1969,7 @@ effect.
 
 Default: \fBdebug uid = no\fR
 .TP
-\fBdebug level (G)\fR
+\fBdebuglevel (G)\fR
 The value of the parameter (an integer) allows 
 the debug level (logging level) to be specified in the 
 \fIsmb.conf\fR file. This is to give greater 
@@ -1885,7 +1984,9 @@ Example: \fBdebug level = 3\fR
 A synonym for \fI default service\fR.
 .TP
 \fBdefault case (S)\fR
-See the section on  NAME MANGLING". Also note the  \fIshort preserve case"\fR parameter.
+See the section on  NAME MANGLING. Also note the  \fIshort preserve case"\fR parameter.
+
+Default: \fBdefault case = lower\fR
 .TP
 \fBdefault service (G)\fR
 This parameter specifies the name of a service 
@@ -1909,20 +2010,32 @@ used in the default service will get mapped to a "/". This allows for
 interesting things.
 
 Example:
+
 .sp
 .nf
-			default service = pub
+[global]
+	default service = pub
         
-			[pub]
-				path = /%S
+[pub]
+	path = /%S
 		
 .sp
 .fi
 .TP
+\fBdelete readonly (S)\fR
+This parameter allows readonly files to be deleted. 
+This is not normal DOS semantics, but is allowed by UNIX.
+
+This option may be useful for running applications such 
+as rcs, where UNIX file ownership prevents changing file 
+permissions, and DOS semantics prevent deletion of a read only file.
+
+Default: \fBdelete readonly = no\fR
+.TP
 \fBdelete user script (G)\fR
 This is the full pathname to a script that will 
-be run \fBAS ROOT\fR by  \fBsmbd(8)\fR <URL:smbd.8.html> under special circumstances 
-decribed below.
+be run \fBAS ROOT\fR by  \fBsmbd(8)\fRunder special circumstances 
+described below.
 
 Normally, a Samba server requires that UNIX users are 
 created for all users accessing files on this server. For sites 
@@ -1972,16 +2085,33 @@ Default: \fBdelete user script = <empty string>
 Example: \fBdelete user script = /usr/local/samba/bin/del_user 
 %u\fR
 .TP
-\fBdelete readonly (S)\fR
-This parameter allows readonly files to be deleted. 
-This is not normal DOS semantics, but is allowed by UNIX.
+\fBdeleteprinter command (G)\fR
+With the introduction of MS-RPC based printer
+support for Windows NT/2000 clients in Samba 2.2, it is now 
+possible to delete printer at run time by issuing the 
+DeletePrinter() RPC call.
 
-This option may be useful for running applications such 
-as rcs, where UNIX file ownership prevents changing file 
-permissions, and DOS semantics prevent deletion of a read only file.
+For a Samba host this means that the printer must be 
+physically deleted from underlying printing system. The \fI deleteprinter command\fR defines a script to be run which 
+will perform the necessary operations for removing the printer
+from the print system and from \fIsmb.conf\fR.
 
-Default: \fBdelete readonly = no\fR
-.TP
+The \fIdeleteprinter command\fR is 
+automatically called with only one parameter: \fI "printer name"\fR.
+
+Once the \fIdeleteprinter command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to associated printer no longer exists. 
+If the sharename is still valid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+
+See also \fI addprinter command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+
+Default: \fBnone\fR
+
+Example: \fBdeleteprinter command = /usr/bin/removeprinter
+\fR.TP
 \fBdelete veto files (S)\fR
 This option is used when Samba is attempting to 
 delete a directory that contains one or more vetoed directories 
@@ -2026,7 +2156,7 @@ this function.
 The external program will be passed a single parameter indicating 
 a directory in the filesystem being queried. This will typically consist
 of the string \fI./\fR. The script should return two 
-integers in ascii. The first should be the total disk space in blocks, 
+integers in ASCII. The first should be the total disk space in blocks, 
 and the second should be the number of available blocks. An optional 
 third return value can give the block size in bytes. The default 
 blocksize is 1024 bytes.
@@ -2142,8 +2272,7 @@ directory mask>\fR
 Example: \fBdirectory security mask = 0777\fR
 .TP
 \fBdns proxy (G)\fR
-Specifies that nmbd(8) <URL:nmbd.8.html> 
-when acting as a WINS server and finding that a NetBIOS name has not 
+Specifies that nmbd(8)when acting as a WINS server and finding that a NetBIOS name has not 
 been registered, should treat the NetBIOS name word-for-word as a DNS 
 name and do a lookup with the DNS server for that name on behalf of 
 the name-querying client.
@@ -2211,14 +2340,13 @@ the file DOMAINS.txt in the Samba documentation directory \fIdocs/
 Default: \fBdomain logons = no\fR
 .TP
 \fBdomain master (G)\fR
-Tell \fB nmbd(8)\fR <URL:nmbd.8.html> to enable WAN-wide browse list
+Tell \fB nmbd(8)\fRto enable WAN-wide browse list
 collation. Setting this option causes \fBnmbd\fR to
 claim a special domain specific NetBIOS name that identifies 
 it as a domain master browser for its given  \fIworkgroup\fR. Local master browsers 
 in the same \fIworkgroup\fR on broadcast-isolated 
 subnets will give this \fBnmbd\fR their local browse lists, 
-and then ask \fBsmbd(8)\fR <URL:smbd.8.html> 
-for a complete copy of the browse list for the whole wide area 
+and then ask \fBsmbd(8)\fRfor a complete copy of the browse list for the whole wide area 
 network. Browser clients will then contact their local master browser, 
 and will receive the domain-wide browse list, instead of just the list 
 for their broadcast-isolated subnet.
@@ -2233,7 +2361,13 @@ the special name for a \fIworkgroup\fR before a Windows
 NT PDC is able to do so then cross subnet browsing will behave 
 strangely and may fail.
 
-Default: \fBdomain master = no\fR
+If \fBdomain logons = yes\fR
+, then the default behavior is to enable the \fIdomain 
+master\fR parameter. If \fIdomain logons\fR is 
+not enabled (the default setting), then neither will \fIdomain 
+master\fR be enabled by default.
+
+Default: \fBdomain master = auto\fR
 .TP
 \fBdont descend (S)\fR
 There are certain directories on some systems 
@@ -2251,13 +2385,27 @@ to descend)\fR
 
 Example: \fBdont descend = /proc,/dev\fR
 .TP
+\fBdos filemode (S)\fR
+The default behavior in Samba is to provide 
+UNIX-like behavor where only the owner of a file/directory is 
+able to change the permissions on it. However, this behavior
+is often confusing to DOS/Windows users. Enabling this parameter 
+allows a user who has write access to the file (by whatever 
+means) to modify the permissions on it. Note that a user
+belonging to the group owning the file will not be allowed to
+change permissions if the group is only granted read access.
+Ownership of the file/directory is not changed, only the permissions 
+are modified.
+
+Default: \fBdos filemode = no\fR
+.TP
 \fBdos filetime resolution (S)\fR
 Under the DOS and Windows FAT filesystem, the finest 
 granularity on time resolution is two seconds. Setting this parameter 
 for a share causes Samba to round the reported time down to the 
 nearest two second boundary when a query call that requires one second 
 resolution is made to \fBsmbd(8)\fR
- <URL:smbd.8.html>.
+.
 
 This option is mainly used as a compatibility option for Visual 
 C++ when used against Samba shares. If oplocks are enabled on a 
@@ -2292,15 +2440,58 @@ Samba see the file ENCRYPTION.txt in the Samba documentation
 directory \fIdocs/\fR shipped with the source code.
 
 In order for encrypted passwords to work correctly
-\fBsmbd(8)\fR <URL:smbd.8.html> must either 
+\fBsmbd(8)\fRmust either 
 have access to a local \fIsmbpasswd(5)
-\fR <URL:smbpasswd.5.html> file (see the \fB smbpasswd(8)\fR <URL:smbpasswd.8.html> program for information on how to set up 
+\fRprogram for information on how to set up 
 and maintain this file), or set the security=[serve|domain] parameter which 
 causes \fBsmbd\fR to authenticate against another 
 server.
 
 Default: \fBencrypt passwords = no\fR
 .TP
+\fBenhanced browsing (G)\fR
+This option enables a couple of enhancements to 
+cross-subnet browse propogation that have been added in Samba 
+but which are not standard in Microsoft implementations. 
+\fBThese enhancements are currently only available in
+the HEAD Samba CVS tree (not Samba 2.2.x).\fR
+
+The first enhancement to browse propogation consists of a regular
+wildcard query to a Samba WINS server for all Domain Master Browsers,
+followed by a browse synchronisation with each of the returned
+DMBs. The second enhancement consists of a regular randomised browse
+synchronisation with all currently known DMBs.
+
+You may wish to disable this option if you have a problem with empty
+workgroups not disappearing from browse lists. Due to the restrictions
+of the browse protocols these enhancements can cause a empty workgroup
+to stay around forever which can be annoying.
+
+In general you should leave this option enabled as it makes
+cross-subnet browse propogation much more reliable.
+
+Default: \fBenhanced browsing = yes\fR
+.TP
+\fBenumports command (G)\fR
+The concept of a "port" is fairly foreign
+to UNIX hosts. Under Windows NT/2000 print servers, a port
+is associated with a port monitor and generally takes the form of
+a local port (i.e. LPT1:, COM1:, FILE:) or a remote port
+(i.e. LPD Port Monitor, etc...). By default, Samba has only one
+port defined--"Samba Printer Port". Under 
+Windows NT/2000, all printers must have a valid port name. 
+If you wish to have a list of ports displayed (\fBsmbd
+\fRdoes not use a port name for anything) other than 
+the default "Samba Printer Port", you 
+can define \fIenumports command\fR to point to
+a program which should generate a list of ports, one per line,
+to standard output. This listing will then be used in response
+to the level 1 and 2 EnumPorts() RPC.
+
+Default: \fBno enumports command\fR
+
+Example: \fBenumports command = /usr/bin/listports
+\fR.TP
 \fBexec (S)\fR
 This is a synonym for  \fIpreexec\fR.
 .TP
@@ -2323,9 +2514,11 @@ timestamp than the object files it contains.
 
 However, Unix time semantics mean that the create time 
 reported by Samba will be updated whenever a file is created or 
-deleted in the directory. NMAKE therefore finds all object files 
-in the object directory bar the last one built are out of date 
-compared to the directory and rebuilds them. Enabling this option 
+or deleted in the directory. NMAKE finds all object files in 
+the object directory. The timestamp of the last one built is then 
+compared to the timestamp of the object dircetory. If the 
+directory's timestamp if newer, then all object files
+will be rebuilt. Enabling this option 
 ensures directories always predate their contents and an NMAKE build 
 will proceed as expected.
 
@@ -2339,7 +2532,7 @@ that it is the only one accessing the file and it will aggressively
 cache file data. With some oplock types the client may even cache 
 file open/close operations. This can give enormous performance benefits.
 
-When you set \fBfake oplocks = yes\fR, \fBsmbd(8)\fR <URL:smbd.8.html> will
+When you set \fBfake oplocks = yes\fR, \fBsmbd(8)\fRwill
 always grant oplock requests no matter how many clients are using 
 the file.
 
@@ -2358,8 +2551,7 @@ Default: \fBfake oplocks = no\fR
 .TP
 \fBfollow symlinks (S)\fR
 This parameter allows the Samba administrator 
-to stop \fBsmbd(8)\fR <URL:smbd.8.html> 
-from following symbolic links in a particular share. Setting this 
+to stop \fBsmbd(8)\fRfrom following symbolic links in a particular share. Setting this 
 parameter to no prevents any file or directory 
 that is a symbolic link from being followed (the user will get an 
 error). This option is very useful to stop users from adding a 
@@ -2375,7 +2567,7 @@ Default: \fBfollow symlinks = yes\fR
 \fBforce create mode (S)\fR
 This parameter specifies a set of UNIX mode bit 
 permissions that will \fBalways\fR be set on a 
-file by Samba. This is done by bitwise 'OR'ing these bits onto 
+file created by Samba. This is done by bitwise 'OR'ing these bits onto 
 the mode bits of a file that is being created or having its 
 permissions changed. The default for this parameter is (in octal) 
 000. The modes in this parameter are bitwise 'OR'ed onto the file 
@@ -2419,7 +2611,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory security mode (S)\fR
+\fBforce directory  security mode (S)\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -2434,7 +2626,7 @@ If not set explicitly this parameter is set to the same
 value as the \fIforce 
 directory mode\fR parameter. To allow
 a user to modify all the user/group/world permissions on a 
-directory, with restrictions set this parameter to 000.
+directory without restrictions, set this parameter to 000.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this restriction, 
@@ -2528,9 +2720,7 @@ This user name only gets used once a connection is established.
 Thus clients still need to connect as a valid user and supply a 
 valid password. Once connected, all file operations will be performed 
 as the "forced user", no matter what username the client connected 
-as.
-
-This can be very useful.
+as. This can be very useful.
 
 In Samba 2.0.5 and above this parameter also causes the 
 primary group of the forced user to be used as the primary group 
@@ -2547,7 +2737,7 @@ Example: \fBforce user = auser\fR
 This parameter allows the administrator to 
 configure the string that specifies the type of filesystem a share 
 is using that is reported by \fBsmbd(8)
-\fR <URL:smbd.8.html> when a client queries the filesystem type
+\fRwhen a client queries the filesystem type
 for a share. The default type is NTFS for 
 compatibility with Windows NT but this can be changed to other 
 strings such as Samba or FAT
@@ -2564,7 +2754,7 @@ calls. This can have a significant impact on performance, especially
 when the \fIwide links\fR
 parameter is set to False.
 
-Default: \fBgetwd cache = No\fR
+Default: \fBgetwd cache = yes\fR
 .TP
 \fBgroup (S)\fR
 Synonym for \fIforce 
@@ -2573,7 +2763,7 @@ group\fR.
 \fBguest account (S)\fR
 This is a username which will be used for access 
 to services which are specified as \fI guest ok\fR (see below). Whatever privileges this 
-ser has will be available to any client connecting to the guest service. 
+user has will be available to any client connecting to the guest service. 
 Typically this user will exist in the password file, but will not
 have a valid login. The user account "ftp" is often a good choice 
 for this parameter. If a username is specified in a given service, 
@@ -2592,7 +2782,7 @@ Example: \fBguest account = ftp\fR
 .TP
 \fBguest ok (S)\fR
 If this parameter is yes for 
-a service, then no password is equired to connect to the service. 
+a service, then no password is required to connect to the service. 
 Privileges will be those of the \fI guest account\fR.
 
 See the section below on \fI security\fR for more information about this option.
@@ -2602,7 +2792,7 @@ Default: \fBguest ok = no\fR
 \fBguest only (S)\fR
 If this parameter is yes for 
 a service, then only guest connections to the service are permitted. 
-This parameter will have no affect if  \fIguest ok\fR is not set for the service.
+This parameter will have no effect if  \fIguest ok\fR is not set for the service.
 
 See the section below on \fI security\fR for more information about this option.
 
@@ -2655,7 +2845,7 @@ Default: \fBhide local users = no\fR
 .TP
 \fBhomedir map (G)\fR
 If\fInis homedir
-\fRis True, and \fBsmbd(8)\fR <URL:smbd.8.html> is also acting 
+\fRis True, and \fBsmbd(8)\fRis also acting 
 as a Win95/98 \fIlogon server\fR then this parameter 
 specifies the NIS (or YP) map from which the server for the user's 
 home directory should be extracted. At present, only the Sun 
@@ -2675,9 +2865,21 @@ See also \fInis homedir\fR
 , \fIdomain logons\fR
 \&.
 
-Default: \fBhomedir map = auto.home\fR
+Default: \fBhomedir map = <empty string>\fR
 
 Example: \fBhomedir map = amd.homedir\fR
+.TP
+\fBhost msdfs (G)\fR
+This boolean parameter is only available 
+if Samba has been configured and compiled with the \fB --with-msdfs\fR option. If set to yes, 
+Samba will act as a Dfs server, and allow Dfs-aware clients 
+to browse Dfs trees hosted on the server.
+
+See also the \fI msdfs root\fR share level parameter. For
+more information on setting up a Dfs tree on Samba,
+refer to msdfs_setup.html.
+
+Default: \fBhost msdfs = no\fR
 .TP
 \fBhosts allow (S)\fR
 A synonym for this parameter is \fIallow 
@@ -2728,7 +2930,7 @@ deny access from one particular host
 Note that access still requires suitable user-level passwords.
 
 See \fBtestparm(1)\fR
- <URL:testparm.1.html> for a way of testing your host access to see if it does 
+for a way of testing your host access to see if it does 
 what you expect.
 
 Default: \fBnone (i.e., all hosts permitted access)
@@ -2840,12 +3042,12 @@ a broadcast/mask pair.
 .PP
 The "mask" parameters can either be a bit length (such 
 as 24 for a C class network) or a full netmask in dotted 
-decmal form.
+decimal form.
 .PP
 .PP
 The "IP" parameters above can either be a full dotted 
 decimal IP address or a hostname which will be looked up via 
-the OSes normal hostname resolution mechanisms.
+the OS's normal hostname resolution mechanisms.
 .PP
 .PP
 For example, the following line:
@@ -2861,6 +3063,10 @@ The netmasks of the latter two interfaces would be set to 255.255.255.0.
 .PP
 See also \fIbind 
 interfaces only\fR.
+.PP
+.PP
+Default: \fBall active interfaces except 127.0.0.1 
+that are broadcast capable\fR
 .PP
 .TP
 \fBinvalid users (S)\fR
@@ -2905,19 +3111,19 @@ Keepalives should, in general, not be needed if the socket
 being used has the SO_KEEPALIVE attribute set on it (see \fIsocket options\fR). 
 Basically you should only use this option if you strike difficulties.
 
-Default: \fBkeepalive = 0\fR
+Default: \fBkeepalive = 300\fR
 
-Example: \fBkeepalive = 60\fR
+Example: \fBkeepalive = 600\fR
 .TP
 \fBkernel oplocks (G)\fR
-For UNIXs that support kernel based \fIoplocks\fR
+For UNIXes that support kernel based \fIoplocks\fR
 (currently only IRIX and the Linux 2.4 kernel), this parameter 
 allows the use of them to be turned on or off.
 
 Kernel oplocks support allows Samba \fIoplocks
 \fRto be broken whenever a local UNIX process or NFS operation 
 accesses a file that \fBsmbd(8)\fR
- <URL:smbd.8.html> has oplocked. This allows complete data consistency between 
+has oplocked. This allows complete data consistency between 
 SMB/CIFS, NFS and local file access (and is a \fBvery\fR 
 cool feature :-).
 
@@ -2931,6 +3137,15 @@ and \fIlevel2 oplocks
 
 Default: \fBkernel oplocks = yes\fR
 .TP
+\fBlanman auth (G)\fR
+This parameter determines whether or not smbd will
+attempt to authentication users using the LANMAN password hash.
+If disabled, only clients which support NT password hashes (e.g. Windows 
+NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS 
+network client) will be able to connect to the Samba host.
+
+Default : \fBlanman auth = yes\fR
+.TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports
 level2 (read-only) oplocks on a share.
@@ -2942,7 +3157,7 @@ of releasing all oplocks on a second open, as in traditional,
 exclusive oplocks). This allows all openers of the file that 
 support level2 oplocks to cache the file for read-ahead only (ie. 
 they may not cache writes or lock requests) and increases performance 
-for many acesses of files that are not commonly written (such as 
+for many accesses of files that are not commonly written (such as 
 application .EXE files).
 
 Once one of the clients which have a read-only oplock 
@@ -2951,8 +3166,7 @@ or waited for) and told to break their oplocks to "none" and
 delete any read-ahead caches.
 
 It is recommended that this parameter be turned on 
-to speed access to shared executables (and also to test 
-the code :-).
+to speed access to shared executables.
 
 For more discussions on level2 oplocks see the CIFS spec.
 
@@ -2967,10 +3181,10 @@ See also the \fIoplocks\fR
 and \fIkernel oplocks\fR
 parameters.
 
-Default: \fBlevel2 oplocks = False\fR
+Default: \fBlevel2 oplocks = yes\fR
 .TP
 \fBlm announce (G)\fR
-This parameter determines if  \fBnmbd(8)\fR <URL:nmbd.8.html> will produce Lanman announce 
+This parameter determines if  \fBnmbd(8)\fRwill produce Lanman announce 
 broadcasts that are needed by OS/2 clients in order for them to see 
 the Samba server in their browse list. This parameter can have three 
 values, true, false, or
@@ -2989,7 +3203,7 @@ See also \fIlm interval
 
 Default: \fBlm announce = auto\fR
 
-Example: \fBlm announce = true\fR
+Example: \fBlm announce = yes\fR
 .TP
 \fBlm interval (G)\fR
 If Samba is set to produce Lanman announce 
@@ -3015,7 +3229,7 @@ more details.
 Default: \fBload printers = yes\fR
 .TP
 \fBlocal master (G)\fR
-This option allows \fB nmbd(8)\fR <URL:nmbd.8.html> to try and become a local master browser 
+This option allows \fB nmbd(8)\fRto try and become a local master browser 
 on a subnet. If set to False then \fB nmbd\fR will not attempt to become a local master browser 
 on a subnet and will also lose in all browsing elections. By
 default this value is set to true. Setting this value to true doesn't
@@ -3036,18 +3250,18 @@ files will be placed. The lock files are used to implement the
 \fImax connections\fR
 option.
 
-Default: \fBlock directory = /tmp/samba\fR
+Default: \fBlock directory = ${prefix}/var/locks\fR
 
-Example: \fBlock directory = /usr/local/samba/var/locks\fR
+Example: \fBlock directory = /var/run/samba/locks\fR
 .TP
 \fBlocking (S)\fR
 This controls whether or not locking will be 
 performed by the server in response to lock requests from the 
 client.
 
-If \fBlocking = no\fR, all lock and unlock requests 
-will appear to succeed and all lock queries will indicate that the 
-queried lock is clear.
+If \fBlocking = no\fR, all lock and unlock 
+requests will appear to succeed and all lock queries will report 
+that the file in question is available for locking.
 
 If \fBlocking = yes\fR, real locking will be performed 
 by the server.
@@ -3064,7 +3278,7 @@ You should never need to set this parameter.
 Default: \fBlocking = yes\fR
 .TP
 \fBlog file (G)\fR
-This options allows you to override the name 
+This option allows you to override the name 
 of the Samba log file (also known as the debug file).
 
 This option takes the standard substitutions, allowing 
@@ -3103,7 +3317,7 @@ This parameter can be used with Win9X workstations to ensure
 that roaming profiles are stored in a subdirectory of the user's 
 home directory. This is done in the following way:
 
-\fBlogon home = \\\\%L\\%U\\profile\fR
+\fBlogon home = \\\\%N\\%U\\profile\fR
 
 This tells Samba to return the above string, with 
 substitutions made when a client requests the info, generally 
@@ -3291,15 +3505,15 @@ is put in its place. Otherwise it is placed at the end of the
 command.
 
 Note that it is good practice to include the absolute path 
-in the \fIlpq command\fR as the PATH may not be 
-available to the server.
+in the \fIlpq command\fR as the \fB$PATH
+\fRmay not be available to the server.
 
 See also the \fIprinting
 \fRparameter.
 
 Default: \fBdepends on the setting of \fI printing\fB\fR
 
-Example: \fBlpq command = /usr/bin/lpq %p\fR
+Example: \fBlpq command = /usr/bin/lpq -P%p\fR
 .TP
 \fBlpresume command (S)\fR
 This parameter specifies the command to be 
@@ -3363,14 +3577,14 @@ Example 2: \fBlprm command = /usr/bin/cancel %p-%j
 \fBmachine password timeout (G)\fR
 If a Samba server is a member of an Windows 
 NT Domain (see the security=domain) 
-parameter) then periodically a running  smbd(8) <URL:smbd.8.html> process will try and change the MACHINE ACCOUNT 
+parameter) then periodically a running  smbd(8)process will try and change the MACHINE ACCOUNT 
 PASSWORD stored in the TDB called \fIprivate/secrets.tdb
 \fR\&. This parameter specifies how often this password 
 will be changed, in seconds. The default is one week (expressed in 
 seconds), the same as a Windows NT Domain member server.
 
 See also \fBsmbpasswd(8)
-\fR <URL:smbpasswd.8.html>, and the  security=domain) parameter.
+\fR, and the  security=domain) parameter.
 
 Default: \fBmachine password timeout = 604800\fR
 .TP
@@ -3395,13 +3609,14 @@ This allows a UNIX script to be sent to the Samba host and
 executed on behalf of the connected user.
 
 Scripts executed in this way will be deleted upon 
-completion, permissions permitting.
+completion assuming that the user has the appripriate level 
+of priviledge and the ile permissions allow the deletion.
 
 If the script generates output, output will be sent to 
 the file specified by the \fI magic output\fR parameter (see above).
 
 Note that some shells are unable to interpret scripts 
-containing carriage-return-linefeed instead of linefeed as 
+containing CR/LF instead of CR as 
 the end-of-line marker. Magic scripts must be executable 
 \fBas is\fR on the host, which for some hosts and 
 some shells will require filtering at the DOS end.
@@ -3415,6 +3630,8 @@ Example: \fBmagic script = user.csh\fR
 .TP
 \fBmangle case (S)\fR
 See the section on  NAME MANGLING
+
+Default: \fBmangle case = no\fR
 .TP
 \fBmangled map (S)\fR
 This is for those who want to directly map UNIX 
@@ -3432,7 +3649,7 @@ you would use:
 
 One very useful case is to remove the annoying \fI;1
 \fRoff the ends of filenames on some CDROMS (only visible 
-under some UNIXs). To do this use a map of (*;1 *;).
+under some UNIXes). To do this use a map of (*;1 *;).
 
 Default: \fBno mangled map\fR
 
@@ -3501,19 +3718,9 @@ do not change between sessions.
 Default: \fBmangled names = yes\fR
 .PP
 .TP
-\fBmangling char (S)\fR
-This controls what character is used as 
-the \fBmagic\fR character in name mangling. The default is a '~'
-but this may interfere with some software. Use this option to set 
-it to whatever you prefer.
-
-Default: \fBmangling char = ~\fR
-
-Example: \fBmangling char = ^\fR
-.TP
 \fBmangled stack (G)\fR
 This parameter controls the number of mangled names 
-that should be cached in the Samba server  smbd(8) <URL:smbd.8.html>.
+that should be cached in the Samba server  smbd(8).
 
 This stack is a list of recently mangled base names 
 (extensions are only maintained if they are longer than 3 characters 
@@ -3530,6 +3737,16 @@ file names, so be prepared for some surprises!
 Default: \fBmangled stack = 50\fR
 
 Example: \fBmangled stack = 100\fR
+.TP
+\fBmangling char (S)\fR
+This controls what character is used as 
+the \fBmagic\fR character in name mangling. The default is a '~'
+but this may interfere with some software. Use this option to set 
+it to whatever you prefer.
+
+Default: \fBmangling char = ~\fR
+
+Example: \fBmangling char = ^\fR
 .TP
 \fBmap archive (S)\fR
 This controls whether the DOS archive attribute 
@@ -3571,7 +3788,7 @@ This parameter is only useful in  security modes other than \fIsecurity=share\fR
 and domain.
 
 This parameter can take three different values, which tell
-smbd(8) <URL:smbd.8.html> what to do with user 
+smbd(8)what to do with user 
 login requests that don't match a valid UNIX user in some way.
 
 The three settings are :
@@ -3593,7 +3810,7 @@ Bad Password - Means user logins
 with an invalid password are treated as a guest login and mapped 
 into the guest account. Note that 
 this can cause problems as it means that any user incorrectly typing 
-their password will be silently logged on as a "guest" - and 
+their password will be silently logged on as "guest" - and 
 will not know the reason they cannot access files they think
 they should - there will have been no message given to them
 that they got their password wrong. Helpdesk services will
@@ -3679,7 +3896,7 @@ Default: \fBmax mux = 50\fR
 .TP
 \fBmax open files (G)\fR
 This parameter limits the maximum number of 
-open files that one smbd(8) <URL:smbd.8.html> file 
+open files that one smbd(8)file 
 serving process may have open for a client at any one time. The 
 default for this parameter is set very high (10,000) as Samba uses 
 only one bit per unopened file.
@@ -3690,9 +3907,74 @@ this parameter so you should never need to touch this parameter.
 
 Default: \fBmax open files = 10000\fR
 .TP
+\fBmax print jobs (S)\fR
+This parameter limits the maximum number of 
+jobs allowable in a Samba printer queue at any given moment.
+If this number is exceeded, \fB smbd(8)\fRwill remote "Out of Space" to the client.
+See all \fItotal
+print jobs\fR.
+
+Default: \fBmax print jobs = 1000\fR
+
+Example: \fBmax print jobs = 5000\fR
+.TP
+\fBmax protocol (G)\fR
+The value of the parameter (a string) is the highest 
+protocol level that will be supported by the server.
+
+Possible values are :
+.RS
+.TP 0.2i
+\(bu
+CORE: Earliest version. No 
+concept of user names.
+.TP 0.2i
+\(bu
+COREPLUS: Slight improvements on 
+CORE for efficiency.
+.TP 0.2i
+\(bu
+LANMAN1: First \fB modern\fR version of the protocol. Long filename
+support.
+.TP 0.2i
+\(bu
+LANMAN2: Updates to Lanman1 protocol.
+.TP 0.2i
+\(bu
+NT1: Current up to date version of 
+the protocol. Used by Windows NT. Known as CIFS.
+.RE
+.PP
+Normally this option should not be set as the automatic 
+negotiation phase in the SMB protocol takes care of choosing 
+the appropriate protocol.
+.PP
+.PP
+See also \fImin
+protocol\fR
+.PP
+.PP
+Default: \fBmax protocol = NT1\fR
+.PP
+.PP
+Example: \fBmax protocol = LANMAN1\fR
+.PP
+.TP
+\fBmax smbd processes (G)\fR
+This parameter limits the maximum number of 
+\fBsmbd(8)\fRprocesses concurrently running on a system and is intended
+as a stop gap to prevent degrading service to clients in the event
+that the server has insufficient resources to handle more than this
+number of connections. Remember that under normal operating
+conditions, each user will have an smbd associated with him or her
+to handle connections to all shares from a given host.
+
+Default: \fBmax smbd processes = 0\fR ## no limit
+
+Example: \fBmax smbd processes = 1000\fR
+.TP
 \fBmax ttl (G)\fR
-This option tells nmbd(8) <URL:nmbd.8.html>
-what the default 'time to live' of NetBIOS names should be (in seconds) 
+This option tells nmbd(8)what the default 'time to live' of NetBIOS names should be (in seconds) 
 when \fBnmbd\fR is requesting a name using either a
 broadcast packet or from a WINS server. You should never need to
 change this parameter. The default is 3 days.
@@ -3701,7 +3983,7 @@ Default: \fBmax ttl = 259200\fR
 .TP
 \fBmax wins ttl (G)\fR
 This option tells nmbd(8)
- <URL:nmbd.8.html> when acting as a WINS server ( \fIwins support=yes\fR) what the maximum
+when acting as a WINS server ( \fIwins support=yes\fR) what the maximum
 \&'time to live' of NetBIOS names that \fBnmbd\fR 
 will grant will be (in seconds). You should never need to change this
 parameter. The default is 6 days (518400 seconds).
@@ -3792,6 +4074,20 @@ Example: \fBmessage command = csh -c 'xedit %s;
 rm %s' &\fR
 .PP
 .TP
+\fBmin passwd length (G)\fR
+Synonym for  \fImin password length\fR.
+.TP
+\fBmin password length (G)\fR
+This option sets the minimum length in characters 
+of a plaintext password that \fBsmbd\fR will accept when performing 
+UNIX password changing.
+
+See also \fIunix 
+password sync\fR,  \fIpasswd program\fR and \fIpasswd chat debug\fR
+\&.
+
+Default: \fBmin password length = 5\fR
+.TP
 \fBmin print space (S)\fR
 This sets the minimum amount of free disk 
 space that must be available before a user will be able to spool 
@@ -3805,34 +4101,53 @@ Default: \fBmin print space = 0\fR
 
 Example: \fBmin print space = 2000\fR
 .TP
-\fBmin passwd length (G)\fR
-Synonym for  \fImin password length\fR.
-.TP
-\fBmin password length (G)\fR
-This option sets the minimum length in characters 
-of a plaintext password than smbd will accept when performing 
-UNIX password changing.
+\fBmin protocol (G)\fR
+The value of the parameter (a string) is the 
+lowest SMB protocol dialect than Samba will support. Please refer
+to the \fImax protocol\fR
+parameter for a list of valid protocol names and a brief description
+of each. You may also wish to refer to the C source code in
+\fIsource/smbd/negprot.c\fR for a listing of known protocol
+dialects supported by clients.
 
-See also \fIunix 
-password sync\fR,  \fIpasswd program\fR and \fIpasswd chat debug\fR
-\&.
+If you are viewing this parameter as a security measure, you should
+also refer to the \fIlanman 
+auth\fR parameter. Otherwise, you should never need 
+to change this parameter.
 
-Default: \fBmin password length = 5\fR
+Default : \fBmin protocol = CORE\fR
+
+Example : \fBmin protocol = NT1\fR # disable DOS 
+clients
 .TP
 \fBmin wins ttl (G)\fR
-This option tells nmbd(8) <URL:nmbd.8.html>
-when acting as a WINS server (\fI wins support = yes\fR) what the minimum 'time to live' 
+This option tells nmbd(8)when acting as a WINS server (\fI wins support = yes\fR) what the minimum 'time to live' 
 of NetBIOS names that \fBnmbd\fR will grant will be (in 
 seconds). You should never need to change this parameter. The default 
 is 6 hours (21600 seconds).
 
 Default: \fBmin wins ttl = 21600\fR
 .TP
+\fBmsdfs root (S)\fR
+This boolean parameter is only available if 
+Samba is configured and compiled with the \fB --with-msdfs\fR option. If set to yes>, 
+Samba treats the share as a Dfs root and allows clients to browse 
+the distributed file system tree rooted at the share directory. 
+Dfs links are specified in the share directory by symbolic 
+links of the form \fImsdfs:serverA\\shareA,serverB\\shareB
+\fRand so on. For more information on setting up a Dfs tree 
+on Samba, refer to msdfs_setup.html
+.
+
+See also \fIhost msdfs
+\fR
+Default: \fBmsdfs root = no\fR
+.TP
 \fBname resolve order (G)\fR
 This option is used by the programs in the Samba 
-suite to determine what naming services and in what order to resolve 
-host names to IP addresses. The option takes a space separated 
-string of different name resolution options.
+suite to determine what naming services to use and in what order 
+to resolve host names to IP addresses. The option takes a space 
+separated string of name resolution options.
 
 The options are :"lmhosts", "host", "wins" and "bcast". They 
 cause names to be resolved as follows :
@@ -3841,7 +4156,7 @@ cause names to be resolved as follows :
 \(bu
 lmhosts : Lookup an IP 
 address in the Samba lmhosts file. If the line in lmhosts has 
-no name type attached to the NetBIOS name (see the lmhosts(5) <URL:lmhosts.5.html> for details) then
+no name type attached to the NetBIOS name (see the lmhosts(5)for details) then
 any name type matches for lookup.
 .TP 0.2i
 \(bu
@@ -3879,7 +4194,7 @@ system hostname lookup.
 .PP
 .TP
 \fBnetbios aliases (G)\fR
-This is a list of NetBIOS names that nmbd(8) <URL:nmbd.8.html> will advertise as additional 
+This is a list of NetBIOS names that nmbd(8)will advertise as additional 
 names by which the Samba server is known. This allows one machine 
 to appear in browse lists under multiple names. If a machine is 
 acting as a browse server or logon server none 
@@ -3943,14 +4258,14 @@ Default: \fBnis homedir = no\fR
 .TP
 \fBnt acl support (G)\fR
 This boolean parameter controls whether 
-smbd(8) <URL:smbd.8.html> will attempt to map 
+smbd(8)will attempt to map 
 UNIX permissions into Windows NT access control lists.
 
 Default: \fBnt acl support = yes\fR
 .TP
 \fBnt pipe support (G)\fR
 This boolean parameter controls whether 
-smbd(8) <URL:smbd.8.html> will allow Windows NT 
+smbd(8)will allow Windows NT 
 clients to connect to the NT SMB specific IPC$ 
 pipes. This is a developer debugging option and can be left
 alone.
@@ -3958,7 +4273,7 @@ alone.
 Default: \fBnt pipe support = yes\fR
 .TP
 \fBnt smb support (G)\fR
-This boolean parameter controls whether smbd(8) <URL:smbd.8.html> will negotiate NT specific SMB 
+This boolean parameter controls whether smbd(8)will negotiate NT specific SMB 
 support with Windows NT clients. Although this is a developer 
 debugging option and should be left alone, benchmarking has discovered 
 that Windows NT clients give faster performance with this option 
@@ -3968,15 +4283,39 @@ exactly the same SMB calls that versions prior to Samba 2.0 offered.
 This information may be of use if any users are having problems 
 with NT SMB support.
 
-Default: \fBnt support = yes\fR
+You should not need to ever disable this parameter.
+
+Default: \fBnt smb support = yes\fR
 .TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
 that have null passwords. 
 
-See also smbpasswd (5) <URL:smbpasswd.5.html>.
+See also smbpasswd (5).
 
 Default: \fBnull passwords = no\fR
+.TP
+\fBonly user (S)\fR
+This is a boolean option that controls whether 
+connections with usernames not in the \fIuser\fR 
+list will be allowed. By default this option is disabled so that a 
+client can supply a username to be used by the server. Enabling
+this parameter will force the server to only user the login 
+names from the \fIuser\fR list and is only really
+useful in shave level
+security.
+
+Note that this also means Samba won't try to deduce 
+usernames from the service name. This can be annoying for 
+the [homes] section. To get around this you could use \fBuser =
+%S\fR which means your \fIuser\fR list
+will be just the service name, which for home directories is the 
+name of the user.
+
+See also the \fIuser\fR
+parameter.
+
+Default: \fBonly user = no\fR
 .TP
 \fBole locking compatibility (G)\fR
 This parameter allows an administrator to turn 
@@ -3993,52 +4332,11 @@ Default: \fBole locking compatibility = yes\fR
 \fBonly guest (S)\fR
 A synonym for \fI guest only\fR.
 .TP
-\fBonly user (S)\fR
-This is a boolean option that controls whether 
-connections with usernames not in the \fIuser\fR 
-list will be allowed. By default this option is disabled so a client 
-can supply a username to be used by the server.
-
-Note that this also means Samba won't try to deduce 
-usernames from the service name. This can be annoying for 
-the [homes] section. To get around this you could use \fBuser =
-%S\fR which means your \fIuser\fR list
-will be just the service name, which for home directories is the 
-name of the user.
-
-See also the \fIuser\fR
-parameter.
-
-Default: \fBonly user = no\fR
-.TP
-\fBoplocks (S)\fR
-This boolean option tells smbd whether to 
-issue oplocks (opportunistic locks) to file open requests on this 
-share. The oplock code can dramatically (approx. 30% or more) improve 
-the speed of access to files on Samba servers. It allows the clients 
-to aggressively cache files ocally and you may want to disable this 
-option for unreliable network environments (it is turned on by 
-default in Windows NT Servers). For more information see the file 
-\fISpeed.txt\fR in the Samba \fIdocs/\fR 
-directory.
-
-Oplocks may be selectively turned off on certain files on 
-a per share basis. See the \fI veto oplock files\fR parameter. On some systems 
-oplocks are recognized by the underlying operating system. This 
-allows data synchronization between all access to oplocked files, 
-whether it be via Samba or NFS or a local UNIX process. See the 
-\fIkernel oplocks\fR parameter for details.
-
-See also the \fIkernel 
-oplocks\fR and \fI level2 oplocks\fR parameters.
-
-Default: \fBoplocks = yes\fR
-.TP
 \fBoplock break wait time (G)\fR
 This is a tuning parameter added due to bugs in 
 both Windows 9x and WinNT. If Samba responds to a client too 
 quickly when that client issues an SMB that can cause an oplock 
-break request, then the client redirector can fail and not respond 
+break request, then the network client can fail and not respond 
 to the break request. This tuning parameter (which is set in milliseconds) 
 is the amount of time Samba will wait before sending an oplock break 
 request to such (broken) clients.
@@ -4046,11 +4344,11 @@ request to such (broken) clients.
 \fBDO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
 AND UNDERSTOOD THE SAMBA OPLOCK CODE\fR.
 
-Default: \fBoplock break wait time = 10\fR
+Default: \fBoplock break wait time = 0\fR
 .TP
 \fBoplock contention limit (S)\fR
 This is a \fBvery\fR advanced 
-smbd(8) <URL:smbd.8.html> tuning option to 
+smbd(8)tuning option to 
 improve the efficiency of the granting of oplocks under multiple 
 client contention for the same file.
 
@@ -4065,23 +4363,69 @@ AND UNDERSTOOD THE SAMBA OPLOCK CODE\fR.
 
 Default: \fBoplock contention limit = 2\fR
 .TP
+\fBoplocks (S)\fR
+This boolean option tells smbd whether to 
+issue oplocks (opportunistic locks) to file open requests on this 
+share. The oplock code can dramatically (approx. 30% or more) improve 
+the speed of access to files on Samba servers. It allows the clients 
+to aggressively cache files locally and you may want to disable this 
+option for unreliable network environments (it is turned on by 
+default in Windows NT Servers). For more information see the file 
+\fISpeed.txt\fR in the Samba \fIdocs/\fR 
+directory.
+
+Oplocks may be selectively turned off on certain files with a 
+share. See the \fI veto oplock files\fR parameter. On some systems 
+oplocks are recognized by the underlying operating system. This 
+allows data synchronization between all access to oplocked files, 
+whether it be via Samba or NFS or a local UNIX process. See the 
+\fIkernel oplocks\fR parameter for details.
+
+See also the \fIkernel 
+oplocks\fR and \fI level2 oplocks\fR parameters.
+
+Default: \fBoplocks = yes\fR
+.TP
 \fBos level (G)\fR
 This integer value controls what level Samba 
 advertises itself as for browse elections. The value of this 
-parameter determines whether nmbd(8) <URL:nmbd.8.html> 
-has a chance of becoming a local master browser for the \fI WORKGROUP\fR in the local broadcast area. The default is 
-zero, which means \fBnmbd\fR will lose elections to 
-Windows machines. See \fIBROWSING.txt\fR in the 
-Samba \fIdocs/\fR directory for details.
+parameter determines whether nmbd(8)has a chance of becoming a local master browser for the \fI WORKGROUP\fR in the local broadcast area.
+
+\fBNote :\fRBy default, Samba will win 
+a local master browsing election over all Microsoft operating 
+systems except a Windows NT 4.0/2000 Domain Controller. This 
+means that a misconfigured Samba host can effectively isolate 
+a subnet for browsing purposes. See \fIBROWSING.txt
+\fRin the Samba \fIdocs/\fR directory 
+for details.
 
 Default: \fBos level = 20\fR
 
 Example: \fBos level = 65 \fR
 .TP
+\fBos2 driver map (G)\fR
+The parameter is used to define the absolute
+path to a file containing a mapping of Windows NT printer driver
+names to OS/2 printer driver names. The format is:
+
+<nt driver name> = <os2 driver 
+name>.<device name>
+
+For example, a valid entry using the HP LaserJet 5
+printer driver woudl appear as \fBHP LaserJet 5L = LASERJET.HP 
+LaserJet 5L\fR.
+
+The need for the file is due to the printer driver namespace 
+problem described in the Samba 
+Printing HOWTO. For more details on OS/2 clients, please 
+refer to the OS2-Client-HOWTO
+containing in the Samba documentation.
+
+Default: \fBos2 driver map = <empty string>
+\fR.TP
 \fBpanic action (G)\fR
 This is a Samba developer option that allows a 
-system command to be called when either  smbd(8) <URL:smbd.8.html> or nmbd(8) <URL:nmbd.8.html> 
-crashes. This is usually used to draw attention to the fact that 
+system command to be called when either  smbd(8)crashes. This is usually used to draw attention to the fact that 
 a problem occurred.
 
 Default: \fBpanic action = <empty string>\fR
@@ -4090,9 +4434,9 @@ Example: \fBpanic action = "/bin/sleep 90000"\fR
 .TP
 \fBpasswd chat (G)\fR
 This string controls the \fB"chat"\fR 
-conversation that takes places between smbd <URL:smbd.8.html> and the local password changing
+conversation that takes places between smbdand the local password changing
 program to change the users password. The string describes a 
-sequence of response-receive pairs that  smbd(8) <URL:smbd.8.html> uses to determine what to send to the 
+sequence of response-receive pairs that  smbd(8)uses to determine what to send to the 
 \fIpasswd program\fR
 and what to expect back. If the expected output is not 
 received then the password is not changed.
@@ -4115,7 +4459,7 @@ in them into a single string.
 
 If the send string in any part of the chat sequence 
 is a fullstop ".", then no string is sent. Similarly, 
-is the expect string is a fullstop then no string is expected.
+if the expect string is a fullstop then no string is expected.
 
 Note that if the \fIunix 
 password sync\fR parameter is set to true, then this 
@@ -4127,8 +4471,8 @@ to "" (the empty string).
 See also \fIunix password 
 sync\fR, \fI passwd program\fR and  \fIpasswd chat debug\fR.
 
-Default: \fBpasswd chat = *old*password* %o\\n *new*
-password* %n\\n *new*password* %n\\n *changed*\fR
+Default: \fBpasswd chat = *new*password* %n\\n 
+*new*password* %n\\n *changed*\fR
 
 Example: \fBpasswd chat = "*Enter OLD password*" %o\\n 
 "*Enter NEW password*" %n\\n "*Reenter NEW password*" %n\\n "*Password 
@@ -4138,7 +4482,7 @@ changed*"\fR
 This boolean specifies if the passwd chat script 
 parameter is run in \fBdebug\fR mode. In this mode the 
 strings passed to and received from the passwd chat are printed 
-in the smbd(8) <URL:smbd.8.html> log with a 
+in the smbd(8)log with a 
 \fIdebug level\fR 
 of 100. This is a dangerous option as it will allow plaintext passwords 
 to be seen in the \fBsmbd\fR log. It is available to help 
@@ -4152,8 +4496,6 @@ See also <\fIpasswd chat\fR
 \&.
 
 Default: \fBpasswd chat debug = no\fR
-
-Example: \fBpasswd chat debug = yes\fR
 .TP
 \fBpasswd program (G)\fR
 The name of a program that can be used to set 
@@ -4171,7 +4513,7 @@ it.
 password sync\fR parameter is set to True
 then this program is called \fBAS ROOT\fR 
 before the SMB password in the smbpasswd(5)
- <URL:smbpasswd.5.html> file is changed. If this UNIX password change fails, then 
+file is changed. If this UNIX password change fails, then 
 \fBsmbd\fR will fail to change the SMB password also 
 (this is by design).
 
@@ -4193,7 +4535,10 @@ Some client/server combinations have difficulty
 with mixed-case passwords. One offending client is Windows for 
 Workgroups, which for some reason forces passwords to upper 
 case when using the LANMAN1 protocol, but leaves them alone when 
-using COREPLUS!
+using COREPLUS! Another problem child is the Windows 95/98
+family of operating systems. These clients upper case clear
+text passwords even when NT LM 0.12 selected by the protocol
+negotiation request/response.
 
 This parameter defines the maximum number of characters 
 that may be upper case in passwords.
@@ -4229,9 +4574,9 @@ as a WinNT box) with this option, and using \fBsecurity = domain
 \fRor \fBsecurity = server\fR you can get Samba 
 to do all its username/password validation via a remote server.
 
-This options sets the name of the password server to use. 
+This option sets the name of the password server to use. 
 It must be a NetBIOS name, so if the machine's NetBIOS name is 
-different from its internet name then you may have to add its NetBIOS 
+different from its Internet name then you may have to add its NetBIOS 
 name to the lmhosts file which is stored in the same directory 
 as the \fIsmb.conf\fR file.
 
@@ -4241,7 +4586,7 @@ resolve order\fR and so may resolved
 by any method and order described in that parameter.
 
 The password server much be a machine capable of using 
-the "LM1.2X002" or the "LM NT 0.12" protocol, and it must be in 
+the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 user level security mode.
 
 \fBNOTE:\fR Using a password server 
@@ -4256,14 +4601,14 @@ server!
 The name of the password server takes the standard 
 substitutions, but probably the only useful one is \fI%m
 \fR, which means the Samba server will use the incoming 
-client as the passwordserver. If you use this then you better 
-trust your clients, and you better restrict them with hosts allow!
+client as the password server. If you use this then you better 
+trust your clients, and you had better restrict them with hosts allow!
 
 If the \fIsecurity\fR parameter is set to
 domain, then the list of machines in this 
 option must be a list of Primary or Backup Domain controllers for the
-Domain or the character '*', as the Samba server is cryptographicly
-in that domain, and will use cryptographicly authenticated RPC calls
+Domain or the character '*', as the Samba server is effectively
+in that domain, and will use cryptographically authenticated RPC calls
 to authenticate the user logging on. The advantage of using \fB security = domain\fR is that if you list several hosts in the 
 \fIpassword server\fR option then \fBsmbd
 \fRwill try each in turn till it finds one that responds. This 
@@ -4336,6 +4681,16 @@ Default: \fBnone\fR
 
 Example: \fBpath = /home/fred\fR
 .TP
+\fBposix locking (S)\fR
+The \fBsmbd(8)\fRdaemon maintains an database of file locks obtained by SMB clients.
+The default behavior is to map this internal database to POSIX
+locks. This means that file locks obtained by SMB clients are 
+consistent with those seen by POSIX compliant applications accessing 
+the files via a non-SMB method (e.g. NFS or local file access). 
+You should never need to disable this parameter.
+
+Default: \fBposix locking = yes\fR
+.TP
 \fBpostexec (S)\fR
 This option specifies a command to be run 
 whenever the service is disconnected. It takes the usual 
@@ -4396,7 +4751,7 @@ return code from \fIpreexec
 Default: \fBpreexec close = no\fR
 .TP
 \fBpreferred master (G)\fR
-This boolean parameter controls if nmbd(8) <URL:nmbd.8.html> is a preferred master browser 
+This boolean parameter controls if nmbd(8)is a preferred master browser 
 for its workgroup.
 
 If this is set to true, on startup, \fBnmbd\fR 
@@ -4414,24 +4769,34 @@ capabilities.
 See also \fIos level\fR
 \&.
 
-Default: \fBpreferred master = no\fR
+Default: \fBpreferred master = auto\fR
 .TP
 \fBprefered master (G)\fR
 Synonym for \fI preferred master\fR for people who cannot spell :-).
 .TP
 \fBpreload\fR
-Synonym for \fI auto services\fR.
+This is a list of services that you want to be 
+automatically added to the browse lists. This is most useful 
+for homes and printers services that would otherwise not be 
+visible.
+
+Note that if you just want all printers in your 
+printcap file loaded then the  \fIload printers\fR option is easier.
+
+Default: \fBno preloaded services\fR
+
+Example: \fBpreload = fred lp colorlp\fR
 .TP
 \fBpreserve case (S)\fR
 This controls if new filenames are created
 with the case that the client passes, or if they are forced to 
-be the \fIderault case
+be the \fIdefault case
 \fR\&.
 
 Default: \fBpreserve case = yes\fR
 
 See the section on NAME 
-MANGLING" for a fuller discussion.
+MANGLING for a fuller discussion.
 .TP
 \fBprint command (S)\fR
 After a print job has finished spooling to 
@@ -4465,7 +4830,7 @@ If there is neither a specified print command for a
 printable service nor a global print command, spool files will 
 be created but not processed and (most importantly) not removed.
 
-Note that printing may fail on some UNIXs from the 
+Note that printing may fail on some UNIXes from the 
 nobody account. If this happens then create 
 an alternative guest account that can print and set the \fIguest account\fR 
 in the [global] section.
@@ -4517,16 +4882,6 @@ Default: \fBprintable = no\fR
 \fBprintcap (G)\fR
 Synonym for \fI printcap name\fR.
 .TP
-\fBprinter admin (S)\fR
-This is a list of users that can do anything to 
-printers via the remote administration interfaces offered by MSRPC 
-(usually using a NT workstation). Note that the root user always 
-has admin rights.
-
-Default: \fBprinter admin = <empty string>\fR
-
-Example: \fBprinter admin = admin, @staff\fR
-.TP
 \fBprintcap name (G)\fR
 This parameter may be used to override the 
 compiled-in default printcap name used by the server (usually \fI /etc/printcap\fR). See the discussion of the [printers] section above for reasons 
@@ -4566,23 +4921,27 @@ Default: \fBprintcap name = /etc/printcap\fR
 
 Example: \fBprintcap name = /etc/myprintcap\fR
 .TP
-\fBprinter (S)\fR
-This parameter specifies the name of the printer 
-to which print jobs spooled through a printable service will be sent.
+\fBprinter admin (S)\fR
+This is a list of users that can do anything to 
+printers via the remote administration interfaces offered by MS-RPC 
+(usually using a NT workstation). Note that the root user always 
+has admin rights.
 
-If specified in the [global] section, the printer
-name given will be used for any printable service that does 
-not have its own printer name specified.
+Default: \fBprinter admin = <empty string>\fR
 
-Default: \fBnone (but may be lp 
-on many systems)\fR
-
-Example: \fBprinter name = laserwriter\fR
+Example: \fBprinter admin = admin, @staff\fR
 .TP
 \fBprinter driver (S)\fR
+\fBNote :\fRThis is a depreciated 
+parameter and will be removed in the next major release
+following version 2.2. Please see the instructions in
+\fIPRINTER_DRIVER2.txt\fR in the \fIdocs
+\fRof the Samba distribution for more information
+on the new method of loading printer drivers onto a Samba server.
+
 This option allows you to control the string 
 that clients receive when they ask the server for the printer driver 
-associated with a printer. If you are using Windows95 or WindowsNT 
+associated with a printer. If you are using Windows95 or Windows NT 
 then you can use this to automate the setup of printers on your 
 system.
 
@@ -4591,7 +4950,7 @@ sensitive) that describes the appropriate printer driver for your
 system. If you don't know the exact string to use then you should 
 first try with no \fI printer driver\fR option set and the client will 
 give you a list of printer drivers. The appropriate strings are 
-shown in a scrollbox after you have chosen the printer manufacturer.
+shown in a scroll box after you have chosen the printer manufacturer.
 
 See also \fIprinter
 driver file\fR.
@@ -4599,6 +4958,13 @@ driver file\fR.
 Example: \fBprinter driver = HP LaserJet 4L\fR
 .TP
 \fBprinter driver file (G)\fR
+\fBNote :\fRThis is a depreciated 
+parameter and will be removed in the next major release
+following version 2.2. Please see the instructions in
+\fIPRINTER_DRIVER2.txt\fR in the \fIdocs
+\fRof the Samba distribution for more information
+on the new method of loading printer drivers onto a Samba server.
+
 This parameter tells Samba where the printer driver 
 definition file, used when serving drivers to Windows 95 clients, is 
 to be found. If this is not set, the default is :
@@ -4620,6 +4986,13 @@ Example: \fBprinter driver file =
 /usr/local/samba/printers/drivers.def\fR
 .TP
 \fBprinter driver location (S)\fR
+\fBNote :\fRThis is a depreciated 
+parameter and will be removed in the next major release
+following version 2.2. Please see the instructions in
+\fIPRINTER_DRIVER2.txt\fR in the \fIdocs
+\fRof the Samba distribution for more information
+on the new method of loading printer drivers onto a Samba server.
+
 This parameter tells clients of a particular printer 
 share where to find the printer driver files for the automatic 
 installation of drivers for Windows 95 machines. If Samba is set up 
@@ -4639,7 +5012,20 @@ Default: \fBnone\fR
 Example: \fBprinter driver location = \\\\MACHINE\\PRINTER$
 \fR.TP
 \fBprinter name (S)\fR
-Synonym for \fI printer\fR.
+This parameter specifies the name of the printer 
+to which print jobs spooled through a printable service will be sent.
+
+If specified in the [global] section, the printer
+name given will be used for any printable service that does 
+not have its own printer name specified.
+
+Default: \fBnone (but may be lp 
+on many systems)\fR
+
+Example: \fBprinter name = laserwriter\fR
+.TP
+\fBprinter (S)\fR
+Synonym for \fI printer name\fR.
 .TP
 \fBprinting (S)\fR
 This parameters controls how printer status 
@@ -4658,63 +5044,14 @@ QNX, SOFTQ,
 and CUPS.
 
 To see what the defaults are for the other print 
-commands when using the various options use the testparm(1) <URL:testparm.1.html> program.
+commands when using the various options use the testparm(1)program.
 
 This option can be set on a per printer basis
 
 See also the discussion in the  [printers] section.
 .TP
-\fBprivate dir(G)\fR
-The \fIprivate dir\fR parameter 
-allows an administator to define a directory path used to hold the 
-various databases Samba will use to store things like a the machine 
-trust account information when acting as a domain member (i.e. where 
-the secrets.tdb file will be located), where the passdb.tbd file 
-will stored in the case of using the experiemental tdbsam support, 
-etc...
-
-Default: \fBprivate dir = <compile time location 
-of smbpasswd>\fR
-
-Example: \fBprivate dir = /etc/smbprivate\fR
-.TP
 \fBprotocol (G)\fR
-The value of the parameter (a string) is the highest 
-protocol level that will be supported by the server.
-
-Possible values are :
-.RS
-.TP 0.2i
-\(bu
-CORE: Earliest version. No 
-concept of user names.
-.TP 0.2i
-\(bu
-COREPLUS: Slight improvements on 
-CORE for efficiency.
-.TP 0.2i
-\(bu
-LANMAN1: First \fB modern\fR version of the protocol. Long filename
-support.
-.TP 0.2i
-\(bu
-LANMAN2: Updates to Lanman1 protocol.
-.TP 0.2i
-\(bu
-NT1: Current up to date version of 
-the protocol. Used by Windows NT. Known as CIFS.
-.RE
-.PP
-Normally this option should not be set as the automatic 
-negotiation phase in the SMB protocol takes care of choosing 
-the appropriate protocol.
-.PP
-.PP
-Default: \fBprotocol = NT1\fR
-.PP
-.PP
-Example: \fBprotocol = LANMAN1\fR
-.PP
+Synonym for  \fImax protocol\fR.
 .TP
 \fBpublic (S)\fR
 Synonym for \fIguest 
@@ -4770,7 +5107,7 @@ Default: \fBdepends on the setting of \fIprinting\fB\fR
 Example: \fBqueuepause command = enable %p
 \fR.TP
 \fBread bmpx (G)\fR
-This boolean parameter controls whether smbd(8) <URL:smbd.8.html> will support the "Read 
+This boolean parameter controls whether smbd(8)will support the "Read 
 Block Multiplex" SMB. This is now rarely used and defaults to 
 no. You should never need to set this 
 parameter.
@@ -4836,7 +5173,7 @@ Default: \fBread size = 16384\fR
 Example: \fBread size = 8192\fR
 .TP
 \fBremote announce (G)\fR
-This option allows you to setup nmbd(8) <URL:nmbd.8.html> to periodically announce itself 
+This option allows you to setup nmbd(8)to periodically announce itself 
 to arbitrary IP addresses with an arbitrary workgroup name.
 
 This is useful if you want your Samba server to appear 
@@ -4865,7 +5202,7 @@ in the \fIdocs/\fR directory.
 Default: \fBremote announce = <empty string>
 \fR.TP
 \fBremote browse sync (G)\fR
-This option allows you to setup nmbd(8) <URL:nmbd.8.html> to periodically request 
+This option allows you to setup nmbd(8)to periodically request 
 synchronization of browse lists with the master browser of a samba 
 server that is on a remote segment. This option will allow you to 
 gain browse lists for multiple workgroups across routed networks. This 
@@ -4900,10 +5237,10 @@ case where the server is expecting the client to send a username,
 but it doesn't. Setting it to true will force these anonymous 
 connections to be denied, and the client will be required to always 
 supply a username and password when connecting. Use of this parameter 
-is only recommened for homogenous NT client environments.
+is only recommended for homogeneous NT client environments.
 
 This parameter makes the use of macro expansions that rely
-on the username (%U, %G, etc) consistant. NT 4.0 
+on the username (%U, %G, etc) consistent. NT 4.0 
 likes to use anonymous connections when refreshing the share list, 
 and this is a way to work around that.
 
@@ -4959,20 +5296,26 @@ is useful for unmounting filesystems
 (such as cdroms) after a connection is closed.
 
 See also \fI postexec\fR.
-.TP
+
+Default: \fBroot postexec = <empty string>
+\fR.TP
 \fBroot preexec (S)\fR
 This is the same as the \fIpreexec\fR
 parameter except that the command is run as root. This 
-is useful for mounting filesystems 
-(such as cdroms) after a connection is closed.
+is useful for mounting filesystems (such as cdroms) after a 
+connection is closed.
 
 See also \fI preexec\fR and  \fIpreexec close\fR.
-.TP
+
+Default: \fBroot preexec = <empty string>
+\fR.TP
 \fBroot preexec close (S)\fR
 This is the same as the \fIpreexec close
 \fRparameter except that the command is run as root.
 
 See also \fI preexec\fR and  \fIpreexec close\fR.
+
+Default: \fBroot preexec close = no\fR
 .TP
 \fBsecurity (G)\fR
 This option affects how clients respond to 
@@ -4980,7 +5323,7 @@ Samba and is one of the most important settings in the \fI smb.conf\fR file.
 
 The option sets the "security mode bit" in replies to 
 protocol negotiations with smbd(8)
- <URL:smbd.8.html> to turn share level security on or off. Clients decide 
+to turn share level security on or off. Clients decide 
 based on this bit whether (and how) to transfer user and password 
 information to the server.
 
@@ -5156,7 +5499,7 @@ parameter.
 \fBSECURITY = DOMAIN
 \fR.PP
 .PP
-This mode will only work correctly if smbpasswd(8) <URL:smbpasswd.8.html> has been used to add this 
+This mode will only work correctly if smbpasswd(8)has been used to add this 
 machine into a Windows NT Domain. It expects the \fIencrypted passwords\fR
 parameter to be set to true. In this 
 mode Samba will try to validate the username/password by passing
@@ -5293,26 +5636,6 @@ off as many Windows applications will break if you do so.
 
 Default: \fBshare modes = yes\fR
 .TP
-\fBshared mem size (G)\fR
-It specifies the size of the shared memory (in 
-bytes) to use between smbd(8) <URL:smbd.8.html> 
-processes. This parameter defaults to one megabyte of shared 
-memory. It is possible that if you have a large erver with many 
-files open simultaneously that you may need to increase this 
-parameter. Signs that this parameter is set too low are users 
-reporting strange problems trying to save files (locking errors) 
-and error messages in the smbd log looking like \fBERROR
-smb_shm_alloc : alloc of XX bytes failed\fR.
-
-If your OS refuses the size that Samba asks for then 
-Samba will try a smaller size, reducing by a factor of 0.8 until 
-the OS accepts it.
-
-Default: \fBshared mem size = 1048576\fR
-
-Example: \fBshared mem size = 5242880 ; Set to 5mb for a 
-large number of files.\fR
-.TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 
 which conform to 8.3 syntax, that is all in upper case and of 
@@ -5326,29 +5649,41 @@ See the section on  NAME MANGLING.
 
 Default: \fBshort preserve case = yes\fR
 .TP
+\fBshow add printer wizard (G)\fR
+With the introduction of MS-RPC based printing support
+for Windows NT/2000 client in Samba 2.2, a "Printers..." folder will 
+appear on Samba hosts in the share listing. Normally this folder will 
+contain an icon for the MS Add Printer Wizard (APW). However, it is 
+possible to disable this feature regardless of the level of privilege 
+of the connected user.
+
+Under normal circumstances, the Windows NT/2000 client will 
+open a handle on the printer server with OpenPrinterEx() asking for
+Administrator privileges. If the user does not have administrative
+access on the print server (i.e is not root or a member of the 
+\fIprinter admin\fR group), the OpenPrinterEx() 
+call fails and the clients another open call with a request for 
+a lower privilege level. This should succeed, however the APW 
+icon will not be displayed.
+
+Disabling the \fIshow add printer wizard\fR
+parameter will always cause the OpenPrinterEx() on the server
+to fail. Thus the APW icon will never be displayed. \fB Note :\fRThis does not prevent the same user from having 
+administrative privilege on an individual printer.
+
+See also \fIaddprinter
+command\fR,  \fIdeleteprinter command\fR, \fIprinter admin\fR
+
+Default :\fBshow add printer wizard = yes\fR
+.TP
 \fBsmb passwd file (G)\fR
 This option sets the path to the encrypted 
 smbpasswd file. By default the path to the smbpasswd file 
 is compiled into Samba.
 
-Default: \fBsmb passwd file= <compiled 
-default>\fR
-
-Example: \fBsmb passwd file = /usr/samba/private/smbpasswd
-\fR.TP
-\fBsmbrun (G)\fR
-This sets the full path to the \fBsmbrun
-\fRbinary. This defaults to the value in the \fI Makefile\fR.
-
-You must get this path right for many services 
-to work correctly.
-
-You should not need to change this parameter so 
-long as Samba is installed correctly.
-
-Default: \fBsmbrun=<compiled default>
+Default: \fBsmb passwd file = ${prefix}/private/smbpasswd
 \fR
-Example: \fBsmbrun = /usr/local/samba/bin/smbrun
+Example: \fBsmb passwd file = /etc/samba/smbpasswd
 \fR.TP
 \fBsocket address (G)\fR
 This option allows you to control what 
@@ -5565,7 +5900,7 @@ given at configure time.
 this code is \fBNOT\fR enabled by default in any 
 current binary version of Samba.
 
-The certificate in this file is used by  \fBsmbclient(1)\fR <URL:smbclient.1.html> if it exists. It's needed 
+The certificate in this file is used by  \fBsmbclient(1)\fRif it exists. It's needed 
 if the server requires a client certificate.
 
 Default: \fBssl client cert = /usr/local/ssl/certs/smbclient.pem
@@ -5580,7 +5915,7 @@ given at configure time.
 this code is \fBNOT\fR enabled by default in any 
 current binary version of Samba.
 
-This is the private key for  \fBsmbclient(1)\fR <URL:smbclient.1.html>. It's only needed if the 
+This is the private key for  \fBsmbclient(1)\fR. It's only needed if the 
 client should have a certificate. 
 
 Default: \fBssl client key = /usr/local/ssl/private/smbclient.pem
@@ -5672,7 +6007,7 @@ current binary version of Samba.
 
 If this variable is set to yes, the 
 \fBsmbclient(1)\fR
- <URL:smbclient.1.html> will request a certificate from the server. Same as 
+will request a certificate from the server. Same as 
 \fIssl require 
 clientcert\fR for the server.
 
@@ -5734,7 +6069,7 @@ Security) is the new standard for SSL.
 Default: \fBssl version = "ssl2or3"\fR
 .TP
 \fBstat cache (G)\fR
-This parameter determines if smbd(8) <URL:smbd.8.html> will use a cache in order to 
+This parameter determines if smbd(8)will use a cache in order to 
 speed up case insensitive name mappings. You should never need 
 to change this parameter.
 
@@ -5749,8 +6084,7 @@ Default: \fBstat cache size = 50\fR
 .TP
 \fBstatus (G)\fR
 This enables or disables logging of connections 
-to a status file that smbstatus(1) <URL:smbstatus.1.html>
-can read.
+to a status file that smbstatus(1)can read.
 
 With this disabled \fBsmbstatus\fR won't be able
 to tell you what connections are active. You should never need to
@@ -5825,7 +6159,7 @@ level one maps onto LOG_WARNING, debug level
 two maps onto LOG_NOTICE, debug level three 
 maps onto LOG_INFO. All higher levels are mapped to  LOG_DEBUG.
 
-This paramter sets the threshold for sending messages 
+This parameter sets the threshold for sending messages 
 to syslog. Only messages with debug level less than this value 
 will be sent to syslog.
 
@@ -5843,7 +6177,7 @@ Default: \fBsyslog only = no\fR
 only available in Samba 3.0.
 
 When filling out the user information for a Windows NT 
-user, the winbindd(8) <URL:winbindd.8.html> daemon 
+user, the winbindd(8)daemon 
 uses this parameter to fill in the home directory for that user. 
 If the string \fI%D\fR is present it is substituted 
 with the user's Windows NT domain name. If the string \fI%U
@@ -5857,7 +6191,7 @@ Default: \fBtemplate homedir = /home/%D/%U\fR
 only available in Samba 3.0.
 
 When filling out the user information for a Windows NT 
-user, the winbindd(8) <URL:winbindd.8.html> daemon 
+user, the winbindd(8)daemon 
 uses this parameter to fill in the login shell for that user.
 
 Default: \fBtemplate shell = /bin/false\fR
@@ -5874,13 +6208,28 @@ Example: \fBtime offset = 60\fR
 .TP
 \fBtime server (G)\fR
 This parameter determines if  
-nmbd(8) <URL:nmbd.8.html> advertises itself as a time server to Windows 
+nmbd(8)advertises itself as a time server to Windows 
 clients.
 
 Default: \fBtime server = no\fR
 .TP
 \fBtimestamp logs (G)\fR
 Synonym for \fI debug timestamp\fR.
+.TP
+\fBtotal print jobs (G)\fR
+This parameter accepts an integer value which defines
+a limit on the maximum number of print jobs that will be accepted 
+system wide at any given time. If a print job is submitted
+by a client which will exceed this number, then smbd will return an 
+error indicating that no space is available on the server. The 
+default value of 0 means that no such limit exists. This parameter
+can be used to prevent a server from exceeding its capacity and is
+designed as a printing throttle. See also 
+\fImax print jobs\fR.
+
+Default: \fBtotal print jobs = 0\fR
+
+Example: \fBtotal print jobs = 5000\fR
 .TP
 \fBunix password sync (G)\fR
 This boolean parameter controls whether Samba 
@@ -5896,14 +6245,6 @@ See also \fIpasswd
 program\fR, \fI passwd chat\fR.
 
 Default: \fBunix password sync = no\fR
-.TP
-\fBunix realname (G)\fR
-This boolean parameter when set causes samba 
-to supply the real name field from the unix password file to 
-the client. This isuseful for setting up mail clients and WWW 
-browsers on systems used by more than one person.
-
-Default: \fBunix realname = no\fR
 .TP
 \fBupdate encrypted (G)\fR
 This boolean parameter allows a user logging 
@@ -5998,7 +6339,7 @@ is compiled with netgroup support) and will expand to a list
 of all users in the netgroup group of that name.
 
 Note that searching though a groups database can take 
-quite some time, snd some clients may time out during the 
+quite some time, and some clients may time out during the 
 search.
 
 See the section NOTE ABOUT 
@@ -6006,7 +6347,7 @@ USERNAME/PASSWORD VALIDATION for more information on how
 this parameter determines access to the services.
 
 Default: \fBThe guest account if a guest service, 
-else the name of the service.\fR
+else <empty string>.\fR
 
 Examples:\fBusername = fred, mary, jack, jane, 
 @users, @pcgroup\fR
@@ -6020,7 +6361,7 @@ username is not found on the UNIX machine.
 
 If this parameter is set to non-zero the behavior changes. 
 This parameter is a number that specifies the number of uppercase
-combinations to try whilst trying to determine the UNIX user name. The
+combinations to try while trying to determine the UNIX user name. The
 higher the number the more combinations will be tried, but the slower
 the discovery of usernames will be. Use this parameter when you have
 strange usernames on your UNIX machine, such as AstrangeUser
@@ -6138,43 +6479,6 @@ native system is set to use (usually
 \fI/var/run/utmp\fR on Linux).
 
 Default: \fBno utmp directory\fR
-.TP
-\fBwinbind cache time\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
-This parameter specifies the number of seconds the
-winbindd(8) <URL:winbindd.8.html> daemon will cache 
-user and group information before querying a Windows NT server 
-again.
-
-Default: \fBwinbind cache type = 15\fR
-.TP
-\fBwinbind gid\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
-The winbind gid parameter specifies the range of group 
-ids that are allocated by the  winbindd(8) <URL:winbindd.8.html> daemon. This range of group ids should have no 
-existing local or nis groups within it as strange conflicts can 
-occur otherwise.
-
-Default: \fBwinbind gid = <empty string>
-\fR
-Example: \fBwinbind gid = 10000-20000\fR
-.TP
-\fBwinbind uid\fR
-\fBNOTE:\fR this parameter is only 
-available in Samba 3.0.
-
-The winbind gid parameter specifies the range of group 
-ids that are allocated by the  winbindd(8) <URL:winbindd.8.html> daemon. This range of ids should have no 
-existing local or nis users within it as strange conflicts can 
-occur otherwise.
-
-Default: \fBwinbind uid = <empty string>
-\fR
-Example: \fBwinbind uid = 10000-20000\fR
 .TP
 \fBvalid chars (G)\fR
 The option allows you to specify additional 
@@ -6319,6 +6623,23 @@ the particular NetBench share :
 
 Example: \fBveto oplock files = /*;.SEM/
 \fR.TP
+\fBvfs object (S)\fR
+This parameter specifies a shared object file that 
+is used for Samba VFS I/O operations. By default, normal 
+disk I/O operations are used but these can be overloaded 
+with a VFS object. The Samba VFS layer is new to Samba 2.2 and 
+must be enabled at compile time with --with-vfs.
+
+Default : \fBno value\fR
+.TP
+\fBvfs options (S)\fR
+This parameter allows parameters to be passed 
+to the vfs layer at initialisation time. The Samba VFS layer 
+is new to Samba 2.2 and must be enabled at compile time 
+with --with-vfs. See also \fI vfs object\fR.
+
+Default : \fBno value\fR
+.TP
 \fBvolume (S)\fR
 This allows you to override the volume label 
 returned for a share. Useful for CDROMs with installation programs 
@@ -6339,31 +6660,56 @@ that Samba has to do in order to perform the link checks.
 
 Default: \fBwide links = yes\fR
 .TP
-\fBwins proxy (G)\fR
-This is a boolean that controls if nmbd(8) <URL:nmbd.8.html> will respond to broadcast name 
-queries on behalf of other hosts. You may need to set this 
-to yes for some older clients.
+\fBwinbind cache time\fR
+\fBNOTE:\fR this parameter is only 
+available in Samba 3.0.
 
-Default: \fBwins proxy = no\fR
+This parameter specifies the number of seconds the
+winbindd(8)daemon will cache 
+user and group information before querying a Windows NT server 
+again.
+
+Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwins server (G)\fR
-This specifies the IP address (or DNS name: IP 
-address for preference) of the WINS server that  nmbd(8) <URL:nmbd.8.html> should register with. If you have a WINS server on 
-your network then you should set this to the WINS server's IP.
+\fBwinbind gid\fR
+\fBNOTE:\fR this parameter is only 
+available in Samba 3.0.
 
-You should point this at your WINS server if you have a
-multi-subnetted network.
+The winbind gid parameter specifies the range of group 
+ids that are allocated by the  winbindd(8)daemon. This range of group ids should have no 
+existing local or nis groups within it as strange conflicts can 
+occur otherwise.
 
-\fBNOTE\fR. You need to set up Samba to point 
-to a WINS server if you have multiple subnets and wish cross-subnet 
-browsing to work correctly.
+Default: \fBwinbind gid = <empty string>
+\fR
+Example: \fBwinbind gid = 10000-20000\fR
+.TP
+\fBwinbind separator\fR
+\fBNOTE:\fR this parameter is only 
+available in Samba 3.0.
 
-See the documentation file \fIBROWSING.txt\fR 
-in the docs/ directory of your Samba source distribution.
+This parameter allows an admin to define the character 
+used when listing a username of the form of \fIDOMAIN
+\fR\\\fIuser\fR. This parameter 
+is only applicable when using the \fIpam_winbind.so\fR
+and \fInss_winbind.so\fR modules for UNIX services.
 
-Default: \fBnot enabled\fR
+Example: \fBwinbind separator = \\\fR
 
-Example: \fBwins server = 192.9.200.1\fR
+Example: \fBwinbind separator = +\fR
+.TP
+\fBwinbind uid\fR
+\fBNOTE:\fR this parameter is only 
+available in Samba 3.0.
+
+The winbind gid parameter specifies the range of group 
+ids that are allocated by the  winbindd(8)daemon. This range of ids should have no 
+existing local or nis users within it as strange conflicts can 
+occur otherwise.
+
+Default: \fBwinbind uid = <empty string>
+\fR
+Example: \fBwinbind uid = 10000-20000\fR
 .TP
 \fBwins hook (G)\fR
 When Samba is running as a WINS server this 
@@ -6411,9 +6757,35 @@ program \fBnsupdate\fR is provided in the examples
 directory of the Samba source code. 
 .PP
 .TP
+\fBwins proxy (G)\fR
+This is a boolean that controls if nmbd(8)will respond to broadcast name 
+queries on behalf of other hosts. You may need to set this 
+to yes for some older clients.
+
+Default: \fBwins proxy = no\fR
+.TP
+\fBwins server (G)\fR
+This specifies the IP address (or DNS name: IP 
+address for preference) of the WINS server that  nmbd(8)should register with. If you have a WINS server on 
+your network then you should set this to the WINS server's IP.
+
+You should point this at your WINS server if you have a
+multi-subnetted network.
+
+\fBNOTE\fR. You need to set up Samba to point 
+to a WINS server if you have multiple subnets and wish cross-subnet 
+browsing to work correctly.
+
+See the documentation file \fIBROWSING.txt\fR 
+in the docs/ directory of your Samba source distribution.
+
+Default: \fBnot enabled\fR
+
+Example: \fBwins server = 192.9.200.1\fR
+.TP
 \fBwins support (G)\fR
 This boolean controls if the  
-nmbd(8) <URL:nmbd.8.html> process in Samba will act as a WINS server. You should 
+nmbd(8)process in Samba will act as a WINS server. You should 
 not set this to true unless you have a multi-subnetted network and 
 you wish a particular \fBnmbd\fR to be your WINS server. 
 Note that you should \fBNEVER\fR set this to true 
@@ -6434,27 +6806,10 @@ Example: \fBworkgroup = MYGROUP\fR
 \fBwritable (S)\fR
 Synonym for \fI writeable\fR for people who can't spell :-).
 .TP
-\fBwrite list (S)\fR
-This is a list of users that are given read-write 
-access to a service. If the connecting user is in this list then 
-they will be given write access, no matter what the \fIwriteable\fR
-option is set to. The list can include group names using the 
-@group syntax.
-
-Note that if a user is in both the read list and the 
-write list then they will be given write access.
-
-See also the \fIread list
-\fRoption.
-
-Default: \fBwrite list = <empty string>
-\fR
-Example: \fBwrite list = admin, root, @staff
-\fR.TP
 \fBwrite cache size (S)\fR
-This integer parameter (new with Samba 2.0.7) 
-if set to non-zero causes Samba to create an in-memory cache for 
-each oplocked file (it does \fBnot\fR do this for 
+If this integer parameter is set to non-zero value,
+Samba will create an in-memory cache for each oplocked file 
+(it does \fBnot\fR do this for 
 non-oplocked files). All writes that the client does not request 
 to be flushed directly to disk will be stored in this cache if possible. 
 The cache is flushed onto disk when a write comes in whose offset 
@@ -6477,6 +6832,23 @@ Example: \fBwrite cache size = 262144\fR
 
 for a 256k cache size per file.
 .TP
+\fBwrite list (S)\fR
+This is a list of users that are given read-write 
+access to a service. If the connecting user is in this list then 
+they will be given write access, no matter what the \fIwriteable\fR
+option is set to. The list can include group names using the 
+@group syntax.
+
+Note that if a user is in both the read list and the 
+write list then they will be given write access.
+
+See also the \fIread list
+\fRoption.
+
+Default: \fBwrite list = <empty string>
+\fR
+Example: \fBwrite list = admin, root, @staff
+\fR.TP
 \fBwrite ok (S)\fR
 Synonym for \fI writeable\fR.
 .TP
@@ -6508,7 +6880,7 @@ problem - but be aware of the possibility.
 .PP
 On a similar note, many clients - especially DOS clients - 
 limit service names to eight characters. smbd(8)
- <URL:smbd.8.html> has no such limitation, but attempts to connect from such 
+has no such limitation, but attempts to connect from such 
 clients will fail if they truncate the service names. For this reason 
 you should probably keep your service names down to eight characters 
 in length.
@@ -6524,16 +6896,15 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-samba(7) <URL:samba.7.html>,
-\fBsmbpasswd(8)\fR <URL:smbpasswd.8.html>,
-\fBswat(8)\fR <URL:swat.8.html>,
-\fBsmbd(8)\fR <URL:smbd.8.html>, 
-\fBnmbd(8)\fR <URL:nmbd.8.html>, 
-\fBsmbclient(1)\fR <URL:smbclient.1.html>, 
-\fBnmblookup(1)\fR <URL:nmblookup.1.html>,
-\fBtestparm(1)\fR <URL:testparm.1.html>, 
-\fBtestprns(1)\fR <URL:testprns.1.html>
-.SH "AUTHOR"
+samba(7),
+\fBsmbpasswd(8)\fR,
+\fBswat(8)\fR,
+\fBsmbd(8)\fR, 
+\fBnmbd(8)\fR, 
+\fBsmbclient(1)\fR, 
+\fBnmblookup(1)\fR,
+\fBtestparm(1)\fR, 
+\fBtestprns(1)\fR.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

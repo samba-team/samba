@@ -3,73 +3,79 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "RPCCLIENT" "1" "28 February 2001" "" ""
+.TH "RPCCLIENT" "1" "28 March 2001" "" ""
 .SH NAME
-rpcclient \- developer's tool to testing client side  MS-RPC functions
+rpcclient \- tool for executing client side  MS-RPC functions
 .SH SYNOPSIS
 .sp
-\fBnmblookup\fR [ \fB-d debuglevel\fR ]  [ \fB-S server\fR ]  [ \fB-U username\fR ]  [ \fB-W workgroup\fR ]  [ \fB-n <netbios name>\fR ]  [ \fB-A authfile\fR ]  [ \fB-N\fR ]  [ \fB-l logfile\fR ]  [ \fB-I destinationIP\fR ]  [ \fB-E <terminal code>\fR ]  [ \fB-c <command string>\fR ]  [ \fB-i scope\fR ]  [ \fB-O <socket options>\fR ]  [ \fB-s <smb config file>\fR ] 
+\fBrpcclient\fR \fBserver\fR [ \fB-A authfile\fR ]  [ \fB-c <command string>\fR ]  [ \fB-d debuglevel\fR ]  [ \fB-h\fR ]  [ \fB-l logfile\fR ]  [ \fB-N\fR ]  [ \fB-s <smb config file>\fR ]  [ \fB-U username[%password]\fR ]  [ \fB-W workgroup\fR ]  [ \fB-N\fR ] 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba <URL:samba.7.html> suite.
+This tool is part of the  Sambasuite.
 .PP
-\fBrpcclient\fR is a utility for developers for 
-executing various MS-RPC functions. It's primary use is for testing 
-Samba's own MS-RPC server implementation, however many administrators
-have written scripts around it to manage Windows NT clients from 
+\fBrpcclient\fR is a utility initially developed
+to test MS-RPC functionality in Samba itself. It has undergone 
+several stages of development and stability. Many system administrators
+have now written scripts around it to manage Windows NT clients from 
 their UNIX workstation. 
 .SH "OPTIONS"
+.TP
+\fBserver\fR
+NetBIOS name of Server to which to connect. 
+The server can be any SMB/CIFS server. The name is 
+resolved using the  \fIname resolve order\fRline from 
+\fIsmb.conf(5)\fR.
+.TP
+\fB-A filename\fR
+This option allows 
+you to specify a file from which to read the username and 
+password used in the connection. The format of the file is 
+
+.sp
+.nf
+		username = <value> 
+		password = <value>
+		domain   = <value>
+		
+.sp
+.fi
+
+Make certain that the permissions on the file restrict 
+access from unwanted users. 
+.TP
+\fB-c 'command string'\fR
+execute semicolon separated commands (listed 
+below)) 
 .TP
 \fB-d debuglevel\fR
 set the debuglevel. Debug level 0 is the lowest 
 and 100 being the highest. This should be set to 100 if you are
-planning on submitting a bug report to the Samba team 
-(see BUGS.txt). 
+planning on submitting a bug report to the Samba team (see BUGS.txt). 
 .TP
-\fB-S server\fR
-NetBIOS name of Server to which you wish to 
-connect. The server can be any SMB/CIFS server. The name is 
-resolved using either the \fIname resolve order\fR 
-line or by using the -R option. 
+\fB-h\fR
+Print a summary of command line options.
 .TP
 \fB-l logbasename\fR
 File name for log/debug files. .client will be 
 appended. The log file is never removed by the client.
 .TP
-\fB-n netbios name\fR
-NetBIOS name of the 
-local machine. This option is only needed if your Samba client 
-cannot find it automatically. Samba should use the uppercase 
-of the machine's hostname. 
-.TP
 \fB-N\fR
-tells rpcclient not to ask for a password. 
-\fBrpcclient\fR will prompt the user by default. 
+instruct \fBrpcclient\fR not to ask 
+for a password. By default, \fBrpcclient\fR will prompt 
+for a password. See also the \fI-U\fR option.
 .TP
-\fB-I destinationIP\fR
-The IP address of the server specified with 
-the -S option. Only needed when the server's NetBIOS name cannot 
-be resolved using WINS or broadcast and isn't found in the LMHOSTS
-file. 
+\fB-s smb.conf\fR
+Specifies the location of the all important 
+\fIsmb.conf\fR file. 
 .TP
-\fB-E\fR
-causes \fBrpcclient\fR to write 
-messages to stderr instead of stdout. 
-.TP
-\fB-U username[%pass]\fR
+\fB-U username[%password]\fR
 Sets the SMB username or username and password. 
-If %pass is not specified, The user will be prompted. The client 
-will first check the USER environment variable, then the 
-\fI$LOGNAME\fR variable and if either exist, the 
-string is uppercased. Anything in these variables following a '%' 
-sign will be treated as the password. If these environmental 
-variables are not found, the username GUEST 
-is used. 
 
-If the password is not included in these environment 
-variables (using the %pass syntax), rpcclient will look for 
-a \fI$PASSWD\fR environment variable from which 
-to read the password. 
+If %password is not specified, The user will be prompted. The 
+client will first check the \fBUSER\fR environment variable, then the 
+\fBLOGNAME\fR variable and if either exist, the 
+string is uppercased. If these environmental variables are not 
+found, the username GUEST is used. 
 
 A third option is to use a credentials file which 
 contains the plaintext of the username and password. This 
@@ -79,28 +85,11 @@ variables. If this method is used, make certain that the permissions
 on the file restrict access from unwanted users. See the 
 \fI-A\fR for more details. 
 
-Be cautious about including passwords in scripts or in 
-the \fI$PASSWD\fR environment variable. Also, on 
+Be cautious about including passwords in scripts. Also, on 
 many systems the command line of a running process may be seen 
-via the \fBps\fR command to be safe always allow 
+via the \fBps\fR command. To be safe always allow 
 \fBrpcclient\fR to prompt for a password and type 
 it in directly. 
-.TP
-\fB-A filename\fR
-This option allows 
-you to specify a file from which to read the username and 
-password used in the connection. The format of the file is 
-
-.sp
-.nf
-username = <value> 
-password = <value>
-		
-.sp
-.fi
-
-Make certain that the permissions on the file restrict 
-access from unwanted users. 
 .TP
 \fB-W domain\fR
 Set the SMB domain of the username. This 
@@ -109,118 +98,65 @@ server specified with the \fI-S\fR option.
 If the domain specified is the same as the server's NetBIOS name, 
 it causes the client to log on using the server's local SAM (as 
 opposed to the Domain SAM). 
-.TP
-\fB-P\fR
-operate in promptless mode. Without this 
-mode (the default) \fBrpcclient\fR displays a 
-prompt of the form '[domain\\username@host]$' 
-.TP
-\fB-c 'command string'\fR
-execute semicolon separated commands (listed 
-below)) 
-.TP
-\fB-t terminalcode\fR
-This tells the Samba client how to interpret 
-the incoming filenames, in regards to character sets. The list 
-here is not complete. For a complete list see your local Samba
-source. Some valid options are sjis, euc, jis7, jis8, junet 
-and hex. 
-.TP
-\fB-O socket options\fR
-These socket options are the same as in 
-\fIsmb.conf\fR (under the \fIsocket options
-\fRsection). 
-.TP
-\fB-s smb.conf\fR
-Specifies the location of the all important 
-\fIsmb.conf\fR file. 
-.TP
-\fB-i scope\fR
-Defines the NetBIOS scope. For more 
-information on NetBIOS scopes, see rfc1001 and rfc1002. NetBIOS 
-scopes are rarely used. 
 .SH "COMMANDS"
 .PP
-\fBSPOOLSS Commands\fR
+\fBLSARPC\fR
 .TP 0.2i
 \(bu
-\fBspoolenum\fR - Execute an EnumPrinters() 
-call. This lists the various installed and share printers. Refer 
-to the MS Platform SDK documentation for more details of the various 
-flags and calling options. 
+\fBlsaquery\fR
 .TP 0.2i
 \(bu
-\fBspoolenumports level
-\fR- Executes an EnumPorts() call using the specified 
-info level. Currently only info level 1 and 2 are supported. 
+\fBlookupsids\fR
 .TP 0.2i
 \(bu
-\fBspoolenumdata\fR - Enumerate all 
-printer setting data stored on the server. On Windows NT clients, 
-these values are stored in the registry, while Samba servers 
-store them in the printers TDB. This command corresponds
-to the MS Platform SDK GetPrinterData() function. 
+\fBlookupnames\fR
 .TP 0.2i
 \(bu
-\fBspooljobs printer\fR - List the jobs 
-and status of a given printer. 
-This command corresponds to the MS Platform SDK EnumJobs() 
-function. 
+\fBenumtrusts\fR
+.PP
+.PP
+.PP
+\fBSAMR\fR
+.PP
 .TP 0.2i
 \(bu
-\fBspoolopen printer
-\fR- Execute an OpenPrinterEx() and ClosePrinter() RPC 
-against a given printer. 
+\fBqueryuser\fR
 .TP 0.2i
 \(bu
-\fBspoolgetdata printer
-\fR- Retrieve the data for a given printer setting. See 
-the \fBspoolenumdata\fR command for more information. 
-This command corresponds to the GetPrinterData() MS Platform 
-SDK function. 
+\fBquerygroup\fR
 .TP 0.2i
 \(bu
-\fBspoolgetprinter printer
-\fR- Retrieve the current printer information. This command 
-corresponds to the GetPrinter() MS Platform SDK function. 
+\fBqueryusergroups\fR
 .TP 0.2i
 \(bu
-\fBspoolgetprinterdriver
-printer\fR - Retrieve the printer driver information 
-(such as driver file, config file, dependent files, etc...) for 
-the given printer. This command corresponds to the GetPrinterDriver()
-MS Platform SDK function. 
+\fBquerygroupmem\fR
+.PP
+.PP
+.PP
+\fBSPOOLSS\fR
+.PP
 .TP 0.2i
 \(bu
-\fBspoolgetprinterdriverdir 
-arch\fR - Execute a GetPrinterDriverDirectory()
-RPC to retreive the SMB share name and subdirectory for 
-storing printer driver files for a given architecture. Possible 
-values for \fIarch\fR are "Windows 4.0" 
-(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
-Alpha_AXP", and "Windows NT R4000". 
-.TP 0.2i
-\(bu
-\fBspooladdprinterdriver 
-arch config\fR - Execute an 
-AddPrinterDriver() RPC to install the printer driver information 
-on the server. Note that the driver files should already exist
-in the directory returned by spoolgetprinterdriverdir. Possible 
-values for \fIarch\fR are the same as those for 
-the \fBspooolgetprintedriverdir\fR command.
+\fBadddriver <arch> <config>\fR 
+- Execute an AddPrinterDriver() RPC to install the printer driver 
+information on the server. Note that the driver files should 
+already exist in the directory returned by 
+\fBgetdriverdir\fR. Possible values for 
+\fIarch\fR are the same as those for 
+the \fBgetdriverdir\fR command.
 The \fIconfig\fR parameter is defined as 
 follows: 
 
 .sp
 .nf
-Long Printer Name:\\
-Driver File Name:\\
-Data File Name:\\
-Config File Name:\\
-Help File Name:\\
-Language Monitor Name:\\
-Default Data Type:\\
-Comma Separated list of Files
+		Long Printer Name:\\
+		Driver File Name:\\
+		Data File Name:\\
+		Config File Name:\\
+		Help File Name:\\
+		Language Monitor Name:\\
+		Default Data Type:\\
+		Comma Separated list of Files
 		
 .sp
 .fi
@@ -235,33 +171,105 @@ driver must already be installed prior to adding the driver or
 else the RPC will fail. 
 .TP 0.2i
 \(bu
-\fBspooladdprinter printername 
-sharename drivername port
-\fR- Add a printer on the remote server. This printer 
+\fBaddprinter <printername> 
+<sharename> <drivername> <port>\fR 
+- Add a printer on the remote server. This printer 
 will be automatically shared. Be aware that the printer driver 
-must already be installed on the server (see addprinterdriver) 
-and the \fIport\fRmust be a valid port name. 
+must already be installed on the server (see \fBadddriver\fR) 
+and the \fIport\fRmust be a valid port name (see
+\fBenumports\fR.
+.TP 0.2i
+\(bu
+\fBenumdata\fR - Enumerate all 
+printer setting data stored on the server. On Windows NT clients, 
+these values are stored in the registry, while Samba servers 
+store them in the printers TDB. This command corresponds
+to the MS Platform SDK GetPrinterData() function (* This
+command is currently unimplemented).
+.TP 0.2i
+\(bu
+\fBenumjobs <printer>\fR 
+- List the jobs and status of a given printer. 
+This command corresponds to the MS Platform SDK EnumJobs() 
+function (* This command is currently unimplemented).
+.TP 0.2i
+\(bu
+\fBenumports [level]\fR 
+- Executes an EnumPorts() call using the specified 
+info level. Currently only info levels 1 and 2 are supported. 
+.TP 0.2i
+\(bu
+\fBenumdrivers [level]\fR 
+- Execute an EnumPrinterDrivers() call. This lists the various installed 
+printer drivers for all architectures. Refer to the MS Platform SDK 
+documentation for more details of the various flags and calling 
+options. Currently supported info levels are 1, 2, and 3.
+.TP 0.2i
+\(bu
+\fBenumprinters [level]\fR 
+- Execute an EnumPrinters() call. This lists the various installed 
+and share printers. Refer to the MS Platform SDK documentation for 
+more details of the various flags and calling options. Currently
+supported info levels are 0, 1, and 2.
+.TP 0.2i
+\(bu
+\fBgetdata <printername>\fR 
+- Retrieve the data for a given printer setting. See 
+the \fBenumdata\fR command for more information. 
+This command corresponds to the GetPrinterData() MS Platform 
+SDK function (* This command is currently unimplemented). 
+.TP 0.2i
+\(bu
+\fBgetdriver <printername>\fR 
+- Retrieve the printer driver information (such as driver file, 
+config file, dependent files, etc...) for 
+the given printer. This command corresponds to the GetPrinterDriver()
+MS Platform SDK function. Currently info level 1, 2, and 3 are supported.
+.TP 0.2i
+\(bu
+\fBgetdriverdir <arch>\fR 
+- Execute a GetPrinterDriverDirectory()
+RPC to retreive the SMB share name and subdirectory for 
+storing printer driver files for a given architecture. Possible 
+values for \fIarch\fR are "Windows 4.0" 
+(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
+Alpha_AXP", and "Windows NT R4000". 
+.TP 0.2i
+\(bu
+\fBgetprinter <printername>\fR 
+- Retrieve the current printer information. This command 
+corresponds to the GetPrinter() MS Platform SDK function. 
+.TP 0.2i
+\(bu
+\fBopenprinter <printername>\fR 
+- Execute an OpenPrinterEx() and ClosePrinter() RPC 
+against a given printer. 
+.TP 0.2i
+\(bu
+\fBsetdriver <printername> <drivername>\fR 
+- Execute a SetPrinter() command to update the printer driver associated
+with an installed printer. The printer driver must already be correctly
+installed on the print server. 
+
+See also the \fBenumprinters\fR and 
+\fBenumdrivers\fR commands for obtaining a list of
+of installed printers and drivers.
 .PP
-\fBGeneral Commands\fR
+\fBGENERAL OPTIONS\fR
 .PP
 .TP 0.2i
 \(bu
-\fBset\fR - Set miscellaneous 
-\fBrpcclient\fR command line options during a 
-running session. 
+\fBdebuglevel\fR - Set the current debug level
+used to log information.
 .TP 0.2i
 \(bu
-\fBuse\fR - Connect to a rmeote SMB 
-server. \fBrpcclient\fR has the ability to 
-maintain connections to multiple server simulaneously. 
-.TP 0.2i
-\(bu
-\fBhelp\fR - Print a listing of all 
+\fBhelp (?)\fR - Print a listing of all 
 known commands or extended help on a particular command. 
 .TP 0.2i
 \(bu
-\fBquit\fR - Exit \fBrpcclient
-\fR.SH "BUGS"
+\fBquit (exit)\fR - Exit \fBrpcclient
+\fR\&.
+.SH "BUGS"
 .PP
 \fBrpcclient\fR is designed as a developer testing tool 
 and may not be robust in certain areas (such as command line parsing). 
@@ -279,15 +287,15 @@ to be... a bit flakey in places.
 .PP
 The development of Samba's implementation is also a bit rough, 
 and as more of the services are understood, it can even result in 
-versions of \fBsmbd(8)\fR and \fBrpcclient\fR 
+versions of \fBsmbd(8)\fR and \fBrpcclient(1)\fR 
 that are incompatible for some commands or services. Additionally, 
 the developers are sending reports to Microsoft, and problems found 
 or reported to Microsoft are fixed in Service Packs, which may 
 result in incompatibilities." 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
-the Samba suite.
+This man page is correct for version 2.2 of the Samba 
+suite.
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -295,6 +303,7 @@ were created by Andrew Tridgell. Samba is now developed
 by the Samba Team as an Open Source project similar 
 to the way the Linux kernel is developed.
 .PP
-The original rpcclient man page was written by Matthew Geddes, 
-Luke Kenneth Casson, and Gerald Carter. The conversion to 
-DocBook for Samba 2.2 was done by Gerald Carter
+The original rpcclient man page was written by Matthew 
+Geddes, Luke Kenneth Casson, and rewriten by Gerald Carter. 
+The conversion to DocBook for Samba 2.2 was done by Gerald 
+Carter.
