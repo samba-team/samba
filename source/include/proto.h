@@ -2158,7 +2158,7 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
-BOOL req_user_info( POLICY_HND *pol_dom,
+BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 user_rid,
@@ -2174,6 +2174,24 @@ uint32 sam_query_usergroups(
 				char    ***name,
 				uint32  **type,
 				USER_MEM_FN(usr_mem));
+void msrpc_sam_user( const POLICY_HND *pol_dom, const POLICY_HND *pol_blt,
+			const char* domain,
+			const DOM_SID *sid1,
+			const DOM_SID *blt_sid1,
+			uint32 user_rid,
+			char  *user_name,
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn));
+BOOL msrpc_sam_query_user( const char* srv_name,
+			const char* domain,
+			const DOM_SID *sid,
+			char  *user_name,
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn));
 int msrpc_sam_enum_users( const char* srv_name,
 			const char* domain,
 			const DOM_SID *sid1,
@@ -2279,7 +2297,7 @@ BOOL set_samr_set_userinfo(
 				uint32 info_level,
 				uint32 user_rid, void *usr);
 BOOL get_samr_query_userinfo( 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr);
 BOOL get_samr_query_groupinfo( 
@@ -3823,6 +3841,7 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
+void readline_init(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 

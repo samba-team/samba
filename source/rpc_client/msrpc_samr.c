@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-BOOL req_user_info( POLICY_HND *pol_dom,
+BOOL req_user_info( const POLICY_HND *pol_dom,
 				const char *domain,
 				const DOM_SID *sid,
 				uint32 user_rid,
@@ -152,6 +152,11 @@ static void req_alias_info(
 	uint32 *ptr_sid;
 	DOM_SID2 *als_sid;
 
+	if (pol_dom == NULL)
+	{
+		return;
+	}
+
 	ptr_sid = (uint32*)  malloc(sizeof(ptr_sid[0]) * 1);
 	als_sid = (DOM_SID2*)malloc(sizeof(als_sid[0]) * 1);
 
@@ -213,6 +218,110 @@ static void req_alias_info(
 		free(als_sid);
 		als_sid = NULL;
 	}
+}
+
+/****************************************************************************
+experimental SAM user display info.
+****************************************************************************/
+void msrpc_sam_user( const POLICY_HND *pol_dom, const POLICY_HND *pol_blt,
+			const char* domain,
+			const DOM_SID *sid1,
+			const DOM_SID *blt_sid1,
+			uint32 user_rid,
+			char  *user_name,
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn))
+{
+	if (usr_fn != NULL)
+	{
+		usr_fn(domain, sid1, user_rid, user_name);
+	}
+
+	if (usr_inf_fn != NULL)
+	{
+		req_user_info(pol_dom,
+				  domain, sid1,
+				  user_rid, 
+				  usr_inf_fn);
+	}
+
+	if (usr_grp_fn != NULL)
+	{
+		req_group_info(pol_dom,
+				  domain, sid1,
+				  user_rid, user_name,
+				  usr_grp_fn);
+	}
+
+	if (usr_als_fn != NULL)
+	{
+		req_alias_info(pol_dom,
+				  domain, sid1,
+				  user_rid, user_name,
+				  usr_als_fn);
+		req_alias_info(pol_blt,
+				  domain, blt_sid1,
+				  user_rid, user_name,
+				  usr_als_fn);
+	}
+}
+
+/****************************************************************************
+experimental SAM user query.
+****************************************************************************/
+BOOL msrpc_sam_query_user( const char* srv_name,
+			const char* domain,
+			const DOM_SID *sid,
+			char  *user_name,
+			USER_FN(usr_fn),
+			USER_INFO_FN(usr_inf_fn),
+			USER_MEM_FN(usr_grp_fn),
+			USER_MEM_FN(usr_als_fn))
+{
+	BOOL res = True;
+	BOOL res1 = True;
+
+	char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, 0x304, sid, &pol_dom) : False;
+
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
+
+	/* send user info query */
+	if (res1 && num_rids == 1)
+	{
+		msrpc_sam_user( &pol_dom, NULL,
+				domain,
+				sid, NULL,
+				rid[0],
+				names[0],
+				usr_fn, usr_inf_fn,
+		                usr_grp_fn, usr_als_fn);
+	}
+	else
+	{
+		res1 = False;
+	}
+
+	res = res ? samr_close( &sam_pol) : False;
+	res = res ? samr_close( &pol_dom) : False;
+
+	return res1;
 }
 
 /****************************************************************************
@@ -289,38 +398,12 @@ int msrpc_sam_enum_users( const char* srv_name,
 			uint32 user_rid  = (*sam)[user_idx].rid;
 			char  *user_name = (*sam)[user_idx].acct_name;
 
-			if (usr_fn != NULL)
-			{
-				usr_fn(domain, sid1, user_rid, user_name);
-			}
-
-			if (usr_inf_fn != NULL)
-			{
-				req_user_info(&pol_dom,
-				                  domain, sid1,
-				                  user_rid, 
-				                  usr_inf_fn);
-			}
-
-			if (usr_grp_fn != NULL)
-			{
-				req_group_info(&pol_dom,
-				                  domain, sid1,
-				                  user_rid, user_name,
-				                  usr_grp_fn);
-			}
-
-			if (usr_als_fn != NULL)
-			{
-				req_alias_info(&pol_dom,
-				                  domain, sid1,
-				                  user_rid, user_name,
-				                  usr_als_fn);
-				req_alias_info(&pol_blt,
-				                  domain, sid1,
-				                  user_rid, user_name,
-				                  usr_als_fn);
-			}
+			msrpc_sam_user( &pol_dom, &pol_blt,
+					domain,
+					sid1, &sid_1_5_20,
+					user_rid, user_name,
+					usr_fn, usr_inf_fn,
+					usr_grp_fn, usr_als_fn);
 		}
 	}
 
@@ -1250,7 +1333,7 @@ BOOL set_samr_set_userinfo(
 do a SAMR query user info
 ****************************************************************************/
 BOOL get_samr_query_userinfo( 
-				POLICY_HND *pol_open_domain,
+				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr)
 {
