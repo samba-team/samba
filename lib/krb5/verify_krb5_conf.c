@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -199,7 +199,7 @@ check_host(krb5_context context, const char *path, char *data)
 	snprintf(service, sizeof(service), "%u", defport);
     }
     ret = getaddrinfo(hostname, service, &hints, &ai);
-    if(ret == EAI_SERVICE && !isdigit(service[0])) {
+    if(ret == EAI_SERVICE && !isdigit((unsigned char)service[0])) {
 	snprintf(service, sizeof(service), "%u", defport);
 	ret = getaddrinfo(hostname, service, &hints, &ai);
     }
