@@ -556,7 +556,10 @@ AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h t
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h lber.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
-AC_CHECK_HEADERS(valgrind.h)
+
+# In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
+# subdirectory of headers.
+AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
 
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
