@@ -1154,7 +1154,7 @@ static BOOL getprinterdata_printer(POLICY_HND *handle,
 /********************************************************************
  * spoolss_getprinterdata
  ********************************************************************/
-uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
+uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
 				uint32 *type,
 				uint32 *out_size,
@@ -1198,9 +1198,8 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		/* reply this param doesn't exist */
 		if (*out_size) {
-			if((*data=(uint8 *)malloc(*out_size*sizeof(uint8))) == NULL)
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
 				return ERROR_NOT_ENOUGH_MEMORY;
-			memset(*data, '\0', *out_size*sizeof(uint8));
 		} else {
 			*data = NULL;
 		}
@@ -2069,7 +2068,9 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
-	
+	size_t realloc_size = 0;
+	SPOOL_NOTIFY_INFO_DATA *info_data_ptr = NULL;
+
 	type=option_type->type;
 
 	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
@@ -2086,10 +2087,11 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		if (!search_notify(type, field, &j) )
 			continue;
 		
-		if((info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA))) == NULL) {
+		realloc_size = (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA);
+		if((info_data_ptr=(SPOOL_NOTIFY_INFO_DATA *)Realloc(info_data_ptr, realloc_size)) == NULL) {
 			return False;
 		}
-		current_data=&info->data[info->count];
+		current_data=&info_data_ptr[info->count];
 
 		construct_info_data(current_data, type, field, id);		
 
@@ -2102,6 +2104,12 @@ static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int
 		info->count++;
 	}
 
+	if (realloc_size)
+		info->data = talloc_memdup(mem_ctx, info_data_ptr, realloc_size);
+	else
+		info->data = NULL;
+
+	safe_free(info_data_ptr);
 	free_a_printer(&printer, 2);
 	return True;
 }
@@ -2321,9 +2329,8 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 /********************************************************************
  * spoolss_rfnpcnex
  ********************************************************************/
-uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
-			  SPOOL_NOTIFY_OPTION *option, TALLOC_CTX *mem_ctx,
-			  SPOOL_NOTIFY_INFO *info)
+uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
+			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info)
 {
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 	uint32 result = ERROR_INVALID_HANDLE;
@@ -2347,18 +2354,16 @@ uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
 	 *	informations even when _NOTHING_ has changed.
 	 */
 
-	/* just discard the SPOOL_NOTIFY_OPTION */
-	if (option!=NULL)
-		safe_free(option->ctr.type);
+	/* just ignore the SPOOL_NOTIFY_OPTION */
 	
 	switch (Printer->printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
 			result = printserver_notify_info(handle, info, 
-							 mem_ctx);
+							 p->mem_ctx);
 			break;
 			
 		case PRINTER_HANDLE_IS_PRINTER:
-			result = printer_notify_info(handle, info, mem_ctx);
+			result = printer_notify_info(handle, info, p->mem_ctx);
 			break;
 	}
 	
@@ -5621,7 +5626,7 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
+uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
@@ -5753,24 +5758,22 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	 */
 	
 	*out_max_value_len=(in_value_len/sizeof(uint16));
-	if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL) {
+	if((*out_value=(uint16 *)talloc_zero(p->mem_ctx,in_value_len*sizeof(uint8))) == NULL) {
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	
-	ZERO_STRUCTP(*out_value);
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
 
 	*out_type=type;
 
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
-	if((*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8))) == NULL) {
+	if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) {
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
 	
-	memset(*data_out,'\0',in_data_len);
 	memcpy(*data_out, data, (size_t)data_len);
 	*out_data_len=data_len;
 
