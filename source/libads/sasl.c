@@ -201,14 +201,14 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
-		DEBUG(3,("got OID=%s\n", OIDs[i]));
+		DEBUG(3,("ads_sasl_spnego_bind: got OID=%s\n", OIDs[i]));
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			got_kerberos_mechanism = True;
 		}
 		free(OIDs[i]);
 	}
-	DEBUG(3,("got principal=%s\n", principal));
+	DEBUG(3,("ads_sasl_spnego_bind: got server principal name =%s\n", principal));
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
