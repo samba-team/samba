@@ -1,4 +1,85 @@
                  ==============================
+                 Release Notes for Samba 2.2.12
+                          Sept 29, 2004
+                 ==============================
+
+
+######################## SECURITY RELEASE ########################
+
+Summary:       Potential Arbitrary File Access
+
+Affected
+Versions:	Samba 2.2.x 
+
+Summary:	A remote attacker may be able to gain access
+		to files which exist outside of the share's
+		defined path. Such files must still be readable
+		by the account used for the connection.
+
+CVE ID:        CAN-2004-0815
+               (http://cve.mitre.org/)
+
+This is the last stable release of the Samba 2.2 code base.
+There will be no further Samba 2.2.x releases.
+
+-------------
+CAN-2004-0815
+-------------
+
+A bug in the input validation routines used to convert DOS
+path names to path names on the Samba host's file system
+may be exploited to gain access to files outside of the
+share's path defined by smb.conf.
+
+
+Protecting Unpatched Servers
+----------------------------
+
+Samba file shares with 'wide links = no' (a non-default
+setting) in the service definition in smb.conf are *not*
+vulnerable to this attack.
+
+The Samba Team always encourages users to run the latest stable
+release as a defense of against attacks.  However, under certain
+circumstances it may not be possible to immediately upgrade
+important installations.  In such cases, administrators should
+read the "Server Security" documentation found at
+http://www.samba.org/samba/docs/server_security.html.
+
+
+Credits
+--------
+
+Both security issues were reported to Samba developers by
+iDEFENSE (http://www.idefense.com/).  Karol Wiesek is
+credited with this discovery.
+
+-- 
+
+Older releases notes for 2.2.x distributions follow
+
+       ------------------------------------------------------
+                 ==============================
+                 Release Notes for Samba 2.2.11
+                          Aug 12, 2004
+                 ==============================
+
+This is the latest stable release of the Samba 2.2 code base.
+
+Please note that the Samba 2.2 code tree will reach its End-Of-Life
+on October 1, 2004.  Administrators of existing Samba 2.2
+installations are encouraged to upgrade to the latest Samba 3.0.x
+release prior to that date.
+
+The Samba 2.2.11 release addresses the following bug:
+
+  o Crashes in smbd triggered by a Windows XP SP2 client sending 
+    a FindNextPrintChangeNotify() request without previously 
+    issuing FindFirstPrintChangeNotify().
+
+
+       ------------------------------------------------------
+                 ==============================
                  Release Notes for Samba 2.2.10
                           July 22, 2004
                  ==============================
@@ -26,8 +107,6 @@ the hash2 mangling method.  Server installations requiring
 the hash mangling method are encouraged to upgrade to Samba v2.2.10 
 or v3.0.5.
 
-
-Older releases notes for 2.2.x distributions follow
 
        ------------------------------------------------------
 
