@@ -1705,8 +1705,9 @@ struct ldap_message *ldap_receive(struct ldap_connection *conn, int msgid,
 
 	while (True) {
 		struct asn1_data data;
-		result = new_ldap_message();
 		BOOL res;
+
+		result = new_ldap_message();
 
 		if (!asn1_read_sequence_until(conn->sock, &data, endtime))
 			return NULL;
