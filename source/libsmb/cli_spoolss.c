@@ -399,7 +399,7 @@ NTSTATUS cli_spoolss_enum_printers(
 	SPOOL_Q_ENUMPRINTERS q;
         SPOOL_R_ENUMPRINTERS r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
+	uint32 needed = 0x1068;
 	NTSTATUS result;
 	fstring server;
 
@@ -433,11 +433,12 @@ NTSTATUS cli_spoolss_enum_printers(
 			needed = r.needed;
 		}
 		
-		/* Return output parameters */
-		if (!W_ERROR_IS_OK(r.status)) {
-			result = werror_to_ntstatus(r.status);
+		result = werror_to_ntstatus(r.status);
+		
+		if (NT_STATUS_V(result)==NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER) || !W_ERROR_IS_OK(result))
 			goto done;
-		}
+	
+		/* Return output parameters */
 
 		if ((*returned = r.returned)) {
 			switch (level) {
@@ -541,19 +542,14 @@ NTSTATUS cli_spoolss_enum_ports(
 }
 
 /* Get printer info */
-NTSTATUS cli_spoolss_getprinter(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr
-)
+NTSTATUS cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol, uint32 level, PRINTER_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTER q;
 	SPOOL_R_GETPRINTER r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
+	uint32 needed = 0x1068;
 	NTSTATUS result;
 
 	ZERO_STRUCT(q);
@@ -584,6 +580,7 @@ NTSTATUS cli_spoolss_getprinter(
 		
 		/* Return output parameters */
 		result = werror_to_ntstatus(r.status);
+		
 		if (NT_STATUS_IS_OK(result)) {
 			switch (level) {
 			case 0:
@@ -676,7 +673,7 @@ NTSTATUS cli_spoolss_getprinterdriver (
 	SPOOL_Q_GETPRINTERDRIVER2 q;
         SPOOL_R_GETPRINTERDRIVER2 r;
 	NEW_BUFFER buffer;
-	uint32 needed = 1024;
+	uint32 needed = 0x1068;
 	NTSTATUS result;
 	fstring server;
 
@@ -715,6 +712,7 @@ NTSTATUS cli_spoolss_getprinterdriver (
 		
 		/* Return output parameters */
 		result = werror_to_ntstatus(r.status);
+		
 		if (NT_STATUS_IS_OK(result))
 		{
 			switch (level) 
