@@ -74,7 +74,7 @@
 #include "hdb.h"
 
 extern krb5_context context;
-extern char *database;
+extern char database[];
 
 #define DECL(X) int X(int, char **)
 
@@ -90,6 +90,7 @@ DECL(del_entry);
 DECL(ext_keytab);
 DECL(help);
 DECL(exit_kdb_edit);
+DECL(set_db);
 
 void init_des_key(hdb_entry *ent);
 void set_keys(hdb_entry *ent, char *password);
