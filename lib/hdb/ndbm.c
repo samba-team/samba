@@ -50,6 +50,9 @@ struct ndbm_db {
 static krb5_error_code
 NDBM_destroy(krb5_context context, HDB *db)
 {
+    krb5_error_code ret;
+
+    ret = hdb_clear_master_key (context, db);
     free(db->name);
     free(db);
     return 0;
@@ -243,6 +246,7 @@ NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
     krb5_error_code ret;
     struct ndbm_db *d = malloc(sizeof(*d));
     char *lock_file;
+
     if(d == NULL)
 	return ENOMEM;
     asprintf(&lock_file, "%s.lock", (char*)db->name);
