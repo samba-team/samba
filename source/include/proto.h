@@ -2351,6 +2351,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode);
 int print_job_write(int jobid, const char *buf, int size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 int print_job_start(struct current_user *user, int snum, char *jobname);
+void print_job_endpage(int jobid);
 BOOL print_job_end(int jobid, BOOL normal_close);
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
