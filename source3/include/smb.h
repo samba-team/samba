@@ -293,6 +293,9 @@ typedef fstring string;
 #define LSA_LOOKUPNAMES     0xFD
 #define LSA_SAMLOGOFF       0xFC
 
+/* srvsvc pipe */
+#define NETSERVERGETINFO 0x15
+#define NETSHAREENUM     0x0f
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
