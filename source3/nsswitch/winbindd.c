@@ -834,8 +834,6 @@ static void usage(void)
 		exit(1);
 	}
 
-	pidfile_create("winbindd");
-
 	/* Setup names. */
 
 	if (!*global_myname) {
@@ -849,8 +847,10 @@ static void usage(void)
 
         fstrcpy(global_myworkgroup, lp_workgroup());
 
-	if (!interactive)
+	if (!interactive) {
 		become_daemon();
+		pidfile_create("winbindd");
+	}
 
 #if HAVE_SETPGID
 	/*
