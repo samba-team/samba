@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libdes.la
-libdes_la_LDFLAGS = -version-info 0:0:0
+libdes_la_LDFLAGS = -version-info 0:1:0
 
 include_HEADERS = des.h md4.h md5.h sha.h
 
@@ -109,4 +109,4 @@ dist-hook:
 	$(mkinstalldirs) $(distdir)/asm
 	(cd $(srcdir)/asm && tar cf - $(asm_files)) \
 		| (cd $(distdir)/asm; tar xf -)
-	
+
