@@ -36,7 +36,7 @@
 #include "includes.h"
 
 #define SMB_MAXPIDS		2048
-static pstring 		Ucrit_username = "";               /* added by OH */
+static uid_t 		Ucrit_uid = 0;               /* added by OH */
 static pid_t		Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
 static int		Ucrit_MaxPid=0;                    /* added by OH */
 static unsigned int	Ucrit_IsActive = 0;                /* added by OH */
@@ -46,24 +46,23 @@ static int            shares_only = 0;            /* Added by RJS */
 static int            locks_only  = 0;            /* Added by RJS */
 static BOOL processes_only=False;
 static int show_brl;
+static BOOL numeric_only = False;
 
 const char *username = NULL;
 
 /* added by OH */
-static void Ucrit_addUsername(const char *user_name)
+static void Ucrit_addUid(uid_t uid)
 {
-	pstrcpy(Ucrit_username, user_name);
-	
-	if ( strlen(Ucrit_username) > 0 )
-		Ucrit_IsActive = 1;
+	Ucrit_uid = uid;
+	Ucrit_IsActive = 1;
 }
 
-static unsigned int Ucrit_checkUsername(const char *user_name)
+static unsigned int Ucrit_checkUid(uid_t uid)
 {
 	if ( !Ucrit_IsActive ) 
 		return 1;
 	
-	if ( strcmp(Ucrit_username,user_name) == 0 ) 
+	if ( uid == Ucrit_uid ) 
 		return 1;
 	
 	return 0;
@@ -91,7 +90,7 @@ static BOOL Ucrit_addPid( pid_t pid )
 
 	if ( Ucrit_MaxPid >= SMB_MAXPIDS ) {
 		d_printf("ERROR: More than %d pids for user %s!\n",
-			SMB_MAXPIDS, Ucrit_username);
+			 SMB_MAXPIDS, uidtoname(Ucrit_uid));
 
 		return False;
 	}
@@ -538,7 +537,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	if (crec.cnum == -1)
 		return 0;
 
-	if (!process_exists(crec.pid) || !Ucrit_checkUsername(uidtoname(crec.uid))) {
+	if (!process_exists(crec.pid) || !Ucrit_checkUid(crec.uid)) {
 		return 0;
 	}
 
@@ -553,21 +552,27 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct sessionid sessionid;
+	fstring uid_str, gid_str;
 
 	if (dbuf.dsize != sizeof(sessionid))
 		return 0;
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists(sessionid.pid) || !Ucrit_checkUsername(uidtoname(sessionid.uid))) {
+	if (!process_exists(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
 		return 0;
 	}
 
 	Ucrit_addPid( sessionid.pid );
 
+	fstr_sprintf(uid_str, "%d", sessionid.uid);
+	fstr_sprintf(gid_str, "%d", sessionid.gid);
+
 	d_printf("%5d   %-12s  %-12s  %-12s (%s)\n",
-	       (int)sessionid.pid, uidtoname(sessionid.uid), gidtoname(sessionid.gid), 
-	       sessionid.remote_machine, sessionid.hostname);
+		 (int)sessionid.pid,
+		 numeric_only ? uid_str : uidtoname(sessionid.uid),
+		 numeric_only ? gid_str : gidtoname(sessionid.gid), 
+		 sessionid.remote_machine, sessionid.hostname);
 	
 	return 0;
 }
@@ -594,6 +599,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only, 'P', "Do profiling" },
 #endif /* WITH_PROFILE */
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl, 'B', "Include byte range locks"},
+		{"numeric",	'n', POPT_ARG_NONE,	&numeric_only, 'n', "Numeric uid/gid"},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -613,7 +619,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	while ((c = poptGetNextOpt(pc)) != -1) {
 		switch (c) {
 		case 'u':                                      
-			Ucrit_addUsername(poptGetOptArg(pc));             
+			Ucrit_addUid(nametouid(poptGetOptArg(pc)));
 			break;
 		}
 	}
@@ -625,7 +631,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	show_shares    = !(processes_only || locks_only || profile_only) || shares_only;
 
 	if ( username )
-		Ucrit_addUsername( username );
+		Ucrit_addUid( nametouid(username) );
 
 	if (verbose) {
 		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
