@@ -2566,12 +2566,12 @@ else
 #line 2567 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(int));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2578: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2605,12 +2605,12 @@ else
 #line 2606 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(long));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2617: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2644,12 +2644,12 @@ else
 #line 2645 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(short));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2656: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -12931,46 +12931,53 @@ if test "${with_acl_support+set}" = set; then
    case "$withval" in
   yes)
 
-        case "$host_os" in
-        *sysv5*)
-            echo "$ac_t""Using UnixWare ACLs" 1>&6
-            cat >> confdefs.h <<\EOF
+	case "$host_os" in
+	*sysv5*)
+		echo "$ac_t""Using UnixWare ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
 #define HAVE_UNIXWARE_ACLS 1
 EOF
 
-            ;;
-        *solaris*)
-            echo "$ac_t""Using solaris ACLs" 1>&6
-            cat >> confdefs.h <<\EOF
+		;;
+	*solaris*)
+		echo "$ac_t""Using solaris ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
 #define HAVE_SOLARIS_ACLS 1
 EOF
 
-            ;;
-		*irix*)
-			echo "$ac_t""Using IRIX ACLs" 1>&6
-			cat >> confdefs.h <<\EOF
+		;;
+	*hpux*)
+		echo "$ac_t""Using HPUX ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
+#define HAVE_HPUX_ACLS 1
+EOF
+
+		;;
+	*irix*)
+		echo "$ac_t""Using IRIX ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
 #define HAVE_IRIX_ACLS 1
 EOF
 
-			;;
-		*aix*)
-			echo "$ac_t""Using AIX ACLs" 1>&6
-			cat >> confdefs.h <<\EOF
+		;;
+	*aix*)
+		echo "$ac_t""Using AIX ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
 #define HAVE_AIX_ACLS 1
 EOF
 
-			;;
-		*osf*)
-			echo "$ac_t""Using Tru64 ACLs" 1>&6
-			cat >> confdefs.h <<\EOF
+		;;
+	*osf*)
+		echo "$ac_t""Using Tru64 ACLs" 1>&6
+		cat >> confdefs.h <<\EOF
 #define HAVE_TRU64_ACLS 1
 EOF
 
-			LIBS="$LIBS -lpacl"
-			;;
+		LIBS="$LIBS -lpacl"
+		;;
         *)
-			echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
-echo "configure:12974: checking for acl_get_file in -lacl" >&5
+		echo $ac_n "checking for acl_get_file in -lacl""... $ac_c" 1>&6
+echo "configure:12981: checking for acl_get_file in -lacl" >&5
 ac_lib_var=`echo acl'_'acl_get_file | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -12978,7 +12985,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lacl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 12982 "configure"
+#line 12989 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -12989,7 +12996,7 @@ int main() {
 acl_get_file()
 ; return 0; }
 EOF
-if { (eval echo configure:12993: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13000: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -13016,14 +13023,14 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
-			echo $ac_n "checking for ACL support""... $ac_c" 1>&6
-echo "configure:13021: checking for ACL support" >&5
+		echo $ac_n "checking for ACL support""... $ac_c" 1>&6
+echo "configure:13028: checking for ACL support" >&5
 if eval "test \"`echo '$''{'samba_cv_HAVE_POSIX_ACLS'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
-			cat > conftest.$ac_ext <<EOF
-#line 13027 "configure"
+		cat > conftest.$ac_ext <<EOF
+#line 13034 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/acl.h>
@@ -13031,7 +13038,7 @@ int main() {
  acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);
 ; return 0; }
 EOF
-if { (eval echo configure:13035: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13042: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   samba_cv_HAVE_POSIX_ACLS=yes
 else
@@ -13051,13 +13058,13 @@ echo "$ac_t""$samba_cv_HAVE_POSIX_ACLS" 1>&6
 EOF
 
 				echo $ac_n "checking for acl_get_perm_np""... $ac_c" 1>&6
-echo "configure:13055: checking for acl_get_perm_np" >&5
+echo "configure:13062: checking for acl_get_perm_np" >&5
 if eval "test \"`echo '$''{'samba_cv_HAVE_ACL_GET_PERM_NP'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
 				cat > conftest.$ac_ext <<EOF
-#line 13061 "configure"
+#line 13068 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <sys/acl.h>
@@ -13065,7 +13072,7 @@ int main() {
  acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);
 ; return 0; }
 EOF
-if { (eval echo configure:13069: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13076: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   samba_cv_HAVE_ACL_GET_PERM_NP=yes
 else
@@ -13112,7 +13119,7 @@ fi
 # (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
 
 echo $ac_n "checking whether to build winbind""... $ac_c" 1>&6
-echo "configure:13116: checking whether to build winbind" >&5
+echo "configure:13123: checking whether to build winbind" >&5
 
 # Initially, the value of $host_os decides whether winbind is supported
 
@@ -13202,7 +13209,7 @@ fi
 
 if test x"$INCLUDED_POPT" != x"yes"; then
     echo $ac_n "checking for poptGetContext in -lpopt""... $ac_c" 1>&6
-echo "configure:13206: checking for poptGetContext in -lpopt" >&5
+echo "configure:13213: checking for poptGetContext in -lpopt" >&5
 ac_lib_var=`echo popt'_'poptGetContext | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -13210,7 +13217,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lpopt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 13214 "configure"
+#line 13221 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -13221,7 +13228,7 @@ int main() {
 poptGetContext()
 ; return 0; }
 EOF
-if { (eval echo configure:13225: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:13232: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -13245,7 +13252,7 @@ fi
 fi
 
 echo $ac_n "checking whether to use included popt""... $ac_c" 1>&6
-echo "configure:13249: checking whether to use included popt" >&5
+echo "configure:13256: checking whether to use included popt" >&5
 if test x"$INCLUDED_POPT" = x"yes"; then
     echo "$ac_t""$srcdir/popt" 1>&6
     BUILD_POPT='$(POPT_OBJS)'
@@ -13265,11 +13272,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 13269 "configure"
+#line 13276 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13273: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13280: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
