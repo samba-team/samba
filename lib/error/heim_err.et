@@ -1,0 +1,14 @@
+#
+# Error messages for the krb5 library
+#
+# This might look like a com_err file, but is not
+#
+# $Id$
+
+error_table heim
+
+prefix HEIM_ERR
+
+error_code LOG_PARSE,		"Error parsing log destination"
+
+end
