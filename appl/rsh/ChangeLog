@@ -1,3 +1,7 @@
+2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.c: require encryption if passed -x
+
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c (loop): check that the fd's aren't too large to select on

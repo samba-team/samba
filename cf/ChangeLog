@@ -1,5 +1,13 @@
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
 
+	* Makefile.am.common: just warn if we fail to setuid a program
+
+	* broken-getnameinfo.m4: add more quotes
+
+	* roken-frag.m4: test for getifaddrs
+
+	* roken-frag.m4: test for broken AIX getnameinfo
+
 	* broken-getnameinfo.m4: test for broken getnameinfo
 
 2000-12-01  Assar Westerlund  <assar@sics.se>
