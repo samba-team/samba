@@ -1450,16 +1450,16 @@ void out_data(FILE *f,char *buf1,int len, int per_line)
 	}
 }
 
-void print_asc(int level, unsigned char *buf,int len)
+void print_asc(int level, const unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
-void dump_data(int level,char *buf1,int len)
+void dump_data(int level, const char *buf1,int len)
 {
-  unsigned char *buf = (unsigned char *)buf1;
+  const unsigned char *buf = (const unsigned char *)buf1;
   int i=0;
   if (len<=0) return;
 

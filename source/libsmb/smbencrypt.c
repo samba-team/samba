@@ -4,6 +4,8 @@
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1998
    Modified by Jeremy Allison 1995.
+   Copyright (C) Jeremy Allison 1995-2000.
+   Copyright (C) Luke Kennethc Casson Leighton 1996-2000.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -83,6 +85,24 @@ static int _my_mbstowcs(int16 *dst, uchar *src, int len)
 	return i;
 }
 
+static int _my_mbstowcsupper(int16 * dst, const uchar * src, int len)
+{
+	int i;
+	int16 val;
+
+	for (i = 0; i < len; i++)
+	{
+		val = toupper(*src);
+		SSVAL(dst, 0, val);
+		dst++;
+		src++;
+		if (val == 0)
+			break;
+	}
+	return i;
+}
+
+
 /* 
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
@@ -141,8 +161,36 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 	memset(passwd, '\0', sizeof(passwd));
 }
 
+/* Does both the NTLMv2 owfs of a user's password */
+void ntv2_owf_gen(const uchar owf[16],
+		  const char *user_n, const char *domain_n, uchar kr_buf[16])
+{
+	pstring user_u;
+	pstring dom_u;
+	HMACMD5Context ctx;
+
+	int user_l = strlen(user_n);
+	int domain_l = strlen(domain_n);
+
+	_my_mbstowcsupper((int16 *) user_u, user_n, user_l * 2);
+	_my_mbstowcsupper((int16 *) dom_u, domain_n, domain_l * 2);
+
+	hmac_md5_init_limK_to_64(owf, 16, &ctx);
+	hmac_md5_update(user_u, user_l * 2, &ctx);
+	hmac_md5_update(dom_u, domain_l * 2, &ctx);
+	hmac_md5_final(kr_buf, &ctx);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
+	dump_data(100, user_u, user_l * 2);
+	dump_data(100, dom_u, domain_l * 2);
+	dump_data(100, owf, 16);
+	dump_data(100, kr_buf, 16);
+#endif
+}
+
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
+void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  
@@ -218,6 +266,53 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
 
 	return True;
+}
+
+/* Does the md5 encryption from the NT hash for NTLMv2. */
+void SMBOWFencrypt_ntv2(const uchar kr[16],
+			const uchar * srv_chal, int srv_chal_len,
+			const uchar * cli_chal, int cli_chal_len,
+			char resp_buf[16])
+{
+	HMACMD5Context ctx;
+
+	hmac_md5_init_limK_to_64(kr, 16, &ctx);
+	hmac_md5_update(srv_chal, srv_chal_len, &ctx);
+	hmac_md5_update(cli_chal, cli_chal_len, &ctx);
+	hmac_md5_final(resp_buf, &ctx);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
+	dump_data(100, srv_chal, srv_chal_len);
+	dump_data(100, cli_chal, cli_chal_len);
+	dump_data(100, resp_buf, 16);
+#endif
+}
+
+void SMBsesskeygen_ntv2(const uchar kr[16],
+			const uchar * nt_resp, char sess_key[16])
+{
+	HMACMD5Context ctx;
+
+	hmac_md5_init_limK_to_64(kr, 16, &ctx);
+	hmac_md5_update(nt_resp, 16, &ctx);
+	hmac_md5_final(sess_key, &ctx);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
+	dump_data(100, sess_key, 16);
+#endif
+}
+
+void SMBsesskeygen_ntv1(const uchar kr[16],
+			const uchar * nt_resp, char sess_key[16])
+{
+	mdfour(sess_key, kr, 16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
+	dump_data(100, sess_key, 16);
+#endif
 }
 
 /***********************************************************
