@@ -406,7 +406,7 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 	
 	if (mods[i] == NULL)
 	{
-		mods = (LDAPMod **)realloc( mods,  (i+2) * sizeof( LDAPMod * ) );	
+		mods = (LDAPMod **)Realloc( mods,  (i+2) * sizeof( LDAPMod * ) );	
 		if (mods == NULL)
 		{
 			DEBUG(0,("make_a_mod: out of memory!\n"));
@@ -431,7 +431,7 @@ static void make_a_mod(LDAPMod ***modlist,int modop, char *attribute, char *valu
 		{
 			for ( ; mods[ i ]->mod_values[ j ] ! = NULL; j++ );
 		}
-		mods[ i ]->mod_values = (char **)realloc(mods[ i ]->mod_values,
+		mods[ i ]->mod_values = (char **)Realloc(mods[ i ]->mod_values,
 		                                          (j+2) * sizeof( char * ));
 		if ( mods[ i ]->mod_values == NULL)
 		{

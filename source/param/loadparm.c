@@ -3585,25 +3585,17 @@ char **lp_list_make(char *string)
 		return NULL;
 	}
 	
-	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
-	if (!list) {
-		DEBUG(0,("ERROR: Unable to allocate memory"));
-		free (s);
-		return NULL;
-	}
-	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
-	lsize = P_LIST_ABS;
-	
-	num = 0;
+	num = lsize = 0;
+	list = NULL;
 	
 	str = s;
 	while (*str)
 	{
 		if (!next_token(&str, tok, LIST_SEP, sizeof(pstring))) continue;
 		
-		if ((num +1) == lsize) {
+		if (num == lsize) {
 			lsize += P_LIST_ABS;
-			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
 				DEBUG(0,("ERROR: Unable to allocate memory"));
 				lp_list_free (&list);
@@ -3611,7 +3603,7 @@ char **lp_list_make(char *string)
 				return NULL;
 			}
 			else list = rlist;
-			memset (&list[num], 0, ((sizeof(char**)) * P_LIST_ABS));
+			memset (&list[num], 0, ((sizeof(char**)) * (P_LIST_ABS +1)));
 		}
 		
 		list[num] = strdup(tok);
@@ -3637,26 +3629,21 @@ BOOL lp_list_copy(char ***dest, char **src)
 	*dest = NULL;
 	if (!src) return False;
 	
-	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
-	if (!list) {
-		DEBUG(0,("ERROR: Unable to allocate memory"));
-		return False;
-	}
-	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
-	lsize = P_LIST_ABS;
+	num = lsize = 0;
+	list = NULL;
 		
-	for (num = 0; src[num]; num++)
+	while (src[num])
 	{
-		if ((num +1) == lsize) {
+		if (num == lsize) {
 			lsize += P_LIST_ABS;
-			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
+			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
 				DEBUG(0,("ERROR: Unable to allocate memory"));
 				lp_list_free (&list);
 				return False;
 			}
 			else list = rlist;
-			memset (&list[num], 0, ((sizeof(char**)) * P_LIST_ABS));
+			memset (&list[num], 0, ((sizeof(char **)) * (P_LIST_ABS +1)));
 		}
 		
 		list[num] = strdup(src[num]);
@@ -3665,6 +3652,8 @@ BOOL lp_list_copy(char ***dest, char **src)
 			lp_list_free (&list);
 			return False;
 		}
+
+		num++;
 	}
 	
 	*dest = list;
@@ -3758,4 +3747,3 @@ BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
 	
 	return True;
 }
-
