@@ -464,7 +464,15 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 9 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
+		<term>Chapter 9 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
+		<para>
+		Misty Stanley-Jones has contributed information that summarizes her experience at migration
+		from a NetWare server to Samba-3.
+		</para>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 10 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
 		<para>
 		Well done, Bob, your team has achieved much. Now help Abmas integrate the entire network.
 		You want central control and central support and you need to cut costs. How can you reduce administrative
@@ -486,7 +494,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 10 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
+		<term>Chapter 11 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
 		<para>
 		Abmas has acquired another company that has just migrated to running Windows Server 2003 and 
 		Active Directory. One of your staff makes offhand comments that land you in hot water.
@@ -504,7 +512,7 @@
 		</varlistentry>
 
 		<varlistentry>
-                <term>Chapter 11 &smbmdash; Integrating Additional Services</term><listitem>
+                <term>Chapter 12 &smbmdash; Integrating Additional Services</term><listitem>
                 <para>
 		The battle is almost over, Samba-3 has won the day. Your team are delighted and now you
 		find yourself at yet another cross-roads. Abmas have acquired a snack food business, you
@@ -523,7 +531,7 @@
                 </varlistentry>
 
 		<varlistentry>
-		<term>Chapter 12 &smbmdash; Performance, Reliability and Availability</term><listitem>
+		<term>Chapter 13 &smbmdash; Performance, Reliability and Availability</term><listitem>
 		<para>
 		Bob, are you sure the new Samba server is up to the load? Your network is serving many
 		users who risk becoming unproductive. What can you do to keep ahead of demand? Can you
