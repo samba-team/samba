@@ -487,9 +487,8 @@ static void init_srv_share_info_1501(pipes_struct *p, SRV_SHARE_INFO_1501 *sh150
 
 static BOOL is_hidden_share(int snum)
 {
-	pstring net_name;
+	const char *net_name = lp_servicename(snum);
 
-	pstrcpy(net_name, lp_servicename(snum));
 	return (net_name[strlen(net_name) - 1] == '$') ? True : False;
 }
 
