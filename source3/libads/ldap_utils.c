@@ -28,7 +28,7 @@
   this is supposed to catch dropped connections and auto-reconnect
 */
 ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, 
-			       const char *exp,
+			       const char *expr,
 			       const char **attrs, void **res)
 {
 	ADS_STATUS status;
@@ -46,10 +46,10 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 
 	while (count--) {
-		status = ads_do_search_all(ads, bp, scope, exp, attrs, res);
+		status = ads_do_search_all(ads, bp, scope, expr, attrs, res);
 		if (ADS_ERR_OK(status)) {
 			DEBUG(5,("Search for %s gave %d replies\n",
-				 exp, ads_count_replies(ads, *res)));
+				 expr, ads_count_replies(ads, *res)));
 			free(bp);
 			return status;
 		}
@@ -79,11 +79,11 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 
 ADS_STATUS ads_search_retry(ADS_STRUCT *ads, void **res, 
-			    const char *exp, 
+			    const char *expr, 
 			    const char **attrs)
 {
 	return ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
-				   exp, attrs, res);
+				   expr, attrs, res);
 }
 
 ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res, 
