@@ -310,7 +310,7 @@ void free_sec_desc(SEC_DESC * t)
 
 	if (t->sacl != NULL)
 	{
-		free_sec_acl(t->dacl);
+		free_sec_acl(t->sacl);
 
 	}
 
