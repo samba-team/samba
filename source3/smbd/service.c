@@ -548,7 +548,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	    pstrcpy(vconn->connectpath, conn->connectpath);
 	    pstrcpy(vconn->origpath, conn->origpath);
 
+	    pstrcpy(vconn->service, service);
 	    pstrcpy(vconn->user, conn->user);
+
 	    vconn->uid = conn->uid;
 	    vconn->gid = conn->gid;
 	    vconn->ngroups = conn->ngroups;
