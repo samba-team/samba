@@ -18,8 +18,6 @@ Implement RFC1731 and 1734, pop over GSS-API
 
 * doc
 
-add example from hprop manpage to texi
-
 * kdc
 
 * kadmin
@@ -57,8 +55,6 @@ inquire_names_for_mech, and
 inquire_mechs_for_name not implemented.
 
 set minor_status in all functions
-
-init_sec_context: `initiator_cred_handle' ignored.
 
 anonymous credentials not implemented
 
