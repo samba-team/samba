@@ -157,6 +157,19 @@ WERROR reg_open(struct registry_context **ret, const char *backend, const char *
 	return WERR_OK;
 }
 
+WERROR reg_close (struct registry_context *ctx)
+{
+	int i;
+	for (i = 0; i < ctx->num_hives; i++) {
+		if (ctx->hives[i]->functions->close_hive) {
+			ctx->hives[i]->functions->close_hive(ctx->hives[i]);
+		}
+	}
+	talloc_destroy(ctx);
+
+	return WERR_OK;
+}
+
 /* Open a registry file/host/etc */
 WERROR reg_import_hive(struct registry_context *h, const char *backend, const char *location, const char *credentials, const char *hivename)
 {
@@ -367,7 +380,8 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 
 	if(key->hive->functions->get_subkey_by_name) {
 		error = key->hive->functions->get_subkey_by_name(mem_ctx, key,name,subkey);
-		/* FIXME: Fall back to reg_open_key rather then get_subkey_by_index */
+	} else if(key->hive->functions->open_key) {
+		error = key->hive->functions->open_key(mem_ctx, key->hive, talloc_asprintf(mem_ctx, "%s\\%s", key->path, name), subkey);
 	} else if(key->hive->functions->get_subkey_by_index) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);
@@ -589,9 +603,8 @@ WERROR reg_del_value(struct registry_value *val)
 	return ret;
 }
 
-WERROR reg_save(struct registry_context *h, const char *location)
+WERROR reg_save (struct registry_context *ctx, const char *location)
 {
-	/* FIXME */	
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -614,4 +627,18 @@ WERROR reg_key_get_parent(TALLOC_CTX *mem_ctx, struct registry_key *key, struct 
 	error = reg_open_key(mem_ctx, root, parent_name, parent);
 	SAFE_FREE(parent_name);
 	return error;
+}
+
+WERROR reg_key_flush(struct registry_key *key)
+{
+	if (!key) {
+		return WERR_INVALID_PARAM;
+	}
+	
+	if (key->hive->functions->flush_key) {
+		return key->hive->functions->flush_key(key);
+	}
+	
+	/* No need for flushing, apparently */
+	return WERR_OK;
 }

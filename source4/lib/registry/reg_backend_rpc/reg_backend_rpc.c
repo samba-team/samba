@@ -97,6 +97,12 @@ static WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const c
 	return WERR_OK;
 }
 
+static WERROR rpc_close_hive (struct registry_hive *h)
+{
+	dcerpc_pipe_close(h->backend_data);
+	return WERR_OK;
+}
+
 static WERROR rpc_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *h, struct registry_key **k)
 {
 	NTSTATUS status;
@@ -373,6 +379,7 @@ static WERROR rpc_num_subkeys(struct registry_key *key, int *count) {
 static struct registry_operations reg_backend_rpc = {
 	.name = "rpc",
 	.open_hive = rpc_open_hive,
+	.close_hive = rpc_close_hive,
 	.open_key = rpc_open_key,
 	.get_subkey_by_index = rpc_get_subkey_by_index,
 	.get_value_by_index = rpc_get_value_by_index,

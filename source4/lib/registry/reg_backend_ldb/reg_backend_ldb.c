@@ -194,11 +194,18 @@ static WERROR ldb_del_key (struct registry_key *key)
 	return WERR_OK;
 }
 
+static WERROR ldb_close_hive (struct registry_hive *hive)
+{
+	ldb_close (hive->backend_data);
+	return WERR_OK;
+}
+
 static struct registry_operations reg_backend_ldb = {
 	.name = "ldb",
 	.add_key = ldb_add_key,
 	.del_key = ldb_del_key,
 	.open_hive = ldb_open_hive,
+	.close_hive = ldb_close_hive,
 	.open_key = ldb_open_key,
 	.get_value_by_index = ldb_get_value_by_id,
 	.get_subkey_by_index = ldb_get_subkey_by_id,
