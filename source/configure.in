@@ -151,6 +151,11 @@ AC_TRY_COMPILE([#include <sys/types.h>
 echo yes;AC_DEFINE(HAVE_SOCK_SIN_LEN), 
 echo no)
 
+echo $ac_n "checking for __FILE__ macro ... $ac_c"
+AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FILE__);],
+echo yes;AC_DEFINE(HAVE_FILE_MACRO), 
+echo no)
+
 echo $ac_n "checking for __FUNCTION__ macro ... $ac_c"
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
 echo yes;AC_DEFINE(HAVE_FUNCTION_MACRO), 
