@@ -1,5 +1,10 @@
 2001-05-10  Assar Westerlund  <assar@sics.se>
 
+	* admin/list.c (do_list): do not close the keytab if opening it
+	failed
+	* admin/list.c (do_list): always print complete names.  print
+	everything to stdout.
+	* admin/list.c: print both v5 and v4 list by default
 	* admin/remove.c (kt_remove): reorganize some.  open the keytab
 	(defaulting to the modify one).
 	* admin/purge.c (kt_purge): reorganize some.  open the keytab

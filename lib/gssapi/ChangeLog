@@ -1,3 +1,7 @@
+2001-05-11  Assar Westerlund  <assar@sics.se>
+
+	* try to return the error string from libkrb5 where applicable
+
 2001-05-08  Assar Westerlund  <assar@sics.se>
 
 	* delete_sec_context.c (gss_delete_sec_context): remember to free
