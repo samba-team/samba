@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,7 +62,7 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
     for(i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
-	sigaction(i, &sa, &sigs[i]);
+	if (i != SIGALRM) sigaction(i, &sa, &sigs[i]);
 
     if((tty = fopen("/dev/tty", "r")) == NULL)
 	tty = stdin;
@@ -104,7 +104,7 @@ read_string(const char *prompt, char *buf, size_t len, int echo)
 	fclose(tty);
 
     for(i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
-	sigaction(i, &sigs[i], NULL);
+	if (i != SIGALRM) sigaction(i, &sigs[i], NULL);
     
     if(ret)
 	return -3;
