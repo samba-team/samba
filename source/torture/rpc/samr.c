@@ -727,6 +727,67 @@ static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+#if 0
+static BOOL test_ChangePasswordNT3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_ChangePasswordUser r;
+	BOOL ret = True;
+	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
+	struct policy_handle user_handle;
+	char *oldpass = "test";
+	char *newpass = "test2";
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
+
+	status = test_OpenUser_byname(p, mem_ctx, handle, "testuser", &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	printf("Testing ChangePasswordUser for user 'testuser'\n");
+
+	printf("old password: %s\n", oldpass);
+	printf("new password: %s\n", newpass);
+
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+
+	r.in.handle = &user_handle;
+	r.in.lm_present = 1;
+	r.in.old_lm_crypted = &hash1;
+	r.in.new_lm_crypted = &hash2;
+	r.in.nt_present = 1;
+	r.in.old_nt_crypted = &hash3;
+	r.in.new_nt_crypted = &hash4;
+	r.in.cross1_present = 1;
+	r.in.nt_cross = &hash5;
+	r.in.cross2_present = 1;
+	r.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	if (!test_Close(p, mem_ctx, &user_handle)) {
+		ret = False;
+	}
+
+	return ret;
+}
+#endif
 
 static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct policy_handle *handle, char **password)
