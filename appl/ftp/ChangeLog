@@ -1,5 +1,10 @@
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ls.c (lstat_file): don't set st_mode, it should already be
+ 	correct
+
+	* ftpd/ls.c: don't use warnx to print errors
+
 	* ftpd/ls.c (builtin_ls): fix typo, 'd' shouldn't imply 'f'
 
 	* ftpd/ls.c (lstat_file): new function for avoiding stating AFS

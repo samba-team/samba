@@ -1,3 +1,7 @@
+1999-10-20  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: use LIB_roken
+
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
 	* su.c (krb5_verify): use krb5_verify_user_lrealm
