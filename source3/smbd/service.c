@@ -328,7 +328,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 	BOOL force = False;
 	connection_struct *conn;
 	uid_t euid;
-
+	struct stat st;
 	fstring user;
 	ZERO_STRUCT(user);
 
@@ -626,6 +626,11 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 		}
 	}
 
+#if CHECK_PATH_ON_TCONX
+	/* win2000 does not check the permissions on the directory
+	   during the tree connect, instead relying on permission
+	   check during individual operations. To match this behaviour
+	   I have disabled this chdir check (tridge) */
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
@@ -636,12 +641,23 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
+#else
+	/* the alternative is just to check the directory exists */
+	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
+		DEBUG(0,("%s is not a directory\n", conn->connectpath));
+		change_to_root_user();
+		yield_connection(conn, lp_servicename(SNUM(conn)));
+		conn_free(conn);
+		*status = NT_STATUS_BAD_NETWORK_NAME;
+		return NULL;
+	}
+#endif
 	
 	string_set(&conn->origpath,conn->connectpath);
 	
 #if SOFTLINK_OPTIMISATION
-	/* resolve any soft links early */
-	{
+	/* resolve any soft links early if possible */
+	if (vfs_ChDir(conn,conn->connectpath) == 0) {
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		vfs_GetWd(conn,s);
