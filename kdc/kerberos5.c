@@ -875,7 +875,7 @@ tgs_check_authenticator(krb5_auth_context ac,
 out:
     free_Authenticator(auth);
     free(auth);
-    return 0;
+    return ret;
 }
 	    
 
