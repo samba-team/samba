@@ -62,7 +62,7 @@ static struct hdb_method methods[] = {
 
 krb5_error_code
 hdb_next_enctype2key(krb5_context context,
-		     hdb_entry *e,
+		     const hdb_entry *e,
 		     krb5_enctype enctype,
 		     Key **key)
 {
