@@ -555,8 +555,14 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		TEST_INT_EQUAL(user->rid, info3->base.rid);
 		TEST_INT_EQUAL(user->primary_gid, info3->base.primary_gid);
-		TEST_INT_EQUAL(user->acct_flags, info3->base.acct_flags);
-		TEST_STRING_EQUAL(user->account_name, info3->base.account_name);
+		/* this is 0x0 from NT4 sp6 */
+		if (info3->base.acct_flags) {
+			TEST_INT_EQUAL(user->acct_flags, info3->base.acct_flags);
+		}
+		/* this is NULL from NT4 sp6 */
+		if (info3->base.account_name.string) {
+			TEST_STRING_EQUAL(user->account_name, info3->base.account_name);
+		}
 		TEST_STRING_EQUAL(user->full_name, info3->base.full_name);
 		TEST_STRING_EQUAL(user->logon_script, info3->base.logon_script);
 		TEST_STRING_EQUAL(user->profile_path, info3->base.profile_path);
@@ -574,8 +580,9 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		 * doco I read -- abartlet) */
 
 		/* This copes with the two different versions of 0 I see */
+		/* with NT4 sp6 we have the || case */
 		if (!((user->last_logoff == 0) 
-		      && (info3->base.last_logoff == 0x7fffffffffffffffLL))) {
+		      || (info3->base.last_logoff == 0x7fffffffffffffffLL))) {
 			TEST_TIME_EQUAL(user->last_logoff, info3->base.last_logoff);
 		}
 		return ret;
@@ -813,6 +820,10 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 		q.in.level = levels[i];
 		status = dcerpc_lsa_QueryTrustedDomainInfo(samsync_state->p_lsa, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
+			if (q.in.level == 8 && NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER)) {
+				info[levels[i]] = NULL;
+				continue;
+			}
 			printf("QueryInfoTrustedDomain level %d failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			return False;
@@ -820,9 +831,11 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 		info[levels[i]]  = q.out.info;
 	}
 
-	TEST_SID_EQUAL(info[8]->full_info.info_ex.sid, dom_sid);
-	TEST_STRING_EQUAL(info[8]->full_info.info_ex.name, trusted_domain->domain_name);
-	TEST_STRING_EQUAL(info[1]->name.domain_name, trusted_domain->domain_name);
+	if (info[8]) {
+		TEST_SID_EQUAL(info[8]->full_info.info_ex.sid, dom_sid);
+		TEST_STRING_EQUAL(info[8]->full_info.info_ex.netbios_name, trusted_domain->domain_name);
+	}
+	TEST_STRING_EQUAL(info[1]->name.netbios_name, trusted_domain->domain_name);
 	TEST_INT_EQUAL(info[3]->flags.flags, trusted_domain->flags);
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
 
