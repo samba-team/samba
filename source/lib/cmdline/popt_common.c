@@ -401,7 +401,7 @@ static void popt_common_credentials_callback(poptContext con,
 			cmdline_auth_info.got_pass = True;
 
 			pstrcpy(cmdline_auth_info.domain, lp_workgroup());
-			cmdline_auth_info.domain = True;
+			cmdline_auth_info.got_domain = True;
 			
 			/* machine accounts only work with kerberos */
 			cmdline_auth_info.use_kerberos = True;
