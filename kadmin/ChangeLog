@@ -1,3 +1,8 @@
+2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* load.c (parse_generation): return if there is no generation
+	(spotted by Daniel Kouril)
+
 2002-06-07  Jacques Vidrine <n@nectar.com>
 
 	* ank.c: do not attempt to free uninitialized pointer when
