@@ -27,6 +27,10 @@
 
 #include "includes.h"
 
+#ifndef HAVE_SYS_QUOTAS
+
+#ifdef WITH_QUOTAS
+
 #if defined(VXFS_QUOTA)
 
 /*
@@ -1112,3 +1116,108 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 #endif /* SUNOS5 || ... */
 
 #endif /* VXFS_QUOTA */
+
+#else /* WITH_QUOTAS */
+
+BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+{
+  (*bsize) = 512; /* This value should be ignored */
+
+  /* And just to be sure we set some values that hopefully */
+  /* will be larger that any possible real-world value     */
+  (*dfree) = (SMB_BIG_UINT)-1;
+  (*dsize) = (SMB_BIG_UINT)-1;
+
+  /* As we have select not to use quotas, allways fail */
+  return False;
+}
+#endif /* WITH_QUOTAS */
+
+#else /* HAVE_SYS_QUOTAS */
+/* wrapper to the new sys_quota interface 
+   this file should be removed later
+   */
+BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+{
+	int r;
+	SMB_DISK_QUOTA D;
+	unid_t id;
+
+	id.uid = geteuid();
+  
+  	r=sys_get_quota(path, SMB_USER_QUOTA_TYPE, id, &D);
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	*bsize = D.bsize;
+	if (r == -1) {
+		if (errno == EDQUOT) {
+			*dfree =0;
+			*dsize =D.curblocks;
+			return (True);
+		} else {
+			goto try_group_quota;
+		}
+	}
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	if (
+		(D.softlimit && D.curblocks >= D.softlimit) ||
+		(D.hardlimit && D.curblocks >= D.hardlimit) ||
+		(D.isoftlimit && D.curinodes >= D.isoftlimit) ||
+		(D.ihardlimit && D.curinodes>=D.ihardlimit)
+	) {
+		*dfree = 0;
+		*dsize = D.curblocks;
+	} else if (D.softlimit==0 && D.hardlimit==0) {
+		goto try_group_quota;
+	} else {
+		if (D.softlimit == 0)
+			D.softlimit = D.hardlimit;
+		*dfree = D.softlimit - D.curblocks;
+		*dsize = D.softlimit;
+	}
+
+	return True;
+	
+try_group_quota:
+#ifdef HAVE_GROUP_QUOTA
+	id.gid = getegid();
+  
+  	r=sys_get_quota(path, SMB_GROUP_QUOTA_TYPE, id, &D);
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	*bsize = D.bsize;
+	if (r == -1) {
+		if (errno == EDQUOT) {
+			*dfree =0;
+			*dsize =D.curblocks;
+			return (True);
+		} else {
+			return False;
+		}
+	}
+
+	/* Use softlimit to determine disk space, except when it has been exceeded */
+	if (
+		(D.softlimit && D.curblocks >= D.softlimit) ||
+		(D.hardlimit && D.curblocks >= D.hardlimit) ||
+		(D.isoftlimit && D.curinodes >= D.isoftlimit) ||
+		(D.ihardlimit && D.curinodes>=D.ihardlimit)
+	) {
+		*dfree = 0;
+		*dsize = D.curblocks;
+	} else if (D.softlimit==0 && D.hardlimit==0) {
+		return False;
+	} else {
+		if (D.softlimit == 0)
+			D.softlimit = D.hardlimit;
+		*dfree = D.softlimit - D.curblocks;
+		*dsize = D.softlimit;
+	}
+
+	return (True);
+#else /* HAVE_GROUP_QUOTA */
+	return False;
+#endif /* HAVE_GROUP_QUOTA */
+}
+#endif /* HAVE_SYS_QUOTAS */

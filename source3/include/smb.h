@@ -243,6 +243,7 @@ typedef struct nttime_info
 /* SID Types */
 enum SID_NAME_USE
 {
+	SID_NAME_USE_NONE = 0,
 	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP,     /* domain group */
 	SID_NAME_DOMAIN,      /* domain sid */
@@ -403,6 +404,7 @@ typedef struct files_struct
 	BOOL is_stat;
 	BOOL directory_delete_on_close;
 	char *fsp_name;
+ 	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
 
 #include "ntquotas.h"

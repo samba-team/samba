@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-2001
+   Copyright (C) Jeremy Allison			1994-2001
+   Copyright (C) Stefan (metze) Metzmacher	2003
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -28,6 +29,7 @@ extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
 extern uint32 global_client_caps;
+extern struct current_user current_user;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
 
@@ -1368,7 +1370,9 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		case SMB_FS_ATTRIBUTE_INFORMATION:
 
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
+				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
+				(HAVE_SYS_QUOTAS ? FILE_VOLUME_QUOTAS: 0)); /* FS ATTRIBUTES */
+
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
@@ -1470,6 +1474,76 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SIVAL(pdata,4,0); /* characteristics */
 			break;
 
+		case SMB_FS_QUOTA_INFORMATION:
+		/* 
+		 * what we have to send --metze:
+		 *
+		 * Unknown1: 		24 NULL bytes
+		 * Soft Quota Treshold: 8 bytes seems like SMB_BIG_UINT or so
+		 * Hard Quota Limit:	8 bytes seems like SMB_BIG_UINT or so
+		 * Quota Flags:		2 byte :
+		 * Unknown3:		6 NULL bytes
+		 *
+		 * 48 bytes total
+		 * 
+		 * details for Quota Flags:
+		 * 
+		 * 0x0020 Log Limit: log if the user exceeds his Hard Quota
+		 * 0x0010 Log Warn:  log if the user exceeds his Soft Quota
+		 * 0x0002 Deny Disk: deny disk access when the user exceeds his Hard Quota
+		 * 0x0001 Enable Quotas: enable quota for this fs
+		 *
+		 */
+		{
+			/* we need to fake up a fsp here,
+			 * because its not send in this call
+			 */
+			files_struct fsp;
+			SMB_NTQUOTA_STRUCT quotas;
+			
+			ZERO_STRUCT(fsp);
+			ZERO_STRUCT(quotas);
+			
+			fsp.conn = conn;
+			fsp.fnum = -1;
+			fsp.fd = -1;
+			
+			/* access check */
+			if (conn->admin_user != True) {
+				DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
+					lp_servicename(SNUM(conn)),conn->user));
+				return ERROR_DOS(ERRDOS,ERRnoaccess);
+			}
+			
+			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
+				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				return ERROR_DOS(ERRSRV,ERRerror);
+			}
+
+			data_len = 48;
+
+			DEBUG(10,("SMB_FS_QUOTA_INFORMATION: for service [%s]\n",lp_servicename(SNUM(conn))));		
+		
+			/* Unknown1 24 NULL bytes*/
+			SBIG_UINT(pdata,0,(SMB_BIG_UINT)0);
+			SBIG_UINT(pdata,8,(SMB_BIG_UINT)0);
+			SBIG_UINT(pdata,16,(SMB_BIG_UINT)0);
+		
+			/* Default Soft Quota 8 bytes */
+			SBIG_UINT(pdata,24,quotas.softlim);
+
+			/* Default Hard Quota 8 bytes */
+			SBIG_UINT(pdata,32,quotas.hardlim);
+	
+			/* Quota flag 2 bytes */
+			SSVAL(pdata,40,quotas.qflags);
+		
+			/* Unknown3 6 NULL bytes */
+			SSVAL(pdata,42,0);
+			SIVAL(pdata,44,0);
+			
+			break;
+		}
 		case SMB_FS_OBJECTID_INFORMATION:
 			data_len = 64;
 			break;
@@ -1519,14 +1593,104 @@ static int call_trans2setfsinfo(connection_struct *conn,
 				char *inbuf, char *outbuf, int length, int bufsize,
 				char **pparams, int total_params, char **ppdata, int total_data)
 {
-	/* Just say yes we did it - there is nothing that
-		can be set here so it doesn't matter. */
+	char *pdata = *ppdata;
+	char *params = *pparams;
+	files_struct *fsp = NULL;
+	uint16 info_level;
 	int outsize;
-	DEBUG(3,("call_trans2setfsinfo\n"));
+	SMB_NTQUOTA_STRUCT quotas;
+	
+	ZERO_STRUCT(quotas);
 
-	if (!CAN_WRITE(conn))
+	DEBUG(10,("call_trans2setfsinfo: SET_FS_QUOTA: for service [%s]\n",lp_servicename(SNUM(conn))));
+
+	/* access check */
+	if ((conn->admin_user != True)||!CAN_WRITE(conn)) {
+		DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
+			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRSRV,ERRaccess);
+	}
 
+	/*  */
+	if (total_params < 4) {
+		DEBUG(0,("call_trans2setfsinfo: requires total_params(%d) >= 4 bytes!\n",
+			total_params));
+		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	}
+
+	fsp = file_fsp(params,0);
+	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	}
+
+	info_level = SVAL(params,2);
+
+	switch(info_level) {
+		case SMB_FS_QUOTA_INFORMATION:
+			/* note: normaly there're 48 bytes,
+			 * but we didn't use the last 6 bytes for now 
+			 * --metze 
+			 */
+			if (total_data < 42) {
+				DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
+					total_data));
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			}
+			
+			/* unknown_1 24 NULL bytes in pdata*/
+		
+			/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
+			quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+#ifdef LARGE_SMB_OFF_T
+			quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if ((IVAL(pdata,28) != 0)&&
+				((quotas.softlim != 0xFFFFFFFF)||
+				(IVAL(pdata,28)!=0xFFFFFFFF)))) {
+				/* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			}
+#endif /* LARGE_SMB_OFF_T */
+		
+			/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
+			quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+#ifdef LARGE_SMB_OFF_T
+			quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if ((IVAL(pdata,36) != 0)&&
+				((quotas.hardlim != 0xFFFFFFFF)||
+				(IVAL(pdata,36)!=0xFFFFFFFF)))) {
+				/* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			}
+#endif /* LARGE_SMB_OFF_T */
+		
+			/* quota_flags 2 bytes **/
+			quotas.qflags = SVAL(pdata,40);
+		
+			/* unknown_2 6 NULL bytes follow*/
+		
+			/* now set the quotas */
+			if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
+				DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				return ERROR_DOS(ERRSRV,ERRerror);
+			}
+			
+			break;
+		default:
+			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
+				info_level));
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+			break;
+	}
+
+	/* 
+	 * sending this reply works fine, 
+	 * but I'm not sure it's the same 
+	 * like windows do...
+	 * --metze
+	 */ 
 	outsize = set_message(outbuf,10,0,True);
 
 	return outsize;
@@ -1589,7 +1753,20 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
+		if(fsp && (fsp->fake_file_handle)) {
+			/*
+			 * This is actually for the QUOTA_FAKE_FILE --metze
+			 */
+						
+			pstrcpy(fname, fsp->fsp_name);
+			unix_convert(fname,conn,0,&bad_path,&sbuf);
+			if (!check_name(fname,conn)) {
+				DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed for fake_file(%s)\n",fname,strerror(errno)));
+				set_bad_path_error(errno, bad_path);
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
+			
+		} else if(fsp && (fsp->is_directory || fsp->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -2229,7 +2406,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	mode_t unixmode = 0;
 
+	if (!params)
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+
 	if (tran_call == TRANSACT2_SETFILEINFO) {
+		if (total_params < 4)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
