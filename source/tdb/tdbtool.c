@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <signal.h>
 #include "tdb.h"
 
 /* a tdb tool for manipulating a tdb database */

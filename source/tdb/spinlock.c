@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <signal.h>
 #include "tdb.h"
 #include "spinlock.h"
 
