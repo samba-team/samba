@@ -35,38 +35,59 @@
 
 RCSID("$Id$");
 
-OM_uint32
-_gssapi_verify_mech_header(u_char **str,
-			   size_t total_len,
-			   gss_OID oid)
+/*
+ * return the length of the mechanism in token or -1
+ * (which implies that the token was bad - GSS_S_DEFECTIVE_TOKEN
+ */
+
+static ssize_t
+gssapi_krb5_get_mech (const u_char *ptr,
+		      size_t total_len,
+		      const u_char **mech_ret)
 {
     size_t len, len_len, mech_len, foo;
+    const u_char *p = ptr;
     int e;
-    u_char *p = *str;
 
     if (total_len < 1)
-	return GSS_S_DEFECTIVE_TOKEN;
+	return -1;
     if (*p++ != 0x60)
-	return GSS_S_DEFECTIVE_TOKEN;
+	return -1;
     e = der_get_length (p, total_len - 1, &len, &len_len);
     if (e || 1 + len_len + len != total_len)
-	return GSS_S_DEFECTIVE_TOKEN;
+	return -1;
     p += len_len;
     if (*p++ != 0x06)
-	return GSS_S_DEFECTIVE_TOKEN;
+	return -1;
     e = der_get_length (p, total_len - 1 - len_len - 1,
 			&mech_len, &foo);
     if (e)
-	return GSS_S_DEFECTIVE_TOKEN;
+	return -1;
     p += foo;
-    if (mech_len != oid->length)
+    *mech_ret = p;
+    return mech_len;
+}
+
+OM_uint32
+_gssapi_verify_mech_header(u_char **str,
+			   size_t total_len,
+			   gss_OID mech)
+{
+    const u_char *p;
+    size_t mech_len;
+
+    mech_len = gssapi_krb5_get_mech (*str, total_len, &p);
+    if (mech_len < 0)
+	return GSS_S_DEFECTIVE_TOKEN;
+
+    if (mech_len != mech->length)
 	return GSS_S_BAD_MECH;
     if (memcmp(p,
-	       oid->elements,
-	       oid->length) != 0)
+	       mech->elements,
+	       mech->length) != 0)
 	return GSS_S_BAD_MECH;
     p += mech_len;
-    *str = p;
+    *str = (char *)p;
     return GSS_S_COMPLETE;
 }
 
@@ -96,6 +117,36 @@ gssapi_krb5_verify_header(u_char **str,
     return 0;
 }
 
+/*
+ * Remove the GSS-API wrapping from `in_token' giving `out_data.
+ * Does not copy data, so just free `in_token'.
+ */
+
+OM_uint32
+_gssapi_decapsulate(
+    OM_uint32 *minor_status,
+    gss_buffer_t input_token_buffer,
+    krb5_data *out_data,
+    const gss_OID mech
+)
+{
+    u_char *p;
+    OM_uint32 ret;
+
+    p = input_token_buffer->value;
+    ret = _gssapi_verify_mech_header(&p,
+				    input_token_buffer->length,
+				    mech);
+    if (ret) {
+	*minor_status = 0;
+	return ret;
+    }
+
+    out_data->length = input_token_buffer->length -
+	(p - (u_char *)input_token_buffer->value);
+    out_data->data   = p;
+    return GSS_S_COMPLETE;
+}
 
 /*
  * Remove the GSS-API wrapping from `in_token' giving `out_data.
