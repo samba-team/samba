@@ -51,15 +51,31 @@ void load_case_tables(void)
 	if (!upcase_table) {
 		DEBUG(1,("creating lame upcase table\n"));
 		upcase_table = malloc(0x20000);
-		for (i=0;i<0x10000;i++) upcase_table[i] = i;
-		for (i=0;i<256;i++) upcase_table[UCS2_CHAR(i)] = UCS2_CHAR(islower(i)?toupper(i):i);
+		for (i=0;i<0x10000;i++) {
+			smb_ucs2_t v;
+			SSVAL(&v, 0, i);
+			upcase_table[v] = i;
+		}
+		for (i=0;i<256;i++) {
+			smb_ucs2_t v;
+			SSVAL(&v, 0, UCS2_CHAR(i));
+			upcase_table[v] = UCS2_CHAR(islower(i)?toupper(i):i);
+		}
 	}
 
 	if (!lowcase_table) {
 		DEBUG(1,("creating lame lowcase table\n"));
 		lowcase_table = malloc(0x20000);
-		for (i=0;i<0x10000;i++) lowcase_table[i] = i;
-		for (i=0;i<256;i++) lowcase_table[UCS2_CHAR(i)] = UCS2_CHAR(isupper(i)?tolower(i):i);
+		for (i=0;i<0x10000;i++) {
+			smb_ucs2_t v;
+			SSVAL(&v, 0, i);
+			lowcase_table[v] = i;
+		}
+		for (i=0;i<256;i++) {
+			smb_ucs2_t v;
+			SSVAL(&v, 0, UCS2_CHAR(i));
+			lowcase_table[v] = UCS2_CHAR(isupper(i)?tolower(i):i);
+		}
 	}
 }
 
@@ -238,7 +254,7 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 
 smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
-	return upcase_table[val];
+	return upcase_table[SVAL(&val,0)];
 }
 
 /*******************************************************************
@@ -247,7 +263,8 @@ smb_ucs2_t toupper_w(smb_ucs2_t val)
 
 smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
-	return lowcase_table[val];
+	return lowcase_table[SVAL(&val,0)];
+
 }
 
 /*******************************************************************
@@ -255,7 +272,7 @@ determine if a character is lowercase
 ********************************************************************/
 BOOL islower_w(smb_ucs2_t c)
 {
-	return upcase_table[c] != c;
+	return upcase_table[SVAL(&c,0)] != c;
 }
 
 /*******************************************************************
@@ -263,7 +280,7 @@ determine if a character is uppercase
 ********************************************************************/
 BOOL isupper_w(smb_ucs2_t c)
 {
-	return lowcase_table[c] != c;
+	return lowcase_table[SVAL(&c,0)] != c;
 }
 
 
@@ -272,7 +289,7 @@ determine if a character is valid in a 8.3 name
 ********************************************************************/
 BOOL isvalid83_w(smb_ucs2_t c)
 {
-	return valid_table[c] != 0;
+	return valid_table[SVAL(&c,0)] != 0;
 }
 
 /*******************************************************************
