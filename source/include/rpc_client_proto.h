@@ -165,6 +165,7 @@ BOOL lsa_close(POLICY_HND *hnd);
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
 void gen_next_creds(struct ntdom_info *nt, DOM_CRED * new_clnt_cred);
+uint32 cli_net_trust_dom_list(const char *srv_name, BUFFER2 *uni_dom);
 BOOL cli_net_logon_ctrl2(const char *srv_name, uint32 status_level);
 uint32 cli_net_auth2(const char *srv_name,
 		     const char *trust_acct,

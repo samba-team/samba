@@ -50,6 +50,63 @@ void gen_next_creds(struct ntdom_info *nt, DOM_CRED * new_clnt_cred)
 }
 
 /****************************************************************************
+do a net trust domain list
+****************************************************************************/
+uint32 cli_net_trust_dom_list(const char *srv_name, BUFFER2 *uni_dom)
+{
+	prs_struct rbuf;
+	prs_struct buf;
+	NET_Q_TRUST_DOM_LIST q_l;
+	uint32 status = 0x0;
+
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_NETLOGON, &con))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	/* create and send a MSRPC command with api NET_TRUST_DOM_LIST */
+
+	DEBUG(4, ("net_trust_dom_list\n"));
+
+	/* store the parameters */
+	q_l.ptr = 1;
+	make_unistr2(&q_l.uni_server_name, srv_name, 0);
+
+	/* turn parameters into data stream */
+	if (net_io_q_trust_dom("", &q_l, &buf, 0) &&
+	    rpc_con_pipe_req(con, NET_TRUST_DOM_LIST, &buf, &rbuf))
+	{
+		NET_R_TRUST_DOM_LIST r_l;
+
+		net_io_r_trust_dom("", &r_l, &rbuf, 0);
+		if (rbuf.offset == 0)
+		{
+			status = NT_STATUS_INVALID_PARAMETER;
+		}
+		else if (status == 0x0)
+		{
+			status = r_l.status;
+		}
+		*uni_dom = r_l.uni_trust_dom_name;
+	}
+	else
+	{
+		status = NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	cli_connection_unlink(con);
+	return status;
+}
+
+/****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
 BOOL cli_net_logon_ctrl2(const char *srv_name, uint32 status_level)

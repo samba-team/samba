@@ -41,6 +41,12 @@ static const struct command_set ntl_commands[] =
 		{NULL, NULL}
 	},
 	{
+		"domlist",
+		cmd_netlogon_dom_list,
+		"NT Trusted Domain list",
+		{NULL, NULL}
+	},
+	{
 		"domtrust",
 		cmd_netlogon_domain_test,
 		"<domain> NT Inter-Domain test",

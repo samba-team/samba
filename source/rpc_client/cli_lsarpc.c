@@ -1136,6 +1136,8 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 		LSA_R_ENUM_TRUST_DOM r_q;
 		BOOL p;
 
+		ZERO_STRUCT(r_q);
+
 		lsa_io_r_enum_trust_dom("", &r_q, &rbuf, 0);
 		p = rbuf.offset != 0;
 

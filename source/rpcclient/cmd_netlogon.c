@@ -214,6 +214,35 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 
 
 /****************************************************************************
+experimental nt trusted domain list.
+****************************************************************************/
+void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[])
+{
+	uint32 status;
+	fstring domains;
+	BUFFER2 buf;
+
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	status = cli_net_trust_dom_list(srv_name, &buf);
+	if (status == 0x0)
+	{
+		buffer2_to_multistr(domains, &buf, sizeof(domains));
+	}
+	else
+	{
+		ZERO_STRUCT(domains);
+	}
+
+	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",
+	       domains, BOOLSTR(status == 0x0));
+}
+
+/****************************************************************************
 experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
