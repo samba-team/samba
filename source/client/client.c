@@ -168,7 +168,7 @@ void setup_pkt(char *outbuf)
   SSVAL(outbuf,smb_pid,pid);
   SSVAL(outbuf,smb_uid,uid);
   SSVAL(outbuf,smb_mid,mid);
-  if (Protocol > PROTOCOL_CORE)
+  if (Protocol > PROTOCOL_COREPLUS)
     {
       SCVAL(outbuf,smb_flg,0x8);
       SSVAL(outbuf,smb_flg2,0x1);
@@ -3316,7 +3316,7 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
       strcpy(pword, ""); passlen=1; 
     }
 
-    if (Protocol <= PROTOCOL_CORE) {
+    if (Protocol <= PROTOCOL_COREPLUS) {
       set_message(outbuf,0,6 + strlen(service) + passlen + strlen(dev),True);
       CVAL(outbuf,smb_com) = SMBtcon;
       setup_pkt(outbuf);
@@ -3376,7 +3376,7 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
     }
   
 
-  if (Protocol <= PROTOCOL_CORE) {
+  if (Protocol <= PROTOCOL_COREPLUS) {
     max_xmit = SVAL(inbuf,smb_vwv0);
 
     cnum = SVAL(inbuf,smb_vwv1);
