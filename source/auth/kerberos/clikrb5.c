@@ -23,7 +23,7 @@
 #include "system/network.h"
 #include "system/kerberos.h"
 #include "system/time.h"
-#include "libcli/auth/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 #ifdef HAVE_KRB5
 

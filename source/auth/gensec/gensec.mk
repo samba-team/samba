@@ -2,7 +2,7 @@
 # Start SUBSYSTEM GENSEC
 [SUBSYSTEM::GENSEC]
 INIT_FUNCTION = gensec_init
-INIT_OBJ_FILES = libcli/auth/gensec.o
+INIT_OBJ_FILES = auth/gensec/gensec.o
 REQUIRED_SUBSYSTEMS = \
 		SCHANNELDB
 # End SUBSYSTEM GENSEC
@@ -13,13 +13,8 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::gensec_krb5]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_krb5_init
-INIT_OBJ_FILES = libcli/auth/gensec_krb5.o 
-ADD_OBJ_FILES = \
-		libcli/auth/clikrb5.o \
-		libcli/auth/kerberos.o \
-		libcli/auth/kerberos_verify.o \
-		libcli/auth/gssapi_parse.o
-REQUIRED_SUBSYSTEMS = NDR_KRB5PAC EXT_LIB_KRB5
+INIT_OBJ_FILES = auth/gensec/gensec_krb5.o 
+REQUIRED_SUBSYSTEMS = NDR_KRB5PAC KERBEROS EXT_LIB_KRB5 
 # End MODULE gensec_krb5
 ################################################
 
@@ -28,7 +23,7 @@ REQUIRED_SUBSYSTEMS = NDR_KRB5PAC EXT_LIB_KRB5
 [MODULE::gensec_gssapi]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_gssapi_init
-INIT_OBJ_FILES = libcli/auth/gensec_gssapi.o 
+INIT_OBJ_FILES = auth/gensec/gensec_gssapi.o 
 REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
 # End MODULE gensec_gssapi
 ################################################
@@ -38,7 +33,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
 [MODULE::gensec_gsskrb5]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_gsskrb5_init
-INIT_OBJ_FILES = libcli/auth/gensec_gsskrb5.o 
+INIT_OBJ_FILES = auth/gensec/gensec_gsskrb5.o 
 REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
 # End MODULE gensec_gsskrb5
 ################################################
@@ -48,9 +43,9 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
 [MODULE::gensec_spnego]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_spnego_init
-INIT_OBJ_FILES = libcli/auth/spnego.o
+INIT_OBJ_FILES = auth/gensec/spnego.o
 ADD_OBJ_FILES = \
-		libcli/auth/spnego_parse.o
+		auth/gensec/spnego_parse.o
 # End MODULE gensec_spnego
 ################################################
 
@@ -59,11 +54,11 @@ ADD_OBJ_FILES = \
 [MODULE::gensec_ntlmssp]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_ntlmssp_init
-INIT_OBJ_FILES = libcli/auth/gensec_ntlmssp.o
+INIT_OBJ_FILES = auth/gensec/gensec_ntlmssp.o
 ADD_OBJ_FILES = \
-		libcli/auth/ntlmssp.o \
-		libcli/auth/ntlmssp_parse.o \
-		libcli/auth/ntlmssp_sign.o
+		auth/gensec/ntlmssp.o \
+		auth/gensec/ntlmssp_parse.o \
+		auth/gensec/ntlmssp_sign.o
 REQUIRED_SUBSYSTEMS = AUTH
 # End MODULE gensec_ntlmssp
 ################################################
@@ -73,9 +68,9 @@ REQUIRED_SUBSYSTEMS = AUTH
 [MODULE::gensec_schannel]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_schannel_init
-INIT_OBJ_FILES = libcli/auth/schannel.o
+INIT_OBJ_FILES = auth/gensec/schannel.o
 ADD_OBJ_FILES = \
-		libcli/auth/schannel_sign.o
+		auth/gensec/schannel_sign.o
 REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
 # End MODULE gensec_ntlmssp
 ################################################
@@ -84,7 +79,7 @@ REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
 INIT_OBJ_FILES = \
-		libcli/auth/schannel_state.o
+		auth/gensec/schannel_state.o
 #
 # End SUBSYSTEM SCHANNELDB
 ################################################
