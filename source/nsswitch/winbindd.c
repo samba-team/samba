@@ -43,14 +43,8 @@ static BOOL reload_services_file(BOOL test)
 		}
 	}
 
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-
 	reopen_logs();
 	ret = lp_load(dyn_CONFIGFILE,False,False,True);
-
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
 
 	reopen_logs();
 	load_interfaces();
@@ -823,12 +817,11 @@ static void usage(void)
 
 	fault_setup((void (*)(void *))fault_quit );
 
-	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", dyn_LOGFILEBASE);
-	lp_set_logfile(logfile);
-
 	/* Initialise for running in non-root mode */
 
 	sec_init();
+
+	set_remote_machine_name("winbindd", False);
 
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */

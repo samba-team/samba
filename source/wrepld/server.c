@@ -619,7 +619,7 @@ static void process(void)
 		lp_set_logfile(logfile);
 	}
 
-	set_remote_machine_name("wrepld");
+	set_remote_machine_name("wrepld", False);
 
 	setup_logging(argv[0],log_stdout);
 
