@@ -210,6 +210,8 @@ NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state,
  *
  * Only valid after a successful authentication
  *
+ * May only be called once per authentication.
+ *
  */
 
 NTSTATUS auth_ntlmssp_get_session_info(struct auth_ntlmssp_state *auth_ntlmssp_state, 
