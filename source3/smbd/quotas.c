@@ -886,10 +886,21 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__)
   char dev_disk[256];
   SMB_STRUCT_STAT S;
+
   /* find the block device file */
-  if ((sys_stat(path, &S)<0) ||
-      (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) return (False);
-#endif
+
+#ifdef HPUX
+  /* Need to set the cache flag to 1 for HPUX. Seems
+   * to have a significant performance boost when
+   * lstat calls on /dev access this function.
+   */
+  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 1)<0))
+#else
+  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) 
+	return (False);
+#endif /* ifdef HPUX */
+
+#endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) */
 
   euser_id = geteuid();
 
