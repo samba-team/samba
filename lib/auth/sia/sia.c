@@ -58,14 +58,16 @@ static int
 posix_getpwnam_r(const char *name, struct passwd *pwd, 
 	   char *buffer, int len, struct passwd **result)
 {
-    int save_errno = errno;
     int ret = getpwnam_r(name, pwd, buffer, len);
-    if(ret < 0){
-	ret = errno;
-	errno = save_errno;
-	*result = NULL;
-    }else{
+    if(ret == 0)
 	*result = pwd;
+    else{
+	*result = NULL;
+	ret = _Geterrno();
+	if(ret == 0){
+	    ret = ERANGE;
+	    _Seterrno(ret);
+	}
     }
     return ret;
 }
@@ -76,14 +78,16 @@ static int
 posix_getpwuid_r(uid_t uid, struct passwd *pwd, 
 		 char *buffer, int len, struct passwd **result)
 {
-    int save_errno = errno;
     int ret = getpwuid_r(uid, pwd, buffer, len);
-    if(ret < 0){
-	ret = errno;
-	errno = save_errno;
-	*result = NULL;
-    }else{
+    if(ret == 0)
 	*result = pwd;
+    else{
+	*result = NULL;
+	ret = _Geterrno();
+	if(ret == 0){
+	    ret = ERANGE;
+	    _Seterrno(ret);
+	}
     }
     return ret;
 }
@@ -156,6 +160,8 @@ common_auth(sia_collect_func_t *collect,
 	    int pkgind)
 {
     prompt_t prompts[2], *pr;
+    char *toname, *toinst;
+
     if((siastat == SIADSUCCESS) && (geteuid() == 0))
 	return SIADSUCCESS;
     if(entity == NULL)
@@ -196,23 +202,23 @@ common_auth(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pw, *pwd, fpw, *fpwd;
-	char *toname, *toinst;
-	char pwbuf[1024], fpwbuf[1024];
+	struct passwd pw, *pwd;
+	char pwbuf[1024];
 	struct state *s = (struct state*)entity->mech[pkgind];
 
 	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
 	    return SIADFAIL;
 
-	if(getpwuid_r(getuid(), &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
-	    return SIADFAIL;
-	
 	snprintf(s->ticket, sizeof(s->ticket),
 		 TKT_ROOT "%u_%u", (unsigned)pwd->pw_uid, (unsigned)getpid());
 	krb_get_lrealm(realm, 1);
 	toname = entity->name;
 	toinst = "";
 	if(entity->authtype == SIA_A_SUAUTH){
+	    struct passwd fpw, *fpwd;
+	    char fpwbuf[1024];
+	    if(getpwuid_r(getuid(), &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0)
+		return SIADFAIL;
 	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
 		     fpwd->pw_name, pwd->pw_name, getpid());
 	    if(strcmp(pwd->pw_name, "root") == 0){
