@@ -226,7 +226,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-acl-support \
 	--with-sambabook=/usr/share/swat/using_samba
 
-make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so modules everything
+make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam_winbind.so modules everything pam_smbpass
 (cd tdb; make tdbdump tdbtest tdbtorture tdbtool)
 
 %Install
@@ -273,15 +273,20 @@ done
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
 cp -p source/nsswitch/libnss_winbind.so $DESTDIR/lib
 cp -p source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+cp -p source/bin/pam_smbpasswd.so $DESTDIR/lib/security
 # Make link for wins resolver
 ( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2 )
 
 # Add libsmbclient.a support stuff
 install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
 
+# Add smbwrapper support
+install -m 755 source/bin/smbsh $DESTDIR/usr/bin
+install -m 755 source/bin/smbwrappers.so $DESTDIR/usr/lib
+
+# Ancilliary support files
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
-
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/findsmb $DESTDIR/usr/bin
@@ -365,6 +370,8 @@ libnss_*                                base
 pam_*                                   base
 vfs_*                                   base
 pdb_*                                   base
+smbsh                                   base
+smbwrappers.so				base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 %{_defaultdocdir}/samba-                doc
 smb(mount|mnt|umount)                   smbfs
@@ -381,6 +388,7 @@ EOF
 
 %Post
 /usr/lib/LSB/init-install %{Name}
+ldconfig
 
 %Post -n swat
 %{NKinetdReload}
