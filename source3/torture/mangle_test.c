@@ -107,7 +107,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 
 static void gen_name(char *name)
 {
-	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~...";
+	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~... ";
 	unsigned max_idx = strlen(chars);
 	unsigned len;
 	int i;
@@ -135,7 +135,12 @@ static void gen_name(char *name)
 
 	/* and a medium probability of a common lead string */
 	if (random() % 10 == 0) {
-		strncpy(p, "ABCDE", 6);
+		if (strlen(p) <= 5) {
+			fstrcpy(p, "ABCDE");
+		} else {
+			/* try not to kill off the null termination */
+			memcpy(p, "ABCDE", 5);
+		}
 	}
 
 	/* and a high probability of a good extension length */
@@ -153,6 +158,7 @@ BOOL torture_mangle(int dummy)
 	extern int torture_numops;
 	static struct cli_state *cli;
 	int i;
+	BOOL ret = True;
 
 	printf("starting mangle test\n");
 
@@ -177,10 +183,12 @@ BOOL torture_mangle(int dummy)
 
 	for (i=0;i<torture_numops;i++) {
 		fstring name;
+		ZERO_STRUCT(name);
 
 		gen_name(name);
-
+		
 		if (!test_one(cli, name)) {
+			ret = False;
 			break;
 		}
 		if (total && total % 100 == 0) {
@@ -201,5 +209,5 @@ BOOL torture_mangle(int dummy)
 	torture_close_connection(cli);
 
 	printf("mangle test finished\n");
-	return (failures == 0);
+	return (ret && (failures == 0));
 }
