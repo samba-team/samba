@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -106,13 +106,9 @@ init(int argc, char **argv)
 	get_deltat("Realm max ticket life", 
 		   "unlimited",
 		   &max_life);
-	if (max_life == 0)
-	    max_life = 24 * 60 * 60;
 	get_deltat("Realm max renewable ticket life", 
 		   "unlimited",
 		   &max_rlife);
-	if (max_rlife == 0)
-	    max_rlife = 7 * max_life;
 	create_random_entry(princ, max_life, max_rlife, 0);
 	krb5_free_principal(context, princ);
 	/* Create `kadmin/changepw' */
