@@ -319,6 +319,20 @@ static BOOL is_mangled( const char *s )
 	return ret;
 } /* is_mangled */
 
+static BOOL is_ms_wildchar(const char c)
+{
+	switch(c) {
+		case '*':
+		case '?':
+		case '<':
+		case '>':
+		case '"':
+			return True;
+		default:
+			return False;
+	}
+}
+
 /* ************************************************************************** **
  * Return True if the name is a valid DOS name in 8.3 DOS format.
  *
@@ -395,7 +409,7 @@ static BOOL is_8_3( const char *cfname, BOOL check_case )
       if( *p == '.' && !dot_pos )
         dot_pos = (char *)p;
       else
-        if( !isdoschar( *p ) )
+        if( !isdoschar( *p ) && !is_ms_wildchar(*p))
           return( False );
       p++;
       }
