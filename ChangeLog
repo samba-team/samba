@@ -1,3 +1,15 @@
+2003-09-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_in_tkt.c (init_as_req): don't realloc data before
+	the loop, add_padata() will handle that itself
+
+	* lib/krb5/get_for_creds.c (add_addrs): don't increase addr->len
+	until in contains interesting data, use right iteration counter
+	when clearing the addresses
+
+	* lib/krb5/log.c (log_realloc): increase len after realloc returns
+	sucessfully
+
 2003-09-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/config_file.c: fix prototypes
