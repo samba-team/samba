@@ -1,5 +1,5 @@
 module spool
-test PRINTER_DRIVER_INFO_LEVEL_3
+test SPOOL_NOTIFY_INFO
 
 struct BUFFER5 {
        .align 4;
@@ -73,4 +73,35 @@ struct PRINTER_DRIVER_INFO {
 	      case 3 PRINTER_DRIVER_INFO_LEVEL_3 info_3;
 	      case 6 PRINTER_DRIVER_INFO_LEVEL_6 info_6;
        }
+};
+
+
+struct NOTIFY_DATA_VALUE {
+       uint32 value0;
+       uint32 value1;
+};
+
+struct NOTIFY_DATA_STRING {
+       uint32 length;
+       {length} uint16 string;
+};
+
+struct SPOOL_NOTIFY_INFO_DATA {
+	uint16 type;
+	uint16 field;
+	uint32 reserved;
+	uint32 id;
+	union enc_type *notify_data {
+		case 1 NOTIFY_DATA_VALUE value;
+		case 0 NOTIFY_DATA_STRING string;
+	}
+	uint32 size;
+	uint32 enc_type;
+};
+
+struct SPOOL_NOTIFY_INFO {
+	uint32 version;
+	uint32 flags;
+	uint32 count;
+	SPOOL_NOTIFY_INFO_DATA *data;
 };

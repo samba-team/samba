@@ -304,3 +304,19 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 
 	return True;
 }
+
+/*******************************************************************
+ Stream a uint16.
+ ********************************************************************/
+
+BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
+{
+	char *q = prs_mem_get(ps, sizeof(uint16));
+	if (q == NULL)
+		return False;
+
+	DBG_RW_SVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data16)
+	ps->data_offset += sizeof(uint16);
+
+	return True;
+}
