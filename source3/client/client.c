@@ -2978,7 +2978,7 @@ static void remember_query_host(const char *arg,
 			}
 			break;
 		case 'D':
-			pstrcpy(base_directory,optarg);
+			fstrcpy(base_directory,optarg);
 			break;
 		case 'c':
 			cmdstr = optarg;

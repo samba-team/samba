@@ -213,7 +213,7 @@ struct cli_state *connect_one(char *share)
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			pstrcpy(password, pass);
+			fstrcpy(password, pass);
 		}
 	}
 
@@ -456,7 +456,7 @@ static void usage(void)
 	load_interfaces();
 
 	if (getenv("USER")) {
-		pstrcpy(username,getenv("USER"));
+		fstrcpy(username,getenv("USER"));
 	}
 
 	seed = time(NULL);
@@ -479,11 +479,11 @@ static void usage(void)
 			max_protocol = interpret_protocol(optarg, max_protocol);
 			break;
 		case 'U':
-			pstrcpy(username,optarg);
+			fstrcpy(username,optarg);
 			p = strchr_m(username,'%');
 			if (p) {
 				*p = 0;
-				pstrcpy(password, p+1);
+				fstrcpy(password, p+1);
 				got_pass = 1;
 			}
 			break;
