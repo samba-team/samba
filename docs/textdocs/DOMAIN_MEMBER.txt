@@ -1,3 +1,6 @@
+!==
+!== DOMAIN_MEMBER.txt for Samba release TNG-prealpha 23 Jan 2000
+!==
 
 TITLE INFORMATION: Joining an NT Domain with Samba 2.0 
 AUTHOR INFORMATION: Jeremy Allison, Samba Team 

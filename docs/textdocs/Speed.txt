@@ -1,5 +1,5 @@
 !==
-!== Speed.txt for Samba release 2.1.0prealpha 981204
+!== Speed.txt for Samba release TNG-prealpha 23 Jan 2000
 !==
 Contributor:	Andrew Tridgell
 Date:		January 1995

@@ -1,3 +1,6 @@
+!==
+!== LDAP.txt for Samba release TNG-prealpha 23 Jan 2000
+!==
 
 TITLE INFORMATION: LDAP Support in Samba 
 AUTHOR INFORMATION: Matthew Chapman 

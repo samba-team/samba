@@ -1,5 +1,5 @@
 !==
-!== Recent-FAQs.txt for Samba release 2.1.0prealpha 981204
+!== Recent-FAQs.txt for Samba release TNG-prealpha 23 Jan 2000
 !==
 Contributor:	Samba-bugs@samba.org
 Date:		July 5, 1998

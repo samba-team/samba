@@ -1,111 +1,78 @@
-          WHATS NEW IN Samba 2.0.0 beta1
-          ==============================
+          WHATS NEW IN Samba (The Next Generation) 0.0
+          ============================================
 
-This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file 
-and print server for Windows systems.
+This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
+print and login server for Windows systems.
 
-There have been many changes in Samba since the last major release,
-1.9.18.  These have mainly been in the areas of performance and
-SMB protocol correctness.  In addition, a Web based GUI interface
-for configuring Samba has been added.
+This release is to enlist the help of people who are unable to use
+cvs (http://samba.org/cvs.html) in a major development project to
+integrate Samba into a Windows NT (tm) Domain environment - the
+NT Domains for Unix project.
 
-In addition, Samba has been re-written to help portability to
-other POSIX-based systems, based on the GNU autoconf tool.
+If you are running Windows 9x and do not forsee the need for or
+need to use any Windows NT Workstations on your network in the near
+future, you will not need Samba TNG or any of its functionality,
+and your assistance is not being solicited in the development of
+this project.
 
-Major changes in Samba 2.0
+Major changes in Samba TNG
 --------------------------
 
-There are many major changes in Samba for version 2.0.  Here are 
-some of them:
+There are many major changes in Samba TNG.  Here are some of them:
 
 =====================================================================
 
-1). Speed
----------
+1). Windows NT (tm) Primary Domain Controller compatibility
+-----------------------------------------------------------
 
-Samba has been benchmarked on high-end UNIX hardware as out-performing
-all other SMB/CIFS servers using the Ziff-Davis NetBench benchmark.
-Many changes to the code to optimise high-end performance have been made.
+Samba TNG can act as a Primary Domain Controller to Windows NT 3.5,
+4.0 and 5.0 (in 4.0 backwards-compatible mode) Workstations.  Backup
+Domain Controller and Inter-Domain Trust Relationships are at an
+early, but functional and very hands-on, stage.
 
-2). Correctness
----------------
+2). Support for Windows NT (tm) Administrative tools
+----------------------------------------------------
 
-Samba now supports the Windows NT specific SMB requests.  This
-means that on platforms that are capable Samba now presents a
-64 bit view of the filesystem to Windows NT clients and is
-capable of handling very large files.
+Significant in-roads have been made into providing support for at least
+the following Windows NT (tm) tools and services:
+
+- User Manager for Domains
+- Server Manager for Domains
+- Event Log
+- Service Control Manager
+- Registry Editor
+
+A command-line tool named rpcclient, with a command-syntax similar to
+smbclient, has over sixty five commands that provide equivalent
+functionality for the same Windows NT (tm) Administrative tools,
+including the ability to remotely shut down a Windows NT (tm) Server.
 
 3). Portability
 ---------------
 
-Samba is now self-configuring using GNU autoconf, removing
+Samba is now self-configuring using GNU autoconf and libtool, removing
 the need for people installing Samba to have to hand configure
 Makefiles, as was needed in previous versions.
 
 You now configure Samba by running "./configure" then "make".  See
 docs/textdocs/UNIX_INSTALL.txt for details.
 
-4). Web based GUI configuration
--------------------------------
-
-Samba now comes with SWAT, a web based GUI config system.  See
-the swat man page for details on how to set it up.
-
-5). Cross protocol data integrity
----------------------------------
-
-An open function interface has been defined to allow 
-"opportunistic locks" (oplocks for short) granted by Samba
-to be seen by other UNIX processes.  This allows complete
-cross protocol (NFS and SMB) data integrety using Samba
-with platforms that support this feature.
-
-6). Domain client capability
-----------------------------
-
-Samba is now capable of using a Windows NT PDC for user
-authentication in exactly the same way that a Windows NT
-workstation does, i.e. it can be a member of a Domain.  See
-docs/textdocs/DOMAIN_MEMBER.txt for details.
-
-7). Documentation Updates
--------------------------
-
-All the reference parts of the Samba documentation (the
-manual pages) have been updated and converted to a document
-format that allows automatic generation of HTML, SGML, and
-text formats.  These documents now ship as standard in HTML
-and manpage format.
+The use of libtool dramatically reduces the size of samba binaries.
+As we are using libtool in a slightly different way from usual,
+you may encounter run-time or compilation errors, so please repoty
+them to us.
 
 =====================================================================
 
-NOTE - Some important option defaults changed
----------------------------------------------
+NOTE - Some important information
+---------------------------------------
 
-Several parameters have changed their default values.  The most
-important of these is that the default security mode is now user
-level security rather than share level security.
+If you wish to use Samba as a PDC, you *must* join Samba to its own
+Domain.  It is important that you read the source/README file for
+instructions, and it is recommended that you join samba-ntdom@samba.org
+for update information and status reports.  For details, please see:
 
-This (incompatible) change was made to ease new Samba installs
-as user level security is easier to use for Windows 95/98 and
-Windows NT clients.
-
-********IMPORTANT NOTE****************
-
-If you have no "security=" line in the [global] section of 
-your current smb.conf and you update to Samba 2.0 you will
-need to add the line :
-
-security=share
-
-to get exactly the same behaviour with Samba 2.0 as you
-did with previous versions of Samba.
-
-********END IMPORTANT NOTE*************
-
-In addition, Samba now defaults to case sensitivity options that
-match a Windows NT server precisely, that is, case insensitive 
-but case preserving.
+http://samba.org/listproc/samba-ntdom
 
 =====================================================================
 
@@ -119,10 +86,8 @@ Domain Controller than serving Windows NT logon requests.
 
 A useful version of a Primary Domain Controller contains
 many remote procedure calls to do things like enumerate users, 
-groups, and security information, only some of which Samba currently
-implements.  For this reason we have chosen not to advertise
-and actively support Primary Domain Controller functionality
-with this release.
+groups, and security information, 98% of which Samba TNG currently
+implements.  
 
 This work is being done in the CVS (developer) versions of Samba,
 development of which continues at a fast pace.  If you are
@@ -139,10 +104,45 @@ http://samba.org/cvs.html
 
 =====================================================================
 
+NOTE - Known Bugs
+-----------------
+
+It is *not* recommended that this version of Samba be run in a
+production environment, for at least the following reasons:
+
+1) nmbd is known to fork() every 20 minutes, resulting in an extra
+process that hangs around.  It has also been reported, in a large
+network neighbourhood environment with "wins support = no"
+and "wins server = x.x.x.x" to flood the WINS server with over
+1000 requests per second to resolve every single name in the
+network neighbourhood.  Be Warned!
+
+You can avoid this by using a stable, production release of nmbd, such
+as can be found in 2.0.6a or later.
+
+2) The new MSRPC architecture forks() one MSRPC daemon per incoming
+service request.  The msrpc daemon stays around for as long as
+the remote server maintains a connection to it.  An investigation
+is underway to attempt to minimise the number of outstanding
+connections, because a *single* NT user logon can result in up to
+5 or 6 msrpc daemons waiting around, doing nothing but take up
+process table space.
+
+3) The Samba TNG code base was cut from the 2.0 development tree
+approximately eighteen months ago.  That means that it does not have
+any of the file and print server improvements or bug-fixes since
+that time.  The use of Samba TNG as a file and print server is
+therefore not recommended, and can be avoided by setting user
+profiles and home directories to be on another Windows NT (tm) or
+compatible file server.
+
+
+=====================================================================
+
 If you have problems, or think you have found a bug please email 
 a report to :
 
-        samba-bugs@samba.org
+        samba-technical@samba.org
 
 As always, all bugs are our responsibility.
 
