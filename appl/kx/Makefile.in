@@ -26,7 +26,7 @@ bindir = @bindir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
 
-X_PROGS_BIN = kx$(EXECSUFFIX) rxterm rxtelnet
+X_PROGS_BIN = kx$(EXECSUFFIX) rxterm rxtelnet tenletxr
 X_PROGS_LIBEXEC = kxd$(EXECSUFFIX)
 
 PROG_BIN	= @MAKE_X_PROGS_BIN@
@@ -35,10 +35,10 @@ PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
 SOURCES_KX     = kx.c @XauWriteAuth_c@
 SOURCES_KXD    = kxd.c @XauWriteAuth_c@
-SOURCES_COMMON = common.c
+SOURCES_COMMON = common.c encdata.c
 
-OBJECTS_KX     = kx.o common.o @XauWriteAuth_o@
-OBJECTS_KXD    = kxd.o common.o @XauWriteAuth_o@
+OBJECTS_KX     = kx.o common.o encdata.o @XauWriteAuth_o@
+OBJECTS_KXD    = kxd.o common.o encdata.o @XauWriteAuth_o@
 
 OBJECTS = $(OBJECTS_KX) $(OBJECTS_KXD)
 SOURCES = $(SOURCES_KX) $(SOURCES_KXD) $(SOURCES_COMMON)
@@ -93,6 +93,9 @@ dist: $(DISTFILES)
 KLIB= -L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 
+encdata.o: $(srcdir)/../kauth/encdata.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(srcdir)/../kauth/encdata.c
+
 kx$(EXECSUFFIX): $(OBJECTS_KX)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
@@ -105,6 +108,10 @@ rxterm: rxterm.in
 
 rxtelnet: rxtelnet.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxtelnet.in > $@
+	chmod +x $@
+
+tenletxr: tenletxr.in
+	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/tenletxr.in > $@
 	chmod +x $@
 
 $(OBJECTS): ../../include/config.h
