@@ -27,15 +27,18 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	int i;
 	NTSTATUS status;
 	uint32 resume_handle = 0;
-	struct ENUM_SERVICE_STATUS *service = talloc_p(mem_ctx, struct ENUM_SERVICE_STATUS);
+	struct ENUM_SERVICE_STATUS *service = NULL; 
+	uint32 needed, sr;
 
 	r.in.handle = h;
 	r.in.type = SERVICE_TYPE_WIN32;
 	r.in.state = SERVICE_STATE_ALL;
-	r.in.buf_size = sizeof(struct ENUM_SERVICE_STATUS);
+	r.in.buf_size = 0;
 	r.in.resume_handle = &resume_handle;
-	r.out.service = service;
+	r.out.service = NULL;
 	r.out.resume_handle = &resume_handle;
+	r.out.services_returned = 0;
+	r.out.bytes_needed = 0;
 
 	status = dcerpc_svcctl_EnumServicesStatus(p, mem_ctx, &r);
 
@@ -45,9 +48,8 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.buf_size = r.out.bytes_needed + sizeof(struct ENUM_SERVICE_STATUS);
-		service = talloc_realloc(mem_ctx, service, r.in.buf_size);
-		r.out.service = service;
+		r.in.buf_size = r.out.bytes_needed;
+		r.out.service = talloc(mem_ctx, r.out.bytes_needed);
 		
 		status = dcerpc_svcctl_EnumServicesStatus(p, mem_ctx, &r);
 
@@ -60,10 +62,11 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			printf("EnumServicesStatus failed\n");
 			return False;
 		}
+		service = (struct ENUM_SERVICE_STATUS *)r.out.service;
 	}
 
 	for(i = 0; i < r.out.services_returned; i++) {
-		printf("%s - %s\n", service[i].service_name, service[i].display_name);
+		printf("Type: %d, State: %d\n", service[i].status.type, service[i].status.state);
 	}
 		
 	return True;
