@@ -23,6 +23,7 @@
 
 #ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
+#include "smb_build.h"
 #endif
 
 #include "local.h"

@@ -142,7 +142,7 @@ static void registry_load_root()
   	gtk_widget_set_sensitive( save_as, True );
 }
 
-GtkWidget* create_rpcwin (void)
+static GtkWidget* create_rpcwin (void)
 {
   GtkWidget *dialog_vbox1;
   GtkWidget *table1;
@@ -242,7 +242,7 @@ static void on_open_file_activate (GtkMenuItem *menuitem, gpointer user_data)
 	gtk_widget_destroy(openfilewin);
 }
 
-void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
+static void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
   		                                      gpointer         user_data)
 {
 	WERROR error = reg_open("gconf", NULL, NULL, &registry);
@@ -254,8 +254,7 @@ void on_open_gconf_activate                       (GtkMenuItem     *menuitem,
 	registry_load_root();
 }
 
-void
-on_open_remote_activate                (GtkMenuItem     *menuitem,
+static void on_open_remote_activate                (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	char *location, *credentials;
@@ -281,8 +280,7 @@ on_open_remote_activate                (GtkMenuItem     *menuitem,
 }
 
 
-void
-on_save_activate                       (GtkMenuItem     *menuitem,
+static void on_save_activate                       (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	WERROR error = reg_save(registry, NULL);
@@ -292,8 +290,7 @@ on_save_activate                       (GtkMenuItem     *menuitem,
 }
 
 
-void
-on_save_as_activate                    (GtkMenuItem     *menuitem,
+static void on_save_as_activate                    (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	gint result;
@@ -316,55 +313,49 @@ on_save_as_activate                    (GtkMenuItem     *menuitem,
 }
 
 
-void
-on_quit_activate                       (GtkMenuItem     *menuitem,
+static void on_quit_activate                       (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	gtk_main_quit();
 }
 
 
-void
-on_cut_activate                        (GtkMenuItem     *menuitem,
+static void on_cut_activate                        (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	/* FIXME */
 }
 
 
-void
-on_copy_activate                       (GtkMenuItem     *menuitem,
+static void on_copy_activate                       (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	/* FIXME */
 }
 
 
-void
-on_paste_activate                      (GtkMenuItem     *menuitem,
+static void on_paste_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	/* FIXME */
 }
 
 
-void
-on_delete_activate                     (GtkMenuItem     *menuitem,
+static void on_delete_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	/* FIXME */
 }
 
 
-void
-on_about_activate                      (GtkMenuItem     *menuitem,
+static void on_about_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	gtk_dialog_run(GTK_DIALOG(create_aboutwin()));
 	gtk_widget_destroy(aboutwin);
 }
 
-void on_key_activate (GtkTreeView *treeview,
+static void on_key_activate (GtkTreeView *treeview,
 					  GtkTreePath *path,
 					  gpointer user_data)
 {
@@ -400,7 +391,7 @@ void on_key_activate (GtkTreeView *treeview,
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(error);
 }
 
-GtkWidget* create_mainwin (void)
+static GtkWidget* create_mainwin (void)
 {
 	GtkWidget *vbox1;
 	GtkWidget *menubar;
@@ -685,7 +676,7 @@ static GtkWidget* create_aboutwin (void)
 }
 
 
-GtkWidget* create_openfilewin (void)
+static GtkWidget* create_openfilewin (void)
 {
   GtkWidget *ok_button;
   GtkWidget *cancel_button;
@@ -704,7 +695,7 @@ GtkWidget* create_openfilewin (void)
   return openfilewin;
 }
 
-GtkWidget* create_savefilewin (void)
+static GtkWidget* create_savefilewin (void)
 {
   GtkWidget *ok_button;
   GtkWidget *cancel_button;

@@ -12,14 +12,14 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 BOOL is_setuid_root(void)
 { return False; }
 
-int share_mode_forall(SHAREMODE_FN(fn))
+ int share_mode_forall(SHAREMODE_FN(fn))
 { return 0; }
 
 #define BRLOCK_FN(fn) \
 	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
-int brl_forall(BRLOCK_FN(fn))
+ int brl_forall(BRLOCK_FN(fn))
 { return 0; }
 
 BOOL locking_end(void)

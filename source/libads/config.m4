@@ -86,6 +86,8 @@ if test x"$with_ldap_support" != x"no"; then
   LIBS=$ac_save_LIBS
 fi
 
+#hack
+LIBS="$LIBS $LDAP_LIBS"
 
 #################################################
 # active directory support
@@ -440,3 +442,6 @@ if test x"$with_ads_support" != x"no"; then
   fi
   LIBS="$ac_save_LIBS"
 fi
+
+#hack
+LIBS="$LIBS $KRB5_LIBS"

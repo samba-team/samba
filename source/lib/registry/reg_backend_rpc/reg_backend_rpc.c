@@ -429,7 +429,7 @@ static struct registry_ops reg_backend_rpc = {
 	.num_values = rpc_num_values,
 };
 
-NTSTATUS reg_rpc_init(void)
+NTSTATUS registry_rpc_init(void)
 {
 	return register_backend("registry", &reg_backend_rpc);
 }

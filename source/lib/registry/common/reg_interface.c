@@ -83,7 +83,7 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 		if (!NT_STATUS_IS_OK(status)) 
 			return WERR_GENERAL_FAILURE;
 
-		static_init_reg;
+		static_init_registry;
 		reg_first_init = False;
 	}
 
