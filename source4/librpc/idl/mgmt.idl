@@ -1,0 +1,63 @@
+#include "idl_types.h"
+
+/*
+  dcerpc remote management interface
+*/
+
+
+[
+  uuid(afa8bd80-7d8a-11c9-bef4-08002b102989), 
+  version(1)
+] 
+interface mgmt
+{
+	typedef struct {
+		dcerpc_syntax_id *id;
+	} dcerpc_syntax_id_p;
+
+	typedef struct {
+		unsigned32              count;
+		[size_is(count)] dcerpc_syntax_id_p if_id[*];
+	} rpc_if_id_vector_t;
+
+
+	/***********************/
+	/* Function 0x00       */
+	void mgmt_inq_if_ids (
+		[out]       rpc_if_id_vector_t      *if_id_vector,
+		[out]       error_status_t          status
+		);
+
+
+
+	/***********************/
+	/* Function 0x01       */
+	void mgmt_inq_stats (
+		[in, out]   unsigned32              *count,
+		[out, size_is(*count)]  unsigned32  *statistics,
+		[out]       error_status_t          *status
+		);
+
+	/***********************/
+	/* Function 0x02       */
+	boolean32 mgmt_is_server_listening (
+		[out]       error_status_t          status
+		);
+
+
+	/***********************/
+	/* Function 0x03       */
+	void mgmt_stop_server_listening (
+		[out]       error_status_t          status
+		);
+
+
+	/***********************/
+	/* Function 0x04       */
+	void mgmt_inq_princ_name (
+		[in]        unsigned32              authn_proto,
+		[in]        unsigned32              princ_name_size,
+		[out]       ascstr2                 princ_name,
+		[out]       error_status_t          status
+		);
+}

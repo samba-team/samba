@@ -31,6 +31,23 @@
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
+const struct dcerpc_interface_table *dcerpc_pipes[] = {
+	&dcerpc_table_samr,
+	&dcerpc_table_lsarpc,
+	&dcerpc_table_netdfs,
+	&dcerpc_table_atsvc,
+	&dcerpc_table_dcerpc,
+	&dcerpc_table_rpcecho,
+	&dcerpc_table_epmapper,
+	&dcerpc_table_eventlog,
+	&dcerpc_table_spoolss,
+	&dcerpc_table_srvsvc,
+	&dcerpc_table_winreg,
+	&dcerpc_table_wkssvc,
+	&dcerpc_table_mgmt,
+	NULL
+};
+
 
 /*
   work out the number of bytes needed to align on a n byte boundary
@@ -772,3 +789,5 @@ NTSTATUS ndr_pull_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	}
 	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 }
+
+

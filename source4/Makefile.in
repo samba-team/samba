@@ -202,7 +202,8 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/gen_ndr/ndr_samr.o librpc/gen_ndr/ndr_spoolss.o \
 		librpc/gen_ndr/ndr_wkssvc.o librpc/gen_ndr/ndr_srvsvc.o \
 		librpc/gen_ndr/ndr_atsvc.o librpc/gen_ndr/ndr_eventlog.o \
-		librpc/gen_ndr/ndr_epmapper.o librpc/gen_ndr/ndr_winreg.o
+		librpc/gen_ndr/ndr_epmapper.o librpc/gen_ndr/ndr_winreg.o \
+		librpc/gen_ndr/ndr_mgmt.o
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_smb.o \
 		librpc/gen_rpc/rpc_echo.o librpc/gen_rpc/rpc_lsa.o \
@@ -210,7 +211,7 @@ LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_smb.o \
 		librpc/gen_rpc/rpc_samr.o librpc/gen_rpc/rpc_wkssvc.o \
 		librpc/gen_rpc/rpc_srvsvc.o librpc/gen_rpc/rpc_atsvc.o \
 		librpc/gen_rpc/rpc_eventlog.o librpc/gen_rpc/rpc_epmapper.o \
-		librpc/gen_rpc/rpc_winreg.o
+		librpc/gen_rpc/rpc_winreg.o librpc/gen_rpc/rpc_mgmt.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
@@ -448,7 +449,7 @@ SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/s
 SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o torture/rpc/dfs.o \
 		torture/rpc/spoolss.o torture/rpc/samr.o torture/rpc/wkssvc.o \
 		torture/rpc/srvsvc.o torture/rpc/atsvc.o torture/rpc/eventlog.o \
-		torture/rpc/epmapper.o torture/rpc/winreg.o
+		torture/rpc/epmapper.o torture/rpc/winreg.o torture/rpc/mgmt.o
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \

@@ -237,14 +237,17 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));
 		return status;
 	}
-	syntax.if_version = version;
+	syntax.major_version = version;
+	syntax.minor_version = 0;
 
 	status = guid_from_string("8a885d04-1ceb-11c9-9fe8-08002b104860", 
 				   &transfer_syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	transfer_syntax.if_version = 2;
+
+	transfer_syntax.major_version = 2;
+	transfer_syntax.minor_version = 0;
 
 	return dcerpc_bind(p, &syntax, &transfer_syntax);
 }
