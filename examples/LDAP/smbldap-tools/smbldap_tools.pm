@@ -4,8 +4,6 @@ package smbldap_tools;
 use smbldap_conf;
 use Net::LDAP;
 
-# $Id: smbldap_tools.pm,v 1.1.6.4 2003/12/04 21:59:20 jerry Exp $
-#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
