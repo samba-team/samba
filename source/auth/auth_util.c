@@ -208,13 +208,13 @@ NTSTATUS make_user_info_netlogon_interactive(struct auth_usersupplied_info **use
 	
 	local_lm_blob = data_blob(local_lm_response, 
 				  sizeof(local_lm_response));
-	lm_interactive_blob = data_blob(lm_interactive_password, 
-					sizeof(lm_interactive_password));
+	lm_interactive_blob = data_blob(lm_interactive_password->hash, 
+					sizeof(lm_interactive_password->hash));
 	
 	local_nt_blob = data_blob(local_nt_response, 
 				  sizeof(local_nt_response));
-	nt_interactive_blob = data_blob(nt_interactive_password, 
-					sizeof(nt_interactive_password));
+	nt_interactive_blob = data_blob(nt_interactive_password->hash, 
+					sizeof(nt_interactive_password->hash));
 	
 	nt_status = make_user_info_map(user_info, 
 				       smb_name, client_domain, 
