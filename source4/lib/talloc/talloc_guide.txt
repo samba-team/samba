@@ -58,11 +58,11 @@ least twice.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc(const void *context, size_t size);
+(type *)talloc(const void *context, type);
 
-The talloc() function is the core of the talloc library. It takes a
-memory context, and returns a pointer to a new area of memory of the
-given size.
+The talloc() macro is the core of the talloc library. It takes a
+memory context and a type, and returns a pointer to a new area of
+memory of the given type.
 
 The returned pointer is itself a talloc context, so you can use it as
 the context argument to more calls to talloc if you wish.
@@ -74,19 +74,19 @@ well. Alternatively you can free just the child.
 The context argument to talloc() can be NULL, in which case a new top
 level context is created. 
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_size(const void *context, size_t size);
+
+The function talloc_size() should be used when you don't have a
+convenient type to pass to talloc(). Unlike talloc(), it is not type
+safe (as it returns a void *), so you are on your own for type checking.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_p(const void *context, type);
 
-The talloc_p() macro is the equivalent of 
-
-  (type *)talloc(ctx, sizeof(type))
-
-You should use it in preference to talloc() whenever possible, as it
-provides additional type safety. It also automatically calls the
-talloc_set_name_const() function with the name being a string holding
-the name of the type.
-
+talloc_p() is a alias for talloc(). It only exists as a backwards
+compatibity macro for code from the bad old days when talloc() was not
+type safe.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 int talloc_free(void *ptr);
@@ -231,7 +231,7 @@ void *talloc_named(const void *context, size_t size, const char *fmt, ...);
 The talloc_named() function creates a named talloc pointer. It is
 equivalent to:
 
-   ptr = talloc(context, size);
+   ptr = talloc_size(context, size);
    talloc_set_name(ptr, fmt, ....);
 
 
@@ -240,7 +240,7 @@ void *talloc_named_const(const void *context, size_t size, const char *name);
 
 This is equivalent to:
 
-   ptr = talloc(context, size);
+   ptr = talloc_size(context, size);
    talloc_set_name_const(ptr, name);
 
 
@@ -275,7 +275,7 @@ void *talloc_realloc(const void *context, void *ptr, size_t size);
 The talloc_realloc() function changes the size of a talloc
 pointer. It has the following equivalences:
 
-  talloc_realloc(context, NULL, size) ==> talloc(context, size);
+  talloc_realloc(context, NULL, size) ==> talloc_size(context, size);
   talloc_realloc(context, ptr, 0)     ==> talloc_free(ptr);
 
 The "context" argument is only used if "ptr" is not NULL, otherwise it
@@ -407,7 +407,7 @@ void *talloc_zero(const void *ctx, size_t size);
 
 The talloc_zero() function is equivalent to:
 
-  ptr = talloc(ctx, size);
+  ptr = talloc_size(ctx, size);
   if (ptr) memset(ptr, 0, size);
 
 
@@ -416,7 +416,7 @@ void *talloc_memdup(const void *ctx, const void *p, size_t size);
 
 The talloc_memdup() function is equivalent to:
 
-  ptr = talloc(ctx, size);
+  ptr = talloc_size(ctx, size);
   if (ptr) memcpy(ptr, p, size);
 
 
@@ -425,7 +425,7 @@ char *talloc_strdup(const void *ctx, const char *p);
 
 The talloc_strdup() function is equivalent to:
 
-  ptr = talloc(ctx, strlen(p)+1);
+  ptr = talloc_size(ctx, strlen(p)+1);
   if (ptr) memcpy(ptr, p, strlen(p)+1);
 
 This functions sets the name of the new pointer to the passed
@@ -473,7 +473,7 @@ void *talloc_array_p(const void *ctx, type, uint_t count);
 
 The talloc_array_p() macro is equivalent to:
 
-  (type *)talloc(ctx, sizeof(type) * count);
+  (type *)talloc_size(ctx, sizeof(type) * count);
 
 except that it provides integer overflow protection for the multiply,
 returning NULL if the multiply overflows.

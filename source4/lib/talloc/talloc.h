@@ -33,11 +33,11 @@ typedef void TALLOC_CTX;
 #define __location__ __FILE__ ":" __LINESTR__
 
 /* useful macros for creating type checked pointers */
-#define talloc(ctx, size) talloc_named_const(ctx, size, __location__)
+#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define talloc_p(ctx, type) talloc(ctx, type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
 #define talloc_zero(ctx, size) _talloc_zero(ctx, size, __location__)
 #define talloc_realloc(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
-#define talloc_p(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
 #define talloc_zero_p(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define talloc_zero_array_p(ctx, type, count) (type *)talloc_zero_array(ctx, sizeof(type), count, __location__)
