@@ -60,10 +60,12 @@ otp_db_open (void)
       close(lock);
       break;
     }
-    if (time(NULL) - statbuf.st_mtime > OTP_DB_TIMEOUT)
-      unlink (OTP_DB_LOCK);
-    else
-      sleep (1);
+    if (stat (OTP_DB_LOCK, &statbuf) == 0) {
+      if (time(NULL) - statbuf.st_mtime > OTP_DB_TIMEOUT)
+	unlink (OTP_DB_LOCK);
+      else
+	sleep (1);
+    }
   }
   if (i == RETRIES)
     return NULL;
