@@ -200,6 +200,7 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
 	NTSTATUS ret;
 	int loc_type;
+	unid_t loc_id;
 
 	if (proxyonly)
 		return NT_STATUS_UNSUCCESSFUL;
@@ -221,6 +222,32 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 
 	if (remote_map == NULL) {
 		return ret;
+	}
+
+	/* Before forking out to the possibly slow remote map, lets see if we
+	 * already have the sid as uid when asking for a gid or vice versa. */
+
+	loc_type = *id_type & ID_TYPEMASK;
+
+	switch (loc_type) {
+	case ID_USERID:
+		loc_type = ID_GROUPID;
+		break;
+	case ID_GROUPID:
+		loc_type = ID_USERID;
+		break;
+	default:
+		loc_type = ID_EMPTY;
+	}
+
+	loc_type |= ID_QUERY_ONLY;
+
+	ret = cache_map->get_id_from_sid(&loc_id, &loc_type, sid);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		/* Ok, we have the uid as gid or vice versa. The remote map
+		 * would not know anything different, so return here. */
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Ok, the mapping was not in the cache, give the remote map a
