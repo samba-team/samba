@@ -338,7 +338,7 @@ BOOL dfs_findfirst_redirect(char* pathname, connection_struct* conn)
 	}
 
 	parse_dfs_path(pathname,&dp);
-	DEBUG(8,("dfs_findfirst_redirect: path %s is in Dfs. dp.restofthepath=.%s.\n",
+	DEBUG(8,("dfs_findfirst_redirect: path %s is in Dfs. dp.reqpath=.%s.\n",
 				pathname,dp.reqpath));
 	if(!(*(dp.reqpath))) {
 		create_nondfs_path(pathname,&dp);
