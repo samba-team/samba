@@ -385,6 +385,11 @@ sub HeaderInterface($)
 	    }
     }
 
+	# Object interfaces use ORPC
+	if (util::has_property($interface, "object")) {
+		pidl "#include \"librpc/gen_ndr/ndr_orpc.h\"\n";
+	}
+
     if (defined $interface->{PROPERTIES}->{uuid}) {
 	    my $name = uc $interface->{NAME};
 	    pidl "#define DCERPC_$name\_UUID " . 
