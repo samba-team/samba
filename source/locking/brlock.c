@@ -121,12 +121,12 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 		}
 		count--;
 		i--;
-		dbuf.dsize -= sizeof(*locks);
 	}
 
 	if (count == 0) {
 		tdb_delete(tdb, kbuf);
 	} else if (count < (dbuf.dsize / sizeof(*locks))) {
+		dbuf.dsize = count * sizeof(*locks);
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 	}
 
