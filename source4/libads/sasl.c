@@ -96,7 +96,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		  nthash, 24,
 		  lp_workgroup(), 
 		  ads->auth.user_name, 
-		  global_myname(),
+		  lp_netbios_name(),
 		  sess_key, 16,
 		  neg_flags);
 
