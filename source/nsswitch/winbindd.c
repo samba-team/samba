@@ -342,6 +342,11 @@ static void remove_client(struct winbindd_cli_state *state)
 		free_getent_state(state->getpwent_state);
 		free_getent_state(state->getgrent_state);
 		
+		/* We may have some extra data that was not freed if the
+		   client was killed unexpectedly */
+
+		safe_free(state->response.extra_data);
+		
 		/* Remove from list and free */
 		
 		DLIST_REMOVE(client_list, state);
