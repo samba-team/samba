@@ -134,7 +134,7 @@ char *strerror(int eno);
 char *hstrerror(int herr);
 #endif
 
-#ifdef NEED_H_ERRNO_DECLARATION
+#ifndef HAVE_H_ERRNO_DECLARATION
 extern int h_errno;
 #endif
 
@@ -285,17 +285,17 @@ void vsyslog(int pri, const char *fmt, va_list ap);
 #endif
 #endif
 
-#ifdef NEED_OPTARG_DECLARATION
+#ifndef HAVE_OPTARG_DECLARATION
 extern char *optarg;
 #endif
-#ifdef NEED_OPTIND_DECLARATION
+#ifndef HAVE_OPTIND_DECLARATION
 extern int optind;
 #endif
-#ifdef NEED_OPTERR_DECLARATION
+#ifndef HAVE_OPTERR_DECLARATION
 extern int opterr;
 #endif
 
-#ifdef NEED___PROGNAME_DECLARATION
+#ifndef HAVE___PROGNAME_DECLARATION
 extern const char *__progname;
 #endif
 
