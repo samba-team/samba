@@ -1,3 +1,9 @@
+2001-02-08  Assar Westerlund  <assar@sics.se>
+
+	* getnameinfo_verified.c (getnameinfo_verified): always capture
+	the service from getnameinfo so it can be sent back to getaddrinfo
+	and set socktype to avoid getaddrinfo not returning any addresses
+
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libroken_la_LDFLAGS): bump version to 11:1:2
