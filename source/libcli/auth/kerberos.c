@@ -61,14 +61,17 @@ kerb_prompter(krb5_context ctx, void *data,
 	krb5_error_code code = 0;
 	krb5_principal me;
 	krb5_creds my_creds;
+	krb5_get_init_creds_opt options;
 
 	if ((code = krb5_parse_name(ctx, principal, &me))) {
 		return code;
 	}
-	
+
+	ZERO_STRUCT(options);
+
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
 						 kerb_prompter, 
-						 NULL, 0, NULL, NULL))) {
+						 NULL, 0, NULL, &options))) {
 		krb5_free_principal(ctx, me);
 		return code;
 	}
