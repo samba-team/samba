@@ -1362,7 +1362,7 @@ void start_login(char *host, int autologin, char *name)
 {
 	char *cp;
 	struct arg_val argv;
-	extern char *getenv(const char *);
+	struct timeval tmp;
 
 #ifdef	HAVE_UTMPX
 	char id_buf[3];
@@ -1384,7 +1384,10 @@ void start_login(char *host, int autologin, char *name)
 	SCPYN(utmpx.ut_id, utid);
 	
 	utmpx.ut_type = LOGIN_PROCESS;
-	gettimeofday(&utmpx.ut_tv, NULL);
+
+	gettimeofday (&tmp, NULL);
+	utmpx.ut_tv.tv_sec  = tmp.tv_sec;
+	utmpx.ut_tv.tv_usec = tmp.tv_usec;
 	if (pututxline(&utmpx) == NULL)
 		fatal(net, "pututxline failed");
 #endif
@@ -1622,7 +1625,7 @@ rmut(void)
 	struct utmp *u, *utmp;
 	int nutmp;
 	struct stat statbf;
-
+	struct timeval tmp;
 	struct utmpx *utxp, utmpx;
 
 	/*
@@ -1644,7 +1647,9 @@ rmut(void)
 	    utxp->ut_exit.e_termination = 0;
 	    utxp->ut_exit.e_exit = 0;
 #endif
-	    gettimeofday(&utxp->ut_tv, NULL);
+	    gettimeofday(&tmp, NULL);
+	    utxp->ut_tv.tv_sec  = tmp.tv_sec;
+	    utxp->ut_tv.tv_usec = tmp.tv_usec;
 	    pututxline(utxp);
 #ifdef WTMPX_FILE
 	    updwtmpx(WTMPX_FILE, utxp);
