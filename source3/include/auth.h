@@ -69,10 +69,10 @@ typedef struct usersupplied_info
 	
 	uint8 chal[8];
 
-	AUTH_STR           requested_domain;     /* domain name unicode string */
+	AUTH_STR           requested_domain;     /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */
 	AUTH_STR           requested_username;
-	AUTH_STR           smb_username;         /* user name unicode string (after mapping) */
+	AUTH_STR           smb_username;         /* user name string (after mapping) */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
 	
 } auth_usersupplied_info;

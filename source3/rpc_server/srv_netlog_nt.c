@@ -446,7 +446,6 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
 
 static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *sess_key)
 {
-
 	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
 
 	unsigned char local_lm_response[24];
@@ -490,6 +489,8 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 	DEBUG(10,("_net_logon_any: Attempting validation level %d.\n", ctr->switch_value));
 	switch (ctr->switch_value) {
 	case NET_LOGON_TYPE:
+		/* Standard challange/response authenticaion */
+
 		user_info.lm_resp.buffer = (uint8 *)ctr->auth.id2.lm_chal_resp.buffer;
 		user_info.lm_resp.len = ctr->auth.id2.lm_chal_resp.str_str_len;
 		user_info.nt_resp.buffer = (uint8 *)ctr->auth.id2.nt_chal_resp.buffer;
@@ -497,6 +498,9 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 		memcpy(user_info.chal, ctr->auth.id2.lm_chal, 8);
 		break;
 	case INTERACTIVE_LOGON_TYPE:
+		/* 'Interactive' autheticaion, supplies the password in its MD4 form, encrypted
+		   with the session key.  We will convert this to challange/responce for the 
+		   auth subsystem to chew on */
 	{
 		char nt_pwd[16];
 		char lm_pwd[16];
@@ -539,25 +543,6 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 		user_info.nt_resp.len = 24;
 		break;
 	}
-#if 0	     
-	case GENERAL_LOGON_TYPE:
-		/* plaintext login.  plaintext username and password */
-
-		/*
-		 * Not encrypted - do so.
-		 */
-		
-		SMBencrypt( (uchar *)ctr->auth.id4....., user_info.chal, local_lm_response);
-		SMBNTencrypt((uchar *)ctr->auth.id4......., user_info.chal, local_nt_response);
-		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
-		user_info.lm_resp.len = 24;
-		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
-		user_info.nt_resp.len = 24;
-		
-		user_info.plaintext_password.str = ;
-		user_info.plaintext_password.len = ;
-		break;
-#endif
 	default:
 		DEBUG(2,("SAM Logon: unsupported switch value\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;

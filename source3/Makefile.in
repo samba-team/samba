@@ -165,7 +165,8 @@ RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
 		rpc_client/cli_lsarpc.o rpc_client/cli_connect.o \
 		rpc_client/cli_use.o rpc_client/cli_login.o \
 		rpc_client/cli_spoolss_notify.o rpc_client/ncacn_np_use.o \
-		lib/util_list.o rpc_client/cli_trust.o
+		lib/util_list.o rpc_client/cli_trust.o \
+		libsmb/domain_client_validate.o 
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -185,7 +186,7 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
 AUTH_OBJ = smbd/auth.o smbd/auth_smbpasswd.o smbd/auth_server.o smbd/auth_domain.o \
-	   smbd/auth_rhosts.o smbd/auth_util.o	
+	   smbd/auth_rhosts.o smbd/auth_unix.o smbd/auth_util.o	
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/utmp.o smbd/session.o \
@@ -386,7 +387,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_misc.o
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
-		smbd/auth_domain.o \
+		libsmb/domain_client_validate.o \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o 
 
 WINBINDD_OBJ = \

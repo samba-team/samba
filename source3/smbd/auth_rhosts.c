@@ -163,3 +163,24 @@ BOOL check_hosts_equiv(char *user)
 
   return(False);
 }
+
+/****************************************************************************
+ Check for a valid .rhosts/hosts.equiv entry for this user
+****************************************************************************/
+
+uint32 check_rhosts_security(const auth_usersupplied_info *user_info, 
+			     auth_serversupplied_info *server_info)
+{
+	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+
+	become_root();
+	if (check_hosts_equiv(user_info->smb_username.str)) {
+		nt_status = NT_STATUS_NOPROBLEMO;
+	}
+	unbecome_root();
+
+	return nt_status;
+}
+
+
+

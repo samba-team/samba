@@ -55,6 +55,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	BOOL result;
 	fstring name_domain, name_user;
 	int passlen;
+	unsigned char trust_passwd[16];
+	time_t last_change_time;
 
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
@@ -113,12 +115,23 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 	
+	/*
+	 * Get the machine account password for our primary domain
+	 */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
+	{
+		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account password for domain %s\n", lp_workgroup()));
+		return WINBINDD_ERROR;
+	}
+
 	/* So domain_client_validate() actually opens a new connection
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
 	result = (domain_client_validate(&user_info, &server_info,
-					server_state.controller) == NT_STATUS_NOPROBLEMO);
+					 server_state.controller, trust_passwd,
+					 last_change_time) == NT_STATUS_NOPROBLEMO);
 
 	return result ? WINBINDD_OK : WINBINDD_ERROR;
 }

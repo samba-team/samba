@@ -155,22 +155,20 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-BOOL cli_nt_login_network(struct cli_state *cli, const char *domain, const char *username, 
-                          uint32 smb_userid_low, const uchar lm_chal[8], 
-			  const uchar *lm_chal_resp, int lm_chal_resp_len, 
-			  const uchar *nt_chal_resp, int nt_chal_resp_len,
-                          NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
+BOOL cli_nt_login_network(struct cli_state *cli, const auth_usersupplied_info *user_info, 
+                          uint32 smb_userid_low, NET_ID_INFO_CTR *ctr, 
+			  NET_USER_INFO_3 *user_info3)
 {
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
   /* indicate a "network" login */
   ctr->switch_value = NET_LOGON_TYPE;
 
   /* Create the structure needed for SAM logon. */
-  init_id_info2(&ctr->auth.id2, domain, 0, smb_userid_low, 0,
-                username, cli->clnt_name_slash,
-		lm_chal, 
-		lm_chal_resp, lm_chal_resp_len,
-		nt_chal_resp, nt_chal_resp_len);
+  init_id_info2(&ctr->auth.id2, user_info->domain.str, 0, smb_userid_low, 0,
+                user_info->smb_username.str, cli->clnt_name_slash,
+		user_info->chal, 
+		user_info->lm_resp.buffer, user_info->lm_resp.len,
+		user_info->nt_resp.buffer, user_info->nt_resp.len);
 
   /* Send client sam-logon request - update credentials on success. */
   return cli_net_sam_logon(cli, ctr, user_info3);
