@@ -160,12 +160,14 @@ recv_conn (int sock, kx_context *kc,
      if (ret) {
 	 syslog (LOG_ERR, "unrecognized auth protocol: %x %x %x %x",
 		 msg[0], msg[1], msg[2], msg[3]);
-	 return 1;
+	 exit (1);
      }
 
      len = kx_read (kc, sock, msg, sizeof(msg));
-     if (len < 0)
-	 return 1;
+     if (len < 0) {
+	 syslog (LOG_ERR, "kx_read failed");
+	 exit (1);
+     }
      p = (u_char *)msg;
      if (*p != INIT)
 	 fatal(kc, sock, "Bad message");
