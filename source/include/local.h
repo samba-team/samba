@@ -154,4 +154,8 @@
 #define LONG_CONNECT_TIMEOUT 30
 #define SHORT_CONNECT_TIMEOUT 5
 
+
+/* the directory to sit in when idle */
+#define IDLE_DIR "/"
+
 #endif

@@ -75,17 +75,13 @@ static int shm_times_locked = 0;
 
 static BOOL shm_register_process(char *processreg_file, pid_t pid, BOOL *other_processes)
 {
-   int old_umask;
    int shm_processes_fd = -1;
    int nb_read;
    pid_t other_pid;
    int free_slot = -1;
-   int erased_slot;
+   int erased_slot;   
    
-   
-   old_umask = umask(0);
    shm_processes_fd = open(processreg_file, O_RDWR | O_CREAT, 0666);
-   umask(old_umask);
    if ( shm_processes_fd < 0 )
    {
       DEBUG(0,("ERROR shm_register_process : processreg_file open failed with code %d\n",errno));

@@ -40,6 +40,8 @@ static void add_dos_char(int lower, int upper)
   if (lower && upper) {
     lower_char_map[(char)upper] = (char)lower;
     upper_char_map[(char)lower] = (char)upper;
+    lower_char_map[(char)lower] = (char)lower;
+    upper_char_map[(char)upper] = (char)upper;
   }
 }
 

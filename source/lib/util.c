@@ -123,6 +123,7 @@ void reopen_logs(void)
 
       if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
 	{
+	  int oldumask = umask(022);
 	  strcpy(debugf,fname);
 	  if (dbf) fclose(dbf);
 	  if (append_log)
@@ -130,6 +131,7 @@ void reopen_logs(void)
 	  else
 	    dbf = fopen(debugf,"w");
 	  if (dbf) setbuf(dbf,NULL);
+	  umask(oldumask);
 	}
     }
   else
@@ -205,7 +207,9 @@ va_dcl
     {
       if (!dbf) 
 	{
+	  int oldumask = umask(022);
       	  dbf = fopen(debugf,"w");
+	  umask(oldumask);
 	  if (dbf)
 	    setbuf(dbf,NULL);
 	  else
@@ -2883,7 +2887,7 @@ connect_again:
   }
 
   if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY)) {
-      DEBUG(2,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
+      DEBUG(1,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
       close(res);
       return -1;
   }
@@ -2896,7 +2900,7 @@ connect_again:
 #endif
 
   if (ret < 0) {
-    DEBUG(2,("error connecting to %s:%d (%s)\n",
+    DEBUG(1,("error connecting to %s:%d (%s)\n",
 	     inet_ntoa(*addr),port,strerror(errno)));
     return -1;
   }

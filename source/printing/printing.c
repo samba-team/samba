@@ -130,7 +130,7 @@ void print_file(int fnum)
   tempstr = build_print_command(cnum, PRINTCOMMAND(snum), syscmd, Files[fnum].name);
   if (tempstr != NULL)
     {
-      int ret = smbrun(syscmd,NULL);
+      int ret = smbrun(syscmd,NULL,False);
       DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
     }
   else
@@ -923,7 +923,6 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
   struct stat sbuf;
   BOOL dorun=True;
   int cachetime = lp_lpqcachetime();
-  int lfd = -1;
 
   *line = 0;
   check_lpq_cache(snum);
@@ -954,20 +953,10 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 	DEBUG(3,("Using cached lpq output\n"));
 	dorun = False;
       }
-
-      if (dorun) {
-	lfd = file_lock(outfile,LPQ_LOCK_TIMEOUT);
-	if (lfd<0 || 
-	    (!fstat(lfd,&sbuf) && (time(NULL) - sbuf.st_mtime)<cachetime)) {
-	  DEBUG(3,("Using cached lpq output\n"));
-	  dorun = False;
-	  file_unlock(lfd); lfd = -1;
-	}
-      }
     }
 
   if (dorun) {
-    ret = smbrun(syscmd,outfile);
+    ret = smbrun(syscmd,outfile,True);
     DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
   }
 
@@ -975,7 +964,6 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 
   f = fopen(outfile,"r");
   if (!f) {
-    if (lfd >= 0) file_unlock(lfd);
     return(0);
   }
 
@@ -1006,12 +994,13 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 
   fclose(f);
 
-  if (lfd >= 0) file_unlock(lfd);
-
-  if (!cachetime) 
+  if (!cachetime) {
     unlink(outfile);
-  else
+  } else {
+    /* we only expect this to succeed on trapdoor systems, on normal systems
+     the file is owned by root */
     chmod(outfile,0666);
+  }
   return(count);
 }
 
@@ -1047,7 +1036,7 @@ void del_printqueue(int cnum,int snum,int jobid)
   string_sub(syscmd,"%j",jobstr);
   standard_sub(cnum,syscmd);
 
-  ret = smbrun(syscmd,NULL);
+  ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
   lpq_reset(snum); /* queue has changed */
 }
@@ -1085,7 +1074,7 @@ void status_printjob(int cnum,int snum,int jobid,int status)
   string_sub(syscmd,"%j",jobstr);
   standard_sub(cnum,syscmd);
 
-  ret = smbrun(syscmd,NULL);
+  ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));  
   lpq_reset(snum); /* queue has changed */
 }
