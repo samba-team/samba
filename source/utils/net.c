@@ -316,8 +316,7 @@ static int net_join(int argc, const char **argv)
 
 static int net_share(int argc, const char **argv)
 {
-	/* only share list is implemented in RPC */
-	if (argc == 0 && net_rpc_check(0))
+	if (net_rpc_check(0))
 		return net_rpc_share(argc, argv);
 	return net_rap_share(argc, argv);
 }
