@@ -56,13 +56,14 @@ static struct stot{
     DECL(A),
     DECL(NS),
     DECL(CNAME),
+    DECL(SOA),
     DECL(PTR),
     DECL(MX),
     DECL(TXT),
     DECL(AFSDB),
-    DECL(SRV),
     DECL(SIG),
     DECL(KEY),
+    DECL(SRV),
     DECL(NAPTR),
     {NULL, 	0}
 };
@@ -238,7 +239,72 @@ parse_reply(unsigned char *data, int len)
 	    (*rr)->u.txt[*p] = 0;
 	    break;
 	}
-	    
+	case T_KEY : {
+	    size_t key_len;
+
+	    key_len = size - 4;
+	    (*rr)->u.key = malloc (sizeof(*(*rr)->u.key) + key_len - 1);
+	    if ((*rr)->u.key == NULL) {
+		dns_free_data (r);
+		return NULL;
+	    }
+
+	    (*rr)->u.key->flags     = (p[0] << 8) | p[1];
+	    (*rr)->u.key->protocol  = p[2];
+	    (*rr)->u.key->algorithm = p[3];
+	    (*rr)->u.key->key_len   = key_len;
+	    memcpy ((*rr)->u.key->key_data, p + 4, key_len);
+	    break;
+	}
+	case T_SIG : {
+	    size_t sig_len;
+
+	    status = dn_expand (data, data + len, p + 18, host, sizeof(host));
+	    if (status < 0) {
+		dns_free_data (r);
+		return NULL;
+	    }
+	    sig_len = len - 18 - status;
+	    (*rr)->u.sig = malloc(sizeof(*(*rr)->u.sig)
+				  + strlen(host) + sig_len);
+	    if ((*rr)->u.sig == NULL) {
+		dns_free_data (r);
+		return NULL;
+	    }
+	    (*rr)->u.sig->type           = (p[0] << 8) | p[1];
+	    (*rr)->u.sig->algorithm      = p[2];
+	    (*rr)->u.sig->labels         = p[3];
+	    (*rr)->u.sig->orig_ttl       = (p[4] << 24) | (p[5] << 16)
+		| (p[6] << 8) | p[7];
+	    (*rr)->u.sig->sig_expiration = (p[8] << 24) | (p[9] << 16)
+		| (p[10] << 8) | p[11];
+	    (*rr)->u.sig->sig_inception  = (p[12] << 24) | (p[13] << 16)
+		| (p[14] << 8) | p[15];
+	    (*rr)->u.sig->key_tag        = (p[16] << 8) | p[17];
+	    (*rr)->u.sig->sig_len        = sig_len;
+	    memcpy ((*rr)->u.sig->sig_data, p + 18 + status, sig_len);
+	    (*rr)->u.sig->signer         = &(*rr)->u.sig->sig_data[sig_len];
+	    strcpy((*rr)->u.sig->signer, host);
+	    break;
+	}
+
+	case T_CERT : {
+	    size_t cert_len;
+
+	    cert_len = size - 5;
+	    (*rr)->u.cert = malloc (sizeof(*(*rr)->u.cert) + cert_len - 1);
+	    if ((*rr)->u.cert == NULL) {
+		dns_free_data (r);
+		return NULL;
+	    }
+
+	    (*rr)->u.cert->type      = (p[0] << 8) | p[1];
+	    (*rr)->u.cert->tag       = (p[2] << 8) | p[3];
+	    (*rr)->u.cert->algorithm = p[4];
+	    (*rr)->u.cert->cert_len  = cert_len;
+	    memcpy ((*rr)->u.cert->cert_data, p + 5, cert_len);
+	    break;
+	}
 	default:
 	    (*rr)->u.data = (unsigned char*)malloc(size);
 	    if(size != 0 && (*rr)->u.data == NULL) {
@@ -324,25 +390,44 @@ main(int argc, char **argv)
 	printf("%s %s %d ", rr->domain, type_to_string(rr->type), rr->ttl);
 	switch(rr->type){
 	case T_NS:
+	case T_CNAME:
+	case T_PTR:
 	    printf("%s\n", (char*)rr->u.data);
 	    break;
 	case T_A:
-	    printf("%d.%d.%d.%d\n", 
-		   ((unsigned char*)rr->u.data)[0],
-		   ((unsigned char*)rr->u.data)[1],
-		   ((unsigned char*)rr->u.data)[2],
-		   ((unsigned char*)rr->u.data)[3]);
+	    printf("%s\n", inet_ntoa(*rr->u.a));
 	    break;
 	case T_MX:
 	case T_AFSDB:{
-	    struct mx_record *mx = (struct mx_record*)rr->u.data;
-	    printf("%d %s\n", mx->preference, mx->domain);
+	    printf("%d %s\n", rr->u.mx->preference, rr->u.mx->domain);
 	    break;
 	}
 	case T_SRV:{
-	    struct srv_record *srv = (struct srv_record*)rr->u.data;
+	    struct srv_record *srv = rr->u.srv;
 	    printf("%d %d %d %s\n", srv->priority, srv->weight, 
 		   srv->port, srv->target);
+	    break;
+	}
+	case T_TXT: {
+	    printf("%s\n", rr->u.txt);
+	    break;
+	}
+	case T_SIG : {
+	    struct sig_record *sig = rr->u.sig;
+	    const char *type_string = type_to_string (sig->type);
+
+	    printf ("type %u (%s), algorithm %u, labels %u, orig_ttl %u, sig_expiration %u, sig_inception %u, key_tag %u, signer %s\n",
+		    sig->type, type_string ? type_string : "",
+		    sig->algorithm, sig->labels, sig->orig_ttl,
+		    sig->sig_expiration, sig->sig_inception, sig->key_tag,
+		    sig->signer);
+	    break;
+	}
+	case T_KEY : {
+	    struct key_record *key = rr->u.key;
+
+	    printf ("flags %u, protocol %u, algorithm %u\n",
+		    key->flags, key->protocol, key->algorithm);
 	    break;
 	}
 	default:
