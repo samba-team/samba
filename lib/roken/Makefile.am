@@ -22,6 +22,7 @@ libroken_a_SOURCES =				\
 	parse_time.c				\
 	parse_units.c				\
 	resolve.c				\
+	roken_gethostby.c			\
 	signal.c				\
 	snprintf.c				\
 	strcasecmp.c				\
