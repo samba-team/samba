@@ -289,6 +289,7 @@ enum nss_status
 _nss_winbind_setpwent(void)
 {
 	if (num_pw_cache > 0) {
+		ndx_pw_cache = num_pw_cache = 0;
 		free_response(&getpwent_response);
 	}
 
@@ -301,6 +302,7 @@ enum nss_status
 _nss_winbind_endpwent(void)
 {
 	if (num_pw_cache > 0) {
+		ndx_pw_cache = num_pw_cache = 0;
 		free_response(&getpwent_response);
 	}
 
@@ -348,11 +350,17 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		ndx_pw_cache = 0;
 		num_pw_cache = getpwent_response.data.num_entries;
 
-		pw_cache = getpwent_response.extra_data;
-
 		/* Return a result */
 
 	return_result:
+
+		pw_cache = getpwent_response.extra_data;
+
+		/* Check data is valid */
+
+		if (pw_cache == NULL) {
+			return NSS_STATUS_NOTFOUND;
+		}
 
 		ret = fill_pwent(result, &pw_cache[ndx_pw_cache],
 				 &buffer, &buflen);
@@ -372,6 +380,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		/* We've finished with this lot of results so free cache */
 
 		if (ndx_pw_cache == num_pw_cache) {
+			ndx_pw_cache = num_pw_cache = 0;
 			free_response(&getpwent_response);
 		}
 	}
