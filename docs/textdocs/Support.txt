@@ -41,11 +41,13 @@ of the SAMBA Web Pages.
 ------------------------------------------------------------------------------
 READING - ENGLAND
 
-Philip Hands                  |   E-Mail: info@hands.com
-Philip Hands Computing Ltd.   |   Tel: +44 1734 476287 Fax: 1734 474655
-Unit 1, Cherry Close, Caversham, Reading RG4 8UP  UK
+Philip Hands                | E-Mail: info@hands.com  Tel:+44 1734 545656
+Philip Hands Computing Ltd. | Mobile: +44 802 242989  Fax:+44 1734 474655
+Unit 1, Cherry Close, Caversham, Reading  RG4 8UP  ENGLAND
 
-Samba experience:  SVR4,SVR3.2 & Linux <--> WfWg, W3.1, OS2 and MS-LanMan
+Samba experience: 
+  Server platforms: Linux,SVR4,SVR3.2 & Sequent ptx
+  Clients: WfWg, W3.1, OS2 and MS-LanMan
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -243,15 +245,15 @@ LE12 8DX
 TELEPHONE 01509-620922
 FAX       01509-620933
 
-CONTACT DAVID ROBINSON
+Contact David Robinson
 
-WE ARE UNIX ORIENTATED BUT ALSO SPECIALISE IN PC TO UNIX COMMUNICATIONS, WE 
-KNOW AND UNDERSTAND PC-NFS, (HENCE OUR INTEREST IN SAMBA).
-WE SUPPORT  SUNOS, SOLARIS 1.X AND 2.X, HP-UX 9.0 AND 10.0, OSF (or DEC UNIX, 
-whichever you prefer), WinNT, WfWG and Win95.
+We are unix orientated but also specialise in pc to unix communications, we 
+know and understand pc-nfs, (hence our interest in samba).
+we support  sunos, solaris 1.x and 2.x, hp-ux 9.0 and 10.0, osf (or dec unix, 
+whichever you prefer), winnt, wfwg and win95.
 
-WE ARE ALREADY TALKING TO A COUPLE OF VERY LARGE SAMBA USERS HERE IN THE UK. 
-WE WOULD LIKE TO SUPPORT THEM (AND MANY MORE), WOULD YOU PLEASE CONTACT ME ON:
+We are already talking to a couple of very large samba users here in the uk. 
+we would like to support them (and many more), would you please contact me on:
 david@tectonic.demon.co.uk
 ----------------------------------------------------------
 
@@ -357,6 +359,8 @@ rowl@earthlink.net
 Michael St. Laurent
 Hartwell Corporation
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 WASHINGTON DC METRO - USA
 
 Asset Software, Inc. has been running Samba since the 1.6 release on various
@@ -372,5 +376,20 @@ mail client running in Windows.
 
 David J. Fenwick                                          Asset Software, Inc.
 President                                                      djf@assetsw.com
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+WELLINGTON - NEW ZEALAND
+
+David Gempton
+Computer Consultant 
+UNIX & PC Networking specialist 
+TTC Technology Training Consulting
+PO Box 5444 
+Lambton Quay Wellington
+New Zealand
+Phone (025) 518-574
+Email: ttcdg@cyberspace.co.nz
 ------------------------------------------------------------------------------
 
