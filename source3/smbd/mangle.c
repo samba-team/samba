@@ -113,7 +113,7 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 char magic_char = '~';
 
 static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
-#define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
+#define MANGLE_BASE       ( (sizeof(basechars)/sizeof(char)) - 1 )
 
 static unsigned char chartest[256]  = { 0 };
 static BOOL          ct_initialized = False;
@@ -124,7 +124,7 @@ static BOOL          ct_initialized = False;
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
 #define isillegal(C) ( (chartest[ ((C) & 0xff) ]) & ILLEGAL_MASK )
 
-static ubi_cacheRoot mangled_cache[1] =  { { { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 } };
+static ubi_cacheRoot mangled_cache[1] = {{ { 0, 0, 0, 0 }, 0, 0, 0, 0, 0, 0 }};
 static BOOL          mc_initialized   = False;
 #define MANGLED_CACHE_MAX_ENTRIES 0
 #define MANGLED_CACHE_MAX_MEMORY  16384
