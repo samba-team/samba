@@ -13,6 +13,7 @@ AC_SUBST(HOST_OS)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
+AC_SUBST(SHLIBEXT)
 
 # compile with optimisation and without debugging by default
 CFLAGS=${CFLAGS-"-O"}
@@ -144,7 +145,7 @@ exit(1);
     *linux*|*hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
         AC_TRY_RUN([
 #include <unistd.h>
 main () {
@@ -156,7 +157,7 @@ exit(1);
 }], [GLIBC_LFS_SUPPORT=yes], [GLIBC_LFS_SUPPORT=no], [GLIBC_LFS_SUPPORT=cross])
         CPPFLAGS="$old_CPPFLAGS"
         if test x$GLIBC_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
         fi
       AC_MSG_RESULT([$GLIBC_LFS_SUPPORT])
     ;;
@@ -188,7 +189,7 @@ case "$host_os" in
 		fi
 	;;
 esac
-AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
@@ -458,6 +459,8 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+PICFLAG=""
+SHLIBEXT="so"
 
 # and these are for particular systems
 case "$host_os" in
@@ -478,7 +481,14 @@ case "$host_os" in
 			ATTEMPT_WRAP32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
-		*hpux*) AC_DEFINE(HPUX);;
+		*hpux*) AC_DEFINE(HPUX)
+			SHLIBEXT="sl"
+			# Use special PIC flags for the native HP-UX compiler.
+			if test $ac_cv_prog_cc_Ae = yes; then
+				LDSHFLAGS="-b"
+				PICFLAG="+z"
+			fi
+		;;
 		*qnx*) AC_DEFINE(QNX);;
 		*osf*) AC_DEFINE(OSF1);;
 		*sco*) AC_DEFINE(SCO);;
@@ -503,22 +513,21 @@ case "$host_os" in
 esac
 
 # try to work out how to produce pic code with this compiler
-PICFLAG=""
 AC_PROG_CC_FLAG(fpic)
 if test $ac_cv_prog_cc_fpic = yes; then
-   PICFLAG="-fpic";
+    PICFLAG="-fpic";
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(Kpic)
   if test $ac_cv_prog_cc_Kpic = yes; then
     PICFLAG="-Kpic";
-  fi 
+  fi
 fi
 if test x$PICFLAG = x; then
   AC_PROG_CC_FLAG(KPIC)
   if test $ac_cv_prog_cc_KPIC = yes; then
     PICFLAG="-KPIC";
-  fi 
+  fi
 fi
 
 ################
@@ -976,12 +985,12 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
-	WRAP="bin/smbsh bin/smbwrapper.so"
+	WRAP="bin/smbsh bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
 		WRAP32=""
 	else
-			WRAP32=bin/smbwrapper.32.so
+			WRAP32=bin/smbwrapper.32.$SHLIBEXT
 	fi
 
 # Conditions under which smbwrapper should not be built.
@@ -1139,6 +1148,7 @@ AC_ARG_WITH(ldap,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP)
+    AC_MSG_ERROR([LDAP password database not supported in this version.])
     ;;
   *)
     AC_MSG_RESULT(no)
