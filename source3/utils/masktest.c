@@ -32,6 +32,7 @@ static BOOL showall = False;
 static BOOL old_list = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
+static int verbose;
 
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(char *pattern, char *string)
@@ -39,34 +40,34 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	char *p = pattern, *n = string;
 	char c;
 
-	// printf("ms_fnmatch_lanman_core(%s, %s)\n", pattern, string);
-
 	while ((c = *p++)) {
 		switch (c) {
 		case '?':
+			//if (! *n) return -1;
 			if (! *n) return ms_fnmatch_lanman_core(p, n);
 			n++;
 			break;
 
 		case '>':
 			if (n[0] == '.') {
-				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) return 0;
-				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
-				return -1;
+				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+				goto nomatch;
 			}
 			if (! *n) return ms_fnmatch_lanman_core(p, n);
 			n++;
 			break;
 
 		case '*':
+			if (! *p) goto match;
 			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
 			}
 			break;
 
 		case '<':
 			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) return 0;
+				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
 				if (*n == '.' && !strchr(n+1,'.')) {
 					n++;
 					break;
@@ -75,47 +76,32 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 			break;
 
 		case '"':
-			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) return 0;
-			if (*n != '.') return -1;
+			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) goto match;
+			if (*n != '.') goto nomatch;
 			n++;
 			break;
 
 		default:
-			if (c != *n) return -1;
+			if (c != *n) goto nomatch;
 			n++;
 		}
 	}
 	
-	if (! *n) return 0;
+	if (! *n) goto match;
 	
+
+ nomatch:
+	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
 	return -1;
+
+ match:
+	if (verbose) printf("MATCH   pattern=[%s] string=[%s]\n", pattern, string);
+	return 0;
 }
 
 int ms_fnmatch_lanman(char *pattern, char *string)
 {
-	pstring p_base, p_ext="", s_base, s_ext="";
-	char *p;
-
-	pstrcpy(p_base, pattern);
-	pstrcpy(s_base, string);
-
-	p = strrchr(p_base,'.');
-	if (p) {
-		*p = 0;
-		pstrcpy(p_ext, p+1);
-	}
-
-	p = strrchr(s_base,'.');
-	if (p) {
-		*p = 0;
-		pstrcpy(s_ext, p+1);
-	}
-
-	//printf("[%s/%s] [%s/%s] [%s/%s]\n", 
-	//      pattern, string, p_base, s_base, p_ext, s_ext);
-
-	return ms_fnmatch_lanman_core(p_base, s_base) ||
-		ms_fnmatch_lanman_core(p_ext, s_ext);
+	return ms_fnmatch_lanman_core(pattern, string);
 }
 
 static BOOL reg_match_one(char *pattern, char *file)
@@ -436,8 +422,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:v")) != EOF) {
 		switch (opt) {
+		case 'v':
+			verbose++;
+			break;
 		case 'M':
 			max_protocol = interpret_protocol(optarg, max_protocol);
 			break;
