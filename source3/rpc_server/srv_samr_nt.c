@@ -1013,8 +1013,13 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
+	/* access checks for the users were performed higher up.  become/unbecome_root()
+	   needed for some passdb backends to enumerate groups */
+	   
+	become_root();
 	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
-
+	unbecome_root();
+	
 	num_entries=group_entries-start_idx;
 
 	/* limit the number of entries */
@@ -2369,6 +2374,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
 {
 	struct samr_info *info = NULL;
+	uint32    des_access = q_u->access_mask;
 
 	/* Access check */
 
@@ -2386,6 +2392,13 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 	if ((info = get_samr_info_by_sid(NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
+	/* don't give away the farm but this is probably ok.  The SA_RIGHT_SAM_ENUM_DOMAINS
+	   was observed from a win98 client trying to enumerate users (when configured  
+	   user level access control on shares)   --jerry */
+	   
+	se_map_generic( &des_access, &sam_generic_mapping );
+	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
+	
 	info->status = q_u->unknown_0;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -2510,7 +2523,9 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_lookup_domain"))) {
+	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
+		SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_lookup_domain"))) 
+	{
 		return r_u->status;
 	}
 
