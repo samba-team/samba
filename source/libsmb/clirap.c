@@ -669,7 +669,7 @@ BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutd
 		return False;
 	}
 
-	memdup(poutdata, data_len);
+	*poutdata = memdup(rdata, data_len);
 	*poutlen = data_len;
 
 	SAFE_FREE(rdata);
