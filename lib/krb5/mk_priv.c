@@ -86,6 +86,7 @@ krb5_mk_priv(krb5_context context,
     return r;
 
   r = encode_KRB_PRIV (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
+  krb5_data_free (&s.enc_part.cipher);
   if (r)
     return r;
   outbuf->length = len;

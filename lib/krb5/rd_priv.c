@@ -75,6 +75,7 @@ krb5_rd_priv(krb5_context context,
       goto failure;
 
   r = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
+  krb5_data_free (&plain);
   if (r) 
       goto failure;
   

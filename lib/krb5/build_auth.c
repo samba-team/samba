@@ -66,6 +66,7 @@ krb5_build_authenticator (krb5_context context,
   auth->subkey = NULL;
 #else
   krb5_generate_subkey (context, &cred->session, &auth->subkey);
+  free_EncryptionKey (&auth_context->local_subkey);
   copy_EncryptionKey (auth->subkey,
 		      &auth_context->local_subkey);
 #endif
@@ -98,7 +99,7 @@ krb5_build_authenticator (krb5_context context,
   if (auth_result)
     *auth_result = auth;
   else {
-    free (auth->crealm);
+    free_Authenticator (auth);
     free (auth);
   }
   return ret;

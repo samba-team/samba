@@ -279,22 +279,33 @@ krb5_rd_req(krb5_context context,
 {
     krb5_keytab_entry entry;
     krb5_error_code ret;
+    krb5_keytab real_keytab;
+
     if(keytab == NULL)
-	krb5_kt_default(context, &keytab);
+	krb5_kt_default(context, &real_keytab);
+    else
+	real_keytab = keytab;
+
     ret = krb5_kt_get_entry(context,
-			    keytab,
+			    real_keytab,
 			    (krb5_principal)server,
 			    0,
 			    KEYTYPE_DES,
 			    &entry);
     if(ret)
-	return ret;
+	goto out;
     
-    return krb5_rd_req_with_keyblock(context,
-				     auth_context,
-				     inbuf,
-				     server,
-				     &entry.keyblock,
-				     ap_req_options,
-				     ticket);
+    ret = krb5_rd_req_with_keyblock(context,
+				    auth_context,
+				    inbuf,
+				    server,
+				    &entry.keyblock,
+				    ap_req_options,
+				    ticket);
+    krb5_kt_free_entry (context, &entry);
+out:
+    if (keytab == NULL)
+	krb5_kt_close (context, real_keytab);
+
+    return ret;
 }

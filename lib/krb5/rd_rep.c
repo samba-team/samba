@@ -53,13 +53,20 @@ krb5_rd_rep(krb5_context context,
   char *buf;
   krb5_data data;
 
+  krb5_data_zero (&data);
+  ret = 0;
+
   ret = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep, &len);
   if (ret)
       return ret;
-  if (ap_rep.pvno != 5)
-    return KRB5KRB_AP_ERR_BADVERSION;
-  if (ap_rep.msg_type != krb_ap_rep)
-    return KRB5KRB_AP_ERR_MSG_TYPE;
+  if (ap_rep.pvno != 5) {
+    ret = KRB5KRB_AP_ERR_BADVERSION;
+    goto out;
+  }
+  if (ap_rep.msg_type != krb_ap_rep) {
+    ret = KRB5KRB_AP_ERR_MSG_TYPE;
+    goto out;
+  }
 
   ret = krb5_decrypt (context,
 		      ap_rep.enc_part.cipher.data,
@@ -68,11 +75,13 @@ krb5_rd_rep(krb5_context context,
 		      &auth_context->key,
 		      &data);
   if (ret)
-    return ret;
+      goto out;
 
   *repl = malloc(sizeof(**repl));
-  if (*repl == NULL)
-    return ENOMEM;
+  if (*repl == NULL) {
+    ret = ENOMEM;
+    goto out;
+  }
   ret = decode_EncAPRepPart(data.data,
 			    data.length,
 			    *repl, 
@@ -88,12 +97,16 @@ krb5_rd_rep(krb5_context context,
 	    auth_context->authenticator->ctime,
 	    auth_context->authenticator->cusec);
 #endif				/* Something wrong with the coding??? */
-    return KRB5KRB_AP_ERR_MUT_FAIL;
+    ret = KRB5KRB_AP_ERR_MUT_FAIL;
+    goto out;
   }
   if ((*repl)->seq_number)
     auth_context->remote_seqnumber = *((*repl)->seq_number);
   
-  return 0;
+out:
+  krb5_data_free (&data);
+  free_AP_REP (&ap_rep);
+  return ret;
 }
 
 void

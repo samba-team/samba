@@ -49,7 +49,6 @@ krb5_mk_req_extended(krb5_context context,
 		     krb5_data *outbuf)
 {
   krb5_error_code r;
-  Authenticator *auth;
   krb5_data authenticator;
   Checksum c;
   Checksum *c_opt;
@@ -66,8 +65,9 @@ krb5_mk_req_extended(krb5_context context,
   if(r)
       return r;
       
-  copy_EncryptionKey(&in_creds->session,
-		     &ac->key);
+  free_EncryptionKey (&ac->key);
+  copy_EncryptionKey (&in_creds->session,
+		      &ac->key);
 
   if (in_data) {
 
@@ -86,7 +86,7 @@ krb5_mk_req_extended(krb5_context context,
 				ac,
 				in_creds,
 				c_opt,
-				&auth,
+				NULL,
 				&authenticator);
   if (r)
     return r;
