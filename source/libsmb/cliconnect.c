@@ -154,10 +154,10 @@ static BOOL cli_session_setup_guest(struct cli_state *cli)
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* username */
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* workgroup */
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE|STR_CONVERT); /* username */
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE|STR_CONVERT); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
@@ -194,7 +194,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	int passlen;
 	char *p;
 
-	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_CONVERT);
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -211,10 +211,10 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	p = smb_buf(cli->outbuf);
 	memcpy(p, pword, passlen);
 	p += passlen;
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
-	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_CONVERT); /* username */
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_CONVERT); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
@@ -258,8 +258,8 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. */
 		passlen = 24;
 		ntpasslen = 24;
-		clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
-		clistr_push(cli, ntpword, ntpass, sizeof(ntpword), STR_TERMINATE);
+		clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_CONVERT);
+		clistr_push(cli, ntpword, ntpass, sizeof(ntpword), STR_TERMINATE|STR_CONVERT);
 		SMBencrypt((uchar *)pword,cli->cryptkey,(uchar *)pword);
 		SMBNTencrypt((uchar *)ntpword,cli->cryptkey,(uchar *)ntpword);
 	} else {
@@ -285,10 +285,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen); p += passlen;
 	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
-	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER|STR_CONVERT);
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER|STR_CONVERT);
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE|STR_CONVERT);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE|STR_CONVERT);
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
