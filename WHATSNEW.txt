@@ -36,6 +36,10 @@ o   Alexander Bokovoy <ab@samba.org>
 o   Gerald Carter <jerry@samba.org>
     * BUG 417, 1128: Ensure that the current_user_info is set
       constistenly so that %[UuGg] is expanded correctly.
+    * BUG 1195: Fix crash in winbindd when the ADS server is 
+      unavailable.
+    * BUG 1185: Set reconnect time to be the same as the 
+      'winbind cache time'.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -184,7 +188,7 @@ o   Alexander Bokovoy <ab@samba.org>
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix 'make installmodules' bug on True64.
+    * BUG 850: Fix 'make installmodules' bug on True64.
     * BUG 66: mark 'only user' deprecated.
     * Remove corrupt tdb and shutdown (only for printing tdbs, 
       connections, sessionid & locking).
