@@ -66,7 +66,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			return status;
 		}
 
-		gensec_want_feature(call->conn->gensec, GENSEC_WANT_SIGN|GENSEC_WANT_SEAL);
+		/*gensec_want_feature(call->conn->gensec, GENSEC_WANT_SIGN|GENSEC_WANT_SEAL);*/
 
 		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
 		if (!NT_STATUS_IS_OK(status)) {
