@@ -1170,38 +1170,29 @@ static void cmd_select(void)
 	next_token(NULL,fileselection,NULL,sizeof(fileselection));
 }
 
-
 /****************************************************************************
   Recursive file matching function act as find
   match must be always set to True when calling this function
 ****************************************************************************/
-  
 static int file_find(struct file_list **list, const char *directory, 
 		      const char *expression, BOOL match)
 {
-        struct dirent **namelist;
+	DIR *dir;
 	struct file_list *entry;
         struct stat statbuf;
-        int n, ret;
+        int ret;
         char *path;
 	BOOL isdir;
+	char *dname;
 
-        n = scandir(directory,  &namelist, 0, alphasort);
-	if (n == -1) return -1;
+        dir = opendir(directory);
+	if (!dir) return -1;
 	
-        while (n--) {
-		int len = NAMLEN(namelist[n]);
-		char *dname = malloc(len+1);
-		if (!dname) continue;
-
-		memcpy(dname, namelist[n]->d_name, len);
-		dname[len] = 0;
-		
+        while ((dname = readdirname(dir))) {
 		if (!strcmp("..", dname)) continue;
 		if (!strcmp(".", dname)) continue;
 		
 		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
-			free(dname);
 			continue;
 		}
 
@@ -1209,7 +1200,7 @@ static int file_find(struct file_list **list, const char *directory,
 		if (!match || !ms_fnmatch(expression, dname)) {
 			if (recurse) {
 				ret = stat(path, &statbuf);
-				if (!ret) {
+				if (ret == 0) {
 					if (S_ISDIR(statbuf.st_mode)) {
 						isdir = True;
 						ret = file_find(list, path, expression, False);
@@ -1218,16 +1209,17 @@ static int file_find(struct file_list **list, const char *directory,
 					DEBUG(0,("file_find: cannot stat file %s\n", path));
 				}
 				
-				if (ret) {
+				if (ret == -1) {
 					free(path);
-					free(dname);
-					return ret;
+					closedir(dir);
+					return -1;
 				}
 			}
 			entry = (struct file_list *) malloc(sizeof (struct file_list));
 			if (!entry) {
 				DEBUG(0,("Out of memory in file_find\n"));
-				return -4;
+				closedir(dir);
+				return -1;
 			}
 			entry->file_path = path;
 			entry->isdir = isdir;
@@ -1235,8 +1227,9 @@ static int file_find(struct file_list **list, const char *directory,
 		} else {
 			free(path);
 		}
-		free(dname);
         }
+
+	closedir(dir);
 	return 0;
 }
 
