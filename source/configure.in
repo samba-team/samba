@@ -2079,7 +2079,7 @@ ac_save_CFLAGS="$CFLAGS"
 ac_save_LIBS="$LIBS"
 CFLAGS=""
 LIBS=""
-	
+
   #################################################
   # check for krb5-config from recent MIT and Heimdal kerberos 5
   AC_PATH_PROG(KRB5_CONFIG, krb5-config)
@@ -2432,24 +2432,6 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 	AC_DEFINE(HAVE_TRUNCATED_SALT,1,[Whether crypt needs truncated salt])
 fi
 fi
-
-# New experimental SAM system
-
-AC_MSG_CHECKING([whether to build the new (experimental) SAM database])
-AC_ARG_WITH(sam,
-[  --with-sam              Build new (experimental) SAM database (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SAM,1,[Whether to build the new (experimental) SAM database])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
 
 ########################################################################################
 ##
