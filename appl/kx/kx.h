@@ -149,6 +149,7 @@ read_encrypted (int fd, void *buf, size_t len, void **ret,
 
 #define KX_PORT 2111
 
+#define KX_OLD_VERSION "KXSERV.1"
 #define KX_VERSION "KXSERV.2"
 
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
