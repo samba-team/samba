@@ -856,20 +856,27 @@ BOOL print_queue_purge(int snum)
 open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
-void print_fsp_open(files_struct *fsp,connection_struct *conn,char *jobname)
+
+files_struct *print_fsp_open(connection_struct *conn,char *jobname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
 	extern struct current_user current_user;
+	files_struct *fsp = file_new();
+
+	if(!fsp)
+		return NULL;
 
 	jobid = print_job_start(SNUM(conn), jobname);
-	if (jobid == -1) return;
+	if (jobid == -1) {
+		file_free(fsp);
+		return NULL;
+	}
 
 	/* setup a full fsp */
 	fsp->print_jobid = jobid;
 	fsp->fd = print_job_fd(jobid);
 	conn->vfs_ops.fstat(fsp->fd, &sbuf);
-	conn->num_files_open++;
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
@@ -893,6 +900,10 @@ void print_fsp_open(files_struct *fsp,connection_struct *conn,char *jobname)
 	string_set(&fsp->fsp_name,print_job_fname(jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
+
+	conn->num_files_open++;
+
+	return fsp;
 }
 
 /****************************************************************************
