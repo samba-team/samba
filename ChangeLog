@@ -1,3 +1,29 @@
+2004-04-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: replace the krb5.conf configuration option that
+	describes the mapping between principals and subject names with a
+	file, default /var/heimdal/pki-mapping. XXX this should be pushed
+	into HDB. XXX should add issuer too
+	
+	* kdc/config.c: merge certificate/private_key to a user_id
+	
+2004-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kdc_locl.h: update prototype for pk_initialize
+	
+	* kuser/kinit.c: merge certificate/private_key to a user_id
+	
+	* kdc/pkinit.c: adapt to heim_integer changes
+	
+	* lib/krb5/pkinit.c: merge certificate/private_key to a user_id
+	
+	* kdc/pkinit.c: adapt to heim_integer changes,
+	merge certificate/private_key to a user_id
+	
+2004-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: use KRB5_PADATA_PK_AS_REQ_WIN free X509_STORE
+	
 2004-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: define BUILD_KRB5_LIB when building
