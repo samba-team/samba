@@ -3150,6 +3150,10 @@ uint32 interpret_addr(char *str)
       DEBUG(3,("Get_Hostbyname: Unknown host. %s\n",str));
       return 0;
     }
+    if(hp->h_addr == NULL) {
+      DEBUG(3,("Get_Hostbyname: host address is invalid for host %s.\n",str));
+      return 0;
+    }
     putip((char *)&res,(char *)hp->h_addr);
   }
 

@@ -206,7 +206,7 @@ file dev = %d, ino = %d in hash_bucket %d\n", dev, inode, hash_entry));
   {
      DEBUG(0,("ERROR:get_share_modes (FAST_SHARE_MODES): Deleting old share mode \
 record due to old locking version %d for file dev = %d, inode = %d in hash \
-bucket %d",file_scanner_p->locking_version, dev, inode, hash_entry));
+bucket %d\n",file_scanner_p->locking_version, dev, inode, hash_entry));
      if(file_prev_p == file_scanner_p)
 	mode_array[hash_entry] = file_scanner_p->next_offset;
      else
@@ -241,6 +241,7 @@ bucket %d",file_scanner_p->locking_version, dev, inode, hash_entry));
     {
       /* Delete this share mode entry */
       share_mode_entry *delete_entry_p = entry_scanner_p;
+      int share_mode = entry_scanner_p->share_mode;
 
       if(entry_prev_p == entry_scanner_p)
       {
@@ -270,8 +271,8 @@ for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries
 
       DEBUG(0,("get_share_modes (FAST_SHARE_MODES): process %d no longer exists and \
 it left a share mode entry with mode 0x%X for file dev = %d, ino = %d in hash \
-bucket (number of entries now = %d)\n", 
-            pid, entry_scanner_p->share_mode, dev, inode, hash_entry,
+bucket %d (number of entries now = %d)\n", 
+            pid, share_mode, dev, inode, hash_entry,
             file_scanner_p->num_share_mode_entries));
 
       smb_shm_free(smb_shm_addr2offset(delete_entry_p));
