@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Shared memory functions - SYSV IPC implementation
-   Copyright (C) Erik Devriendt 1996-1997
+   Copyright (C) Andrew Tridgell 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ extern int DEBUGLEVEL;
 #define SHMEM_HASH_SIZE 63
 #endif
 
-#define MIN_SHM_SIZE 10240
+#define MIN_SHM_SIZE 0x1000
 
 static int shm_id;
 static int sem_id;
@@ -83,19 +83,18 @@ struct ShmBlockDesc
 {
    int next;	/* offset of next block in the free list or
 		   SHM_NOT_FREE_OFF when block in use */
-   int          size;   /* user size in BlockDescSize units */
+   int size;   /* user size in BlockDescSize units */
 };
 
-#define	EOList_Addr	(struct ShmBlockDesc *)( 0 )
-#define EOList_Off      (NULL_OFFSET)
+#define	EOList_Addr	NULL
+#define EOList_Off      (0)
 
 #define	CellSize	sizeof(struct ShmBlockDesc)
 
-/* HeaderSize aligned on 8 byte boundary */
-#define	AlignedHeaderSize  	((sizeof(struct ShmHeader)+7) & ~7)
+/* HeaderSize aligned on a 8 byte boundary */
+#define	AlignedHeaderSize ((sizeof(struct ShmHeader)+7) & ~7)
 
-static struct ShmHeader *shm_header_p = (struct ShmHeader *)0;
-
+static struct ShmHeader *shm_header_p = NULL;
 static BOOL shm_initialize_called = False;
 
 static int read_only;
@@ -156,22 +155,22 @@ static BOOL global_unlock(void)
 
 static void *shm_offset2addr(int offset)
 {
-   if (offset == NULL_OFFSET )
+   if (offset == 0 )
       return (void *)(0);
    
    if (!shm_header_p)
       return (void *)(0);
    
-   return (void *)((char *)shm_header_p + offset );
+   return (void *)((char *)shm_header_p + offset);
 }
 
 static int shm_addr2offset(void *addr)
 {
    if (!addr)
-      return NULL_OFFSET;
+      return 0;
    
    if (!shm_header_p)
-      return NULL_OFFSET;
+      return 0;
    
    return (int)((char *)addr - (char *)shm_header_p);
 }
@@ -189,7 +188,7 @@ static int shm_alloc(int size)
 	if (!shm_header_p) {
 		/* not mapped yet */
 		DEBUG(0,("ERROR shm_alloc : shmem not mapped\n"));
-		return NULL_OFFSET;
+		return 0;
 	}
 	
 	global_lock();
@@ -197,13 +196,13 @@ static int shm_alloc(int size)
 	if (!shm_header_p->consistent) {
 		DEBUG(0,("ERROR shm_alloc : shmem not consistent\n"));
 		global_unlock();
-		return NULL_OFFSET;
+		return 0;
 	}
 	
-	/* calculate	the number of cells */
-	num_cells = (size + CellSize -1) / CellSize;
+	/* calculate the number of cells */
+	num_cells = (size + (CellSize-1)) / CellSize;
 	
-	/* set start	of scan */
+	/* set start of scan */
 	prev_p = (struct ShmBlockDesc *)shm_offset2addr(shm_header_p->first_free_off);
 	scanner_p =	prev_p ;
 	
@@ -216,144 +215,50 @@ static int shm_alloc(int size)
 	/* at this point scanner point to a block header or to the end of
 	   the list */
 	if (scanner_p == EOList_Addr) {
-		DEBUG(0,("ERROR shm_alloc : alloc of %d bytes failed, no free space found\n",size));
+		DEBUG(0,("ERROR shm_alloc : alloc of %d bytes failed\n",size));
 		global_unlock();
-		return (NULL_OFFSET);
+		return (0);
 	}
    
 	/* going to modify shared mem */
 	shm_header_p->consistent = False;
 	
 	/* if we found a good one : scanner == the good one */
-	if (scanner_p->size <= num_cells + 2) {
-		/* there is no use in making a new one, it will be too small anyway 
-		 *	 we will link out scanner
-		 */
-		if ( prev_p == scanner_p ) {
-			shm_header_p->first_free_off = scanner_p->next ;
-		} else {
-			prev_p->next = scanner_p->next ;
-		}
-		shm_header_p->statistics.cells_free -= scanner_p->size;
-		shm_header_p->statistics.cells_used += scanner_p->size;
-	} else {
+	if (scanner_p->size > num_cells + 2) {
 		/* Make a new one */
 		new_p = scanner_p + 1 + num_cells;
-		new_p->size = scanner_p->size - num_cells - 1;
+		new_p->size = scanner_p->size - (num_cells + 1);
 		new_p->next = scanner_p->next;
 		scanner_p->size = num_cells;
 		scanner_p->next = shm_addr2offset(new_p);
-		
-		if (prev_p != scanner_p) {
-			prev_p->next	   = shm_addr2offset(new_p)  ;
-		} else {
-			shm_header_p->first_free_off = shm_addr2offset(new_p);
-		}
-		shm_header_p->statistics.cells_free -= num_cells+1;
-		shm_header_p->statistics.cells_used += num_cells;
+
+		shm_header_p->statistics.cells_free -= 1;
 		shm_header_p->statistics.cells_system += 1;
 	}
 
-	result_offset = shm_addr2offset( &(scanner_p[1]) );
-	scanner_p->next =	SHM_NOT_FREE_OFF ;
+	/* take it from the free list */
+	if (prev_p == scanner_p) {
+		shm_header_p->first_free_off = scanner_p->next;
+	} else {
+		prev_p->next = scanner_p->next;
+	}
+	shm_header_p->statistics.cells_free -= scanner_p->size;
+	shm_header_p->statistics.cells_used += scanner_p->size;
+
+	result_offset = shm_addr2offset(&(scanner_p[1]));
+	scanner_p->next = SHM_NOT_FREE_OFF;
 
 	/* end modification of shared mem */
 	shm_header_p->consistent = True;
-	
-	DEBUG(6,("shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
 
 	global_unlock();
+	
+	DEBUG(6,("shm_alloc : allocated %d bytes at offset %d\n",
+		 size,result_offset));
+
 	return result_offset;
 }   
 
-
-
-/* 
- * Function to create the hash table for the share mode entries. Called
- * when smb shared memory is global locked.
- */
-static BOOL shm_create_hash_table( unsigned int size )
-{
-	size *= sizeof(int);
-
-	global_lock();
-	shm_header_p->userdef_off = shm_alloc( size );
-
-	if(shm_header_p->userdef_off == NULL_OFFSET) {
-		DEBUG(0,("shm_create_hash_table: Failed to create hash table of size %d\n",size));
-		global_unlock();
-		return False;
-	}
-
-	/* Clear hash buckets. */
-	memset( shm_offset2addr(shm_header_p->userdef_off), '\0', size);
-	global_unlock();
-	return True;
-}
-
-static BOOL shm_validate_header(int size)
-{
-	if( !shm_header_p ) {
-		/* not mapped yet */
-		DEBUG(0,("ERROR shm_validate_header : shmem not mapped\n"));
-		return False;
-	}
-   
-	if(shm_header_p->shm_magic != SHM_MAGIC) {
-		DEBUG(0,("ERROR shm_validate_header : bad magic\n"));
-		return False;
-	}
-
-	if(shm_header_p->shm_version != SHM_VERSION) {
-		DEBUG(0,("ERROR shm_validate_header : bad version %X\n",shm_header_p->shm_version));
-		return False;
-	}
-   
-	if(shm_header_p->total_size != size) {
-		DEBUG(0,("ERROR shm_validate_header : shmem size mismatch (old = %d, new = %d)\n",shm_header_p->total_size,size));
-		return False;
-	}
-
-	if(!shm_header_p->consistent) {
-		DEBUG(0,("ERROR shm_validate_header : shmem not consistent\n"));
-		return False;
-	}
-	return True;
-}
-
-static BOOL shm_initialize(int size)
-{
-	struct ShmBlockDesc * first_free_block_p;
-	
-	DEBUG(5,("shm_initialize : initializing shmem file of size %d\n",size));
-   
-	if( !shm_header_p ) {
-		/* not mapped yet */
-		DEBUG(0,("ERROR shm_initialize : shmem not mapped\n"));
-		return False;
-	}
-   
-	shm_header_p->shm_magic = SHM_MAGIC;
-	shm_header_p->shm_version = SHM_VERSION;
-	shm_header_p->total_size = size;
-	shm_header_p->first_free_off = AlignedHeaderSize;
-	shm_header_p->userdef_off = NULL_OFFSET;
-	
-	first_free_block_p = (struct ShmBlockDesc *)shm_offset2addr(shm_header_p->first_free_off);
-	first_free_block_p->next = EOList_Off;
-	first_free_block_p->size = ( size - AlignedHeaderSize - CellSize ) / CellSize ;
-   
-	shm_header_p->statistics.cells_free = first_free_block_p->size;
-	shm_header_p->statistics.cells_used = 0;
-	shm_header_p->statistics.cells_system = 1;
-   
-	shm_header_p->consistent = True;
-   
-	shm_initialize_called = True;
-
-	return True;
-}
-   
 static void shm_solve_neighbors(struct ShmBlockDesc *head_p )
 {
 	struct ShmBlockDesc *next_p;
@@ -364,9 +269,9 @@ static void shm_solve_neighbors(struct ShmBlockDesc *head_p )
 	if ( head_p->next == EOList_Off ) return ;
    
 	next_p = (struct ShmBlockDesc *)shm_offset2addr(head_p->next);
-	if ( ( head_p + head_p->size + 1 ) == next_p) {
-		head_p->size += next_p->size +1 ;	/* adapt size */
-		head_p->next = next_p->next	  ; /* link out */
+	if ((head_p + head_p->size + 1) == next_p) {
+		head_p->size += next_p->size + 1; /* adapt size */
+		head_p->next = next_p->next; /* link out */
       
 		shm_header_p->statistics.cells_free += 1;
 		shm_header_p->statistics.cells_system -= 1;
@@ -374,21 +279,13 @@ static void shm_solve_neighbors(struct ShmBlockDesc *head_p )
 }
 
 
-
-
-static BOOL shm_close( void )
-{
-	return True;
-}
-
-
 static BOOL shm_free(int offset)
 {
 	struct ShmBlockDesc *header_p; /* pointer to header of
-					       block to free */
+					  block to free */
 	struct ShmBlockDesc *scanner_p; /* used to scan the list */
 	struct ShmBlockDesc *prev_p; /* holds previous in the
-					   list */
+					list */
    
 	if (!shm_header_p) {
 		/* not mapped yet */
@@ -416,14 +313,16 @@ static BOOL shm_free(int offset)
 	/* find a place in the free_list to put the header in */
 	
 	/* set scanner and previous pointer to start of list */
-	prev_p = (struct ShmBlockDesc *)shm_offset2addr(shm_header_p->first_free_off);
+	prev_p = (struct ShmBlockDesc *)
+		shm_offset2addr(shm_header_p->first_free_off);
 	scanner_p = prev_p ;
 	
 	while ((scanner_p != EOList_Addr) && 
 	       (scanner_p < header_p)) { 
 		/* while we didn't scan past its position */
 		prev_p = scanner_p ;
-		scanner_p = (struct ShmBlockDesc *)shm_offset2addr(scanner_p->next);
+		scanner_p = (struct ShmBlockDesc *)
+			shm_offset2addr(scanner_p->next);
 	}
 	
 	shm_header_p->consistent = False;
@@ -436,11 +335,12 @@ static BOOL shm_free(int offset)
 		shm_header_p->statistics.cells_used -= header_p->size;
 		
 		/* we must free it at the beginning of the list */
-		shm_header_p->first_free_off = shm_addr2offset(header_p);						 /*	set	the free_list_pointer to this block_header */
+		shm_header_p->first_free_off = shm_addr2offset(header_p);
+		/* set the free_list_pointer to this block_header */
 		
 		/* scanner is the one that was first in the list */
 		header_p->next = shm_addr2offset(scanner_p);
-		shm_solve_neighbors( header_p ); /* if neighbors then link them */
+		shm_solve_neighbors(header_p); 
 		
 		shm_header_p->consistent = True;
 	} else {
@@ -460,13 +360,112 @@ static BOOL shm_free(int offset)
 }
 
 
+/* 
+ * Function to create the hash table for the share mode entries. Called
+ * when smb shared memory is global locked.
+ */
+static BOOL shm_create_hash_table(unsigned int hash_entries)
+{
+	int size = hash_entries * sizeof(int);
+
+	global_lock();
+	shm_header_p->userdef_off = shm_alloc(size);
+
+	if(shm_header_p->userdef_off == 0) {
+		DEBUG(0,("shm_create_hash_table: Failed to create hash table of size %d\n",
+			 size));
+		global_unlock();
+		return False;
+	}
+
+	/* Clear hash buckets. */
+	memset(shm_offset2addr(shm_header_p->userdef_off), '\0', size);
+	global_unlock();
+	return True;
+}
+
+
+static BOOL shm_validate_header(int size)
+{
+	if(!shm_header_p) {
+		/* not mapped yet */
+		DEBUG(0,("ERROR shm_validate_header : shmem not mapped\n"));
+		return False;
+	}
+   
+	if(shm_header_p->shm_magic != SHM_MAGIC) {
+		DEBUG(0,("ERROR shm_validate_header : bad magic\n"));
+		return False;
+	}
+
+	if(shm_header_p->shm_version != SHM_VERSION) {
+		DEBUG(0,("ERROR shm_validate_header : bad version %X\n",
+			 shm_header_p->shm_version));
+		return False;
+	}
+   
+	if(shm_header_p->total_size != size) {
+		DEBUG(0,("ERROR shmem size mismatch (old = %d, new = %d)\n",
+			 shm_header_p->total_size,size));
+		return False;
+	}
+
+	if(!shm_header_p->consistent) {
+		DEBUG(0,("ERROR shmem not consistent\n"));
+		return False;
+	}
+	return True;
+}
+
+
+static BOOL shm_initialize(int size)
+{
+	struct ShmBlockDesc * first_free_block_p;
+	
+	DEBUG(5,("shm_initialize : initializing shmem size %d\n",size));
+   
+	if( !shm_header_p ) {
+		/* not mapped yet */
+		DEBUG(0,("ERROR shm_initialize : shmem not mapped\n"));
+		return False;
+	}
+   
+	shm_header_p->shm_magic = SHM_MAGIC;
+	shm_header_p->shm_version = SHM_VERSION;
+	shm_header_p->total_size = size;
+	shm_header_p->first_free_off = AlignedHeaderSize;
+	shm_header_p->userdef_off = 0;
+	
+	first_free_block_p = (struct ShmBlockDesc *)
+		shm_offset2addr(shm_header_p->first_free_off);
+	first_free_block_p->next = EOList_Off;
+	first_free_block_p->size = 
+		(size - (AlignedHeaderSize+CellSize))/CellSize;   
+	shm_header_p->statistics.cells_free = first_free_block_p->size;
+	shm_header_p->statistics.cells_used = 0;
+	shm_header_p->statistics.cells_system = 1;
+   
+	shm_header_p->consistent = True;
+   
+	shm_initialize_called = True;
+
+	return True;
+}
+   
+static BOOL shm_close( void )
+{
+	return True;
+}
+
+
 static int shm_get_userdef_off(void)
 {
    if (!shm_header_p)
-      return NULL_OFFSET;
+      return 0;
    else
       return shm_header_p->userdef_off;
 }
+
 
 /*******************************************************************
   Lock a particular hash bucket entry.
@@ -500,7 +499,8 @@ static BOOL shm_get_usage(int *bytes_free,
 
 	*bytes_free = shm_header_p->statistics.cells_free * CellSize;
 	*bytes_used = shm_header_p->statistics.cells_used * CellSize;
-	*bytes_overhead = shm_header_p->statistics.cells_system * CellSize + AlignedHeaderSize;
+	*bytes_overhead = shm_header_p->statistics.cells_system * CellSize + 
+		AlignedHeaderSize;
 	
 	return True;
 }

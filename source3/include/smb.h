@@ -57,9 +57,6 @@
 
 typedef int BOOL;
 
-/* offset in shared memory */
-#define NULL_OFFSET (int)(0)
-
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
 
