@@ -43,7 +43,7 @@ int d_vfprintf(FILE *f, const char *format, va_list ap)
 	if (!msgstr) return -1;
 
 #if defined(HAVE_VA_COPY)
-	__va_copy(ap2, ap)
+	__va_copy(ap2, ap);
 #else
 	ap2 = ap;
 #endif
