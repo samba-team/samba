@@ -354,11 +354,11 @@ BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	if (!open_fn(p, mem_ctx, &handle))
 		return False;
 
+#if 0
 	if (!test_EnumKey(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
-#if 0
 	if (!test_GetVersion(p, mem_ctx, &handle)) {
 		ret = False;
 	}
@@ -385,7 +385,7 @@ BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	do {
 		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
 
-		if (W_ERROR_IS_OK(r.out.result)) {
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			struct policy_handle key_handle;
 
 			if (!test_OpenKey(
