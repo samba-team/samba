@@ -918,7 +918,8 @@ int open_pipe_sock(char *path)
 
 	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
 	{
-		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
+		DEBUG(0,("socket connect to %s failed: %s\n",
+			  sa.sun_path,strerror(errno)));
 		close(sock);
 		return -1;
 	}

@@ -169,13 +169,24 @@ static BOOL process_srv_sock(struct sock_redir **socks,
 
 static int get_agent_sock(char *id)
 {
+	int s;
 	fstring dir;
 	fstring path;
 
 	slprintf(dir, sizeof(dir)-1, "/tmp/.nmb");
 	slprintf(path, sizeof(path)-1, "%s/agent", dir);
 
-	return create_pipe_socket(dir, 0777, path, 0777);
+	s = create_pipe_socket(dir, 0777, path, 0777);
+
+	if (s == -1)
+		return -1;
+		/* ready to listen */
+	if (listen(s, 5) == -1) {
+		DEBUG(0,("listen: %s\n", strerror(errno)));
+		close(s);
+		return -1;
+	}
+	return s;
 }
 
 static void start_nmb_agent(void)

@@ -753,9 +753,9 @@ bin/nmb-agent: $(NMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NMB_AGENT_OBJ) $(LIBS)
 
-bin/smb-agent: $(SAMBA_LIBS) $(SMB_AGENT_OBJ) bin/.dummy
+bin/smb-agent: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(SMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMBA_LIBS) $(SMB_AGENT_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(SMB_AGENT_OBJ) $(LIBS)
 
 bin/smbfilter: $(SAMBA_LIBS) $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@

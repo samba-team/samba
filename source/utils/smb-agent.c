@@ -102,17 +102,17 @@ static struct cli_state *init_client_connection(int c)
 	dump_data(100, buf, rl);
 #endif
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&ps, 0, 4, 0, True);
- 	mem_create(ps.data, buf, 0, len, 0, False);
+ 	prs_init(&ps, 0, 4, True);
+ 	prs_append_data(&ps, buf, rl);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
 		DEBUG(0,("Unable to parse credentials\n"));
-		mem_free_data(ps.data);
+		prs_free_data(&ps);
 		return NULL;
 	}
 
- 	mem_free_data(ps.data);
+	prs_free_data(&ps);
 
 	if (ps.offset != rl)
 	{
@@ -294,13 +294,24 @@ static BOOL process_srv_sock(struct sock_redir **socks, uint32 num_socks,
 
 static int get_agent_sock(char *id)
 {
+	int s;
 	fstring path;
 	fstring dir;
 
 	slprintf(dir, sizeof(dir)-1, "/tmp/.smb.%d", getuid());
 	slprintf(path, sizeof(path)-1, "%s/agent", dir);
 
-	return create_pipe_socket(dir, S_IRUSR|S_IWUSR|S_IXUSR, path, 0);
+	s = create_pipe_socket(dir, 0700, path, 0700);
+
+	if (s == -1)
+		return -1;
+		/* ready to listen */
+	if (listen(s, 5) == -1) {
+		DEBUG(0,("listen: %s\n", strerror(errno)));
+		close(s);
+		return -1;
+	}
+	return s;
 }
 
 static void start_smb_agent(void)
