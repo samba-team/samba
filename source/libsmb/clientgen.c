@@ -234,7 +234,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-	cli->use_spnego = True;
+	if (lp_use_spnego()) {
+		cli->use_spnego = True;
+	}
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
