@@ -30,16 +30,19 @@ struct creds_CredentialState {
 };
 
 
-#define NETLOGON_NEG_128BIT 0x4000
-
 
 /* for the timebeing, use the same neg flags as Samba3. */
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
-#define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
+#define NETLOGON_NEG_AUTH2_FLAGS     0x000701ff
+
+
+#define NETLOGON_NEG_ARCFOUR         0x00000004
+#define NETLOGON_NEG_128BIT          0x00004000
+
+#define NETLOGON_NEG_SCHANNEL        0x40000000
 
 /* these are the flags that ADS clients use */
-#define NETLOGON_NEG_AUTH2_ADS_FLAGS 0x600fffff
+#define NETLOGON_NEG_AUTH2_ADS_FLAGS (0x200fbffb | NETLOGON_NEG_ARCFOUR | NETLOGON_NEG_128BIT | NETLOGON_NEG_SCHANNEL)
 
-#define NETLOGON_NEG_SCHANNEL    0x40000000
 
