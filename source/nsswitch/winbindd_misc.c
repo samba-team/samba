@@ -26,13 +26,42 @@
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
 						 *state)
 {
-	DEBUG(1, ("check machine account\n"));
 	return WINBINDD_ERROR;
 }
 
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 						   *state)
 {
-	DEBUG(1, ("enumerate trusted domains\n"));
-	return WINBINDD_ERROR;
+	struct winbindd_domain *domain;
+	int total_entries = 0, extra_data_len = 0;
+	char *extra_data = NULL;
+
+	for(domain = domain_list; domain; domain = domain->next) {
+
+		/* Skip own domain */
+
+		if (strequal(domain->name, lp_workgroup())) continue;
+
+		/* Add domain to list */
+
+		total_entries++;
+		extra_data = Realloc(extra_data, sizeof(fstring) * 
+				     total_entries);
+
+		if (!extra_data) return WINBINDD_ERROR;
+
+		memcpy(&extra_data[extra_data_len], domain->name,
+		       strlen(domain->name));
+
+		extra_data_len  += strlen(domain->name);
+		extra_data[extra_data_len++] = ',';
+	}
+
+	if (extra_data) {
+		if (extra_data_len > 1) extra_data[extra_data_len - 1] = '\0';
+		state->response.extra_data = extra_data;
+		state->response.length += extra_data_len;
+	}
+
+	return WINBINDD_OK;
 }

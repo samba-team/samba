@@ -840,22 +840,17 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			       strlen(name));
 			extra_data_len += strlen(name);
 
-			if (i == (groups.num_sam_entries - 1)) {
-				extra_data[extra_data_len++] = '\0';
-			} else {
-				extra_data[extra_data_len++] = ',';
-			}   
+			extra_data[extra_data_len++] = ',';
 		}
 	}
 
 	/* Assign extra_data fields in response structure */
 
 	if (extra_data) {
+		extra_data[extra_data_len - 1] = '\0';
 		state->response.extra_data = extra_data;
 		state->response.length += extra_data_len;
-		
-		return WINBINDD_OK;
-	}
+			}
 
         return WINBINDD_OK;
 }

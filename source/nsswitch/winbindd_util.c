@@ -704,19 +704,18 @@ uint32 domain_sequence_number(char *domain_name)
    bit extra to give an overview of domain users for the User Manager
    application. */
 
-BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
+uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	uint32 res;
+	uint32 status;
 
 	if (!domain_handles_open(domain)) return False;
 
-	res = samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
-				  info_level, num_entries, ctr);
+	status = samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
+				     info_level, num_entries, ctr);
 
-	return (res == NT_STATUS_NOPROBLEMO ||
-		res == STATUS_MORE_ENTRIES);
+	return status;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */

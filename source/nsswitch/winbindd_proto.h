@@ -131,7 +131,7 @@ void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
 uint32 domain_sequence_number(char *domain_name);
-BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
+uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);

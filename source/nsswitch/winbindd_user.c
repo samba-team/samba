@@ -308,8 +308,6 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 
 /* Fetch next passwd entry from ntdom database */
 
-#define TPOT_DISPINFO 1
-
 enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 {
 	if (state == NULL) return WINBINDD_ERROR;
@@ -332,6 +330,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 			/* Look in cache for entries, else get them direct */
 		    
 			if (winbindd_fetch_user_cache(ent->domain->name,
+						      (fstring **)
 						      &ent->sam_entries,
 						      &ent->num_sam_entries)) {
 				goto send_entry;
@@ -465,11 +464,10 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
         /* Enumerate over trusted domains */
 
-        for (domain = domain_list; domain; domain = domain->next) {
-		uint32 start_ndx = 0;
-		int i;
+	ctr.sam.info1 = &info1;
 
-		ctr.sam.info1 = &info1;
+        for (domain = domain_list; domain; domain = domain->next) {
+		uint32 status, start_ndx = 0;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
@@ -481,55 +479,57 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
                 /* Query display info */
 
-                if (!winbindd_query_dispinfo(domain, &start_ndx, 1, 
-					     &num_entries, &ctr)) {
-			continue;
-		}
+		do {
+			int i;
 
-		/* Allocate some memory for extra data.  Note that we limit
-		   account names to sizeof(fstring) = 128 characters.  */
+			status = winbindd_query_dispinfo(domain, &start_ndx, 
+							 1, &num_entries, 
+							 &ctr);
 
-		total_entries += num_entries;
-		extra_data = Realloc(extra_data, 
-				     sizeof(fstring) * total_entries);
+			/* Allocate some memory for extra data.  Note that
+			   we limit account names to sizeof(fstring) = 128
+			   characters.  */
 
-		if (!extra_data) {
-			return WINBINDD_ERROR;
-		}
-
-		/* Pack user list into extra data fields */
-
-		for (i = 0; i < num_entries; i++) {
-			UNISTR2 *uni_acct_name;
-			fstring acct_name, name;
-
-			/* Convert unistring to ascii */
-
-			uni_acct_name = &ctr.sam.info1->str[i]. uni_acct_name;
-			unistr2_to_ascii(acct_name, uni_acct_name,
-					 sizeof(acct_name) - 1);
-                                                 
-			slprintf(name, sizeof(name), "%s%s%s",
-				 domain->name, lp_winbind_separator(),
-				 acct_name);
-
-			/* Append to extra data */
+			total_entries += num_entries;
+			extra_data = Realloc(extra_data, sizeof(fstring) * 
+					     total_entries);
 			
-			memcpy(&extra_data[extra_data_len], name, 
-			       strlen(name));
-			extra_data_len += strlen(name);
+			if (!extra_data) {
+				return WINBINDD_ERROR;
+			}
+			
+			/* Pack user list into extra data fields */
+			
+			for (i = 0; i < num_entries; i++) {
+				UNISTR2 *uni_acct_name;
+				fstring acct_name, name;
 
-			if (i == (num_entries - 1)) {
-				extra_data[extra_data_len++] = '\0';
-			} else {
+				/* Convert unistring to ascii */
+				
+				uni_acct_name = &ctr.sam.info1->str[i]. 
+					uni_acct_name;
+				unistr2_to_ascii(acct_name, uni_acct_name,
+						 sizeof(acct_name) - 1);
+                                                 
+				slprintf(name, sizeof(name), "%s%s%s",
+					 domain->name, lp_winbind_separator(),
+					 acct_name);
+
+				/* Append to extra data */
+			
+				memcpy(&extra_data[extra_data_len], name, 
+				       strlen(name));
+				extra_data_len += strlen(name);
+				
 				extra_data[extra_data_len++] = ',';
 			}   
-		}
+		} while (status == STATUS_MORE_ENTRIES);
         }
 
 	/* Assign extra_data fields in response structure */
 
 	if (extra_data) {
+		extra_data[extra_data_len - 1] = '\0';
 		state->response.extra_data = extra_data;
 		state->response.length += extra_data_len;
 		

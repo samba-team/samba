@@ -32,9 +32,40 @@ enum nss_status generic_request(int req_type,
 				struct winbindd_request *request,
 				struct winbindd_response *response);
 
-/* Globals */
+/* List trusted domains */
 
-BOOL do_users, do_groups, do_lookupsid, do_lookupname;
+static BOOL wbinfo_list_domains(void)
+{
+	struct winbindd_response response;
+	fstring name;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	if (generic_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
+	    WINBINDD_ERROR) {
+		return False;
+	}
+
+	/* Display response */
+
+	if (response.extra_data) {
+		while(next_token((char **)&response.extra_data, name, ",", 
+				 sizeof(fstring))) {
+			printf("%s\n", name);
+		}
+	}
+
+	return True;
+}
+
+/* Check trust account password */
+
+static BOOL wbinfo_check_secret(void)
+{
+	return False;
+}
 
 /* Convert uid to sid */
 
@@ -246,7 +277,7 @@ static BOOL print_domain_groups(void)
 
 static void usage(void)
 {
-	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid\n");
+	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm\n");
 	printf("\t-u\tlists all domain users\n");
 	printf("\t-g\tlists all domain groups\n");
 	printf("\t-n name\tconverts name to sid\n");
@@ -255,6 +286,8 @@ static void usage(void)
 	printf("\t-G gid\tconverts gid to sid\n");
 	printf("\t-S sid\tconverts sid to uid\n");
 	printf("\t-Y sid\tconverts sid to gid\n");
+	printf("\t-t\tcheck shared secret\n");
+	printf("\t-m\tlist trusted domains\n");
 }
 
 /* Main program */
@@ -262,7 +295,6 @@ static void usage(void)
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
-	extern pstring debugf;
 	int opt;
 
 	/* Samba client initialisation */
@@ -295,7 +327,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tm")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -346,6 +378,18 @@ int main(int argc, char **argv)
 			if (!wbinfo_sid_to_gid(optarg)) {
 				printf("Could not convert sid %s to gid\n",
 				       optarg);
+				return 1;
+			}
+			break;
+		case 't':
+			if (!wbinfo_check_secret()) {
+				printf("Could not check secret\n");
+				return 1;
+			}
+			break;
+		case 'm':
+			if (!wbinfo_list_domains()) {
+				printf("Could not list trusted domains\n");
 				return 1;
 			}
 			break;
