@@ -15,9 +15,11 @@ struct samr_Connect {
 
 struct samr_Close {
 	struct {
+		struct policy_handle *handle;
 	} in;
 
 	struct {
+		struct policy_handle *handle;
 		NTSTATUS result;
 	} out;
 

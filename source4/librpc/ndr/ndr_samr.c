@@ -15,6 +15,7 @@ NTSTATUS ndr_push_samr_Connect(struct ndr_push *ndr, struct samr_Connect *r)
 
 NTSTATUS ndr_push_samr_Close(struct ndr_push *ndr, struct samr_Close *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 
 	return NT_STATUS_OK;
 }
@@ -482,6 +483,7 @@ NTSTATUS ndr_pull_samr_Connect(struct ndr_pull *ndr, struct samr_Connect *r)
 
 NTSTATUS ndr_pull_samr_Close(struct ndr_pull *ndr, struct samr_Close *r)
 {
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
