@@ -865,6 +865,12 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*num_mem = r.num_sids;
 
+	if (*num_mem == 0) {
+		*sids = NULL;
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
 	if (!(*sids = talloc(mem_ctx, sizeof(DOM_SID) * *num_mem))) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
