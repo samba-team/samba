@@ -473,6 +473,33 @@ int sys_chroot(const char *dname)
 #endif
 }
 
+#ifdef HAVE_RESOLVER_INTERNALS
+static void print_resolver_error(const char *name)
+{
+	pstring nameservers;
+	int i;
+
+	if (h_errno != TRY_AGAIN)
+		return;
+
+	/* Can't contact nameserver. */
+	*nameservers = '\0';
+	for (i = 0; i < _res.nscount; i++) {
+		pstrcat(nameservers, inet_ntoa(_res.nsaddr_list[i].sin_addr));
+		pstrcat(nameservers, " ");
+	}
+
+	if (*nameservers == '\0') {
+		sys_adminlog(LOG_ERR, "No nameservers defined trying to lookup name %s\n",
+			name );
+		return;
+	}
+
+	sys_adminlog(LOG_INFO, "No response from nameservers %s when looking up name %s\n",
+			name );
+}
+#endif /* HAVE_RESOLVER_INTERNALS */
+
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
 in the root domain, which can cause dial-on-demand links to come up for no
@@ -481,6 +508,8 @@ apparent reason.
 
 struct hostent *sys_gethostbyname(const char *name)
 {
+	struct hostent *ret;
+	const char *lookupname;
 
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
 	char query[256], hostname[256];
@@ -498,22 +527,38 @@ struct hostent *sys_gethostbyname(const char *name)
 
 	gethostname(hostname, sizeof(hostname) - 1);
 	hostname[sizeof(hostname) - 1] = 0;
-	if ((domain = strchr(hostname, '.')) == NULL)
-		return(gethostbyname(name));
+	if ((domain = strchr(hostname, '.')) == NULL) {
+		ret = gethostbyname(name);
+		lookupname = name;
+		goto out;
+	}
 
 	/* Attach domain name to query and do modified query.
 		If names too large, just do gethostname on the
 		original string.
 	*/
 
-	if((strlen(name) + strlen(domain)) >= sizeof(query))
-		return(gethostbyname(name));
+	if((strlen(name) + strlen(domain)) >= sizeof(query)) {
+		ret = (gethostbyname(name));
+		lookupname = name;
+		goto out;
+	}
 
 	slprintf(query, sizeof(query)-1, "%s%s", name, domain);
-	return(gethostbyname(query));
+
+	ret = gethostbyname(query);
+	lookupname = query;
 #else /* REDUCE_ROOT_DNS_LOOKUPS */
-	return(gethostbyname(name));
+	lookupname = name;
+	ret = gethostbyname(name);
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
+
+#ifdef HAVE_RESOLVER_INTERNALS
+	if (!ret)
+		print_resolver_error(lookupname);
+#endif
+
+	return ret;
 }
 
 

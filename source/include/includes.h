@@ -216,6 +216,10 @@
 #include <netinet/tcp.h>
 #endif
 
+#ifdef HAVE_RESOLVER_INTERNALS
+#include <resolv.h>
+#endif
+
 /*
  * The next three defines are needed to access the IPTOS_* options
  * on some systems.
