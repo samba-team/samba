@@ -403,7 +403,6 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 			return False; /* Negative cache hit. */
 		return True;
 	}
-
 	/* Lookup name */
         
 	if (!(mem_ctx = talloc_init()))
@@ -431,7 +430,7 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *ty
 			*type = types[0];
 
 		/* Store the forward and reverse map of this lookup in the cache. */
-		store_sid_by_name_in_cache(name, &sids[0], types[0]);
+                store_sid_by_name_in_cache(name, &sids[0], types[0]);
 		store_name_by_sid_in_cache(&sids[0], name, types[0]);
 	} else {
 		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
@@ -587,18 +586,15 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
+                                TALLOC_CTX *mem_ctx,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups)
 {
-        TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         POLICY_HND dom_pol, user_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_user_pol = False;
-
-        if (!(mem_ctx = talloc_init()))
-                return False;
 
         /* Get sam handle */
 
@@ -638,8 +634,6 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 
         if (got_dom_pol)
                 cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-        talloc_destroy(mem_ctx);
 
         return NT_STATUS_IS_OK(result);
 }

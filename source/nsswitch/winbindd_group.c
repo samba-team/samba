@@ -894,12 +894,16 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	uint32 user_rid, num_groups, num_gids;
 	DOM_GID *user_groups = NULL;
 	struct winbindd_domain *domain;
-	enum winbindd_result result;
+	enum winbindd_result result = WINBINDD_ERROR;
 	gid_t *gid_list;
 	int i;
+        TALLOC_CTX *mem_ctx;
 	
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
+
+        if (!(mem_ctx = talloc_init()))
+                return WINBINDD_ERROR;
 
 	/* Parse domain and username */
 
@@ -910,14 +914,14 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	   the entire name. */
  
 	if (strequal(name_domain, ""))
-		return WINBINDD_ERROR;
+		goto done;
 
 	/* Get info for the domain */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
-		return WINBINDD_ERROR;
+		goto done;
 	}
 
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
@@ -926,20 +930,20 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
-		return WINBINDD_ERROR;
+                goto done;
 	}
 
 	if (name_type != SID_NAME_USER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
 			  name_type));
-		return WINBINDD_ERROR;
+                goto done;
 	}
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	if (!winbindd_lookup_usergroups(domain, user_rid, &num_groups,
-					&user_groups))
-		return WINBINDD_ERROR;
+	if (!winbindd_lookup_usergroups(domain, mem_ctx, user_rid, 
+                                        &num_groups, &user_groups))
+                goto done;
 
 	/* Copy data back to client */
 
@@ -947,7 +951,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	gid_list = malloc(sizeof(gid_t) * num_groups);
 
 	if (state->response.extra_data) {
-		result = WINBINDD_ERROR;
 		goto done;
 	}
 
@@ -971,7 +974,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	result = WINBINDD_OK;
 
  done:
-	SAFE_FREE(user_groups);
+        talloc_destroy(mem_ctx);
 
 	return result;
 }
