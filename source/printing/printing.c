@@ -65,7 +65,7 @@ static pid_t local_pid;
 #define UNIX_JOB_START PRINT_MAX_JOBID
 
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 2
+#define PRINT_DATABASE_VERSION 3
 
 #define MAX_CACHE_VALID_TIME 3600
 
