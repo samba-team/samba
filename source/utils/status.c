@@ -135,7 +135,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	  else
 		printf("NONE            ");
 
-	  printf(" %s   %s",fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+	  printf(" %s   %s",dos_to_unix(fname,False),
+             asctime(LocalTime((time_t *)&e->time.tv_sec)));
 	}
 }
 
