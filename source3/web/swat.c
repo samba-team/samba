@@ -51,6 +51,7 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+
 /****************************************************************************
 ****************************************************************************/
 static int enum_index(int value, const struct enum_list *enumlist)
