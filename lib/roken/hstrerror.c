@@ -48,15 +48,17 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <netdb.h>
 
+#ifndef HAVE_H_ERRNO
+int h_errno = -17; /* Some magic number */
+#endif
+
 #ifndef HAVE_H_ERRLIST
-static
-const
-char *const h_errlist[] = {
-  "Resolver Error 0 (no error)",
-  "Unknown host",		/* 1 HOST_NOT_FOUND */
-  "Host name lookup failure",	/* 2 TRY_AGAIN */
-  "Unknown server error",	/* 3 NO_RECOVERY */
-  "No address associated with name", /* 4 NO_ADDRESS */
+static const char *const h_errlist[] = {
+    "Resolver Error 0 (no error)",
+    "Unknown host",		/* 1 HOST_NOT_FOUND */
+    "Host name lookup failure",	/* 2 TRY_AGAIN */
+    "Unknown server error",	/* 3 NO_RECOVERY */
+    "No address associated with name", /* 4 NO_ADDRESS */
 };
 
 static
@@ -74,10 +76,12 @@ extern int h_nerr;
 char *
 hstrerror(int herr)
 {
-  if (0 <= herr && herr < h_nerr)
-    return (char *) h_errlist[herr];
-  else
-    return "Error number out of range (hstrerror)";
+    if (0 <= herr && herr < h_nerr)
+	return (char *) h_errlist[herr];
+    else if(herr == -17)
+	return "unknown error";
+    else
+	return "Error number out of range (hstrerror)";
 }
 
 #endif
