@@ -385,7 +385,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **selected) 
 {
 	int i = 0;
-	struct pdb_methods *curmethods, *tmpmethods;
+	struct pdb_methods *curmethods;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
@@ -401,7 +401,7 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, const char **select
 			return nt_status;
 		}
 		curmethods->parent = *context;
-		DLIST_ADD_END((*context)->pdb_methods, curmethods, tmpmethods);
+		DLIST_ADD_END((*context)->pdb_methods, curmethods, struct pdb_methods *);
 		i++;
 	}
 

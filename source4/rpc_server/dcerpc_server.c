@@ -30,7 +30,7 @@ static const struct dcesrv_endpoint_ops *find_endpoint(struct server_context *sm
 {
 	struct dce_endpoint *ep;
 	for (ep=smb->dcesrv.endpoint_list; ep; ep=ep->next) {
-		if (ep->endpoint_ops->query(endpoint)) {
+		if (ep->endpoint_ops->query_endpoint(endpoint)) {
 			return ep->endpoint_ops;
 		}
 	}
@@ -86,6 +86,7 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	(*p)->endpoint = *endpoint;
 	(*p)->ops = ops;
 	(*p)->private = NULL;
+	(*p)->call_list = NULL;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -107,23 +108,318 @@ void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
 	talloc_destroy(p->mem_ctx);
 }
 
+/*
+  return a dcerpc fault
+*/
+static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
+{
+	struct ndr_push *push;
+	struct dcerpc_packet pkt;
+	NTSTATUS status;
+
+	/* setup a bind_ack */
+	pkt.rpc_vers = 5;
+	pkt.rpc_vers_minor = 0;
+	pkt.drep[0] = 0x10; /* Little endian */
+	pkt.drep[1] = 0;
+	pkt.drep[2] = 0;
+	pkt.drep[3] = 0;
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_FAULT;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.u.fault.alloc_hint = 0;
+	pkt.u.fault.context_id = 0;
+	pkt.u.fault.cancel_count = 0;
+	pkt.u.fault.status = fault_code;
+
+	/* now form the NDR for the bind_ack */
+	push = ndr_push_init_ctx(call->mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	call->data = ndr_push_blob(push);
+	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+
+	return NT_STATUS_OK;	
+}
+
+
+/*
+  handle a bind request
+*/
+static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
+{
+	const char *uuid, *transfer_syntax;
+	uint32 if_version, transfer_syntax_version;
+	struct dcerpc_packet pkt;
+	struct ndr_push *push;
+	NTSTATUS status;
+
+	if (call->pkt.u.bind.num_contexts != 1 ||
+	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.major_version;
+	uuid = GUID_string(call->mem_ctx, &call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid);
+	if (!uuid) {
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	transfer_syntax_version = call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].major_version;
+	transfer_syntax = GUID_string(call->mem_ctx, 
+				      &call->pkt.u.bind.ctx_list[0].transfer_syntaxes[0].uuid);
+	if (!transfer_syntax ||
+	    strcasecmp(NDR_GUID, transfer_syntax) != 0 ||
+	    NDR_GUID_VERSION != transfer_syntax_version) {
+		/* we only do NDR encoded dcerpc */
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	if (!call->dce->ops->set_interface(call->dce, uuid, if_version)) {
+		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
+		/* we don't know about that interface */
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	/* setup a bind_ack */
+	pkt.rpc_vers = 5;
+	pkt.rpc_vers_minor = 0;
+	pkt.drep[0] = 0x10; /* Little endian */
+	pkt.drep[1] = 0;
+	pkt.drep[2] = 0;
+	pkt.drep[3] = 0;
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_BIND_ACK;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.u.bind_ack.max_xmit_frag = 0x2000;
+	pkt.u.bind_ack.max_recv_frag = 0x2000;
+	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
+	pkt.u.bind_ack.secondary_address = talloc_asprintf(call->mem_ctx, "\\PIPE\\%s", 
+							 call->dce->ndr->name);
+	pkt.u.bind_ack.num_results = 1;
+	pkt.u.bind_ack.ctx_list = talloc(call->mem_ctx, sizeof(struct dcerpc_ack_ctx));
+	if (!pkt.u.bind_ack.ctx_list) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pkt.u.bind_ack.ctx_list[0].result = 0;
+	pkt.u.bind_ack.ctx_list[0].reason = 0;
+	GUID_from_string(uuid, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
+	pkt.u.bind_ack.ctx_list[0].syntax.major_version = if_version;
+	pkt.u.bind_ack.ctx_list[0].syntax.minor_version = 0;
+	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
+
+	/* now form the NDR for the bind_ack */
+	push = ndr_push_init_ctx(call->mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	call->data = ndr_push_blob(push);
+	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+
+	return NT_STATUS_OK;
+}
+
+
+/*
+  handle a dcerpc request packet
+*/
+static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
+{
+	struct ndr_pull *pull;
+	struct ndr_push *push;
+	uint16 opnum;
+	void *r;
+	NTSTATUS status;
+	DATA_BLOB stub;
+	struct dcerpc_packet pkt;
+
+	if (call->pkt.pfc_flags != (DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST)) {
+		/* we don't do fragments in the server yet */
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	opnum = call->pkt.u.request.opnum;
+
+	if (opnum >= call->dce->ndr->num_calls) {
+		return dcesrv_fault(call, DCERPC_FAULT_OP_RNG_ERROR);
+	}
+
+	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call->mem_ctx);
+	if (!pull) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r = talloc(call->mem_ctx, call->dce->ndr->calls[opnum].struct_size);
+	if (!r) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* unravel the NDR for the packet */
+	status = call->dce->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	/* call the dispatch function */
+	status = call->dce->dispatch[opnum](call->dce, call->mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	/* form the reply NDR */
+	push = ndr_push_init_ctx(call->mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = call->dce->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault(call, DCERPC_FAULT_TODO);
+	}
+
+	stub = ndr_push_blob(push);
+
+	/* form the dcerpc response packet */
+	pkt.rpc_vers = 5;
+	pkt.rpc_vers_minor = 0;
+	pkt.drep[0] = 0x10; /* Little endian */
+	pkt.drep[1] = 0;
+	pkt.drep[2] = 0;
+	pkt.drep[3] = 0;
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_RESPONSE;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.u.response.alloc_hint = stub.length;
+	pkt.u.response.context_id = call->pkt.u.request.context_id;
+	pkt.u.response.cancel_count = 0;
+	pkt.u.response.stub_and_verifier = stub;
+
+	push = ndr_push_init_ctx(call->mem_ctx);
+	if (!push) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_push_dcerpc_packet(push, NDR_SCALARS|NDR_BUFFERS, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	call->data = ndr_push_blob(push);
+	SSVAL(call->data.data,  DCERPC_FRAG_LEN_OFFSET, call->data.length);
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   provide some input to a dcerpc endpoint server. This passes data
   from a dcerpc client into the server
 */
-NTSTATUS dcesrv_input(struct dcesrv_state *p, const DATA_BLOB *data)
+NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct ndr_pull *ndr;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct dcesrv_call_state *call;
+
+	mem_ctx = talloc_init("dcesrv_input");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	call = talloc(mem_ctx, sizeof(*call));
+	if (!call) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	call->mem_ctx = mem_ctx;
+	call->dce = dce;
+
+	ndr = ndr_pull_init_blob(data, mem_ctx);
+	if (!ndr) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_destroy(mem_ctx);
+		return status;
+	}
+
+	/* TODO: at this point we should see if the packet is a
+	   continuation of an existing call, but I'm too lazy for that
+	   right now ... maybe tomorrow */
+
+
+	switch (call->pkt.ptype) {
+	case DCERPC_PKT_BIND:
+		status = dcesrv_bind(call);
+		break;
+	case DCERPC_PKT_REQUEST:
+		status = dcesrv_request(call);
+		break;
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	/* if we are going to be sending a reply then add
+	   it to the list of pending calls. We add it to the end to keep the call
+	   list in the order we will answer */
+	if (NT_STATUS_IS_OK(status)) {
+		DLIST_ADD_END(dce->call_list, call, struct dcesrv_call_state *);
+	} else {
+		talloc_destroy(mem_ctx);
+	}
+
+	return status;
 }
 
 /*
   retrieve some output from a dcerpc server. The amount of data that
-  is wanted is in data->length
+  is wanted is in data->length and data->data is already allocated
+  to hold that much data.
 */
-NTSTATUS dcesrv_output(struct dcesrv_state *p, DATA_BLOB *data)
+NTSTATUS dcesrv_output(struct dcesrv_state *dce, DATA_BLOB *data)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_call_state *call;
+
+	call = dce->call_list;
+	if (!call) {
+		return NT_STATUS_FOOBAR;
+	}
+	
+	if (data->length >= call->data.length) {
+		data->length = call->data.length;
+	}
+
+	memcpy(data->data, call->data.data, data->length);
+	call->data.length -= data->length;
+	call->data.data += data->length;
+
+	if (call->data.length == 0) {
+		/* we're done with this call */
+		DLIST_REMOVE(dce->call_list, call);
+		talloc_destroy(call->mem_ctx);
+	}
+
+	return NT_STATUS_OK;
 }
 
 

@@ -57,16 +57,17 @@ do { \
 } while (0)
 
 /* hook into the end of the list - needs a tmp pointer */
-#define DLIST_ADD_END(list, p, tmp) \
+#define DLIST_ADD_END(list, p, type) \
 do { \
 		if (!(list)) { \
 			(list) = (p); \
 			(p)->next = (p)->prev = NULL; \
 		} else { \
-			for ((tmp) = (list); (tmp)->next; (tmp) = (tmp)->next) ; \
-			(tmp)->next = (p); \
+			type tmp; \
+			for (tmp = (list); tmp->next; tmp = tmp->next) ; \
+			tmp->next = (p); \
 			(p)->next = NULL; \
-			(p)->prev = (tmp); \
+			(p)->prev = tmp; \
 		} \
 } while (0)
 

@@ -773,6 +773,11 @@ extern int errno;
 #include "librpc/ndr/libndr.h"
 #include "librpc/rpc/dcerpc.h"
 
+#include "rpc_server/dcerpc_server.h"
+#include "context.h"
+#include "ntvfs.h"
+#include "cli_context.h"
+
 
 /* used in net.c */
 struct functable {

@@ -32,6 +32,19 @@ struct dcesrv_endpoint {
 	} info;
 };
 
+struct dcesrv_state;
+
+/* the dispatch functions for an interface take this form */
+typedef NTSTATUS (*dcesrv_dispatch_fn_t)(struct dcesrv_state *, TALLOC_CTX *, void *); 
+
+/* the state of an ongoing dcerpc call */
+struct dcesrv_call_state {
+	struct dcesrv_call_state *next, *prev;
+	struct dcesrv_state *dce;
+	TALLOC_CTX *mem_ctx;
+	struct dcerpc_packet pkt;
+	DATA_BLOB data;
+};
 
 /* the state associated with a dcerpc server connection */
 struct dcesrv_state {
@@ -43,15 +56,29 @@ struct dcesrv_state {
 	/* endpoint operations provided by the endpoint server */
 	const struct dcesrv_endpoint_ops *ops;
 
+	/* the ndr function table for the chosen interface */
+	const struct dcerpc_interface_table *ndr;
+
+	/* the dispatch table for the chosen interface. Must contain
+	   enough entries for all entries in the ndr table */
+	const dcesrv_dispatch_fn_t *dispatch;
+
+	/* the state of the current calls */
+	struct dcesrv_call_state *call_list;
+
 	/* private data for the endpoint server */
 	void *private;
 };
 
 
 struct dcesrv_endpoint_ops {
-	/* the query function is used to ask an endpoint server if it
+	/* this function is used to ask an endpoint server if it
 	   handles a particular endpoint */
-	BOOL (*query)(const struct dcesrv_endpoint *);
+	BOOL (*query_endpoint)(const struct dcesrv_endpoint *);
+
+	/* this function sets up the dispatch table for this
+	   connection */
+	BOOL (*set_interface)(struct dcesrv_state *, const char *, uint32);
 
 	/* connect() is called when a connection is made to an endpoint */
 	NTSTATUS (*connect)(struct dcesrv_state *);

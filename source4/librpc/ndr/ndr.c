@@ -43,7 +43,7 @@ size_t ndr_align_size(uint32 offset, size_t n)
 /*
   initialise a ndr parse structure from a data blob
 */
-struct ndr_pull *ndr_pull_init_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr;
 

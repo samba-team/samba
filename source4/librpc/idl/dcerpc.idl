@@ -81,6 +81,10 @@ interface dcerpc
 
 	const int DCERPC_FAULT_OP_RNG_ERROR = 0x1c010002;
 
+	/* we return this fault when we haven't yet run the test
+	   to see what fault w2k3 returns in this case */
+	const int DCERPC_FAULT_TODO         = 0x00000042;
+
 	typedef struct {
 		uint32 alloc_hint;
 		uint16 context_id;

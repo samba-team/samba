@@ -114,5 +114,4 @@ struct cli_client
 #define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
 #define CLI_FULL_CONNECTION_USE_DFS 0x0008
 
-#include "cli_context.h"
 #endif /* _CLIENT_H */

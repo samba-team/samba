@@ -324,7 +324,6 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 {
 	auth_methods *list = NULL;
 	auth_methods *t = NULL;
-	auth_methods *tmp;
 	int i;
 	NTSTATUS nt_status;
 
@@ -358,7 +357,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 				if (NT_STATUS_IS_OK(builtin_auth_init_functions[i].init(*auth_context, module_params, &t))) {
 					DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
 								*text_list));
-					DLIST_ADD_END(list, t, tmp);
+					DLIST_ADD_END(list, t, auth_methods *);
 				} else {
 					DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
 								*text_list));

@@ -421,10 +421,7 @@ struct vuid_cache {
 #include "smb_acls.h"
 #include "enums.h"
 #include "events.h"
-#include "rpc_server/dcerpc_server.h"
-#include "context.h"
 #include "smb_interfaces.h"
-#include "ntvfs.h"
 
 typedef struct smb_vfs_handle_struct
 {
@@ -434,34 +431,6 @@ typedef struct smb_vfs_handle_struct
     struct smb_vfs_handle_struct  *next, *prev;
     
 } smb_vfs_handle_struct;
-
-struct tcon_context {
-	struct tcon_context *next, *prev;
-
-	/* the server context that this was created on */
-	struct server_context *smb;
-
-	/* a talloc context for all data in this structure */
-	TALLOC_CTX *mem_ctx;
-
-	/* a private structure used by the active NTVFS backend */
-	void *ntvfs_private;
-
-	uint16 cnum; /* an index passed over the wire (the TID) */
-	int service;
-	enum ntvfs_type type;
-	BOOL read_only;
-	BOOL admin_user;
-
-	/* the NTVFS operations - see source/ntvfs/ and include/ntvfs.h for details */
-	struct ntvfs_ops *ntvfs_ops;
-
-	/* the reported filesystem type */
-	char *fs_type;
-
-	/* the reported device type */
-	char *dev_type;
-};
 
 struct current_user
 {

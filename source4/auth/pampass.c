@@ -208,7 +208,6 @@ static struct chat_struct *make_pw_chat(char *p)
 	fstring reply;
 	struct chat_struct *list = NULL;
 	struct chat_struct *t;
-	struct chat_struct *tmp;
 
 	while (1) {
 		t = (struct chat_struct *)malloc(sizeof(*t));
@@ -219,7 +218,7 @@ static struct chat_struct *make_pw_chat(char *p)
 
 		ZERO_STRUCTP(t);
 
-		DLIST_ADD_END(list, t, tmp);
+		DLIST_ADD_END(list, t, struct chat_struct *);
 
 		if (!next_token(&p, prompt, NULL, sizeof(fstring)))
 			break;

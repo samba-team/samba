@@ -1219,8 +1219,10 @@ static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *t
 */
 static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *trans)
 {
-
-	return NT_STATUS_NOT_IMPLEMENTED;
+	if (!req->conn->ntvfs_ops->trans) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return req->conn->ntvfs_ops->trans(req, trans);
 }
 
 
