@@ -61,3 +61,15 @@ else
 fi
 rm -f conftest*
 ])])
+
+dnl check for a function in a library, but don't
+dnl keep adding the same library to the LIBS variable.
+dnl AC_LIBTESTFUNC(lib,func)
+AC_DEFUN(AC_LIBTESTFUNC,
+[case "$LIBS" in
+  *-l$1*) AC_CHECK_FUNCS($2) ;;
+  *) AC_CHECK_LIB($1, $2) 
+     AC_CHECK_FUNCS($2)
+  ;;
+  esac
+])

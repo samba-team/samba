@@ -588,6 +588,9 @@
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
+/* Define if you have the strtoul function.  */
+#undef HAVE_STRTOUL
+
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
 

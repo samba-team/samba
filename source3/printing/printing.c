@@ -110,7 +110,7 @@ void print_file(connection_struct *conn, files_struct *file)
 
 	*syscmd = 0;
 
-	if (file_size(file->fsp_name) <= 0) {
+	if (dos_file_size(file->fsp_name) <= 0) {
 		DEBUG(3,("Discarding null print job %s\n",file->fsp_name));
 		dos_unlink(file->fsp_name);
 		return;

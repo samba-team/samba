@@ -114,18 +114,8 @@ BOOL get_unixalias_members(struct group *als,
 	{
 		DOM_SID sid;
 		BOOL found = False;
-		struct group unix_als;
 
-		if (isdigit(unix_name[0]))
-		{
-			unix_als.gr_gid = get_number(unix_name);
-			unix_als.gr_name = unix_name;
-		}
-		else
-		{
-			unix_als.gr_name = unix_name;
-			found = map_unix_alias_name(unix_name, &sid, nt_name, NULL);
-		}
+		found = map_unix_alias_name(unix_name, &sid, nt_name, NULL);
 
 		found = found ? sid_equal(&sid, &global_sam_sid) : False;
 

@@ -973,7 +973,7 @@ share ode system
 static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 {
 	int i, count=0;
-	void *dir;
+	DIR *dir;
 	char *s;
 	share_mode_entry e;
 

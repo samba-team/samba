@@ -811,12 +811,11 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 		else if (sid_equal(&dom_sid, &usr_sid))
 		{
 			DOMAIN_GRP *mem_grp = NULL;
-			BOOL ret;
 
 			DEBUG(5,("lookup on Domain SID\n"));
 
 			become_root(True);
-			ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
+			getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
 			unbecome_root(True);
 
 			num_rids = MIN(num_rids, MAX_SAM_ENTRIES);
@@ -1392,10 +1391,9 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		DOMAIN_GRP *mem_grp = NULL;
-		BOOL ret;
 
 		become_root(True);
-		ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
+		getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
 		unbecome_root(True);
 
                 gids = NULL;

@@ -550,7 +550,7 @@ static void mmap_open_file(files_struct *fsp)
 #if WITH_MMAP
   /* mmap it if read-only */
   if (!fsp->can_write) {
-	  fsp->mmap_size = file_size(fsp->fsp_name);
+	  fsp->mmap_size = dos_file_size(fsp->fsp_name);
 	  if (fsp->mmap_size < MAX_MMAP_SIZE) {
 		  fsp->mmap_ptr = (char *)sys_mmap(NULL,fsp->mmap_size,
 					       PROT_READ,MAP_SHARED,fsp->fd_ptr->fd,(SMB_OFF_T)0);
@@ -727,7 +727,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   int deny_mode = GET_DENY_MODE(share_mode);
   BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
   SMB_STRUCT_STAT sbuf;
-  BOOL file_existed = file_exist(fname,&sbuf);
+  BOOL file_existed = dos_file_exist(fname,&sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
   int token;

@@ -518,7 +518,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  void *p = dos_opendir(name);
+  DIR *p = dos_opendir(name);
   int used=0;
 
   if (!p) return(NULL);
@@ -530,7 +530,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   dirp->pos = dirp->numentries = dirp->mallocsize = 0;
   dirp->data = dirp->current = NULL;
 
-  while ((n = readdirname(p)))
+  while ((n = dos_readdirname(p)))
   {
     int l = strlen(n)+1;
 
