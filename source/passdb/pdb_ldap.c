@@ -243,7 +243,7 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 			{
 				DEBUG(0,("Failed to issue the StartTLS instruction: %s\n",
 					 ldap_err2string(rc)));
-				return False;
+				return rc;
 			}
 			DEBUG (3, ("StartTLS issued: using a TLS connection\n"));
 		} else {
