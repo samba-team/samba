@@ -21,66 +21,65 @@ the section on "Known Issues" for more details.
 Major new features:
 -------------------
 
-- Active Directory support. This release is able to join a ADS realm
-  as a member server and authenticate users using LDAP/kerberos.
+1)  Active Directory support. This release is able to join a ADS realm
+    as a member server and authenticate users using LDAP/kerberos.
 
-- Unicode support. Samba will now negotiate UNICODE on the wire and
-  internally there is now a much better infrastructure for multi-byte
-  and UNICODE character sets.
+2)  Unicode support. Samba will now negotiate UNICODE on the wire and
+    internally there is now a much better infrastructure for multi-byte
+    and UNICODE character sets.
 
-- New authentication system. The internal authentication system has
-  been almost completely rewritten. Most of the changes are internal,
-  but the new auth system is also very configurable.
+3)  New authentication system. The internal authentication system has
+    been almost completely rewritten. Most of the changes are internal,
+    but the new auth system is also very configurable.
 
-- new filename mangling system. The filename mangling system has been
-  completely rewritten. An internal database now stores mangling maps
-  persistently. This needs lots of testing.
+4)  New filename mangling system. The filename mangling system has been
+    completely rewritten. An internal database now stores mangling maps
+    persistently. This needs lots of testing.
 
-- new "net" command. A new "net" command has been added. It is
-  somewhat similar to the "net" command in windows. Eventually we plan
-  to replace a bunch of other utilities (such as smbpasswd) with
-  subcommands in "net", at the moment only a few things are
-  implemented.
+5)  New "net" command. A new "net" command has been added. It is
+    somewhat similar to the "net" command in windows. Eventually we 
+    plan to replace a bunch of other utilities (such as smbpasswd) 
+    with subcommands in "net", at the moment only a few things are
+    implemented.
 
-- Samba now negotiates NT-style status32 codes on the wire. This
-  improves error handling a lot.
+6)  Samba now negotiates NT-style status32 codes on the wire. This
+    improves error handling a lot.
 
-- better w2k printing support including publishing printer attributes 
-  in active directory
+7)  Better Windows 2000/XP/2003 printing support including publishing 
+    printer attributes in active directory
 
-- new loadable RPC modules
+8)  New loadable RPC modules
 
-- new dual-daemon winbindd support for better performance
+9)  New dual-daemon winbindd support (-B) for better performance
 
-- support for migrating from a Windows NT 4.0 domain
+10) Support for migrating from a Windows NT 4.0 domain to a Samba 
+    domain and maintaining user, group and domain SIDs
 
-- support for establishing trust relationships with Windows NT 4.0
-  domain controllers
+11) Support for establishing trust relationships with Windows NT 4.0
+    domain controllers
   
-- Initial support for a distributed winbind architecture using
-  an LDAP directory for storing SID to uid/gid mappings
+12) Initial support for a distributed winbind architecture using
+    an LDAP directory for storing SID to uid/gid mappings
+  
+13) Major updates to the Samba documentation tree.
 
-Plus lots of other changes!
-
-
-Reporting bugs & Development Discussion
----------------------------------------
-
-Please discuss this release on the samba-technical mailing list or by
-joining the #samba-technical IRC channel on irc.freenode.net.
-
-If you do report problems then please try to send high quality
-feedback. If you don't provide vital information to help us track down
-the problem then you will probably be ignored.  
-
-A new bugzilla installation has been established to help support the 
-Samba 3.0 community of users.  This server, located at 
-https://bugzilla.samba.org/, will replace the existing jitterbug server 
-and the old http://bugs.samba.org now points to the new bugzilla server.
+Plus lots of other improvements!
 
 
-Upgrading from Samba 2.2
+Additional Documentation
 ------------------------
+
+Please refer to Samba documentation tree (including in the docs/ 
+subdirectory) for extensive explanations of installing, configuring
+and maintaining Samba 3.0 servers and clients.  It is advised to 
+begin with the Samba-HOWTO-Collection for overviews and specific 
+tasks (the current book is up to approximately 400 pages) and to 
+refer to the various man pages for information on individual options.
+
+
+######################################################################
+Upgrading from Samba 2.2
+########################
 
 This section is provided to help administrators understand the details
 involved with upgrading a Samba 2.2 server to Samba 3.0
@@ -228,13 +227,14 @@ New Parameters (new parameters have been grouped by function):
 
 Modified Parameters (changes in behavior):
 
-  * encrypt passwords
-  * mangling method
+  * encrypt passwords (enabled by default)
+  * mangling method (set to 'hash2' by deault)
   * passwd chat
   * passwd program
-  * restrict anonymous
-  * strict locking
-  * winbind cache time
+  * restrict anonymous (integer value)
+  * security (new 'ads' value)
+  * strict locking (enabled by default)
+  * winbind cache time (increased to 5 minutes)
   * winbind uid (deprecated in favor of 'idmap uid')
   * winbind gid (deprecated in favor of 'idmap gid')
 
@@ -242,11 +242,11 @@ Modified Parameters (changes in behavior):
 Databases
 ---------
 
-This section contains brief descriptions of any new databases introduced in
-Samba 3.0.  Please remember to backup your existing ${lock directory}/*tdb
-before upgrading to Samba 3.0.  Samba will upgrade databases as they are 
-opened (if necessary), but downgrading from 3.0 to 2.2 is an unsupported
-path.
+This section contains brief descriptions of any new databases 
+introduced in Samba 3.0.  Please remember to backup your existing 
+${lock directory}/*tdb before upgrading to Samba 3.0.  Samba will 
+upgrade databases as they are opened (if necessary), but downgrading 
+from 3.0 to 2.2 is an unsupported path.
 
 Name		Description				Backup?
 ----		-----------				-------
@@ -272,14 +272,76 @@ registry	Read-only samba registry skeleton	no
 Changes in Behavior
 -------------------
 
+The following issues are known changes in bahavior between Samba 2.2 and 
+Samba 3.0 that may affect certain installations of Samba.
 
+  1)  When operating as a member of a Windows domain, Samba 2.2 would 
+      map any users authenticated by the remote DC to the 'guest account'
+      if a uid could not be obtained via the getpwnam() call.  Samba 3.0
+      rejects the connection as NT_STATUS_LOGON_FAILURE.  There is no 
+      current work around to re-establish the 2.2 behavior.
+      
+  2)  When adding machines to a Samba 2.2 controlled domain, the 
+      'add user script' was used to create the UNIX identity of the 
+      machine trust account.  Samba 3.0 introduces a new 'add machine 
+      script' that must be specified for this purpose.  Samba 3.0 will
+      not fall back to using the 'add user script' in the absence of 
+      an 'add machine script'
+  
+
+######################################################################
+Passdb Backends and Authentication
+##################################
+
+There have been a few new changes that Samba administrators should be
+aware of when moving to Samba 3.0.
+
+  1) encrypted passwords have been enabled by default in order to 
+     interoperate better with out-of-the-box Windows client 
+     installations.  This does mean that either (a) a samba account
+     must be created for each user, or (b) 'encrypt passwords = no'
+     must be explicitly defined in smb.conf.
+    
+  2) Inclusion of new 'security = ads' option for integration 
+     with an Active Directory domain using the native Windows
+     Kerberos 5 and LDAP protocols.
+
+Samba 3.0 also includes the possibility of setting up chains
+of authentication methods (auth methods) and account storage 
+backends (passdb backend).  Pleas erefer to the smb.conf(5) 
+man page for details.  While both parameters assume sane default 
+values, it is likely that you will need to understand what the 
+values actually mean in order to ensure Samba operates correctly.
+
+The recommended passdb backends at this time are
+
+  * smbpasswd - 2.2 comatible flat file format
+  * tdbsam - attribute rich database intended as an smbpasswd
+    replacement for stand alone servers
+  * ldapsam - attribute rich account storage and retrieval 
+    backend utilizing an LDAP directory.  
+  * ldapsam_compat - a 2.2 backwards compatible LDAP account 
+    backend
+    
+Certain functions of the smbpasswd(8) tool have been split between the 
+new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8) 
+utility.
+    
+     
+######################################################################
 LDAP
-----
+####
 
-  A new objectclass (sambaSamAccount) has been introduced to replace the old
-  sambaAccount.  This change aids us in the renaming of attributes to prevent
-  clashes with attributes from other vendors.  There is a conversion script
-  (examples/LDAP/convertSambaAccount) to modify and LDIF file to the new schema.
+This section outlines the new features affecting Samba / LDAP integration.
+
+  New Schema
+  ----------
+  
+  A new objectclass (sambaSamAccount) has been introduced to replace 
+  the old sambaAccount.  This change aids us in the renaming of attributes 
+  to prevent clashes with attributes from other vendors.  There is a 
+  conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF 
+  file to the new schema.
   
   Example:
   
@@ -297,3 +359,34 @@ LDAP
   The old sambaAccount schema may still be used by specifying the 
   "ldapsam_compat" passdb backend.
   
+
+######################################################################
+Known Issues
+############
+
+One such limitation that is worth mentioning (and will be corrected 
+before the actual stable 3.0.0 release is the dead lock problem with
+running winbindd on a Samba PDC in order to allocate uids and gids for 
+users and groups in a trusted domain.  When the Samba domain is acting 
+as the trusted domain to a Windows NT 4.0 domain, there are no known 
+issues.
+
+Please refer to https://bugzilla.samba.org/ for a current list of bugs 
+filed against the Samba 3.0 codebase.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  
+
+A new bugzilla installation has been established to help support the 
+Samba 3.0 community of users.  This server, located at 
+https://bugzilla.samba.org/, will replace the existing jitterbug server 
+and the old http://bugs.samba.org now points to the new bugzilla server.
