@@ -1,5 +1,11 @@
+2005-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* vis.c: use RCSID instead of __RCSID
+
 2005-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: check_PROGRAMS += hex-test
+	
 	* hex-test.c: hex encoding/decoding test
 	
 	* hex.c: fix decodeing, it processed to much data and thus
