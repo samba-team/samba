@@ -88,7 +88,11 @@ static void ldapsrv_init(struct server_service *service,
 		return;
 	}
 	part->base_dn = "*"; /* default partition */
-	part->ops = ldapsrv_get_sldb_partition_ops();
+	if (lp_parm_bool(-1, "ldapsrv", "hacked", False)) {
+		part->ops = ldapsrv_get_hldb_partition_ops();
+	} else {
+		part->ops = ldapsrv_get_sldb_partition_ops();
+	}
 
 	ldap_service->default_partition = part;
 	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
