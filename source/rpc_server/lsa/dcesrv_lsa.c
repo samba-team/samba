@@ -51,12 +51,33 @@ struct lsa_policy_state {
 
 
 /*
+  state associated with a lsa_OpenAccount() operation
+*/
+struct lsa_account_state {
+	struct lsa_policy_state *policy;
+	uint32_t access_mask;
+	struct dom_sid *account_sid;
+	const char *account_sid_str;
+	const char *account_name;
+};
+
+
+/*
   destroy an open policy. This closes the database connection
 */
 static void lsa_Policy_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
 	struct lsa_policy_state *state = h->data;
 	talloc_free(state);
+}
+
+/*
+  destroy an open account.
+*/
+static void lsa_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+	struct lsa_account_state *astate = h->data;
+	talloc_free(astate);
 }
 
 /* 
@@ -682,9 +703,59 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
   lsa_OpenAccount 
 */
 static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_OpenAccount *r)
+				struct lsa_OpenAccount *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h, *ah;
+	struct lsa_policy_state *state;
+	struct lsa_account_state *astate;
+
+	ZERO_STRUCTP(r->out.acct_handle);
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	astate = talloc_p(dce_call->conn, struct lsa_account_state);
+	if (astate == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	astate->account_sid = dom_sid_dup(astate, r->in.sid);
+	if (astate->account_sid == NULL) {
+		talloc_free(astate);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	astate->account_sid_str = dom_sid_string(astate, astate->account_sid);
+	if (astate->account_sid_str == NULL) {
+		talloc_free(astate);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* check it really exists */
+	astate->account_name = samdb_search_string(state->sam_ctx, astate,
+						   NULL, "sAMAccountName", 
+						   "objectSid=%s", astate->account_sid_str);
+	if (astate->account_name == NULL) {
+		talloc_free(astate);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	
+	astate->policy = talloc_reference(astate, state);
+	astate->access_mask = r->in.access_mask;
+
+	ah = dcesrv_handle_new(dce_call->conn, LSA_HANDLE_ACCOUNT);
+	if (!ah) {
+		talloc_free(astate);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ah->data = astate;
+	ah->destroy = lsa_Account_destroy;
+
+	*r->out.acct_handle = ah->wire_handle;
+
+	return NT_STATUS_OK;
 }
 
 
