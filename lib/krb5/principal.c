@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -502,6 +502,54 @@ krb5_realm_compare(krb5_context context,
     return strcmp(princ_realm(princ1), princ_realm(princ2)) == 0;
 }
 
+struct v4_name_convert {
+    const char *from;
+    const char *to; 
+} default_v4_name_convert[] = {
+    { "ftp", "ftp" },
+    { "hprop", "hprop" },
+    { "pop", "pop" },
+    { "rcmd", "host" },
+    { NULL, NULL }
+};
+
+static const char*
+get_name_conversion(krb5_context context, const char *realm, const char *name)
+{
+    struct v4_name_convert *q;
+    const char *p;
+    p = krb5_config_get_string(context, NULL, "realms", realm,
+			       "v4_name_convert", "host", name, NULL);
+    if(p == NULL)
+	p = krb5_config_get_string(context, NULL, "libdefaults", 
+				   "v4_name_convert", "host", name, NULL);
+    if(p)
+	return p;
+
+    /* XXX should be possible to override default list */
+    p = krb5_config_get_string(context, NULL,
+			       "realms",
+			       realm,
+			       "v4_name_convert",
+			       "plain",
+			       name,
+			       NULL);
+    if(p)
+	return NULL;
+    p = krb5_config_get_string(context, NULL,
+			       "libdefaults",
+			       "v4_name_convert",
+			       "plain",
+			       name,
+			       NULL);
+    if(p)
+	return NULL;
+    for(q = default_v4_name_convert; q->from; q++)
+	if(strcmp(q->from, name) == 0)
+	    return q->to;
+    return NULL;
+}
+
 krb5_error_code
 krb5_425_conv_principal_ext(krb5_context context,
 			    const char *name,
@@ -530,11 +578,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 	instance = NULL;
 	goto no_host;
     }
-    p = krb5_config_get_string(context, NULL, "realms", realm,
-			       "v4_name_convert", "host", name, NULL);
-    if(p == NULL)
-	p = krb5_config_get_string(context, NULL, "libdefaults", 
-				   "v4_name_convert", "host", name, NULL);
+    p = get_name_conversion(context, realm, name);
     if(p == NULL)
 	goto no_host;
     name = p;
