@@ -3426,11 +3426,25 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       if (*user && Get_Pwnam(user,True))
 	return(make_connection(user,user,password,pwlen,dev,vuid));
 
-      if (validated_username(vuid))
-	{
-	  strcpy(user,validated_username(vuid));
-	  return(make_connection(user,user,password,pwlen,dev,vuid));
-	}
+      if(lp_security() != SEC_SHARE)
+      {
+        if (validated_username(vuid))
+        {
+          strcpy(user,validated_username(vuid));
+          return(make_connection(user,user,password,pwlen,dev,vuid));
+        }
+      }
+      else
+      {
+        /*
+         * Security = share. Try with sesssetup_user as the username.
+         */
+        if(*sesssetup_user)
+        {
+          strcpy(user,sesssetup_user);
+          return(make_connection(user,user,password,pwlen,dev,vuid));
+        }
+      }
     }
 
   if (!lp_snum_ok(snum) || !check_access(snum)) {    
