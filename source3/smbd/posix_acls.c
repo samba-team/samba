@@ -933,14 +933,14 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 * Finally apply it to the file or directory.
 	 */
 
-	if(fsp->is_directory || fsp->fd == -1) {
+	if(default_ace || fsp->is_directory || fsp->fd == -1) {
 		if (sys_acl_set_file(fsp->fsp_name, the_acl_type, the_acl) == -1) {
 			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
 		}
 	} else {
-		if (sys_acl_set_fd(fsp->fd, the_acl_type, the_acl) == -1) {
+		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
 			DEBUG(0,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
