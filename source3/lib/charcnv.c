@@ -95,7 +95,7 @@ size_t convert_string(charset_t from, charset_t to,
 {
 	size_t i_len, o_len;
 	size_t retval;
-	char* inbuf = (char*)src;
+	const char* inbuf = (char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
@@ -118,7 +118,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 	i_len=srclen;
 	o_len=destlen;
-	retval = smb_iconv(descriptor, &(const char *)inbuf, &i_len, &outbuf, &o_len);
+	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
 	{
 	    	char *reason="unknown error";
@@ -155,7 +155,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
-	char *inbuf = (char *)src;
+	const char *inbuf = (char *)src;
 	char *outbuf, *ob;
 	smb_iconv_t descriptor;
 
@@ -190,7 +190,7 @@ convert:
 	i_len = srclen;
 	o_len = destlen;
 	retval = smb_iconv(descriptor,
-			   &(const char *) inbuf, &i_len,
+			   &inbuf, &i_len,
 			   &outbuf, &o_len);
 	if(retval == -1) 		
 	{
