@@ -55,7 +55,6 @@ static struct ldb_wrap *schannel_db_connect(TALLOC_CTX *mem_ctx)
   use a simple ldb structure
 */
 NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
-				    const char *computer_name, 
 				    struct creds_CredentialState *creds)
 {
 	struct ldb_wrap *ldb;
@@ -63,6 +62,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	struct ldb_val val, seed;
 	char *s;
 	char *f;
+	char *sct;
 	time_t expiry = time(NULL) + SCHANNEL_CREDENTIALS_EXPIRY;
 	int ret;
 
@@ -85,13 +85,20 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	sct = talloc_asprintf(mem_ctx, "%u", (unsigned int)creds->secure_channel_type);
+
+	if (sct == NULL) {
+		talloc_free(ldb);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = talloc_strdup(msg, computer_name);
+	msg->dn = talloc_asprintf(msg, "computerName=%s", creds->computer_name);
 	if (msg->dn == NULL) {
 		talloc_free(ldb);
 		talloc_free(msg);
@@ -108,6 +115,9 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_value(ldb->ldb, msg, "seed", &seed);
 	ldb_msg_add_string(ldb->ldb, msg, "expiry", s);
 	ldb_msg_add_string(ldb->ldb, msg, "negotiateFlags", f);
+	ldb_msg_add_string(ldb->ldb, msg, "secureChannelType", sct);
+	ldb_msg_add_string(ldb->ldb, msg, "accountName", creds->account_name);
+	ldb_msg_add_string(ldb->ldb, msg, "computerName", creds->computer_name);
 
 	ldb_delete(ldb->ldb, msg->dn);
 
@@ -154,7 +164,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	expr = talloc_asprintf(mem_ctx, "(dn=%s)", computer_name);
+	expr = talloc_asprintf(mem_ctx, "(dn=computerName=%s)", computer_name);
 	if (expr == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
@@ -190,6 +200,12 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	memcpy((*creds)->seed.data, val->data, 8);
 
 	(*creds)->negotiate_flags = ldb_msg_find_int(res[0], "negotiateFlags", 0);
+
+	(*creds)->secure_channel_type = ldb_msg_find_int(res[0], "secureChannelType", 0);
+
+	(*creds)->account_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "accountName", NULL));
+
+	(*creds)->computer_name = talloc_reference(*creds, ldb_msg_find_string(res[0], "computerName", NULL));
 
 	talloc_free(ldb);
 
