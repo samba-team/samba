@@ -413,6 +413,7 @@ typedef struct
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
+	BOOL bForceUnknownAclUser;
 	BOOL bUseSendfile;
 	BOOL bProfileAcls;
 	BOOL bMap_acl_inherit;
@@ -536,6 +537,7 @@ static service sDefault = {
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
+	False,                  /* bForceUnknownAclUser */
 	True,			/* bUseSendfile */
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
@@ -849,6 +851,7 @@ static struct parm_struct parm_table[] = {
 	{"force directory mode", P_OCTAL, P_LOCAL, &sDefault.iDir_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"directory security mask", P_OCTAL, P_LOCAL, &sDefault.iDir_Security_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"force directory security mode", P_OCTAL, P_LOCAL, &sDefault.iDir_Security_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	{"force unknown acl user", P_BOOL, P_LOCAL, &sDefault.bForceUnknownAclUser, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"inherit permissions", P_BOOL, P_LOCAL, &sDefault.bInheritPerms, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"inherit acls", P_BOOL, P_LOCAL, &sDefault.bInheritACLS, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1893,6 +1896,7 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
+FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
 FN_LOCAL_BOOL(lp_ea_support, bEASupport)
 FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
