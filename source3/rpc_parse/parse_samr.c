@@ -2576,6 +2576,17 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 		if (r_u->ptr_rids != 0)
 		{
 			prs_uint32("num_rids", ps, depth, &(r_u->num_rids));
+			if (r_u->num_rids != 0)
+			{
+				r_u->rid = Realloc(r_u->rid,
+						       sizeof(r_u->rid[0]) *
+						       r_u->num_rids);
+				if (r_u->rid == NULL)
+				{
+					samr_free_r_query_groupmem(r_u);
+					return False;
+				}
+			}
 			for (i = 0; i < r_u->num_rids; i++)
 			{
 				prs_grow(ps);
@@ -2586,6 +2597,18 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 		if (r_u->ptr_attrs != 0)
 		{
 			prs_uint32("num_attrs", ps, depth, &(r_u->num_attrs));
+
+			if (r_u->num_attrs != 0)
+			{
+				r_u->attr = Realloc(r_u->attr,
+						       sizeof(r_u->attr[0]) *
+						       r_u->num_attrs);
+				if (r_u->attr == NULL)
+				{
+					samr_free_r_query_groupmem(r_u);
+					return False;
+				}
+			}
 			for (i = 0; i < r_u->num_attrs; i++)
 			{
 				prs_grow(ps);
@@ -2596,9 +2619,32 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 
 	prs_uint32("status", ps, depth, &(r_u->status));
 
+	if (!ps->io)
+	{
+		/* storing.  memory no longer needed */
+		samr_free_r_query_groupmem(r_u);
+	}
+
 	return True;
 }
 
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u)
+{
+	if (r_u->rid != NULL)
+	{
+		free(r_u->rid);
+		r_u->rid = NULL;
+	}
+	if (r_u->attr != NULL)
+	{
+		free(r_u->attr);
+		r_u->attr = NULL;
+	}
+}
 
 /*******************************************************************
 makes a SAMR_Q_QUERY_USERGROUPS structure.
@@ -3494,6 +3540,17 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint32("num_rids2", ps, depth, &(q_u->num_rids2));
 
+	if (q_u->num_rids2 != 0)
+	{
+		q_u->rid = Realloc(q_u->rid, sizeof(q_u->rid[0]) *
+		                   q_u->num_rids2);
+		if (q_u->rid == NULL)
+		{
+			samr_free_q_lookup_rids(q_u);
+			return False;
+		}
+	}
+
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
 		prs_grow(ps);
@@ -3503,7 +3560,25 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 
 	prs_align(ps);
 
+	if (!ps->io)
+	{
+		/* storing.  don't need memory any more */
+		samr_free_q_lookup_rids(q_u);
+	}
+
 	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u)
+{
+	if (q_u->rid != NULL)
+	{
+		free(q_u->rid);
+		q_u->rid = NULL;
+	}
 }
 
 
@@ -3666,7 +3741,7 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 }
 
 /*******************************************************************
-reads or writes a structure.
+frees a structure.
 ********************************************************************/
 void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u)
 {

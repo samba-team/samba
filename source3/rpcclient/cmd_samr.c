@@ -1311,12 +1311,6 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 		}
 	}
 
-	if (rid != NULL)
-	{
-		free(rid);
-		rid = NULL;
-	}
-
 	/* send user alias query */
 	if (samr_query_useraliases(smb_cli, fnum,
 				&info->dom.samr_pol_open_builtindom,
@@ -1346,11 +1340,6 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 	{
 		free(ptr_sid);
 		ptr_sid = NULL;
-	}
-	if (rid != NULL)
-	{
-		free(rid);
-		rid = NULL;
 	}
 	if (als_sid != NULL)
 	{
@@ -1987,13 +1976,13 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 				uint32 group_rid)
 {
 	uint32 num_mem;
-	uint32 rid_mem[MAX_LOOKUP_SIDS];
-	uint32 attr_mem[MAX_LOOKUP_SIDS];
+	uint32 *rid_mem = NULL;
+	uint32 *attr_mem = NULL;
 
 	/* get group members */
 	if (get_samr_query_groupmem(smb_cli, fnum, 
 		&info->dom.samr_pol_open_domain,
-		group_rid, &num_mem, rid_mem, attr_mem))
+		group_rid, &num_mem, &rid_mem, &attr_mem))
 	{
 		BOOL res3 = True;
 		int num_names = 0;
@@ -2016,6 +2005,15 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 		{
 			free(type);
 		}
+	}
+
+	if (attr_mem != NULL)
+	{
+		free(attr_mem);
+	}
+	if (rid_mem != NULL)
+	{
+		free(rid_mem);
 	}
 }
 

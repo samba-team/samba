@@ -166,7 +166,7 @@ void cmd_netlogon_domain_test(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
 	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, inter_dom_acct,
-	                               trust_passwd, global_myname,
+	                               global_myname, trust_passwd, 
 	                               SEC_CHAN_DOMAIN) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
@@ -195,8 +195,8 @@ void cmd_sam_sync(struct client_info *info)
 		return;
 	}
 
-	if (do_sam_sync(smb_cli, global_myname,
-	    trust_passwd, hdr_deltas, deltas, &num))
+	if (do_sam_sync(smb_cli, trust_passwd, global_myname,
+	    hdr_deltas, deltas, &num))
 	{
 		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);
 		display_sam_sync(out_hnd, ACTION_ENUMERATE, hdr_deltas, deltas, num);
