@@ -552,6 +552,9 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
 	space_avail = SMB_VFS_DISK_FREE(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	if (space_avail == (SMB_BIG_UINT)-1) {
+		return -1;
+	}
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
 			fsp->fsp_name, (double)st.st_size, (double)len, (double)space_avail ));
