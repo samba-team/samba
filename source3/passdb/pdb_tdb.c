@@ -419,8 +419,10 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	if (!init_sam_from_buffer (user, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		SAFE_FREE(data.dptr);
 		return False;
 	}
+	SAFE_FREE(data.dptr);
 	
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
@@ -501,8 +503,10 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	if (!init_sam_from_buffer (user, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		SAFE_FREE(data.dptr);
 		return False;
 	}
+	SAFE_FREE(data.dptr);
 	
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
@@ -599,6 +603,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 	}
 
 	fstrcpy (name, data.dptr);
+	SAFE_FREE(data.dptr);
 	
 	tdb_close (pwd_tdb);
 	
@@ -659,8 +664,10 @@ BOOL pdb_delete_sam_account(char *sname)
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
 		tdb_close (pwd_tdb);
+		SAFE_FREE(data.dptr);
 		return False;
 	}
+	SAFE_FREE(data.dptr);
 
 	pwd = sys_getpwnam(sam_pass->username);
 	
@@ -709,6 +716,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	fstring 	keystr;
 	pstring		tdbfile;
 	fstring		name;
+	BOOL		ret = True;
 	int		newtdb = FALSE;
 	
 	pstrcpy (tdbfile, lp_private_dir());
@@ -729,7 +737,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1)
 	{
 		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
-		return False;
+		ret = False;
+		goto done;
 	}
 	data.dptr = buf;
 
@@ -758,7 +767,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 			if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600)))
 			{
 				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
-				return False;
+				ret = False;
+				goto done;
 			}
 			newtdb = True;
 		}
@@ -770,7 +780,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 		DEBUG(0, ("Unable to modify passwd TDB!"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
-		return False;
+		ret = False;
+		goto done;
 	}
 	
 	/* setup RID data */
@@ -787,14 +798,17 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	{
 		DEBUG(0, ("Unable to modify TDB passwd !"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		tdb_close (pwd_tdb);
-		return False;
+		ret = False;
+		goto done;
 	}
-	
+
+done:	
 	/* cleanup */
 	tdb_close (pwd_tdb);
+	SAFE_FREE(buf);
 	
-	return (True);
+	return (ret);
+	
 }
 
 /***************************************************************************
