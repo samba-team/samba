@@ -25,13 +25,14 @@
 
 /* Fill a pwent structure with information we have obtained */
 
-static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
+static void winbindd_fill_pwent(struct winbindd_pw *pw, char *name,
                                 uid_t unix_uid, gid_t unix_gid, 
                                 char *full_name)
 {
     pstring homedir;
+    fstring name_domain, name_user;
 
-    if (!pw || !username) {
+    if (!pw || !name) {
         return;
     }
 
@@ -42,7 +43,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     /* Username */
 
-    safe_strcpy(pw->pw_name, username, sizeof(pw->pw_name) - 1);
+    safe_strcpy(pw->pw_name, name, sizeof(pw->pw_name) - 1);
 
     /* Full name (gecos) */
 
@@ -51,8 +52,12 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
     /* Home directory and shell - use template config parameters.  The
        defaults are /tmp for the home directory and /bin/false for shell. */
 
+    parse_domain_user(name, name_domain, name_user);
+
     pstrcpy(homedir, lp_template_homedir());
-    pstring_sub(homedir,"%U",username);
+
+    pstring_sub(homedir, "%U", name_user);
+    pstring_sub(homedir, "%D", name_domain);
 
     safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
 
