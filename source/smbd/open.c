@@ -1171,6 +1171,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 
 			if(conn->read_only) {
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
+				errno = EACCES;
 				return -1;
 			}
 
