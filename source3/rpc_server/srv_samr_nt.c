@@ -303,6 +303,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	}
 
 	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+		DEBUG(1, ("load_group_domain_entries: pdb_enum_group_mapping() failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -311,6 +312,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	grp_array=(DISP_GROUP_INFO *)talloc(mem_ctx, info->disp_info.num_group_account*sizeof(DISP_GROUP_INFO));
 
 	if (group_entries!=0 && grp_array==NULL) {
+		DEBUG(1, ("load_group_domain_entries: talloc() failed for grp_array!\n"));
 		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
 	}
