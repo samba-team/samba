@@ -242,6 +242,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 	r_s.user = user_info;
 	r_s.buffer_user = user_info != NULL ? 1 : 0;
 	r_s.status = user_info != NULL ? 0 : (0xC000000|NT_STATUS_NO_SUCH_USER);
+	r_s.auth_resp = 1; /* authoritative response */
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4, 0);

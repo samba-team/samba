@@ -106,6 +106,16 @@ void make_dom_sid(DOM_SID *sid, char *domsid)
 	int identauth;
 	char *p;
 
+	if (sid == NULL) return;
+
+	if (domsid == NULL)
+	{
+		DEBUG(4,("netlogon domain SID: none\n"));
+		sid->sid_no = 0;
+		sid->num_auths = 0;
+		return;
+	}
+		
 	DEBUG(4,("netlogon domain SID: %s\n", domsid));
 
 	/* assume, but should check, that domsid starts "S-" */

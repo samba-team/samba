@@ -1182,9 +1182,9 @@ void show_msg(char *buf)
   DEBUG(5,("smb_bcc=%d\n",bcc));
   if (DEBUGLEVEL < 10)
     return;
-  for (i = 0; i < MIN(bcc, 256); i += 16)
+  for (i = 0; i < MIN(bcc, 512); i += 16)
   {
-    for (j = 0; j < 16 && i+j < MIN(bcc,256); j++)
+    for (j = 0; j < 16 && i+j < MIN(bcc,512); j++)
     {
 
       DEBUG(10,("%2X ",CVAL(smb_buf(buf),i+j)));
@@ -1193,7 +1193,7 @@ void show_msg(char *buf)
     }
     DEBUG(10,("  "));  
 
-    for (j = 0; j < 16 && i+j < MIN(bcc,256); j++)
+    for (j = 0; j < 16 && i+j < MIN(bcc,512); j++)
     {
       unsigned char c = CVAL(smb_buf(buf),i+j);
       if (c < 32 || c > 128) c = '.';
