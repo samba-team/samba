@@ -576,7 +576,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 /* Print usage information */
 static void usage(void)
 {
-	printf("Usage: rpcclient server [options]\n");
+	printf("Usage: rpcclient [options] server\n");
 
 	printf("\t-A or --authfile authfile          file containing user credentials\n");
 	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
@@ -660,52 +660,69 @@ static void usage(void)
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	
-	while((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		case 'A':
-			/* only get the username, password, and domain from the file */
-			read_authfile (opt_authfile, username,
-				       password, domain);
-			if (strlen (password))
-				got_pass = 1;
-			break;
+	while (argc > optind) {
+		while((opt = poptGetNextOpt(pc)) != -1) {
+			switch (opt) {
+			case 'A':
+				/* only get the username, password, and domain from the file */
+				read_authfile (opt_authfile, username, password, domain);
+				if (strlen (password))
+					got_pass = 1;
+				break;
 
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
-				 opt_logfile);
-			lp_set_logfile(logfile);
-			interactive = False;
- 			break;
+			case 'l':
+				slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
+					 opt_logfile);
+				lp_set_logfile(logfile);
+				interactive = False;
+ 				break;
 
-		case 's':
-			pstrcpy(dyn_CONFIGFILE, opt_configfile);
-			break;
+			case 's':
+				pstrcpy(dyn_CONFIGFILE, opt_configfile);
+				break;
 
-		case 'd':
-			DEBUGLEVEL = opt_debuglevel;
-			break;
+			case 'd':
+				DEBUGLEVEL = opt_debuglevel;
+				break;
 
-		case 'U': {
-			char *lp;
-			pstrcpy(username,opt_username);
-			if ((lp=strchr_m(username,'%'))) {
-				*lp = 0;
-				pstrcpy(password,lp+1);
-				got_pass = 1;
-				memset(strchr_m(opt_username,'%')+1,'X',strlen(password));
+			case 'U': {
+				char *lp;
+				pstrcpy(username,opt_username);
+				if ((lp=strchr_m(username,'%'))) {
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					got_pass = 1;
+					memset(strchr_m(opt_username,'%')+1,'X',strlen(password));
+				}
+				break;
 			}
-			break;
-		}
 		
-		case 'W':
-			pstrcpy(domain, opt_domain);
-			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
+			case 'W':
+				pstrcpy(domain, opt_domain);
+				break;
+				
+			case 'h':
+			default:
+				usage();
+				exit(1);
+			}
 		}
+
+		if (argc > optind) {
+			if (strncmp("//", argv[optind], 2) == 0 ||
+			    strncmp("\\\\", argv[optind], 2) == 0)
+			{
+				argv[optind] += 2;
+			}
+
+			pstrcpy(server, argv[optind]);
+			optind ++;
+		}
+	}
+
+	if (!server[0]) {
+		usage();
+		return 1;
 	}
 
 	poptFreeContext(pc);
