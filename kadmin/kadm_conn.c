@@ -123,19 +123,21 @@ static int
 spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 {
     int e, i;
-    struct sockaddr sa;
-    socklen_t sa_size;
+    struct sockaddr_storage __ss;
+    struct sockaddr *sa = (struct sockaddr *)&__ss;
+    socklen_t sa_size = sizeof(__ss);
     int s;
     pid_t pid;
     krb5_address addr;
     char buf[128];
     size_t buf_len;
-    s = accept(socks[this_sock], &sa, &sa_size);
+
+    s = accept(socks[this_sock], sa, &sa_size);
     if(s < 0) {
 	krb5_warn(context, errno, "accept");
 	return 1;
     }
-    e = krb5_sockaddr2address(&sa, &addr);
+    e = krb5_sockaddr2address(sa, &addr);
     if(e)
 	krb5_warn(context, e, "krb5_sockaddr2address");
     else {
