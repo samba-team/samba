@@ -358,7 +358,8 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	}
 
 	ZERO_STRUCT(ctr);
-	
+	ZERO_STRUCT(dinfo);
+
 	switch(level) {
 	case 3:
 		ctr.info3 = &dinfo.driver_3;
