@@ -1945,6 +1945,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	char *QueueName = skip_string(str2,1);
 	int errcode = NERR_notsupported;
 	int snum;
+	extern struct current_user current_user;
 
 	/* check it's a supported varient */
 	if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
@@ -1963,13 +1964,13 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 
 	switch (function) {
 	case 74: /* Pause queue */
-		if (print_queue_pause(NULL, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_pause(&current_user, snum, &errcode)) errcode = NERR_Success;
 		break;
 	case 75: /* Resume queue */
-		if (print_queue_resume(NULL, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_resume(&current_user, snum, &errcode)) errcode = NERR_Success;
 		break;
 	case 103: /* Purge */
-		if (print_queue_purge(NULL, snum, &errcode)) errcode = NERR_Success;
+		if (print_queue_purge(&current_user, snum, &errcode)) errcode = NERR_Success;
 		break;
 	}
 

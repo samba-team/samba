@@ -534,6 +534,14 @@ static BOOL print_job_delete1(int jobid)
 
 	snum = print_job_snum(jobid);
 
+	/* Hrm - we need to be able to cope with deleting a job before it
+	   has reached the spooler. */
+
+	if (pjob->sysjob == -1) {
+		DEBUG(5, ("attempt to delete job %d not seen by lpr\n",
+			  jobid));
+	}
+
 	if (pjob->spooled && pjob->sysjob != -1) {
 		/* need to delete the spooled entry */
 		fstring jobstr;
@@ -1212,11 +1220,15 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	print_status_struct status;
 	char *printer_name;
 	int njobs, i;
+	BOOL can_job_admin;
 
+	can_job_admin = print_access_check(user, snum, JOB_ACCESS_ADMINISTER);
 	njobs = print_queue_status(snum, &queue, &status);
 
-	if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		for (i=0;i<njobs;i++) {
+	for (i=0;i<njobs;i++) {
+		BOOL owner = is_owner(user, queue[i].job);
+
+		if (owner || can_job_admin) {
 			print_job_delete1(queue[i].job);
 		}
 	}
