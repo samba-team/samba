@@ -121,9 +121,8 @@ krb4_adat(void *app_data, void *buf, size_t len)
     int kerror;
     u_int32_t cs;
     char msg[35]; /* size of encrypted block */
-
+    int tmp_len;
     struct krb4_data *d = app_data;
-
     char inst[INST_SZ];
 
     memcpy(tkt.dat, buf, len);
@@ -154,12 +153,13 @@ krb4_adat(void *app_data, void *buf, size_t len)
     {
 	unsigned char tmp[4];
 	krb_put_int(cs, tmp, 4, sizeof(tmp));
-	len = krb_mk_safe(tmp, msg, 4, &d->key, &LOCAL_ADDR, &REMOTE_ADDR);
+	tmp_len = krb_mk_safe(tmp, msg, 4, &d->key, &LOCAL_ADDR, &REMOTE_ADDR);
     }
-    if(len < 0){
+    if(tmp_len < 0){
 	reply(535, "Error creating reply: %s.", strerror(errno));
 	return -1;
     }
+    len = tmp_len;
     if(base64_encode(msg, len, &p) < 0) {
 	reply(535, "Out of memory base64-encoding.");
 	return -1;
@@ -257,12 +257,13 @@ krb4_auth(void *app_data, char *host)
 	printf("Remote host didn't send adat reply.\n");
 	return -1;
     }
-    p+=5;
-    adat.length = base64_decode(p, adat.dat);
+    p += 5;
+    len = base64_decode(p, adat.dat);
     if(len < 0){
 	printf("Failed to decode base64 from server.\n");
 	return -1;
     }
+    adat.length = len;
     ret = krb_rd_safe(adat.dat, adat.length, &d->key, 
 		      &hisctladdr, &myctladdr, &msg_data);
     if(ret){
