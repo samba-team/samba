@@ -2374,7 +2374,7 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		charset Samba should talk to DOS clients.
 		</para>
 
-		<para>The default depends on which charsets you have instaled. 
+		<para>The default depends on which charsets you have installed. 
 		Samba tries to use charset 850 but falls back to ASCII in 
 		case it is not available. Run <citerefentry><refentrytitle>testparm</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry> to check the default on your system.

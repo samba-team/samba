@@ -161,7 +161,7 @@ group:          files winbind
 		as 2 threads. The first will answer all requests from the cache, 
 		thus making responses to clients faster. The other will 
 		update the cache for the query that the first has just responded. 
-		Advantage of this is that responses are accurate and fast.
+		Advantage of this is that responses stay accurate and are faster.
 		</para></listitem>
 		</varlistentry>
 
