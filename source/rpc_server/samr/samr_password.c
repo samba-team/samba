@@ -143,6 +143,8 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	const char *domain_sid;
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
+	uint8_t new_lm_hash[16];
+	struct samr_Password lm_verifier;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_WRONG_PASSWORD;
@@ -181,6 +183,17 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_ASCII)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* check LM verifier */
+	if (lm_pwd == NULL || r->in.hash == NULL) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	E_deshash(new_pass, new_lm_hash);
+	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
+	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -243,11 +256,13 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 					   "pwdProperties", "minPwdAge", "maxPwdAge", 
 					   NULL };
 	const char *domain_sid;
-	struct samr_Password *nt_pwd;
+	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo;
 	struct samr_ChangeReject *reject;
 	uint32_t reason = 0;
+	uint8_t new_nt_hash[16], new_lm_hash[16];
+	struct samr_Password nt_verifier, lm_verifier;
 
 	ZERO_STRUCT(r->out);
 
@@ -279,7 +294,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	user_dn = res[0]->dn;
 
-	status = samdb_result_passwords(mem_ctx, res[0], NULL, &nt_pwd);
+	status = samdb_result_passwords(mem_ctx, res[0], &lm_pwd, &nt_pwd);
 	if (!NT_STATUS_IS_OK(status) ) {
 		goto failed;
 	}
@@ -300,6 +315,30 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
 	}
+
+	if (r->in.nt_verifier == NULL) {
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto failed;
+	}
+
+	/* check NT verifier */
+	E_md4hash(new_pass, new_nt_hash);
+	E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
+	if (memcmp(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto failed;
+	}
+
+	/* check LM verifier */
+	if (lm_pwd && r->in.lm_verifier != NULL) {
+		E_deshash(new_pass, new_lm_hash);
+		E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
+		if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
+			status = NT_STATUS_WRONG_PASSWORD;
+			goto failed;
+		}
+	}
+
 
 	/* work out the domain dn */
 	domain_sid = samdb_result_sid_prefix(mem_ctx, res[0], "objectSid");
