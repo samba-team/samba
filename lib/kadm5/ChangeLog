@@ -1,3 +1,8 @@
+2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* dump_log.c (print_entry): check return values from
+	krb5_data_alloc
+
 2003-04-01  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* init_c.c (kadm_connect): if a context realm was passed in, use
