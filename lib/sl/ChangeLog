@@ -1,3 +1,7 @@
+Sun Sep 27 01:28:21 1998  Assar Westerlund  <assar@sics.se>
+
+	* make_cmds.c: clean-up and simplification
+
 Mon May 25 02:54:13 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (clean): try to remove shared library debris
