@@ -8,7 +8,7 @@ manpagename(nmblookup)(NetBIOS over TCP/IP client used to lookup NetBIOS names)
 label(SYNOPSIS)
 manpagesynopsis() 
 
-bf(nmblookup) [link(-M)(minusM)] [link(-R)(minusR)] [link(-S)(minusS)] [link(-r)(minusr)] [link(-A)(minusA)] [link(-h)(minush)] [link(-B broadcast address)(minusB)] [link(-U unicast address)(minusU)] [link(-d debuglevel)(minusd)] [link(-s smb config file)(minuss)] [link(-i NetBIOS scope)(minusi)] link(name)(name)
+bf(nmblookup) [link(-M)(minusM)] [link(-R)(minusR)] [link(-S)(minusS)] [link(-r)(minusr)] [link(-A)(minusA)] [link(-h)(minush)] [link(-B broadcast address)(minusB)] [link(-U unicast address)(minusU)] [link(-d debuglevel)(minusd)] [link(-s smb config file)(minuss)] [link(-i NetBIOS scope)(minusi)] [link(-T)(minusT)] link(name)(name)
 
 label(DESCRIPTION)
 manpagedescription()
@@ -26,8 +26,9 @@ manpageoptions()
 startdit()
 
 label(minusM)
-dit(bf(-M)) Searches for a master browser. This is done by doing a
-broadcast lookup on the special name tt(__MSBROWSE__).
+dit(bf(-M)) Searches for a master browser by looking up the 
+NetBIOS name link(bf(name))(name) with a type of 0x1d. If link(bf(name))(name)
+is tt("-") then it does a lookup on the special name tt(__MSBROWSE__).
 
 label(minusR)
 dit(bf(-R)) Set the recursion desired bit in the packet to do a
@@ -102,6 +103,12 @@ use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are em(very) rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with.
+
+label(minusT)
+dit(bf(-T)) This causes any IP addresses found in the lookup to be
+looked up via a reverse DNS lookup into a DNS name, and printed out
+before each tt("IP address   NetBIOS name") pair that is the normal
+output.
 
 label(name)
 dit(bf(name)) This is the NetBIOS name being queried. Depending upon
