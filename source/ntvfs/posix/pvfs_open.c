@@ -283,6 +283,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_CANNOT_DELETE;
 	}
 	
+	if (access_mask & SEC_RIGHT_MAXIMUM_ALLOWED) {
+		access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+	}
+
 	flags = O_RDWR;
 
 	f = talloc_p(req, struct pvfs_file);
@@ -355,7 +359,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->lock_count = 0;
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
-	f->access_mask = io->generic.in.access_mask;
+	f->access_mask = access_mask;
 	f->seek_offset = 0;
 	f->position = 0;
 
@@ -428,6 +432,14 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	create_options = io->generic.in.create_options;
 	share_access   = io->generic.in.share_access;
 	access_mask    = io->generic.in.access_mask;
+
+	if (access_mask & SEC_RIGHT_MAXIMUM_ALLOWED) {
+		if (name->dos.attrib & FILE_ATTRIBUTE_READONLY) {
+			access_mask = GENERIC_RIGHTS_FILE_READ;
+		} else {
+			access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
+		}
+	}
 
 	/* certain create options are not allowed */
 	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
@@ -551,7 +563,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->lock_count = 0;
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
-	f->access_mask = io->generic.in.access_mask;
+	f->access_mask = access_mask;
 	f->seek_offset = 0;
 	f->position = 0;
 
