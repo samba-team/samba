@@ -488,7 +488,7 @@ spx_status(ap, name, level)
 	 * and acl_file to "~kannan/.sphinx"
 	 */
 
-	pwd = getpwnam(UserNameRequested);
+	pwd = k_getpwnam(UserNameRequested);
 	if (pwd == NULL) {
 	  return(AUTH_USER);   /*  not authenticated  */
 	}

@@ -201,7 +201,7 @@ static char	*gunique (char *);
 static void	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
 static void	 send_data (FILE *, FILE *, off_t);
-static struct passwd * sgetpwnam (char *);
+static struct passwd * sk_getpwnam (char *);
 
 static char *
 curdir(void)
@@ -464,7 +464,7 @@ sgetpwnam(char *name)
 	static struct passwd save;
 	struct passwd *p;
 
-	if ((p = getpwnam(name)) == NULL)
+	if ((p = k_getpwnam(name)) == NULL)
 		return (p);
 	if (save.pw_name) {
 		free(save.pw_name);

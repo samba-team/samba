@@ -51,7 +51,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 strncmp(version, "KXSERV.0", KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
-     passwd = getpwnam (auth.pname);
+     passwd = k_getpwnam (auth.pname);
      if (passwd == NULL)
 	  return fatal (sock, "Cannot find uid");
      username = strdup (passwd->pw_name);

@@ -2362,7 +2362,7 @@ int tn(int argc, char **argv)
 
 	user = getenv("USER");
 	if (user == NULL ||
-	    ((pw = getpwnam(user)) && pw->pw_uid != getuid())) {
+	    ((pw = k_getpwnam(user)) && pw->pw_uid != getuid())) {
 		if (pw = getpwuid(getuid()))
 			user = pw->pw_name;
 		else

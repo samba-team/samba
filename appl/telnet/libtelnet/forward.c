@@ -420,7 +420,7 @@ rd_and_store_for_creds(inbuf, ticket, lusername)
 	return(retval);
     }
 
-    if (!(pwd = (struct passwd *) getpwnam(lusername))) {
+    if (!(pwd = (struct passwd *) k_getpwnam(lusername))) {
 	return -1;
     }
 

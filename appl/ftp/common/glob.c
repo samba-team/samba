@@ -371,7 +371,7 @@ globtilde(const Char *pattern, Char *patbuf, glob_t *pglob)
 		/*
 		 * Expand a ~user
 		 */
-		if ((pwd = getpwnam((char*) patbuf)) == NULL)
+		if ((pwd = k_getpwnam((char*) patbuf)) == NULL)
 			return pattern;
 		else
 			h = pwd->pw_dir;

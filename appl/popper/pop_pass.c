@@ -31,7 +31,7 @@ pop_pass (POP *p)
 #endif /* KERBEROS */
 
     /*  Look for the user in the password file */
-    if ((pw = getpwnam(p->user)) == NULL)
+    if ((pw = k_getpwnam(p->user)) == NULL)
         return (pop_msg(p,POP_FAILURE,
             "Password supplied for \"%s\" is incorrect.",p->user));
 

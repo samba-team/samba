@@ -413,7 +413,7 @@ char *name, *passwd;
   struct passwd *pwd;
   int   passwdok_status = 0;
 
-  if (pwd = getpwnam(name))
+  if (pwd = k_getpwnam(name))
     salt = pwd->pw_passwd;
   else salt = "xx";
 

@@ -70,4 +70,7 @@ int getent(char *cp, char *name);
 char *getstr(char *id, char **cpp);
 #endif
 
+#include <pwd.h>
+struct passwd *k_getpwnam (char *user);
+
 #endif /*  __ROKEN_H__ */

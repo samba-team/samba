@@ -220,7 +220,7 @@ again:
 	}
 	if (first == 1 && (__check_rhosts_file || superuser)) {
 		first = 0;
-		if ((pwd = getpwnam(luser)) == NULL)
+		if ((pwd = k_getpwnam(luser)) == NULL)
 			return (-1);
 		(void)strcpy(pbuf, pwd->pw_dir);
 		(void)strcat(pbuf, "/.rhosts");
