@@ -162,3 +162,16 @@ krb5_afslog_home(krb5_context context,
 {
     return krb5_afslog_uid_home (context, id, cell, realm, getuid(), homedir);
 }
+
+/*
+ *
+ */
+
+krb5_error_code
+krb5_realm_of_cell(const char *cell, char **realm)
+{
+    kafs_data kd;
+
+    kd.get_realm = get_realm;
+    return _kafs_realm_of_cell(&kd, cell, realm);
+}
