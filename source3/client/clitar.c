@@ -1477,7 +1477,7 @@ accordingly.
 static int read_inclusion_file(char *filename)
 {
 	XFILE *inclusion = NULL;
-	char buf[MAX_PATH + 1];
+	char buf[PATH_MAX + 1];
 	char *inclusion_buffer = NULL;
 	int inclusion_buffer_size = 0;
 	int inclusion_buffer_sofar = 0;
@@ -1487,7 +1487,7 @@ static int read_inclusion_file(char *filename)
 	int error = 0;
 
 	clipn = 0;
-	buf[MAX_PATH] = '\0'; /* guarantee null-termination */
+	buf[PATH_MAX] = '\0'; /* guarantee null-termination */
 	if ((inclusion = x_fopen(filename, O_RDONLY, 0)) == NULL) {
 		/* XXX It would be better to include a reason for failure, but without
 		 * autoconf, it's hard to use strerror, sys_errlist, etc.
