@@ -42,8 +42,6 @@ RCSID("$Id$");
 
 char *prog;
 
-static u_int32_t display_num;
-static char xauthfile[MaxPathLen];
 static int nchild;
 static int donep;
 
