@@ -554,40 +554,38 @@ DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
 /*The following definitions come from  lib/util.c  */
 
 char *tmpdir(void);
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t * groups);
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
 char *Atoic(char *p, int *n, char *c);
 char *get_numlist(char *p, uint32 **num, int *count);
-BOOL file_exist(char *fname, SMB_STRUCT_STAT * sbuf);
+BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
 int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
-BOOL directory_exist(char *dname, SMB_STRUCT_STAT * st);
+BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
-void smb_setlen(char *buf, int len);
-int set_message(char *buf, int num_words, int num_bytes, BOOL zero);
+void smb_setlen(char *buf,int len);
+int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
-BOOL reduce_name(char *s, char *dir, BOOL widelinks);
-void make_dir_struct(char *buf, char *mask, char *fname, SMB_OFF_T size,
-		     int mode, time_t date);
+BOOL reduce_name(char *s,char *dir,BOOL widelinks);
+void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
-SMB_OFF_T transfer_file(int infd, int outfd, SMB_OFF_T n, char *header,
-			int headlen, int align);
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
 void msleep(int t);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
-void *Realloc(void *p, size_t size);
+void *Realloc(void *p,size_t size);
 void safe_free(void *p);
 BOOL get_myname(char *my_name);
-int interpret_protocol(char *str, int def);
+int interpret_protocol(char *str,int def);
 BOOL is_ipaddress(const char *str);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-BOOL same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask);
+BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
 char *uidtoname(uid_t uid);
@@ -595,18 +593,18 @@ char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
 gid_t nametogid(const char *name);
 void smb_panic(char *why);
-char *readdirname(DIR * p);
-BOOL is_in_path(char *name, name_compare_entry * namelist);
-void set_namearray(name_compare_entry ** ppname_array, char *namelist);
-void free_namearray(name_compare_entry * name_array);
+char *readdirname(DIR *p);
+BOOL is_in_path(char *name, name_compare_entry *namelist);
+void set_namearray(name_compare_entry **ppname_array, char *namelist);
+void free_namearray(name_compare_entry *name_array);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
-void out_ascii(FILE * f, unsigned char *buf, int len);
-void out_data(FILE * f, char *buf1, int len, int per_line);
-void print_asc(int level, unsigned char *buf, int len);
-void dump_data(int level, char *buf1, int len);
+void out_ascii(FILE *f, unsigned char *buf,int len);
+void out_data(FILE *f,char *buf1,int len, int per_line);
+void print_asc(int level, unsigned char *buf,int len);
+void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -665,31 +663,28 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
-BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
+BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 size_t sid_size(DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
-ssize_t read_udp_socket(int fd, char *buf, size_t len);
-ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
-			  unsigned int time_out);
+ssize_t read_udp_socket(int fd,char *buf,size_t len);
+ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
 BOOL send_keepalive(int client);
-ssize_t read_data(int fd, char *buffer, size_t N);
-ssize_t write_data(int fd, char *buffer, size_t N);
-ssize_t write_socket_data(int fd, char *buffer, size_t N);
-ssize_t write_socket(int fd, char *buf, size_t len);
-ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout);
-BOOL receive_smb(int fd, char *buffer, unsigned int timeout);
-BOOL client_receive_smb(int fd, char *buffer, unsigned int timeout);
+ssize_t read_data(int fd,char *buffer,size_t N);
+ssize_t write_data(int fd,char *buffer,size_t N);
+ssize_t write_socket_data(int fd,char *buffer,size_t N);
+ssize_t write_socket(int fd,char *buf,size_t len);
+ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL send_null_session_msg(int fd);
-BOOL send_smb(int fd, char *buffer);
-BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
-		     int type);
-int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
-		   BOOL rebind);
-int open_socket_out(int type, struct in_addr *addr, int port, int timeout);
+BOOL send_smb(int fd,char *buffer);
+BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
+int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 void reset_globals_after_fork(void);
 void client_setfd(int fd);
 char *client_name(void);
@@ -697,7 +692,8 @@ char *client_addr(void);
 char *get_socket_name(int fd);
 char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
-int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms);
+int create_pipe_socket(char *dir, int dir_perms,
+				char *path, int path_perms);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -817,6 +813,16 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
 smb_ucs2_t *octal_string_w(int i);
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
+
+/*The following definitions come from  lib/util_unixsd.c  */
+
+size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
+			       BOOL is_directory, mode_t mode,
+			       SEC_DESC ** ppdesc);
+BOOL convertperms_sd_to_unix(SMB_STRUCT_STAT * psbuf, uid_t * puser,
+			     gid_t * pgrp, mode_t * pmode,
+			     uint32 security_info_sent, SEC_DESC * psd,
+			     BOOL is_directory);
 
 /*The following definitions come from  locking/brlock.c  */
 
@@ -2910,6 +2916,7 @@ BOOL api_spoolss_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
+#if OLD_NTDOMAIN
 void init_printer_hnd(void);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 const PRINTER_DEFAULT *printer_default,
@@ -3013,6 +3020,7 @@ uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
 uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 			NEW_BUFFER *buffer, uint32 offered, 
 			uint32 *needed);
+#endif
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
@@ -3357,114 +3365,73 @@ void smbd_process(void);
 /*The following definitions come from  smbd/reply.c  */
 
 #if OLD_NTDOMAIN
-int reply_special(char *inbuf, char *outbuf);
-int reply_tcon(connection_struct * conn,
-	       char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_tcon_and_X(connection_struct * conn, char *inbuf, char *outbuf,
-		     int length, int bufsize);
-int reply_unknown(char *inbuf, char *outbuf);
-int reply_ioctl(connection_struct * conn,
-		char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_sesssetup_and_X(connection_struct * conn, char *inbuf, char *outbuf,
-			  int length, int bufsize);
-int reply_chkpth(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_getatr(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_setatr(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_dskattr(connection_struct * conn, char *inbuf, char *outbuf,
-		  int dum_size, int dum_buffsize);
-int reply_search(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_fclose(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_open(connection_struct * conn, char *inbuf, char *outbuf,
-	       int dum_size, int dum_buffsize);
-int reply_open_and_X(connection_struct * conn, char *inbuf, char *outbuf,
-		     int length, int bufsize);
-int reply_ulogoffX(connection_struct * conn, char *inbuf, char *outbuf,
-		   int length, int bufsize);
-int reply_mknew(connection_struct * conn, char *inbuf, char *outbuf,
-		int dum_size, int dum_buffsize);
-int reply_ctemp(connection_struct * conn, char *inbuf, char *outbuf,
-		int dum_size, int dum_buffsize);
-int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-int reply_readbraw(connection_struct * conn, char *inbuf, char *outbuf,
-		   int dum_size, int dum_buffsize);
-int reply_lockread(connection_struct * conn, char *inbuf, char *outbuf,
-		   int length, int dum_buffsiz);
-int reply_read(connection_struct * conn, char *inbuf, char *outbuf, int size,
-	       int dum_buffsize);
-int reply_read_and_X(connection_struct * conn, char *inbuf, char *outbuf,
-		     int length, int bufsize);
-int reply_writebraw(connection_struct * conn, char *inbuf, char *outbuf,
-		    int size, int dum_buffsize);
-int reply_writeunlock(connection_struct * conn, char *inbuf, char *outbuf,
-		      int size, int dum_buffsize);
-int reply_write(connection_struct * conn, char *inbuf, char *outbuf, int size,
-		int dum_buffsize);
-int reply_write_and_X(connection_struct * conn, char *inbuf, char *outbuf,
-		      int length, int bufsize);
-int reply_lseek(connection_struct * conn, char *inbuf, char *outbuf, int size,
-		int dum_buffsize);
-int reply_flush(connection_struct * conn, char *inbuf, char *outbuf, int size,
-		int dum_buffsize);
-int reply_exit(connection_struct * conn,
-	       char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_close(connection_struct * conn, char *inbuf, char *outbuf, int size,
-		int dum_buffsize);
-int reply_writeclose(connection_struct * conn,
-		     char *inbuf, char *outbuf, int size, int dum_buffsize);
-int reply_lock(connection_struct * conn,
-	       char *inbuf, char *outbuf, int length, int dum_buffsize);
-int reply_unlock(connection_struct * conn, char *inbuf, char *outbuf,
-		 int size, int dum_buffsize);
-int reply_tdis(connection_struct * conn,
-	       char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_echo(connection_struct * conn,
-	       char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_printopen(connection_struct * conn,
-		    char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
-int reply_printclose(connection_struct * conn,
-		     char *inbuf, char *outbuf, int dum_size,
-		     int dum_buffsize);
-int reply_printqueue(connection_struct * conn,
-		     char *inbuf, char *outbuf, int dum_size,
-		     int dum_buffsize);
-int reply_printwrite(connection_struct * conn, char *inbuf, char *outbuf,
-		     int dum_size, int dum_buffsize);
-int reply_mkdir(connection_struct * conn, char *inbuf, char *outbuf,
-		int dum_size, int dum_buffsize);
-BOOL rmdir_internals(connection_struct * conn, char *directory);
-int reply_rmdir(connection_struct * conn, char *inbuf, char *outbuf,
-		int dum_size, int dum_buffsize);
-int rename_internals(connection_struct * conn,
-		     char *inbuf, char *outbuf, char *name,
+int reply_special(char *inbuf,char *outbuf);
+int reply_tcon(connection_struct *conn,
+	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_unknown(char *inbuf,char *outbuf);
+int reply_ioctl(connection_struct *conn,
+		char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_ulogoffX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize);
+int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length, int dum_buffsiz);
+int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize);
+int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_exit(connection_struct *conn, 
+	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
+                int dum_buffsize);
+int reply_writeclose(connection_struct *conn,
+		     char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_lock(connection_struct *conn,
+	       char *inbuf,char *outbuf, int length, int dum_buffsize);
+int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_tdis(connection_struct *conn, 
+	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_echo(connection_struct *conn,
+	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_printopen(connection_struct *conn, 
+		    char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_printclose(connection_struct *conn,
+		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_printqueue(connection_struct *conn,
+		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+BOOL rmdir_internals(connection_struct *conn, char *directory);
+int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int rename_internals(connection_struct *conn, 
+		     char *inbuf, char *outbuf, char *name, 
 		     char *newname, BOOL replace_if_exists);
-int reply_mv(connection_struct * conn, char *inbuf, char *outbuf,
-	     int dum_size, int dum_buffsize);
-int reply_copy(connection_struct * conn, char *inbuf, char *outbuf,
-	       int dum_size, int dum_buffsize);
-int reply_setdir(connection_struct * conn, char *inbuf, char *outbuf,
-		 int dum_size, int dum_buffsize);
-SMB_BIG_UINT get_lock_count(char *data, int data_offset,
-			    BOOL large_file_format);
-SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
-			     BOOL large_file_format, BOOL *err);
-int reply_lockingX(connection_struct * conn, char *inbuf, char *outbuf,
-		   int length, int bufsize);
-int reply_readbmpx(connection_struct * conn, char *inbuf, char *outbuf,
-		   int length, int bufsize);
-int reply_writebmpx(connection_struct * conn, char *inbuf, char *outbuf,
-		    int size, int dum_buffsize);
-int reply_writebs(connection_struct * conn, char *inbuf, char *outbuf,
-		  int dum_size, int dum_buffsize);
-int reply_setattrE(connection_struct * conn, char *inbuf, char *outbuf,
-		   int size, int dum_buffsize);
-int reply_getattrE(connection_struct * conn, char *inbuf, char *outbuf,
-		   int size, int dum_buffsize);
+int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format);
+SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
+int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
+int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 #endif
 
 /*The following definitions come from  smbd/server.c  */
