@@ -4014,7 +4014,7 @@ int reply_nt1(char *outbuf)
   SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
   SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
-  SIVAL(outbuf,smb_vwv5+1,0xffff); /* raw size. LOTS! */
+  SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
   SIVAL(outbuf,smb_vwv7+1,getpid()); /* session key */
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
   put_long_date(outbuf+smb_vwv11+1,t);
