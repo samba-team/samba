@@ -19,4 +19,4 @@ mk_cmds_SOURCES = make_cmds.c parse.y lex.l
 
 $(mk_cmds_OBJECTS): parse.h
 
-LDADD = -L../roken -lroken
+LDADD = -L../roken -lroken @LEXLIB@
