@@ -48,6 +48,7 @@ extern const char *opt_workgroup;
 extern int opt_long_list_entries;
 extern int opt_reboot;
 extern int opt_force;
+extern int opt_machine_pass;
 extern int opt_timeout;
 extern const char *opt_host;
 extern const char *opt_user_name;

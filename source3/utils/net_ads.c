@@ -145,7 +145,7 @@ static ADS_STRUCT *ads_startup(void)
 	}
 
 retry:
-	if (!opt_password && need_password) {
+	if (!opt_password && need_password && !opt_machine_pass) {
 		char *prompt;
 		asprintf(&prompt,"%s password: ", opt_user_name);
 		opt_password = getpass(prompt);
