@@ -1236,6 +1236,7 @@ static void init_globals(void)
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
 	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
+	string_set(&Globals.szPasswordServer, "*");
 
 	Globals.bLoadPrinters = True;
 	Globals.max_packet = 65535;
