@@ -19,6 +19,14 @@ Fri Apr  9 20:24:04 1999  Assar Westerlund  <assar@sics.se>
 	* configure.in: test for more header files
 	(LIB_roken): set
 
+Thu Apr  8 15:01:59 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* configure.in: fixes for building w/o krb4
+
+	* ltmain.sh: update to libtool 1.2d
+
+	* ltconfig: update to libtool 1.2d
+
 Wed Apr  7 23:37:26 1999  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c: fix some error messages to be more understandable.
@@ -31,7 +39,24 @@ Wed Apr  7 23:37:26 1999  Assar Westerlund  <assar@sics.se>
 
 	* appl/test/gssapi_client.c: remove unused variables
 
+Wed Apr  7 14:05:15 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/context.c (krb5_get_err_text): long -> krb5_error_code
+
+	* kuser/klist.c: make it compile w/o krb4
+
+	* kuser/kdestroy.c: make it compile w/o krb4
+
+	* admin/ktutil.c: fix {srv,key}2{srv,key}tab confusion; add help
+ 	strings
+
+Mon Apr  5 16:13:46 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* configure.in: test for MIPS ABI; new test_package
+
 Thu Apr  1 11:00:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* include/Makefile.am: clean krb5-private.h
 
 	* Release 0.1d
 
