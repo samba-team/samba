@@ -325,7 +325,7 @@
 
 	<para>Many of the strings that are settable in the config file 
 	can take substitutions. For example the option "path =
-	/tmp/%u" would be interpreted as "path = 
+	/tmp/%U" would be interpreted as "path = 
 	/tmp/john" if the user connected with the username john.</para>
 
 	<para>These substitutions are mostly noted in the descriptions below, 
