@@ -1350,7 +1350,7 @@ NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
-				       const DOM_SID const *members,
+				       const DOM_SID *members,
 				       int num_members,
 				       uint32 **alias_rids,
 				       int *num_alias_rids)
