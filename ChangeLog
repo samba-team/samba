@@ -1,3 +1,9 @@
+2001-08-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/appdefault.c: also check libdefaults, and realms/realm
+
+	* lib/krb5/context.c (krb5_free_context): free more stuff
+
 2001-08-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/verify_krb5_conf.c: do some checks of the values in the
