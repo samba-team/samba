@@ -24,7 +24,7 @@
 #include "includes.h"
 
 /****************************************************************************
-issue a single SMBread and don't wait for a reply
+Issue a single SMBread and don't wait for a reply.
 ****************************************************************************/
 
 static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
@@ -44,6 +44,31 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
+	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+	return cli_send_smb(cli);
+}
+
+/****************************************************************************
+Issue a single SMBreadraw and don't wait for a reply.
+****************************************************************************/
+
+static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
+			   size_t size, int i)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,10,0,True);
+		
+	CVAL(cli->outbuf,smb_com) = SMBreadbraw;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SIVAL(cli->outbuf,smb_vwv1,offset);
+	SSVAL(cli->outbuf,smb_vwv2,size);
+	SSVAL(cli->outbuf,smb_vwv3,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	return cli_send_smb(cli);
@@ -112,6 +137,68 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 
 		p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
 		memcpy(buf + total, p, size2);
+
+		total += size2;
+		offset += size2;
+
+		/*
+		 * If the server returned less than we asked for we're at EOF.
+		 */
+
+		if (size2 < readsize)
+			break;
+	}
+
+	return total;
+}
+
+/****************************************************************************
+ Tester for the readraw call.
+****************************************************************************/
+
+ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+{
+	char *p;
+	int size2;
+	size_t readsize;
+	ssize_t total = 0;
+
+	if (size == 0) 
+		return 0;
+
+	/*
+	 * Set readsize to the maximum size we can handle in one readraw.
+	 */
+
+	readsize = 0xFFFF;
+
+	while (total < size) {
+		readsize = MIN(readsize, size-total);
+
+		/* Issue a read and receive a reply */
+
+		if (!cli_issue_readraw(cli, fnum, offset, readsize, 0))
+			return -1;
+
+		if (!client_receive_smb(cli->fd, cli->inbuf, cli->timeout))
+			return -1;
+
+		size2 = smb_len(cli->inbuf);
+
+		if (size2 > readsize) {
+			DEBUG(5,("server returned more than we wanted!\n"));
+			return -1;
+		} else if (size2 < 0) {
+			DEBUG(5,("read return < 0!\n"));
+			return -1;
+		}
+
+		/* Copy data into buffer */
+
+		if (size2) {
+			p = cli->inbuf + 4;
+			memcpy(buf + total, p, size2);
+		}
 
 		total += size2;
 		offset += size2;
