@@ -535,11 +535,8 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
-	NTSTATUS status;
 
-	srvstr_get_path(inbuf, fname, smb_buf(inbuf), sizeof(fname), 0, STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status))
-		return ERROR_NT(status);
+	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
