@@ -379,18 +379,25 @@
 
 #if HAVE_KRB5_H
 #include <krb5.h>
+#else
+#undef HAVE_KRB5
 #endif
 
 #if HAVE_LDAP_H
 #include <ldap.h>
+#else
+#undef HAVE_LDAP
 #endif
 
 #if HAVE_SASL_H
 #include <sasl.h>
+#else
+/* we must have sasl to use ldap */
+#undef HAVE_LDAP
 #endif
 
 /* we support ADS if we have krb5 and ldap libs */
-#if defined(HAVE_KRB5) && defined(HAVE_KRB5_H) && defined(HAVE_LDAP) && defined(HAVE_LDAP_H) && defined(HAVE_SASL_H)
+#if defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
 #endif
 
