@@ -1,4 +1,6 @@
 dnl
+dnl $Id$
+dnl
 dnl Shared library stuff has to be different everywhere
 dnl
 
@@ -58,7 +60,7 @@ case "${host}" in
 	LDSHARED='$(CC) -shared -Wl,-soname,$(LIBNAME).so.'"${SHLIB_SONAME}"
 	REAL_LD_FLAGS='-Wl,-rpath,$(libdir)'
 	REAL_SHLIBEXT=so.$SHLIB_VERSION
-	build_symlink_command='$(LN_S) -f $@ $(LIBNAME).so'
+	build_symlink_command='$(LN_S) -f [$][@] $(LIBNAME).so'
 	install_symlink_command='$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so.'"${SHLIB_SONAME}"';$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so'
 	install_symlink_command2='$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so.'"${SHLIB_SONAME}"';$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so'
 	;;
@@ -66,8 +68,9 @@ case "${host}" in
 	REAL_SHLIBEXT=so.$SHLIB_VERSION
 	LDSHARED='ld -Bshareable'
 	REAL_LD_FLAGS='-Wl,-R$(libdir)'
-	build_symlink_command='$(LN_S) -f $@ $(LIBNAME).so'
+	build_symlink_command='$(LN_S) -f [$][@] $(LIBNAME).so'
 	install_symlink_command='$(LN_S) -f $(LIB) $(DESTDIR)$(libdir)/$(LIBNAME).so'
+	install_symlink_command2='$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so'
 	;;
 *-*-*bsd*)
 	REAL_SHLIBEXT=so.$SHLIB_VERSION
