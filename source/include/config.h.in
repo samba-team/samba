@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -805,6 +805,9 @@
 
 /* Define if you have the strlcpy function.  */
 #undef HAVE_STRLCPY
+
+/* Define if you have the strndup function.  */
+#undef HAVE_STRNDUP
 
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK

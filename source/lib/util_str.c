@@ -982,3 +982,22 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 	va_end(ap);
 	return ret;
 }
+
+
+#ifndef HAVE_STRNDUP
+/*******************************************************************
+some platforms don't have strndup
+********************************************************************/
+ char *strndup(const char *s, size_t n)
+{
+	char *ret;
+	int i;
+	for (i=0;s[i] && i<n;i++) ;
+
+	ret = malloc(i+1);
+	if (!ret) return NULL;
+	memcpy(ret, s, i);
+	ret[i] = 0;
+	return ret;
+}
+#endif
