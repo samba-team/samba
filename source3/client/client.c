@@ -2822,7 +2822,7 @@ static void remember_query_host(const char *arg,
 			fstrcpy(base_directory,poptGetOptArg(pc));
 			break;
 		case 'b':
-			io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
+			io_bufsize = MAX(1, poptGetOptArg(pc));
 			break;
 		}
 	}
