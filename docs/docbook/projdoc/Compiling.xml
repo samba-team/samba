@@ -1,11 +1,7 @@
 <chapter id="compiling">
 <chapterinfo>
-	<author>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-		</affiliation>
-	</author>
 	&author.jelmer;
+	<author><surname>Someone; Jerry perhaps?</surname></author>
 	
 	<pubdate> 22 May 2001 </pubdate>
 	<pubdate> 18 March 2003 </pubdate>
