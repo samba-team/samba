@@ -200,10 +200,10 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 
 	/* Ensure this *must* be set right */
 	if (strcmp(pwd->pw_name, guest_account) == 0) {
-		if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_DEFAULT)) {
+		if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_SET)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT)) {
+		if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_SET)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
