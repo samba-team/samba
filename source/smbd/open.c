@@ -702,6 +702,7 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 		mode_t new_mode, mode_t *returned_mode)
 {
 	uint32 old_dos_mode, new_dos_mode;
+	uint32 noarch_old_dos_mode, noarch_new_dos_mode;
 	SMB_STRUCT_STAT sbuf;
 
 	ZERO_STRUCT(sbuf);
@@ -712,25 +713,27 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 	sbuf.st_mode = new_mode;
 	new_dos_mode = dos_mode(conn, path, &sbuf);
 
-	/*
-	 * We only set returned mode to be the same as new_mode if
-	 * the file attributes need to be changed.
-	 */
+	noarch_old_dos_mode = (old_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
+	noarch_new_dos_mode = (new_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
 
-	*returned_mode = (mode_t)0;
+	if((noarch_old_dos_mode == 0 && noarch_new_dos_mode != 0) || 
+	   (noarch_old_dos_mode != 0 && ((noarch_old_dos_mode & noarch_new_dos_mode) == noarch_old_dos_mode)))
+		*returned_mode = new_mode;
+	else
+		*returned_mode = (mode_t)0;
+
+	DEBUG(10,("open_match_attributes: file %s old_dos_mode = 0x%x, existing_mode = 0%o, new_dos_mode = 0x%x returned_mode = 0%o\n",
+		path,
+		old_dos_mode, (unsigned int)existing_mode, new_dos_mode, (unsigned int)*returned_mode ));
 
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
 	if (lp_map_system(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
 			return False;
-		if  (!(old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && (new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
-			*returned_mode = new_mode;
 	}
 	if (lp_map_hidden(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
 			return False;
-		if (!(old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && (new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
-			*returned_mode = new_mode;
 	}
 	return True;
 }
