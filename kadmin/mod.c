@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,12 +48,22 @@ mod_entry(int argc, char **argv)
     krb5_error_code ret;
     krb5_principal princ_ent = NULL;
     
+    if (argc != 2) {
+	printf ("Usage: mod principal\n");
+	return 0;
+    }
+
     krb5_parse_name(context, argv[1], &princ_ent);
 
     memset(&princ, 0, sizeof(princ));
     ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES | 
 			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE);
+    if (ret) {
+	printf ("no such principal: %s\n", argv[1]);
+	krb5_free_principal (context, princ_ent);
+	return 0;
+    }
     
     edit_entry(&princ, &mask);
 
