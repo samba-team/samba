@@ -294,7 +294,7 @@ krb5_verify_ap_req2(krb5_context context,
 	krb5_clear_error_string (context);
 	goto out;
     }
-    memset(t, 0, sizeof(t));
+    memset(t, 0, sizeof(*t));
 
     if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
