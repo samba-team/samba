@@ -49,7 +49,7 @@ typedef struct reg_val_s REG_VAL;
 typedef struct reg_ops_s REG_OPS;
 
 #if 0
-//FIXME
+/* FIXME */
 typedef struct ace_struct_s {
   uint8_t type, flags;
   uint_t perms;   /* Perhaps a better def is in order */
