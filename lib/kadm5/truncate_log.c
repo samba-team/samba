@@ -83,6 +83,7 @@ main(int argc, char **argv)
     server_context = (kadm5_server_context *)kadm_handle;
 
     ret = kadm5_log_truncate (server_context);
+    if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_truncate");
     return 0;
 }
