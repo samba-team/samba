@@ -2392,9 +2392,33 @@ turn a user name into a uid
 ********************************************************************/
 uid_t nametouid(const char *name)
 {
-	struct passwd *pass = sys_getpwnam(name);
+	struct passwd *pass;
+	char *p;
+	uid_t u;
+
+	u = strtol(name, &p, 0);
+	if (p != name) return u;
+
+	pass = sys_getpwnam(name);
 	if (pass) return(pass->pw_uid);
 	return (uid_t)-1;
+}
+
+/*******************************************************************
+turn a group name into a gid
+********************************************************************/
+gid_t nametogid(const char *name)
+{
+	struct group *grp;
+	char *p;
+	gid_t g;
+
+	g = strtol(name, &p, 0);
+	if (p != name) return g;
+
+	grp = getgrnam(name);
+	if (grp) return(grp->gr_gid);
+	return (gid_t)-1;
 }
 
 /*******************************************************************
