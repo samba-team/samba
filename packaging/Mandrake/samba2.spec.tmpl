@@ -14,11 +14,12 @@
 
 %define pkg_name	samba
 %define ver 		3.0.1pre3
-%define rel 		3mdk
+%define rel 		5mdk
 %define vscanver 	0.3.3beta1
 %define libsmbmajor 	0
 
-%{!?mklibname: %define mklibname %lib%{1}%{?2:%{2}}%{?3:_%{3}}%{-s:-static}%{-d:-devel}}
+%{!?lib: %global lib lib}
+%{!?mklibname: %global mklibname(ds) %lib%{1}%{?2:%{2}}%{?3:_%{3}}%{-s:-static}%{-d:-devel}}
 
 %define libname %mklibname smbclient %libsmbmajor
 
@@ -1647,7 +1648,13 @@ update-alternatives --auto smbclient
 %exclude %{_mandir}/man1/smbsh*.1*
 
 %changelog
-* Sun Nov 16 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.rpe3.3mdk
+* Fri Dec 05 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre3.5mdk
+- Allow winbind to start if old winbind ranges are used (ease upgrades)
+
+* Tue Nov 18 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre3.4mdk
+- Fix build as system on 8.2 (and probably earlier)
+
+* Sun Nov 16 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre3.3mdk
 - Ensure printer drivers keep permissions by default (setgid and inherit perms)
 
 * Fri Nov 14 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre3.2mdk
