@@ -290,7 +290,12 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 						  acct_name, ACB_WSTRUST,
 						  unknown, &user_pol, 
 						  &user_rid);
-	}
+
+		/* We *must* do this.... don't ask... */
+
+		CHECK_RPC_ERR_DEBUG(cli_samr_close(&cli, mem_ctx, &user_pol), ("error closing user policy"));
+		result = NT_STATUS_USER_EXISTS;
+	}	
 
 	if (result == NT_STATUS_USER_EXISTS) {
 		uint32 num_rids, *name_types, *user_rids;
@@ -356,7 +361,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(p24);
 
-	init_sam_user_info24(&p24, pwbuf);
+	init_sam_user_info24(&p24, pwbuf,24);
 
 	ctr.switch_value = 24;
 	ctr.info.id24 = &p24;
@@ -380,6 +385,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	   seems to cope with either value so don't bomb out if the set
 	   userinfo2 level 0x10 fails.  -tpot */
 
+	ZERO_STRUCT(ctr);
 	ctr.switch_value = 0x10;
 	ctr.info.id10 = &p10;
 
@@ -549,7 +555,7 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
-	while ((ch = getopt(argc, argv, "ax:d:e:mnj:r:sR:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sR:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
@@ -613,6 +619,7 @@ static int process_root(int argc, char *argv[])
 
 			break;
 		}
+		case 'h':
 		default:
 			usage();
 		}
