@@ -5,6 +5,7 @@
    Modified by Jeremy Allison 1995.
    Copyright (C) Jeremy Allison 1995-2000.
    Copyright (C) Luke Kennethc Casson Leighton 1996-2000.
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -419,4 +420,41 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 	cli->sign_info.send_seq_num++;
 	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
 	cli->sign_info.send_seq_num++;
+}
+
+/***********************************************************
+ SMB signing - check a MAC sent by server.
+************************************************************/
+
+BOOL cli_check_sign_mac(struct cli_state *cli)
+{
+	unsigned char calc_md5_mac[16];
+	unsigned char server_sent_mac[8];
+	struct MD5Context md5_ctx;
+
+	if (cli->sign_info.temp_smb_signing) {
+		return True;
+	}
+
+	if (!cli->sign_info.use_smb_signing) {
+		return True;
+	}
+
+	/*
+	 * Firstly put the sequence number into the first 4 bytes.
+	 * and zero out the next 4 bytes.
+	 */
+
+	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
+
+	SIVAL(cli->inbuf, smb_ss_field, cli->sign_info.reply_seq_num);
+	SIVAL(cli->inbuf, smb_ss_field + 4, 0);
+
+	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
+	MD5Update(&md5_ctx, cli->inbuf + 4, smb_len(cli->inbuf));
+	MD5Final(calc_md5_mac, &md5_ctx);
+
+	return (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 }
