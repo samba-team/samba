@@ -68,18 +68,21 @@ everything: manpages ps pdf html-single html htmlman txt htmlfaq
 
 # Global rules
 
-manpages: $(MANPAGES)
-pdf: $(PDFDIR)/Samba-HOWTO-Collection.pdf ../Samba-Developers-Guide.pdf
-ps: $(PSDIR)/Samba-HOWTO-Collection.ps ../Samba-Developers-Guide.ps
-txt: $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
-htmlman:  $(MANPAGES_HTML)
-htmlfaq: 
+manpages: $(MANDIR) $(MANPAGES)
+pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf ../Samba-Developers-Guide.pdf
+ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps ../Samba-Developers-Guide.ps
+txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
+htmlman: $(HTMLDIR) $(MANPAGES_HTML)
+htmlfaq: $(HTMLDIR)
 	$(DOCBOOK2HTML) -d samba.dsl -o $(FAQDIR) $(FAQPROJDOC)/sambafaq.sgml
-html-single: $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
-html:
+html-single: $(HTMLDIR) $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
+html: $(HTMLDIR)
 	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) $(PROJDOC)/samba-doc.sgml
 
 # Text files
+
+$(TXTDIR): 
+	mkdir $(TXTDIR)
 
 $(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.sgml
 	$(DOCBOOK2TXT) -d samba.dsl -o . $<
@@ -90,6 +93,9 @@ $(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.sgml
 	mv ./dev-doc.txt $@
 
 # PostScript
+
+$(PSDIR):
+	mkdir $(PSDIR)
 
 $(PSDIR)/Samba-HOWTO-Collection.ps: $(PROJDOC)/samba-doc.sgml
 	$(DOCBOOK2PS) -d samba.dsl -o . $<
@@ -109,6 +115,9 @@ $(PDFDIR)/Samba-Developers-Guide.pdf: $(HTMLDIR)/Samba-Developers-Guide.html
 
 # Single large HTML files
 
+$(HTMLDIR):
+	mkdir $(HTMLDIR)
+
 $(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.sgml
 	$(DOCBOOK2HTML) -d samba.dsl -u -o . $<
 	mv ./samba-doc.html $@
@@ -120,6 +129,11 @@ $(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.sgml
 
 $(HTMLDIR)/%.html: $(MANPROJDOC)/%.sgml
 	$(DOCBOOK2HTML) -d samba.dsl -u -o $(HTMLDIR) $<
+
+# Manpages
+
+$(MANDIR): 
+	mkdir $(MANDIR)
 
 $(MANDIR)/%: $(MANPROJDOC)/%.sgml 
 	$(DOCBOOK2MAN) -d samba.dsl -o $(MANDIR) $<
