@@ -62,7 +62,7 @@
  * and 'coding system'.
  */
 #ifndef KANJI
-#define KANJI "sjis"
+#define KANJI "sbcs"
 #endif /* KANJI */
 
 BOOL bLoaded = False;
