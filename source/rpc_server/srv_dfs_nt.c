@@ -44,12 +44,20 @@ uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u)
 
 uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 {
+  struct current_user user;
   struct junction_map jn;
   struct referral* old_referral_list = NULL;
   BOOL exists = False;
 
   pstring dfspath, servername, sharename;
   pstring altpath;
+
+  get_current_user(&user,p);
+
+  if (user.uid != 0) {
+	DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
+	return ERROR_ACCESS_DENIED;
+  }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
   unistr2_to_ascii(servername, &q_u->ServerName, sizeof(servername)-1);
@@ -103,11 +111,19 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 
 uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u)
 {
+  struct current_user user;
   struct junction_map jn;
   BOOL found = False;
 
   pstring dfspath, servername, sharename;
   pstring altpath;
+
+  get_current_user(&user,p);
+
+  if (user.uid != 0) {
+	DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
+	return ERROR_ACCESS_DENIED;
+  }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
   if(q_u->ptr_ServerName)
