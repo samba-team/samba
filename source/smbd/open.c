@@ -31,7 +31,7 @@ extern uint16 oplock_port;
 /****************************************************************************
 fd support routines - attempt to do a dos_open
 ****************************************************************************/
-static int fd_attempt_open(char *fname, int flags, int mode)
+static int fd_attempt_open(char *fname, int flags, mode_t mode)
 {
   int fd = dos_open(fname,flags,mode);
 
@@ -125,7 +125,7 @@ static BOOL fd_is_in_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 fd support routines - attempt to re-open an already open fd as O_RDWR.
 Save the already open fd (we cannot close due to POSIX file locking braindamage.
 ****************************************************************************/
-static void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
+static void fd_attempt_reopen(char *fname, mode_t mode, file_fd_struct *fd_ptr)
 {
   int fd = dos_open( fname, O_RDWR, mode);
 
@@ -268,7 +268,7 @@ static void check_for_pipe(char *fname)
 open a file
 ****************************************************************************/
 static void open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,int flags,int mode, SMB_STRUCT_STAT *sbuf)
+		      char *fname1,int flags,mode_t mode, SMB_STRUCT_STAT *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
@@ -688,7 +688,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 open a file with a share mode
 ****************************************************************************/
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      int mode,int oplock_request, int *Access,int *action)
+		      mode_t mode,int oplock_request, int *Access,int *action)
 {
   int flags=0;
   int flags2=0;
@@ -865,7 +865,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
   }
 
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
-	   flags,flags2,mode));
+	   flags,flags2,(int)mode));
 
   open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
   if (!fsp->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 

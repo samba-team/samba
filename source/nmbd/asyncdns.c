@@ -313,7 +313,7 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 
 
 /***************************************************************************
-  we use this then we can't do async DNS lookups
+  we use this when we can't do async DNS lookups
   ****************************************************************************/
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n)

@@ -399,23 +399,23 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 }
 
 /*************************************************************************
- Return the current position in the smbpasswd list as an unsigned long.
+ Return the current position in the smbpasswd list as an SMB_BIG_INTEGER
  This must be treated as an opaque token.
 *************************************************************************/
 
-static unsigned long getsmbfilepwpos(void *vp)
+static SMB_BIG_INTEGER getsmbfilepwpos(void *vp)
 {
-  return (unsigned long)ftell((FILE *)vp);
+  return (SMB_BIG_INTEGER)sys_ftell((FILE *)vp);
 }
 
 /*************************************************************************
- Set the current position in the smbpasswd list from unsigned long.
+ Set the current position in the smbpasswd list from an SMB_BIG_INTEGER.
  This must be treated as an opaque token.
 *************************************************************************/
 
-static BOOL setsmbfilepwpos(void *vp, unsigned long tok)
+static BOOL setsmbfilepwpos(void *vp, SMB_BIG_INTEGER tok)
 {
-  return !fseek((FILE *)vp, tok, SEEK_SET);
+  return !sys_fseek((FILE *)vp, (SMB_OFF_T)tok, SEEK_SET);
 }
 
 /************************************************************************
@@ -609,7 +609,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
    * Scan the file, a line at a time and check if the name matches.
    */
   while (!feof(fp)) {
-    pwd_seekpos = (SMB_OFF_T)ftell(fp);
+    pwd_seekpos = sys_ftell(fp);
 
     linebuf[0] = '\0';
 

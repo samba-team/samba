@@ -219,7 +219,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
   *pass_last_set_time = (time_t)0;
   memset(ret_pwd, '\0', 16);
 
-  if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
+  if(sys_fseek( mach_passwd_fp, (SMB_OFF_T)0, SEEK_SET) == -1) {
     DEBUG(0,("get_trust_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;
@@ -298,7 +298,7 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
   char linebuf[64];
   int i;
 
-  if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
+  if(sys_fseek( mach_passwd_fp, (SMB_OFF_T)0, SEEK_SET) == -1) {
     DEBUG(0,("set_trust_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;

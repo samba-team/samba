@@ -2542,7 +2542,7 @@ char *volume_label(int snum)
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
-static void set_default_server_announce_type()
+static void set_default_server_announce_type(void)
 {
   default_server_announce = (SV_TYPE_WORKSTATION | SV_TYPE_SERVER |
                               SV_TYPE_SERVER_UNIX | SV_TYPE_PRINTQ_SERVER);

@@ -784,7 +784,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
   char *QueueName = p;
-  int uLevel,cbBuf;
+  int uLevel;
   int count=0;
   int snum;
   char* str3;
@@ -797,7 +797,6 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
  
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
   str3 = p + 4;
  
   /* remove any trailing username */
@@ -2670,7 +2669,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uLevel,cbBuf;
+  int uLevel;
   int count;
   int i;
   int snum;
@@ -2680,7 +2679,6 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   print_status_struct status;
 
   uLevel = SVAL(p,2);
-  cbBuf = SVAL(p,4);
 
   bzero(&desc,sizeof(desc));
   bzero(&status,sizeof(status));
@@ -2735,7 +2733,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
   char* name = p;
-  int uLevel,cbBuf;
+  int uLevel;
   int count;
   int i, succnt=0;
   int snum;
@@ -2748,7 +2746,6 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
@@ -2853,7 +2850,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
   char* PrinterName = p;
-  int uLevel,cbBuf;
+  int uLevel;
   struct pack_desc desc;
   int snum;
 
@@ -2861,7 +2858,6 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintDestGetInfo uLevel=%d PrinterName=%s\n",uLevel,PrinterName));
 
@@ -2911,7 +2907,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uLevel,cbBuf;
+  int uLevel;
   int queuecnt;
   int i, n, succnt=0;
   struct pack_desc desc;
@@ -2920,7 +2916,6 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
   bzero(&desc,sizeof(desc));
 
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintDestEnum uLevel=%d\n",uLevel));
 
@@ -2969,14 +2964,13 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uLevel,cbBuf;
+  int uLevel;
   int succnt;
   struct pack_desc desc;
 
   bzero(&desc,sizeof(desc));
 
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintDriverEnum uLevel=%d\n",uLevel));
 
@@ -3014,14 +3008,13 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uLevel,cbBuf;
+  int uLevel;
   int succnt;
   struct pack_desc desc;
 
   bzero(&desc,sizeof(desc));
 
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintQProcEnum uLevel=%d\n",uLevel));
 
@@ -3060,14 +3053,13 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   char *str1 = param+2;
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
-  int uLevel,cbBuf;
+  int uLevel;
   int succnt;
   struct pack_desc desc;
 
   bzero(&desc,sizeof(desc));
 
   uLevel = SVAL(p,0);
-  cbBuf = SVAL(p,2);
 
   DEBUG(3,("WPrintPortEnum uLevel=%d\n",uLevel));
 

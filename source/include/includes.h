@@ -410,6 +410,12 @@
 #  endif
 #endif
 
+#if defined(HAVE_LONGLONG)
+#define SMB_BIG_INTEGER unsigned long long
+#else
+#define SMB_BIG_INTEGER unsigned long
+#endif
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif

@@ -893,25 +893,25 @@ static void endldappwent(void *vp)
 }
 
 /*************************************************************************
- Return the current position in the ldap passwd list as an unsigned long.
+ Return the current position in the ldap passwd list as an SMB_BIG_INTEGER.
  This must be treated as an opaque token.
 
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-static unsigned long getldappwpos(void *vp)
+static SMB_BIG_INTEGER getldappwpos(void *vp)
 {
 	return 0;
 }
 
 /*************************************************************************
- Set the current position in the ldap passwd list from unsigned long.
+ Set the current position in the ldap passwd list from SMB_BIG_INTEGER.
  This must be treated as an opaque token.
 
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-static BOOL setldappwpos(void *vp, unsigned long tok)
+static BOOL setldappwpos(void *vp, SMB_BIG_INTEGER tok)
 {
 	return False;
 }
