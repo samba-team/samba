@@ -351,8 +351,6 @@
 #define PRINTER_ENUM_ICON7		0x00400000
 #define PRINTER_ENUM_ICON8		0x00800000
 
-#define POLICY_HND_SIZE 20
-
 /* this struct is undocumented */
 /* thanks to the ddk ... */
 typedef struct spool_user_1

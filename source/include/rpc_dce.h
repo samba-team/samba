@@ -24,7 +24,7 @@
 #ifndef _DCE_RPC_H /* _DCE_RPC_H */
 #define _DCE_RPC_H 
 
-#include "rpc_misc.h" /* this only pulls in STRHDR */
+#include "rpc_misc.h"  /* this only pulls in STRHDR */
 
 
 /* DCE/RPC packet types */
@@ -340,5 +340,6 @@ typedef struct rpc_auth_ntlmssp_chk_info
 } RPC_AUTH_NTLMSSP_CHK;
 
 #define RPC_AUTH_NTLMSSP_CHK_LEN 16
+
 
 #endif /* _DCE_RPC_H */

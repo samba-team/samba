@@ -244,27 +244,6 @@ struct acct_info
 
 /* end higher order functions */
 
-struct cli_connection;
-
-typedef struct cli_auth_fns
-{
-        /* these three will do for now.  they *should* match with server-side */
-        BOOL (*create_bind_req) (struct cli_connection *, prs_struct *,
-                                 uint32, RPC_IFACE *, RPC_IFACE *);
-        BOOL (*decode_bind_resp) (struct cli_connection *, prs_struct *);
-        BOOL (*create_bind_cont) (struct cli_connection *, prs_struct *,
-                                  uint32);
-        /* creates an authenticated PDU */
-        BOOL (*cli_create_pdu) (struct cli_connection *, uint8,
-                                prs_struct *, int, int *,
-                                prs_struct *, uint8 *);
-        /* decodes an authenticated PDU */
-        BOOL (*cli_decode_pdu) (struct cli_connection *, prs_struct *,
-                                int, int);
-
-}
-cli_auth_fns;
-
 
 /* security descriptor structures */
 #include "rpc_secdes.h"

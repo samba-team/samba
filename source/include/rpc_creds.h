@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 #ifndef _RPC_CREDS_H /* _RPC_CREDS_H */
 #define _RPC_CREDS_H 
 
@@ -91,6 +92,6 @@ typedef struct cred_command
 	CREDS_HYBRID *cred;
 
 } CREDS_CMD;
-	
+
 #endif /* _RPC_CREDS_H */
 
