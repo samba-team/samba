@@ -95,7 +95,7 @@ interface drsblobs {
 	typedef [gensize,flag(NDR_PAHEX)] struct {
 		/* this includes the 8 bytes of the repsFromToBlob header */
 		[value(ndr_size_repsFromTo1(8, r, ndr->flags))] uint32 blobsize;
-		uint32 consecutive_failures;
+		uint32 consecutive_sync_failures;
 		NTTIME_1sec last_success;
 		NTTIME_1sec last_attempt;
 		WERROR result_last_attempt;
@@ -107,8 +107,8 @@ interface drsblobs {
 		uint64 tmp_highest_usn; /* updated after each object update */
 		uint64 reserved_usn;
 		uint64 highest_usn; /* updated after a full replication cycle */
-		GUID dsa_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
-		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
+		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		GUID transport_guid;
 	} repsFromTo1;
 
