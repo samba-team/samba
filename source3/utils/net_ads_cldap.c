@@ -24,8 +24,58 @@
 #ifdef HAVE_ADS
 
 struct cldap_netlogon_reply {
-	uint32 i1;
+	uint32 version;
+	uint32 flags;
+	uint32 unknown[4];
+	char *domain;
+	char *server_name;
+	char *flatname;
+	char *server_name2;
+	char *dns_name;
+	uint32 unknown2[2];
 };
+
+
+/*
+  pull a length prefixed string from a packet
+  return number of bytes consumed
+*/
+static unsigned pull_len_string(char **ret, const char *p)
+{
+	unsigned len = *p;
+	(*ret) = NULL;
+	if (len == 0) return 1;
+	(*ret) = strndup(p+1, len);
+	return len+1;
+}
+
+/*
+  pull a dotted string from a packet
+  return number of bytes consumed
+*/
+static unsigned pull_dotted_string(char **ret, const char *p)
+{
+	char *s;
+	unsigned len, total_len=0;
+
+	(*ret) = NULL;
+
+	while ((len = pull_len_string(&s, p)) > 1) {
+		if (total_len) {
+			char *s2;
+			asprintf(&s2, "%s.%s", *ret, s);
+			SAFE_FREE(*ret);
+			(*ret) = s2;
+		} else {
+			(*ret) = s;
+		}
+		total_len += len;
+		p += len;
+	}
+
+	return total_len + 1;
+}
+
 
 /*
   do a cldap netlogon query
@@ -100,6 +150,9 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	ASN1_DATA data;
 	DATA_BLOB blob;
 	DATA_BLOB os1, os2, os3;
+	uint32 i1;
+	char *p;
+	int i;
 
 	blob = data_blob(NULL, 8192);
 
@@ -114,7 +167,7 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 	asn1_load(&data, blob);
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
-	asn1_read_Integer(&data, &reply->i1);
+	asn1_read_Integer(&data, &i1);
 	asn1_start_tag(&data, ASN1_APPLICATION(4));
 	asn1_read_OctetString(&data, &os1);
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
@@ -129,7 +182,25 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 
 	file_save("cldap_reply_core.dat", os3.data, os3.length);
-	
+
+	p = os3.data;
+
+	reply->version = IVAL(p, 0); p += 4;
+	reply->flags = IVAL(p, 0); p += 4;
+	for (i=0;i<4;i++) {
+		reply->unknown[i] = IVAL(p, 0);
+		p += 4;
+	}
+	p += pull_dotted_string(&reply->domain, p);
+	p += 2; /* 0xc018 - whats this? */
+	p += pull_len_string(&reply->server_name, p);
+	p += 2; /* 0xc018 - whats this? */
+	p += pull_len_string(&reply->flatname, p);
+	p += 1;
+	p += pull_len_string(&reply->server_name2, p);
+	p += 2;
+	p += pull_len_string(&reply->dns_name, p);
+
 	data_blob_free(&os1);
 	data_blob_free(&os2);
 	data_blob_free(&os3);
@@ -163,8 +234,15 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	}
 
 	ret = recv_cldap_netlogon(sock, &reply);
-
 	close(sock);
+
+	d_printf("Version: 0x%x\n", reply.version);
+	d_printf("Flags:   0x%x\n", reply.flags);
+	d_printf("Domain: %s\n", reply.domain);
+	d_printf("Server Name: %s\n", reply.server_name);
+	d_printf("Flatname: %s\n", reply.flatname);
+	d_printf("Server Name2: %s\n", reply.server_name2);
+	d_printf("DNS Name: %s\n", reply.dns_name);
 	
 	return ret;
 }
