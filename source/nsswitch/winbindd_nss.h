@@ -27,6 +27,7 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
+#define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variable */
 
 /* Socket commands */
 
@@ -46,16 +47,15 @@ enum winbindd_cmd {
 /* Winbind request structure */
 
 struct winbindd_request {
-    enum winbindd_cmd cmd;
-    pid_t pid;
+    enum winbindd_cmd cmd;   /* Winbindd command to execute */
+    pid_t pid;               /* pid of calling process */
 
     union {
-        pstring username;    /* getpwnam */
-        pstring groupname;   /* getgrnam */
-        uid_t uid;           /* getpwuid */
-        gid_t gid;           /* getgrgid */
-        int pwent_ndx;       /* getpwent */
-        int grent_ndx;       /* getgrent */
+        pstring username;    /* getpwnam() */
+        pstring groupname;   /* getgrnam() */
+        uid_t uid;           /* getpwuid() */
+        gid_t gid;           /* getgrgid() */
+        pstring domain;      /* {set,get,end}{pw,gr}ent() */
     } data;
 };
 
