@@ -1,0 +1,19 @@
+<samba:parameter name="strict locking"
+                 context="S"
+                 xmlns:samba="http://samba.org/common">
+<listitem>
+	<para>This is a boolean that controls the handling of 
+	file locking in the server. When this is set to <constant>yes</constant> 
+	the server will check every read and write access for file locks, and 
+	deny access if locks exist. This can be slow on some systems.</para>
+
+	<para>When strict locking is <constant>no</constant> the server does file 
+	lock checks only when the client explicitly asks for them.</para>
+
+	<para>Well-behaved clients always ask for lock checks when it 
+	is important, so in the vast majority of cases <command moreinfo="none">strict 
+	locking = no</command> is preferable.</para>
+
+	<para>Default: <command moreinfo="none">strict locking = no</command></para>
+</listitem>
+</samba:parameter>

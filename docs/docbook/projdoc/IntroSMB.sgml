@@ -1,0 +1,175 @@
+<chapter id="IntroSMB">
+<chapterinfo>
+	&author.dlechnyr;
+	<pubdate>April 13, 2003</pubdate>
+</chapterinfo>
+
+<title>Introduction to Samba</title>
+
+<para>
+Samba provides MS Windows file and print services over TCP/IP and provides compatible support for
+all SMB/CIFS enabled clients. Samba can be used to provide seemless interoperability between unix
+/ Linux systems and MS Windows clients and servers. A global team of about 30 active programmers
+is responsible for the development of Samba, a marvelous tool that was originally developed by
+Andrew Tridgell. That team of developers is known as the Samba-Team.
+</para>
+
+<sect1>
+<title>Background</title>
+
+<para>
+Once long ago, there was a buzzword referred to as DCE/RPC. This stood for Distributed Computing
+Environment/Remote Procedure Calls and conceptually was a good idea. It was originally developed
+by Apollo/HP as NCA 1.0 (Network Computing Architecture) and only ran over UDP.  When there was
+a need to run it over TCP so that it would be compatible with DECnet 3.0, it was redesigned,
+submitted to The Open Group, and officially became known as DCE/RPC. Microsoft came along and
+decided, rather than pay $20 per seat to license this technology, to reimplement DCE/RPC
+themselves as MSRPC. From this, the concept continued in the form of SMB (Server Message Block,
+or the "what") using the NetBIOS (Network Basic Input/Output System, or the "how") compatibility
+layer. You can run SMB (i.e., transport) over several different protocols; many different
+implementations arose as a result, including NBIPX (NetBIOS over IPX, NwLnkNb, or NWNBLink) and
+NBT (NetBIOS over TCP/IP, or NetBT). As the years passed, NBT became the most common form of
+implementation until the advance of "Direct-Hosted TCP" -- the Microsoft marketing term for
+eliminating NetBIOS entirely and running SMB by itself across TCP port 445 only. As of yet,
+direct-hosted TCP has yet to catch on. And so the story goes.
+</para>
+
+<para>
+Perhaps the best summary of the origins of SMB are voiced in the 1997 article titled, CIFS:
+Common Insecurities Fail Scrutiny:
+</para>
+
+<para><emphasis>
+Several megabytes of NT-security archives, random whitepapers, RFCs, the CIFS spec, the Samba
+stuff, a few MS knowledge-base articles, strings extracted from binaries, and packet dumps have
+been dutifully waded through during the information-gathering stages of this project, and there
+are *still* many missing pieces... While often tedious, at least the way has been generously
+littered with occurrences of clapping hand to forehead and muttering 'crikey, what are they
+thinking?
+</emphasis></para>
+
+<sect2>
+<title>Terminology</title>
+
+<itemizedlist>
+
+	<listitem><para>
+	SMB: Acronym for "Server Message Block". This is a Microsoft's file and printer
+	sharing protocol.
+	</para></listitem>
+
+	<listitem><para>
+	CIFS: Acronym for the "Common Internet File System". Around 1996, Microsoft apparently
+	decided that SMB needed the word "Internet" in it, so they changed it to CIFS.  
+	</para></listitem>
+
+	<listitem><para>
+	Direct-Hosted: A method of providing file/printer sharing services over port 445/tcp
+	only, using DNS for name resolution instead of WINS.
+	</para></listitem>
+
+	<listitem><para>
+	IPC: Acronym for "Inter-process Communication". A method to communicate specific
+	information between programs.
+	</para></listitem>
+
+	<listitem><para>
+	Marshalling: - A method of serializing (i.e., sequential ordering of) variable data
+	suitable for transmission via a network connection or storing in a file. The source
+	data can be re-created using a similar process called unmarshalling.
+	</para></listitem> 
+
+	<listitem><para>
+	NetBIOS: Acronym for "Network Basic Input/Output System". This is not a protocol;
+	it is a method of communication across an existing protocol. This is a standard which
+	was originally developed for IBM by Sytek in 1983. To exaggerate the analogy a bit,
+	it can help to think of this in comparison your computer's BIOS -- it controlls the
+	essential functions of your input/output hardware -- whereas NetBIOS controlls the
+	essential functions of your input/output traffic via the network. Again, this is a bit
+	of an exaggeration but it should help that paradigm shift. What is important to realize
+	is that NetBIOS is a transport standard, not a protocol. Unfortunately, even technically
+	brilliant people tend to interchange NetBIOS with terms like NetBEUI without a second
+	thought; this will cause no end (and no doubt) of confusion.
+	</para></listitem>
+
+	<listitem><para>
+	NetBEUI: Acronym for the "NetBIOS Extended User Interface". Unlike NetBIOS, NetBEUI
+	is a protocol, not a standard. It is also not routable, so traffic on one side of a
+	router will be unable to communicate with the other side. Understanding NetBEUI is
+	not essential to deciphering SMB; however it helps to point out that it is not the
+	same as NetBIOS and to improve your score in trivia at parties. NetBEUI was originally
+	referred to by Microsoft as "NBF", or "The Windows NT NetBEUI Frame protocol driver".
+	It is not often heard from these days.
+	</para></listitem>
+
+	<listitem><para>
+	NBT: Acronym for "NetBIOS over TCP"; also known as "NetBT". Allows the continued use
+	of NetBIOS traffic proxied over TCP/IP. As a result, NetBIOS names are made equivilant
+	to IP addresses and NetBIOS name types are conceptually equivilant to TCP/IP ports.
+	This is how file and printer sharing are accomplished in Windows 95/98/ME. They 
+	traditionally rely on three ports: NetBIOS Name Service (nbname) via UDP port 137, 
+	NetBIOS Datagram Service (nbdatagram) via UDP port 138, and NetBIOS Session Service 
+	(nbsession) via TCP port 139. All name resolution is done via WINS, NetBIOS broadcasts, 
+	and DNS. NetBIOS over TCP is documented in RFC 1001 (Concepts and methods) and RFC 1002 
+	(Detailed specifications).
+	</para></listitem>
+
+	<listitem><para>
+	W2K: Acronym for Windows 2000 Professional or Server
+	</para></listitem>
+
+	<listitem><para>
+	W3K: Acronym for Windows 2003 Server
+	</para></listitem>
+
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Related Projects>
+
+<para>
+Currently, there are two projects that are directly related to Samba: SMBFS and CIFS network
+client file systems for Linux, both available in the Linux kernel itself.
+</para>
+
+<itemizedlist>
+
+	<listitem><para>
+	SMBFS (Server Message Block File System) allows you to mount SMB shares (the protocol
+	Windows 95/98/ME, Windows NT/2000/XP and OS/2 Lan Manager use to share files and printers 
+	over local networks) and access them just like any other Unix directory. This is useful 
+	if you just want to mount such filesystems without being a SMBFS server.
+	</para></listitem>
+
+	<listitem><para>
+	CIFS (Common Internet File System) is the successor to SMB, and is actively being worked
+	on in the upcoming version of the Linux kernel (2.5/2.6). The intent of this module is to 
+	provide advanced network file system functionality including support for dfs (heirarchical 
+	name space), secure per-user session establishment, safe distributed caching (oplock), 
+	optional packet signing, Unicode and other internationalization improvements, and optional 
+	Winbind (nsswitch) integration. If you enable CONFIG_CIFS in the Linux kernel, be aware 
+	that it is currently in an early development stage and may not be as stable as the existing 
+	CONFIG_SMB_FS option.
+	</para></listitem>
+
+</itemizedlist>
+
+<para>
+Again, it's important to note that these are implementations for client filesystems, and have
+nothing to do with acting as a file and print server for SMB/CIFS clients.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Miscellaneous</title>
+
+<para>
+This chapter is Copyright © 2003 David Lechnyr. Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.
+</para>
+
+</sect2>
+</sect1>
+</chapter>
