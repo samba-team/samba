@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -630,7 +630,8 @@ as_rep(KDC_REQ *req,
 		      &foo_data,
 		      client_princ,
 		      server_princ,
-		      0,
+		      NULL,
+		      NULL,
 		      reply);
 	free(buf);
 	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
@@ -862,7 +863,8 @@ out:
 		      NULL,
 		      client_princ,
 		      server_princ,
-		      0,
+		      NULL,
+		      NULL,
 		      reply);
 	ret = 0;
     }
@@ -978,7 +980,9 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	    old_life -= *tgt->starttime;
 	else
 	    old_life -= tgt->authtime;
-	et->endtime = min(*et->renew_till, *et->starttime + old_life);
+	et->endtime = *et->starttime + old_life;
+	if (et->renew_till != NULL)
+	    et->endtime = min(*et->renew_till, et->endtime);
     }	    
     
     /* checks for excess flags */
@@ -1312,7 +1316,9 @@ tgs_rep2(KDC_REQ_BODY *b,
 	 PA_DATA *tgs_req,
 	 krb5_data *reply,
 	 const char *from,
-	 struct sockaddr *from_addr)
+	 const struct sockaddr *from_addr,
+	 time_t **csec,
+	 int **cusec)
 {
     krb5_ap_req ap_req;
     krb5_error_code ret;
@@ -1407,6 +1413,19 @@ tgs_rep2(KDC_REQ_BODY *b,
 	kdc_log(0, "Failed to verify AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
 	goto out2;
+    }
+
+    {
+	krb5_authenticator auth;
+
+	ret = krb5_auth_getauthenticator(context, ac, &auth);
+	if (ret == 0) {
+	    csec = auth->csec;
+	    auth->csec = NULL;
+	    cusec = auth->cusec;
+	    auth->cusec = NULL;
+	    krb5_free_authenticator(context, &auth);
+	}
     }
 
     cetype = ap_req.authenticator.etype;
@@ -1631,7 +1650,8 @@ out2:
 		      NULL,
 		      cp,
 		      sp,
-		      0,
+		      NULL,
+		      NULL,
 		      reply);
     krb5_free_principal(context, cp);
     krb5_free_principal(context, sp);
@@ -1660,6 +1680,8 @@ tgs_rep(KDC_REQ *req,
     krb5_error_code ret;
     int i = 0;
     PA_DATA *tgs_req = NULL;
+    time_t *csec = NULL;
+    int *cusec = NULL;
 
     if(req->padata == NULL){
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED; /* XXX ??? */
@@ -1684,8 +1706,11 @@ out:
 		      NULL,
 		      NULL,
 		      NULL,
-		      0,
+		      ctime,
+		      cusec,
 		      data);
     }
+    free(ctime);
+    free(cusec);
     return 0;
 }
