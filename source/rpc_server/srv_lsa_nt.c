@@ -371,8 +371,11 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 					name = global_myname;
 					sid = &domain_sid;
 				}
-			default:
+				else
+					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
+			default:
+				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 		init_dom_query(&r_u->dom.id3, name, sid);
 		break;
@@ -393,8 +396,11 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 					name = global_myname;
 					sid = &domain_sid;
 				}
-			default:
+				else
+					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
+			default:
+				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
