@@ -2488,6 +2488,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>dos filemode</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >dos filetime resolution</I
 ></TT
 ></P
@@ -3343,7 +3352,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1092"
+NAME="AEN1095"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -6217,6 +6226,27 @@ CLASS="EMPHASIS"
 >Example: <B
 CLASS="COMMAND"
 >dont descend = /proc,/dev</B
+></P
+></DD
+><DT
+><A
+NAME="DOSFILEMODE"
+></A
+>dos filemode (S)</DT
+><DD
+><P
+> The default behavior in Samba is to provide 
+		UNIX-like behavor that unless a user is the the owner of a 
+		file or directory, he or she will not be able to modify the 
+		object's permissions.  This is often confusing to  DOS/Windows 
+		users.  Enabling this parameter allows a user who would not 
+		otherwise be allowed to modify these permissions, to make 
+		changes.  Ownership of the file/directory is not changed,
+		only the permissions are modified.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>dos filemode = no</B
 ></P
 ></DD
 ><DT
@@ -17016,7 +17046,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5362"
+NAME="AEN5372"
 ></A
 ><H2
 >WARNINGS</H2
@@ -17046,7 +17076,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5368"
+NAME="AEN5378"
 ></A
 ><H2
 >VERSION</H2
@@ -17057,7 +17087,7 @@ NAME="AEN5368"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5371"
+NAME="AEN5381"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17136,7 +17166,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5391"
+NAME="AEN5401"
 ></A
 ><H2
 >AUTHOR</H2

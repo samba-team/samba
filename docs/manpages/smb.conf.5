@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "28 March 2001" "" ""
+.TH "SMB.CONF" "5" "30 March 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -1051,6 +1051,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIdont descend\fR
+.TP 0.2i
+\(bu
+\fIdos filemode\fR
 .TP 0.2i
 \(bu
 \fIdos filetime resolution\fR
@@ -2390,6 +2393,18 @@ Default: \fBnone (i.e., all directories are OK
 to descend)\fR
 
 Example: \fBdont descend = /proc,/dev\fR
+.TP
+\fBdos filemode (S)\fR
+The default behavior in Samba is to provide 
+UNIX-like behavor that unless a user is the the owner of a 
+file or directory, he or she will not be able to modify the 
+object's permissions. This is often confusing to DOS/Windows 
+users. Enabling this parameter allows a user who would not 
+otherwise be allowed to modify these permissions, to make 
+changes. Ownership of the file/directory is not changed,
+only the permissions are modified.
+
+Default: \fBdos filemode = no\fR
 .TP
 \fBdos filetime resolution (S)\fR
 Under the DOS and Windows FAT filesystem, the finest 

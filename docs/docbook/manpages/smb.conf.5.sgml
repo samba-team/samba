@@ -779,6 +779,7 @@
 		<listitem><para><parameter>directory mode</parameter></para></listitem>
 		<listitem><para><parameter>directory security mask</parameter></para></listitem>
 		<listitem><para><parameter>dont descend</parameter></para></listitem>
+		<listitem><para><parameter>dos filemode</parameter></para></listitem>
 		<listitem><para><parameter>dos filetime resolution</parameter></para></listitem>
 		<listitem><para><parameter>dos filetimes</parameter></para></listitem>
 		<listitem><para><parameter>exec</parameter></para></listitem>
@@ -2192,6 +2193,23 @@
 		</listitem>
 		</varlistentry>
 		
+
+
+		<varlistentry>
+		<term><anchor id="DOSFILEMODE">dos filemode (S)</term>
+		<listitem><para> The default behavior in Samba is to provide 
+		UNIX-like behavor that unless a user is the the owner of a 
+		file or directory, he or she will not be able to modify the 
+		object's permissions.  This is often confusing to  DOS/Windows 
+		users.  Enabling this parameter allows a user who would not 
+		otherwise be allowed to modify these permissions, to make 
+		changes.  Ownership of the file/directory is not changed,
+		only the permissions are modified.</para>
+		
+		<para>Default: <command>dos filemode = no</command></para>
+		</listitem>
+		</varlistentry>
+
 		
 		
 		<varlistentry>
