@@ -5085,10 +5085,10 @@
 
 		<varlistentry>
 		<term><anchor id="PASSDBBACKEND">passdb backend (G)</term>
-		<listitem><para>This option allows the administrator to chose what
-                backend in which to store passwords.  This allows (for example) both 
-                smbpasswd and tdbsam to be used without a recompile.  Only one can
-                be used at a time however, and experimental backends must still be selected
+		<listitem><para>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile. 
+                Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Experimental backends must still be selected
                 (eg --with-tdbsam) at configure time.
 		</para>
 
@@ -5141,9 +5141,9 @@
 		</para>
 
 		<para>Default: <command>passdb backend = smbpasswd</command></para>
-		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb</command></para>
+		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</command></para>
 		<para>Example: <command>passdb backend = ldapsam_nua:ldaps://ldap.example.com</command></para>
-		<para>Example: <command>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args</command></para>
+		<para>Example: <command>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</command></para>
 		</listitem>
 		</varlistentry>
 
