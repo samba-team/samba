@@ -329,6 +329,8 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   saved_vuid = current_user.vuid;
   GetWd(saved_dir);
   unbecome_user();
+  /* Save the chain fnum. */
+  file_chain_save();
 
   while(OPEN_FSP(fsp) && fsp->granted_oplock)
   {
@@ -397,6 +399,9 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   }
   /* Including the directory. */
   ChDir(saved_dir);
+
+  /* Restore the chain fnum. */
+  file_chain_restore();
 
   /* Free the buffers we've been using to recurse. */
   free(inbuf);
