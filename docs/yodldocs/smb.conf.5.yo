@@ -1199,7 +1199,7 @@ tt(	blocking locks = True)
 tt(	blocking locks = False)
 
 label(browsable)
-dit(bf(browseable (S)))
+dit(bf(browsable (S)))
 
 Synonym for link(bf(browseable))(browseable).
 
