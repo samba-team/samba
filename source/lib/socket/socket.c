@@ -32,27 +32,23 @@ static int socket_destructor(void *ptr)
 	return 0;
 }
 
-NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_context **new_sock, uint32_t flags)
+NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops, struct socket_context **new_sock, uint32_t flags)
 {
 	NTSTATUS status;
 
-	(*new_sock) = talloc_p(NULL, struct socket_context);
+	(*new_sock) = talloc(mem_ctx, struct socket_context);
 	if (!(*new_sock)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*new_sock)->type = type;
+	(*new_sock)->type = ops->type;
 	(*new_sock)->state = SOCKET_STATE_UNDEFINED;
 	(*new_sock)->flags = flags;
 
 	(*new_sock)->fd = -1;
 
 	(*new_sock)->private_data = NULL;
-	(*new_sock)->ops = socket_getops_byname(name, type);
-	if (!(*new_sock)->ops) {
-		talloc_free(*new_sock);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	(*new_sock)->ops = ops;
 
 	status = (*new_sock)->ops->fn_init((*new_sock));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -71,6 +67,18 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 	talloc_set_destructor(*new_sock, socket_destructor);
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_context **new_sock, uint32_t flags)
+{
+	const struct socket_ops *ops;
+
+	ops = socket_getops_byname(name, type);
+	if (!ops) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return socket_create_with_ops(NULL, ops, new_sock, flags);
 }
 
 void socket_destroy(struct socket_context *sock)
