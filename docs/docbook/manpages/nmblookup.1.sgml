@@ -58,7 +58,10 @@
 		up the  NetBIOS name <replaceable>name</replaceable> with a 
 		type of <constant>0x1d</constant>. If <replaceable>
 		name</replaceable> is "-" then it does a lookup on the special name 
-		<constant>__MSBROWSE__</constant>.</para></listitem>
+		<constant>__MSBROWSE__</constant>. Please note that in order to 
+		use the name "-", you need to make sure "-" isn't parsed as an 
+		argument, e.g. use : 
+		<userinput>nmblookup -M -- -</userinput>.</para></listitem> 
 		</varlistentry>
 		
 		<varlistentry>
