@@ -2167,6 +2167,7 @@ static void sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *p
 	if (usr->ptr_logon_hrs)
 	{
 		sam_io_logon_hrs("logon_hrs", &(usr->logon_hrs)   , ps, depth);
+		prs_align(ps);
 	}
 }
 

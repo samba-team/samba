@@ -177,7 +177,7 @@ void cmd_sam_enum_users(struct client_info *info)
 	res = res ? do_samr_enum_dom_users(smb_cli, 
 				&info->dom.samr_pol_open_domain,
 	            num_entries, unk_0, acb_mask, unk_1, 0xffff,
-				info->dom.sam, &info->dom.num_sam_entries) : False;
+				&info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)
 	{
@@ -239,6 +239,11 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);
+
+	if (info->dom.sam != NULL)
+	{
+		free(info->dom.sam);
+	}
 
 	if (res)
 	{
