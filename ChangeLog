@@ -1,3 +1,11 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* appl/test/gss_common.h: new prototypes
+
+	* appl/test/gssapi_client.c: use gss_err instead of abort
+
+	* appl/test/gss_common.c (gss_verr, gss_err): add
+
 1999-08-03  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (n_fold_test_LDADD): need to set this
