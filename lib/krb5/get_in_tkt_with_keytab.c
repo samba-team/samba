@@ -54,14 +54,12 @@ krb5_keytab_key_proc (krb5_context context,
     krb5_keytab real_keytab;
     krb5_keytab_entry entry;
 
-    free (args);
-
     if(keytab == NULL)
 	krb5_kt_default(context, &real_keytab);
     else
 	real_keytab = keytab;
 
-    ret = krb5_kt_get_entry (context, keytab, principal,
+    ret = krb5_kt_get_entry (context, real_keytab, principal,
 			     0, type, &entry);
 
     if (keytab == NULL)
