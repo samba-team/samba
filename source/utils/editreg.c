@@ -419,11 +419,37 @@ typedef int (*key_print_f)(char *path, char *key_name, char *class_name,
 			   int root, int terminal, int values);
 
 typedef int (*val_print_f)(char *path, char *val_name, int val_type, 
-			   int data_len, void *data_blk, int last);
+			   int data_len, void *data_blk, int terminal,
+			   int first, int last);
+
 typedef struct regf_struct_s REGF;
 
 int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path, 
 		    key_print_f key_print, val_print_f val_print);
+
+int nt_val_list_iterator(REGF *regf, VAL_LIST *val_list, int bf, char *path,
+			 int terminal, val_print_f val_print)
+{
+  int i;
+
+  if (!val_list) return 1;
+
+  if (!val_print) return 1;
+
+  for (i=0; i<val_list->val_count; i++) {
+    if (!val_print(path, val_list->vals[i]->name, val_list->vals[i]->data_type,
+		   val_list->vals[i]->data_len, val_list->vals[i]->data_blk,
+		   terminal,
+		   (i == 0),
+		   (i == val_list->val_count))) {
+
+      return 0;
+
+    }
+  }
+
+  return 1;
+}
 
 int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
 			 key_print_f key_print, val_print_f val_print)
@@ -462,16 +488,29 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
       return 0;
   }
 
-  /* 
-   * Now, iterate through the keys in the key list
-   */
-
   new_path = (char *)malloc(path_len + 1 + strlen(key_tree->name) + 1);
   if (!new_path) return 0; /* Errors? */
   new_path[0] = '\0';
   strcat(new_path, path);
   strcat(new_path, "\\");
   strcat(new_path, key_tree->name);
+
+  /*
+   * Now, iterate through the values in the val_list 
+   */
+
+  if (key_tree->values &&
+      !nt_val_list_iterator(regf, key_tree->values, bf, new_path, 
+			    (key_tree->values?(key_tree->values->val_count):0),
+			    val_print)) {
+
+    free(new_path);
+    return 0;
+  } 
+
+  /* 
+   * Now, iterate through the keys in the key list
+   */
 
   if (key_tree->sub_keys && 
       !nt_key_list_iterator(regf, key_tree->sub_keys, bf, new_path, key_print, 
@@ -962,6 +1001,8 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
     }
   }
 
+  tmp->val_count = count;
+
   return tmp;
 
  error:
@@ -1251,6 +1292,19 @@ int print_key(char *path, char *name, char *class_name, int root,
   return 1;
 }
 
+/*
+ * Value print function here ...
+ */
+int print_val(char *path, char *val_name, int val_type, int data_len, 
+	      void *data_blk, int terminal, int first, int last)
+{
+  if (terminal && first)
+    fprintf(stdout, "%s\n", path);
+  fprintf(stdout, "  %s : %s : \n", (val_name?val_name:"<No Name>"), 
+		   val_to_str(val_type, reg_type_names));
+  return 1;
+}
+
 void usage(void)
 {
   fprintf(stderr, "Usage: editreg [-v] [-k] <registryfile>\n");
@@ -1313,7 +1367,7 @@ int main(int argc, char *argv[])
    * to iterate over it.
    */
 
-  nt_key_iterator(regf, regf->root, 0, "", print_key, NULL);
+  nt_key_iterator(regf, regf->root, 0, "", print_key, print_val);
   return 0;
 }
 
