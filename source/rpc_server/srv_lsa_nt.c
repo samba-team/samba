@@ -238,6 +238,11 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 			sid_split_rid(&find_sid, &rid);
 		}
 
+		/* unistr routines take dos codepage strings */
+
+		unix_to_dos(dom_name, True);
+		unix_to_dos(name, True);
+
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
 		DEBUG(10,("init_lsa_trans_names: added user '%s\\%s' to "
@@ -332,6 +337,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 {
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
+	fstring dos_domain;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 
@@ -339,6 +345,9 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
+
+	fstrcpy(dos_domain, global_myworkgroup);
+	unix_to_dos(dos_domain, True);
 
 	switch (q_u->info_class) {
 	case 0x02:
@@ -359,20 +368,20 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myworkgroup;
+				name = dos_domain;
 				/* We need to return the Domain SID here. */
-				if (secrets_fetch_domain_sid(global_myworkgroup,
-					&domain_sid))
-						sid = &domain_sid;
+				if (secrets_fetch_domain_sid(dos_domain,
+							     &domain_sid))
+					sid = &domain_sid;
 				else
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 				break;
 			case ROLE_STANDALONE:
-				name = global_myname;
+				name = dos_domain;
 				sid = NULL; /* Tell it we're not in a domain. */
 				break;
 			default:
@@ -385,15 +394,15 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		switch (lp_server_role()) {
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
-				name = global_myworkgroup;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = global_myname;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
-				name = global_myname;
+				name = dos_domain;
 				sid = &global_sam_sid;
 				break;
 			default:
