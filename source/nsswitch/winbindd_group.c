@@ -21,9 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "nterr.h"
-#include "sids.h"
+#include "winbindd.h"
 
 /* Fill a grent structure from various other information */
 
@@ -58,8 +56,6 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
     struct grent_mem_group *temp;
     pstring groupmem_list;
     
-    fprintf(stderr, "*** looking up membership for group rid %d\n", group_rid);
-
     /* Initialise group membership information */
 
     gr->num_gr_mem = 0;
@@ -83,7 +79,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
     while(todo_groups != NULL) {
         struct grent_mem_group *current_group = todo_groups;
-        uint32 num_names = 0, num_sids = 0, *rid_mem = NULL;
+        uint32 num_names = 0, *rid_mem = NULL;
         enum SID_NAME_USE *name_types = NULL;
 
         DOM_SID **sids = NULL;
@@ -108,6 +104,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
         /* Lookup group membership for the current group */
 
         if (current_group->group_name_type == SID_NAME_DOM_GRP) {
+
             if (!winbindd_lookup_groupmem(domain, current_group->group_rid, 
                                           &num_names, &rid_mem, &names, 
                                           &name_types)) {
@@ -127,6 +124,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
         }
 
         if (current_group->group_name_type == SID_NAME_ALIAS) {
+
             if (!winbindd_lookup_aliasmem(domain, current_group->group_rid, 
                                           &num_names, &sids, &names, 
                                           &name_types)) {
@@ -180,16 +178,12 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                 name_domain = domain;
             }
 
-            fprintf(stderr, "*** got name %s/%s\n", name_dom, name_user);
-
             if (winbindd_lookup_sid_by_name(name_domain, name_user, NULL, 
                                             &name_type) == WINBINDD_OK) {
 
                 /* Check name type */
 
                 if (name_type == SID_NAME_USER) {
-        
-                    fprintf(stderr, "*** name is user\n");
 
                     /* Add to group membership list */
                 
@@ -205,8 +199,6 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                     DOM_SID todo_sid;
                     uint32 todo_rid;
                     char *todo_domain;
-
-                    fprintf(stderr, "*** name is group\n");
 
                     /* Add group to todo list */
 
@@ -237,7 +229,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
         /* Remove group from todo list and add to done_groups list */
 
     cleanup:
-
+        
         DLIST_REMOVE(todo_groups, current_group);
         DLIST_ADD(done_groups, current_group);
 
@@ -269,7 +261,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
         if (sids != NULL) {
             int j;
 
-            for (j = 0; j < num_sids; j++) {
+            for (j = 0; j < num_names; j++) {
                 if (sids[j] != NULL) {
                     free(sids[j]);
                 }
@@ -580,10 +572,20 @@ enum winbindd_result winbindd_getgrent(struct winbindd_state *state)
         
     cleanup:
 
+        /* Free mallocated memory for sam entries */
+
         if (ent->sam_entries != NULL) free(ent->sam_entries);
         ent->sam_entries = NULL;
-        
-        DLIST_REMOVE(state->getgrent_state, state->getgrent_state);
+
+        /* Free state information for this domain */
+
+        {
+            struct getent_state *old_ent;
+
+            old_ent = state->getgrent_state;
+            DLIST_REMOVE(state->getgrent_state, state->getgrent_state);
+            free(old_ent);
+        }
     }
 
     /* Out of pipes so we're done */
