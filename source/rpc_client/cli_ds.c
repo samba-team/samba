@@ -114,6 +114,14 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	result = r.status;
 	
+	if ( NT_STATUS_IS_OK(result) ) {
+	
+		*num_domains = r.num_domains;
+		*trusts = (DS_DOMAIN_TRUSTS*)smb_xmalloc(r.num_domains*sizeof(DS_DOMAIN_TRUSTS));
+		
+		memcpy( *trusts, r.domains.trusts, r.num_domains*sizeof(DS_DOMAIN_TRUSTS) );
+	}
+	
 done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
