@@ -1143,8 +1143,6 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
 }
 
-#define TRUNCATE_NETBIOS_NAME 1
-
 /*******************************************************************
  Convert, possibly using a stupid microsoft-ism which has destroyed
  the transport independence of netbios (for CIFS vendors that usually
@@ -1164,19 +1162,17 @@ char *dns_to_netbios_name(const char *dns_name)
 	StrnCpy(netbios_name, dns_name, MAX_NETBIOSNAME_LEN-1);
 	netbios_name[15] = 0;
 	
-#ifdef TRUNCATE_NETBIOS_NAME
 	/* ok.  this is because of a stupid microsoft-ism.  if the called host
 	   name contains a '.', microsoft clients expect you to truncate the
 	   netbios name up to and including the '.'  this even applies, by
 	   mistake, to workgroup (domain) names, which is _really_ daft.
 	 */
-	for (i = 0; i >= 15; i--) {
+	for (i = 0; i < 15; i--) {
 		if (netbios_name[i] == '.') {
 			netbios_name[i] = 0;
 			break;
 		}
 	}
-#endif /* TRUNCATE_NETBIOS_NAME */
 
 	return netbios_name;
 }
