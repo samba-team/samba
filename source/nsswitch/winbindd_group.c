@@ -522,8 +522,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
 			       num_entries * sizeof(struct acct_info));
-
-			safe_free(sam_grp_entries);
 		}
 
 		ent->num_sam_entries += num_entries;

@@ -327,8 +327,7 @@ static BOOL get_any_dc_name(char *domain, fstring srv_name)
 	dc_ip = ip_list[i];
 	free(ip_list);
 		
-	if (!lookup_pdc_name(global_myname, lp_workgroup(),
-			     &dc_ip, server_state.controller))
+	if (!lookup_pdc_name(global_myname, lp_workgroup(), &dc_ip, srv_name))
 		return False;
 
 	return True;
@@ -366,6 +365,8 @@ void establish_connections(BOOL force_reestablish)
 
 		if (!get_any_dc_name(lp_workgroup(), 
 				     server_state.controller)) {
+			DEBUG(3, ("could not find any domain controllers "
+				  "for domain %s\n", lp_workgroup()));
 			return;
 		}
 
@@ -374,8 +375,10 @@ void establish_connections(BOOL force_reestablish)
 //		server_state.pwdb_initialised = pwdb_initialise(False);
 		server_state.pwdb_initialised = True;
 
-		if (!server_state.pwdb_initialised) 
+		if (!server_state.pwdb_initialised) {
+			DEBUG(3, ("could not initialise pwdb\n"));
 			return;
+		}
 	}
 
 	/* Open lsa handle if it isn't already open */
@@ -387,7 +390,11 @@ void establish_connections(BOOL force_reestablish)
 					   False, SEC_RIGHTS_MAXIMUM_ALLOWED,
 					   &server_state.lsa_handle);
 
-		if (!server_state.lsa_handle_open) return;
+		if (!server_state.lsa_handle_open) {
+			DEBUG(0, ("error opening lsa handle on dc %s\n",
+				  server_state.controller));
+			return;
+		}
 
 		/* Now we can talk to the server we can get some info */
 
@@ -436,7 +443,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
     
     /* Look for domain name */
     
-    if (res && domains && sids) {
+    if (!res && domains && sids) {
             int found = False;
             int i;
 	    
