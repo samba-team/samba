@@ -1047,8 +1047,11 @@ add_principal_mapping(const char *principal_name, const char * subject)
 krb5_error_code
 pk_initialize(const char *user_id, const char *x509_anchors)
 {
-    const krb5_config_binding *binding; 
+    const char *mapping_file; 
     krb5_error_code ret;
+    char buf[1024];
+    unsigned long lineno = 0;
+    FILE *f;
 
     principal_mappings.len = 0;
     principal_mappings.val = NULL;
@@ -1065,22 +1068,49 @@ pk_initialize(const char *user_id, const char *x509_anchors)
 	return ret;
     }
 
-    binding = krb5_config_get_list(context, 
-				   NULL,
-				   "kdc",
-				   "pki-allowed-principals",
-				   NULL);
-    while (binding) {
-	if (binding->type != krb5_config_string)
-	    continue;
-	ret = add_principal_mapping(binding->name, binding->u.string);
-	if (ret)
-	    krb5_err(context, 1, ret, "adding cert %s to principal %s failed",
-		     binding->u.string, binding->name);
-	binding = binding->next;
+    mapping_file = krb5_config_get_string_default(context, 
+						  NULL,
+						  HDB_DB_DIR "/pki-mapping",
+						  "kdc",
+						  "pki-mappings-file",
+						  NULL);
+    f = fopen(mapping_file, "r");
+    if (f == NULL) {
+	krb5_warn(context, ret, "PKINIT: failed to load mappings file %s",
+		  mapping_file);
+	return 0;
     }
 
-    return ret;
+    while (fgets(buf, sizeof(buf), f) != NULL) {
+	char *subject_name, *p;
+    
+	buf[strcspn(buf, "\n")] = '\0';
+	lineno++;
+
+	p = buf + strspn(buf, " \t");
+
+	if (*p == '#' || *p == '\0')
+	    continue;
+
+	subject_name = strchr(p, ':');
+	if (subject_name == NULL) {
+	    krb5_warnx(context, "line %lu missing \":\" :%s\n",
+		       lineno, buf);
+	    continue;
+	}
+	*subject_name++ = '\0';
+
+	ret = add_principal_mapping(p, subject_name);
+	if (ret) {
+	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
+		      lineno, buf);
+	    continue;
+	}
+    } 
+
+    fclose(f);
+
+    return 0;
 }
 
 #endif /* PKINIT */
