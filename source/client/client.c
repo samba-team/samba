@@ -1773,13 +1773,11 @@ static int cmd_rename(void)
 	return 0;
 }
 
-#if 0
- This will become a hard link call. JRA.
 /****************************************************************************
- Rename some file using the NT call.
+ Hard link files using the NT call.
 ****************************************************************************/
 
-static int cmd_ntrename(void)
+static int cmd_hardlink(void)
 {
 	pstring src,dest;
 	fstring buf,buf2;
@@ -1789,21 +1787,20 @@ static int cmd_ntrename(void)
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
 	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("ntrename <src> <dest>\n");
+		d_printf("hardlink <src> <dest>\n");
 		return 1;
 	}
 
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_ntrename(cli, src, dest)) {
-		d_printf("%s doing an NT rename of files\n",cli_errstr(cli));
+	if (!cli_nt_hardlink(cli, src, dest)) {
+		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
 		return 1;
 	}
 	
 	return 0;
 }
-#endif
 
 /****************************************************************************
  Toggle the prompt flag.
@@ -2191,6 +2188,7 @@ static struct
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
+  {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
@@ -2204,10 +2202,6 @@ static struct
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
-#if 0
-  /* This call will eventually morph into a hard link call. JRA */
-  {"ntrename",cmd_ntrename,"<src> <dest> NT rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
-#endif
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},

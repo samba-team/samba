@@ -36,16 +36,18 @@ static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, cons
 	pstring data;
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
+	size_t srclen = 2*(strlen(fname_src)+1);
+	size_t destlen = 2*(strlen(fname_dst) + 1);
 
 	memset(param, 0, sizeof(param));
 	SSVAL(param,0,hard_link ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
 	p = &param[6];
 
-	p += clistr_push(cli, p, fname_src, -1, STR_TERMINATE);
+	p += clistr_push(cli, p, fname_src, MIN(srclen, sizeof(param)-6), STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	p = data;
-	p += clistr_push(cli, p, fname_dst, -1, STR_TERMINATE);
+	p += clistr_push(cli, p, fname_dst, MIN(destlen,sizeof(data)), STR_TERMINATE);
 	data_len = PTR_DIFF(p, data);
 
 	if (!cli_send_trans(cli, SMBtrans2,
@@ -242,6 +244,44 @@ BOOL cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fnam
 
 	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
 	SSVAL(cli->outbuf,smb_vwv1, RENAME_FLAG_RENAME);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_src, -1, STR_TERMINATE);
+	*p++ = 4;
+	p += clistr_push(cli, p, fname_dst, -1, STR_TERMINATE);
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	if (cli_is_error(cli))
+		return False;
+
+	return True;
+}
+
+/****************************************************************************
+ NT hardlink a file.
+****************************************************************************/
+
+BOOL cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf, 4, 0, True);
+
+	SCVAL(cli->outbuf,smb_com,SMBntrename);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(cli->outbuf,smb_vwv1, RENAME_FLAG_HARD_LINK);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;

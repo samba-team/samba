@@ -2478,6 +2478,82 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 }
 
 /****************************************************************************
+ Set a hard link (called by UNIX extensions and by NT rename with HARD link
+ code.
+****************************************************************************/
+
+NTSTATUS hardlink_internals(connection_struct *conn, char *name, char *newname)
+{
+	BOOL bad_path_src = False;
+	BOOL bad_path_dest = False;
+	SMB_STRUCT_STAT sbuf1, sbuf2;
+	BOOL rc, rcdest;
+	pstring last_component_src;
+	pstring last_component_dest;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ZERO_STRUCT(sbuf1);
+	ZERO_STRUCT(sbuf2);
+
+	/* No wildcards. */
+	if (ms_has_wild(name) || ms_has_wild(newname)) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+	}
+
+	rc = unix_convert(name,conn,last_component_src,&bad_path_src,&sbuf1);
+	if (!rc && bad_path_src) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	/* Quick check for "." and ".." */
+	if (last_component_src[0] == '.') {
+		if (!last_component_src[1] || (last_component_src[1] == '.' && !last_component_src[2])) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+
+	/* source must already exist. */
+	if (!VALID_STAT(sbuf1)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	rcdest = unix_convert(newname,conn,last_component_dest,&bad_path_dest,&sbuf2);
+	if (!rcdest && bad_path_dest) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+	}
+
+	/* Quick check for "." and ".." */
+	if (last_component_dest[0] == '.') {
+		if (!last_component_dest[1] || (last_component_dest[1] == '.' && !last_component_dest[2])) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+
+	/* Disallow if already exists. */
+	if (VALID_STAT(sbuf2)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	/* No links from a directory. */
+	if (S_ISDIR(sbuf1.st_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
+	if (ensure_link_is_safe(conn, newname, newname) != 0)
+		return NT_STATUS_ACCESS_DENIED;
+
+	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", name, newname ));
+
+	if (SMB_VFS_LINK(conn,name,newname) != 0) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(3,("hardlink_internals: Error %s link %s -> %s\n",
+                                nt_errstr(status), name,newname));
+	}
+
+	return status;
+}
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid).
 ****************************************************************************/
 
@@ -2964,10 +3040,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (!lp_symlinks(SNUM(conn)))
 				return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-			/* Disallow if already exists. */
-			if (VALID_STAT(sbuf))
-				return(ERROR_DOS(ERRDOS,ERRbadpath));
-
 			srvstr_get_path(inbuf, link_dest, pdata, sizeof(link_dest), -1, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
@@ -2991,24 +3063,19 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			pstring link_dest;
 
 			/* Set a hard link. */
-
-			/* Disallow if already exists. */
-			if (VALID_STAT(sbuf))
-				return(ERROR_DOS(ERRDOS,ERRbadpath));
-
 			srvstr_get_path(inbuf, link_dest, pdata, sizeof(link_dest), -1, STR_TERMINATE, &status);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 
-			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 				fname, link_dest ));
 
-			if (SMB_VFS_LINK(conn,link_dest,fname) != 0)
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			status = hardlink_internals(conn, fname, link_dest);
+			if (!NT_STATUS_IS_OK(status)) {
+				return ERROR_NT(status);
+			}
+
 			SSVAL(params,0,0);
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
