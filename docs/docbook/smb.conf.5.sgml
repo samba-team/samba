@@ -25,7 +25,7 @@
 </refsect1>
 
 <refsect1>
-	<title>FILE FORMAT</title>
+	<title id="fileformatsect">FILE FORMAT</title>
 
 	<para>The file consists of sections and parameters. A section 
 	begins with the name of the section in square brackets and continues 
@@ -47,10 +47,10 @@
 	value is discarded. Internal whitespace within a parameter value 
 	is retained verbatim.</para>
 
-	<para>Any line beginning with a semicolon (';') or a hash ('&num;') 
+	<para>Any line beginning with a semicolon (';') or a hash ('#') 
 	character is ignored, as are lines containing only whitespace.</para>
 
-	<para>Any line ending in a &bsol; is &quot;continued&quot; 
+	<para>Any line ending in a '\' is continued
 	on the next line in the customary UNIX fashion.</para>
 
 	<para>The values following the equals sign in parameters are all 
@@ -64,13 +64,13 @@
 	<title>SECTION DESCRIPTIONS</title>
 
 	<para>Each section in the configuration file (except for the
-	&lsqb;global&rsqb; section) describes a shared resource (known
-	as a &quot;share&quot;). The section name is the name of the 
+	[global] section) describes a shared resource (known
+	as a "share"). The section name is the name of the 
 	shared resource and the parameters within the section define 
 	the shares attributes.</para>
 
-	<para>There are three special sections, &lsqb;global&rsqb;,
-	&lsqb;homes&rsqb; and &lsqb;printers&rsqb;, which are
+	<para>There are three special sections, [global],
+	[homes] and [printers], which are
 	described under <emphasis>special sections</emphasis>. The
 	following notes apply to ordinary section descriptions.</para>
 
@@ -92,7 +92,7 @@
 	<para>Sections other than guest services will require a password 
 	to access them. The client provides the username. As older clients 
 	only provide passwords and not usernames, you may specify a list 
-	of usernames to check against the password using the &quot;user=&quot; 
+	of usernames to check against the password using the "user=" 
 	option in the share definition. For modern clients such as 
 	Windows 95/98/ME/NT/2000, this should not be necessary.</para>
 
@@ -103,7 +103,7 @@
 	
 	<para>The following sample section defines a file space share. 
 	The user has write access to the path <filename>/home/bar</filename>. 
-	The share is accessed via the share name &quot;foo&quot;:</para>
+	The share is accessed via the share name "foo":</para>
 
 	<screen>
 	<computeroutput>
@@ -135,16 +135,16 @@
 	<title>SPECIAL SECTIONS</title>
 	
 	<refsect2>
-		<title>The &lsqb;global&rsqb; section</title>
+		<title>The [global] section</title>
 		
-		<para>Parameters in this section apply to the server 
+		<para>parameters in this section apply to the server 
 		as a whole, or are defaults for sections which do not 
 		specifically define certain items. See the notes 
-		under PARAMETERS for more information.</para>
+		under paraMETERS for more information.</para>
 	</refsect2>
 	
 	<refsect2>
-		<title>The &lsqb;homes&rsqb; section</title>
+		<title id="homesect">The [homes] section</title>
 		
 		<para>If a section called homes is included in the 
 		configuration file, services connecting clients to their 
@@ -155,7 +155,7 @@
 		match is found, the requested section name is treated as a 
 		user name and looked up in the local password file. If the 
 		name exists and the correct password has been given, a share is 
-		created by cloning the &lsqb;homes&rsqb; section.</para>
+		created by cloning the [homes] section.</para>
 		
 		<para>Some modifications are then made to the newly 
 		created share:</para>
@@ -169,10 +169,10 @@
 		</itemizedlist>
 
 		<para>If you decide to use a <emphasis>path=</emphasis> line 
-		in your &lsqb;homes&rsqb; section then you may find it useful 
-		to use the &percnt;S macro. For example :</para>
+		in your [homes] section then you may find it useful 
+		to use the %S macro. For example :</para>
 
-		<para><userinput>path=/data/pchome/&percnt;S</userinput></para>
+		<para><userinput>path=/data/pchome/%S</userinput></para>
 
 		<para>would be useful if you have different home directories 
 		for your PCs than for UNIX access.</para>
@@ -182,14 +182,14 @@
 		of fuss.</para>
 
 		<para>A similar process occurs if the requested section 
-		name is &quot;homes&quot;, except that the share name is not 
+		name is "homes", except that the share name is not 
 		changed to that of the requesting user. This method of using 
-		the &lsqb;homes&rsqb; section works well if different users share 
+		the [homes] section works well if different users share 
 		a client PC.</para>
 		
-		<para>The &lsqb;homes&rsqb; section can specify all the parameters 
+		<para>The [homes] section can specify all the parameters 
 		a normal service section can specify, though some make more sense 
-		than others. The following is a typical and suitable &lsqb;homes&rsqb;
+		than others. The following is a typical and suitable [homes]
 		section:</para>
 
 		<screen>
@@ -200,7 +200,7 @@
 		</screen>
 	
 		<para>An important point is that if guest access is specified 
-		in the &lsqb;homes&rsqb; section, all home directories will be 
+		in the [homes] section, all home directories will be 
 		visible to all clients <emphasis>without a password</emphasis>. 
 		In the very unlikely event that this is actually desirable, it 
 		would be wise to also specify <emphasis>read only
@@ -208,30 +208,30 @@
 
 		<para>Note that the <emphasis>browseable</emphasis> flag for 
 		auto home directories will be inherited from the global browseable 
-		flag, not the &lsqb;homes&rsqb; browseable flag. This is useful as 
-		it means setting browseable=no in the &lsqb;homes&rsqb; section 
-		will hide the &lsqb;homes&rsqb; share but make any auto home 
+		flag, not the [homes] browseable flag. This is useful as 
+		it means setting browseable=no in the [homes] section 
+		will hide the [homes] share but make any auto home 
 		directories visible.</para>
 	</refsect2>
 	
 	<refsect2>
-		<title>The &lsqb;printers&rsqb; section</title>
+		<title id="printersect">The [printers] section</title>
 		
-		<para>This section works like &lsqb;homes&rsqb;, 
+		<para>This section works like [homes], 
 		but for printers.</para>
 
-		<para>If a &lsqb;printers&rsqb; section occurs in the 
+		<para>If a [printers] section occurs in the 
 		configuration file, users are able to connect to any printer 
 		specified in the local host's printcap file.</para>
 
 		<para>When a connection request is made, the existing sections 
 		are scanned. If a match is found, it is used. If no match is found, 
-		but a &lsqb;homes&rsqb; section exists, it is used as described
+		but a [homes] section exists, it is used as described
 		above. Otherwise, the requested section name is treated as a 
 		printer name and the appropriate printcap file is scanned to see 
 		if the requested section name is a valid printer share name. If 
 		a match is found, a new printer share is created by cloning 
-		the &lsqb;printers&rsqb; section.</para>
+		the [printers] section.</para>
 
 		<para>A few modifications are then made to the newly created 
 		share:</para>
@@ -248,13 +248,13 @@
 		printer name.</para></listitem>
 		</itemizedlist>
 
-		<para>Note that the &lsqb;printers&rsqb; service MUST be 
+		<para>Note that the [printers] service MUST be 
 		printable - if you specify otherwise, the server will refuse 
 		to load the configuration file.</para>
 		
 		<para>Typically the path specified would be that of a 
 		world-writeable spool directory with the sticky bit set on 
-		it. A typical &lsqb;printers&rsqb; entry would look like 
+		it. A typical [printers] entry would look like 
 		this:</para>
 
 		<screen><computeroutput>
@@ -277,7 +277,7 @@
 		</screen>
 
 		<para>Each alias should be an acceptable printer name for 
-		your printing subsystem. In the &lsqb;global&rsqb; section, specify 
+		your printing subsystem. In the [global] section, specify 
 		the new file as your printcap.  The server will then only recognize 
 		names found in your pseudo-printcap, which of course can contain 
 		whatever aliases you like. The same technique could be used 
@@ -286,35 +286,35 @@
 		<para>An alias, by the way, is defined as any component of the 
 		first entry of a printcap record. Records are separated by newlines,
 		components (if there are more than one) are separated by vertical 
-		bar symbols (&quot;&verbar;&quot;).</para>
+		bar symbols ('|').</para>
 		
 		<para>NOTE: On SYSV systems which use lpstat to determine what 
 		printers are defined on the system you may be able to use
-		&quot;printcap name = lpstat&quot; to automatically obtain a list 
-		of printers. See the &quot;printcap name&quot; option 
+		"printcap name = lpstat" to automatically obtain a list 
+		of printers. See the "printcap name" option 
 		for more details.</para>
 	</refsect2>
 </refsect1>
 
 <refsect1>
-	<title>PARAMETRS</title>
+	<title>paraMETRS</title>
 
-	<para>Parameters define the specific attributes of sections.</para>
+	<para>parameters define the specific attributes of sections.</para>
 
-	<para>Some parameters are specific to the &lsqb;global&rsqb; section
+	<para>Some parameters are specific to the [global] section
 	(e.g., <emphasis>security</emphasis>).  Some parameters are usable 
 	in all sections (e.g., <emphasis>create mode</emphasis>). All others 
 	are permissible only in normal sections. For the purposes of the 
-	following descriptions the &lsqb;homes&rsqb; and &lsqb;printers&rsqb;
+	following descriptions the [homes] and [printers]
 	sections will be considered normal.  The letter <emphasis>G</emphasis> 
 	in parentheses indicates that a parameter is specific to the
-	&lsqb;global&rsqb; section. The letter <emphasis>S</emphasis>
+	[global] section. The letter <emphasis>S</emphasis>
 	indicates that a parameter can be specified in a service specific
 	section. Note that all <emphasis>S</emphasis> parameters can also be specified in 
-	the &lsqb;global&rsqb; section - in which case they will define
+	the [global] section - in which case they will define
 	the default behavior for all services.</para>
 
-	<para>Parameters are arranged here in alphabetical order - this may 
+	<para>parameters are arranged here in alphabetical order - this may 
 	not create best bedfellows, but at least you can find them! Where 
 	there are synonyms, the preferred synonym is described, others refer 
 	to the preferred synonym.</para>
@@ -324,9 +324,9 @@
 	<title>VARIABLE SUBSTITUTIONS</title>
 
 	<para>Many of the strings that are settable in the config file 
-	can take substitutions. For example the option &quot;path =
-	/tmp/&percnt;u&quot; would be interpreted as &quot;path = 
-	/tmp/john&quot; if the user connected with the username john.</para>
+	can take substitutions. For example the option "path =
+	/tmp/%u" would be interpreted as "path = 
+	/tmp/john" if the user connected with the username john.</para>
 
 	<para>These substitutions are mostly noted in the descriptions below, 
 	but there are some general substitutions which apply whenever they 
@@ -334,128 +334,128 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>&percnt;S</term>
+		<term>%S</term>
 		<listitem><para>the name of the current service, if any.</para>
 		</listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;P</term>
+		<term>%P</term>
 		<listitem><para>the root directory of the current service, 
 		if any.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;u</term>
+		<term>%u</term>
 		<listitem><para>user name of the current service, if any.</para>
 		</listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;g</term>
-		<listitem><para>primary group name of &percnt;u.</para></listitem>
+		<term>%g</term>
+		<listitem><para>primary group name of %u.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;U</term>
+		<term>%U</term>
 		<listitem><para>session user name (the user name that the client 
 		wanted, not necessarily the same as the one they got).</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;G</term>
-		<listitem><para>primary group name of &percnt;U.</para></listitem>
+		<term>%G</term>
+		<listitem><para>primary group name of %U.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>&percnt;H</term>
+		<term>%H</term>
 		<listitem><para>the home directory of the user given 
-		by &percnt;u.</para></listitem>
+		by %u.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;v</term>
+		<term>%v</term>
 		<listitem><para>the Samba version.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;h</term>
+		<term>%h</term>
 		<listitem><para>the internet hostname that Samba is running 
 		on.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>&percnt;m</term>
+		<term>%m</term>
 		<listitem><para>the NetBIOS name of the client machine 
 		(very useful).</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;L</term>
+		<term>%L</term>
 		<listitem><para>the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
-		server can have a &quot;dual personality&quot;.</para></listitem>
+		server can have a "dual personality".</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;M</term>
+		<term>%M</term>
 		<listitem><para>the internet name of the client machine.
 		</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;N</term>
+		<term>%N</term>
 		<listitem><para>the name of your NIS home directory server.  
 		This is obtained from your NIS auto.map entry.  If you have 
 		not compiled Samba with the <emphasis>--with-automount</emphasis> 
-		option then this value will be the same as &percnt;.</para>
+		option then this value will be the same as %.</para>
 		</listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;p</term>
+		<term>%p</term>
 		<listitem><para>the path of the service's home directory, 
 		obtained from your NIS auto.map entry. The NIS auto.map entry 
-		is split up as &quot;&percnt;N:&percnt;p&quot;.</para></listitem>
+		is split up as "%N:%p".</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;R</term>
+		<term>%R</term>
 		<listitem><para>the selected protocol level after 
 		protocol negotiation. It can be one of CORE, COREPLUS, 
 		LANMAN1, LANMAN2 or NT1.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>&percnt;d</term>
+		<term>%d</term>
 		<listitem><para>The process id of the current server 
 		process.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;a</term>
+		<term>%a</term>
 		<listitem><para>the architecture of the remote
 		machine. Only some are recognized, and those may not be 
-		100&percnt; reliable. It currently recognizes Samba, WfWg, 
+		100% reliable. It currently recognizes Samba, WfWg, 
 		WinNT and Win95. Anything else will be known as 
-		&quot;UNKNOWN&quot;. If it gets it wrong then sending a level 
-		3 log to <ulink url="mailto:samba@samba.org">samba&commat;samba.org
+		"UNKNOWN". If it gets it wrong then sending a level 
+		3 log to <ulink url="mailto:samba@samba.org">samba@samba.org
 		</ulink> should allow it to be fixed.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;I</term>
+		<term>%I</term>
 		<listitem><para>The IP address of the client machine.</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>&percnt;T</term>
+		<term>%T</term>
 		<listitem><para>the current date and time.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>&percnt;&dollar;(<replaceable>envvar</replaceable>)</term>
+		<term>%$(<replaceable>envvar</replaceable>)</term>
 		<listitem><para>The value of the environment variable
 		<replaceable>envar</replaceable>.</para></listitem>
 		</varlistentry>
@@ -466,10 +466,66 @@
 </refsect1>
 
 <refsect1>
-	<title>NAME MANGLING</title
+	<title id="namemanglingsect">NAME MANGLING</title>
+	
+	<para>Samba supports "name mangling" so that DOS and 
+	Windows clients can use files that don't conform to the 8.3 format. 
+	It can also be set to adjust the case of 8.3 format filenames.</para>
+
+	<para>There are several options that control the way mangling is 
+	performed, and they are grouped here rather than listed separately. 
+	For the defaults look at the output of the testparm program. </para>
+
+	<para>All of these options can be set separately for each service 
+	(or globally, of course). </para>
+
+	<para>The options are: </para>
+	
+	<variablelist>
+	
+	<varlistentry>
+		<term>mangle case= yes/no</term>
+		<listitem><para> controls if names that have characters that 
+		aren't of the "default" case are mangled. For example, 
+		if this is yes then a name like "Mail" would be mangled. 
+		Default <emphasis>no</emphasis>.</para></listitem>
+		</varlistentry> 
+	
+		<varlistentry>
+		<term>case sensitive = yes/no</term>
+		<listitem><para>controls whether filenames are case sensitive. If 
+		they aren't then Samba must do a filename search and match on passed 
+		names. Default <emphasis>no</emphasis>.</para></listitem>
+		</varlistentry> 
+
+		<varlistentry>
+		<term>default case = upper/lower</term>
+		<listitem><para>controls what the default case is for new 
+		filenames. Default <emphasis>lower</emphasis>.</para></listitem>
+		</varlistentry> 
+	
+		<varlistentry>
+		<term>preserve case = yes/no</term>
+		<listitem><para>controls if new files are created with the 
+		case that the client passes, or if they are forced to be the 
+		"default" case. Default <emphasis>yes</emphasis>.
+		</para></listitem>
+		</varlistentry> 
+
+		<varlistentry>
+		<term>short preserve case = yes/no</term>
+		<listitem><para>controls if new files which conform to 8.3 syntax, 
+		that is all in upper case and of suitable length, are created 
+		upper case, or if they are forced to be the "default" 
+		case. This option can be use with "preserve case = yes" 
+		to permit long filenames to retain their case, while short names 
+		are lowered. Default <emphasis>yes</emphasis>.</para></listitem>
+		</varlistentry> 
+	</variablelist>
 	
 	<para>By default, Samba 2.2 has the same semantics as a Windows 
 	NT server, in that it is case insensitive but case preserving.</para>
+	
 </refsect1>
 
 <refsect1>
@@ -481,7 +537,7 @@
 	steps fail then the connection request is rejected. If one of the 
 	steps pass then the following steps are not checked.</para>
 
-	<para>If the service is marked &quot;guest only = yes&quot; then
+	<para>If the service is marked "guest only = yes" then
 	steps 1 to 5 are skipped.</para>
 
 	<orderedlist numeration="Arabic">
@@ -489,7 +545,7 @@
 		pair and that username/password pair is validated by the UNIX 
 		system's password programs then the connection is made as that 
 		username. Note that this includes the 
-		&bsol;&bsol;server&bsol;service&percnt;username method of passing 
+		\\server\service%<replaceable>username</replaceable> method of passing 
 		a username.</para></listitem>
 
 		<listitem><para>If the client has previously registered a username 
@@ -505,19 +561,19 @@
 		username/password pair with the server and the client has passed 
 		the validation token then that username is used. </para></listitem>
 
-		<listitem><para>If a &quot;user = &quot; field is given in the
+		<listitem><para>If a "user = " field is given in the
 		<filename>smb.conf</filename> file for the service and the client 
 		has supplied a password, and that password matches (according to 
 		the UNIX system's password checking) with one of the usernames 
-		from the &quot;user=&quot; field then the connection is made as 
-		the username in the &quot;user=&quot; line. If one 
-		of the username in the &quot;user=&quot; list begins with a
-		&commat; then that name expands to a list of names in 
+		from the "user=" field then the connection is made as 
+		the username in the "user=" line. If one 
+		of the username in the "user=" list begins with a
+		'@' then that name expands to a list of names in 
 		the group of the same name.</para></listitem>
 
 		<listitem><para>If the service is a guest service then a 
-		connection is made as the username given in the &quot;guest 
-		account =&quot; for the service, irrespective of the 
+		connection is made as the username given in the "guest 
+		account =" for the service, irrespective of the 
 		supplied password.</para></listitem>
 	</orderedlist>
 
@@ -529,5 +585,3815 @@
 	<para>Here is a list of all global parameters. See the section of 
 	each parameter for details.  Note that some are synonyms.</para>
 
+	<itemizedlist>
+		<listitem><para><parameter>add user script</parameter> </para></listitem>
+		<listitem><para><parameter>allow trusted domains</parameter> </para></listitem>
+		<listitem><para><parameter>announce as</parameter> </para></listitem>
+		<listitem><para><parameter>announce version</parameter> </para></listitem>
+		<listitem><para><parameter>auto services</parameter> </para></listitem>
+		<listitem><para><parameter>bind interfaces only</parameter> </para></listitem>
+		<listitem><para><parameter>browse list</parameter></para></listitem>
+		<listitem><para><parameter>change notify timeout</parameter> </para></listitem>
+		<listitem><para><parameter>character set</parameter> </para></listitem>
+		<listitem><para><parameter>client code page</parameter> </para></listitem>
+		<listitem><para><parameter>coding system</parameter></para></listitem>
+		<listitem><para><parameter>config file</parameter> </para></listitem>
+		<listitem><para><parameter>deadtime</parameter> </para></listitem>
+		<listitem><para><parameter>debug hires timestamp</parameter> </para></listitem>
+		<listitem><para><parameter>debug pid</parameter> </para></listitem>
+		<listitem><para><parameter>debug timestamp</parameter></para></listitem>
+		<listitem><para><parameter>debug uid</parameter> </para></listitem>
+		<listitem><para><parameter>debug level</parameter> </para></listitem>
+		<listitem><para><parameter>default</parameter> </para></listitem>
+		<listitem><para><parameter>default service</parameter> </para></listitem>
+		<listitem><para><parameter>delete user script</parameter> </para></listitem>
+		<listitem><para><parameter>dfree command</parameter> </para></listitem>
+		<listitem><para><parameter>dns proxy</parameter> </para></listitem>
+		<listitem><para><parameter>domain admin group</parameter> </para></listitem>
+		<listitem><para><parameter>domain admin users</parameter> </para></listitem>
+		<listitem><para><parameter>domain groups</parameter></para></listitem>
+		<listitem><para><parameter>domain guest group</parameter> </para></listitem>
+		<listitem><para><parameter>domain guest users</parameter> </para></listitem>
+		<listitem><para><parameter>domain logons</parameter> </para></listitem>
+		<listitem><para><parameter>domain master</parameter> </para></listitem>
+		<listitem><para><parameter>encrypt passwords</parameter> </para></listitem>
+		<listitem><para><parameter>getwd cache</parameter> </para></listitem>
+		<listitem><para><parameter>hide local users</parameter> </para></listitem>
+		<listitem><para><parameter>homedir map</parameter> </para></listitem>
+		<listitem><para><parameter>hosts equiv</parameter> </para></listitem>
+		<listitem><para><parameter>interfaces</parameter></para></listitem>
+		<listitem><para><parameter>keepalive</parameter> </para></listitem>
+		<listitem><para><parameter>kernel oplocks</parameter> </para></listitem>
+		<listitem><para><parameter>ldap filter</parameter> </para></listitem>
+		<listitem><para><parameter>ldap port</parameter> </para></listitem>
+		<listitem><para><parameter>ldap root</parameter> </para></listitem>
+		<listitem><para><parameter>ldap root passwd</parameter> </para></listitem>
+		<listitem><para><parameter>ldap server</parameter> </para></listitem>
+		<listitem><para><parameter>ldap suffix</parameter> </para></listitem>
+		<listitem><para><parameter>lm announce</parameter> </para></listitem>
+		<listitem><para><parameter>lm interval</parameter> </para></listitem>
+		<listitem><para><parameter>load printers</parameter></para></listitem>
+		<listitem><para><parameter>local master</parameter> </para></listitem>
+		<listitem><para><parameter>lock dir</parameter> </para></listitem>
+		<listitem><para><parameter>lock directory</parameter> </para></listitem>
+		<listitem><para><parameter>log file</parameter> </para></listitem>
+		<listitem><para><parameter>log level</parameter> </para></listitem>
+		<listitem><para><parameter>logon drive</parameter></para></listitem>
+		<listitem><para><parameter>logon home</parameter> </para></listitem>
+		<listitem><para><parameter>logon path</parameter> </para></listitem>
+		<listitem><para><parameter>logon script</parameter> </para></listitem>
+		<listitem><para><parameter>lpq cache time</parameter> </para></listitem>
+		<listitem><para><parameter>machine password timeout</parameter> </para></listitem>
+		<listitem><para><parameter>mangled stack</parameter> </para></listitem>
+		<listitem><para><parameter>map to guest</parameter> </para></listitem>
+		<listitem><para><parameter>max disk size</parameter> </para></listitem>
+		<listitem><para><parameter>max log size</parameter> </para></listitem>
+		<listitem><para><parameter>max mux</parameter> </para></listitem>
+		<listitem><para><parameter>max open files</parameter> </para></listitem>
+		<listitem><para><parameter>max packet</parameter> </para></listitem>
+		<listitem><para><parameter>max ttl</parameter> </para></listitem>
+		<listitem><para><parameter>max wins ttl</parameter> </para></listitem>
+		<listitem><para><parameter>max xmit</parameter> </para></listitem>
+		<listitem><para><parameter>message command</parameter> </para></listitem>
+		<listitem><para><parameter>min passwd length</parameter> </para></listitem>
+		<listitem><para><parameter>min password length</parameter> </para></listitem>
+		<listitem><para><parameter>min wins ttl</parameter> </para></listitem>
+		<listitem><para><parameter>name resolve order</parameter> </para></listitem>
+		<listitem><para><parameter>netbios aliases</parameter> </para></listitem>
+		<listitem><para><parameter>netbios name</parameter> </para></listitem>
+		<listitem><para><parameter>netbios scope</parameter> </para></listitem>
+		<listitem><para><parameter>nis homedir</parameter> </para></listitem>
+		<listitem><para><parameter>nt acl support</parameter> </para></listitem>
+		<listitem><para><parameter>nt pipe support</parameter> </para></listitem>
+		<listitem><para><parameter>nt smb support</parameter> </para></listitem>
+		<listitem><para><parameter>null passwords</parameter> </para></listitem>
+		<listitem><para><parameter>ole locking compatibility</parameter></para></listitem>
+		<listitem><para><parameter>oplock break wait time</parameter> </para></listitem>
+		<listitem><para><parameter>os level</parameter> </para></listitem>
+		<listitem><para><parameter>packet size</parameter> </para></listitem>
+		<listitem><para><parameter>panic action</parameter> </para></listitem>
+		<listitem><para><parameter>passwd chat</parameter></para></listitem>
+		<listitem><para><parameter>passwd chat debug</parameter> </para></listitem>
+		<listitem><para><parameter>passwd program</parameter> </para></listitem>
+		<listitem><para><parameter>password level</parameter> </para></listitem>
+		<listitem><para><parameter>password server</parameter> </para></listitem>
+		<listitem><para><parameter>prefered master</parameter> </para></listitem>
+		<listitem><para><parameter>preferred master</parameter> </para></listitem>
+		<listitem><para><parameter>preload</parameter> </para></listitem>
+		<listitem><para><parameter>printcap</parameter> </para></listitem>
+		<listitem><para><parameter>printcap name</parameter> </para></listitem>
+		<listitem><para><parameter>printer driver file</parameter> </para></listitem>
+		<listitem><para><parameter>private dir</parameter> </para></listitem>
+		<listitem><para><parameter>protocol</parameter> </para></listitem>
+		<listitem><para><parameter>read bmpx</parameter> </para></listitem>
+		<listitem><para><parameter>read prediction</parameter> </para></listitem>
+		<listitem><para><parameter>read raw</parameter> </para></listitem>
+		<listitem><para><parameter>read size</parameter> </para></listitem>
+		<listitem><para><parameter>remote announce</parameter> </para></listitem>
+		<listitem><para><parameter>remote browse sync</parameter> </para></listitem>
+		<listitem><para><parameter>restrict anonymous</parameter> </para></listitem>
+		<listitem><para><parameter>root</parameter> </para></listitem>
+		<listitem><para><parameter>root dir</parameter> </para></listitem>
+		<listitem><para><parameter>root directory</parameter> </para></listitem>
+		<listitem><para><parameter>security</parameter> </para></listitem>
+		<listitem><para><parameter>server string</parameter> </para></listitem>
+		<listitem><para><parameter>shared mem size</parameter> </para></listitem>
+		<listitem><para><parameter>smb passwd file</parameter> </para></listitem>
+		<listitem><para><parameter>smbrun</parameter> </para></listitem>
+		<listitem><para><parameter>socket address</parameter> </para></listitem>
+		<listitem><para><parameter>socket options</parameter> </para></listitem>
+		<listitem><para><parameter>source environment</parameter> </para></listitem>
+		<listitem><para><parameter>ssl</parameter> </para></listitem>
+		<listitem><para><parameter>ssl CA certDir</parameter> </para></listitem>
+		<listitem><para><parameter>ssl CA certFile</parameter> </para></listitem>
+		<listitem><para><parameter>ssl ciphers</parameter> </para></listitem>
+		<listitem><para><parameter>ssl client cert</parameter> </para></listitem>
+		<listitem><para><parameter>ssl client key</parameter></para></listitem>
+		<listitem><para><parameter>ssl compatibility</parameter> </para></listitem>
+		<listitem><para><parameter>ssl hosts</parameter> </para></listitem>
+		<listitem><para><parameter>ssl hosts resign</parameter> </para></listitem>
+		<listitem><para><parameter>ssl require clientcert</parameter></para></listitem>
+		<listitem><para><parameter>ssl require servercert</parameter> </para></listitem>
+		<listitem><para><parameter>ssl server cert</parameter> </para></listitem>
+		<listitem><para><parameter>ssl server key</parameter> </para></listitem>
+		<listitem><para><parameter>ssl version</parameter> </para></listitem>
+		<listitem><para><parameter>stat cache</parameter> </para></listitem>
+		<listitem><para><parameter>stat cache size</parameter> </para></listitem>
+		<listitem><para><parameter>strip dot</parameter> </para></listitem>
+		<listitem><para><parameter>syslog</parameter> </para></listitem>
+		<listitem><para><parameter>syslog only</parameter> </para></listitem>
+		<listitem><para><parameter>template homedir</parameter></para></listitem>
+		<listitem><para><parameter>template shell</parameter> </para></listitem>
+		<listitem><para><parameter>time offset</parameter> </para></listitem>
+		<listitem><para><parameter>time server</parameter> </para></listitem>
+		<listitem><para><parameter>timestamp logs</parameter> </para></listitem>
+		<listitem><para><parameter>unix password sync</parameter> </para></listitem>
+		<listitem><para><parameter>unix realname</parameter> </para></listitem>
+		<listitem><para><parameter>update encrypted</parameter> </para></listitem>
+		<listitem><para><parameter>use rhosts</parameter> </para></listitem>
+		<listitem><para><parameter>username level</parameter> </para></listitem>
+		<listitem><para><parameter>username map</parameter> </para></listitem>
+		<listitem><para><parameter>utmp directory</parameter> </para></listitem>
+		<listitem><para><parameter>valid chars</parameter> </para></listitem>
+		<listitem><para><parameter>winbind cache time</parameter> </para></listitem>
+		<listitem><para><parameter>winbind gid</parameter> </para></listitem>
+		<listitem><para><parameter>winbind uid</parameter> </para></listitem>
+		<listitem><para><parameter>wins hook</parameter> </para></listitem>
+		<listitem><para><parameter>wins proxy</parameter> </para></listitem>
+		<listitem><para><parameter>wins server</parameter> </para></listitem>
+		<listitem><para><parameter>wins support</parameter> </para></listitem>
+		<listitem><para><parameter>workgroup</parameter> </para></listitem>
+		<listitem><para><parameter>write raw</parameter> </para></listitem>
+	</itemizedlist>
+
 </refsect1>
+
+<refsect1>
+	<title>COMPLETE LIST OF SERVICE PARAMETERS</title>
+	
+	<para>Here is a list of all service parameters. See the section of 
+	each parameter for details. Note that some are synonyms.</para>
+	
+	<itemizedlist>
+		<listitem><para><parameter>admin users</parameter> </para></listitem>
+		<listitem><para><parameter>allow hosts</parameter> </para></listitem>
+		<listitem><para><parameter>alternate permissions</parameter> </para></listitem>
+		<listitem><para><parameter>available</parameter> </para></listitem>
+		<listitem><para><parameter>blocking locks</parameter></para></listitem>
+		<listitem><para><parameter>browsable</parameter> </para></listitem>
+		<listitem><para><parameter>browseable</parameter> </para></listitem>
+		<listitem><para><parameter>case sensitive</parameter> </para></listitem>
+		<listitem><para><parameter>casesignames</parameter> </para></listitem>
+		<listitem><para><parameter>comment</parameter> </para></listitem>
+		<listitem><para><parameter>copy</parameter> </para></listitem>
+		<listitem><para><parameter>create mask</parameter> </para></listitem>
+		<listitem><para><parameter>create mode</parameter> </para></listitem>
+		<listitem><para><parameter>default case</parameter> </para></listitem>
+		<listitem><para><parameter>delete readonly</parameter> </para></listitem>
+		<listitem><para><parameter>delete veto files</parameter> </para></listitem>
+		<listitem><para><parameter>deny hosts</parameter> </para></listitem>
+		<listitem><para><parameter>directory</parameter> </para></listitem>
+		<listitem><para><parameter>directory mask</parameter> </para></listitem>
+		<listitem><para><parameter>directory mode</parameter> </para></listitem>
+		<listitem><para><parameter>directory security mask</parameter></para></listitem>
+		<listitem><para><parameter>dont descend</parameter> </para></listitem>
+		<listitem><para><parameter>dos filetime resolution</parameter> </para></listitem>
+		<listitem><para><parameter>dos filetimes</parameter> </para></listitem>
+		<listitem><para><parameter>exec</parameter> </para></listitem>
+		<listitem><para><parameter>fake directory create times</parameter> </para></listitem>
+		<listitem><para><parameter>fake oplocks</parameter> </para></listitem>
+		<listitem><para><parameter>follow symlinks</parameter> </para></listitem>
+		<listitem><para><parameter>force create mode</parameter> </para></listitem>
+		<listitem><para><parameter>force directory mode</parameter> </para></listitem>
+		<listitem><para><parameter>force directory security mode</parameter> </para></listitem>
+		<listitem><para><parameter>force group</parameter> </para></listitem>
+		<listitem><para><parameter>force security mode</parameter> </para></listitem>
+		<listitem><para><parameter>force user</parameter> </para></listitem>
+		<listitem><para><parameter>fstype</parameter> </para></listitem>
+		<listitem><para><parameter>group</parameter> </para></listitem>
+		<listitem><para><parameter>guest account</parameter> </para></listitem>
+		<listitem><para><parameter>guest ok</parameter> </para></listitem>
+		<listitem><para><parameter>guest only</parameter> </para></listitem>
+		<listitem><para><parameter>hide dot files</parameter></para></listitem>
+		<listitem><para><parameter>hide files</parameter> </para></listitem>
+		<listitem><para><parameter>hosts allow</parameter> </para></listitem>
+		<listitem><para><parameter>hosts deny</parameter> </para></listitem>
+		<listitem><para><parameter>include</parameter> </para></listitem>
+		<listitem><para><parameter>inherit permissions</parameter> </para></listitem>
+		<listitem><para><parameter>invalid users</parameter> </para></listitem>
+		<listitem><para><parameter>level2 oplocks</parameter> </para></listitem>
+		<listitem><para><parameter>locking</parameter> </para></listitem>
+		<listitem><para><parameter>lppause command</parameter> </para></listitem>
+		<listitem><para><parameter>lpq command</parameter> </para></listitem>
+		<listitem><para><parameter>lpresume command</parameter> </para></listitem>
+		<listitem><para><parameter>lprm command</parameter> </para></listitem>
+		<listitem><para><parameter>magic output</parameter> </para></listitem>
+		<listitem><para><parameter>magic script</parameter> </para></listitem>
+		<listitem><para><parameter>mangle case</parameter> </para></listitem>
+		<listitem><para><parameter>mangle locks</parameter> </para></listitem>
+		<listitem><para><parameter>mangled map</parameter> </para></listitem>
+		<listitem><para><parameter>mangled names</parameter> </para></listitem>
+		<listitem><para><parameter>mangling char</parameter> </para></listitem>
+		<listitem><para><parameter>map archive</parameter> </para></listitem>
+		<listitem><para><parameter>map hidden</parameter></para></listitem>
+		<listitem><para><parameter>map system</parameter> </para></listitem>
+		<listitem><para><parameter>max connections</parameter> </para></listitem>
+		<listitem><para><parameter>min print space</parameter> </para></listitem>
+		<listitem><para><parameter>only guest</parameter> </para></listitem>
+		<listitem><para><parameter>only user</parameter> </para></listitem>
+		<listitem><para><parameter>oplock contention limit</parameter> </para></listitem>
+		<listitem><para><parameter>oplocks</parameter> </para></listitem>
+		<listitem><para><parameter>path</parameter> </para></listitem>
+		<listitem><para><parameter>postexec</parameter> </para></listitem>
+		<listitem><para><parameter>postscript</parameter> </para></listitem>
+		<listitem><para><parameter>preexec</parameter> </para></listitem>
+		<listitem><para><parameter>preexec close</parameter> </para></listitem>
+		<listitem><para><parameter>preserve case</parameter> </para></listitem>
+		<listitem><para><parameter>print command</parameter> </para></listitem>
+		<listitem><para><parameter>print ok</parameter> </para></listitem>
+		<listitem><para><parameter>printable</parameter> </para></listitem>
+		<listitem><para><parameter>printer</parameter> </para></listitem>
+		<listitem><para><parameter>printer admin</parameter> </para></listitem>		
+		<listitem><para><parameter>printer driver</parameter> </para></listitem>
+		<listitem><para><parameter>printer driver location</parameter> </para></listitem>
+		<listitem><para><parameter>printer name</parameter> </para></listitem>
+		<listitem><para><parameter>printing</parameter></para></listitem>
+		<listitem><para><parameter>public</parameter> </para></listitem>
+		<listitem><para><parameter>queuepause command</parameter> </para></listitem>
+		<listitem><para><parameter>queueresume command</parameter> </para></listitem>
+		<listitem><para><parameter>read list</parameter> </para></listitem>
+		<listitem><para><parameter>read only</parameter></para></listitem>
+		<listitem><para><parameter>root postexec</parameter> </para></listitem>
+		<listitem><para><parameter>root preexec</parameter> </para></listitem>
+		<listitem><para><parameter>root preexec close</parameter> </para></listitem>
+		<listitem><para><parameter>security mask</parameter> </para></listitem>
+		<listitem><para><parameter>set directory</parameter></para></listitem>
+		<listitem><para><parameter>share modes</parameter> </para></listitem>
+		<listitem><para><parameter>short preserve case</parameter> </para></listitem>
+		<listitem><para><parameter>status</parameter> </para></listitem>
+		<listitem><para><parameter>strict locking</parameter> </para></listitem>
+		<listitem><para><parameter>strict sync</parameter></para></listitem>
+		<listitem><para><parameter>sync always</parameter> </para></listitem>
+		<listitem><para><parameter>user</parameter> </para></listitem>
+		<listitem><para><parameter>username</parameter> </para></listitem>
+		<listitem><para><parameter>users</parameter> </para></listitem>
+		<listitem><para><parameter>utmp</parameter> </para></listitem>
+		<listitem><para><parameter>valid users</parameter> </para></listitem>
+		<listitem><para><parameter>veto files</parameter> </para></listitem>
+		<listitem><para><parameter>veto oplock files</parameter> </para></listitem>
+		<listitem><para><parameter>volume</parameter> </para></listitem>
+		<listitem><para><parameter>wide links</parameter> </para></listitem>
+		<listitem><para><parameter>writable</parameter> </para></listitem>
+		<listitem><para><parameter>write cache size</parameter> </para></listitem>
+		<listitem><para><parameter>write list</parameter></para></listitem>
+		<listitem><para><parameter>write ok</parameter> </para></listitem>
+		<listitem><para><parameter>writeable</parameter> </para></listitem>
+	</itemizedlist>
+
+</refsect1>
+
+<refsect1>
+	<title>EXPLANATION OF EACH PARAMETER</title>
+	
+	<variablelist>
+	
+		<varlistentry>
+		<term id="adduserscript">add user script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)
+		</ulink> under special circumstances decribed below.</para>
+
+		<para>Normally, a Samba server requires that UNIX users are 
+		created for all users accessing files on this server. For sites 
+		that use Windows NT account databases as their primary user database 
+		creating these users and keeping the user list in sync with the 
+		Windows NT PDC is an onerous task. This option allows <ulink 
+		url="smbd.8.html">smbd</ulink> to create the required UNIX users 
+		<emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.</para>
+
+		<para>In order to use this option, <ulink url="smbd.8.html">smbd</ulink> 
+		must be set to <parameter>security=server</parameter> or <parameter>
+		security=domain</parameter> and <parameter>add user script</parameter>
+		must be set to a full pathname for a script that will create a UNIX 
+		user given one argument of <parameter>%u</parameter>, which expands into 
+		the UNIX user name to create.</para>
+
+		<para>When the Windows user attempts to access the Samba server, 
+		at login (session setup in the SMB protocol) time, <ulink url="smbd.8.html">
+		smbd</ulink> contacts the <parameter>password server</parameter> and 
+		attempts to authenticate the given user with the given password. If the 
+		authentication succeeds then <ulink url="smbd.8.html">smbd</ulink> 
+		attempts to find a UNIX user in the UNIX password database to map the 
+		Windows user into. If this lookup fails, and <parameter>add user script
+		</parameter> is set then <ulink url="smbd.8.html">smbd</ulink> will
+		call the specified script <emphasis>AS ROOT</emphasis>, expanding 
+		any <parameter>%u</parameter> argument to be the user name to create.</para>
+
+		<para>If this script successfully creates the user then <ulink 
+		url="smbd.8.html">smbd</ulink> will continue on as though the UNIX user
+		already existed. In this way, UNIX users are dynamically created to
+		match existing Windows NT accounts.</para>
+
+		<para>See also <ulink url="smb.conf.5.html#security"><parameter>
+		security</parameter></ulink>, <ulink url="smb.conf.5.html#passwordserver">
+		<parameter>password server</parameter></ulink>, <ulink
+		url="smb.conf.5.html#deleteuserscript"><parameter>delete user 
+		script</parameter></ulink>.</para>
+
+		<para>Default: <command>add user script = &lt;empty string&gt;
+		</command></para>	
+
+		<para>Example: <command>add user script = /usr/local/samba/bin/add_user 
+		%u</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="adminusers">admin users (S)</term>
+		<listitem><para>This is a list of users who will be granted 
+		administrative privileges on the share. This means that they 
+		will do all file operations as the super-user (root).</para>
+
+		<para>You should use this option very carefully, as any user in 
+		this list will be able to do anything they like on the share, 
+		irrespective of file permissions.</para>
+
+		<para>Default: <emphasis>no admin users</emphasis></para>
+
+		<para>Example: <command>admin users = jason</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="allowhosts">allow hosts (S)</term>
+		<listitem><para>Synonym for <ulink url="smb.conf.5.html#hostsallow">
+		<parameter>hosts allow</parameter></ulink>.</para></listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="allowtrusteddomains">allow trusted domains (G)</term>
+		<listitem><para>This option only takes effect when the <ulink 
+		url="smb.conf.5.html">security</ulink> option is set to 
+		<parameter>server</parameter> or <parameter>domain</parameter>.  
+		If it is set to no, then attempts to connect to a resource from 
+		a domain or workgroup other than the one which smbd is running 
+		in will fail, even if that domain is trusted by the remote server 
+		doing the authentication.</para>
+		
+		<para>This is useful if you only want your Samba server to 
+		serve resources to users in the domain it is a member of. As 
+		an example, suppose that there are two domains DOMA and DOMB.  DOMB 
+		is trusted by DOMA, which contains the Samba server.  Under normal 
+		circumstances, a user with an account in DOMB can then access the 
+		resources of a UNIX account with the same account name on the 
+		Samba server even if they do not have an account in DOMA.  This 
+		can make implementing a security boundary difficult.</para>
+
+		<para>Default: <command>allow trusted domains = yes</command></para>
+
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="announceas">announce as (G)</term>
+		<listitem><para>This specifies what type of server 
+		<ulink url="nmbd.8.html"><command>nmbd</command></ulink> 
+		will announce itself as, to a network neighborhood browse 
+		list. By default this is set to Windows NT. The valid options 
+		are : "NT" (which is a synonym for "NT Server"), "NT Server", 
+		"NT Workstation", "Win95" or "WfW" meaning Windows NT Server, 
+		Windows NT Workstation, Windows 95 and Windows for Workgroups 
+		respectively. Do not change this parameter unless you have a 
+		specific need to stop Samba appearing as an NT server as this 
+		may prevent Samba servers from participating as browser servers 
+		correctly.</para>
+
+		<para>Default: <command>announce as = NT Server</command></para>
+		
+		<para>Example: <command>announce as = Win95</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="annouceversion">annouce version (G)</term>
+		<listitem><para>This specifies the major and minor version numbers 
+		that nmbd will use when announcing itself as a server. The default 
+		is 4.2.  Do not change this parameter unless you have a specific 
+		need to set a Samba server to be a downlevel server.</para>
+
+		<para>Default: <command>announce version = 4.2</command></para>
+
+		<para>Example: <command>announce version = 2.0</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="autoservices">auto services (G)</term>
+		<listitem><para>This is a list of services that you want to be 
+		automatically added to the browse lists. This is most useful 
+		for homes and printers services that would otherwise not be 
+		visible.</para>
+
+		<para>Note that if you just want all printers in your 
+		printcap file loaded then the <ulink url="smb.conf.5.html#loadprinters">
+		<parameter>load printers</parameter></ulink> option is easier.</para>
+
+		<para>Default: <emphasis>no auto services</emphasis></para>
+		
+		<para>Example: <command>auto services = fred lp colorlp</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="available">available (S)</term>
+		<listitem><para>This parameter lets you "turn off" a service. If 
+		<parameter>available = no</parameter>, then <emphasis>ALL</emphasis> 
+		attempts to connect to the service will fail. Such failures are 
+		logged.</para>
+
+		<para>Default: <command>available = yes</command></para>
+		
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="bindinterfacesonly">bind interfaces only (G)</term>
+		<listitem><para>This global parameter allows the Samba admin 
+		to limit what interfaces on a machine will serve smb requests. If 
+		affects file service <ulink url="smbd.8.html">smbd(8)</ulink> and 
+		name service <ulink url="nmbd.8.html">nmbd(8)</ulink> in slightly 
+		different ways.</para>
+
+		<para>For name service it causes <command>nmbd</command> to bind 
+		to ports 137 and 138 on the interfaces listed in the <link 
+		linkend="interfaces">interfaces</link> parameter. <command>nmbd
+		</command> also binds to the "all addresses" interface (0.0.0.0) 
+		on ports 137 and 138 for the purposes of reading broadcast messages. 
+		If this option is not set then <command>nmbd</command> will service 
+		name requests on all of these sockets. If <parameter>bind interfaces
+		only</parameter> is set then <command>nmbd</command> will check the 
+		source address of any packets coming in on the broadcast sockets 
+		and discard any that don't match the broadcast addresses of the 
+		interfaces in the <parameter>interfaces</parameter> parameter list. 
+		As unicast packets are received on the other sockets it allows 
+		<command>nmbd</command> to refuse to serve names to machines that 
+		send packets that arrive through any interfaces not listed in the
+		<parameter>interfaces</parameter> list.  IP Source address spoofing
+		does defeat this simple check, however so it must not be used
+		seriously as a security feature for <command>nmbd</command>.</para>
+
+		<para>For file service it causes <ulink url="smbd.8.html">smbd(8)</ulink>
+		to bind only to the interface list given in the <link linkend="interfaces">
+		interfaces</link> parameter. This restricts the networks that 
+		<command>smbd</command> will serve to packets coming in those 
+		interfaces.  Note that you should not use this parameter for machines 
+		that are serving PPP or other intermittent or non-broadcast network 
+		interfaces as it will not cope with non-permanent interfaces.</para>
+
+		<para>If <parameter>bind interfaces only</parameter> is set then 
+		unless the network address <emphasis>127.0.0.1</emphasis> is added 
+		to the <parameter>interfaces</parameter> parameter list <ulink
+		url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> 
+		and <ulink url="swat.8.html"><command>swat(8)</command></ulink> may 
+		not work as expected due to the reasons covered below.</para>
+
+		<para>To change a users SMB password, the <command>smbpasswd</command>
+		by default connects to the <emphasis>localhost - 127.0.0.1</emphasis> 
+		address as an SMB client to issue the password change request. If 
+		<parameter>bind interfaces only</parameter> is set then unless the 
+		network address <emphasis>127.0.0.1</emphasis> is added to the
+		<parameter>interfaces</parameter> parameter list then <command>
+		smbpasswd</command> will fail to connect in it's default mode. 
+		<command>smbpasswd</command> can be forced to use the primary IP interface 
+		of the local host by using its <ulink url="smbpasswd.8.html#minusr">
+		<parameter>-r <replaceable>remote machine</replaceable></parameter>
+		</ulink> parameter, with <replaceable>remote machine</replaceable> set 
+		to the IP name of the primary interface of the local host.</para>
+
+		<para>The <command>swat</command> status page tries to connect with
+		<command>smbd</command> and <command>nmbd</command> at the address 
+		<emphasis>127.0.0.1</emphasis> to determine if they are running.  
+		Not adding <emphasis>127.0.0.1</emphasis>  will cause <command>
+		smbd</command> and <command>nmbd</command> to always show
+		"not running" even if they really are.  This can prevent <command>
+		swat</command> from starting/stopping/restarting <command>smbd</command>
+		and <command>nmbd</command>.</para>
+
+		<para>Default: <command>bind interfaces only = no</command></para>
+		
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="blockinglocks">blocking locks (S)</term>
+		<listitem><para>This parameter controls the behavior of <ulink 
+		url="smbd.8.html">smbd(8)</ulink> when given a request by a client 
+		to obtain a byte range lock on a region of an open file, and the 
+		request has a time limit associated with it.</para>
+		
+		<para>If this parameter is set and the lock range requested 
+		cannot be immediately satisfied, Samba 2.2 will internally 
+		queue the lock request, and periodically attempt to obtain 
+		the lock until the timeout period expires.</para>
+
+		<para>If this parameter is set to <constant>False</constant>, then 
+		Samba 2.2 will behave as previous versions of Samba would and 
+		will fail the lock request immediately if the lock range 
+		cannot be obtained.</para>
+
+		<para>Default: <command>blocking locks = yes</command></para>
+
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="browsable">browsable (S)</term>
+		<listitem><para>See the <link linkend="browseable"><parameter>
+		browseable</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="browselist">browse list (G)</term>
+		<listitem><para>This controls whether <ulink url="smbd.8.html">
+		<command>smbd(8)</command></ulink> will serve a browse list to 
+		a client doing a <command>NetServerEnum</command> call. Normally 
+		set to <constant>true</constant>. You should never need to change 
+		this.</para>
+		
+		<para>Default: <command>browse list = yes</command></para></listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="browseable">browseable (S)</term>
+		<listitem><para>This controls whether this share is seen in 
+		the list of available shares in a net view and in the browse list.</para>
+
+		<para>Default: <command>browseable = yes</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="casesensitive">case sensitive (S)</term>
+		<listitem><para>See the discussion in the section <link 
+		linkend="namemanglingsect">NAME MANGLING</link>.</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="casesignames">casesignames (S)</term>
+		<listitem><para>Synonym for <link linkend="casesensitive">case 
+		sensitive</link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="changenotifytimeout">change notify timeout (G)</term>
+		<listitem><para>This SMB allows a client to tell a server to 
+		"watch" a particular directory for any changes and only reply to
+		the SMB request when a change has occurred. Such constant scanning of
+		a directory is expensive under UNIX, hence an <ulink url="smbd.8.html">
+		<command>smbd(8)</command></ulink> daemon only performs such a scan 
+		on each requested directory once every <parameter>change notify 
+		timeout</parameter> seconds.</para>
+
+		<para>Default: <command>change notify timeout = 60</command></para>
+		<para>Example: <command>change notify timeout = 300</command></para>
+
+		<para>Would change the scan time to every 5 minutes.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="characterset">character set (G)</term>
+		<listitem><para>This allows a smbd to map incoming filenames 
+		from a DOS Code page (see the <link linkend="clientcodepage">client 
+		code page</link> parameter) to several built in UNIX character sets. 
+		The built in code page translations are:</para>
+		
+		<itemizedlist>
+			<listitem><para><constant>ISO8859-1</constant> : Western European 
+			UNIX character set. The parameter <parameter>client code page</parameter>
+			<emphasis>MUST</emphasis> be set to code page 850 if the 
+			<parameter>character set</parameter> parameter is set to
+			<constant>ISO8859-1</constant> in order for the conversion to the 
+			UNIX character set to be done correctly.</para></listitem>
+
+			<listitem><para><constant>ISO8859-2</constant> : Eastern European 
+			UNIX character set. The parameter <parameter>client code page
+			</parameter> <emphasis>MUST</emphasis> be set to code page 852 if 
+			the <parameter> character set</parameter> parameter is set 
+			to <constant>ISO8859-2</constant> in order for the conversion 
+			to the UNIX character set to be done correctly. </para></listitem>
+
+			<listitem><para><constant>ISO8859-5</constant> : Russian Cyrillic 
+			UNIX character set. The parameter <parameter>client code page
+			</parameter> <emphasis>MUST</emphasis> be set to code page 
+			866 if the <parameter>character set </parameter> parameter is 
+			set to <constant>ISO8859-5</constant> in order for the conversion 
+			to the UNIX character set to be done correctly. </para></listitem>
+
+			<listitem><para><constant>ISO8859-7</constant> : Greek UNIX 
+			character set. The parameter <parameter>client code page
+			</parameter> <emphasis>MUST</emphasis> be set to code page 
+			737 if the <parameter>character set</parameter> parameter is 
+			set to <constant>ISO8859-7</constant> in order for the conversion 
+			to the UNIX character set to be done correctly.</para></listitem>
+ 
+			<listitem><para><constant>KOI8-R</constant> : Alternate mapping 
+			for Russian Cyrillic UNIX character set. The parameter 
+			<parameter>client code page</parameter> <emphasis>MUST</emphasis> 
+			be set to code page 866 if the <parameter>character set</parameter> 
+			parameter is set to <constant>KOI8-R</constant> in order for the 
+			conversion to the UNIX character set to be done correctly.</para>
+			</listitem>
+		</itemizedlist>
+
+		<para><emphasis>BUG</emphasis>. These MSDOS code page to UNIX character 
+		set mappings should be dynamic, like the loading of MS DOS code pages, 
+		not static.</para>
+
+		<para>Normally this parameter is not set, meaning no filename 
+		translation is done.</para>
+
+		<para>Default: <command>character set = &lt;empty string&gt;</command></para>
+		<para>Example: <command>character set = ISO8859-1</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="clientcodepage">client code page (G)</term>
+		<listitem><para>This parameter specifies the DOS code page 
+		that the clients accessing Samba are using. To determine what code 
+		page a Windows or DOS client is using, open a DOS command prompt 
+		and type the command <command>chcp</command>. This will output 
+		the code page. The default for USA MS-DOS, Windows 95, and
+		Windows NT releases is code page 437. The default for western 
+		european releases of the above operating systems is code page 850.</para>
+
+		<para>This parameter tells <ulink url="smbd.8.html">smbd(8)</ulink> 
+		which of the <filename>codepage.<replaceable>XXX</replaceable>
+		</filename> files to dynamically load on startup. These files,
+		described more fully in the manual page <ulink url="make_smbcodepage.1.html">
+		<command>make_smbcodepage(1)</command></ulink>, tell <command>
+		smbd</command> how to map lower to upper case characters to provide 
+		the case insensitivity of filenames that Windows clients expect.</para>
+
+		<para>Samba currently ships with the following code page files :</para>
+
+		<itemizedlist>
+			<listitem><para>Code Page 437 - MS-DOS Latin US</para></listitem>
+			<listitem><para>Code Page 737 - Windows '95 Greek</para></listitem>
+			<listitem><para>Code Page 850 - MS-DOS Latin 1</para></listitem>
+			<listitem><para>Code Page 852 - MS-DOS Latin 2</para></listitem>
+			<listitem><para>Code Page 861 - MS-DOS Icelandic</para></listitem>
+			<listitem><para>Code Page 866 - MS-DOS Cyrillic</para></listitem>
+			<listitem><para>Code Page 932 - MS-DOS Japanese SJIS</para></listitem>
+			<listitem><para>Code Page 936 - MS-DOS Simplified Chinese</para></listitem>
+			<listitem><para>Code Page 949 - MS-DOS Korean Hangul</para></listitem>
+			<listitem><para>Code Page 950 - MS-DOS Traditional Chinese</para></listitem>
+		</itemizedlist>
+
+		<para>Thus this parameter may have any of the values 437, 737, 850, 852,
+		861, 932, 936, 949, or 950.  If you don't find the codepage you need,
+		read the comments in one of the other codepage files and the
+		<command>make_smbcodepage(1)</command> man page and write one. Please 
+		remember to donate it back to the Samba user community.</para>
+
+		<para>This parameter co-operates with the <parameter>valid
+		chars</parameter> parameter in determining what characters are
+		valid in filenames and how capitalization is done. If you set both
+		this parameter and the <parameter>valid chars</parameter> parameter
+		the <parameter>client code page</parameter> parameter 
+		<emphasis>MUST</emphasis> be set before the <parameter>valid 
+		chars</parameter> parameter in the <filename>smb.conf</filename>
+		file. The <parameter>valid chars</parameter> string will then 
+		augment the character settings in the <parameter>client code page</parameter> 
+		parameter.</para>
+
+		<para>If not set, <parameter>client code page</parameter> defaults 
+		to 850.</para>
+
+		<para>See also : <link linkend="validchars"><parameter>valid 
+		chars</parameter></link></para>
+
+		<para>Default: <command>client code page = 850</command></para>
+		<para>Example: <command>client code page = 936</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term id="codingsystem">codingsystem (G)</term>
+		<listitem><para>This parameter is used to determine how incoming 
+		Shift-JIS Japanese characters are mapped from the incoming <link 
+		linkend="clientcodepage"><parameter>client code page</parameter>
+		</link> used by the client, into file names in the UNIX filesystem. 
+		Only useful if <parameter>client code page</parameter> is set to 
+		932 (Japanese Shift-JIS).  The options are :</para>
+
+		<itemizedlist>
+			<listitem><para><constant>SJIS</constant>  - Shift-JIS. Does no 
+			conversion of the incoming filename.</para></listitem>
+			
+			<listitem><para><constant>JIS8, J8BB, J8BH, J8@B, 
+			J8@J, J8@H </constant> - Convert from incoming Shift-JIS to eight 
+			bit JIS code with different shift-in, shift out codes.</para></listitem>
+
+			<listitem><para><constant>JIS7, J7BB, J7BH, J7@B, J7@J, 
+			J7@H </constant> - Convert from incoming Shift-JIS to seven bit 
+			JIS code with different shift-in, shift out codes.</para></listitem>
+
+			<listitem><para><constant>JUNET, JUBB, JUBH, JU@B, JU@J, JU@H </constant> 
+			- Convert from incoming Shift-JIS to JUNET code with different shift-in, 
+			shift out codes.</para></listitem>
+			
+			
+			<listitem><para><constant>EUC</constant> - Convert an incoming 
+			Shift-JIS character to EUC code.</para></listitem>
+			
+			<listitem><para><constant>HEX</constant> - Convert an incoming 
+			Shift-JIS character to a 3 byte hex representation, i.e. 
+			<constant>:AB</constant>.</para></listitem>
+			
+			<listitem><para><constant>CAP</constant> - Convert an incoming 
+			Shift-JIS character to the 3 byte hex representation used by 
+			the Columbia AppleTalk Program (CAP), i.e. <constant>:AB</constant>.  
+			This is used for compatibility between Samba and CAP.</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="comment">comment (S)</term>
+		<listitem><para>This is a text field that is seen next to a share 
+		when a client does a queries the server, either via the network 
+		neighborhood or via <command>net view</command> to list what shares 
+		are available.</para>
+
+		<para>If you want to set the string that is displayed next to the 
+		machine name then see the <link linkend="serverstring"><parameter>
+		server string</parameter></link> parameter.</para>
+
+		<para>Default: <emphasis>No comment string</emphasis></para>
+		<para>Example: <command>comment = Fred's Files</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="configfile">config file (G)</term>
+		<listitem><para>This allows you to override the config file 
+		to use, instead of the default (usually <filename>smb.conf</filename>). 
+		There is a chicken and egg problem here as this option is set 
+		in the config file!</para>
+
+		<para>For this reason, if the name of the config file has changed 
+		when the parameters are loaded then it will reload them from 
+		the new config file.</para>
+
+		<para>This option takes the usual substitutions, which can 
+		be very useful.</para>
+
+		<para>If the config file doesn't exist then it won't be loaded 
+		(allowing you to special case the config files of just a few 
+		clients).</para>
+
+		<para>Example: <command>config file = /usr/local/samba/lib/smb.conf.%m
+		</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="copy">copy (S)</term>
+		<listitem><para>This parameter allows you to "clone" service 
+		entries. The specified service is simply duplicated under the 
+		current service's name. Any parameters specified in the current 
+		section will override those in the section being copied.</para>
+
+		<para>This feature lets you set up a 'template' service and 
+		create similar services easily. Note that the service being 
+		copied must occur earlier in the configuration file than the 
+		service doing the copying.</para>
+
+		<para>Default: <emphasis>none</emphasis></para>
+		<para>Example: <command>copy = otherservice</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="createmask">create mask (S)</term>
+		<listitem><para>A synonym for this parameter is 
+		<link linkend="createmode"><parameter>create mode</parameter>
+		</link>.</para>
+
+		<para>When a file is created, the necessary permissions are 
+		calculated according to the mapping from DOS modes to UNIX 
+		permissions, and the resulting UNIX mode is then bit-wise 'AND'ed 
+		with this parameter. This parameter may be thought of as a bit-wise 
+		MASK for the UNIX modes of a file. Any bit <emphasis>not</emphasis> 
+		set here will be removed from the modes set on a file when it is 
+		created.</para>
+
+		<para>The default value of this parameter removes the 
+		'group' and 'other' write and execute bits from the UNIX modes.</para>
+
+		<para>Following this Samba will bit-wise 'OR' the UNIX mode created 
+		from this parameter with the value of the <link
+		linkend="forcecreatemode"><parameter>force create mode</parameter></link>
+		parameter which is set to 000 by default.</para>
+
+		<para>This parameter does not affect directory modes. See the 
+		parameter <link linkend="directorymode"><parameter>directory mode
+		</parameter></link> for details.</para>
+
+		<para>See also the <link linkend="forcecreatemode"><parameter>force 
+		create mode</parameter></link> parameter for forcing particular mode 
+		bits to be set on created files. See also the <link linkend="directorymode">
+		<parameter>directory mode"</parameter></link> parameter for masking 
+		mode bits on created directories.  See also the <link linkend="inheritpermissions">
+		<parameter>inherit permissions</parameter></link> parameter.</para>
+
+		<para>Default: <command>create mask = 0744</command></para>
+		<para>Example: <command>create mask = 0775</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="createmode">create mode (S)</term>
+		<listitem><para>This is a synonym for <link linkend="createmask"><parameter>
+		create mask</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="deadtime">deadtime (G)</term>
+		<listitem><para>The value of the parameter (a decimal integer) 
+		represents the number of minutes of inactivity before a connection 
+		is considered dead, and it is disconnected. The deadtime only takes 
+		effect if the number of open files is zero.</para>
+		
+		<para>This is useful to stop a server's resources being 
+		exhausted by a large number of inactive connections.</para>
+
+		<para>Most clients have an auto-reconnect feature when a 
+		connection is broken so in most cases this parameter should be 
+		transparent to users.</para>
+
+		<para>Using this parameter with a timeout of a few minutes 
+		is recommended for most systems.</para>
+
+		<para>A deadtime of zero indicates that no auto-disconnection 
+		should be performed.</para>
+
+		<para>Default: <command>deadtime = 0</command></para>
+		<para>Example: <command>deadtime = 15</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="debughirestimestamp">debug hires timestamp (G)</term>
+		<listitem><para>Sometimes the timestamps in the log messages 
+		are needed with a resolution of higher that seconds, this 
+		boolean parameter adds microsecond resolution to the timestamp 
+		message header when turned on.</para>
+
+		<para>Note that the parameter <link linkend="debugtimestamp"><parameter>
+		debug timestamp</parameter></link> must be on for this to have an 
+		effect.</para>
+
+		<para>Default: <command>debug hires timestamp = no</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="debugtimestamp">debug timestamp (G)</term>
+		<listitem><para>Samba 2.2 debug log messages are timestamped 
+		by default. If you are running at a high <link linkend="debuglevel">
+		<parameter>debug level</parameter></link> these timestamps
+		can be distracting. This boolean parameter allows timestamping 
+		to be turned off.</para>
+
+		<para>Default: <command>debug timestamp = yes</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="debugpid">debug pid (G)</term>
+		<listitem><para>When using only one log file for more then one 
+		forked smbd-process there may be hard to follow which process 
+		outputs which message. This boolean parameter is adds the process-id 
+		to the timestamp message headers in the logfile when turned on.</para>
+
+		<para>Note that the parameter <link linkend="debugtimestamp"><parameter>
+		debug timestamp</parameter></link> must be on for this to have an 
+		effect.</para>
+
+		<para>Default: <command>debug pid = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="debuguid">debug uid (G)</term>
+		<listitem><para>Samba is sometimes run as root and sometime 
+		run as the connected user, this boolean parameter inserts the 
+		current euid, egid, uid and gid to the timestamp message headers 
+		in the log file if turned on.</para>
+		
+		<para>Note that the parameter <link linkend="debugtimestamp"><parameter>
+		debug timestamp</parameter></link> must be on for this to have an 
+		effect.</para>
+
+		<para>Default: <command>debug uid = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="debuglevel">debug level (G)</term>
+		<listitem><para>The value of the parameter (an integer) allows 
+		the debug level (logging level) to be specified in the 
+		<filename>smb.conf</filename> file. This is to give greater 
+		flexibility in the configuration of the system.</para>
+
+		<para>The default will be the debug level specified on 
+		the command line or level zero if none was specified.</para>
+
+		<para>Example: <command>debug level = 3</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="default">default (G)</term>
+		<listitem><para>A synonym for <link linkend="defaultservice"><parameter>
+		default service</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="defaultcase">default case (S)</term>
+		<listitem><para>See the section on <link linkend="namemanglingsect">
+		NAME MANGLING"</link>. Also note the <link linkend="shortpreservecase">
+		<parameter>short preserve case"</parameter>></link> parameter.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="defaultservice">default service (G)</term>
+		<listitem><para>This parameter specifies the name of a service 
+		which will be connected to if the service actually requested cannot 
+		be found. Note that the square brackets are <emphasis>NOT</emphasis> 
+		given in the parameter value (see example below).</para>
+
+		<para>There is no default value for this parameter. If this 
+		parameter is not given, attempting to connect to a nonexistent 
+		service results in an error.</para>
+
+		<para>Typically the default service would be a <link linkend="guestok">
+		<parameter>guest ok</parameter></link>, <link linkend="readonly">
+		<parameter>read-only</parameter></link> service.</para>
+
+		<para>Also note that the apparent service name will be changed 
+		to equal that of the requested service, this is very useful as it 
+		allows you to use macros like <parameter>%S</parameter> to make 
+		a wildcard service.</para>
+
+		<para>Note also that any "_" characters in the name of the service 
+		used in the default service will get mapped to a "/". This allows for
+		interesting things.</para>
+
+
+		<para>Example:</para>
+		
+		<screen><computeroutput>
+			default service = pub
+        
+			[pub]
+				path = /%S
+		</computeroutput></screen>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="deleteuserscript">delete user script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">
+		<command>smbd(8)</command></ulink> under special circumstances 
+		decribed below.</para>
+
+		<para>Normally, a Samba server requires that UNIX users are 
+		created for all users accessing files on this server. For sites 
+		that use Windows NT account databases as their primary user database 
+		creating these users and keeping the user list in sync with the 
+		Windows NT PDC is an onerous task. This option allows <command>
+		smbd</command> to delete the required UNIX users <emphasis>ON 
+		DEMAND</emphasis> when a user accesses the Samba server and the 
+		Windows NT user no longer exists.</para>
+		
+		<para>In order to use this option, <command>smbd</command> must be 
+		set to <parameter>security=domain</parameter> and <parameter>delete 
+		user script</parameter> must be set to a full pathname for a script 
+		that will delete a UNIX user given one argument of <parameter>%u
+		</parameter>, which expands into the UNIX user name to delete.
+		<emphasis>NOTE</emphasis> that this is different to the <link
+		linkend="adduserscript"><parameter>add user script</parameter></link>
+		which will work with the <parameter>security=server</parameter> option 
+		as well as <parameter>security=domain</parameter>. The reason for this
+		is only when Samba is a domain member does it get the information
+		on an attempted user logon that a user no longer exists. In the
+		<parameter>security=server</parameter> mode a missing user
+		is treated the same as an invalid password logon attempt. Deleting
+		the user in this circumstance would not be a good idea.</para>
+
+		<para>When the Windows user attempts to access the Samba server, 
+		at <emphasis>login</emphasis> (session setup in the SMB protocol) 
+		time, <command>smbd</command> contacts the <link linkend="passwordserver">
+		<parameter>password server</parameter></link> and attempts to authenticate 
+		the given user with the given password. If the authentication fails 
+		with the specific Domain error code meaning that the user no longer 
+		exists then <command>smbd</command> attempts to find a UNIX user in 
+		the UNIX password database that matches the Windows user account. If 
+		this lookup succeeds, and <parameter>delete user script</parameter> is 
+		set then <command>smbd</command> will all the specified script 
+		<emphasis>AS ROOT</emphasis>, expanding any <parameter>%u</parameter> 
+		argument to be the user name to delete.</para>
+
+		<para>This script should delete the given UNIX username. In this way, 
+		UNIX users are dynamically deleted to match existing Windows NT 
+		accounts.</para>
+
+		<para>See also <link linkend="securitydomain">security=domain</link>,
+		<link linkend="passwordserver"><parameter>password server</parameter>
+		</link>, <link linkend="adduserscript"><parameter>add user script</parameter>
+		</link>.</para>
+
+		<para>Default: <command>delete user script = &lt;empty string&gt;
+		</command></para>
+		<para>Example: <command>delete user script = /usr/local/samba/bin/del_user 
+		%u</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="deletereadonly">delete readonly (S)</term>
+		<listitem><para>This parameter allows readonly files to be deleted.  
+		This is not normal DOS semantics, but is allowed by UNIX.</para>
+		
+		<para>This option may be useful for running applications such 
+		as rcs, where UNIX file ownership prevents changing file 
+		permissions, and DOS semantics prevent deletion of a read only file.</para>
+
+		<para>Default: <command>delete readonly = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="deletevetofiles">delete veto files (S)</term>
+		<listitem><para>This option is used when Samba is attempting to 
+		delete a directory that contains one or more vetoed directories 
+		(see the <link linkend="vetofiles"><parameter>veto files</parameter></link>
+		option).  If this option is set to False (the default) then if a vetoed 
+		directory contains any non-vetoed files or directories then the 
+		directory delete will fail. This is usually what you want.</para>
+
+		<para>If this option is set to <constant>True</constant>, then Samba 
+		will attempt to recursively delete any files and directories within 
+		the vetoed directory. This can be useful for integration with file 
+		serving systems such as NetAtalk which create meta-files within 
+		directories you might normally veto DOS/Windows users from seeing 
+		(e.g. <filename>.AppleDouble</filename>)</para>
+
+		<para>Setting <command>delete veto files = yes</command> allows these 
+		directories to be  transparently deleted when the parent directory 
+		is deleted (so long as the user has permissions to do so).</para>
+
+		<para>See also the <link linkend="vetofiles"><parameter>veto 
+		files</parameter></link> parameter.</para>
+
+		<para>Default: <command>delete veto files = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="denyhosts">deny hosts (S)</term>
+		<listitem><para>Synonym for <link linkend="hostsdeny"><parameter>hosts 
+		deny</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="dfreecommand">dfree command (G)</term>
+		<listitem><para>The <parameter>dfree command</parameter> setting should 
+		only be used on systems where a problem occurs with the internal 
+		disk space calculations. This has been known to happen with Ultrix, 
+		but may occur with other operating systems. The symptom that was 
+		seen was an error of "Abort Retry Ignore" at the end of each 
+		directory listing.</para>
+		
+		<para>This setting allows the replacement of the internal routines to
+		calculate the total disk space and amount available with an external
+		routine. The example below gives a possible script that might fulfill
+		this function.</para>
+
+		<para>The external program will be passed a single parameter indicating 
+		a directory in the filesystem being queried. This will typically consist
+		of the string <filename>./</filename>. The script should return two 
+		integers in ascii. The first should be the total disk space in blocks, 
+		and the second should be the number of available blocks. An optional 
+		third return value can give the block size in bytes. The default 
+		blocksize is 1024 bytes.</para>
+
+		<para>Note: Your script should <emphasis>NOT</emphasis> be setuid or 
+		setgid and should be owned by (and writeable only by) root!</para>
+
+		<para>Default: <emphasis>By default internal routines for 
+		determining the disk capacity and remaining space will be used.
+		</emphasis></para>
+
+		<para>Example: <command>dfree command = /usr/local/samba/bin/dfree
+		</command></para>
+
+		<para>Where the script dfree (which must be made executable) could be:</para>
+
+		<para><programlisting> 
+		#!/bin/sh
+		df $1 | tail -1 | awk '{print $2" "$4}'
+		</programlisting></para>
+
+		<para>or perhaps (on Sys V based systems):</para>
+
+		<para><programlisting> 
+		#!/bin/sh
+		/usr/bin/df -k $1 | tail -1 | awk '{print $3" "$5}'
+		</programlisting></para>
+		
+		<para>Note that you may have to replace the command names 
+		with full path names on some systems.</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		
+		<varlistentry>
+		<term id="directory">directory (S)</term>
+		<listitem><para>Synonym for <link linkend="path"><parameter>path
+		</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="directorymask">directory mask (S)</term>
+		<listitem><para>This parameter is the octal modes which are 
+		used when converting DOS modes to UNIX modes when creating UNIX 
+		directories.</para>
+
+		<para>When a directory is created, the necessary permissions are 
+		calculated according to the mapping from DOS modes to UNIX permissions, 
+		and the resulting UNIX mode is then bit-wise 'AND'ed with this 
+		parameter. This parameter may be thought of as a bit-wise MASK for 
+		the UNIX modes of a directory. Any bit <emphasis>not</emphasis> set 
+		here will be removed from the modes set on a directory when it is 
+		created.</para>
+
+		<para>The default value of this parameter removes the 'group' 
+		and 'other' write bits from the UNIX mode, allowing only the 
+		user who owns the directory to modify it.</para>
+		
+		<para>Following this Samba will bit-wise 'OR' the UNIX mode 
+		created from this parameter with the value of the <link
+		linkend="forcedirectorymode"><parameter>force directory mode
+		</parameter></link> parameter. This parameter is set to 000 by 
+		default (i.e. no extra mode bits are added).</para>
+
+		<para>See the <link linkend="forcedirectorymode"><parameter>force 
+		directory mode</parameter></link> parameter to cause particular mode 
+		bits to always be set on created directories.</para>
+
+		<para>See also the <link linkend="createmode"><parameter>create mode
+		</parameter></link> parameter for masking mode bits on created files, 
+		and the <link linkend="directorysecuritymask"><parameter>directory 
+		security mask</parameter></link> parameter.</para>
+
+		<para>Also refer to the <link linkend="inheritpermissions"><parameter>
+		inherit permissions</parameter></link> parameter.</para>
+
+		<para>Default: <command>directory mask = 0755</command></para>
+		<para>Example: <command>directory mask = 0775</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="directorymode">directory mode (S)</term>
+		<listitem><para>Synonym for <link linkend="directorymode"><parameter>
+		directory mask</parameter></link></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="directorysecuritymask">directory security mask (S)</term>
+		<listitem><para>This parameter controls what UNIX permission bits 
+		can be modified when a Windows NT client is manipulating the UNIX 
+		permission on a directory using the native NT security dialog 
+		box.</para>
+
+		<para>This parameter is applied as a mask (AND'ed with) to 
+		the changed permission bits, thus preventing any bits not in 
+		this mask from being modified. Essentially, zero bits in this 
+		mask may be treated as a set of bits the user is not allowed 
+		to change.</para>
+
+		<para>If not set explicitly this parameter is set to the same 
+		value as the <link linkend="directorymask"><parameter>directory 
+		mask</parameter></link> parameter. To allow a user to
+		modify all the user/group/world permissions on a directory, set 
+		this parameter to 0777.</para>
+
+		<para><emphasis>Note</emphasis> that users who can access the 
+		Samba server through other means can easily bypass this restriction, 
+		so it is primarily useful for standalone "appliance" systems.  
+		Administrators of most normal systems will probably want to set 
+		it to 0777.</para>
+
+		<para>See also the <link linkend="forcedirectorysecuritymode"><parameter>
+		force directory security mode</parameter></link>, <link
+		linkend="securitymask"><parameter>security mask</parameter></link>, 
+		<link linkend="forcesecuritymode"><parameter>force security mode
+		</parameter></link> parameters.</para>
+
+		<para>Default: <command>directory security mask = &lt;same as 
+		directory mask&gt;</command></para>
+		<para>Example: <command>directory security mask = 0777</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="dnsproxy">dns proxy (G)</term>
+		<listitem><para>Specifies that <ulink url="nmbd.8.html">nmbd(8)</ulink> 
+		when acting as a WINS server and finding that a NetBIOS name has not 
+		been registered, should treat the NetBIOS name word-for-word as a DNS 
+		name and do a lookup with the DNS server for that name on behalf of 
+		the name-querying client.</para>
+
+		<para>Note that the maximum length for a NetBIOS name is 15 
+		characters, so the DNS name (or DNS alias) can likewise only be 
+		15 characters, maximum.</para>
+
+		<para><command>nmbd</command> spawns a second copy of itself to do the
+		DNS name lookup requests, as doing a name lookup is a blocking 
+		action.</para>
+
+		<para>See also the parameter <link linkend="winssupport"><parameter>
+		wins support</parameter></link>.</para>
+
+		<para>Default: <command>dns proxy = yes</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="domainadmingroup">domain admin group (G)</term>
+		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
+		that is part of the unfinished Samba NT Domain Controller Code. It may 
+		be removed in a later release. To work with the latest code builds 
+		that may have more support for Samba NT Domain Controller functionality 
+		please subscribe to the mailing list <ulink
+		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
+		visiting the web page at <ulink url="http://lists.samba.org/">
+		http://lists.samba.org/</ulink>.</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="domainadminusers">domain admin users (G)</term>
+		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
+		that is part of the unfinished Samba NT Domain Controller Code. It may 
+		be removed in a later release. To work with the latest code builds 
+		that may have more support for Samba NT Domain Controller functionality 
+		please subscribe to the mailing list <ulink
+		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
+		visiting the web page at <ulink url="http://lists.samba.org/">
+		http://lists.samba.org/</ulink>.</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="domaingroups">domain groups (G)</term>
+		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
+		that is part of the unfinished Samba NT Domain Controller Code. It may 
+		be removed in a later release. To work with the latest code builds 
+		that may have more support for Samba NT Domain Controller functionality 
+		please subscribe to the mailing list <ulink
+		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
+		visiting the web page at <ulink url="http://lists.samba.org/">
+		http://lists.samba.org/</ulink>.</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="domainguestgroup">domain guest group (G)</term>
+		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
+		that is part of the unfinished Samba NT Domain Controller Code. It may 
+		be removed in a later release. To work with the latest code builds 
+		that may have more support for Samba NT Domain Controller functionality 
+		please subscribe to the mailing list <ulink
+		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
+		visiting the web page at <ulink url="http://lists.samba.org/">
+		http://lists.samba.org/</ulink>.</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="domainguestusers">domain guest users (G)</term>
+		<listitem><para>This is an <emphasis>EXPERIMENTAL</emphasis> parameter 
+		that is part of the unfinished Samba NT Domain Controller Code. It may 
+		be removed in a later release. To work with the latest code builds 
+		that may have more support for Samba NT Domain Controller functionality 
+		please subscribe to the mailing list <ulink
+		url="mailto:samba-ntdom@samba.org">samba-ntdom</ulink> available by 
+		visiting the web page at <ulink url="http://lists.samba.org/">
+		http://lists.samba.org/</ulink>.</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="domainlogons">domain logons (G)</term>
+		<listitem><para>If set to true, the Samba server will serve 
+		Windows 95/98 Domain logons for the <link linkend="workgroup">
+		<parameter>workgroup</parameter></link> it is in. Samba 2.2 also 
+		has limited capability to act as a domain controller for Windows 
+		NT 4 Domains.  For more details on setting up this feature see 
+		the file DOMAINS.txt in the Samba documentation directory <filename>docs/
+		</filename> shipped with the source code.</para>
+		
+		<para>Default: <command>domain logons = no</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="domainmaster">domain master (G)</term>
+		<listitem><para>Tell <ulink url="nmbd.8.html"><command>
+		nmbd(8)</command></ulink> to enable WAN-wide browse list
+		collation. Setting this option causes <command>nmbd</command> to
+		claim a special domain specific NetBIOS name that identifies 
+		it as a domain master browser for its given <link linkend="workgroup">
+		<parameter>workgroup</parameter></link>. Local master browsers 
+		in the same <parameter>workgroup</parameter> on broadcast-isolated 
+		subnets will give this <command>nmbd</command> their local browse lists, 
+		and then ask <ulink url="smbd.8.html"><command>smbd(8)</command></ulink> 
+		for a complete copy of the browse list for the whole wide area 
+		network.  Browser clients will then contact their local master browser, 
+		and will receive the domain-wide browse list, instead of just the list 
+		for their broadcast-isolated subnet.</para>
+
+		<para>Note that Windows NT Primary Domain Controllers expect to be 
+		able to claim this <parameter>workgroup</parameter> specific special 
+		NetBIOS name that identifies them as domain master browsers for 
+		that <parameter>workgroup</parameter> by default (i.e. there is no 
+		way to prevent a Windows NT PDC from attempting to do this). This 
+		means that if this parameter is set and <command>nmbd</command> claims 
+		the special name for a <parameter>workgroup</parameter> before a Windows 
+		NT PDC is able to do so then cross subnet browsing will behave 
+		strangely and may fail.</para>
+
+		<para>Default: <command>domain master = no</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="dontdescend">dont descend (S)</term>
+		<listitem><para>There are certain directories on some systems 
+		(e.g., the <filename>/proc</filename> tree under Linux) that are either not 
+		of interest to clients or are infinitely deep (recursive). This 
+		parameter allows you to specify a comma-delimited list of directories 
+		that the server should always show as empty.</para>
+
+		<para>Note that Samba can be very fussy about the exact format 
+		of the "dont descend" entries. For example you may need <filename>
+		./proc</filename> instead of just <filename>/proc</filename>. 
+		Experimentation is the best policy :-)  </para>
+		
+		<para>Default: <emphasis>none (i.e., all directories are OK 
+		to descend)</emphasis></para>
+		<para>Example: <command>dont descend = /proc,/dev</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="dosfiletimeresolution">dos filetime resolution (S)</term>
+		<listitem><para>Under the DOS and Windows FAT filesystem, the finest 
+		granularity on time resolution is two seconds. Setting this parameter 
+		for a share causes Samba to round the reported time down to the 
+		nearest two second boundary when a query call that requires one second 
+		resolution is made to <ulink url="smbd.8.html"><command>smbd(8)</command>
+		</ulink>.</para>
+
+		<para>This option is mainly used as a compatibility option for Visual 
+		C++ when used against Samba shares. If oplocks are enabled on a 
+		share, Visual C++ uses two different time reading calls to check if a 
+		file has changed since it was last read. One of these calls uses a
+		one-second granularity, the other uses a two second granularity. As
+		the two second call rounds any odd second down, then if the file has a
+		timestamp of an odd number of seconds then the two timestamps will not
+		match and Visual C++ will keep reporting the file has changed. Setting
+		this option causes the two timestamps to match, and Visual C++ is
+		happy.</para>
+
+		<para>Default: <command>dos filetime resolution = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="dosfiletimes">dos filetimes (S)</term>
+		<listitem><para>Under DOS and Windows, if a user can write to a 
+		file they can change the timestamp on it. Under POSIX semantics, 
+		only the owner of the file or root may change the timestamp. By 
+		default, Samba runs with POSIX semantics and refuses to change the 
+		timestamp on a file if the user <command>smbd</command> is acting 
+		on behalf of is not the file owner. Setting this option to <constant>
+		True</constant> allows DOS semantics and smbd will change the file 
+		timestamp as DOS requires.</para>
+
+		<para>Default: <command>dos filetimes = no</command></para></listitem>
+		</varlistentry>
+
+		
+
+		<varlistentry>
+		<term id="encryptpasswords">encrypt passwords (G)</term>
+		<listitem><para>This boolean controls whether encrypted passwords 
+		will be negotiated with the client. Note that Windows NT 4.0 SP3 and 
+		above and also Windows 98 will by default expect encrypted passwords 
+		unless a registry entry is changed. To use encrypted passwords in 
+		Samba see the file ENCRYPTION.txt in the Samba documentation 
+		directory <filename>docs/</filename> shipped with the source code.</para>
+
+		<para>In order for encrypted passwords to work correctly
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> must either 
+		have access to a local <ulink url="smbpasswd.5.html"><filename>smbpasswd(5)
+		</filename></ulink> file (see the <ulink url="smbpasswd.8.html"><command>
+		smbpasswd(8)</command></ulink> program for information on how to set up 
+ 		and maintain this file), or set the <link
+		linkend="security">security=[serve|domain]</link> parameter which 
+		causes <command>smbd</command> to authenticate against another 
+		server.</para>
+		
+		<para>Default: <command>encrypt passwords = no</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="exec">exec (S)</term>
+		<listitem><para>This is a synonym for <link linkend="preexec">
+		<parameter>preexec</parameter></link>.</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="fakedirectorycreatetimes">fake directory create times (S)</term>
+		<listitem><para>NTFS and Windows VFAT file systems keep a create 
+		time for all files and directories. This is not the same as the 
+		ctime - status change time - that Unix keeps, so Samba by default 
+		reports the earliest of the various times Unix does keep. Setting 
+		this parameter for a share causes Samba to always report midnight 
+		1-1-1980 as the create time for directories.</para>
+
+		<para>This option is mainly used as a compatibility option for 
+		Visual C++ when used against Samba shares. Visual C++ generated 
+		makefiles have the object directory as a dependency for each object 
+		file, and a make rule to create the directory. Also, when NMAKE 
+		compares timestamps it uses the creation time when examining a 
+		directory. Thus the object directory will be created if it does not 
+		exist, but once it does exist it will always have an earlier 
+		timestamp than the object files it contains.</para>
+
+		<para>However, Unix time semantics mean that the create time 
+		reported by Samba will be updated whenever a file is created or 
+		deleted in the directory. NMAKE therefore finds all object files 
+		in the object directory bar the last one built are out of date 
+		compared to the directory and rebuilds them. Enabling this option 
+		ensures directories always predate their contents and an NMAKE build 
+		will proceed as expected.</para>
+
+		<para>Default: <command>fake directory create times = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="fakeoplocks">fake oplocks (S)</term>
+		<listitem><para>Oplocks are the way that SMB clients get permission 
+		from a server to locally cache file operations. If a server grants 
+		an oplock (opportunistic lock) then the client is free to assume 
+		that it is the only one accessing the file and it will aggressively 
+		cache file data. With some oplock types the client may even cache 
+		file open/close operations. This can give enormous performance benefits.
+		</para>
+
+		<para>When you set <command>fake oplocks = yes</command>, <ulink 
+		url="smbd.8.html"><command>smbd(8)</command></ulink> will
+		always grant oplock requests no matter how many clients are using 
+		the file.</para>
+
+		<para>It is generally much better to use the real <link 
+		linkend="oplocks"><parameter>oplocks</parameter></link> support rather 
+		than this parameter.</para>
+		
+		<para>If you enable this option on all read-only shares or 
+		shares that you know will only be accessed from one client at a 
+		time such as physically read-only media like CDROMs, you will see 
+		a big performance improvement on many operations. If you enable 
+		this option on shares where multiple clients may be accessing the 
+		files read-write at the same time you can get data corruption. Use 
+		this option carefully!</para>
+		
+		<para>Default: <command>fake oplocks = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="followsymlinks">follow symlinks (S)</term>
+		<listitem><para>This parameter allows the Samba administrator 
+		to stop <ulink url="smbd.8.html"><command>smbd(8)</command></ulink> 
+		from following symbolic links in a particular share. Setting this 
+		parameter to <constant>no</constant> prevents any file or directory 
+		that is a symbolic link from being followed (the user will get an 
+		error).  This option is very useful to stop users from adding a 
+		symbolic link to <filename>/etc/passwd</filename> in their home 
+		directory for instance.  However it will slow filename lookups 
+		down slightly.</para>
+
+		<para>This option is enabled (i.e. <command>smbd</command> will 
+		follow symbolic links) by default.</para>
+		
+		<para>Default: <command>follow symlinks = yes</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="forcecreatemode">force create mode (S)</term>
+		<listitem><para>This parameter specifies a set of UNIX mode bit 
+		permissions that will <emphasis>always</emphasis> be set on a 
+		file by Samba. This is done by bitwise 'OR'ing these bits onto 
+		the mode bits of a file that is being created or having its 
+		permissions changed. The default for this parameter is (in octal) 
+		000. The modes in this parameter are bitwise 'OR'ed onto the file 
+		mode after the mask set in the <parameter>create mask</parameter> 
+		parameter is applied.</para>
+		
+		<para>See also the parameter <link linkend="createmask"><parameter>create 
+		mask</parameter></link> for details on masking mode bits on files.</para>
+
+		<para>See also the <link linkend="inheritpermissions"><parameter>inherit 
+		permissions</parameter></link> parameter.</para>
+
+		<para>Default: <command>force create mode = 000</command></para>
+		<para>Example: <command>force create mode = 0755</command></para>
+
+		<para>would force all created files to have read and execute 
+		permissions set for 'group' and 'other' as well as the 
+		read/write/execute bits set for the 'user'.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+ 		<varlistentry>
+		<term id="forcedirectorymode">force directory mode (S)</term>
+		<listitem><para>This parameter specifies a set of UNIX mode bit 
+		permissions that will <emphasis>always</emphasis> be set on a directory 
+		created by Samba. This is done by bitwise 'OR'ing these bits onto the 
+		mode bits of a directory that is being created. The default for this 
+		parameter is (in octal) 0000 which will not add any extra permission 
+		bits to a created directory. This operation is done after the mode 
+		mask in the parameter <parameter>directory mask</parameter> is 
+		applied.</para>
+
+		<para>See also the parameter <link linkend="directorymask"><parameter>
+		directory mask</parameter></link> for details on masking mode bits 
+		on created directories.</para>
+		
+		<para>See also the <link linkend="inheritpermissions"><parameter>
+		inherit permissions</parameter></link> parameter.</para>
+
+		<para>Default: <command>force directory mode = 000</command></para>
+		<para>Example: <command>force directory mode = 0755</command></para>
+
+		<para>would force all created directories to have read and execute
+		permissions set for 'group' and 'other' as well as the
+		read/write/execute bits set for the 'user'.</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="forcedirectorysecuritymode">force directory security mode (S)</term>
+		<listitem><para>This parameter controls what UNIX permission bits 
+		can be modified when a Windows NT client is manipulating the UNIX 
+		permission on a directory using the native NT security dialog box.</para>
+
+		<para>This parameter is applied as a mask (OR'ed with) to the 
+		changed permission bits, thus forcing any bits in this mask that 
+		the user may have modified to be on. Essentially, one bits in this 
+		mask may be treated as a set of bits that, when modifying security 
+		on a directory, the user has always set to be 'on'.</para>
+
+		<para>If not set explicitly this parameter is set to the same 
+		value as the <link linkend="forcedirectorymode"><parameter>force 
+		directory mode</parameter></link> parameter. To allow
+		a user to modify all the user/group/world permissions on a 
+		directory, with restrictions set this parameter to 000.</para>
+
+		<para><emphasis>Note</emphasis> that users who can access the 
+		Samba server through other means can easily bypass this restriction, 
+		so it is primarily useful for standalone "appliance" systems.  
+		Administrators of most normal systems will probably want to set 
+		it to 0000.</para>
+
+		<para>See also the <link linkend="directorysecuritymask"><parameter>
+		directory security mask</parameter></link>, <link linkend="secduritymask">
+		<parameter>security mask</parameter></link>, 
+		<link linkend="forcesecuritymode"><parameter>force security mode
+		</parameter></link> parameters.</para>
+
+		<para>Default: <command>force directory security mode = &lt;same as 
+		force directory mode&gt;</command></para>
+		<para>Example: <command>force directory security mode = 0</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term id="forcegroup">force group (S)</term>
+		<listitem><para>This specifies a UNIX group name that will be 
+		assigned as the default primary group for all users connecting 
+		to this service. This is useful for sharing files by ensuring 
+		that all access to files on service will use the named group for 
+		their permissions checking. Thus, by assigning permissions for this 
+		group to the files and directories within this service the Samba 
+		administrator can restrict or allow sharing of these files.</para>
+
+		<para>In Samba 2.0.5 and above this parameter has extended 
+		functionality in the following way. If the group name listed here 
+		has a '+' character prepended to it then the current user accessing 
+		the share only has the primary group default assigned to this group 
+		if they are already assigned as a member of that group. This allows 
+		an administrator to decide that only users who are already in a 
+		particular group will create files with group ownership set to that 
+		group. This gives a finer granularity of ownership assignment. For 
+		example, the setting <filename>force group = +sys</filename> means 
+		that only users who are already in group sys will have their default
+		primary group assigned to sys when accessing this Samba share. All
+		other users will retain their ordinary primary group.</para>
+
+		<para>If the <link linkend="forceuser"><parameter>force user
+		</parameter></link> parameter is also set the group specified in 
+		<parameter>force group</parameter> will override the primary group
+		set in <parameter>force user</parameter>.</para>
+
+		<para>See also <link linkend="forceuser"><parameter>force 
+		user</parameter></link>.</para>
+
+		<para>Default: <emphasis>no forced group</emphasis></para>
+		<para>Example: <command>force group = agroup</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="forcesecuritymode">force security mode (S)</term>
+		<listitem><para>This parameter controls what UNIX permission 
+		bits can be modified when a Windows NT client is manipulating 
+		the UNIX permission on a file using the native NT security dialog 
+		box.</para>
+		
+		<para>This parameter is applied as a mask (OR'ed with) to the 
+		changed permission bits, thus forcing any bits in this mask that 
+		the user may have modified to be on. Essentially, one bits in this 
+		mask may be treated as a set of bits that, when modifying security 
+		on a file, the user has always set to be 'on'.</para>
+
+		<para>If not set explicitly this parameter is set to the same 
+		value as the <link linkend="forcecreatemode"><parameter>force 
+		create mode</parameter></link> parameter. To allow a user to 
+		modify all the user/group/world permissions on a file, with no 
+		restrictions set this parameter to 000.</para>
+		
+		<para><emphasis>Note</emphasis> that users who can access 
+		the Samba server through other means can easily bypass this restriction, 
+		so it is primarily useful for standalone "appliance" systems.  
+		Administrators of most normal systems will probably want to set 
+		it to 0000.</para>
+
+		<para>See also the <link linkend="forcedirectorysecuritymode"><parameter>
+		force directory security mode</parameter></link>,
+		<link linkend="directorysecuritymask"><parameter>directory security
+		mask</parameter></link>, <link linkend="securitymask"><parameter>
+		security mask</parameter></link> parameters.</para>
+
+		<para>Default: <command>force security mode = &lt;same as force 
+		create mode&gt;</command></para>
+		<para>Example: <command>force security mode = 0</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="forceuser">force user (S)</term>
+		<listitem><para>This specifies a UNIX user name that will be 
+		assigned as the default user for all users connecting to this service. 
+		This is useful for sharing files. You should also use it carefully 
+		as using it incorrectly can cause security problems.</para>
+
+		<para>This user name only gets used once a connection is established. 
+		Thus clients still need to connect as a valid user and supply a 
+		valid password. Once connected, all file operations will be performed 
+		as the "forced user", no matter what username the client connected 
+		as.</para>
+		
+			<para>This can be very useful.</para>
+
+		<para>In Samba 2.0.5 and above this parameter also causes the 
+		primary group of the forced user to be used as the primary group 
+		for all file activity. Prior to 2.0.5 the primary group was left 
+		as the primary group of the connecting user (this was a bug).</para>
+
+		<para>See also <link linkend="forcegroup"><parameter>force group
+		</parameter></link></para>
+
+		<para>Default: <emphasis>no forced user</emphasis></para>
+		<para>Example: <command>force user = auser</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="fstype">fstype (S)</term>
+		<listitem><para>This parameter allows the administrator to 
+		configure the string that specifies the type of filesystem a share 
+		is using that is reported by <ulink url="smbd.8.html"><command>smbd(8)
+		</command></ulink> when a client queries the filesystem type
+		for a share. The default type is <constant>NTFS</constant> for 
+		compatibility with Windows NT but this can be changed to other 
+		strings such as <constant>Samba</constant> or <constant>FAT
+		</constant> if required.</para>
+		
+		<para>Default: <command>fstype = NTFS</command></para>
+		<para>Example: <command>fstype = Samba</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="getwdcache">getwd cache (G)</term>
+		<listitem><para>This is a tuning option. When this is enabled a 
+		caching algorithm will be used to reduce the time taken for getwd() 
+		calls. This can have a significant impact on performance, especially 
+		when the <link linkend="widelinks"><parameter>wide links</parameter>
+		</link>parameter is set to <constant>False</constant>.</para>
+
+		<para>Default: <command>getwd cache = No</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="group">group (S)</term>
+		<listitem><para>Synonym for <link linkend="forcegroup"><parameter>force 
+		group</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="guestaccount">guest account (S)</term>
+		<listitem><para>This is a username which will be used for access 
+		to services which are specified as <link linkend="guestok"><parameter>
+		guest ok</parameter></link> (see below). Whatever privileges this 
+		ser has will be available to any client connecting to the guest service. 
+		Typically this user will exist in the password file, but will not
+		have a valid login. The user account "ftp" is often a good choice 
+		for this parameter. If a username is specified in a given service, 
+		the specified username overrides this one.</para>
+
+		<para>One some systems the default guest account "nobody" may not 
+		be able to print. Use another account in this case. You should test 
+		this by trying to log in as your guest user (perhaps by using the 
+		<command>su -</command> command) and trying to print using the 
+		system print command such as <command>lpr(1)</command> or <command>
+		lp(1)</command>.</para>
+		
+		<para>Default: <emphasis>specified at compile time, usually 
+		"nobody"</emphasis></para>
+
+		<para>Example: <command>guest account = ftp</command></para></listitem>
+		</varlistentry>
+
+		
+		
+		<varlistentry>
+		<term id="guestok">guest ok (S)</term>
+		<listitem><para>If this parameter is <constant>yes</constant> for 
+		a service, then no password is equired to connect to the service. 
+		Privileges will be those of the <link linkend="guestaccount"><parameter>
+		guest account</parameter></link>.</para>
+
+		<para>See the section below on <link linkend="security"><parameter>
+		security</parameter></link> for more information about this option.
+		</para>
+
+		<para>Default: <command>guest ok = no</command></para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="guestonly">guest only (S)</term>
+		<listitem><para>If this parameter is <constant>yes</constant> for 
+		a service, then only guest connections to the service are permitted. 
+		This parameter will have no affect if <link linkend="guestok">
+		<parameter>guest ok</parameter></link> is not set for the service.</para>
+
+		<para>See the section below on <link linkend="security"><parameter>
+		security</parameter></link> for more information about this option.
+		</para>
+
+		<para>Default: <command>guest only = no</command></para></listitem>
+		</varlistentry>
+
+
+		
+		<varlistentry>
+		<term id="hidedotfiles">hide dot files (S)</term>
+		<listitem><para>This is a boolean parameter that controls whether 
+		files starting with a dot appear as hidden files.</para>
+
+		<para>Default: <command>hide dot files = yes</command></para></listitem>
+		</varlistentry>
+
+
+	
+		<varlistentry>
+		<term id="hidefiles">hide files(S)</term>
+		<listitem><para>This is a list of files or directories that are not 
+		visible but are accessible.  The DOS 'hidden' attribute is applied 
+		to any files or directories that match.</para>
+
+		<para>Each entry in the list must be separated by a '/', 
+		which allows spaces to be included in the entry.  '*'
+		and '?' can be used to specify multiple files or directories 
+		as in DOS wildcards.</para>
+
+		<para>Each entry must be a Unix path, not a DOS path and must 
+		not include the Unix directory separator '/'.</para>
+
+		<para>Note that the case sensitivity option is applicable 
+		in hiding files.</para>
+		
+		<para>Setting this parameter will affect the performance of Samba, 
+		as it will be forced to check all files and directories for a match 
+		as they are scanned.</para>
+
+		<para>See also <link linkend="hidedotfiles"><parameter>hide 
+		dot files</parameter></link>, <link linkend="vetofiles"><parameter>
+		veto files</parameter></link> and <link linkend="casesensitive">
+		<parameter>case sensitive</parameter></link>.</para>
+
+		<para>Default: <emphasis>no file are hidden</emphasis></para>
+  		<para>Example: <command>hide files =
+		/.*/DesktopFolderDB/TrashFor%m/resource.frk/</command></para>
+
+		<para>The above example is based on files that the Macintosh 
+		SMB client (DAVE) available from <ulink url="http://www.thursby.com"> 
+		Thursby</ulink> creates for internal use, and also still hides 
+		all files beginning with a dot.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="hidelocalusers">hide local users(G)</term>
+		<listitem><para>This parameter toggles the hiding of local UNIX 
+		users (root, wheel, floppy, etc) from remote clients.</para>
+
+		<para>Default: <command>hide local users = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="homedirmap">homedir map (G)</term>
+		<listitem><para>If<link linkend="nishomedir"><parameter>nis homedir
+		</parameter></link> is <constant>True</constant>, and <ulink 
+		url="smbd.8.html"><command>smbd(8)</command></ulink> is also acting 
+		as a Win95/98 <parameter>logon server</parameter> then this parameter 
+		specifies the NIS (or YP) map from which the server for the user's 
+		home directory should be extracted.  At present, only the Sun 
+		auto.home map format is understood. The form of the map is:</para>
+
+		<para><command>username	server:/some/file/system</command></para>
+
+		<para>and the program will extract the servername from before 
+		the first ':'.  There should probably be a better parsing system 
+		that copes with different map formats and also Amd (another 
+		automounter) maps.</para>
+		
+		<para><emphasis>NOTE :</emphasis>A working NIS client is required on 
+		the system for this option to work.</para>
+
+		<para>See also <link linkend="nishomedir"><parameter>nis homedir</parameter>
+		</link>, <link linkend="domainlogons"><parameter>domain logons</parameter>
+		</link>.</para>
+
+		<para>Default: <command>homedir map = auto.home</command></para>
+		<para>Example: <command>homedir map = amd.homedir</command></para>
+		</listitem>
+		</varlistentry>
+
+
+	
+		<varlistentry>
+		<term id="hostsallow">hosts allow (S)</term>
+		<listitem><para>A synonym for this parameter is <parameter>allow 
+		hosts</parameter>.</para>
+		
+		<para>This parameter is a comma, space, or tab delimited 
+		set of hosts which are permitted to access a service.</para>
+
+		<para>If specified in the [global] section then it will
+		apply to all services, regardless of whether the individual 
+		service has a different setting.</para>
+
+		<para>You can specify the hosts by name or IP number. For 
+		example, you could restrict access to only the hosts on a 
+		Class C subnet with something like <command>allow hosts = 150.203.5.
+		</command>. The full syntax of the list is described in the man 
+		page <filename>hosts_access(5)</filename>. Note that this man
+		page may not be present on your system, so a brief description will
+		be given here also.</para>
+
+		<para>Note that the localhost address 127.0.0.1 will always 
+		be allowed access unless specifically denied by a <link 
+		linkend="hostsdeny"><parameter>hosts deny</parameter></link> option.</para>
+
+		<para>You can also specify hosts by network/netmask pairs and 
+		by netgroup names if your system supports netgroups. The 
+		<emphasis>EXCEPT</emphasis> keyword can also be used to limit a 
+		wildcard list. The following examples may provide some help:</para>
+
+		<para>Example 1: allow all IPs in 150.203.*.*; except one</para>
+
+		<para><command>hosts allow = 150.203. EXCEPT 150.203.6.66</command></para>
+
+		<para>Example 2: allow hosts that match the given network/netmask</para>
+
+		<para><command>hosts allow = 150.203.15.0/255.255.255.0</command></para>
+
+		<para>Example 3: allow a couple of hosts</para>
+
+		<para><command>hosts allow = lapland, arvidsjaur</command></para>
+
+		<para>Example 4: allow only hosts in NIS netgroup "foonet", but 
+		deny access from one particular host</para>
+
+		<para><command>hosts allow = @foonet</command></para>
+
+		<para><command>hosts deny = pirate</command></para>
+
+		<para>Note that access still requires suitable user-level passwords.</para>
+
+		<para>See <ulink url="testparm.1.html"><command>testparm(1)</command>
+		</ulink> for a way of testing your host access to see if it does 
+		what you expect.</para>
+
+		<para>Default: <emphasis>none (i.e., all hosts permitted access)
+		</emphasis></para>
+		
+		<para>Example: <command>allow hosts = 150.203.5. myhost.mynet.edu.au
+		</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="hostsdeny">hosts deny (S)</term>
+		<listitem><para>The opposite of <parameter>hosts allow</parameter> 
+		- hosts listed here are <emphasis>NOT</emphasis> permitted access to 
+		services unless the specific services have their own lists to override 
+		this one. Where the lists conflict, the <parameter>allow</parameter> 
+		list takes precedence.</para>
+		
+		<para>Default: <emphasis>none (i.e., no hosts specifically excluded)
+		</emphasis></para>
+
+		<para>Example: <command>hosts deny = 150.203.4. badhost.mynet.edu.au
+		</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="hostsequiv">hosts equiv (G)</term>
+		<listitem><para>If this global parameter is a non-null string, 
+		it specifies the name of a file to read for the names of hosts 
+		and users who will be allowed access without specifying a password.
+		</para>
+		
+		<para>This is not be confused with <link linkend="hostsallow">
+		<parameter>hosts allow</parameter></link> which is about hosts 
+		access to services and is more useful for guest services. <parameter>
+		hosts equiv</parameter> may be useful for NT clients which will 
+		not supply passwords to samba.</para>
+
+		<para><emphasis>NOTE :</emphasis> The use of <parameter>hosts equiv
+		</parameter> can be a major security hole. This is because you are 
+		trusting the PC to supply the correct username. It is very easy to 
+		get a PC to supply a false username. I recommend that the 
+		<parameter>hosts equiv</parameter> option be only used if you really 
+		know what you are doing, or perhaps on a home network where you trust 
+		your spouse and kids. And only if you <emphasis>really</emphasis> trust 
+		them :-).</para>
+		
+		<para>Default: <emphasis>no host equivalences</emphasis></para>
+		<para>Example: <command>hosts equiv = /etc/hosts.equiv</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="include">include (G)</term>
+		<listitem><para>This allows you to include one config file 
+		inside another.  The file is included literally, as though typed 
+		in place.</para>
+
+		<para>It takes the standard substitutions, except <parameter>%u
+		</parameter>, <parameter>%P</parameter> and <parameter>%S</parameter>.
+		</para>
+		
+		<para>Default: <emphasis>no file included</emphasis></para>
+		<para>Example: <command>include = /usr/local/samba/lib/admin_smb.conf
+		</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="inheritpermissions">inherit permissions (S)</term>
+		<listitem><para>The permissions on new files and directories 
+		are normally governed by <link linkend="createmask"><parameter>
+		create mask</parameter></link>, <link linkend="directorymask">
+		<parameter>directory mask</parameter></link>, <link 
+		linkend="forcecreatemode"><parameter>force create mode</parameter>
+		</link> and <link linkend="forcedirectorymode"><parameter>force 
+		directory mode</parameter></link> but the boolean inherit 
+		permissions parameter overrides this.</para>
+		
+		<para>New directories inherit the mode of the parent directory,
+		including bits such as setgid.</para>
+
+		<para>New files inherit their read/write bits from the parent 
+		directory.  Their execute bits continue to be determined by
+		<link linkend="maparchive"><parameter>map archive</parameter>
+		</link>, <link linkend="maphidden"><parameter>map hidden</parameter>
+		</link> and <link linkend="mapsystem"><parameter>map system</parameter>
+		</link> as usual.</para>
+
+		<para>Note that the setuid bit is <emphasis>never</emphasis> set via 
+		inheritance (the code explicitly prohibits this).</para>
+
+		<para>This can be particularly useful on large systems with 
+		many users, perhaps several thousand,to allow a single [homes] 
+		share to be used flexibly by each user.</para>
+		
+		<para>See also <link linkend="createmask"><parameter>create mask
+		</parameter></link>, <link linkend="directorymask"><parameter>
+		directory mask</parameter></link>, <link linkend="forcecreatemode">
+		<parameter>force create mode</parameter></link> and <link
+		linkend="forcedirectorymode"><parameter>force directory mode</parameter>
+		</link>.</para>
+
+		<para>Default: <command>inherit permissions = no</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="interfaces">interfaces (G)</term>
+		<listitem><para>This option allows you to override the default 
+		network interfaces list that Samba will use for browsing, name 
+		registration and other NBT traffic. By default Samba will query 
+		the kernel for the list of all active interfaces and use any 
+		interfaces except 127.0.0.1 that are broadcast capable.</para>
+
+		<para>The option takes a list of interface strings. Each string 
+		can be in any of the following forms:</para>
+
+		<itemizedlist>
+			<listitem><para>a network interface name (such as eth0). 
+			This may include shell-like wildcards so eth* will match 
+			any interface starting with the substring "eth"</para></listitem>
+			
+			<listitem><para>an IP address. In this case the netmask is 
+			determined from the list of interfaces obtained from the 
+			kernel</para></listitem>
+			
+			<listitem><para>an IP/mask pair. </para></listitem>
+			
+			<listitem><para>a broadcast/mask pair.</para></listitem>
+		</itemizedlist>
+
+		<para>The "mask" parameters can either be a bit length (such 
+		as 24 for a C class network) or a full netmask in dotted 
+		decmal form.</para>
+
+		<para>The "IP" parameters above can either be a full dotted 
+		decimal IP address or a hostname which will be looked up via 
+		the OSes normal hostname resolution mechanisms.</para>
+
+		<para>For example, the following line:</para>
+		
+		<para><command>interfaces = eth0 192.168.2.10/24 192.168.3.10/255.255.255.0
+		</command></para>
+
+		<para>would configure three network interfaces corresponding 
+		to the eth0 device and IP addresses 192.168.2.10 and 192.168.3.10. 
+		The netmasks of the latter two interfaces would be set to 255.255.255.0.</para>
+
+		<para>See also <link linkend="bindinterfacesonly"><parameter>bind 
+		interfaces only</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="invalidusers">invalid users (S)</term>
+		<listitem><para>This is a list of users that should not be allowed 
+		to login to this service. This is really a <emphasis>paranoid</emphasis> 
+		check to absolutely ensure an improper setting does not breach 
+		your security.</para>
+		
+		<para>A name starting with a '@' is interpreted as an NIS 
+ 		netgroup first (if your system supports NIS), and then as a UNIX 
+		group if the name was not found in the NIS netgroup database.</para>
+
+		<para>A name starting with '+' is interpreted only 
+		by looking in the UNIX group database. A name starting with 
+		'&' is interpreted only by looking in the NIS netgroup database 
+		(this requires NIS to be working on your system). The characters 
+		'+' and '&' may be used at the start of the name in either order 
+		so the value <parameter>+&amp;group</parameter> means check the 
+		UNIX group database, followed by the NIS netgroup database, and 
+		the value <parameter>&+group"</parameter> means check the NIS
+		netgroup database, followed by the UNIX group database (the 
+		same as the '@' prefix).</para>
+
+		<para>The current servicename is substituted for <parameter>%S</parameter>. 
+		This is useful in the [homes] section.</para>
+
+		<para>See also <link linkend="validusers"><parameter>valid users
+		</parameter></link>.</para>
+
+		<para>Default: <emphasis>no invalid users</emphasis></para>
+		<para>Example: <command>invalid users = root fred admin @wheel
+		</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="keepalive">keepalive (G)</term>
+		<listitem><para>The value of the parameter (an integer) represents 
+		the number of seconds between <parameter>keepalive</parameter> 
+		packets. If this parameter is zero, no keepalive packets will be 
+		sent. Keepalive packets, if sent, allow the server to tell whether 
+		a client is still present and responding.</para>
+
+		<para>Keepalives should, in general, not be needed if the socket 
+		being used has the SO_KEEPALIVE attribute set on it (see <link 
+		linkend="socketoptions"><parameter>socket options</parameter></link>). 
+		Basically you should only use this option if you strike difficulties.</para>
+
+  		<para>Default: <command>keepalive = 0</command></para>
+  		<para>Example: <command>keepalive = 60</command></para>
+		</listitem>
+		</varlistentry>
+
+	
+	
+		<varlistentry>
+		<term id="kerneloplocks">kernel oplocks (G)</term>
+		<listitem><para>For UNIXs that support kernel based <link
+		linkend="oplocks"><parameter>oplocks</parameter></link>
+		(currently only IRIX and the Linux 2.4 kernel), this parameter 
+		allows the use of them to be turned on or off.</para>
+
+		<para>Kernel oplocks support allows Samba <parameter>oplocks
+		</parameter> to be broken whenever a local UNIX process or NFS operation 
+		accesses a file that <ulink url="smbd.8.html"><command>smbd(8)</command>
+		</ulink> has oplocked. This allows complete data consistency between 
+		SMB/CIFS, NFS and local file access (and is a <emphasis>very</emphasis> 
+		cool feature :-).</para>
+
+		<para>This parameter defaults to <constant>on</constant> on systems 
+		that have the support, and <constant>off</constant> on systems that 
+		don't. You should never need to touch this parameter.</para>
+
+		<para>See also the <link linkend="oplocks"><parameter>oplocks</parameter>
+		</link> and <link linkend="level2oplocks"><parameter>level2 oplocks
+		</parameter></link> parameters.</para>
+		
+		<para>Default: <command>kernel oplocks = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+		
+
+		<varlistentry>
+		<term id="level2oplocks">level2 oplocks (S)</term>
+		<listitem><para>This parameter controls whether Samba supports
+		level2 (read-only) oplocks on a share.</para>
+		
+		<para>Level2, or read-only oplocks allow Windows NT clients 
+		that have an oplock on a file to downgrade from a read-write oplock 
+		to a read-only oplock once a second client opens the file (instead 
+		of releasing all oplocks on a second open, as in traditional, 
+		exclusive oplocks). This allows all openers of the file that 
+		support level2 oplocks to cache the file for read-ahead only (ie. 
+		they may not cache writes or lock requests) and increases performance 
+		for many acesses of files that are not commonly written (such as 
+		application .EXE files).</para>
+
+		<para>Once one of the clients which have a read-only oplock 
+		writes to the file all clients are notified (no reply is needed 
+		or waited for) and told to break their oplocks to "none" and 
+		delete any read-ahead caches.</para>
+
+		<para>It is recommended that this parameter be turned on 
+		to speed access to shared executables (and also to test 
+		the code :-).</para>
+
+		<para>For more discussions on level2 oplocks see the CIFS spec.</para>
+
+		<para>Currently, if <link linkend="kerneloplocks"><parameter>kernel 
+		oplocks</parameter></link> are supported then level2 oplocks are 
+		not granted (even if this parameter is set to <constant>yes</constant>). 
+		Note also, the <link linkend="oplocks"><parameter>oplocks</parameter>
+		</link> parameter must be set to "true" on this share in order for 
+		this parameter to have any effect.</para>
+
+		<para>See also the <link linkend="oplocks"><parameter>oplocks</parameter>
+		</link> and <link linkend="oplocks"><parameter>kernel oplocks</parameter>
+		</link> parameters.</para>
+		
+		<para>Default: <command>level2 oplocks = False</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lmannounce">lm announce (G)</term>
+		<listitem><para>This parameter determines if <ulink url="nmbd.8.html">
+		<command>nmbd(8)</command></ulink> will produce Lanman announce 
+		broadcasts that are needed by OS/2 clients in order for them to see 
+		the Samba server in their browse list. This parameter can have three 
+		values, <constant>true</constant>, <constant>false</constant>, or
+		<constant>auto</constant>. The default is <constant>auto</constant>.  
+		If set to <constant>false</constant> Samba will never produce these 
+		broadcasts. If set to <constant>true</constant> Samba will produce 
+		Lanman announce broadcasts at a frequency set by the parameter 
+		<parameter>lm interval</parameter>. If set to <constant>auto</constant> 
+		Samba will not send Lanman announce broadcasts by default but will 
+		listen for them. If it hears such a broadcast on the wire it will 
+		then start sending them at a frequency set by the parameter 
+		<parameter>lm interval</parameter>.</para>
+
+		<para>See also <link linkend="lminterval"><parameter>lm interval
+		</parameter></link>.</para>
+
+		<para>Default: <command>lm announce = auto</command></para>
+		<para>Example: <command>lm announce = true</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lminterval">lm interval (G)</term>
+		<listitem><para>If Samba is set to produce Lanman announce 
+		broadcasts needed by OS/2 clients (see the <link linkend="lmannounce">
+		<parameter>lm announce</parameter></link> parameter) then this 
+		parameter defines the frequency in seconds with which they will be 
+		made.  If this is set to zero then no Lanman announcements will be 
+		made despite the setting of the <parameter>lm announce</parameter> 
+		parameter.</para>
+
+		<para>See also <link linkend="lmannounce"><parameter>lm 
+		announce</parameter></link>.</para>
+
+		<para>Default: <command>lm interval = 60</command></para>
+		<para>Example: <command>lm interval = 120</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="loadprinters">load printers (G)</term>
+		<listitem><para>A boolean variable that controls whether all 
+		printers in the printcap will be loaded for browsing by default. 
+		See the <link linkend="printersect">printers</link> section for 
+		more details.</para>
+
+		<para>Default: <command>load printers = yes</command></para></listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term id="localmaster">local master (G)</term>
+		<listitem><para>This option allows <ulink url="nmbd.8.html"><command>
+		nmbd(8)</command></ulink> to try and become a local master browser 
+		on a subnet. If set to <constant>False</constant> then <command>
+		nmbd</command> will not attempt to become a local master browser 
+		on a subnet and will also lose in all browsing elections. By
+		default this value is set to true. Setting this value to true doesn't
+		mean that Samba will <emphasis>become</emphasis> the local master 
+		browser on a subnet, just that <command>nmbd</command> will <emphasis>
+		participate</emphasis> in elections for local master browser.</para>
+
+		<para>Setting this value to False will cause <command>nmbd</command>
+		<emphasis>never</emphasis> to become a local master browser.</para>
+
+  		<para>Default: <command>local master = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lockdir">lock dir (G)</term>
+		<listitem><para>Synonym for <link linkend="lockdirectory"><parameter>
+		lock directory</parameter></link>.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="lockdirectory">lock directory (G)</term>
+		<listitem><para>This option specifies the directory where lock 
+		files will be placed.  The lock files are used to implement the 
+		<link linkend="maxconnections"><parameter>max connections</parameter>
+		</link> option.</para>
+
+		<para>Default: <command>lock directory = /tmp/samba</command></para>
+		<para>Example: <command>lock directory = /usr/local/samba/var/locks</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="locking">locking (S)</term>
+		<listitem><para>This controls whether or not locking will be 
+		performed by the server in response to lock requests from the 
+		client.</para>
+
+		<para>If <command>locking = no</command>, all lock and unlock requests 
+		will appear to succeed and all lock queries will indicate that the 
+		queried lock is clear.</para>
+
+		<para>If <command>locking = yes</command>, real locking will be performed 
+		by the server.</para>
+
+		<para>This option <emphasis>may</emphasis> be useful for read-only 
+		filesystems which <emphasis>may</emphasis> not need locking (such as 
+		cdrom drives), although setting this parameter of <constant>no</constant> 
+		is not really recommended even in this case.</para>
+
+		<para>Be careful about disabling locking either globally or in a 
+		specific service, as lack of locking may result in data corruption. 
+		You should never need to set this parameter.</para>
+
+		<para>Default: <command>locking = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="logfile">log file (G)</term>
+		<listitem><para>This options allows you to override the name 
+		of the Samba log file (also known as the debug file).</para>
+
+		<para>This option takes the standard substitutions, allowing 
+		you to have separate log files for each user or machine.</para>
+
+		<para>Example: <command>log file = /usr/local/samba/var/log.%m
+		</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="loglevel">log level (G)</term>
+		<listitem><para>Synonym for <link linkend="debuglevel"><parameter>
+		debug level</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="logondrive">logon drive (G)</term>
+		<listitem><para>This parameter specifies the local path to 
+		which the home directory will be connected (see <link 
+		linkend="logonhome"><parameter>logon home</parameter></link>) 
+		and is only used by NT Workstations. </para>
+
+		<para>Note that this option is only useful if Samba is set up as a
+		logon server.</para>
+
+		<para>Default: <command>logon drive = z:</command></para>
+  		<para>Example: <command>logon drive = h:</command></para>
+		</listitem>
+		</varlistentry>
+
+	
+	
+		<varlistentry>
+		<term id="logonhome">logon home (G)</term>
+		<listitem><para>This parameter specifies the home directory 
+		location when a Win95/98 or NT Workstation logs into a Samba PDC.  
+		It allows you to do </para>
+		
+		<para><prompt>C:\> </prompt><userinput>NET USE H: /HOME</userinput>
+		</para>
+
+		<para>from a command prompt, for example.</para>
+
+		<para>This option takes the standard substitutions, allowing 
+		you to have separate logon scripts for each user or machine.</para>
+
+		<para>This parameter can be used with Win9X workstations to ensure 
+		that roaming profiles are stored in a subdirectory of the user's 
+		home directory.  This is done in the following way:</para>
+
+		<para><command>logon home = \\%L\%U\profile</command></para>
+
+		<para>This tells Samba to return the above string, with 
+		substitutions made when a client requests the info, generally 
+		in a NetUserGetInfo request.  Win9X clients truncate the info to
+		\\server\share when a user does <command>net use /home"</command>
+		but use the whole string when dealing with profiles.</para>
+
+		<para>Note that in prior versions of Samba, the <link linkend="logonpath">
+		<parameter>logon path</parameter></link> was returned rather than 
+		<parameter>logon home</parameter>.  This broke <command>net use 
+		/home</command> but allowed profiles outside the home directory.  
+		The current implementation is correct, and can be used for 
+		profiles if you use the above trick.</para>
+		
+		<para>This option is only useful if Samba is set up as a logon 
+		server.</para>
+
+		<para>Default: <command>logon home = "\\%N\%U"</command></para>
+		<para>Example: <command>logon home = "\\remote_smb_server\%U"</command>
+		</para></listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="logonpath">logon path (G)</term>
+		<listitem><para>This parameter specifies the home directory 
+		where roaming profiles (NTuser.dat etc files for Windows NT) are 
+		stored.  Contrary to previous versions of these manual pages, it has 
+		nothing to do with Win 9X roaming profiles.  To find out how to 
+		handle roaming profiles for Win 9X system, see the <link linkend="logonhome">
+		<parameter>logon home</parameter></link> parameter.</para>
+
+		<para>This option takes the standard substitutions, allowing you 
+		to have separate logon scripts for each user or machine.  It also 
+		specifies the directory from which the "Application Data", 
+		(<filename>desktop</filename>, <filename>start menu</filename>,
+		<filename>network neighborhood</filename>, <filename>programs</filename> 
+		and other folders, and their contents, are loaded and displayed on 
+		your Windows NT client.</para>
+		
+		<para>The share and the path must be readable by the user for 
+		the preferences and directories to be loaded onto the Windows NT
+		client.  The share must be writeable when the logs in for the first
+		time, in order that the Windows NT client can create the NTuser.dat
+		and other directories.</para>
+
+		<para>Thereafter, the directories and any of the contents can, 
+		if required, be made read-only.  It is not advisable that the 
+		NTuser.dat file be made read-only - rename it to NTuser.man to 
+		achieve the desired effect (a <emphasis>MAN</emphasis>datory 
+		profile). </para>
+
+		<para>Windows clients can sometimes maintain a connection to 
+		the [homes] share, even though there is no user logged in.  
+		Therefore, it is vital that the logon path does not include a 
+		reference to the homes share (i.e. setting this parameter to
+		\%N\%U\profile_path will cause problems).</para>
+
+		<para>This option takes the standard substitutions, allowing 
+		you to have separate logon scripts for each user or machine.</para>
+
+		<para>Note that this option is only useful if Samba is set up 
+		as a logon server.</para>
+
+		<para>Default: <command>logon path = \\%N\%U\profile</command></para>
+		<para>Example: <command>logon path = \\PROFILESERVER\PROFILE\%U</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="logonscript">logon script (G)</term>
+		<listitem><para>This parameter specifies the batch file (.bat) or 
+		NT command file (.cmd) to be downloaded and run on a machine when 
+		a user successfully logs in.  The file must contain the DOS 
+		style cr/lf line endings. Using a DOS-style editor to create the 
+		file is recommended.</para>
+		
+		<para>The script must be a relative path to the [netlogon] 
+		service.  If the [netlogon] service specifies a <link linkend="path">
+		<parameter>path</parameter></link> of <filename>/usr/local/samba/netlogon
+		</filename>, and <command>logon script = STARTUP.BAT</command>, then 
+		the file that will be downloaded is:</para>
+
+		<para><filename>/usr/local/samba/netlogon/STARTUP.BAT</filename></para>
+
+		<para>The contents of the batch file is entirely your choice.  A 
+		suggested command would be to add <command>NET TIME \\SERVER /SET 
+		/YES</command>, to force every machine to synchronize clocks with 
+		the same time server.  Another use would be to add <command>NET USE 
+		U: \\SERVER\UTILS</command> for commonly used utilities, or <command>
+		NET USE Q: \\SERVER\ISO9001_QA</command> for example.</para>
+
+		<para>Note that it is particularly important not to allow write 
+		access to the [netlogon] share, or to grant users write permission 
+		on the batch files in a secure environment, as this would allow 
+		the batch files to be arbitrarily modified and security to be 
+		breached.</para>
+
+		<para>This option takes the standard substitutions, allowing you 
+		to have separate logon scripts for each user or machine.</para>
+
+		<para>This option is only useful if Samba is set up as a logon 
+		server.</para>
+
+		<para>Default: <emphasis>no logon script defined</emphasis></para>
+		<para>Example: <command>logon script = scripts\%U.bat</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lppausecommand">lppause command (S)</term>
+		<listitem><para>This parameter specifies the command to be 
+		executed on the server host in order to stop printing or spooling 
+		a specific print job.</para>
+
+		<para>This command should be a program or script which takes 
+		a printer name and job number to pause the print job. One way 
+		of implementing this is by using job priorities, where jobs 
+		having a too low priority won't be sent to the printer.</para>
+
+		<para>If a <parameter>%p</parameter> is given then the printername 
+		is put in its place. A <parameter>%j</parameter> is replaced with 
+		the job number (an integer).  On HPUX (see <parameter>printing=hpux
+		</parameter>), if the <parameter>-p%p</parameter> option is added 
+		to the lpq command, the job will show up with the correct status, i.e. 
+		if the job priority is lower than the set fence priority it will 
+		have the PAUSED status, whereas if  the priority is equal or higher it 
+		will have the SPOOLED or PRINTING status.</para>
+
+		<para>Note that it is good practice to include the absolute path 
+		in the lppause command as the PATH may not be available to the server.</para>
+
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: Currently no default value is given to 
+		this string, unless the value of the <parameter>printing</parameter> 
+		parameter is <constant>SYSV</constant>, in which case the default is :</para>
+
+		<para><command>lp -i %p-%j -H hold</command></para>
+
+		<para>or if the value of the <parameter>printing</parameter> parameter 
+		is <constant>SOFTQ</constant>, then the default is:</para>
+
+		<para><command>qstat -s -j%j -h</command></para>
+ 
+		<para>Example for HPUX: <command>lppause command = /usr/bin/lpalt 	
+		%p-%j -p0</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lpqcachetime">lpq cache time (G)</term>
+		<listitem><para>This controls how long lpq info will be cached 
+		for to prevent the <command>lpq</command> command being called too 
+		often. A separate cache is kept for each variation of the <command>
+		lpq</command> command used by the system, so if you use different 
+		<command>lpq</command> commands for different users then they won't
+		share cache information.</para>
+
+		<para>The cache files are stored in <filename>/tmp/lpq.xxxx</filename> 
+		where xxxx is a hash of the <command>lpq</command> command in use.</para>
+
+		<para>The default is 10 seconds, meaning that the cached results 
+		of a previous identical <command>lpq</command> command will be used 
+		if the cached data is less than 10 seconds old. A large value may 
+		be advisable if your <command>lpq</command> command is very slow.</para>
+
+		<para>A value of 0 will disable caching completely.</para>
+
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: <command>lpq cache time = 10</command></para>
+		<para>Example: <command>lpq cache time = 30</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="lpqcommand">lpq command (S)</term>
+		<listitem><para>This parameter specifies the command to be 
+		executed on the server host in order to obtain <command>lpq
+		</command>-style printer status information.</para>
+
+		<para>This command should be a program or script which 
+		takes a printer name as its only parameter and outputs printer 
+		status information.</para>
+
+		<para>Currently eight styles of printer status information 
+		are supported; BSD, AIX, LPRNG, PLP, SYSV, HPUX, QNX and SOFTQ. 
+		This covers most UNIX systems. You control which type is expected 
+		using the <parameter>printing =</parameter> option.</para>
+
+		<para>Some clients (notably Windows for Workgroups) may not 
+		correctly send the connection number for the printer they are 
+		requesting status information about. To get around this, the 
+		server reports on the first printer service connected to by the 
+		client. This only happens if the connection number sent is invalid.</para>
+
+		<para>If a <parameter>%p</parameter> is given then the printername 
+		is put in its place. Otherwise it is placed at the end of the 
+		command.</para>
+
+		<para>Note that it is good practice to include the absolute path 
+		in the <parameter>lpq command</parameter> as the PATH may not be 
+		available to the server.</para>
+
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: <emphasis>depends on the setting of <parameter>
+		printing</parameter></emphasis></para>
+
+		<para>Example: <command>lpq command = /usr/bin/lpq %p</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="lpresumecommand">lpresume command (S)</term>
+		<listitem><para>This parameter specifies the command to be 
+		executed on the server host in order to restart or continue 
+		printing or spooling a specific print job.</para>
+
+		<para>This command should be a program or script which takes 
+		a printer name and job number to resume the print job. See 
+		also the <link linkend="lppausecommand"><parameter>lppause command
+		</parameter></link> parameter.</para>
+
+		<para>If a <parameter>%p</parameter> is given then the printername 
+		is put in its place. A <parameter>%j</parameter> is replaced with 
+		the job number (an integer).</para>
+		
+		<para>Note that it is good practice to include the absolute path 
+		in the <parameter>lpresume command</parameter> as the PATH may not 
+		be available to the server.</para>
+		
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: Currently no default value is given 
+		to this string, unless the value of the <parameter>printing</parameter> 
+		parameter is <constant>SYSV</constant>, in which case the default is :</para>
+
+		<para><command>lp -i %p-%j -H resume</command></para>
+
+		<para>or if the value of the <parameter>printing</parameter> parameter 
+		is <constant>SOFTQ</constant>, then the default is:</para>
+
+		<para><command>qstat -s -j%j -r</command></para>
+ 
+		<para>Example for HPUX: <command>lpresume command = /usr/bin/lpalt 
+		%p-%j -p2</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+
+		<varlistentry>
+		<term id="lprmcommand">lprm command (S)</term>
+		<listitem><para>This parameter specifies the command to be 
+		executed on the server host in order to delete a print job.</para>
+
+		<para>This command should be a program or script which takes 
+		a printer name and job number, and deletes the print job.</para>
+
+		<para>If a <parameter>%p</parameter> is given then the printername 
+		is put in its place. A <parameter>%j</parameter> is replaced with 
+		the job number (an integer).</para>
+
+		<para>Note that it is good practice to include the absolute 
+		path in the <parameter>lprm command</parameter> as the PATH may not be 
+		available to the server.</para>
+
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: <emphasis>depends on the setting of <parameter>printing
+		</parameter></emphasis></para>
+
+		<para>Example 1: <command>lprm command = /usr/bin/lprm -P%p %j
+		</command></para>
+		<para>Example 2: <command>lprm command = /usr/bin/cancel %p-%j
+		</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="machinepasswordtimeout">machine password timeout (G)</term>
+		<listitem><para>If a Samba server is a member of an Windows 
+		NT Domain (see the <link linkend="securitydomain">security=domain</link>) 
+		parameter) then periodically a running <ulink url="smbd.8.html">
+		smbd(8)</ulink> process will try and change the MACHINE ACCOUNT 
+		PASSWORD stored in the TDB called <filename>private/secrets.tdb
+		</filename>.  This parameter specifies how often this password 
+		will be changed, in seconds. The default is one week (expressed in 
+		seconds), the same as a Windows NT Domain member server.</para>
+
+		<para>See also <ulink url="smbpasswd.8.html"><command>smbpasswd(8)
+		</command></ulink>, and the <link linkend="securitydomain">
+		security=domain</link>) parameter.</para>
+
+		<para>Default: <command>machine password timeout = 604800</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="magicoutput">magic output (S)</term>
+		<listitem><para>This parameter specifies the name of a file 
+		which will contain output created by a magic script (see the 
+		<link linkend="magicscript"><parameter>magic script</parameter></link>
+		parameter below).</para>
+
+		<para>Warning: If two clients use the same <parameter>magic script
+		</parameter> in the same directory the output file content
+		is undefined.</para>
+
+		<para>Default: <command>magic output = &lt;magic script name&gt;.out
+		</command></para>
+
+		<para>Example: <command>magic output = myfile.txt</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="magicscript">magic script (S)</term>
+		<listitem><para>This parameter specifies the name of a file which, 
+		if opened, will be executed by the server when the file is closed. 
+		This allows a UNIX script to be sent to the Samba host and 
+		executed on behalf of the connected user.</para>
+
+		<para>Scripts executed in this way will be deleted upon 
+		completion, permissions permitting.</para>
+
+		<para>If the script generates output, output will be sent to 
+		the file specified by the <link linkend="magicoutput"><parameter>
+		magic output</parameter></link> parameter (see above).</para>
+
+		<para>Note that some shells are unable to interpret scripts 
+		containing carriage-return-linefeed instead of linefeed as 
+		the end-of-line marker. Magic scripts must be executable 
+		<emphasis>as is</emphasis> on the host, which for some hosts and 
+		some shells will require filtering at the DOS end.</para>
+
+		<para>Magic scripts are <emphasis>EXPERIMENTAL</emphasis> and 
+		should <emphasis>NOT</emphasis> be relied upon.</para>
+
+		<para>Default: <emphasis>None. Magic scripts disabled.</emphasis></para>
+		<para>Example: <command>magic script = user.csh</command></para>
+		</listitem>
+		</varlistentry>
+
+		
+
+		<varlistentry>
+		<term id="manglecase">mangle case (S)</term>
+		<listitem><para>See the section on <link linkend="manmaglingsect">
+		NAME MANGLING</link></para>
+		</listitem>
+		</varlistentry>
+		
+
+		<varlistentry>
+		<term id="mangledmap">mangled map (S)</term>
+		<listitem><para>This is for those who want to directly map UNIX 
+		file names which can not be represented on Windows/DOS.  The mangling 
+		of names is not always what is needed.  In particular you may have 
+		documents with file extensions that differ between DOS and UNIX. 
+		For example, under UNIX it is common to use <filename>.html</filename> 
+		for HTML files, whereas under Windows/DOS <filename>.htm</filename> 
+		is more commonly used.</para>
+
+		<para>So to map <filename>html</filename> to <filename>htm</filename> 
+		you would use:</para>
+		
+		<para><command>mangled map = (*.html *.htm)</command></para>
+
+		<para>One very useful case is to remove the annoying <filename>;1
+		</filename> off the ends of filenames on some CDROMS (only visible 
+		under some UNIXs). To do this use a map of (*;1 *;).</para>
+
+		<para>Default: <emphasis>no mangled map</emphasis></para>
+		<para>Example: <command>mangled map = (*;1 *;)</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="manglednames">mangled names (S)</term>
+		<listitem><para>This controls whether non-DOS names under UNIX 
+		should be mapped to DOS-compatible names ("mangled") and made visible, 
+		or whether non-DOS names should simply be ignored.</para>
+
+		<para>See the section on <link linkend="namemanglingsect">
+		NAME MANGLING</link> for details on how to control the mangling process.</para>
+
+		<para>If mangling is used then the mangling algorithm is as follows:</para>
+
+		<itemizedlist>
+			<listitem><para>The first (up to) five alphanumeric characters 
+			before the rightmost dot of the filename are preserved, forced 
+			to upper case, and appear as the first (up to) five characters 
+			of the mangled name.</para></listitem>
+		
+			<listitem><para>A tilde "~" is appended to the first part of the mangled
+			name, followed by a two-character unique sequence, based on the
+			original root name (i.e., the original filename minus its final
+			extension). The final extension is included in the hash calculation
+			only if it contains any upper case characters or is longer than three
+			characters.</para>
+
+			<para>Note that the character to use may be specified using 
+			the <link linkend="manglingchar"><parameter>mangling char</parameter>
+			</link> option, if you don't like '~'.</para></listitem>
+
+			<listitem><para>The first three alphanumeric characters of the final 
+			extension are preserved, forced to upper case and appear as the 
+			extension of the mangled name. The final extension is defined as that 
+			part of the original filename after the rightmost dot. If there are no 
+			dots in the filename, the mangled name will have no extension (except 
+			in the case of "hidden files" - see below).</para></listitem>
+
+			<listitem><para>Files whose UNIX name begins with a dot will be 
+			presented as DOS hidden files. The mangled name will be created as 
+			for other filenames, but with the leading dot removed and "___" as 
+			its extension regardless of actual original extension (that's three 
+			underscores).</para></listitem>
+		</itemizedlist>
+
+		<para>The two-digit hash value consists of upper case 
+		alphanumeric characters.</para>
+
+		<para>This algorithm can cause name collisions only if files 
+		in a directory share the same first five alphanumeric characters. 
+		The probability of such a clash is 1/1300.</para>
+
+		<para>The name mangling (if enabled) allows a file to be 
+		copied between UNIX directories from Windows/DOS while retaining 
+		the long UNIX filename. UNIX files can be renamed to a new extension 
+		from Windows/DOS and will retain the same basename. Mangled names 
+		do not change between sessions.</para>
+
+		<para>Default: <command>mangled names = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="manglingchar">mangling char (S)</term>
+		<listitem><para>This controls what character is used as 
+		the <emphasis>magic</emphasis> character in <link 
+		linkend="namemanglingsect">name mangling</link>. The default is a '~'
+		but this may interfere with some software. Use this option to set 
+		it to whatever you prefer.</para>
+
+		<para>Default: <command>mangling char = ~</command></para>
+		<para>Example: <command>mangling char = ^</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="mangledstack">mangled stack (G)</term>
+		<listitem><para>This parameter controls the number of mangled names 
+		that should be cached in the Samba server <ulink url="smbd.8.html">
+		smbd(8)</ulink>.</para>
+
+		<para>This stack is a list of recently mangled base names 
+		(extensions are only maintained if they are longer than 3 characters 
+		or contains upper case characters).</para>
+
+		<para>The larger this value, the more likely it is that mangled 
+		names can be successfully converted to correct long UNIX names. 
+		However, large stack sizes will slow most directory access. Smaller 
+		stacks save memory in the server (each stack element costs 256 bytes).
+		</para>
+
+		<para>It is not possible to absolutely guarantee correct long 
+		file names, so be prepared for some surprises!</para>
+
+		<para>Default: <command>mangled stack = 50</command></para>
+  		<para>Example: <command>mangled stack = 100</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maparchive">map archive (S)</term>
+		<listitem><para>This controls whether the DOS archive attribute 
+		should be mapped to the UNIX owner execute bit.  The DOS archive bit 
+		is set when a file has been modified since its last backup.  One 
+		motivation for this option it to keep Samba/your PC from making 
+		any file it touches from becoming executable under UNIX.  This can 
+		be quite annoying for shared source code, documents, etc...</para>
+
+		<para>Note that this requires the <parameter>create mask</parameter>
+		parameter to be set such that owner execute bit is not masked out 
+		(i.e. it must include 100). See the parameter <link linkend="createmask">
+		<parameter>create mask</parameter></link> for details.</para>
+
+		<para>Default: <command>map archive = yes</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="maphidden">map hidden (S)</term>
+		<listitem><para>This controls whether DOS style hidden files 
+		should be mapped to the UNIX world execute bit.</para>
+
+		<para>Note that this requires the <parameter>create mask</parameter> 
+		to be set such that the world execute bit is not masked out (i.e. 
+		it must include 001). See the parameter <link linkend="createmask">
+		<parameter>create mask</parameter></link> for details.</para>
+
+		<para>Default: <command>map hidden = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="mapsystem">map system (S)</term>
+		<listitem><para>This controls whether DOS style system files 
+		should be mapped to the UNIX group execute bit.</para>
+
+		<para>Note that this requires the <parameter>create mask</parameter> 
+		to be set such that the group execute bit is not masked out (i.e. 
+		it must include 010). See the parameter <link linkend="createmask">
+		<parameter>create mask</parameter></link> for details.</para>
+
+		<para>Default: <command>map system = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="maptoguest">map to guest (G)</term>
+		<listitem><para>This parameter is only useful in <link linkend="security">
+		security</link> modes other than <parameter>security=share</parameter> 
+		- i.e. <constant>user</constant>, <constant>server</constant>, 
+		and <constant>domain</constant>.</para>
+
+		<para>This parameter can take three different values, which tell
+		<ulink url="smbd.8.html">smbd(8)</ulink> what to do with user 
+		login requests that don't match a valid UNIX user in some way.</para>
+
+		<para>The three settings are :</para>
+
+		<itemizedlist>
+			<listitem><para><constant>Never</constant> - Means user login 
+			requests with an invalid password are rejected. This is the 
+			default.</para></listitem>
+			
+			<listitem><para><constant>Bad User</constant> - Means user
+			logins with an invalid password are rejected, unless the username 
+			does not exist, in which case it is treated as a guest login and 
+			mapped into the <link linkend="guestaccount"><parameter>
+			guest account</parameter></link>.</para></listitem>
+
+			<listitem><para><constant>Bad Password</constant> - Means user logins 
+			with an invalid password are treated as a guest login and mapped 
+			into the <link linkend="guestaccount">guest account</link>. Note that 
+			this can cause problems as it means that any user incorrectly typing 
+			their password will be silently logged on as a "guest" - and 
+			will not know the reason they cannot access files they think
+			they should - there will have been no message given to them
+			that they got their password wrong. Helpdesk services will
+			<emphasis>hate</emphasis> you if you set the <parameter>map to 
+			guest</parameter> parameter this way :-).</para></listitem>
+		</itemizedlist>
+
+		<para>Note that this parameter is needed to set up "Guest" 
+		share services when using <parameter>security</parameter> modes other than 
+		share. This is because in these modes the name of the resource being
+		requested is <emphasis>not</emphasis> sent to the server until after 
+		the server has successfully authenticated the client so the server 
+		cannot make authentication decisions at the correct time (connection 
+		to the share) for "Guest" shares.</para>
+
+		<para>For people familiar with the older Samba releases, this 
+		parameter maps to the old compile-time setting of the <constant>
+		GUEST_SESSSETUP</constant> value in local.h.</para>
+
+		<para>Default: <command>map to guest = Never</command></para>
+		<para>Example: <command>map to guest = Bad User</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxconnections">max connections (S)</term>
+		<listitem><para>This option allows the number of simultaneous 
+		connections to a service to be limited. If <parameter>max connections
+		</parameter> is greater than 0 then connections will be refused if 
+		this number of connections to the service are already open. A value 
+		of zero mean an unlimited number of connections may be made.</para>
+
+		<para>Record lock files are used to implement this feature. The 
+		lock files will be stored in the directory specified by the <link
+		linkend="lockdirectory"><parameter>lock directory</parameter></link> 
+		option.</para>
+
+		<para>Default: <command>max connections = 0</command></para>
+  		<para>Example: <command>max connections = 10</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxdisksize">max disk size (G)</term>
+		<listitem><para>This option allows you to put an upper limit 
+		on the apparent size of disks. If you set this option to 100 
+		then all shares will appear to be not larger than 100 MB in 
+		size.</para>
+
+		<para>Note that this option does not limit the amount of 
+		data you can put on the disk. In the above case you could still 
+		store much more than 100 MB on the disk, but if a client ever asks 
+		for the amount of free disk space or the total disk size then the 
+		result will be bounded by the amount specified in <parameter>max 
+		disk size</parameter>.</para>
+
+		<para>This option is primarily useful to work around bugs 
+		in some pieces of software that can't handle very large disks, 
+		particularly disks over 1GB in size.</para>
+
+		<para>A <parameter>max disk size</parameter> of 0 means no limit.</para>
+
+		<para>Default: <command>max disk size = 0</command></para>
+		<para>Example: <command>max disk size = 1000</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term id="maxlogsize">max log size (G)</term>
+		<listitem><para>This option (an integer in kilobytes) specifies 
+		the max size the log file should grow to. Samba periodically checks 
+		the size and if it is exceeded it will rename the file, adding 
+		a <filename>.old</filename> extension.</para>
+
+		<para>A size of 0 means no limit.</para>
+
+		<para>Default: <command>max log size = 5000</command></para>
+		<para>Example: <command>max log size = 1000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxmux">max mux (G)</term>
+		<listitem><para>This option controls the maximum number of 
+		outstanding simultaneous SMB operations that samba tells the client 
+		it will allow. You should never need to set this parameter.</para>
+
+		<para>Default: <command>max mux = 50</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxopenfiles">max open files (G)</term>
+		<listitem><para>This parameter limits the maximum number of 
+		open files that one <ulink url="smbd.8.html">smbd(8)</ulink> file 
+		serving process may have open for a client at any one time. The 
+		default for this parameter is set very high (10,000) as Samba uses 
+		only one bit per unopened file.</para>
+		
+		<para>The limit of the number of open files is usually set 
+		by the UNIX per-process file descriptor limit rather than 
+		this parameter so you should never need to touch this parameter.</para>
+
+		<para>Default: <command>max open files = 10000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxpacket">max packet (G)</term>
+		<listitem><para>Synonym for <link linkend="packetsize"><parameter>
+		packet size</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxttl">max ttl (G)</term>
+		<listitem><para>This option tells <ulink url="nmbd.8.html">nmbd(8)</ulink>
+		what the default 'time to live' of NetBIOS names should be (in seconds) 
+		when <command>nmbd</command> is requesting a name using either a
+		broadcast packet or from a WINS server. You should never need to
+		change this parameter. The default is 3 days.</para>
+
+		<para>Default: <command>max ttl = 259200</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxwinsttl">max wins ttl (G)</term>
+		<listitem><para>This option tells <ulink url="nmbd.8.html">nmbd(8)
+		</ulink> when acting as a WINS server (<link linkend="winsupport">
+		<parameter>wins support=yes</parameter></link>) what the maximum
+		'time to live' of NetBIOS names that <command>nmbd</command> 
+		will grant will be (in seconds). You should never need to change this
+		parameter.  The default is 6 days (518400 seconds).</para>
+
+		<para>See also the <link linkend="minwinsttl"><parameter>min 
+		wins ttl"</parameter></link> parameter.</para>
+
+		<para>Default: <command>max wins ttl = 518400</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="maxxmit">max xmit (G)</term>
+		<listitem><para>This option controls the maximum packet size 
+		that will be negotiated by Samba. The default is 65535, which 
+		is the maximum. In some cases you may find you get better performance 
+		with a smaller value. A value below 2048 is likely to cause problems.
+		</para>
+
+		<para>Default: <command>max xmit = 65535</command></para>
+		<para>Example: <command>max xmit = 8192</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="messagecommand">message command (G)</term>
+		<listitem><para>This specifies what command to run when the 
+		server receives a WinPopup style message.</para>
+
+		<para>This would normally be a command that would 
+		deliver the message somehow. How this is to be done is 
+		up to your imagination.</para>
+
+		<para>An example is:</para>
+
+		<para><command>message command = csh -c 'xedit %s;rm %s' &</command>
+		</para>
+
+		<para>This delivers the message using <command>xedit</command>, then 
+		removes it afterwards. <emphasis>NOTE THAT IT IS VERY IMPORTANT 
+		THAT THIS COMMAND RETURN IMMEDIATELY</emphasis>. That's why I 
+		have the '&' on the end. If it doesn't return immediately then 
+		your PCs may freeze when sending messages (they should recover 
+		after 30secs, hopefully).</para>
+
+		<para>All messages are delivered as the global guest user. 
+		The command takes the standard substitutions, although <parameter>
+		%u</parameter> won't work (<parameter>%U</parameter> may be better 
+		in this case).</para>
+
+		<para>Apart from the standard substitutions, some additional 
+		ones apply. In particular:</para>
+
+		<itemizedlist>
+			<listitem><para><parameter>%s</parameter> = the filename containing 
+			the message.</para></listitem>
+			
+			<listitem><para><parameter>%t</parameter> = the destination that 
+			the message was sent to (probably the server name).</para></listitem>
+
+			<listitem><para><parameter>%f</parameter> = who the message 
+			is from.</para></listitem>
+		</itemizedlist>
+
+		<para>You could make this command send mail, or whatever else 
+		takes your fancy. Please let us know of any really interesting 
+		ideas you have.</para>
+
+
+		<para>Here's a way of sending the messages as mail to root:</para>
+
+		<para><command>message command = /bin/mail -s 'message from %f on 
+		%m' root &lt; %s; rm %s</command></para>
+
+		<para>If you don't have a message command then the message 
+		won't be delivered and Samba will tell the sender there was 
+		an error. Unfortunately WfWg totally ignores the error code 
+		and carries on regardless, saying that the message was delivered.
+		</para>
+
+		<para>If you want to silently delete it then try:</para>
+
+		<para><command>message command = rm %s</command></para>
+
+		<para>Default: <emphasis>no message command</emphasis></para>
+		<para>Example: <command>message command = csh -c 'xedit %s;
+		rm %s' &</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="minprintspace">min print space (S)</term>
+		<listitem><para>This sets the minimum amount of free disk 
+		space that must be available before a user will be able to spool 
+		a print job. It is specified in kilobytes. The default is 0, which 
+		means a user can always spool a print job.</para>
+
+		<para>See also the <link linkend="printing"><parameter>printing
+		</parameter></link> parameter.</para>
+
+		<para>Default: <command>min print space = 0</command></para>
+		<para>Example: <command>min print space = 2000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="minpasswdlength">min passwd length (G)</term>
+		<listitem><para>Synonym for <link linkend="minpasswordlength">
+		<parameter>min password length</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="minpasswordlength">min password length (G)</term>
+		<listitem><para>This option sets the minimum length in characters 
+		of a plaintext password than smbd will accept when performing 
+		UNIX password changing.</para>
+
+		<para>See also <link linkend="unixpasswordsync"><parameter>unix 
+		password sync</parameter></link>, <link linkend="passwdprogram">
+		<parameter>passwd program</parameter></link> and <link
+		linkend="passwdchatdebug"><parameter>passwd chat debug</parameter>
+		</link>.</para>
+
+		<para>Default: <command>min password length = 5</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="minwinsttl">min wins ttl (G)</term>
+		<listitem><para>This option tells <ulink url="nmbd.8.html">nmbd(8)</ulink>
+		when acting as a WINS server (<link linkend="winssupport"><parameter>
+		wins support = yes</parameter></link>) what the minimum 'time to live' 
+		of NetBIOS names that <command>nmbd</command> will grant will be (in 
+		seconds). You should never need to change this parameter.  The default 
+		is 6 hours (21600 seconds).</para>
+
+		<para>Default: <command>min wins ttl = 21600</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="nameresolveorder">name resolve order (G)</term>
+		<listitem><para>This option is used by the programs in the Samba 
+		suite to determine what naming services and in what order to resolve 
+		host names to IP addresses. The option takes a space separated 
+		string of different name resolution options.</para>
+
+		<para>The options are :"lmhosts", "host", "wins" and "bcast". They 
+		cause names to be resolved as follows :</para>
+
+		<itemizedlist>
+			<listitem><para><constant>lmhosts</constant> : Lookup an IP 
+			address in the Samba lmhosts file. If the line in lmhosts has 
+			no name type attached to the NetBIOS name (see the <ulink 
+			url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+			any name type matches for lookup.</para></listitem>
+
+			<listitem><para><constant>host</constant> : Do a standard host 
+			name to IP address resolution, using the system <filename>/etc/hosts
+			</filename>, NIS, or DNS lookups. This method of name resolution 
+			is operating system depended for instance on IRIX or Solaris this 
+			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
+			file).  Note that this method is only used if the NetBIOS name 
+			type being queried is the 0x20 (server) name type, otherwise 
+			it is ignored.</para></listitem>
+
+			<listitem><para><constant>wins</constant> : Query a name with 
+			the IP address listed in the <link linkend="winsserver"><parameter>
+			wins server</parameter></link> parameter.  If no WINS server has
+			been specified this method will be ignored.</para></listitem>
+
+			<listitem><para><constant>bcast</constant> : Do a broadcast on 
+			each of the known local interfaces listed in the <link 
+			linkend="interfaces"><parameter>interfaces</parameter></link> 
+			parameter. This is the least reliable of the name resolution 
+			methods as it depends on the target host being on a locally 
+			connected subnet.</para></listitem>
+		</itemizedlist>
+
+		<para>Default: <command>name resolve order = lmhosts host wins bcast
+		</command></para>
+		<para>Example: <command>name resolve order = lmhosts bcast host
+		</command></para>
+
+		<para>This will cause the local lmhosts file to be examined 
+		first, followed by a broadcast attempt, followed by a normal 
+		system hostname lookup.</para>
+		</listitem>
+		</varlistentry>
+		
+
+
+	
+		<varlistentry>
+		<term id="netbiosaliases">netbios aliases (G)</term>
+		<listitem><para>This is a list of NetBIOS names that <ulink 
+		url="nmbd.8.html">nmbd(8)</ulink> will advertise as additional 
+		names by which the Samba server is known. This allows one machine 
+		to appear in browse lists under multiple names. If a machine is 
+		acting as a browse server or logon server none 
+		of these names will be advertised as either browse server or logon 
+		servers, only the primary name of the machine will be advertised 
+		with these capabilities.</para>
+		
+		<para>See also <link linkend="netbiosname"><parameter>netbios 
+		name</parameter></link>.</para>
+
+		<para>Default: <emphasis>empty string (no additional names)</emphasis></para>
+		<para>Example: <command>netbios aliases = TEST TEST1 TEST2</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term id="netbiosname">netbios name (G)</term>
+		<listitem><para>This sets the NetBIOS name by which a Samba 
+		server is known. By default it is the same as the first component 
+		of the host's DNS name. If a machine is a browse server or
+		logon server this name (or the first component
+		of the hosts DNS name) will be the name that these services are
+		advertised under.</para>
+		
+		<para>See also <link linkend="netbiosaliases"><parameter>netbios 
+		aliases</parameter></link>.</para>
+
+		<para>Default: <emphasis>machine DNS name</emphasis></para>
+		<para>Example: <command>netbios name = MYNAME</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="netbiosscope">netbios scope (G)</term>
+		<listitem><para>This sets the NetBIOS scope that Samba will 
+		operate under. This should not be set unless every machine 
+		on your LAN also sets this value.</para>
+		</listitem>
+		</varlistentry>
+		
+
+		<varlistentry>
+		<term id="nishomedir">nis homedir (G)</term>
+		<listitem><para>Get the home share server from a NIS map. For 
+		UNIX systems that use an automounter, the user's home directory 
+		will often be mounted on a workstation on demand from a remote 
+		server. </para>
+
+		<para>When the Samba logon server is not the actual home directory 
+		server, but is mounting the home directories via NFS then two 
+		network hops would be required to access the users home directory 
+		if the logon server told the client to use itself as the SMB server 
+	 	for home directories (one over SMB and one over NFS). This can 
+		be very slow.</para>
+
+		<para>This option allows Samba to return the home share as 
+		being on a different server to the logon server and as 
+		long as a Samba daemon is running on the home directory server, 
+		it will be mounted on the Samba client directly from the directory 
+		server. When Samba is returning the home share to the client, it 
+		will consult the NIS map specified in <link linkend="homedirmap">
+		<parameter>homedir map</parameter></link> and return the server 
+		listed there.</para>
+
+		<para>Note that for this option to work there must be a working 
+		NIS system and the Samba server with this option must also 
+		be a logon server.</para>
+
+		<para>Default: <command>nis homedir = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="ntaclsupport">nt acl support (G)</term>
+		<listitem><para>This boolean parameter controls whether 
+		<ulink url="smbd.8.html">smbd(8)</ulink> will attempt to map 
+		UNIX permissions into Windows NT access control lists.</para>
+		
+		<para>Default: <command>nt acl support = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="ntpipesupport">nt pipe support (G)</term>
+		<listitem><para>This boolean parameter controls whether 
+		<ulink url="smbd.8.html">smbd(8)</ulink> will allow Windows NT 
+		clients to connect to the NT SMB specific <constant>IPC$</constant> 
+		pipes. This is a developer debugging option and can be left
+		alone.</para>
+
+		<para>Default: <command>nt pipe support = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="ntsmbsupport">nt smb support (G)</term>
+		<listitem><para>This boolean parameter controls whether <ulink 
+		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific SMB 
+		support with Windows NT clients. Although this is a developer 
+		debugging option and should be left alone, benchmarking has discovered 
+		that Windows NT clients give faster performance with this option 
+		set to <constant>no</constant>. This is still being investigated. 
+	 	If this option is set to <constant>no</constant> then Samba offers 
+		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
+		This information may be of use if any users are having problems 
+		with NT SMB support.</para>
+
+		<para>Default: <command>nt support = yes</command></para>
+		</listitem>
+		</varlistentry>
+	
+
+
+		<varlistentry>
+		<term id="nullpasswords">null passwords (G)</term>
+		<listitem><para>Allow or disallow client access to accounts 
+		that have null passwords. </para>
+
+		<para>See also <ulink url="smbpasswd.5.html">smbpasswd (5)</ulink>.</para>
+
+		<para>Default: <command>null passwords = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="olelockingcompatibility">ole locking compatibility (G)</term>
+		<listitem><para>This parameter allows an administrator to turn 
+ 		off the byte range lock manipulation that is done within Samba to 
+		give compatibility for OLE applications. Windows OLE applications 
+		use byte range locking as a form of inter-process communication, by 
+		locking ranges of bytes around the 2^32 region of a file range. This 
+		can cause certain UNIX lock managers to crash or otherwise cause 
+		problems. Setting this parameter to <constant>no</constant> means you 
+		trust your UNIX lock manager to handle such cases correctly.</para>
+
+		<para>Default: <command>ole locking compatibility = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="onlyguest">only guest (S)</term>
+		<listitem><para>A synonym for <link linkend="guestonly"><parameter>
+		guest only</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="onlyuser">only user (S)</term>
+		<listitem><para>This is a boolean option that controls whether 
+		connections with usernames not in the <parameter>user</parameter> 
+		list will be allowed. By default this option is disabled so a client 
+		can supply a username to be used by the server.</para>
+
+		<para>Note that this also means Samba won't try to deduce 
+		usernames from the service name. This can be annoying for 
+		the [homes] section. To get around this you could use <command>user =
+		%S</command> which means your <parameter>user</parameter> list
+		will be just the service name, which for home directories is the 
+		name of the user.</para>
+
+		<para>See also the <link linkend="user"><parameter>user</parameter>
+		</link> parameter.</para>
+
+		<para>Default: <command>only user = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="oplocks">oplocks (S)</term>
+		<listitem><para>This boolean option tells smbd whether to 
+		issue oplocks (opportunistic locks) to file open requests on this 
+		share. The oplock code can dramatically (approx. 30% or more) improve 
+	 	the speed of access to files on Samba servers. It allows the clients 
+		to aggressively cache files ocally and you may want to disable this 
+		option for unreliable network environments (it is turned on by 
+		default in Windows NT Servers).  For more information see the file 
+		<filename>Speed.txt</filename> in the Samba <filename>docs/</filename> 
+		directory.</para>
+
+		<para>Oplocks may be selectively turned off on certain files on 
+		a per share basis. See the <link linkend="vetooplockfiles"><parameter>
+		veto oplock files</parameter></link> parameter. On some systems 
+		oplocks are recognized by the underlying operating system. This 
+		allows data synchronization between all access to oplocked files, 
+		whether it be via Samba or NFS or a local UNIX process. See the 
+		<parameter>kernel oplocks</parameter> parameter for details.</para>
+
+		<para>See also the <link linkend="kerneloplocks"><parameter>kernel 
+		oplocks</parameter></link> and <link linkend="level2oplocks"><parameter>
+		level2 oplocks</parameter></link> parameters.</para>
+
+		<para>Default: <command>oplocks = yes</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term id="oplockbreakwaittime">oplock break wait time (G)</term>
+		<listitem><para>This is a tuning parameter added due to bugs in 
+		both Windows 9x and WinNT. If Samba responds to a client too 
+		quickly when that client issues an SMB that can cause an oplock 
+		break request, then the client redirector can fail and not respond 
+		to the break request. This tuning parameter (which is set in milliseconds) 
+		is the amount of time Samba will wait before sending an oplock break 
+		request to such (broken) clients.</para>
+
+		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
+
+		<para>Default: <command>oplock break wait time = 10</command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term id="oplockcontentionlimit">oplock contention limit (S)</term>
+		<listitem><para>This is a <emphasis>very</emphasis> advanced 
+		<ulink url="smbd.8.html">smbd(8)</ulink> tuning option to 
+		improve the efficiency of the granting of oplocks under multiple 
+		client contention for the same file.</para>
+		
+		<para>In brief it specifies a number, which causes smbd not to 
+		grant an oplock even when requested if the approximate number of 
+		clients contending for an oplock on the same file goes over this 
+		limit. This causes <command>smbd</command> to behave in a similar 
+		way to Windows NT.</para>
+
+		<para><emphasis>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
+		AND UNDERSTOOD THE SAMBA OPLOCK CODE</emphasis>.</para>
+
+		<para>Default: <command>oplock contention limit = 2</command></para>
+		</listitem>
+		</varlistentry>
+
+
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>WARNINGS</title>
+	
+	<para>Although the configuration file permits service names 
+	to contain spaces, your client software may not. Spaces will 
+	be ignored in comparisons anyway, so it shouldn't be a 
+	problem - but be aware of the possibility.</para>
+
+	<para>On a similar note, many clients - especially DOS clients - 
+	limit service names to eight characters. <ulink url="smbd.8.html">smbd(8)
+	</ulink> has no such limitation, but attempts to connect from such 
+	clients will fail if they truncate the service names.  For this reason 
+	you should probably keep your service names down to eight characters 
+	in length.</para>
+
+	<para>Use of the [homes] and [printers] special sections make life 
+	for an administrator easy, but the various combinations of default 
+	attributes can be tricky. Take extreme care when designing these 
+	sections. In particular, ensure that the permissions on spool 
+	directories are correct.</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of 
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><ulink url="samba.7.html">samba(7)</ulink>,
+	<ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink>,
+	<ulink url="swat.8.html"><command>swat(8)</command></ulink>,
+	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
+	<ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>, 
+	<ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink>, 
+	<ulink url="nmblookup.1.html"><command>nmblookup(1)</command></ulink>,
+	<ulink url="testparm.1.html"><command>testparm(1)</command></ulink>, 
+	<ulink url="testprns.1.html"><command>testprns(1)</command></ulink>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</para>
+</refsect1>
+
 </refentry>
