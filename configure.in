@@ -11,6 +11,7 @@ AC_CANONICAL_HOST
 CANONICAL_HOST=$host
 AC_SUBST(CANONICAL_HOST)
 
+sunos=no
 case "$host" in 
 *-*-sunos4*)
 	sunos=4
@@ -18,15 +19,21 @@ case "$host" in
 *-*-solaris2*)
 	sunos=5
 	;;
-*)
-	sunos=no
-	;;
 esac
 if test "$sunos" != no; then
 	AC_DEFINE_UNQUOTED(SunOS, $sunos, 
 		[Define to what version of SunOS you are running.])
 fi
 
+aix=no
+case "$host" in 
+*-*-aix3*)
+	aix=3
+	;;
+*-*-aix4*)
+	aix=4
+	;;
+esac
 
 test -z "$CFLAGS" && CFLAGS="-g"
 
@@ -106,14 +113,14 @@ AM_CONDITIONAL(KRB4, test "$with_krb4" != "no")
 AM_CONDITIONAL(KRB5, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
-AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
-AM_CONDITIONAL(AIX4, test "`uname`" = AIX -a "`uname -v`" = 4)
+AM_CONDITIONAL(AIX, test "$aix" != no)dnl
+AM_CONDITIONAL(AIX4, test "$aix" = 4)
 aix_dynamic_afs=yes
 AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$aix_dynamic_afs" = yes)dnl
 
 AC_FIND_FUNC_NO_LIBS(dlopen, dl)
 
-if test "`uname`" = AIX ;then
+if test "$aix" != no; then
 	if test "$aix_dynamic_afs" = yes; then
 		if test "$ac_cv_funclib_dlopen" = yes; then
 			AIX_EXTRA_KAFS=
@@ -126,6 +133,7 @@ if test "`uname`" = AIX ;then
 		AIX_EXTRA_KAFS=
 	fi
 fi
+
 AM_CONDITIONAL(HAVE_DLOPEN, test "$ac_cv_funclib_dlopen" != no)dnl
 AC_SUBST(AFS_EXTRA_LD)dnl
 AC_SUBST(AIX_EXTRA_KAFS)dnl
@@ -758,17 +766,9 @@ fi
 # And also something wierd has happend with dec-osf1, fallback to bsd-ptys
 
 AC_MSG_CHECKING(for streamspty)
-case "`uname -sr`" in
-SunOS\ 4*|OSF1*|IRIX\ 4*|HP-UX\ ?.10.*)
+case "$host" in
+*-*-aix3*|*-*-sunos4*|*-*-osf*|*-*-hpux10*)
 	krb_cv_sys_streamspty=no
-	;;
-AIX*)
-	os_rel=`uname -v`.`uname -r`
-	if expr "$os_rel" : "3*" >/dev/null 2>&1; then
-		krb_cv_sys_streamspty=no
-	else
-		krb_cv_sys_streamspty="$ac_cv_func_getmsg"
-	fi
 	;;
 *)
 	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
@@ -869,7 +869,7 @@ if test -f include/version.h && cmp -s include/newversion.h.in include/version.h
 else
  	echo "creating include/version.h"
  	User=${USER-${LOGNAME}}
- 	Host=`(hostname || uname -n) 2>/dev/null | sed 1q`
+ 	Host=`(hostname || uname -n || echo unknown) 2>/dev/null | sed 1q`
  	Date=`date`
 	mv -f include/newversion.h.in include/version.h.in
 	sed -e "s/@USER@/$User/" -e "s/@HOST@/$Host/" -e "s/@DATE@/$Date/" include/version.h.in > include/version.h
