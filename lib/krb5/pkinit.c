@@ -1218,6 +1218,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     memset(&ed, 0, sizeof(ed));
     krb5_data_zero(&plain);
     krb5_data_zero(&eContent);
+    krb5_data_zero(&encryptedContent);
 
     user_cert = sk_X509_value(ctx->id->cert, 0);
 
@@ -1297,6 +1298,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
+    if (ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters == NULL){
+	krb5_set_error_string(context, "encryptedContent parameter missing");
+	ret = KRB5_BADMSGTYPE;
+	goto out;
+    }
+
+
     if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_rc2CBC_oid) == 0) {
 	/* use rc2-cbc */
 	RC2CBCParameter params;
@@ -1304,7 +1312,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
 	plain.data = malloc(encryptedContent.length);
 	if (plain.data == NULL) {
-	    free_octet_string(&encryptedContent);
 	    krb5_set_error_string(context, "malloc - out of memory");
 	    ret = ENOMEM;
 	    goto out;
@@ -1312,11 +1319,10 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	plain.length = encryptedContent.length;
 
 	ret = decode_RC2CBCParameter(ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data,
-			       ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
-			       &params,
-			       &size);
+				     ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
+				     &params,
+				     &size);
 	if (ret) {
-	    free_octet_string(&encryptedContent);
 	    krb5_set_error_string(context, "failed decoding rc2 parameters");
 	    goto out;
 	}
@@ -1357,11 +1363,29 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			    encryptedContent.length, &key,
 			    params.iv.data, 0);
 	}
-	free_octet_string(&encryptedContent);
+	free_RC2CBCParameter(&params);
 
     } else if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
 			    &heim_des_ede3_cbc_oid) == 0) {
 	/* use des-ede3-cbc */
+	CBCParameter params;
+
+	ret = decode_CBCParameter(ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data,
+				  ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
+				  &params,
+				  &size);
+	if (ret) {
+	    krb5_set_error_string(context, "failed decoding des3 parameters");
+	    goto out;
+	}
+
+	if (params.length != 8) {
+	    free_CBCParameter(&params);
+	    krb5_set_error_string(context, "des3 iv wrong size: %d", 
+				  params.length);
+	    ret = KRB5_BADMSGTYPE;
+	    goto out;
+	}
 
 	tmp_key.keytype = ETYPE_DES3_CBC_NONE;
 	ret = krb5_crypto_init(context,
@@ -1369,16 +1393,17 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			       0,
 			       &crypto);
 	if (ret) {
-	    free_octet_string(&encryptedContent);
+	    free_CBCParameter(&params);
 	    goto out;
 	}
-	ret = krb5_decrypt(context, crypto,
-			   0,
-			   encryptedContent.data,
-			   encryptedContent.length,
-			   &plain);
+	ret = krb5_decrypt_ivec(context, crypto,
+				0,
+				encryptedContent.data,
+				encryptedContent.length,
+				&plain,
+				params.data);
+	free_CBCParameter(&params);
 	krb5_crypto_destroy(context, crypto);
-	free_octet_string(&encryptedContent);
 	if (ret)
 	    goto out;
 	
@@ -1454,6 +1479,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     if (host)
 	_krb5_pk_cert_free(host);
     free_oid(&eContentType);
+    free_octet_string(&encryptedContent);
     krb5_data_free(&eContent);
     krb5_free_keyblock_contents(context, &tmp_key);
     krb5_data_free(&plain);
