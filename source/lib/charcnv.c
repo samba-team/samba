@@ -163,6 +163,7 @@ size_t convert_string(charset_t from, charset_t to,
  * Convert between character sets, allocating a new buffer for the result.
  *
  * @param srclen length of source buffer.
+ * @param dest always set at least to NULL
  * @note -1 is not accepted for srclen.
  *
  * @retval Size in bytes of the converted string; or -1 in case of error.
@@ -217,7 +218,7 @@ convert:
 		case E2BIG:
 			goto convert;		
 		case EILSEQ:
-			reason="Illegal myltibyte sequence";
+			reason="Illegal multibyte sequence";
 			break;
 		}
 		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
@@ -234,6 +235,32 @@ convert:
 	}
 
 	return destlen;
+}
+
+/**
+ * Convert between character sets, allocating a new buffer using talloc for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL 
+ * @note -1 is not accepted for srclen.
+ *
+ * @retval Size in bytes of the converted string; or -1 in case of error.
+ **/
+size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
+		      		void const *src, size_t srclen, void **dest)
+{
+	void *ob;
+	size_t dest_len;
+
+	*dest = NULL;
+	dest_len=convert_string_allocate(from, to, src, srclen, (void **)&ob);
+	if (dest_len == -1)
+		return -1;
+	*dest = talloc_strdup(ctx, (char *)ob);
+	SAFE_FREE(ob);
+	if (*dest == NULL)
+		return -1;
+	return dest_len;
 }
 
 int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -433,6 +460,36 @@ int push_utf8_pstring(void *dest, const char *src)
 	return push_utf8(dest, src, sizeof(pstring), STR_TERMINATE);
 }
 
+/**
+ * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int push_utf8_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, dest);
+}
+
+/**
+ * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int push_utf8_allocate(void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+
+	*dest = NULL;
+	return convert_string_allocate(CH_UNIX, CH_UTF8, src, src_len, dest);	
+}
+
 /****************************************************************************
 copy a string from a ucs2 source to a unix char* destination
 flags can have:
@@ -512,6 +569,34 @@ int pull_utf8_fstring(char *dest, const void *src)
 	return pull_utf8(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
+/**
+ * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int pull_utf8_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, dest);	
+}
+
+/**
+ * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @retval The number of bytes occupied by the string in the destination
+ **/
+int pull_utf8_allocate(void **dest, const char *src)
+{
+	int src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_allocate(CH_UTF8, CH_UNIX, src, src_len, dest);	
+}
+ 
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
 dos codepage destination choosing unicode or ascii based on the 
