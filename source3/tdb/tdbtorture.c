@@ -21,6 +21,7 @@
 #define REOPEN_PROB 30
 #define DELETE_PROB 8
 #define STORE_PROB 4
+#define APPEND_PROB 6
 #define LOCKSTORE_PROB 0
 #define TRAVERSE_PROB 20
 #define CULL_PROB 100
@@ -117,6 +118,15 @@ static void addrec_db(void)
 	if (random() % STORE_PROB == 0) {
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
+		}
+		goto next;
+	}
+#endif
+
+#if APPEND_PROB
+	if (random() % APPEND_PROB == 0) {
+		if (tdb_append(db, key, data) != 0) {
+			fatal("tdb_append failed");
 		}
 		goto next;
 	}
