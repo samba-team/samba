@@ -219,7 +219,7 @@ int vslprintf(char *str, int n, char *format, va_list ap);
 
 /*The following definitions come from  lib/smbrun.c  */
 
-int smbrun(char *cmd, int *outfd, char *template);
+int smbrun(char *cmd, int *outfd);
 
 /*The following definitions come from  lib/snprintf.c  */
 
@@ -1191,6 +1191,7 @@ int share_mode_forall(SHAREMODE_FN(fn));
 /*The following definitions come from  locking/posix.c  */
 
 int fd_close_posix(struct connection_struct *conn, files_struct *fsp);
+uint32 map_lock_offset(uint32 high, uint32 low);
 BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
 BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
 BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count);
@@ -1587,7 +1588,6 @@ enum nss_status winbindd_request(int req_type,
 
 void lp_talloc_free(void);
 char *lp_logfile(void);
-char *lp_smbrun(void);
 char *lp_configfile(void);
 char *lp_smb_passwd_file(void);
 char *lp_private_dir(void);
@@ -1886,6 +1886,7 @@ BOOL pdb_generate_sam_sid(void);
 /*The following definitions come from  passdb/pampass.c  */
 
 BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
+BOOL pam_accountcheck(char * user);
 BOOL pam_passcheck(char * user, char * password);
 
 /*The following definitions come from  passdb/pass_check.c  */

@@ -692,7 +692,7 @@ int smb_create_group(char *unix_group)
 	pstrcpy(add_script, lp_addgroup_script());
 	if (! *add_script) return -1;
 	pstring_sub(add_script, "%g", unix_group);
-	ret = smbrun(add_script,NULL,False);
+	ret = smbrun(add_script,NULL);
 	DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
 	return ret;
 }
@@ -709,7 +709,7 @@ int smb_delete_group(char *unix_group)
 	pstrcpy(del_script, lp_delgroup_script());
 	if (! *del_script) return -1;
 	pstring_sub(del_script, "%g", unix_group);
-	ret = smbrun(del_script,NULL,False);
+	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 	return ret;
 }
@@ -727,7 +727,7 @@ int smb_add_user_group(char *unix_group, char *unix_user)
 	if (! *add_script) return -1;
 	pstring_sub(add_script, "%g", unix_group);
 	pstring_sub(add_script, "%u", unix_user);
-	ret = smbrun(add_script,NULL,False);
+	ret = smbrun(add_script,NULL);
 	DEBUG(3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
 	return ret;
 }
@@ -745,7 +745,7 @@ int smb_delete_user_group(char *unix_group, char *unix_user)
 	if (! *del_script) return -1;
 	pstring_sub(del_script, "%g", unix_group);
 	pstring_sub(del_script, "%u", unix_user);
-	ret = smbrun(del_script,NULL,False);
+	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 	return ret;
 }

@@ -52,7 +52,7 @@
 #define TDB_PAGE_SIZE 0x2000
 #define FREELIST_TOP (sizeof(struct tdb_header))
 #define TDB_ALIGN(x,a) (((x) + (a)-1) & ~((a)-1))
-#define TDB_BYTEREV(x) (((x<<24)|(x&0xFF00)<<8)|((x>>8)&0xFF00)|(x>>24))
+#define TDB_BYTEREV(x) (((((x)&0xff)<<24)|((x)&0xFF00)<<8)|(((x)>>8)&0xFF00)|((x)>>24))
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))

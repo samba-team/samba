@@ -955,9 +955,6 @@
 /* Define if you have the nsl_s library (-lnsl_s).  */
 #undef HAVE_LIBNSL_S
 
-/* Define if you have the readline library (-lreadline).  */
-#undef HAVE_LIBREADLINE
-
 /* Define if you have the resolv library (-lresolv).  */
 #undef HAVE_LIBRESOLV
 
@@ -969,6 +966,3 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
-
-/* Define if you have the termcap library (-ltermcap).  */
-#undef HAVE_LIBTERMCAP

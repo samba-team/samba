@@ -62,7 +62,7 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 	}
 
 	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
-	smbrun(command, NULL, NULL);
+	smbrun(command, NULL);
 }
 
 

@@ -749,7 +749,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   ******************************************************************/
 static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 {
-  BOOL ret;
+  BOOL ret = False;
   int i;
   struct sockaddr_in sock_out;
 

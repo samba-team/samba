@@ -493,7 +493,7 @@ int smb_create_user(char *unix_user, char *homedir)
   all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
   if (homedir)
     all_string_sub(add_script, "%H", homedir, sizeof(pstring));
-  ret = smbrun(add_script,NULL,NULL);
+  ret = smbrun(add_script,NULL);
   DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
   return ret;
 }
@@ -510,7 +510,7 @@ static int smb_delete_user(char *unix_user)
   pstrcpy(del_script, lp_deluser_script());
   if (! *del_script) return -1;
   all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
-  ret = smbrun(del_script,NULL,NULL);
+  ret = smbrun(del_script,NULL);
   DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
   return ret;
 }
