@@ -27,7 +27,7 @@ case `rpm --version | awk '{print $3}'` in
        ;;
 esac
 
-( cd ../../source; make distclean )
+( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 ( cd ../../.. ; tar --exclude=CVS -czvf samba-${VERSION}.tar.gz samba-${VERSION}/samba2.*.spec samba-${VERSION} )
 
