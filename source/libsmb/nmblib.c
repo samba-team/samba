@@ -475,6 +475,11 @@ static BOOL parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
 	dgram->datasize = length-offset;
 	memcpy(dgram->data,inbuf+offset,dgram->datasize);
 
+	/* Paranioa. Ensure the last 2 bytes in the dgram buffer are
+	   zero. This should be true anyway, just enforce it for paranioa sake. JRA. */
+	SMB_ASSERT(dgram->datasize <= (sizeof(dgram->data)-2));
+	memset(&dgram->data[sizeof(dgram->data)-2], '\0', 2);
+
 	return(True);
 }
 
