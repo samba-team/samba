@@ -157,7 +157,8 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
-	BOOL pipe_start_message_raw = ((SVAL(inbuf, smb_vwv7) & (PIPE_START_MESSAGE|PIPE_RAW_MODE)) != 0);
+	BOOL pipe_start_message_raw = ((SVAL(inbuf, smb_vwv7) & (PIPE_START_MESSAGE|PIPE_RAW_MODE)) ==
+									(PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	char *data;
 
 	if (!p)
