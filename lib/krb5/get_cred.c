@@ -257,7 +257,9 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     }else if(krb5_rd_error(context, &resp, &error) == 0){
 	ret = error.error_code;
 	free_KRB_ERROR(&error);
-    }else
+    }else if(((char*)resp.data)[0] == 4)
+	ret = KRB5KRB_AP_ERR_V4_REPLY;
+    else
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
     krb5_data_free(&resp);
 out:
