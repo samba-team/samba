@@ -472,8 +472,8 @@ BOOL winbind_nametogid(gid_t *pgid, const char *gname)
 NTSTATUS winbind_smb_auth_crap(const char *domain, const char *username,
 			const unsigned char proof[16],
 			const unsigned char challenge[8],
-			const unsigned char nt_resp[24],
 			const unsigned char lm_resp[24],
+			const unsigned char nt_resp[24],
 			char **pp_raw,
 			size_t *pdata_len)
 {
