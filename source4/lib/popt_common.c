@@ -94,6 +94,10 @@ static void popt_common_callback(poptContext con,
 	case 'i':
 		lp_set_cmdline("netbios scope", arg);
 		break;
+
+	case 'm':
+		lp_set_cmdline("max protocol", arg);
+		break;
 	}
 }
 
@@ -104,6 +108,7 @@ struct poptOption popt_common_connection[] = {
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
+	{ "maxprotocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set max protocol level", "MAXPROTOCOL" },
 	POPT_TABLEEND
 };
 
