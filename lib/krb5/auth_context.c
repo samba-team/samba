@@ -219,9 +219,10 @@ krb5_auth_getauthenticator(krb5_context context,
 
 
 void
-krb5_free_authenticator(krb5_authenticator *authenticator)
+krb5_free_authenticator(krb5_context context,
+			krb5_authenticator *authenticator)
 {
-    krb5_free_principal ((*authenticator)->cname);
+    krb5_free_principal (context, (*authenticator)->cname);
     free (*authenticator);
     *authenticator = NULL;
 }
