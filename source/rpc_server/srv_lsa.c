@@ -490,7 +490,8 @@ static BOOL api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
 	ZERO_STRUCT(q_e);
 
 	/* grab the enum trust domain context etc. */
-	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
+	if(!lsa_io_q_enum_trust_dom("", &q_e, data, 0))
+		return False;
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
@@ -528,6 +529,7 @@ static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
 		break;
 	default:
 		DEBUG(0,("api_lsa_query_info: unknown info level in Lsa Query: %d\n", q_i.info_class));
+		return False;
 		break;
 	}
 
