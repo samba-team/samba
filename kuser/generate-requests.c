@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -137,6 +137,15 @@ main(int argc, char **argv)
     setprogname(argv[0]);
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
+
+    if (help_flag)
+	usage (0);
+
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
+    }
+
     argc -= optind;
     argv += optind;
 
