@@ -81,31 +81,17 @@ static user_struct *validated_users = NULL;
 static int num_validated_users = 0;
 
 /****************************************************************************
-check if a uid has been validated, and return an index if it has. -1 if not
-****************************************************************************/
-int valid_uid(int uid)
-{
-  int i;
-  if (uid == -1) return(-1);
-
-  for (i=0;i<num_validated_users;i++)
-    if (validated_users[i].uid == uid)
-      {
-	DEBUG(3,("valid uid %d mapped to vuid %d (user=%s)\n",
-		 uid,i,validated_users[i].name));
-	return(i);
-      }
-  return(-1);
-}
-
-/****************************************************************************
 check if a uid has been validated, and return an pointer to the user_struct
-if it has. NULL if not
+if it has. NULL if not. vuid is biased by an offset. This allows us to
+tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-user_struct *get_valid_user_struct(int uid)
+user_struct *get_valid_user_struct(uint16 vuid)
 {
-  int vuid = valid_uid(uid);
-  if(vuid == -1 || validated_users[vuid].guest)
+  if(vuid == UID_FIELD_INVALID)
+    return NULL;
+  vuid -= VUID_OFFSET;
+  if((vuid >= (uint16)num_validated_users) || 
+     (validated_users[vuid].uid == -1) || (validated_users[vuid].gid == -1))
     return NULL;
   return &validated_users[vuid];
 }
@@ -113,56 +99,65 @@ user_struct *get_valid_user_struct(int uid)
 /****************************************************************************
 invalidate a uid
 ****************************************************************************/
-void invalidate_uid(int uid)
+void invalidate_vuid(uint16 vuid)
 {
-  int i;
-  for (i=0;i<num_validated_users;i++)
-    if (validated_users[i].uid == uid)
-      {
-	user_struct *vuser = &validated_users[i];
-	vuser->uid = -1;
-	vuser->gid = -1;
-	vuser->user_ngroups = 0;
-	if(vuser->user_groups && 
-	   (vuser->user_groups != (gid_t *)vuser->user_igroups))
-	  free(vuser->user_groups);
-	vuser->user_groups = NULL;
-	if(vuser->user_igroups)
-	  free(vuser->user_igroups);
-	vuser->user_igroups = NULL;
-      }
+  user_struct *vuser = get_valid_user_struct(vuid);
+  if(vuser == 0)
+    return;
+
+  vuser->uid = -1;
+  vuser->gid = -1;
+  vuser->user_ngroups = 0;
+  if(vuser->user_groups && 
+     (vuser->user_groups != (gid_t *)vuser->user_igroups))
+       free(vuser->user_groups);
+  vuser->user_groups = NULL;
+  if(vuser->user_igroups)
+    free(vuser->user_igroups);
+  vuser->user_igroups = NULL;
 }
 
 
 /****************************************************************************
 return a validated username
 ****************************************************************************/
-char *validated_username(int vuid)
+char *validated_username(uint16 vuid)
 {
-  return(validated_users[vuid].name);
+  user_struct *vuser = get_valid_user_struct(vuid);
+  if(vuser == 0)
+    return 0;
+  return(vuser->name);
 }
 
 /****************************************************************************
 register a uid/name pair as being valid and that a valid password
-has been given.
+has been given. vuid is biased by an offset. This allows us to
+tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-void register_uid(int uid,int gid, char *name,BOOL guest)
+uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 {
   user_struct *vuser;
 
-  if (valid_uid(uid) >= 0)
-    return;
-  validated_users = (user_struct *)Realloc(validated_users,
-					   sizeof(user_struct)*
-					   (num_validated_users+1));
+  int i;
+  for(i = 0; i < num_validated_users; i++) {
+    vuser = &validated_users[i];
+    if( vuser->uid == uid )
+      return i; /* User already validated */
+  }
 
+  validated_users = (user_struct *)Realloc(validated_users,
+			   sizeof(user_struct)*
+			   (num_validated_users+1));
+  
   if (!validated_users)
     {
       DEBUG(0,("Failed to realloc users struct!\n"));
-      return;
+      return UID_FIELD_INVALID;
     }
 
   vuser = &validated_users[num_validated_users];
+  num_validated_users++;
+
   vuser->uid = uid;
   vuser->gid = gid;
   vuser->guest = guest;
@@ -180,8 +175,8 @@ void register_uid(int uid,int gid, char *name,BOOL guest)
 	       &vuser->user_groups);
 
   DEBUG(3,("uid %d registered to name %s\n",uid,name));
-  
-  num_validated_users++;
+
+  return (uint16)((num_validated_users - 1) + VUID_OFFSET);
 }
 
 
@@ -944,7 +939,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 check for authority to login to a service with a given username/password
 ****************************************************************************/
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
-		     BOOL *guest,BOOL *force,int vuid)
+		     BOOL *guest,BOOL *force,uint16 vuid)
 {
   BOOL ok = False;
   
@@ -971,6 +966,8 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
   if (!(GUEST_ONLY(snum) && GUEST_OK(snum)))
     {
 
+      user_struct *vuser = get_valid_user_struct(vuid);
+
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
 	ok = password_ok(user,password, pwlen, NULL);
@@ -978,11 +975,11 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       }
 
       /* check for a previously registered guest username */
-      if (!ok && (vuid >= 0) && validated_users[vuid].guest) {	  
-	if (user_ok(validated_users[vuid].name,snum) &&
-	    password_ok(validated_users[vuid].name, password, pwlen, NULL)) {
-	  strcpy(user, validated_users[vuid].name);
-	  validated_users[vuid].guest = False;
+      if (!ok && (vuser != 0) && vuser->guest) {	  
+	if (user_ok(vuser->name,snum) &&
+	    password_ok(vuser->name, password, pwlen, NULL)) {
+	  strcpy(user, vuser->name);
+	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
 	  ok = True;
 	}
@@ -1015,9 +1012,9 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check for a previously validated username/password pair */
       if (!ok && !lp_revalidate(snum) &&
-	  (vuid >= 0) && !validated_users[vuid].guest &&
-	  user_ok(validated_users[vuid].name,snum)) {
-	strcpy(user,validated_users[vuid].name);
+	  (vuser != 0) && !vuser->guest &&
+	  user_ok(vuser->name,snum)) {
+	strcpy(user,vuser->name);
 	*guest = False;
 	DEBUG(3,("ACCEPTED: validated uid ok as non-guest\n"));
 	ok = True;
