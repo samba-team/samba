@@ -59,8 +59,10 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
     for (a = ai; a != NULL; a = a->ai_next) {
 	if (a->ai_addrlen == salen
 	    && memcmp (a->ai_addr, sa, salen) == 0)
-	    retrurn 0;
+	    return 0;
     }
+    if (flags & NI_NAMEREQD)
+	return EAI_NONAME;
     ret = getnameinfo (sa, salen, host, hostlen, serv, servlen,
 		       flags | NI_NUMERICSERV | NI_NUMERICHOST);
     return ret;
