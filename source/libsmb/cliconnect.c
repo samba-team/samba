@@ -248,6 +248,12 @@ static void set_signing_on_cli (struct cli_state *cli, uint8 user_session_key[16
 	}
 }
 
+static void set_cli_session_key (struct cli_state *cli, DATA_BLOB session_key) 
+{
+	memcpy(cli->user_session_key, session_key.data, MIN(session_key.length, sizeof(cli->user_session_key)));
+}
+
+
 static void set_temp_signing_on_cli(struct cli_state *cli) 
 {
 	if (cli->sign_info.negotiated_smb_signing)
@@ -367,6 +373,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 	if (session_key.data) {
 		/* Have plaintext orginal */
+		set_cli_session_key(cli, session_key);
 		set_signing_on_cli(cli, session_key.data, nt_response);
 	}
 
@@ -558,6 +565,10 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 		data_blob_free(&blob_out);
 		turn++;
 	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		set_cli_session_key(cli, ntlmssp_state->session_key);
+	}
 
 	if (!NT_STATUS_IS_OK(ntlmssp_client_end(&ntlmssp_state))) {
 		return False;

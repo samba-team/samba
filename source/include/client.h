@@ -122,6 +122,10 @@ struct cli_state {
 
 	smb_sign_info sign_info;
 
+	/* the session key for this CLI, outside 
+	   any per-pipe authenticaion */
+	unsigned char user_session_key[16];
+
 	/*
 	 * Only used in NT domain calls.
 	 */
