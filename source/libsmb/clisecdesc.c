@@ -39,7 +39,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 	SEC_DESC *ret;
 
 	SIVAL(param, 0, fd);
-	SSVAL(param, 4, 0xf);
+	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
 			       NT_TRANSACT_QUERY_SECURITY_DESC, 
@@ -107,7 +107,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	}
 
 	SIVAL(param, 0, fd);
-	SSVAL(param, 4, 0xf);
+	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
 			       NT_TRANSACT_SET_SECURITY_DESC, 
