@@ -542,16 +542,16 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 			desc->errcode=NERR_notsupported;
 			return;
 		} 
-		else 
+
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok;i++) 
 		{
-			/* lookup the long printer driver name in the file description */
-			for (i=0;lines[i] && !ok;i++) 
+			p = lines[i];
+			if (next_token(&p,tok,":",sizeof(tok)) &&
+		    	   (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
+		    	   (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 			{
-				p = lines[i];
-				if (next_token(&p,tok,":",sizeof(tok)) &&
-			    	   (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-			    	   (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
-					ok = True;
+				ok = True;
 			}
 		}
 	}
@@ -777,17 +777,18 @@ static int get_printerdrivernumber(int snum)
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
+			return 0;
 		} 
-		else 
+
+		/* lookup the long printer driver name in the file description */
+		for (i=0;lines[i] && !ok;i++) 
 		{
-			/* lookup the long printer driver name in the file description */
-			for (i=0;lines[i] && !ok;i++) 
+			p = lines[i];
+			if (next_token(&p,tok,":",sizeof(tok)) &&
+			   (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
+			   (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
 			{
-				p = lines[i];
-				if (next_token(&p,tok,":",sizeof(tok)) &&
-						(strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-					    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
-					ok = True;
+				ok = True;
 			}
 		}
 	}
