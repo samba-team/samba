@@ -548,6 +548,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 		return NULL;
 
 	fsp->fd = -1;
+	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
 
 	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, share_mode, ofun, (int)mode,  oplock_request ));
@@ -867,6 +868,8 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 
 	if(!fsp)
 		return NULL;
+
+	fsp->conn = conn; /* THe vfs_fXXX() macros need this. */
 
 	if (VALID_STAT(*psbuf))
 		got_stat = True;
