@@ -1,3 +1,7 @@
+Sat Sep 26 17:42:39 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* compile_et.c: <foo_err.h> -> "foo_err.h"
+
 Tue Jun 30 17:17:36 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: add str{cpy,cat}_truncate

@@ -28,10 +28,11 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
-@lib_deps_yes@LIB_DEPS = -L../../kafs -lkafs			\
+@lib_deps_yes@LIB_DEPS = -L../../kafs -lkafs		\
 @lib_deps_yes@	   -L../../kadm -lkadm			\
 @lib_deps_yes@	   -L../../krb -lkrb			\
 @lib_deps_yes@	   -L../../des -ldes			\
+@lib_deps_yes@	   -L../../com_err -lcom_err		\
 @lib_deps_yes@	   -L../../roken -lroken		\
 @lib_deps_yes@	   @LIB_getpwnam_r@			\
 @lib_deps_yes@	   -lc

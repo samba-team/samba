@@ -78,7 +78,7 @@ getstring(void)
     int i = 0;
     int c;
     int backslash = 0;
-    while((c = getc(yyin)) != EOF){
+    while((c = input()) != EOF){
 	if(backslash) {
 	    if(c == 'n')
 		c = '\n';
