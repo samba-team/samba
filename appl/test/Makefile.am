@@ -6,13 +6,13 @@ INCLUDES = -I$(top_builddir)/include
 
 noinst_PROGRAMS = tcp_client tcp_server gssapi_server gssapi_client
 
-tcp_client_SOURCES = tcp_client.c
+tcp_client_SOURCES = tcp_client.c common.c
 
-tcp_server_SOURCES = tcp_server.c
+tcp_server_SOURCES = tcp_server.c common.c
 
-gssapi_server_SOURCES = gssapi_server.c gss_common.c
+gssapi_server_SOURCES = gssapi_server.c gss_common.c common.c
 
-gssapi_client_SOURCES = gssapi_client.c gss_common.c
+gssapi_client_SOURCES = gssapi_client.c gss_common.c common.c
 
 gssapi_server_LDADD = -L$(top_builddir)/lib/gssapi -lgssapi $(LDADD)
 
