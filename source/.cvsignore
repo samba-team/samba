@@ -1,8 +1,9 @@
-bin
 Makefile
+bin
+build
 config.cache
 config.log
 config.status
 cvs.log
-so_locations
 libtool
+so_locations

@@ -17,6 +17,7 @@ CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
+PYTHON=@PYTHON@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
@@ -210,8 +211,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				 printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
-		printing/printing_db.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
@@ -258,8 +258,7 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o \
-	printing/printing_db.o
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -737,6 +736,27 @@ installclientlib:
 	-$(INSTALLCMD) -d ${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
 
+# Python extensions
+
+python_ext: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
+	LIBS="$(LIBS)" \
+		$(PYTHON) python/setup.py build
+
+python_install: $(PYTHON_OBJS)
+	@if test -z "$(PYTHON)"; then \
+		echo Use the option --with-python to configure python; \
+		exit 1; fi
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+	LIBS="$(LIBS)" \
+		$(PYTHON) python/setup.py install
+
+python_clean:
+	@if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
+
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) ${WINBIND_SPROGS}
@@ -760,7 +780,7 @@ uninstallscripts:
 uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
-clean: 
+clean: python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a
 
 nsswitch/winbindd_proto.h:
