@@ -1,3 +1,8 @@
+2003-07-23  Love  <lha@stacken.kth.se>
+
+	* rijndael-alg-fst.h,rijndael-alg-fst.c,aes.c,aes.h:
+	Makefile.am: add AES support
+
 2003-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* des.1: sunOS -> SunOS, from jmc <jmc@prioris.mini.pw.edu.pl>
