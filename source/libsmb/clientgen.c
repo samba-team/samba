@@ -1053,6 +1053,11 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
+	if (cli->fd == -1)
+	{
+		DEBUG(4,("cli_ulogoff: file descriptor not initialised\n"));
+		return False;
+	}
 	if (cli->reuse)
 	{
 		DEBUG(3,("cli_ulogoff: reuse enabled, skipping SMBulogoff\n"));
