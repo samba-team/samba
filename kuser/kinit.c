@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,10 +37,6 @@
  */
 
 #include "kuser_locl.h"
-#ifdef KRB4
-#include <krb.h>
-#include <kafs.h>
-#endif
 RCSID("$Id$");
 
 int forwardable		= 0;
