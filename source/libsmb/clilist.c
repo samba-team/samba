@@ -270,18 +270,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = rdata;
 
 		/* we might need the lastname for continuations */
- 
-		/* and add them to the dirlist pool */
-		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
-
-		if (!tdl) {
-			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
-			break;
-		} else {
-			dirlist = tdl;
-		}
-
-		/* we might need the lastname for continuations */
 		for (p2=p,i=0;i<ff_searchcount;i++) {
 			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
 		}
@@ -293,6 +281,16 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
 
 		/* grab the data for later use */
+		/* and add them to the dirlist pool */
+		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
+
+		if (!tdl) {
+			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
+			break;
+		} else {
+			dirlist = tdl;
+		}
+
 		memcpy(dirlist+dirlist_len,p,data_len);
 		dirlist_len += data_len;
 
