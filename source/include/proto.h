@@ -1738,7 +1738,7 @@ BOOL cli_nt_logoff(struct cli_state *cli, uint16 fnum, NET_ID_INFO_CTR *ctr);
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
 BOOL lsa_open_policy(struct cli_state *cli, uint16 fnum,
-			char *server_name, POLICY_HND *hnd,
+			const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
 BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
@@ -3215,6 +3215,13 @@ void cmd_sam_del_groupmem(struct client_info *info);
 void cmd_sam_delete_dom_group(struct client_info *info);
 void cmd_sam_add_groupmem(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
+uint32 sam_query_usergroups(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				uint32 user_rid,
+				uint32 *num_groups,
+				DOM_GID **gid,
+				char    ***name,
+				uint32  **type);
 int msrpc_sam_enum_users(struct client_info *info,
 			struct acct_info **sam,
 			uint32 *num_sam_entries,
@@ -3228,7 +3235,7 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
-BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
+BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				uint32 group_rid,
 				uint32 *num_names,
