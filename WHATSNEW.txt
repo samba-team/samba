@@ -8,7 +8,7 @@ The purpose of this alpha release is to get wider testing of the major
 new pieces of code in the current Samba 3.0 development tree. We have 
 officially ceased development on the 2.2.x release of Samba and are 
 concentrating on Samba 3.0. To reduce the time before the final Samba 3.0 
-release we need as many poeple as possible to start testing these alpha 
+release we need as many people as possible to start testing these alpha 
 releases, and hopefully giving us some high quality feedback on what needs 
 fixing.
 
@@ -21,24 +21,19 @@ Major new features:
 -------------------
 
 - Active Directory support. This release is able to join a ADS realm
-  as a member server and authenticate users using
-  LDAP/kerberos. Please read ADS-HOWTO.txt in the release for a very
-  rough guide on how to set this up.
+  as a member server and authenticate users using LDAP/kerberos. 
 
-- Unicode support. Samba will now negotiate unicode on the wire and
-  interally there is now a much better infrastructure for multi-byte
-  and unicode character sets. You may need the "dos charset", "unix
-  charset" and "display charset" options. The unicode support is not
-  yet documented.
+- Unicode support. Samba will now negotiate UNICODE on the wire and
+  internally there is now a much better infrastructure for multi-byte
+  and UNICODE character sets.
 
 - New authentication system. The internal authentication system has
   been almost completely rewritten. Most of the changes are internal,
-  but the new auth system is also very configurable. Not documented
-  yet.
+  but the new auth system is also very configurable. 
 
 - new filename mangling system. The filename mangling system has been
   completely rewritten. An internal database now stores mangling maps
-  persistantly. This needs lots of testing.
+  persistently. This needs lots of testing.
 
 - new "net" command. A new "net" command has been added. It is
   somewhat similar to the "net" command in windows. Eventually we plan
@@ -74,14 +69,18 @@ Removed Parameters
   * printer driver location
   * printer driver file
 
-Added Parmeters
+Added Parameters
 ---------------
+
+  * ldap trust ids
+  * acl compatibility
+  * mangle prefix
 
 
 Modified Parameters
 -------------------
 
-  * restruct anonymous
+  * restrict anonymous
   * password server
 
 
@@ -120,7 +119,7 @@ Changes in alpha21:
 23) Enable "make modules" to build VFS libraries
 24) Enable print notify messages on printer attributes from smbcontrol
 25) Enable auto lookup of domain controllers when adding '*' to
-    "password server" parameter.  Allows to have prefferred list
+    "password server" parameter.  Allows to have preferred list
     of DC's, but not authoritative (e.g. password server = DC1 DC2 *)
 
 
@@ -214,7 +213,7 @@ Changes in alpha20:
      truncate
 64)  Add lots of const casts to function parameters
 65)  Implemented some more client side spoolss functions
-66)  usrmgr expects unicode as ProductType
+66)  usrmgr expects UNICODE as ProductType
 67)  Change JOB_INFO_CTR to return a pointer to an array rather than array of
      pointers in client code
 68)  Various NTLMSSP fixes
