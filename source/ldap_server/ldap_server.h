@@ -45,8 +45,6 @@ struct ldapsrv_call {
 
 	struct ldapsrv_connection *conn;
 
-	const struct auth_session_info *session_info;
-
 	struct ldap_message request;
 
 	struct ldapsrv_reply {
@@ -62,7 +60,7 @@ struct ldapsrv_connection {
 	struct server_connection *connection;
 
 	struct gensec_security *gensec;
-	const struct auth_session_info *session_info;
+	struct auth_session_info *session_info;
 
 	struct rw_buffer sasl_in_buffer;
 	struct rw_buffer sasl_out_buffer;
