@@ -146,7 +146,7 @@ while (@allfiles) {
     print IDB "d 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
   }
   else {
-    if (grep(/SGI/ & (/\.sh$/ | /\.pl$/ | /mkman$/),$nextfile)) {
+    if (grep((/\.sh$/ | /\.pl$/ | /mkman$/),$nextfile)) {
 	print IDB "f 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
     }
     else {
