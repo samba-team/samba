@@ -6,7 +6,7 @@ if test $# -ne 1; then
 fi
 host=$1
 bindir=%bindir%
-set -- `$bindir/kx $host`
+PATH=$PATH:$bindir set -- `kx $host`
 if test $# -ne 3; then
   exit 1
 fi
