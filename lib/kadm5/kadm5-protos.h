@@ -345,6 +345,12 @@ kadm5_s_chpass_principal __P((
 	char *password));
 
 kadm5_ret_t
+kadm5_s_chpass_principal_cond __P((
+	void *server_handle,
+	krb5_principal princ,
+	char *password));
+
+kadm5_ret_t
 kadm5_s_chpass_principal_with_key __P((
 	void *server_handle,
 	krb5_principal princ,
