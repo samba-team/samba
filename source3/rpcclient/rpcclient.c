@@ -849,8 +849,6 @@ char *complete_cmd_null(char *text, int state)
 
 	codepage_initialise(lp_client_code_page());
 
-	if (*smb_cli->domain == 0) pstrcpy(smb_cli->domain,lp_workgroup());
-
 	load_interfaces();
 
 	if (cli_action == CLIENT_IPC)

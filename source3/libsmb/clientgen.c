@@ -2400,7 +2400,10 @@ BOOL cli_negprot(struct cli_state *cli)
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
 
 
-	if (cli->protocol >= PROTOCOL_NT1) {    
+	if (cli->protocol >= PROTOCOL_NT1)
+	{    
+		char *buf = smb_buf(cli->inbuf);
+		int bcc = SVAL(cli->inbuf,smb_vwv+2*(CVAL(cli->inbuf,smb_wct)));
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
 		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
@@ -2409,13 +2412,26 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1)*60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
-		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
+		memcpy(cli->cryptkey, buf,8);
+		if (bcc > 8)
+		{
+			unibuf_to_ascii(cli->server_domain,  buf+8,
+					sizeof(cli->server_domain));
+		}
+		else
+		{
+			cli->server_domain[0] = 0;
+		}
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
 		if (cli->capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
-	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+		DEBUG(5,("server's domain: %s bcc: %d\n",
+			cli->server_domain, bcc));
+	}
+	else if (cli->protocol >= PROTOCOL_LANMAN1)
+	{
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
 		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
@@ -2834,6 +2850,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
+	if (cli->domain[0] == 0)
+	{
+		safe_strcpy(cli->domain, cli->server_domain,
+		            sizeof(cli->domain));
+	}
+
 	if (cli->pwd.cleartext || cli->pwd.null_pwd)
 	{
 		fstring passwd, ntpasswd;
@@ -2885,13 +2907,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		unsigned char lm_sess_pwd[24];
 		unsigned char nt_sess_pwd[128];
 		size_t nt_sess_pwd_len;
-		extern pstring global_myname;
 
 		if (cli->use_ntlmv2 != False)
 		{
 			DEBUG(10,("cli_establish_connection: NTLMv2\n"));
 			pwd_make_lm_nt_owf2(&(cli->pwd), cli->cryptkey,
-			           cli->user_name, global_myname, cli->domain);
+			           cli->user_name, calling->name, cli->domain);
 		}
 		else
 		{
