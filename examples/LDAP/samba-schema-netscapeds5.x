@@ -1,5 +1,6 @@
 ##
-## Garren Chew <darren.chew at vicscouts dot asn dot au>
+## Darren Chew <darren.chew at vicscouts dot asn dot au>
+## Andre Fiebach <andre dot fiebach at stud dot uni-rostock dot de>
 ##
 ## Samba 3.0 schema file for Netscape DS 5.x
 ##
