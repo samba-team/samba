@@ -212,7 +212,7 @@ krb5_ret_xdr_data(krb5_storage *sp,
     return 0;
 }
 
-krb5_error_code
+static krb5_error_code
 krb5_store_xdr_data(krb5_storage *sp,
 		    krb5_data data)
 {
