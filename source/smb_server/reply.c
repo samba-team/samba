@@ -938,8 +938,7 @@ void reply_read_and_X(struct smbsrv_request *req)
 ****************************************************************************/
 void reply_writebraw(struct smbsrv_request *req)
 {
-	/* this one is damn complex - put it off for now */
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	req_reply_dos_error(req, ERRSRV, ERRuseSTD);
 }
 
 
