@@ -721,8 +721,8 @@ handle_tcp(struct descr *d, int index, int min_free)
 	krb5_warn(context, errno, "recvfrom");
 	return;
     } else if (n == 0) {
-	krb5_warnx(context, "connection closed before end of data after %d "
-		   "bytes from %s to %s/%d", d[index].len, 
+	krb5_warnx(context, "connection closed before end of data after %lu "
+		   "bytes from %s to %s/%d", (unsigned long)d[index].len, 
 		   d[index].addr_string, descr_type(d + index), 
 		   ntohs(d[index].port));
 	clear_descr (d + index);
