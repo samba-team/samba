@@ -59,6 +59,52 @@ static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, 
 /*******************************************************************
 ********************************************************************/
 
+static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, prs_struct *ps, int depth )
+{
+
+	prs_debug(ps, depth, desc, "svcctl_io_service_config");
+	depth++;
+
+	if(!prs_uint32("service_type", ps, depth, &config->service_type))
+		return False;
+	if(!prs_uint32("start_type", ps, depth, &config->start_type))
+		return False;
+	if(!prs_uint32("error_control", ps, depth, &config->error_control))
+		return False;
+
+	if (!prs_io_unistr2_p("", &config->executablepath, ps, depth))
+		return False;
+	if (!prs_io_unistr2_p("", &config->loadordergroup, ps, depth))
+		return False;
+
+	if(!prs_uint32("tag_id", ps, depth, &config->tag_id))
+		return False;
+
+	if (!prs_io_unistr2_p("", &config->dependencies, ps, depth))
+		return False;
+	if (!prs_io_unistr2_p("", &config->startname, ps, depth))
+		return False;
+	if (!prs_io_unistr2_p("", &config->displayname, ps, depth))
+		return False;
+
+	if (!prs_io_unistr2("", config->executablepath, ps, depth))
+		return False;
+	if (!prs_io_unistr2("", config->loadordergroup, ps, depth))
+		return False;
+	if (!prs_io_unistr2("", config->dependencies, ps, depth))
+		return False;
+	if (!prs_io_unistr2("", config->startname, ps, depth))
+		return False;
+	if (!prs_io_unistr2("", config->displayname, ps, depth))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/
+
 BOOL svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth )
 {
 	prs_struct *ps=&buffer->prs;
@@ -478,7 +524,7 @@ BOOL svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDE
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_uint32("state", ps, depth, &q_u->state))
@@ -519,4 +565,101 @@ BOOL svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDE
 
 	return True;
 }
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_control_service(const char *desc, SVCCTL_Q_CONTROL_SERVICE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_control_service");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("control", ps, depth, &q_u->control))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_control_service(const char *desc, SVCCTL_R_CONTROL_SERVICE *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_control_service");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!svcctl_io_service_status("service_status", &r_u->svc_status, ps, depth))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_query_service_config");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_config");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!svcctl_io_service_config("config", &r_u->config, ps, depth))
+		return False;
+
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
 

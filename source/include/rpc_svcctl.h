@@ -26,14 +26,16 @@
 /* svcctl pipe */
 
 #define SVCCTL_CLOSE_SERVICE			0x00
+#define SVCCTL_CONTROL_SERVICE			0x01
 #define SVCCTL_QUERY_STATUS			0x06
 #define SVCCTL_ENUM_DEPENDENT_SERVICES_W	0x0d
 #define SVCCTL_ENUM_SERVICES_STATUS_W		0x0e
 #define SVCCTL_OPEN_SCMANAGER_W			0x0f
-#define SVCCTL_OPEN_SERVICE			0x10
-#define SVCCTL_QUERY_SERVICE_CONFIG		0x11
-#define SVCCTL_START_SERVICE			0x13
+#define SVCCTL_OPEN_SERVICE_W			0x10
+#define SVCCTL_QUERY_SERVICE_CONFIG_W		0x11
+#define SVCCTL_START_SERVICE_W			0x13
 #define SVCCTL_GET_DISPLAY_NAME			0x14
+#define SVCCTL_QUERY_SERVICE_CONFIG2_W		0x27
 
 /* ANSI versions not implemented currently 
 #define SVCCTL_ENUM_SERVICES_STATUS_A		0x0e
@@ -71,7 +73,40 @@
 #define SVCCTL_ACCEPT_POWEREVENT		0x00000040
 
 
+/* utility structures for RPCs */
+
+typedef struct {
+	uint32 type;
+	uint32 state;
+	uint32 controls_accepted;
+	uint32 win32_exit_code;
+	uint32 service_exit_code;
+	uint32 check_point;
+	uint32 wait_hint;
+} SERVICE_STATUS;
+
+typedef struct {
+	UNISTR servicename;
+	UNISTR displayname;
+	SERVICE_STATUS status;
+} ENUM_SERVICES_STATUS;
+
+typedef struct {
+	uint32 service_type;
+	uint32 start_type;
+	uint32 error_control;
+	UNISTR2 *executablepath;
+	UNISTR2 *loadordergroup;
+	uint32 tag_id;
+	UNISTR2 *dependencies;
+	UNISTR2 *startname;
+	UNISTR2 *displayname;
+} SERVICE_CONFIG;
+
+
 /* rpc structures */
+
+/**************************/
 
 typedef struct {
 	POLICY_HND handle;
@@ -80,6 +115,8 @@ typedef struct {
 typedef struct {
 	WERROR status;
 } SVCCTL_R_CLOSE_SERVICE;
+
+/**************************/
 
 typedef struct {
 	uint32 ptr_srv;
@@ -94,6 +131,8 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_OPEN_SCMANAGER;
 
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
@@ -106,6 +145,8 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_GET_DISPLAY_NAME;
 
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
@@ -117,6 +158,8 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_OPEN_SERVICE;
 
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
 	uint32 parmcount;
@@ -127,15 +170,19 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_START_SERVICE;
 
+/**************************/
+
 typedef struct {
-	uint32 type;
-	uint32 state;
-	uint32 controls_accepted;
-	uint32 win32_exit_code;
-	uint32 service_exit_code;
-	uint32 check_point;
-	uint32 wait_hint;
-} SERVICE_STATUS;
+	POLICY_HND handle;
+	uint32 control;
+} SVCCTL_Q_CONTROL_SERVICE;
+
+typedef struct {
+	SERVICE_STATUS svc_status;
+	WERROR status;
+} SVCCTL_R_CONTROL_SERVICE;
+
+/**************************/
 
 typedef struct {
 	POLICY_HND handle;
@@ -146,11 +193,7 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_STATUS;
 
-typedef struct {
-	UNISTR servicename;
-	UNISTR displayname;
-	SERVICE_STATUS status;
-} ENUM_SERVICES_STATUS;
+/**************************/
 
 typedef struct {
 	POLICY_HND handle;
@@ -168,6 +211,8 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
 
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
 	uint32 state;
@@ -180,5 +225,19 @@ typedef struct {
 	uint32 returned;
 	WERROR status;
 } SVCCTL_R_ENUM_DEPENDENT_SERVICES;
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle;
+	uint32 buffer_size;
+} SVCCTL_Q_QUERY_SERVICE_CONFIG;
+
+typedef struct {
+	SERVICE_CONFIG config;
+	uint32 needed;
+	WERROR status;
+} SVCCTL_R_QUERY_SERVICE_CONFIG;
+
 #endif /* _RPC_SVCCTL_H */
 

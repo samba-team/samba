@@ -23,6 +23,60 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*
+ * sertup the \PIPE\svcctl db API
+ */
+ 
+static TDB_CONTEXT *svcctl_tdb; /* used for share security descriptors */
+
+#define SCVCTL_DATABASE_VERSION_V1 1
+
+/********************************************************************
+********************************************************************/
+
+static BOOL init_svcctl_db( void )
+{
+	static pid_t local_pid;
+	const char *vstring = "INFO/version";
+ 
+ 	/* see if we've already opened the tdb */
+	
+	if (svcctl_tdb && local_pid == sys_getpid())
+		return True;
+	
+	/* so open it */	
+	if ( !(svcctl_tdb = tdb_open_log(lock_path("svcctl.tdb"), 0, TDB_DEFAULT, 
+		O_RDWR|O_CREAT, 0600))) 
+	{
+		DEBUG(0,("Failed to open svcctl database %s (%s)\n", 
+			lock_path("svcctl.tdb"), strerror(errno) ));
+		return False;
+	}
+ 
+	local_pid = sys_getpid();
+ 
+	/***** BEGIN Check the tdb version ******/
+	
+	tdb_lock_bystring(svcctl_tdb, vstring, 0);
+	
+	if ( tdb_fetch_int32(svcctl_tdb, vstring) != SCVCTL_DATABASE_VERSION_V1 )
+		tdb_store_int32(svcctl_tdb, vstring, SCVCTL_DATABASE_VERSION_V1);
+
+	tdb_unlock_bystring(svcctl_tdb, vstring);
+	
+	/***** END Check the tdb version ******/
+
+	return True;
+}
+
+/********************************************************************
+ TODO
+ (a) get and set security descriptors on services
+ (b) read and write QUERY_SERVICE_CONFIG structures
+ (c) create default secdesc objects for services and SCM
+ (d) check access control masks with se_access_check()
+ (e) implement SERVICE * for associating with open handles
+********************************************************************/
 
 /********************************************************************
 ********************************************************************/
@@ -45,6 +99,8 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	fstring service;
 
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
+	
+	/* can only be called on service name (not displayname) */
 
 	if ( !(strequal( service, "NETLOGON") || strequal(service, "Spooler")) )
 		return WERR_NO_SUCH_SERVICE;
@@ -192,6 +248,14 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 /********************************************************************
 ********************************************************************/
 
+WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, SVCCTL_R_CONTROL_SERVICE *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+
+/********************************************************************
+********************************************************************/
+
 WERROR _svcctl_enum_dependent_services( pipes_struct *p, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u )
 {
 	
@@ -206,6 +270,22 @@ WERROR _svcctl_enum_dependent_services( pipes_struct *p, SVCCTL_Q_ENUM_DEPENDENT
 	r_u->returned    = 0;
 
 	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u )
+{
+	
+	/* we have to set the outgoing buffer size to the same as the 
+	   incoming buffer size (even in the case of failure */
+
+	r_u->needed      = q_u->buffer_size;
+	
+	/* no dependent services...basically a stub function */
+
+	return WERR_ACCESS_DENIED;
 }
 
 

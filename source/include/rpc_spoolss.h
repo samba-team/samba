@@ -429,14 +429,12 @@ PRINTER_MESSAGE_INFO;
 typedef struct spool_user_1
 {
 	uint32 size;		/* length of user_name & client_name + 2? */
-	uint32 client_name_ptr;
-	uint32 user_name_ptr;
+	UNISTR2 *client_name;
+	UNISTR2 *user_name;
 	uint32 build;
 	uint32 major;
 	uint32 minor;
 	uint32 processor;
-	UNISTR2 client_name;
-	UNISTR2 user_name;
 }
 SPOOL_USER_1;
 

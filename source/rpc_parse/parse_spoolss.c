@@ -563,10 +563,12 @@ static BOOL spool_io_user_level_1(const char *desc, SPOOL_USER_1 *q_u, prs_struc
 		return False;
 	if (!prs_uint32("size", ps, depth, &q_u->size))
 		return False;
-	if (!prs_uint32("client_name_ptr", ps, depth, &q_u->client_name_ptr))
+
+	if (!prs_io_unistr2_p("", &q_u->client_name, ps, depth))
 		return False;
-	if (!prs_uint32("user_name_ptr", ps, depth, &q_u->user_name_ptr))
+	if (!prs_io_unistr2_p("", &q_u->user_name, ps, depth))
 		return False;
+
 	if (!prs_uint32("build", ps, depth, &q_u->build))
 		return False;
 	if (!prs_uint32("major", ps, depth, &q_u->major))
@@ -576,11 +578,12 @@ static BOOL spool_io_user_level_1(const char *desc, SPOOL_USER_1 *q_u, prs_struc
 	if (!prs_uint32("processor", ps, depth, &q_u->processor))
 		return False;
 
-	if (!smb_io_unistr2("", &q_u->client_name, q_u->client_name_ptr, ps, depth))
+	if (!prs_io_unistr2("", q_u->client_name, ps, depth))
 		return False;
 	if (!prs_align(ps))
 		return False;
-	if (!smb_io_unistr2("", &q_u->user_name,   q_u->user_name_ptr,   ps, depth))
+
+	if (!prs_io_unistr2("", q_u->user_name, ps, depth))
 		return False;
 
 	return True;
@@ -915,14 +918,14 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
 	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+10;
-	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
-	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
+	q_u->user_ctr.user1.client_name = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	q_u->user_ctr.user1.user_name   = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	init_unistr2(q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
 	
 	return True;
 }
@@ -969,16 +972,16 @@ BOOL make_spoolss_q_addprinterex(
 
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
-	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
-	q_u->user_ctr.user1.size=q_u->user_ctr.user1.user_name.uni_str_len +
-	                         q_u->user_ctr.user1.client_name.uni_str_len + 2;
+	q_u->user_ctr.user1.client_name = TALLOC_P( mem_ctx, UNISTR2 );
+	q_u->user_ctr.user1.user_name   = TALLOC_P( mem_ctx, UNISTR2 );
+	init_unistr2(q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
+	q_u->user_ctr.user1.size=q_u->user_ctr.user1.user_name->uni_str_len +
+	                         q_u->user_ctr.user1.client_name->uni_str_len + 2;
 	
 	return True;
 }

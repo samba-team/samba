@@ -1034,6 +1034,50 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
 }
 
 /*******************************************************************
+ UNISTR2* are a little different in that the pointer and the UNISTR2
+ are not necessarily read/written back to back.  So we break it up 
+ into 2 separate functions.
+ See SPOOL_USER_1 in include/rpc_spoolss.h for an example.
+********************************************************************/
+
+BOOL prs_io_unistr2_p(const char *desc, UNISTR2 **uni2, prs_struct *ps, int depth)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *uni2;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*uni2 = PRS_ALLOC_MEM(ps, UNISTR2, 1)) )
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ now read/write the actual UNISTR2.  Memory for the UNISTR2 (but
+ not UNISTR2.buffer) has been allocated previously by prs_io_unistr2_p()
+********************************************************************/
+
+BOOL prs_io_unistr2(const char *desc, UNISTR2 *uni2, prs_struct *ps, int depth)
+{
+	/* just pass off to smb_io_unstr2() passing the uni2 address as 
+	   the pointer (like you would expect) */
+
+	return smb_io_unistr2( desc, uni2, (uint32)uni2, ps, depth );
+}
+
+/*******************************************************************
  Reads or writes a UNISTR2 structure.
  XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
    the uni_str_len member tells you how long the string is;
