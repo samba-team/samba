@@ -58,7 +58,7 @@ static int help_usage(int argc, const char **argv)
 "\n"\
 "Valid functions are:\n"\
 "  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
-"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP\n");
+"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP GETLOCALSID SETLOCALSID\n");
 	return -1;
 }
 
@@ -136,6 +136,8 @@ static int net_usage(int argc, const char **argv)
 		 "  net group\t\tto manage groups\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "  net cache\t\tto operate on cache tdb file\n"\
+		 "  net getlocalsid [NAME]\tto get the SID for local name\n"\
+		 "  net setlocalsid SID\tto set the local domain SID\n"\
 		 "\n"\
 		 "  net ads <command>\tto run ADS commands\n"\
 		 "  net rap <command>\tto run RAP (pre-RPC) commands\n"\
