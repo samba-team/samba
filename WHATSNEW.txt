@@ -16,31 +16,20 @@ Common bugs fixed in 3.0.11rc1 include:
     structure returned from domain controllers.
     
 
-Administrator Domain SID
-------------------------
-
-Please note that when configured as a DC, it is now required 
-that an account in the server's passdb backend be set to the 
-domain SID of the default Administrator account.  To obtain the 
-domain SID on a Samba DC, run the following command:
-
-root# net getlocalsid
-SID for domain FOO is: S-1-5-21-4294955119-3368514841-2087710299
-
-You may then assign the Domain Administrator rid to an account 
-via pdbedit:
-
-root# pdbedit -U S-1-5-21-4294955119-3368514841-2087710299-500 \
--u root -r
-
-
-
 ######################################################################
 Changes
 #######
 
 Changes since 3.0.11pre2
 ------------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    winbind enable local accounts	Deprecated
+
 
 commits
 -------
@@ -61,13 +50,22 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix segfault in cups_queue_get().
     * Tighten restrictions on changing user passwords when 
       the connected user possesses the SeMachineAccountPrivilege.
-    
+    * Ensure we set NETBIOSNAME.domainname for the long machine name
+      when publishing printers in AD (based on input from Rob Foehl).
+    * Mark 'winbind enable local accounts' as deprecated.
+    * Mark testprns tool as deprecated.
+    * Allow root to grant/revoke privilege assignments.
+    * Correct interaction between user rights and se_access_check() on
+      SAMR objects.
+
     
 o   Guenther Deschner <gd@samba.org>
     * Fix configure.in tests using KRB5_CONFIG variable and krb5-
       config utility.
     * Require assignment of Administrator SID in the passdb 
-      backend.  No longer default to 'root' or 'admin users' list.
+      backend.  Fall back to the default name of 'Administrator' if
+      the lookup fails rather than using the first name in the
+      default 'admin users' list.
     * Enhance LDAP failure debug messages.
     
     
@@ -114,8 +112,9 @@ LDAP Changes
 
 If "ldap user suffix" or "ldap machine suffix" are defined in
 smb.conf, all user-accounts must reside below the user suffix,
-and all machine trust-accounts must be located below the machine
-suffix.
+and all machine and inter-domain trust-accounts must be located 
+below the machine suffix.  Previous Samba releases would fall 
+back to searching the 'ldap suffix' in some cases.
 
 
 Privilege Model
@@ -131,8 +130,8 @@ SeDiskOperatorPrivilege    Manage disk shares
 
 These rights can be assigned to arbitrary users or groups
 via the 'net rpc rights grant/revoke' command.  More details
-of Samba's privilege implementation will be available in a
-forthcoming HOWTO. 
+of Samba's privilege implementation can be found in the 
+Samba-HOWTO-Collection.
 
 
 ######################################################################
@@ -156,7 +155,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fixes for libsmbclient to ensure that interrupted system calls
       are restarted minus the already expired portion of the timeout
       (based on work by Derrell Lipman).
-    * More unicode string parsing fixes.
+    * More Unicode string parsing fixes.
     * Convert the winreg pipe to use WERROR returns.
     * Make all LDAP timeouts consistent (input from Joe Meadows 
       <jameadows@webopolis.com>).
