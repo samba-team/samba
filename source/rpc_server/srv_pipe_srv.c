@@ -61,7 +61,7 @@ static BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start,
 	}
 	if ((!ret) || IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST))
 	{
-		DEBUG(10,("create_noauth_reply: finished sending\n"));
+		DEBUG(10,("create_rpc_reply: finished sending\n"));
 		prs_free_data(&l->rdata);
 	}
 	return ret;
@@ -393,11 +393,6 @@ static BOOL api_pipe_request(rpcsrv_struct *l, const char* name,
 	{
 		DEBUG(10,("api_pipe_request: validated auth\n"));
 		if (!l->auth->api_decode_pdu(l)) return False;
-
-		DEBUG(0,("api_pipe_request: **** MUST CALL become_user() HERE **** \n"));
-#if 0
-		become_user();
-#endif
 	}
 
 	for (i = 0; i < num_cmds; i++)

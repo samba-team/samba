@@ -53,6 +53,10 @@ struct cli_connection
 		struct msrpc_state *local;
 		void* cli;
 	} msrpc;
+
+	cli_auth_fns *auth;
+	void *auth_info;
+	void *auth_creds;
 };
 
 static struct cli_connection **con_list = NULL;
@@ -89,7 +93,10 @@ void free_connections(void)
 }
 
 static struct cli_connection *cli_con_get(const char* srv_name,
-				const char* pipe_name, BOOL reuse)
+				const char* pipe_name, 
+				cli_auth_fns *auth,
+				void *auth_creds,
+				BOOL reuse)
 {
 	struct cli_connection *con = NULL;
 
@@ -113,6 +120,19 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 	if (pipe_name != NULL)
 	{
 		con->pipe_name = strdup(pipe_name);
+	}
+
+	con->auth_info = NULL;
+	con->auth_creds = auth_creds;
+
+	if (auth != NULL)
+	{
+		con->auth = auth;
+	}
+	else
+	{
+		extern cli_auth_fns cli_noauth_fns;
+		con->auth = &cli_noauth_fns;
 	}
 
 	if (strequal(srv_name, "\\\\."))
@@ -255,6 +275,12 @@ void cli_connection_free(struct cli_connection *con)
 		con->pipe_name = NULL;
 	}
 
+	if (con->auth_info != NULL)
+	{
+		free(con->auth_info);
+		con->auth_info = NULL;
+	}
+
 	memset(&con->usr_creds, 0, sizeof(con->usr_creds));
 
 	for (i = 0; i < num_cons; i++)
@@ -286,6 +312,17 @@ init client state
 BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con)
 {
+	return cli_connection_init_auth(srv_name, pipe_name, con, NULL, NULL);
+}
+
+/****************************************************************************
+init client state
+****************************************************************************/
+BOOL cli_connection_init_auth(const char* srv_name, const char* pipe_name,
+				struct cli_connection **con,
+				cli_auth_fns *auth,
+				void *auth_creds)
+{
 	BOOL res = True;
 	BOOL reuse = False;
 
@@ -296,7 +333,7 @@ BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 	DEBUG(10,("cli_connection_init: %s %s\n",
 	            srv_name != NULL ? srv_name : "<null>", pipe_name));
 
-	*con = cli_con_get(srv_name, pipe_name, reuse);
+	*con = cli_con_get(srv_name, pipe_name, auth, auth_creds, reuse);
 
 	if ((*con) == NULL)
 	{
@@ -386,6 +423,39 @@ BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
 	memcpy(usr_sess_key, src_key, 16);
 
 	return True;
+}
+
+/****************************************************************************
+ get auth functions associated with an msrpc session.
+****************************************************************************/
+struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con)
+{
+	return con != NULL ? con->auth : NULL;
+}
+
+/****************************************************************************
+ get auth info associated with an msrpc session.
+****************************************************************************/
+void *cli_conn_get_auth_creds(struct cli_connection *con)
+{
+	return con != NULL ? con->auth_creds: NULL;
+}
+
+/****************************************************************************
+ get auth info associated with an msrpc session.
+****************************************************************************/
+void *cli_conn_get_auth_info(struct cli_connection *con)
+{
+	return con != NULL ? con->auth_info: NULL;
+}
+
+/****************************************************************************
+ set auth info associated with an msrpc session.
+****************************************************************************/
+BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info)
+{
+	con->auth_info = auth_info;
+	return auth_info != NULL;
 }
 
 /****************************************************************************
@@ -649,7 +719,7 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 		{
 			struct cli_state *cli = con->msrpc.smb->cli;
 			int fnum = con->msrpc.smb->fnum;
-			return cli_rcv_pdu(cli, fnum, rdata);
+			return cli_rcv_pdu(con, cli, fnum, rdata);
 		}
 		case MSRPC_LOCAL:
 		{
@@ -676,7 +746,7 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 			struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 			struct cli_state *cli = con->msrpc.smb->cli;
 			int fnum = con->msrpc.smb->fnum;
-			return cli_send_and_rcv_pdu(cli, fnum, data, rdata,
+			return cli_send_and_rcv_pdu(con, cli, fnum, data, rdata,
 			                            nt->max_xmit_frag);
 		}
 		case MSRPC_LOCAL:

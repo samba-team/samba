@@ -304,7 +304,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 	mdfour(sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("SMBsesskeygen_ntv2:\n"));
+	DEBUG(100,("SMBsesskeygen_ntv1:\n"));
 	dump_data(100, sess_key, 16);
 #endif
 }

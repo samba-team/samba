@@ -126,6 +126,23 @@ typedef struct rpcsrv_struct
 
 } rpcsrv_struct;
 
+struct cli_connection;
+
+typedef struct cli_auth_fns
+{
+	BOOL (*create_bind_req)(struct cli_connection *, prs_struct *,
+	                        uint32, RPC_IFACE *, RPC_IFACE *);
+	BOOL (*decode_bind_resp)(struct cli_connection *, prs_struct *);
+	BOOL (*create_bind_cont)(struct cli_connection *, prs_struct *,
+	                         uint32);
+	BOOL (*cli_create_pdu)(struct cli_connection *, uint8,
+	                         prs_struct *, int, int*,
+	                         prs_struct *, uint8 *);
+	BOOL (*cli_decode_pdu)(struct cli_connection *, prs_struct *,
+	                         int, int);
+ 
+} cli_auth_fns;
+
 typedef struct srv_auth_fns
 {
 	BOOL (*api_auth_chk)(rpcsrv_struct *, enum RPC_PKT_TYPE);

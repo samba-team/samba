@@ -2722,9 +2722,9 @@ initialise a client structure
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
 	copy_nt_creds(&cli->usr, usr);
-#if 0
-	cli->nt.ntlmssp_cli_flgs = usr->ntlmssp_flags;
-#endif
+	cli->nt.ntlmssp_cli_flgs = usr != NULL ? usr->ntlmssp_flags : 0;
+	DEBUG(10,("cli_init_creds: ntlmssp_flgs: %x\n", 
+	           cli->nt.ntlmssp_cli_flgs));
 }
 
 /****************************************************************************
@@ -2764,7 +2764,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	cli->initialised = 1;
 	cli->capabilities = CAP_DFS | CAP_NT_SMBS | CAP_STATUS32;
-	cli->use_ntlmv2 = Auto;
+	cli->use_ntlmv2 = lp_client_ntlmv2();
 
 	cli_init_creds(cli, NULL);
 

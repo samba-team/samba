@@ -834,7 +834,7 @@ BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
 	          domain, user, wks, neg_flags));
 
-	offset = 0;
+	offset = 0x40;
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{

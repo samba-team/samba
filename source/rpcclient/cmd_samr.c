@@ -170,7 +170,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	if (msrpc_sam_ntchange_pwd( srv_name, acct_name,
+	if (msrpc_sam_ntchange_pwd( srv_name, NULL, acct_name, 
 	                                   lm_oldhash, nt_oldhash,
 	                                   new_passwd))
 	{

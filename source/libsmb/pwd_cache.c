@@ -197,7 +197,9 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 /****************************************************************************
  stores lm and nt hashed passwords
  ****************************************************************************/
-void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
+void pwd_set_lm_nt_16(struct pwd_info *pwd,
+				const uchar lm_pwd[16],
+				const uchar nt_pwd[16])
 {
 	pwd_init(pwd);
 

@@ -136,6 +136,10 @@ BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name)
 			valid_un8 = True;
 		}
 	}
+	else
+	{
+		DEBUG(4,("samr_unknown38: rpc_con_pipe_req failed\n"));
+	}
 
 	prs_free_data(&data   );
 	prs_free_data(&rdata  );

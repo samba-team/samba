@@ -1789,10 +1789,8 @@ struct pwd_info
 struct ntdom_info
 {
 	unsigned char sess_key[16];        /* Current session key. */
-	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
 	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
 	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
-	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
 	DOM_CRED clnt_cred;                /* Client credential. */
 
 	int max_recv_frag;
@@ -1804,6 +1802,8 @@ struct msrpc_state
 	fstring pipe_name;
 	struct user_creds usr;
 	struct ntdom_info nt;
+	cli_auth_fns *auth;
+	void *auth_info;
 
 	int fd;
 	BOOL redirect;

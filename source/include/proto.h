@@ -947,7 +947,9 @@ void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
 void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
-void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
+void pwd_set_lm_nt_16(struct pwd_info *pwd,
+				const uchar lm_pwd[16],
+				const uchar nt_pwd[16]);
 void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
 void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
@@ -1909,11 +1911,19 @@ void cli_connection_free(struct cli_connection *con);
 void cli_connection_unlink(struct cli_connection *con);
 BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
+BOOL cli_connection_init_auth(const char* srv_name, const char* pipe_name,
+				struct cli_connection **con,
+				cli_auth_fns *auth,
+				void *auth_creds);
 BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
 BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
+struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
+void *cli_conn_get_auth_creds(struct cli_connection *con);
+void *cli_conn_get_auth_info(struct cli_connection *con);
+BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info);
 struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con);
 struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
@@ -2054,27 +2064,27 @@ BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
-BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct *rdata);
+BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
+				int data_len,
+				int auth_len);
 BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 				prs_struct *data,
 				prs_struct *rdata);
-BOOL cli_send_and_rcv_pdu_trans(struct cli_state *cli, uint16 fnum,
+BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
+				struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu);
-BOOL cli_send_and_rcv_pdu_rw(struct cli_state *cli, uint16 fnum,
-			prs_struct *data, prs_struct *rdata,
-			int max_send_pdu);
-BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
-			prs_struct *data, prs_struct *rdata,
-			int max_send_pdu);
-BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata);
-BOOL create_rpc_bind_resp(struct pwd_info *pwd,
-				char *domain, char *user_name, char *my_name,
-				uint32 ntlmssp_cli_flgs,
-				uint32 rpc_call_id,
-				prs_struct *rhdr,
-                                prs_struct *rhdr_autha,
-                                prs_struct *auth_resp);
+BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
+				struct cli_state *cli, uint16 fnum,
+				prs_struct *data, prs_struct *rdata,
+				int max_send_pdu);
+BOOL cli_send_and_rcv_pdu(struct cli_connection *con,
+				struct cli_state *cli, uint16 fnum,
+				prs_struct *data, prs_struct *rdata,
+				int max_send_pdu);
+BOOL cli_rcv_pdu(struct cli_connection *con,
+				struct cli_state *cli, uint16 fnum,
+				prs_struct *rdata);
 BOOL rpc_pipe_bind(struct cli_connection *con, 
 				const char *pipe_name,
 				RPC_IFACE *abstract, RPC_IFACE *transfer, 
@@ -2083,6 +2093,12 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name,
 		uint16* fnum);
 void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
+
+/*The following definitions come from  rpc_client/cli_pipe_noauth.c  */
+
+
+/*The following definitions come from  rpc_client/cli_pipe_ntlmssp.c  */
+
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
@@ -2509,11 +2525,14 @@ BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				uint16 switch_value,
 				uint32 *num_entries, SAM_DISPINFO_CTR *ctr,
 				DISP_FN(disp_fn));
-BOOL msrpc_sam_ntchange_pwd(const char* srv_name, const char *user, 
+BOOL msrpc_sam_ntchange_pwd(const char* srv_name,
+				const char* domain,
+				const char *ntuser, 
 				const uchar lm_oldhash[16],
 				const uchar nt_oldhash[16],
 				const char* new_passwd);
 BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user, 
+				struct ntuser_creds *samr_creds,
 				const uchar lm_newpass[516],
 				const uchar lm_hshhash[16],
 				const uchar nt_newpass[516],

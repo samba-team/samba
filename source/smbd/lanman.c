@@ -38,6 +38,7 @@ extern int DEBUGLEVEL;
 
 extern fstring local_machine;
 extern fstring global_myworkgroup;
+extern fstring global_sam_name;
 
 #define NERR_Success 0
 #define NERR_badpass 86
@@ -1558,7 +1559,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
    */
 
 	nt_lm_owf_gen(pass1, nt_pw, lm_pw);
-	if (msrpc_sam_ntchange_pwd("\\\\.", user, lm_pw, nt_pw, pass2))
+	if (msrpc_sam_ntchange_pwd("\\\\.", user, global_sam_name,
+	                           lm_pw, nt_pw, pass2))
 	{
 		SSVAL(*rparam,0,NERR_Success);
 	}
@@ -1572,7 +1574,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 	if (SVAL(*rparam,0) != NERR_Success)
 	{
 		if (make_oem_passwd_hash(pwbuf, pass1, 16, NULL, False) &&
-		    msrpc_sam_ntpasswd_set("\\\\.", user, 
+		    msrpc_sam_ntpasswd_set("\\\\.", user,  NULL,
 			     pwbuf, pass2, /* lm pw */
 			     NULL, NULL)) /* nt pw */
 		{
@@ -1637,7 +1639,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
    */
   (void)Get_Pwnam( user, True);
 
-  if (msrpc_sam_ntpasswd_set("\\\\.", user, 
+  if (msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
                              (uchar*) data, (uchar *)&data[516], /* lm pw */
                              NULL, NULL)) /* nt pw */
   {
