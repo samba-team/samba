@@ -5589,11 +5589,9 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		goto done;
 	}
 		
-	if (!(devmode = construct_dev_mode(snum))) {
-		*returned = 0;
-		result = WERR_NOMEM;
-		goto done;
-	}
+	/* this should not be a failure condition if the devmode is NULL */
+	
+	devmode = construct_dev_mode(snum);
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
@@ -7665,10 +7663,10 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(ret))
 		goto done;
-	if (construct_dev_mode(snum) == NULL) {
-		ret = WERR_NOMEM;
-		goto done;
-	}
+		
+	/* not a failure condition if devmode == NULL */
+	
+	construct_dev_mode(snum);
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
