@@ -1,3 +1,17 @@
+Changes in release 0.4c
+
+ * repair some of the v4 fallback code in kinit
+
+ * add more shared library dependencies
+
+ * simplify and fix hprop handling of v4 databases
+
+ * bug fixes
+
+Changes in release 0.4b
+
+ * update the shared library version numbers correctly
+
 Changes in release 0.4a
 
  * corrected key used for checksum in mk_safe, unfortunately this
