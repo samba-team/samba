@@ -314,6 +314,9 @@ SamrTestPrivateFunctionsUser
 #define ALIAS_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
                              ALIAS_ACCESS_LOOKUP_INFO )
 
+/* A flag for the user info 21 and 23 structs */
+#define PASS_MUST_CHANGE_AT_NEXT_LOGON 1
+
 typedef struct _DISP_USER_INFO {
 	SAM_ACCOUNT *sam;
 } DISP_USER_INFO;
@@ -366,9 +369,13 @@ typedef struct sam_user_info_23
 	/* uint8 pad[2] */
 	uint32 ptr_logon_hrs; /* pointer to logon hours */
 
-	uint8 padding1[8];
-
 	uint32 unknown_5;     /* 0x0001 0000 */
+
+	uint8 padding1[6];
+		
+	uint8 passmustchange; /* 0x00 must change = 0x01 */
+
+	uint8 padding2;
 
 	uint8 pass[516];
 
@@ -487,7 +494,11 @@ typedef struct sam_user_info_21
 
 	uint32 unknown_5;     /* 0x0002 0000 */
 
-	uint8 padding1[8];
+	uint8 padding1[6];
+		
+	uint8 passmustchange; /* 0x00 must change = 0x01 */
+
+	uint8 padding2;
 
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -507,6 +518,8 @@ typedef struct sam_user_info_21
 
 } SAM_USER_INFO_21;
 
+#define PASS_MUST_CHANGE_AT_NEXT_LOGON	0x01
+#define PASS_DONT_CHANGE_AT_NEXT_LOGON	0x00
 
 /* SAM_USER_INFO_20 */
 typedef struct sam_user_info_20
