@@ -460,7 +460,7 @@ case "$host_os" in
 	*solaris*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		case `uname -r` in
-			5.0*|5.1*|5.2*|5.3*|5.5*)
+			5.0|5.0.*|5.1|5.1.*|5.2|5.2.*|5.3|5.3.*|5.5|5.5.*)
 	  			AC_MSG_RESULT([no large file support])
 				;;
 			5.*)

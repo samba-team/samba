@@ -701,7 +701,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 		return 1;
 	}
 
-	DEBUG(2,("getting file %s of size %.0f as %s ", 
+	DEBUG(1,("getting file %s of size %.0f as %s ", 
 		 rname, (double)size, lname));
 
 	if(!(data = (char *)malloc(read_size))) { 
@@ -758,7 +758,7 @@ static int do_get(char *rname, char *lname, BOOL reget)
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 		
-		DEBUG(2,("(%3.1f kb/s) (average %3.1f kb/s)\n",
+		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
 			 nread / (1.024*this_time + 1.0e-4),
 			 get_total_size / (1.024*get_total_time_ms)));
 	}
