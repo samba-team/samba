@@ -66,6 +66,10 @@ size_t
 unparse_units (int num, const struct units *units, char *s, size_t len);
 
 size_t
+unparse_units_approx (int num, const struct units *units, char *s,
+		      size_t len);
+
+size_t
 unparse_flags (int num, const struct units *units, char *s, size_t len);
 
 void
