@@ -250,14 +250,27 @@
 #define real_rmdir(fn)			(syscall(SYS_rmdir, (fn)))
 #define real_mkdir(fn, mode)		(syscall(SYS_mkdir, (fn), (mode)))
 
+/*
+ * On GNU/Linux distributions which allow to use both 2.4 and 2.6 kernels
+ * there is SYS_utimes syscall defined at compile time in glibc-kernheaders but 
+ * it is available on 2.6 kernels only. Therefore, we can't rely on syscall at 
+ * compile time but have to check that behaviour during program execution. An easy 
+ * workaround is to have replacement for utimes() implemented within our wrapper and 
+ * do not rely on syscall at all. Thus, if REPLACE_UTIME is defined already (by packager), 
+ * skip these syscall shortcuts.
+ */
+#ifndef REPLACE_UTIME
 #ifdef SYS_utime
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #else
 #define REPLACE_UTIME 1
 #endif
+#endif
 
+#ifndef REPLACE_UTIMES
 #ifdef SYS_utimes
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
 #else
 #define REPLACE_UTIMES 1
+#endif
 #endif
