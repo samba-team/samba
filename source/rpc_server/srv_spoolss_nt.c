@@ -1231,8 +1231,8 @@ Can't find printer handle we created for printer %s\n", name ));
 
 		/* Allow admin access */
 
-		if (printer_default->access_required & 
-		    SERVER_ACCESS_ADMINISTER) {
+		if ( printer_default->access_required & SERVER_ACCESS_ADMINISTER ) 
+		{
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
@@ -1296,7 +1296,9 @@ Can't find printer handle we created for printer %s\n", name ));
 		else
 			printer_default->access_required = PRINTER_ACCESS_USE;
 
-		DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
+		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
+			? "PRINTER_ACCESS_ADMINSTER" : "PRINTER_ACCESS_USE" ));
+
 		Printer->access_granted = printer_default->access_required;
 
 		/*
@@ -1695,11 +1697,62 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 }
 
 
+/****************************************************************************
+ Internal routine for retreiving printerdata
+ ***************************************************************************/
+
+static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer, 
+                                  char *key, char *value, uint32 *type, uint8 **data, 
+				  uint32 *needed, uint32 in_size  )
+{
+	REGISTRY_VALUE 		*val;
+	int			size, data_len;
+	
+	if ( !(val = get_printer_data( printer->info_2, key, value)) )
+		return WERR_BADFILE;
+	
+	*type = regval_type( val );
+
+	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
+
+	size = regval_size( val );
+	
+	/* copy the min(in_size, len) */
+	
+	if ( in_size ) {
+		data_len = (size > in_size) ? in_size : size*sizeof(uint8);
+		if ( (*data  = (uint8 *)talloc_memdup(ctx, regval_data_p(val), data_len)) == NULL )
+			return WERR_NOMEM;
+	}
+	else
+		*data = NULL;
+
+	*needed = size;
+	
+	DEBUG(5,("getprinterdata_printer:copy done\n"));
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ Internal routine for storing printerdata
+ ***************************************************************************/
+
+static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value, 
+                                  uint32 type, uint8 *data, int real_len  )
+{
+	delete_printer_data( printer->info_2, key, value );
+	
+	add_printer_data( printer->info_2, key, value, type, data, real_len );
+	
+	return mod_a_printer(*printer, 2);
+}
+
 /********************************************************************
  GetPrinterData on a printer server Handle.
 ********************************************************************/
 
-static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
+static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
 {		
 	int i;
 	
@@ -1708,50 +1761,50 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 	if (!strcmp(value, "W3SvcInstalled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc_zero(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
-		*needed = 0x4;			
-		return True;
+			return WERR_NOMEM;
+		*needed = 0x4;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "BeepEnabled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "EventLog")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		/* formally was 0x1b */
 		SIVAL(*data, 0, 0x0);
 		*needed = 0x4;			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "NetPopup")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "MajorVersion")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
-			return False;
+			return WERR_NOMEM;
 #ifndef EMULATE_WIN2K_HACK /* JERRY */
 		SIVAL(*data, 0, 2);
 #else
 		SIVAL(*data, 0, 3);
 #endif
 		*needed = 0x4;
-		return True;
+		return WERR_OK;
 	}
 
    	if (!strcmp(value, "DefaultSpoolDirectory")) {
@@ -1761,7 +1814,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
-			return False;
+			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		
 		/* it's done by hand ready to go on the wire */
@@ -1769,7 +1822,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
-		return True;
+		return WERR_OK;
 	}
 
 	if (!strcmp(value, "Architecture")) {			
@@ -1777,16 +1830,16 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
 		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
-			return False;
+			return WERR_NOMEM;
 		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 		for (i=0; i<strlen(string); i++) {
 			(*data)[2*i]=string[i];
 			(*data)[2*i+1]='\0';
 		}			
-		return True;
+		return WERR_OK;
 	}
 	
-	return False;
+	return WERR_INVALID_PARAM;
 }
 
 /********************************************************************
@@ -1857,17 +1910,18 @@ static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND 
 
 WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *valuename = &q_u->valuename;
-	uint32 in_size = q_u->size;
-	uint32 *type = &r_u->type;
-	uint32 *out_size = &r_u->size;
-	uint8 **data = &r_u->data;
-	uint32 *needed = &r_u->needed;
-
-	fstring value;
-	BOOL found=False;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	POLICY_HND 	*handle = &q_u->handle;
+	UNISTR2 	*valuename = &q_u->valuename;
+	uint32 		in_size = q_u->size;
+	uint32 		*type = &r_u->type;
+	uint32 		*out_size = &r_u->size;
+	uint8 		**data = &r_u->data;
+	uint32 		*needed = &r_u->needed;
+	WERROR 		status;
+	fstring 	value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int		snum = 0;
 	
 	/*
 	 * Reminder: when it's a string, the length is in BYTES
@@ -1885,45 +1939,49 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
-	if (!Printer) {
+	if ( !Printer ) {
 		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
 		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 	
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if ( !W_ERROR_IS_OK(status) )
+		return status;
+
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-		found = getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
+		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
 	else
-		found = getprinterdata_printer(p, p->mem_ctx, handle, value, type, data, needed, *out_size);
+		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, in_size );
 
-	if ( !found ) 
+	if ( !W_ERROR_IS_OK(status) ) 
 	{
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
 		
-		if (*out_size) {
+		if ( *out_size ) {
 			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
 				return WERR_NOMEM;
-		} else {
+		} 
+		else
 			*data = NULL;
-		}
-
-		/* error depends on handle type */
-
-		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-			return WERR_INVALID_PARAM;
-		else 
-			return WERR_BADFILE;
 	}
 	
 	if (*needed > *out_size)
-		return WERR_MORE_DATA;
-	else 
-		return WERR_OK;
+		status = WERR_MORE_DATA;
+
+	/* cleanup & exit */
+
+	free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 /*********************************************************
@@ -7112,7 +7170,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) 
+	{
 		DEBUG(3, ("_spoolss_setprinterdata: change denied by handle access permissions\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
@@ -7122,15 +7181,12 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
+	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	
 	/* save the registry data */
 	
-	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
-	delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
-	add_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename, type, data, real_len );
-
-	/* write the **entire** printer out to disk.... :-( */	
-	
-	status = mod_a_printer(*printer, 2);
+	status = set_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename, 
+					type, data, real_len );
 
 done:
 	free_a_printer(&printer, 2);
@@ -7786,7 +7842,10 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 }
 
 /********************************************************************
- * spoolss_getprinterdataex
+ spoolss_getprinterdataex
+ 
+ From MSDN documentation of GetPrinterDataEx: pass request
+ to GetPrinterData if key is "PrinterDriverData".
  ********************************************************************/
 
 WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
@@ -7797,76 +7856,90 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	uint32 		*out_size = &r_u->size;
 	uint8 		**data = &r_u->data;
 	uint32 		*needed = &r_u->needed;
-
-	fstring 	key, value;
+	fstring 	keyname, valuename;
+	
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	BOOL 		found = False;
+	
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum = 0;
+	WERROR 			status = WERR_OK;
 
 	DEBUG(4,("_spoolss_getprinterdataex\n"));
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
-        unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
+        unistr2_to_ascii(keyname, &q_u->keyname, sizeof(keyname) - 1);
+        unistr2_to_ascii(valuename, &q_u->valuename, sizeof(valuename) - 1);
+	
+	DEBUG(10, ("_spoolss_getprinterdataex: key => [%s], value => [%s]\n", 
+		keyname, valuename));
 
 	/* in case of problem, return some default values */
-	*needed=0;
-	*type=0;
-	*out_size=0;
+	
+	*needed   = 0;
+	*type     = 0;
+	*out_size = in_size;
 
-		
 	if (!Printer) {
 		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
-		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_getprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
-		
 	/* Is the handle to a printer or to the server? */
 
-	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER )
 	{
 		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
-	else
-	{
-	        /* 
-		 * From MSDN documentation of GetPrinterDataEx: pass request
-		 * to GetPrinterData if key is "PrinterDriverData". This is 
-		 * the only key we really support. Other keys to implement:
-		 * (a) DsDriver
-		 * (b) DsSpooler
-		 * (c) PnPData
-		 * (d) DsUser
-		 */
-	   
-		if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-			return WERR_BADFILE;
+	
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
 
-		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
-		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
-			type, data, needed, in_size);
-		
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if ( !W_ERROR_IS_OK(status) )
+		return status;
+
+	/* check to see if the keyname is valid */
+	if ( !strlen(keyname) ) {
+		status = WERR_INVALID_PARAM;
+		goto done;
 	}
-	 
-	if (!found) {
+	
+	if ( lookup_printerkey( &printer->info_2->data, keyname ) == -1 ) {
+		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
+		status = WERR_BADFILE;
+		goto done;
+	}
+	
+	/* When given a new keyname, we should just create it */
+
+	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename, type, data, needed, in_size );
+	
+	if ( !W_ERROR_IS_OK(status) ) 
+	{
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		
 		/* reply this param doesn't exist */
-		if (*out_size) {
-			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
-				return WERR_NOMEM;
-		} else {
+		
+		if ( *out_size ) 
+		{
+			if( (*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL ) {
+				status = WERR_NOMEM;
+				goto done;
+			}
+		} 
+		else 
 			*data = NULL;
-		}
-
-		return WERR_INVALID_PARAM;
 	}
 	
 	if (*needed > *out_size)
-		return WERR_MORE_DATA;
-	else
-		return WERR_OK;
+		status = WERR_MORE_DATA;
+
+done:
+	free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 /********************************************************************
@@ -7875,34 +7948,59 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
 {
-	SPOOL_Q_SETPRINTERDATA q_u_local;
-	SPOOL_R_SETPRINTERDATA r_u_local;
-        fstring key;
+	POLICY_HND 		*handle = &q_u->handle;
+	uint32 			type = q_u->type;
+	uint8 			*data = q_u->data;
+	uint32 			real_len = q_u->real_len;
+
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum = 0;
+	WERROR 			status = WERR_OK;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
+	fstring			valuename;
+	fstring			keyname;
 
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
         /* From MSDN documentation of SetPrinterDataEx: pass request to
            SetPrinterData if key is "PrinterDriverData" */
 
-        unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	if (!Printer) {
+		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
 
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-		
-	ZERO_STRUCT(q_u_local);	
-	ZERO_STRUCT(r_u_local);	
+	if ( !get_printer_snum(p,handle, &snum) )
+		return WERR_BADFID;
+
+	/* 
+	 * Access check : NT returns "access denied" if you make a 
+	 * SetPrinterData call without the necessary privildge.
+	 * we were originally returning OK if nothing changed
+	 * which made Win2k issue **a lot** of SetPrinterData
+	 * when connecting to a printer  --jerry
+	 */
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) 
+	{
+		DEBUG(3, ("_spoolss_setprinterdataex: change denied by handle access permissions\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+
+        unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename) - 1);
+        unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname) - 1);
+
+	/* save the registry data */
 	
-	/* make a copy to call _spoolss_setprinterdata() */
+	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len ); 
 
-	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
-	copy_unistr2(&q_u_local.value, &q_u->value);
-	q_u_local.type = q_u->type;
-	q_u_local.max_len = q_u->max_len;
-	q_u_local.data = q_u->data;
-	q_u_local.real_len = q_u->real_len;
-	q_u_local.numeric_data = q_u->numeric_data;
-		
-	return _spoolss_setprinterdata(p, &q_u_local, &r_u_local);
+	free_a_printer(&printer, 2);
+
+	return status;
 }
 
 

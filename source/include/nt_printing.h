@@ -181,6 +181,7 @@ typedef struct nt_printer_driver_info_level
 #define SPOOL_DSDRIVER_KEY		"DsDriver"
 #define SPOOL_DSUSER_KEY		"DsUser"
 #define SPOOL_PNPDATA_KEY		"PnPData"
+#define SPOOL_OID_KEY			"OID"
 
 /* container for a single registry key */
 
