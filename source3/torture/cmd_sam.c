@@ -56,12 +56,12 @@ static NTSTATUS cmd_load_module(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 	char *plugin_arg[2];
 	NTSTATUS status;
 	if (argc != 2 && argc != 3) {
-		printf("Usage: load <module path> [domain-sid]\n");
+		printf("Usage: load <module path> [domain-name]\n");
 		return NT_STATUS_OK;
 	}
 
 	if (argc == 3)
-		asprintf(&plugin_arg[0], "%s|plugin:%s", argv[2], argv[1]);
+		asprintf(&plugin_arg[0], "plugin:%s|%s", argv[1], argv[2]);
 	else
 		asprintf(&plugin_arg[0], "plugin:%s", argv[1]);
 
