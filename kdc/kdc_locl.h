@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -81,7 +81,7 @@ Key* unseal_key (Key*);
 
 #ifdef KRB4
 hdb_entry* db_fetch4 (const char*, const char*, const char*);
-krb5_error_code do_524 (Ticket*, krb5_data*, const char*);
+krb5_error_code do_524 (Ticket*, krb5_data*, const char*, struct sockaddr_in*);
 krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);
 krb5_error_code encode_v4_ticket (void*, size_t, EncTicketPart*, 
