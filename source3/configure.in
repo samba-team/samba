@@ -563,7 +563,7 @@ else
     RUNPROG=""
 fi
 
-AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot)
+AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
@@ -871,6 +871,19 @@ main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit
 samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
     AC_DEFINE(HAVE_INO64_T)
+fi
+
+AC_CACHE_CHECK([for dev64_t],samba_cv_HAVE_DEV64_T,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
+#include <sys/stat.h>
+main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
+samba_cv_HAVE_DEV64_T=yes,samba_cv_HAVE_DEV64_T=no,samba_cv_HAVE_DEV64_T=cross)])
+if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
+    AC_DEFINE(HAVE_DEV64_T)
 fi
 
 AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[

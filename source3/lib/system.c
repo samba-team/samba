@@ -3,6 +3,7 @@
    Version 1.9.
    Samba system utilities
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 1998-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,30 +46,30 @@
 int sys_usleep(long usecs)
 {
 #ifndef HAVE_USLEEP
-  struct timeval tval;
+	struct timeval tval;
 #endif
 
-  /*
-   * We need this braindamage as the glibc usleep
-   * is not SPEC1170 complient... grumble... JRA.
-   */
+	/*
+	 * We need this braindamage as the glibc usleep
+	 * is not SPEC1170 complient... grumble... JRA.
+	 */
 
-  if(usecs < 0 || usecs > 1000000) {
-    errno = EINVAL;
-    return -1;
-  }
+	if(usecs < 0 || usecs > 1000000) {
+		errno = EINVAL;
+		return -1;
+	}
 
 #if HAVE_USLEEP
-  usleep(usecs);
-  return 0;
+	usleep(usecs);
+	return 0;
 #else /* HAVE_USLEEP */
-  /*
-   * Fake it with select...
-   */
-  tval.tv_sec = 0;
-  tval.tv_usec = usecs/1000;
-  select(0,NULL,NULL,NULL,&tval);
-  return 0;
+	/*
+	 * Fake it with select...
+	 */
+	tval.tv_sec = 0;
+	tval.tv_usec = usecs/1000;
+	select(0,NULL,NULL,NULL,&tval);
+	return 0;
 #endif /* HAVE_USLEEP */
 }
 
@@ -130,9 +131,9 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 int sys_ftruncate(int fd, SMB_OFF_T offset)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
-  return ftruncate64(fd, offset);
+	return ftruncate64(fd, offset);
 #else
-  return ftruncate(fd, offset);
+	return ftruncate(fd, offset);
 #endif
 }
 
@@ -143,9 +144,9 @@ int sys_ftruncate(int fd, SMB_OFF_T offset)
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
-  return lseek64(fd, offset, whence);
+	return lseek64(fd, offset, whence);
 #else
-  return lseek(fd, offset, whence);
+	return lseek(fd, offset, whence);
 #endif
 }
 
@@ -156,11 +157,11 @@ SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
-  return fseek64(fp, offset, whence);
+	return fseek64(fp, offset, whence);
 #elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEKO64)
-  return fseeko64(fp, offset, whence);
+	return fseeko64(fp, offset, whence);
 #else
-  return fseek(fp, offset, whence);
+	return fseek(fp, offset, whence);
 #endif
 }
 
@@ -171,11 +172,11 @@ int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
 SMB_OFF_T sys_ftell(FILE *fp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
-  return (SMB_OFF_T)ftell64(fp);
+	return (SMB_OFF_T)ftell64(fp);
 #elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
-  return (SMB_OFF_T)ftello64(fp);
+	return (SMB_OFF_T)ftello64(fp);
 #else
-  return (SMB_OFF_T)ftell(fp);
+	return (SMB_OFF_T)ftell(fp);
 #endif
 }
 
@@ -186,13 +187,13 @@ SMB_OFF_T sys_ftell(FILE *fp)
 int sys_creat(const char *path, mode_t mode)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CREAT64)
-  return creat64(path, mode);
+	return creat64(path, mode);
 #else
-  /*
-   * If creat64 isn't defined then ensure we call a potential open64.
-   * JRA.
-   */
-  return sys_open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+	/*
+	 * If creat64 isn't defined then ensure we call a potential open64.
+	 * JRA.
+	 */
+	return sys_open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 #endif
 }
 
@@ -203,9 +204,9 @@ int sys_creat(const char *path, mode_t mode)
 int sys_open(const char *path, int oflag, mode_t mode)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPEN64)
-  return open64(path, oflag, mode);
+	return open64(path, oflag, mode);
 #else
-  return open(path, oflag, mode);
+	return open(path, oflag, mode);
 #endif
 }
 
@@ -216,9 +217,9 @@ int sys_open(const char *path, int oflag, mode_t mode)
 FILE *sys_fopen(const char *path, const char *type)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FOPEN64)
-  return fopen64(path, type);
+	return fopen64(path, type);
 #else
-  return fopen(path, type);
+	return fopen(path, type);
 #endif
 }
 
@@ -229,9 +230,28 @@ FILE *sys_fopen(const char *path, const char *type)
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
-  return readdir64(dirp);
+	return readdir64(dirp);
 #else
-  return readdir(dirp);
+	return readdir(dirp);
+#endif
+}
+
+/*******************************************************************
+ An mknod() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
+{
+#if defined(HAVE_MKNOD) || defined(HAVE_MKNOD64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_MKNOD64) && defined(HAVE_DEV64_T)
+	return mknod64(path, mode, dev);
+#else
+	return mknod(path, mode, dev);
+#endif
+#else
+	/* No mknod system call. */
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 
@@ -242,24 +262,25 @@ The wait() calls vary between systems
 int sys_waitpid(pid_t pid,int *status,int options)
 {
 #ifdef HAVE_WAITPID
-  return waitpid(pid,status,options);
+	return waitpid(pid,status,options);
 #else /* HAVE_WAITPID */
-  return wait4(pid, status, options, NULL);
+	return wait4(pid, status, options, NULL);
 #endif /* HAVE_WAITPID */
 }
 
 /*******************************************************************
-system wrapper for getwd
+ System wrapper for getwd
 ********************************************************************/
+
 char *sys_getwd(char *s)
 {
-    char *wd;
+	char *wd;
 #ifdef HAVE_GETCWD
-    wd = (char *)getcwd(s, sizeof (pstring));
+	wd = (char *)getcwd(s, sizeof (pstring));
 #else
-    wd = (char *)getwd(s);
+	wd = (char *)getwd(s);
 #endif
-    return wd;
+	return wd;
 }
 
 /*******************************************************************
@@ -287,6 +308,20 @@ int sys_readlink(const char *path, char *buf, size_t bufsiz)
 	return -1;
 #else
 	return readlink(path, buf, bufsiz);
+#endif
+}
+
+/*******************************************************************
+system wrapper for link
+********************************************************************/
+
+int sys_link(const char *oldpath, const char *newpath)
+{
+#ifndef HAVE_LINK
+	errno = ENOSYS;
+	return -1;
+#else
+	return link(oldpath, newpath);
 #endif
 }
 
@@ -330,39 +365,40 @@ A wrapper for gethostbyname() that tries avoids looking up hostnames
 in the root domain, which can cause dial-on-demand links to come up for no
 apparent reason.
 ****************************************************************************/
+
 struct hostent *sys_gethostbyname(const char *name)
 {
 #ifdef REDUCE_ROOT_DNS_LOOKUPS
-  char query[256], hostname[256];
-  char *domain;
+	char query[256], hostname[256];
+	char *domain;
 
-  /* Does this name have any dots in it? If so, make no change */
+	/* Does this name have any dots in it? If so, make no change */
 
-  if (strchr_m(name, '.'))
-    return(gethostbyname(name));
+	if (strchr_m(name, '.'))
+		return(gethostbyname(name));
 
-  /* Get my hostname, which should have domain name 
-     attached. If not, just do the gethostname on the
-     original string. 
-  */
+	/* Get my hostname, which should have domain name 
+		attached. If not, just do the gethostname on the
+		original string. 
+	*/
 
-  gethostname(hostname, sizeof(hostname) - 1);
-  hostname[sizeof(hostname) - 1] = 0;
-  if ((domain = strchr_m(hostname, '.')) == NULL)
-    return(gethostbyname(name));
+	gethostname(hostname, sizeof(hostname) - 1);
+	hostname[sizeof(hostname) - 1] = 0;
+	if ((domain = strchr_m(hostname, '.')) == NULL)
+		return(gethostbyname(name));
 
-  /* Attach domain name to query and do modified query.
-     If names too large, just do gethostname on the
-     original string.
-  */
+	/* Attach domain name to query and do modified query.
+		If names too large, just do gethostname on the
+		original string.
+	*/
 
-  if((strlen(name) + strlen(domain)) >= sizeof(query))
-    return(gethostbyname(name));
+	if((strlen(name) + strlen(domain)) >= sizeof(query))
+		return(gethostbyname(name));
 
-  slprintf(query, sizeof(query)-1, "%s%s", name, domain);
-  return(gethostbyname(query));
+	slprintf(query, sizeof(query)-1, "%s%s", name, domain);
+	return(gethostbyname(query));
 #else /* REDUCE_ROOT_DNS_LOOKUPS */
-  return(gethostbyname(name));
+	return(gethostbyname(name));
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
 
@@ -373,33 +409,32 @@ struct hostent *sys_gethostbyname(const char *name)
 ****************************************************************************/
 static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
 {
-  if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
-  {
-    cap_t cap = cap_get_proc();
+	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
+		cap_t cap = cap_get_proc();
 
-    if (cap == NULL) {
-      DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
-            strerror(errno)));
-      return False;
-    }
+		if (cap == NULL) {
+			DEBUG(0,("set_process_capability: cap_get_proc failed. Error was %s\n",
+				strerror(errno)));
+			return False;
+		}
 
-    if(enable)
-      cap->cap_effective |= CAP_NETWORK_MGT;
-    else
-      cap->cap_effective &= ~CAP_NETWORK_MGT;
+		if(enable)
+			cap->cap_effective |= CAP_NETWORK_MGT;
+		else
+			cap->cap_effective &= ~CAP_NETWORK_MGT;
 
-    if (cap_set_proc(cap) == -1) {
-      DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
-            strerror(errno)));
-      cap_free(cap);
-      return False;
-    }
+		if (cap_set_proc(cap) == -1) {
+			DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
+				strerror(errno)));
+			cap_free(cap);
+			return False;
+		}
 
-    cap_free(cap);
+		cap_free(cap);
 
-    DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
-  }
-  return True;
+		DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+	}
+	return True;
 }
 
 /**************************************************************************
@@ -408,39 +443,39 @@ static BOOL set_process_capability( uint32 cap_flag, BOOL enable )
 
 static BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
 {
-  if(cap_flag == KERNEL_OPLOCK_CAPABILITY)
-  {
-    cap_t cap = cap_get_proc();
+	if(cap_flag == KERNEL_OPLOCK_CAPABILITY) {
+		cap_t cap = cap_get_proc();
 
-    if (cap == NULL) {
-      DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
-            strerror(errno)));
-      return False;
-    }
+		if (cap == NULL) {
+			DEBUG(0,("set_inherited_process_capability: cap_get_proc failed. Error was %s\n",
+				strerror(errno)));
+			return False;
+		}
 
-    if(enable)
-      cap->cap_inheritable |= CAP_NETWORK_MGT;
-    else
-      cap->cap_inheritable &= ~CAP_NETWORK_MGT;
+		if(enable)
+			cap->cap_inheritable |= CAP_NETWORK_MGT;
+		else
+			cap->cap_inheritable &= ~CAP_NETWORK_MGT;
 
-    if (cap_set_proc(cap) == -1) {
-      DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
-            strerror(errno)));
-      cap_free(cap);
-      return False;
-    }
+		if (cap_set_proc(cap) == -1) {
+			DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
+				strerror(errno)));
+			cap_free(cap);
+			return False;
+		}
 
-    cap_free(cap);
+		cap_free(cap);
 
-    DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
-  }
-  return True;
+		DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
+	}
+	return True;
 }
 #endif
 
 /****************************************************************************
-gain the oplock capability from the kernel if possible
+ Gain the oplock capability from the kernel if possible.
 ****************************************************************************/
+
 void oplock_set_capability(BOOL this_process, BOOL inherit)
 {
 #if HAVE_KERNEL_OPLOCKS_IRIX
@@ -456,12 +491,12 @@ void oplock_set_capability(BOOL this_process, BOOL inherit)
 long sys_random(void)
 {
 #if defined(HAVE_RANDOM)
-  return (long)random();
+	return (long)random();
 #elif defined(HAVE_RAND)
-  return (long)rand();
+	return (long)rand();
 #else
-  DEBUG(0,("Error - no random function available !\n"));
-  exit(1);
+	DEBUG(0,("Error - no random function available !\n"));
+	exit(1);
 #endif
 }
 
@@ -472,12 +507,12 @@ long sys_random(void)
 void sys_srandom(unsigned int seed)
 {
 #if defined(HAVE_SRANDOM)
-  srandom(seed);
+	srandom(seed);
 #elif defined(HAVE_SRAND)
-  srand(seed);
+	srand(seed);
 #else
-  DEBUG(0,("Error - no srandom function available !\n"));
-  exit(1);
+	DEBUG(0,("Error - no srandom function available !\n"));
+	exit(1);
 #endif
 }
 
@@ -488,10 +523,10 @@ void sys_srandom(unsigned int seed)
 int groups_max(void)
 {
 #if defined(SYSCONF_SC_NGROUPS_MAX)
-  int ret = sysconf(_SC_NGROUPS_MAX);
-  return (ret == -1) ? NGROUPS_MAX : ret;
+	int ret = sysconf(_SC_NGROUPS_MAX);
+	return (ret == -1) ? NGROUPS_MAX : ret;
 #else
-  return NGROUPS_MAX;
+	return NGROUPS_MAX;
 #endif
 }
 
@@ -502,47 +537,47 @@ int groups_max(void)
 int sys_getgroups(int setlen, gid_t *gidset)
 {
 #if !defined(HAVE_BROKEN_GETGROUPS)
-  return getgroups(setlen, gidset);
+	return getgroups(setlen, gidset);
 #else
 
-  GID_T gid;
-  GID_T *group_list;
-  int i, ngroups;
+	GID_T gid;
+	GID_T *group_list;
+	int i, ngroups;
 
-  if(setlen == 0) {
-    return getgroups(setlen, &gid);
-  }
+	if(setlen == 0) {
+		return getgroups(setlen, &gid);
+	}
 
-  /*
-   * Broken case. We need to allocate a
-   * GID_T array of size setlen.
-   */
+	/*
+	 * Broken case. We need to allocate a
+	 * GID_T array of size setlen.
+	 */
 
-  if(setlen < 0) {
-    errno = EINVAL; 
-    return -1;
-  } 
+	if(setlen < 0) {
+		errno = EINVAL; 
+		return -1;
+	} 
 
-  if (setlen == 0)
-    setlen = groups_max();
+	if (setlen == 0)
+		setlen = groups_max();
 
-  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
-    DEBUG(0,("sys_getgroups: Malloc fail.\n"));
-    return -1;
-  }
+	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+		DEBUG(0,("sys_getgroups: Malloc fail.\n"));
+		return -1;
+	}
 
-  if((ngroups = getgroups(setlen, group_list)) < 0) {
-    int saved_errno = errno;
-    SAFE_FREE(group_list);
-    errno = saved_errno;
-    return -1;
-  }
+	if((ngroups = getgroups(setlen, group_list)) < 0) {
+		int saved_errno = errno;
+		SAFE_FREE(group_list);
+		errno = saved_errno;
+		return -1;
+	}
 
-  for(i = 0; i < ngroups; i++)
-    gidset[i] = (gid_t)group_list[i];
+	for(i = 0; i < ngroups; i++)
+		gidset[i] = (gid_t)group_list[i];
 
-  SAFE_FREE(group_list);
-  return ngroups;
+	SAFE_FREE(group_list);
+	return ngroups;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
@@ -556,42 +591,42 @@ int sys_getgroups(int setlen, gid_t *gidset)
 int sys_setgroups(int setlen, gid_t *gidset)
 {
 #if !defined(HAVE_BROKEN_GETGROUPS)
-  return setgroups(setlen, gidset);
+	return setgroups(setlen, gidset);
 #else
 
-  GID_T *group_list;
-  int i ; 
+	GID_T *group_list;
+	int i ; 
 
-  if (setlen == 0)
-    return 0 ;
+	if (setlen == 0)
+		return 0 ;
 
-  if (setlen < 0 || setlen > groups_max()) {
-    errno = EINVAL; 
-    return -1;   
-  }
+	if (setlen < 0 || setlen > groups_max()) {
+		errno = EINVAL; 
+		return -1;   
+	}
 
-  /*
-   * Broken case. We need to allocate a
-   * GID_T array of size setlen.
-   */
+	/*
+	 * Broken case. We need to allocate a
+	 * GID_T array of size setlen.
+	 */
 
-  if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
-    DEBUG(0,("sys_setgroups: Malloc fail.\n"));
-    return -1;    
-  }
+	if((group_list = (GID_T *)malloc(setlen * sizeof(GID_T))) == NULL) {
+		DEBUG(0,("sys_setgroups: Malloc fail.\n"));
+		return -1;    
+	}
  
-  for(i = 0; i < setlen; i++) 
-    group_list[i] = (GID_T) gidset[i]; 
+	for(i = 0; i < setlen; i++) 
+		group_list[i] = (GID_T) gidset[i]; 
 
-  if(setgroups(setlen, group_list) != 0) {
-    int saved_errno = errno;
-    SAFE_FREE(group_list);
-    errno = saved_errno;
-    return -1;
-  }
+	if(setgroups(setlen, group_list) != 0) {
+		int saved_errno = errno;
+		SAFE_FREE(group_list);
+		errno = saved_errno;
+		return -1;
+	}
  
-  SAFE_FREE(group_list);
-  return 0 ;
+	SAFE_FREE(group_list);
+	return 0 ;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
 
@@ -723,6 +758,178 @@ struct passwd *sys_getpwuid(uid_t uid)
 	
   	return setup_pwret(getpwuid(uid));
 }
+
+#if 0 /* NOT CURRENTLY USED - JRA */
+/**************************************************************************
+ The following are the UNICODE versions of *all* system interface functions
+ called within Samba. Ok, ok, the exceptions are the gethostbyXX calls,
+ which currently are left as ascii as they are not used other than in name
+ resolution.
+****************************************************************************/
+
+/**************************************************************************
+ Wide stat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_stat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_stat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide lstat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_lstat(const smb_ucs2_t *wfname,SMB_STRUCT_STAT *sbuf)
+{
+	pstring fname;
+	return sys_lstat(unicode_to_unix(fname,wfname,sizeof(fname)), sbuf);
+}
+
+/**************************************************************************
+ Wide creat. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_creat(const smb_ucs2_t *wfname, mode_t mode)
+{
+	pstring fname;
+	return sys_creat(unicode_to_unix(fname,wfname,sizeof(fname)), mode);
+}
+
+/**************************************************************************
+ Wide open. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_open(const smb_ucs2_t *wfname, int oflag, mode_t mode)
+{
+	pstring fname;
+	return sys_open(unicode_to_unix(fname,wfname,sizeof(fname)), oflag, mode);
+}
+
+/**************************************************************************
+ Wide fopen. Just narrow and call sys_xxx.
+****************************************************************************/
+
+FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type)
+{
+	pstring fname;
+	return sys_fopen(unicode_to_unix(fname,wfname,sizeof(fname)), type);
+}
+
+/**************************************************************************
+ Wide opendir. Just narrow and call sys_xxx.
+****************************************************************************/
+
+DIR *wsys_opendir(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return opendir(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide readdir. Return a structure pointer containing a wide filename.
+****************************************************************************/
+
+SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
+{
+	static SMB_STRUCT_WDIRENT retval;
+	SMB_STRUCT_DIRENT *dirval = sys_readdir(dirp);
+
+	if(!dirval)
+		return NULL;
+
+	/*
+	 * The only POSIX defined member of this struct is d_name.
+	 */
+
+	unix_to_unicode(retval.d_name,dirval->d_name,sizeof(retval.d_name));
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getwd. Call sys_xxx and widen. Assumes s points to a wpstring.
+****************************************************************************/
+
+smb_ucs2_t *wsys_getwd(smb_ucs2_t *s)
+{
+	pstring fname;
+	char *p = sys_getwd(fname);
+
+	if(!p)
+		return NULL;
+
+	return unix_to_unicode(s, p, sizeof(wpstring));
+}
+
+/**************************************************************************
+ Wide chown. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid)
+{
+	pstring fname;
+	return chown(unicode_to_unix(fname,wfname,sizeof(fname)), uid, gid);
+}
+
+/**************************************************************************
+ Wide chroot. Just narrow and call sys_xxx.
+****************************************************************************/
+
+int wsys_chroot(const smb_ucs2_t *wfname)
+{
+	pstring fname;
+	return chroot(unicode_to_unix(fname,wfname,sizeof(fname)));
+}
+
+/**************************************************************************
+ Wide getpwnam. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwnam(const smb_ucs2_t *wname)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	fstring name;
+	struct passwd *pwret = sys_getpwnam(unicode_to_unix(name,wname,sizeof(name)));
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
+}
+
+/**************************************************************************
+ Wide getpwuid. Return a structure pointer containing wide names.
+****************************************************************************/
+
+SMB_STRUCT_WPASSWD *wsys_getpwuid(uid_t uid)
+{
+	static SMB_STRUCT_WPASSWD retval;
+	struct passwd *pwret = sys_getpwuid(uid);
+
+	if(!pwret)
+		return NULL;
+
+	unix_to_unicode(retval.pw_name, pwret->pw_name, sizeof(retval.pw_name));
+	retval.pw_passwd = pwret->pw_passwd;
+	retval.pw_uid = pwret->pw_uid;
+	retval.pw_gid = pwret->pw_gid;
+	unix_to_unicode(retval.pw_gecos, pwret->pw_gecos, sizeof(retval.pw_gecos));
+	unix_to_unicode(retval.pw_dir, pwret->pw_dir, sizeof(retval.pw_dir));
+	unix_to_unicode(retval.pw_shell, pwret->pw_shell, sizeof(retval.pw_shell));
+
+	return &retval;
+}
+#endif /* NOT CURRENTLY USED - JRA */
 
 /**************************************************************************
  Extract a command into an arg list. Uses a static pstring for storage.
@@ -905,6 +1112,7 @@ err_exit:
 /**************************************************************************
  Wrapper for pclose. Modified from the glibc sources.
 ****************************************************************************/
+
 int sys_pclose(int fd)
 {
 	int wstatus;

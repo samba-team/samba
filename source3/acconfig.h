@@ -81,6 +81,7 @@
 #undef WITH_MSDFS
 #undef WITH_LIBICONV
 #undef HAVE_INO64_T
+#undef HAVE_DEV64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
 #undef SIZEOF_OFF_T
