@@ -1902,8 +1902,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 		pstrcpy(newHomedir, pszHomedir);
 	} else {
 		pstrcpy(newHomedir, lp_pathname(iDefaultService));
-		standard_sub_home(iDefaultService, pszHomename, user, 
-				  pszHomedir, newHomedir);
+		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
 	}
 
 	string_set(&ServicePtrs[i]->szPath, newHomedir);
@@ -1912,7 +1911,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	{
 		pstring comment;
 		slprintf(comment, sizeof(comment) - 1,
-			 "Home directory of %s", pszHomename);
+			 "Home directory of %s", user);
 		string_set(&ServicePtrs[i]->comment, comment);
 	}
 	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
@@ -1921,7 +1920,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	DEBUG(3,
 	      ("adding home's share [%s] for user %s at %s\n", pszHomename, 
 	       user, newHomedir));
-
+	
 	return (True);
 }
 
