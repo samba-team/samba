@@ -1073,7 +1073,7 @@ AC_TRY_COMPILE([
 #include <dirent.h>],
 [struct dirent64 de;],
 samba_cv_HAVE_STRUCT_DIRENT64=yes,samba_cv_HAVE_STRUCT_DIRENT64=no)])
-if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes"; then
+if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_DIRENT64)
 fi
 
@@ -2064,7 +2064,9 @@ AC_ARG_WITH(ldapsam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_LDAP_SAM)
-    LIBS="-lldap -llber -lresolv $LIBS"
+    LIBS="-lldap $LIBS"
+    AC_CHECK_LIB(ber, ber_bvfree, [LIBS="$LIBS -lber"])
+    LIBS="-lresolv $LIBS"
     with_smbpasswd_sam=no
     ;;
   *)
