@@ -1017,6 +1017,7 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
 void *lp_local_ptr(int snum, void *ptr);
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
+BOOL lp_is_default(int snum, struct parm_struct *parm);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 BOOL lp_snum_ok(int iService);
 BOOL lp_loaded(void);

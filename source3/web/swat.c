@@ -198,6 +198,27 @@ static int save_reload(void)
 
 
 
+/* commit one parameter */
+static void commit_parameter(int snum, struct parm_struct *parm, char *v)
+{
+	int i;
+	char *s;
+
+	if (snum < 0 && parm->class == P_LOCAL) {
+		/* this handles the case where we are changing a local
+		   variable globally. We need to change the parameter in 
+		   all shares where it is currently set to the default */
+		for (i=0;i<lp_numservices();i++) {
+			s = lp_servicename(i);
+			if (s && (*s) && lp_is_default(i, parm)) {
+				lp_do_parameter(i, parm->label, v);
+			}
+		}
+	}
+
+	lp_do_parameter(snum, parm->label, v);
+}
+
 /* commit a set of parameters for a service */
 static void commit_parameters(int snum)
 {
@@ -209,7 +230,8 @@ static void commit_parameters(int snum)
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
 		sprintf(label, "parm_%s", parm->label);
 		if ((v = cgi_variable(label))) {
-			lp_do_parameter(snum, parm->label, v); 
+			if (parm->flags & FLAG_HIDE) continue;
+			commit_parameter(snum, parm, v); 
 		}
 	}
 }
