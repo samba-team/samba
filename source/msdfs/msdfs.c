@@ -269,7 +269,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 			if (consumedcntp) {
 				char *q;
 				pstring buf;
-				safe_strcpy(buf, dfspath, sizeof(buf));
+				pstrcpy(buf, dfspath);
 				trim_string(buf, NULL, "\\");
 				q = strrchr(buf, '\\');
 				if (q) 
@@ -610,7 +610,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	       && pathnamep[1] == '\\')
 		pathnamep++;
 
-	safe_strcpy(buf, pathnamep, sizeof(buf));
+	pstrcpy(buf, pathnamep);
 	if (!get_referred_path(buf, &junction, &consumedcnt,
 			       &self_referral))
 		return -1;
@@ -829,7 +829,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 			return False;
 		}
 
-		safe_strcpy(ref->alternate_path, alt_path, sizeof(pstring));
+		pstrcpy(ref->alternate_path, alt_path);
 		ref->proximity = 0;
 		ref->ttl = REFERRAL_TTL;
 		cnt++;
