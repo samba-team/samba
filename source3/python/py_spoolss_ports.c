@@ -44,8 +44,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
