@@ -654,7 +654,7 @@ typedef struct spool_notify_info_data
 		struct
 		{
 			uint32 length;
-			uint16 string[1024];
+			uint16 *string;
 		}
 		data;
 	}
