@@ -189,8 +189,8 @@ krb5_to4 (krb5_ccache id)
 	get_v4_tgt = krb5_config_get_bool_default(context, NULL,
 						  get_v4_tgt,
 						  "realms",
-						  krb5_princ_realm(context,
-								   princ),
+						  *krb5_princ_realm(context,
+								    princ),
 						  "krb4_get_tickets",
 						  NULL);
 	krb5_free_principal(context, princ);
