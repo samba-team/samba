@@ -1,3 +1,8 @@
+1999-08-06  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (sockaddr_storage): cater for those that have
+ 	v6-support also
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* inet_ntop.c (inet_ntop_v4): remember to call ntohl
