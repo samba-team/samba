@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -54,7 +54,7 @@ writev(int d, const struct iovec *iov, int iovcnt)
     for(i = 0; i < iovcnt; ++i)
 	tot += iov[i].iov_len;
     buf = malloc(tot);
-    if (buf == NULL) {
+    if (tot != 0 && buf == NULL) {
 	errno = ENOMEM;
 	return -1;
     }
