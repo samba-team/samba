@@ -441,7 +441,6 @@ static void usage(char *pname)
 	extern pstring 		global_myname;
 	BOOL 			got_pass = False;
 	BOOL 			interactive = True;
-	BOOL 			have_ip = False;
 	int 			opt;
 	int 			olddebug;
 	pstring 		cmdstr = "", 
@@ -493,7 +492,6 @@ static void usage(char *pname)
 
 		case 'I':
 			dest_ip = *interpret_addr2(optarg);
-			have_ip = True;
 			break;
 			
 		case 'l':
@@ -598,10 +596,9 @@ static void usage(char *pname)
 	if (cmdstr[0]) {
 		char 	*cmd;
 		char 	*p = cmdstr;
-		uint32 	result;
 
 		while((cmd=next_command(&p)) != NULL) {
-			result = process_cmd(&cli, cmd);
+			process_cmd(&cli, cmd);
 		}
 
 		return 0;
@@ -611,7 +608,6 @@ static void usage(char *pname)
 	/* Loop around accepting commands */
 	while(1) {
 		pstring prompt, cmd;
-		uint32 result;
 
 		ZERO_STRUCT(cmd);
 		
@@ -628,7 +624,7 @@ static void usage(char *pname)
 
 		cmd[strlen(cmd) - 1] = '\0';
 #endif
-		result = process_cmd(&cli, cmd);
+		process_cmd(&cli, cmd);
 	}
 	
 	return 0;
