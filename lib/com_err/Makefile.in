@@ -53,6 +53,8 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
+	$(MKINSTALLDIRS) $(bindir)
+	$(INSTALL_DATA) -m 0555 $(PROGS) $(bindir)
 
 uninstall:
 	rm -f $(libdir)/$(LIB)
