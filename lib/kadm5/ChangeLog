@@ -1,5 +1,9 @@
 2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* log.c: check return values from krb5_data_alloc
+	
+2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+
 	* dump_log.c (print_entry): check return values from
 	krb5_data_alloc
 
