@@ -247,5 +247,6 @@ BOOL reset_stat_cache( void )
 		return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
 	}
 	hash_clear(&stat_cache);
-	return True;
+	return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+
 } /* reset_stat_cache  */
