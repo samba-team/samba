@@ -161,11 +161,17 @@ AC_CHECK_FUNCS([				\
 	getconfattr				\
 	getrlimit				\
 	getspnam				\
+	strsvis					\
+	strvis					\
+	strvisx					\
+	strvisx					\
+	svis					\
 	sysconf					\
 	sysctl					\
 	uname					\
 	vasnprintf				\
 	vasprintf				\
+	vis					\
 ])
 
 if test "$ac_cv_func_cgetent" = no; then
