@@ -1,6 +1,6 @@
                  ================================
-                 Release Notes for Samba 3.0.2rc1
-                         January 16, 2004
+                 Release Notes for Samba 3.0.2rc2
+                         January XX, 2004
                  ================================
 
 This is a release candidate snapshot of the Samba 3.0.2 code 
@@ -17,23 +17,53 @@ exact updates.
 
 Common bugs fixed in this preview release include:
 
-  o Better separation of WINS and DNS queries for domain 
-    controllers.
-  o Issues with nss_winbind FreeBSD and Solaris.
-  o Several crash bugs in smbd and winbindd.
-  o Output formatting fixes for smbclient for better compatibility
-    with scripts based on the 2.2 version.
+  o <FILL THIS IN>
 
 
 ######################################################################
 Changes
 #######
-Changes since 3.0.2pre1
------------------------
+Changes since 3.0.2rc1
+----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
 
+o   Jeremy Allison <jra@samba.org>
+
+
+o   Andrew Bartlet <abartlet@samba.org>
+
+
+o   Alexander Bokovoy <ab@samba.org>
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+
+
+o   Volker Lendecke <vl@samba.org>
+
+
+o   Herb Lewis <herb@samba.org>
+
+
+o   Jianliang Lu <j.lu@tiesse.com>
+
+
+o   Jim McDonough <jmcd@samba.org>
+
+o   Stefan Metzmacher <metze@samba.org>
+
+
+o   Tim Potter <tpot@samba.org>
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+
+
+
+Changes since 3.0.2pre1
+-----------------------
 
 o   Jeremy Allison <jra@samba.org>
     * Revert change that broke Exchange clear text samlogons.
