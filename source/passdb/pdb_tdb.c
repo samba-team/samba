@@ -37,7 +37,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#define TDBSAM_VERSION	1	/* Most recent TDBSAM version */
+#define TDBSAM_VERSION	2	/* Most recent TDBSAM version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
@@ -124,6 +124,9 @@ static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from)
 					break;
 				case 1:
 					ret = init_sam_from_buffer_v1(user, (uint8 *)data.dptr, data.dsize);
+					break;
+				case 2:
+					ret = init_sam_from_buffer_v2(user, (uint8 *)data.dptr, data.dsize);
 					break;
 				default:
 					/* unknown tdbsam version */
