@@ -1440,6 +1440,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	int len;
 	time_t c_time;
 
+	if (!params) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
 	if (tran_call == TRANSACT2_QFILEINFO) {
 		files_struct *fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);
