@@ -680,7 +680,7 @@ void process_blocking_lock_queue(time_t t)
 			continue;
 		}
 
-		if(!set_current_service(conn,True)) {
+		if(!set_current_service(conn,SVAL(blr->inbuf,smb_flg),True)) {
 			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
 			/*
 			 * Remove the entry and return an error to the client.

@@ -28,7 +28,7 @@ extern userdom_struct current_user_info;
  Load parameters specific to a connection/service.
 ****************************************************************************/
 
-BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
+BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 {
 	extern char magic_char;
 	static connection_struct *last_conn;
@@ -55,6 +55,18 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 		return(True);
 
 	last_conn = conn;
+
+	/* Obey the client case sensitivity requests - only for clients that support it. */
+	if (lp_casesensitive(snum) == Auto) {
+		/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */
+		enum remote_arch_types ra_type = get_remote_arch();
+		if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+			/* Client can't support per-packet case sensitive pathnames. */
+			conn->case_sensitive = False;
+		} else {
+			conn->case_sensitive = !(flags & FLAG_CASELESS_PATHNAMES);
+		}
+	}
 
 	magic_char = lp_magicchar(snum);
 	return(True);
@@ -347,7 +359,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->dirptr = NULL;
 
 	/* Case options for the share. */
-	conn->case_sensitive = lp_casesensitive(snum);
+	if (lp_casesensitive(snum) == Auto) {
+		/* We will be setting this per packet. Set to be case insensitive for now. */
+		conn->case_sensitive = False;
+	} else {
+		conn->case_sensitive = (BOOL)lp_casesensitive(snum);
+	}
+
 	conn->case_preserve = lp_preservecase(snum);
 	conn->short_case_preserve = lp_shortpreservecase(snum);
 

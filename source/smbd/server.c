@@ -494,18 +494,16 @@ BOOL reload_services(BOOL test)
 
 	load_interfaces();
 
-	{
-		if (smbd_server_fd() != -1) {      
-			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-			set_socket_options(smbd_server_fd(), user_socket_options);
-		}
+	if (smbd_server_fd() != -1) {      
+		set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+		set_socket_options(smbd_server_fd(), user_socket_options);
 	}
 
 	mangle_reset_cache();
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
-	set_current_service(NULL,True);
+	set_current_service(NULL,0,True);
 
 	return(ret);
 }

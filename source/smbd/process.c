@@ -934,7 +934,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
 		/* load service specific parameters */
-		if (conn && !set_current_service(conn,(flags & (AS_USER|DO_CHDIR)?True:False)))
+		if (conn && !set_current_service(conn,SVAL(inbuf,smb_flg),(flags & (AS_USER|DO_CHDIR)?True:False)))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
 		/* does this protocol need to be run as guest? */

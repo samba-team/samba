@@ -164,7 +164,7 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 
 	if (!change_to_user(conn,vuid))
 		return True;
-	if (!set_current_service(conn,True)) {
+	if (!set_current_service(conn,FLAG_CASELESS_PATHNAMES,True)) {
 		change_to_root_user();
 		return True;
 	}
