@@ -100,7 +100,7 @@ DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const c
 
 SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
-	struct dirent *result;
+	SMB_STRUCT_DIRENT *result;
 
 	START_PROFILE(syscall_readdir);
 	result = sys_readdir(dirp);
