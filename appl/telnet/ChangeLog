@@ -1,3 +1,7 @@
+2002-03-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* telnet/commands.c: fix an old cut-n-paste typo (via debian)
+
 2002-02-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* telnet/telnet.c: print a more informative message than "done"
