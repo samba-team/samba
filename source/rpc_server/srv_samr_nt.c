@@ -75,8 +75,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
         }
 
         user_name_len = strlen(pwd->smb_name)+1;
-        init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
-        init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
+        init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pwd->smb_name, user_name_len);
+        init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
         pw_buf[(*num_entries)].user_rid = pwd->user_rid;
         memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
@@ -302,8 +302,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 			
 			pw_rid = pdb_uid_to_user_rid(pwd->pw_uid);
 			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
-			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->pw_name, user_name_len);
-			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
+			init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pwd->pw_name, user_name_len);
+			init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
 			pw_buf[(*num_entries)].user_rid = pw_rid;
 			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
@@ -322,8 +322,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		        (*num_entries < max_num_entries)) {
 			user_name_len = strlen(unmap_name);
 			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
-			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), unmap_name, user_name_len);
-			init_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len);
+			init_unistr2(&pw_buf[(*num_entries)].uni_user_name, unmap_name, user_name_len);
+			init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
 			pw_buf[(*num_entries)].user_rid = pw_rid;
 			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 
@@ -381,7 +381,7 @@ uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_D
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the connection policy handle. */
-	if (find_lsa_policy_by_hnd(q_u->pol) == -1))
+	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -408,20 +408,66 @@ uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, S
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->user_pol) == -1)) {
+	if (find_lsa_policy_by_hnd(&q_u->user_pol) == -1) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* find the user's rid */
-	if (get_lsa_policy_samr_rid(&q_u->user_pol) == 0xffffffff)) {
+	if (get_lsa_policy_samr_rid(&q_u->user_pol) == 0xffffffff) {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	init_samr_r_get_usrdom_pwinfo(&r_u, NT_STATUS_NOPROBLEMO);
+	init_samr_r_get_usrdom_pwinfo(r_u, NT_STATUS_NOPROBLEMO);
 
 	DEBUG(5,("_samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+/*******************************************************************
+ samr_make_usr_obj_sd
+ ********************************************************************/
+
+static uint32 samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC_BUF **buf, DOM_SID *usr_sid)
+{
+	extern DOM_SID global_sid_Builtin;
+	extern DOM_SID global_sid_World;
+    DOM_SID adm_sid;
+    DOM_SID act_sid;
+
+    SEC_ACE ace[4];
+    SEC_ACCESS mask;
+
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+
+    sid_copy(&adm_sid, &global_sid_Builtin);
+    sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
+
+    sid_copy(&act_sid, &global_sid_Builtin);
+    sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
+
+	init_sec_access(&mask, 0x2035b);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	init_sec_access(&mask, 0xf07ff);
+    init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+    init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+    init_sec_access(&mask,0x20044);
+    init_sec_ace(&ace[3], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	if((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 4, ace)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if((psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, &sd_size)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if((*buf = make_sec_desc_buf(ctx, sd_size, psd)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+    return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -430,85 +476,106 @@ uint32 _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, S
 
 uint32 _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QUERY_SEC_OBJ *r_u)
 {
-	prs_struct *rdata = &p->out_data.rdata;
 	DOM_SID pol_sid;
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	/* find the policy handle.  open a policy on it. */
-	if ((find_lsa_policy_by_hnd(&q_u->user_pol)) == -1))
+	if ((find_lsa_policy_by_hnd(&q_u->user_pol)) == -1)
 		return NT_STATUS_INVALID_HANDLE;
-
-HERE !!!
 
 	/* Get the SID. */
 	if (!get_lsa_policy_samr_sid(&q_u->user_pol, &pol_sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	{
-		DOM_SID user_sid;
-		DOM_SID everyone_sid;
+	r_u->status = samr_make_usr_obj_sd(p->mem_ctx, &r_u->buf, &pol_sid);
 
-		user_sid = global_sam_sid;
+	if (r_u->status == NT_STATUS_NOPROBLEMO)
+		r_u->ptr = 1;
 
-		SMB_ASSERT_ARRAY(user_sid.sub_auths, user_sid.num_auths+1);
+	return r_u->status;
+}
 
-		/*
-		 * Add the user RID.
-		 */
-		user_sid.sub_auths[user_sid.num_auths++] = rid;
-		
-			string_to_sid(&everyone_sid, "S-1-1");
+/*******************************************************************
+makes a SAM_ENTRY / UNISTR2* structure.
+********************************************************************/
 
-			/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
-			/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
-			init_dom_sid3(&(sid[0]), 0x035b, 0x0002, &everyone_sid);
-			init_dom_sid3(&(sid[1]), 0x0044, 0x0002, &user_sid);
+static void make_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_acct_name_pp,
+                uint32 num_sam_entries, SAM_USER_INFO_21 *pass)
+{
+	uint32 i;
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_acct_name;
+
+	*sam_pp = NULL;
+	*uni_acct_name_pp = NULL;
+
+	if (num_sam_entries == 0)
+		return;
+
+	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+
+	uni_acct_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+
+	if (sam == NULL || uni_acct_name == NULL) {
+		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
+		return;
 	}
 
-	init_samr_r_unknown_3(&r_u,
-				0x0001, 0x8004,
-				0x00000014, 0x0002, 0x0070,
-				2, sid, status);
+	for (i = 0; i < num_sam_entries; i++) {
+		int len = pass[i].uni_user_name.uni_str_len/2; /* JRA - I think this should be non-unicode len. It's not in the TNG code */
 
-	DEBUG(5,("samr_unknown_3: %d\n", __LINE__));
+		init_sam_entry(&sam[i], len, pass[i].user_rid);
+		copy_unistr2(&uni_acct_name[i], &pass[i].uni_user_name);
+	}
 
-	/* store the response in the SMB stream */
-	if(!samr_io_r_unknown_3("", &r_u, rdata, 0))
-		return False;
-
-	DEBUG(5,("samr_unknown_3: %d\n", __LINE__));
-
-	return NT_STATUS_NOPROBLEMO;
+	*sam_pp = sam;
+	*uni_acct_name_pp = uni_acct_name;
 }
 
 /*******************************************************************
  samr_reply_enum_dom_users
  ********************************************************************/
 
-static uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_ENUM_DOM_USERS *r_u)
+uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_ENUM_DOM_USERS *r_u)
 {
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries;
-	int total_entries;
+	int num_entries = 0;
+	int total_entries = 0;
+	BOOL ret;
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	r_u->total_num_entries = 0;
-
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	get_sampwd_entries(pass, 0, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
+	ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+								MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root();
 
-	init_samr_r_enum_dom_users(r_u, total_entries,
-	                           q_u->unknown_0, num_entries,
-	                           pass, NT_STATUS_NOPROBLEMO);
+	if (!ret)
+		return NT_STATUS_ACCESS_DENIED;
+
+	/* 
+	 * Note from JRA. total_entries is not being used here. Currently if there is a
+	 * large user base then it looks like NT will enumerate until get_sampwd_entries
+	 * returns False due to num_entries being zero. This will cause an access denied
+	 * return. I don't think this is right and needs further investigation. Note that
+	 * this is also the same in the TNG code (I don't think that has been tested with
+	 * a very large user list as MAX_SAM_ENTRIES is set to 600).
+	 * 
+	 * I also think that one of the 'num_entries' return parameters is probably
+	 * the "max entries" parameter - but in the TNG code they're all currently set to the same
+	 * value (again I think this is wrong).
+	 */
+
+	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_acct_name, num_entries, pass);
+
+	init_samr_r_enum_dom_users(r_u, q_u->start_idx + num_entries, num_entries);
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
@@ -517,33 +584,32 @@ static uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, 
 
 /*******************************************************************
  samr_reply_enum_dom_groups
+ Only reply with one group - domain admins. This must be fixed for
+ a real PDC. JRA.
  ********************************************************************/
 
-static uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
+uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	SAM_USER_INFO_21 pass;
 	int num_entries;
-	BOOL got_grps;
 	char *dummy_group = "Domain Admins";
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-	r_u->num_entries = 0;
-
 	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
 		return NT_STATUS_INVALID_HANDLE;
 
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
-	got_grps = True;
 	num_entries = 1;
-	ZERO_STRUCTP(&pass[0]);
-	init_unistr2(&pass[0].uni_user_name, dummy_group, strlen(dummy_group)+1);
-	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
+	ZERO_STRUCT(pass);
+	init_unistr2(&pass.uni_user_name, dummy_group, strlen(dummy_group)+1);
+	pass.user_rid = DOMAIN_GROUP_RID_ADMINS;
 
-	if (got_grps)
-		init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries, pass, NT_STATUS_NOPROBLEMO);
+	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &pass);
+
+	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
 
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 
@@ -554,13 +620,14 @@ static uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u
  samr_reply_enum_dom_aliases
  ********************************************************************/
 
-static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
+uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
 {
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
 	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
 	fstring sam_sid_str;
+	uint32 start_idx = q_u->start_idx;
 	struct group *grp;
 	
 	r_u->status = NT_STATUS_NOPROBLEMO;
@@ -613,7 +680,17 @@ static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q
 			if ( i < num_entries )
 				continue; /* rid was there, dup! */
 
-			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
+			/* JRA - added this for large group db enumeration... */
+
+        	if (start_idx > 0) {
+				/* skip the requested number of entries.
+					not very efficient, but hey...
+				*/
+				start_idx--;
+				continue;
+			}
+
+			init_unistr2(&pass[num_entries].uni_user_name, name, strlen(name)+1);
 			pass[num_entries].user_rid = trid;
 			num_entries++;
 		}
@@ -621,7 +698,9 @@ static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q
 		endgrent();
 	}
 		
-	init_samr_r_enum_dom_aliases(r_u, num_entries, pass, NT_STATUS_NOPROBLEMO);
+	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, pass);
+
+	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx, num_entries);
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
@@ -632,7 +711,7 @@ static uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q
  samr_reply_query_dispinfo
  ********************************************************************/
 
-static uint32 _samr_query_dispinfo(pipes_struct p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
+uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
 {
     SAM_INFO_CTR ctr;
     SAM_INFO_1 info1;
@@ -746,11 +825,12 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
     return True;
 }
 
+#if 0
 /*******************************************************************
  samr_reply_lookup_ids
  ********************************************************************/
 
-uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_IDS *r_u)
+ uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_IDS *r_u)
 {
     uint32 rid[MAX_SAM_ENTRIES];
     int num_rids = q_u->num_sids1;
@@ -803,6 +883,7 @@ uint32 _samr_lookup_ids(pipes_struct *p, SAMR_Q_LOOKUP_IDS *q_u, SAMR_R_LOOKUP_I
 
     return r_u->status;
 }
+#endif
 
 /*******************************************************************
  _samr_lookup_names
@@ -891,11 +972,12 @@ uint32 _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_
     return r_u->status;
 }
 
+#if 0
 /*******************************************************************
  samr_reply_unknown_38
  ********************************************************************/
 
-uint32 _samr_unknown_38(pipes_struct *p, SAMR_Q_UNKNOWN_38 *q_u, SAMR_R_UNKNOWN_38 *r_u)
+ uint32 _samr_unknown_38(pipes_struct *p, SAMR_Q_UNKNOWN_38 *q_u, SAMR_R_UNKNOWN_38 *r_u)
 {
     DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
 
@@ -906,12 +988,13 @@ uint32 _samr_unknown_38(pipes_struct *p, SAMR_Q_UNKNOWN_38 *q_u, SAMR_R_UNKNOWN_
     DEBUG(5,("_samr_unknown_38: %d\n", __LINE__));
     return r_u->status;
 }
+#endif
 
 /*******************************************************************
  _samr_lookup_rids
  ********************************************************************/
 
-uint32 _samr_lookup_rids(pipe_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
+uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
     fstring group_names[MAX_SAM_ENTRIES];
     uint32  group_attrs[MAX_SAM_ENTRIES];
@@ -947,7 +1030,7 @@ uint32 _samr_lookup_rids(pipe_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_
  _api_samr_open_user
  ********************************************************************/
 
-uint32 _api_samr_open_user(pipe_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
+uint32 _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
 {
     struct sam_passwd *sam_pass;
     DOM_SID sid;
@@ -1031,6 +1114,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 /*************************************************************************
  get_user_info_21
  *************************************************************************/
+
 static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 {
     NTTIME dummy_time;
@@ -1106,7 +1190,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
  _samr_query_userinfo
  ********************************************************************/
 
-uint32 _samr_query_userinfo(pipe_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_QUERY_USERINFO *r_u)
+uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_QUERY_USERINFO *r_u)
 {
 #if 0
     SAM_USER_INFO_11 id11;
@@ -1510,6 +1594,7 @@ uint32 _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN
 /*******************************************************************
  set_user_info_10
  ********************************************************************/
+
 static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
@@ -1536,6 +1621,7 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 /*******************************************************************
  set_user_info_12
  ********************************************************************/
+
 static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
@@ -1569,6 +1655,7 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 /*******************************************************************
  set_user_info_21
  ********************************************************************/
+
 static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
@@ -1610,6 +1697,7 @@ static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
 /*******************************************************************
  set_user_info_23
  ********************************************************************/
+
 static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
@@ -1663,6 +1751,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
+
 static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
@@ -1714,11 +1803,8 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
  samr_reply_set_userinfo
  ********************************************************************/
 
-uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, 
-                                 SAM_USERINFO_CTR *ctr, pipes_struct *p)
+uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_USERINFO *r_u)
 {
-	(&q_u.pol, q_u.switch_value, &ctr, p);
-
 	uint32 rid = 0x0;
 	DOM_SID sid;
 	struct current_user user;
@@ -1810,7 +1896,7 @@ uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
  samr_reply_set_userinfo2
  ********************************************************************/
 
-static uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
+uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
 {
 	DOM_SID sid;
 	uint32 rid = 0x0;
@@ -1862,4 +1948,174 @@ static uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SA
 	}
 
 	return r_u->status;
+}
+
+/*********************************************************************
+ _samr_query_aliasmem
+*********************************************************************/
+
+uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
+{
+	DEBUG(0,("_samr_query_useraliases: Not yet implemented.\n"));
+	return False;
+}
+
+/*********************************************************************
+ _samr_query_aliasmem
+*********************************************************************/
+
+uint32 _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
+{
+  DEBUG(0,("_samr_query_aliasmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_query_groupmem
+*********************************************************************/
+
+uint32 _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_QUERY_GROUPMEM *r_u)
+{
+  DEBUG(0,("_samr_query_groupmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_add_aliasmem
+*********************************************************************/
+
+uint32 _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_ADD_ALIASMEM *r_u)
+{
+  DEBUG(0,("_samr_add_aliasmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_del_aliasmem
+*********************************************************************/
+
+uint32 _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DEL_ALIASMEM *r_u)
+{
+  DEBUG(0,("_samr_del_aliasmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_add_groupmem
+*********************************************************************/
+
+uint32 _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_ADD_GROUPMEM *r_u)
+{
+  DEBUG(0,("_samr_add_groupmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_del_groupmem
+*********************************************************************/
+
+uint32 _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DEL_GROUPMEM *r_u)
+{
+  DEBUG(0,("_samr_del_groupmem: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_delete_dom_user
+*********************************************************************/
+
+uint32 _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAMR_R_DELETE_DOM_USER *r_u )
+{
+  DEBUG(0,("_samr_delete_dom_user: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_delete_dom_group
+*********************************************************************/
+
+uint32 _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAMR_R_DELETE_DOM_GROUP *r_u)
+{
+  DEBUG(0,("_samr_delete_dom_group: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_delete_dom_alias
+*********************************************************************/
+
+uint32 _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, SAMR_R_DELETE_DOM_ALIAS *r_u)
+{
+  DEBUG(0,("_samr_delete_dom_alias: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_create_dom_group
+*********************************************************************/
+
+uint32 _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, SAMR_R_CREATE_DOM_GROUP *r_u)
+{
+  DEBUG(0,("_samr_create_dom_group: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_create_dom_alias
+*********************************************************************/
+
+uint32 _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, SAMR_R_CREATE_DOM_ALIAS *r_u)
+{
+  DEBUG(0,("_samr_create_dom_alias: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_query_groupinfo
+*********************************************************************/
+
+uint32 _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_R_QUERY_GROUPINFO *r_u)
+{
+  DEBUG(0,("_samr_query_groupinfo: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_set_groupinfo
+*********************************************************************/
+
+uint32 _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SET_GROUPINFO *r_u)
+{
+  DEBUG(0,("_samr_set_groupinfo: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_get_dom_pwinfo
+*********************************************************************/
+
+uint32 _samr_get_dom_pwinfo(pipes_struct *p, SAMR_Q_GET_DOM_PWINFO *q_u, SAMR_R_GET_DOM_PWINFO *r_u)
+{
+  DEBUG(0,("_samr_get_dom_pwinfo: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_open_group
+*********************************************************************/
+
+uint32 _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_GROUP *r_u)
+{
+  DEBUG(0,("_samr_open_group: Not yet implemented.\n"));
+  return False;
+}
+
+/*********************************************************************
+ _samr_unknown_2d
+*********************************************************************/
+
+uint32 _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOWN_2D *r_u)
+{
+  DEBUG(0,("_samr_unknown_2d: Not yet implemented.\n"));
+  return False;
 }
