@@ -1776,6 +1776,7 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, const uint8 *hours)
 
 BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 {
+	time_t expire;
 
 	if (!sampass)
 		return False;
@@ -1783,10 +1784,17 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 	if (!pdb_set_pass_last_set_time (sampass, time(NULL)))
 		return False;
 
-	if (!pdb_set_pass_must_change_time (sampass, 
+	account_policy_get(AP_MAX_PASSWORD_AGE, (int *)&expire);
+
+	if (expire==-1) {
+		if (!pdb_set_pass_must_change_time (sampass, 0))
+			return False;
+	} else {
+		if (!pdb_set_pass_must_change_time (sampass, 
 					    pdb_get_pass_last_set_time(sampass)
-					    + MAX_PASSWORD_AGE))
-		return False;
+					    + expire))
+			return False;
+	}
 	
 	return True;
 }

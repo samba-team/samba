@@ -345,8 +345,15 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 	DEBUG(5, ("init_samr_r_get_usrdom_pwinfo\n"));
 	
 	r_u->unknown_0 = 0x0000;
-    r_u->unknown_1 = 0x0015;
-    r_u->unknown_2 = 0x00000000;
+
+	/*
+	 * used to be 	
+	 * r_u->unknown_1 = 0x0015;
+	 * but for trusts.
+	 */
+	r_u->unknown_1 = 0x01D1;
+
+	r_u->unknown_2 = 0x00000000;
 
 	r_u->status = status;
 }
@@ -461,10 +468,10 @@ BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info3(SAM_UNK_INFO_3 * u_3)
+void init_unk_info3(SAM_UNK_INFO_3 *u_3, NTTIME nt_logout)
 {
-	u_3->unknown_0 = 0x00000000;
-	u_3->unknown_1 = 0x80000000;
+	u_3->logout.low = nt_logout.low;
+	u_3->logout.high = nt_logout.high;
 }
 
 /*******************************************************************
@@ -480,9 +487,7 @@ static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 * u_3,
 	prs_debug(ps, depth, desc, "sam_io_unk_info3");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_3->unknown_0))	/* 0x0000 0000 */
-		return False;
-	if(!prs_uint32("unknown_1", ps, depth, &u_3->unknown_1))	/* 0x8000 0000 */
+	if(!smb_io_time("logout", &u_3->logout, ps, depth))
 		return False;
 
 	return True;
@@ -554,14 +559,14 @@ static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info12(SAM_UNK_INFO_12 * u_12)
+void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout)
 {
-	u_12->duration.low = 0xcf1dcc00;
-	u_12->duration.high = 0xfffffffb;
-	u_12->reset_count.low = 0xcf1dcc00;
-	u_12->reset_count.high = 0xfffffffb;
+	u_12->duration.low = nt_lock_duration.low;
+	u_12->duration.high = nt_lock_duration.high;
+	u_12->reset_count.low = nt_reset_time.low;
+	u_12->reset_count.high = nt_reset_time.high;
 
-	u_12->bad_attempt_lockout = 0x0000;
+	u_12->bad_attempt_lockout = lockout;
 }
 
 /*******************************************************************
@@ -719,19 +724,20 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info1(SAM_UNK_INFO_1 * u_1)
+void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
+		    uint32 flag, NTTIME nt_expire, NTTIME nt_min_age)
 {
-	u_1->min_length_password = 0;
-	u_1->password_history = 0;
-	u_1->flag = 0;
+	u_1->min_length_password = min_pass_len;
+	u_1->password_history = pass_hist;
+	u_1->flag = flag;
 	
 	/* password never expire */
-	u_1->expire.high = 0x80000000;
-	u_1->expire.low = 0;
+	u_1->expire.high = nt_expire.high;
+	u_1->expire.low = nt_expire.low;
 	
 	/* can change the password now */
-	u_1->min_passwordage.high = 0;
-	u_1->min_passwordage.low = 0;
+	u_1->min_passwordage.high = nt_min_age.high;
+	u_1->min_passwordage.low = nt_min_age.low;
 	
 }
 
