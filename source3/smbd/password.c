@@ -828,15 +828,16 @@ allows this user from this machine
 ****************************************************************************/
 static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 {
-  pstring buf;
   int plus_allowed = 1;
   char *file_host;
   char *file_user;
-  FILE *fp = sys_fopen(equiv_file, "r");
+  char **lines = file_lines_load(equiv_file, NULL);
+  int i;
+
   DEBUG(5, ("check_user_equiv %s %s %s\n", user, remote, equiv_file));
-  if (! fp) return False;
-  while(fgets(buf, sizeof(buf), fp)) 
-  {
+  if (! lines) return False;
+  for (i=0; lines[i]; i++) {
+    char *buf = lines[i];
     trim_string(buf," "," ");
 
     if (buf[0] != '#' && buf[0] != '\n') 
@@ -857,7 +858,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	  {
 	    /* a bare plus means everbody allowed */
 	    DEBUG(6, ("check_user_equiv everybody allowed\n"));
-	    fclose(fp);
+	    file_lines_free(lines);
 	    return True;
 	  }
 	}
@@ -912,17 +913,17 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	  /* is it this user */
 	  if (file_user == 0 || strequal(user, file_user)) 
 	    {
-	      fclose(fp);
 	      DEBUG(5, ("check_user_equiv matched %s%s %s\n",
 			(plus ? "+" : "-"), file_host,
 			(file_user ? file_user : "")));
+	      file_lines_free(lines);
 	      return (plus ? True : False);
 	    }
 	}
       }
     }
   }
-  fclose(fp);
+  file_lines_free(lines);
   return False;
 }
 
