@@ -111,7 +111,7 @@ static void ScanQconfig_fn(char *psz,void (*fn)(char *, char *))
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -181,7 +181,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	if ((pfile = x_fopen(psz, O_RDONLY, 0)) == NULL)
 	{
 	      DEBUG(0,( "Unable to open qconfig file %s for read!\n", psz));
-	      free(pName);
+	      SAFE_FREE(pName);
 	      return(False);
 	}
 	slprintf(pName, iLg + 9, "%s:",pszPrintername);
@@ -189,7 +189,7 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 	/*DEBUG(3,( " Looking for entry %s\n",pName));*/
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+	for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
 	{
 		if (*line == '*' || *line == 0)
 		continue;
@@ -208,8 +208,8 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	 {
 		  	   /* name is found without stanza device  */
 		  	   /* probably a good printer ???		*/
-		  	   free (line);
-		  	   free(pName);
+		  	   SAFE_FREE (line);
+		  	   SAFE_FREE(pName);
 		  	   fclose(pfile);
 		  	   return(True);
 		  	  }
@@ -222,15 +222,15 @@ static BOOL ScanQconfig(char *psz,char *pszPrintername)
 		  	  else if (strlocate(line,"device"))
 		  	  {
 		  		/* it's a good virtual printer */
-		  		free (line);
-		  		free(pName);
+		  		SAFE_FREE (line);
+		  		SAFE_FREE(pName);
 		  		fclose(pfile);
 		  		return(True);
 		  	  }
 		  	  break;
 		}
 	}
-	free (pName);
+	SAFE_FREE (pName);
 	x_fclose(pfile);
 	return(False);
 }
@@ -288,7 +288,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
       return(False);
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
     {
       if (*line == '#' || *line == 0)
 	continue;
@@ -307,7 +307,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	    {
 	      /* normalise the case */
 	      pstrcpy(pszPrintername,p);
-	      free(line);
+	      SAFE_FREE(line);
 	      x_fclose(pfile);
 	      return(True);	      
 	    }
@@ -369,7 +369,7 @@ void pcap_printer_fn(void (*fn)(char *, char *))
       return;
     }
 
-  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); free(line))
+  for (;(line = fgets_slash(NULL,sizeof(pstring),pfile)); SAFE_FREE(line))
     {
       if (*line == '#' || *line == 0)
 	continue;

@@ -695,6 +695,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	
 	while ((available_space > 0)  && (i < DM_NUM_OPTIONAL_FIELDS))
 	{
+		DEBUG(10, ("spoolss_io_devmode: [%d] bytes left to parse in devmode\n", available_space));
 		if (!prs_uint32(opt_fields[i].name, ps, depth, opt_fields[i].field))
 			return False;
 		available_space -= sizeof(uint32);
@@ -1115,6 +1116,7 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
         q_u->handle = *handle;
 	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
         q_u->size = size;
+
         return True;
 }
 
