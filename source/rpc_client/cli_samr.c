@@ -377,6 +377,42 @@ BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a SAMR query alias info
+****************************************************************************/
+BOOL get_samr_query_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 alias_rid, ALIAS_INFO_CTR *ctr)
+{
+	POLICY_HND pol_open_alias;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || ctr == NULL) return False;
+
+	bzero(ctr, sizeof(*ctr));
+
+	/* send open domain (on alias sid) */
+	if (!samr_open_alias(cli, fnum,
+				pol_open_domain,
+				0x02000000, alias_rid, &pol_open_alias))
+	{
+		return False;
+	}
+
+	/* send alias info query */
+	if (!samr_query_aliasinfo(cli, fnum,
+				&pol_open_alias,
+				info_level, ctr))
+	{
+		DEBUG(5,("samr_query_aliasinfo: error in query alias info, level 0x%x\n",
+		          info_level));
+		ret = False;
+	}
+
+	return samr_close(cli, fnum,&pol_open_alias) && ret;
+}
+
+/****************************************************************************
 do a SAMR change user password command
 ****************************************************************************/
 BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
@@ -640,21 +676,24 @@ uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SAMR enumerate aliases
 ****************************************************************************/
-BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
+uint32 samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
-				uint32 start_idx, uint32 size,
+				uint32 *start_idx, uint32 size,
 				struct acct_info **sam,
 				uint32 *num_sam_aliases)
 {
+	uint32 status = 0x0;
 	prs_struct data;
 	prs_struct rdata;
 
 	SAMR_Q_ENUM_DOM_ALIASES q_e;
-	BOOL valid_pol = False;
 
 	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
 
-	if (pol == NULL || num_sam_aliases == NULL) return False;
+	if (pol == NULL || num_sam_aliases == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER | 0xC0000000;
+	}
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_ALIASES */
 
@@ -662,7 +701,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_enum_dom_aliases(&q_e, pol, start_idx, size);
+	make_samr_q_enum_dom_aliases(&q_e, pol, *start_idx, size);
 
 	/* turn parameters into data stream */
 	samr_io_q_enum_dom_aliases("", &q_e, &data, 0);
@@ -680,35 +719,31 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 		{
 			/* report error code */
 			DEBUG(4,("SAMR_R_ENUM_DOM_ALIASES: %s\n", get_nt_error_msg(r_e.status)));
-			p = False;
+			p = (r_e.status == STATUS_MORE_ENTRIES);
 		}
 
 		if (p)
 		{
-			uint32 i;
-			int name_idx = 0;
+			uint32 i = (*num_sam_aliases);
+			uint32 j = 0;
+			uint32 name_idx = 0;
 
-			*num_sam_aliases = r_e.num_entries2;
-			if (*num_sam_aliases > MAX_SAM_ENTRIES)
-			{
-				*num_sam_aliases = MAX_SAM_ENTRIES;
-				DEBUG(2,("samr_enum_dom_aliases: sam user entries limited to %d\n",
-				          *num_sam_aliases));
-			}
-
-			*sam = (struct acct_info*) malloc(sizeof(struct acct_info) * (*num_sam_aliases));
+			(*num_sam_aliases) += r_e.num_entries2;
+			(*sam) = (struct acct_info*) Realloc((*sam),
+			       sizeof(struct acct_info) * (*num_sam_aliases));
 				    
 			if ((*sam) == NULL)
 			{
-				*num_sam_aliases = 0;
+				(*num_sam_aliases) = 0;
+				i = 0;
 			}
 
-			for (i = 0; i < *num_sam_aliases; i++)
+			for (j = 0; i < (*num_sam_aliases) && j < r_e.num_entries2; j++, i++)
 			{
-				(*sam)[i].rid = r_e.sam[i].rid;
+				(*sam)[i].rid = r_e.sam[j].rid;
 				(*sam)[i].acct_name[0] = 0;
 				(*sam)[i].acct_desc[0] = 0;
-				if (r_e.sam[i].hdr_name.buffer)
+				if (r_e.sam[j].hdr_name.buffer)
 				{
 					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_grp_name[name_idx], sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
@@ -716,14 +751,14 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 				DEBUG(5,("samr_enum_dom_aliases: idx: %4d rid: %8x acct: %s\n",
 				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
-			valid_pol = True;
+			(*start_idx) = r_e.next_idx;
 		}
 	}
 
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
 
-	return valid_pol;
+	return status;
 }
 
 /****************************************************************************
@@ -1290,17 +1325,17 @@ BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum,
 	return valid_pol;
 }
 
-#if 0
 /****************************************************************************
 do a SAMR Get Alias Info
 ****************************************************************************/
-BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
+BOOL samr_query_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *alias_pol, uint16 switch_value,
+				ALIAS_INFO_CTR *ctr)
 {
 	prs_struct data;
 	prs_struct rdata;
 
-	SAMR_Q_GET_ALIASINFO q_o;
+	SAMR_Q_QUERY_ALIASINFO q_o;
 	BOOL valid_pol = False;
 
 	if (alias_pol == NULL || ctr == NULL) return False;
@@ -1313,24 +1348,27 @@ BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("SAMR Get Alias Info\n"));
 
 	/* store the parameters */
-	make_samr_q_get_aliasinfo(&q_o, alias_pol, ctr);
+	make_samr_q_query_aliasinfo(&q_o, alias_pol, switch_value);
 
 	/* turn parameters into data stream */
-	samr_io_q_get_aliasinfo("", &q_o,  &data, 0);
+	samr_io_q_query_aliasinfo("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SAMR_GET_ALIASINFO, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SAMR_QUERY_ALIASINFO, &data, &rdata))
 	{
-		SAMR_R_GET_ALIASINFO r_o;
+		SAMR_R_QUERY_ALIASINFO r_o;
 		BOOL p;
 
-		samr_io_r_get_aliasinfo("", &r_o, &rdata, 0);
+		/* get alias info */
+		r_o.ctr = ctr;
+
+		samr_io_r_query_aliasinfo("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_GET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(4,("SAMR_R_QUERY_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1345,7 +1383,6 @@ BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum,
 
 	return valid_pol;
 }
-#endif
 
 /****************************************************************************
 do a SAMR Set Alias Info
@@ -2326,7 +2363,7 @@ BOOL samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 		SAMR_R_QUERY_GROUPINFO r_o;
 		BOOL p;
 
-		/* get user info */
+		/* get group info */
 		r_o.ctr = ctr;
 
 		samr_io_r_query_groupinfo("", &r_o, &rdata, 0);

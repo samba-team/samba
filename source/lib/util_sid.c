@@ -231,7 +231,7 @@ int sid_size(const DOM_SID *sid)
  Duplicates a sid - mallocs the target.
 *****************************************************************/
 
-DOM_SID *sid_dup(DOM_SID *src)
+DOM_SID *sid_dup(const DOM_SID *src)
 {
   DOM_SID *dst;
 

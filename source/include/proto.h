@@ -482,6 +482,8 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
 void free_char_array(uint32 num_entries, char **entries);
 BOOL add_chars_to_array(uint32 *len, char ***array, const char *name);
+BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+void free_sid_array(uint32 num_entries, DOM_SID **entries);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -532,7 +534,7 @@ void sid_copy(DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_size(const DOM_SID *sid);
-DOM_SID *sid_dup(DOM_SID *src);
+DOM_SID *sid_dup(const DOM_SID *src);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -1896,6 +1898,10 @@ BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 group_rid, GROUP_INFO_CTR *ctr);
+BOOL get_samr_query_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
 BOOL samr_chgpasswd_user(struct cli_state *cli, uint16 fnum,
 		char *srv_name, char *user_name,
 		char nt_newpass[516], uchar nt_oldhash[16],
@@ -1909,9 +1915,9 @@ uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 				uint32 *start_idx, uint32 size,
 				struct acct_info **sam,
 				uint32 *num_sam_groups);
-BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
+uint32 samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
-				uint32 start_idx, uint32 size,
+				uint32 *start_idx, uint32 size,
 				struct acct_info **sam,
 				uint32 *num_sam_aliases);
 uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
@@ -1942,8 +1948,9 @@ BOOL samr_create_dom_user(struct cli_state *cli, uint16 fnum,
 BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *alias_pol, uint32 *rid);
-BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum, 
-				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
+BOOL samr_query_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *alias_pol, uint16 switch_value,
+				ALIAS_INFO_CTR *ctr);
 BOOL samr_set_aliasinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr);
 BOOL samr_open_group(struct cli_state *cli, uint16 fnum, 
@@ -3268,6 +3275,13 @@ int msrpc_sam_enum_users(struct client_info *info,
 			USER_MEM_FN(usr_als_fn));
 BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
+BOOL sam_query_aliasmem(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *pol_dom,
+				uint32 alias_rid,
+				uint32 *num_names,
+				DOM_SID ***sids,
+				char ***name,
+				uint8 **type);
 BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
 				uint32 group_rid,
@@ -3281,6 +3295,12 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 				GROUP_FN(grp_fn),
 				GROUP_INFO_FN(grp_inf_fn),
 				GROUP_MEM_FN(grp_mem_fn));
+uint32 msrpc_sam_enum_aliases(struct client_info *info,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
+				ALIAS_FN(als_fn),
+				ALIAS_INFO_FN(als_inf_fn),
+				ALIAS_MEM_FN(als_mem_fn));
 void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
 void cmd_sam_lookup_domain(struct client_info *info);
@@ -3400,7 +3420,8 @@ void display_share2(FILE *out_hnd, enum action_type action,
 void display_name(FILE *out_hnd, enum action_type action,
 				char *sname);
 void display_alias_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, char **sid_mem);
+				uint32 num_mem, char **sid_mem,
+				uint8 *type);
 void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 				DOM_SID *sid,
 				uint32 num_rids, uint32 *rid);
@@ -3414,6 +3435,9 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 				uint32 num_gids, DOM_GID *gid);
 void display_alias_name_info(FILE *out_hnd, enum action_type action,
 				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs);
+void display_alias_info3(FILE *out_hnd, enum action_type action, ALIAS_INFO3 *info3);
+void display_alias_info_ctr(FILE *out_hnd, enum action_type action,
+				ALIAS_INFO_CTR *ctr);
 void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *usr);
 char *get_sec_mask_str(uint32 type);
 void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info);
