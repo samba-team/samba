@@ -3654,26 +3654,26 @@ static BOOL resolve_wildcards(char *name1,char *name2)
 }
 
 /*******************************************************************
-check if a user is allowed to rename a file
+ Check if a user is allowed to rename a file.
 ********************************************************************/
-static BOOL can_rename(char *fname,connection_struct *conn)
+
+static NTSTATUS can_rename(char *fname,connection_struct *conn)
 {
-  SMB_STRUCT_STAT sbuf;
+  if (!CAN_WRITE(conn))
+	return NT_STATUS_ACCESS_DENIED;
 
-  if (!CAN_WRITE(conn)) return(False);
+  if (!check_file_sharing(conn,fname,True))
+	return NT_STATUS_SHARING_VIOLATION;
 
-  if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0) return(False);
-  if (!check_file_sharing(conn,fname,True)) return(False);
-  return(True);
+  return NT_STATUS_OK;
 }
 
 /****************************************************************************
  The guts of the rename command, split out so it may be called by the NT SMB
  code. 
 ****************************************************************************/
-NTSTATUS rename_internals(connection_struct *conn, 
-			  char *name, 
-		     char *newname, BOOL replace_if_exists)
+
+NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BOOL replace_if_exists)
 {
 	pstring directory;
 	pstring mask;
@@ -3684,10 +3684,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 	BOOL bad_path2 = False;
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
-	BOOL exists=False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
-	pstring zdirectory;
 
 	*directory = *mask = 0;
 
@@ -3729,6 +3727,9 @@ NTSTATUS rename_internals(connection_struct *conn,
 	has_wild = ms_has_wild(mask);
 
 	if (!has_wild) {
+		pstring zdirectory;
+		pstring znewname;
+
 		/*
 		 * No wildcards - just process the one file.
 		 */
@@ -3747,7 +3748,8 @@ NTSTATUS rename_internals(connection_struct *conn,
 			pstrcpy(newname, tmpstr);
 		}
 		
-		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
+		DEBUG(3,("rename_internals: case_sensitive = %d, case_preserve = %d, short case preserve = %d, \
+directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
 			 case_sensitive, case_preserve, short_case_preserve, directory, 
 			 newname, newname_last_component, is_short_name));
 
@@ -3785,37 +3787,81 @@ NTSTATUS rename_internals(connection_struct *conn,
 			}
 		}
 		
-                pstrcpy(zdirectory, dos_to_unix(directory, False));
-		if(replace_if_exists) {
-			/*
-			 * NT SMB specific flag - rename can overwrite
-			 * file with the same name so don't check for
-			 * vfs_file_exist().
-			 */
 
-			if(resolve_wildcards(directory,newname) &&
-			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(conn,zdirectory,
-						 dos_to_unix(newname,False)))
-				count++;
-		} else {
-			if (resolve_wildcards(directory,newname) && 
-			    can_rename(directory,conn) && 
-			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(conn,zdirectory,
-						  dos_to_unix(newname,False)))
-				count++;
+		resolve_wildcards(directory,newname);
+
+		/*
+		 * The source object must exist.
+		 */
+
+		if (!vfs_object_exist(conn, directory, NULL)) {
+			DEBUG(3,("rename_internals: source doesn't exist doing rename %s -> %s\n",
+				directory,newname));
+
+			if (errno == ENOTDIR || errno == EISDIR || errno == ENOENT) {
+				/*
+				 * Must return different errors depending on whether the parent
+				 * directory existed or not.
+				 */
+
+				p = strrchr(directory, '/');
+				if (!p)
+					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				*p = '\0';
+				if (vfs_object_exist(conn, directory, NULL))
+					return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+			}
+			error = map_nt_error_from_unix(errno);
+			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
+				get_nt_error_msg(error), directory,newname));
+
+			return error;
 		}
 
-		DEBUG(3,("rename_internals: %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
-                         directory,newname));
-		
-		if (!count) exists = vfs_file_exist(conn,directory,NULL);
-		if (!count && exists && vfs_file_exist(conn,newname,NULL)) {
-			exists = True;
+		error = can_rename(directory,conn);
+
+		if (!NT_STATUS_IS_OK(error)) {
+			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
+				get_nt_error_msg(error), directory,newname));
+		}
+
+               	pstrcpy(zdirectory, dos_to_unix(directory, False));
+		pstrcpy(znewname, dos_to_unix(newname,False));
+
+		/*
+		 * If the src and dest names are identical - including case,
+		 * don't do the rename, just return success.
+		 */
+
+		if (strcsequal(zdirectory, znewname)) {
+			DEBUG(3,("rename_internals: identical names in rename %s - returning success\n", directory));
+			return NT_STATUS_OK;
+		}
+
+		if(!replace_if_exists && vfs_object_exist(conn,newname,NULL)) {
+			DEBUG(3,("rename_internals: dest exists doing rename %s -> %s\n",
+				directory,newname));
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+
+		if(conn->vfs_ops.rename(conn,zdirectory, znewname) == 0) {
+			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
+				directory,newname));
+			return NT_STATUS_OK;	
+		}
+
+		if (errno == ENOTDIR || errno == EISDIR)
 			error = NT_STATUS_OBJECT_NAME_COLLISION;
-		}
+		else
+			error = map_nt_error_from_unix(errno);
+		
+		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
+			get_nt_error_msg(error), directory,newname));
+
+		return error;
 	} else {
+
 		/*
 		 * Wildcards - process each file that matches.
 		 */
@@ -3842,8 +3888,9 @@ NTSTATUS rename_internals(connection_struct *conn,
 				
 				error = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
-				if (!can_rename(fname,conn)) {
-					DEBUG(6,("rename %s refused\n", fname));
+				error = can_rename(fname,conn);
+				if (!NT_STATUS_IS_OK(error)) {
+					DEBUG(6,("rename %s failed. Error %s\n", fname, get_nt_error_msg(error)));
 					continue;
 				}
 				pstrcpy(destname,newname);
@@ -3855,7 +3902,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 				}
 				
 				if (!replace_if_exists && 
-                                    vfs_file_exist(conn,destname, NULL)) {
+                                    vfs_object_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
 					error = NT_STATUS_OBJECT_NAME_COLLISION;
 					continue;
@@ -3869,7 +3916,7 @@ NTSTATUS rename_internals(connection_struct *conn,
 			CloseDir(dirptr);
 		}
 	}
-	
+
 	if (count == 0 && NT_STATUS_IS_OK(error)) {
 		error = map_nt_error_from_unix(errno);
 	}
@@ -3883,19 +3930,19 @@ NTSTATUS rename_internals(connection_struct *conn,
 
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  int outsize = 0;
-  pstring name;
-  pstring newname;
+	int outsize = 0;
+	pstring name;
+	pstring newname;
 	NTSTATUS status;
-  START_PROFILE(SMBmv);
+	START_PROFILE(SMBmv);
 
-  pstrcpy(name,smb_buf(inbuf) + 1);
-  pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
+	pstrcpy(name,smb_buf(inbuf) + 1);
+	pstrcpy(newname,smb_buf(inbuf) + 3 + strlen(name));
 
-  RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
-  RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
 
-  DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
+	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
 	status = rename_internals(conn, name, newname, False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3903,14 +3950,14 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
 	}
 
 	/*
-     * Win2k needs a changenotify request response before it will
-     * update after a rename..
-     */
-    process_pending_change_notify_queue((time_t)0);
-    outsize = set_message(outbuf,0,0,True);
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */
+	process_pending_change_notify_queue((time_t)0);
+	outsize = set_message(outbuf,0,0,True);
   
-  END_PROFILE(SMBmv);
-  return(outsize);
+	END_PROFILE(SMBmv);
+	return(outsize);
 }
 
 /*******************************************************************

@@ -4434,9 +4434,7 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory);
 int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 BOOL rmdir_internals(connection_struct *conn, char *directory);
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-NTSTATUS rename_internals(connection_struct *conn, 
-			  char *name, 
-		     char *newname, BOOL replace_if_exists);
+NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BOOL replace_if_exists);
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
@@ -4543,6 +4541,7 @@ BOOL vfs_init(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
 int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode);
 char *vfs_getwd(connection_struct *conn, char *unix_path);
+BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);

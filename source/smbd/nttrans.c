@@ -1553,29 +1553,30 @@ static int call_nt_transact_rename(connection_struct *conn,
                                    int bufsize,
                                    char **ppsetup, char **ppparams, char **ppdata)
 {
-  char *params = *ppparams;
-  pstring new_name;
-  files_struct *fsp = file_fsp(params, 0);
-  BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
+	char *params = *ppparams;
+	pstring new_name;
+	files_struct *fsp = file_fsp(params, 0);
+	BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
 	NTSTATUS status;
-  uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
-                         ((uint32)sizeof(new_name)-1));
+	uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
+				((uint32)sizeof(new_name)-1));
 
-  CHECK_FSP(fsp, conn);
-  StrnCpy(new_name,params+4,fname_len);
-  new_name[fname_len] = '\0';
+	CHECK_FSP(fsp, conn);
+	StrnCpy(new_name,params+4,fname_len);
+	new_name[fname_len] = '\0';
 
 	status = rename_internals(conn, fsp->fsp_name,
                              new_name, replace_if_exists);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
-    /*
-     * Rename was successful.
-     */
+	/*
+	 * Rename was successful.
+	 */
 	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 
-    DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
-          fsp->fsp_name, new_name));
+	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
+		fsp->fsp_name, new_name));
 
 	/*
 	 * Win2k needs a changenotify request response before it will
