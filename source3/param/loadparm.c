@@ -67,6 +67,7 @@
 
 BOOL in_client = False;   /* Not in the client by default */
 BOOL bLoaded = False;
+BOOL in_client = False;
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
@@ -2485,16 +2486,16 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 
   set_default_server_announce_type();
 
-  /* We set a WINS server address of 127.0.0.1 if we are in the client */
-  /* and we have WINS support enabled                                  */
+  bLoaded = True;
+
+  /* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
+  /* if bWINSsupport is true and we are in the client            */
 
   if (in_client && Globals.bWINSsupport) {
 
     string_set(&Globals.szWINSserver, "127.0.0.1");
 
   }
-
-  bLoaded = True;
 
   return (bRetval);
 }
