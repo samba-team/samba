@@ -168,7 +168,7 @@ ssize_t convert_string(charset_t from, charset_t to,
  **/
 
 ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-		      		void const *src, size_t srclen, void **dest)
+			      void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
@@ -189,20 +189,25 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		return -1;
 	}
 
-	destlen = MAX(srclen, 512);
+	/* it is _very_ rare that a conversion increases the size by
+	   more than 3x */
+	destlen = srclen;
 	outbuf = NULL;
 convert:
-	destlen = destlen * 2;
+	destlen = 2 + (destlen*3);
 	ob = (char *)talloc_realloc(ctx, outbuf, destlen);
 	if (!ob) {
 		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
 		talloc_free(outbuf);
 		return (size_t)-1;
-	}
-	else
+	} else {
 		outbuf = ob;
+	}
+
+	/* we give iconv 2 less bytes to allow us to terminate at the
+	   end */
 	i_len = srclen;
-	o_len = destlen;
+	o_len = destlen-2;
 	retval = smb_iconv(descriptor,
 			   &inbuf, &i_len,
 			   &outbuf, &o_len);
@@ -220,20 +225,15 @@ convert:
 		}
 		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		talloc_free(ob);
-		/* smb_panic(reason); */
 		return (size_t)-1;
 	}
 	
-	destlen = destlen - o_len;
-	/* +2 for mandetory null termination, UTF8 or UTF16 */
-	*dest = (char *)talloc_realloc(ctx, ob, destlen+2);
-	if (!*dest) {
-		DEBUG(0, ("convert_string_talloc: out of memory!\n"));
-		talloc_free(ob);
-		return (size_t)-1;
-	}
-	((char *)*dest)[destlen] = '\0';
-	((char *)*dest)[destlen+1] = '\0';
+	destlen = (destlen-2) - o_len;
+
+	/* guarantee null termination in all charsets */
+	SSVAL(ob, destlen, 0);
+
+	*dest = ob;
 
 	return destlen;
 }
