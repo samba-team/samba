@@ -177,8 +177,16 @@ typedef enum krb5_key_usage {
     /* seal in GSSAPI krb5 mechanism */
     KRB5_KU_USAGE_SIGN = 23,
     /* sign in GSSAPI krb5 mechanism */
-    KRB5_KU_USAGE_SEQ = 24
+    KRB5_KU_USAGE_SEQ = 24,
     /* SEQ in GSSAPI krb5 mechanism */
+    KRB5_KU_USAGE_ACCEPTOR_SIGN = 22,
+    /* acceptor sign in GSSAPI CFX krb5 mechanism */
+    KRB5_KU_USAGE_ACCEPTOR_SEAL = 23,
+    /* acceptor seal in GSSAPI CFX krb5 mechanism */
+    KRB5_KU_USAGE_INITIATOR_SIGN = 24,       
+    /* initiator sign in GSSAPI CFX krb5 mechanism */  
+    KRB5_KU_USAGE_INITIATOR_SEAL = 25
+    /* initiator seal in GSSAPI CFX krb5 mechanism */     
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
