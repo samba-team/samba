@@ -57,13 +57,13 @@ all:
 	@echo "txt - Build plain text version of HOWTO Collection"
 
 manpages: $(MANPAGES)
-pdf: ../Samba-HOWTO-Collection.pdf
-ps: ../Samba-HOWTO-Collection.ps
-txt: ../Samba-HOWTO-Collection.txt
+pdf: ../Samba-HOWTO-Collection.pdf ../Samba-Developers-Guide.pdf
+ps: ../Samba-HOWTO-Collection.ps ../Samba-Developers-Guide.ps
+txt: ../textdocs/Samba-HOWTO-Collection.txt ../textdocs/Samba-Developers-Guide.txt
 htmlman:  $(MANPAGES_HTML)
+html-single: ../htmldocs/Samba-HOWTO-Collection.html  ../htmldocs/Samba-Developers-Guide.html
 html:
 	$(DOCBOOK2HTML) -d samba.dsl -o $(HTMLDIR) projdoc/samba-doc.sgml
-html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 
 ../Samba-HOWTO-Collection.txt: $(SGMLDIR)/samba-doc.sgml
 	$(DOCBOOK2TXT) -o .. $<
@@ -73,14 +73,21 @@ html-single: ../Samba-HOWTO-Collection.html  ../Samba-Developers-Guide.html
 	$(DOCBOOK2PS) -o .. $<
 	mv ../samba-doc.ps $@
 
-../Samba-HOWTO-Collection.pdf: ../Samba-HOWTO-Collection.html
+../Samba-Developers-Guide.ps: $(SGMLDIR)/samba-doc.sgml
+	$(DOCBOOK2PS) -o .. $<
+	mv ../samba-doc.ps $@
+
+../Samba-HOWTO-Collection.pdf: ../htmldocs/Samba-HOWTO-Collection.html
 	$(HTMLDOC) --book --color --links -f $@ $<
 
-../Samba-HOWTO-Collection.html: $(SGMLDIR)/samba-doc.sgml
+../Samba-Developers-Guide.pdf: ../htmldocs/Samba-Developers-Guide.html
+	$(HTMLDOC) --book --color --links -f $@ $<
+
+../htmldocs/Samba-HOWTO-Collection.html: $(SGMLDIR)/samba-doc.sgml
 	$(DOCBOOK2HTML) -u -o .. $<
 	mv ../samba-doc.html $@
 
-../Samba-Developers-Guide.html: devdoc/dev-doc.sgml
+../htmldocs/Samba-Developers-Guide.html: devdoc/dev-doc.sgml
 	$(DOCBOOK2HTML) -u -o .. $<
 	mv ../dev-doc.html $@
 
