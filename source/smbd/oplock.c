@@ -676,13 +676,13 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
      messages crossing on the wire.
    */
 
-  if((inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  if((inbuf = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL)
   {
     DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
     return False;
   }
 
-  if((outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN))==NULL)
+  if((outbuf = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL)
   {
     DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
     free(inbuf);

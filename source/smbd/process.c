@@ -1183,8 +1183,8 @@ void smbd_process(void)
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
 
-	InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-	OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+	InBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+	OutBuffer = (char *)malloc(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
 
@@ -1210,7 +1210,7 @@ void smbd_process(void)
 		lp_talloc_free();
 		main_loop_talloc_free();
 
-		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout)) {
+		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */

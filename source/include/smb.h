@@ -27,6 +27,7 @@
 
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
+#define LARGE_WRITEX_HDR_SIZE 65
 
 #define NMB_PORT 137
 #define DGRAM_PORT 138
