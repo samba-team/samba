@@ -382,6 +382,10 @@ void string_replace(pstring s,char oldc,char newc)
 		return;
 
 	/* Slow (mb) path. */
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+	/* With compose characters we must restart from the beginning. JRA. */
+	p = s;
+#endif
 	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
 	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
 	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
@@ -1175,24 +1179,30 @@ char *string_truncate(char *s, unsigned int length)
  We convert via ucs2 for now.
 **/
 
-char *strchr_m(const char *s, char c)
+char *strchr_m(const char *src, char c)
 {
 	wpstring ws;
 	pstring s2;
 	smb_ucs2_t *p;
+	const char *s;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && (((unsigned char)s[0]) & 0x80)) {
+	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
 			return s;
 	}
 
 	if (!*s)
 		return NULL;
+
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+	/* With compose characters we must restart from the beginning. JRA. */
+	s = src;
+#endif
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
