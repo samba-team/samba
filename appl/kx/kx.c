@@ -6,6 +6,42 @@ char *prog;
 
 static u_int32_t display_num;
 static char xauthfile[MaxPathLen];
+static int nchild;
+static int donep;
+
+/*
+ * Signal handler that justs waits for the children when they die.
+ */
+
+static RETSIGTYPE
+childhandler (int sig)
+{
+     pid_t pid;
+     int status;
+
+     do { 
+	 pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
+	 if (pid > 0 && WIFEXITED(status) || WIFSIGNALED(status))
+	     if (--nchild == 0 && donep)
+		 exit (0);
+     } while(pid > 0);
+     signal (SIGCHLD, childhandler);
+     SIGRETURN(0);
+}
+
+/*
+ * Handler for SIGUSR1.
+ * This signal means that we should wait until there are no children
+ * left and then exit.
+ */
+
+static RETSIGTYPE
+usr1handler (int sig)
+{
+    donep = 1;
+
+    SIGRETURN(0);
+}
 
 /*
  * Establish authenticated connection
@@ -267,14 +303,14 @@ doit (char *host, int passivep, int debugp)
 	  /* close (otherside); */
 	  fn = passive;
 	  if(debugp)
-	       printf ("%d\t%s\n", display_num, xauthfile);
+	       printf ("%d\t%d\t%s\n", getpid(), display_num, xauthfile);
 	  else {
 	      pid = fork();
 	      if (pid < 0) {
 		  fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
 		  return 1;
 	      } else if (pid > 0) {
-		  printf ("%d\t%s\n", display_num, xauthfile);
+		  printf ("%d\t%d\t%s\n", pid, display_num, xauthfile);
 		  exit (0);
 	      } else {
 		  fclose(stdout);
@@ -300,6 +336,7 @@ doit (char *host, int passivep, int debugp)
 			     strerror(errno));
 		    return 1;
 	       }
+	  ++nchild;
 	  child = fork ();
 	  if (child < 0) {
 	       fprintf (stderr, "%s: fork: %s\n", prog,
@@ -360,5 +397,6 @@ main(int argc, char **argv)
       */
      passivep = 1;
      signal (SIGCHLD, childhandler);
+     signal (SIGUSR1, usr1handler);
      return doit (argv[0], passivep, debugp);
 }
