@@ -6,11 +6,11 @@ AC_DEFUN([rk_OTP],[
 AC_REQUIRE([rk_DB])dnl
 AC_ARG_ENABLE(otp,
 	AC_HELP_STRING([--disable-otp],[if you don't want OTP support]))
-if test "$enable_otp" = yes -a "$ac_cv_func_dbm_firstkey" != yes; then
-	AC_MSG_ERROR([OTP requires a NDBM compatible library])
+if test "$enable_otp" = yes -a "$db_type" = unknown; then
+	AC_MSG_ERROR([OTP requires a NDBM/DB compatible library])
 fi
 if test "$enable_otp" != no; then
-	if test "$ac_cv_func_dbm_firstkey" = yes; then
+	if test "$db_type" != unknown; then
 		enable_otp=yes
 	else
 		enable_otp=no
