@@ -168,7 +168,7 @@ find_all_addresses (krb5_context context,
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 	 sz = max(sz, sizeof(ifr->ifr_name) + sa->sa_len);
 #endif
-#ifdef AF_INET6
+#ifdef HAVE_IPV6
 	 if (sa->sa_family == AF_INET6)
 	     sz = max(sz, sizeof(ifr->ifr_name) + sizeof(struct sockaddr_in6));
 #endif
