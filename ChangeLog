@@ -1,5 +1,7 @@
 Sat Sep 13 00:59:36 1997  Assar Westerlund  <assar@sics.se>
 
+	* Release 0.0h
+	
 	* appl/telnet/telnet/commands.c: AF_INET6 support
 
 	* admin/misc.c: new file
