@@ -22,10 +22,8 @@
 	<title>Viewing and changing UNIX permissions using the NT 
 	security dialogs</title>
 
-
-	<para>New in the Samba 2.0.4 release is the ability for Windows 
-	NT clients to use their native security settings dialog box to 
-	view and modify the underlying UNIX permissions.</para>
+	<para>Windows NT clients can use their native security settings 
+	dialog box to view and modify the underlying UNIX permissions.</para>
 
 	<para>Note that this ability is careful not to compromise 
 	the security of the UNIX host Samba is running on, and 
@@ -36,13 +34,12 @@
 <sect1>
 	<title>How to view file security on a Samba share</title>
 
-	<para>From an NT 4.0 client, single-click with the right 
+	<para>From an NT4/2000/XP client, single-click with the right 
 	mouse button on any file or directory in a Samba mounted 
 	drive letter or UNC path. When the menu pops-up, click 
 	on the <emphasis>Properties</emphasis> entry at the bottom of 
-	the menu. This brings up the normal file properties dialog
-	box, but with Samba 2.0.4 this will have a new tab along the top
-	marked <emphasis>Security</emphasis>. Click on this tab and you 
+	the menu. This brings up the file properties dialog
+	box. Click on the tab <emphasis>Security</emphasis> and you 
 	will see three buttons, <emphasis>Permissions</emphasis>, 	
 	<emphasis>Auditing</emphasis>, and <emphasis>Ownership</emphasis>. 
 	The <emphasis>Auditing</emphasis> button will cause either 
@@ -89,7 +86,7 @@
 
 	<para>There is an NT chown command that will work with Samba 
 	and allow a user with Administrator privilege connected 
-	to a Samba 2.0.4 server as root to change the ownership of 
+	to a Samba server as root to change the ownership of 
 	files on both a local NTFS filesystem or remote mounted NTFS 
 	or Samba drive. This is available as part of the <emphasis>Seclib
 	</emphasis> NT security library written by Jeremy Allison of 
@@ -193,7 +190,7 @@
 	</command> message.</para>
 
 	<para>The first thing to note is that the <command>"Add"</command> 
-	button will not return a list of users in Samba 2.0.4 (it will give 
+	button will not return a list of users in Samba (it will give 
 	an error message of <command>"The remote procedure call failed 
 	and did not execute"</command>). This means that you can only 
 	manipulate the current user/group/world permissions listed in 
@@ -233,8 +230,9 @@
 	<title>Interaction with the standard Samba create mask 
 	parameters</title>
 
-	<para>Note that with Samba 2.0.5 there are four new parameters 
-	to control this interaction.  These are :</para>
+	<para>There are four parameters 
+	to control interaction with the standard Samba create mask parameters.
+	These are :</para>
 
 	<para><parameter>security mask</parameter></para>
 	<para><parameter>force security mode</parameter></para>
@@ -256,9 +254,8 @@
 
 	<para>If not set explicitly this parameter is set to the same value as 
 	the <ulink url="smb.conf.5.html#CREATEMASK"><parameter>create mask
-	</parameter></ulink> parameter to provide compatibility with Samba 2.0.4 
-	where this permission change facility was introduced. To allow a user to 
-	modify all the user/group/world permissions on a file, set this parameter 
+	</parameter></ulink> parameter. To allow a user to modify all the
+	user/group/world permissions on a file, set this parameter 
 	to 0777.</para>
 
 	<para>Next Samba checks the changed permissions for a file against 
@@ -273,8 +270,7 @@
 
 	<para>If not set explicitly this parameter is set to the same value 
 	as the <ulink url="smb.conf.5.html#FORCECREATEMODE"><parameter>force 
-	create mode</parameter></ulink> parameter to provide compatibility
-	with Samba 2.0.4 where the permission change facility was introduced.
+	create mode</parameter></ulink> parameter.
 	To allow a user to modify all the user/group/world permissions on a file
 	with no restrictions set this parameter to 000.</para>
 
@@ -293,9 +289,7 @@
 	by default is set to the same value as the <parameter>directory mask
 	</parameter> parameter and the <parameter>force directory security 
 	mode</parameter> parameter by default is set to the same value as 
- 	the <parameter>force directory mode</parameter> parameter to provide 
-	compatibility with Samba 2.0.4 where the permission change facility 
-	was introduced.</para>
+ 	the <parameter>force directory mode</parameter> parameter. </para>
 
 	<para>In this way Samba enforces the permission restrictions that 
 	an administrator can set on a Samba share, whilst still allowing users 
@@ -311,15 +305,6 @@
 	<para><parameter>force security mode = 0</parameter></para>
 	<para><parameter>directory security mask = 0777</parameter></para>
 	<para><parameter>force directory security mode = 0</parameter></para>
-
-	<para>As described, in Samba 2.0.4 the parameters :</para>
-
-	<para><parameter>create mask</parameter></para>
-	<para><parameter>force create mode</parameter></para>
-	<para><parameter>directory mask</parameter></para>
-	<para><parameter>force directory mode</parameter></para>
-
-	<para>were used instead of the parameters discussed here.</para>
 </sect1>
 
 <sect1>
