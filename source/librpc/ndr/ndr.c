@@ -315,16 +315,12 @@ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 {
 	struct ndr_print *ndr;
 
-	ndr = talloc(NULL, struct ndr_print);
+	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->switch_list = talloc(ndr, struct ndr_token_list);
-	if (!ndr->switch_list)
-		goto fail;
 	fn(ndr, name, ptr);
-fail:
 	talloc_free(ndr);
 }
 
@@ -335,7 +331,7 @@ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int fla
 {
 	struct ndr_print *ndr;
 
-	ndr = talloc(NULL, struct ndr_print);
+	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
