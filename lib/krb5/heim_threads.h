@@ -79,7 +79,7 @@
 #define HEIMDAL_getspecific(k) thr_getspecific(k)
 #define HEIMDAL_key_delete(k) thr_keydelete(k)
 
-#elif defined(ENABLE_PTHREAD_SUPPORT)
+#elif defined(ENABLE_PTHREAD_SUPPORT) && !defined(__NetBSD__)
 
 #define HEIMDAL_MUTEX pthread_mutex_t
 #define HEIMDAL_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
