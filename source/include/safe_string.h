@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Safe string handling routines.
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,6 +48,14 @@
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
 
 #endif /* !_SPLINT_ */
+
+#ifdef DEVELOPER
+#define SAFE_STRING_FUNCTION_NAME FUNCTION_MACRO
+#define SAFE_STRING_LINE __LINE__
+#else
+#define SAFE_STRING_FUNCTION_NAME ("")
+#define SAFE_STRING_LINE (0)
+#endif
 
 /* We need a number of different prototypes for our 
    non-existant fuctions */
@@ -141,32 +150,17 @@ size_t __unsafe_string_function_usage_here_char__(void);
  * long.  This is not a good situation, because we can't do the normal
  * sanity checks. Don't use in new code! */
 
-#ifdef DEVELOPER
-#define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(__FUNCTION__,__LINE__,dest,src,maxlength)
-#define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(__FUNCTION__,__LINE__,dest,src,maxlength)
-#define safe_strcat(dest,src,maxlength)	safe_strcat_fn2(__FUNCTION__,__LINE__,dest,src,maxlength)
-#define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(__FUNCTION__, __LINE__, base_ptr, dest, src, dest_len, flags)
-#define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(__FUNCTION__, __LINE__, base_ptr, dest, src, dest_len, src_len, flags)
-#define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(__FUNCTION__, __LINE__, cli, dest, src, dest_len, flags)
-#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(__FUNCTION__, __LINE__, cli, dest, src, dest_len, src_len, flags)
+#define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE,dest,src,maxlength)
+#define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE,dest,src,maxlength)
+#define safe_strcat(dest,src,maxlength)	safe_strcat_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE,dest,src,maxlength)
+#define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, dest, src, dest_len, flags)
+#define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, dest, src, dest_len, src_len, flags)
+#define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, cli, dest, src, dest_len, flags)
+#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, cli, dest, src, dest_len, src_len, flags)
+#define srvstr_push(base_ptr, dest, src, dest_len, flags) srvstr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, base_ptr, dest, src, dest_len, flags)
 
-#define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(__FUNCTION__,__LINE__,dest,src,other_safe_chars,maxlength)
-#define StrnCpy(dest,src,n)		StrnCpy_fn(__FUNCTION__,__LINE__,dest,src,n)
-
-#else
-
-#define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(NULL,0,dest,src,maxlength)
-#define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(NULL,0,dest,src,maxlength)
-#define safe_strcat(dest,src,maxlength)	safe_strcat_fn2(NULL,0,dest,src,maxlength)
-#define push_string(base_ptr, dest, src, dest_len, flags) push_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, flags)
-#define pull_string(base_ptr, dest, src, dest_len, src_len, flags) pull_string_fn2(NULL, 0, base_ptr, dest, src, dest_len, src_len, flags)
-#define clistr_push(cli, dest, src, dest_len, flags) clistr_push_fn2(NULL, 0, cli, dest, src, dest_len, flags)
-#define clistr_pull(cli, dest, src, dest_len, src_len, flags) clistr_pull_fn2(NULL, 0, cli, dest, src, dest_len, src_len, flags)
-
-#define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(NULL,0,dest,src,other_safe_chars,maxlength)
-#define StrnCpy(dest,src,n)		StrnCpy_fn(NULL,0,dest,src,n)
-#endif /* DEVELOPER */
-
+#define alpha_strcpy(dest,src,other_safe_chars,maxlength) alpha_strcpy_fn(SAFE_STRING_FUNCTION_NAME,SAFE_STRING_LINE,dest,src,other_safe_chars,maxlength)
+#define StrnCpy(dest,src,n)		StrnCpy_fn(SAFE_STRING_FUNCTION_NAME,SAFE_STRING_LINE,dest,src,n)
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
@@ -204,6 +198,11 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_pull_fn(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags))
 
+#define srvstr_push_fn2(fn_name, fn_line, base_ptr, dest, src, dest_len, flags) \
+    (CHECK_STRING_SIZE(dest, dest_len) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+    : srvstr_push_fn(fn_name, fn_line, base_ptr, dest, src, dest_len, flags))
+
 #else
 
 #define safe_strcpy_fn2 safe_strcpy_fn
@@ -212,6 +211,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define pull_string_fn2 pull_string_fn
 #define clistr_push_fn2 clistr_push_fn
 #define clistr_pull_fn2 clistr_pull_fn
+#define srvstr_push_fn2 srvstr_push_fn
 
 #endif
 
