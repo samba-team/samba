@@ -1131,13 +1131,16 @@ static void samr_reply_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 		{
 			r_e.ptr = 1;
 			ctr.switch_value1 = 1;
-			make_samr_group_info1(&ctr.group.info1, "account name", "account description");
+			make_samr_group_info1(&ctr.group.info1,
+			                      "account name",
+			                      "account description");
 		}
 		else if (q_u->switch_level == 4)
 		{
 			r_e.ptr = 1;
 			ctr.switch_value1 = 4;
-			make_samr_group_info4(&ctr.group.info4, "account description");
+			make_samr_group_info4(&ctr.group.info4,
+			                     "account description");
 		}
 		else
 		{

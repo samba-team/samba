@@ -1215,7 +1215,7 @@ static void query_groupinfo(struct client_info *info, uint16 fnum,
 	/* send group info query */
 	if (get_samr_query_groupinfo(smb_cli, fnum,
 				      &info->dom.samr_pol_open_domain,
-				      group_rid, 1, &ctr))
+				      1, group_rid, &ctr))
 	{
 #if 0
 		display_samr_groupinfo(out_hnd, ACTION_HEADER   , &ctr);
