@@ -1,3 +1,17 @@
+Changes in release 0.3g
+
+ * update to autoconf 2.50, libtool 1.4
+
+ * re-write dns/config lookups (krb5_krbhst API)
+
+ * make order of using subkeys consistent
+
+ * add man page links
+
+ * add more man pages
+
+ * remove rfc2052 support, now only rfc2782 is supported
+
 Changes in release 0.3f
 
  * change default keytab to ANY:FILE:/etc/krb5.keytab,krb4:/etc/srvtab,
