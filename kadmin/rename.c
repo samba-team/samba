@@ -36,67 +36,36 @@
  * SUCH DAMAGE. 
  */
 
-/* 
- * $Id$
- */
+#include "kadmin_locl.h"
 
-#ifndef __ADMIN_LOCL_H__
-#define __ADMIN_LOCL_H__
+RCSID("$Id$");
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_NETINET_IN6_H
-#include <netinet/in6.h>
-#endif
-#ifdef HAVE_NETINET6_IN6_H
-#include <netinet6/in6.h>
-#endif
+int
+rename_entry(int argc, char **argv)
+{
+    krb5_error_code ret;
+    krb5_principal princ1, princ2;
 
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#include <err.h>
-#include <roken.h>
-#include <krb5.h>
-#include <kadm5/admin.h>
-#include <hdb_err.h>
-#include <parse_time.h>
-#include <getarg.h>
+    if(argc != 3){
+	krb5_warnx(context, "rename source target");
+	return 0;
+    }
+    ret = krb5_parse_name(context, argv[1], &princ1);
+    if(ret){
+	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[1]);
+	return 0;
+    }
+    ret = krb5_parse_name(context, argv[2], &princ2);
+    if(ret){
+	krb5_free_principal(context, princ2);
+	krb5_warn(context, ret, "krb5_parse_name(%s)", argv[2]);
+	return 0;
+    }
+    ret = kadm5_rename_principal(kadm_handle, princ1, princ2);
+    if(ret)
+	krb5_warn(context, ret, "rename");
+    krb5_free_principal(context, princ1);
+    krb5_free_principal(context, princ2);
+    return 0;
+}
 
-#include "hdb.h"
-
-extern krb5_context context;
-extern void * kadm_handle;
-
-#define DECL(X) int X(int, char **)
-
-DECL(add_new_key);
-DECL(cpw_entry);
-DECL(del_entry);
-DECL(ext_keytab);
-DECL(get_entry);
-DECL(rename_entry);
-DECL(help);
-DECL(exit_kadmin);
-
-#define ALLOC(X) ((X) = malloc(sizeof(*(X))))
-
-#endif /* __ADMIN_LOCL_H__ */
