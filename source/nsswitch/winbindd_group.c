@@ -945,6 +945,14 @@ static void add_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
 		add_gid_to_array_unique(gid, gids, num);
 
+	/* Don't expand aliases if not explicitly activated -- for now */
+	/* we don't support windows local nested groups if we are a DC.
+           refer to to sid_to_gid() in the smbd server code to see why 
+	   -- jerry */
+
+	if (!lp_winbind_nested_groups() || IS_DC)
+		return;
+
 	/* Add nested group memberships */
 
 	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))

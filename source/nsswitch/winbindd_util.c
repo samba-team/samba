@@ -320,8 +320,15 @@ BOOL init_domain_list(void)
 	/* do an initial scan for trusted domains */
 	add_trusted_domains(domain);
 
-	/* Add our local SAM domains */
-	{
+	/* Don't expand aliases if not explicitly activated -- for now */
+	/* we don't support windows local nested groups if we are a DC.
+	   refer to to sid_to_gid() in the smbd server code to see why
+	   -- jerry */
+
+
+	if (lp_winbind_nested_groups() || IS_DC) {
+
+		/* Add our local SAM domains */
 		DOM_SID sid;
 		extern struct winbindd_methods passdb_methods;
 		struct winbindd_domain *dom;
@@ -330,12 +337,10 @@ BOOL init_domain_list(void)
 
 		dom = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 					 &sid);
-		dom->internal = True;
 
 		dom = add_trusted_domain(get_global_sam_name(), NULL,
 					 &passdb_methods,
 					 get_global_sam_sid());
-		dom->internal = True;
 	}
 	
 	/* avoid rescanning this right away */

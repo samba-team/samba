@@ -176,6 +176,7 @@ typedef struct
 	BOOL bWinbindEnumGroups;
 	BOOL bWinbindUseDefaultDomain;
 	BOOL bWinbindTrustedDomainsOnly;
+	BOOL bWinbindNestedGroups;
 	char *szWinbindBackend;
 	char *szIdmapBackend;
 	char *szAddShareCommand;
@@ -1172,6 +1173,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1517,6 +1519,7 @@ static void init_globals(void)
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
+	Globals.bWinbindNestedGroups = False;
 
 	Globals.bEnableRidAlgorithm = True;
 
