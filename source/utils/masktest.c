@@ -120,8 +120,8 @@ struct cli_state *connect_one(char *share)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, "masktest", 0x0, "");
-	make_nmb_name(&called , server, 0x20, "");
+	make_nmb_name(&calling, "masktest", 0x0);
+	make_nmb_name(&called , server, 0x20);
 
  again:
 	ip = ipzero;
@@ -137,7 +137,7 @@ struct cli_state *connect_one(char *share)
 		DEBUG(0,("session request to %s failed\n", called.name));
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
 		return NULL;
