@@ -3200,8 +3200,6 @@ BOOL make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
 BOOL samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
-		uint32 status);
 BOOL samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
 				POLICY_HND *pol,

@@ -2093,21 +2093,6 @@ BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_s
 }
 
 /*******************************************************************
-makes a SAMR_R_DELETE_DOM_GROUP structure.
-********************************************************************/
-BOOL make_samr_r_delete_dom_group(SAMR_R_DELETE_DOM_GROUP *r_u,
-		uint32 status)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("make_samr_r_delete_dom_group\n"));
-
-	r_u->status = status;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth)
