@@ -26,6 +26,7 @@
 #include "rpc_client_proto.h"
 
 extern int DEBUGLEVEL;
+extern struct in_addr ipzero;
 
 /****************************************************************************
  * make a connection to a server.
@@ -304,7 +305,9 @@ static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 	struct cli_state cli;
 	uint16 fnum;
 	
-	ZERO_STRUCT(cli);
+	/* Don't check ipzero addresses */
+
+	if (ip_equal(ipzero, dest_ip)) return False;
 
 	/* Look up remote name */
 
@@ -314,6 +317,20 @@ static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 			 inet_ntoa(dest_ip), domain));
 		return False;
 	}
+
+	/* Don't attempt connect if the password server parameter does
+	   not list this controller */
+
+	if (!lp_wildcard_dc() && 
+	    !in_list(remote_machine, lp_passwordserver(), False)) {
+		DEBUG(3, ("domain controller %s not in password server list\n",
+			  remote_machine));
+		return False;
+	}
+
+	/* Attempt connect */
+
+	ZERO_STRUCT(cli);
 
 	if(cli_initialise(&cli) == False) {
 		DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
@@ -418,12 +435,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
 ****************************************************************************/
 BOOL get_any_dc_name(char *domain, fstring srv_name)
 {
-	extern struct in_addr ipzero;
 	struct in_addr *ip_list = NULL, *dc_ip = NULL;
 	BOOL connected_ok = False;
 	int i, count = 0;
 
-	DEBUG(3, ("looking up dc namer for domain %s\n", domain));
+	DEBUG(3, ("looking up dc name for domain %s\n", domain));
 
 	/* Get list of possible domain controllers */
 
@@ -436,6 +452,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	/* Find a DC on the local network */
 
 	for (i = 0; i < count; i++) {
+
 		if (!is_local_net(ip_list[i])) continue;
 
 		/* Try to contact DC */
