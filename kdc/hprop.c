@@ -104,7 +104,6 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     krb5_error_code ret;
     struct prop_data *pd = appdata;
     krb5_data data;
-    int i;
 
     if(encrypt_flag)
 	hdb_seal_keys(entry, msched5);
