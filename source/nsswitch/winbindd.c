@@ -21,13 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "includes.h"
+#include "winbindd.h"
 
 /* List of all connected clients */
 
@@ -539,7 +533,7 @@ int main(int argc, char **argv)
 
     /* Setup signal handlers */
 
-//    CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
+    CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
     CatchSignal(SIGQUIT, termination_handler);
     CatchSignal(SIGTERM, termination_handler);
 
