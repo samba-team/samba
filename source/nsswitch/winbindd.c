@@ -77,7 +77,7 @@ static void winbindd_status(void)
 
 /* Print winbindd status to log file */
 
-static void do_print_winbindd_status(void)
+static void print_winbindd_status(void)
 {
 	winbindd_status();
 	winbindd_idmap_status();
@@ -87,7 +87,7 @@ static void do_print_winbindd_status(void)
 
 /* Flush client cache */
 
-static void do_flush_caches(void)
+static void flush_caches(void)
 {
 	/* Clear cached user and group enumation info */
 	
@@ -114,11 +114,11 @@ static void termination_handler(int signum)
 	do_sigterm = True;
 }
 
-static BOOL print_winbindd_status;
+static BOOL do_sigusr1;
 
 static void sigusr1_handler(int signum)
 {
-	print_winbindd_status = True;
+	do_sigusr1 = True;
 }
 
 static BOOL do_sighup;
@@ -657,15 +657,16 @@ static void process_loop(int accept_sock)
 
 			/* Flush winbindd cache */
 
-			do_flush_caches();
+			flush_caches();
 			reload_services_file(True);
 
 			do_sighup = False;
 		}
 
-		if (print_winbindd_status) {
-			do_print_winbindd_status();
-			print_winbindd_status = False;
+		if (do_sigusr1) {
+			print_winbindd_status();
+
+                        do_sigusr1 = False;
 		}
 	}
 }
@@ -681,6 +682,11 @@ int main(int argc, char **argv)
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
+
+        /* glibc (?) likes to print "User defined signal 1" and exit if a
+           SIGUSR1 is received before a handler is installed */
+
+ 	CatchSignal(SIGUSR1, SIG_IGN);
 
 	/* Initialise for running in non-root mode */
 
