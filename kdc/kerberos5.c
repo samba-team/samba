@@ -1289,6 +1289,10 @@ out:
     return ret;
 }
 
+/*
+ * return the realm of a krbtgt-ticket or NULL
+ */
+
 static Realm 
 get_krbtgt_realm(const PrincipalName *p)
 {
@@ -1568,18 +1572,40 @@ tgs_rep2(KDC_REQ_BODY *b,
 
 	if(ret){
 	    Realm req_rlm, new_rlm;
-	    if(loop++ < 2 && (req_rlm = get_krbtgt_realm(&sp->name))){
-		new_rlm = find_rpath(req_rlm);
-		if(new_rlm) {
-		    kdc_log(5, "krbtgt for realm %s not found, trying %s", 
-			    req_rlm, new_rlm);
+	    krb5_realm *realms;
+
+	    if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
+		if(loop++ < 2) {
+		    new_rlm = find_rpath(req_rlm);
+		    if(new_rlm) {
+			kdc_log(5, "krbtgt for realm %s not found, trying %s", 
+				req_rlm, new_rlm);
+			krb5_free_principal(context, sp);
+			free(spn);
+			krb5_make_principal(context, &sp, r, 
+					    KRB5_TGS_NAME, new_rlm, NULL);
+			krb5_unparse_name(context, sp, &spn);	
+			goto server_lookup;
+		    }
+		}
+	    } else if(sp->name.name_string.len == 2
+		&& (ret = krb5_get_host_realm_int(context,
+						  sp->name.name_string.val[1],
+						  FALSE,
+						  &realms)) == 0) {
+		if (strcmp(realms[0], sp->realm) != 0) {
+		    kdc_log(5, "returning a referral to realm %s for "
+			    "server %s that was not found",
+			    realms[0], spn);
 		    krb5_free_principal(context, sp);
 		    free(spn);
-		    krb5_make_principal(context, &sp, r, 
-					"krbtgt", new_rlm, NULL);
-		    krb5_unparse_name(context, sp, &spn);	
+		    krb5_make_principal(context, &sp, r, KRB5_TGS_NAME,
+					realms[0], NULL);
+		    krb5_unparse_name(context, sp, &spn);
+		    krb5_free_host_realm(context, realms);
 		    goto server_lookup;
 		}
+		krb5_free_host_realm(context, realms);
 	    }
 	    kdc_log(0, "Server not found in database: %s: %s", spn,
 		    krb5_get_err_text(context, ret));
