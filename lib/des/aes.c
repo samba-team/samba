@@ -39,8 +39,6 @@ RCSID("$Id$");
 
 #ifdef KRB5
 #include <krb5-types.h>
-#elif defined(KRB4)
-#include <ktypes.h>
 #endif
 
 #include <string.h>
