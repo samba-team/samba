@@ -107,7 +107,7 @@ int setenv(const char *var, const char *val, int rewrite);
 void unsetenv(const char *name);
 #endif
 
-#ifndef HAVE_GETUSERSHELL
+#if !defined(HAVE_GETUSERSHELL) || defined(NEED_GETUSERSHELL_PROTO)
 char *getusershell(void);
 #endif
 
