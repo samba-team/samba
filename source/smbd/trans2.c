@@ -1570,12 +1570,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRbadpath));
 			}
 
-			if (INFO_LEVEL_IS_UNIX(info_level) && vfs_lstat(conn,fname,&sbuf)) {
-				DEBUG(3,("call_trans2qfilepathinfo: vfs_lstat of %s failed (%s)\n",fname,strerror(errno)));
-				set_bad_path_error(errno, bad_path);
-				return(UNIXERROR(ERRDOS,ERRbadpath));
-			}
-			else if (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf)) {
+			if (INFO_LEVEL_IS_UNIX(info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (vfs_lstat(conn,fname,&sbuf)) {
+					DEBUG(3,("call_trans2qfilepathinfo: vfs_lstat of %s failed (%s)\n",fname,strerror(errno)));
+					set_bad_path_error(errno, bad_path);
+					return(UNIXERROR(ERRDOS,ERRbadpath));
+				}
+			} else if (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf)) {
 				DEBUG(3,("call_trans2qfilepathinfo: vfs_stat of %s failed (%s)\n",fname,strerror(errno)));
 				set_bad_path_error(errno, bad_path);
 				return(UNIXERROR(ERRDOS,ERRbadpath));
@@ -1615,9 +1617,20 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if (!check_name(fname,conn) || (!VALID_STAT(sbuf) &&
-			(INFO_LEVEL_IS_UNIX(info_level) ? vfs_lstat(conn,fname,&sbuf) : vfs_stat(conn,fname,&sbuf)))) {
-			DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+		if (!check_name(fname,conn)) {
+			DEBUG(3,("call_trans2qfilepathinfo: check_name of %s failed (%s)\n",fname,strerror(errno)));
+			set_bad_path_error(errno, bad_path);
+			return(UNIXERROR(ERRDOS,ERRbadpath));
+		}
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			/* Always do lstat for UNIX calls. */
+			if (vfs_lstat(conn,fname,&sbuf)) {
+				DEBUG(3,("call_trans2qfilepathinfo: vfs_lstat of %s failed (%s)\n",fname,strerror(errno)));
+				set_bad_path_error(errno, bad_path);
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
+		} else if (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf)) {
+			DEBUG(3,("call_trans2qfilepathinfo: vfs_stat of %s failed (%s)\n",fname,strerror(errno)));
 			set_bad_path_error(errno, bad_path);
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
@@ -2216,7 +2229,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	char *pdata = *ppdata;
 	uint16 tran_call = SVAL(inbuf, smb_setup0);
 	uint16 info_level;
-	int dosmode=0;
+	int dosmode = 0;
 	SMB_OFF_T size=0;
 	struct utimbuf tvs;
 	SMB_STRUCT_STAT sbuf;
@@ -2553,6 +2566,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			pdata += 8;
 			raw_unixmode = IVAL(pdata,28);
 			unixmode = unix_perms_from_wire(conn, &sbuf, raw_unixmode);
+			dosmode = 0; /* Ensure dos mode change doesn't override this. */
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC: name = %s \
 size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
