@@ -49,9 +49,12 @@ db_fetch(krb5_context context, krb5_principal principal)
     hdb_entry *ent;
     krb5_error_code ret;
 
+    ret = hdb_open(context, &db, NULL, O_RDONLY, 0);
+    if (ret) {
+	return NULL;
+    }
     ent = malloc(sizeof(*ent));
     krb5_copy_principal(context, principal, &ent->principal);
-    hdb_open(context, &db, NULL, O_RDONLY, 0);
     ret = db->fetch(context, db, ent);
     db->close(context, db);
     if(ret){
