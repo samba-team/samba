@@ -1,0 +1,16 @@
+<chapter id="FAQ-Printing">
+<title>Printing problems</title>
+
+<sect1>
+<title>cupsaddsmb fails!</title>
+<para>
+This can have a few causes:
+
+<simplelist>
+<member>Does the user you are trying to add the printer with have the correct rights? Make sure
+this user is listed in 'printer admin = ' in the section [global]</member>
+</simplelist>
+
+</para>
+</sect1>
+</chapter>
