@@ -1145,3 +1145,84 @@ int create_pipe_socket(char *dir, int dir_perms,
 
 	return s;
 }
+
+#ifdef SMB_REGRESSION_TEST
+/*******************************************************************
+this is like socketpair but uses tcp. It is used by the Samba
+user testing 
+ ******************************************************************/
+static int socketpair_tcp(int fd[2])
+{
+	int listener;
+	struct sockaddr sock;
+	socklen_t socklen = sizeof(sock);
+	int len = socklen;
+	int one = 1;
+	int connect_done = 0;
+
+	fd[0] = fd[1] = listener = -1;
+
+	memset(&sock, 0, sizeof(sock));
+	
+	if ((listener = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	setsockopt(listener,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+	if (listen(listener, 1) != 0) goto failed;
+
+	if (getsockname(listener, &sock, &socklen) != 0) goto failed;
+
+	if ((fd[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	setsockopt(fd[1],SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+	set_blocking(fd[1], 0);
+
+	if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) == -1) {
+		if (errno != EINPROGRESS) goto failed;
+	} else {
+		connect_done = 1;
+	}
+
+	if ((fd[0] = accept(listener, &sock, &len)) == -1) goto failed;
+
+	setsockopt(fd[0],SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+	close(listener);
+	if (connect_done == 0) {
+		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0) goto failed;
+	}
+
+	set_blocking(fd[1], 1);
+
+	/* all OK! */
+	return 0;
+
+ failed:
+	if (fd[0] != -1) close(fd[0]);
+	if (fd[1] != -1) close(fd[1]);
+	if (listener != -1) close(listener);
+	return -1;
+}
+
+
+/*******************************************************************
+run a program on a local tcp socket, this is used to launch smbd
+in the test code
+ ******************************************************************/
+int sock_exec(char *prog)
+{
+	int fd[2];
+	if (socketpair_tcp(fd) != 0) return -1;
+	if (fork() == 0) {
+		close(fd[0]);
+		close(0);
+		close(1);
+		dup(fd[1]);
+		dup(fd[1]);
+		exit(system(prog));
+	}
+	close(fd[1]);
+	return fd[0];
+}
+#endif

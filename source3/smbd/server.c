@@ -626,10 +626,12 @@ static void usage(char *pname)
 	 * dump if euid != 0. Ensure this is the case.
 	 */
 
+#ifndef SMB_REGRESSION_TEST
 	if(geteuid() != (uid_t)0) {
 		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
 		exit(1);
 	}
+#endif
 
 	append_log = True;
 

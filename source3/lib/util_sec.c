@@ -51,11 +51,13 @@ static void assert_uid(uid_t ruid, uid_t euid)
 {
 	if ((euid != (uid_t)-1 && geteuid() != euid) ||
 	    (ruid != (uid_t)-1 && getuid() != ruid)) {
+#ifndef SMB_REGRESSION_TEST
 		DEBUG(0,("Failed to set uid privileges to (%d,%d) now set to (%d,%d)\n",
 			 (int)ruid, (int)euid,
 			 (int)getuid(), (int)geteuid()));
 		smb_panic("failed to set uid\n");
 		exit(1);
+#endif
 	}
 }
 
@@ -66,12 +68,14 @@ static void assert_gid(gid_t rgid, gid_t egid)
 {
 	if ((egid != (gid_t)-1 && getegid() != egid) ||
 	    (rgid != (gid_t)-1 && getgid() != rgid)) {
+#ifndef SMB_REGRESSION_TEST
 		DEBUG(0,("Failed to set gid privileges to (%d,%d) now set to (%d,%d) uid=(%d,%d)\n",
 			 (int)rgid, (int)egid,
 			 (int)getgid(), (int)getegid(),
 			 (int)getuid(), (int)geteuid()));
 		smb_panic("failed to set gid\n");
 		exit(1);
+#endif
 	}
 }
 
