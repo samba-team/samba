@@ -2522,7 +2522,11 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_OCTAL:
-			fprintf(f, "%s", octal_string(*(int *)ptr));
+			if (*(int *)ptr == -1) {
+				fprintf(f, "-1");
+			} else {
+				fprintf(f, "0%o", *(int *)ptr);
+			}
 			break;
 
 		case P_LIST:
