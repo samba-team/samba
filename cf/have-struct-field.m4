@@ -5,14 +5,16 @@ dnl
 dnl AC_HAVE_STRUCT_FIELD(struct, field, headers)
 
 AC_DEFUN(AC_HAVE_STRUCT_FIELD, [
-AC_CACHE_CHECK([for $2 in $1], ac_cv_type_$1_$2,[
+define(cache_val, translit(ac_cv_type_$1_$2, [A-Z ], [a-z_]))
+AC_CACHE_CHECK([for $2 in $1], cache_val,[
 AC_TRY_COMPILE([$3],[$1 x; x.$2;],
-ac_cv_type_$1_$2=yes,
-ac_cv_type_$1_$2=no)])
-if test "$ac_cv_type_$1_$2" = yes; then
-	define(foo, [HAVE_STRUCT_]translit($1_$2, [a-z ], [A-Z_]))
+cache_val=yes,
+cache_val=no)])
+if test "$cache_val" = yes; then
+	define(foo, translit(HAVE_$1_$2, [a-z ], [A-Z_]))
 	AC_DEFINE(foo, 1, [Define if $1 has field $2.])
 	undefine(foo)
 fi
-AC_MSG_RESULT($ac_cv_type_$1_$2)
+AC_MSG_RESULT($cache_val)
+undefine(cache_val)
 ])
