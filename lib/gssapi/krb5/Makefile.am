@@ -8,6 +8,8 @@ lib_LTLIBRARIES = libgssapi.la
 libgssapi_la_LDFLAGS = -version-info 3:5:2
 libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
 
+man_MANS = gssapi.3
+
 include_HEADERS = gssapi.h
 
 libgssapi_la_SOURCES =		\
@@ -17,6 +19,7 @@ libgssapi_la_SOURCES =		\
 	add_oid_set_member.c	\
 	canonicalize_name.c	\
 	compare_name.c		\
+	compat.c		\
 	context_time.c		\
 	copy_ccache.c		\
 	create_emtpy_oid_set.c	\
