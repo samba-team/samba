@@ -200,8 +200,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int16 open_ofun;
 	int32 open_size;
 	char *pname;
-	int16 namelen;
-
 	pstring fname;
 	mode_t unixmode;
 	SMB_OFF_T size=0;
@@ -230,8 +228,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	open_ofun = SVAL(params,12);
 	open_size = IVAL(params,14);
 	pname = &params[28];
-
-	StrnCpy(fname,pname,namelen);
 
 	srvstr_pull(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE);
 
@@ -1680,12 +1676,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		sbuf.st_mtime &= ~1;
 	}
 
-	/* NT expects the name to be in an exact form */
+	/* NT expects the name to be in an exact form of the *full*
+	   filename. See the trans2 torture test */
 	if (strequal(base_name,".")) {
 		pstrcpy(dos_fname, "\\");
 	} else {
-		snprintf(dos_fname, sizeof(dos_fname), "\\%s", base_name);
-		string_replace( dos_fname, '/', '\\');
+		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+		string_replace(dos_fname, '/', '\\');
 	}
 
 	switch (info_level) {
@@ -1918,7 +1915,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				data_size = 0;
 			} else {
 				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
-				SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
 				SIVAL(pdata,0,0); /* ??? */
 				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 				SOFF_T(pdata,8,size);
