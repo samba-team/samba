@@ -636,10 +636,10 @@ WINBINDD_OBJ = \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
-		$(DCUTIL_OBJ) $(IDMAP_OBJ) lib/dummyroot.o
+		$(DCUTIL_OBJ) $(IDMAP_OBJ) lib/dummyroot.o lib/afs.o
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		$(UBIQX_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+		$(UBIQX_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) lib/afs.o
 
 WINBIND_NSS_OBJ = nsswitch/wb_common.o lib/replace1.o @WINBIND_NSS_EXTRA_OBJS@
 
@@ -1179,7 +1179,7 @@ bin/expand_msdfs.@SHLIBEXT@: $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@)
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBS) @POPTLIBS@ -lcrypto
 
 bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy

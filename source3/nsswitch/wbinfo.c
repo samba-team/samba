@@ -594,6 +594,64 @@ static BOOL wbinfo_auth_crap(char *username)
         return result == NSS_STATUS_SUCCESS;
 }
 
+/* Authenticate a user with a plaintext password and set a token */
+
+static BOOL wbinfo_klog(char *username)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+        NSS_STATUS result;
+        char *p;
+
+	/* Send off request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+        p = strchr(username, '%');
+
+        if (p) {
+                *p = 0;
+                fstrcpy(request.data.auth.user, username);
+                fstrcpy(request.data.auth.pass, p + 1);
+                *p = '%';
+        } else {
+                fstrcpy(request.data.auth.user, username);
+		fstrcpy(request.data.auth.pass, getpass("Password: "));
+	}
+
+	request.flags |= WBFLAG_PAM_AFS_TOKEN;
+
+	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+
+	/* Display response */
+
+        d_printf("plaintext password authentication %s\n", 
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+
+	if (response.data.auth.nt_status)
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
+			 response.data.auth.nt_status_string, 
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	if (response.extra_data == NULL) {
+		d_printf("Did not get token data\n");
+		return False;
+	}
+
+	if (!afs_settoken_str((char *)response.extra_data)) {
+		d_printf("Could not set token\n");
+		return False;
+	}
+
+	d_printf("Successfully created AFS token\n");
+	return True;
+}
+
 /******************************************************************
  create a winbindd user
 ******************************************************************/
@@ -1001,6 +1059,9 @@ int main(int argc, char **argv)
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
+#ifdef WITH_FAKE_KASERVER
+ 		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
+#endif
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -1160,6 +1221,12 @@ int main(int argc, char **argv)
 					goto done;
 				break;
 			}
+		case 'k':
+			if (!wbinfo_klog(string_arg)) {
+				d_printf("Could not klog user\n");
+				goto done;
+			}
+			break;
 		case 'c':
 			if ( !wbinfo_create_user(string_arg) ) {
 				d_printf("Could not create user account\n");

@@ -43,6 +43,130 @@ struct ClearToken {
 	uint32 EndTimestamp;
 };
 
+static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
+			      const struct ClearToken *ct)
+{
+	char *base64_ticket;
+	char *result;
+
+	DATA_BLOB key = data_blob(ct->HandShakeKey, 8);
+	char *base64_key;
+
+	base64_ticket = base64_encode_data_blob(ticket);
+	if (base64_ticket == NULL)
+		return NULL;
+
+	base64_key = base64_encode_data_blob(key);
+	if (base64_key == NULL) {
+		free(base64_ticket);
+		return NULL;
+	}
+
+	asprintf(&result, "%s\n%u\n%s\n%u\n%u\n%u\n%s\n", cell,
+		 ct->AuthHandle, base64_key, ct->ViceId, ct->BeginTimestamp,
+		 ct->EndTimestamp, base64_ticket);
+
+	DEBUG(10, ("Got ticket string:\n%s\n", result));
+
+	free(base64_ticket);
+	free(base64_key);
+
+	return result;
+}
+
+static BOOL afs_decode_token(const char *string, char **cell,
+			     DATA_BLOB *ticket, struct ClearToken *ct)
+{
+	DATA_BLOB blob;
+	struct ClearToken result_ct;
+
+	char *s = strdup(string);
+
+	char *t;
+
+	if ((t = strtok(s, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	*cell = strdup(t);
+
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	if (sscanf(t, "%u", &result_ct.AuthHandle) != 1) {
+		DEBUG(10, ("sscanf AuthHandle failed\n"));
+		return False;
+	}
+		
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	blob = base64_decode_data_blob(t);
+
+	if ( (blob.data == NULL) ||
+	     (blob.length != sizeof(result_ct.HandShakeKey) )) {
+		DEBUG(10, ("invalid key: %x/%d\n", (uint32)blob.data,
+			   blob.length));
+		return False;
+	}
+
+	memcpy(result_ct.HandShakeKey, blob.data, blob.length);
+
+	data_blob_free(&blob);
+
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	if (sscanf(t, "%u", &result_ct.ViceId) != 1) {
+		DEBUG(10, ("sscanf ViceId failed\n"));
+		return False;
+	}
+		
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	if (sscanf(t, "%u", &result_ct.BeginTimestamp) != 1) {
+		DEBUG(10, ("sscanf BeginTimestamp failed\n"));
+		return False;
+	}
+		
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	if (sscanf(t, "%u", &result_ct.EndTimestamp) != 1) {
+		DEBUG(10, ("sscanf EndTimestamp failed\n"));
+		return False;
+	}
+		
+	if ((t = strtok(NULL, "\n")) == NULL) {
+		DEBUG(10, ("strtok failed\n"));
+		return False;
+	}
+
+	blob = base64_decode_data_blob(t);
+
+	if (blob.data == NULL) {
+		DEBUG(10, ("Could not get ticket\n"));
+		return False;
+	}
+
+	*ticket = blob;
+	*ct = result_ct;
+
+	return True;
+}
+
 /*
   Put an AFS token into the Kernel so that it can authenticate against
   the AFS server. This assumes correct local uid settings.
@@ -53,9 +177,9 @@ struct ClearToken {
   to avoid. 
 */
 
-static BOOL afs_settoken(const char *username, const char *cell,
+static BOOL afs_settoken(const char *cell,
 			 const struct ClearToken *ctok,
-			 char *v4tkt_data, int v4tkt_length)
+			 DATA_BLOB ticket)
 {
 	int ret;
 	struct {
@@ -67,10 +191,10 @@ static BOOL afs_settoken(const char *username, const char *cell,
 	char *p = buf;
 	int tmp;
 
-	memcpy(p, &v4tkt_length, sizeof(uint32));
+	memcpy(p, &ticket.length, sizeof(uint32));
 	p += sizeof(uint32);
-	memcpy(p, v4tkt_data, v4tkt_length);
-	p += v4tkt_length;
+	memcpy(p, ticket.data, ticket.length);
+	p += ticket.length;
 
 	tmp = sizeof(struct ClearToken);
 	memcpy(p, &tmp, sizeof(uint32));
@@ -109,8 +233,145 @@ static BOOL afs_settoken(const char *username, const char *cell,
 	return (ret == 0);
 }
 
+BOOL afs_settoken_str(const char *token_string)
+{
+	DATA_BLOB ticket;
+	struct ClearToken ct;
+	BOOL result;
+	char *cell;
+
+	if (!afs_decode_token(token_string, &cell, &ticket, &ct))
+		return False;
+
+	if (geteuid() != 0)
+		ct.ViceId = getuid();
+
+	result = afs_settoken(cell, &ct, ticket);
+
+	SAFE_FREE(cell);
+	data_blob_free(&ticket);
+
+	return result;
+	}
+
+/* Create a ClearToken and an encrypted ticket. ClearToken has not yet the
+ * ViceId set, this should be set by the caller. */
+
+static BOOL afs_createtoken(const char *username, const char *cell,
+			    DATA_BLOB *ticket, struct ClearToken *ct)
+{
+	fstring clear_ticket;
+	char *p = clear_ticket;
+	uint32 len;
+	uint32 now;
+
+	struct afs_key key;
+	des_key_schedule key_schedule;
+
+	if (!secrets_init()) 
+		return False;
+
+	if (!secrets_fetch_afs_key(cell, &key)) {
+		DEBUG(1, ("Could not fetch AFS service key\n"));
+		return False;
+	}
+
+	ct->AuthHandle = key.kvno;
+
+	/* Build the ticket. This is going to be encrypted, so in our
+           way we fill in ct while we still have the unencrypted
+           form. */
+
+	p = clear_ticket;
+
+	/* The byte-order */
+	*p = 1;
+	p += 1;
+
+	/* "Alice", the client username */
+	strncpy(p, username, sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
+	p += strlen(p)+1;
+	strncpy(p, "", sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
+	p += strlen(p)+1;
+	strncpy(p, cell, sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
+	p += strlen(p)+1;
+
+	/* Alice's network layer address. At least Openafs-1.2.10
+           ignores this, so we fill in a dummy value here. */
+	SIVAL(p, 0, 0);
+	p += 4;
+
+	/* We need to create a session key */
+	generate_random_buffer(p, 8, False);
+
+	/* Our client code needs the the key in the clear, it does not
+           know the server-key ... */
+	memcpy(ct->HandShakeKey, p, 8);
+
+	p += 8;
+
+	/* Ticket lifetime. We fake everything here, so go as long as
+	   possible. This is in 5-minute intervals, so 255 is 21 hours
+	   and 15 minutes.*/
+	*p = 255;
+	p += 1;
+
+	/* Ticket creation time */
+	now = time(NULL);
+	SIVAL(p, 0, now);
+	ct->BeginTimestamp = now;
+
+	ct->EndTimestamp = now + (255*60*5);
+	if (((ct->EndTimestamp - ct->BeginTimestamp) & 1) == 1) {
+		ct->BeginTimestamp += 1; /* Lifetime must be even */
+	}
+	p += 4;
+
+	/* And here comes Bob's name and instance, in this case the
+           AFS server. */
+	strncpy(p, "afs", sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
+	p += strlen(p)+1;
+	strncpy(p, "", sizeof(clear_ticket)-PTR_DIFF(p,clear_ticket)-1);
+	p += strlen(p)+1;
+
+	/* And zero-pad to a multiple of 8 bytes */
+	len = PTR_DIFF(p, clear_ticket);
+	if (len & 7) {
+		uint32 extra_space = 8-(len & 7);
+		memset(p, 0, extra_space);
+		p+=extra_space;
+	}
+	len = PTR_DIFF(p, clear_ticket);
+
+	des_key_sched((const_des_cblock *)key.key, key_schedule);
+	des_pcbc_encrypt(clear_ticket, clear_ticket,
+			 len, key_schedule, (C_Block *)key.key, 1);
+
+	ZERO_STRUCT(key);
+
+	*ticket = data_blob(clear_ticket, len);
+
+	return True;
+}
+
+char *afs_createtoken_str(const char *username, const char *cell)
+{
+	DATA_BLOB ticket;
+	struct ClearToken ct;
+	char *result;
+
+	if (!afs_createtoken(username, cell, &ticket, &ct))
+		return NULL;
+
+	result = afs_encode_token(cell, ticket, &ct);
+
+	data_blob_free(&ticket);
+
+	return result;
+}
+
 /*
-  This routine takes a radical approach completely defeating the
+  This routine takes a radical approach completely bypassing the
   Kerberos idea of security and using AFS simply as an intelligent
   file backend. Samba has persuaded itself somehow that the user is
   actually correctly identified and then we create a ticket that the
@@ -126,18 +387,12 @@ static BOOL afs_settoken(const char *username, const char *cell,
 
 BOOL afs_login(connection_struct *conn)
 {
-	fstring ticket;
-	char *p = ticket;
-	uint32 len;
-	struct afs_key key;
+	DATA_BLOB ticket;
 	pstring afs_username;
 	char *cell;
+	BOOL result;
 
 	struct ClearToken ct;
-
-	uint32 now;		/* I assume time() returns 32 bit */
-
-	des_key_schedule key_schedule;
 
 	pstrcpy(afs_username, lp_afs_username_map());
 	standard_sub_conn(conn, afs_username, sizeof(afs_username));
@@ -160,93 +415,55 @@ BOOL afs_login(connection_struct *conn)
 	DEBUG(10, ("Trying to log into AFS for user %s@%s\n", 
 		   afs_username, cell));
 
-	if (!secrets_init()) 
+	if (!afs_createtoken(afs_username, cell, &ticket, &ct))
 		return False;
 
-	if (!secrets_fetch_afs_key(cell, &key)) {
-		DEBUG(5, ("Could not fetch AFS service key\n"));
-		return False;
-	}
-
-	ct.AuthHandle = key.kvno;
-
-	/* Build the ticket. This is going to be encrypted, so in our
-           way we fill in ct while we still have the unencrypted
-           form. */
-
-	p = ticket;
-
-	/* The byte-order */
-	*p = 1;
-	p += 1;
-
-	/* "Alice", the client username */
-	strncpy(p, afs_username, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
-	p += strlen(p)+1;
-	strncpy(p, "", sizeof(ticket)-PTR_DIFF(p,ticket)-1);
-	p += strlen(p)+1;
-	strncpy(p, cell, sizeof(ticket)-PTR_DIFF(p,ticket)-1);
-	p += strlen(p)+1;
-
-	/* This assumes that we have setresuid and set the real uid as well as
-	   the effective uid in set_effective_uid(). */
+	/* For which Unix-UID do we want to set the token? */
 	ct.ViceId = getuid();
-	DEBUG(10, ("Creating Token for uid %d\n", ct.ViceId));
 
-	/* Alice's network layer address. At least Openafs-1.2.10
-           ignores this, so we fill in a dummy value here. */
-	SIVAL(p, 0, 0);
-	p += 4;
+	{
+		char *str, *new_cell;
+		DATA_BLOB test_ticket;
+		struct ClearToken test_ct;
 
-	/* We need to create a session key */
-	generate_random_buffer(p, 8, False);
+		hex_encode(ct.HandShakeKey, sizeof(ct.HandShakeKey), &str);
+		DEBUG(10, ("Key: %s\n", str));
+		free(str);
 
-	/* Our client code needs the the key in the clear, it does not
-           know the server-key ... */
-	memcpy(ct.HandShakeKey, p, 8);
+		str = afs_encode_token(cell, ticket, &ct);
 
-	p += 8;
+		if (!afs_decode_token(str, &new_cell, &test_ticket,
+				      &test_ct)) {
+			DEBUG(0, ("Could not decode token"));
+			goto decode_failed;
+		}
 
-	/* Ticket lifetime. We fake everything here, so go as long as
-	   possible. This is in 5-minute intervals, so 255 is 21 hours
-	   and 15 minutes.*/
-	*p = 255;
-	p += 1;
+		if (strcmp(cell, new_cell) != 0) {
+			DEBUG(0, ("cell changed\n"));
+		}
 
-	/* Ticket creation time */
-	now = time(NULL);
-	SIVAL(p, 0, now);
-	ct.BeginTimestamp = now;
+		if ((ticket.length != test_ticket.length) ||
+		    (memcmp(ticket.data, test_ticket.data,
+			    ticket.length) != 0)) {
+			DEBUG(0, ("Ticket changed\n"));
+		}
 
-	ct.EndTimestamp = now + (255*60*5);
-	if (((ct.EndTimestamp - ct.BeginTimestamp) & 1) == 1) {
-		ct.BeginTimestamp += 1; /* Lifetime must be even */
+		if (memcmp(&ct, &test_ct, sizeof(ct)) != 0) {
+			DEBUG(0, ("ClearToken changed\n"));
+		}
+
+		data_blob_free(&test_ticket);
+
+	decode_failed:
+		SAFE_FREE(str);
+		SAFE_FREE(new_cell);
 	}
-	p += 4;
 
-	/* And here comes Bob's name and instance, in this case the
-           AFS server. */
-	strncpy(p, "afs", sizeof(ticket)-PTR_DIFF(p,ticket)-1);
-	p += strlen(p)+1;
-	strncpy(p, "", sizeof(ticket)-PTR_DIFF(p,ticket)-1);
-	p += strlen(p)+1;
+	result = afs_settoken(cell, &ct, ticket);
 
-	/* And zero-pad to a multiple of 8 bytes */
-	len = PTR_DIFF(p, ticket);
-	if (len & 7) {
-		uint32 extra_space = 8-(len & 7);
-		memset(p, 0, extra_space);
-		p+=extra_space;
-	}
-	len = PTR_DIFF(p, ticket);
+	data_blob_free(&ticket);
 
-	des_key_sched((const_des_cblock *)key.key, key_schedule);
-	des_pcbc_encrypt(ticket, ticket,
-			 len, key_schedule, (C_Block *)key.key, 1);
-
-	ZERO_STRUCT(key);
-
-	return afs_settoken(afs_username, cell, &ct, ticket, len);
+	return result;
 }
 
 #else
@@ -254,6 +471,16 @@ BOOL afs_login(connection_struct *conn)
 BOOL afs_login(connection_struct *conn)
 {
 	return True;
+}
+
+BOOL afs_settoken_str(const char *token_string)
+{
+	return False;
+}
+
+char *afs_createtoken_str(const char *username, const char *cell)
+{
+	return False;
 }
 
 #endif /* WITH_FAKE_KASERVER */
