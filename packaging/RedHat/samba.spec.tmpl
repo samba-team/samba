@@ -16,7 +16,7 @@ Source998: filter-requires-samba_rh8.sh
 Source999: filter-requires-samba_rh9.sh
 
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
-Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
+Requires: pam pam-devel kernel glibc
 Prereq: chkconfig fileutils /sbin/ldconfig
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
