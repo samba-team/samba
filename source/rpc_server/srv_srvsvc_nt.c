@@ -814,7 +814,7 @@ uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	share_name = rpc_unistr2_to_str(&q_u->uni_share_name, p->endian);
+	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
 	init_srv_r_net_share_get_info(r_u, share_name, q_u->info_level);
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));

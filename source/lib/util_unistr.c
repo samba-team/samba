@@ -161,42 +161,6 @@ char *dos_unistrn2(uint16 *src, int len)
 	return lbuf;
 }
 
-/*******************************************************************
- Return a DOS codepage version of a big or little endian unicode string.
- len is the filename length (ignoring any terminating zero) in uin16
- units. Always null terminates. Endian is 1 if it's big endian.
- Hack alert: uses fixed buffer(s).
-********************************************************************/
-
-char *rpc_unistrn2(uint16 *src, int len, BOOL endian)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; (len > 0) && (p-lbuf < MAXUNI-3) && *src; len--, src++) {
-		uint16 ucs2_val;
-		uint16 cp_val;
-
-		RW_SVAL(True,endian,src,ucs2_val,0);
-
-		cp_val = ucs2_to_doscp[ucs2_val];
-
-		if (cp_val < 256)
-			*p++ = (char)cp_val;
-		else {
-			*p++ = (cp_val >> 8) & 0xff;
-			*p++ = (cp_val & 0xff);
-		}
-	}
-
-	*p = 0;
-	return lbuf;
-}
-
 static char lbufs[8][MAXUNI];
 static int nexti;
 
@@ -244,38 +208,6 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
-
-		if (cp_val < 256)
-			*p++ = (char)cp_val;
-		else {
-			*p++ = (cp_val >> 8) & 0xff;
-			*p++ = (cp_val & 0xff);
-		}
-	}
-
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-Return a DOS codepage version of a big or little-endian unicode string
-********************************************************************/
-
-char *rpc_unistr2_to_str(UNISTR2 *str, BOOL endian)
-{
-	char *lbuf = lbufs[nexti];
-	char *p;
-	uint16 *src = str->buffer;
-	int max_size = MIN(MAXUNI-3, str->uni_str_len);
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; (p-lbuf < max_size) && *src; src++) {
-		uint16 ucs2_val;
-		uint16 cp_val;
-
-		RW_SVAL(True,endian,src,ucs2_val,0);
-		cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -347,7 +279,7 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 }
 
 /*******************************************************************
- Convert a UNISTR2 structure to an ASCII string
+ Convert a (little-endian) UNISTR2 structure to an ASCII string
  Warning: this version does DOS codepage.
 ********************************************************************/
 

@@ -182,20 +182,14 @@ it also defines lots of intermediate macros, just ignore those :-)
 { int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
 
 /* reads multiple data from an SMB buffer */
-#define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,val,len,1)
-#define PSVAL(buf,pos,val,len) SMBMACRO(SVAL,buf,pos,val,len,2)
-#define PIVAL(buf,pos,val,len) SMBMACRO(IVAL,buf,pos,val,len,4)
-#define PCVALS(buf,pos,val,len) SMBMACRO(CVALS,buf,pos,val,len,1)
-#define PSVALS(buf,pos,val,len) SMBMACRO(SVALS,buf,pos,val,len,2)
-#define PIVALS(buf,pos,val,len) SMBMACRO(IVALS,buf,pos,val,len,4)
+#define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,((uint8 *)(val)),len,1)
+#define PSVAL(buf,pos,val,len) SMBMACRO(SVAL,buf,pos,((uint16 *)(val)),len,2)
+#define PIVAL(buf,pos,val,len) SMBMACRO(IVAL,buf,pos,((uint32 *)(val)),len,4)
 
 /* stores multiple data in an SMB buffer */
 #define PSCVAL(buf,pos,val,len) SSMBMACRO(SCVAL,buf,pos,val,len,1)
 #define PSSVAL(buf,pos,val,len) SSMBMACRO(SSVAL,buf,pos,val,len,2)
 #define PSIVAL(buf,pos,val,len) SSMBMACRO(SIVAL,buf,pos,val,len,4)
-#define PSCVALS(buf,pos,val,len) SSMBMACRO(SCVALS,buf,pos,val,len,1)
-#define PSSVALS(buf,pos,val,len) SSMBMACRO(SSVALS,buf,pos,val,len,2)
-#define PSIVALS(buf,pos,val,len) SSMBMACRO(SIVALS,buf,pos,val,len,4)
 
 
 /* now the reverse routines - these are used in nmb packets (mostly) */
@@ -212,16 +206,12 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define RSIVALS(buf,pos,val) SIVALS(buf,pos,IREV(val))
 
 /* reads multiple data from an SMB buffer (big-endian) */
-#define RPSVAL(buf,pos,val,len) SMBMACRO(RSVAL,buf,pos,val,len,2)
-#define RPIVAL(buf,pos,val,len) SMBMACRO(RIVAL,buf,pos,val,len,4)
-#define RPSVALS(buf,pos,val,len) SMBMACRO(RSVALS,buf,pos,val,len,2)
-#define RPIVALS(buf,pos,val,len) SMBMACRO(RIVALS,buf,pos,val,len,4)
+#define RPSVAL(buf,pos,val,len) SMBMACRO(RSVAL,buf,pos,((uint16 *)(val)),len,2)
+#define RPIVAL(buf,pos,val,len) SMBMACRO(RIVAL,buf,pos,((uint32 *)(val)),len,4)
 
 /* stores multiple data in an SMB buffer (big-endian) */
 #define RPSSVAL(buf,pos,val,len) SSMBMACRO(RSSVAL,buf,pos,val,len,2)
 #define RPSIVAL(buf,pos,val,len) SSMBMACRO(RSIVAL,buf,pos,val,len,4)
-#define RPSSVALS(buf,pos,val,len) SSMBMACRO(RSSVALS,buf,pos,val,len,2)
-#define RPSIVALS(buf,pos,val,len) SSMBMACRO(RSIVALS,buf,pos,val,len,4)
 
 #define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	{ RW_PCVAL(read,inbuf,outbuf,len) \

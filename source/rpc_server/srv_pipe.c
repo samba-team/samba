@@ -297,9 +297,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 */
 
 	if (p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_UNICODE) {
-		fstrcpy(user_name, rpc_unistrn2((uint16*)ntlmssp_resp->user, ntlmssp_resp->hdr_usr.str_str_len/2, p->endian));
-		fstrcpy(domain, rpc_unistrn2((uint16*)ntlmssp_resp->domain, ntlmssp_resp->hdr_domain.str_str_len/2, p->endian));
-		fstrcpy(wks, rpc_unistrn2((uint16*)ntlmssp_resp->wks, ntlmssp_resp->hdr_wks.str_str_len/2, p->endian));
+		fstrcpy(user_name, dos_unistrn2((uint16*)ntlmssp_resp->user, ntlmssp_resp->hdr_usr.str_str_len/2));
+		fstrcpy(domain, dos_unistrn2((uint16*)ntlmssp_resp->domain, ntlmssp_resp->hdr_domain.str_str_len/2));
+		fstrcpy(wks, dos_unistrn2((uint16*)ntlmssp_resp->wks, ntlmssp_resp->hdr_wks.str_str_len/2));
 	} else {
 		fstrcpy(user_name, ntlmssp_resp->user);
 		fstrcpy(domain, ntlmssp_resp->domain);

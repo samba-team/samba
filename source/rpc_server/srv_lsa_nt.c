@@ -128,7 +128,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		/* Split name into domain and user component */
 
-		pstrcpy(full_name, rpc_unistr2_to_str(&name[i], endian));
+		pstrcpy(full_name, dos_unistr2_to_str(&name[i]));
 		split_domain_name(full_name, dom_name, user);
 
 		/* Lookup name */
