@@ -45,7 +45,7 @@ struct test {
     const char *salt;
     const char *result;
 } tests[] = {
-    {"Hello world!", "$1$saltstring", "$1$saltstriYMyguxXMBpd2TEZ.vS/3q1"},
+    {"Hello world!", "$1$saltstring", "$1$saltstri$YMyguxXMBpd2TEZ.vS/3q1"},
     {NULL, NULL, NULL}
 };
 
