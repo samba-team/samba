@@ -11,12 +11,11 @@ release.
 Common bugs fixed in 3.0.12 include:
 
   o Winbind failures when using 'disable netbios = yes'
-  o Failure to establish a trust relationship via 'net rpc 
-    trust establish'
+  o Failure to establish a trust relationship via 'net rpc trust 
+    establish'
   o Various portability & compiler issues.
-  o Read only file deletion failure caused by new delete 
-    semantics in Windows XP SP2 and the MS 04-044 security 
-    hotfix.
+  o Read only file deletion failure caused by new delete semantics 
+    in Windows XP SP2 and the MS 04-044 security hotfix.
   o Error messages from shared Excel workbooks residing on Samba 
     file shares.
   o Missing files in the output of smbclient -c 'dir' when run 
@@ -26,11 +25,11 @@ Common bugs fixed in 3.0.12 include:
 
 Additional features introduced in Samba 3.0.12:
 
-  o Performance enhancements when serving directories 
-    containing large number of files.
+  o Performance enhancements when serving directories containing 
+    large number of files.
   o MS-DFS support added to smbclient.
-  o More performance improvements when using Samba/OpenLDAP
-    based DC's via the 'ldapsam:trusted=yes' option.
+  o More performance improvements when using Samba/OpenLDAP based 
+    DC's via the 'ldapsam:trusted=yes' option.
   o Support for the Novell NDS universal password when using the
     ldapsam passdb backend.
   o New 'net rpc trustdom {add,del}' functionality to eventually 
