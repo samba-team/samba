@@ -2683,6 +2683,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	struct in_addr ip;
 	fstring servicename;
 	char *sharename;
+	NTSTATUS status;
 	
 	/* make a copy so we don't modify the global string 'service' */
 	fstrcpy(servicename, share);
@@ -2745,12 +2746,14 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		}
 	}
 
-	if (NT_STATUS_IS_ERR(cli_session_setup(c, username, password, 
-					       lp_workgroup()))) {
+	status = cli_session_setup(c, username, password, lp_workgroup());
+	if (NT_STATUS_IS_ERR(status)) {
 		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || use_kerberos ||
-		    NT_STATUS_IS_ERR(cli_session_setup(c, "", "", lp_workgroup()))) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c->tree));
+		if (password[0] || !username[0] || use_kerberos) {
+			status = cli_session_setup(c, "", "", lp_workgroup());
+		}
+		if (NT_STATUS_IS_ERR(status)) {
+			d_printf("session setup failed: %s\n", nt_errstr(status));
 			cli_shutdown(c);
 			return NULL;
 		}
