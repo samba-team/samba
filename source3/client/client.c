@@ -477,6 +477,17 @@ static void display_finfo(file_info *finfo)
 
 
 /****************************************************************************
+  calculate size of a file
+  ****************************************************************************/
+static void do_du(file_info *finfo)
+{
+  if (do_this_one(finfo)) {
+    dir_total += finfo->size;
+  }
+}
+
+
+/****************************************************************************
   do a directory listing, calling fn on each file found. Use the TRANSACT2
   call for long filenames
   ****************************************************************************/
@@ -1056,6 +1067,38 @@ static void cmd_dir(char *inbuf,char *outbuf)
 }
 
 
+/****************************************************************************
+  get a directory listing
+  ****************************************************************************/
+static void cmd_du(char *inbuf,char *outbuf)
+{
+  int attribute = aDIR | aSYSTEM | aHIDDEN;
+  pstring mask;
+  fstring buf;
+  char *p=buf;
+
+  dir_total = 0;
+  pstrcpy(mask,cur_dir);
+  if(mask[strlen(mask)-1]!='\\')
+    pstrcat(mask,"\\");
+
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
+    {
+      if (*p == '\\')
+	pstrcpy(mask,p);
+      else
+	pstrcat(mask,p);
+    }
+  else {
+    pstrcat(mask,"*");
+  }
+
+  do_dir(inbuf,outbuf,mask,attribute,do_du,recurse,False);
+
+  do_dskattr();
+
+  DEBUG(0, ("Total number of bytes: %d\n", dir_total));
+}
 
 /****************************************************************************
   get a file from rname to lname
@@ -3226,6 +3269,7 @@ struct
 {
   {"ls",cmd_dir,"<mask> list the contents of the current directory",COMPL_REMOTE},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",COMPL_REMOTE},
+  {"du",cmd_du,"<mask> computes the total size of the current directory",COMPL_REMOTE},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",COMPL_LOCAL},
   {"cd",cmd_cd,"[directory] change/report the remote directory",COMPL_REMOTE},
   {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)"},
@@ -3257,7 +3301,7 @@ struct
   {"exit",cli_send_logout,"logoff the server"},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",COMPL_LOCAL},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit"},
-  {"tar",cmd_tar,"tar <c|x>[IXbgNa] current directory to/from <file name>" },
+  {"tar",cmd_tar,"tar <c|x>[IXbgNan] current directory to/from <file name>" },
   {"blocksize",cmd_block,"blocksize <number> (default 20)" },
   {"tarmode",cmd_tarmode,
      "<full|inc|reset|noreset> tar's behaviour towards archive bits" },
@@ -3694,7 +3738,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-T<c|x>IXgbNa          command line tar\n"));
+  DEBUG(0,("\t-T<c|x>IXgbNan        command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\n"));
 }
@@ -3789,6 +3833,58 @@ static void usage(char *pname)
   if (getenv("PASSWD")) {
     pstrcpy(password,getenv("PASSWD"));
     got_pass = True;
+  }
+
+  if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
+    int fd = -1;
+    BOOL close_it;
+    pstring spec;
+    char pass[128];
+    char *p;
+    if ((p = getenv("PASSWD_FD")) != NULL) {
+      pstrcpy(spec, "descriptor ");
+      pstrcat(spec, p);
+      sscanf(p, "%d", &fd);
+      close_it = False;
+    } else if ((p = getenv("PASSWD_FILE")) != NULL) {
+      fd = open(p, O_RDONLY);
+      pstrcpy(spec, p);
+      if (fd < 0) {
+	fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
+		spec, strerror(errno));
+	exit(1);
+      }
+      close_it = True;
+    }
+    for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
+	p && p - pass < sizeof(pass);) {
+      switch (read(fd, p, 1)) {
+      case 1:
+	if (*p != '\n' && *p != '\0') {
+	  *++p = '\0'; /* advance p, and null-terminate pass */
+	  break;
+	}
+      case 0:
+	if (p - pass) {
+	  *p = '\0'; /* null-terminate it, just in case... */
+	  p = NULL; /* then force the loop condition to become false */
+	  break;
+	} else {
+	  fprintf(stderr, "Error reading password from file %s: %s\n",
+		  spec, "empty password\n");
+	  exit(1);
+	}
+
+      default:
+	fprintf(stderr, "Error reading password from file %s: %s\n",
+		spec, strerror(errno));
+	exit(1);
+      }
+    }
+    pstrcpy(password, pass);
+    got_pass = True;
+    if (close_it)
+      close(fd);
   }
 
   if (*username == 0 && getenv("LOGNAME"))
