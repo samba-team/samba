@@ -49,10 +49,14 @@ NTSTATUS pvfs_map_errno(struct pvfs_state *pvfs, int unix_errno)
   this is used by calls like unlink and search which take an attribute
   and only include special files if they match the given attribute
 */
-BOOL pvfs_match_attrib(struct pvfs_state *pvfs, struct pvfs_filename *name, uint32_t attrib)
+BOOL pvfs_match_attrib(struct pvfs_state *pvfs, struct pvfs_filename *name, 
+		       uint32_t attrib, uint32_t must_attrib)
 {
 	if ((name->dos.attrib & ~attrib) & 
 	    (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM)) {
+		return False;
+	}
+	if (must_attrib & ~name->dos.attrib) {
 		return False;
 	}
 	return True;

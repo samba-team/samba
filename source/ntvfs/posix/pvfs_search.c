@@ -54,7 +54,7 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	if (!pvfs_match_attrib(pvfs, name, search->search_attrib)) {
+	if (!pvfs_match_attrib(pvfs, name, search->search_attrib, search->must_attrib)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -296,7 +296,8 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	search->handle = id;
 	search->dir = dir;
 	search->current_index = 0;
-	search->search_attrib = search_attrib;
+	search->search_attrib = search_attrib & 0xFF;
+	search->must_attrib = (search_attrib>>8) & 0xFF;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -425,6 +426,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	search->dir = dir;
 	search->current_index = 0;
 	search->search_attrib = search_attrib;
+	search->must_attrib = 0;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
