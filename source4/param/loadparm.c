@@ -2028,7 +2028,7 @@ static BOOL handle_include(const char *pszParmValue, char **ptr)
 
 	string_set(ptr, fname);
 
-	if (file_exist(fname, NULL))
+	if (file_exist(fname))
 		return (pm_process(fname, do_section, do_parameter));
 
 	DEBUG(2, ("Can't find include file %s\n", fname));

@@ -496,7 +496,7 @@ static void init_mount(void)
 
 		asprintf(&smbmnt_path, "%s/smbmnt", dyn_BINDIR);
 		
-		if (file_exist(smbmnt_path, NULL)) {
+		if (file_exist(smbmnt_path)) {
 			execv(smbmnt_path, args);
 			fprintf(stderr,
 				"smbfs/init_mount: execv of %s failed. Error was %s.",

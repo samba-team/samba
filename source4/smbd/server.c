@@ -157,7 +157,7 @@ static int binary_smbd_main(int argc, const char *argv[])
 
 	cleanup_tmp_files();
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+	if (!directory_exist(lp_lockdir())) {
 		mkdir(lp_lockdir(), 0755);
 	}
 
