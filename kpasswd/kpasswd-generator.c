@@ -180,6 +180,12 @@ main(int argc, char **argv)
     setprogname(argv[0]);
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
+    if (help_flag)
+	usage (0);
+    if (version_flag) {
+	print_version(NULL);
+	return 0;
+    }
     argc -= optind;
     argv += optind;
 
