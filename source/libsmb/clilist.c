@@ -52,8 +52,8 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->mtime = make_unix_date2(p+12);
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
-			len = CVAL(p, 26);
-			p += 27;
+			len = CVAL(p, 25);
+			p += 26;
 			p += clistr_align_in(cli, p, 0);
 			p += clistr_pull(cli, finfo->name, p,
 				    sizeof(finfo->name),
