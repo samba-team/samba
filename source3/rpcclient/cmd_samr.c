@@ -37,6 +37,11 @@ extern struct cli_state *smb_cli;
 
 extern FILE* out_hnd;
 
+static void sam_display_domain(const char *domain)
+{
+	report(out_hnd, "Domain Name: %s\n", domain);
+}
+
 static void sam_display_alias_info(const char *domain, const DOM_SID *sid,
 				uint32 alias_rid, 
 				ALIAS_INFO_CTR *const ctr)
@@ -754,6 +759,95 @@ static BOOL req_groupmem_info(struct cli_state *cli, uint16 fnum,
 		return True;
 	}
 	return False;
+}
+
+/****************************************************************************
+SAM Domains query.
+				DOMAIN_INFO_FN(dom_inf_fn),
+				DOMAIN_MEM_FN(dom_mem_fn))
+****************************************************************************/
+uint32 msrpc_sam_enum_domains(struct cli_state *cli,
+				const char* srv_name,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
+				DOMAIN_FN(dom_fn))
+{
+	uint16 fnum;
+	BOOL res = True;
+	uint32 ace_perms = 0x02000000; /* access control permissions. */
+	POLICY_HND sam_pol;
+	uint32 status;
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(cli, fnum,
+				srv_name, ace_perms,
+				&sam_pol) : False;
+
+	(*sam) = NULL;
+	(*num_sam_entries) = 0;
+
+	if (res)
+	{
+		uint32 domain_idx;
+		uint32 start_idx = 0;
+		/* read some domains */
+		do
+		{
+			status = samr_enum_domains(cli, fnum, 
+			     &sam_pol,
+			     &start_idx, 0x10000,
+			     sam, num_sam_entries);
+
+		} while (status == STATUS_MORE_ENTRIES);
+
+		if ((*num_sam_entries) == 0)
+		{
+			report(out_hnd, "No domains\n");
+		}
+
+		for (domain_idx = 0; domain_idx < (*num_sam_entries); domain_idx++)
+		{
+			char *domain_name = (*sam)[domain_idx].acct_name;
+
+			if (dom_fn != NULL)
+			{
+				dom_fn(domain_name);
+			}
+
+#if 0
+			if (dom_inf_fn != NULL)
+			{
+				query_domaininfo(cli, fnum, &sam_pol,
+				                  domain_name,
+				                  dom_inf_fn);
+			}
+			if (dom_mem_fn != NULL)
+			{
+				req_domainmem_info(cli, fnum, &sam_pol,
+				                  domain_name,
+				                  dom_mem_fn);
+			}
+#endif
+		}
+	}
+
+	res = res ? samr_close(cli, fnum, &sam_pol) : False;
+
+	/* close the session */
+	cli_nt_session_close(cli, fnum);
+
+	if (res)
+	{
+		DEBUG(5,("msrpc_sam_enum_domains: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("msrpc_sam_enum_domains: failed\n"));
+	}
+	return (*num_sam_entries);
 }
 
 /****************************************************************************
@@ -3133,3 +3227,46 @@ void cmd_sam_enum_groups(struct client_info *info)
 		free(sam);
 	}
 }
+
+/****************************************************************************
+experimental SAM domains enum.
+****************************************************************************/
+void cmd_sam_enum_domains(struct client_info *info)
+{
+	BOOL request_domain_info = False;
+	fstring tmp;
+	int i;
+	struct acct_info *sam = NULL;
+	uint32 num_sam_entries = 0;
+
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	for (i = 0; i < 3; i++)
+	{
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		{
+			request_domain_info  |= strequal(tmp, "-i");
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	report(out_hnd, "SAM Enumerate Domains\n");
+
+	msrpc_sam_enum_domains(smb_cli, srv_name,
+	            &sam, &num_sam_entries,
+	            sam_display_domain);
+
+	if (sam != NULL)
+	{
+		free(sam);
+	}
+}
+

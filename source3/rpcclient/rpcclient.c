@@ -484,6 +484,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"enumdomains",
+		cmd_sam_enum_domains,
+		"SAM Domains Database Query (experimental!)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"enumgroups",
 		cmd_sam_enum_groups,
 		"SAM Group Database Query (experimental!)",

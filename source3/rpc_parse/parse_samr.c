@@ -2756,6 +2756,166 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 
 
 /*******************************************************************
+makes a SAMR_Q_ENUM_DOMAINS structure.
+********************************************************************/
+BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
+				uint32 start_idx, uint32 size)
+{
+	if (q_e == NULL || pol == NULL) return False;
+
+	DEBUG(5,("make_samr_q_enum_domains\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+
+	q_e->start_idx = start_idx;
+	q_e->max_size = size;
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_enum_domains");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("start_idx", ps, depth, &(q_e->start_idx));
+	prs_uint32("max_size ", ps, depth, &(q_e->max_size ));
+
+	prs_align(ps);
+
+	return True;
+}
+
+
+/*******************************************************************
+makes a SAMR_R_ENUM_DOMAINS structure.
+********************************************************************/
+BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
+		uint32 next_idx,
+		uint32 num_sam_entries, char **doms, uint32 status)
+{
+	uint32 i;
+
+	if (r_u == NULL) return False;
+
+	DEBUG(5,("make_samr_r_enum_domains\n"));
+
+	r_u->next_idx = next_idx;
+	r_u->sam = NULL;
+	r_u->uni_dom_name = NULL;
+
+	if (num_sam_entries != 0)
+	{
+		r_u->ptr_entries1 = 1;
+		r_u->ptr_entries2 = 1;
+		r_u->num_entries2 = num_sam_entries;
+		r_u->num_entries3 = num_sam_entries;
+
+		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+		r_u->uni_dom_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_dom_name[0]));
+
+		if (r_u->sam == NULL || r_u->uni_dom_name == NULL)
+		{
+			DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOMAINS\n"));
+			return False;
+		}
+
+		for (i = 0; i < num_sam_entries; i++)
+		{
+			int acct_name_len = doms[i] != NULL ? strlen(doms[i]) : 0;
+
+			make_sam_entry(&(r_u->sam[i]), acct_name_len, 0);
+			make_unistr2(&(r_u->uni_dom_name[i]), doms[i], acct_name_len);
+		}
+
+		r_u->num_entries4 = num_sam_entries;
+	}
+	else
+	{
+		r_u->ptr_entries1 = 0;
+		r_u->num_entries2 = num_sam_entries;
+		r_u->ptr_entries2 = 1;
+	}
+
+	r_u->status = status;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps, int depth)
+{
+	uint32 i;
+
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_enum_domains");
+	depth++;
+
+	r_u->sam = NULL;
+	r_u->uni_dom_name = NULL;
+
+	prs_align(ps);
+
+	prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx    ));
+	prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1));
+
+	if (r_u->ptr_entries1 != 0)
+	{
+		prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
+		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
+		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
+
+		if (ps->io)
+		{
+			r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+			r_u->uni_dom_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_dom_name[0]));
+		}
+
+		if ((r_u->sam == NULL || r_u->uni_dom_name == NULL) && r_u->num_entries2 != 0)
+		{
+			DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOMAINS\n"));
+			r_u->num_entries4 = 0;
+			r_u->status = 0xC0000000|NT_STATUS_MEMORY_NOT_ALLOCATED;
+			return False;
+		}
+
+		for (i = 0; i < r_u->num_entries2; i++)
+		{
+			prs_grow(ps);
+			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
+		}
+
+		for (i = 0; i < r_u->num_entries2; i++)
+		{
+			prs_grow(ps);
+			smb_io_unistr2("", &(r_u->uni_dom_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+		}
+
+		prs_align(ps);
+
+	}
+
+	prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
+	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
+}
+
+/*******************************************************************
 makes a SAMR_Q_ENUM_DOM_GROUPS structure.
 ********************************************************************/
 BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
