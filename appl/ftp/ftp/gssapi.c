@@ -166,17 +166,17 @@ gss_adat(void *app_data, void *buf, size_t len)
     OM_uint32 maj_stat, min_stat;
     gss_name_t client_name;
     struct gss_data *d = app_data;
+    struct gss_channel_bindings_struct bindings;
 
-    gss_channel_bindings_t bindings = malloc(sizeof(*bindings));
     sockaddr_to_gss_address (his_addr,
-			     &bindings->initiator_addrtype,
-			     &bindings->initiator_address);
+			     &bindings.initiator_addrtype,
+			     &bindings.initiator_address);
     sockaddr_to_gss_address (ctrl_addr,
-			     &bindings->acceptor_addrtype,
-			     &bindings->acceptor_address);
+			     &bindings.acceptor_addrtype,
+			     &bindings.acceptor_address);
 
-    bindings->application_data.length = 0;
-    bindings->application_data.value = NULL;
+    bindings.application_data.length = 0;
+    bindings.application_data.value = NULL;
 
     input_token.value = buf;
     input_token.length = len;
@@ -194,7 +194,7 @@ gss_adat(void *app_data, void *buf, size_t len)
 				       &d->context_hdl,
 				       GSS_C_NO_CREDENTIAL,
 				       &input_token,
-				       bindings,
+				       &bindings,
 				       &client_name,
 				       NULL,
 				       &output_token,
@@ -272,6 +272,11 @@ import_name(const char *kname, const char *host, gss_name_t *target_name)
     gss_buffer_desc name;
 
     name.length = asprintf((char**)&name.value, "%s@%s", kname, host);
+    if (name.value == NULL) {
+	printf("Out of memory\n");
+	return AUTH_ERROR;
+    }
+
     maj_stat = gss_import_name(&min_stat,
 			       &name,
 			       GSS_C_NT_HOSTBASED_SERVICE,
