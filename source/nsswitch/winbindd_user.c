@@ -84,6 +84,12 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	return True;
 }
 
+/************************************************************************
+ Empty static struct for negative caching.
+*************************************************************************/
+ 
+static struct winbindd_pw negative_pw_cache_entry;
+
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
@@ -121,6 +127,10 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 
 	if (winbindd_fetch_user_cache_entry(name_domain, name_user,
 					    &state->response.data.pw)) {
+		/* Check if this is a negative cache entry. */
+		if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
+				sizeof(state->response.data.pw)) == 0)
+                        return WINBINDD_ERROR;
 		return WINBINDD_OK;
 	}
 	
@@ -130,12 +140,14 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 
 	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
+		winbindd_store_user_cache_entry(name_domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 
 	if (name_type != SID_NAME_USER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
 			  name_type));
+		winbindd_store_user_cache_entry(name_domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -150,6 +162,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
+		winbindd_store_user_cache_entry(name_domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
     
@@ -164,6 +177,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	if (!winbindd_fill_pwent(domain->name, state->request.data.username, 
 				 user_rid, group_rid, gecos_name,
 				 &state->response.data.pw)) {
+		winbindd_store_user_cache_entry(name_domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -214,6 +228,10 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	if (winbindd_fetch_uid_cache_entry(domain->name, 
 					   state->request.data.uid,
 					   &state->response.data.pw)) {
+		/* Check if this is a negative cache entry. */
+                if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
+				 sizeof(state->response.data.pw)) == 0)
+			return WINBINDD_ERROR;
 		return WINBINDD_OK;
 	}
 	
@@ -227,6 +245,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		
 		sid_to_string(temp, &user_sid);
 		DEBUG(1, ("Could not lookup sid %s\n", temp));
+		winbindd_store_uid_cache_entry(domain->name, state->request.data.uid,
+				       &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -240,6 +260,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
+		winbindd_store_uid_cache_entry(domain->name, state->request.data.uid,
+				       &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -253,6 +275,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
+		winbindd_store_uid_cache_entry(domain->name, state->request.data.uid,
+				       &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 
@@ -260,6 +284,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, group_rid,
 				 gecos_name, &state->response.data.pw)) {
+		winbindd_store_uid_cache_entry(domain->name, state->request.data.uid,
+				       &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
