@@ -1151,7 +1151,7 @@ installdat: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installclientlib: libsmbclient
+installclientlib: installdirs libsmbclient
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
@@ -1193,7 +1193,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS) 
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
-installman:
+installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
 
 .PHONY: showlayout
