@@ -281,6 +281,12 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    free (errbuf);
 	    return;
 	}
+
+	r = krb5_auth_con_getkey(context, auth_context, &key_block);
+	if(r){
+	    abort ();
+	}
+	
 	{
 	    krb5_authenticator authenticator;
 
@@ -298,7 +304,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		r = krb5_verify_checksum (context,
 					  foo,
 					  sizeof(foo),
-					  NULL,
+					  key_block,
 					  authenticator->cksum);
 		if (r) {
 		    Data(ap, KRB_REJECT, "No checksum", -1);
@@ -334,13 +340,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 					   auth_context,
 					   &key_block);
 
-	if (r)
-	    r = krb5_auth_con_getkey(context, auth_context, &key_block);
-
-	if(r){
-	  abort ();
-	}
-	
 	if(key_block->keytype == KEYTYPE_DES){
 	  Session_Key skey;
 
