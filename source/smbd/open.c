@@ -1159,6 +1159,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 
 			if(!S_ISDIR(st.st_mode)) {
 				DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
+				errno = EACCES;
 				return -1;
 			}
 			*action = FILE_WAS_OPENED;
@@ -1171,6 +1172,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 
 			if(conn->read_only) {
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
+				errno = EACCES;
 				return -1;
 			}
 

@@ -458,7 +458,7 @@ static int smb_create_user(char *unix_user)
   int ret;
 
   pstrcpy(add_script, lp_adduser_script());
-  string_sub(add_script, "%u", unix_user);
+  pstring_sub(add_script, "%u", unix_user);
   ret = smbrun(add_script,NULL,False);
   DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
   return ret;
@@ -474,7 +474,7 @@ static int smb_delete_user(char *unix_user)
   int ret;
 
   pstrcpy(del_script, lp_deluser_script());
-  string_sub(del_script, "%u", unix_user);
+  pstring_sub(del_script, "%u", unix_user);
   ret = smbrun(del_script,NULL,False);
   DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
   return ret;

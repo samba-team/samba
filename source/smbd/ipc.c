@@ -81,7 +81,7 @@ static int CopyExpanded(connection_struct *conn,
 	if (!src || !dst || !n || !(*dst)) return(0);
 
 	StrnCpy(buf,src,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	StrnCpy(*dst,buf,*n);
 	l = strlen(*dst) + 1;
@@ -106,7 +106,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 	pstring buf;
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	return strlen(buf) + 1;
 }
@@ -116,7 +116,7 @@ static char* Expand(connection_struct *conn, int snum, char* s)
 	static pstring buf;
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
-	string_sub(buf,"%S",lp_servicename(snum));
+	pstring_sub(buf,"%S",lp_servicename(snum));
 	standard_sub(conn,buf);
 	return &buf[0];
 }

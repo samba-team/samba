@@ -76,10 +76,10 @@ static char *build_print_command(connection_struct *conn,
 	if (strstr(syscmd,"%s")) {
 		pstrcpy(filename,filename1);
     
-		string_sub(syscmd, "%s", filename);
+		pstring_sub(syscmd, "%s", filename);
 	}
   
-	string_sub(syscmd, "%f", filename1);
+	pstring_sub(syscmd, "%f", filename1);
   
 	/* Does the service have a printername? If not, make a fake
            and empty */
@@ -91,7 +91,7 @@ static char *build_print_command(connection_struct *conn,
 		tstr = SERVICE(snum);
 	}
   
-	string_sub(syscmd, "%p", tstr);
+	pstring_sub(syscmd, "%p", tstr);
   
 	standard_sub(conn,syscmd);
   
@@ -414,9 +414,9 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  string_sub(line,"standard input","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  pstring_sub(line,"standard input","STDIN");
+  all_string_sub(line,"(","\"",0);
+  all_string_sub(line,")","\"",0);
 
   for (count=0; 
        count<10 && 
@@ -531,9 +531,9 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     }
     if (!header_line_ok) return (False); /* incorrect header line */
     /* handle the case of "(standard input)" as a filename */
-    string_sub(line,"standard input","STDIN");
-    all_string_sub(line,"(","\"");
-    all_string_sub(line,")","\"");
+    pstring_sub(line,"standard input","STDIN");
+    all_string_sub(line,"(","\"",0);
+    all_string_sub(line,")","\"",0);
     
     for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
@@ -569,7 +569,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     else if (base_prio) base_prio_reset=False;
     
     /* handle the dash in the job id */
-    string_sub(line,"-"," ");
+    pstring_sub(line,"-"," ");
     
     for (count=0; count<12 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
       
@@ -619,7 +619,7 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   char *p;
 
   /* handle the dash in the job id */
-  string_sub(line,"-"," ");
+  pstring_sub(line,"-"," ");
   
   for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
@@ -673,14 +673,14 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   DEBUG(4,("antes [%s]\n", line));
 
   /* handle the case of "-- standard input --" as a filename */
-  string_sub(line,"standard input","STDIN");
+  pstring_sub(line,"standard input","STDIN");
   DEBUG(4,("despues [%s]\n", line));
-  all_string_sub(line,"-- ","\"");
-  all_string_sub(line," --","\"");
+  all_string_sub(line,"-- ","\"",0);
+  all_string_sub(line," --","\"",0);
   DEBUG(4,("despues 1 [%s]\n", line));
 
-  string_sub(line,"[job #","");
-  string_sub(line,"]","");
+  pstring_sub(line,"[job #","");
+  pstring_sub(line,"]","");
   DEBUG(4,("despues 2 [%s]\n", line));
 
   
@@ -736,9 +736,9 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
-  string_sub(line,"stdin","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  pstring_sub(line,"stdin","STDIN");
+  all_string_sub(line,"(","\"",0);
+  all_string_sub(line,")","\"",0);
   
   for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
@@ -806,7 +806,7 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
 
   /* mung all the ":"s to spaces*/
-  string_sub(line,":"," ");
+  pstring_sub(line,":"," ");
   
   for (count=0; count<10 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
@@ -993,7 +993,7 @@ int get_printqueue(int snum,
 	}
     
 	pstrcpy(syscmd,lpq_command);
-	string_sub(syscmd,"%p",printername);
+	pstring_sub(syscmd,"%p",printername);
 
 	standard_sub(conn,syscmd);
 
@@ -1082,8 +1082,8 @@ void del_printqueue(connection_struct *conn,int snum,int jobid)
   slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lprm_command);
-  string_sub(syscmd,"%p",printername);
-  string_sub(syscmd,"%j",jobstr);
+  pstring_sub(syscmd,"%p",printername);
+  pstring_sub(syscmd,"%j",jobstr);
   standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
@@ -1120,8 +1120,8 @@ void status_printjob(connection_struct *conn,int snum,int jobid,int status)
   slprintf(jobstr,sizeof(jobstr)-1,"%d",jobid);
 
   pstrcpy(syscmd,lpstatus_command);
-  string_sub(syscmd,"%p",printername);
-  string_sub(syscmd,"%j",jobstr);
+  pstring_sub(syscmd,"%p",printername);
+  pstring_sub(syscmd,"%j",jobstr);
   standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);
@@ -1176,7 +1176,7 @@ void status_printqueue(connection_struct *conn,int snum,int status)
   }
 
   pstrcpy(syscmd,queuestatus_command);
-  string_sub(syscmd,"%p",printername);
+  pstring_sub(syscmd,"%p",printername);
   standard_sub(conn,syscmd);
 
   ret = smbrun(syscmd,NULL,False);

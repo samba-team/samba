@@ -578,7 +578,7 @@ void dos_clean_name(char *s)
   DEBUG(3,("dos_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  string_sub(s, "\\\\", "\\");
+  pstring_sub(s, "\\\\", "\\");
 
   while ((p = strstr(s,"\\..\\")) != NULL)
     {
@@ -596,7 +596,7 @@ void dos_clean_name(char *s)
 
   trim_string(s,NULL,"\\..");
 
-  string_sub(s, "\\.\\", "\\");
+  pstring_sub(s, "\\.\\", "\\");
 }
 
 /*******************************************************************
@@ -609,7 +609,7 @@ void unix_clean_name(char *s)
   DEBUG(3,("unix_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  string_sub(s, "//","/");
+  pstring_sub(s, "//","/");
 
   /* Remove leading ./ characters */
   if(strncmp(s, "./", 2) == 0) {
@@ -676,7 +676,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
   /* remove any double slashes */
-  string_sub(s,"//","/");
+  pstring_sub(s,"//","/");
 
   pstrcpy(base_name,s);
   p = strrchr(base_name,'/');
@@ -1349,8 +1349,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
     /*
      * Handle broken clients that send us old 8.3 format.
      */
-    string_sub(t_pattern,"????????","*");
-    string_sub(t_pattern,".???",".*");
+    pstring_sub(t_pattern,"????????","*");
+    pstring_sub(t_pattern,".???",".*");
 #endif
   }
 
@@ -1369,8 +1369,8 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 #endif
 
   /* Remove any *? and ** as they are meaningless */
-  string_sub(t_pattern, "*?", "*");
-  string_sub(t_pattern, "**", "*");
+  pstring_sub(t_pattern, "*?", "*");
+  pstring_sub(t_pattern, "**", "*");
 
   if (strequal(t_pattern,"*"))
     return(True);
@@ -1392,7 +1392,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
     /*
      * Remove multiple "*." patterns.
      */
-    string_sub(te_pattern, "*.*.", "*.");
+    pstring_sub(te_pattern, "*.*.", "*.");
     num_regexp_components = count_chars(te_pattern, '.');
     num_path_components = count_chars(te_filename, '.');
 
@@ -1976,7 +1976,7 @@ static char *automount_lookup(char *user_name)
            DEBUG(3, ("NIS+ result: %s\n", entry->en_cols.en_cols_val[1].ec_value.ec_value_val));
  
            pstrcpy(last_value, entry->en_cols.en_cols_val[1].ec_value.ec_value_val);
-           string_sub(last_value, "&", user_name);
+           pstring_sub(last_value, "&", user_name);
            fstrcpy(last_key, user_name);
         }
       }
@@ -2161,7 +2161,7 @@ static size_t expand_env_var(char *p)
 	copylen = MIN((q+1-p),(sizeof(envname)-1));
 	strncpy(envname,p,copylen);
 	envname[copylen] = '\0';
-	string_sub(p,envname,envval);
+	pstring_sub(p,envname,envval);
 	return 0; /* Allow the environment contents to be parsed. */
 }
 
@@ -2185,29 +2185,29 @@ void standard_sub_basic(char *str)
 			case 'G' :
 			{
 				if ((pass = Get_Pwnam(username,False))!=NULL) {
-					string_sub(p,"%G",gidtoname(pass->pw_gid));
+					pstring_sub(p,"%G",gidtoname(pass->pw_gid));
 				} else {
 					p += 2;
 				}
 				break;
 			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr(Client)); break;
-			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name(Client)); break;
-			case 'R' : string_sub(p,"%R", remote_proto); break;
-			case 'T' : string_sub(p,"%T", timestring()); break;
-			case 'U' : string_sub(p,"%U", username); break;
-			case 'a' : string_sub(p,"%a", remote_arch); break;
+			case 'N' : pstring_sub(p,"%N", automount_server(username)); break;
+			case 'I' : pstring_sub(p,"%I", client_addr(Client)); break;
+			case 'L' : pstring_sub(p,"%L", local_machine); break;
+			case 'M' : pstring_sub(p,"%M", client_name(Client)); break;
+			case 'R' : pstring_sub(p,"%R", remote_proto); break;
+			case 'T' : pstring_sub(p,"%T", timestring()); break;
+			case 'U' : pstring_sub(p,"%U", username); break;
+			case 'a' : pstring_sub(p,"%a", remote_arch); break;
 			case 'd' :
 			{
 				slprintf(pidstr,sizeof(pidstr) - 1, "%d",(int)getpid());
-				string_sub(p,"%d", pidstr);
+				pstring_sub(p,"%d", pidstr);
 				break;
 			}
-			case 'h' : string_sub(p,"%h", myhostname); break;
-			case 'm' : string_sub(p,"%m", remote_machine); break;
-			case 'v' : string_sub(p,"%v", VERSION); break;
+			case 'h' : pstring_sub(p,"%h", myhostname); break;
+			case 'm' : pstring_sub(p,"%m", remote_machine); break;
+			case 'v' : pstring_sub(p,"%v", VERSION); break;
 			case '$' : p += expand_env_var(p); break; /* Expand environment variables */
 			case '\0': p++; break; /* don't run off end if last character is % */
 			default  : p+=2; break;
@@ -2229,27 +2229,27 @@ void standard_sub(connection_struct *conn,char *str)
 		switch (*(p+1)) {
 		case 'H': 
 			if ((home = get_home_dir(conn->user))) {
-				string_sub(p,"%H",home);
+				pstring_sub(p,"%H",home);
 			} else {
 				p += 2;
 			}
 			break;
 			
 		case 'P': 
-			string_sub(p,"%P",conn->connectpath); 
+			pstring_sub(p,"%P",conn->connectpath); 
 			break;
 			
 		case 'S': 
-			string_sub(p,"%S",
+			pstring_sub(p,"%S",
 				   lp_servicename(SNUM(conn))); 
 			break;
 			
 		case 'g': 
-			string_sub(p,"%g",
+			pstring_sub(p,"%g",
 				   gidtoname(conn->gid)); 
 			break;
 		case 'u': 
-			string_sub(p,"%u",conn->user); 
+			pstring_sub(p,"%u",conn->user); 
 			break;
 			
 			/* Patch from jkf@soton.ac.uk Left the %N (NIS
@@ -2260,7 +2260,7 @@ void standard_sub(connection_struct *conn,char *str)
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			string_sub(p,"%p",
+			pstring_sub(p,"%p",
 				   automount_path(lp_servicename(SNUM(conn)))); 
 			break;
 		case '\0': 

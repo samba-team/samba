@@ -147,7 +147,7 @@ void sync_browse_lists(struct work_record *work,
 
 	slprintf(s->fname, sizeof(pstring)-1,
 		 "%s/sync.%d", lp_lockdir(), counter++);
-	string_sub(s->fname,"//", "/");
+	pstring_sub(s->fname,"//", "/");
 	
 	DLIST_ADD(syncs, s);
 

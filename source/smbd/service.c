@@ -84,7 +84,7 @@ int find_service(char *service)
 {
    int iService;
 
-   string_sub(service,"\\","/");
+   fstring_sub(service,"\\","/");
 
    iService = lp_servicenumber(service);
 
@@ -161,7 +161,7 @@ int find_service(char *service)
        iService = find_service(defservice);
        if (iService >= 0)
        {
-         string_sub(service,"_","/");
+         fstring_sub(service,"_","/");
          iService = lp_add_service(service,iService);
        }
      }
@@ -293,13 +293,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	{
 		pstring list;
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 
 		if (user_in_list(user,list))
 			conn->read_only = True;
 		
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
-		string_sub(list,"%S",service);
+		pstring_sub(list,"%S",service);
 		
 		if (user_in_list(user,list))
 			conn->read_only = False;    
@@ -351,7 +351,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstrcpy(fuser,lp_force_user(snum));
 
 		/* Allow %S to be used by force user. */
-		string_sub(fuser,"%S",service);
+		fstring_sub(fuser,"%S",service);
 
 		pass2 = (struct passwd *)Get_Pwnam(fuser,True);
 		if (pass2) {
@@ -387,7 +387,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			StrnCpy(gname,tmp_gname,sizeof(pstring)-1);
 		}
 		/* default service may be a group name 		*/
-		string_sub(gname,"%S",service);
+		pstring_sub(gname,"%S",service);
 		gptr = (struct group *)getgrnam(gname);
 		
 		if (gptr) {

@@ -305,7 +305,7 @@ static void run_netbench(int client)
 
 		/* printf("[%d] %s\n", line_count, line); */
 
-		all_string_sub(line,"CLIENT1", cname);
+		all_string_sub(line,"CLIENT1", cname, sizeof(line));
 		
 		for (i=0;i<20;i++) params[i] = "";
 

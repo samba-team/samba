@@ -78,9 +78,9 @@ static void msg_deliver(void)
       fstring alpha_msgto;
 
       pstrcpy(s,lp_msg_command());
-      string_sub(s,"%s",name);
-      string_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,sizeof(alpha_msgfrom)));
-      string_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,sizeof(alpha_msgto)));
+      pstring_sub(s,"%s",name);
+      pstring_sub(s,"%f",alpha_strcpy(alpha_msgfrom,msgfrom,sizeof(alpha_msgfrom)));
+      pstring_sub(s,"%t",alpha_strcpy(alpha_msgto,msgto,sizeof(alpha_msgto)));
       standard_sub_basic(s);
       smbrun(s,NULL,False);
     }
