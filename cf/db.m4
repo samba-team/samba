@@ -104,8 +104,8 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
   #include <stdio.h>
   #if defined(HAVE_NDBM_H)
   #include <ndbm.h>
-  #else
-  #error no ndbm.h
+  #elif defined(HAVE_DBM_H)
+  #include <dbm.h>
   #endif
   DBM *dbm;
   ],[NULL])
@@ -183,6 +183,10 @@ int main()
       AC_MSG_RESULT([no])
     fi],[AC_MSG_RESULT([no])])
 fi
+
+AM_CONDITIONAL(HAVE_DB1, test "$db_type" = db1)dnl
+AM_CONDITIONAL(HAVE_DB3, test "$db_type" = db3)dnl
+AM_CONDITIONAL(HAVE_NDBM, test "$db_type" = ndbm)dnl
 
 AC_SUBST(DBLIB)dnl
 AC_SUBST(LIB_NDBM)dnl
