@@ -4,7 +4,7 @@
 @chapter Programming with Kerberos
 
 First you need to know how the Kerberos model works, go read the
-introduction text (@xref{What is Kerberos?}).
+introduction text (@pxref{What is Kerberos?}).
 
 @macro manpage{man, section}
 @cite{\man\(\section\)}
