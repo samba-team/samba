@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -237,31 +237,31 @@ krb4_auth(void *app_data, char *host)
 	ret = mk_auth(d, &adat, "rcmd", host, checksum);
     if(ret){
 	printf("%s\n", krb_get_err_text(ret));
-	return -1;
+	return AUTH_CONTINUE;
     }
 
     if(base64_encode(adat.dat, adat.length, &p) < 0) {
 	printf("Out of memory base64-encoding.\n");
-	return -1;
+	return AUTH_CONTINUE;
     }
     ret = command("ADAT %s", p);
     free(p);
 
     if(ret != COMPLETE){
 	printf("Server didn't accept auth data.\n");
-	return -1;
+	return AUTH_ERROR;
     }
 
     p = strstr(reply_string, "ADAT=");
     if(!p){
 	printf("Remote host didn't send adat reply.\n");
-	return -1;
+	return AUTH_ERROR;
     }
     p += 5;
     len = base64_decode(p, adat.dat);
     if(len < 0){
 	printf("Failed to decode base64 from server.\n");
-	return -1;
+	return AUTH_ERROR;
     }
     adat.length = len;
     ret = krb_rd_safe(adat.dat, adat.length, &d->key, 
@@ -269,14 +269,14 @@ krb4_auth(void *app_data, char *host)
     if(ret){
 	printf("Error reading reply from server: %s.\n", 
 	       krb_get_err_text(ret));
-	return -1;
+	return AUTH_ERROR;
     }
     krb_get_int(msg_data.app_data, &cs, 4, 0);
     if(cs - checksum != 1){
 	printf("Bad checksum returned from server.\n");
-	return -1;
+	return AUTH_ERROR;
     }
-    return 0;
+    return AUTH_OK;
 }
 
 struct sec_client_mech krb4_client_mech = {
