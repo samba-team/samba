@@ -156,6 +156,24 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+/* check a BOOLEAN */
+BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
+{
+	uint8 b = 0;
+
+	asn1_read_uint8(data, &b);
+	if (b != ASN1_BOOLEAN) {
+		data->has_error = True;
+		return False;
+	}
+	asn1_read_uint8(data, &b);
+	if (b != v) {
+		data->has_error = True;
+		return False;
+	}
+	return !data->has_error;
+}
+
 
 /* load a ASN1_DATA structure with a lump of data, ready to be parsed */
 BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)

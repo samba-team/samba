@@ -365,6 +365,10 @@
 #include <iconv.h>
 #endif
 
+#if HAVE_KRB5
+#include <krb5.h>
+#endif
+
 /*
  * Define VOLATILE if needed.
  */

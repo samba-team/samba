@@ -22,6 +22,71 @@
 
 #include "includes.h"
 
+#if HAVE_KRB5
+/****************************************************************************
+reply to a session setup spnego negotiate packet for kerberos
+****************************************************************************/
+static int reply_spnego_kerberos(connection_struct *conn, char *outbuf,
+				 DATA_BLOB *secblob)
+{
+	DATA_BLOB ticket;
+	krb5_context context;
+	krb5_principal server;
+	krb5_auth_context auth_context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_data packet;
+	krb5_ticket *tkt = NULL;
+	int ret;
+	char *realm, *client;
+	fstring service;
+	extern pstring global_myname;
+
+	realm = lp_realm();
+
+	if (!spnego_parse_krb5_wrap(*secblob, &ticket)) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	/* the service is the wins name lowercase with $ tacked on */
+	fstrcpy(service, global_myname);
+	strlower(service);
+	fstrcat(service, "$");
+
+	ret = krb5_init_context(&context);
+	if (ret) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	ret = krb5_build_principal(context, &server, strlen(realm),
+				   realm, service, NULL);
+	if (ret) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	packet.length = ticket.length;
+	packet.data = (krb5_pointer)ticket.data;
+
+	if ((ret = krb5_rd_req(context, &auth_context, &packet, 
+				       server, keytab, NULL, &tkt))) {
+		DEBUG(3,("krb5_rd_req failed with code %08x\n", ret));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client,
+				     &client))) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	DEBUG(3,("Ticket name is [%s]\n", client));
+
+	/* well, if we got a client above then I think we have authenticated the user
+	   but fail it for now until I understand it */
+	
+	
+	return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+}
+#endif
+
 
 /****************************************************************************
 send a security blob via a session setup reply
@@ -50,9 +115,6 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	return send_smb(smbd_server_fd(),outbuf);
 }
 
-
-
-
 /****************************************************************************
 reply to a session setup spnego negotiate packet
 ****************************************************************************/
@@ -65,6 +127,7 @@ static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
 	uint32 ntlmssp_command, neg_flags;
 	DATA_BLOB sess_key, chal, spnego_chal;
 	uint8 cryptkey[8];
+	BOOL got_kerberos = False;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -73,20 +136,33 @@ static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
 	
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
+		if (strcmp(OID_KERBEROS5_OLD, OIDs[i]) == 0) {
+			got_kerberos = True;
+		}
 		free(OIDs[i]);
 	}
 	DEBUG(3,("Got secblob of size %d\n", secblob.length));
+
+#if HAVE_KRB5
+	if (got_kerberos) {
+		int ret = reply_spnego_kerberos(conn, outbuf, &secblob);
+		data_blob_free(&secblob);
+		return ret;
+	}
+#endif
 
 	/* parse the NTLMSSP packet */
 #if 0
 	file_save("secblob.dat", secblob.data, secblob.length);
 #endif
 
-	msrpc_parse(&secblob, "CddB",
-		    "NTLMSSP",
-		    &ntlmssp_command,
-		    &neg_flags,
-		    &sess_key);
+	if (!msrpc_parse(&secblob, "CddB",
+			 "NTLMSSP",
+			 &ntlmssp_command,
+			 &neg_flags,
+			 &sess_key)) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
 
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
@@ -97,7 +173,9 @@ static int reply_spnego_negotiate(connection_struct *conn, char *outbuf,
 
 	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
 
-	last_challenge(cryptkey);
+	if (!last_challenge(cryptkey)) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
 
 	/* Give them the challenge. For now, ignore neg_flags and just
 	   return the flags we want. Obviously this is not correct */
@@ -252,6 +330,10 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	/* pull the spnego blob */
 	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
 	
+#if 0
+	file_save("negotiate.dat", blob1.data, blob1.length);
+#endif
+
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
 		ret = reply_spnego_negotiate(conn, outbuf, blob1);

@@ -241,6 +241,29 @@ static DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
 	return ret;
 }
 
+/*
+  parse a krb5 GSS-API wrapper packet giving a ticket
+*/
+BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
+{
+	BOOL ret;
+	ASN1_DATA data;
+
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_APPLICATION(0));
+	asn1_check_OID(&data, OID_KERBEROS5);
+	asn1_check_BOOLEAN(&data, 0);
+	*ticket = data_blob(data.data, asn1_tag_remaining(&data));
+	asn1_read(&data, ticket->data, ticket->length);
+	asn1_end_tag(&data);
+
+	ret = !data.has_error;
+
+	asn1_free(&data);
+
+	return ret;
+}
+
 
 /* 
    generate a SPNEGO negTokenTarg packet, ready for a EXTENDED_SECURITY
