@@ -4,9 +4,9 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4)
 
-man_MANS = kinit.1 klist.1 kdestroy.1
+man_MANS = kinit.1 klist.1 kdestroy.1 kgetcred.1
 
-bin_PROGRAMS = kinit kauth klist kdestroy
+bin_PROGRAMS = kinit kauth klist kdestroy kgetcred
 
 kinit_SOURCES = kinit.c kinit_options.c
 
