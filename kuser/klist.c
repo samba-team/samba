@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -222,7 +222,7 @@ print_tickets (krb5_context context,
     krb5_cc_cursor cursor;
     krb5_creds creds;
 
-    rtbl_t ct;
+    rtbl_t ct = NULL;
 
     ret = krb5_unparse_name (context, principal, &str);
     if (ret)
