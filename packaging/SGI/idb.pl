@@ -55,7 +55,7 @@ if (@codepage) {
 }
 
 # add my local files to the list of binaries to install
-@bins = sort (@sprogs,@progs,@progs1,@scripts,("sambalp","smbprint"));
+@bins = sort (@sprogs,@progs,@progs1,@scripts,("findsmb","sambalp","smbprint"));
 
 # the files installed in docs include all the original files in docs plus all
 # the "*.doc" files from the source tree
@@ -91,6 +91,9 @@ while(@bins) {
   if (index($nextfile,'$')) {
     if ($nextfile eq "smbpasswd") {
       print IDB "f 4555 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+    }
+    elsif ($nextfile eq "findsmb") {
+      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
     }
     elsif ($nextfile eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
