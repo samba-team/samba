@@ -118,6 +118,7 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 	if (!sid) return NULL;
 
 	*sid = *domain_sid;
+	/*TODO: use realloc! */
 	sid->sub_auths = talloc_array_p(mem_ctx, uint32_t, sid->num_auths+1);
 	if (!sid->sub_auths) {
 		return NULL;
