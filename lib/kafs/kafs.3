@@ -1,4 +1,4 @@
-.\" Copyright (c) 1998 - 1999, 2001 - 2002 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1998 - 1999, 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,8 +31,8 @@
 .\" 
 .\"	$Id$
 .\"
-.Dd May 7, 1997
-.Os KTH-KRB
+.Dd Mar 17, 2003
+.Os HEIMDAL
 .Dt KAFS 3
 .Sh NAME
 .Nm k_hasafs ,
@@ -42,8 +42,8 @@
 .Nm k_afs_cell_of_file ,
 .Nm krb_afslog ,
 .Nm krb_afslog_uid
-.\" .Nm krb5_afslog ,
-.\" .Nm krb5_afslog_uid
+.Nm krb5_afslog ,
+.Nm krb5_afslog_uid
 .Nd AFS library
 .Sh LIBRARY
 AFS cache manager access library (libkafs, -lkafs)
@@ -63,10 +63,10 @@ AFS cache manager access library (libkafs, -lkafs)
 .Fn krb_afslog "char *cell" "char *realm"
 .Ft int
 .Fn krb_afslog_uid "char *cell" "char *realm" "uid_t uid"
-.\" .Ft krb5_error_code
-.\" .Fn krb5_afslog_uid "krb5_context context" "krb5_ccache id" "const char *cell" "krb5_const_realm realm" "uid_t uid"
-.\" .Ft krb5_error_code
-.\" .Fn krb5_afslog "krb5_context context" "krb5_ccache id" "const char *cell" "krb5_const_realm realm"
+.Ft krb5_error_code
+.Fn krb5_afslog_uid "krb5_context context" "krb5_ccache id" "const char *cell" "krb5_const_realm realm" "uid_t uid"
+.Ft krb5_error_code
+.Fn krb5_afslog "krb5_context context" "krb5_ccache id" "const char *cell" "krb5_const_realm realm"
 .Sh DESCRIPTION
 .Fn k_hasafs
 initializes some library internal structures, and tests for the
@@ -100,13 +100,13 @@ field in the token,
 will use
 .Fa uid .
 .Pp
-.\" .Fn krb5_afslog ,
-.\" and
-.\" .Fn krb5_afslog_uid
-.\" are the Kerberos 5 equivalents of
-.\" .Fn krb_afslog ,
-.\" and
-.\" .Fn krb_afslog_uid .
+.Fn krb5_afslog ,
+and
+.Fn krb5_afslog_uid
+are the Kerberos 5 equivalents of
+.Fn krb_afslog ,
+and
+ .Fn krb_afslog_uid .
 .\" The extra arguments are the ubiquitous context, and the cache id where
 .\" to store any obtained tickets. Since AFS servers normally can't handle
 .\" Kerberos 5 tickets directly, these functions will first obtain version
