@@ -250,9 +250,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!(hnd = cm_get_sam_handle(domain))) {
+	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd))) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 
@@ -260,9 +259,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
 			  user));
 		result = NT_STATUS_WRONG_PASSWORD;
-	} else {
+	} else
 		result = NT_STATUS_OK;
-	}
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
