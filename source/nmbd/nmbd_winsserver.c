@@ -1548,7 +1548,7 @@ void wins_write_database(void)
 
     if (namerec->source == REGISTER_NAME)
     {
-      fprintf(fp, "%s#%02x %d ",
+      fprintf(fp, "\"%s#%02x\" %d ",
 	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
 	      (int)namerec->death_time);
 
