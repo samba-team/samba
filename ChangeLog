@@ -1,3 +1,12 @@
+2001-03-06  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_enctype): remove trailing comma
+
+2001-03-04  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_enctype): add ENCTYPE_* aliases for
+	compatibility with MIT krb5
+
 2001-03-02  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.c (main): only request a renewable ticket when
@@ -8,6 +17,10 @@
 2001-02-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/get_cred.c: implement krb5_get_cred_from_kdc_opt
+
+2001-02-25  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: do not use -R when testing for des functions
 
 2001-02-14  Assar Westerlund  <assar@sics.se>
 

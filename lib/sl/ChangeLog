@@ -1,3 +1,7 @@
+2001-03-06  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: re do the roken-renaming properly
+
 2001-02-13  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add more functions to rename
