@@ -139,7 +139,8 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 
 BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 
-EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@
+EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
+	bin/log2pcap@EXEEXT@
 
 SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
 
@@ -674,7 +675,8 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
-everything: all libsmbclient debug2html smbfilter talloctort modules torture
+everything: all libsmbclient debug2html smbfilter talloctort modules torture \
+	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .lo
