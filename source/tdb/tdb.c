@@ -875,7 +875,10 @@ static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 	if (!(rec_ptr = tdb_find_lock(tdb, key, F_WRLCK, &rec))) return -1;
 
 	/* must be long enough key, data and tailer */
-	if (rec.rec_len < key.dsize + dbuf.dsize + sizeof(tdb_off)) goto out;
+	if (rec.rec_len < key.dsize + dbuf.dsize + sizeof(tdb_off)) {
+		tdb->ecode = TDB_SUCCESS; /* Not really an error */
+		goto out;
+	}
 
 	if (tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len,
 		      dbuf.dptr, dbuf.dsize) == -1)
