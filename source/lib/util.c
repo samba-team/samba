@@ -1599,10 +1599,13 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 
 void free_namearray(name_compare_entry *name_array)
 {
+	int i;
+
 	if(name_array == NULL)
 		return;
 
-	SAFE_FREE(name_array->name);
+	for(i=0; name_array[i].name!=NULL; i++)
+		SAFE_FREE(name_array[i].name);
 	SAFE_FREE(name_array);
 }
 
