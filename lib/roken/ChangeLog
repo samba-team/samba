@@ -1,3 +1,7 @@
+2000-09-24  Assar Westerlund  <assar@sics.se>
+
+	*  esetenv.c: new file/function
+
 2000-08-16  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 10:0:1
