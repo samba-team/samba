@@ -103,7 +103,7 @@ typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
 #ifndef yet
 typedef struct krb5_keyblock{
     krb5_keytype keytype;
-    krb5_data contents;
+    krb5_data keyvalue;
 } krb5_keyblock;
 #else
 typedef EncryptionKey krb5_keyblock;
@@ -125,8 +125,19 @@ typedef struct krb5_ccache_data *krb5_ccache;
 
 typedef struct krb5_context_data *krb5_context;
 
-typedef struct krb5_principal_data *krb5_principal;
-typedef const struct krb5_principal_data *krb5_const_principal;
+#ifdef USE_ASN1_PRINCIPAL
+typedef Principal krb5_principal_data;
+#else
+typedef struct krb5_principal_data{
+  int type;
+  krb5_data realm;
+  krb5_data *comp;
+  int ncomp;
+}krb5_principal_data;
+
+#endif
+typedef krb5_principal_data *krb5_principal;
+typedef const krb5_principal_data *krb5_const_principal;
 
 
 typedef time_t krb5_time;
@@ -191,22 +202,8 @@ enum{
   KRB5_NT_UID		= 5
 };
 
-typedef krb5_data krb5_realm;
+typedef Realm krb5_realm;
 
-#ifdef USE_PRINCIPALNAME
-typedef struct krb5_principal_data {
-    PrincipalName pn;
-    krb5_realm realm;
-} krb5_principal_data;
-#else
-typedef struct krb5_principal_data{
-  int type;
-  krb5_data realm;
-  krb5_data *comp;
-  int ncomp;
-}krb5_principal_data;
-
-#endif
 
 typedef struct krb5_ticket {
 #if 0
@@ -615,14 +612,14 @@ krb5_unparse_name_ext(krb5_context context,
 		      char **name,
 		      size_t *size);
 
-krb5_data*
+krb5_realm*
 krb5_princ_realm(krb5_context context,
 		 krb5_principal principal);
 
 void
 krb5_princ_set_realm(krb5_context context,
 		     krb5_principal principal,
-		     krb5_data *realm);
+		     krb5_realm *realm);
 
 krb5_error_code
 krb5_principal_set_component(krb5_context, 
@@ -683,7 +680,7 @@ krb5_sname_to_principal (krb5_context context,
 
 krb5_error_code
 krb5_get_krbhst (krb5_context context,
-		 const krb5_data *realm,
+		 const krb5_realm *realm,
 		 char ***hostlist);
 
 krb5_error_code
