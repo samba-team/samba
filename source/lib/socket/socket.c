@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "lib/socket/socket.h"
 #include "system/filesys.h"
 
 /*
@@ -326,6 +327,10 @@ NTSTATUS socket_dup(struct socket_context *sock)
 
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type)
 {
+	extern const struct socket_ops *socket_ipv4_ops(enum socket_type );
+	extern const struct socket_ops *socket_ipv6_ops(enum socket_type );
+	extern const struct socket_ops *socket_unixdom_ops(enum socket_type );
+
 	if (strcmp("ip", name) == 0 || 
 	    strcmp("ipv4", name) == 0) {
 		return socket_ipv4_ops(type);

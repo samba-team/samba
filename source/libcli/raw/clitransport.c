@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "lib/socket/socket.h"
 #include "system/time.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"

@@ -26,6 +26,7 @@
 #include "asn_1.h"
 #include "ldap_server/ldap_server.h"
 #include "smbd/service_stream.h"
+#include "lib/socket/socket.h"
 
 /*
   close the socket and shutdown a server_context

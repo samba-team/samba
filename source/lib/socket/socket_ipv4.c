@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "lib/socket/socket.h"
 
 static NTSTATUS ipv4_init(struct socket_context *sock)
 {

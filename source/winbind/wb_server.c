@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/socket/socket.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
 #include "lib/events/events.h"

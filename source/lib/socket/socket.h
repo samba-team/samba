@@ -103,4 +103,39 @@ struct socket_context {
 	const struct socket_ops *ops;
 };
 
+
+/* prototypes */
+NTSTATUS socket_create(const char *name, enum socket_type type, 
+		       struct socket_context **new_sock, uint32_t flags);
+void socket_destroy(struct socket_context *sock);
+NTSTATUS socket_connect(struct socket_context *sock,
+			const char *my_address, int my_port,
+			const char *server_address, int server_port,
+			uint32_t flags);
+NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags);
+NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags);
+NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock);
+NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
+		     size_t wantlen, size_t *nread, uint32_t flags);
+NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf, 
+			 size_t wantlen, size_t *nread, uint32_t flags,
+			 const char **src_addr, int *src_port);
+NTSTATUS socket_send(struct socket_context *sock, 
+		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags);
+NTSTATUS socket_sendto(struct socket_context *sock, 
+		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+		       const char *dest_addr, int dest_port);
+NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val);
+char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+int socket_get_peer_port(struct socket_context *sock);
+char *socket_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+int socket_get_my_port(struct socket_context *sock);
+int socket_get_fd(struct socket_context *sock);
+NTSTATUS socket_dup(struct socket_context *sock);
+const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type);
+BOOL socket_check_access(struct socket_context *sock, 
+			 const char *service_name,
+			 const char **allow_list, const char **deny_list);
+
 #endif /* _SAMBA_SOCKET_H */
