@@ -80,7 +80,7 @@ extern BOOL have_ip;
 extern int max_xmit;
 
 static int interpret_long_filename(int level,char *p,file_info *finfo);
-static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(),BOOL longdir);
+static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(),BOOL longdir, BOOL dirstoo);
 static int interpret_short_filename(char *p,file_info *finfo);
 static BOOL do_this_one(file_info *finfo);
 
@@ -478,7 +478,7 @@ static void display_finfo(file_info *finfo)
   do a directory listing, calling fn on each file found. Use the TRANSACT2
   call for long filenames
   ****************************************************************************/
-static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
+static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir, BOOL dirstoo)
 {
   int max_matches = 512;
   int info_level = Protocol<PROTOCOL_NT1?1:260; /* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -638,7 +638,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
   for (p=dirlist,i=0;i<total_received;i++)
     {
       p += interpret_long_filename(info_level,p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True, dirstoo);
     }
 
   /* free up the dirlist buffer */
@@ -650,7 +650,7 @@ static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
+static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir, BOOL dirstoo)
 {
   char *p;
   int received = 0;
@@ -777,7 +777,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
   for (p=dirlist,i=0;i<num_received;i++)
     {
       p += interpret_short_filename(p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False,dirstoo);
     }
 
   if (dirlist) free(dirlist);
@@ -789,17 +789,17 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
+void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir, BOOL dirstoo)
 {
   DEBUG(5,("do_dir(%s,%x,%s)\n",Mask,attribute,BOOLSTR(recurse_dir)));
   if (Protocol >= PROTOCOL_LANMAN2)
     {
-      if (do_long_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir) > 0)
+      if (do_long_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo) > 0)
 	return;
     }
 
   expand_mask(Mask,False);
-  do_short_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir);
+  do_short_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo);
   return;
 }
 
@@ -973,8 +973,11 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 
 /****************************************************************************
   act on the files in a dir listing
+
+  RJS, 4-Apr-1998, dirstoo added to allow caller to indicate that directories
+                   should be processed as well.
   ****************************************************************************/
-static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(),BOOL longdir)
+static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(),BOOL longdir, BOOL dirstoo)
 {
 
   if (!((finfo->mode & aDIR) == 0 && *fileselection && 
@@ -986,6 +989,11 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 	{
 	  pstring mask2;
 	  pstring sav_dir;
+
+          if (fn && dirstoo && do_this_one(finfo)) { /* Do dirs, RJS */
+	    fn(finfo);
+	  }
+
 	  strcpy(sav_dir,cur_dir);
 	  strcat(cur_dir,finfo->name);
 	  strcat(cur_dir,"\\");
@@ -997,9 +1005,9 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 	  strcat(mask2,"*");
 
 	  if (longdir)
-	    do_long_dir(inbuf,outbuf,mask2,attribute,fn,True);      
+	    do_long_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);      
 	  else
-	    do_dir(inbuf,outbuf,mask2,attribute,fn,True);
+	    do_dir(inbuf,outbuf,mask2,attribute,fn,True, dirstoo);
 
 	  strcpy(cur_dir,sav_dir);
 	}
@@ -1038,7 +1046,7 @@ static void cmd_dir(char *inbuf,char *outbuf)
     strcat(mask,"*");
   }
 
-  do_dir(inbuf,outbuf,mask,attribute,NULL,recurse);
+  do_dir(inbuf,outbuf,mask,attribute,NULL,recurse,False);
 
   do_dskattr();
 
@@ -1541,7 +1549,7 @@ static void do_mget(file_info *finfo)
       strcat(mget_mask,"*");
       
       do_dir((char *)inbuf,(char *)outbuf,
-	     mget_mask,aSYSTEM | aHIDDEN | aDIR,do_mget,False);
+	     mget_mask,aSYSTEM | aHIDDEN | aDIR,do_mget,False, False);
       chdir("..");
       strcpy(cur_dir,saved_curdir);
       free(inbuf);free(outbuf);
@@ -1610,7 +1618,7 @@ static void cmd_mget(char *inbuf,char *outbuf)
 	strcpy(mget_mask,p);
       else
 	strcat(mget_mask,p);
-      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False);
+      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 
   if (! *mget_mask)
@@ -1619,7 +1627,7 @@ static void cmd_mget(char *inbuf,char *outbuf)
       if(mget_mask[strlen(mget_mask)-1]!='\\')
 	strcat(mget_mask,"\\");
       strcat(mget_mask,"*");
-      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False);
+      do_dir((char *)inbuf,(char *)outbuf,mget_mask,attribute,do_mget,False,False);
     }
 }
 
@@ -2674,7 +2682,7 @@ static void cmd_del(char *inbuf,char *outbuf )
     }
   strcat(mask,buf);
 
-  do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_del,False);
+  do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_del,False,False);
 }
 
 
