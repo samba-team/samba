@@ -5,6 +5,12 @@ This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
+TODO Before Official 2.0.7 release
+----------------------------------
+
+Update "Using Samba" html to match 2.0.7 code.
+Update packaging code to include all new files.
+
 New Documentation in 2.0.7
 --------------------------
 
