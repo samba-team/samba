@@ -134,24 +134,6 @@ static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 
 
 /****************************************************************************
-hash our interfaces and netbios names settings
-*****************************************************************************/
-static unsigned wins_hash(void)
-{
-	int i;
-	unsigned ret = iface_hash();
-	extern char **my_netbios_names;
-
-	for (i=0;my_netbios_names[i];i++)
-		ret ^= str_checksum(my_netbios_names[i]);
-	
-	ret ^= str_checksum(lp_workgroup());
-
-	return ret;
-}
-	
-
-/****************************************************************************
 Determine if this packet should be allocated to the WINS server.
 *****************************************************************************/
 
