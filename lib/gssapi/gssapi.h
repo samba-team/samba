@@ -773,6 +773,11 @@ OM_uint32 gss_krb5_copy_ccache
 	 gss_cred_id_t /*cred*/,
 	 struct krb5_ccache_data */*out*/);
 
+OM_uint32 gss_krb5_get_tkt_flags
+	(OM_uint32 */*minor*/,
+	 gss_ctx_id_t /*context_handle*/,
+	 OM_uint32 */*tkt_flags*/);
+
 OM_uint32
 gsskrb5_extract_authz_data_from_sec_context
 	(OM_uint32 * /*minor_status*/,
