@@ -418,7 +418,7 @@ find_cred(krb5_context context,
 				&mcreds, out_creds);
     if(ret == 0)
 	return 0;
-    while(*tgts){
+    while(tgts && *tgts){
 	if(krb5_compare_creds(context, KRB5_TC_DONT_MATCH_REALM, 
 			      &mcreds, *tgts)){
 	    ret = krb5_copy_creds_contents(context, *tgts, out_creds);
@@ -578,7 +578,7 @@ krb5_get_credentials_with_flags(krb5_context context,
 	krb5_free_creds(context, tgts[i]);
     }
     free(tgts);
-    if(ret == 0)
+    if(ret == 0 && flags.b.enc_tkt_in_skey == 0)
 	krb5_cc_store_cred(context, ccache, *out_creds);
     return ret;
 }
