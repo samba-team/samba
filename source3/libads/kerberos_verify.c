@@ -46,6 +46,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	char *password_s;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
+	BOOL auth_ok = False;
 
 	if (!secrets_init()) {
 		DEBUG(1,("secrets_init failed\n"));
@@ -124,11 +125,12 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
 				       NULL, keytab, NULL, &tkt))) {
 			krb5_free_ktypes(context, enctypes);
+			auth_ok = True;
 			break;
 		}
 	}
 
-	if (!enctypes[i]) {
+	if (!auth_ok) {
 		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
