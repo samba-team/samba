@@ -1,7 +1,7 @@
 TEST_ALL="basicsmb-sharelist basicsmb-local-pass-change \
-basicsmb-sharesec basicsmb-usersec\
-basicsmb-serversec basicsmb-domainsec basicsmb-domainsec-nt4\
-basicsmb-shareguest basicsmb-hostsequiv basicsmb-invalidusers\
+basicsmb-sharesec basicsmb-usersec \
+basicsmb-serversec basicsmb-domainsec basicsmb-domainsec-nt4 \
+basicsmb-shareguest basicsmb-hostsequiv basicsmb-invalidusers \
 basicsmb-hostsdeny basicsmb-remote-pass-change \
 torture-FDPASS torture-LOCK1 torture-LOCK2 \
 torture-LOCK3 torture-LOCK4 torture-LOCK5 \
