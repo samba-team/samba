@@ -94,7 +94,7 @@ NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
 #ifndef _PSTRING
 #define _PSTRING
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 256
+#define FSTRING_LEN 128
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 #endif
