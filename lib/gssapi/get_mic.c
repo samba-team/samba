@@ -89,7 +89,7 @@ OM_uint32 gss_get_mic
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
 	  sizeof(key));
 #endif
-  memcpy (&key, context_handle->auth_context->local_subkey.keyvalue.data,
+  memcpy (&key, context_handle->auth_context->local_subkey->keyvalue.data,
 	  sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,

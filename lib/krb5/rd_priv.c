@@ -68,10 +68,10 @@ krb5_rd_priv(krb5_context context,
 
   /* XXX - Is this right? */
 
-  if (auth_context->local_subkey.keytype)
-      key = &auth_context->local_subkey;
-  else if (auth_context->remote_subkey.keytype)
-      key = &auth_context->remote_subkey;
+  if (auth_context->local_subkey->keytype)
+      key = auth_context->local_subkey;
+  else if (auth_context->remote_subkey->keytype)
+      key = auth_context->remote_subkey;
   else
       key = auth_context->keyblock;
 

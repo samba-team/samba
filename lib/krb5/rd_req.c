@@ -238,8 +238,9 @@ krb5_verify_ap_req(krb5_context context,
     /* And where should it be stored? */
 
     if (ac->authenticator->subkey) {
-	copy_EncryptionKey (ac->authenticator->subkey,
-			    &ac->remote_subkey);
+	krb5_copy_keyblock(context, 
+			   ac->authenticator->subkey,
+			   &ac->remote_subkey);
     }
 
     if (ap_req_options) {

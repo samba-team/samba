@@ -101,7 +101,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	enctype = auth_context->enctype;
     else {
 	ret = krb5_keytype_to_etype (context,
-				     auth_context->local_subkey.keytype,
+				     auth_context->local_subkey->keytype,
 				     &enctype);
 	if (ret)
 	    return ret;
@@ -228,7 +228,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 				      len,
 				      enctype,
 				      0,
-				      &auth_context->local_subkey,
+				      auth_context->local_subkey,
 				      &cred.enc_part);
     if (ret) {
 	free_KRB_CRED(&cred);

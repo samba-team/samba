@@ -72,7 +72,7 @@ krb5_rd_cred (krb5_context      context,
 			cred.enc_part.cipher.data,
 			cred.enc_part.cipher.length,
 			cred.enc_part.etype,
-			&auth_context->remote_subkey,
+			auth_context->remote_subkey,
 			&enc_krb_cred_part_data);
     if (ret)
 	goto out;

@@ -84,7 +84,7 @@ OM_uint32 gss_verify_mic
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
 	  sizeof(key));
 #endif
-  memcpy (&key, context_handle->auth_context->remote_subkey.keyvalue.data,
+  memcpy (&key, context_handle->auth_context->remote_subkey->keyvalue.data,
 	  sizeof(key));
 
   des_set_key (&key, schedule);
