@@ -215,24 +215,15 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct policy_handle *handle)
 {
 	struct winreg_EnumValue r;
-	struct winreg_EnumValueName name;
 	struct winreg_Uint8buf value;
-	struct winreg_Uint16buf buf;
+	struct winreg_String name;
 	uint32 type, requested_len, returned_len;
 	NTSTATUS status;
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 
-	buf.max_len = 0x7fff;
-	buf.offset = 0;
-	buf.len = 0;
-	buf.buffer = NULL;
-
-	name.len = 0;
-	name.max_len = buf.max_len * 2;
-	name.buf = &buf;
-
+	init_winreg_String(&name, NULL);
 	r.in.name = r.out.name = &name;
 	
 	type = 0;
