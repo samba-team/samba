@@ -172,8 +172,8 @@ typedef struct
   char *szUtmpDir;
 #endif /* WITH_UTMP */
   char *szSourceEnv;
-  char *szsursmapUID;
-  char *szsursmapGID;
+  char *szWinbindUID;
+  char *szWinbindGID;
   char *szTemplateHomedir;
   char *szTemplateShell;
   int max_log_size;
@@ -530,7 +530,7 @@ static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue,char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
-static BOOL handle_sursmap_id(char *pszParmValue, char **ptr);
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -960,13 +960,10 @@ static struct parm_struct parm_table[] =
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
 #endif
 
-  {"SURS options [temporary! moving to /etc/surs.conf!]", P_SEP, P_SEPARATOR},
-
-  {"surs uid map", P_STRING, P_GLOBAL, &Globals.szsursmapUID, handle_sursmap_id, NULL, 0},
-  {"surs gid map", P_STRING, P_GLOBAL, &Globals.szsursmapGID, handle_sursmap_id, NULL, 0},
-
   {"Winbind daemon options", P_SEP, P_SEPARATOR},
 
+  {"surs uid map", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
+  {"surs gid map", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
   {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
   {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
   {"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL,   NULL,  0},
@@ -1042,10 +1039,6 @@ static void init_globals(void)
   string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
   string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
-
-  /* lkclXXXX - assume 16-bit uids/gids.  for now */
-  string_set(&Globals.szsursmapUID, "%s/0-65534");
-  string_set(&Globals.szsursmapGID, "%s/0-65534");
 
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
@@ -1410,8 +1403,8 @@ FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 
-FN_GLOBAL_STRING(lp_surs_domainrange_uid,&Globals.szsursmapUID)
-FN_GLOBAL_STRING(lp_surs_domainrange_gid,&Globals.szsursmapGID)
+FN_GLOBAL_STRING(lp_winbind_uid,&Globals.szWinbindUID)
+FN_GLOBAL_STRING(lp_winbind_gid,&Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir,&Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell,&Globals.szTemplateShell)
 
@@ -2403,9 +2396,9 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
 
 ***************************************************************************/
 
-/* Do some simple checks on "surs map [ug]id" parameter value */
+/* Do some simple checks on "winbind [ug]id" parameter value */
 
-static BOOL handle_sursmap_id(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
 {
     fstring temp;
     char *p;
