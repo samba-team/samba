@@ -166,13 +166,7 @@ static struct winbindd_domain *find_auth_domain(const char *domain_name)
 		return NULL;
 	}
 
-	domain = find_our_domain();
-	if (domain == NULL) {
-		DEBUG(1, ("Authentication for domain [%s] failed "
-			  "-- we can't find our domain!\n", domain_name)); 
-	}
-
-	return domain;
+	return find_our_domain();
 }
 
 static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
@@ -336,12 +330,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 			goto done;
 		}
 
-		if (!(contact_domain = find_our_domain())) {
-			DEBUG(1, ("Authentication for [%s] -> [%s]\\[%s] in our domain failed - we can't find our domain!\n", 
-				  state->request.data.auth.user, name_domain, name_user)); 
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
+		contact_domain = find_our_domain();
 	}
 
 	srv_name_slash = talloc_asprintf(state->mem_ctx, "\\\\%s",
@@ -648,12 +637,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			goto done;
 		}
 
-		if (!(contact_domain = find_our_domain())) {
-			DEBUG(1, ("Authenticatoin for [%s] -> [%s]\\[%s] in our domain failed - we can't find our domain!\n", 
-				  state->request.data.auth_crap.user, name_domain, name_user)); 
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
+		contact_domain = find_our_domain();
 	}
 
 	srv_name_slash = talloc_asprintf(state->mem_ctx, "\\\\%s",

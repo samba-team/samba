@@ -2588,7 +2588,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	/* We need to add the primary group as the first gid/sid */
 
-	add_gid_to_array_unique(primary_gid, gids, &num_gids);
+	add_gid_to_array_unique(NULL, primary_gid, gids, &num_gids);
 
 	/* This sid will be replaced later */
 
@@ -2624,7 +2624,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (gid == primary_gid) {
 			sid_copy(&(*sids)[0], &sid);
 		} else {
-			add_gid_to_array_unique(gid, gids, &num_gids);
+			add_gid_to_array_unique(NULL, gid, gids, &num_gids);
 			add_sid_to_array_unique(NULL, &sid, sids, &num_sids);
 		}
 	}
@@ -3181,9 +3181,12 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
+					  TALLOC_CTX *mem_ctx,
+					  const DOM_SID *domain_sid,
 					  const DOM_SID *members,
 					  int num_members,
-					  DOM_SID **aliases, int *num_aliases)
+					  uint32 **alias_rids,
+					  int *num_alias_rids)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -3196,12 +3199,6 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	int i;
 	int rc;
 	char *filter;
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("ldapsam_alias_memberships");
-
-	if (mem_ctx == NULL)
-		return NT_STATUS_NO_MEMORY;
 
 	/* This query could be further optimized by adding a
 	   (&(sambaSID=<domain-sid>*)) so that only those aliases that are
@@ -3226,9 +3223,6 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	*aliases = NULL;
-	*num_aliases = 0;
-
 	ldap_struct = ldap_state->smbldap_state->ldap_struct;
 
 	for (entry = ldap_first_entry(ldap_struct, result);
@@ -3237,6 +3231,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	{
 		fstring sid_str;
 		DOM_SID sid;
+		uint32 rid;
 
 		if (!smbldap_get_single_attribute(ldap_struct, entry,
 						  LDAP_ATTRIBUTE_SID,
@@ -3247,7 +3242,11 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (!string_to_sid(&sid, sid_str))
 			continue;
 
-		add_sid_to_array_unique(NULL, &sid, aliases, num_aliases);
+		if (!sid_peek_check_rid(domain_sid, &sid, &rid))
+			continue;
+
+		add_rid_to_array_unique(mem_ctx, rid, alias_rids,
+					num_alias_rids);
 	}
 
 	ldap_msgfree(result);

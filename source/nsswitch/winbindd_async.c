@@ -152,6 +152,7 @@ enum winbindd_result winbindd_uid2name_async(TALLOC_CTX *mem_ctx,
 					     void *private)
 {
 	struct winbindd_request request;
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_UID2NAME;
 	request.data.uid = uid;
 	return do_async(mem_ctx, idmap_child(), &request,
@@ -194,6 +195,7 @@ enum winbindd_result winbindd_gid2name_async(TALLOC_CTX *mem_ctx,
 					     void *private)
 {
 	struct winbindd_request request;
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GID2NAME;
 	request.data.gid = gid;
 	return do_async(mem_ctx, idmap_child(), &request,
@@ -248,6 +250,7 @@ enum winbindd_result winbindd_lookup_sid_async(TALLOC_CTX *mem_ctx,
 		return WINBINDD_ERROR;
 	}
 
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPSID;
 	fstrcpy(request.data.sid, sid_string_static(sid));
 
@@ -299,6 +302,7 @@ enum winbindd_result winbindd_lookup_name_async(TALLOC_CTX *mem_ctx,
 		return WINBINDD_ERROR;
 	}
 
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPNAME;
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
@@ -319,7 +323,7 @@ static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		sprintf_append(mem_ctx, result, &len, &buflen,
 			       "%s\n", sid_string_static(&sids[i]));
 
-	return (*result != NULL);
+	return (num_sids == 0) || (*result != NULL);
 }
 
 static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
@@ -410,6 +414,7 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 		return;
 	}
 
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
 	fstrcpy(request.domain_name, domain->name);
 	fstrcpy(request.data.dual_sidaliases.cache_key, keystr);
@@ -499,7 +504,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_cli_state *stat
 
 struct gettoken_state {
 	TALLOC_CTX *mem_ctx;
-	const DOM_SID *user_sid;
+	DOM_SID user_sid;
 	struct winbindd_domain *alias_domain;
 	struct winbindd_domain *builtin_domain;
 	DOM_SID *sids;
@@ -518,8 +523,6 @@ static void gettoken_recvaliases(void *private, BOOL success,
 
 enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
 					     const DOM_SID *user_sid,
-					     struct winbindd_domain *alias_domain,
-					     struct winbindd_domain *builtin_domain,
 					     void (*cont)(void *private,
 							  BOOL success,
 							  DOM_SID *sids,
@@ -537,9 +540,9 @@ enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
 	}
 
 	state->mem_ctx = mem_ctx;
-	state->user_sid = user_sid;
-	state->alias_domain = alias_domain;
-	state->builtin_domain = builtin_domain;
+	sid_copy(&state->user_sid, user_sid);
+	state->alias_domain = find_our_domain();
+	state->builtin_domain = find_builtin_domain();
 	state->cont = cont;
 	state->private = private;
 
@@ -550,6 +553,7 @@ enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
 		return WINBINDD_ERROR;
 	}
 
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_GETUSERDOMGROUPS;
 	fstrcpy(request.data.sid, sid_string_static(user_sid));
 
@@ -579,7 +583,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	state->sids = NULL;
 	state->num_sids = 0;
 
-	add_sid_to_array(mem_ctx, state->user_sid, &state->sids,
+	add_sid_to_array(mem_ctx, &state->user_sid, &state->sids,
 			 &state->num_sids);
 
 	if (!parse_sidlist(mem_ctx, sids_str, &state->sids,
@@ -626,4 +630,97 @@ static void gettoken_recvaliases(void *private, BOOL success,
 	}
 
 	state->cont(state->private, True, state->sids, state->num_sids);
+}
+
+struct sid2gid_state {
+	TALLOC_CTX *mem_ctx;
+	DOM_SID sid;
+	void (*cont)(void *private, BOOL success, gid_t gid);
+	void *private;
+};
+
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type);
+static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			 struct winbindd_response *response,
+			 void *c, void *private);
+
+void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx,
+			    const DOM_SID *sid,
+			    void (*cont)(void *private,
+					 BOOL success,
+					 gid_t gid),
+			    void *private)
+{
+	struct sid2gid_state *state;
+	NTSTATUS result;
+	gid_t gid;
+
+	if (idmap_proxyonly()) {
+		cont(private, False, 0);
+		return;
+	}
+
+	/* Query only the local tdb, everything else might possibly block */
+
+	result = idmap_sid_to_gid(sid, &gid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		cont(private, True, gid);
+		return;
+	}
+
+	state = TALLOC_P(mem_ctx, struct sid2gid_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->sid = *sid;
+	state->cont = cont;
+	state->private = private;
+
+	winbindd_lookup_sid_async(mem_ctx, sid, sid2gid_lookup_sid_recv,
+				  state);
+}
+
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type)
+{
+	struct sid2gid_state *state = private;
+	struct winbindd_request request;
+
+	if ((!success) ||
+	    (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	      (type != SID_NAME_WKN_GRP)))) {
+		DEBUG(5, ("SID is not a group\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_SID2GID;
+	fstrcpy(request.data.dual_sid2id.sid, sid_string_static(&state->sid));
+	fstrcpy(request.data.dual_sid2id.name, name);
+
+	do_async(state->mem_ctx, idmap_child(), &request,
+		 sid2gid_recv, NULL, state);
+}
+
+static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			 struct winbindd_response *response,
+			 void *c, void *private)
+{
+	struct sid2gid_state *state = private;
+
+	if (!success) {
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->cont(state->private, True, response->data.gid);
 }

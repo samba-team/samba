@@ -473,7 +473,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 num_sids, DOM_SID *sids,
+				  uint32 num_sids, const DOM_SID const *sids,
 				  uint32 *num_aliases, uint32 **alias_rids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

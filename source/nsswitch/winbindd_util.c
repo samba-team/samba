@@ -296,7 +296,6 @@ static void trustdom_recv(void *private, BOOL success)
 void rescan_trusted_domains( void )
 {
 	time_t now = time(NULL);
-	struct winbindd_domain *mydomain = NULL;
 	
 	/* see if the time has come... */
 	
@@ -304,14 +303,9 @@ void rescan_trusted_domains( void )
 	    ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
-	if ( (mydomain = find_our_domain()) == NULL ) {
-		DEBUG(0,("rescan_trusted_domains: Can't find my own domain!\n"));
-		return;
-	}
-	
 	/* this will only add new domains we didn't already know about */
 	
-	add_trusted_domains( mydomain );
+	add_trusted_domains( find_our_domain() );
 
 	last_trustdom_scan = now;
 	
@@ -339,7 +333,6 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
-	struct winbindd_domain *our_domain;
 
 	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
@@ -381,17 +374,10 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	/* This is *not* the primary domain, let's ask our DC about a DC
 	 * name */
 
-	our_domain = find_our_domain();
-
-	if (our_domain == NULL) {
-		DEBUG(0, ("Could not find our domain\n"));
-		return WINBINDD_ERROR;
-	}
-
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	return async_request(mem_ctx, &our_domain->child,
+	return async_request(mem_ctx, &find_our_domain()->child,
 			     request, response,
 			     init_child_getdc_recv, state);
 }
@@ -617,6 +603,8 @@ struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 	return NULL;
 }
 
+/* Given a domain sid, return the struct winbindd domain info for it */
+
 struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
@@ -632,8 +620,6 @@ struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 	return domain;
 }
 
-/* Given a domain sid, return the struct winbindd domain info for it */
-
 struct winbindd_domain *find_our_domain(void)
 {
 	struct winbindd_domain *domain;
@@ -645,9 +631,22 @@ struct winbindd_domain *find_our_domain(void)
 			return domain;
 	}
 
-	/* Not found */
-
+	smb_panic("Could not find our domain\n");
 	return NULL;
+}
+
+struct winbindd_domain *find_builtin_domain(void)
+{
+	DOM_SID sid;
+	struct winbindd_domain *domain;
+
+	string_to_sid(&sid, "S-1-5-32");
+	domain = find_domain_from_sid(&sid);
+
+	if (domain == NULL)
+		smb_panic("Could not find BUILTIN domain\n");
+
+	return domain;
 }
 
 /* Find the appropriate domain to lookup a name or SID */
@@ -839,6 +838,16 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	strupper_m(domain);
 	
 	return True;
+}
+
+BOOL parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
+			      char **domain, char **user)
+{
+	fstring fstr_domain, fstr_user;
+	parse_domain_user(domuser, fstr_domain, fstr_user);
+	*domain = talloc_strdup(mem_ctx, fstr_domain);
+	*user = talloc_strdup(mem_ctx, fstr_user);
+	return ((*domain != NULL) && (*user != NULL));
 }
 
 /*

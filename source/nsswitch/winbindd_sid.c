@@ -268,7 +268,6 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 
 enum winbindd_result winbindd_dual_sid2uid(struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain = NULL;
 	DOM_SID sid;
 	NTSTATUS result;
 
@@ -290,19 +289,13 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(result))
 		return WINBINDD_OK;
 
-	domain = find_our_domain();
-	if (domain == NULL) {
-		DEBUG(0,("winbindd_sid_to_uid: can't find my own domain!\n"));
-		return WINBINDD_ERROR;
-	}
-
 	/* This gets a little tricky.  If we assume that usernames are syncd
 	   between /etc/passwd and the windows domain (such as a member of a
 	   Samba domain), the we need to get the uid from the OS and not
 	   allocate one ourselves */
 	   
 	if (lp_winbind_trusted_domains_only() && 
-	    (sid_compare_domain(&sid, &domain->sid) == 0)) {
+	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
 
 		const char *user_name = state->request.data.dual_sid2id.name;
 		struct passwd *pw = NULL;
@@ -344,17 +337,12 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_cli_state *state)
 /* Convert a sid to a gid.  We assume we only have one rid attached to the
    sid.*/
 
-static void sid2gid_lookup_sid_recv(void *private, BOOL success,
-				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type);
+static void winbindd_sid2gid_recv(void *private, BOOL success,
+				  gid_t gid);
 
 enum winbindd_result winbindd_sid_to_gid_async(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	NTSTATUS result;
-
-	if (idmap_proxyonly())
-		return WINBINDD_ERROR;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -368,51 +356,30 @@ enum winbindd_result winbindd_sid_to_gid_async(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	/* Query only the local tdb, everything else might possibly block */
+	state->response.result = WINBINDD_PENDING;
 
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
-				  ID_QUERY_ONLY|ID_CACHE_ONLY);
+	winbindd_sid2gid_async(state->mem_ctx, &sid, winbindd_sid2gid_recv,
+			       state);
 
-	if (NT_STATUS_IS_OK(result))
-		return WINBINDD_OK;
+	/* winbindd_sid2gid_recv might have been called directly from within
+	   winbindd_sid2gid_async and might have modified the result */
 
-	return winbindd_lookup_sid_async(state->mem_ctx, &sid,
-					 sid2gid_lookup_sid_recv,
-					 state);
+	return state->response.result;
 }
 
-static void sid2gid_lookup_sid_recv(void *private, BOOL success,
-				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type)
+static void winbindd_sid2gid_recv(void *private, BOOL success,
+				  gid_t gid)
 {
 	struct winbindd_cli_state *state = private;
-	struct winbindd_request *request;
 
-	if ((!success) ||
-	    (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
-	      (type != SID_NAME_WKN_GRP)))) {
-		DEBUG(5, ("SID is not a group\n"));
+	if (!success) {
 		state->response.result = WINBINDD_ERROR;
 		request_finished(state);
-		return;
 	}
 
-	request = TALLOC_ZERO_P(state->mem_ctx, struct winbindd_request);
-
-	if (request == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		request_finished_cont(state, False);
-		return;
-	}
-
-	request->length = sizeof(*request);
-	request->cmd = WINBINDD_DUAL_SID2GID;
-	fstrcpy(request->data.dual_sid2id.sid, state->request.data.sid);
-	fstrcpy(request->data.dual_sid2id.name, name);
-
-	async_request(state->mem_ctx, idmap_child(),
-		      request, &state->response,
-		      request_finished_cont, state);
+	state->response.result = WINBINDD_OK;
+	state->response.data.gid = gid;
+	request_finished(state);
 }
 
 /* Child part of winbindd_sid2gid. We already know for sure it's a user, as
@@ -420,7 +387,6 @@ static void sid2gid_lookup_sid_recv(void *private, BOOL success,
 
 enum winbindd_result winbindd_dual_sid2gid(struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain = NULL;
 	DOM_SID sid;
 	NTSTATUS result;
 
@@ -442,19 +408,13 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(result))
 		return WINBINDD_OK;
 
-	domain = find_our_domain();
-	if (domain == NULL) {
-		DEBUG(0,("winbindd_sid_to_gid: can't find my own domain!\n"));
-		return WINBINDD_ERROR;
-	}
-
 	/* This gets a little tricky.  If we assume that usernames are syncd
 	   between /etc/passwd and the windows domain (such as a member of a
 	   Samba domain), the we need to get the gid from the OS and not
 	   allocate one ourselves */
 	   
 	if (lp_winbind_trusted_domains_only() && 
-	    (sid_compare_domain(&sid, &domain->sid) == 0)) {
+	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
 
 		const char *group_name = state->request.data.dual_sid2id.name;
 		struct group *grp = NULL;
@@ -561,23 +521,20 @@ static void uid2sid_uid2name_recv(void *private, BOOL success,
 				  const char *username)
 {
 	struct uid2sid_state *state = private;
-	struct winbindd_domain *domain;
 
 	DEBUG(10, ("uid2sid: uid %lu has name %s\n",
 		   (unsigned long)state->uid, username));
 
 	fstrcpy(state->name, username);
 
-	domain = find_our_domain();
-
-	if ((!success) || (domain == NULL)) {
+	if (!success) {
 		state->cli_state->response.result = WINBINDD_ERROR;
 		request_finished(state->cli_state);
 		return;
 	}
 
 	winbindd_lookup_name_async(state->cli_state->mem_ctx,
-				   domain->name, username,
+				   find_our_domain()->name, username,
 				   uid2sid_lookupname_recv, state);
 }
 
@@ -681,23 +638,20 @@ static void gid2sid_gid2name_recv(void *private, BOOL success,
 				  const char *username)
 {
 	struct gid2sid_state *state = private;
-	struct winbindd_domain *domain;
 
 	DEBUG(10, ("gid2sid: gid %lu has name %s\n",
 		   (unsigned long)state->gid, username));
 
 	fstrcpy(state->name, username);
 
-	domain = find_our_domain();
-
-	if ((!success) || (domain == NULL)) {
+	if (!success) {
 		state->cli_state->response.result = WINBINDD_ERROR;
 		request_finished(state->cli_state);
 		return;
 	}
 
 	winbindd_lookup_name_async(state->cli_state->mem_ctx,
-				   domain->name, username,
+				   find_our_domain()->name, username,
 				   gid2sid_lookupname_recv, state);
 }
 

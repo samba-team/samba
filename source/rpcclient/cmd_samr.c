@@ -568,25 +568,42 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 {
 	POLICY_HND 		connect_pol, domain_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
-	uint32 			user_rid, num_aliases, *alias_rids;
+	DOM_SID                *sids;
+	int                     num_sids;
+	uint32 			num_aliases, *alias_rids;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	fstring			server;
-	DOM_SID			tmp_sid;
-	DOM_SID2		sid;
+	DOM_SID2	       *sid2;
 	DOM_SID global_sid_Builtin;
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
-	if ((argc < 3) || (argc > 4)) {
-		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
-		return NT_STATUS_OK;
+	if (argc < 3) {
+		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	sscanf(argv[2], "%i", &user_rid);
-	
-	if (argc > 3)
-		sscanf(argv[3], "%x", &access_mask);
+	sids = NULL;
+	num_sids = 0;
+
+	for (i=2; i<argc; i++) {
+		DOM_SID tmp_sid;
+		if (!string_to_sid(&tmp_sid, argv[i])) {
+			printf("%s is not a legal SID\n", argv[i]);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		add_sid_to_array(mem_ctx, &tmp_sid, &sids, &num_sids);
+	}
+
+	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
+	if (sid2 == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_sids; i++) {
+		sid_copy(&sid2[i].sid, &sids[i]);
+		sid2[i].num_auths = sid2[i].sid.num_auths;
+	}
 
 	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper_m(server);
@@ -604,18 +621,19 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	else if (StrCaseCmp(argv[1], "builtin")==0)
 		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 					      access_mask,
-					      &global_sid_Builtin, &domain_pol);
-	else
-		return NT_STATUS_OK;
+					      &global_sid_Builtin,
+					      &domain_pol);
+	else {
+		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	sid_copy(&tmp_sid, &domain_sid);
-	sid_append_rid(&tmp_sid, user_rid);
-	init_dom_sid2(&sid, &tmp_sid);
-
-	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol, 1, &sid, &num_aliases, &alias_rids);
+	result = cli_samr_query_useraliases(cli, mem_ctx, &domain_pol,
+					    num_sids, sid2,
+					    &num_aliases, &alias_rids);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

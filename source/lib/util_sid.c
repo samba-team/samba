@@ -351,6 +351,19 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 	return True;
 }
 
+DOM_SID *string_sid_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
+{
+	DOM_SID *result = TALLOC_P(mem_ctx, DOM_SID);
+
+	if (result == NULL)
+		return NULL;
+
+	if (!string_to_sid(result, sidstr))
+		return NULL;
+
+	return result;
+}
+
 /*****************************************************************
  Add a rid to the end of a sid
 *****************************************************************/  
@@ -656,7 +669,8 @@ void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		      DOM_SID **sids, int *num)
 {
 	if (mem_ctx != NULL)
-		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID, (*num)+1);
+		*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
+					     (*num)+1);
 	else
 		*sids = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
 

@@ -178,10 +178,10 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 	groups = NULL;
 
 	/* Add in primary group first */
-	add_gid_to_array_unique(primary_gid, &groups, &ngrp);
+	add_gid_to_array_unique(NULL, primary_gid, &groups, &ngrp);
 
 	for (i=0; i<max_grp; i++)
-		add_gid_to_array_unique(temp_groups[i], &groups, &ngrp);
+		add_gid_to_array_unique(NULL, temp_groups[i], &groups, &ngrp);
 
 	*ngroups = ngrp;
 	*ret_groups = groups;

@@ -119,8 +119,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	if (domain->primary)
 		return False;
 
-	if ((our_domain = find_our_domain()) == NULL)
-		return False;
+	our_domain = find_our_domain();
 
 	if ((mem_ctx = talloc_init("get_dc_name_via_netlogon")) == NULL)
 		return False;
