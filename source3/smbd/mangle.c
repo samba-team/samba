@@ -970,7 +970,6 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 
 
 #if 0
-
 #define MANGLE_TDB_VERSION		"20010830"
 #define MANGLE_TDB_FILE_NAME		"mangle.tdb"
 #define MANGLE_TDB_STORED_NAME		"B"
@@ -999,11 +998,11 @@ static int POW10(unsigned int exp)
 
 static BOOL init_mangle_tdb(void)
 {
-	pstring tdbfile;
+	char *tdbfile;
 	
 	if (global_mt_ent.mangle_tdb == 0)
 	{
-		slprintf(tdbfile, sizeof(tdbfile)-1, "%s/%s", lp_private_dir(), MANGLE_TDB_FILE_NAME);
+		tdbfile = lock_path(MANGLE_TDB_FILE_NAME); /* this return a static pstring do not try to free it */
 
 		/* Open tdb */
 		if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600)))
@@ -1077,54 +1076,41 @@ int ucs2_to_dos(const void *base_ptr, char *dest, const void *src, int dest_len,
 	return src_len;
 }
 
-
-
-/* the unicode string will be ZERO terminated */
-static smb_ucs2_t *unicode_from_buffer (uint8 *buf, uint32 size)
+/* return False if something fail and
+ * return 2 alloced unicode strings that contain prefix and extension
+ */
+static BOOL mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **prefix, smb_ucs2_t **extension)
 {
-	uint32 len = 0;
-	uint32 lfn_len;
-	smb_ucs2_t *long_file_name;
-	
-	len = tdb_unpack (buf, size, MANGLE_TDB_STORED_NAME,
-		&lfn_len, &long_file_name);
+	size_t str_len;
+	smb_ucs2_t *p;
 
-	if (len == -1) return NULL;
-	else return long_file_name;
-}
-
-/* the unicode string MUST be ZERO terminated */
-static uint32 buffer_from_unicode (uint8 **buf, smb_ucs2_t *long_file_name)
-{
-	uint32 buflen;
-	uint32 len = 0;
-	uint32 lfn_len = strlen_w(long_file_name)*sizeof(smb_ucs2_t)+1;
-	
-	/* one time to get the size needed */
-	len = tdb_pack(NULL, 0,  MANGLE_TDB_STORED_NAME,
-		lfn_len, long_file_name);
-
-	/* malloc the space needed */
-	if ((*buf=(uint8*)malloc(len)) == NULL)
+	*extension = 0;
+	*prefix = strdup_w(ucs2_string);
+	if (!*prefix)
 	{
-		DEBUG(0,("buffer_from_longname: Unable to malloc() memory for buffer!\n"));
-		return (-1);
+		DEBUG(0,("mangle_get_prefix: out of memory!\n"));
+		return False;
 	}
-	
-	/* now for the real call to tdb_pack() */
-	buflen = tdb_pack(*buf, 0,  MANGLE_TDB_STORED_NAME,
-		lfn_len, long_file_name);
-
-	/* check to make sure we got it correct */
-	if (buflen != len)
+	str_len = strlen_w(*prefix);
+	if (p = strrchr_wa(*prefix, '.'))
 	{
-		/* error */
-		free (*buf);
-		return (-1);
+		if ((str_len - ((p - *prefix) / sizeof(smb_ucs2_t))) < 4) /* check extension */
+		{
+			*p = 0;
+			p++;
+			*extension = strdup_w(p);
+			if (!*extension)
+			{
+				DEBUG(0,("mangle_get_prefix: out of memory!\n"));
+				SAFE_FREE(*prefix);
+				return False;
+			}
+		}
 	}
 
-	return (buflen);
+	return True;
 }
+
 
 /* mangled must contain only the file name, not a path.
    and MUST be ZERO terminated */
@@ -1133,24 +1119,23 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	TDB_DATA data, key;
 	fstring keystr;
 	fstring mufname;
-	smb_ucs2_t *retstr;
-	smb_ucs2_t *temp;
+	smb_ucs2_t *pref, *ext, *retstr;
+	size_t long_len, ext_len;
+	BOOL ret;
 
 	if (strlen_w(mangled) > 12) return NULL;
 	if (!strchr_wa(mangled, '~')) return NULL;
 	if (!init_mangle_tdb()) return NULL;
 	
-	temp = strdup_w(mangled);
-	if (!temp)
-	{
-		DEBUG(0,("mangle: out of memory!\n"));
-		return NULL;
-	}
-	strupper_w(temp);
+	ret = mangle_get_prefix(mangled, &pref, &ext);
+	if (!ret) return NULL;
+	
+	/* TODO: get out extension */
+	strlower_w(pref);
 	/* set search key */
-	ucs2_to_dos(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
-	SAFE_FREE(temp);
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
+	ucs2_to_dos(NULL, mufname, pref, sizeof(mufname), 0, STR_TERMINATE);
+	SAFE_FREE(pref);
+	slprintf(keystr, sizeof(keystr) - 1, "%s%s", MANGLED_PREFIX, mufname);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
@@ -1159,18 +1144,42 @@ smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
 	
 	if (!data.dptr) /* not found */
 	{
-		DEBUG(5,("unmangle: %s\n", tdb_errorstr(global_mt_ent.mangle_tdb)));
-		return NULL;
-	}
-	
-	if (!(retstr = unicode_from_buffer (data.dptr, data.dsize)))
-	{
-		DEBUG(0,("unmangle: bad buffer returned from database!\n"));
-		SAFE_FREE(data.dptr);
-		return NULL;
+		DEBUG(5,("unmangle: failed retrieve from db %s\n", tdb_errorstr(global_mt_ent.mangle_tdb)));
+		retstr = NULL;
+		goto done;
 	}
 
+	if (ext)
+	{
+		long_len = data.dsize / 2; /* terminator counted on purpose, will contain '.' */
+		ext_len = strlen_w(ext);
+		retstr = (smb_ucs2_t *)malloc((long_len + ext_len + 1)*sizeof(smb_ucs2_t));
+		if (!retstr)
+		{
+			DEBUG(0, ("unamngle: out of memory!\n"));
+			goto done;
+		}
+		strncpy_w(retstr, (smb_ucs2_t *)data.dptr, long_len);
+		retstr[long_len] = UCS2_CHAR('.');
+		retstr[long_len + 1] = 0;
+		strncat_w(retstr, ext, ext_len);
+	}
+	else
+	{
+		retstr = strdup_w((smb_ucs2_t *)data.dptr);
+		if (!retstr)
+		{
+			DEBUG(0, ("unamngle: out of memory!\n"));
+			goto done;
+		}
+
+	}
+
+done:
 	SAFE_FREE(data.dptr);
+	SAFE_FREE(pref);
+	SAFE_FREE(ext);
+
 	return retstr;
 }
 
@@ -1183,33 +1192,17 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 	pstring longname;
 	fstring mufname;
 	BOOL db_free = False;
-	smb_ucs2_t *mangled;
-	smb_ucs2_t *um;
-	smb_ucs2_t *ext = NULL;
-	smb_ucs2_t *p;
-	size_t b_len;
-	size_t e_len;
+	smb_ucs2_t *mangled = NULL;
+	smb_ucs2_t *um, *ext, *p = NULL;
+	size_t pref_len, ext_len;
 	size_t um_len;
 	uint32 n, c;
 			
 
-	/* TODO: if it is a path return a failure */
+	/* TODO: if it is a path return a failure ?? */
+	
 			
-	um = strdup_w(unmangled);
-	if (!um)
-	{
-		DEBUG(0,("mangle: out of memory!\n"));
-		goto error;
-	}
-	um_len = strlen_w(um);
-	if (p = strrchr_wa(um, '.'))
-	{
-		if ((um_len - ((p - um) / sizeof(smb_ucs2_t))) < 4) /* check extension */
-		{
-			*p = UCS2_CHAR('\0');
-			ext = p++;
-		}
-	}
+	if (!mangle_get_prefix(unmangled, &um, &ext)) return NULL;
 
 	/* test if the same is yet mangled */
 
@@ -1227,7 +1220,7 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		{
 			DEBUG(0, ("mangle: database retrieval error: %s\n",
 					tdb_errorstr(global_mt_ent.mangle_tdb)));
-			goto error;
+			goto done;
 		}
 	
 		/* if not find the first free possibile mangled name */
@@ -1240,10 +1233,13 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 		
 			while ((int)POW10(n) <= c) n++;
 			pos = 7 - n;
-			if (pos == 0) goto error;
-
+			if (pos == 0)
+			{
+				DEBUG(0, ("mangle: unable to mangle file name!\n"));
+				goto done;
+			}
 			strncpy_w(temp, um, pos);
-			strupper_w(temp);
+			strlower_w(temp);
 			temp[pos] = UCS2_CHAR('~');
 			temp[pos+1] = 0;
 			snprintf(num, 7, "%d", c);
@@ -1255,19 +1251,16 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 				n++;
 				continue;
 			}
-
+			
+			/* store the mangled entries */
 			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
 			key.dptr = keystr;
 			key.dsize = strlen (keystr) + 1;
-			if ((data.dsize=buffer_from_unicode ((uint8 **)(&data.dptr), temp)) == -1)
-			{
-				DEBUG(0,("mangle: ERROR - Unable to copy mangled name info buffer!\n"));
-				goto error;
-			}
+			data.dsize = (strlen_w(um) + 1) * sizeof (smb_ucs2_t);
+			data.dptr = (void *)um;
 
 			if (tdb_store(global_mt_ent.mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
 			{
-				SAFE_FREE(data.dptr);
 				if (tdb_error(global_mt_ent.mangle_tdb) == TDB_ERR_EXISTS)
 				{
 					continue;
@@ -1276,44 +1269,78 @@ smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
 				{
 					DEBUG(0, ("mangle: database retrieval error: %s\n",
 							tdb_errorstr(global_mt_ent.mangle_tdb)));
-					goto error;
+					goto done;
 				}
 			}
 			else
 			{
+				/* store the mangled entry */
+				pull_ucs2(NULL, longname, um, sizeof(longname), 0, STR_TERMINATE);
+				slprintf(keystr, sizeof(keystr)-1, "%s%s", LONG_PREFIX, longname);
+				key.dptr = keystr;
+				key.dsize = strlen (keystr) + 1;
+				data.dsize = strlen(mufname +1);
+				data.dptr = mufname;
+				if (tdb_store(global_mt_ent.mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
+				{
+					DEBUG(0, ("mangle: store failed: %s\n",
+							tdb_errorstr(global_mt_ent.mangle_tdb)));
+					goto done;
+				}
+
 				db_free = True;
 				p = strdup_w(temp);
+				if (!p)
+				{
+					DEBUG(0,("mangle: out of memory!\n"));
+					goto done;
+				}
 			}
 			c++;
 		}
 	}
 	else /* FOUND */
 	{
-		if (!(p = unicode_from_buffer (data.dptr, data.dsize)))
+		p = (smb_ucs2_t *)malloc(data.dsize*sizeof(smb_ucs2_t));
+		if (!p)
 		{
-			DEBUG(0,("mangle: bad buffer returned from database!\n"));
-			goto error;
+			DEBUG(0,("mangle: out of memory!\n"));
+			goto done;
 		}
+		dos_to_ucs2(NULL, p, data.dptr, data.dsize*sizeof(smb_ucs2_t), STR_TERMINATE);
 	}
 		
-	b_len = strlen_w(p);
-	if (ext) e_len = strlen_w(ext);
-	else e_len = 0;
-	mangled = (smb_ucs2_t *)malloc((b_len+e_len+2)*sizeof(smb_ucs2_t));
-	strncpy_w (mangled, p, b_len+1);
-	strncat_w (mangled, ext, e_len);
+	if (ext)
+	{
+		pref_len = strlen_w(p) + 1; /* terminator counted on purpose, will contain '.' */
+		ext_len = strlen_w(ext);
+		mangled = (smb_ucs2_t *)malloc((pref_len + ext_len + 1)*sizeof(smb_ucs2_t));
+		if (!mangled)
+		{
+			DEBUG(0,("mangle: out of memory!\n"));
+			goto done;
+		}
+		strncpy_w (mangled, p, pref_len);
+		mangled[pref_len] = UCS2_CHAR('.');
+		mangled[pref_len + 1] = 0;
+		strncat_w (mangled, ext, ext_len);
+	}
+	else
+	{
+		mangled = strdup_w(p);
+		if (!mangled)
+		{
+			DEBUG(0,("mangle: out of memory!\n"));
+			goto done;
+		}
+	}
 
+done:
 	SAFE_FREE(p);
 	SAFE_FREE(um);
-	SAFE_FREE(data.dptr);
+	SAFE_FREE(ext);
 
 	return mangled;
-
-error:
-	DEBUG(10, ("mangle: failed to mangle <string from unicode here>!\n"));
-	SAFE_FREE(data.dptr);
-	SAFE_FREE(um);
-	return NULL;
 }
 
 #endif /* 0 */
