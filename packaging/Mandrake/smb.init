@@ -26,6 +26,12 @@ RETVAL=0
 
 
 start() {
+       # If CUPS is used as printing system, reload smb after a 1 minute delay
+       # to allow the printers to appear properly as samba shares.
+        if killall -0 cupsd 2>/dev/null; then
+         ( sleep 60 && killproc smbd -HUP ) &
+       fi
+       export TMPDIR="/var/tmp"
 	echo -n "Starting SMB services: "
 	daemon smbd -D 	
 	RETVAL=$?
@@ -55,6 +61,7 @@ restart() {
 	start
 }	
 reload() {
+       export TMPDIR="/var/tmp"
         echo -n "Reloading smb.conf file: "
 	killproc smbd -HUP
 	RETVAL=$?
