@@ -224,7 +224,7 @@ Next, include the <filename>samba.schema</filename> file in <filename>slapd.conf
 The sambaAccount object contains two attributes which depend upon other schema
 files.  The 'uid' attribute is defined in <filename>cosine.schema</filename> and
 the 'displayName' attribute is defined in the <filename>inetorgperson.schema</filename>
-file.  Bother of these must be included before the <filename>samba.schema</filename> file.
+file.  Both of these must be included before the <filename>samba.schema</filename> file.
 </para>
 
 <para><programlisting>
