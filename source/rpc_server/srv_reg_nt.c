@@ -26,6 +26,11 @@
 
 #include "includes.h"
 
+#define REGSTR_PRODUCTTYPE		"ProductType"
+#define REG_PT_WINNT			"WinNT"
+#define REG_PT_LANMANNT			"LanmanNT"
+#define REG_PT_SERVERNT			"ServerNT"
+
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
@@ -364,7 +369,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		goto out;
 	}
 
-	if ( strequal(name, "ProductType") ) {
+	if ( strequal(name, REGSTR_PRODUCTTYPE) ) {
 		/* This makes the server look like a member server to clients */
 		/* which tells clients that we have our own local user and    */
 		/* group databases and helps with ACL support.                */
@@ -372,13 +377,13 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
-				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "LanmanNT", strlen("LanmanNT")+1 );
+				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_LANMANNT, strlen(REG_PT_LANMANNT)+1 );
 		break;
 	case ROLE_STANDALONE:
-				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "ServerNT", strlen("ServerNT")+1 );
+				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_SERVERNT, strlen(REG_PT_SERVERNT)+1 );
 		break;
 	case ROLE_DOMAIN_MEMBER:
-				regval_ctr_addvalue( &regvals, "ProductType", REG_SZ, "WinNT", strlen("WinNT")+1 );
+				regval_ctr_addvalue( &regvals, REGSTR_PRODUCTTYPE, REG_SZ, REG_PT_WINNT, strlen(REG_PT_WINNT)+1 );
 		break;
 	}
 
