@@ -41,18 +41,14 @@ extern int smb_tidx;
 nt spoolss query
 ****************************************************************************/
 BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
+				const char* srv_name,
 				uint32 level,
 				uint32 *num,
 				void ***ctr,
 				PRINT_INFO_FN(fn))
 {
 	uint16 nt_pipe_fnum;
-	fstring srv_name;
 	BOOL res = True;
-
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, smb_cli->desthost);
-	strupper(srv_name);
 
 	/* open SPOOLSS session. */
 	res = cli_nt_session_open(cli, PIPE_SPOOLSS, &nt_pipe_fnum);
@@ -88,7 +84,12 @@ void cmd_spoolss_enum_printers(struct client_info *info)
 	uint32 num = 0;
 	uint32 level = 1;
 
-	if (msrpc_spoolss_enum_printers(smb_cli, level, &num, &ctr,
+	fstring srv_name;
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, smb_cli->desthost);
+	strupper(srv_name);
+
+	if (msrpc_spoolss_enum_printers(smb_cli, srv_name, level, &num, &ctr,
 	                         spool_print_info_ctr))
 	{
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
@@ -151,5 +152,119 @@ void cmd_spoolss_open_printer_ex(struct client_info *info)
 	{
 		DEBUG(5,("cmd_spoolss_open_printer_ex: query failed\n"));
 	}
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
+				const char* srv_name,
+				const char* user_name,
+				const char* printer_name,
+				uint32 level,
+				uint32 *num,
+				void ***ctr,
+				JOB_INFO_FN(fn))
+{
+	uint16 nt_pipe_fnum;
+	PRINTER_HND hnd;
+	uint32 buf_size = 0x0;
+	uint32 status = 0x0;
+
+	BOOL res = True;
+	BOOL res1 = True;
+
+	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
+		printer_name, srv_name, user_name));
+
+	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
+
+	/* open SPOOLSS session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
+
+	res = res ? spoolss_open_printer_ex(smb_cli, nt_pipe_fnum, 
+	                        printer_name,
+	                        0, 0, 0,
+	                        srv_name, user_name,
+	                        &hnd) : False;
+
+	if (status == 0x0)
+	{
+		status = spoolss_enum_jobs(smb_cli, nt_pipe_fnum, 
+				&hnd,
+	                        0, 1000, level, &buf_size,
+	                        num, ctr);
+	}
+
+	if (status == ERROR_INSUFFICIENT_BUFFER)
+	{
+		status = spoolss_enum_jobs(smb_cli, nt_pipe_fnum, 
+				&hnd,
+	                        0, 1000, level, &buf_size,
+	                        num, ctr);
+	}
+
+	res1 = (status == 0x0);
+
+	res = res ? spoolss_closeprinter(smb_cli, nt_pipe_fnum, &hnd) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res1 && fn != NULL)
+	{
+		fn(srv_name, printer_name, level, *num, *ctr);
+	}
+
+	return res1;
+}
+
+static void spool_job_info_ctr(const char* srv_name, const char* printer_name,
+				uint32 level,
+				uint32 num, void *const *const ctr)
+{
+	display_job_info_ctr(out_hnd, ACTION_HEADER   , level, num, ctr);
+	display_job_info_ctr(out_hnd, ACTION_ENUMERATE, level, num, ctr);
+	display_job_info_ctr(out_hnd, ACTION_FOOTER   , level, num, ctr);
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+void cmd_spoolss_enum_jobs(struct client_info *info)
+{
+	fstring srv_name;
+	fstring printer_name;
+
+	void **ctr = NULL;
+	uint32 num = 0;
+	uint32 level = 1;
+
+	if (!next_token(NULL, printer_name, NULL, sizeof(printer_name)))
+	{
+		report(out_hnd, "spoolopen <printer name>\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
+		printer_name, srv_name, smb_cli->user_name));
+
+	if (msrpc_spoolss_enum_jobs(smb_cli,
+				srv_name, smb_cli->user_name, printer_name,
+				level, &num, &ctr,
+				spool_job_info_ctr))
+	{
+		DEBUG(5,("cmd_spoolss_enum_jobs: query succeeded\n"));
+	}
+	else
+	{
+		report(out_hnd, "FAILED\n");
+	}
+
+	free_void_array(num, ctr, free);
 }
 

@@ -283,7 +283,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 fnum,
 	setup[0] = cmd; 
 	setup[1] = fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
-	if (data_len > 1024 && !bind_rq)
+	if (data_len > 2048 && !bind_rq)
 	{
 		ssize_t written;
 
@@ -314,7 +314,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 fnum,
 		if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
 			  setup, 2, 0,                     /* Setup, length, max */
 			  pparams, params_len, 0,          /* Params, length, max */
-			  pdata, data_len, 1024,           /* data, length, max */                  
+			  pdata, data_len, 2048,           /* data, length, max */                  
 			  pp_ret_params, p_ret_params_len, /* return params, len */
 			  pp_ret_data, p_ret_data_len))    /* return data, len */
 		{

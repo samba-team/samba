@@ -239,8 +239,14 @@ commands[] =
 	{
 		"spoolenum",
 		cmd_spoolss_enum_printers,
-		"Spool Printer Enum Test",
+		"Enumerate Printers",
 		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"spooljobs",
+		cmd_spoolss_enum_jobs,
+		"<printer name> Enumerate Printer Jobs",
+		{COMPL_PRTLST, COMPL_NONE}
 	},
 	{
 		"spoolopen",
@@ -1152,13 +1158,18 @@ static char *complete_printersenum(char *text, int state)
     
 	if (state == 0)
 	{
+		fstring srv_name;
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, smb_cli->desthost);
+		strupper(srv_name);
+
 		free_print1_array(num, ctr);
 		ctr = NULL;
 		num = 0;
 
 		/* Iterate all users */
-		if (!msrpc_spoolss_enum_printers(smb_cli, 1, &num,
-		                   (void***)&ctr,
+		if (!msrpc_spoolss_enum_printers(smb_cli, srv_name,
+		                   1, &num, (void***)&ctr,
 		                   NULL))
 		{
 			return NULL;

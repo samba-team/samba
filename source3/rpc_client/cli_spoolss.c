@@ -56,7 +56,7 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 	DEBUG(5,("SPOOLSS Enum Printers (Server: %s level: %d)\n",
 				servername, level));
 
-	make_spoolss_q_enumprinters(&q_o, flags, servername, level, 0x400);
+	make_spoolss_q_enumprinters(&q_o, flags, servername, level, 0x50);
 
 	/* turn parameters into data stream */
 	spoolss_io_q_enumprinters("", &q_o, &buf, 0);
@@ -69,7 +69,7 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 
 		ZERO_STRUCT(r_o);
 
-		r_o.level = level;
+		r_o.level = level; /* i can't believe you have to this */
 
 		spoolss_io_r_enumprinters("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
@@ -97,13 +97,86 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 }
 
 /****************************************************************************
+do a SPOOLSS Enum Jobs
+****************************************************************************/
+uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
+			const PRINTER_HND *hnd,
+			uint32 firstjob,
+			uint32 numofjobs,
+			uint32 level,
+			uint32 *buf_size,
+			uint32 *count,
+			void ***jobs)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SPOOL_Q_ENUMJOBS q_o;
+	uint32 status = 0x0;
+
+	if (hnd == NULL || count == NULL || jobs == NULL)
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
+
+	DEBUG(5,("SPOOLSS Enum Jobs level: %d)\n", level));
+
+	make_spoolss_q_enumjobs(&q_o, hnd,
+			firstjob, numofjobs,
+			level, *buf_size);
+
+	/* turn parameters into data stream */
+	spoolss_io_q_enumjobs("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SPOOLSS_ENUMJOBS, &buf, &rbuf))
+	{
+		SPOOL_R_ENUMJOBS r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		r_o.level = level; /* i can't believe you have to this */
+
+		spoolss_io_r_enumjobs("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		status = r_o.status;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(5,("SPOOLSS_ENUM_JOBS: %s\n", get_nt_error_msg(r_o.status)));
+			p = status = ERROR_INSUFFICIENT_BUFFER;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			(*count) = r_o.numofjobs;
+			(*jobs) = r_o.job.info;
+			(*buf_size) = r_o.offered;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return status;
+}
+
+/****************************************************************************
 do a SPOOLSS Open Printer Ex
 ****************************************************************************/
 BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
-			char *printername,
+			const char *printername,
 			uint32 cbbuf, uint32 devmod, uint32 des_access,
-			char *station,
-			char *username,
+			const char *station,
+			const char *username,
 			PRINTER_HND *hnd)
 {
 	prs_struct rbuf;

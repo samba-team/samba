@@ -490,6 +490,7 @@ void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
 UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
 DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
 void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
 PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
@@ -2059,11 +2060,19 @@ BOOL spoolss_enum_printers(struct cli_state *cli, uint16 fnum,
 			uint32 level,
 			uint32 *count,
 			void ***printers);
+uint32 spoolss_enum_jobs(struct cli_state *cli, uint16 fnum,
+			const PRINTER_HND *hnd,
+			uint32 firstjob,
+			uint32 numofjobs,
+			uint32 level,
+			uint32 *buf_size,
+			uint32 *count,
+			void ***jobs);
 BOOL spoolss_open_printer_ex(struct cli_state *cli, uint16 fnum,
-			char *printername,
+			const char *printername,
 			uint32 cbbuf, uint32 devmod, uint32 des_access,
-			char *station,
-			char *username,
+			const char *station,
+			const char *username,
 			PRINTER_HND *hnd);
 BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd);
 
@@ -2952,10 +2961,10 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, 
-		char *printername,
+		const char *printername,
 		uint32 cbbuf, uint32 devmod, uint32 des_access,
-		char *station,
-		char *username);
+		const char *station,
+		const char *username);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				PRINTER_HND *handle,
@@ -3019,7 +3028,7 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth);
 void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u);
 BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, PRINTER_HND *hnd,
+BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const PRINTER_HND *hnd,
 				uint32 firstjob,
 				uint32 numofjobs,
 				uint32 level,
@@ -3460,12 +3469,22 @@ void cmd_sam_enum_groups(struct client_info *info);
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
 BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
+				const char* srv_name,
 				uint32 level,
 				uint32 *num,
 				void ***ctr,
 				PRINT_INFO_FN(fn));
 void cmd_spoolss_enum_printers(struct client_info *info);
 void cmd_spoolss_open_printer_ex(struct client_info *info);
+BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
+				const char* srv_name,
+				const char* user_name,
+				const char* printer_name,
+				uint32 level,
+				uint32 *num,
+				void ***ctr,
+				JOB_INFO_FN(fn));
+void cmd_spoolss_enum_jobs(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
@@ -3630,6 +3649,17 @@ void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action,
 void display_printer_info_1_ctr(FILE *out_hnd, enum action_type action, 
 				uint32 count, PRINTER_INFO_1 *const *const ctr);
 void display_printer_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 level, uint32 count,
+				void *const *const ctr);
+void display_job_info_2(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_2 *const i2);
+void display_job_info_1(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_1 *const i1);
+void display_job_info_2_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_2 *const *const ctr);
+void display_job_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_1 *const *const ctr);
+void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
 				uint32 level, uint32 count,
 				void *const *const ctr);
 

@@ -2724,6 +2724,244 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action,
 	}
 }
 
+/****************************************************************************
+job info level 2 display function
+****************************************************************************/
+void display_job_info_2(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_2 *const i2)
+{
+	if (i2 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Job Info Level 2:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring tmp;
+
+			fprintf(out_hnd, "\tjob id:\t%d\n", i2->jobid);
+			unistr_to_ascii(tmp, i2->printername.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tprinter name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->machinename.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tmachine name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->username.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tusername:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->document.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tdocument:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->notifyname.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tnotify name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->datatype.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tdata type:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->printprocessor.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tprint processor:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->parameters.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tparameters:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i2->drivername.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tdriver name:\t%s\n", tmp);
+			fprintf(out_hnd, "\tDevice Mode:\tNOT DISPLAYED YET\n");
+/*
+			DEVICEMODE *devmode;
+*/
+			unistr_to_ascii(tmp, i2->text_status.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\ttext status:\t%s\n", tmp);
+		/*	SEC_DESC sec_desc;*/
+			fprintf(out_hnd, "\tstatus:\t%d\n", i2->status);
+			fprintf(out_hnd, "\tpriority:\t%d\n", i2->priority);
+			fprintf(out_hnd, "\tposition:\t%d\n", i2->position);
+			fprintf(out_hnd, "\tstarttime:\t%d\n", i2->starttime);
+			fprintf(out_hnd, "\tuntiltime:\t%d\n", i2->untiltime);
+			fprintf(out_hnd, "\ttotalpages:\t%d\n", i2->totalpages);
+			fprintf(out_hnd, "\tsize:\t%d\n", i2->size);
+/*
+			SYSTEMTIME submitted;
+*/
+			fprintf(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
+			fprintf(out_hnd, "\ttimeelapsed:\t%d\n", i2->timeelapsed);
+			fprintf(out_hnd, "\tpagesprinted:\t%d\n", i2->pagesprinted);
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+job info level 1 display function
+****************************************************************************/
+void display_job_info_1(FILE *out_hnd, enum action_type action, 
+		JOB_INFO_1 *const i1)
+{
+	if (i1 == NULL)
+	{
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "Job Info Level 1:\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring tmp;
+
+			fprintf(out_hnd, "\tjob id:\t%d\n", i1->jobid);
+			unistr_to_ascii(tmp, i1->printername.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tprinter name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i1->machinename.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tmachine name:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i1->username.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tusername:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i1->document.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tdocument:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i1->datatype.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\tdata type:\t%s\n", tmp);
+			unistr_to_ascii(tmp, i1->text_status.buffer, sizeof(tmp)-1);
+			fprintf(out_hnd, "\ttext status:\t%s\n", tmp);
+			fprintf(out_hnd, "\tstatus:\t%d\n", i1->status);
+			fprintf(out_hnd, "\tpriority:\t%d\n", i1->priority);
+			fprintf(out_hnd, "\tposition:\t%d\n", i1->position);
+			fprintf(out_hnd, "\ttotalpages:\t%d\n", i1->totalpages);
+/*
+			SYSTEMTIME submitted;
+*/
+			fprintf(out_hnd, "\tsubmitted:\tNOT DISPLAYED YET\n");
+			fprintf(out_hnd, "\tpagesprinted:\t%d\n", i1->pagesprinted);
+
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+
+}
+
+/****************************************************************************
+connection info level 2 container display function
+****************************************************************************/
+void display_job_info_2_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_2 *const *const ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_job_info_2_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < count; i++)
+			{
+				display_job_info_2(out_hnd, ACTION_HEADER   , ctr[i]);
+				display_job_info_2(out_hnd, ACTION_ENUMERATE, ctr[i]);
+				display_job_info_2(out_hnd, ACTION_FOOTER   , ctr[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+connection info level 1 container display function
+****************************************************************************/
+void display_job_info_1_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 count, JOB_INFO_1 *const *const ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_job_info_1_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			int i;
+
+			for (i = 0; i < count; i++)
+			{
+				display_job_info_1(out_hnd, ACTION_HEADER   , ctr[i]);
+				display_job_info_1(out_hnd, ACTION_ENUMERATE, ctr[i]);
+				display_job_info_1(out_hnd, ACTION_FOOTER   , ctr[i]);
+			}
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+connection info container display function
+****************************************************************************/
+void display_job_info_ctr(FILE *out_hnd, enum action_type action, 
+				uint32 level, uint32 count,
+				void *const *const ctr)
+{
+	if (ctr == NULL)
+	{
+		fprintf(out_hnd, "display_job_info_ctr: unavailable due to an internal error\n");
+		return;
+	}
+
+	switch (level)
+	{
+		case 1:
+		{
+			display_job_info_1_ctr(out_hnd, action, 
+			                   count, (JOB_INFO_1*const*const)ctr);
+			break;
+		}
+		case 2:
+		{
+			display_job_info_2_ctr(out_hnd, action, 
+			                   count, (JOB_INFO_2*const*const)ctr);
+			break;
+		}
+		default:
+		{
+			fprintf(out_hnd, "display_job_info_ctr: Unknown Info Level\n");
+			break;
+		}
+	}
+}
+
 #if COPY_THIS_TEMPLATE
 /****************************************************************************
  display structure
