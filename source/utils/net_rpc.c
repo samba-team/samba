@@ -243,6 +243,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 	extern pstring global_myname;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
+	NTSTATUS result;
 
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
@@ -256,7 +257,12 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
-	return trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+	result = trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
+
+	if (NT_STATUS_IS_OK(result))
+		printf("Joined domain %s.\n",lp_workgroup());
+
+	return result;
 }
 
 /** 
