@@ -79,11 +79,10 @@ section carefully.
 </para>
 </partintro>
 &ServerType;
-&SECURITY-LEVEL;
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
-&ADS-HOWTO;
 &DOMAIN-MEMBER;
+&StandAloneServer;
 </part>
 
 <part id="optional">
