@@ -2432,8 +2432,9 @@ static void spoolss_notify_security_desc(int snum,
 					 NT_PRINTER_INFO_LEVEL *printer,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.data.length=0;
 	data->notify_data.data.string = NULL;
+	data->notify_data.sd.size = printer->info_2->secdesc_buf->len;
+	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sec ) ;
 }
 
 /*******************************************************************
