@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -330,7 +330,7 @@ wrap_des3
 	  4);
 
 
-  ret = krb5_crypto_init(gssapi_krb5_context, key, ETYPE_DES3_CBC_NONE_IVEC,
+  ret = krb5_crypto_init(gssapi_krb5_context, key, ETYPE_DES3_CBC_NONE,
 			 &crypto);
   if (ret) {
       free (output_message_buffer->value);
