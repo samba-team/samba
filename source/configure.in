@@ -167,7 +167,8 @@ fi
 # Do the same check for setresguid...
 #
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
-    AC_TRY_COMPILE([#include <errno.h>
+    AC_TRY_RUN([#include <unistd.h>
+#include <errno.h>
 main() { setresgid(1,1,1); exit(0);}],
 	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
@@ -676,6 +677,7 @@ AC_CACHE_CHECK([for netmask ifconf],samba_cv_HAVE_NETMASK_IFCONF,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFCONF 1
 #define AUTOCONF 1
+#include "confdefs.h"
 #include "${srcdir-.}/lib/netmask.c"],
            samba_cv_HAVE_NETMASK_IFCONF=yes,samba_cv_HAVE_NETMASK_IFCONF=no,samba_cv_HAVE_NETMASK_IFCONF=cross)])
 if test x"$samba_cv_HAVE_NETMASK_IFCONF" = x"yes"; then
@@ -687,6 +689,7 @@ AC_CACHE_CHECK([for netmask ifreq],samba_cv_HAVE_NETMASK_IFREQ,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_IFREQ 1
 #define AUTOCONF 1
+#include "confdefs.h"
 #include "${srcdir-.}/lib/netmask.c"],
            samba_cv_HAVE_NETMASK_IFREQ=yes,samba_cv_HAVE_NETMASK_IFREQ=no,samba_cv_HAVE_NETMASK_IFREQ=cross)])
 if test x"$samba_cv_HAVE_NETMASK_IFREQ" = x"yes"; then
@@ -699,6 +702,7 @@ AC_CACHE_CHECK([for netmask AIX],samba_cv_HAVE_NETMASK_AIX,[
 AC_TRY_RUN([
 #define HAVE_NETMASK_AIX 1
 #define AUTOCONF 1
+#include "confdefs.h"
 #include "${srcdir-.}/lib/netmask.c"],
            samba_cv_HAVE_NETMASK_AIX=yes,samba_cv_HAVE_NETMASK_AIX=no,samba_cv_HAVE_NETMASK_AIX=cross)])
 if test x"$samba_cv_HAVE_NETMASK_AIX" = x"yes"; then

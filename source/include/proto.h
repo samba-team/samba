@@ -2431,6 +2431,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
 
+BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp);
@@ -2556,6 +2557,8 @@ int rename_internals(connection_struct *conn,
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err);
+SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);

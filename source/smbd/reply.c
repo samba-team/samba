@@ -3705,8 +3705,83 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 }
 
 /****************************************************************************
+ Get a lock count, dealing with large count requests.
+****************************************************************************/
+
+SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+{
+  SMB_OFF_T count;
+
+  *err = False;
+
+  if(!large_file_format) {
+    count = (SMB_OFF_T)IVAL(data,SMB_LKLEN_OFFSET(data_offset));
+  } else {
+#ifdef LARGE_SMB_OFF_T
+    count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)));
+#else /* !LARGE_SMB_OFF_T */
+    /*
+     * NT4.x seems to be broken in that it sends large file
+     * lockingX calls even if the CAP_LARGE_FILES was *not*
+     * negotiated. JRA.
+     */
+      
+    if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0){
+      DEBUG(0,("get_lock_count: Error : a large file count was sent and we don't \
+support large counts.\n" ));
+
+      *err = True;
+      return (SMB_OFF_T)-1;
+    }
+
+    count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+#endif /* LARGE_SMB_OFF_T */
+  }
+  return count;
+}
+
+/****************************************************************************
+ Get a lock offset, dealing with large offset requests.
+****************************************************************************/
+
+SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
+{
+  SMB_OFF_T offset;
+
+  *err = False;
+
+  if(!large_file_format) {
+    offset = (SMB_OFF_T)IVAL(data,SMB_LKOFF_OFFSET(data_offset));
+  } else {
+#ifdef LARGE_SMB_OFF_T
+    offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) << 32) |
+            ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)));
+#else /* !LARGE_SMB_OFF_T */
+    /*
+     * NT4.x seems to be broken in that it sends large file
+     * lockingX calls even if the CAP_LARGE_FILES was *not*
+     * negotiated. JRA.
+     */
+      
+    if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0){
+      DEBUG(0,("get_lock_count: Error : a large file offset was sent and we don't \
+support large offsets.\n" ));
+
+      *err = True;
+      return (SMB_OFF_T)-1;
+    }
+
+    offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+#endif /* LARGE_SMB_OFF_T */
+  }
+  return offset;
+}
+
+/****************************************************************************
   reply to a lockingX request
 ****************************************************************************/
+
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   files_struct *fsp = file_fsp(inbuf,smb_vwv2);
@@ -3723,6 +3798,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+  BOOL err1, err2;
+
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
 
@@ -3779,18 +3856,14 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(i));
-      offset = IVAL(data,SMB_LKOFF_OFFSET(i));
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    count = get_lock_count( data, i, large_file_format, &err1);
+    offset = get_lock_offset( data, i, large_file_format, &err2);
+
+    /*
+     * There is no error code marked "stupid client bug".... :-).
+     */
+    if(err1 || err2)
+      return ERROR(ERRDOS,ERRnoaccess);
 
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
@@ -3809,18 +3882,14 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
-    if(!large_file_format) {
-      count = IVAL(data,SMB_LKLEN_OFFSET(i)); 
-      offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-    }
-#ifdef LARGE_SMB_OFF_T
-    else {
-      count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-              ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-      offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-               ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-    }
-#endif /* LARGE_SMB_OFF_T */
+    count = get_lock_count( data, i, large_file_format, &err1);
+    offset = get_lock_offset( data, i, large_file_format, &err2);
+
+    /*
+     * There is no error code marked "stupid client bug".... :-).
+     */
+    if(err1 || err2)
+      return ERROR(ERRDOS,ERRnoaccess);
  
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
@@ -3844,19 +3913,15 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      all of the previous locks (X/Open spec). */
   if(i != num_locks && num_locks != 0) {
     for(; i >= 0; i--) {
-      if(!large_file_format) {
-        count = IVAL(data,SMB_LKLEN_OFFSET(i));  
-        offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
-      }
-#ifdef LARGE_SMB_OFF_T
-      else {
-        count = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(i))) << 32) |
-                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(i)));
-        offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
-                 ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
-      }
-#endif /* LARGE_SMB_OFF_T */
+      count = get_lock_count( data, i, large_file_format, &err1);
+      offset = get_lock_offset( data, i, large_file_format, &err2);
 
+      /*
+       * There is no error code marked "stupid client bug".... :-).
+       */
+      if(err1 || err2)
+        return ERROR(ERRDOS,ERRnoaccess);
+ 
       do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
     }
     return ERROR(eclass,ecode);
