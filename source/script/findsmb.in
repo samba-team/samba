@@ -90,6 +90,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 			# names starting or ending with spaces
 			/(.{1,15})\s+<00>\s+/;
 			$name = $1;
+			$name =~ s/^\s+//g;
     		}
 
 		# do an smbclient command on the netbios name.
