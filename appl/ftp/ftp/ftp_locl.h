@@ -7,7 +7,7 @@
 #include <config.h>
 #endif
 
-#include <protos.h>
+#include "roken.h"
 
 #include <sys/bitypes.h>
 #include <sys/cdefs.h>
