@@ -901,18 +901,20 @@ tgs_rep2(KDC_REQ_BODY *b,
     Key *ekey;
     krb5_principal cp = NULL;
 
+    char *spn = NULL, *cpn = NULL;
+
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
 	kdc_log(0, "Failed to decode AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
-	goto out;
+	goto out2;
     }
     
     if(ap_req.ticket.sname.name_string.len != 2 ||
        strcmp(ap_req.ticket.sname.name_string.val[0], "krbtgt")){
 	kdc_log(0, "PA-DATA is not a ticket-granting ticket");
 	ret = KRB5KDC_ERR_POLICY; /* ? */
-	goto out;
+	goto out2;
     }
     
     principalname2krb5_principal(&princ,
@@ -924,11 +926,10 @@ tgs_rep2(KDC_REQ_BODY *b,
     if(krbtgt == NULL) {
 	char *p;
 	krb5_unparse_name(context, princ, &p);
-	kdc_log(0, "Ticket-granting ticket not found in database: %s",
-		p);
+	kdc_log(0, "Ticket-granting ticket not found in database: %s", p);
 	free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
-	goto out;
+	goto out2;
     }
     
     ekey = unseal_key(&krbtgt->keys.val[0]); /* XXX */
@@ -945,7 +946,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     if(ret) {
 	kdc_log(0, "Failed to verify AP-REQ: %s", 
 		krb5_get_err_text(context, ret));
-	goto out;
+	goto out2;
     }
 
     tgt = &ticket->ticket;
@@ -957,14 +958,13 @@ tgs_rep2(KDC_REQ_BODY *b,
     if(ret){
 	kdc_log(0, "Failed to verify authenticator: %s", 
 		krb5_get_err_text(context, ret));
-	goto out;
+	goto out2;
     }
     
     {
 	PrincipalName *s;
 	Realm r;
-	char *spn, *cpn;
-	hdb_entry *server, *client;
+	hdb_entry *server = NULL, *client = NULL;
 
 	s = b->sname;
 	r = b->realm;
@@ -1026,30 +1026,11 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ret = tgs_make_reply(b, tgt, server, client, reply);
 	
     out:
-	if(ret)
-	    krb5_mk_error(context,
-			  ret,
-			  e_text,
-			  NULL,
-			  cp,
-			  sp,
-			  0,
-			  reply);
-		      
-	if (ticket) {
-	    krb5_free_ticket(context, ticket);
-	    free(ticket);
-	}
-	
 	free_AP_REQ(&ap_req);
 	free(spn);
 	krb5_free_principal(context, cp);
 	free(cpn);
 	    
-	if(krbtgt){
-	    hdb_free_entry(context, krbtgt);
-	    free(krbtgt);
-	}
 	if(server){
 	    hdb_free_entry(context, server);
 	    free(server);
@@ -1058,9 +1039,28 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    hdb_free_entry(context, client);
 	    free(client);
 	}
-	    
-	return ret;
+	
     }
+out2:
+    if(ret)
+	krb5_mk_error(context,
+		      ret,
+		      e_text,
+		      NULL,
+		      cp,
+		      sp,
+		      0,
+		      reply);
+    if (ticket) {
+	krb5_free_ticket(context, ticket);
+	free(ticket);
+    }
+
+    if(krbtgt){
+	hdb_free_entry(context, krbtgt);
+	free(krbtgt);
+    }
+    return ret;
 }
 
 static krb5_error_code
