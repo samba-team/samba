@@ -343,7 +343,7 @@ BOOL epm_io_tower_array(const char *desc, EPM_TOWER_ARRAY *array,
 	}
 
 	for (i = 0; i < array->count; i++) {
-		if (!epm_io_tower("tower", array->towers + 1, ps, depth))
+		if (!epm_io_tower("tower", &array->towers[i], ps, depth))
 			return False;
 	}
 
