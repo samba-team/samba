@@ -434,6 +434,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     gid_t tty_gid;
     struct group *gr;
     const char *home_dir;
+    int i;
 
     if(!rootlogin)
 	checknologin();
