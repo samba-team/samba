@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4)
-
 bin_PROGRAMS = verify_krb5_conf
 
 noinst_PROGRAMS = dump_config test_get_addrs
@@ -11,19 +9,13 @@ noinst_PROGRAMS = dump_config test_get_addrs
 check_PROGRAMS = n-fold-test string-to-key-test
 TESTS = n-fold-test string-to-key-test
 
-if KRB4
-KRB4LIB = $(LIB_krb4)
-endif
-
 LDADD = libkrb5.la \
-	$(KRB4LIB) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
 
 libkrb5_la_LIBADD = \
 	../com_err/error.lo ../com_err/com_err.lo \
-	$(KRB4LIB) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
@@ -126,8 +118,6 @@ libkrb5_la_SOURCES = \
 	warn.c \
 	write_message.c \
 	$(ERR_FILES)
-
-EXTRA_libkrb5_la_SOURCES = keytab_krb4.c
 
 libkrb5_la_LDFLAGS = -version-info 14:0:0
 
