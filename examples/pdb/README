@@ -1,5 +1,41 @@
 README for Samba Password Database (PDB) examples
 ====================================================
+21-6-2002 Stefan (metze) Metzmacher <metze@metzemix.de>
+
+I have added an interface versioning.
+
+Every module MUST have a pdb_version() function.
+
+this is defined in include/passdb.h:
+#define PDB_MODULE_VERSIONING_MAGIC \
+int pdb_version(void)\
+{\
+	return PASSDB_INTERFACE_VERSION;\
+}
+
+You MUST add this line inside a module:
+PDB_MODULE_VERSIONING_MAGIC
+
+21-6-2002 Stefan (metze) Metzmacher <metze@metzemix.de>
+
+The pdb_interface was changed:
+
+this function are deleted:
+static BOOL testsam_getsampwrid (struct pdb_methods *methods, SAM_ACCOUNT *user, uint32 rid)
+
+this function are added:
+static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, DOM_SID sid)
+
+In the SAM_ACCOUNT struct:
+
+this fields are deleted:
+uint32 user_rid;
+uint32 group_rid;
+
+this fields are added:
+DOM_SID user_sid;
+DOM_SID group_sid; 
+
 15-2-2002 Jelmer Vernooij <jelmer@nl.linux.org>
 
 The pdb_test.c file in this directory contains a very basic example of 
