@@ -613,6 +613,8 @@ typedef struct vk_struct {
 #define REG_TYPE_DWORD     4
 #define REG_TYPE_MULTISZ   7
 
+REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size);
+
 int nt_set_regf_input_file(REGF *regf, char *filename)
 {
   return ((regf->regfile_name = strdup(filename)) != NULL); 
@@ -654,6 +656,27 @@ int nt_free_regf(REGF *regf)
 
   free(regf);
 
+}
+
+/*
+ * Convert from UniCode to Ascii ... Does not take into account other lang
+ * Restrict by ascii_max if > 0
+ */
+int uni_to_ascii(unsigned char *uni, unsigned char *ascii, int ascii_max, 
+		 int uni_max)
+{
+  int i = 0; 
+
+  while (i < ascii_max && !(!uni[i*2] && !uni[i*2+1])) {
+    if (uni_max > 0 && (i*2) >= uni_max) break;
+    ascii[i] = uni[i*2];
+    i++;
+
+  }
+
+  ascii[i] = '\0';
+
+  return i;
 }
 
 /* Get the header of the registry. Return a pointer to the structure 
@@ -708,10 +731,46 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
 }
 
 /*
+ * Process a VL Header and return a list of values
+ */
+VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
+{
+
+} 
+
+/*
  * Process an LF Header and return a list of sub-keys
  */
 KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 {
+  int count, i, nk_off;
+  unsigned int lf_id;
+  KEY_LIST *tmp;
+
+  if (!lf_hdr) return NULL;
+
+  if ((lf_id = SVAL(&lf_hdr->LF_ID)) != REG_LF_ID) {
+    fprintf(stderr, "Unrecognized LF Header format: %0X, Block: %0X, %s.\n",
+	    lf_id, lf_hdr, regf->regfile_name);
+    return NULL;
+  }
+
+  assert(size < 0);
+
+  count = SVAL(&lf_hdr->key_count);
+
+  if (count <= 0) return NULL;
+
+  /* Now, we should allocate a KEY_LIST struct and fill it in ... */
+
+  for (i=0; i<count; i++) {
+    NK_HDR *nk_hdr;
+    int nk_off;
+
+    nk_off = IVAL(&lf_hdr->hr[i].nk_off);
+    nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
+    nt_get_key_tree(regf, nk_hdr, BLK_SIZE(nk_hdr));
+  }
 
   return NULL;
 }
@@ -723,12 +782,20 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 {
   REG_KEY *tmp = NULL;
-  int rec_size, name_len, clsname_len, lf_off;
+  int rec_size, name_len, clsname_len, lf_off, val_off, val_count, sk_off;
+  unsigned int nk_id;
   LF_HDR *lf_hdr;
   VL_TYPE *vl;
-  char key_name[1024];
+  SK_HDR *sk_hdr;
+  char key_name[1024], cls_name[1024];
 
   if (!nk_hdr) return NULL;
+
+  if ((nk_id = SVAL(&nk_hdr->NK_ID)) != REG_NK_ID) {
+    fprintf(stderr, "Unrecognized NK Header format: %08X, Block: %0X. %s\n", 
+	    nk_id, nk_hdr, regf->regfile_name);
+    return NULL;
+  }
 
   assert(size < 0);
 
@@ -737,19 +804,20 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 
   /*
    * The value of -size should be ge 
-   * (sizeof(NK_HDR) - 1 + name_len + clsname_len)
+   * (sizeof(NK_HDR) - 1 + name_len)
    * The -1 accounts for the fact that we included the first byte of 
-   * the name in the structure.
+   * the name in the structure. clsname_len is the length of the thing 
+   * pointed to by clsnam_off
    */
 
-  if (-size < (sizeof(NK_HDR) - 1 + name_len + clsname_len)) {
+  if (-size < (sizeof(NK_HDR) - 1 + name_len)) {
     fprintf(stderr, "Incorrect NK_HDR size: %d, %0X\n", -size, nk_hdr);
     fprintf(stderr, "Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
 	    sizeof(NK_HDR), name_len, clsname_len);
-    return NULL;
+    /*return NULL;*/
   }
 
-  fprintf(stderr, "NK HDR: Name len: %d, class name len: %d\n", name_len,
+  fprintf(stdout, "NK HDR: Name len: %d, class name len: %d\n", name_len,
 	  clsname_len);
 
   /* Fish out the key name and process the LF list */
@@ -757,8 +825,56 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
   assert(name_len < sizeof(key_name));
 
   strncpy(key_name, nk_hdr->key_nam, name_len);
+  key_name[name_len] = '\0';
 
-  fprintf(stderr, "Key name: %s\n", key_name);
+  fprintf(stdout, "Key name: %s\n", key_name);
+
+  /*
+   * Fish out the class name, it is in UNICODE, while the key name is 
+   * ASCII :-)
+   */
+
+  if (clsname_len) { /* Just print in Ascii for now */
+    char *clsnamep;
+    int clsnam_off;
+
+    clsnam_off = IVAL(&nk_hdr->clsnam_off);
+    clsnamep = LOCN(regf->base, clsnam_off);
+ 
+    bzero(cls_name, clsname_len);
+    uni_to_ascii(clsnamep, cls_name, sizeof(cls_name), clsname_len);
+    
+
+    fprintf(stdout, "  Class Name: %s\n", cls_name);
+
+  }
+
+  /*
+   * If there are any values, process them here
+   */
+
+  val_count = IVAL(&nk_hdr->val_cnt);
+
+  if (val_count) {
+    int val_off;
+
+    val_off = IVAL(&nk_hdr->val_off);
+    vl = (VL_TYPE *)LOCN(regf->base, val_off);
+
+    process_vl(regf, *vl, val_count, BLK_SIZE(vl));
+  }
+
+  /* 
+   * Also handle the SK header ...
+   */
+
+  sk_off = IVAL(&nk_hdr->sk_off);
+  sk_hdr = (SK_HDR *)LOCN(regf->base, sk_off);
+
+  if (sk_off != -1) {
+
+
+  } 
 
   lf_off = IVAL(&nk_hdr->lf_off);
 
