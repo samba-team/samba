@@ -2,10 +2,6 @@ This file describes how to report Samba bugs.
 
 >> The email address for bug reports is samba-bugs@anu.edu.au <<
 
-(NOTE: This mail may not be in place yet. If you have troubles with it
-then use samba-bugs@arvidsjaur.anu.edu.au)
-
-
 Please take the time to read this file before you submit a bug
 report. Also, please see if it has changed between releases, as I
 may be changing the bug reporting mechanism sometime soon.
@@ -17,10 +13,9 @@ of an answer and a fix if you send me a "developer friendly" bug
 report that lets me fix it fast. 
 
 Do not assume that if you post the bug to the comp.protocols.smb
-newsgroup that I will read it. I do read all postings to the samba
-mailing list (see the README). If you suspect that your problem is not
-a bug but a configuration problem then it is better to send it to the
-Samba mailing list, as there are (at last count) 1900 other users on
+newsgroup or the mailing list that I will read it. If you suspect that your 
+problem is not a bug but a configuration problem then it is better to send 
+it to the Samba mailing list, as there are (at last count) 1900 other users on
 that list that may be able to help you.
 
 You may also like to look though the recent mailing list archives,
@@ -35,6 +30,8 @@ Before submitting a bug report check your config for silly
 errors. Look in your log files for obvious messages that tell you that
 you've misconfigured something and run testparm to test your config
 file for correct syntax.
+
+Have you run through DIAGNOSIS.txt? This is very important.
 
 If you include part of a log file with your bug report then be sure to
 annotate it with exactly what you were doing on the client at the
