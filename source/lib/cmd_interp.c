@@ -1091,7 +1091,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	if (cmd_set_options & CMD_INTER) {
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
+	{
 		setup_logging(debugf, interactive);
 		if (!interactive)
 			reopen_logs();
@@ -1100,7 +1101,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	strupper(global_myname);
 	fstrcpy(cli_info.myhostname, global_myname);
 
-	if (cmd_set_options & CMD_SVC) {
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_SVC))
+	{
 		if (!lp_load(servicesf, True, False, False))
 		{
 			fprintf(stderr,
@@ -1110,23 +1112,26 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 
 	}
 
-	if (cmd_set_options & CMD_INTER) {
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
+	{
 		load_interfaces();
 	}
 
 	DEBUG(10, ("cmd_set: options: %x\n", cmd_set_options));
 
-	if (cmd_set_options & CMD_HELP) {
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
+	{
 		return 0;
 	}
 
-	if (cmd_set_options & CMD_NOPW) {
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
+	{
 		set_user_password(&usr.ntc, True, NULL);
 	}
 	else
 	{
 		set_user_password(&usr.ntc,
-				  ((cmd_set_options & CMD_PASS) != 0),
+				  IS_BITS_SET_ALL(cmd_set_options, CMD_PASS),
 				  password);
 	}
 
@@ -1305,7 +1310,8 @@ int command_main(int argc, char *argv[])
 
 	status = cmd_set(&cli_info, argc, argv);
 
-	if (cmd_set_options & (CMD_HELP|CMD_STR)) {
+	if (IS_BITS_SET_SOME(cmd_set_options, CMD_HELP|CMD_STR))
+	{
 		free_connections();
 		get_safe_nt_error_msg(status, msg, sizeof(msg));
 

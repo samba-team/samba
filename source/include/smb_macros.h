@@ -30,6 +30,11 @@
 #define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
+#define IS_BITS_SET_ALL(var,bit) (((var)&(bit))==(bit))
+#define IS_BITS_SET_SOME(var,bit) (((var)&(bit))!=0)
+#define IS_BITS_CLR_ALL(var,bit) (((var)&(bit))==0)
+#define IS_BITS_CLR_SOME(var,bit) (((var)&(bit))!=(bit))
+
 /* for readability... */
 #define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
 #define IS_DOS_DIR(test_mode)      (((test_mode) & aDIR) != 0)
@@ -54,7 +59,7 @@
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
 
 /* assert macros */
-#define SMB_ASSERT(b) ((b)?(void)0: \
+#define SMB_ASSERT(b) ((b)?0: \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
 		 __FILE__, __LINE__)), smb_panic("assert failed")))
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))

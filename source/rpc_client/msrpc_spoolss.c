@@ -251,10 +251,9 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 					     needed, &needed, &returned);
 	}
 	
-	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
-	
 	if (status!=NT_STATUS_NO_PROBLEMO)
 	{
+		DEBUG(0,("spoolss_enum_printers: %s\n", get_nt_error_msg(status)));
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
 		return False;
@@ -672,15 +671,15 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 	}
 
         switch (level) {
-        case 1:
-                decode_printer_driver_1(&buffer, 1, &(ctr.info1));
-                break;
-        case 2:
-                decode_printer_driver_2(&buffer, 1, &(ctr.info2));
-                break;
-        case 3:
-                decode_printer_driver_3(&buffer, 1, &(ctr.info3));
-                break;
+		case 1:
+			decode_printer_driver_1(&buffer, 1, &(ctr.info1));
+			break;
+		case 2:
+			decode_printer_driver_2(&buffer, 1, &(ctr.info2));
+			break;
+		case 3:
+			decode_printer_driver_3(&buffer, 1, &(ctr.info3));
+			break;
         }
 
         display_printer_driver_ctr(out_hnd, ACTION_HEADER   , level, 1, ctr);
