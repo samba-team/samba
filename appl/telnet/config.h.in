@@ -41,12 +41,6 @@
 /*  */
 #undef OLD_ENVIRON
 
-/* Define if you have setupterm() */
-#undef HAVE_SETUPTERM
-
-/* Define if you have tgetent() */
-#undef HAVE_TGETENT
-
 /* Define if there are working stream ptys */
 #undef STREAMSPTY
 
@@ -58,9 +52,6 @@
 
 /* Define if you have the frevoke function.  */
 #undef HAVE_FREVOKE
-
-/* Define if you have the gethostbyname function.  */
-#undef HAVE_GETHOSTBYNAME
 
 /* Define if you have the getmsg function.  */
 #undef HAVE_GETMSG
@@ -88,9 +79,6 @@
 
 /* Define if you have the setupterm function.  */
 #undef HAVE_SETUPTERM
-
-/* Define if you have the socket function.  */
-#undef HAVE_SOCKET
 
 /* Define if you have the tgetent function.  */
 #undef HAVE_TGETENT
@@ -122,6 +110,9 @@
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
 
+/* Define if you have the <sys/str_tty.h> header file.  */
+#undef HAVE_SYS_STR_TTY_H
+
 /* Define if you have the <sys/stream.h> header file.  */
 #undef HAVE_SYS_STREAM_H
 
@@ -130,6 +121,9 @@
 
 /* Define if you have the <sys/tty.h> header file.  */
 #undef HAVE_SYS_TTY_H
+
+/* Define if you have the <sys/uio.h> header file.  */
+#undef HAVE_SYS_UIO_H
 
 /* Define if you have the <termio.h> header file.  */
 #undef HAVE_TERMIO_H
@@ -140,11 +134,17 @@
 /* Define if you have the <utmpx.h> header file.  */
 #undef HAVE_UTMPX_H
 
+/* Define if you have the curses library (-lcurses).  */
+#undef HAVE_LIBCURSES
+
 /* Define if you have the nsl library (-lnsl).  */
 #undef HAVE_LIBNSL
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Define if you have the termcap library (-ltermcap).  */
+#undef HAVE_LIBTERMCAP
 
 /* Define if you have the util library (-lutil).  */
 #undef HAVE_LIBUTIL

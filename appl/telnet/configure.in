@@ -271,8 +271,8 @@ AC_CHECK_LIB(util, logout)
 AC_SUBST(HAVE_LIBTERMCAP)
 
 AC_CHECK_HEADERS(sys/filio.h sys/ioctl.h sys/ptyvar.h sys/resource.h)
-AC_CHECK_HEADERS(sys/select.h sys/stream.h sys/strtty.h sys/tty.h)
-AC_CHECK_HEADERS(termio.h termios.h utmpx.h)
+AC_CHECK_HEADERS(sys/select.h sys/stream.h sys/strtty.h sys/str_tty.h)
+AC_CHECK_HEADERS(sys/tty.h termio.h termios.h utmpx.h sys/uio.h)
 
 
 #
