@@ -623,12 +623,6 @@ kadm5_s_modify_principal __P((
 	u_int32_t mask));
 
 kadm5_ret_t
-kadm5_s_modify_principal_with_key __P((
-	void *server_handle,
-	kadm5_principal_ent_t princ,
-	u_int32_t mask));
-
-kadm5_ret_t
 kadm5_s_randkey_principal __P((
 	void *server_handle,
 	krb5_principal princ,
