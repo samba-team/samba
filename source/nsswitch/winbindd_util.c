@@ -21,6 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
 #include "winbindd.h"
 
 #undef DBGC_CLASS
@@ -340,7 +341,7 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_our_domain()
+struct winbindd_domain *find_our_domain(void)
 {
 	struct winbindd_domain *domain;
 
