@@ -74,7 +74,7 @@ static BOOL init_wcache(void)
 	}
 
 	if (wcache->tdb != NULL)
-		return True;;
+		return True;
 
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
 				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
