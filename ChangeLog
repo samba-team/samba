@@ -1,3 +1,7 @@
+Thu Apr  1 11:00:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/asn1/main.c: use getargs
+
 Mon Mar 29 20:19:57 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kuser/klist.c (print_cred_verbose): use krb5_print_address
