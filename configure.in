@@ -93,7 +93,8 @@ fi
 AC_CHECK_FUNCS(asnprintf asprintf vasprintf vasnprintf vsnprintf)
 
 AC_CHECK_FUNCS(gethostname mktime timegm select strstr)
-AC_CHECK_FUNCS(random rand setitimer setsid)
+AC_CHECK_FUNCS(random rand setitimer setsid setsockopt)
+AC_CHECK_FUNCS(setpcred setlogin)
 
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
@@ -111,7 +112,7 @@ AC_BROKEN(chown daemon err errx fchown getcwd getdtablesize)
 AC_BROKEN(getusershell inet_aton initgroups lstat memmove mkstemp)
 AC_BROKEN(putenv rcmd setegid setenv seteuid strcasecmp strdup)
 AC_BROKEN(strerror strftime strlwr strnlen strtok_r strupr unsetenv)
-AC_BROKEN(verr verrx vwarn vwarnx warn warnx)
+AC_BROKEN(vsyslog verr verrx vwarn vwarnx warn warnx)
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
 
