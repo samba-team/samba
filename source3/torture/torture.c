@@ -3873,6 +3873,146 @@ static void del_fn(file_info *finfo, const char *mask, void *state)
 	}
 }
 
+
+/*
+  sees what IOCTLs are supported
+ */
+BOOL torture_ioctl_test(int dummy)
+{
+	static struct cli_state *cli;
+	uint16 device, function;
+	int fnum;
+	const char *fname = "\\ioctl.dat";
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	printf("starting ioctl test\n");
+
+	cli_unlink(cli, fname);
+
+	fnum = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli));
+		return False;
+	}
+
+	status = cli_raw_ioctl(cli, fnum, 0x2d0000 | (0x0420<<2), &blob);
+	printf("ioctl device info: %s\n", cli_errstr(cli));
+
+	status = cli_raw_ioctl(cli, fnum, IOCTL_QUERY_JOB_INFO, &blob);
+	printf("ioctl job info: %s\n", cli_errstr(cli));
+
+	for (device=0;device<0x100;device++) {
+		printf("testing device=0x%x\n", device);
+		for (function=0;function<0x100;function++) {
+			uint32 code = (device<<16) | function;
+
+			status = cli_raw_ioctl(cli, fnum, code, &blob);
+
+			if (NT_STATUS_IS_OK(status)) {
+				printf("ioctl 0x%x OK : %d bytes\n", code, blob.length);
+				data_blob_free(&blob);
+			}
+		}
+	}
+
+	if (!torture_close_connection(cli)) {
+		return False;
+	}
+
+	return True;
+}
+
+
+/*
+  tries varients of chkpath
+ */
+BOOL torture_chkpath_test(int dummy)
+{
+	static struct cli_state *cli;
+	int fnum;
+	BOOL ret;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	printf("starting chkpath test\n");
+
+	/* cleanup from an old run */
+	cli_rmdir(cli, "\\chkpath.dir\\dir2");
+	cli_unlink(cli, "\\chkpath.dir\\*");
+	cli_rmdir(cli, "\\chkpath.dir");
+
+	if (!cli_mkdir(cli, "\\chkpath.dir")) {
+		printf("mkdir1 failed : %s\n", cli_errstr(cli));
+		return False;
+	}
+
+	if (!cli_mkdir(cli, "\\chkpath.dir\\dir2")) {
+		printf("mkdir2 failed : %s\n", cli_errstr(cli));
+		return False;
+	}
+
+	fnum = cli_open(cli, "\\chkpath.dir\\foo.txt", O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open1 failed (%s)\n", cli_errstr(cli));
+		return False;
+	}
+	cli_close(cli, fnum);
+
+	if (!cli_chkpath(cli, "\\chkpath.dir")) {
+		printf("chkpath1 failed: %s\n", cli_errstr(cli));
+		ret = False;
+	}
+
+	if (!cli_chkpath(cli, "\\chkpath.dir\\dir2")) {
+		printf("chkpath2 failed: %s\n", cli_errstr(cli));
+		ret = False;
+	}
+
+	if (!cli_chkpath(cli, "\\chkpath.dir\\foo.txt")) {
+		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
+				  NT_STATUS_NOT_A_DIRECTORY);
+	} else {
+		printf("* chkpath on a file should fail\n");
+		ret = False;
+	}
+
+	if (!cli_chkpath(cli, "\\chkpath.dir\\bar.txt")) {
+		ret = check_error(__LINE__, cli, ERRDOS, ERRbadfile, 
+				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	} else {
+		printf("* chkpath on a non existant file should fail\n");
+		ret = False;
+	}
+
+	if (!cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt")) {
+		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
+				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	} else {
+		printf("* chkpath on a non existent component should fail\n");
+		ret = False;
+	}
+
+	cli_rmdir(cli, "\\chkpath.dir\\dir2");
+	cli_unlink(cli, "\\chkpath.dir\\*");
+	cli_rmdir(cli, "\\chkpath.dir");
+
+	if (!torture_close_connection(cli)) {
+		return False;
+	}
+
+	return ret;
+}
+
+
+
+
 static BOOL run_dirtest1(int dummy)
 {
 	int i;
@@ -4206,6 +4346,8 @@ static struct {
 	{"ERRMAPEXTRACT", run_error_map_extract, 0},
 	{"PIPE_NUMBER", run_pipe_number, 0},
 	{"TCON2",  run_tcon2_test, 0},
+	{"IOCTL",  torture_ioctl_test, 0},
+	{"CHKPATH",  torture_chkpath_test, 0},
 	{NULL, NULL, 0}};
 
 
