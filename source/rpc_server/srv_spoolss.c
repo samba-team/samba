@@ -48,7 +48,7 @@ static BOOL api_spoolss_open_printer_ex(pipes_struct *p)
 	if (q_u.printername_ptr != 0)
 		printername = &q_u.printername;
 
-	r_u.status = _spoolss_open_printer_ex( printername,
+	r_u.status = _spoolss_open_printer_ex( printername, p,
 					       &q_u.printer_default,
 	                                       q_u.user_switch, q_u.user_ctr,
 	                                       &r_u.handle);
