@@ -43,7 +43,7 @@ static char *get_socket_addr(int fd)
 	}
 	
 	if (getsockname(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		DEBUG(0,("getsockname failed. Error was %s\n", strerror(errno) ));
 		return addr_buf;
 	}
 	
