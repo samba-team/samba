@@ -74,6 +74,12 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	/* Strip \PIPE\ off the name. */
 	pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
 
+	/*
+	 * Hack for NT printers... JRA.
+	 */
+    if(should_fail_next_srvsvc_open(fname))
+      return(ERROR(ERRSRV,ERRaccess));
+
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
 	/* can be opened and add it in after the open. */
 	DEBUG(3,("Known pipe %s opening.\n",fname));

@@ -425,6 +425,9 @@ EOF
 		echo ${UNAME_MACHINE}-unknown-sysv32
 	fi
 	exit 0 ;;
+	*:UnixWare:*:*)
+		echo ${UNAME_MACHINE}-UnixWare-sysv${UNAME_RELEASE}
+		exit 0 ;;
     Intel:Mach:3*:*)
 	echo i386-unknown-mach3
 	exit 0 ;;

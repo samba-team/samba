@@ -26,7 +26,7 @@
 
 
 extern int DEBUGLEVEL;
-
+extern pstring user_socket_options;
 
 /****************************************************************************
 recv an smb
@@ -2311,6 +2311,35 @@ retry:
 
 	if (!cli_receive_smb(cli))
 		return False;
+
+	if (CVAL(cli->inbuf,0) == 0x84) {
+		/* C. Hoch  9/14/95 Start */
+		/* For information, here is the response structure.
+		 * We do the byte-twiddling to for portability.
+		struct RetargetResponse{
+		unsigned char type;
+		unsigned char flags;
+		int16 length;
+		int32 ip_addr;
+		int16 port;
+		};
+		*/
+		int port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
+		/* SESSION RETARGET */
+		putip((char *)&cli->dest_ip,cli->inbuf+4);
+
+		close_sockets();
+		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, port, LONG_CONNECT_TIMEOUT);
+		if (cli->fd == -1)
+			return False;
+
+		DEBUG(3,("Retargeted\n"));
+
+		set_socket_options(cli->fd,user_socket_options);
+
+		/* Try again */
+		return cli_session_request(cli, calling, called);
+	} /* C. Hoch 9/14/95 End */
 
 #ifdef WITH_SSL
     if (CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */

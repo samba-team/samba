@@ -2865,14 +2865,32 @@ int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
-	getrlimit(RLIMIT_NOFILE, &rlp);
+	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: getrlimit (1) for RLIMIT_NOFILE failed with error %s\n",
+			strerror(errno) ));
+		/* just guess... */
+		return requested_max;
+	}
 	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
 	 * account for the extra fd we need 
 	 * as well as the log files and standard
 	 * handles etc.  */
 	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
-	setrlimit(RLIMIT_NOFILE, &rlp);
-	getrlimit(RLIMIT_NOFILE, &rlp);
+
+	if(setrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n", 
+			(int)rlp.rlim_cur, strerror(errno) ));
+		/* just guess... */
+		return requested_max;
+	}
+
+	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
+		DEBUG(0,("set_maxfiles: getrlimit (2) for RLIMIT_NOFILE failed with error %s\n",
+			strerror(errno) ));
+		/* just guess... */
+		return requested_max;
+    }
+
 	return rlp.rlim_cur;
 #else
 	/*

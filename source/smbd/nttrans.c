@@ -466,6 +466,31 @@ void fail_next_srvsvc_open(void)
   DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
 }
 
+/*
+ * HACK alert.... see above - JRA.
+ */
+
+BOOL should_fail_next_srvsvc_open(const char *pipename)
+{
+
+  DEBUG(10,("should_fail_next_srvsvc_open: fail = %d, pipe = %s\n",
+    (int)fail_next_srvsvc, pipename));
+
+  if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
+    fail_next_srvsvc = False;
+    fail_time = (time_t)0;
+    DEBUG(10,("should_fail_next_srvsvc_open: End of timeout close of \\srvsvc pipe for print fix.\n"));
+  }
+
+  if(fail_next_srvsvc && strequal(pipename, "srvsvc")) {
+    fail_next_srvsvc = False;
+    DEBUG(10,("should_fail_next_srvsvc_open: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
+    return True;
+  }
+  return False;
+}
+
+
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
 ****************************************************************************/
@@ -484,32 +509,15 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 		if( strequal(fname,known_nt_pipes[i]))
 			break;
     
-	/*
-	 * HACK alert.... see above - JRA.
-	 */
-
-	if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
-		fail_next_srvsvc = False;
-		fail_time = (time_t)0;
-		DEBUG(10,("nt_open_pipe: End of timeout close of \\srvsvc pipe for print fix.\n"));
-	}
-
-	if(fail_next_srvsvc && strequal(fname, "\\srvsvc")) {
-		fail_next_srvsvc = False;
-		DEBUG(10,("nt_open_pipe: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
-		return(ERROR(ERRSRV,ERRaccess));
-	}
-
-	/*
-	 * End hack alert.... see above - JRA.
-	 */
-
 	if ( known_nt_pipes[i] == NULL )
 		return(ERROR(ERRSRV,ERRaccess));
     
 	/* Strip \\ off the name. */
 	fname++;
     
+	if(should_fail_next_srvsvc_open(fname))
+		return (ERROR(ERRSRV,ERRaccess));
+
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
