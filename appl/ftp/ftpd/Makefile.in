@@ -24,6 +24,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 
 prefix 	= @prefix@
 exec_prefix = @exec_prefix@
+libdir = @libdir@
 libexecdir = @libexecdir@
 transform=@program_transform_name@
 EXECSUFFIX=@EXECSUFFIX@
