@@ -256,11 +256,13 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
 #endif /* WITH_SSL */
 
       if (readret == 0) {
+        DEBUG(5,("read_with_timeout: blocking read. EOF from client.\n"));
         smb_read_error = READ_EOF;
         return -1;
       }
 
       if (readret == -1) {
+        DEBUG(0,("read_with_timeout: read error = %s.\n", strerror(errno) ));
         smb_read_error = READ_ERROR;
         return -1;
       }
@@ -289,12 +291,14 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     /* Check if error */
     if(selrtn == -1) {
       /* something is wrong. Maybe the socket is dead? */
+      DEBUG(0,("read_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
       smb_read_error = READ_ERROR;
       return -1;
     }
-      
+
     /* Did we timeout ? */
     if (selrtn == 0) {
+      DEBUG(10,("read_with_timeout: timeout read. select timed out.\n"));
       smb_read_error = READ_TIMEOUT;
       return -1;
     }
@@ -311,12 +315,14 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
 
     if (readret == 0) {
       /* we got EOF on the file descriptor */
+      DEBUG(5,("read_with_timeout: timeout read. EOF from client.\n"));
       smb_read_error = READ_EOF;
       return -1;
     }
 
     if (readret == -1) {
       /* the descriptor is probably dead */
+      DEBUG(0,("read_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
       smb_read_error = READ_ERROR;
       return -1;
     }
@@ -368,12 +374,13 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 
     if (ret == 0)
     {
+      DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", N - total, strerror(errno) ));
       smb_read_error = READ_EOF;
       return 0;
     }
     if (ret == -1)
     {
-      DEBUG(0,("read_data: read failure. Error = %s\n", strerror(errno) ));
+      DEBUG(0,("read_data: read failure for %d. Error = %s\n", N - total, strerror(errno) ));
       smb_read_error = READ_ERROR;
       return -1;
     }
@@ -473,6 +480,8 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
       break;
   }
 
+  DEBUG(10,("read_smb_length: got smb length of %d\n",len));
+
   return len;
 }
 
@@ -548,6 +557,34 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
   }
   show_msg(buffer);
   return ret;
+}
+
+/****************************************************************************
+  send an null session message to a fd
+****************************************************************************/
+
+BOOL send_null_session_msg(int fd)
+{
+  ssize_t ret;
+  uint32 blank = 0;
+  size_t len = 4;
+  size_t nwritten=0;
+  char *buffer = (char *)&blank;
+
+  while (nwritten < len)
+  {
+    ret = write_socket(fd,buffer+nwritten,len - nwritten);
+    if (ret <= 0)
+    {
+      DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",len,ret));
+      close_sockets();
+      exit(1);
+    }
+    nwritten += ret;
+  }
+
+  DEBUG(10,("send_null_session_msg: sent 4 null bytes to client.\n"));
+  return True;
 }
 
 /****************************************************************************

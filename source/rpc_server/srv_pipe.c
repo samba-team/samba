@@ -431,7 +431,7 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	prs_init(&(p->rdata), 1024, 4, 0, False);
 	prs_init(&(p->rhdr ), 0x18, 4, 0, False);
 	prs_init(&(p->rauth), 1024, 4, 0, False);
-	prs_init(&(p->rverf), 0x08, 4, 0, False);
+	prs_init(&(p->rverf), 0x10, 4, 0, False);
 	prs_init(&(p->rntlm), 1024, 4, 0, False);
 
 	/***/

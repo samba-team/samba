@@ -38,7 +38,35 @@
 #define SEC_CHAN_WKSTA   2
 #define SEC_CHAN_DOMAIN  4
 
+#if 0
+/* JRATEST.... */
+/* NET_USER_INFO_2 */
+typedef struct net_user_info_2
+{
+        uint32 ptr_user_info;
+
+        NTTIME logon_time;            /* logon time */
+        NTTIME logoff_time;           /* logoff time */
+        NTTIME kickoff_time;          /* kickoff time */
+        NTTIME pass_last_set_time;    /* password last set time */
+        NTTIME pass_can_change_time;  /* password can change time */
+        NTTIME pass_must_change_time; /* password must change time */
+
+....
+	uint32 user_id;       /* User ID */
+	uint32 group_id;      /* Group ID */
+....
+	uint32 num_groups2;        /* num groups */
+	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+	DOM_SID2 dom_sid;
 	
+} NET_USER_INFO_2;
+/* ! JRATEST.... */
+#endif
+
 /* NET_USER_INFO_3 */
 typedef struct net_user_info_3
 {

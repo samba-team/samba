@@ -40,6 +40,15 @@ extern int smb_read_error;
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
 
 /****************************************************************************
+ Get the number of current oplocks.
+****************************************************************************/
+
+int32 get_number_of_open_oplocks(void)
+{
+  return global_oplocks_open;
+}
+
+/****************************************************************************
  Setup the kernel level oplock backchannel for this process.
 ****************************************************************************/
 
@@ -294,8 +303,9 @@ inode = %.0f. Another process had the file open.\n",
   }
 #endif /* HAVE_KERNEL_OPLOCKS */
 
-  DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f\n", 
-        fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode));
+  DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+        fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
+        (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
 
   fsp->granted_oplock = True;
   fsp->sent_oplock_break = False;
@@ -599,10 +609,13 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   int saved_vuid;
   pstring saved_dir; 
   int break_counter = OPLOCK_BREAK_RESENDS;
+  int timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
 
   if( DEBUGLVL( 3 ) )
   {
-    dbgtext( "oplock_break: called for dev = %x, inode = %.0f.\n", (unsigned int)dev, (double)inode );
+    dbgtext( "oplock_break: called for dev = %x, inode = %.0f tv_sec = %x, tv_usec = %x.\n",
+      (unsigned int)dev, (double)inode, tval ? (int)tval->tv_sec : 0, 
+      tval ? (int)tval->tv_usec : 0);
     dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
   }
 
@@ -661,6 +674,11 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
     return False;
   }
 
+  if(global_oplock_break) {
+    DEBUG(0,("ABORT : ABORT : recursion in oplock_break !!!!!\n"));
+    abort();
+  }
+
   /* Now comes the horrid part. We must send an oplock break to the client,
      and then process incoming messages until we get a close or oplock release.
      At this point we know we need a new inbuf/outbuf buffer pair.
@@ -686,6 +704,9 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 
   prepare_break_message( outbuf, fsp, False);
   send_smb(Client, outbuf);
+
+  if(get_remote_arch() == RA_WIN95)
+    timeout = 200;
 
   /* Remember we just sent an oplock break on this file. */
   fsp->sent_oplock_break = True;
@@ -713,19 +734,36 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 
   while(OPEN_FSP(fsp) && fsp->granted_oplock)
   {
-    if(receive_smb(Client,inbuf,
-		   (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000) == False)
+    if(receive_smb(Client,inbuf, timeout) == False)
     {
 
-	    /* Isaac suggestd that if a MS client doesn't respond to a
-	       oplock break request then we might try resending
-	       it. Certainly it's no worse than just dropping the
-	       socket! */
-	    if (smb_read_error == READ_TIMEOUT && break_counter--) {
-		    DEBUG(2, ( "oplock_break resend\n" ) );
-		    send_smb(Client, outbuf);
-		    continue;
-	    }
+      /*
+       * Win95 specific oplock processing...
+       */
+
+      if (smb_read_error == READ_TIMEOUT && timeout == 200) {
+        send_null_session_msg(Client);
+        timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
+        continue;
+      }
+
+      /* 
+       * Isaac suggestd that if a MS client doesn't respond to a
+       * oplock break request then we might try resending
+       * it. Certainly it's no worse than just dropping the
+       * socket!
+       */
+
+      if (smb_read_error == READ_TIMEOUT && break_counter--) {
+        DEBUG(0, ( "oplock_break resend\n" ) );
+        send_smb(Client, outbuf);
+
+        if(get_remote_arch() == RA_WIN95) {
+          msleep(200);
+          send_null_session_msg(Client);
+        }
+        continue;
+      }
 
       /*
        * Die if we got an error.
@@ -893,7 +931,10 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
   {
     dbgtext( "request_oplock_break: sending a oplock break message to " );
     dbgtext( "pid %d on port %d ", share_entry->pid, share_entry->op_port );
-    dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+    dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+            (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+            (int)share_entry->time.tv_usec );
+
   }
 
   if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
@@ -904,7 +945,9 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
       dbgtext( "request_oplock_break: failed when sending a oplock " );
       dbgtext( "break message to pid %d ", share_entry->pid );
       dbgtext( "on port %d ", share_entry->op_port );
-      dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+      dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+          (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+          (int)share_entry->time.tv_usec );
       dbgtext( "Error was %s\n", strerror(errno) );
     }
     return False;
@@ -946,6 +989,9 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
           dbgtext( "break request to pid %d ", share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
           dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+          dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+             (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+             (int)share_entry->time.tv_usec );
         }
 
         /*
@@ -963,7 +1009,9 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
           dbgtext( "request_oplock_break: error in response received " );
           dbgtext( "to oplock break request to pid %d ", share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
-          dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+          dbgtext( "for dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
+               (unsigned int)dev, (double)inode, (int)share_entry->time.tv_sec,
+               (int)share_entry->time.tv_usec );
           dbgtext( "Error was (%s).\n", strerror(errno) );
         }
       return False;

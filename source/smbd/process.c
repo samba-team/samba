@@ -231,6 +231,51 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
   return ret;
 }
 
+/****************************************************************************
+ We're terminating and have closed all our files/connections etc.
+ If there are any pending local messages we need to respond to them
+ before termination so that other smbds don't think we just died whilst
+ holding oplocks.
+****************************************************************************/
+
+void respond_to_all_remaining_local_messages(void)
+{
+  char buffer[1024];
+  fd_set fds;
+
+  /*
+   * Assert we have no open oplocks.
+   */
+
+  if(get_number_of_open_oplocks()) {
+    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d oplocks.\n",
+          get_number_of_open_oplocks() ));
+    return;
+  }
+
+  /*
+   * Setup the select read fd set.
+   */
+
+  FD_ZERO(&fds);
+  (void)setup_oplock_select_set(&fds);
+
+  /*
+   * Keep doing receive_local_message with a 1 ms timeout until
+   * we have no more messages.
+   */
+
+  while(receive_local_message(&fds, buffer, sizeof(buffer), 1)) {
+    /* Deal with oplock break requests from other smbd's. */
+    process_local_message(buffer, sizeof(buffer));
+
+    FD_ZERO(&fds);
+    (void)setup_oplock_select_set(&fds);
+  }
+
+  return;
+}
+
 
 /*
 These flags determine some of the permissions required to do an operation 
@@ -321,7 +366,7 @@ struct smb_message_struct
    {SMBwritec,"SMBwritec",NULL,AS_USER},
    {SMBsetattrE,"SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE},
    {SMBgetattrE,"SMBgetattrE",reply_getattrE,AS_USER},
-   {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC},
+   {SMBtrans,"SMBtrans",reply_trans,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
    {SMBtranss,"SMBtranss",NULL,AS_USER | CAN_IPC},
    {SMBioctls,"SMBioctls",NULL,AS_USER},
    {SMBcopy,"SMBcopy",reply_copy,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
@@ -339,12 +384,12 @@ struct smb_message_struct
    /* LANMAN2.0 PROTOCOL FOLLOWS */
    {SMBfindnclose, "SMBfindnclose", reply_findnclose, AS_USER},
    {SMBfindclose, "SMBfindclose", reply_findclose,AS_USER},
-   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER },
+   {SMBtrans2, "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK },
    {SMBtranss2, "SMBtranss2", reply_transs2, AS_USER},
 
    /* NT PROTOCOL FOLLOWS */
    {SMBntcreateX, "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
-   {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
+   {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
    {SMBnttranss, "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
    {SMBntcancel, "SMBntcancel", reply_ntcancel, 0 },
 

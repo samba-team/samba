@@ -407,6 +407,8 @@ void exit_server(char *reason)
 
 	conn_close_all();
 
+    respond_to_all_remaining_local_messages();
+
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
 		dfs_unlogin();

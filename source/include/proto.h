@@ -350,6 +350,7 @@ ssize_t write_data(int fd,char *buffer,size_t N);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
@@ -2457,6 +2458,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
 
+int32 get_number_of_open_oplocks(void);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
@@ -2518,6 +2520,7 @@ void invalidate_read_prediction(int fd);
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len);
 BOOL receive_next_smb(char *inbuf, int bufsize, int timeout);
+void respond_to_all_remaining_local_messages(void);
 void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
