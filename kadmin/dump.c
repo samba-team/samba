@@ -143,7 +143,7 @@ hdb_entry2string(hdb_entry *ent, char **str)
 	strcat(buf, "-");
     
     strcat(buf, " ");
-    asprintf(&p, "%d", flags2int(&ent->flags));
+    asprintf(&p, "%d", flags2int(ent->flags));
     strcat(buf, p);
     free(p);
 
