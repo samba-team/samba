@@ -255,6 +255,10 @@ static int lldb_search(struct ldb_module *module, const char *base,
 	int count, msg_count;
 	LDAPMessage *ldapres, *msg;
 
+	if (base == NULL) {
+		base = "";
+	}
+
 	lldb->last_rc = ldap_search_s(lldb->ldap, base, (int)scope, 
 				      expression, 
 				      discard_const_p(char *, attrs), 
