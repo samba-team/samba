@@ -197,7 +197,6 @@ failed:
 */
 int ltdb_increase_sequence_number(struct ldb_module *module)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg;
 	struct ldb_message_element el;
