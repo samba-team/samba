@@ -6,19 +6,16 @@ EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 	      -I/usr/include/glib-1.2 \
 	      -I/usr/lib/glib/include
 
-CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
+DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 
-LDFLAGS = -L/usr/lib
+LDFLAGS = -L/usr/local/samba/lib
 
-all: testsmbc tree testacl testbrowse smbsh
+all: testsmbc tree testacl testbrowse teststat smbsh
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient -L/usr/local/lib
-
-testsmbc-static: testsmbc.o 
-	@echo Linking testsmbc
-	@$(CC) $(CFLAGS) -static $(LDFLAGS) -o $@ $< -lsmbclient -ldl -lnsl
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient
 
 tree: tree.o
 	@echo Linking tree
@@ -32,9 +29,13 @@ testbrowse: testbrowse.o
 	@echo Linking testbrowse
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
 
+teststat: teststat.o
+	@echo Linking teststat
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
+
 smbsh:
 	make -C smbwrapper
 
 clean:
-	@rm -f *.o *~ testsmbc tree testacl testbrowse
+	@rm -f *.o *~ testsmbc tree testacl testbrowse teststat
 	@make -C smbwrapper clean
