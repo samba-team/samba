@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   Password cacheing.  obfuscation is planned
+   Password cacheing.  
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
    
    This program is free software; you can redistribute it and/or modify
@@ -49,41 +49,12 @@ BOOL pwd_is_nullpwd(const struct pwd_info *pwd)
 	return pwd->null_pwd;
 }
 
-/****************************************************************************
-de-obfuscates a password
-****************************************************************************/
-static void pwd_deobfuscate(const struct pwd_info *pwd)
-{
-}
-
-/****************************************************************************
-obfuscates a password
-****************************************************************************/
-static void pwd_obfuscate(const struct pwd_info *pwd)
-{
-}
-
-/****************************************************************************
-sets the obfuscation key info
-****************************************************************************/
-void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key)
-{
-}
 
 /****************************************************************************
 compares two passwords.  hmm, not as trivial as expected.  hmm.
 ****************************************************************************/
-BOOL pwd_compare(const struct pwd_info *_pwd1, const struct pwd_info *_pwd2)
+BOOL pwd_compare(const struct pwd_info *pwd1, const struct pwd_info *pwd2)
 {
-	struct pwd_info pwd1;
-	struct pwd_info pwd2;
-
-	memcpy(&pwd1, _pwd1, sizeof(pwd1));
-	memcpy(&pwd2, _pwd2, sizeof(pwd2));
-
-	pwd_deobfuscate(&pwd1);
-	pwd_deobfuscate(&pwd2);
-
 	if (pwd1.crypted || pwd2.crypted)
 	{
 		DEBUG(0,("pwd_compare: cannot compare crypted passwords\n"));
@@ -182,7 +153,6 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 	pwd->null_pwd  = False;
 	pwd->crypted   = False;
 
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -190,7 +160,6 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
  ****************************************************************************/
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 {
-	pwd_deobfuscate(pwd);
 	if (pwd->cleartext)
 	{
 		fstrcpy(clr, pwd->password);
@@ -199,7 +168,6 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 	{
 		clr[0] = 0;
 	}
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -217,7 +185,7 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
 	}
 	else
 	{
-		bzero(pwd->smb_lm_pwd, 16);
+		memset(pwd->smb_lm_pwd, 0, 16);
 	}
 
 	if (nt_pwd)
@@ -226,14 +194,13 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
 	}
 	else
 	{
-		bzero(pwd->smb_nt_pwd, 16);
+		memset(pwd->smb_nt_pwd, 0, 16);
 	}
 
 	pwd->null_pwd  = False;
 	pwd->cleartext = False;
 	pwd->crypted   = False;
 
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -241,7 +208,6 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd,
  ****************************************************************************/
 void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
-	pwd_deobfuscate(pwd);
 	if (lm_pwd != NULL)
 	{
 		memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
@@ -250,7 +216,6 @@ void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd
 	{
 		memcpy(nt_pwd, pwd->smb_nt_pwd, 16);
 	}
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -265,7 +230,6 @@ void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 	pwd->cleartext = False;
 	pwd->crypted = False;
 
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -280,7 +244,6 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 	DEBUG(10,("pwd_make_lm_nt_owf2: user %s, srv %s, dom %s\n",
 		user, server, domain));
 
-	pwd_deobfuscate(pwd);
 
 	SMBgenclientchals(pwd->lm_cli_chal,
 			  pwd->nt_cli_chal,
@@ -334,7 +297,6 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 #endif
 	pwd->crypted = True;
 
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -351,7 +313,6 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8],
 		pwd->nt_owf_len = 0;
 		return;
 	}
-	pwd_deobfuscate(pwd);
 
 	/* generate 24-byte hashes */
 	SMBOWFencrypt(pwd->smb_lm_pwd, cryptkey, pwd->smb_lm_owf);
@@ -380,7 +341,6 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8],
 
 	pwd->crypted = True;
 
-	pwd_obfuscate(pwd);
 }
 
 /****************************************************************************
@@ -401,7 +361,6 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 		return;
 	}
 		
-	pwd_deobfuscate(pwd);
 	if (lm_owf != NULL)
 	{
 		memcpy(lm_owf, pwd->smb_lm_owf, 24);
@@ -414,6 +373,5 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 	{
 		*nt_owf_len = pwd->nt_owf_len;
 	}
-	pwd_obfuscate(pwd);
 }
 
