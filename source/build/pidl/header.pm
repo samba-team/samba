@@ -60,8 +60,7 @@ sub HeaderElement($)
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
-    if ($element->{POINTERS} && 
-	$element->{TYPE} ne "string") {
+    if ($element->{POINTERS} && $element->{TYPE} ne "string") {
 	    my($n) = $element->{POINTERS};
 	    for (my($i)=$n; $i > 0; $i--) {
 		    pidl "*";
@@ -91,10 +90,10 @@ sub HeaderStruct($$)
     $tab_depth++;
     my $el_count=0;
     if (defined $struct->{ELEMENTS}) {
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    HeaderElement($e);
-	    $el_count++;
-	}
+		foreach my $e (@{$struct->{ELEMENTS}}) {
+		    HeaderElement($e);
+		    $el_count++;
+		}
     }
     if ($el_count == 0) {
 	    # some compilers can't handle empty structures
@@ -195,30 +194,7 @@ sub HeaderType($$$)
 		return;
 	}
 
-	my $dt;
-	if (my $t = typelist::getType($e->{TYPE})) {
-		$dt = $t->{DATA};
-	}
-
-	if ($data =~ "string") {
-		pidl "const char *";
-	} elsif (not defined($dt->{TYPE})) {
-		pidl "struct $data";
-	} else {
-		if ($dt->{TYPE} eq "ENUM") {
-			pidl "enum $data";
-		} elsif ($dt->{TYPE} eq "BITMAP") {
-			pidl util::bitmap_type_decl($dt);
-		} elsif ($dt->{TYPE} eq "SCALAR") {
-			pidl util::map_type($data);
-		} elsif ($dt->{TYPE} eq "UNION") {
-			pidl "union $data";
-		} elsif ($dt->{TYPE} eq "STRUCT") {
-			pidl "struct $data";
-		} else {
-			print "Unknown data type type $dt->{TYPE}\n";
-		}
-	}
+	pidl typelist::mapType($e);
 }
 
 #####################################################################
@@ -334,7 +310,7 @@ sub HeaderFunction($)
 	    HeaderFunctionInOut($fn, "out");
 	    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 		    tabs();
-		    pidl util::map_type($fn->{RETURN_TYPE}) . " result;\n";
+		    pidl typelist::mapScalarType($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
 	    tabs();
