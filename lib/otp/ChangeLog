@@ -1,5 +1,7 @@
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken_rename.h: rename strlcat, strlcpy
+	* Makefile.am: (ES): add strlcpy.c and strlcat.c
 	* otp_db.c: use strlcpy, from openbsd
 	* otp_md.c: use strlcat/strlcpy, from openbsd
 	* otp_challenge.c: do strdup again, we desupport ultrix

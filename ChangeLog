@@ -1,3 +1,12 @@
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/transited.c: use strlcat/strlcpy, from openbsd
+	* lib/krb5/krbhst.c (srv_find_realm): use strlcpy, from openbsd
+	* lib/krb5/aname_to_localname.c (krb5_aname_to_localname): use
+	strlcpy, from openbsd
+	* kdc/hpropd.c: s/strcat/strlcat/, inspired from openbsd
+	* appl/kf/kfd.c: use strlcpy, from openbsd
+	
 2003-04-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: fix for large file support in AIX, _LARGE_FILES
@@ -5,7 +14,7 @@
 	include stdio.h before we get to config.h
 
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	
 	* lib/krb5/*.3: Change .Fd #include <header.h> to .In header.h,
 	from Thomas Klausner <wiz@netbsd.org>
 	
