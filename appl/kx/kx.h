@@ -7,10 +7,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <pwd.h>
 #include <signal.h>
+#include <errno.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
@@ -38,6 +42,9 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
@@ -61,8 +68,15 @@ int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);
 
 extern char x_socket[];
+extern u_int32_t display_num;
+extern char xauthfile[];
+extern int xauthfile_size;
+extern u_char cookie[];
+extern size_t cookie_len;
 
 int get_xsockets (int *unix_socket, int *tcp_socket);
 int connect_local_xsocket (unsigned dnr);
 
 #define KX_PORT 2111
+
+#define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
