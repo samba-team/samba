@@ -243,10 +243,9 @@ AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 	
 
-AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror strftime)
 AC_CHECK_FUNCS(cgetent getstr cgetstr uname vhangup)
 AC_CHECK_FUNCS(frevoke revoke setsid setpgid getmsg)
-AC_CHECK_FUNCS(tgetent setupterm mktime ptsname ttyname unlockpt grantpt)
+AC_CHECK_FUNCS(tgetent setupterm ptsname ttyname unlockpt grantpt)
 
 AC_FIND_FUNC(logout, util)
 
