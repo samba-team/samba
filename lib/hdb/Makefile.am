@@ -1,6 +1,8 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
+
+SUFFIXES = .x .et .h
 
 INCLUDES += -I../asn1 -I$(srcdir)/../asn1
 
@@ -34,3 +36,6 @@ asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
 	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
+
+.x.c:
+	@cmp -s $< $@ 2> /dev/null || cp $< $@
