@@ -1272,12 +1272,12 @@ static void do_tarput(void)
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-int cmd_block(void)
+int cmd_block(const char **cmd_ptr)
 {
   fstring buf;
   int block;
 
-  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("blocksize <n>\n"));
       return 1;
@@ -1299,11 +1299,11 @@ int cmd_block(void)
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-int cmd_tarmode(void)
+int cmd_tarmode(const char **cmd_ptr)
 {
   fstring buf;
 
-  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+  while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
     if (strequal(buf, "full"))
       tar_inc=False;
     else if (strequal(buf, "inc"))
@@ -1340,7 +1340,7 @@ int cmd_tarmode(void)
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-int cmd_setmode(void)
+int cmd_setmode(const char **cmd_ptr)
 {
   char *q;
   fstring buf;
@@ -1350,7 +1350,7 @@ int cmd_setmode(void)
 
   attra[0] = attra[1] = 0;
 
-  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
       return 1;
@@ -1359,7 +1359,7 @@ int cmd_setmode(void)
   safe_strcpy(fname, cur_dir, sizeof(pstring));
   safe_strcat(fname, buf, sizeof(pstring));
 
-  while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+  while (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
     q=buf;
 
     while(*q)
@@ -1397,19 +1397,19 @@ int cmd_setmode(void)
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-int cmd_tar(void)
+int cmd_tar(const char **cmd_ptr)
 {
   fstring buf;
   char **argl;
   int argcl;
 
-  if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
+  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
       return 1;
     }
 
-  argl=toktocliplist(&argcl, NULL);
+  argl=toktocliplist(*cmd_ptr, &argcl, NULL);
   if (!tar_parseargs(argcl, argl, buf, 0))
     return 1;
 

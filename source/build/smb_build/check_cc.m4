@@ -86,7 +86,7 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 if test -n "$DEVELOPER_CFLAGS"; then
 	OLD_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
-	AC_MSG_CHECKING([that the C compiler can use the DEVELOPER_CFALGS])
+	AC_MSG_CHECKING([that the C compiler can use the DEVELOPER_CFLAGS])
 	AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 		AC_MSG_RESULT(yes),
 		DEVELOPER_CFLAGS=""; AC_MSG_RESULT(no),

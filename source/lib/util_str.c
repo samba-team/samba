@@ -67,25 +67,6 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	return(True);
 }
 
-/**
-This is like next_token but is not re-entrant and "remembers" the first 
-parameter so you can pass NULL. This is useful for user interface code
-but beware the fact that it is not re-entrant!
-**/
-
-static char *last_ptr=NULL;
-
-BOOL next_token_nr(const char **ptr, char *buff, const char *sep, size_t bufsize)
-{
-	BOOL ret;
-	if (!ptr)
-		ptr = (const char **)&last_ptr;
-
-	ret = next_token(ptr, buff, sep, bufsize);
-	last_ptr = *ptr;
-	return ret;	
-}
-
 static uint16_t tmpbuf[sizeof(pstring)];
 
 /**
@@ -93,9 +74,9 @@ static uint16_t tmpbuf[sizeof(pstring)];
  Uses last_ptr from above - bit of a hack.
 **/
 
-char **toktocliplist(int *ctok, const char *sep)
+char **toktocliplist(const char *ptr, int *ctok, const char *sep)
 {
-	char *s=last_ptr;
+	char *s = ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -118,7 +99,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=last_ptr;
+	s = ptr;
 	
 	if (!(ret=iret=malloc(ictok*sizeof(char *))))
 		return NULL;
