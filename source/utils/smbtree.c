@@ -100,7 +100,7 @@ static struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip
 	
 	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
-					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK);
+					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

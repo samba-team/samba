@@ -728,7 +728,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					username, domain,
-					password, 0);
+					password, 0, NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
