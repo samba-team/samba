@@ -68,7 +68,6 @@ void invalidate_vuid(struct server_context *smb, uint16 vuid)
 	   from the vuid 'owner' of connections */
 	/* REWRITE: conn_clear_vuid_cache(smb, vuid); */
 
-	delete_nt_token(&vuser->nt_user_token);
 	SAFE_FREE(vuser);
 	smb->users.num_validated_vuids--;
 }
@@ -136,15 +135,9 @@ int register_vuid(struct server_context *smb,
 
 	vuser->vuid = smb->users.next_vuid;
 
-	vuser->guest = server_info->guest;
-
 	vuser->session_key = *session_key;
 
-	DEBUG(10,("register_vuid: guest=%d\n", vuser->guest ));
-
- 	if (server_info->ptok) {
-		vuser->nt_user_token = dup_nt_token(server_info->ptok);
-	} else {
+ 	if (!server_info->ptok) {
 		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
 		free_server_info(&server_info);
 

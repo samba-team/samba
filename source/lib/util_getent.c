@@ -249,29 +249,7 @@ struct sys_userlist *get_users_in_group(const char *gname)
 {
 	struct sys_userlist *list_head = NULL;
 	struct group *gptr;
-	fstring domain;
-	fstring groupname;
-	DOM_SID sid;
-	enum SID_NAME_USE name_type;
 
-	/* No point using winbind if we can't split it in the
-	   first place */
-	if (split_domain_and_name(gname, domain, groupname)) {
-
-		/*
-		 * If we're doing this via winbindd, don't do the
-		 * entire group list enumeration as we know this is
-		 * pointless (and slow).
-		 */
-		
-		if (winbind_lookup_name(domain, groupname, &sid, &name_type) 
-		    && name_type == SID_NAME_DOM_GRP) {
-			if ((gptr = (struct group *)getgrnam(gname)) == NULL)
-				return NULL;
-			return add_members_to_userlist(list_head, gptr);
-		}
-	}
-	
 #if !defined(BROKEN_GETGRNAM)
 	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
 		return NULL;

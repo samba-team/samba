@@ -714,7 +714,6 @@ extern int errno;
 #include "libcli/auth/schannel.h"
 
 #include "auth/auth.h"
-#include "passdb/passdb.h"
 
 #include "module.h"
 

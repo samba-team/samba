@@ -27,6 +27,8 @@
 void smbd_process_init(void)
 {
 	TALLOC_CTX *mem_ctx;
+
+	generate_wellknown_sids();
 	
 	mem_ctx = talloc_init("smbd_process_init talloc");
 	if (!mem_ctx) {
@@ -47,11 +49,6 @@ void smbd_process_init(void)
 	/* possibly reload the services file. */
 	reload_services(NULL, True);
 
-	if(!get_global_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
-
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
 		exit(1);
@@ -70,10 +67,6 @@ void smbd_process_init(void)
 	if (!init_change_notify())
 		exit(1);
 
-	/* Setup the PASSDB subsystem */
-	if(!initialize_password_db(False))
-		exit(1);
-
 	talloc_destroy(mem_ctx);
 }
 
@@ -85,10 +78,6 @@ void init_subsystems(void)
 
 	/* Setup the AUTH subsystem */
 	if (!auth_init())
-		exit(1);
-
-	/* Setup the PASSDB subsystem */
-	if (!passdb_init())
 		exit(1);
 
 	/* Setup the NTVFS subsystem */

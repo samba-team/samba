@@ -209,7 +209,6 @@ sinclude(libcli/libsmb.m4)
 sinclude(smbd/process_model.m4)
 sinclude(smb_server/config.m4)
 sinclude(auth/config.m4)
-sinclude(passdb/config.m4)
 sinclude(ntvfs/config.m4)
 sinclude(rpc_server/config.m4)
 sinclude(lib/registry/config.m4)
@@ -236,7 +235,7 @@ SMB_BINARY(smbd, [ALL], [SBIN],
 	smbd/build_options.o
 	smbd/rewrite.o],
 	[],
-	[PROCESS_MODEL SMB AUTH PASSDB NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBSMB REGISTRY])
+	[PROCESS_MODEL SMB AUTH NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBSMB REGISTRY])
 
 SMB_BINARY(smbclient, [ALL], [BIN], 
 	[client/client.o

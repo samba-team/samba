@@ -26,40 +26,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Network;
-extern DOM_SID global_sid_Builtin_Guests;
-extern DOM_SID global_sid_Authenticated_Users;
-
-/****************************************************************************
- Create a SAM_ACCOUNT - either by looking in the pdb, or by faking it up from
- unix info.
-****************************************************************************/
-
-NTSTATUS auth_get_sam_account(const char *user, SAM_ACCOUNT **account) 
-{
-	BOOL pdb_ret;
-	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(account))) {
-		return nt_status;
-	}
-	
-	become_root();
-	pdb_ret = pdb_getsampwnam(*account, user);
-	unbecome_root();
-
-	if (!pdb_ret) {
-		
-		struct passwd *pass = Get_Pwnam(user);
-		if (!pass) 
-			return NT_STATUS_NO_SUCH_USER;
-
-		if (!NT_STATUS_IS_OK(nt_status = pdb_fill_sam_pw(*account, pass))) {
-			return nt_status;
-		}
-	}
-	return NT_STATUS_OK;
-}
+extern struct dom_sid *global_sid_World;
+extern struct dom_sid *global_sid_Anonymous;
+extern struct dom_sid *global_sid_Network;
+extern struct dom_sid *global_sid_Builtin_Guests;
+extern struct dom_sid *global_sid_Authenticated_Users;
 
 /****************************************************************************
  Create an auth_usersupplied_data structure
@@ -428,11 +399,11 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 	}
 	
 	DEBUGC(dbg_class, dbg_lev, ("NT user token of user %s\n",
-				    sid_to_string(sid_str, &token->user_sids[0]) ));
+				    sid_to_string(sid_str, token->user_sids[0]) ));
 	DEBUGADDC(dbg_class, dbg_lev, ("contains %lu SIDs\n", (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
 		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
-					       sid_to_string(sid_str, &token->user_sids[i])));
+					       sid_to_string(sid_str, token->user_sids[i])));
 }
 
 /****************************************************************************
@@ -454,32 +425,29 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid, int
  Create the SID list for this user.
 ****************************************************************************/
 
-static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *group_sid, 
-				     int n_groupSIDs, DOM_SID *groupSIDs, 
-				     BOOL is_guest, NT_USER_TOKEN **token)
+NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx, 
+			      struct dom_sid *user_sid, struct dom_sid *group_sid, 
+			      int n_groupSIDs, struct dom_sid **groupSIDs, 
+			      BOOL is_guest, struct nt_user_token **token)
 {
 	NTSTATUS       nt_status = NT_STATUS_OK;
-	NT_USER_TOKEN *ptoken;
+	struct nt_user_token *ptoken;
 	int i;
 	int sid_ndx;
 	
-	if ((ptoken = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+	if (!(ptoken = talloc_p(mem_ctx, struct nt_user_token))) {
 		DEBUG(0, ("create_nt_token: Out of memory allocating token\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
 	}
 
-	ZERO_STRUCTP(ptoken);
+	ptoken->num_sids = 0;
 
-	ptoken->num_sids = n_groupSIDs + 5;
-
-	if ((ptoken->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
+	if (!(ptoken->user_sids = talloc_array_p(mem_ctx, struct dom_sid*, n_groupSIDs + 5))) {
 		DEBUG(0, ("create_nt_token: Out of memory allocating SIDs\n"));
 		nt_status = NT_STATUS_NO_MEMORY;
 		return nt_status;
 	}
-	
-	memset((char*)ptoken->user_sids,0,sizeof(DOM_SID) * ptoken->num_sids);
 	
 	/*
 	 * Note - user SID *MUST* be first in token !
@@ -488,9 +456,10 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	 * Primary group SID is second in token. Convention.
 	 */
 
-	sid_copy(&ptoken->user_sids[PRIMARY_USER_SID_INDEX], user_sid);
-	if (group_sid)
-		sid_copy(&ptoken->user_sids[PRIMARY_GROUP_SID_INDEX], group_sid);
+	ptoken->user_sids[PRIMARY_USER_SID_INDEX] = user_sid;
+	ptoken->num_sids++;
+	ptoken->user_sids[PRIMARY_GROUP_SID_INDEX] = group_sid;
+	ptoken->num_sids++;
 
 	/*
 	 * Finally add the "standard" SIDs.
@@ -498,29 +467,31 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	 * don't really support) is the addition of Authenticated_Users.
 	 */
 
-	sid_copy(&ptoken->user_sids[2], &global_sid_World);
-	sid_copy(&ptoken->user_sids[3], &global_sid_Network);
+	ptoken->user_sids[2] = global_sid_World;
+	ptoken->user_sids[3] = global_sid_Network;
 
-	if (is_guest)
-		sid_copy(&ptoken->user_sids[4], &global_sid_Builtin_Guests);
-	else
-		sid_copy(&ptoken->user_sids[4], &global_sid_Authenticated_Users);
-	
+	if (is_guest) {
+		ptoken->user_sids[4] = global_sid_Builtin_Guests;
+		ptoken->num_sids++;
+	} else {
+		ptoken->user_sids[4] = global_sid_Authenticated_Users;
+		ptoken->num_sids++;
+	}
+
 	sid_ndx = 5; /* next available spot */
 
 	for (i = 0; i < n_groupSIDs; i++) {
 		size_t check_sid_idx;
 		for (check_sid_idx = 1; check_sid_idx < ptoken->num_sids; check_sid_idx++) {
-			if (sid_equal(&ptoken->user_sids[check_sid_idx], 
-				      &groupSIDs[i])) {
+			if (sid_equal(ptoken->user_sids[check_sid_idx], 
+				      groupSIDs[i])) {
 				break;
 			}
 		}
 		
 		if (check_sid_idx >= ptoken->num_sids) /* Not found already */ {
-			sid_copy(&ptoken->user_sids[sid_ndx++], &groupSIDs[i]);
-		} else {
-			ptoken->num_sids--;
+			ptoken->user_sids[sid_ndx++] = groupSIDs[i];
+			ptoken->num_sids++;
 		}
 	}
 	
@@ -535,65 +506,18 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
  Make a user_info struct
 ***************************************************************************/
 
-static NTSTATUS make_server_info(auth_serversupplied_info **server_info, SAM_ACCOUNT *sampass)
+NTSTATUS make_server_info(auth_serversupplied_info **server_info, const char *username)
 {
-	*server_info = malloc(sizeof(**server_info));
+	TALLOC_CTX *mem_ctx = talloc_init("auth subsystem: server_info for %s", username);
+	*server_info = talloc_p(mem_ctx, auth_serversupplied_info);
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
+		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(*server_info);
-
+	(*server_info)->mem_ctx = mem_ctx;
+	
 	return NT_STATUS_OK;
-}
-
-/***************************************************************************
- Make (and fill) a user_info struct from a SAM_ACCOUNT
-***************************************************************************/
-
-NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info, 
-			      SAM_ACCOUNT *sampass)
-{
-	NTSTATUS nt_status = NT_STATUS_OK;
-	const DOM_SID *user_sid = pdb_get_user_sid(sampass);
-	const DOM_SID *group_sid = pdb_get_group_sid(sampass);
-	NT_USER_TOKEN *token;
-	BOOL is_guest;
-	uint32 rid;
-
-	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info, sampass))) {
-		return nt_status;
-	}
-	
-	is_guest = (sid_peek_rid(user_sid, &rid) && rid == DOMAIN_USER_RID_GUEST);
-
-	if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token(user_sid, group_sid,
-							      0, NULL, is_guest, 
-							      &token)))
-	{
-		DEBUG(4,("create_nt_user_token failed\n"));
-		free_server_info(server_info);
-		return nt_status;
-	}
-
-	(*server_info)->ptok = token;
-	
-	return nt_status;
-}
-
-/***************************************************************************
- Make (and fill) a user_info struct from a 'struct passwd' by conversion 
- to a SAM_ACCOUNT
-***************************************************************************/
-
-NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, const struct passwd *pwd)
-{
-	NTSTATUS nt_status;
-	SAM_ACCOUNT *sampass = NULL;
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(&sampass, pwd))) {		
-		return nt_status;
-	}
-	return make_server_info_sam(server_info, sampass);
 }
 
 /***************************************************************************
@@ -603,35 +527,29 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, const struc
 NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
-	SAM_ACCOUNT *sampass = NULL;
-	DOM_SID guest_sid;
+	static const char zeros[16];
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sampass))) {
+	nt_status = make_server_info(server_info, "");
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-
-	sid_copy(&guest_sid, get_global_sam_sid());
-	sid_append_rid(&guest_sid, DOMAIN_USER_RID_GUEST);
-
-	become_root();
-	if (!pdb_getsampwsid(sampass, &guest_sid)) {
-		unbecome_root();
-		return NT_STATUS_NO_SUCH_USER;
+	
+	(*server_info)->guest = True;
+	
+	if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token((*server_info)->mem_ctx, 
+							      global_sid_Anonymous, global_sid_Builtin_Guests,
+							      0, NULL, 
+							      True, &(*server_info)->ptok))) {
+		DEBUG(1,("check_sam_security: create_nt_user_token failed with '%s'\n", nt_errstr(nt_status)));
+		free_server_info(server_info);
+		return nt_status;
 	}
-	unbecome_root();
-
-	nt_status = make_server_info_sam(server_info, sampass);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		static const char zeros[16];
-		(*server_info)->guest = True;
-		
-		/* annoying, but the Guest really does have a session key, 
-		   and it is all zeros! */
-		(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
-		(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
-	}
-
+	
+	/* annoying, but the Guest really does have a session key, 
+	   and it is all zeros! */
+	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
+	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
 	return nt_status;
 }
@@ -666,14 +584,11 @@ void free_user_info(auth_usersupplied_info **user_info)
 
 void free_server_info(auth_serversupplied_info **server_info)
 {
-	DEBUG(5,("attempting to free (and zero) a server_info structure\n"));
-	if (*server_info != NULL) {
-
-		/* call pam_end here, unless we know we are keeping it */
-		delete_nt_token( &(*server_info)->ptok );
-		ZERO_STRUCT(**server_info);
+	DEBUG(5,("attempting to free a server_info structure\n"));
+	if (!*server_info) {
+		talloc_destroy((*server_info)->mem_ctx);
 	}
-	SAFE_FREE(*server_info);
+	*server_info = NULL;
 }
 
 /***************************************************************************
@@ -712,32 +627,6 @@ void delete_nt_token(NT_USER_TOKEN **pptoken)
 	    ZERO_STRUCTP(ptoken);
     }
     SAFE_FREE(*pptoken);
-}
-
-/****************************************************************************
- Duplicate a SID token.
-****************************************************************************/
-
-struct nt_user_token *dup_nt_token(NT_USER_TOKEN *ptoken)
-{
-	NT_USER_TOKEN *token;
-
-	if (!ptoken)
-		return NULL;
-
-    if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
-        return NULL;
-
-    ZERO_STRUCTP(token);
-
-    if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
-        SAFE_FREE(token);
-        return NULL;
-    }
-
-    token->num_sids = ptoken->num_sids;
-
-	return token;
 }
 
 /**

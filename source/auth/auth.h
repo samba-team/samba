@@ -64,6 +64,8 @@ typedef struct auth_usersupplied_info
 
 typedef struct auth_serversupplied_info 
 {
+	TALLOC_CTX *mem_ctx;
+
 	BOOL guest;
 	
 	/* NT group information taken from the info3 structure */
