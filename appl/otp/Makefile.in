@@ -21,9 +21,9 @@ libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 bindir = $(exec_prefix)/bin
 
-PROG_BIN	= otp otpprint
-PROG_LIBEXEC	= 
-PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
+PROG_SUIDBIN	= otp
+PROG_BIN	= otpprint
+PROGS = $(PROG_BIN) $(PROG_SUIDBIN)
 
 SOURCES_OTP    = otp.c
 SOURCES_OTPPRINT = otpprint.c
@@ -42,6 +42,8 @@ all: $(PROGS)
 install: all
 	$(MKINSTALLDIRS) $(bindir)
 	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
+	-for x in $(PROG_SUIDBIN);\
+		do $(INSTALL) -o root -m 04555 $$x $(bindir); done
 
 uninstall:
 
