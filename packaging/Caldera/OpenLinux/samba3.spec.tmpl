@@ -251,7 +251,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
-make all nsswitch/libnss_wins.so torture 
+make all nsswitch/libnss_wins.so torture nsswitch/pam_winbind.so
 
 
 %Install
