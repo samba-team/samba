@@ -533,7 +533,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 						 &sbuf)) {
 
 					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
-					sbuf.st_mode = (sbuf.st_mode & S_IAMB) | S_IFDIR;
+					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
 
 				} else {
 
