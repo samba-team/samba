@@ -267,6 +267,12 @@ static int pvfs_handle_destructor(void *p)
 
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name == NULL) {
+		NTSTATUS status;
+		status = pvfs_xattr_unlink_hook(h->pvfs, h->name->full_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Warning: xattr unlink hook failed for '%s' - %s\n",
+				 h->name->full_name, nt_errstr(status)));
+		}
 		if (unlink(h->name->full_name) != 0) {
 			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
 				 h->name->full_name, strerror(errno)));

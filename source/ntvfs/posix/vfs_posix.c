@@ -35,6 +35,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 {
 	int snum = pvfs->tcon->service;
 	int delay;
+	const char *eadb;
 
 	if (lp_map_hidden(snum))     pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
 	if (lp_map_archive(snum))    pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
@@ -65,6 +66,21 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		FS_ATTR_CASE_PRESERVED_NAMES |
 		FS_ATTR_UNICODE_ON_DISK |
 		FS_ATTR_SPARSE_FILES;
+
+	/* allow xattrs to be stored in a external tdb */
+	eadb = lp_parm_string(snum, "posix", "eadb");
+	if (eadb != NULL) {
+		pvfs->ea_db = tdb_wrap_open(pvfs, eadb, 50000,  
+					    TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		if (pvfs->ea_db != NULL) {
+			pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
+		} else {
+			DEBUG(0,("Failed to open eadb '%s' - %s\n",
+				 eadb, strerror(errno)));
+			pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
+		}
+	}
+
 
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
 		pvfs->fs_attribs |= FS_ATTR_NAMED_STREAMS;

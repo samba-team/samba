@@ -57,6 +57,9 @@ struct pvfs_state {
 
 	/* filesystem attributes (see FS_ATTR_*) */
 	uint32_t fs_attribs;
+
+	/* if posix:eadb is set, then this gets setup */
+	struct tdb_wrap *ea_db;
 };
 
 /* this is the basic information needed about a file from the filesystem */

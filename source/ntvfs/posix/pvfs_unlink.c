@@ -86,6 +86,11 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
+	status = pvfs_xattr_unlink_hook(pvfs, name->full_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* finally try the actual unlink */
 	if (unlink(name->full_name) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
