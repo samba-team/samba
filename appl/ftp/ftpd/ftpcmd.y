@@ -857,6 +857,7 @@ check_login_no_guest : check_login
 			if($1 && !$$)
 				reply(550, "Permission denied");
 		}
+	;
 
 check_login
 	: /* empty */
