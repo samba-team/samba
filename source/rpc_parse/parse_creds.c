@@ -334,6 +334,7 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	prs_uint32("ptr_uxc", ps, depth, &(r_u->ptr_uxc));
 	prs_uint32("ptr_nts", ps, depth, &(r_u->ptr_nts));
 	prs_uint32("ptr_uxs", ps, depth, &(r_u->ptr_uxs));
+	prs_uint32("ptr_ssk", ps, depth, &(r_u->ptr_ssk));
 	if (r_u->ptr_ntc != 0)
 	{
 		if (!creds_io_nt  ("ntc", &r_u->ntc, ps, depth)) return False;
@@ -349,6 +350,14 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	if (r_u->ptr_uxs != 0)
 	{
 		if (!creds_io_unix_sec("uxs", &r_u->uxs, ps, depth)) return False;
+	}
+	if (r_u->ptr_ssk != 0)
+	{
+		prs_uint8s(False, "usr_sess_key", ps, depth, (char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
+	}
+	else
+	{
+		memset(r_u->usr_sess_key, 0, sizeof(r_u->usr_sess_key));
 	}
 	return True;
 }
@@ -432,6 +441,9 @@ void copy_nt_creds(struct ntuser_creds *to,
 	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
 	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
 	to->ntlmssp_flags = from->ntlmssp_flags;
+	DEBUG(10,("copy_nt_creds: user %s domain %s flgs: %x\n",
+	       to->user_name, to->domain, 
+	       to->ntlmssp_flags));
 };
 
 void copy_user_creds(struct user_creds *to,
@@ -444,6 +456,7 @@ void copy_user_creds(struct user_creds *to,
 		to->ptr_uxc = 0;
 		to->ptr_nts = 0;
 		to->ptr_uxs = 0;
+		to->ptr_ssk = 0;
 		copy_nt_creds(&to->ntc, NULL);
 		copy_unix_creds(&to->uxc, NULL);
 		copy_nt_sec_creds(&to->nts, NULL);
@@ -455,6 +468,7 @@ void copy_user_creds(struct user_creds *to,
 	to->ptr_uxs = from->ptr_uxs;
 	to->ptr_ntc = from->ptr_ntc;
 	to->ptr_uxc = from->ptr_uxc;
+	to->ptr_ssk = from->ptr_ssk;
 	if (to->ptr_ntc != 0)
 	{
 		copy_nt_creds(&to->ntc, &from->ntc);
@@ -470,6 +484,11 @@ void copy_user_creds(struct user_creds *to,
 	if (to->ptr_uxs != 0)
 	{
 		copy_unix_sec_creds(&to->uxs, &from->uxs);
+	}
+	if (to->ptr_ssk != 0)
+	{
+		memcpy(to->usr_sess_key, from->usr_sess_key,
+		        sizeof(to->usr_sess_key));
 	}
 	to->reuse = from->reuse;
 };

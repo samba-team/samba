@@ -53,7 +53,7 @@ typedef struct unixsec_creds
 
 typedef struct ntsec_creds
 {
-	DOM_SID      sid;
+	DOM_SID sid;
 	uint32 num_grps;
 	uint32 *grp_rids;
 
@@ -66,6 +66,7 @@ typedef struct user_creds
 	uint32 ptr_uxc;
 	uint32 ptr_nts;
 	uint32 ptr_uxs;
+	uint32 ptr_ssk;
 
 	CREDS_NT   ntc;
 	CREDS_UNIX uxc;
@@ -73,6 +74,7 @@ typedef struct user_creds
 	CREDS_NT_SEC   nts;
 	CREDS_UNIX_SEC uxs;
 
+	uchar usr_sess_key[16];
 
 } CREDS_HYBRID;
 
