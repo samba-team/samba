@@ -22,6 +22,16 @@
 #include "includes.h"
 
 /* -------------------------------------------------------------------------- **
+ * Defines...
+ *
+ *  FORMAT_BUFR_MAX - Index of the last byte of the format buffer;
+ *                    format_bufr[FORMAT_BUFR_MAX] should always be reserved
+ *                    for a terminating nul byte.
+ */
+
+#define FORMAT_BUFR_MAX ( sizeof( format_bufr ) - 1 )
+
+/* -------------------------------------------------------------------------- **
  * This module implements Samba's debugging utility.
  *
  * The syntax of a debugging log file is represented as:
@@ -416,7 +426,6 @@ static void bufr_print( void )
  */
 static void format_debug_text( char *msg )
   {
-  int max = sizeof( format_bufr ) - 1;
   int i;
 
   for( i = 0; msg[i]; i++ )
@@ -429,12 +438,21 @@ static void format_debug_text( char *msg )
       }
 
     /* If there's room, copy the character to the format buffer. */
-    if( format_pos < max )
+    if( format_pos < FORMAT_BUFR_MAX )
       format_bufr[format_pos++] = msg[i];
 
     /* If a newline is encountered, print & restart. */
     if( '\n' == msg[i] )
       bufr_print();
+
+    /* If the buffer is full dump it out, reset it, and put out a line
+     * continuation indicator.
+     */
+    if( format_pos >= FORMAT_BUFR_MAX )
+      {
+      bufr_print();
+      (void)Debug1( " +>\n" );
+      }
     }
 
   /* Just to be safe... */
