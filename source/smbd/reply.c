@@ -789,26 +789,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         passlen2 = 0;
     }
 
-    if (lp_restrict_anonymous()) {
-      /* there seems to be no reason behind the differences in MS clients formatting
-       * various info like the domain, NativeOS, and NativeLanMan fields. Win95
-       * in particular seems to have an extra null byte between the username and the
-       * domain, or the password length calculation is wrong, which throws off the
-       * string extraction routines below.  This makes the value of domain be the
-       * empty string, which fails the restrict anonymous check further down.
-       * This compensates for that, and allows browsing to work in mixed NT and
-       * win95 environments even when restrict anonymous is true. AAB
-       */
-      dump_data(100, p, 0x70);
-      DEBUG(9, ("passlen1=%d, passlen2=%d\n", passlen1, passlen2));
-      if (ra_type == RA_WIN95 && !passlen1 && !passlen2 && p[0] == 0 && p[1] == 0) {
-        DEBUG(0, ("restrict anonymous parameter used in a win95 environment!\n"));
-        DEBUG(0, ("client is win95 and broken passlen1 offset -- attempting fix\n"));
-        DEBUG(0, ("if win95 cilents are having difficulty browsing, you will be unable to use restrict anonymous\n"));
-        passlen1 = 1;
-      }
-    }
-
     if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
