@@ -43,7 +43,7 @@ Example:
         lpq command   = /usr/bin/lpq    -P%p %s
         lprm command  = /usr/bin/lprm   -P%p %j
         queuepause command = /usr/sbin/lpc -P%p stop
-        queuepause command = /usr/sbin/lpc -P%p start
+        queueresume command = /usr/sbin/lpc -P%p start
 
 Samba should set reasonable defaults for these depending on your
 system type, but it isn't clairvoyant. It is not uncommon that you
