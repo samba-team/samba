@@ -104,11 +104,17 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 
 /*******************************************************************
  Mkdir() that calls dos_to_unix.
+ Cope with UNIXes that don't allow high order mode bits on mkdir.
+ Patch from gcarter@lanier.com.
 ********************************************************************/
 
 int dos_mkdir(char *dname,mode_t mode)
 {
-  return(mkdir(dos_to_unix(dname,False),mode));
+  int ret = mkdir(dos_to_unix(dname,False),mode);
+  if(!ret)
+    return(dos_chmod(dname,mode));
+  else
+    return ret;
 }
 
 /*******************************************************************
