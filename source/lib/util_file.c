@@ -362,12 +362,13 @@ char **file_lines_load(char *fname, int *numlines)
 		if (s[0] == '\n') i++;
 	}
 
-	ret = (char **)malloc(sizeof(ret[0])*(i+1));
+	ret = (char **)malloc(sizeof(ret[0])*(i+2));
 	if (!ret) {
 		free(p);
 		return NULL;
 	}	
-	*numlines = i;
+	memset(ret, 0, sizeof(ret[0])*(i+2));
+	if (numlines) *numlines = i;
 
 	ret[0] = p;
 	for (s = p, i=0; s < p+size; s++) {
@@ -391,3 +392,4 @@ void file_lines_free(char **lines)
 	free(lines[0]);
 	free(lines);
 }
+

@@ -64,3 +64,33 @@ va_dcl
 	va_end(ap);
 	return ret;
 }
+
+ /* this is rather line fprintf, except that it works on a file descriptor
+    and is limited to one pstring of output */
+#ifdef HAVE_STDARG_H
+ int fdprintf(int fd, char *format, ...)
+{
+#else
+ int fdprintf(va_alist)
+va_dcl
+{
+	int fd;
+	char *format;
+#endif
+	va_list ap;  
+	int ret;
+	pstring str;
+
+#ifdef HAVE_STDARG_H
+	va_start(ap, format);
+#else
+	va_start(ap);
+	fd = va_arg(ap,int);
+	format = va_arg(ap,char *);
+#endif
+	str[0] = 0;
+
+	ret = vslprintf(str,sizeof(str),format,ap);
+	va_end(ap);
+	return write(fd, str, strlen(str));
+}
