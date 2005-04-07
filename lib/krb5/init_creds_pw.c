@@ -1115,7 +1115,7 @@ process_pa_data_to_key(krb5_context context,
     krb5_error_code ret;
     krb5_enctype etype;
     PA_DATA *pa;
-    int index = 0;
+    int index;
 
     memset(&paid, 0, sizeof(paid));
 
@@ -1135,11 +1135,20 @@ process_pa_data_to_key(krb5_context context,
     }
 
     pa = NULL;
-    if (rep->kdc_rep.padata)
+    if (rep->kdc_rep.padata) {
+	index = 0;
 	pa = krb5_find_padata(rep->kdc_rep.padata->val, 
 			      rep->kdc_rep.padata->len,
 			      KRB5_PADATA_PK_AS_REP,
 			      &index);
+	if (pa == NULL) {
+	    index = 0;
+	    pa = krb5_find_padata(rep->kdc_rep.padata->val, 
+				  rep->kdc_rep.padata->len,
+				  KRB5_PADATA_PK_AS_REP_19,
+				  &index);
+	}
+    }
     if (pa && ctx->pk_init_ctx) {
 #ifdef PKINIT
 	ret = _krb5_pk_rd_pa_reply(context,
