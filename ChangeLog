@@ -1,4 +1,9 @@
-2005-04-04 Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (process_pa_data_to_key): also check
+	for KRB5_PADATA_PK_AS_REP_19, From: Douglas Engert
+
+2005-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/check-der.c: use size_t, print size_t by casting to
 	unsigned long
