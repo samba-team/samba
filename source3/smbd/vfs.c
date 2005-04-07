@@ -731,7 +731,9 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 		in trouble :-) */
 
 	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
-		DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
+		/* Known to fail for root: the directory may be
+		 * NFS-mounted and exported with root_squash (so has no root access). */
+		DEBUG(1,("vfs_GetWd: couldn't stat \".\" path=%s error %s (NFS problem ?)\n", path, strerror(errno) ));
 		return(SMB_VFS_GETWD(conn,path));
 	}
 
