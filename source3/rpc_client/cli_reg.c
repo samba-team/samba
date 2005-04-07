@@ -651,14 +651,14 @@ done:
 /****************************************************************************
 do a REG Create Value
 ****************************************************************************/
-WERROR cli_reg_create_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *val_name, uint32 type,
-                            BUFFER3 *data)
+                            RPC_DATA_BLOB *data)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
-	REG_Q_CREATE_VALUE q_o;
-	REG_R_CREATE_VALUE r_o;
+	REG_Q_SET_VALUE q_o;
+	REG_R_SET_VALUE r_o;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
@@ -666,17 +666,17 @@ WERROR cli_reg_create_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_reg_q_create_val(&q_o, hnd, val_name, type, data);
+	init_reg_q_set_val(&q_o, hnd, val_name, type, data);
 
-	if (!reg_io_q_create_val("", &q_o, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_WINREG, REG_CREATE_VALUE, &qbuf, &rbuf))
+	if (!reg_io_q_set_val("", &q_o, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_SET_VALUE, &qbuf, &rbuf))
 		goto done;
 
 	ZERO_STRUCT(r_o);
 
 	/* Unmarshal response */
 
-	if (reg_io_r_create_val("", &r_o, &rbuf, 0))
+	if (reg_io_r_set_val("", &r_o, &rbuf, 0))
 		result = r_o.status;
 
 done:

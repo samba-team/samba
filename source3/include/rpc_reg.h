@@ -45,7 +45,7 @@
 #define REG_RESTORE_KEY		0x13
 #define REG_SAVE_KEY		0x14
 #define REG_SET_KEY_SEC		0x15
-#define REG_CREATE_VALUE	0x16
+#define REG_SET_VALUE		0x16
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
 #define REG_GETVERSION		0x1a
@@ -209,12 +209,13 @@ typedef struct {
 	POLICY_HND pol;   
 	UNISTR4 name;   	
 	uint32 type;  
-	BUFFER3 *value; 
-} REG_Q_CREATE_VALUE;
+	RPC_DATA_BLOB value; 
+	uint32 size;
+} REG_Q_SET_VALUE;
 
 typedef struct { 
 	WERROR status;
-} REG_R_CREATE_VALUE;
+} REG_R_SET_VALUE;
 
 /***********************************************/
 
@@ -331,12 +332,28 @@ typedef struct {
 
 /***********************************************/
 
+
+/* I have no idea if this is correct since I 
+   have not seen the full structure on the wire 
+   as of yet */
+   
+typedef struct {
+	uint32 max_len;
+	uint32 len;
+	SEC_DESC *secdesc;
+} REG_SEC_DESC_BUF;
+
+typedef struct {
+	uint32 size;		/* size in bytes of security descriptor */
+	REG_SEC_DESC_BUF secdesc;
+	uint8  inherit;		/* see MSDN for a description */
+} SECURITY_ATTRIBUTE;
+
 typedef struct {
 	POLICY_HND pol; 
 	UNISTR4 filename;
-	uint32 unknown;		/* I'm pretty sure this is a pointer to a SEC_DESC as per MSDN */
+	SECURITY_ATTRIBUTE *sec_attr;
 } REG_Q_SAVE_KEY;
-
 
 typedef struct {
 	WERROR status;         /* return status */

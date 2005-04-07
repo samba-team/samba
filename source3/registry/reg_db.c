@@ -65,6 +65,13 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 
+#ifdef REG_TEST_CODE
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+#endif
+
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
