@@ -47,9 +47,14 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	TDB_DATA data_val;
 	char *original_path;
 	size_t original_path_length;
+	size_t sc_size = lp_max_stat_cache_size();
 
 	if (!lp_stat_cache())
 		return;
+
+	if (sc_size && (sc_size*1024 > tdb_stat_cache->map_size)) {
+		reset_stat_cache();
+	}
 
 	ZERO_STRUCT(data_val);
 
