@@ -639,8 +639,10 @@ BOOL reg_io_q_save_key(const char *desc,  REG_Q_SAVE_KEY *q_u, prs_struct *ps, i
 	if(!prs_unistr4("filename", ps, depth, &q_u->filename))
 		return False;
 
+#if 0	/* reg_io_sec_attr() */
 	if(!prs_uint32("unknown", ps, depth, &q_u->unknown))
 		return False;
+#endif
 
 	return True;
 }
@@ -1203,9 +1205,9 @@ BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_u, prs_struct *ps,
 makes a structure.
 ********************************************************************/
 
-void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_u, POLICY_HND *pol,
+void init_reg_q_set_val(REG_Q_SET_VALUE *q_u, POLICY_HND *pol,
 				char *val_name, uint32 type,
-				BUFFER3 *val)
+				RPC_DATA_BLOB *val)
 {
 	ZERO_STRUCTP(q_u);
 
@@ -1214,19 +1216,20 @@ void init_reg_q_create_val(REG_Q_CREATE_VALUE *q_u, POLICY_HND *pol,
 	init_unistr4(&q_u->name, val_name, UNI_STR_TERMINATE);
 	
 	q_u->type      = type;
-	q_u->value     = val;
+	q_u->value     = *val;
+	q_u->size      = val->buf_len;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_create_val(const char *desc,  REG_Q_CREATE_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_set_val(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_create_val");
+	prs_debug(ps, depth, desc, "reg_io_q_set_val");
 	depth++;
 
 	if(!prs_align(ps))
@@ -1242,9 +1245,13 @@ BOOL reg_io_q_create_val(const char *desc,  REG_Q_CREATE_VALUE *q_u, prs_struct 
 
 	if(!prs_uint32("type", ps, depth, &q_u->type))
 		return False;
-	if(!smb_io_buffer3("value", q_u->value, ps, depth))
+
+	if(!smb_io_rpc_blob("value", &q_u->value, ps, depth ))
 		return False;
 	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("size", ps, depth, &q_u->size))
 		return False;
 
 	return True;
@@ -1254,12 +1261,12 @@ BOOL reg_io_q_create_val(const char *desc,  REG_Q_CREATE_VALUE *q_u, prs_struct 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_create_val(const char *desc,  REG_R_CREATE_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_r_set_val(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_create_val");
+	prs_debug(ps, depth, desc, "reg_io_r_set_val");
 	depth++;
 
 	if(!prs_align(ps))
@@ -1451,7 +1458,7 @@ BOOL reg_io_q_open_entry(const char *desc,  REG_Q_OPEN_ENTRY *q_u, prs_struct *p
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_entry");
+	prs_debug(ps, depth, desc, "reg_io_q_open_entry");
 	depth++;
 
 	if(!prs_align(ps))
