@@ -832,9 +832,14 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 
 	tdb->map_size += size;
 
-	if (tdb->flags & TDB_INTERNAL)
-		tdb->map_ptr = realloc(tdb->map_ptr, tdb->map_size);
-	else {
+	if (tdb->flags & TDB_INTERNAL) {
+		char *new_map_ptr = realloc(tdb->map_ptr, tdb->map_size);
+		if (!new_map_ptr) {
+			tdb->map_size -= size;
+			goto fail;
+		}
+		tdb->map_ptr = new_map_ptr;
+	} else {
 		/*
 		 * We must ensure the file is remapped before adding the space
 		 * to ensure consistency with systems like OpenBSD where
