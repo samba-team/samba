@@ -1,10 +1,21 @@
-2005-01-09  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/ftp.c: fix 3 'var' might be used uninitialized warnings
+
+2005-04-04 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/cmds.c: MacOS is also a unix that doesn't define
+	__unix__/unix While here, rewrite this part of the function to not
+	modify that string, but rather take a copy of it and them modify
+	is, all this just to pacify gcc
+	
+2005-01-09 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/domacro.c: cast argument to is* to unsigned char
 
 	* ftp/ftp.c: cast argument to tolower to unsigned char
 
-2004-08-20 Love Hörnquist Åstrand <lha@it.su.se>
+2004-08-20 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.c: send ABOR protect with security layer if its there
 
@@ -23,7 +34,7 @@
 	* ftp/main.c: reverse help strings for --no-gss-bindings and
 	--no-gss-delegate
 
-2004-06-20  Love Hörnquist Åstrand <lha@it.su.se>
+2004-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpcmd.y: make cbuf 64k to handle lager tickets From:
 	MAAAAA MOOOR <huaraz@btinternet.com>
@@ -32,7 +43,7 @@
 
 	* ftpd/ftpd.c (main): setpag if there is krb4 OR krb5 support
 	
-2003-12-19  Love Hörnquist Åstrand <lha@it.su.se>
+2003-12-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/security.h: add ftp_do_gss_delegate
 	
@@ -40,13 +51,13 @@
 	
 	* ftp/gssapi.c (ftp_do_gss_delegate): delegate creds (default on)
 	
-2003-09-03  Love Hörnquist Åstrand <lha@it.su.se>
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
 	
 	* ftp/cmds.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
 	
-2003-07-19  Love Hörnquist Åstrand <lha@it.su.se>
+2003-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/security.h: add ftp_do_gss_bindings
 	
@@ -69,7 +80,7 @@
 
 	* ftp/gssapi.c (gss_adat): fix name allocation bug
 
-2003-05-21  Love Hörnquist Åstrand <lha@it.su.se>
+2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/gss_userok.c (gss_userok): release delegated cred handle
 	
@@ -79,12 +90,12 @@
 	* ftpd/gss_userok.c (gss_userok): remove poking inside the
 	delegated handle
 
-2003-05-14  Love Hörnquist Åstrand <lha@it.su.se>
+2003-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpcmd.y: support afslog <cell> and afslog when compiled
 	with krb5
 
-2003-05-07  Love Hörnquist Åstrand <lha@it.su.se>
+2003-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/cmdtab.c: include afslog in both the krb4 and krb5 case
 	
@@ -92,21 +103,21 @@
 	
 	* ftp/Makefile.am: always include auth.c
 	
-2003-05-07  Love Hörnquist Åstrand <lha@it.su.se>
+2003-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* ftpd/Makefile.am: always include auth.c
 
 	* ftpd/kauth.c: do afslog in the krb5 case too
 	
-2003-04-22  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.1: replace > with \*[Gt]
 	
-2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.c: make sure argument to is* functions are unsigned
 	
-2003-04-06  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.8: s/kerberos/Kerberos/
 	
@@ -128,17 +139,17 @@
 
 	* ftpd/ftpd_locl.h: always include kafs
 	
-2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/gssapi.c (gss_adat): now that gss_export_name exports a
 	principal, bandaid with gss_display_name, and check that oid is
 	GSS_KRB5_NT_PRINCIPAL_NAME, also free memory
 	
-2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
+2003-02-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/gssapi.c (gss_auth): print out the name we authenticated too
 	
-2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
+2003-02-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ls.c: use readlink with bufsize - 1, From NetBSD
 
