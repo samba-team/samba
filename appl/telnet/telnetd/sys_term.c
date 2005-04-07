@@ -1072,6 +1072,8 @@ int login_tty(int t)
  * Clean the tty name.  Return a pointer to the cleaned version.
  */
 
+static char * clean_ttyname (char *) __attribute__((unused));
+
 static char *
 clean_ttyname (char *tty)
 {
