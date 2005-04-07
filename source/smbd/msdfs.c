@@ -282,8 +282,7 @@ should try the remaining path on the redirected server.
 *****************************************************************/
 
 static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp, 
-		      connection_struct* conn,
-		      BOOL findfirst_flag, BOOL allow_wcards,
+		      connection_struct* conn, BOOL search_flag, 
 		      struct referral** reflistpp, int* refcntp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
@@ -315,7 +314,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 
 	/* check if need to redirect */
 	if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
-		if (findfirst_flag) {
+		if ( search_flag ) {
 			DEBUG(6,("resolve_dfs_path (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
 			return False;
@@ -369,17 +368,20 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 /*****************************************************************
   Decides if a dfs pathname should be redirected or not.
   If not, the pathname is converted to a tcon-relative local unix path
+
+  search_wcard_flag: this flag performs 2 functions bother related
+  to searches.  See resolve_dfs_path() and parse_processed_dfs_path()
+  for details.
 *****************************************************************/
 
-BOOL dfs_redirect( pstring pathname, connection_struct* conn, 
-                   BOOL findfirst_flag, BOOL allow_wcards )
+BOOL dfs_redirect( pstring pathname, connection_struct* conn, BOOL search_wcard_flag )
 {
 	struct dfs_path dp;
 	
 	if (!conn || !pathname)
 		return False;
 
-	parse_processed_dfs_path(pathname, &dp, allow_wcards);
+	parse_processed_dfs_path(pathname, &dp, search_wcard_flag);
 
 	/* if dfs pathname for a non-dfs share, convert to tcon-relative
 	   path and return false */
@@ -391,7 +393,7 @@ BOOL dfs_redirect( pstring pathname, connection_struct* conn,
 	if (!strequal(dp.servicename, lp_servicename(SNUM(conn)) )) 
 		return False;
 
-	if (resolve_dfs_path(pathname, &dp, conn, findfirst_flag, allow_wcards,
+	if (resolve_dfs_path(pathname, &dp, conn, search_wcard_flag,
 			     NULL, NULL, NULL, NULL)) {
 		DEBUG(3,("dfs_redirect: Redirecting %s\n", pathname));
 		return True;
@@ -529,7 +531,7 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 		return False;
 
 	/* If not remote & not a self referral, return False */
-	if (!resolve_dfs_path(pathname, &dp, conn, False, False,
+	if (!resolve_dfs_path(pathname, &dp, conn, False, 
 			      &jucn->referral_list, &jucn->referral_count,
 			      self_referralp, consumedcntp)) {
 		if (!*self_referralp) {
