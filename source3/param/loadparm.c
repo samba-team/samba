@@ -281,6 +281,7 @@ typedef struct
 	BOOL bNTPipeSupport;
 	BOOL bNTStatusSupport;
 	BOOL bStatCache;
+	int iMaxStatCacheSize;
 	BOOL bKernelOplocks;
 	BOOL bAllowTrustedDomains;
 	BOOL bLanmanAuth;
@@ -1033,6 +1034,7 @@ static struct parm_struct parm_table[] = {
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
+	{"max stat cache size", P_INTEGER, P_GLOBAL, &Globals.iMaxStatCacheSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"stat cache", P_BOOL, P_GLOBAL, &Globals.bStatCache, NULL, NULL, FLAG_ADVANCED}, 
 	{"store dos attributes", P_BOOL, P_LOCAL, &sDefault.bStoreDosAttributes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
@@ -1462,6 +1464,7 @@ static void init_globals(void)
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
+	Globals.iMaxStatCacheSize = 0;	/* unlimited size in kb by default. */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
@@ -1814,6 +1817,7 @@ FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
+FN_GLOBAL_INTEGER(lp_max_stat_cache_size, &Globals.iMaxStatCacheSize)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
