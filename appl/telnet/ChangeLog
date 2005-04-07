@@ -1,4 +1,9 @@
-2005-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* telnetd/sys_term.c: clean_ttyname might be unused, mark it so
+	with __attribute__
+	
+2005-03-29  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* telnet/telnet.c: From FreeBSD:
 	
