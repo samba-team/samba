@@ -59,6 +59,32 @@ function formatHelp()
 	head.appendChild(altLink);
 }
 
+function addTocNav()
+{
+	var page = document.getElementsByTagName('body')[0];
+	var docList = document.getElementById('controls');
+
+	// Create "back" link on the fly
+	var toc = document.createElement('p');
+	var link = document.createElement('a');
+	link.setAttribute('href', 'help');
+	var linkText = document.createTextNode('Return to Help Menu');
+	link.appendChild(linkText);
+	toc.appendChild(link);
+
+	// Add "back" link to top of the page
+	var pageTop = page.firstChild;
+	page.insertBefore(toc, pageTop);
+	
+	// Remove the docs list when done
+	var docListKids = docList.childNodes
+
+	for (i=docListKids.length - 2; i>=0; i--) {
+		docList.removeChild(docListKids[i]);
+	}
+}
+
+
 /*********************************************************************
  Initialize each page.
 *********************************************************************/
