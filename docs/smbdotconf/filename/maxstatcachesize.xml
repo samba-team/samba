@@ -1,0 +1,13 @@
+<samba:parameter name="stat cache"
+                 context="G"
+                 developer="1"
+		 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter specifies the maximum amount of memory (in kilobytes)
+	smbd will use for the stat cache that speeds up case insensitive name mappings.
+	If set to zero (the default) there is no limit. Change this if your smbd processes
+	grow too large when servicing something like a back-up application.</para>
+</description>
+<value type="default">0</value>
+</samba:parameter>
