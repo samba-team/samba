@@ -147,20 +147,12 @@ typedef struct {
 
 
 /********************************************************************** 
- * Buffers use by winreg
+ * Buffers 
  **********************************************************************/
 
-/* 
-   OLD COMMENT: 
-      BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer 
-      pathetic.  some stupid team of \PIPE\winreg writers got the concept
-      of a unicode string different from the other \PIPE\ writers
-
-   NEW COMMENT: 
-      buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
-      It *may* look like a UNISTR2 but it is *not*.  This is not a goof
-      by the winreg developers.  It is a generic buffer 
-*/
+/* buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
+   It *may* look like a UNISTR2 but it is *not*.  This is not a goof
+   by the winreg developers.  It is a generic buffer */
 
 typedef struct {
 	uint32 buf_max_len;
@@ -169,34 +161,22 @@ typedef struct {
 	uint16 *buffer;
 } REGVAL_BUFFER;
 
-typedef struct buffer3_info {
-	uint32 buf_max_len;
-	uint8  *buffer; 		/* Data */
+/* generic rpc version of the DATA_BLOB.  Just a length and uint8 array */
+
+typedef struct {
 	uint32 buf_len;
-} BUFFER3;
-
-
+	uint8 *buffer;
+} RPC_DATA_BLOB;
 
 /********************************************************************** 
- * Buffers use by spoolss
+ * Buffers use by spoolss (i might be able to replace it with
+ * an RPC_DATA_BLOB)
  **********************************************************************/
 
 typedef struct {
 	uint32 buf_len;
 	uint16 *buffer; /* data */
 } BUFFER5;
-
-
-
-/********************************************************************** 
- * Buffers use by netlogon
- **********************************************************************/
-
-typedef struct {
-	uint32 buf_len;
-	uint8 *buffer;
-} BUFFER4;
-
 
 
 /********************************************************************** 

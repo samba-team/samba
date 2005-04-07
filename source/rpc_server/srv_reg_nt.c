@@ -720,6 +720,7 @@ WERROR _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABO
 WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_KEY *r_u)
 {
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	pstring         filename;
 	
 	DEBUG(5,("_reg_restore_key: Enter\n"));
 	
@@ -731,7 +732,9 @@ WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	DEBUG(8,("_reg_restore_key: verifying backup of key [%s]\n", regkey->name));
+	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+
+	DEBUG(8,("_reg_restore_key: verifying restore of key [%s] from \"%s\"\n", regkey->name, filename));
 
 #if 0
 	validate_reg_filemame( filename );
@@ -747,6 +750,7 @@ WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_
 WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 {
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	pstring         filename;
 	
 	DEBUG(5,("_reg_save_key: Enter\n"));
 	
@@ -758,7 +762,9 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	DEBUG(8,("_reg_save_key: verifying backup of key [%s]\n", regkey->name));
+	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+
+	DEBUG(8,("_reg_save_key: verifying backup of key [%s] to \"%s\"\n", regkey->name, filename));
 
 #if 0
 	validate_reg_filemame( filename );

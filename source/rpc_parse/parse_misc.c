@@ -554,105 +554,69 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Allocate the BUFFER3 memory.
+ Allocate the RPC_DATA_BLOB memory.
 ********************************************************************/
 
-static size_t create_buffer3(BUFFER3 *str, size_t len)
+static size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
 	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
-		smb_panic("create_buffer3: talloc fail\n");
+		smb_panic("create_rpc_blob: talloc fail\n");
 	return len;
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure from a uint32
+ Inits a RPC_DATA_BLOB structure from a uint32
 ********************************************************************/
 
-void init_buffer3_uint32(BUFFER3 *str, uint32 val)
+void init_rpc_blob_uint32(RPC_DATA_BLOB *str, uint32 val)
 {
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = str->buf_len = create_buffer3(str, sizeof(uint32));
+	str->buf_len = create_rpc_blob(str, sizeof(uint32));
 	SIVAL(str->buffer, 0, val);
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure.
+ Inits a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-void init_buffer3_str(BUFFER3 *str, const char *buf, int len)
+void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = str->buf_len = create_buffer3(str, len*2);
-	rpcstr_push(str->buffer, buf, str->buf_max_len, STR_TERMINATE);
+	str->buf_len = create_rpc_blob(str, len*2);
+	rpcstr_push(str->buffer, buf, str->buf_len, STR_TERMINATE);
 	
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure from a hex string.
+ Inits a RPC_DATA_BLOB structure from a hex string.
 ********************************************************************/
 
-void init_buffer3_hex(BUFFER3 *str, const char *buf)
+void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
-	str->buf_max_len = str->buf_len = create_buffer3(str, strlen(buf));
-	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
+	str->buf_len = create_rpc_blob(str, strlen(buf));
+	str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure.
+ Inits a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, size_t len)
+void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
 	/* max buffer size (allocated size) */
 	if (buf != NULL) {
-		len = create_buffer3(str, len);
+		len = create_rpc_blob(str, len);
 		memcpy(str->buffer, buf, len);
 	}
-	str->buf_max_len = len;
-	str->buf_len = buf != NULL ? len : 0;
-}
-
-/*******************************************************************
- Reads or writes a BUFFER3 structure.
-   the uni_max_len member tells you how large the buffer is.
-   the uni_str_len member tells you how much of the buffer is really used.
-********************************************************************/
-
-BOOL smb_io_buffer3(const char *desc, BUFFER3 *buf3, prs_struct *ps, int depth)
-{
-	if (buf3 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_buffer3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("uni_max_len", ps, depth, &buf3->buf_max_len))
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		buf3->buffer = PRS_ALLOC_MEM(ps, unsigned char, buf3->buf_max_len);
-		if (buf3->buffer == NULL)
-			return False;
-	}
-
-	if(!prs_uint8s(True, "buffer     ", ps, depth, buf3->buffer, buf3->buf_max_len))
-		return False;
-
-	if(!prs_uint32("buf_len    ", ps, depth, &buf3->buf_len))
-		return False;
-
-	return True;
+	str->buf_len = len;
 }
 
 /*******************************************************************
@@ -1816,23 +1780,30 @@ BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a BUFFER4 structure.
+reads or writes a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-BOOL smb_io_buffer4(const char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
+BOOL smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	prs_debug(ps, depth, desc, "smb_io_rpc_blob");
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("buf_len", ps, depth, &buf4->buf_len);
+	if ( !prs_uint32("buf_len", ps, depth, &blob->buf_len) )
+		return False;
+
+	if ( blob->buf_len == 0 )
+		return True;
+
 	if (UNMARSHALLING(ps)) {
-		buf4->buffer = PRS_ALLOC_MEM(ps, uint8, buf4->buf_len);
-		if (!buf4->buffer) {
+		blob->buffer = PRS_ALLOC_MEM(ps, uint8, blob->buf_len);
+		if (!blob->buffer) {
 			return False;
 		}
 	}
-	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
+
+	if ( !prs_uint8s(True, "buffer", ps, depth, blob->buffer, blob->buf_len) )
+		return False;
 
 	return True;
 }
