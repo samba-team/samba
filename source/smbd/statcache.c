@@ -52,7 +52,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	if (!lp_stat_cache())
 		return;
 
-	if (sc_size && (sc_size*1024 > tdb_stat_cache->map_size)) {
+	if (sc_size && (tdb_stat_cache->map_size > sc_size*1024)) {
 		reset_stat_cache();
 	}
 
