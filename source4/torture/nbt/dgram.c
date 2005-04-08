@@ -78,7 +78,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	}
 
 	/* setup a temporary mailslot listener for replies */
-	dgmslot = dgram_mailslot_temp(dgmsock, "\\MAILSLOT\\NET\\GETDC", 
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, &replies);
 	
 
