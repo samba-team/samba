@@ -805,7 +805,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	saved_user_conn = current_user.conn;
 	saved_vuid = current_user.vuid;
 	saved_fsp_conn = fsp->conn;
-	change_to_root_user();
 	/*
 	 * Initialize saved_dir to something sensible: vfs_GetWd may not work well
 	 * for root: the directory may be NFS-mounted and exported with root_squash
@@ -816,14 +815,16 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Save the chain fnum. */
 	file_chain_save();
 
+	pstrcpy(file_name, fsp->fsp_name);
+
+	change_to_root_user();
+
 	/*
 	 * From Charles Hoch <hoch@exemplary.com>. If the break processing
 	 * code closes the file (as it often does), then the fsp pointer here
 	 * points to free()'d memory. We *must* revalidate fsp each time
 	 * around the loop.
 	 */
-
-	pstrcpy(file_name, fsp->fsp_name);
 
 	while((fsp = initial_break_processing(dev, inode, file_id)) &&
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
