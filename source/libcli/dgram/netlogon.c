@@ -56,3 +56,19 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 	return status;
 }
 
+
+/*
+  parse a netlogon response. The packet must be a valid mailslot packet
+*/
+NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
+				       TALLOC_CTX *mem_ctx,
+				       struct nbt_dgram_packet *dgram,
+				       struct nbt_netlogon_packet *netlogon)
+{
+	DATA_BLOB *data = &dgram->data.msg.body.smb.body.trans.data;
+	NTSTATUS status;
+
+	status = ndr_pull_struct_blob(data, mem_ctx, netlogon, 
+				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
+	return status;
+}

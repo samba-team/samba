@@ -321,7 +321,8 @@ interface nbt
 
 	/* \MAILSLOT\NET\NETLOGON mailslot requests */
 	typedef [enum8bit] enum {
-		NETLOGON_QUERY_FOR_PDC = 0x7		
+		NETLOGON_QUERY_FOR_PDC     = 0x7,	
+		NETLOGON_RESPONSE_FROM_PDC = 0xc
 	} nbt_netlogon_command;
 
 	/* query for pdc request */
@@ -334,8 +335,19 @@ interface nbt
 		uint16               lm20_token;
 	} nbt_netlogon_query_for_pdc;
 
+	/* response from request */
+	typedef struct {
+		astring              pdc_name;
+		nstring              unicode_pdc_name;
+		nstring              domain_name;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_netlogon_response_from_pdc;
+
 	typedef [nodiscriminant] union {
 		[case(NETLOGON_QUERY_FOR_PDC)] nbt_netlogon_query_for_pdc pdc;
+		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
 	} nbt_netlogon_request;
 
 	typedef [flag(NDR_NOALIGN),public] struct {
