@@ -404,6 +404,9 @@ void init_rpc_hdr_rb(RPC_HDR_RB *rpc,
 
 BOOL smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth)
 {
+	RPC_HDR_RB rpc2;
+	int i;
+	
 	if (rpc == NULL)
 		return False;
 
@@ -424,6 +427,20 @@ BOOL smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int de
 		return False;
 	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
 		return False;
+		
+	/* just chew through extra context id's for now */
+	
+	for ( i=1; i<rpc->num_elements; i++ ) {
+		if(!prs_uint16("context_id  ", ps, depth, &rpc2.context_id ))
+			return False;
+		if(!prs_uint8 ("num_syntaxes", ps, depth, &rpc2.num_syntaxes))
+			return False;
+
+		if(!smb_io_rpc_iface("", &rpc2.abstract, ps, depth))
+			return False;
+		if(!smb_io_rpc_iface("", &rpc2.transfer, ps, depth))
+			return False;
+	}	
 
 	return True;
 }
