@@ -282,7 +282,7 @@ static BOOL password_change(const char *remote_mach, char *username,
 		ret = remote_password_change(remote_mach, username, 
 					     old_passwd, new_pw, err_str, sizeof(err_str));
 		if(*err_str)
-			fprintf(stderr, err_str);
+			fprintf(stderr, "%s", err_str);
 		return ret;
 	}
 	
@@ -292,7 +292,7 @@ static BOOL password_change(const char *remote_mach, char *username,
 	if(*msg_str)
 		printf(msg_str);
 	if(*err_str)
-		fprintf(stderr, err_str);
+		fprintf(stderr, "%s", err_str);
 
 	return ret;
 }
@@ -503,7 +503,7 @@ static int process_nonroot(int local_flags)
 			fstrcpy(user_name,pwd->pw_name);
 			passwd_free(&pwd);
 		} else {
-			fprintf(stderr, "smbpasswd: you don't exist - go away\n");
+			fprintf(stderr, "smbpasswd: cannot lookup user name for uid %u\n", (unsigned int)getuid());
 			exit(1);
 		}
 	}
