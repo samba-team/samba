@@ -59,22 +59,50 @@ function formatHelp()
 	head.appendChild(altLink);
 }
 
+function styleDocs()
+{
+	var docStyle = document.createElement('link');
+	docStyle.setAttribute('rel', 'stylesheet');
+	docStyle.setAttribute('href', '/swat/include/docs.css');
+	docStyle.setAttribute('type', 'text/css');
+	docStyle.setAttribute('media', 'screen');
+
+	var head = document.getElementsByTagName('head')[0];
+	head.appendChild(docStyle);
+}
+
 function addTocNav()
 {
 	var page = document.getElementsByTagName('body')[0];
 	var docList = document.getElementById('controls');
 
+	var toc = document.createElement('div');
+	toc.setAttribute('id', 'toc');
+
 	// Create "back" link on the fly
-	var toc = document.createElement('p');
-	var link = document.createElement('a');
-	link.setAttribute('href', 'help');
-	var linkText = document.createTextNode('Return to Help Menu');
-	link.appendChild(linkText);
-	toc.appendChild(link);
+	var backLink = document.createElement('a');
+	backLink.setAttribute('href', 'help');
+	var backLinkText = document.createTextNode('Back to Help');
+	backLink.appendChild(backLinkText);
+
+	var linkImg = document.createElement('img');
+	linkImg.setAttribute('src', '/swat/images/back_arrow.png');
+	linkImg.setAttribute('alt', 'Previous Page');
+
+	var helpHeading = document.createElement('h4');
+	var helpHeadingText = document.createTextNode('SWAT | Samba Docs');
+	helpHeading.appendChild(helpHeadingText);
+
+	var hbar = document.createElement('hr');
+	
+	toc.appendChild(linkImg);
+	toc.appendChild(backLink);
+	toc.appendChild(helpHeading);
+	toc.appendChild(hbar);
 
 	// Add "back" link to top of the page
-	var pageTop = page.firstChild;
-	page.insertBefore(toc, pageTop);
+	var topPage = page.firstChild;
+	page.insertBefore(toc, topPage);
 	
 	// Remove the docs list when done
 	var docListKids = docList.childNodes
@@ -84,7 +112,12 @@ function addTocNav()
 	}
 }
 
-
+// Wrapper for calling functions from onclick
+function prepForDoc()
+{
+	styleDocs();
+	addTocNav();
+}
 /*********************************************************************
  Initialize each page.
 *********************************************************************/
