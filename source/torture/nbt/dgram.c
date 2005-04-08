@@ -38,6 +38,7 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 {
 	NTSTATUS status;
 	struct nbt_netlogon_packet netlogon;
+	int *replies = dgmslot->private;
 
 	printf("netlogon reply from %s:%d\n", src_address, src_port);
 
@@ -49,6 +50,8 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	NDR_PRINT_DEBUG(nbt_netlogon_packet, &netlogon);
+
+	(*replies)++;
 }
 
 
@@ -62,8 +65,8 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
-	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	struct timeval tv = timeval_current();
+	int replies = 0;
 
 	/* try receiving replies on port 138 first, which will only
 	   work if we are root and smbd/nmbd are not running - fall
@@ -76,7 +79,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, "\\MAILSLOT\\NET\\GETDC", 
-				      netlogon_handler, NULL);
+				      netlogon_handler, &replies);
 	
 
 	ZERO_STRUCT(logon);
@@ -99,7 +102,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	}
 
 
-	while (timeval_elapsed(&tv) < timelimit) {
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
