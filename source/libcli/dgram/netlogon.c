@@ -70,5 +70,12 @@ NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 
 	status = ndr_pull_struct_blob(data, mem_ctx, netlogon, 
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to parse netlogon packet of length %d\n", 
+			 data->length));
+#if 0
+		file_save("netlogon.dat", data->data, data->length);
+#endif
+	}
 	return status;
 }
