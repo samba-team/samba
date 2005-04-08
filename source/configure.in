@@ -729,7 +729,8 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/cdefs.h glob.h)
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 ## These faile to compile on Solaris so just check for their presence
 AC_CHECK_HEADERS(security/pam_modules.h net/if.h netinet/ip.h, [], [], -)
@@ -1165,6 +1166,18 @@ AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
 AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
 AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
 AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+# Check if we have extattr
+case "$host_os" in
+  *freebsd4* | *DragonFly* )
+    AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
+    ;;
+  *)
+    AC_CHECK_FUNCS(extattr_delete_fd extattr_delete_file extattr_delete_link)
+    AC_CHECK_FUNCS(extattr_get_fd extattr_get_file extattr_get_link)
+    AC_CHECK_FUNCS(extattr_list_fd extattr_list_file extattr_list_link)
+    AC_CHECK_FUNCS(extattr_set_fd extattr_set_file extattr_set_link)
+    ;;
+esac
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
