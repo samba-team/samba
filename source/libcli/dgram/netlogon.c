@@ -50,7 +50,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 
 
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
-				     "\\MAILSLOT\\NET\\NETLOGON",
+				     NBT_MAILSLOT_NETLOGON,
 				     dest_name, dest_address, src_name, &blob);
 	talloc_free(tmp_ctx);
 	return status;
