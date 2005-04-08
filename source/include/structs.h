@@ -173,6 +173,8 @@ struct nbt_name_refresh_wins;
 struct nbt_name_register_wins;
 
 struct nbt_dgram_packet;
+struct nbt_dgram_socket;
+struct dgram_mailslot_handler;
 
 struct messaging_context;
 struct stream_connection;

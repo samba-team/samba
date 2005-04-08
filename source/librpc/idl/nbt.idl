@@ -224,6 +224,10 @@ interface nbt
 	   code, but it does make working with these types of dgrams
 	   easier */
 
+	const string NBT_MAILSLOT_NETLOGON = "\\MAILSLOT\\NET\\NETLOGON";
+	const string NBT_MAILSLOT_GETDC    = "\\MAILSLOT\\GETDC";
+	const string NBT_MAILSLOT_BROWSE   = "\\MAILSLOT\\BROWSE";
+
 	typedef [enum8bit] enum {
 		SMB_TRANSACTION = 0x25
 	} smb_command;
@@ -329,6 +333,7 @@ interface nbt
 	typedef struct {
 		astring              computer_name;
 		astring              mailslot_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
 		nstring              unicode_name;
 		uint32               nt_version;
 		uint16               lmnt_token;
@@ -337,7 +342,8 @@ interface nbt
 
 	/* response from request */
 	typedef struct {
-		astring              pdc_name;
+		astring pdc_name;
+		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
 		nstring              unicode_pdc_name;
 		nstring              domain_name;
 		uint32               nt_version;

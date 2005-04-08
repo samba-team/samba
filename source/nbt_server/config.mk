@@ -14,6 +14,18 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 
 #######################
+# Start SUBSYSTEM NBTD_DGRAM
+[SUBSYSTEM::NBTD_DGRAM]
+ADD_OBJ_FILES = \
+		nbt_server/dgram/request.o \
+		nbt_server/dgram/netlogon.o \
+		nbt_server/dgram/browse.o
+REQUIRED_SUBSYSTEMS = \
+		LIBCLI_DGRAM
+# End SUBSYSTEM NBTD_DGRAM
+#######################
+
+#######################
 # Start SUBSYSTEM NBTD
 [SUBSYSTEM::NBTD]
 INIT_OBJ_FILES = \
@@ -26,6 +38,6 @@ ADD_OBJ_FILES = \
 		nbt_server/defense.o \
 		nbt_server/packet.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_NBT NBTD_WINS
+		LIBCLI_NBT NBTD_WINS NBTD_DGRAM
 # End SUBSYSTEM NBTD
 #######################
