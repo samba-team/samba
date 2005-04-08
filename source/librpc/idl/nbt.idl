@@ -8,7 +8,10 @@
    encoding if it doesn't work out
 */
 
-interface nbt
+[ uuid("1-2-3-4"),
+  version(1.0),
+  depends(security)
+] interface nbt
 {
 	const int NBT_NAME_SERVICE_PORT  = 137;
 	const int NBT_DGRAM_SERVICE_PORT = 138;
@@ -326,6 +329,7 @@ interface nbt
 	/* \MAILSLOT\NET\NETLOGON mailslot requests */
 	typedef [enum8bit] enum {
 		NETLOGON_QUERY_FOR_PDC     = 0x7,	
+		NETLOGON_ANNOUNCE_UAS      = 0xa,
 		NETLOGON_RESPONSE_FROM_PDC = 0xc
 	} nbt_netlogon_command;
 
@@ -351,8 +355,37 @@ interface nbt
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc;
 
+	/* announce change to UAS or SAM */
+	typedef struct {
+		uint32           db_index;
+		hyper            serial;
+		NTTIME           timestamp;
+	} nbt_db_change;
+
+	/* used to announce SAM changes */
+	typedef struct {
+		uint32           serial_lo;
+		time_t           timestamp;
+		uint32           pulse;
+		uint32           random;
+		astring          pdc_name;
+		astring          domain;
+		[flag(NDR_ALIGN2)] DATA_BLOB _pad;
+		nstring          unicode_pdc_name;
+		nstring          unicode_domain;
+		uint32           db_count;
+		nbt_db_change    dbchange[db_count];
+		[value(ndr_size_dom_sid(&r->sid))] uint32 sid_size;
+		uint16           unknown;
+		dom_sid          sid;
+		uint32           nt_version;
+		uint16           lmnt_token;
+		uint16           lm20_token;
+	} nbt_netlogon_announce_uas;
+
 	typedef [nodiscriminant] union {
 		[case(NETLOGON_QUERY_FOR_PDC)] nbt_netlogon_query_for_pdc pdc;
+		[case(NETLOGON_ANNOUNCE_UAS)] nbt_netlogon_announce_uas uas;
 		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
 	} nbt_netlogon_request;
 
@@ -361,4 +394,6 @@ interface nbt
 		uint8                pad;
 		[switch_is(command)] nbt_netlogon_request req;
 	} nbt_netlogon_packet;
+
+	void nbt_netlogon([in] nbt_netlogon_packet logon);
 }
