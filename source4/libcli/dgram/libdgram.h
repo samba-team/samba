@@ -124,5 +124,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 				      const char *dest_address,
 				      struct nbt_name *src_name,
 				      struct nbt_netlogon_packet *request);
-
-
+NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
+				       TALLOC_CTX *mem_ctx,
+				       struct nbt_dgram_packet *dgram,
+				       struct nbt_netlogon_packet *netlogon);

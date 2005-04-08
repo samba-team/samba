@@ -36,8 +36,21 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 			     struct nbt_dgram_packet *packet, 
 			     const char *src_address, int src_port)
 {
+	NTSTATUS status;
+	struct nbt_netlogon_packet netlogon;
+
 	printf("netlogon reply from %s:%d\n", src_address, src_port);
+
+	status = dgram_mailslot_netlogon_parse(dgmslot, dgmslot, packet, &netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to parse netlogon packet from %s:%d\n",
+		       src_address, src_port);
+		return;
+	}
+
+	NDR_PRINT_DEBUG(nbt_netlogon_packet, &netlogon);
 }
+
 
 /* test UDP/138 netlogon requests */
 static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx, 
@@ -52,7 +65,14 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 	struct timeval tv = timeval_current();
 
-	socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+	/* try receiving replies on port 138 first, which will only
+	   work if we are root and smbd/nmbd are not running - fall
+	   back to listening on any port, which means replies from
+	   some windows versions won't be seen */
+	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+	}
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, "\\MAILSLOT\\NET\\GETDC", 
