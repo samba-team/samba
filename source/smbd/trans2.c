@@ -3581,6 +3581,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 
 	ZERO_STRUCT(sbuf);
+	ZERO_STRUCT(tvs);
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
 		if (total_params < 4) {
