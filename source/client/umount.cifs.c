@@ -49,7 +49,7 @@
 #define MNT_EXPIRE 0x04
 #endif
 
-#define CIFS_IOC_CHECKUMOUNT _IOR('u', 2, int)
+#define CIFS_IOC_CHECKUMOUNT _IO('c', 2)
    
 static struct option longopts[] = {
 	{ "all", 0, NULL, 'a' },
@@ -93,14 +93,21 @@ static int umount_check_perm(char * dir)
 	/* presumably can not chdir into the target as we do on mount */
 
 	fileid = open(dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW, 0);
-
-	/* check if fileid valid if fileid == -1 BB FIXME */
+	if(fileid == -1) {
+		if(verboseflg)
+			printf("error opening mountpoint %d %s",errno,strerror(errno));
+		return errno;
+	}
 
 	rc = ioctl(fileid, CIFS_IOC_CHECKUMOUNT, NULL);
 
 	if(verboseflg)
-		printf("ioctl returned %d with errno %d\n",rc,errno);
+		printf("ioctl returned %d with errno %d %s\n",rc,errno,strerror(errno));
 
+	if(rc == ENOTTY)
+		printf("user unmounting via %s is an optional feature of the cifs filesystem driver (cifs.ko)\n\tand requires cifs.ko version 1.32 or later\n",thisprogram);
+	else if (rc > 0)
+		printf("user unmount of %s failed with %d %s",dir,errno,strerror(errno));
 	close(fileid);
 
 	return rc;
