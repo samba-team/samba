@@ -346,7 +346,7 @@ ATTRIB_MAP_ENTRY acctpol_attr_list[] = {
 	}
 
 #if 0	/* commented out after discussion with abartlet.  Do not reenable.
-	   left here so other so re-add similar code   --jerry */
+	   left here so other do not re-add similar code   --jerry */
        	if (value == NULL || *value == '\0')
 		return;
 #endif
