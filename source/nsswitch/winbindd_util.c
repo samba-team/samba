@@ -84,8 +84,6 @@ void free_domain_list(void)
 
 static BOOL is_internal_domain(const DOM_SID *sid)
 {
-	extern DOM_SID global_sid_Builtin;
-
 	if (sid == NULL)
 		return False;
 
@@ -102,7 +100,7 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
 						  struct winbindd_methods *methods,
-						  DOM_SID *sid)
+						  const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
@@ -495,7 +493,6 @@ enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
 /* Look up global info for the winbind daemon */
 void init_domain_list(void)
 {
-	extern DOM_SID global_sid_Builtin;
 	extern struct winbindd_methods cache_methods;
 	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;

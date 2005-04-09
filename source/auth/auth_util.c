@@ -26,11 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Network;
-extern DOM_SID global_sid_Builtin_Guests;
-extern DOM_SID global_sid_Authenticated_Users;
-
 
 /****************************************************************************
  Create a UNIX user on demand.

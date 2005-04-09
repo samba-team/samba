@@ -2020,7 +2020,6 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 
 static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 {
-	extern DOM_SID global_sid_World;
 	size_t sd_size;
 
 	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);

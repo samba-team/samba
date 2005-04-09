@@ -32,13 +32,6 @@ static TDB_CONTEXT *tdb;
 #define AP_MIGRATED 		"ACCOUNT POLICIES WERE MIGRATED TO PASSDB"
 #define AP_TTL			60
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin_Administrators;
-extern DOM_SID global_sid_Builtin_Account_Operators;
-extern DOM_SID global_sid_Builtin_Server_Operators;
-extern DOM_SID global_sid_Builtin_Print_Operators;
-extern DOM_SID global_sid_Builtin_Backup_Operators;
-
 
 struct ap_table {
 	int field;

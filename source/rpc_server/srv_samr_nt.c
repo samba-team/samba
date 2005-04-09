@@ -35,8 +35,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-extern DOM_SID global_sid_Builtin;
-
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
@@ -75,7 +73,6 @@ struct generic_mapping ali_generic_mapping = {GENERIC_RIGHTS_ALIAS_READ, GENERIC
 
 static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid, act_sid, domadmin_sid;
 	SEC_ACE ace[4];
 	SEC_ACCESS mask;
@@ -123,7 +120,6 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size, DOM_SID *usr_sid)
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid, act_sid, domadmin_sid;
 	size_t i = 0;
 
@@ -177,7 +173,6 @@ static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 static NTSTATUS samr_make_grp_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid;
 	DOM_SID act_sid;
 
@@ -216,7 +211,6 @@ static NTSTATUS samr_make_grp_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 static NTSTATUS samr_make_ali_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid;
 	DOM_SID act_sid;
 

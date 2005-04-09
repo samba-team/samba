@@ -170,7 +170,6 @@ BOOL share_info_db_init(void)
 
 static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
-	extern DOM_SID global_sid_World;
 	extern struct generic_mapping file_generic_mapping;
 	SEC_ACCESS sa;
 	SEC_ACE ace;

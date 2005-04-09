@@ -24,8 +24,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-extern DOM_SID global_sid_Builtin; 
-
 static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 {
 	int i;

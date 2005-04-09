@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_World;
-
 /* Map generic permissions to printer object specific permissions */
 
 GENERIC_MAPPING printer_generic_mapping = {
