@@ -39,9 +39,6 @@
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin;
-
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];

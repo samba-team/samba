@@ -287,6 +287,28 @@ typedef struct sid_info
 
 } DOM_SID;
 
+/* Some well-known SIDs */
+extern const DOM_SID global_sid_World_Domain;
+extern const DOM_SID global_sid_World;
+extern const DOM_SID global_sid_Creator_Owner_Domain;
+extern const DOM_SID global_sid_NT_Authority;
+extern const DOM_SID global_sid_System;
+extern const DOM_SID global_sid_NULL;
+extern const DOM_SID global_sid_Authenticated_Users;
+extern const DOM_SID global_sid_Network;
+extern const DOM_SID global_sid_Creator_Owner;
+extern const DOM_SID global_sid_Creator_Group;
+extern const DOM_SID global_sid_Anonymous;
+extern const DOM_SID global_sid_Builtin;
+extern const DOM_SID global_sid_Builtin_Administrators;
+extern const DOM_SID global_sid_Builtin_Users;
+extern const DOM_SID global_sid_Builtin_Guests;
+extern const DOM_SID global_sid_Builtin_Power_Users;
+extern const DOM_SID global_sid_Builtin_Account_Operators;
+extern const DOM_SID global_sid_Builtin_Server_Operators;
+extern const DOM_SID global_sid_Builtin_Print_Operators;
+extern const DOM_SID global_sid_Builtin_Backup_Operators;
+extern const DOM_SID global_sid_Builtin_Replicator;
 
 /*
  * The complete list of SIDS belonging to this user.

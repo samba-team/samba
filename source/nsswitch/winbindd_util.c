@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "winbindd.h"
 
-extern DOM_SID global_sid_Builtin;
 extern struct winbindd_methods cache_methods;
 extern struct winbindd_methods passdb_methods;
 
@@ -105,7 +104,7 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
 						  struct winbindd_methods *methods,
-						  DOM_SID *sid)
+						  const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;

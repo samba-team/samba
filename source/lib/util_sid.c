@@ -28,29 +28,51 @@
  * Some useful sids
  */
 
-DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
-DOM_SID global_sid_World;    				/* Everyone */
-DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
-DOM_SID global_sid_NT_Authority;    		/* NT Authority */
-DOM_SID global_sid_System;    		/* System */
-DOM_SID global_sid_NULL;            		/* NULL sid */
-DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
-DOM_SID global_sid_Network;			/* Network rids */
 
-DOM_SID global_sid_Creator_Owner;	/* Creator Owner */
-DOM_SID global_sid_Creator_Group;	/* Creator Group */
-DOM_SID global_sid_Anonymous;		/* Anonymous login */
+const DOM_SID global_sid_World_Domain =               /* Everyone domain */
+{ 1, 0, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_World =                      /* Everyone */
+{ 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Creator_Owner_Domain =       /* Creator Owner domain */
+{ 1, 0, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_NT_Authority =    		/* NT Authority */
+{ 1, 0, {0,0,0,0,0,5}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_System =			/* System */
+{ 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_NULL =            		/* NULL sid */
+{ 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Authenticated_Users =	/* All authenticated rids */
+{ 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Network =			/* Network rids */
+{ 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
-DOM_SID global_sid_Builtin; 			/* Local well-known domain */
-DOM_SID global_sid_Builtin_Administrators;	/* Builtin administrators */
-DOM_SID global_sid_Builtin_Users;		/* Builtin users */
-DOM_SID global_sid_Builtin_Guests;		/* Builtin guest users */
-DOM_SID global_sid_Builtin_Power_Users;		/* Builtin power users */
-DOM_SID global_sid_Builtin_Account_Operators;	/* Builtin account operators */
-DOM_SID global_sid_Builtin_Server_Operators;	/* Builtin server operators */
-DOM_SID global_sid_Builtin_Print_Operators;	/* Builtin print operators */
-DOM_SID global_sid_Builtin_Backup_Operators;	/* Builtin backup operators */
-DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
+const DOM_SID global_sid_Creator_Owner =		/* Creator Owner */
+{ 1, 1, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Creator_Group =		/* Creator Group */
+{ 1, 1, {0,0,0,0,0,3}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Anonymous =			/* Anonymous login */
+{ 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
+const DOM_SID global_sid_Builtin = 			/* Local well-known domain */
+{ 1, 1, {0,0,0,0,0,5}, {32,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Administrators =	/* Builtin administrators */
+{ 1, 2, {0,0,0,0,0,5}, {32,544,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Users =		/* Builtin users */
+{ 1, 2, {0,0,0,0,0,5}, {32,545,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Guests =		/* Builtin guest users */
+{ 1, 2, {0,0,0,0,0,5}, {32,546,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Power_Users =	/* Builtin power users */
+{ 1, 2, {0,0,0,0,0,5}, {32,547,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Account_Operators =	/* Builtin account operators */
+{ 1, 2, {0,0,0,0,0,5}, {32,548,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Server_Operators =	/* Builtin server operators */
+{ 1, 2, {0,0,0,0,0,5}, {32,549,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Print_Operators =	/* Builtin print operators */
+{ 1, 2, {0,0,0,0,0,5}, {32,550,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Backup_Operators =	/* Builtin backup operators */
+{ 1, 2, {0,0,0,0,0,5}, {32,551,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const DOM_SID global_sid_Builtin_Replicator =		/* Builtin replicator */
+{ 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 #define SECURITY_NULL_SID_AUTHORITY    0
 #define SECURITY_WORLD_SID_AUTHORITY   1
@@ -62,18 +84,15 @@ DOM_SID global_sid_Builtin_Replicator;		/* Builtin replicator */
  * An NT compatible anonymous token.
  */
 
-static DOM_SID anon_sid_array[3];
+static DOM_SID anon_sid_array[3] =
+{ { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
+  { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}},
+  { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
+NT_USER_TOKEN anonymous_token = { 3, anon_sid_array, SE_NONE };
 
-NT_USER_TOKEN anonymous_token = {
-	3,
-	anon_sid_array
-};
-
-static DOM_SID system_sid_array[4];
-NT_USER_TOKEN system_token = {
-	1,
-	system_sid_array
-};
+static DOM_SID system_sid_array[1] =
+{ { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}} };
+NT_USER_TOKEN system_token = { 1, system_sid_array, SE_ALL_PRIVS };
 
 /****************************************************************************
  Lookup string names for SID types.
@@ -111,66 +130,12 @@ const char *sid_type_lookup(uint32 sid_type)
 	return "SID *TYPE* is INVALID";
 }
 
-/****************************************************************************
- Creates some useful well known sids
-****************************************************************************/
-
-void generate_wellknown_sids(void)
-{
-	static BOOL initialised = False;
-
-	if (initialised) 
-		return;
-
-	/* SECURITY_NULL_SID_AUTHORITY */
-	string_to_sid(&global_sid_NULL, "S-1-0-0");
-
-	/* SECURITY_WORLD_SID_AUTHORITY */
-	string_to_sid(&global_sid_World_Domain, "S-1-1");
-	string_to_sid(&global_sid_World, "S-1-1-0");
-
-	/* SECURITY_CREATOR_SID_AUTHORITY */
-	string_to_sid(&global_sid_Creator_Owner_Domain, "S-1-3");
-	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
-	string_to_sid(&global_sid_Creator_Group, "S-1-3-1");
-
-	/* SECURITY_NT_AUTHORITY */
-	string_to_sid(&global_sid_NT_Authority, "S-1-5");
-	string_to_sid(&global_sid_Network, "S-1-5-2");
-	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
-	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
-	string_to_sid(&global_sid_System, "S-1-5-18");
-
-	/* SECURITY_BUILTIN_DOMAIN_RID */
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
-	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
-	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
-	string_to_sid(&global_sid_Builtin_Guests, "S-1-5-32-546");
-	string_to_sid(&global_sid_Builtin_Power_Users, "S-1-5-32-547");
-	string_to_sid(&global_sid_Builtin_Account_Operators, "S-1-5-32-548");
-	string_to_sid(&global_sid_Builtin_Server_Operators, "S-1-5-32-549");
-	string_to_sid(&global_sid_Builtin_Print_Operators, "S-1-5-32-550");
-	string_to_sid(&global_sid_Builtin_Backup_Operators, "S-1-5-32-551");
-	string_to_sid(&global_sid_Builtin_Replicator, "S-1-5-32-552");
-
-	/* Create the anon token. */
-	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
-	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
-	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
-
-	/* Create the system token. */
-	sid_copy( &system_token.user_sids[0], &global_sid_System);
-	
-	initialised = True;
-}
-
 /**************************************************************************
  Create the SYSTEM token.
 ***************************************************************************/
 
 NT_USER_TOKEN *get_system_token(void) 
 {
-	generate_wellknown_sids(); /* The token is initialised here */
 	return &system_token;
 }
 
