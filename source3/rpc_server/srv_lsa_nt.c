@@ -33,8 +33,6 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 extern PRIVS privs[];
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin;
 
 struct lsa_info {
 	DOM_SID sid;

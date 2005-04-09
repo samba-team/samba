@@ -22,11 +22,6 @@
 #include "includes.h"
 
 extern struct current_user current_user;
-extern DOM_SID global_sid_Creator_Owner;
-extern DOM_SID global_sid_Creator_Group;
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin_Administrators;
-extern DOM_SID global_sid_Builtin_Users;
 extern struct generic_mapping file_generic_mapping;
 
 #undef  DBGC_CLASS
@@ -1045,8 +1040,8 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 							files_struct *fsp,
-							DOM_SID *pfile_owner_sid,
-							DOM_SID *pfile_grp_sid,
+							const DOM_SID *pfile_owner_sid,
+							const DOM_SID *pfile_grp_sid,
 							SMB_STRUCT_STAT *pst,
 							BOOL setting_acl)
 {
@@ -2063,7 +2058,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-					DOM_SID *powner, DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
+					const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	connection_struct *conn = fsp->conn;
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);

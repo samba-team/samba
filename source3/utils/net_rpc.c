@@ -1909,7 +1909,6 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
-	DOM_SID global_sid_Builtin;
 	BOOL global = False;
 	BOOL local = False;
 	BOOL builtin = False;
@@ -1930,8 +1929,6 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (strequal(argv[i], "builtin"))
 			builtin = True;
 	}
-
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	/* Get sam policy handle */
 	
@@ -3278,7 +3275,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol;
-	DOM_SID global_sid_Builtin;
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
@@ -3286,8 +3282,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 	
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
-
 	result = rpc_fetch_domain_aliases(cli, mem_ctx, &connect_pol,
 					  &global_sid_Builtin);
 
@@ -3304,14 +3298,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 {
-	DOM_SID global_sid_World;
-	DOM_SID global_sid_Network;
-	DOM_SID global_sid_Authenticated_Users;
-
-	string_to_sid(&global_sid_World, "S-1-1-0");
-	string_to_sid(&global_sid_Network, "S-1-5-2");
-	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
-
 	token->num_sids = 4;
 
 	token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4);

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_Builtin;
-extern DOM_SID global_sid_World;
 extern NT_USER_TOKEN anonymous_token;
 
 /*********************************************************************************

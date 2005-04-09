@@ -575,9 +575,6 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	int 			i;
 	fstring			server;
 	DOM_SID2	       *sid2;
-	DOM_SID global_sid_Builtin;
-
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	if (argc < 3) {
 		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
@@ -869,10 +866,7 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 	uint32 start_idx, size, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct acct_info *als_groups;
-	DOM_SID global_sid_Builtin;
 	BOOL got_connect_pol = False, got_domain_pol = False;
-
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s builtin|domain [access mask]\n", argv[0]);
@@ -951,9 +945,6 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 	uint32 alias_rid, num_members, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	DOM_SID *alias_sids;
-	DOM_SID global_sid_Builtin;
-	
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	if ((argc < 3) || (argc > 4)) {
 		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
@@ -1364,9 +1355,6 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 	uint32 num_rids, num_names, *name_types, *rids;
 	const char **names;
 	int i;
-	DOM_SID global_sid_Builtin;
-
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	if (argc < 3) {
 		printf("Usage: %s  domain|builtin name1 [name2 [name3] [...]]\n", argv[0]);

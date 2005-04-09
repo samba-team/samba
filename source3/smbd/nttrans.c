@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_World;
 extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;

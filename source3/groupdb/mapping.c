@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_Builtin;
-
 static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */

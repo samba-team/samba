@@ -24,14 +24,6 @@ static TDB_CONTEXT *tdb;
 
 #define DATABASE_VERSION 2
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin_Administrators;
-extern DOM_SID global_sid_Builtin_Account_Operators;
-extern DOM_SID global_sid_Builtin_Server_Operators;
-extern DOM_SID global_sid_Builtin_Print_Operators;
-extern DOM_SID global_sid_Builtin_Backup_Operators;
-
-
 /****************************************************************************
  Set default for a field if it is empty
 ****************************************************************************/
