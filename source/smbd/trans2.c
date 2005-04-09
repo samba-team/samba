@@ -3739,7 +3739,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
-			break;
+
+			/* We're done. We only get EA info in this call. */
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
 		}
 
 #if 0
@@ -3929,7 +3933,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				return ERROR_NT(status);
 			}
 
-			break;
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
 		}
 
 		case SMB_FILE_POSITION_INFORMATION:
@@ -3949,9 +3955,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
 					fname, (double)position_information ));
-			if (fsp)
+			if (fsp) {
 				fsp->position_information = position_information;
-			break;
+			}
+
+			/* We're done. We only get position info in this call. */
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
 		}
 
 		/* From tridge Samba4 : 
@@ -3971,7 +3982,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (mode != 0 && mode != 2 && mode != 4 && mode != 6) {
 				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
-			break;
+
+			/* We're done. We only get mode info in this call. */
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
 		}
 
 		/*
