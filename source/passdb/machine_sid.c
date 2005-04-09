@@ -86,8 +86,6 @@ static DOM_SID *pdb_generate_sam_sid(void)
 	if(!(sam_sid=SMB_MALLOC_P(DOM_SID)))
 		return NULL;
 			
-	generate_wellknown_sids();
-
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:

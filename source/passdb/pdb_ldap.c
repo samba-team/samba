@@ -45,8 +45,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_NULL;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 

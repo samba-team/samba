@@ -24,7 +24,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sid_World;
 extern struct generic_mapping file_generic_mapping;
 
 #undef DBGC_CLASS

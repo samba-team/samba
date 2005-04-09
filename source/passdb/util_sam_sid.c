@@ -32,16 +32,10 @@ typedef struct _known_sid_users {
 
 static struct sid_name_map_info
 {
-	DOM_SID *sid;
+	const DOM_SID *sid;
 	const char *name;
 	const known_sid_users *known_users;
 } sid_name_map[MAX_SID_NAMES];
-
-extern DOM_SID global_sid_Builtin; 				/* Local well-known domain */
-extern DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
-extern DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
-extern DOM_SID global_sid_NT_Authority;    		/* NT Authority */
-
 
 static BOOL sid_name_map_initialized = False;
 /* static known_sid_users no_users[] = {{0, 0, NULL}}; */
@@ -98,8 +92,6 @@ static void init_sid_name_map (void)
 	int i = 0;
 	
 	if (sid_name_map_initialized) return;
-
-	generate_wellknown_sids();
 
 	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
 		sid_name_map[i].sid = get_global_sam_sid();

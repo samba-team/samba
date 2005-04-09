@@ -23,7 +23,6 @@
 #include "includes.h"
 
 extern struct current_user current_user;
-extern DOM_SID global_sid_World;
 
 static TDB_CONTEXT *tdb_forms; /* used for forms files */
 static TDB_CONTEXT *tdb_drivers; /* used for driver files */
