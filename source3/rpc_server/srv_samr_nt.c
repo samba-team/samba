@@ -864,6 +864,7 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	int i;
 	uint32 group_entries = 0;
 	uint32 num_entries = 0;
+	NTSTATUS result = NT_STATUS_OK;
 
 	*p_num_entries = 0;
 
@@ -881,6 +882,7 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	if (num_entries>max_entries) {
 		DEBUG(5,("Limiting to %d entries\n", max_entries));
 		num_entries=max_entries;
+		result = STATUS_MORE_ENTRIES;
 	}
 
 	*d_grp=TALLOC_ZERO_ARRAY(ctx, DOMAIN_GRP, num_entries);
@@ -903,7 +905,7 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	DEBUG(10,("get_group_domain_entries: returning %d entries\n",
 		  *p_num_entries));
 
-	return NT_STATUS_OK;
+	return result;
 }
 
 /*******************************************************************
@@ -970,13 +972,19 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	/* the domain group array is being allocated in the function below */
-	if (!NT_STATUS_IS_OK(r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))) {
+	r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid,
+					       q_u->start_idx, &num_entries,
+					       MAX_SAM_ENTRIES);
+
+	if (!NT_STATUS_IS_OK(r_u->status) &&
+	    !NT_STATUS_EQUAL(r_u->status, STATUS_MORE_ENTRIES))
 		return r_u->status;
-	}
 
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
+				  num_entries, grp);
 
-	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
+	init_samr_r_enum_dom_groups(r_u, q_u->start_idx+num_entries,
+				    num_entries);
 
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 
