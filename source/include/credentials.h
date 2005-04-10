@@ -23,7 +23,8 @@
 
 /* In order of priority */
 enum credentials_obtained { 
-	CRED_GUESSED	= 0, /* Current value should be used, which was guessed */
+	CRED_UNINITIALISED = 0,  /* We don't even have a guess yet */
+	CRED_GUESSED,	         /* Current value should be used, which was guessed */
 	CRED_CALLBACK, 		 /* Callback should be used to obtain value */
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */
 };
