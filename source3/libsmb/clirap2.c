@@ -329,6 +329,70 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
   return res;
 }
 
+int cli_RNetGroupEnum0(struct cli_state *cli,
+		       void (*fn)(const char *, void *),
+		       void *state)
+{
+  char param[WORDSIZE                     /* api number    */
+	    +sizeof(RAP_NetGroupEnum_REQ) /* parm string   */
+	    +sizeof(RAP_GROUP_INFO_L0)    /* return string */
+	    +WORDSIZE                     /* info level    */
+	    +WORDSIZE];                   /* buffer size   */
+  char *p;
+  char *rparam = NULL;
+  char *rdata = NULL; 
+  unsigned int rprcnt, rdrcnt;
+  int res = -1;
+  
+  
+  memset(param, '\0', sizeof(param));
+  p = make_header(param, RAP_WGroupEnum,
+		  RAP_NetGroupEnum_REQ, RAP_GROUP_INFO_L0);
+  PUTWORD(p,0); /* Info level 0 */ /* Hmmm. I *very* much suspect this
+				      is the resume count, at least
+				      that's what smbd believes... */
+  PUTWORD(p,0xFFE0); /* Return buffer size */
+
+  if (cli_api(cli,
+	      param, PTR_DIFF(p,param),8,
+	      NULL, 0, 0xFFE0 /* data area size */,
+	      &rparam, &rprcnt,
+	      &rdata, &rdrcnt)) {
+    res = GETRES(rparam);
+    cli->rap_error = res;
+    if(cli->rap_error == 234) 
+        DEBUG(1,("Not all group names were returned (such as those longer than 21 characters)\n"));
+    else if (cli->rap_error != 0) {
+      DEBUG(1,("NetGroupEnum gave error %d\n", cli->rap_error));
+    }
+  }
+
+  if (rdata) {
+    if (res == 0 || res == ERRmoredata) {
+      int i, converter, count;
+
+      p = rparam + WORDSIZE; /* skip result */
+      GETWORD(p, converter);
+      GETWORD(p, count);
+
+      for (i=0,p=rdata;i<count;i++) {
+	    char groupname[RAP_GROUPNAME_LEN];
+	    GETSTRINGF(p, groupname, RAP_GROUPNAME_LEN);
+	    fn(groupname, cli);
+      }	
+    } else {
+      DEBUG(4,("NetGroupEnum res=%d\n", res));
+    }
+  } else {
+    DEBUG(4,("NetGroupEnum no data returned\n"));
+  }
+    
+  SAFE_FREE(rparam);
+  SAFE_FREE(rdata);
+
+  return res;
+}
+
 int cli_NetGroupDelUser(struct cli_state * cli, const char *group_name, const char *user_name)
 {
   char *rparam = NULL;
@@ -754,6 +818,66 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
         GETSTRINGP(p, logonscript, rdata, converter);
 
         fn(username, comment, homedir, logonscript, cli);
+      }
+    } else {
+      DEBUG(4,("NetUserEnum res=%d\n", res));
+    }
+  } else {
+    DEBUG(4,("NetUserEnum no data returned\n"));
+  }
+    
+  SAFE_FREE(rparam);
+  SAFE_FREE(rdata);
+
+  return res;
+}
+
+int cli_RNetUserEnum0(struct cli_state *cli,
+		      void (*fn)(const char *, void *),
+		      void *state)
+{
+  char param[WORDSIZE                 /* api number    */
+	    +sizeof(RAP_NetUserEnum_REQ) /* parm string   */
+	    +sizeof(RAP_USER_INFO_L0)    /* return string */
+	    +WORDSIZE                 /* info level    */
+	    +WORDSIZE];               /* buffer size   */
+  char *p;
+  char *rparam = NULL;
+  char *rdata = NULL; 
+  unsigned int rprcnt, rdrcnt;
+  int res = -1;
+  
+
+  memset(param, '\0', sizeof(param));
+  p = make_header(param, RAP_WUserEnum,
+		  RAP_NetUserEnum_REQ, RAP_USER_INFO_L0);
+  PUTWORD(p,0); /* Info level 1 */
+  PUTWORD(p,0xFF00); /* Return buffer size */
+
+/* BB Fix handling of large numbers of users to be returned */
+  if (cli_api(cli,
+	      param, PTR_DIFF(p,param),8,
+	      NULL, 0, CLI_BUFFER_SIZE,
+	      &rparam, &rprcnt,
+	      &rdata, &rdrcnt)) {
+    res = GETRES(rparam);
+    cli->rap_error = res;
+    if (cli->rap_error != 0) {
+      DEBUG(1,("NetUserEnum gave error %d\n", cli->rap_error));
+    }
+  }
+  if (rdata) {
+    if (res == 0 || res == ERRmoredata) {
+      int i, converter, count;
+      char username[RAP_USERNAME_LEN];
+
+      p = rparam + WORDSIZE; /* skip result */
+      GETWORD(p, converter);
+      GETWORD(p, count);
+
+      for (i=0,p=rdata;i<count;i++) {
+        GETSTRINGF(p, username, RAP_USERNAME_LEN);
+        fn(username, cli);
       }
     } else {
       DEBUG(4,("NetUserEnum res=%d\n", res));
