@@ -33,6 +33,9 @@
 
 /* $Id$ */
 
+#ifndef HEIM_AES_H
+#define HEIM_AES_H 1
+
 #define AES_BLOCK_SIZE 16
 #define AES_MAXNR 14
 
@@ -53,3 +56,5 @@ void AES_decrypt(const unsigned char *, unsigned char *, const AES_KEY *);
 void AES_cbc_encrypt(const unsigned char *, unsigned char *,
 		     const unsigned long, const AES_KEY *,
 		     unsigned char *, int);
+
+#endif /* HEIM_AES_H */
