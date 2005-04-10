@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,39 +25,45 @@
 
 
 /****************************************************************************
-check if a uid has been validated, and return an pointer to the user_struct
-if it has. NULL if not. vuid is biased by an offset. This allows us to
-tell random client vuid's (normally zero) from valid vuids.
+init the tcon structures
+****************************************************************************/
+void smbsrv_vuid_init(struct smbsrv_connection *smb_conn)
+{
+	smb_conn->sessions.idtree_vuid = idr_init(smb_conn);
+}
+
+
+/****************************************************************************
+Find the session structure assoicated with a VUID (not one from an in-progress session setup)
 ****************************************************************************/
 struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn, uint16_t vuid)
 {
-	struct smbsrv_session *sess;
-	int count=0;
-
-	if (vuid == UID_FIELD_INVALID)
-		return NULL;
-
-	for (sess=smb_conn->sessions.session_list; sess; sess=sess->next,count++) {
-		if (vuid == sess->vuid) {
-			if (count > 10) {
-				DLIST_PROMOTE(smb_conn->sessions.session_list, sess);
-			}
-			return sess;
-		}
+	struct smbsrv_session *sess = idr_find(smb_conn->sessions.idtree_vuid, vuid);
+	if (sess && sess->finished_sesssetup) {
+		return sess;
 	}
-
 	return NULL;
 }
 
 /****************************************************************************
-invalidate a uid
+ Find a VUID assoicated with an in-progress session setup
 ****************************************************************************/
-void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
+struct smbsrv_session *smbsrv_session_find_sesssetup(struct smbsrv_connection *smb_conn, uint16_t vuid)
 {
-	struct smbsrv_session *sess = smbsrv_session_find(smb_conn, vuid);
+	struct smbsrv_session *sess = idr_find(smb_conn->sessions.idtree_vuid, vuid);
+	if (sess && !sess->finished_sesssetup) {
+		return sess;
+	}
+	return NULL;
+}
 
-	if (sess == NULL)
-		return;
+/****************************************************************************
+invalidate a session
+****************************************************************************/
+static int smbsrv_session_destructor(void *p) 
+{
+	struct smbsrv_session *sess = p;
+	struct smbsrv_connection *smb_conn = sess->smb_conn;
 
 	DLIST_REMOVE(smb_conn->sessions.session_list, sess);
 
@@ -65,20 +72,18 @@ void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
 	/* REWRITE: conn_clear_vuid_cache(smb, vuid); */
 
 	smb_conn->sessions.num_validated_vuids--;
+
+	idr_remove(smb_conn->sessions.idtree_vuid, sess->vuid);
+	return 0;
 }
 
 /****************************************************************************
-invalidate all vuid entries for this process
+invalidate a uid
 ****************************************************************************/
-void smbsrv_invalidate_all_vuids(struct smbsrv_connection *smb_conn)
+void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
 {
-	struct smbsrv_session *sess,*next=NULL;
-
-	for (sess=smb_conn->sessions.session_list; sess; sess=next) {
-		next = sess->next;
-		
-		smbsrv_invalidate_vuid(smb_conn, sess->vuid);
-	}
+	struct smbsrv_session *sess = smbsrv_session_find(smb_conn, vuid);
+	talloc_free(sess);
 }
 
 /**
@@ -93,56 +98,45 @@ void smbsrv_invalidate_all_vuids(struct smbsrv_connection *smb_conn)
  *
  */
 
-uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
-				 struct auth_session_info *session_info,
-				 struct gensec_security *gensec_ctx)
+struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_conn,
+					       struct auth_session_info *session_info,
+					       struct gensec_security *gensec_ctx)
 {
 	struct smbsrv_session *sess = NULL;
-
-	sess = talloc(smb_conn, struct smbsrv_session);
-	if(sess == NULL) {
-		DEBUG(0,("talloc(smb_conn->mem_ctx, struct smbsrv_session) failed\n"));
-		return UID_FIELD_INVALID;
-	}
-
-	ZERO_STRUCTP(sess);
-	sess->vuid = UID_FIELD_INVALID;
+	int i;
 
 	/* Ensure no vuid gets registered in share level security. */
 	/* TODO: replace lp_security with a flag in smbsrv_connection */
-	if(lp_security() == SEC_SHARE)
-		return sess->vuid;
+	if (lp_security() == SEC_SHARE)
+		return UID_FIELD_INVALID;
 
-	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (smb_conn->sessions.num_validated_vuids >= 0xFFFF-VUID_OFFSET)
-		return sess->vuid;
-
-	/* Allocate a free vuid. Yes this is a linear search... :-) */
-	while (smbsrv_session_find(smb_conn, smb_conn->sessions.next_vuid) != NULL ) {
-		smb_conn->sessions.next_vuid++;
-		/* Check for vuid wrap. */
-		if (smb_conn->sessions.next_vuid == UID_FIELD_INVALID)
-			smb_conn->sessions.next_vuid = VUID_OFFSET;
+	sess = talloc(smb_conn, struct smbsrv_session);
+	if (sess == NULL) {
+		DEBUG(0,("talloc(smb_conn->mem_ctx, struct smbsrv_session) failed\n"));
+		return sess;
 	}
 
-	DEBUG(10,("register_vuid: allocated vuid = %u\n", 
-		  (uint_t)smb_conn->sessions.next_vuid));
+	ZERO_STRUCTP(sess);
 
-	sess->vuid = smb_conn->sessions.next_vuid;
-	smb_conn->sessions.next_vuid++;
+	i = idr_get_new_above(smb_conn->sessions.idtree_vuid, sess, VUID_OFFSET, UINT16_MAX);
+	if (i == -1) {
+		DEBUG(1,("ERROR! Out of connection structures\n"));	       
+		talloc_free(sess);
+		return NULL;
+	}
+	sess->vuid = i;
+
 	smb_conn->sessions.num_validated_vuids++;
 
 	/* use this to keep tabs on all our info from the authentication */
-	if (session_info) {
-		sess->session_info = talloc_reference(sess, session_info);
-	}
-
-	if (gensec_ctx) {
-		sess->gensec_ctx = talloc_reference(sess, gensec_ctx);
-	}
+	sess->session_info = talloc_reference(sess, session_info);
+	
+	sess->gensec_ctx = talloc_reference(sess, gensec_ctx);
 
 	sess->smb_conn = smb_conn;
 	DLIST_ADD(smb_conn->sessions.session_list, sess);
 
-	return sess->vuid;
+	talloc_set_destructor(sess, smbsrv_session_destructor);
+
+	return sess;
 }

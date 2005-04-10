@@ -1,10 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    handle SMBsessionsetup
-   Copyright (C) Andrew Tridgell 1998-2001
-   Copyright (C) Andrew Bartlett      2001
-   Copyright (C) Jim McDonough        2002
-   Copyright (C) Luke Howard          2003
+   Copyright (C) Andrew Tridgell                      1998-2001
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2005
+   Copyright (C) Jim McDonough                        2002
+   Copyright (C) Luke Howard                          2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
 #include "smbd/service_stream.h"
-
+#include "libcli/nbt/libnbt.h"
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply
@@ -49,8 +49,12 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
+	struct smbsrv_session *smb_sess;
 	char *remote_machine;
 	TALLOC_CTX *mem_ctx;
+
+	sess->old.out.vuid = UID_FIELD_INVALID;
+	sess->old.out.action = 0;
 
 	mem_ctx = talloc_named(req, 0, "OLD session setup");
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
@@ -85,17 +89,24 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		return auth_nt_status_squash(status);
 	}
 
-	sess->old.out.action = 0;
-	sess->old.out.vuid = smbsrv_register_session(req->smb_conn, session_info, NULL);
-	if (sess->old.out.vuid == UID_FIELD_INVALID) {
+	smb_sess = smbsrv_register_session(req->smb_conn, session_info, NULL);
+	if (!smb_sess) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	/* Ensure this is marked as a 'real' vuid, not one
+	 * simply valid for the session setup leg */
+	smb_sess->finished_sesssetup = True;
+
+	/* To correctly process any AndX packet (like a tree connect)
+	 * we need to fill in the session on the request here */
+	req->session = smb_sess;
+	sess->old.out.vuid = smb_sess->vuid;
+
 	sesssetup_common_strings(req, 
 				 &sess->old.out.os,
 				 &sess->old.out.lanman,
 				 &sess->old.out.domain);
-
-	req->session = smbsrv_session_find(req->smb_conn, sess->old.out.vuid);
 
 	return NT_STATUS_OK;
 }
@@ -107,11 +118,15 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
+	struct smbsrv_session *smb_sess;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	TALLOC_CTX *mem_ctx;
 	
+	sess->nt1.out.vuid = UID_FIELD_INVALID;
+	sess->nt1.out.action = 0;
+
 	mem_ctx = talloc_named(req, 0, "NT1 session setup");
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
@@ -143,9 +158,15 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		status = auth_check_password(auth_context, mem_ctx,
 					     user_info, &server_info);
 	} else {
-		char *remote_machine;
+		const char *remote_machine = NULL;
 
-		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+		if (req->smb_conn->negotiate.called_name) {
+			remote_machine = req->smb_conn->negotiate.called_name->name;
+		}
+
+		if (!remote_machine) {
+			remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+		}
 
 		status = make_user_info_for_reply_enc(req->smb_conn, 
 						      sess->nt1.in.user, sess->nt1.in.domain,
@@ -174,12 +195,21 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return auth_nt_status_squash(status);
 	}
 
-	sess->nt1.out.action = 0;
-	sess->nt1.out.vuid = smbsrv_register_session(req->smb_conn, session_info, NULL);
+	smb_sess = smbsrv_register_session(req->smb_conn, session_info, NULL);
 	talloc_free(mem_ctx);
-	if (sess->nt1.out.vuid == UID_FIELD_INVALID) {
+	if (!smb_sess) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	/* Ensure this is marked as a 'real' vuid, not one
+	 * simply valid for the session setup leg */
+	smb_sess->finished_sesssetup = True;
+
+	/* To correctly process any AndX packet (like a tree connect)
+	 * we need to fill in the session on the request here */
+	req->session = smb_sess;
+	sess->nt1.out.vuid = smb_sess->vuid;
+
 	sesssetup_common_strings(req, 
 				 &sess->nt1.out.os,
 				 &sess->nt1.out.lanman,
@@ -190,13 +220,17 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return NT_STATUS_OK;
 	}
 
-	if (!srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
+
+ 	if (!srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
 		/* Already signing, or disabled */
 		return NT_STATUS_OK;
 	}
 
 	/* Force check of the request packet, now we know the session key */
 	req_signing_check_incoming(req);
+
+	/* Unfortunetly win2k3 as a client doesn't sign the request
+	 * packet here, so we have to force signing to start again */
 
 	srv_signing_restart(req->smb_conn,  &session_info->session_key, &sess->nt1.in.password2);
 
@@ -211,9 +245,17 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	struct smbsrv_session *smb_sess;
-	struct gensec_security *gensec_ctx = NULL;
+	struct gensec_security *gensec_ctx ;
 	struct auth_session_info *session_info = NULL;
 	uint16_t vuid;
+
+	sess->spnego.out.vuid = UID_FIELD_INVALID;
+	sess->spnego.out.action = 0;
+
+	sesssetup_common_strings(req, 
+				 &sess->spnego.out.os,
+				 &sess->spnego.out.lanman,
+				 &sess->spnego.out.workgroup);
 
 	if (!req->smb_conn->negotiate.done_sesssetup) {
 		req->smb_conn->negotiate.max_send = sess->nt1.in.bufsize;
@@ -221,16 +263,11 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	}
 
 	vuid = SVAL(req->in.hdr,HDR_UID);
-	smb_sess = smbsrv_session_find(req->smb_conn, vuid);
-	if (smb_sess && !smb_sess->session_info) {
-		if (!smb_sess->gensec_ctx) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-
-		status = gensec_update(smb_sess->gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
+	smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
+	if (smb_sess) {
+		gensec_ctx = smb_sess->gensec_ctx;
+		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
-		smb_sess = NULL;
-
 		status = gensec_server_start(req->smb_conn, &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
@@ -248,55 +285,55 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		}
 
 		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
-
-	}
-
-	if (!smb_sess) {
-		vuid = smbsrv_register_session(req->smb_conn, 
-					       session_info, gensec_ctx);
-		if (vuid == UID_FIELD_INVALID) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		smb_sess = smbsrv_session_find(req->smb_conn, vuid);
-		if (!smb_sess) {
-			return NT_STATUS_FOOBAR;
-		}
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		DATA_BLOB session_key;
 		
-		status = gensec_session_info(smb_sess->gensec_ctx, &smb_sess->session_info);
+		status = gensec_session_info(gensec_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(smb_sess);
 			return status;
 		}
 		
-		status = gensec_session_key(smb_sess->gensec_ctx, 
+		status = gensec_session_key(gensec_ctx, 
 					    &session_key);
+
 		if (NT_STATUS_IS_OK(status) 
-		    && smb_sess->session_info->server_info->authenticated
+		    && session_info->server_info->authenticated
 		    && srv_setup_signing(req->smb_conn, &session_key, NULL)) {
 			/* Force check of the request packet, now we know the session key */
 			req_signing_check_incoming(req);
 
 			srv_signing_restart(req->smb_conn, &session_key, NULL);
-
 		}
+
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 	} else {
 		status = auth_nt_status_squash(status);
-		if (smb_sess->gensec_ctx && 
-		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			talloc_free(smb_sess->gensec_ctx);
-			smb_sess->gensec_ctx = NULL;
+		
+		/* This invalidates the VUID of the failed login */
+		talloc_free(smb_sess);
+		return status;
+	}
+		
+	if (!smb_sess) {
+		smb_sess = smbsrv_register_session(req->smb_conn, 
+						   session_info, gensec_ctx);
+		if (!smb_sess) {
+			return NT_STATUS_ACCESS_DENIED;
 		}
+		req->session = smb_sess;
+	} else {
+		smb_sess->session_info = talloc_reference(smb_sess, session_info);
 	}
 
-	sess->spnego.out.action = 0;
-	sess->spnego.out.vuid = vuid;
-	sesssetup_common_strings(req, 
-				 &sess->spnego.out.os,
-				 &sess->spnego.out.lanman,
-				 &sess->spnego.out.workgroup);
+	if (NT_STATUS_IS_OK(status)) {
+		/* Ensure this is marked as a 'real' vuid, not one
+		 * simply valid for the session setup leg */
+		smb_sess->finished_sesssetup = True;
+	}
+	sess->spnego.out.vuid = smb_sess->vuid;
 
 	return status;
 }
