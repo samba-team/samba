@@ -1,3 +1,13 @@
+2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* accept_sec_context.c: break out the processing of the delegated
+	credential to a separate function to make error handling easier,
+	move the credential handling to after other setup is done
+	
+	* test_sequence.c: make less verbose in case of success
+
+	* Makefile.am: add test_sequence to TESTS
+
 2005-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* 8003.c (gssapi_krb5_verify_8003_checksum): check that cksum
