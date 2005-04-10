@@ -806,8 +806,8 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 
 	struct cli_credentials *anon_creds
 		= cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(anon_creds);
 	cli_credentials_set_anonymous(anon_creds);
-	cli_credentials_guess(anon_creds);
 
 	/* First, check if there is a default endpoint specified in the IDL */
 
@@ -939,7 +939,14 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	} else if (!cli_credentials_is_anonymous(credentials) &&
 		!(binding->transport == NCACN_NP &&
 		  !(binding->flags & DCERPC_SIGN) &&
-		  !(binding->flags & DCERPC_SEAL))) {
+		  !(binding->flags & DCERPC_SEAL))) { 	
+	
+		/* Perform an authenticated DCE-RPC bind, except where
+		 * we ask for a connection on NCACN_NP, and that
+		 * connection is not signed or sealed.  For that case
+		 * we rely on the already authenicated CIFS connection
+		 */
+
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
