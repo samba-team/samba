@@ -1586,3 +1586,361 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 
 	return NT_STATUS_OK;
 }
+
+struct pdb_search *pdb_search_users(uint16 acct_flags);
+struct pdb_search *pdb_search_groups(void);
+struct pdb_search *pdb_search_aliases(const DOM_SID *sid);
+uint32 pdb_search_entries(struct pdb_search *search, uint32 start_idx, uint32 max_entries, struct samr_displayentry **result);
+void pdb_search_destroy(struct pdb_search *search);
+
+static struct pdb_search *pdb_search_init(enum pdb_search_type type)
+{
+	TALLOC_CTX *mem_ctx;
+	struct pdb_search *result;
+
+	mem_ctx = talloc_init("pdb_search");
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_init failed\n"));
+		return NULL;
+	}
+
+	result = TALLOC_P(mem_ctx, struct pdb_search);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->mem_ctx = mem_ctx;
+	result->type = type;
+	result->cache = NULL;
+	result->cache_size = 0;
+	result->search_ended = False;
+
+	return result;
+}
+
+static void fill_displayentry(TALLOC_CTX *mem_ctx, uint32 rid,
+			      uint16 acct_flags,
+			      const char *account_name,
+			      const char *fullname,
+			      const char *description,
+			      struct samr_displayentry *entry)
+{
+	entry->rid = rid;
+	entry->acct_flags = acct_flags;
+
+	if (account_name != NULL)
+		entry->account_name = talloc_strdup(mem_ctx, account_name);
+
+	if (fullname != NULL)
+		entry->fullname = talloc_strdup(mem_ctx, fullname);
+
+	if (description != NULL)
+		entry->description = talloc_strdup(mem_ctx, description);
+}
+
+static BOOL user_search_in_progress = False;
+struct user_search {
+	uint16 acct_flags;
+};
+
+struct pdb_search *pdb_search_users(uint16 acct_flags)
+{
+	struct pdb_search *result;
+	struct user_search *state;
+
+	if (user_search_in_progress) {
+		DEBUG(1, ("user search in progress\n"));
+		return NULL;
+	}
+
+	if (!pdb_setsampwent(False, acct_flags))
+		return NULL;
+
+	user_search_in_progress = True;
+
+	result = pdb_search_init(PDB_USER_SEARCH);
+	if (result == NULL)
+		return NULL;
+
+	state = TALLOC_P(result->mem_ctx, struct user_search);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	state->acct_flags = acct_flags;
+
+	result->private = state;
+	return result;
+}
+
+static BOOL pdb_search_entry_users(struct pdb_search *s, TALLOC_CTX *mem_ctx,
+				   struct samr_displayentry *entry)
+{
+	struct user_search *state = s->private;
+	SAM_ACCOUNT *user = NULL;
+	NTSTATUS status;
+
+ next:
+	status = pdb_init_sam(&user);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not pdb_init_sam\n"));
+		return False;
+	}
+
+	if (!pdb_getsampwent(user)) {
+		pdb_free_sam(&user);
+		return False;
+	}
+
+ 	if ((state->acct_flags != 0) &&
+	    ((pdb_get_acct_ctrl(user) & state->acct_flags) == 0)) {
+		pdb_free_sam(&user);
+		goto next;
+	}
+
+	fill_displayentry(mem_ctx, pdb_get_user_rid(user),
+			  pdb_get_acct_ctrl(user), pdb_get_username(user),
+			  pdb_get_fullname(user), pdb_get_acct_desc(user),
+			  entry);
+
+	pdb_free_sam(&user);
+	return True;
+}
+
+static void pdb_search_end_users(struct pdb_search *search)
+{
+	pdb_endsampwent();
+	user_search_in_progress = False;
+}
+
+struct group_search {
+	GROUP_MAP *groups;
+	int num_groups, current_group;
+};
+
+struct pdb_search *pdb_search_groups(void)
+{
+	struct pdb_search *result;
+	struct group_search *state;
+
+	result = pdb_search_init(PDB_GROUP_SEARCH);
+	if (result == NULL)
+		return NULL;
+
+	state = TALLOC_P(result->mem_ctx, struct group_search);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &state->groups,
+				    &state->num_groups, True)) {
+		DEBUG(0, ("Could not enum groups\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	state->current_group = 0;
+	result->private = state;
+	return result;
+}
+
+static BOOL pdb_search_entry_group(struct pdb_search *s, TALLOC_CTX *mem_ctx,
+				   struct samr_displayentry *entry)
+{
+	struct group_search *state = s->private;
+	uint32 rid;
+	GROUP_MAP *map = &state->groups[state->current_group];
+
+	if (state->current_group == state->num_groups)
+		return False;
+
+	sid_peek_rid(&map->sid, &rid);
+
+	fill_displayentry(mem_ctx, rid, 0, map->nt_name, NULL, map->comment,
+			  entry);
+
+	state->current_group += 1;
+	return True;
+}
+
+static void pdb_search_end_groups(struct pdb_search *search)
+{
+	struct group_search *state = search->private;
+	SAFE_FREE(state->groups);
+}
+
+struct alias_search {
+	GROUP_MAP *aliases;
+	int num_aliases, current_alias;
+};
+
+struct pdb_search *pdb_search_aliases(const DOM_SID *sid)
+{
+	struct pdb_search *result;
+	struct alias_search *state;
+	enum SID_NAME_USE type = SID_NAME_UNKNOWN;
+	DOM_SID builtin_sid;
+
+	if (sid_equal(sid, get_global_sam_sid()))
+		type = SID_NAME_ALIAS;
+
+	string_to_sid(&builtin_sid, "S-1-5-32");
+
+	if (sid_equal(sid, &builtin_sid))
+		type = SID_NAME_WKN_GRP;
+
+	if (type == SID_NAME_UNKNOWN) {
+		DEBUG(3, ("unknown domain sid: %s\n", sid_string_static(sid)));
+		return NULL;
+	}
+
+	result = pdb_search_init(PDB_ALIAS_SEARCH);
+	if (result == NULL)
+		return NULL;
+
+	state = TALLOC_P(result->mem_ctx, struct alias_search);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	if (!pdb_enum_group_mapping(type, &state->aliases,
+				    &state->num_aliases, False)) {
+		DEBUG(0, ("Could not enum aliases\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	state->current_alias = 0;
+	result->private = state;
+	return result;
+}
+
+static BOOL pdb_search_entry_alias(struct pdb_search *s, TALLOC_CTX *mem_ctx,
+				   struct samr_displayentry *entry)
+{
+	struct alias_search *state = s->private;
+	uint32 rid;
+	GROUP_MAP *map = &state->aliases[state->current_alias];
+
+	if (state->current_alias == state->num_aliases)
+		return False;
+
+	sid_peek_rid(&map->sid, &rid);
+
+	fill_displayentry(mem_ctx, rid, 0, map->nt_name, NULL, map->comment,
+			  entry);
+
+	state->current_alias += 1;
+	return True;
+}
+
+static void pdb_search_end_aliases(struct pdb_search *search)
+{
+	struct alias_search *state = search->private;
+	SAFE_FREE(state->aliases);
+}
+
+static BOOL pdb_search_entry(struct pdb_search *search, TALLOC_CTX *mem_ctx,
+			     struct samr_displayentry *entry)
+{
+	BOOL result = False;
+	switch (search->type) {
+	case PDB_USER_SEARCH:
+		result = pdb_search_entry_users(search, mem_ctx, entry);
+		break;
+	case PDB_GROUP_SEARCH:
+		result = pdb_search_entry_group(search, mem_ctx, entry);
+		break;
+	case PDB_ALIAS_SEARCH:
+		result = pdb_search_entry_alias(search, mem_ctx, entry);
+		break;
+	default:
+		DEBUG(0, ("unknown search type: %d\n", search->type));
+		break;
+	}
+	return result;
+}
+
+static void pdb_search_end(struct pdb_search *search)
+{
+	switch (search->type) {
+	case PDB_USER_SEARCH:
+		pdb_search_end_users(search);
+		break;
+	case PDB_GROUP_SEARCH:
+		pdb_search_end_groups(search);
+		break;
+	case PDB_ALIAS_SEARCH:
+		pdb_search_end_aliases(search);
+		break;
+	default:
+		DEBUG(0, ("unknown search type: %d\n", search->type));
+		break;
+	}
+}
+
+static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
+						     uint32 idx)
+{
+	if (idx < search->cache_size)
+		return &search->cache[idx];
+
+	if (search->search_ended)
+		return NULL;
+
+	while (idx >= search->cache_size) {
+		struct samr_displayentry entry;
+
+		if (!pdb_search_entry(search, search->mem_ctx, &entry)) {
+			pdb_search_end(search);
+			search->search_ended = True;
+			break;
+		}
+
+		ADD_TO_ARRAY(search->mem_ctx, struct samr_displayentry,
+			     entry, &search->cache, &search->cache_size);
+	}
+
+	return (search->cache_size > idx) ? &search->cache[idx] : NULL;
+}
+
+uint32 pdb_search_entries(struct pdb_search *search,
+			  uint32 start_idx, uint32 max_entries,
+			  struct samr_displayentry **result)
+{
+	struct samr_displayentry *end_entry;
+	uint32 end_idx = start_idx+max_entries-1;
+
+	/* The first entry needs to be searched after the last. Otherwise the
+	 * first entry might have moved due to a realloc during the search for
+	 * the last entry. */
+
+	end_entry = pdb_search_getentry(search, end_idx);
+	*result = pdb_search_getentry(search, start_idx);
+
+	if (end_entry != NULL)
+		return max_entries;
+
+	if (start_idx >= search->cache_size)
+		return 0;
+
+	return search->cache_size - start_idx;
+}
+
+void pdb_search_destroy(struct pdb_search *search)
+{
+	if (search == NULL)
+		return;
+
+	if (!search->search_ended)
+		pdb_search_end(search);
+
+	talloc_destroy(search->mem_ctx);
+}

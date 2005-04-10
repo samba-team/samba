@@ -351,4 +351,14 @@ copy an IP address from one buffer to another
 
 #endif
 
+#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
+do { \
+	*(array) = ((mem_ctx) != NULL) ? \
+		TALLOC_REALLOC_ARRAY(mem_ctx, (*(array)), type, (*(num))+1) : \
+		SMB_REALLOC_ARRAY((*(array)), type, (*(num))+1); \
+	SMB_ASSERT((*(array)) != NULL); \
+	(*(array))[*(num)] = (elem); \
+	(*(num)) += 1; \
+} while (0)
+
 #endif /* _SMB_MACROS_H */
