@@ -2946,6 +2946,9 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
 			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
+			/* We need to re-calcuate the new length after we've read the secondary packet. */
+			length = smb_len(inbuf) + 4;
+
 			/*
 			 * The sequence number for the trans reply is always
 			 * based on the last secondary received.
@@ -2993,7 +2996,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					goto bad_param;
 				if (parameter_displacement > total_parameter_count)
 					goto bad_param;
-				if ((smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length) ||
 						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 					goto bad_param;
 				if (parameter_displacement + params < params)
@@ -3010,7 +3013,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					goto bad_param;
 				if (data_displacement > total_data_count)
 					goto bad_param;
-				if ((smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
 						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 					goto bad_param;
 				if (data_displacement + data < data)

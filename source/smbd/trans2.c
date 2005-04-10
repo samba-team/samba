@@ -4885,6 +4885,9 @@ int reply_trans2(connection_struct *conn,
 			unsigned int data_off;
 
 			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
+
+			/* We need to re-calcuate the new length after we've read the secondary packet. */
+			length = smb_len(inbuf) + 4;
 			
 			/*
 			 * The sequence number for the trans reply is always
@@ -4932,7 +4935,7 @@ int reply_trans2(connection_struct *conn,
 					goto bad_param;
 				if (param_disp > total_params)
 					goto bad_param;
-				if ((smb_base(inbuf) + param_off + num_params >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + param_off + num_params > inbuf + length) ||
 						(smb_base(inbuf) + param_off + num_params < smb_base(inbuf)))
 					goto bad_param;
 				if (params + param_disp < params)
@@ -4948,7 +4951,7 @@ int reply_trans2(connection_struct *conn,
 					goto bad_param;
 				if (data_disp > total_data)
 					goto bad_param;
-				if ((smb_base(inbuf) + data_off + num_data >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + data_off + num_data > inbuf + length) ||
 						(smb_base(inbuf) + data_off + num_data < smb_base(inbuf)))
 					goto bad_param;
 				if (data + data_disp < data)
