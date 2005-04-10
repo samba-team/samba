@@ -102,11 +102,11 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
-		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", 
+		DEBUG(3, ("cm_get_ipc_userpass: Retrieved auth-user from secrets.tdb [%s\\%s]\n", 
 			  *domain, *username));
 
 	} else {
-		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		DEBUG(3, ("cm_get_ipc_userpass: No auth-user defined\n"));
 		*username = smb_xstrdup("");
 		*domain = smb_xstrdup("");
 		*password = smb_xstrdup("");
@@ -376,7 +376,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	got_mutex = False;
 	*retry = False;
 
-	if (domain->primary || IS_DC) {
+	/* Windows 2003 SP1 does not lie LsaOpenPolicy() over schannel.
+	   Returns RPC_NT_CANNOT_SUPPPORT (0xc0020041) for that call.
+	   So just drop it on the lsarpc pipe */
+
+	if ( (domain->primary || IS_DC) && (pipe_index!=PI_LSARPC) ) {
 		NTSTATUS status = setup_schannel( *cli, domain->name );
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("schannel refused - continuing without "

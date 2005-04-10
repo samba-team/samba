@@ -537,7 +537,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 static BOOL run_readwritetest(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
-	BOOL test1, test2;
+	BOOL test1, test2 = False;
 
 	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;

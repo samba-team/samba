@@ -857,6 +857,10 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		   
 		if ( *which_domain && !strequal(which_domain, domain->name) )
 			continue;
+
+		if ( !domain->initialized )
+			set_dc_type_and_flags( domain );
+
 			
 		ZERO_STRUCT(groups);
 
@@ -1047,6 +1051,13 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	if ( !opt_nocache && (info3 = netsamlogon_cache_get(mem_ctx, &user_sid))) {
 
+		struct winbindd_domain *our_domain = find_our_domain();
+
+		if (our_domain == NULL) {
+			DEBUG(0, ("Could not find our domain\n"));
+			goto done;
+		}
+
 		DEBUG(10, ("winbindd_getgroups: info3 has %d groups, %d other sids\n",
 			   info3->num_groups2, info3->num_other_sids));
 
@@ -1055,6 +1066,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		/* Go through each other sid and convert it to a gid */
 
 		for (i = 0; i < info3->num_other_sids; i++) {
+			DOM_SID *sid = &info3->other_sids[i].sid;
 			fstring name;
 			fstring dom_name;
 			enum SID_NAME_USE sid_type;
@@ -1062,30 +1074,30 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			/* Is this sid known to us?  It can either be
                            a trusted domain sid or a foreign sid. */
 
-			if (!winbindd_lookup_name_by_sid( &info3->other_sids[i].sid, 
-				dom_name, name, &sid_type))
-			{
-				DEBUG(10, ("winbindd_getgroups: could not lookup name for %s\n", 
-					   sid_string_static(&info3->other_sids[i].sid)));
+			if (!winbindd_lookup_name_by_sid( sid, dom_name,
+							  name, &sid_type)) {
+				DEBUG(10, ("winbindd_getgroups: could not "
+					   "lookup name for %s\n", 
+					   sid_string_static(sid)));
 				continue;
 			}
 
-			/* Check it is a domain group or an alias (domain local group) 
-			   in a win2k native mode domain. */
+			/* Check it is a domain group or an alias (domain
+			   local group) in a win2k native mode domain. */
 			
-			if ( !((sid_type==SID_NAME_DOM_GRP) ||
-				((sid_type==SID_NAME_ALIAS) && domain->primary)) )
-			{
+			if (!((sid_type==SID_NAME_DOM_GRP) ||
+			      ((sid_type==SID_NAME_ALIAS) &&
+			       (our_domain->active_directory) &&
+			       (our_domain->native_mode) &&
+			       (sid_compare_domain(sid, &our_domain->sid)
+				== 0)))) {
 				DEBUG(10, ("winbindd_getgroups: sid type %d "
 					   "for %s is not a domain group\n",
-					   sid_type,
-					   sid_string_static(
-						   &info3->other_sids[i].sid)));
+					   sid_type, sid_string_static(sid)));
 				continue;
 			}
 
-			add_gids_from_group_sid(&info3->other_sids[i].sid,
-						&gid_list, &num_gids);
+			add_gids_from_group_sid(sid, &gid_list, &num_gids);
 		}
 
 		for (i = 0; i < info3->num_groups2; i++) {
@@ -1255,8 +1267,8 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		user_grpsids[num_groups] = &user_sid;
 
 		status = domain->methods->lookup_useraliases(domain, mem_ctx,
-							     num_groups,
-							     user_grpsids+1,
+							     num_groups+1,
+							     user_grpsids,
 							     &num_aliases,
 							     &alias_rids);
 
