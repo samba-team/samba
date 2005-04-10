@@ -480,4 +480,27 @@ struct pdb_init_function_entry {
 
 enum sql_search_field { SQL_SEARCH_NONE = 0, SQL_SEARCH_USER_SID = 1, SQL_SEARCH_USER_NAME = 2};
 
+struct samr_displayentry {
+	uint32 rid;
+	uint16 acct_flags;
+	const char *account_name;
+	const char *fullname;
+	const char *description;
+};
+
+enum pdb_search_type {
+	PDB_USER_SEARCH,
+	PDB_GROUP_SEARCH,
+	PDB_ALIAS_SEARCH
+};
+
+struct pdb_search {
+	TALLOC_CTX *mem_ctx;
+	enum pdb_search_type type;
+	struct samr_displayentry *cache;
+	uint32 cache_size;
+	BOOL search_ended;
+	void *private;
+};
+
 #endif /* _PASSDB_H */
