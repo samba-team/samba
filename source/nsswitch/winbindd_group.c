@@ -924,7 +924,6 @@ static BOOL enum_alias_memberships(const DOM_SID *member_sid,
 				   DOM_SID **aliases, int *num_aliases)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("enum_alias_memberships");
-	DOM_SID builtin_sid;
 
 	uint32 *rids = NULL;
 	int i, num_rids = 0;
@@ -948,15 +947,13 @@ static BOOL enum_alias_memberships(const DOM_SID *member_sid,
 		add_sid_to_array(NULL, &alias_sid, aliases, num_aliases);
 	}
 
-	string_to_sid(&builtin_sid, "S-1-5-32");
-
-	if (!pdb_enum_alias_memberships(mem_ctx, &builtin_sid,
+	if (!pdb_enum_alias_memberships(mem_ctx, &global_sid_Builtin,
 					member_sid, 1, &rids, &num_rids))
 		goto done;
 
 	for (i=0; i<num_rids; i++) {
 		DOM_SID alias_sid;
-		sid_copy(&alias_sid, &builtin_sid);
+		sid_copy(&alias_sid, &global_sid_Builtin);
 		sid_append_rid(&alias_sid, rids[i]);
 		add_sid_to_array(NULL, &alias_sid, aliases, num_aliases);
 	}
