@@ -79,6 +79,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBCLI_NBT
+		LIBCLI_NBT \
+		LIB_SECURITY_NDR
 # End BINARY nmblookup
 #################################
