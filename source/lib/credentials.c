@@ -32,11 +32,17 @@
  */
 struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
-	struct cli_credentials *cred = talloc_zero(mem_ctx, struct cli_credentials);
+	struct cli_credentials *cred = talloc(mem_ctx, struct cli_credentials);
 	if (!cred) {
 		return cred;
 	}
 
+	cred->machine_account_pending = False;
+	cred->workstation_obtained = CRED_UNINITIALISED;
+	cred->username_obtained = CRED_UNINITIALISED;
+	cred->password_obtained = CRED_UNINITIALISED;
+	cred->domain_obtained = CRED_UNINITIALISED;
+	cred->realm_obtained = CRED_UNINITIALISED;
 	return cred;
 }
 
