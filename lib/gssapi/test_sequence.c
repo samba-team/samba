@@ -324,12 +324,9 @@ main(int argc, char **argv)
 	    printf("test pattern %d failed with %d (should have been %d)\n",
 		   i, maj_stat, pl[i].error_code);
 	    failed++;
-	} else
-	    printf("test %d success\n", i);
+	}
     }
     if (failed)
 	printf("FAILED %d tests\n", failed);
-    else
-	printf("no failure\n");
     return failed != 0;
 }
