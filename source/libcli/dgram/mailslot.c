@@ -142,6 +142,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 			     const char *mailslot_name,
 			     struct nbt_name *dest_name,
 			     const char *dest_address,
+			     int dest_port,
 			     struct nbt_name *src_name,
 			     DATA_BLOB *request)
 {
@@ -151,6 +152,10 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	struct dgram_smb_packet *smb;
 	struct smb_trans_body *trans;
 	NTSTATUS status;
+
+	if (dest_port == 0) {
+		dest_port = lp_dgram_port();
+	}
 
 	ZERO_STRUCT(packet);
 	packet.msg_type = msg_type;
@@ -183,7 +188,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	trans->mailslot_name = mailslot_name;
 	trans->data = *request;
 
-	status = nbt_dgram_send(dgmsock, &packet, dest_address, lp_dgram_port());
+	status = nbt_dgram_send(dgmsock, &packet, dest_address, dest_port);
 
 	talloc_free(tmp_ctx);
 
