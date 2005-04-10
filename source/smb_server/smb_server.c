@@ -737,7 +737,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_conn->sessions.next_vuid = VUID_OFFSET;
+	smbsrv_vuid_init(smb_conn);
 
 	srv_init_signing(smb_conn);
 
