@@ -1,8 +1,16 @@
 #################################
+# Start SUBSYSTEM LIB_SECURITY_NDR_HELPER
+[SUBSYSTEM::LIB_SECURITY_NDR_HELPER]
+ADD_OBJ_FILES = librpc/ndr/ndr_sec_helper.o
+# End SUBSYSTEM LIB_SECURITY_NDR_HELPER
+#################################
+
+#################################
 # Start SUBSYSTEM LIB_SECURITY_NDR
 [SUBSYSTEM::LIB_SECURITY_NDR]
 ADD_OBJ_FILES = librpc/gen_ndr/ndr_security.o
 NOPROTO = YES
+REQUIRED_SUBSYSTEMS = LIB_SECURITY_NDR_HELPER
 # End SUBSYSTEM LIB_SECURITY_NDR
 #################################
 
