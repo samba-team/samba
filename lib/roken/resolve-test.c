@@ -156,6 +156,19 @@ main(int argc, char **argv)
 
 	    break;
 	}
+	case rk_ns_t_ds : {
+	    struct ds_record *ds = rr->u.ds;
+	    int i;
+
+	    printf ("key tag %u alg %u type %u length %u data ",
+		    ds->key_tag, ds->algorithm, ds->digest_type, 
+		    ds->digest_len);
+	    for (i = 0; i < ds->digest_len; i++)
+		printf("%02X", ds->digest_data[i]);
+	    printf("\n");
+
+	    break;
+	}
 	default:
 	    printf("\n");
 	    break;
