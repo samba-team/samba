@@ -33,18 +33,8 @@
 
 /* $Id$ */
 
-#include <stdlib.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-#ifdef KRB5
-#include <krb5-types.h>
-#elif defined(KRB4)
-#include <ktypes.h>
-#endif
+#ifndef HEIM_MD5_H
+#define HEIM_MD5_H 1
 
 struct md5 {
   unsigned int sz[2];
@@ -57,3 +47,5 @@ typedef struct md5 MD5_CTX;
 void MD5_Init (struct md5 *m);
 void MD5_Update (struct md5 *m, const void *p, size_t len);
 void MD5_Final (void *res, struct md5 *m); /* u_int32_t res[4] */
+
+#endif /* HEIM_MD5_H */
