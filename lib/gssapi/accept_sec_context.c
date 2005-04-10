@@ -115,6 +115,124 @@ gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
 
 
 static OM_uint32
+gsskrb5_accept_delegated_token
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+	    krb5_data *fwd_data,
+	    OM_uint32 *flags,
+	    krb5_principal principal,
+            gss_cred_id_t * delegated_cred_handle
+	   )
+{
+    krb5_ccache ccache = NULL;
+    krb5_error_code kret;
+    int32_t ac_flags, ret;
+    gss_cred_id_t handle = NULL;
+      
+    if (delegated_cred_handle == NULL) {
+	/* XXX Create a new delegated_cred_handle? */
+
+	ret = 0;
+
+	kret = krb5_cc_default (gssapi_krb5_context, &ccache);
+	if (kret) {
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    goto end_fwd;
+	}
+    } else {
+
+	*delegated_cred_handle = NULL;
+	
+	handle = calloc(1, sizeof(*handle));
+	if (handle == NULL) {
+	    ret = GSS_S_FAILURE;
+	    *minor_status = ENOMEM;
+	    krb5_set_error_string(gssapi_krb5_context, "out of memory");
+	    gssapi_krb5_set_error_string();
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    goto end_fwd;
+	}
+	if ((ret = gss_duplicate_name(minor_status, principal,
+				      &handle->principal)) != 0) {
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    ret = 0;
+	    goto end_fwd;
+	}
+	kret = krb5_cc_gen_new (gssapi_krb5_context,
+				&krb5_mcc_ops,
+				&handle->ccache);
+	if (kret) {
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    ret = 0;
+	    goto end_fwd;
+	}
+	ccache = handle->ccache;
+
+	ret = gss_create_empty_oid_set(minor_status, &handle->mechanisms);
+	if (ret) {
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    goto end_fwd;
+	}
+	ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
+				     &handle->mechanisms);
+	if (ret) {
+	    *flags &= ~GSS_C_DELEG_FLAG;
+	    goto end_fwd;
+	}
+    }
+
+    kret = krb5_cc_initialize(gssapi_krb5_context, ccache, principal);
+    if (kret) {
+	*flags &= ~GSS_C_DELEG_FLAG;
+	ret = 0;
+	goto end_fwd;
+    }
+      
+    krb5_auth_con_removeflags(gssapi_krb5_context,
+			      (*context_handle)->auth_context,
+			      KRB5_AUTH_CONTEXT_DO_TIME,
+			      &ac_flags);
+    kret = krb5_rd_cred2(gssapi_krb5_context,
+			 (*context_handle)->auth_context,
+			 ccache,
+			 fwd_data);
+    if (kret)
+	gssapi_krb5_set_error_string();
+    krb5_auth_con_setflags(gssapi_krb5_context,
+			   (*context_handle)->auth_context,
+			   ac_flags);
+    if (kret) {
+	*flags &= ~GSS_C_DELEG_FLAG;
+	ret = GSS_S_FAILURE;
+	*minor_status = kret;
+	goto end_fwd;
+    }
+ end_fwd:
+    /* if there was some kind of failure, clean up internal structures */
+    if ((*flags & GSS_C_DELEG_FLAG) == 0) {
+	if (handle) {
+	    if (handle->principal)
+		gss_release_name(minor_status, &handle->principal);
+	    if (handle->mechanisms)
+		gss_release_oid_set(NULL, &handle->mechanisms);
+	    if (handle->ccache)
+		krb5_cc_destroy(gssapi_krb5_context, handle->ccache);
+	    free(handle);
+	    handle = NULL;
+	}
+    }
+    if (delegated_cred_handle == NULL) {
+	if (ccache)
+	    krb5_cc_close(gssapi_krb5_context, ccache);
+    }
+    if (handle)
+	*delegated_cred_handle = handle;
+
+    return ret;
+}
+
+
+static OM_uint32
 gsskrb5_accept_sec_context
            (OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
@@ -343,87 +461,6 @@ gsskrb5_accept_sec_context
 	    goto failure;
     }
 
-    if (fwd_data.length > 0 && (flags & GSS_C_DELEG_FLAG)) {
-	krb5_ccache ccache;
-	int32_t ac_flags;
-      
-	if (delegated_cred_handle == NULL)
-	    /* XXX Create a new delegated_cred_handle? */
-	    kret = krb5_cc_default (gssapi_krb5_context, &ccache);
-	else {
-	    if ((*delegated_cred_handle =
-		 calloc(1, sizeof(**delegated_cred_handle))) == NULL) {
-		ret = GSS_S_FAILURE;
-		*minor_status = ENOMEM;
-		krb5_set_error_string(gssapi_krb5_context, "out of memory");
-		gssapi_krb5_set_error_string();
-		goto failure;
-	    }
-	    if ((ret = gss_duplicate_name(minor_status, ticket->client,
-					  &(*delegated_cred_handle)->principal)) != 0) {
-		flags &= ~GSS_C_DELEG_FLAG;
-		free(*delegated_cred_handle);
-		*delegated_cred_handle = NULL;
-		goto end_fwd;
-	    }
-            kret = krb5_cc_gen_new (gssapi_krb5_context,
-                                    &krb5_mcc_ops,
-                                    &(*delegated_cred_handle)->ccache);
-	    if (kret) {
-		gss_release_name(minor_status, 
-				 &(*delegated_cred_handle)->principal);
-		free(*delegated_cred_handle);
-		*delegated_cred_handle = NULL;
-		goto end_fwd;
-	    }
-	    ccache = (*delegated_cred_handle)->ccache;
-	}
-	if (delegated_cred_handle != NULL &&
-	    (*delegated_cred_handle)->mechanisms == NULL) {
-	    ret = gss_create_empty_oid_set(minor_status, 
-					   &(*delegated_cred_handle)->mechanisms);
-            if (ret)
-		goto failure;
-	    ret = gss_add_oid_set_member(minor_status, GSS_KRB5_MECHANISM,
-					 &(*delegated_cred_handle)->mechanisms);
-	    if (ret)
-		goto failure;
-	}
-
-	if (kret) {
-	    flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-      
-	kret = krb5_cc_initialize(gssapi_krb5_context,
-				  ccache,
-				  *src_name);
-	if (kret) {
-	    flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-      
-	krb5_auth_con_removeflags(gssapi_krb5_context,
-				  (*context_handle)->auth_context,
-				  KRB5_AUTH_CONTEXT_DO_TIME,
-				  &ac_flags);
-	kret = krb5_rd_cred2(gssapi_krb5_context,
-			     (*context_handle)->auth_context,
-			     ccache,
-			     &fwd_data);
-	krb5_auth_con_setflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       ac_flags);
-	if (kret) {
-	    flags &= ~GSS_C_DELEG_FLAG;
-	    goto end_fwd;
-	}
-
-      end_fwd:
-	free(fwd_data.data);
-    }
-         
-
     flags |= GSS_C_TRANS_FLAG;
 
     if (ret_flags)
@@ -477,11 +514,6 @@ gsskrb5_accept_sec_context
     }
 
     (*context_handle)->ticket = ticket;
-    ticket = NULL;
-
-#if 0
-    krb5_free_ticket (context, ticket);
-#endif
 
     {
 	int32_t seq_number;
@@ -501,6 +533,22 @@ gsskrb5_accept_sec_context
 					     (*context_handle)->auth_context,
 					     seq_number);
 	}
+    }
+
+    if (fwd_data.length > 0) {
+
+	if (flags & GSS_C_DELEG_FLAG) {
+	    ret = gsskrb5_accept_delegated_token(minor_status,
+						 context_handle,
+						 &fwd_data,
+						 &flags,
+						 ticket->client,
+						 delegated_cred_handle);
+	    if (ret)
+		goto failure;
+	}
+	free(fwd_data.data);
+	krb5_data_zero(&fwd_data);
     }
 
     *minor_status = 0;
