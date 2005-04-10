@@ -21,9 +21,9 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-#ifdef WITH_WINBIND
-
 extern struct in_addr loopback_ip;
+
+#ifdef WITH_WINBIND
 
 NSS_STATUS winbindd_request(int req_type,
 			struct winbindd_request *request,
