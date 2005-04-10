@@ -1,5 +1,5 @@
 2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	
 	* appl/test/gssapi_server.c: print out client principla of
 	delegated credential
 
@@ -8,6 +8,10 @@
 	* lib/krb5/init_creds_pw.c (process_pa_data_to_key): also check
 	for KRB5_PADATA_PK_AS_REP_19, From: Douglas Engert
 
+2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* .cvsignore: ignore more generate files
+	
 2005-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/check-der.c: use size_t, print size_t by casting to
