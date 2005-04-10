@@ -1655,9 +1655,10 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	BOOL ret;
 
-	GROUP_MAP *group_list;
+	struct pdb_search *search;
+	struct samr_displayentry *entries;
+
 	int num_entries;
  
 	if (strcmp(str1,"WrLeh") != 0)
@@ -1675,30 +1676,39 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 
 	/* get list of domain groups SID_DOMAIN_GRP=2 */
 	become_root();
-	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False);
+	search = pdb_search_groups();
 	unbecome_root();
-	
-	if( !ret ) {
-		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));	
+
+	if (search == NULL) {
+		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
 		return False;
 	}
 
 	resume_context = SVAL(p,0); 
 	cli_buf_size=SVAL(p+2,0);
-	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
+	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: "
+		  "%d\n", resume_context, cli_buf_size));
+
+	become_root();
+	num_entries = pdb_search_entries(search, resume_context, 0xffffffff,
+					 &entries);
+	unbecome_root();
 
 	*rdata_len = cli_buf_size;
 	*rdata = SMB_REALLOC_LIMIT(*rdata,*rdata_len);
 
 	p = *rdata;
 
-	for(i=resume_context; i<num_entries; i++) {	
-		char* name=group_list[i].nt_name;
+	for(i=0; i<num_entries; i++) {
+		fstring name;
+		fstrcpy(name, entries[i].account_name);
 		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
 			/* truncate the name at 21 chars. */
 			memcpy(p, name, 21); 
 			DEBUG(10,("adding entry %d group %s\n", i, p));
-			p += 21; 
+			p += 21;
+			p += 5; /* Both NT4 and W2k3SP1 do padding here.
+				   No idea why... */
 		} else {
 			/* set overflow error */
 			DEBUG(3,("overflow on entry %d group %s\n", i, name));
@@ -1707,6 +1717,8 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 		}
 	}
 
+	pdb_search_destroy(search);
+
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	*rparam_len = 8;
@@ -1714,8 +1726,8 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 
   	SSVAL(*rparam, 0, errflags);
   	SSVAL(*rparam, 2, 0);		/* converter word */
-  	SSVAL(*rparam, 4, i-resume_context);	/* is this right?? */
- 	SSVAL(*rparam, 6, num_entries);	/* is this right?? */
+  	SSVAL(*rparam, 4, i);	/* is this right?? */
+ 	SSVAL(*rparam, 6, resume_context+num_entries);	/* is this right?? */
 
 	return(True);
 }
@@ -1834,11 +1846,12 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
 {
-	SAM_ACCOUNT  *pwd=NULL;
 	int count_sent=0;
-	int count_total=0;
+	int num_users=0;
 	int errflags=0;
-	int resume_context, cli_buf_size;
+	int i, resume_context, cli_buf_size;
+	struct pdb_search *search;
+	struct samr_displayentry *users;
 
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
@@ -1870,49 +1883,47 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 
 	p = *rdata;
 
-	/* to get user list enumerations for NetUserEnum in B21 format */
-	pdb_init_sam(&pwd);
-	
-	/* Open the passgrp file - not for update. */
 	become_root();
-	if(!pdb_setsampwent(False, 0)) {
+	search = pdb_search_users(ACB_NORMAL);
+	unbecome_root();
+	if (search == NULL) {
 		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
-		unbecome_root();
 		return False;
 	}
-	errflags=NERR_Success;
 
-	while ( pdb_getsampwent(pwd) ) {
-		const char *name=pdb_get_username(pwd);	
-		if ((name) && (*(name+strlen(name)-1)!='$')) { 
-			count_total++;
-			if(count_total>=resume_context) {
-				if( ((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)  ) {
-					pstrcpy(p,name); 
-					DEBUG(10,("api_RNetUserEnum:adding entry %d username %s\n",count_sent,p));
-					p += 21; 
-					count_sent++; 
-				} else {
-					/* set overflow error */
-					DEBUG(10,("api_RNetUserEnum:overflow on entry %d username %s\n",count_sent,name));
-					errflags=234;
-					break;
-				}
-			}
-		}	
-	} ;
-
-	pdb_endsampwent();
+	become_root();
+	num_users = pdb_search_entries(search, resume_context, 0xffffffff,
+				       &users);
 	unbecome_root();
 
-	pdb_free_sam(&pwd);
+	errflags=NERR_Success;
+
+	for (i=0; i<num_users; i++) {
+		const char *name = users[i].account_name;
+		
+		if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)) {
+			pstrcpy(p,name); 
+			DEBUG(10,("api_RNetUserEnum:adding entry %d username "
+				  "%s\n",count_sent,p));
+			p += 21; 
+			count_sent++; 
+		} else {
+			/* set overflow error */
+			DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
+				  "username %s\n",count_sent,name));
+			errflags=234;
+			break;
+		}
+	}
+
+	pdb_search_destroy(search);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
 	SSVAL(*rparam,0,errflags);
 	SSVAL(*rparam,2,0);	      /* converter word */
 	SSVAL(*rparam,4,count_sent);  /* is this right?? */
-	SSVAL(*rparam,6,count_total); /* is this right?? */
+	SSVAL(*rparam,6,num_users); /* is this right?? */
 
 	return True;
 }
