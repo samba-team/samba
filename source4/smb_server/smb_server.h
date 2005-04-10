@@ -47,6 +47,10 @@ struct smbsrv_session {
 	struct gensec_security *gensec_ctx;
 
 	struct auth_session_info *session_info;
+
+	/* Distinguish between a VUID allocated for the multi-pass
+	 * extended secrity session setup and one that is finished */
+	BOOL finished_sesssetup;
 };
 
 /* we need a forward declaration of the ntvfs_ops strucutre to prevent
@@ -216,8 +220,11 @@ struct smbsrv_connection {
 	struct {
 		/* this holds info on session vuids that are already validated for this VC */
 		struct smbsrv_session *session_list;
-		uint16_t next_vuid; /* initialise to VUID_OFFSET */
+
 		int num_validated_vuids;
+
+		/* an id tree used to allocate vuids */
+		struct idr_context *idtree_vuid;
 	} sessions;
 
 	/* the server_context holds a linked list of pending requests,
