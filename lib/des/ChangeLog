@@ -1,4 +1,15 @@
+2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sha.h,md5.h, md4.h: don't include bit types, the user must do
+	that #ifdef wrap
+	
+	* aes.h: #ifdef wrap
+
 2005-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.h: fix prototype for DES_random_key
+
+	* rnd_keys.c: fix prototype for DES_random_key
 
 	* des.[ch]: provide compatibility function DES_key_sched, same as
 	DES_set_key
