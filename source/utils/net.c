@@ -632,62 +632,38 @@ static int net_afs(int argc, const char **argv)
 
 #endif /* WITH_FAKE_KASERVER */
 
+static BOOL search_maxrid(struct pdb_search *search, const char *type,
+			  uint32 *max_rid)
+{
+	struct samr_displayentry *entries;
+	uint32 i, num_entries;
+
+	if (search == NULL) {
+		d_printf("get_maxrid: Could not search %s\n", type);
+		return False;
+	}
+
+	num_entries = pdb_search_entries(search, 0, 0xffffffff, &entries);
+	for (i=0; i<num_entries; i++)
+		*max_rid = MAX(*max_rid, entries[i].rid);
+	pdb_search_destroy(search);
+	return True;
+}
+
 static uint32 get_maxrid(void)
 {
-	SAM_ACCOUNT *pwd = NULL;
 	uint32 max_rid = 0;
-	GROUP_MAP *map = NULL;
-	int num_entries = 0;
-	int i;
 
-	if (!pdb_setsampwent(False, 0)) {
-		DEBUG(0, ("get_maxrid: Unable to open passdb.\n"));
+	if (!search_maxrid(pdb_search_users(0), "users", &max_rid))
 		return 0;
-	}
 
-	for (; (NT_STATUS_IS_OK(pdb_init_sam(&pwd))) 
-		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
-		uint32 rid;
+	if (!search_maxrid(pdb_search_groups(), "groups", &max_rid))
+		return 0;
 
-		if (!sid_peek_rid(pdb_get_user_sid(pwd), &rid)) {
-			DEBUG(0, ("can't get RID for user '%s'\n",
-				  pdb_get_username(pwd)));
-			pdb_free_sam(&pwd);
-			continue;
-		}
-
-		if (rid > max_rid)
-			max_rid = rid;
-
-		DEBUG(1,("%d is user '%s'\n", rid, pdb_get_username(pwd)));
-		pdb_free_sam(&pwd);
-	}
-
-	pdb_endsampwent();
-	pdb_free_sam(&pwd);
-
-	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries,
-				    ENUM_ONLY_MAPPED))
-		return max_rid;
-
-	for (i = 0; i < num_entries; i++) {
-		uint32 rid;
-
-		if (!sid_peek_check_rid(get_global_sam_sid(), &map[i].sid,
-					&rid)) {
-			DEBUG(3, ("skipping map for group '%s', SID %s\n",
-				  map[i].nt_name,
-				  sid_string_static(&map[i].sid)));
-			continue;
-		}
-		DEBUG(1,("%d is group '%s'\n", rid, map[i].nt_name));
-
-		if (rid > max_rid)
-			max_rid = rid;
-	}
-
-	SAFE_FREE(map);
-
+	if (!search_maxrid(pdb_search_aliases(get_global_sam_sid()),
+			   "aliases", &max_rid))
+		return 0;
+	
 	return max_rid;
 }
 
