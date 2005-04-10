@@ -90,6 +90,9 @@ asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
 
 $(libgssapi_la_OBJECTS): spnego_asn1.h
 
-check_PROGRAMS = test_acquire_cred test_sequence
+TESTS = test_sequence
+
+check_PROGRAMS = test_acquire_cred $(TESTS)
+
 noinst_PROGRAMS = test_cred
 LDADD = libgssapi.la $(LIB_roken)
