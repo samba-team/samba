@@ -201,7 +201,7 @@ proto (int sock, const char *service)
 				    output_token,
 				    NULL,
 				    NULL,
-				    /*&delegated_cred_handle*/ NULL);
+				    &delegated_cred_handle);
 	if(GSS_ERROR(maj_stat))
 	    gss_err (1, min_stat, "gss_accept_sec_context");
 	if (output_token->length != 0)
@@ -230,11 +230,26 @@ proto (int sock, const char *service)
     if (delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
        krb5_context context;
 
+       printf("Delegated cred found\n");
+
        maj_stat = krb5_init_context(&context);
        maj_stat = krb5_cc_resolve(context, "FILE:/tmp/krb5cc_test", &ccache);
        maj_stat = gss_krb5_copy_ccache(&min_stat,
 				       delegated_cred_handle,
 				       ccache);
+       if (maj_stat == 0) {
+	   krb5_principal p;
+	   maj_stat = krb5_cc_get_principal(context, ccache, &p);
+	   if (maj_stat == 0) {
+	       char *name;
+	       maj_stat = krb5_unparse_name(context, p, &name);
+	       if (maj_stat == 0) {
+		   printf("Delegated user is: `%s'\n", name);
+		   free(name);
+	       }
+	       krb5_free_principal(context, p);
+	   }
+       }
        krb5_cc_close(context, ccache);
        gss_release_cred(&min_stat, &delegated_cred_handle);
     }
