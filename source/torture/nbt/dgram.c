@@ -95,7 +95,8 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	myname.type = NBT_NAME_CLIENT;
 	myname.scope = NULL;
 
-	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, &myname, &logon);
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
+					      0, &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
 		goto failed;
