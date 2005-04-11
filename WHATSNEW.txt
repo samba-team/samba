@@ -1,12 +1,92 @@
                    ==============================
-                   Release Notes for Samba 3.0.13
-                            Mar 24, 2005
+                   Release Notes for Samba 3.0.14
+                            Apr 11, 2005
                    ==============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
+
+Common bugs fixed in 3.0.14 include:
+
+  o Compatibility issues between Winbind and Windows 2003 SP1
+    domain controllers (*2k3sp1*).
+  o MS-DFS errors with Windows XP SP2 clients.
+  o High CPU loads caused by infinite loops in the FindNext()
+    server code.
+
+    
+######################################################################
+Changes
+#######
+
+Changes since 3.0.13
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Prevent nt_status code support when negotiating protocols
+      earlier than NT1.
+    * BUG 2533: Remove the UNICODE flags2 bit from SMBsearch calls
+      as this SMB is DOS codepage only.
+    * BUG 2585: Fix printf() issues in smbpasswd which caused
+      seg faults.
+    * BUG 2563: Fix infinite loop on non-existent file with 
+      FindNext().
+    * BUG 2581 (partial): Ensure if realloc fails on an internal 
+      tdb we fail gracefully.
+
+      
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Workaround autoconf issue to prevent debug symbols from 
+      being included in the default build.
+    * Disable schannel on the \lsarpc pipe in order to successfully 
+      enumerate users and groups (*2k3sp1*)
+    * Fix parsing error in rpc binds which broke NTLMSSP 
+      authentication.   And as a result broke CTL+ALT+DEL password 
+      changes from a Windows 2003 SP1 member of a Samba domain 
+      (*2k3sp1*).
+    * Revert change to FindFirst() server code that broke WinXP
+      SP2 clients from launching *.exe files from a dfs target 
+      share.
+      
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix build on FreeBSD 4 where Winbind is not supported.
+    * Fix 'wbinfo --user-sids' when using domain local groups.
+    * Restrict domain local groups reported by 'wbinfo -r' to
+      the Samba server domain and not the users domain.
+
+
+o   Lin Li <linl@xandros.com>
+    * Ensure that winbind initializes internal trusted domain 
+      structures when enumerating users and groups.
+      
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 2565: Fix crash bug and compiler warnings in strchr_m() 
+      test.
+    * Fix compiler warnings.
+
+
+o   <psz@maths.usyd.edu.au>
+    * Fix for possible root squash NFS bugs.
+    
+    
+o   Simo Sorce <irda@samba.org>
+    * Debian packaging fixes.
+    
+
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==============================
+                   Release Notes for Samba 3.0.13
+                            Mar 24, 2005
+                   ==============================
 
 Common bugs fixed in 3.0.13 include:
 
@@ -68,9 +148,6 @@ o   Herb Lewis <herb@samba.org>
 o   Jim McDonough <jmcd@us.ibm.com>
     * Make sure that enum_group_members() searches the correct suffix.
     
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
