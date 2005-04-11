@@ -2660,12 +2660,12 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 ****************************************************************************/
 
 static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					unsigned int tran_call,
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	uint16 tran_call = SVAL(inbuf, smb_setup0);
 	uint16 info_level;
 	int mode=0;
 	SMB_OFF_T file_size=0;
@@ -3557,12 +3557,12 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 ****************************************************************************/
 
 static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					unsigned int tran_call,
 					char **pparams, int total_params, char **ppdata, int total_data,
 					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	uint16 tran_call = SVAL(inbuf, smb_setup0);
 	uint16 info_level;
 	int dosmode=0;
 	SMB_OFF_T size=0;
@@ -5007,14 +5007,14 @@ int reply_trans2(connection_struct *conn,
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
 		START_PROFILE_NESTED(Trans2_qpathinfo);
-		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
+		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, length, bufsize, tran_call,
 					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_qpathinfo);
 		break;
 	case TRANSACT2_SETPATHINFO:
 	case TRANSACT2_SETFILEINFO:
 		START_PROFILE_NESTED(Trans2_setpathinfo);
-		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
+		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, length, bufsize, tran_call,
 					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_setpathinfo);
 		break;
