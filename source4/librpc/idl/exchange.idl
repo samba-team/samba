@@ -6,9 +6,9 @@
  */
 
 [
-	uuid("99e64010-b032-11d0-97a4-00c04fd6551d"),
-    pointer_default(unique),
-	version(3.0)
+  uuid("99e64010-b032-11d0-97a4-00c04fd6551d"),
+  pointer_default(unique),
+  version(3.0)
 ] interface exchange_store_admin3
 {
 	void ec_store_admin3_dummy();
@@ -16,18 +16,18 @@
 
 
 [
-	uuid("89742ace-a9ed-11cf-9c0c-08002be7ae86"),
-    pointer_default(unique),
-	version(2.0)
+  uuid("89742ace-a9ed-11cf-9c0c-08002be7ae86"),
+  pointer_default(unique),
+  version(2.0)
 ] interface exchange_store_admin2
 {
 	void ec_store_admin2_dummy();
 }
 
 [
-	uuid("a4f1db00-ca47-1067-b31e-00dd010662da"),
-    pointer_default(unique),
-	version(1.0)
+  uuid("a4f1db00-ca47-1067-b31e-00dd010662da"),
+  pointer_default(unique),
+  version(1.0)
 ] interface exchange_store_admin1
 {
 	void ec_store_admin1_dummy();
@@ -35,10 +35,10 @@
 
 
 [
-	uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
-    pointer_default(unique),
-	version(1.0),
-	helpstring("Exchange 2003 Directory Request For Response")
+  uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
+  pointer_default(unique),
+  version(1.0),
+  helpstring("Exchange 2003 Directory Request For Response")
 ] interface exchange_ds_rfr
 {
 	/*****************/
@@ -51,10 +51,10 @@
 }
 
 [
-	uuid("f930c514-1215-11d3-99a5-00a0c9b61b04"),
-	helpstring("System Attendant Cluster Interface"),
-    pointer_default(unique),
-	version(1.0)
+  uuid("f930c514-1215-11d3-99a5-00a0c9b61b04"),
+  helpstring("System Attendant Cluster Interface"),
+  pointer_default(unique),
+  version(1.0)
 ] interface exchange_sysatt_cluster
 {
 	void sysatt_cluster_dummy();
@@ -66,19 +66,19 @@ System Attendant Private Interface
 */
 
 [
-	uuid("469d6ec0-0d87-11ce-b13f-00aa003bac6c"),
-    pointer_default(unique),
-	helpstring("Exchange 5.5 System Attendant Request for Response")
+  uuid("469d6ec0-0d87-11ce-b13f-00aa003bac6c"),
+  pointer_default(unique),
+  helpstring("Exchange 5.5 System Attendant Request for Response")
 ] interface exchange_system_attendant
 {
 	void sysatt_dummy();
 }
 
 [
-	uuid("9e8ee830-4559-11ce-979b-00aa005ffebe"),
-    pointer_default(unique),
-	version(2.0),
-	helpstring("Exchange 5.5 MTA")
+  uuid("9e8ee830-4559-11ce-979b-00aa005ffebe"),
+  pointer_default(unique),
+  version(2.0),
+  helpstring("Exchange 5.5 MTA")
 ] interface exchange_mta
 {
 	/*****************/
@@ -91,10 +91,10 @@ System Attendant Private Interface
 }
 
 [
-	uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
-    pointer_default(unique),
-	version(21.0),
-	helpstring("Exchange 5.5 DRS")
+  uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
+  pointer_default(unique),
+  version(21.0),
+  helpstring("Exchange 5.5 DRS")
 ] interface exchange_drs
 {
 	/*****************/
@@ -129,19 +129,19 @@ System Attendant Private Interface
 }
 
 [
-	uuid("f5cc5a7c-4264-101a-8c59-08002b2f8426"),
-	version(21.0),
-    pointer_default(unique),
-	helpstring("Exchange 5.5 XDS")
+  uuid("f5cc5a7c-4264-101a-8c59-08002b2f8426"),
+  version(21.0),
+  pointer_default(unique),
+  helpstring("Exchange 5.5 XDS")
 ] interface exchange_xds
 {
 	void xds_dummy();
 }
 
 [
-	uuid("38a94e72-a9bc-11d2-8faf-00c04fa378ff"),
-    pointer_default(unique),
-	version(1.0)
+  uuid("38a94e72-a9bc-11d2-8faf-00c04fa378ff"),
+  pointer_default(unique),
+  version(1.0)
 ] interface exchange_mta_qadmin
 {
 	void exchange_mta_qadmin();
@@ -149,19 +149,19 @@ System Attendant Private Interface
 
 
 [
-	uuid("0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde"),
-    pointer_default(unique),
-	version(1.0)
+  uuid("0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde"),
+  pointer_default(unique),
+  version(1.0)
 ] interface exchange_store_information
 {
 	void exchange_store_information_dummy();
 }
 
 [
-	uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
-    pointer_default(unique),
-	version(56.0),
-	helpstring("Exchange 5.5 Name Service Provider")
+  uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
+  pointer_default(unique),
+  version(56.0),
+  helpstring("Exchange 5.5 Name Service Provider")
 ] interface exchange_nsp
 {
 	void NspiBind();
@@ -188,10 +188,10 @@ System Attendant Private Interface
 }
 
 [
-	uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
-    pointer_default(unique),
-	version(0.81),
-	helpstring("Exchange 5.5 EMSMDB")
+  uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
+  pointer_default(unique),
+  version(0.81),
+  helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
 {
 	/*****************/
@@ -236,9 +236,9 @@ System Attendant Private Interface
 }
 
 [
-	uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
-    pointer_default(unique),
-	helpstring("Unknown")
+  uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
+  pointer_default(unique),
+  helpstring("Unknown")
 ] interface exchange_unknown
 {
 	void unknown_dummy();
