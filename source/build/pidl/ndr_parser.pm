@@ -421,11 +421,10 @@ sub compression_dlen($)
 	return ParseExpr($e, $dlen, "r->");
 }
 
-sub ParseCompressionPushStart($$$)
+sub ParseCompressionPushStart($$)
 {
 	my $e = shift;
 	my $subndr = shift;
-	my $ndr_flags = shift;
 	my $comndr = $subndr."_compressed";
 
 	pidl "{";
@@ -452,11 +451,10 @@ sub ParseCompressionPushEnd($$)
 	pidl "}";
 }
 
-sub ParseCompressionPullStart($$$)
+sub ParseCompressionPullStart($$)
 {
 	my $e = shift;
 	my $subndr = shift;
-	my $ndr_flags = shift;
 	my $comndr = $subndr."_compressed";
 	my $alg = compression_alg($e);
 	my $dlen = compression_dlen($e);
@@ -480,28 +478,69 @@ sub ParseCompressionPullEnd($$)
 	pidl "}";
 }
 
+sub ParseObfuscationPushStart($$)
+{
+	my $e = shift;
+	my $ndr = shift;
+
+	# nothing to do here
+
+	return $ndr;
+}
+
+sub ParseObfuscationPushEnd($$)
+{
+	my $e = shift;
+	my $ndr = shift;
+	my $obfuscation = util::has_property($e, "obfuscation");
+
+	pidl "NDR_CHECK(ndr_push_obfuscation($ndr, $obfuscation));";
+}
+
+sub ParseObfuscationPullStart($$)
+{
+	my $e = shift;
+	my $ndr = shift;
+	my $obfuscation = util::has_property($e, "obfuscation");
+
+	pidl "NDR_CHECK(ndr_pull_obfuscation($ndr, $obfuscation));";
+
+	return $ndr;
+}
+
+sub ParseObfuscationPullEnd($$)
+{
+	my $e = shift;
+	my $ndr = shift;
+
+	# nothing to do here
+}
+
 sub ParseSubcontextPushStart($$)
 {
 	my $e = shift;
 	my $ndr_flags = shift;
 	my $compression = util::has_property($e, "compression");
-	my $retndr;
+	my $obfuscation = util::has_property($e, "obfuscation");
+	my $retndr = "_ndr_$e->{NAME}";
 
 	pidl "if (($ndr_flags) & NDR_SCALARS) {";
 	indent;
-	pidl "struct ndr_push *_ndr_$e->{NAME};";
+	pidl "struct ndr_push *$retndr;";
 	pidl "";
-	pidl "_ndr_$e->{NAME} = ndr_push_init_ctx(ndr);";
-	pidl "if (!_ndr_$e->{NAME}) return NT_STATUS_NO_MEMORY;";
-	pidl "_ndr_$e->{NAME}->flags = ndr->flags;";
+	pidl "$retndr = ndr_push_init_ctx(ndr);";
+	pidl "if (!$retndr) return NT_STATUS_NO_MEMORY;";
+	pidl "$retndr->flags = ndr->flags;";
 	pidl "";
-	
-	$retndr = "_ndr_$e->{NAME}";
 
 	if (defined $compression) {
-		$retndr = ParseCompressionPushStart($e, $retndr, "NDR_SCALARS");
+		$retndr = ParseCompressionPushStart($e, $retndr);
 	}
-	
+
+	if (defined $obfuscation) {
+		$retndr = ParseObfuscationPushStart($e, $retndr);
+	}
+
 	return $retndr
 }
 
@@ -511,7 +550,12 @@ sub ParseSubcontextPushEnd($)
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
 	my $compression = util::has_property($e, "compression");
+	my $obfuscation = util::has_property($e, "obfuscation");
 	my $ndr = "_ndr_$e->{NAME}";
+
+	if (defined $obfuscation) {
+		ParseObfuscationPushEnd($e, $ndr);
+	}
 
 	if (defined $compression) {
 		ParseCompressionPushEnd($e, $ndr);
@@ -530,11 +574,12 @@ sub ParseSubcontextPushEnd($)
 sub ParseSubcontextPullStart($$)
 {
 	my $e = shift;
-	my $ndr_flags = shift;	
+	my $ndr_flags = shift;
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
-	my $retndr = "_ndr_$e->{NAME}";
 	my $compression = util::has_property($e, "compression");
+	my $obfuscation = util::has_property($e, "obfuscation");
+	my $retndr = "_ndr_$e->{NAME}";
 
 	if (not defined($size_is)) {
 		$size_is = "-1";
@@ -544,10 +589,14 @@ sub ParseSubcontextPullStart($$)
 	indent;
 	pidl "struct ndr_pull *$retndr;";
 	pidl "NDR_ALLOC(ndr, $retndr);";
-	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $header_size, $size_is, $retndr));"; 
+	pidl "NDR_CHECK(ndr_pull_subcontext_header(ndr, $header_size, $size_is, $retndr));";
 
 	if (defined $compression) {
-		$retndr = ParseCompressionPullStart($e, $retndr, $ndr_flags);
+		$retndr = ParseCompressionPullStart($e, $retndr);
+	}
+
+	if (defined $obfuscation) {
+		$retndr = ParseObfuscationPullStart($e, $retndr);
 	}
 	
 	return $retndr;
@@ -558,20 +607,25 @@ sub ParseSubcontextPullEnd($)
 	my $e = shift;
 	my $header_size = util::has_property($e, "subcontext");
 	my $size_is = util::has_property($e, "subcontext_size");
-	my $subndr = "_ndr_$e->{NAME}";
 	my $compression = util::has_property($e, "compression");
+	my $obfuscation = util::has_property($e, "obfuscation");
+	my $ndr = "_ndr_$e->{NAME}";
+
+	if (defined $obfuscation) {
+		ParseObfuscationPullEnd($e, $ndr);
+	}
 
 	if (defined $compression) {
-		ParseCompressionPullEnd($e, $subndr);
+		ParseCompressionPullEnd($e, $ndr);
 	}
 
 	my $advance;
 	if (defined ($size_is)) {
-		$advance = "$size_is";	
+		$advance = "$size_is";
 	} elsif ($header_size) {
-		$advance = "$subndr->data_size";
+		$advance = "$ndr->data_size";
 	} else {
-		$advance = "$subndr->offset";
+		$advance = "$ndr->offset";
 	}
 	pidl "NDR_CHECK(ndr_pull_advance(ndr, $advance));";
 	deindent;

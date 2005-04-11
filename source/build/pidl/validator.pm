@@ -86,6 +86,7 @@ my %property_list = (
 	"subcontext"		=> {},
 	"subcontext_size"	=> {},
 	"compression"		=> {},
+	"obfuscation"		=> {},
 
 	# enum
 	"enum8bit"		=> {},
@@ -165,6 +166,10 @@ sub ValidElement($)
 
 	if (defined (util::has_property($e, "compression")) and not defined(util::has_property($e, "subcontext"))) {
 		fatal(el_name($e) . " : compression() on non-subcontext element");
+	}
+
+	if (defined (util::has_property($e, "obfuscation")) and not defined(util::has_property($e, "subcontext"))) {
+		fatal(el_name($e) . " : obfuscation() on non-subcontext element");
 	}
 
 	if (!$e->{POINTERS} && (
