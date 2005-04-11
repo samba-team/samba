@@ -3252,6 +3252,7 @@ static int do_message_op(void)
 	struct nmb_name called, calling;
 	fstring server_name;
 	char name_type_hex[10];
+	int msg_port;
 
 	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
@@ -3264,7 +3265,11 @@ static int do_message_op(void)
 	if (have_ip) 
 		ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
+	/* we can only do messages over port 139 (to windows clients at least) */
+
+	msg_port = port ? port : 139;
+
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, msg_port) != msg_port) ||
 	    !cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
