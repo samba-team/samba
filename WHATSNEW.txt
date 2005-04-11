@@ -24,6 +24,16 @@ Changes
 Changes since 3.0.13
 --------------------
 
+smb.conf changes
+----------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    dos filetimes			Enabled by default
+
+
+commits
+-------
 o   Jeremy Allison <jra@samba.org>
     * Prevent nt_status code support when negotiating protocols
       earlier than NT1.
@@ -35,6 +45,8 @@ o   Jeremy Allison <jra@samba.org>
       FindNext().
     * BUG 2581 (partial): Ensure if realloc fails on an internal 
       tdb we fail gracefully.
+    * Ensure that 'dos filetimes' works with ACLs.
+    * Set 'dos filefimes = yes' as the default for smb.conf.
 
       
 o   Gerald (Jerry) Carter <jerry@samba.org>
