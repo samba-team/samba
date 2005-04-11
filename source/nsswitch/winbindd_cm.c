@@ -1021,6 +1021,16 @@ NTSTATUS cm_get_sam_handle(struct winbindd_domain *domain, CLI_POLICY_HND **retu
 			cli_shutdown(conn->cli);
 			DLIST_REMOVE(cm_conns, conn);
 			SAFE_FREE(conn);
+
+			/* log a message for possible Windows 2003 SP1 DC's */
+			if ( NT_STATUS_EQUAL(result,NT_STATUS_ACCESS_DENIED) && (lp_security() == SEC_DOMAIN) ) {
+				DEBUG(0,("samr_connect() received NT_STATUS_ACCESS_DENIED.  If you are connecting \n"));
+				DEBUGADD(0,("to a Windows 2003 SP1 DC, this is a known issue.  There are two current \n"));
+				DEBUGADD(0,("workarounds:\n"));
+				DEBUGADD(0,("(a) Move your configuration to security = ads, or\n"));
+				DEBUGADD(0,("(b) set 'client schannel = no' in smb.conf and use 'wbinfo --set-auth-user'\n"));
+				DEBUGADD(0,("    to define the credentials when connecting to the DC\n"));
+			}
 			
 			return result;
 		}
