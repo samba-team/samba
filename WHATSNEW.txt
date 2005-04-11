@@ -49,6 +49,9 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Revert change to FindFirst() server code that broke WinXP
       SP2 clients from launching *.exe files from a dfs target 
       share.
+    * BUG 2588: Force smbclient to send netbios messages to port 
+      139 unless otherwise instructed (based on patch from Thomas 
+      Bork).
       
 
 o   Volker Lendecke <vl@samba.org>
