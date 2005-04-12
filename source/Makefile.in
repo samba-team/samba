@@ -98,7 +98,7 @@ LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -617,8 +617,8 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(SECRETS_OBJ) \
 
 PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(SMBD_OBJ_SRV) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
-	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) \
+	    $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
+	    $(LIBMSRPC_OBJ) @SMBWRAP_OBJS@ \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
