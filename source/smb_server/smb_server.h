@@ -218,12 +218,11 @@ struct smbsrv_connection {
 
 	/* context associated with currently valid session setups */
 	struct {
-		/* this holds info on session vuids that are already validated for this VC */
-		struct smbsrv_session *session_list;
-
 		int num_validated_vuids;
 
 		/* an id tree used to allocate vuids */
+		/* this holds info on session vuids that are already
+		 * validated for this VC */
 		struct idr_context *idtree_vuid;
 	} sessions;
 
