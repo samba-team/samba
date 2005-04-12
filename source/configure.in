@@ -225,6 +225,8 @@ AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(SMBWRAPPER)
+AC_SUBST(SMBWRAP_OBJS)
+AC_SUBST(SMBWRAP_INC)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
@@ -1193,7 +1195,7 @@ SHLIBEXT="so"
 
 if test "$enable_shared" = "yes"; then
   # this bit needs to be modified for each OS that is suported by
-  # smbwrapper. You need to specify how to created a shared library and
+  # smbwrapper. You need to specify how to create a shared library and
   # how to compile C code to produce PIC object files
 
   AC_MSG_CHECKING([ability to build shared libraries])
@@ -2094,7 +2096,7 @@ fi
 
 AC_CACHE_CHECK([whether getpass should be replaced],samba_cv_REPLACE_GETPASS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
 #define NO_PROTO_H 1
@@ -2410,6 +2412,8 @@ AC_ARG_WITH(smbwrapper,
     AC_DEFINE(WITH_SMBWRAPPER,1,[Whether to include smbwrapper support])
 	WRAPPROG="bin/smbsh\$(EXEEXT)"
 	WRAP="bin/smbwrapper.$SHLIBEXT"
+	WRAP_OBJS="\$(SMBW_OBJ1) \$(SMBWRAPPER_OBJ1)"
+	WRAP_INC="-I\$(srcdir)/smbwrapper"
 
 # Conditions under which smbwrapper should not be built.
 
@@ -2417,13 +2421,19 @@ AC_ARG_WITH(smbwrapper,
 	   echo No support for PIC code - disabling smbwrapper and smbsh
 	   WRAPPROG=""
 	   WRAP=""
+	   WRAP_OBJS=""
+	   WRAP_INC=""
 	elif test x$ac_cv_func_syscall = xno; then
 	   AC_MSG_RESULT([No syscall() -- disabling smbwrapper and smbsh])
 	   WRAPPROG=""
 	   WRAP=""
+	   WRAP_OBJS=""
+	   WRAP_INC=""
 	fi
 	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WRAPPROG $WRAP"
 	SMBWRAPPER="$WRAPPROG $WRAP"
+	SMBWRAP_OBJS="$WRAP_OBJS"
+	SMBWRAP_INC="$WRAP_INC"
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -3539,7 +3549,7 @@ fi
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
 AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -3566,7 +3576,7 @@ fi
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no" -a x"$samba_cv_found_xfs_header" = x"yes"; then
 AC_CACHE_CHECK([whether the sys_quota interface works with XFS],samba_cv_SYSQUOTA_WORKS_XFS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
@@ -3586,7 +3596,7 @@ fi
 
 AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
 SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper -I${srcdir-.}/nsswitch"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt -I${srcdir-.}/nsswitch"
 AC_TRY_COMPILE([
 #include "confdefs.h"
 #define NO_PROTO_H 1
