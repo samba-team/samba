@@ -2058,7 +2058,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	security_info_wanted = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
+	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, info_wanted = 0x%x\n", fsp->fsp_name,
+			(unsigned int)security_info_wanted ));
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL)
