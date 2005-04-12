@@ -18,6 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
+
 #include "includes.h"
 
 #ifdef HAVE_LDAP
@@ -173,7 +175,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	DATA_BLOB blob;
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
+#ifdef HAVE_KRB5
 	BOOL got_kerberos_mechanism = False;
+#endif
 
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
 
@@ -202,10 +206,12 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("ads_sasl_spnego_bind: got OID=%s\n", OIDs[i]));
+#ifdef HAVE_KRB5
 		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
 			got_kerberos_mechanism = True;
 		}
+#endif
 		free(OIDs[i]);
 	}
 	DEBUG(3,("ads_sasl_spnego_bind: got server principal name =%s\n", principal));
@@ -281,7 +287,8 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			ENCTYPE_DES_CBC_MD5,
 			ENCTYPE_NULL};
 	gss_OID_desc nt_principal = 
-	{10, "\052\206\110\206\367\022\001\002\002\002"};
+                {10, CONST_DISCARD(char *,
+                                     "\052\206\110\206\367\022\001\002\002\002")};
 
 	/* we need to fetch a service ticket as the ldap user in the
 	   servers realm, regardless of our realm */

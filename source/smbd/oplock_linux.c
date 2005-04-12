@@ -22,6 +22,22 @@
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 
+/* these can be removed when they are in glibc headers */
+struct  cap_user_header {
+	uint32 version;
+	int pid;
+} header;
+struct cap_user_data {
+	uint32 effective;
+	uint32 permitted;
+	uint32 inheritable;
+} data;
+
+extern int capget(struct cap_user_header * hdrp,
+		  struct cap_user_data * datap);
+extern int capset(struct cap_user_header * hdrp,
+		  const struct cap_user_data * datap);
+
 static SIG_ATOMIC_T signals_received;
 #define FD_PENDING_SIZE 100
 static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
@@ -68,17 +84,6 @@ static void set_capability(unsigned capability)
 #ifndef _LINUX_CAPABILITY_VERSION
 #define _LINUX_CAPABILITY_VERSION 0x19980330
 #endif
-	/* these can be removed when they are in glibc headers */
-	struct  {
-		uint32 version;
-		int pid;
-	} header;
-	struct {
-		uint32 effective;
-		uint32 permitted;
-		uint32 inheritable;
-	} data;
-
 	header.version = _LINUX_CAPABILITY_VERSION;
 	header.pid = 0;
 
@@ -133,7 +138,8 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	fsp = file_find_fd(fd);
 	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
 	if (signals_received > 1)
-		memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
+                memmove(CONST_DISCARD(void *, &fd_pending_array[0]),
+                        CONST_DISCARD(void *, &fd_pending_array[1]),
 			sizeof(SIG_ATOMIC_T)*(signals_received-1));
 	signals_received--;
 	/* now we can receive more signals */

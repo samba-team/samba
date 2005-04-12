@@ -212,7 +212,7 @@ static PyObject *py_smb_read(PyObject *self, PyObject *args, PyObject *kw)
 	static char *kwlist[] = { "fnum", "offset", "size", NULL };
 	int fnum, offset=0, size=0;
 	ssize_t result;
-	size_t fsize;
+	SMB_OFF_T fsize;
 	char *data;
 	PyObject *ret;
 

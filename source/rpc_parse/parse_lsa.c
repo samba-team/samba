@@ -6,6 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Andrew Bartlett                   2002,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
+ *  Copyright (C) Gerald )Jerry) Carter             2005
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -516,45 +517,78 @@ void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 en
 
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	
-        r_e->enum_context = enum_context;
-	r_e->num_domains = num_domains;
-	r_e->ptr_enum_domains = 0;
-	r_e->num_domains2 = num_domains;
+        r_e->enum_context  = enum_context;
+	r_e->count         = num_domains;
+			
+	if ( num_domains != 0 ) {
 	
-	if (num_domains != 0) {
-	
-		/* 
-		 * allocating empty arrays of unicode headers, strings
-		 * and sids of enumerated trusted domains
-		 */
-		if (!(r_e->hdr_domain_name = TALLOC_ARRAY(ctx,UNIHDR2,num_domains))) {
+		/* allocate container memory */
+		
+		r_e->domlist = TALLOC_P( ctx, DOMAIN_LIST );
+		r_e->domlist->domains = TALLOC_ARRAY( ctx, DOMAIN_INFO, r_e->count );
+		
+		if ( !r_e->domlist || !r_e->domlist->domains ) {
 			r_e->status = NT_STATUS_NO_MEMORY;
 			return;
 		}
 		
-		if (!(r_e->uni_domain_name = TALLOC_ARRAY(ctx,UNISTR2,num_domains))) {
-			r_e->status = NT_STATUS_NO_MEMORY;
-			return;
-		}
-
-		if (!(r_e->domain_sid = TALLOC_ARRAY(ctx,DOM_SID2,num_domains))) {
-			r_e->status = NT_STATUS_NO_MEMORY;
-			return;
-		}
+		r_e->domlist->count = r_e->count;
+		
+		/* initialize the list of domains and their sid */
+		
+		for (i = 0; i < num_domains; i++) {	
+			if ( !(r_e->domlist->domains[i].sid = TALLOC_P(ctx, DOM_SID2)) ) {
+				r_e->status = NT_STATUS_NO_MEMORY;
+				return;
+			}
 				
-		for (i = 0; i < num_domains; i++) {
-			
-			/* don't know what actually is this for */
-			r_e->ptr_enum_domains = 1;
-			
-			init_dom_sid2(&r_e->domain_sid[i], &(td[i])->sid);
-			
-			init_unistr2_w(ctx, &r_e->uni_domain_name[i], (td[i])->name);
-			init_uni_hdr2(&r_e->hdr_domain_name[i], &r_e->uni_domain_name[i]);
-			
-		};
+			init_dom_sid2(r_e->domlist->domains[i].sid, &(td[i])->sid);
+			init_unistr4_w(ctx, &r_e->domlist->domains[i].name, (td[i])->name);	
+		}
 	}
 
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL lsa_io_domain_list( const char *desc, prs_struct *ps, int depth, DOMAIN_LIST *domlist )
+{
+	int i;
+	
+	prs_debug(ps, depth, desc, "lsa_io_domain_list");
+	depth++;
+
+	if(!prs_uint32("count", ps, depth, &domlist->count))
+		return False;
+
+	if ( domlist->count == 0 )
+		return True;
+		
+	if ( UNMARSHALLING(ps) ) {
+		if ( !(domlist->domains = PRS_ALLOC_MEM( ps, DOMAIN_INFO, domlist->count )) )
+			return False;
+	}
+	
+	/* headers */
+	
+	for ( i=0; i<domlist->count; i++ ) {
+		if ( !prs_unistr4_hdr("name_header", ps, depth, &domlist->domains[i].name) )
+			return False;
+		if ( !smb_io_dom_sid2_p("sid_header", ps, depth, &domlist->domains[i].sid) )
+			return False;
+	}
+
+	/* data */
+	
+	for ( i=0; i<domlist->count; i++ ) {
+		if ( !prs_unistr4_str("name", ps, depth, &domlist->domains[i].name) )
+			return False;
+		if( !smb_io_dom_sid2("sid", domlist->domains[i].sid, ps, depth) )
+			return False;
+	}
+	
+	return True;
 }
 
 /*******************************************************************
@@ -567,49 +601,15 @@ BOOL lsa_io_r_enum_trust_dom(const char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_trust_dom");
 	depth++;
 
-	if(!prs_uint32("enum_context    ", ps, depth, &r_e->enum_context))
-		return False;
-	if(!prs_uint32("num_domains     ", ps, depth, &r_e->num_domains))
-		return False;
-	if(!prs_uint32("ptr_enum_domains", ps, depth, &r_e->ptr_enum_domains))
+	if(!prs_uint32("enum_context", ps, depth, &r_e->enum_context))
 		return False;
 
-	if (r_e->ptr_enum_domains) {
-		int i, num_domains;
+	if(!prs_uint32("count", ps, depth, &r_e->count))
+		return False;
 
-		if(!prs_uint32("num_domains2", ps, depth, &r_e->num_domains2))
-			return False;
-
-		num_domains = r_e->num_domains2;
-
-		if (UNMARSHALLING(ps)) {
-			if (!(r_e->hdr_domain_name = PRS_ALLOC_MEM(ps,UNIHDR2,num_domains)))
-				return False;
-
-			if (!(r_e->uni_domain_name = PRS_ALLOC_MEM(ps,UNISTR2,num_domains)))
-				return False;
-
-			if (!(r_e->domain_sid = PRS_ALLOC_MEM(ps,DOM_SID2,num_domains)))
-				return False;
-		}
-
-		for (i = 0; i < num_domains; i++) {
-			if(!smb_io_unihdr2 ("", &r_e->hdr_domain_name[i], ps, 
-					    depth))
-				return False;
-		}
+	if ( !prs_pointer("trusted_domains", ps, depth, (void**)&r_e->domlist, sizeof(DOMAIN_LIST), (PRS_POINTER_CAST)lsa_io_domain_list))
+		return False;
 		
-		for (i = 0; i < num_domains; i++) {
-			if(!smb_io_unistr2 ("", &r_e->uni_domain_name[i],
-					    r_e->hdr_domain_name[i].buffer,
-					    ps, depth))
-				return False;
-			if(!smb_io_dom_sid2("", &r_e->domain_sid[i], ps, 
-					    depth))
-				return False;
-		}
-	}
-
 	if(!prs_ntstatus("status", ps, depth, &r_e->status))
 		return False;
 
@@ -906,7 +906,7 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
 	memcpy(&q_l->pol, hnd, sizeof(q_l->pol));
 	init_lsa_sid_enum(mem_ctx, &q_l->sids, num_sids, sids);
 	
-	q_l->level.value = level;
+	q_l->level = level;
 }
 
 /*******************************************************************
@@ -928,7 +928,10 @@ BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *
 		return False;
 	if(!lsa_io_trans_names("names  ", &q_s->names, ps, depth)) /* translated names */
 		return False;
-	if(!smb_io_lookup_level("switch ", &q_s->level, ps, depth)) /* lookup level */
+
+	if(!prs_uint16("level", ps, depth, &q_s->level)) /* lookup level */
+		return False;
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("mapped_count", ps, depth, &q_s->mapped_count))
@@ -2319,7 +2322,9 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *r_u, PRIVILEGE_SET *pr
 	}
 
 	if ( num_priv ) {
-		if ( !init_unistr2_array( &r_u->rights, num_priv, privname_array ) ) 
+		r_u->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+
+		if ( !init_unistr4_array( r_u->rights, num_priv, privname_array ) ) 
 			return NT_STATUS_NO_MEMORY;
 
 		r_u->count = num_priv;
@@ -2361,7 +2366,7 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, pr
 	if(!prs_uint32("count   ", ps, depth, &r_c->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &r_c->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&r_c->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	if(!prs_align(ps))
@@ -2377,17 +2382,17 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, pr
 /*******************************************************************
  Inits an LSA_Q_ADD_ACCT_RIGHTS structure.
 ********************************************************************/
-void init_q_add_acct_rights(LSA_Q_ADD_ACCT_RIGHTS *q_q, 
-			    POLICY_HND *hnd, 
-			    DOM_SID *sid,
-			    uint32 count, 
-			    const char **rights)
+void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *q_q, POLICY_HND *hnd, 
+                             DOM_SID *sid, uint32 count, const char **rights )
 {
 	DEBUG(5, ("init_q_add_acct_rights\n"));
 
 	q_q->pol = *hnd;
 	init_dom_sid2(&q_q->sid, sid);
-	init_unistr2_array(&q_q->rights, count, rights);
+	
+	q_q->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	init_unistr4_array( q_q->rights, count, rights );
+	
 	q_q->count = count;
 }
 
@@ -2409,7 +2414,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *q_q, prs_
 	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&q_q->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
@@ -2443,10 +2448,14 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q,
 	DEBUG(5, ("init_q_remove_acct_rights\n"));
 
 	q_q->pol = *hnd;
+
 	init_dom_sid2(&q_q->sid, sid);
+
 	q_q->removeall = removeall;
-	init_unistr2_array(&q_q->rights, count, rights);
 	q_q->count = count;
+
+	q_q->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	init_unistr4_array( q_q->rights, count, rights );
 }
 
 
@@ -2470,7 +2479,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q
 	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&q_q->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;

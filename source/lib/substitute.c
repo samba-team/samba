@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
@@ -800,7 +802,6 @@ char *alloc_sub_conn(connection_struct *conn, const char *str)
 
 void standard_sub_snum(int snum, char *str, size_t len)
 {
-	extern struct current_user current_user;
 	static uid_t cached_uid = -1;
 	static fstring cached_user;
 	/* calling uidtoname() on every substitute would be too expensive, so

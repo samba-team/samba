@@ -920,6 +920,52 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
+static BOOL enum_alias_memberships(const DOM_SID *member_sid,
+				   DOM_SID **aliases, int *num_aliases)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("enum_alias_memberships");
+
+	uint32 *rids = NULL;
+	int i, num_rids = 0;
+
+	BOOL result = False;
+
+	if (mem_ctx == NULL)
+		return False;
+	
+	*aliases = NULL;
+	*num_aliases = 0;
+
+	if (!pdb_enum_alias_memberships(mem_ctx, get_global_sam_sid(),
+					member_sid, 1, &rids, &num_rids))
+		goto done;
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID alias_sid;
+		sid_copy(&alias_sid, get_global_sam_sid());
+		sid_append_rid(&alias_sid, rids[i]);
+		add_sid_to_array(NULL, &alias_sid, aliases, num_aliases);
+	}
+
+	if (!pdb_enum_alias_memberships(mem_ctx, &global_sid_Builtin,
+					member_sid, 1, &rids, &num_rids))
+		goto done;
+
+	for (i=0; i<num_rids; i++) {
+		DOM_SID alias_sid;
+		sid_copy(&alias_sid, &global_sid_Builtin);
+		sid_append_rid(&alias_sid, rids[i]);
+		add_sid_to_array(NULL, &alias_sid, aliases, num_aliases);
+	}
+
+	result = True;
+ done:
+	if (mem_ctx != NULL)
+		talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 {
 	gid_t gid;
@@ -937,7 +983,7 @@ static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 
 	/* Add nested group memberships */
 
-	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
+	if (!enum_alias_memberships(sid, &aliases, &num_aliases))
 		return;
 
 	for (j=0; j<num_aliases; j++) {
@@ -953,7 +999,7 @@ static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 			continue;
 		}
 
-		add_gid_to_array_unique(gid, gids, num);
+		add_gid_to_array_unique(NULL, gid, gids, num);
 	}
 	SAFE_FREE(aliases);
 }
@@ -974,7 +1020,7 @@ static void add_gids_from_group_sid(DOM_SID *sid, gid_t **gids, int *num)
 		   sid_string_static(sid)));
 
 	if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &gid, 0)))
-		add_gid_to_array_unique(gid, gids, num);
+		add_gid_to_array_unique(NULL, gid, gids, num);
 
 	add_local_gids_from_sid(sid, gids, num);
 }
@@ -1178,7 +1224,7 @@ static void add_local_sids_from_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	DOM_SID *aliases = NULL;
 	int i, num_aliases = 0;
 
-	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
+	if (!enum_alias_memberships(sid, &aliases, &num_aliases))
 		return;
 
 	if (num_aliases == 0)

@@ -24,8 +24,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-extern DOM_SID global_sid_Builtin; 
-
 static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 {
 	int i;
@@ -429,7 +427,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	if (delta->buf_logon_hrs.buffer) {
 		pstring old, new;
 		pdb_sethexhours(old, pdb_get_hours(account));
-		pdb_sethexhours(new, (const char *)delta->buf_logon_hrs.buffer);
+		pdb_sethexhours(new, delta->buf_logon_hrs.buffer);
 		if (!strequal(old, new))
 			pdb_set_hours(account, (const char *)delta->buf_logon_hrs.buffer, PDB_CHANGED);
 	}

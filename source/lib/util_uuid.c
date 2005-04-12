@@ -94,7 +94,7 @@ BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
 {
 	BOOL ret = False;
 	const char *ptr = in;
-	char *end = (char *)in;
+	char *end = CONST_DISCARD(char *, in);
 	int i;
 	unsigned v1, v2;
 

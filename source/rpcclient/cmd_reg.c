@@ -57,6 +57,7 @@ static void cmd_reg_enum(struct client_info *info)
 	POLICY_HND key_pol;
 	fstring full_keyname;
 	fstring key_name;
+	uint32 reg_type;
 
 	/*
 	 * query key info
@@ -84,6 +85,11 @@ static void cmd_reg_enum(struct client_info *info)
 	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
 		fprintf(out_hnd, "regenum <key_name>\n");
+		return;
+	}
+
+	if (!reg_split_key(full_keyname, &reg_type, key_name)) {
+		fprintf(out_hnd, "Unknown registry hive '%s'\n", key_name);
 		return;
 	}
 
@@ -130,7 +136,7 @@ static void cmd_reg_enum(struct client_info *info)
 		time_t key_mod_time;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_getversion(smb_cli, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
@@ -166,11 +172,11 @@ static void cmd_reg_enum(struct client_info *info)
 		 */
 
 		uint32 val_type;
-		BUFFER2 value;
+		REGVAL_BUFFER value;
 		fstring val_name;
 
 		/* unknown 1a it */
-		res2 = res1 ? do_reg_unknown_1a(smb_cli, &key_pol,
+		res2 = res1 ? do_reg_getversion(smb_cli, &key_pol,
 					&unk_1a_response) : False;
 
 		if (res2 && unk_1a_response != 5)
@@ -314,7 +320,7 @@ static void cmd_reg_query_key(struct client_info *info)
 /****************************************************************************
 nt registry create value
 ****************************************************************************/
-static void cmd_reg_create_val(struct client_info *info)
+static void cmd_reg_set_val(struct client_info *info)
 {
 	BOOL res = True;
 	BOOL res3 = True;
@@ -327,7 +333,7 @@ static void cmd_reg_create_val(struct client_info *info)
 	fstring val_name;
 	fstring tmp;
 	uint32 val_type;
-	BUFFER3 value;
+	RPC_DATA_BLOB value;
 
 #if 0
 	uint32 unk_0;
@@ -337,7 +343,7 @@ static void cmd_reg_create_val(struct client_info *info)
 	                        val_name, *val_type) : False;
 #endif
 
-	DEBUG(5, ("cmd_reg_create_val: smb_cli->fd:%d\n", smb_cli->fd));
+	DEBUG(5, ("cmd_reg_set_val: smb_cli->fd:%d\n", smb_cli->fd));
 
 	if (!next_token_nr(NULL, full_keyname, NULL, sizeof(full_keyname)))
 	{
@@ -377,12 +383,12 @@ static void cmd_reg_create_val(struct client_info *info)
 	{
 		case 0x01: /* UNISTR */
 		{
-			init_buffer3_str(&value, tmp, strlen(tmp)+1);
+			init_rpc_blob_str(&value, tmp, strlen(tmp)+1);
 			break;
 		}
 		case 0x03: /* BYTES */
 		{
-			init_buffer3_hex(&value, tmp);
+			init_rpc_blob_hex(&value, tmp);
 			break;
 		}
 		case 0x04: /* DWORD */
@@ -396,7 +402,7 @@ static void cmd_reg_create_val(struct client_info *info)
 			{
 				tmp_val = strtol(tmp, (char**)NULL, 10);
 			}
-			init_buffer3_uint32(&value, tmp_val);
+			init_rpc_blob_uint32(&value, tmp_val);
 			break;
 		}
 		default:
@@ -428,7 +434,7 @@ static void cmd_reg_create_val(struct client_info *info)
 	}
 
 	/* create an entry */
-	res4 = res3 ? do_reg_create_val(smb_cli, &parent_pol,
+	res4 = res3 ? do_reg_set_val(smb_cli, &parent_pol,
 				 val_name, val_type, &value) : False;
 
 	/* flush the modified key */
@@ -448,12 +454,12 @@ static void cmd_reg_create_val(struct client_info *info)
 
 	if (res && res3 && res4)
 	{
-		DEBUG(5,("cmd_reg_create_val: query succeeded\n"));
+		DEBUG(5,("cmd_reg_set_val: query succeeded\n"));
 		fprintf(out_hnd,"OK\n");
 	}
 	else
 	{
-		DEBUG(5,("cmd_reg_create_val: query failed\n"));
+		DEBUG(5,("cmd_reg_set_val: query failed\n"));
 	}
 }
 
@@ -982,7 +988,7 @@ struct cmd_set reg_commands[] = {
 	{ "regqueryval",	cmd_reg_query_info,		"Registry Value Query", "<valname>" },
 	{ "regquerykey",	cmd_reg_query_key,		"Registry Key Query", "<keyname>" },
 	{ "regdeleteval",	cmd_reg_delete_val,		"Registry Value Delete", "<valname>" },
-	{ "regcreateval",	cmd_reg_create_val,		"Registry Key Create", "<valname> <valtype> <value>" },
+	{ "regsetval",	        cmd_reg_set_val,		"Registry Key Create", "<valname> <valtype> <value>" },
 	{ "reggetsec",		cmd_reg_get_key_sec,		"Registry Key Security", "<keyname>" },
 	{ "regtestsec",		cmd_reg_test_key_sec,		"Test Registry Key Security", "<keyname>" },
 #endif

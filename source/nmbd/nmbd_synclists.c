@@ -29,6 +29,8 @@
 
 #include "includes.h"
 
+extern fstring local_machine;
+
 struct sync_record {
 	struct sync_record *next, *prev;
 	unstring workgroup;
@@ -65,7 +67,6 @@ static void sync_child(char *name, int nm_type,
 		       struct in_addr ip, BOOL local, BOOL servers,
 		       char *fname)
 {
-	extern fstring local_machine;
 	fstring unix_workgroup;
 	static struct cli_state cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;

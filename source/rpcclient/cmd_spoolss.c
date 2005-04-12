@@ -1283,7 +1283,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  wrapper for strtok to get the next parameter from a delimited list.
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
-static char* get_driver_3_param (const char* str, const char* delim, UNISTR* dest)
+static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
 
@@ -1310,11 +1310,8 @@ static char* get_driver_3_param (const char* str, const char* delim, UNISTR* des
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files> 
  *******************************************************************************/
-static BOOL init_drv_info_3_members (
-	TALLOC_CTX *mem_ctx, 
-	DRIVER_INFO_3 *info, 
-	const char *args
-)
+static BOOL init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info, 
+                                      char *args )
 {
 	char	*str, *str2;
 	uint32	len, i;
@@ -1370,6 +1367,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	DRIVER_INFO_3		info3;
 	const char		*arch;
 	fstring			driver_name;
+	char 			*driver_args;
 
 	/* parse the command arguements */
 	if (argc != 3 && argc != 4)
@@ -1393,7 +1391,8 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	else
 		set_drv_info_3_env(&info3, arch);
 
-	if (!init_drv_info_3_members(mem_ctx, &info3, argv[2]))
+	driver_args = talloc_strdup( mem_ctx, argv[2] );
+	if (!init_drv_info_3_members(mem_ctx, &info3, driver_args ))
 	{
 		printf ("Error Invalid parameter list - %s.\n", argv[2]);
 		return WERR_INVALID_PARAM;
@@ -1813,6 +1812,38 @@ static WERROR cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return werror;
 }
 
+static const char *get_form_flag(int form_flag)
+{
+	switch (form_flag) {
+	case FORM_USER:
+		return "FORM_USER";
+	case FORM_BUILTIN:
+		return "FORM_BUILTIN";
+	case FORM_PRINTER:
+		return "FORM_PRINTER";
+	default:
+		return "unknown";
+	}
+}
+
+static void display_form(FORM_1 *form)
+{
+	fstring form_name = "";
+
+	if (form->name.buffer)
+		rpcstr_pull(form_name, form->name.buffer,
+			    sizeof(form_name), -1, STR_TERMINATE);
+
+	printf("%s\n" \
+		"\tflag: %s (%d)\n" \
+		"\twidth: %d, length: %d\n" \
+		"\tleft: %d, right: %d, top: %d, bottom: %d\n\n", 
+		form_name, get_form_flag(form->flag), form->flag,
+		form->width, form->length, 
+		form->left, form->right, 
+		form->top, form->bottom);
+}
+
 /* Get a form */
 
 static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -1847,7 +1878,7 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	got_handle = True;
 
-	/* Set the form */
+	/* Get the form */
 
 	werror = cli_spoolss_getform(cli, mem_ctx, 0, &needed,
 				     &handle, argv[2], 1, &form);
@@ -1859,12 +1890,7 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	printf("width: %d\n", form.width);
-	printf("length: %d\n", form.length);
-	printf("left: %d\n", form.left);
-	printf("top: %d\n", form.top);
-	printf("right: %d\n", form.right);
-	printf("bottom: %d\n", form.bottom);
+	display_form(&form);
 
  done:
 	if (got_handle)
@@ -1925,20 +1951,6 @@ static WERROR cmd_spoolss_deleteform(struct cli_state *cli,
 
 /* Enumerate forms */
 
-static const char *get_form_flag(int form_flag)
-{
-	switch (form_flag) {
-	case FORM_USER:
-		return "FORM_USER";
-	case FORM_BUILTIN:
-		return "FORM_BUILTIN";
-	case FORM_PRINTER:
-		return "FORM_PRINTER";
-	default:
-		return "unknown";
-	}
-}
-
 static WERROR cmd_spoolss_enum_forms(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
 				       const char **argv)
@@ -1988,20 +2000,9 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 	/* Display output */
 
 	for (i = 0; i < num_forms; i++) {
-		fstring form_name;
 
-		if (forms[i].name.buffer)
-			rpcstr_pull(form_name, forms[i].name.buffer,
-				    sizeof(form_name), -1, STR_TERMINATE);
+		display_form(&forms[i]);
 
-		printf("%s\n" \
-			"\tflag: %s (%d)\n" \
-			"\twidth: %d, length: %d\n" \
-			"\tleft: %d, right: %d, top: %d, bottom: %d\n\n", 
-			form_name, get_form_flag(forms[i].flag), forms[i].flag,
-			forms[i].width, forms[i].length, 
-			forms[i].left, forms[i].right, 
-			forms[i].top, forms[i].bottom);
 	}
 
  done:

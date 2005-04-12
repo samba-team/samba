@@ -476,6 +476,14 @@
 #include <sys/xattr.h>
 #endif
 
+#ifdef HAVE_SYS_EXTATTR_H
+#include <sys/extattr.h>
+#endif
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #if HAVE_LOCALE_H
 #include <locale.h>
 #endif
@@ -1371,5 +1379,8 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 #ifdef MMAP_BLACKLIST
 #undef HAVE_MMAP
 #endif
+
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
 
 #endif /* _INCLUDES_H */

@@ -226,6 +226,9 @@ Byte offset   Type     name                description
 #define SMB_QUERY_FILE_STREAM_INFO	0x109
 #define SMB_QUERY_COMPRESSION_INFO	0x10b
 
+#define SMB_FIND_INFO_STANDARD			1
+#define SMB_FIND_EA_SIZE			2
+#define SMB_FIND_EA_LIST			3
 #define SMB_FIND_FILE_DIRECTORY_INFO		0x101
 #define SMB_FIND_FILE_FULL_DIRECTORY_INFO	0x102
 #define SMB_FIND_FILE_NAMES_INFO		0x103
@@ -437,6 +440,9 @@ Offset Size         Name
 #define SMB_QUERY_XATTR                0x205 /* need for non-user XATTRs */
 #define SMB_QUERY_ATTR_FLAGS           0x206 /* chflags, chattr */
 #define SMB_SET_ATTR_FLAGS             0x206 
+#define SMB_QUERY_POSIX_PERMISSION     0x207
+#define SMB_QUERY_POSIX_LOCK	       0x208
+#define SMB_SET_POSIX_LOCK	       0x208
 
 /* Transact 2 Find First levels */
 #define SMB_FIND_FILE_UNIX             0x202
@@ -461,6 +467,12 @@ Offset Size         Name
 
 #define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
 #define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+#define CIFS_UNIX_XATTTR_CAP	            0x4 /* for support of other xattr
+						namespaces such as system,
+						security and trusted */
+#define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
+						(chflags) and lsattr */
+						
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 

@@ -1269,6 +1269,21 @@ size_t pull_utf8_allocate(char **dest, const char *src)
 }
  
 /**
+ * Copy a string from a DOS src to a unix char * destination, allocating a buffer using talloc
+ *
+ * @param dest always set at least to NULL 
+ *
+ * @returns The number of bytes occupied by the string in the destination
+ **/
+
+size_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+{
+	size_t src_len = strlen(src)+1;
+	*dest = NULL;
+	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest, True);
+}
+
+/**
  Copy a string from a char* src to a unicode or ascii
  dos codepage destination choosing unicode or ascii based on the 
  flags in the SMB buffer starting at base_ptr.

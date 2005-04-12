@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 /****************************************************************************
  Open a file with a share mode.
 ****************************************************************************/
@@ -29,7 +31,6 @@ files_struct *open_fake_file_shared1(enum FAKE_FILE_TYPE fake_file_type, connect
 				int share_mode,int ofun, uint32 new_dos_attr, int oplock_request, 
 				int *Access,int *action)
 {
-	extern struct current_user current_user;
 	int flags=0;
 	files_struct *fsp = NULL;
 

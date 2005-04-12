@@ -43,7 +43,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
 #endif
 
 /* zero a structure */
@@ -76,16 +76,20 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
+/* you must add the following extern declaration to files using this macro
+ * extern struct current_user current_user;
+ */
 #define FSP_BELONGS_CONN(fsp,conn) do {\
-			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid));\
 			} while(0)
 
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
+/* you must add the following extern declaration to files using this macro
+ * extern struct current_user current_user;
+ */
 #define CHECK_FSP(fsp,conn) do {\
-			extern struct current_user current_user;\
 			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
@@ -96,9 +100,6 @@
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-
-#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-				return(CACHED_ERROR(fsp))
 
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
@@ -158,25 +159,23 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-/* Macro to cache an error in a write_bmpx_struct */
-#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
-                w->wr_discard = True, -1)
 /* Macro to test if an error has been cached for this fnum */
 #define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
                 (fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
 #define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
-/* these are the datagram types */
-#define DGRAM_DIRECT_UNIQUE 0x10
-
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,False,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,True,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,False,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,False,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_INVALID,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
+
+/* these are the datagram types */
+#define DGRAM_DIRECT_UNIQUE 0x10
 
 #define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 
@@ -290,6 +289,8 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array_((ctx),(ptr),sizeof(type),(count))
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
+#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem_((ps),(size),1)
+
 
 /* Get medieval on our ass about malloc.... */
 
@@ -338,6 +339,7 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array((ctx),(ptr),sizeof(type),(count))
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
+#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)
 
 /* Regular malloc code. */
 
@@ -348,5 +350,15 @@ copy an IP address from one buffer to another
 #define SMB_STRNDUP(s,n) strndup(s,n)
 
 #endif
+
+#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
+do { \
+	*(array) = ((mem_ctx) != NULL) ? \
+		TALLOC_REALLOC_ARRAY(mem_ctx, (*(array)), type, (*(num))+1) : \
+		SMB_REALLOC_ARRAY((*(array)), type, (*(num))+1); \
+	SMB_ASSERT((*(array)) != NULL); \
+	(*(array))[*(num)] = (elem); \
+	(*(num)) += 1; \
+} while (0)
 
 #endif /* _SMB_MACROS_H */

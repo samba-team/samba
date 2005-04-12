@@ -25,6 +25,7 @@
 
 #include "includes.h"
 
+extern struct in_addr loopback_ip;
 extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
@@ -211,7 +212,6 @@ BOOL create_subnets(void)
 	int num_interfaces = iface_count();
 	int i;
 	struct in_addr unicast_ip, ipzero;
-	extern struct in_addr loopback_ip;
 
 	if(num_interfaces == 0) {
 		DEBUG(0,("create_subnets: No local interfaces !\n"));

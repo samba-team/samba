@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+extern struct generic_mapping file_generic_mapping;
+
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
@@ -916,7 +919,6 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take ownership to work
 				 * reasonably */
-				extern struct current_user current_user;
 				*puser = current_user.uid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
@@ -938,7 +940,6 @@ static BOOL unpack_nt_owners(int snum, SMB_STRUCT_STAT *psbuf, uid_t *puser, gid
 			if (lp_force_unknown_acl_user(snum)) {
 				/* this allows take group ownership to work
 				 * reasonably */
-				extern struct current_user current_user;
 				*pgrp = current_user.gid;
 			} else {
 				DEBUG(3,("unpack_nt_owners: unable to validate"
@@ -1003,10 +1004,8 @@ static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
 
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
-	extern DOM_SID global_sid_World;
 	fstring u_name;
 	fstring g_name;
-	extern struct current_user current_user;
 
 	/* "Everyone" always matches every uid. */
 
@@ -1041,12 +1040,11 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 							files_struct *fsp,
-							DOM_SID *pfile_owner_sid,
-							DOM_SID *pfile_grp_sid,
+							const DOM_SID *pfile_owner_sid,
+							const DOM_SID *pfile_grp_sid,
 							SMB_STRUCT_STAT *pst,
 							BOOL setting_acl)
 {
-	extern DOM_SID global_sid_World;
 	canon_ace *pace;
 	BOOL got_user = False;
 	BOOL got_grp = False;
@@ -1220,10 +1218,6 @@ static BOOL create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
 							SEC_ACL *dacl)
 {
-	extern DOM_SID global_sid_Creator_Owner;
-	extern DOM_SID global_sid_Creator_Group;
-	extern DOM_SID global_sid_World;
-	extern struct generic_mapping file_generic_mapping;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
@@ -1647,7 +1641,6 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 
 static void process_deny_list( canon_ace **pp_ace_list )
 {
-	extern DOM_SID global_sid_World;
 	canon_ace *ace_list = *pp_ace_list;
 	canon_ace *curr_ace = NULL;
 	canon_ace *curr_ace_next = NULL;
@@ -2065,9 +2058,8 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-					DOM_SID *powner, DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
+					const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
-	extern DOM_SID global_sid_World;
 	connection_struct *conn = fsp->conn;
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
 	canon_ace *list_head = NULL;
@@ -2629,10 +2621,6 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 
 size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 {
-	extern DOM_SID global_sid_Builtin_Administrators;
-	extern DOM_SID global_sid_Builtin_Users;
-	extern DOM_SID global_sid_Creator_Owner;
-	extern DOM_SID global_sid_Creator_Group;
 	connection_struct *conn = fsp->conn;
 	SMB_STRUCT_STAT sbuf;
 	SEC_ACE *nt_ace_list = NULL;
@@ -2920,7 +2908,6 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 {
 	int ret;
-	extern struct current_user current_user;
 	files_struct *fsp;
 	SMB_STRUCT_STAT st;
 
@@ -2976,7 +2963,6 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	uid_t orig_uid;
 	gid_t orig_gid;
 	BOOL need_chown = False;
-	extern struct current_user current_user;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -3067,7 +3053,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
-									&file_ace_list, &dir_ace_list, security_info_sent, psd);
+					&file_ace_list, &dir_ace_list, security_info_sent, psd);
 
 	/* Ignore W2K traverse DACL set. */
 	if (file_ace_list || dir_ace_list) {
@@ -3760,7 +3746,6 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 static int check_posix_acl_group_write(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	extern struct current_user current_user;
 	SMB_ACL_T posix_acl = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
@@ -3922,7 +3907,6 @@ failed to match on user or group in token.\n", fname ));
 
 BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 {
-	extern struct current_user current_user;
 	SMB_STRUCT_STAT sbuf;  
 	pstring dname;
 	int ret;
@@ -3980,7 +3964,6 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 BOOL can_write_to_file(connection_struct *conn, const char *fname)
 {
-	extern struct current_user current_user;
 	SMB_STRUCT_STAT sbuf;  
 	int ret;
 

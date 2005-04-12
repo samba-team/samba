@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
 extern userdom_struct current_user_info;
 extern uint16 global_oplock_port;
 extern uint16 global_smbpid;
@@ -76,9 +77,92 @@ static void check_for_pipe(const char *fname)
 	strlower_m(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
-		unix_ERR_class = ERRSRV;
-		unix_ERR_code = ERRaccess;
-		unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
+		set_saved_error_triple(ERRSRV, ERRaccess, NT_STATUS_ACCESS_DENIED);
+	}
+}
+
+/****************************************************************************
+ Change the ownership of a file to that of the parent directory.
+ Do this by fd if possible.
+****************************************************************************/
+
+void change_owner_to_parent(connection_struct *conn, files_struct *fsp, const char *fname, SMB_STRUCT_STAT *psbuf)
+{
+	const char *parent_path = parent_dirname(fname);
+	SMB_STRUCT_STAT parent_st;
+	int ret;
+
+	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
+	if (ret == -1) {
+		DEBUG(0,("change_owner_to_parent: failed to stat parent directory %s. Error was %s\n",
+			parent_path, strerror(errno) ));
+		return;
+	}
+
+	if (fsp && fsp->fd != -1) {
+		become_root();
+		ret = SMB_VFS_FCHOWN(fsp, fsp->fd, parent_st.st_uid, (gid_t)-1);
+		unbecome_root();
+		if (ret == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to fchown file %s to parent directory uid %u. \
+Error was %s\n",
+				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+		}
+
+		DEBUG(10,("change_owner_to_parent: changed new file %s to parent directory uid %u.\n",
+			fname, (unsigned int)parent_st.st_uid ));
+
+	} else {
+		/* We've already done an lstat into psbuf, and we know it's a directory. If
+		   we can cd into the directory and the dev/ino are the same then we can safely
+		   chown without races as we're locking the directory in place by being in it.
+		   This should work on any UNIX (thanks tridge :-). JRA.
+		*/
+
+		pstring saved_dir;
+		SMB_STRUCT_STAT sbuf;
+
+		if (!vfs_GetWd(conn,saved_dir)) {
+			DEBUG(0,("change_owner_to_parent: failed to get current working directory\n"));
+			return;
+		}
+
+		/* Chdir into the new path. */
+		if (vfs_ChDir(conn, fname) == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to change current working directory to %s. \
+Error was %s\n", fname, strerror(errno) ));
+			goto out;
+		}
+
+		if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to stat directory '.' (%s) \
+Error was %s\n", fname, strerror(errno)));
+			goto out;
+		}
+
+		/* Ensure we're pointing at the same place. */
+		if (sbuf.st_dev != psbuf->st_dev || sbuf.st_ino != psbuf->st_ino || sbuf.st_mode != psbuf->st_mode ) {
+			DEBUG(0,("change_owner_to_parent: device/inode/mode on directory %s changed. Refusing to chown !\n",
+				fname ));
+			goto out;
+		}
+
+		become_root();
+		ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
+		unbecome_root();
+		if (ret == -1) {
+			DEBUG(10,("change_owner_to_parent: failed to chown directory %s to parent directory uid %u. \
+Error was %s\n",
+				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+			goto out;
+		}
+
+		DEBUG(10,("change_owner_to_parent: changed ownership of new directory %s to parent directory uid %u.\n",
+			fname, (unsigned int)parent_st.st_uid ));
+
+  out:
+
+		vfs_ChDir(conn,saved_dir);
 	}
 }
 
@@ -89,7 +173,6 @@ static void check_for_pipe(const char *fname)
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		      const char *fname,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
-	extern struct current_user current_user;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 
@@ -165,9 +248,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 		/* Don't create files with Microsoft wildcard characters. */
 		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRinvalidname;
-			unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+			set_saved_error_triple(ERRDOS, ERRinvalidname, NT_STATUS_OBJECT_NAME_INVALID);
 			return False;
 		}
 
@@ -402,9 +483,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
 			fname ));
 		/* Use errno to map to correct error. */
-		unix_ERR_class = SMB_SUCCESS;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		set_saved_error_triple(SMB_SUCCESS, 0, NT_STATUS_OK);
 		return False;
 	}
 
@@ -444,10 +523,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 				(!GET_ALLOW_SHARE_DELETE(share->share_mode) || !GET_ALLOW_SHARE_DELETE(share_mode))) {
 			DEBUG(5,("check_share_mode: Failing open on file %s as delete access requests conflict.\n",
 				fname ));
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return False;
 		}
 
@@ -472,10 +548,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 	if ((desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share->share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access requested and allow share delete not set.\n",
 			fname ));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 
@@ -488,18 +561,14 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 	if ((share->desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access granted and allow share delete not requested.\n",
 			fname ));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 
 #if 0
 	/* Bluarc test may need this ... needs further investigation. */
 	if (deny_mode == DENY_ALL || old_deny_mode == DENY_ALL) {
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 #endif
@@ -529,10 +598,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 				deny_mode,old_deny_mode,old_open_mode,
 				(int)share->pid,fname, fcbopen, *flags, access_allowed));
 
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return False;
 		}
 
@@ -683,10 +749,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 					DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
 					SAFE_FREE(old_shares);
-					errno = EACCES;
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadshare;
-					unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+					set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 					return -1;
 				}
 				
@@ -750,9 +813,7 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 					if (del_share_entry(dev, inode, &broken_entry->entry, NULL) == -1) {
 						free_broken_entry_list(broken_entry_list);
 						errno = EACCES;
-						unix_ERR_class = ERRDOS;
-						unix_ERR_code = ERRbadshare;
-						unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+						set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 						return -1;
 					}
 					
@@ -1019,9 +1080,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			delete_defered_open_entry_record(conn, dib.dev, dib.inode);
 			unlock_share_entry(conn, dib.dev, dib.inode);
 
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 		/* Ensure we don't reprocess this message. */
@@ -1039,15 +1098,10 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		return print_fsp_open(conn, fname);
 	}
 
-	fsp = file_new(conn);
-	if(!fsp)
-		return NULL;
-
 	DEBUG(10,("open_file_shared: fname = %s, dos_attrs = %x, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, new_dos_mode, share_mode, ofun, (int)mode,  oplock_request ));
 
 	if (!check_name(fname,conn)) {
-		file_free(fsp);
 		return NULL;
 	} 
 
@@ -1063,21 +1117,15 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	/* this is for OS/2 long file names - say we don't support them */
 	if (strstr(fname,".+,;=[].")) {
-		unix_ERR_class = ERRDOS;
 		/* OS/2 Workplace shell fix may be main code stream in a later release. */ 
-		unix_ERR_code = ERRcannotopen;
-		unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		set_saved_error_triple(ERRDOS, ERRcannotopen, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		DEBUG(5,("open_file_shared: OS/2 long filenames are not supported.\n"));
-		/* need to reset errno or DEVELOPER will cause us to coredump */
-		errno = 0;
-		file_free(fsp);
 		return NULL;
 	}
 
 	if ((GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL) && file_existed)  {
 		DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
 			fname ));
-		file_free(fsp);
 		if (S_ISDIR(psbuf->st_mode)) {
 			errno = EISDIR;
 		} else {
@@ -1099,7 +1147,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (%x %x) (0%o, 0%o)\n",
 						fname, existing_dos_mode, new_dos_mode,
 						(int)psbuf->st_mode, (int)mode ));
-			file_free(fsp);
 			errno = EACCES;
 			return NULL;
 		}
@@ -1112,6 +1159,11 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		append does not mean the same thing under dos and unix */
 
 	switch (GET_OPEN_MODE(share_mode)) {
+		case DOS_OPEN_RDONLY:
+			flags = O_RDONLY;
+			if (desired_access == 0)
+				desired_access = FILE_READ_DATA;
+			break;
 		case DOS_OPEN_WRONLY: 
 			flags = O_WRONLY; 
 			if (desired_access == 0)
@@ -1124,15 +1176,15 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		case DOS_OPEN_RDWR: 
+		case DOS_OPEN_EXEC:
 			flags = O_RDWR; 
 			if (desired_access == 0)
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		default:
-			flags = O_RDONLY;
-			if (desired_access == 0)
-				desired_access = FILE_READ_DATA;
-			break;
+			/* Force DOS error. */
+			set_saved_error_triple(ERRDOS, ERRinvalidparam, NT_STATUS_INVALID);
+			return NULL;
 	}
 
 #if defined(O_SYNC)
@@ -1146,7 +1198,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		if (!fcbopen) {
 			DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
 				fname, !CAN_WRITE(conn) ? "share" : "file" ));
-			file_free(fsp);
 			errno = EACCES;
 			return NULL;
 		}
@@ -1155,7 +1206,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	if (deny_mode > DENY_NONE && deny_mode!=DENY_FCB) {
 		DEBUG(2,("Invalid deny mode %d on file %s\n",deny_mode,fname));
-		file_free(fsp);
 		errno = EINVAL;
 		return NULL;
 	}
@@ -1170,6 +1220,10 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			flags2 &= ~O_CREAT;
 		}
 	}
+
+	fsp = file_new(conn);
+	if(!fsp)
+		return NULL;
 
 	if (file_existed) {
 
@@ -1204,9 +1258,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				flags,(flags2&~(O_TRUNC|O_CREAT)),(int)mode,(int)fsp_open ));
 
 			if (!fsp_open && errno) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRnoaccess;
-				unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
+				/* Default error. */
+				set_saved_error_triple(ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED);
 			}
 
 			/* 
@@ -1214,9 +1267,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
-				/* The fsp->open_time here represents the current time of day. */
-				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+			if (!internal_only_open) {
+				NTSTATUS status;
+				get_saved_error_triple(NULL, NULL, &status);
+				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
+					/* The fsp->open_time here represents the current time of day. */
+					defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+				}
 			}
 
 			unlock_share_entry(conn, dev, inode);
@@ -1226,9 +1283,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				 * We have detected a sharing violation here
 				 * so return the correct error code
 				 */
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadshare;
-				unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+				set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			}
 			file_free(fsp);
 			return NULL;
@@ -1300,7 +1355,9 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
+			NTSTATUS status;
+			get_saved_error_triple(NULL, NULL, &status);
+			if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
 				/* The fsp->open_time here represents the current time of day. */
 				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
 			}
@@ -1312,9 +1369,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * We have detected a sharing violation here, so
 			 * return the correct code.
 			 */
-                        unix_ERR_class = ERRDOS;
-                        unix_ERR_code = ERRbadshare;
-                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 
@@ -1380,7 +1435,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	DEBUG(10,("open_file_shared : share_mode = %x\n", fsp->share_mode ));
 
 	if (Access) {
-		(*Access) = open_mode;
+		(*Access) = (SET_DENY_MODE(deny_mode) | SET_OPEN_MODE(open_mode));
 	}
 
 	action = 0;
@@ -1389,8 +1444,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		action = FILE_WAS_OPENED;
 	if (file_existed && (flags2 & O_TRUNC))
 		action = FILE_WAS_OVERWRITTEN;
-	if (!file_existed) 
+	if (!file_existed) {
 		action = FILE_WAS_CREATED;
+		/* Change the owner if required. */
+		if (lp_inherit_owner(SNUM(conn))) {
+			change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+		}
+	}
 
 	if (paction) {
 		*paction = action;
@@ -1437,9 +1497,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			fd_close(conn,fsp);
 			file_free(fsp);
 			ntstatus_to_dos(result, &u_e_c, &u_e_code);
-                        unix_ERR_ntstatus = result;
-                        unix_ERR_class = u_e_c;
-                        unix_ERR_code = u_e_code;
+			set_saved_error_triple(u_e_c, u_e_code, result);
 			return NULL;
 		}
 	}
@@ -1545,10 +1603,9 @@ int close_file_fchmod(files_struct *fsp)
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf,
+files_struct *open_directory(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
 			uint32 desired_access, int share_mode, int smb_ofun, int *action)
 {
-	extern struct current_user current_user;
 	BOOL got_stat = False;
 	files_struct *fsp = file_new(conn);
 	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
@@ -1583,39 +1640,29 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 			 * Try and create the directory.
 			 */
 
-			if(!CAN_WRITE(conn)) {
-				DEBUG(2,("open_directory: failing create on read-only share\n"));
-				file_free(fsp);
-				errno = EACCES;
-				return NULL;
-			}
+			/* We know bad_path is false as it's caught earlier. */
 
-			if (ms_has_wild(fname))  {
-				file_free(fsp);
-				DEBUG(5,("open_directory: failing create on filename %s with wildcards\n", fname));
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRinvalidname;
-				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
-				return NULL;
-			}
+			NTSTATUS status = mkdir_internal(conn, fname, False);
 
-			if( strchr_m(fname, ':')) {
-				file_free(fsp);
-				DEBUG(5,("open_directory: failing create on filename %s with colon in name\n", fname));
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRinvalidname;
-				unix_ERR_ntstatus = NT_STATUS_NOT_A_DIRECTORY;
-				return NULL;
-			}
-
-			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname, True)) < 0) {
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
+				/* Ensure we return the correct NT status to the client. */
+				set_saved_error_triple(0, 0, status);
 				return NULL;
 			}
 
-			if(SMB_VFS_STAT(conn,fname, psbuf) != 0) {
+			/* Ensure we're checking for a symlink here.... */
+			/* We don't want to get caught by a symlink racer. */
+
+			if(SMB_VFS_LSTAT(conn,fname, psbuf) != 0) {
+				file_free(fsp);
+				return NULL;
+			}
+
+			if(!S_ISDIR(psbuf->st_mode)) {
+				DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 				file_free(fsp);
 				return NULL;
 			}
@@ -1672,13 +1719,19 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	string_set(&fsp->fsp_name,fname);
 
 	if (delete_on_close) {
-		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close, 0);
+		NTSTATUS status = set_delete_on_close_internal(fsp, delete_on_close, 0);
 
-		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			file_free(fsp);
 			return NULL;
 		}
 	}
+
+	/* Change the owner if required. */
+	if ((*action == FILE_WAS_CREATED) && lp_inherit_owner(SNUM(conn))) {
+		change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+	}
+
 	conn->num_files_open++;
 
 	return fsp;
@@ -1690,7 +1743,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 
 files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	extern struct current_user current_user;
 	files_struct *fsp = NULL;
 
 	if (!VALID_STAT(*psbuf))

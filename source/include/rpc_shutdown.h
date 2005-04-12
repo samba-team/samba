@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
-   SMB parameters and setup
+   
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)      2003.
+   Copyright (C) Gerald (Jerry) Carter                2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,48 +23,52 @@
 #define _RPC_SHUTDOWN_H 
 
 
-/* Implemented */
+/* opnums */
+
 #define SHUTDOWN_INIT		0x00
 #define SHUTDOWN_ABORT		0x01
-/* NOT IMPLEMENTED
 #define SHUTDOWN_INIT_EX	0x02
-*/
 
-/* SHUTDOWN_Q_INIT */
-typedef struct q_shutodwn_init_info
-{
-	uint32 ptr_server;
-	uint16 server;
-	uint32 ptr_msg;
-	UNIHDR hdr_msg;		/* shutdown message */
-	UNISTR2 uni_msg;	/* seconds */
-	uint32 timeout;		/* seconds */
+
+/***********************************************/
+ 
+typedef struct {
+	uint16 *server;
+	UNISTR4 *message; 	
+	uint32 timeout;		/* in seconds */
 	uint8 force;		/* boolean: force shutdown */
-	uint8 reboot;		/* boolean: reboot on shutdown */
-		
+	uint8 reboot;		/* boolean: reboot on shutdown */		
 } SHUTDOWN_Q_INIT;
 
-/* SHUTDOWN_R_INIT */
-typedef struct r_shutdown_init_info
-{
-	NTSTATUS status;		/* return status */
-
+typedef struct {
+	WERROR status;		/* return status */
 } SHUTDOWN_R_INIT;
 
-/* SHUTDOWN_Q_ABORT */
-typedef struct q_shutdown_abort_info
-{
-	uint32 ptr_server;
-	uint16 server;
+/***********************************************/
+ 
+typedef struct {
+	uint16 *server;
+	UNISTR4 *message; 	
+	uint32 timeout;		/* in seconds */
+	uint8 force;		/* boolean: force shutdown */
+	uint8 reboot;		/* boolean: reboot on shutdown */
+	uint32 reason;		/* reason - must be defined code */
+} SHUTDOWN_Q_INIT_EX;
 
+typedef struct {
+	WERROR status;
+} SHUTDOWN_R_INIT_EX;
+
+/***********************************************/
+
+typedef struct {
+	uint16 *server;
 } SHUTDOWN_Q_ABORT;
 
-/* SHUTDOWN_R_ABORT */
-typedef struct r_shutdown_abort_info
-{ 
-	NTSTATUS status; /* return status */
-
+typedef struct { 
+	WERROR status; 
 } SHUTDOWN_R_ABORT;
+
 
 
 #endif /* _RPC_SHUTDOWN_H */
