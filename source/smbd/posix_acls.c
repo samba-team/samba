@@ -3874,10 +3874,14 @@ match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
 		}
 	}
 
-	/* If we get here we know ret == 0. */
-	SMB_ASSERT(ret == 0);
+	/* If ret is -1 here we didn't match on the user entry or
+	   supplemental group entries. */
+	
+	DEBUG(10,("check_posix_acl_group_write: ret = %d before check_stat:\n", ret));
 
   check_stat:
+
+	/* Do we match on the owning group entry ? */
 
 	for (i = 0; i < current_user.ngroups; i++) {
 		if (current_user.groups[i] == psbuf->st_gid) {
@@ -3889,14 +3893,15 @@ match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "c
 	}
 
 	if (i == current_user.ngroups) {
-		SMB_ASSERT(ret != 1);
 		DEBUG(10,("check_posix_acl_group_write: file %s \
-failed to match on user or group in token.\n", fname ));
+failed to match on user or group in token (ret = %d).\n", fname, ret ));
 	}
 
   done:
 
 	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+
+	DEBUG(10,("check_posix_acl_group_write: file %s returning (ret = %d).\n", fname, ret ));
 	return ret;
 }
 
