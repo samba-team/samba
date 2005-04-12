@@ -1019,6 +1019,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	BOOL was_8_3;
 	int nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+	BOOL check_mangled_names = lp_manglednames(SNUM(conn));
 
 	*fname = 0;
 	*out_of_space = False;
@@ -1063,7 +1064,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
 			got_match = mask_match(fname, mask, conn->case_sensitive);
 
-		if(!got_match && !mangle_is_8_3(fname, False)) {
+		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False)) {
 
 			/*
 			 * It turns out that NT matches wildcards against
