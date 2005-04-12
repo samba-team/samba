@@ -1,3 +1,7 @@
+2005-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: rk_WIN32_EXPORT for roken
+
 2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* appl/test/gssapi_server.c: print out client principla of
