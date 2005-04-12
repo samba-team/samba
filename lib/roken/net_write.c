@@ -46,7 +46,7 @@ RCSID("$Id$");
  * Like write but never return partial data.
  */
 
-ssize_t
+ssize_t ROKEN_LIB_FUNCTION
 net_write (int fd, const void *buf, size_t nbytes)
 {
     const char *cbuf = (const char *)buf;

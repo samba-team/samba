@@ -36,10 +36,20 @@
 #ifndef _rk_HEX_H_
 #define _rk_HEX_H_ 1
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 #define hex_encode rk_hex_encode
 #define hex_decode rk_hex_decode
 
-ssize_t		hex_encode(const void *, size_t, char **);
-ssize_t		hex_decode(const char *, void *, size_t);
+ssize_t	ROKEN_LIB_FUNCTION
+	hex_encode(const void *, size_t, char **);
+ssize_t ROKEN_LIB_FUNCTION
+	hex_decode(const char *, void *, size_t);
 
 #endif /* _rk_HEX_H_ */

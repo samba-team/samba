@@ -42,7 +42,7 @@ RCSID("$Id$");
  * Try to find a fqdn (with `.') in he if possible, else return h_name
  */
 
-const char *
+const char * ROKEN_LIB_FUNCTION
 hostent_find_fqdn (const struct hostent *he)
 {
     const char *ret = he->h_name;

@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <shadow.h>
 #endif
 
-struct passwd *
+struct passwd * ROKEN_LIB_FUNCTION
 k_getpwnam (const char *user)
 {
      struct passwd *p;

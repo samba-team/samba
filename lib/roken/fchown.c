@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 fchown(int fd, uid_t owner, gid_t group)
 {
   return 0;

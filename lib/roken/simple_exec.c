@@ -81,7 +81,7 @@ sigtimeout(int sig)
     SIGRETURN(0);
 }
 
-int
+int ROKEN_LIB_FUNCTION
 wait_for_process_timed(pid_t pid, time_t (*func)(void *), 
 		       void *ptr, time_t timeout)
 {
@@ -137,13 +137,13 @@ wait_for_process_timed(pid_t pid, time_t (*func)(void *),
     return ret;
 }
 
-int
+int ROKEN_LIB_FUNCTION
 wait_for_process(pid_t pid)
 {
     return wait_for_process_timed(pid, NULL, NULL, 0);
 }
 
-int
+int ROKEN_LIB_FUNCTION
 pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd, 
 	   const char *file, ...)
 {
@@ -230,7 +230,7 @@ pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd,
     return pid;
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execvp_timed(const char *file, char *const args[], 
 		    time_t (*func)(void *), void *ptr, time_t timeout)
 {
@@ -246,14 +246,14 @@ simple_execvp_timed(const char *file, char *const args[],
     }
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execvp(const char *file, char *const args[])
 {
     return simple_execvp_timed(file, args, NULL, NULL, 0);
 }
 
 /* gee, I'd like a execvpe */
-int
+int ROKEN_LIB_FUNCTION
 simple_execve_timed(const char *file, char *const args[], char *const envp[],
 		    time_t (*func)(void *), void *ptr, time_t timeout)
 {
@@ -269,13 +269,13 @@ simple_execve_timed(const char *file, char *const args[], char *const envp[],
     }
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execve(const char *file, char *const args[], char *const envp[])
 {
     return simple_execve_timed(file, args, envp, NULL, NULL, 0);
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execlp(const char *file, ...)
 {
     va_list ap;
@@ -292,7 +292,7 @@ simple_execlp(const char *file, ...)
     return ret;
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execle(const char *file, ... /* ,char *const envp[] */)
 {
     va_list ap;
@@ -311,7 +311,7 @@ simple_execle(const char *file, ... /* ,char *const envp[] */)
     return ret;
 }
 
-int
+int ROKEN_LIB_FUNCTION
 simple_execl(const char *file, ...) 
 {
     va_list ap;

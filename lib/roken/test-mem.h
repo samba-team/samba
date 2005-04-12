@@ -33,5 +33,7 @@
 
 enum rk_test_mem_type { RK_TM_OVERRUN, RK_TM_UNDERRUN };
 
-void *	rk_test_mem_alloc(enum rk_test_mem_type, const char *, void *, size_t);
-void	rk_test_mem_free(const char *);
+void * ROKEN_LIB_FUNCTION
+	rk_test_mem_alloc(enum rk_test_mem_type, const char *, void *, size_t);
+void ROKEN_LIB_FUNCTION
+	rk_test_mem_free(const char *);

@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRNCASECMP
 
-int
+int ROKEN_LIB_FUNCTION
 strncasecmp(const char *s1, const char *s2, size_t n)
 {
     while(n > 0 

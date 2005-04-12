@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 setegid(gid_t egid)
 {
 #ifdef HAVE_SETREGID

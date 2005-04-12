@@ -44,7 +44,7 @@ RCSID("$Id$");
 
 /* strsep, but with const stringp, so return string in buf */
 
-ssize_t
+ssize_t ROKEN_LIB_FUNCTION
 strsep_copy(const char **stringp, const char *delim, char *buf, size_t len)
 {
     const char *save = *stringp;

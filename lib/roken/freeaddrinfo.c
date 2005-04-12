@@ -42,7 +42,7 @@ RCSID("$Id$");
  * free the list of `struct addrinfo' starting at `ai'
  */
 
-void
+void ROKEN_LIB_FUNCTION
 freeaddrinfo(struct addrinfo *ai)
 {
     struct addrinfo *tofree;

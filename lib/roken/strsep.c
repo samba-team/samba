@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRSEP
 
-char *
+char * ROKEN_LIB_FUNCTION
 strsep(char **str, const char *delim)
 {
     char *save = *str;

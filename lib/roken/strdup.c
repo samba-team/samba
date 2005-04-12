@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include <string.h>
 
 #ifndef HAVE_STRDUP
-char *
+char * ROKEN_LIB_FUNCTION
 strdup(const char *old)
 {
 	char *t = malloc(strlen(old)+1);

@@ -60,7 +60,7 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-int
+int ROKEN_LIB_FUNCTION
 get_window_size(int fd, struct winsize *wp)
 {
     int ret = -1;

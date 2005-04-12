@@ -43,7 +43,7 @@ RCSID("$Id$");
  * NULL if we can't guess at all.
  */
 
-const char *
+const char * ROKEN_LIB_FUNCTION
 get_default_username (void)
 {
     const char *user;

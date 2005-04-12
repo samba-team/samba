@@ -530,7 +530,7 @@ xyzprintf (struct snprintf_state *state, const char *char_format, va_list ap)
 }
 
 #if !defined(HAVE_SNPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 snprintf (char *str, size_t sz, const char *format, ...)
 {
     va_list args;
@@ -563,7 +563,7 @@ snprintf (char *str, size_t sz, const char *format, ...)
 #endif
 
 #if !defined(HAVE_ASPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 asprintf (char **ret, const char *format, ...)
 {
     va_list args;
@@ -595,7 +595,7 @@ asprintf (char **ret, const char *format, ...)
 #endif
 
 #if !defined(HAVE_ASNPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 asnprintf (char **ret, size_t max_sz, const char *format, ...)
 {
     va_list args;
@@ -625,7 +625,7 @@ asnprintf (char **ret, size_t max_sz, const char *format, ...)
 #endif
 
 #if !defined(HAVE_VASPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 vasprintf (char **ret, const char *format, va_list args)
 {
     return vasnprintf (ret, 0, format, args);
@@ -634,7 +634,7 @@ vasprintf (char **ret, const char *format, va_list args)
 
 
 #if !defined(HAVE_VASNPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
 {
     int st;
@@ -673,7 +673,7 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
 #endif
 
 #if !defined(HAVE_VSNPRINTF) || defined(TEST_SNPRINTF)
-int
+int ROKEN_LIB_FUNCTION
 vsnprintf (char *str, size_t sz, const char *format, va_list args)
 {
     struct snprintf_state state;

@@ -209,7 +209,7 @@ do {									   \
  * 	  pointed to by `extra'
  */
 #ifndef HAVE_SVIS
-char *
+char * ROKEN_LIB_FUNCTION
 svis(char *dst, int c, int flag, int nextc, const char *extra)
 {
 	_DIAGASSERT(dst != NULL);
@@ -238,7 +238,7 @@ svis(char *dst, int c, int flag, int nextc, const char *extra)
  *	This is useful for encoding a block of data.
  */
 #ifndef HAVE_STRSVIS
-int
+int ROKEN_LIB_FUNCTION
 strsvis(char *dst, const char *src, int flag, const char *extra)
 {
 	char c;
@@ -257,7 +257,7 @@ strsvis(char *dst, const char *src, int flag, const char *extra)
 
 
 #ifndef HAVE_STRVISX
-int
+int ROKEN_LIB_FUNCTION
 strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
 {
 	char c;
@@ -281,7 +281,7 @@ strsvisx(char *dst, const char *src, size_t len, int flag, const char *extra)
  * vis - visually encode characters
  */
 #ifndef HAVE_VIS
-char *
+char * ROKEN_LIB_FUNCTION
 vis(char *dst, int c, int flag, int nextc)
 {
 	char extra[MAXEXTRAS];
@@ -307,7 +307,7 @@ vis(char *dst, int c, int flag, int nextc)
  *	This is useful for encoding a block of data.
  */
 #ifndef HAVE_STRVIS
-int
+int ROKEN_LIB_FUNCTION
 strvis(char *dst, const char *src, int flag)
 {
 	char extra[MAXEXTRAS];
@@ -319,7 +319,7 @@ strvis(char *dst, const char *src, int flag)
 
 
 #ifndef HAVE_STRVISX
-int
+int ROKEN_LIB_FUNCTION
 strvisx(char *dst, const char *src, size_t len, int flag)
 {
 	char extra[MAXEXTRAS];

@@ -39,7 +39,7 @@
 
 RCSID("$Id$");
 
-int
+int ROKEN_LIB_FUNCTION
 innetgr(const char *netgroup, const char *machine, 
 	const char *user, const char *domain)
 {

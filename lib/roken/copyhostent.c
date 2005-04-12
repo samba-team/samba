@@ -42,7 +42,7 @@ RCSID("$Id$");
  * return a malloced copy of `h'
  */
 
-struct hostent *
+struct hostent * ROKEN_LIB_FUNCTION
 copyhostent (const struct hostent *h)
 {
     struct hostent *res;

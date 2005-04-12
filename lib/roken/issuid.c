@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 issuid(void)
 {
 #if defined(HAVE_ISSETUGID)

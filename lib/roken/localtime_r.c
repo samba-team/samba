@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_LOCALTIME_R
 
-struct tm *
+struct tm * ROKEN_LIB_FUNCTION
 localtime_r(const time_t *timer, struct tm *result)
 {
     struct tm *tm;

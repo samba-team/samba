@@ -62,7 +62,7 @@ accept_it (int s)
  * Listen on a specified port, emulating inetd.
  */
 
-void
+void ROKEN_LIB_FUNCTION
 mini_inetd_addrinfo (struct addrinfo *ai)
 {
     int ret;
@@ -124,7 +124,7 @@ mini_inetd_addrinfo (struct addrinfo *ai)
     abort ();
 }
 
-void
+void ROKEN_LIB_FUNCTION
 mini_inetd (int port)
 {
     int error;

@@ -167,7 +167,7 @@ week_number_mon4 (const struct tm *tm)
  *
  */
 
-size_t
+size_t ROKEN_LIB_FUNCTION
 strftime (char *buf, size_t maxsize, const char *format,
 	  const struct tm *tm)
 {

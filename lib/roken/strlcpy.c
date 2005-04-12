@@ -40,7 +40,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRLCPY
 
-size_t
+size_t ROKEN_LIB_FUNCTION
 strlcpy (char *dst, const char *src, size_t dst_sz)
 {
     size_t n;

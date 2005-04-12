@@ -36,6 +36,14 @@
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 typedef enum {
 	rk_ns_t_invalid = 0,	/* Cookie. */
 	rk_ns_t_a = 1,		/* Host address. */
@@ -276,10 +284,15 @@ struct dns_reply{
 };
 
 
-struct dns_reply* dns_lookup(const char *, const char *);
-void dns_free_data(struct dns_reply *);
-int dns_string_to_type(const char *name);
-const char *dns_type_to_string(int type);
-void dns_srv_order(struct dns_reply*);
+struct dns_reply* ROKEN_LIB_FUNCTION
+	dns_lookup(const char *, const char *);
+void ROKEN_LIB_FUNCTION
+	dns_free_data(struct dns_reply *);
+int ROKEN_LIB_FUNCTION
+	dns_string_to_type(const char *name);
+const char *ROKEN_LIB_FUNCTION
+	dns_type_to_string(int type);
+void ROKEN_LIB_FUNCTION
+	dns_srv_order(struct dns_reply*);
 
 #endif /* __RESOLVE_H__ */

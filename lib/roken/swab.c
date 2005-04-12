@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-void
+void ROKEN_LIB_FUNCTION
 swab (char *from, char *to, int nbytes)
 {
      while(nbytes >= 2) {

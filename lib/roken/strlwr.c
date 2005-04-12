@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <roken.h>
 
 #ifndef HAVE_STRLWR
-char *
+char * ROKEN_LIB_FUNCTION
 strlwr(char *str)
 {
   char *s;

@@ -45,7 +45,7 @@ RCSID("$Id$");
  * Like calloc but never fails.
  */
 
-void *
+void * ROKEN_LIB_FUNCTION
 ecalloc (size_t number, size_t size)
 {
     void *tmp = calloc (number, size);

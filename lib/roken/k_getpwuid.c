@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <shadow.h>
 #endif
 
-struct passwd *
+struct passwd * ROKEN_LIB_FUNCTION
 k_getpwuid (uid_t uid)
 {
      struct passwd *p;

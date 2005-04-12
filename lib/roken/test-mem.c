@@ -84,7 +84,7 @@ segv_handler(int sig)
 	errx(1, "malloc");
 
 
-void *
+void * ROKEN_LIB_FUNCTION
 rk_test_mem_alloc(enum rk_test_mem_type type, const char *name,
 		  void *buf, size_t size)
 {
@@ -164,7 +164,7 @@ rk_test_mem_alloc(enum rk_test_mem_type type, const char *name,
     return map.data_start;
 }
 
-void
+void ROKEN_LIB_FUNCTION
 rk_test_mem_free(const char *map_name)
 {
 #ifndef HAVE_MMAP

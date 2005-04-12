@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include "roken.h"
 #include "err.h"
 
-void
+void ROKEN_LIB_FUNCTION
 warnerr(int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;

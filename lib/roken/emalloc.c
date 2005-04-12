@@ -45,7 +45,7 @@ RCSID("$Id$");
  * Like malloc but never fails.
  */
 
-void *
+void * ROKEN_LIB_FUNCTION
 emalloc (size_t sz)
 {
     void *tmp = malloc (sz);

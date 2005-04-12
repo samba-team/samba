@@ -67,7 +67,7 @@ extern int h_nerr;
 
 #endif
 
-const char *
+const char * ROKEN_LIB_FUNCTION
 hstrerror(int herr)
 {
     if (0 <= herr && herr < h_nerr)

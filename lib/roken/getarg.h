@@ -78,14 +78,17 @@ typedef struct getarg_collect_info {
     void *data;
 } getarg_collect_info;
 
-int getarg(struct getargs *args, size_t num_args, 
-	   int argc, char **argv, int *goptind);
+int ROKEN_LIB_FUNCTION
+getarg(struct getargs *args, size_t num_args, 
+       int argc, char **argv, int *goptind);
 
-void arg_printusage (struct getargs *args,
-		     size_t num_args,
-		     const char *progname,
-		     const char *extra_string);
+void ROKEN_LIB_FUNCTION
+arg_printusage (struct getargs *args,
+		size_t num_args,
+		const char *progname,
+		const char *extra_string);
 
-void free_getarg_strings (getarg_strings *);
+void ROKEN_LIB_FUNCTION
+free_getarg_strings (getarg_strings *);
 
 #endif /* __GETARG_H__ */

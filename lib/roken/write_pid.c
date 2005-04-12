@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-char *
+char * ROKEN_LIB_FUNCTION
 pid_file_write (const char *progname)
 {
     FILE *fp;
@@ -62,7 +62,7 @@ pid_file_write (const char *progname)
     return ret;
 }
 
-void
+void ROKEN_LIB_FUNCTION
 pid_file_delete (char **filename)
 {
     if (*filename != NULL) {

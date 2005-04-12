@@ -43,7 +43,7 @@ RCSID("$Id$");
 extern int sys_nerr;
 extern char *sys_errlist[];
 
-char*
+char* ROKEN_LIB_FUNCTION
 strerror(int eno)
 {
     static char emsg[1024];

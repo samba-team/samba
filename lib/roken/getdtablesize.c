@@ -64,7 +64,8 @@ RCSID("$Id$");
 #include <sys/sysctl.h>
 #endif
 
-int getdtablesize(void)
+int ROKEN_LIB_FUNCTION
+getdtablesize(void)
 {
   int files = -1;
 #if defined(HAVE_SYSCONF) && defined(_SC_OPEN_MAX)

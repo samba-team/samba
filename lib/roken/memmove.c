@@ -44,7 +44,8 @@ RCSID("$Id$");
 #include <sys/types.h>
 #endif
 
-void* memmove(void *s1, const void *s2, size_t n)
+void* ROKEN_LIB_FUNCTION
+memmove(void *s1, const void *s2, size_t n)
 {
   char *s=(char*)s2, *d=(char*)s1;
 

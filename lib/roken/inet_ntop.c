@@ -116,7 +116,7 @@ inet_ntop_v6 (const void *src, char *dst, size_t size)
 }
 #endif /* HAVE_IPV6 */
 
-const char *
+const char * ROKEN_LIB_FUNCTION
 inet_ntop(int af, const void *src, char *dst, size_t size)
 {
     switch (af) {

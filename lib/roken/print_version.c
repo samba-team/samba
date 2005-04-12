@@ -39,7 +39,7 @@ RCSID("$Id$");
 
 #include "print_version.h"
 
-void
+void ROKEN_LIB_FUNCTION
 print_version(const char *progname)
 {
     const char *arg[] = VERSIONLIST;

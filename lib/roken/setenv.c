@@ -47,7 +47,7 @@ RCSID("$Id$");
  * anyway.
  */
 
-int
+int ROKEN_LIB_FUNCTION
 setenv(const char *var, const char *val, int rewrite)
 {
     char *t;

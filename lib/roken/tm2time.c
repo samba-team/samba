@@ -46,7 +46,7 @@ RCSID("$Id$");
 #endif
 #include "roken.h"
 
-time_t
+time_t ROKEN_LIB_FUNCTION
 tm2time (struct tm tm, int local)
 {
     time_t t;

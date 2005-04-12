@@ -45,7 +45,7 @@ RCSID("$Id$");
  * Like write but never fails (and never returns partial data).
  */
 
-ssize_t
+ssize_t ROKEN_LIB_FUNCTION
 ewrite (int fd, const void *buf, size_t nbytes)
 {
     ssize_t ret;

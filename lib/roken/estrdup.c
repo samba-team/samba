@@ -45,7 +45,7 @@ RCSID("$Id$");
  * Like strdup but never fails.
  */
 
-char *
+char * ROKEN_LIB_FUNCTION
 estrdup (const char *str)
 {
     char *tmp = strdup (str);

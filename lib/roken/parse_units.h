@@ -39,33 +39,41 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 struct units {
     const char *name;
     unsigned mult;
 };
 
-int
+int ROKEN_LIB_FUNCTION
 parse_units (const char *s, const struct units *units,
 	     const char *def_unit);
 
-void
+void ROKEN_LIB_FUNCTION
 print_units_table (const struct units *units, FILE *f);
 
-int
+int ROKEN_LIB_FUNCTION
 parse_flags (const char *s, const struct units *units,
 	     int orig);
 
-int
+int ROKEN_LIB_FUNCTION
 unparse_units (int num, const struct units *units, char *s, size_t len);
 
-int
+int ROKEN_LIB_FUNCTION
 unparse_units_approx (int num, const struct units *units, char *s,
 		      size_t len);
 
-int
+int ROKEN_LIB_FUNCTION
 unparse_flags (int num, const struct units *units, char *s, size_t len);
 
-void
+void ROKEN_LIB_FUNCTION
 print_flags_table (const struct units *units, FILE *f);
 
 #endif /* __PARSE_UNITS_H__ */

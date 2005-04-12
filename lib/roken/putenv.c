@@ -48,7 +48,7 @@ extern char **environ;
  *      value by altering an existing variable or creating a new one.
  */
 
-int
+int ROKEN_LIB_FUNCTION
 putenv(const char *string)
 {
     int i;

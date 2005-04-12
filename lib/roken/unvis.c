@@ -86,7 +86,7 @@ __warn_references(unvis,
  * unvis - decode characters previously encoded by vis
  */
 #ifndef HAVE_UNVIS
-int
+int ROKEN_LIB_FUNCTION
 unvis(char *cp, int c, int *astate, int flag)
 {
 
@@ -250,7 +250,7 @@ unvis(char *cp, int c, int *astate, int flag)
  */
 
 #ifndef HAVE_STRUNVIS
-int
+int ROKEN_LIB_FUNCTION
 strunvis(char *dst, const char *src)
 {
 	char c;

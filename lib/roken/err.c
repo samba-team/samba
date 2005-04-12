@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "err.h"
 
-void
+void ROKEN_LIB_FUNCTION
 err(int eval, const char *fmt, ...)
 {
   va_list ap;

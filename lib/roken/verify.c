@@ -45,7 +45,7 @@ RCSID("$Id$");
 #endif
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 unix_verify_user(char *user, char *password)
 {
     struct passwd *pw;

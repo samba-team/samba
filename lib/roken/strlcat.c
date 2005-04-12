@@ -40,7 +40,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRLCAT
 
-size_t
+size_t ROKEN_LIB_FUNCTION
 strlcat (char *dst, const char *src, size_t dst_sz)
 {
     size_t len = strlen(dst);

@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRTOK_R
 
-char *
+char * ROKEN_LIB_FUNCTION
 strtok_r(char *s1, const char *s2, char **lasts)
 {
   char *ret;

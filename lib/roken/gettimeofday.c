@@ -42,7 +42,7 @@ RCSID("$Id$");
 /*
  * Simple gettimeofday that only returns seconds.
  */
-int
+int ROKEN_LIB_FUNCTION
 gettimeofday (struct timeval *tp, void *ignore)
 {
      time_t t;

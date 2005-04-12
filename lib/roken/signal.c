@@ -50,7 +50,7 @@ RCSID("$Id$");
  * Do we need any extra hacks for SIGCLD and/or SIGCHLD?
  */
 
-SigAction
+SigAction ROKEN_LIB_FUNCTION
 signal(int iSig, SigAction pAction)
 {
     struct sigaction saNew, saOld;

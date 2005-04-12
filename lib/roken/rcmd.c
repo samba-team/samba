@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include "roken.h"
 #include <stdio.h>
 
-int
+int ROKEN_LIB_FUNCTION
 rcmd(char **ahost,
      unsigned short inport,
      const char *locuser,

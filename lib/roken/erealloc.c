@@ -45,7 +45,7 @@ RCSID("$Id$");
  * Like realloc but never fails.
  */
 
-void *
+void * ROKEN_LIB_FUNCTION
 erealloc (void *ptr, size_t sz)
 {
     void *tmp = realloc (ptr, sz);

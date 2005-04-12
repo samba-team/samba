@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-ssize_t
+ssize_t ROKEN_LIB_FUNCTION
 readv(int d, const struct iovec *iov, int iovcnt)
 {
     ssize_t ret, nb;

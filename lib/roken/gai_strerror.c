@@ -65,7 +65,7 @@ static struct gai_error {
  *
  */
 
-char *
+char * ROKEN_LIB_FUNCTION
 gai_strerror(int ecode)
 {
     struct gai_error *g;

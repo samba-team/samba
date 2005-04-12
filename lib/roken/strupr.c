@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <roken.h>
 
 #ifndef HAVE_STRUPR
-char *
+char * ROKEN_LIB_FUNCTION
 strupr(char *str)
 {
   char *s;

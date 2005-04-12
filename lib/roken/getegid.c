@@ -40,7 +40,8 @@
 
 RCSID("$Id$");
 
-int getegid(void)
+int ROKEN_LIB_FUNCTION
+getegid(void)
 {
     return getgid();
 }

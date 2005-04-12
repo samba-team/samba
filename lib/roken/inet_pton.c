@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-int
+int ROKEN_LIB_FUNCTION
 inet_pton(int af, const char *src, void *dst)
 {
     if (af != AF_INET) {

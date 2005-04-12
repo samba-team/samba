@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 #define OP_MASK (LOCK_SH | LOCK_EX | LOCK_UN)
 
-int
+int ROKEN_LIB_FUNCTION
 flock(int fd, int operation)
 {
 #if defined(HAVE_FCNTL) && defined(F_SETLK)

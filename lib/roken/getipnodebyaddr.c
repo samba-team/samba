@@ -43,7 +43,7 @@ RCSID("$Id$");
  * to a malloced struct hostent or NULL.
  */
 
-struct hostent *
+struct hostent * ROKEN_LIB_FUNCTION
 getipnodebyaddr (const void *src, size_t len, int af, int *error_num)
 {
     struct hostent *tmp;

@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 chown(const char *path, uid_t owner, gid_t group)
 {
   return 0;

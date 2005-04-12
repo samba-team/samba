@@ -46,7 +46,7 @@ RCSID("$Id$");
  * list of malloced strings in `env'
  */
 
-int
+int ROKEN_LIB_FUNCTION
 read_environment(const char *file, char ***env)
 {
     int i, k;

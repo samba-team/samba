@@ -42,7 +42,7 @@ RCSID("$Id$");
  * free a malloced hostent
  */
 
-void
+void ROKEN_LIB_FUNCTION
 freehostent (struct hostent *h)
 {
     char **p;

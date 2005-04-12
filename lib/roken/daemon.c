@@ -51,7 +51,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 daemon(int nochdir, int noclose)
 {
     int fd;

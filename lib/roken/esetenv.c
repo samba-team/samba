@@ -40,7 +40,7 @@ RCSID("$Id$");
 
 #include <err.h>
 
-void
+void ROKEN_LIB_FUNCTION
 esetenv(const char *var, const char *val, int rewrite)
 {
     if (setenv ((char *)var, (char *)val, rewrite))

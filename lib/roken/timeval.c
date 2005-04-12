@@ -46,7 +46,7 @@ RCSID("$Id$");
  * Make `t1' consistent.
  */
 
-void
+void ROKEN_LIB_FUNCTION
 timevalfix(struct timeval *t1)
 {
     if (t1->tv_usec < 0) {
@@ -63,7 +63,7 @@ timevalfix(struct timeval *t1)
  * t1 += t2
  */
 
-void
+void ROKEN_LIB_FUNCTION
 timevaladd(struct timeval *t1, const struct timeval *t2)
 {
     t1->tv_sec  += t2->tv_sec;
@@ -75,7 +75,7 @@ timevaladd(struct timeval *t1, const struct timeval *t2)
  * t1 -= t2
  */
 
-void
+void ROKEN_LIB_FUNCTION
 timevalsub(struct timeval *t1, const struct timeval *t2)
 {
     t1->tv_sec  -= t2->tv_sec;

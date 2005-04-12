@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 initgroups(const char *name, gid_t basegid)
 {
   return 0;

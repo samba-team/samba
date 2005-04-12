@@ -43,7 +43,7 @@ const char *__progname;
 #endif
 
 #ifndef HAVE_GETPROGNAME
-const char *
+const char * ROKEN_LIB_FUNCTION
 getprogname(void)
 {
     return __progname;

@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_STRCASECMP
 
-int
+int ROKEN_LIB_FUNCTION
 strcasecmp(const char *s1, const char *s2)
 {
     while(toupper((unsigned char)*s1) == toupper((unsigned char)*s2)) {

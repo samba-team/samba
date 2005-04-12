@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <roken.h>
 
 #ifndef HAVE_STRNDUP
-char *
+char * ROKEN_LIB_FUNCTION
 strndup(const char *old, size_t sz)
 {
     size_t len = strnlen (old, sz);

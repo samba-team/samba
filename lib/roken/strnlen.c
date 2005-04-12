@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-size_t
+size_t ROKEN_LIB_FUNCTION
 strnlen(const char *s, size_t len)
 {
     size_t i;

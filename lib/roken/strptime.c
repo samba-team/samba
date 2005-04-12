@@ -204,7 +204,7 @@ set_week_number_mon4 (struct tm *timeptr, int wnum)
  *
  */
 
-char *
+char * ROKEN_LIB_FUNCTION
 strptime (const char *buf, const char *format, struct tm *timeptr)
 {
     char c;

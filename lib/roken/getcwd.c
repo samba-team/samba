@@ -45,7 +45,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-char*
+char* ROKEN_LIB_FUNCTION
 getcwd(char *path, size_t size)
 {
     char xxx[MaxPathLen];

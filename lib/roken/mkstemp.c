@@ -48,7 +48,7 @@ RCSID("$Id$");
 
 #ifndef HAVE_MKSTEMP
 
-int
+int ROKEN_LIB_FUNCTION
 mkstemp(char *template)
 {
     int start, i;

@@ -198,7 +198,7 @@ check_column(FILE *f, int col, int len, int columns)
     return col;
 }
 
-void
+void ROKEN_LIB_FUNCTION
 arg_printusage (struct getargs *args,
 		size_t num_args,
 		const char *progname,
@@ -523,7 +523,7 @@ arg_match_short (struct getargs *args, size_t num_args,
     return 0;
 }
 
-int
+int ROKEN_LIB_FUNCTION
 getarg(struct getargs *args, size_t num_args, 
        int argc, char **argv, int *goptind)
 {
@@ -559,7 +559,7 @@ getarg(struct getargs *args, size_t num_args,
     return ret;
 }
 
-void
+void ROKEN_LIB_FUNCTION
 free_getarg_strings (getarg_strings *s)
 {
     free (s->strings);

@@ -84,7 +84,7 @@ static char **initshells (void);
 /*
  * Get a list of shells from _PATH_SHELLS, if it exists.
  */
-char *
+char * ROKEN_LIB_FUNCTION
 getusershell()
 {
     char *ret;
@@ -97,7 +97,7 @@ getusershell()
     return (ret);
 }
 
-void
+void ROKEN_LIB_FUNCTION
 endusershell()
 {
     if (shells != NULL)
@@ -109,7 +109,7 @@ endusershell()
     curshell = NULL;
 }
 
-void
+void ROKEN_LIB_FUNCTION
 setusershell()
 {
     curshell = initshells();

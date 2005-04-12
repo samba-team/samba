@@ -46,7 +46,7 @@ RCSID("$Id$");
  * Like read but never return partial data.
  */
 
-ssize_t
+ssize_t ROKEN_LIB_FUNCTION
 net_read (int fd, void *buf, size_t nbytes)
 {
     char *cbuf = (char *)buf;

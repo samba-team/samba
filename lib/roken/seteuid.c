@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 seteuid(uid_t euid)
 {
 #ifdef HAVE_SETREUID

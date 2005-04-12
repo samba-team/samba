@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "roken.h"
 
-int
+int ROKEN_LIB_FUNCTION
 lstat(const char *path, struct stat *buf)
 {
   return stat(path, buf);

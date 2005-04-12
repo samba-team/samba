@@ -36,6 +36,14 @@
 #ifndef __ifaddrs_h__
 #define __ifaddrs_h__
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 /*
  * the interface is defined in terms of the fields below, and this is
  * sometimes #define'd, so there seems to be no simple way of solving
@@ -57,8 +65,10 @@ struct ifaddrs {
 #define ifa_broadaddr ifa_dstaddr
 #endif
 
-int getifaddrs(struct ifaddrs**);
+int ROKEN_LIB_FUNCTION
+getifaddrs(struct ifaddrs**);
 
-void freeifaddrs(struct ifaddrs*);
+void ROKEN_LIB_FUNCTION
+freeifaddrs(struct ifaddrs*);
 
 #endif /* __ifaddrs_h__ */
