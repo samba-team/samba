@@ -2172,26 +2172,28 @@ void reply_sesssetup(struct smbsrv_request *req)
 void reply_ulogoffX(struct smbsrv_request *req)
 {
 	struct smbsrv_tcon *tcon;
-	uint16_t vuid;
 	NTSTATUS status;
 
-	vuid = SVAL(req->in.hdr, HDR_UID);
+	if (!req->session) {
+		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+		return;
+	}
 
 	/* in user level security we are supposed to close any files
 	   open by this user on all open tree connects */
-	if ((vuid != 0) && (lp_security() != SEC_SHARE)) {
-		for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
-			req->tcon = tcon;
-			status = ntvfs_logoff(req);
-			req->tcon = NULL;
-			if (!NT_STATUS_IS_OK(status)) {
-				req_reply_error(req, status);
-				return;
-			}
+	for (tcon=req->smb_conn->tree.tcons;tcon;tcon=tcon->next) {
+		req->tcon = tcon;
+		status = ntvfs_logoff(req);
+		req->tcon = NULL;
+		if (!NT_STATUS_IS_OK(status)) {
+			req_reply_error(req, status);
+			return;
 		}
 	}
 
-	smbsrv_invalidate_vuid(req->smb_conn, vuid);
+	talloc_free(req->session);
+	req->session = NULL; /* it is now invalid, don't use on 
+				any chained packets */
 
 	req_setup_reply(req, 2, 0);
 
