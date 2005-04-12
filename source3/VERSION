@@ -29,7 +29,7 @@ SAMBA_VERSION_RELEASE=15
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=1
+SAMBA_VERSION_PRE_RELEASE=2
 
 ########################################################
 # For 'rc' releases the version will be                #
