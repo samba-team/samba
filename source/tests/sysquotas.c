@@ -1,5 +1,7 @@
 /* this test should find out what quota api is available on the os */
 
+ int autoconf_quota(void);
+
 #if defined(HAVE_QUOTACTL_4A)
 /* long quotactl(int cmd, char *special, qid_t id, caddr_t addr) */
 
