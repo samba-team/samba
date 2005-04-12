@@ -9,7 +9,7 @@ ADD_OBJ_FILES = \
 		smb_server/conn.o \
 		smb_server/negprot.o \
 		smb_server/nttrans.o \
-		smb_server/password.o \
+		smb_server/session.o \
 		smb_server/reply.o \
 		smb_server/request.o \
 		smb_server/search.o \

@@ -65,8 +65,6 @@ static int smbsrv_session_destructor(void *p)
 	struct smbsrv_session *sess = p;
 	struct smbsrv_connection *smb_conn = sess->smb_conn;
 
-	DLIST_REMOVE(smb_conn->sessions.session_list, sess);
-
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
 	/* REWRITE: conn_clear_vuid_cache(smb, vuid); */
@@ -134,7 +132,6 @@ struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_con
 	sess->gensec_ctx = talloc_reference(sess, gensec_ctx);
 
 	sess->smb_conn = smb_conn;
-	DLIST_ADD(smb_conn->sessions.session_list, sess);
 
 	talloc_set_destructor(sess, smbsrv_session_destructor);
 
