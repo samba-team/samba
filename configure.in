@@ -329,6 +329,7 @@ AM_CONDITIONAL(KCM, test "$enable_kcm" = yes)
 
 dnl export symbols
 rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB_FUNCTION)
+rk_WIN32_EXPORT(BUILD_ROKEN_LIB, ROKEN_LIB_FUNCTION)
 
 dnl Checks for libraries.
 
