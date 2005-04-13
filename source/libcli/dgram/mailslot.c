@@ -159,7 +159,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 
 	ZERO_STRUCT(packet);
 	packet.msg_type = msg_type;
-	packet.flags = DGRAM_FLAG_FIRST;
+	packet.flags = DGRAM_FLAG_FIRST | DGRAM_NODE_NBDD;
 	packet.dgram_id = generate_random() % UINT16_MAX;
 	packet.source = socket_get_my_addr(dgmsock->sock, tmp_ctx);
 	packet.src_port = socket_get_my_port(dgmsock->sock);
@@ -179,7 +179,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 
 	trans = &smb->body.trans;
 	trans->total_data_count = request->length;
-	trans->timeout     = (uint32_t)-1;
+	trans->timeout     = 1000;
 	trans->data_count  = request->length;
 	trans->data_offset = 70 + strlen(mailslot_name);
 	trans->opcode      = 1; /* write mail slot */
