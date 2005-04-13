@@ -44,6 +44,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	}
 
 	/* setup a GETDC reply */
+	ZERO_STRUCT(reply);
 	reply.command = NETLOGON_RESPONSE_FROM_PDC;
 	pdc = &reply.req.response;
 

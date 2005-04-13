@@ -70,6 +70,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 	NTSTATUS status;
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
+	struct nbt_name myname;
 
 	status = ndr_push_struct_blob(&blob, tmp_ctx, reply, 
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
@@ -78,11 +79,15 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 		return status;
 	}
 
+	myname.name = lp_netbios_name();
+	myname.type = NBT_NAME_CLIENT;
+	myname.scope = NULL;
+
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
 				     mailslot_name,
 				     &request->data.msg.source_name,
 				     request->source, request->src_port,
-				     &request->data.msg.dest_name, &blob);
+				     &myname, &blob);
 	talloc_free(tmp_ctx);
 	return status;
 }
