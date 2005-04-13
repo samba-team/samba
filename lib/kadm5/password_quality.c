@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000, 2003-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000, 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,6 +36,9 @@
 
 RCSID("$Id$");
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -129,12 +132,109 @@ char_class_passwd_quality (krb5_context context,
     return 0;
 }
 
+static int
+external_passwd_quality (krb5_context context,
+			 krb5_principal principal,
+			 krb5_data *pwd,
+			 const char *opaque,
+			 char *message,
+			 size_t length)
+{
+    krb5_error_code ret;
+    const char *program;
+    char *p;
+    pid_t child;
+    int status;
+    char reply[1024];
+    FILE *in = NULL, *out = NULL, *error = NULL;
+
+    if (memchr(pwd->data, pwd->length, '\n') != NULL) {
+	snprintf(message, length, "password contains newline, "
+		 "not valid for external test");
+	return 1;
+    }
+
+    program = krb5_config_get_string(context, NULL,
+				     "password_quality",
+				     "external-program",
+				     NULL);
+    if (program == NULL) {
+	snprintf(message, length, "external password quality "
+		 "program not configured");
+	return 1;
+    }
+
+    ret = krb5_unparse_name(context, principal, &p);
+    if (ret) {
+	strlcpy(message, "out of memory", sizeof(message));
+	return 1;
+    }
+
+    child = pipe_execv(&in, &out, &error, program, p, NULL);
+    if (child < 0) {
+	snprintf(message, length, "external password quality "
+		 "program failed to execute for principal %s", p);
+	free(p);
+	return 1;
+    }
+
+    fprintf(in, "principal: %s\nnew-password: %.*s",
+	    p, (int)pwd->length, (char *)pwd->data);
+    
+    fclose(in);
+
+    if (fgets(reply, sizeof(reply), out) == NULL) {
+
+	if (fgets(reply, sizeof(reply), error) == NULL) {
+	    snprintf(message, length, "external password quality "
+		     "program fail without error");
+
+	} else {
+	    reply[strcspn(reply, "\n")] = '\0';
+	    snprintf(message, length, "External password quality "
+		     "program fail: %s", reply);
+	}
+
+	fclose(out);
+	fclose(error);
+	waitpid(child, &status, 0);
+	return 1;
+    }
+    reply[strcspn(reply, "\n")] = '\0';
+
+    fclose(out);
+    fclose(error);
+
+    if (waitpid(child, &status, 0) < 0) {
+	snprintf(message, length, "external program failed: %s", reply);
+	free(p);
+	return 1;
+    }
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+	snprintf(message, length, "external program failed: %s", reply);
+	free(p);
+	return 1;
+    }
+
+    if (strcmp(reply, "APPROVED") != 0) {
+	snprintf(message, length, "%s", reply);
+	free(p);
+	return 1;
+    }
+
+    free(p);
+
+    return 0;
+}
+
+
 static kadm5_passwd_quality_check_func_v0 passwd_quality_check = 
 	min_length_passwd_quality_v0;
 
 struct kadm5_pw_policy_check_func builtin_funcs[] = {
     { "minimum-length", min_length_passwd_quality },
     { "character-class", char_class_passwd_quality },
+    { "external-check", external_passwd_quality },
     { NULL }
 };
 struct kadm5_pw_policy_verifier builtin_verifier = {
