@@ -3,9 +3,14 @@
 <chapter id="simple">
   <title>No Frills Samba Servers</title>
 
+<?latex \pagenumbering{arabic} ?>
+
 	<para>
-	Congratulations, you managed to get past the opening chapter. To some, this is where the interesting
-	exercises begin. This is the start of the real journey toward the Samba deployment of a lifetime.
+	This is the start of the real journey toward the successful deployment of Samba. For some this is chapter
+	is the end of the road bacause their needs will have been adequately met. For others, this chapter is
+	the beginning of a journey that will take them well past the contents of this book. This book provides
+	example configurations of, for the greater part, complete networking solutions. The intent of this book
+	is to help you to get your Samba installation working with least pain and agony.
 	</para>
 
 <sect1>
