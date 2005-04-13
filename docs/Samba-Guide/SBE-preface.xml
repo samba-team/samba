@@ -83,7 +83,7 @@
 	<para>
 	The Samba 3.0.x series has been remarkably popular. At the time this book first
 	went to print samba-3.0.2 was being released. There have been significant modifications
-	and enhancements between samba-3.0.2 and samba-3.0.11 (the current release) that
+	and enhancements between samba-3.0.2 and samba-3.0.14 (the current release) that
 	necessitate this documentation update. This update has the specific intent to
 	refocus this book so that its guidance can be followed for samba-3.0.15
 	and beyond. Further changes are expected as Samba-3 matures further and will 
