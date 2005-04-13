@@ -19,6 +19,7 @@ REQUIRED_SUBSYSTEMS = \
 ADD_OBJ_FILES = \
 		nbt_server/dgram/request.o \
 		nbt_server/dgram/netlogon.o \
+		nbt_server/dgram/ntlogon.o \
 		nbt_server/dgram/browse.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_DGRAM

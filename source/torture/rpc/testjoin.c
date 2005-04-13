@@ -32,6 +32,7 @@
 struct test_join {
 	struct dcerpc_pipe *p;
 	struct policy_handle user_handle;
+	const char *dom_sid;
 };
 
 
@@ -155,6 +156,8 @@ struct test_join *torture_create_testuser(const char *username,
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
+
+	join->dom_sid = dom_sid_string(join, l.out.sid);
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -307,6 +310,14 @@ void torture_leave_domain(struct test_join *join)
 	}
 
 	talloc_free(join);
+}
+
+/*
+  return the dom sid for a test join
+*/
+const char *torture_join_sid(struct test_join *join)
+{
+	return join->dom_sid;
 }
 
 

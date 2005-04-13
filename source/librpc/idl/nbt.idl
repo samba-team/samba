@@ -228,6 +228,7 @@
 	   easier */
 
 	const string NBT_MAILSLOT_NETLOGON = "\\MAILSLOT\\NET\\NETLOGON";
+	const string NBT_MAILSLOT_NTLOGON  = "\\MAILSLOT\\NET\\NTLOGON";
 	const string NBT_MAILSLOT_GETDC    = "\\MAILSLOT\\GETDC";
 	const string NBT_MAILSLOT_BROWSE   = "\\MAILSLOT\\BROWSE";
 
@@ -326,6 +327,7 @@
 	} nbt_dgram_packet;
 
 
+	/*******************************************/
 	/* \MAILSLOT\NET\NETLOGON mailslot requests */
 	typedef enum {
 		NETLOGON_QUERY_FOR_PDC     = 0x7,	
@@ -376,7 +378,7 @@
 		uint32           db_count;
 		nbt_db_change    dbchange[db_count];
 		[value(ndr_size_dom_sid(&r->sid))] uint32 sid_size;
-		uint16           unknown;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad2;
 		dom_sid          sid;
 		uint32           nt_version;
 		uint16           lmnt_token;
@@ -393,4 +395,45 @@
 		nbt_netlogon_command command;
 		[switch_is(command)] nbt_netlogon_request req;
 	} nbt_netlogon_packet;
+
+	/*******************************************/
+	/* \MAILSLOT\NET\NTLOGON mailslot requests */
+	typedef enum {
+		NTLOGON_SAM_LOGON       = 0x12,
+		NTLOGON_SAM_LOGON_REPLY = 0x13
+	} nbt_ntlogon_command;
+
+	typedef struct {
+		uint16               request_count;
+		nstring              computer_name;
+		nstring              user_name;
+		astring              mailslot_name;
+		uint32               acct_control;
+		[value(ndr_size_dom_sid(&r->sid))] uint32 sid_size;
+		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		dom_sid              sid;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_ntlogon_sam_logon;
+
+	typedef struct {
+		nstring              server;
+		nstring              user_name;
+		nstring              domain;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_ntlogon_sam_logon_reply;
+
+	typedef [nodiscriminant] union {
+		[case(NTLOGON_SAM_LOGON)]       nbt_ntlogon_sam_logon logon;
+		[case(NTLOGON_SAM_LOGON_REPLY)] nbt_ntlogon_sam_logon_reply reply;
+	} nbt_ntlogon_request;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		nbt_ntlogon_command command;
+		[switch_is(command)] nbt_ntlogon_request req;
+	} nbt_ntlogon_packet;
+	
 }

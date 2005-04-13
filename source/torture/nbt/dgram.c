@@ -24,6 +24,7 @@
 #include "libcli/nbt/libnbt.h"
 #include "libcli/dgram/libdgram.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 
@@ -61,7 +62,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 {
 	struct dgram_mailslot_handler *dgmslot;
 	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
-	const char *myaddress = talloc_strdup(mem_ctx, iface_best_ip(address));
+	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
 	struct nbt_netlogon_packet logon;
 	struct nbt_name myname;
 	NTSTATUS status;
@@ -117,6 +118,112 @@ failed:
 
 
 /*
+  reply handler for ntlogon request
+*/
+static void ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
+			     struct nbt_dgram_packet *packet, 
+			     const char *src_address, int src_port)
+{
+	NTSTATUS status;
+	struct nbt_ntlogon_packet ntlogon;
+	int *replies = dgmslot->private;
+
+	printf("ntlogon reply from %s:%d\n", src_address, src_port);
+
+	status = dgram_mailslot_ntlogon_parse(dgmslot, dgmslot, packet, &ntlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to parse ntlogon packet from %s:%d\n",
+		       src_address, src_port);
+		return;
+	}
+
+	NDR_PRINT_DEBUG(nbt_ntlogon_packet, &ntlogon);
+
+	(*replies)++;
+}
+
+
+/* test UDP/138 ntlogon requests */
+static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx, 
+			     struct nbt_name name, const char *address)
+{
+	struct dgram_mailslot_handler *dgmslot;
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+	struct nbt_ntlogon_packet logon;
+	struct nbt_name myname;
+	NTSTATUS status;
+	struct timeval tv = timeval_current();
+	int replies = 0;
+	struct test_join *join_ctx;
+	const char *password;
+	const char *dom_sid;
+
+	join_ctx = torture_join_domain(TEST_NAME, lp_workgroup(), 
+				       ACB_WSTRUST, &password);
+	if (join_ctx == NULL) {
+		printf("Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME);
+		talloc_free(dgmsock);
+		return False;
+	}
+
+	dom_sid = torture_join_sid(join_ctx);
+
+	/* try receiving replies on port 138 first, which will only
+	   work if we are root and smbd/nmbd are not running - fall
+	   back to listening on any port, which means replies from
+	   some windows versions won't be seen */
+	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+	}
+
+	/* setup a temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      ntlogon_handler, &replies);
+	
+
+	ZERO_STRUCT(logon);
+	logon.command = NTLOGON_SAM_LOGON;
+	logon.req.logon.request_count = 0;
+	logon.req.logon.computer_name = TEST_NAME;
+	logon.req.logon.user_name     = TEST_NAME"$";
+	logon.req.logon.mailslot_name = dgmslot->mailslot_name;
+	logon.req.logon.acct_control  = ACB_WSTRUST;
+	logon.req.logon.sid           = *dom_sid_parse_talloc(dgmslot, dom_sid);
+	logon.req.logon.nt_version    = 1;
+	logon.req.logon.lmnt_token    = 0xFFFF;
+	logon.req.logon.lm20_token    = 0xFFFF;
+
+
+	myname.name = TEST_NAME;
+	myname.type = NBT_NAME_CLIENT;
+	myname.scope = NULL;
+
+	status = dgram_mailslot_ntlogon_send(dgmsock, &name, address, 
+					      0, &myname, &logon);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	torture_leave_domain(join_ctx);
+	talloc_free(dgmsock);
+	return True;
+
+failed:
+	torture_leave_domain(join_ctx);
+	talloc_free(dgmsock);
+	return False;
+}
+
+
+/*
   test nbt dgram operations
 */
 BOOL torture_nbt_dgram(void)
@@ -127,7 +234,7 @@ BOOL torture_nbt_dgram(void)
 	NTSTATUS status;
 	BOOL ret = True;
 	
-	name.name = lp_parm_string(-1, "torture", "host");
+	name.name = lp_workgroup();
 	name.type = NBT_NAME_PDC;
 	name.scope = NULL;
 
@@ -141,6 +248,7 @@ BOOL torture_nbt_dgram(void)
 	}
 
 	ret &= nbt_test_netlogon(mem_ctx, name, address);
+	ret &= nbt_test_ntlogon(mem_ctx, name, address);
 
 	talloc_free(mem_ctx);
 
