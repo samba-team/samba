@@ -1,9 +1,9 @@
 <?xml version='1.0'?>
 <!DOCTYPE preface PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <preface>
-	<title>Foreword</title>
+<title>Foreword</title>
 
-	<para>
+<para>
 Over the last few years, the Samba project has undergone a major
 transformation. From a small project used only by people who dream in
 machine code, Samba has grown to be an integral part of the IT
