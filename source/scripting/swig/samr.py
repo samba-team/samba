@@ -94,7 +94,7 @@ def call_fn(fn, pipe, args):
     
     result = fn(pipe, args);
 
-    if result & 0xc0000000:
+    if result & 0xc0000000L:
         raise dcerpc.NTSTATUS(result, dcerpc.nt_errstr(result));
 
     return result;
@@ -345,7 +345,20 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_OpenAlias, self.pipe, r)
 
-        return AliasHandle(pipe, r.data_out.group_handle)
+        return AliasHandle(self.pipe, r.data_out.alias_handle)
+
+    def CreateDomAlias(self, alias_name, access_mask = 0x02000000):
+
+        r = dcerpc.samr_CreateDomAlias()
+        r.data_in.domain_handle = self.handle
+        r.data_in.alias_name = dcerpc.samr_String()
+        r.data_in.alias_name.string = alias_name
+        r.data_in.access_mask = access_mask
+
+        call_fn(dcerpc.dcerpc_samr_CreateDomAlias, self.pipe, r)
+
+        return (AliasHandle(self.pipe, r.data_out.alias_handle),
+                r.data_out.rid)    
 
     def RidToSid(self, rid):
 
@@ -399,8 +412,57 @@ class GroupHandle(SamrHandle):
     
 
 class AliasHandle(SamrHandle):
-    pass
-    
+
+    def DeleteDomAlias(self):
+
+        r = dcerpc.samr_DeleteDomAlias()
+        r.data_in.alias_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_DeleteDomAlias, self.pipe, r)
+
+        self.handle = None
+
+    def QueryAliasInfo(self, level = 1):
+
+        r = dcerpc.samr_QueryAliasInfo()
+        r.data_in.alias_handle = self.handle
+        r.data_in.level = level
+
+        call_fn(dcerpc.dcerpc_samr_QueryAliasInfo, self.pipe, r)
+
+        return r.data_out.info
+
+    def SetAliasInfo(self, level, info):
+
+        r = dcerpc.samr_SetAliasInfo()
+        r.data_in.alias_handle = self.handle
+        r.data_in.level = level
+        r.data_in.info = info
+
+        call_fn(dcerpc.dcerpc_samr_SetAliasInfo, self.pipe, r)
+
+    def AddAliasMember(self, sid):
+
+        r = dcerpc.samr_AddAliasMember()
+        r.data_in.alias_handle = self.handle
+        r.data_in.sid = string_to_sid(sid)
+
+        call_fn(dcerpc.dcerpc_samr_AddAliasMember, self.pipe, r)
+
+    def AddMultipleMembersToAlias(self, sids):
+
+        r = dcerpc.samr_AddMultipleMembersToAlias()
+        r.data_in.alias_handle = self.handle
+        r.data_in.sids = dcerpc.lsa_SidArray()
+        r.data_in.sids.num_sids = len(sids)
+        r.data_in.sids.sids = dcerpc.new_lsa_SidPtr_array(len(sids))
+
+        for i in range(len(sids)):
+            s = dcerpc.lsa_SidPtr()
+            s.sid = string_to_sid(sids[i])
+            dcerpc.lsa_SidPtr_array_setitem(r.data_in.sids.sids, i, s)
+
+        call_fn(dcerpc.dcerpc_samr_AddMultipleMembersToAlias, self.pipe, r)
 
 def Connect(pipe, access_mask = 0x02000000):
 
@@ -466,7 +528,6 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
     
     
 # CreateDomainGroup
-# CreateDomAlias
 # GetAliasMembership
 # LookupNames
 # QueryGroupInfo
@@ -476,9 +537,6 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # DeleteGroupMember
 # QueryGroupMember
 # SetMemberAttributesofGroup
-# QueryAliasInfo
-# SetAliasInfo
-# DeleteDomAlias
 # AddAliasMember
 # DeleteAliasMember
 # GetMembersinAlias
@@ -497,7 +555,6 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # QueryDisplayInfo2
 # GetDisplayEnumerationIndex2
 # QueryDisplayInfo3
-# AddMultipleMembersToAlias
 # RemoveMultipleMembersFromAlias
 # OemChangePasswordUser2
 # ChangePasswordUser2
