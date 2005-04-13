@@ -1,3 +1,15 @@
+2005-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* password_quality.c: add external passsword quality check builtin
+	module
+	
+	[password_quality]
+		policies = external-check
+		external-program = /bin/false
+	
+	To approve password a, make the test program return APPROVED on
+	stderr and fail with exit code 0.
+	
 2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: bump version to 7:7:0 and 6:5:2
