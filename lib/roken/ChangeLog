@@ -1,3 +1,9 @@
+2005-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* simple_exec.c (pipe_execv): use closefrom
+
+	* add closefrom
+
 2005-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* add ROKEN_LIB_FUNCTION to all exported functions
