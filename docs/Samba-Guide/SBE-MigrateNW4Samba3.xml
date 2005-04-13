@@ -244,9 +244,9 @@
 		<member><para>nss_ldap</para></member>
 		<member><para>smbldap-tools Version 0.8.7</para></member>
 		<member><para>perl-ldap</para></member>
-		<member><para>samba-3.0.12 or later</para></member>
-		<member><para>samba-client-3.0.12 or later</para></member>
-		<member><para>samba-winbind-3.0.12 or later</para></member>
+		<member><para>samba-3.0.15 or later</para></member>
+		<member><para>samba-client-3.0.15 or later</para></member>
+		<member><para>samba-winbind-3.0.15 or later</para></member>
 	</simplelist>
 
 	<para>
