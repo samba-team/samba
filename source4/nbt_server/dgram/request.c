@@ -34,6 +34,7 @@ static const struct {
 	dgram_mailslot_handler_t handler;
 } mailslot_handlers[] = {
 	{ NBT_MAILSLOT_NETLOGON, nbtd_mailslot_netlogon_handler },
+	{ NBT_MAILSLOT_NTLOGON,  nbtd_mailslot_ntlogon_handler },
 	{ NBT_MAILSLOT_BROWSE,   nbtd_mailslot_browse_handler }
 };
 
