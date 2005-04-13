@@ -38,6 +38,14 @@
 
 #include <stddef.h>
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 struct getargs{
     const char *long_name;
     char short_name;
