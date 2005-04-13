@@ -1344,7 +1344,7 @@ slapd[12164]: conn=1 fd=10 closed
 	</para>
 
 <note><para>
-The following information applies to Samba-3.0.12 when used with the Idealx smbldap-tools scripts
+The following information applies to Samba-3.0.15 when used with the Idealx smbldap-tools scripts
 version 0.8.7. If using a different version of Samba, or of the smbldap-tools tarball, please 
 verify that the versions you are about to use are matching.
 </para></note>
@@ -1751,8 +1751,8 @@ session  optional    pam_mail.so
 	<para><indexterm>
 	    <primary>Samba RPM Packages</primary>
 	  </indexterm>
-	Verify that the Samba-3.0.12 (or later) packages are installed on each SUSE Linux server 
-	before following the steps below. If Samba-3.0.12 (or later) is not installed, you have the
+	Verify that the Samba-3.0.15 (or later) packages are installed on each SUSE Linux server 
+	before following the steps below. If Samba-3.0.15 (or later) is not installed, you have the
 	choice to either build your own or to obtain the packages from a dependable source.
 	Packages for SUSE Linux 8.x, 9.x and SUSE Linux Enterprise Server 9, as well as for 
 	Red Hat Fedora Core and Red Hat Enteprise Linux Server 3 and 4 are included on the CD-ROM that
