@@ -1,5 +1,8 @@
 2005-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* simple_exec.c: don't close stderr, close all fd that is num 3
+	and larger
+
 	* simple_exec.c (pipe_execv): use closefrom
 
 	* add closefrom
