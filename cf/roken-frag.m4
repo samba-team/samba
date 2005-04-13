@@ -333,6 +333,7 @@ AC_FIND_IF_NOT_BROKEN(gai_strerror,,
 AC_BROKEN([					\
 	chown					\
 	copyhostent				\
+	closefrom				\
 	daemon					\
 	ecalloc					\
 	emalloc					\
