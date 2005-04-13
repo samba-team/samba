@@ -109,6 +109,7 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 						   const char *mailslot_name,
 						   dgram_mailslot_handler_t handler,
 						   void *private);
+DATA_BLOB dgram_mailslot_data(struct nbt_dgram_packet *dgram);
 
 
 NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,

@@ -167,7 +167,7 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	msg = &packet.data.msg;
 	/* this length calculation is very crude - it should be based on gensize
 	   calls */
-	msg->length = 138 + strlen(mailslot_name) + request->length; 
+	msg->length = 138 + strlen(mailslot_name) + request->length;
 	msg->offset = 0;
 
 	msg->source_name = *src_name;
@@ -193,4 +193,22 @@ NTSTATUS dgram_mailslot_send(struct nbt_dgram_socket *dgmsock,
 	talloc_free(tmp_ctx);
 
 	return status;
+}
+
+/*
+  return the mailslot data portion from a mailslot packet
+*/
+DATA_BLOB dgram_mailslot_data(struct nbt_dgram_packet *dgram)
+{
+	struct smb_trans_body *trans = &dgram->data.msg.body.smb.body.trans;
+	DATA_BLOB ret = trans->data;
+	int pad = trans->data_offset - (70 + strlen(trans->mailslot_name));
+
+	if (pad < 0 || pad > ret.length) {
+		DEBUG(2,("Badly formatted data in mailslot - pad = %d\n", pad));
+		return data_blob(NULL, 0);
+	}
+	ret.data += pad;
+	ret.length -= pad;
+	return ret;	
 }

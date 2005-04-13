@@ -259,7 +259,7 @@
 		[value(strlen(r->mailslot_name)+1+r->data.length)] 
 		      uint16                byte_count;
 		astring                     mailslot_name;
-		[flag(NDR_REMAINING)] DATA_BLOB data;
+		[flag(NDR_REMAINING)]       DATA_BLOB data;
 	} smb_trans_body;
 
 	typedef [nodiscriminant] union {
@@ -435,5 +435,4 @@
 		nbt_ntlogon_command command;
 		[switch_is(command)] nbt_ntlogon_request req;
 	} nbt_ntlogon_packet;
-	
 }
