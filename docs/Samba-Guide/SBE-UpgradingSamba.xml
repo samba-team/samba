@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<chapter id="migration">
+<chapter id="upgrades">
 <title>Updating Samba-3</title>
 
 <para>
@@ -57,7 +57,12 @@ productivity on a user.
 </para>
 
 <para>
-XXX
+It is prudent also to backup all data files on the server before attempting
+to perform a major upgrade. Many administrators have experienced the consequences
+of failure to take adequate precautions. So what is adequate? That is simple!
+If data is lost during an upgrade or and update and it can not be restored
+the precautions take were inadequate. If a backup was not needed, but was available,
+precaution was on the side of the victor.
 </para>
 
 </sect1>
@@ -72,6 +77,29 @@ on the complexity of the configuration. Samba-1.9.x upgrades to Samba-3 will
 generally be simple and straight forward, although no upgrade should be
 attempted without proper planning and preparation.
 </para>
+
+<para>
+There are two basic modes of use of Samba versions prior to Samba-3. The first
+does not use LDAP, the other does. Samba-1.9.x did not provide LDAP support.
+Samba-2.x could be compiled with LDAP support.
+</para>
+
+	<sect2>
+	<title>Samba 1.9.x and 2.x Versions Without LDAP</title>
+
+	<para>
+	JJJ Pick up from here JJJ.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Samba-2.x with LDAP support</title>
+
+	<para>
+	</para>
+
+	</sect2>
 
 </sect1>
 
@@ -108,8 +136,50 @@ attempted without proper planning and preparation.
 	<sect2>
 	<title>Cautions and Notes</title>
 
+	<sect3>
+	<title>Change of hostname</title>
+
 	<para>
 	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Change of workgroup (domain) name</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Location of config files</title>
+
+	<para>
+	The Samba 1.9.x &smb.conf; file may be found either in the <filename>/etc</filename>
+	directory or in <filename>/usr/local/samba/lib</filename>.
+	</para>
+
+	<para>
+	During the life of the Samba 2.x release the &smb.conf; file was relocated
+	on Linux systems to the <filename>/etc/samba</filename> directory where it
+	remains located also for Samba 3.0.x installations.
+	</para>
+
+	<para>
+	Samba 2.x introduced the secrets.tdb file that is also stored in the
+	<filename>/etc/samba</filename> directory, or in the <filename>/usr/local/samba/lib</filename>
+	directory sub-system.
+	</para>
+
+	<para>
+	It is important that both the &smb.conf; file and the <filename>secrets.tdb</filename> should
+	be backed up before attempting any upgrade. The <filename>secrets.tdb</filename> file is version
+	encoded and therefore a newer version may not work with an older version of Samba. A backup
+	means that it is always possible to revert a failed or problematic upgrade.
+	</para>
+
+	</sect3>
 
 	</sect2>
 
