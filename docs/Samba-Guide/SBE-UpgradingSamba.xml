@@ -24,7 +24,7 @@ highlighted by an email posting that included the following neat remark:
 </para>
 
 <blockquote><para>
-I like the <quote>net rpc vampire</quote> on NT4, but that to my surpirse does
+I like the <quote>net rpc vampire</quote> on NT4, but that to my surprise does
 not seem to work against a Samba PDC and, if addressed in the Samba to Samba
 context in either book, I could not find it.
 </para></blockquote>
@@ -65,10 +65,317 @@ the precautions take were inadequate. If a backup was not needed, but was availa
 precaution was on the side of the victor.
 </para>
 
+	<sect2>
+	<title>Cautions and Notes</title>
+
+	<para>
+	Someone once said, <quote>It is good to be sorry, but better never to need to be!</quote>
+	These are wise words of advice to those contemplating a Samba upgrade or update.
+	</para>
+
+	<para>
+	This is as good a time as any to define the terms <constant>upgrade</constant> and
+	<constant>update</constant>. The term <constant>upgrade</constant> is used to refer to
+	the installation of a version of Samba that is a whole generation or more ahead of
+	that which is installed. Generations are indicated by the first digit of the version
+	number. So far Samba has been release in generations 1.x, 2.x, 3.x and currently 4.0
+	is in development.
+	</para>
+
+	<para>
+	The term <constant>update</constant> is used to refer to a minor version number installation
+	in place of one of the same generation. For example, updating from Samba 3.0.10 to 3.0.14
+	is an update. The move from Samba 2.0.7 to 3.0.14 is an upgrade.
+	</para>
+
+	<para>
+	While the use of these terms is an exercise in semantics, what needs to be realized
+	is that there are major functional differences between a Samba 2.x release and a Samba
+	3.0.x release. Such differences may require a significantly different approach to
+	solving the same networking challenge and generally requires careful review of the
+	latest documentation to identify precisely how the new installation may need to be
+	modified to preserve prior functionality.
+	</para>
+
+	<para>
+	There is an old axiom that says, <quote>The greater the volume of the documentation
+	the greater the risk that no-one will read it, but where there is no documentation
+	no-one can read it!</quote>. While true, some documentation is an evil necessity.
+	It is to be hoped that this update to the documentation will avoid both extremes.
+	</para>
+
+	<sect3>
+	<title>Security Identifiers (SIDs)</title>
+
+	<para>
+	Before the days of Windows NT and OS/2 every Windows and DOS networking client
+	that used the SMB protocols was an entirely autonomous entity. There was no concept
+	of a security identifier for a machine or a user outside of the username, the
+	machine name, and the workgroup name. In actual fact, these were not security identifies
+	in the same context as the way that the SID is used since the development of
+	Windows NT 3.10.
+	</para>
+
+	<para>
+	Versions of Samba prior to 1.9 did not make use of a SID, instead they make exclusive use
+	of the username that is embedded in the SessionSetUpAndX component of the connection
+	setup process between a Windows client and an SMB/CIFS server. 
+	</para>
+
+	<para>
+	Around November 1997 support was added to Samba-1.9 to handle the Windows security
+	rpc based protocols that implemented support for Samba to store a machine SID. This
+	information was stored in a file called <filename>MACHINE.SID.</filename>
+	</para>
+
+	<para>
+	Within the life time of the early Samba 2.x series the machine SID information was
+	relocated into a tdb file called <filename>secrets.tdb</filename>, which is where is
+	is still located in Samba 3.0.x along with other information that pertains to the
+	local machine and its role within a domain security context.
+	</para>
+
+	<para>
+	There are two types of SID, those pertaining to the machine itself and the domain to
+	which it may belong, and those pertaining to users and groups within the security
+	context of the local machine (in the case of stand-alone servers (SAS) and domain member
+	servers (DMS).
+	</para>
+
+	<para>
+	When the Samba <command>smbd</command> daemon is first started, if the <filename>secrets.tdb</filename>
+	file does not exist it is created at the first client connection attempt. If this file does
+	exist, <command>smbd</command> checks that there is a machine SID (if it is a domain controller
+	it searches for the domain SID). If <command>smbd</command> does not find one for the current
+	name of the machine or for the current name of the workgroup a new SID will be generated and
+	then written to the <filename>secrets.tdb</filename> file. The SID is generated in a non-determinative
+	manner. This means that each time it is generated for a particular combination of machine name
+	(hostname) and domain name (workgroup) it will be different.
+	</para>
+
+	<para>
+	The SID is the key used by MS Windows networking for all networking operations. This means
+	that when the machine or domain SID changes all security encoded objects such as profiles
+	and ACLs may become unusable.
+	</para>
+
+	<note><para>
+	It is of paramount importance that the machine and domain SID must be backed up so that in
+	the event of a change of hostname (machine name) or domain name (workgroup) the SID can
+	be restored to its previous value.
+	</para></note>
+
+	<para>
+	The local machine SID can be backed up using this procedure (Samba-3):
+<screen>
+&rootprompt; net getlocalsid > /etc/samba/my-local-SID
+</screen>
+	The contents of the file <filename>/etc/samba/my-local-SID</filename> will be:
+<screen>
+SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
+</screen>
+	This SID can be restored by executing:
+<screen>
+&rootprompt; net setlocalsid S-1-5-21-726309263-4128913605-1168186429
+</screen>
+	</para>
+
+	<para>
+	Samba 1.9.x stored the machine SID in the the file <filename>/etc/MACHINE.SID</filename>
+	from which it can be recovered and stored into the <filename>secrets.tdb</filename> file
+	using the procedure shown above.
+	</para>
+
+	<para>
+	Where the <filename>secrets.tdb</filename> file exists and a version of Samba 2.x or later
+	has been used there is no specific need to go through this update process.
+	</para>
+
+	<para>
+	In the course of the Samba 2.0.x series the <command>smbpasswd</command> was modified to
+	permit the domain SID to be captured to the <filename>secrets.tdb</filename> file by executing:
+<screen>
+&rootprompt; smbpasswd -S PDC -Uadministrator%password
+</screen>
+	</para>
+
+	<para>
+	The release of the Samba 2.2.x series permitted the SID to be obtained by executing:
+<screen>
+&rootprompt; smbpasswd -S PDC -Uadministrator%password
+</screen>
+	From which the SID could be copied to a file and then it could be written to the
+	<filename>secrets.tdb</filename> file by executing:
+<screen>
+&rootprompt; smbpasswd -W S-1-5-21-726309263-4128913605-1168186429
+</screen>
+	</para>
+
+	<para>
+	Domain security information, that includes the domain SID, can be obtained from Samba-2.2.x
+	systems by executing:
+<screen>
+&rootprompt; rpcclient lsaquery -Uroot%password
+</screen>
+	This can also be done with Samba-3 by executing:
+<screen>
+&rootprompt; net rpc info -Uroot%password
+Domain Name: MIDEARTH
+Domain SID: S-1-5-21-726309263-4128913605-1168186429
+Sequence number: 1113415916
+Num users: 4237
+Num domain groups: 86
+Num local groups: 0
+</screen>
+	It is a very good practice to store this SID information in a safely kept file, just in
+	case it is ever needed at a later date.
+	</para>
+
+	<para>
+	Take note that the domain SID is used extensively in Samba. Where LDAP is used for the
+	<parameter>passdb backend</parameter>, all user, group, and trust accounts are encoded
+	with the domain SID. This means that if the domain SID changes for any reason the entire
+	Samba environment can become broken thus requiring extensive corrective action is the 
+	original SID can not be restored. Fortunately, it can be recovered from a dump of the
+	LDAP database. A dump of the LDAP directory database can be obtained by executing:
+<screen>
+&rootprompt; slapcat -v -l filename.ldif
+</screen>
+	</para>
+
+	<para>
+	When the domain SID has changed roaming profiles will cease to be functional. The recovery
+	of roaming profiles will necessitate resetting of the domain portion of the user SID
+	that owns the profile. This is encoded in the <filename>NTUser.DAT</filename> and can be
+	updated using the Samba <command>profiles</command> utility. Please be aware that not all
+	Linux distributions of the Samba RPMs do include this essential utility. Please do not
+	complain to the Samba Team if this utility is missing, that is an issue that must be
+	addressed to the creator of the RPM package. The Samba Team do their best to make
+	available all the tools needed to manage a Samba based Windows networking environment.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Change of hostname</title>
+
+	<para>
+	Samba uses two (2) methods by which the primary NetBIOS machine name (also known as a computer
+	name or the hostname) may be determined: If the &smb.conf; file contains an entry
+	<parameter>netbios name</parameter> entry its value will be used directly. In the absence
+	of such and entry the UNIX system hostname will be used.
+	</para>
+
+	<para>
+	Many sites have become victims of lost Samba functionality because the UNIX system
+	hostname was changed for one reason or another. Such a change will cause a new machine
+	SID to be generated. If this happens on a domain controller it will also change the
+	domain SID. These SIDs can be updated (restored) using the procedure outlined above.
+	</para>
+
+	<note><para>
+	Do NOT change the hostname or the <parameter>netbios name</parameter>. If this
+	is changed be sure to reset the machine SID to the original setting, otherwise
+	there may be serious interoperability and/or operational problems.
+	</para></note>
+
+	</sect3>
+
+	<sect3>
+	<title>Change of workgroup (domain) name</title>
+
+	<para>
+	The domain name of a Samba server is identical with the workgroup name and is
+	set in the &smb.conf; file using the <parameter>workgroup</parameter> parameter.
+	This has been consistent throughout the history of Samba and across all versions.
+	</para>
+
+	<para>
+	Be aware that when the workgroup name is changed a new SID will be generated.
+	The old domain SID can be reset using the procedure outlined earlier in this chapter.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Location of config files</title>
+
+	<para>
+	The Samba 1.9.x &smb.conf; file may be found either in the <filename>/etc</filename>
+	directory or in <filename>/usr/local/samba/lib</filename>.
+	</para>
+
+	<para>
+	During the life of the Samba 2.x release the &smb.conf; file was relocated
+	on Linux systems to the <filename>/etc/samba</filename> directory where it
+	remains located also for Samba 3.0.x installations.
+	</para>
+
+	<para>
+	Samba 2.x introduced the secrets.tdb file that is also stored in the
+	<filename>/etc/samba</filename> directory, or in the <filename>/usr/local/samba/lib</filename>
+	directory sub-system.
+	</para>
+
+	<para>
+	The location at which <command>smbd</command> expects to find all configuration and control
+	files is determined at the time of compilation of Samba. For versions of Samba prior to
+	3.0 one way to find the expected location of these files is to execute:
+<screen>
+&rootprompt; strings /usr/sbin/smbd | grep conf
+&rootprompt; strings /usr/sbin/smbd | grep secret
+&rootprompt; strings /usr/sbin/smbd | grep smbpasswd
+</screen>
+	Note: The <command>smbd</command> executable may be located in the path
+	<filename>/usr/local/samba/sbin</filename>.
+	</para>
+
+	<para>
+	Samba-3 provides a neat new way to track the location of all control files as well as to
+	find the compile-time options used as the Samba package was built. Here  is how the dark
+	secrets of the internals of Samba can be uncovered:
+<screen>
+&rootprompt; smbd -b | less
+Build environment:
+   Built by:    root@frodo
+   Built on:    Mon Apr 11 20:23:27 MDT 2005
+   Built using: gcc
+   Build host:  Linux frodo 2.6...
+   SRCDIR:      /usr/src/packages/BUILD/samba-3.0.15/source
+   BUILDDIR:    /usr/src/packages/BUILD/samba-3.0.15/source
+
+Paths:
+   SBINDIR: /usr/sbin
+   BINDIR: /usr/bin
+   SWATDIR: /usr/share/samba/swat
+   CONFIGFILE: /etc/samba/smb.conf
+   LOGFILEBASE: /var/log/samba
+   LMHOSTSFILE: /etc/samba/lmhosts
+   LIBDIR: /usr/lib/samba
+   SHLIBEXT: so
+   LOCKDIR: /var/lib/samba
+   PIDDIR: /var/run/samba
+   SMB_PASSWD_FILE: /etc/samba/smbpasswd
+   PRIVATE_DIR: /etc/samba
+ ... 
+</screen>
+	</para>
+
+	<para>
+	It is important that both the &smb.conf; file and the <filename>secrets.tdb</filename> should
+	be backed up before attempting any upgrade. The <filename>secrets.tdb</filename> file is version
+	encoded and therefore a newer version may not work with an older version of Samba. A backup
+	means that it is always possible to revert a failed or problematic upgrade.
+	</para>
+
+	</sect3>
+
+	</sect2>
+
 </sect1>
 
 <sect1>
-<title>Upgrading from Samba-2 to Samba-3</title>
+<title>Upgrading from Samba 1.x and 2.x to Samba-3</title>
 
 <para>
 Sites that are being upgraded from Samba-2 (or earlier versions) to Samba-3
@@ -88,8 +395,49 @@ Samba-2.x could be compiled with LDAP support.
 	<title>Samba 1.9.x and 2.x Versions Without LDAP</title>
 
 	<para>
-	JJJ Pick up from here JJJ.
+	Where it is necessary to upgrade an old Samba installation to Samba-3
+	the following procedure can be followed:
 	</para>
+
+	<procedure>
+		<step><para>
+		Stop Samba. This can be done using the appropriate system tool
+		that is particular for each operating system or by executing the
+		<command>kill</command> command on <command>smbd, nmbd</command>
+		and on <command>winbindd</command>.
+		</para></step>
+
+		<step><para>
+		Find the location of the Samba &smb.conf; file - back it up to a
+		safe location.
+		</para></step>
+
+		<step><para>
+		Find the location of the 
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+		<step><para>
+		</para></step>
+
+	</procedure>
 
 	</sect2>
 
@@ -130,56 +478,6 @@ Samba-2.x could be compiled with LDAP support.
 
 	<para>
 	</para>
-
-	</sect2>
-
-	<sect2>
-	<title>Cautions and Notes</title>
-
-	<sect3>
-	<title>Change of hostname</title>
-
-	<para>
-	</para>
-
-	</sect3>
-
-	<sect3>
-	<title>Change of workgroup (domain) name</title>
-
-	<para>
-	</para>
-
-	</sect3>
-
-	<sect3>
-	<title>Location of config files</title>
-
-	<para>
-	The Samba 1.9.x &smb.conf; file may be found either in the <filename>/etc</filename>
-	directory or in <filename>/usr/local/samba/lib</filename>.
-	</para>
-
-	<para>
-	During the life of the Samba 2.x release the &smb.conf; file was relocated
-	on Linux systems to the <filename>/etc/samba</filename> directory where it
-	remains located also for Samba 3.0.x installations.
-	</para>
-
-	<para>
-	Samba 2.x introduced the secrets.tdb file that is also stored in the
-	<filename>/etc/samba</filename> directory, or in the <filename>/usr/local/samba/lib</filename>
-	directory sub-system.
-	</para>
-
-	<para>
-	It is important that both the &smb.conf; file and the <filename>secrets.tdb</filename> should
-	be backed up before attempting any upgrade. The <filename>secrets.tdb</filename> file is version
-	encoded and therefore a newer version may not work with an older version of Samba. A backup
-	means that it is always possible to revert a failed or problematic upgrade.
-	</para>
-
-	</sect3>
 
 	</sect2>
 
