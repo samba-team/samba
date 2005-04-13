@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<chapter id="migration">
+<title>Updating Samba-3</title>
+
+<para>
+It was a little difficult to select an appropriate title for this chapter.
+From email messages on the Samba mailing lists it is clear that many people
+consider the updating and upgrading of Samba to be a migration matter. Others
+talk about migrating Samba servers when in fact the issue at hand is one of
+installing a new Samba server to replace an older existing Samba server.
+</para>
+
+<para>
+There has also been much talk about migration of Samba-3 from an smbpasswd
+passdb backend to the use of the tdbsam or ldapsam facilities that are new
+to Samba-3.
+</para>
+
+<para>
+Clearly, there is not a great deal of clarity in the terminology that various
+people apply to these modes by which Samba servers are updated. This is further 
+highlighted by an email posting that included the following neat remark:
+</para>
+
+<blockquote><para>
+I like the <quote>net rpc vampire</quote> on NT4, but that to my surpirse does
+not seem to work against a Samba PDC and, if addressed in the Samba to Samba
+context in either book, I could not find it.
+</para></blockquote>
+
+<para>
+So in response to the significant request for these situations to be better 
+documented this chapter has now been added. Your contributions and documentation
+of real-world experiences will be a most welcome addition to this chapter.
+</para>
+
+<sect1>
+<title>Introduction</title>
+
+<para>
+A Windows network administrator explained in an email what changes he was
+planning to make and and followed with the question: <quote>Anyone done this before?</quote>.
+Many of us have upgraded and updated Samba without incident. Others have
+experienced much pain and user frustration. So it is to be hoped that the
+notes in this chapter will make a positive difference by assuring that
+someone will be saved a lot of discomfort.
+</para>
+
+<para>
+Before anyone commences an upgrade or an update of Samba the one cardinal
+rule that must be observed is: Backup all Samba configuration files in
+case it is necessary to revert to the old version. Even if you do not like
+this precautionary step, users will punish an administrator who
+fails to take adequate steps to avoid situations that may inflict lost
+productivity on a user.
+</para>
+
+<para>
+XXX
+</para>
+
+</sect1>
+
+<sect1>
+<title>Upgrading from Samba-2 to Samba-3</title>
+
+<para>
+Sites that are being upgraded from Samba-2 (or earlier versions) to Samba-3
+may experience little difficulty or may require a lot of effort, depending
+on the complexity of the configuration. Samba-1.9.x upgrades to Samba-3 will
+generally be simple and straight forward, although no upgrade should be
+attempted without proper planning and preparation.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Updating a Samba-3 Installation</title>
+
+<para>
+</para>
+
+	<sect2>
+	<title>Updating from Versions Earlier than 3.0.6</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Updating from Versions between 3.0.7 and 3.0.10</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Migrating Samba-3 to a New Server</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Cautions and Notes</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+</sect1>
+
+</chapter>
+
