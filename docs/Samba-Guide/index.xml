@@ -14,10 +14,10 @@
 	<?latex \clearpage ?>
 	<?latex \setcounter{page}{5} ?>
 
-	<xi:include href="inside-cover.xml"/>
-	<xi:include href="acknowledgements.xml"/>
-	<xi:include href="foreword.xml"/>
-	<xi:include href="preface.xml"/>
+	<xi:include href="SBE-inside-cover.xml"/>
+	<xi:include href="SBE-acknowledgements.xml"/>
+	<xi:include href="SBE-foreword.xml"/>
+	<xi:include href="SBE-preface.xml"/>
 
 	<?latex \cleardoublepage ?>
 
@@ -113,6 +113,6 @@ play in a Windows networking world.
 	<xi:include href="SBE-Appendix2.xml"/>
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 </part>
-	<xi:include href="glossary.xml"/>
+	<xi:include href="SBE-glossary.xml"/>
 	<index/>
 </book>
