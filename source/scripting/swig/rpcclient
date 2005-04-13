@@ -28,9 +28,9 @@ class rpcclient(Cmd):
 
     prompt = 'rpcclient$ '
 
-    def __init__(self, binding, domain, username, password):
+    def __init__(self, server, domain, username, password):
         Cmd.__init__(self)
-        self.binding = binding
+        self.server = server
         self.domain = domain
         self.username = username
         self.password = password
@@ -83,9 +83,9 @@ class rpcclient(Cmd):
             return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
 
@@ -105,9 +105,9 @@ class rpcclient(Cmd):
             return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
 
@@ -126,9 +126,9 @@ class rpcclient(Cmd):
 	    return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -153,9 +153,9 @@ class rpcclient(Cmd):
 	    return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -180,9 +180,9 @@ class rpcclient(Cmd):
             return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)	
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -205,9 +205,9 @@ class rpcclient(Cmd):
             return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
         domain_handle = connect_handle.OpenDomain(args[0])
@@ -229,9 +229,9 @@ class rpcclient(Cmd):
 	    return
 
         pipe = dcerpc.pipe_connect(
-            self.binding,
+            'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            self.domain, self.username, self.password)
+            (self.domain, self.username, self.password))
 
         connect_handle = samr.Connect(pipe)
         domain_handle = connect_handle.OpenDomain(args[0])
@@ -247,17 +247,14 @@ if __name__ == '__main__':
 
     # Parse command line
 
-    usage = 'rpcclient BINDING [options]'
+    usage = 'rpcclient SERVER [options]'
 
     if len(sys.argv) == 1:
         print usage
         sys.exit(1)
 
-    binding = sys.argv[1]
+    server = sys.argv[1]
     del(sys.argv[1])
-
-    if string.find(binding, ':') == -1:
-        binding = 'ncacn_np:' + binding
 
     parser = OptionParser(usage)
 
@@ -288,7 +285,7 @@ if __name__ == '__main__':
 
     # Run command loop
 
-    c = rpcclient(binding, domain, username, password)
+    c = rpcclient(server, domain, username, password)
 
     if options.command:
         c.onecmd(options.command)
