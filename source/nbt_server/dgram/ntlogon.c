@@ -26,6 +26,44 @@
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
 
+
+/*
+  reply to a SAM LOGON request
+ */
+static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot, 
+				   struct nbt_dgram_packet *packet, 
+				   const char *src_address, int src_port,
+				   struct nbt_ntlogon_packet *ntlogon)
+{
+	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbt_ntlogon_packet reply;
+	struct nbt_ntlogon_sam_logon_reply *logon;
+
+	/* only answer sam logon requests on the PDC or LOGON names */
+	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+		return;
+	}
+
+	/* setup a SAM LOGON reply */
+	ZERO_STRUCT(reply);
+	reply.command = NTLOGON_SAM_LOGON_REPLY;
+	logon = &reply.req.reply;
+
+	logon->server           = talloc_asprintf(packet, "\\\\%s", lp_netbios_name());
+	logon->user_name        = ntlogon->req.logon.user_name;
+	logon->domain           = lp_workgroup();
+	logon->nt_version       = 1;
+	logon->lmnt_token       = 0xFFFF;
+	logon->lm20_token       = 0xFFFF;
+
+	packet->data.msg.dest_name.type = 0;
+
+	dgram_mailslot_ntlogon_reply(dgmslot->dgmsock, 
+				     packet, 
+				     ntlogon->req.logon.mailslot_name,
+				     &reply);
+}
+
 /*
   handle incoming ntlogon mailslot requests
 */
@@ -60,6 +98,9 @@ void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	NDR_PRINT_DEBUG(nbt_ntlogon_packet, ntlogon);
 
 	switch (ntlogon->command) {
+	case NTLOGON_SAM_LOGON:
+		nbtd_ntlogon_sam_logon(dgmslot, packet, src_address, src_port, ntlogon);
+		break;
 	default:
 		DEBUG(2,("unknown ntlogon op %d from %s:%d\n", 
 			 ntlogon->command, src_address, src_port));
