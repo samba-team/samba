@@ -679,4 +679,9 @@ char * ROKEN_LIB_FUNCTION
 vis(char *dst, int c, int flag, int nextc);
 #endif
 
+#if !defined(HAVE_CLOSEFROM)
+int ROKEN_LIB_FUNCTION
+closefrom(int);
+#endif
+
 ROKEN_CPP_END
