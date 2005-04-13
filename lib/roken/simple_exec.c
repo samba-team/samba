@@ -197,7 +197,7 @@ pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd,
 	    close(err_fd[1]);
 	}
 
-	closefrom(2);
+	closefrom(3);
 
 	execv(file, argv);
 	exit((errno == ENOENT) ? EX_NOTFOUND : EX_NOEXEC);
