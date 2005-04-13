@@ -9,42 +9,110 @@
 		<authorgroup>
 			<author>&person.jht;</author>
 		</authorgroup>
-		<pubdate>March 4, 2005</pubdate>
+		<pubdate>April 12, 2005</pubdate>
 	</bookinfo>
 	<?latex \clearpage ?>
-<!--- Leave the commented out lines they are needed for book production.
-	<para>boo</para>
-	<?latex \clearpage ?>
-	<para>boo</para>
-	<?latex \clearpage ?>
-	<para>boo</para>
--->
+	<?latex \setcounter{page}{5} ?>
+
 	<xi:include href="inside-cover.xml"/>
 	<xi:include href="acknowledgements.xml"/>
 	<xi:include href="foreword.xml"/>
 	<xi:include href="preface.xml"/>
+
 	<?latex \cleardoublepage ?>
+
 	<toc/>
+
 	<?latex \cleardoublepage ?>
+
 	<?latex \listofexamples ?>
+
 	<?latex \cleardoublepage ?>
+
 	<lot/>
+
 	<!-- Chapters -->
-	<xi:include href="Chap01-WindowsNetworkingPrimer.xml"/>
-	<xi:include href="Chap02-SimpleOfficeServer.xml"/>
-	<xi:include href="Chap03-TheSmallOffice.xml"/>
-	<xi:include href="Chap04-SecureOfficeServer.xml"/>
-	<xi:include href="Chap05-500UserNetwork.xml"/>
-	<xi:include href="Chap06-MakingHappyUsers.xml"/>
-	<xi:include href="Chap07-2000UserNetwork.xml"/>
-	<xi:include href="Chap08-MigrateNT4Samba3.xml"/>
-	<xi:include href="Chap08b-MigrateNW4Samba3.xml"/>
-	<xi:include href="Chap09-AddingUNIXClients.xml"/>
-	<xi:include href="Chap10-KerberosFastStart.xml"/>
-	<xi:include href="Chap10b-DomainAppsSupport.xml"/>
-	<xi:include href="Chap11-HighAvailability.xml"/>
-	<xi:include href="Chap12-Appendix.xml"/>
+
+<part id="ExNetworks">
+<title>Example Network Configurations</title>
+<partintro>
+<title>Example Network Configurations</title>
+
+<?latex \pagenumbering{arabic} ?>
+
+<para>
+This section of <emphasis>Samba-3 by Example</emphasis> provides example network
+configurations that can be copied, or modified as needed, and deployed as-is.
+</para>
+
+<para>
+Best use can be made of this book by finding in this section the network design and
+layout that best approximates your estimated needs. It is recommended that you will
+implement the design pattern exactly as it appears, then after the installation has
+been proven to work make any changes or modifications needed at your site.
+</para>
+
+<para>
+The examples have been tested with Red Hat Fedora Core 2, Novell SUSE Linux Professional
+9.2 and Novell SUSE Linux Enterprise Server (SLES) 9. The principals of implementation
+apply to all Linux and UNIX systems in general, though some system files and tools will 
+be different and the location of some Samba file locations will be different since these 
+are determinered by the person who packages Samba for each platform.
+</para>
+
+</partintro>
+	<xi:include href="SBE-SimpleOfficeServer.xml"/>
+	<xi:include href="SBE-TheSmallOffice.xml"/>
+	<xi:include href="SBE-SecureOfficeServer.xml"/>
+	<xi:include href="SBE-500UserNetwork.xml"/>
+	<xi:include href="SBE-MakingHappyUsers.xml"/>
+	<xi:include href="SBE-2000UserNetwork.xml"/>
+</part>
+
+<part id="DMSMig">
+<title>Domain Membership and Migration</title>
+<partintro>
+<title>Domain Membership and Migration</title>
+
+<para>
+This section <emphasis>Samba-3 by Example</emphasis> covers two main topics: How to add
+Samba Domain Member Servers and Samba Domain Member Clients to a Samba domain, the other
+subject is that of how to migrate from and NT4 Domain, a NetWare server, or from an earlier
+Samba version to environments that use the most recent Samba-3 release. 
+</para>
+
+<para>
+Those who are making use of the chapter on Adding UNIX clients and servers running Samba
+to a Samba or a Windows networking domain may also benefit by referring to the book
+<emphasis>The Official Samba-3 HOWTO and Reference Guide.</emphasis>
+</para>
+
+</partintro>
+	<xi:include href="SBE-AddingUNIXClients.xml"/>
+	<xi:include href="SBE-MigrateNT4Samba3.xml"/>
+	<xi:include href="SBE-MigrateNW4Samba3.xml"/>
+</part>
+
+<part id="RefSection">
+<title>Reference Section</title>
+<partintro>
+<title>Reference Section</title>
+
+<para>
+This section <emphasis>Samba-3 by Example</emphasis> provides important reference material
+that may help you to solve network performance issues, to answer some of the critiques
+published regarding Samba, or just to gain a more broad understanding of how Samba can
+play in a Windows networking world.
+</para>
+
+</partintro>
+	<xi:include href="SBE-KerberosFastStart.xml"/>
+	<xi:include href="SBE-DomainAppsSupport.xml"/>
+	<xi:include href="SBE-HighAvailability.xml"/>
+	<xi:include href="SBE-Appendix1.xml"/>
+	<xi:include href="SBE-Appendix2.xml"/>
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
+</part>
 	<xi:include href="glossary.xml"/>
 	<index/>
 </book>
