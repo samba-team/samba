@@ -232,6 +232,9 @@ char *nt_errstr(NTSTATUS nt_code);
 %array_functions(struct samr_SamEntry, samr_SamEntry_array);
 %array_functions(union samr_ConnectInfo, samr_ConnectInfo_array);
 
+%array_functions(struct lsa_SidPtr, lsa_SidPtr_array);
+
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/security.i"
 %include "librpc/gen_ndr/samr.i"
+%include "librpc/gen_ndr/lsa.i"
