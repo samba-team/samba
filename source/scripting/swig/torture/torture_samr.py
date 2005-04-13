@@ -11,7 +11,7 @@ def test_Connect(pipe):
     handle = samr.Connect2(pipe)
     handle = samr.Connect3(pipe)
     handle = samr.Connect4(pipe)
-    handle = samr.Connect5(pipe)
+#    handle = samr.Connect5(pipe) # win2k3 only?
 
     return handle
     
@@ -33,7 +33,7 @@ def test_GetDomPwInfo(pipe, handle, domain):
 
 def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
 
-    print 'test RemoveMemberFromForeignDomain'
+    print 'testing RemoveMemberFromForeignDomain'
 
     sid = samr.string_to_sid('S-1-5-32-12-34-56-78-9')
 
@@ -41,7 +41,7 @@ def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
 
 def test_CreateUser2(pipe, domain_handle):
 
-    print 'test CreateUser2'
+    print 'testing CreateUser2'
 
     username = 'samrtorturemach$'
 
@@ -55,7 +55,7 @@ def test_CreateUser2(pipe, domain_handle):
 
 def test_LookupName(pipe, domain_handle, name):
 
-    print 'test samr_LookupNames'
+    print 'testing samr_LookupNames'
 
     domain_handle.LookupNames(['Administrator', 'xxNONAMExx'])
 
@@ -84,7 +84,7 @@ def test_DeleteUser_byname(pipe, domain_handle, user_name):
 
 def test_QueryUserInfo(pipe, user_handle):
 
-    print 'test samr_QueryUserInfo'
+    print 'testing samr_QueryUserInfo'
 
     levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
 
@@ -97,7 +97,7 @@ def test_QueryUserInfo(pipe, user_handle):
 
 def test_QueryUserInfo2(pipe, user_handle):
 
-    print 'test samr_QueryUserInfo2'
+    print 'testing samr_QueryUserInfo2'
 
     levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21]
 
@@ -126,7 +126,7 @@ def test_SetUserInfo(pipe, user_handle):
 
 def test_GetUserPwInfo(pipe, user_handle):
 
-    print 'test samr_GetUserpwInfo'
+    print 'testing samr_GetUserpwInfo'
 
     r = {}
     r['user_handle'] = user_handle
@@ -135,7 +135,7 @@ def test_GetUserPwInfo(pipe, user_handle):
 
 def test_TestPrivateFunctionsUser(pipe, user_handle):
 
-    print 'test samr.TestPrivateFunctionsUser'
+    print 'testing samr.TestPrivateFunctionsUser'
 
     r = {}
     r['user_handle'] = user_handle
@@ -162,64 +162,14 @@ def test_user_ops(pipe, user_handle):
 
 def test_CreateUser(pipe, domain_handle):
 
-    print 'test samr_CreateUser'
-    
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['account_name'] = {}
-    r['account_name']['name'] = 'samrtorturetest'
-    r['access_mask'] = 0x02000000
+    username = 'samrtorturetest'
 
     try:
-        result = dcerpc.samr_CreateUser(pipe, r)
+        return domain_handle.CreateUser(username)
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
-            return
-        elif arg[0] == dcerpc.NT_STATUS_USER_EXISTS:
-            test_DeleteUser_byname(pipe, domain_handle, 'samrtorturetest')
-            result = dcerpc.samr_CreateUser(pipe, r)
-        else:
-            raise dcerpc.NTSTATUS(arg)
-
-    user_handle = result['user_handle']
-
-    q = {}
-    q['user_handle'] = user_handle
-    q['level'] = 16
-
-    dcerpc.samr_QueryUserInfo(pipe, q)
-
-    test_user_ops(pipe, user_handle)
-
-    return user_handle
-
-def test_DeleteAlias_byname(pipe, domain_handle, alias_name):
-
-    rid = test_LookupNames(pipe, domain_handle, alias_name)
-
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['access_mask'] = 0x02000000
-    r['rid'] = rid
-
-    result = dcerpc.samr_OpenAlias(pipe, r)
-
-    s = {}
-    s['alias_handle'] = result['alias_handle']
-
-    dcerpc.samr_DeleteDomAlias(pipe, s)
-
-def test_QueryAliasInfo(pipe, alias_handle):
-
-    levels = [1, 2, 3]
-
-    for i in range(0, len(levels)):
-
-        r = {}
-        r['alias_handle'] = alias_handle
-        r['level']  = levels[i]
-
-        dcerpc.samr_QueryAliasInfo(pipe, r)
+        if arg[0] == 0xc0000063L:
+            test_OpenUser_byname(pipe, domain_handle, username).DeleteUser()
+            return domain_handle.CreateUser(username)
 
 def test_SetAliasInfo(pipe, alias_handle):
 
@@ -240,79 +190,62 @@ def test_SetAliasInfo(pipe, alias_handle):
     
     dcerpc.samr_SetAliasInfo(pipe, r)
 
-def test_AddMemberToAlias(pipe, alias_handle, domain_sid):
+def test_Aliases(pipe, domain_handle, domain_sid):
 
-    r = {}
-    r['alias_handle'] = alias_handle
-    r['sid'] = domain_sid
+    print 'testing aliases'
 
-    r['sid']['num_auths'] = r['sid']['num_auths'] + 1
-    r['sid']['sub_auths'].append(512)
+    aliasname = 'samrtorturetestalias'
 
-    dcerpc.samr_AddAliasMember(pipe, r)
-
-    dcerpc.samr_DeleteAliasMember(pipe, r)
-
-def test_AddMultipleMembersToAlias(pipe, alias_handle):
-
-    r = {}
-    r['alias_handle'] = alias_handle
-    r['sids'] = {}
-    r['sids']['num_sids'] = 2
-    r['sids']['sids'] = []
-
-    for i in range(0,2):
-        sid = {}
-        sid['sid_rev_num'] = 1
-        sid['id_auth'] = [0, 0, 0, 0, 0, 5]
-        sid['num_auths'] = 5
-        sid['sub_auths'] = [21, 737922324, -1292160505, 1285293260, 512 + i]
-
-        r['sids']['sids'].append({'sid': sid})
-
-    dcerpc.samr_AddMultipleMembersToAlias(pipe, r)
-
-    dcerpc.samr_RemoveMultipleMembersFromAlias(pipe, r)
-
-def test_alias_ops(pipe, alias_handle, domain_sid):
-
-    test_QuerySecurity(pipe, alias_handle)
-
-    test_QueryAliasInfo(pipe, alias_handle)
-
-    test_SetAliasInfo(pipe, alias_handle)
-
-    test_AddMemberToAlias(pipe, alias_handle, domain_sid)
-
-    test_AddMultipleMembersToAlias(pipe, alias_handle)
-
-def test_CreateAlias(pipe, domain_handle, domain_sid):
-
-    print 'test samr_CreateAlias'    
-
-    alias_name = 'samrtorturetestalias'
-
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['aliasname'] = {}
-    r['aliasname']['name'] = alias_name
-    r['access_mask'] = 0x02000000
+    # Create a new alias
 
     try:
-        result = dcerpc.samr_CreateDomAlias(pipe, r)
+
+        handle, rid = domain_handle.CreateDomAlias(aliasname)
+
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
-            return
-        if arg[0] != dcerpc.NT_STATUS_USER_EXISTS:
-            raise dcerpc.NTSTATUS(arg)
-        test_DeleteAlias_byname(pipe, domain_handle, alias_name)
-        result = dcerpc.samr_CreateDomAlias(pipe, r)
 
-    alias_handle = result['alias_handle']
+        if arg[0] == 0x0c0000154L:
 
-    test_alias_ops(pipe, alias_handle, domain_sid)
+            # Alias exists, delete it and try again
 
-    return alias_handle
+            rids, types = domain_handle.LookupNames([aliasname])
+            domain_handle.OpenAlias(rids[0]).DeleteDomAlias()
+
+            handle, rid = domain_handle.CreateDomAlias(aliasname)
+            
+        else:
+            raise
+
+    # QuerySecurity/GetSecurity
+
+    handle.SetSecurity(handle.QuerySecurity())
+
+    # QueryAliasInfo/SetAliasInfo
+
+    for i in [1, 2, 3]:
+        info = handle.QueryAliasInfo(i)
+        try:
+            handle.SetAliasInfo(i, info)
+        except dcerpc.NTSTATUS, arg:
+
+            # Can't set alias info level 1
+
+            if not (arg[0] == 0xC0000003L and i == 1):
+                raise
+
+    # AddAliasMember
+
+    handle.AddAliasMember('S-1-5-21-1606980848-1677128483-854245398-500')
+
+    # AddMultipleMembersToAlias
+
+    handle.AddMultipleMembersToAlias(
+        ['S-1-5-21-1606980848-1677128483-854245398-501',
+         'S-1-5-21-1606980848-1677128483-854245398-502'])
+
+    # DeleteDomAlias
+
+    handle.DeleteDomAlias()
 
 def test_DeleteGroup_byname(pipe, domain_handle, group_name):
     
@@ -558,7 +491,7 @@ def test_GetDisplayEnumerationIndex2(pipe, domain_handle):
 
 def test_TestPrivateFunctionsDomain(pipe, domain_handle):
 
-    print 'test samr.TestPrivateFunctionsDomain'
+    print 'testing samr.TestPrivateFunctionsDomain'
 
     r = {}
     r['domain_handle'] = domain_handle
@@ -631,13 +564,13 @@ def test_OpenDomain(pipe, connect_handle, domain_sid):
 
     test_CreateUser2(pipe, domain_handle)
 
+    test_CreateUser(pipe, domain_handle)
+
+    test_Aliases(pipe, domain_handle, domain_sid)
+
     sys.exit(0)
 
-    user_handle = test_CreateUser(pipe, domain_handle)
-
-    alias_handle = test_CreateAlias(pipe, domain_handle, domain_sid)
-
-    group_handle = test_CreateDomainGroup(pipe, domain_handle)
+    test_CreateDomainGroup(pipe, domain_handle)
 
     test_QueryDomainInfo(pipe, domain_handle)
     
