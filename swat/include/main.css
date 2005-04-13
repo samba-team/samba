@@ -63,15 +63,26 @@
 	padding-left:28px;
 }
 #footer {
-	text-align:right;
+	text-align:center;
+	font-size:small;
+	font-style:italic;
+}
+#footer p {
+	margin:40px 0 0 0;
+	width:100%;
 }
 #footer img {
+	position:relative;
+	top:17px;
 	width:84px;
 	height:40px;
+	margin:0 25px 0 0;
 }
 .view_conf {
-  float:right;
-  position:relative;
-  top:-100px;
+  position:absolute;
+  top:100px;
+  right:15%;	
 }
+.view_conf a {
+	display:block;
 }

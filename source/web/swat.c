@@ -584,7 +584,23 @@ static void help_page(void)
 ****************************************************************************/
 static void services_page(void)
 {
-	printf("Get served here.\n");
+	printf("  <div class=\"whereto\">\n");
+	printf("    <h2>File and Printer Shares</h2>\n\n");
+	printf("    <p>Follow the links below to edit service-level parameters for file and printer shares.</p>\n");
+	printf("  </div>\n\n");
+
+	printf("  <div class=\"view_conf\"><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
+
+	printf("  <div class=\"services_opts\">\n");
+	printf("    <ul>\n");
+	printf("      <li><a href=\"shares\">File Shares</a></li>\n");
+	printf("      <li><a href=\"printers\">Printer Shares</a></li>\n");
+	printf("    </ul>\n");
+	printf("  </div>\n\n");
+
+	printf("  <div>\n");
+	printf("    <p>Shares may also be added via the links above.</p>\n");
+	printf("  </div>\n\n");
 }
 
 /****************************************************************************
@@ -836,7 +852,7 @@ static void conf_page(void)
 	printf("  <div class=\"whereto\">\n");
 	printf("    <h2>Configuring Samba</h2>\n\n");
 	printf("    <p>The following menu allows for editing of global parameters affecting your Samba configuration.</p>\n");
-	printf("  </div\n");
+	printf("  </div>\n\n");
 
 	printf("  <div class=\"view_conf\"><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
 
@@ -896,6 +912,8 @@ static void shares_page(void)
 		snum = lp_servicenumber(share);
 
 	printf("<H2>%s</H2>\n", _("Share Parameters"));
+	
+	printf("  <div class=\"view_conf\"><a href=\"services\">Return to Services Page</a><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1237,6 +1255,8 @@ static void printers_page(void)
 		snum = lp_servicenumber(share);
 
         printf("<H2>%s</H2>\n", _("Printer Parameters"));
+
+	printf("  <div class=\"view_conf\"><a href=\"services\">Return to Services Page</a><a href=\"viewconfig\" onclick=\"openHelp(this.href); return false\">View smb.conf file</a></div>\n\n");
  
         printf("<H3>%s</H3>\n", _("Important Note:"));
         printf(_("Printer names marked with [*] in the Choose Printer drop-down box "));
