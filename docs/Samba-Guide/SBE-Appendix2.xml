@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
-<chapter id="primer">
+<appendix id="primer">
   <title>Networking Primer</title>
-
-<?latex \pagenumbering{arabic} ?>
 
 	<para>
 	You are about to use the equivalent of a microscope to look at the information
@@ -1275,5 +1273,5 @@
 
 </sect1>
 
-</chapter>
+</appendix>
 
