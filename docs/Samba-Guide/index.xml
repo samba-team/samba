@@ -70,9 +70,9 @@ are determinered by the person who packages Samba for each platform.
 </part>
 
 <part id="DMSMig">
-<title>Domain Membership and Migration</title>
+<title>Domain Members, Updating Samba and Migration</title>
 <partintro>
-<title>Domain Membership and Migration</title>
+<title>Domain Members, Updating Samba and Migration</title>
 
 <para>
 This section <emphasis>Samba-3 by Example</emphasis> covers two main topics: How to add
@@ -89,6 +89,7 @@ to a Samba or a Windows networking domain may also benefit by referring to the b
 
 </partintro>
 	<xi:include href="SBE-AddingUNIXClients.xml"/>
+	<xi:include href="SBE-UpgradingSamba.xml"/>
 	<xi:include href="SBE-MigrateNT4Samba3.xml"/>
 	<xi:include href="SBE-MigrateNW4Samba3.xml"/>
 </part>
