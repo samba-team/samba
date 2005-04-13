@@ -6,7 +6,7 @@
 	resulting credential cache type, inherit the type from the
 	invoking process
 
-	* pagsh.1: manpag for pagsh
+	* pagsh.1: manpage for pagsh
 
 2004-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
