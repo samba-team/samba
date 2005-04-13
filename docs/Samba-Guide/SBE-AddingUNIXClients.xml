@@ -1497,7 +1497,7 @@ logonCount: 13
 sAMAccountName: fran$
 sAMAccountType: 805306369
 operatingSystem: Samba
-operatingSystemVersion: 3.0.12-SUSE
+operatingSystemVersion: 3.0.15-SUSE
 dNSHostName: fran
 userPrincipalName: HOST/fran@LONDON.ABMAS.BIZ
 servicePrincipalName: CIFS/fran.london.abmas.biz
@@ -1645,7 +1645,7 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">LONDON</smbconfoption>
 <smbconfoption name="realm">LONDON.ABMAS.BIZ</smbconfoption>
-<smbconfoption name="server string">Samba 3.0.12</smbconfoption>
+<smbconfoption name="server string">Samba 3.0.15</smbconfoption>
 <smbconfoption name="security">ADS</smbconfoption>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>
