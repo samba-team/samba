@@ -289,7 +289,7 @@
 	/* Function    0x0e     */
 	NTSTATUS samr_CreateDomAlias(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_String     *aliasname,
+		[in,ref]      samr_String   *alias_name,
 		[in]          uint32         access_mask,
 		[out,ref]     policy_handle *alias_handle,
 		[out,ref]     uint32        *rid

@@ -902,7 +902,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *aliasname, *name, *sidstr;
+	const char *alias_name, *name, *sidstr;
 	struct ldb_message *msg;
 	struct dom_sid *sid;
 	struct dcesrv_handle *a_handle;
@@ -915,9 +915,9 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	d_state = h->data;
 
-	aliasname = r->in.aliasname->string;
+	alias_name = r->in.alias_name->string;
 
-	if (aliasname == NULL) {
+	if (alias_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -925,7 +925,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				   "sAMAccountName",
 				   "(&pAMAccountName=%s)(objectclass=group))",
-				   aliasname);
+				   alias_name);
 
 	if (name != NULL) {
 		return NT_STATUS_ALIAS_EXISTS;
@@ -937,13 +937,13 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", aliasname,
+	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", alias_name,
 				 d_state->domain_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", aliasname);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", alias_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "groupType", "0x80000004");
 
@@ -973,7 +973,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	a_state->account_name = talloc_strdup(a_state, aliasname);
+	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1826,7 +1826,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *aliasname, *sidstr;
+	const char *alias_name, *sidstr;
 	struct ldb_message **msgs;
 	struct dcesrv_handle *g_handle;
 	const char * const attrs[2] = { "sAMAccountName", NULL };
@@ -1862,8 +1862,8 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	aliasname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
-	if (aliasname == NULL) {
+	alias_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	if (alias_name == NULL) {
 		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1877,7 +1877,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
 	a_state->account_sid = talloc_steal(a_state, sidstr);
-	a_state->account_name = talloc_strdup(a_state, aliasname);
+	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}

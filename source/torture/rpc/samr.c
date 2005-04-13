@@ -1490,22 +1490,22 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	init_samr_String(&name, TEST_ALIASNAME);
 	r.in.domain_handle = domain_handle;
-	r.in.aliasname = &name;
+	r.in.alias_name = &name;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.alias_handle = alias_handle;
 	r.out.rid = &rid;
 
-	printf("Testing CreateAlias (%s)\n", r.in.aliasname->string);
+	printf("Testing CreateAlias (%s)\n", r.in.alias_name->string);
 
 	status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.aliasname->string);
+		printf("Server refused create of '%s'\n", r.in.alias_name->string);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ALIAS_EXISTS)) {
-		if (!test_DeleteAlias_byname(p, mem_ctx, domain_handle, r.in.aliasname->string)) {
+		if (!test_DeleteAlias_byname(p, mem_ctx, domain_handle, r.in.alias_name->string)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateDomAlias(p, mem_ctx, &r);
