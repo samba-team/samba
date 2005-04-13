@@ -35,6 +35,14 @@
 #ifndef _GLOB_H_
 #define	_GLOB_H_
 
+#ifndef ROKEN_LIB_FUNCTION
+#ifdef _WIN32
+#define ROKEN_LIB_FUNCTION _stdcall
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 #define glob_t rk_glob_t
 #define	glob rk_glob
 #define	globfree rk_globfree
