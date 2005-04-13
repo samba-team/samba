@@ -78,7 +78,7 @@
 	</para>
 
 	<sect2>
-	<title>Samba 3.0.12 Update Edition</title>
+	<title>Samba 3.0.15 Update Edition</title>
 
 	<para>
 	The Samba 3.0.x series has been remarkably popular. At the time this book first
@@ -95,7 +95,7 @@
 	</para>
 
 	<table id="pref-new">
-		<title>Samba Changes &smbmdash; 3.0.2 to 3.0.12</title>
+		<title>Samba Changes &smbmdash; 3.0.2 to 3.0.15</title>
 		<tgroup cols="2">
 			<colspec align="left"/>
 			<colspec align="justify"/>
@@ -265,32 +265,25 @@
 	<title>Summary of Topics</title>
 
 	<para>
-	Our first assignment is to understand how Microsoft Windows products
-	function in the network environment. That is where we start. Let's take
-	just a few moments to get a bird's eye view of this book. Remember that
-	this is a book about file and print technology deployment; there are
-	great examples of printing solutions. Here we go.
+	The contents of this second edition of <emphasis>Samba-3 by Example</emphasis>
+	have been rearranged based on feedback from purchasers of the first edition.
+	</para>
+
+	<para>
+	Clearly the first edition contained most of what was needed and that was missing
+	from other books that cover this difficult subject. The new arrangement adds
+	additional material to meet consumer requests and includeis changes that originated
+	as suggestions for improvement.
+	</para>
+
+	<para>
+	Chapter 1 now dives directly into the heart of the implementation of Windows
+	file and print server networks that use Samba at the heart.
 	</para>
 
 	<variablelist>
 		<varlistentry>
-		<term>Chapter 1 &smbmdash; Windows Networking Primer</term><listitem>
-		<para>
-		Here we cover practical exercises to help us to understand how MS Windows
-		network protocols function. A network protocol analyzer helps you to
-		appreciate the fact that Windows networking is highly dependent on broadcast
-		messaging. Additionally, you can look into network packets that a Windows
-		client sends to a network server to set up a network connection. On completion,
-		you should have a basic understanding of how network browsing functions and
-		have seen some of the information a Windows client sends to
-		a file and print server to create a connection over which file and print
-		operations may take place.
-		</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>Chapter 2 &smbmdash; No Frills Samba Servers</term><listitem>
+		<term>Chapter 1 &smbmdash; No Frills Samba Servers</term><listitem>
 		<para>
 		Here you design a solution for three different business scenarios, each for a 
 		company called Abmas. There are two simple networking problems and one slightly 
@@ -333,7 +326,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 3 &smbmdash; Small Office Networking</term><listitem>
+		<term>Chapter 2 &smbmdash; Small Office Networking</term><listitem>
 		<para>
 		Abmas is a successful company now. They have 50 network users
 		and want a little more varoom from the network. This is a typical
@@ -353,7 +346,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 4 &smbmdash; Secure Office Networking</term><listitem>
+		<term>Chapter 3 &smbmdash; Secure Office Networking</term><listitem>
 		<para>
 		Abmas is growing rapidly now. Money is a little tight, but with 130
 		network users, security has become a concern. They have many new machines
@@ -374,7 +367,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 5 &smbmdash; The 500 User Office</term><listitem>
+		<term>Chapter 4 &smbmdash; The 500 User Office</term><listitem>
 		<para>
 		The two-year projections were met. Congratulations, you are a star.
 		Now Abmas needs to replace the network. Into the existing user base, they
@@ -397,7 +390,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 6 &smbmdash; Making Users Happy</term><listitem>
+		<term>Chapter 5 &smbmdash; Making Users Happy</term><listitem>
 		<para>
 		Congratulations again. Abmas is happy with your services and you have been given another raise.
 		Your users are becoming much more capable and are complaining about little
@@ -421,7 +414,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 7 &smbmdash; A Distributed 2000-User Network</term><listitem>
+		<term>Chapter 6 &smbmdash; A Distributed 2000-User Network</term><listitem>
 		<para>
 		Only eight months have passed, and Abmas has acquired another company. You now need to expand
 		the network further. You have to deal with a network that spans several countries.
@@ -440,7 +433,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 8 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
+		<term>Chapter 7 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
 		<para>
 		Another six months have <?latex \linebreak ?>
 		 passed. Abmas has acquired yet another company. You will find a
@@ -457,7 +450,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 9 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
+		<term>Chapter 8 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
 		<para>
 		Misty Stanley-Jones has contributed information that summarizes her experience at migration
 		from a NetWare server to Samba-3.
@@ -471,7 +464,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 10 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
+		<term>Chapter 9 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
 		<para>
 		Well done, Bob, your team has achieved much. Now help Abmas integrate the entire network.
 		You want central control and central support and you need to cut costs. How can you reduce administrative
@@ -493,7 +486,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 11 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
+		<term>Chapter 10 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
 		<para>
 		Abmas has acquired another company that has just migrated to running Windows Server 2003 and 
 		Active Directory. One of your staff makes offhand comments that land you in hot water.
@@ -511,7 +504,7 @@
 		</varlistentry>
 
 		<varlistentry>
-                <term>Chapter 12 &smbmdash; Integrating Additional Services</term><listitem>
+                <term>Chapter 11 &smbmdash; Integrating Additional Services</term><listitem>
                 <para>
 		The battle is almost over, Samba-3 has won the day. Your team are delighted and now you
 		find yourself at yet another cross-roads. Abmas have acquired a snack food business, you
@@ -530,7 +523,7 @@
                 </varlistentry>
 
 		<varlistentry>
-		<term>Chapter 13 &smbmdash; Performance, Reliability and Availability</term><listitem>
+		<term>Chapter 12 &smbmdash; Performance, Reliability and Availability</term><listitem>
 		<para>
 		Bob, are you sure the new Samba server is up to the load? Your network is serving many
 		users who risk becoming unproductive. What can you do to keep ahead of demand? Can you
@@ -546,6 +539,23 @@
 		</para>
 		</listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 13 &smbmdash; Windows Networking Primer</term><listitem>
+		<para>
+		Here we cover practical exercises to help us to understand how MS Windows
+		network protocols function. A network protocol analyzer helps you to
+		appreciate the fact that Windows networking is highly dependent on broadcast
+		messaging. Additionally, you can look into network packets that a Windows
+		client sends to a network server to set up a network connection. On completion,
+		you should have a basic understanding of how network browsing functions and
+		have seen some of the information a Windows client sends to
+		a file and print server to create a connection over which file and print
+		operations may take place.
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 
   </sect1>
