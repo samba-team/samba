@@ -101,16 +101,16 @@ NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 				       struct nbt_dgram_packet *dgram,
 				       struct nbt_netlogon_packet *netlogon)
 {
-	DATA_BLOB *data = &dgram->data.msg.body.smb.body.trans.data;
+	DATA_BLOB data = dgram_mailslot_data(dgram);
 	NTSTATUS status;
 
-	status = ndr_pull_struct_blob(data, mem_ctx, netlogon, 
+	status = ndr_pull_struct_blob(&data, mem_ctx, netlogon, 
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse netlogon packet of length %d\n", 
-			 data->length));
+			 data.length));
 #if 0
-		file_save("netlogon.dat", data->data, data->length);
+		file_save("netlogon.dat", data.data, data.length);
 #endif
 	}
 	return status;
