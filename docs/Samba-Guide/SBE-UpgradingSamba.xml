@@ -56,6 +56,14 @@ fails to take adequate steps to avoid situations that may inflict lost
 productivity on a user.
 </para>
 
+<warning><para>
+Samba makes it possible to upgrade and update configuration files, but it
+is not possible to downgrade the configuration files. Please ensure that
+all configuration and control files are backed up to permit a down-grade
+in the rare event that this may be necessary.
+</para></warning>
+
+
 <para>
 It is prudent also to backup all data files on the server before attempting
 to perform a major upgrade. Many administrators have experienced the consequences
@@ -297,7 +305,7 @@ Num local groups: 0
 
 	</sect3>
 
-	<sect3>
+	<sect3 id="sbeug1">
 	<title>Location of config files</title>
 
 	<para>
@@ -399,7 +407,7 @@ Samba-2.x could be compiled with LDAP support.
 	the following procedure can be followed:
 	</para>
 
-	<procedure>
+	<procedure id="sbeug2">
 		<step><para>
 		Stop Samba. This can be done using the appropriate system tool
 		that is particular for each operating system or by executing the
@@ -413,28 +421,78 @@ Samba-2.x could be compiled with LDAP support.
 		</para></step>
 
 		<step><para>
-		Find the location of the 
+		Find the location of the <filename>smbpasswd</filename> file -
+		back it up to a safe location.
 		</para></step>
 
 		<step><para>
+		Find the location of the <filename>secrets.tdb</filename> file -
+		back it up to a safe location.
 		</para></step>
 
 		<step><para>
+		Find the location of the lock directory. This is the directory
+		in which Samba stores all its tdb control files. The default
+		location used by the Samba Team is in
+		<filename>/usr/local/samba/var/locks</filename> directory,
+		but on Linux systems the old location was under the
+		<filename>/var/cache/samba</filename> directory, however the
+		Linux Standards Base specified location is now under the
+		<filename>/var/lib/samba</filename> directory. Copy all the
+		tdb files to a safe location.
 		</para></step>
 
 		<step><para>
+		It is now safe to ugrade the Samba installation. On Linux systems
+		it is not necessary to remove the Samba RPMs becasue a simple
+		upgrade installation will automatically remove the old files.
+		</para>
+
+		<para>
+		On systems that do not support a reliable package management system
+		it is advisable either to delete the Samba old installation , or to
+		move it out of the way by renaming the directories that contain the
+		Samab binary files.
 		</para></step>
 
 		<step><para>
+		When the Samba upgrade has been installed the first step that should
+		be completed is to identify the new target locations for the control
+		files. Follow the steps shown in <link linend="sbeug1"/> to locate
+		the correct directories to which each control file must be moved.
 		</para></step>
 
 		<step><para>
+		Do not change the hostname.
 		</para></step>
 
 		<step><para>
+		Do not change the workgroup name.
 		</para></step>
 
 		<step><para>
+		Execute the <command>testparm</command> to validate the smb.conf file.
+		This process will flag any parameters that are no longer supported.
+		It will also flag configuration settings that may be in conflict.
+		</para>
+
+		<para>
+		One solution that may be used to clean up and to update the &smb.conf;
+		file involves renaming it to <filename>smb.conf.master</filename> and 
+		then executing the following:
+<screen>
+&rootprompt; cd /etc/samba
+&rootprompt; testparm -s smb.conf.master &gt; smb.conf
+</screen>
+		The resulting &smb.conf; file will be stripped of all comments
+		and will be stripped of all non-conforming configuration settings.
+		</para></step>
+
+		<step><para>
+		It is now safe to start Samba using the appropriate system tool.
+		Alternately, it is possible to just execute <command>nmbd, smbd</command>
+		and <command>winbindd</command> for the command line while logged in
+		as the 'root' user.
 		</para></step>
 
 	</procedure>
@@ -445,6 +503,106 @@ Samba-2.x could be compiled with LDAP support.
 	<title>Samba-2.x with LDAP support</title>
 
 	<para>
+	Samba version 2.x could be compiled for use either with, or without, LDAP.
+	The LDAP control settings in the &smb.conf; file in this old version are
+	completely different (and less complete) than they are with Samba-3. This
+	means that after migrating the control files it will be necessary to reconfigure
+	the LDAP settings entirely.
+	</para>
+
+	<para>
+	Follow the procedure outlined in <link linkend="sbeug2"/> to affect a migration
+	of all files to the correct locations.
+	</para>
+
+	<para>
+	The Samba SAM schema required for Samba-3 is significantly different from that
+	used with Samba 2.x. This means that the LDAP directory will need to be updated
+	using the procedure outlined in the Samba WHATSNEW.txt file that accompanies
+	all releases of Samba-3. This information is repeated here directly from this
+	file:
+<screen>
+######################################################################
+LDAP
+####
+
+This section outlines the new features affecting Samba / LDAP
+integration.
+
+New Schema
+----------
+
+A new object class (sambaSamAccount) has been introduced to replace
+the old sambaAccount.  This change aids us in the renaming of
+attributes to prevent clashes with attributes from other vendors.
+There is a conversion script (examples/LDAP/convertSambaAccount) to
+modify and LDIF file to the new schema.
+
+Example:
+
+  $ ldapsearch .... -b "ou=people,dc=..." > sambaAcct.ldif
+  $ convertSambaAccount --sid=<Domain SID> \
+    --input=sambaAcct.ldif --output=sambaSamAcct.ldif \
+    --changetype=[modify|add]
+
+The <DOM SID> can be obtained by running 'net getlocalsid
+<DOMAINNAME>' on the Samba PDC as root.  The changetype determines
+the format of the generated LDIF output--either create new entries
+or modify existing entries.
+
+The old sambaAccount schema may still be used by specifying the
+"ldapsam_compat" passdb backend.  However, the sambaAccount and
+associated attributes have been moved to the historical section of
+the schema file and must be uncommented before use if needed.
+The 2.2 object class declaration for a sambaAccount has not changed
+in the 3.0 samba.schema file.
+
+Other new object classes and their uses include:
+
+  * sambaDomain - domain information used to allocate rids
+    for users and groups as necessary.  The attributes are added
+    in 'ldap suffix' directory entry automatically if
+    an idmap uid/gid range has been set and the 'ldapsam'
+    passdb backend has been selected.
+
+  * sambaGroupMapping - an object representing the
+    relationship between a posixGroup and a Windows
+    group/SID.  These entries are stored in the 'ldap
+    group suffix' and managed by the 'net groupmap' command.
+
+  * sambaUnixIdPool - created in the 'ldap idmap suffix' entry
+    automatically and contains the next available 'idmap uid' and
+    'idmap gid'
+
+  * sambaIdmapEntry - object storing a mapping between a
+    SID and a UNIX uid/gid.  These objects are created by the
+    idmap_ldap module as needed.
+
+  * sambaSidEntry - object representing a SID alone, as a Structural
+    class on which to build the sambaIdmapEntry.
+
+
+New Suffix for Searching
+------------------------
+
+The following new smb.conf parameters have been added to aid in directing
+certain LDAP queries when 'passdb backend = ldapsam://...' has been
+specified.
+
+  * ldap suffix         - used to search for user and computer accounts
+  * ldap user suffix    - used to store user accounts
+  * ldap machine suffix - used to store machine trust accounts
+  * ldap group suffix   - location of posixGroup/sambaGroupMapping entries
+  * ldap idmap suffix   - location of sambaIdmapEntry objects
+
+If an 'ldap suffix' is defined, it will be appended to all of the
+remaining sub-suffix parameters.  In this case, the order of the suffix
+listings in smb.conf is important.  Always place the 'ldap suffix' first
+in the list.
+
+Due to a limitation in Samba's smb.conf parsing, you should not surround
+the DN's with quotation marks.
+</screen>
 	</para>
 
 	</sect2>
