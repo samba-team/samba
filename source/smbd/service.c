@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern char magic_char;
 extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
 
@@ -31,6 +30,7 @@ extern userdom_struct current_user_info;
 
 BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 {
+	extern char magic_char;
 	static connection_struct *last_conn;
 	static uint16 last_flags;
 	int snum;
@@ -272,7 +272,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	struct passwd *pass = NULL;
 	BOOL guest = False;
 	connection_struct *conn;
-	SMB_STRUCT_STAT st;
+	struct stat st;
 	fstring user;
 	fstring dev;
 

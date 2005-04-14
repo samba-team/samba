@@ -25,12 +25,6 @@
 
 uint32 global_client_caps = 0;
 
-extern BOOL global_encrypted_passwords_negotiated;
-extern BOOL global_spnego_negotiated;
-extern enum protocol_types Protocol;
-extern int max_send;
-extern struct auth_context *negprot_global_auth_context;
-
 static struct auth_ntlmssp_state *global_ntlmssp_state;
 
 /*
@@ -319,9 +313,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
         /* wrap that up in a nice GSS-API wrapping */
 	if (NT_STATUS_IS_OK(ret)) {
-		ap_rep_wrapped = spnego_gen_krb5_wrap(
-                        ap_rep,
-                        CONST_ADD(const uint8 *, TOK_ID_KRB_AP_REP));
+		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_AP_REP);
 	} else {
 		ap_rep_wrapped = data_blob(NULL, 0);
 	}
@@ -425,9 +417,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB secblob;
 	int i;
 	DATA_BLOB chal;
-#ifdef HAVE_KRB5
-	BOOL got_kerberos_mechanism = False;
-#endif
+	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
 
 	/* parse out the OIDs and the first sec blob */
@@ -444,13 +434,11 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	   server sent back krb5/mskrb5/ntlmssp as mechtypes, but the 
 	   client (2ksp3) replied with ntlmssp/mskrb5/krb5 and an 
 	   NTLMSSP mechtoken.                 --jerry              */
-
-#ifdef HAVE_KRB5	
+	
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
 	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		got_kerberos_mechanism = True;
+		got_kerberos = True;
 	}
-#endif
 		
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
@@ -459,7 +447,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos_mechanism && (SEC_ADS == lp_security())) {
+	if (got_kerberos && (SEC_ADS == lp_security())) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
@@ -643,8 +631,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	fstring native_lanman;
 	fstring primary_domain;
 	static BOOL done_sesssetup = False;
+	extern BOOL global_encrypted_passwords_negotiated;
+	extern BOOL global_spnego_negotiated;
+	extern enum protocol_types Protocol;
+	extern int max_send;
 
 	auth_usersupplied_info *user_info = NULL;
+	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;

@@ -747,8 +747,8 @@ static NTSTATUS check_oem_password(const char *user,
 	static uchar null_pw[16];
 	static uchar null_ntpw[16];
 	SAM_ACCOUNT *sampass = NULL;
-	uint8 *password_encrypted;
-	const uint8 *encryption_key;
+	char *password_encrypted;
+	const char *encryption_key;
 	const uint8 *lanman_pw, *nt_pw;
 	uint16 acct_ctrl;
 	uint32 new_pw_len;
@@ -943,8 +943,7 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 	const uint8 *nt_pw;
 	const uint8 *pwhistory;
 	BOOL found = False;
-	int i;
-	uint32 pwHisLen, curr_pwHisLen;
+	int i, pwHisLen, curr_pwHisLen;
 
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHisLen);
 	if (pwHisLen == 0) {

@@ -27,8 +27,6 @@
 
 #ifdef HAVE_ADS
 
-extern struct winbindd_methods msrpc_methods, cache_methods;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -78,6 +76,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
+		extern struct winbindd_methods msrpc_methods, cache_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
 		ads_destroy(&ads);

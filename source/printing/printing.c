@@ -45,7 +45,7 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
 
 struct print_queue_update_context {
 	char* sharename;
-	int printing_type;
+	enum printing_types printing_type;
 	char* lpqcommand;
 };
 
@@ -235,7 +235,7 @@ void printing_end(void)
  when asked for (and only when supported)
 ****************************************************************************/
 
-static struct printif *get_printer_fns_from_type( int type )
+static struct printif *get_printer_fns_from_type( enum printing_types type )
 {
 	struct printif *printer_fns = &generic_printif;
 
@@ -907,7 +907,7 @@ static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 
 static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct *pts)
 {
-	TDB_DATA data;
+	TDB_DATA data, key;
 	int max_reported_jobs = lp_max_reported_jobs(pts->snum);
 	print_queue_struct *queue = pts->queue;
 	size_t len;
@@ -951,19 +951,22 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 				queue[i].fs_file);
 	}
 
-	tdb_store(pdb->tdb, string_tdb_data("INFO/linear_queue_array"), data,
-		  TDB_REPLACE);
+	key.dptr = "INFO/linear_queue_array";
+	key.dsize = strlen(key.dptr);
+	tdb_store(pdb->tdb, key, data, TDB_REPLACE);
 	SAFE_FREE(data.dptr);
 	return;
 }
 
 static TDB_DATA get_jobs_changed_data(struct tdb_print_db *pdb)
 {
-	TDB_DATA data;
+	TDB_DATA data, key;
 
+	key.dptr = "INFO/jobs_changed";
+	key.dsize = strlen(key.dptr);
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	data = tdb_fetch(pdb->tdb, key);
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0)) {
 		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
@@ -1032,7 +1035,7 @@ static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
 		snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
 
 		if ( check_pending 
-			&& tdb_fetch_uint32( pdb->tdb, key, (uint32*)&msg_pending_time ) 
+			&& tdb_fetch_uint32( pdb->tdb, key, &msg_pending_time ) 
 			&& msg_pending_time > 0
 			&& msg_pending_time <= time_now 
 			&& (time_now - msg_pending_time) < 60 ) 
@@ -1379,7 +1382,7 @@ static void print_queue_update(int snum, BOOL force)
 	size_t len = 0;
 	size_t newlen;
 	struct tdb_print_db *pdb;
-	int type;
+	enum printing_types type;
 	struct printif *current_printif;
 
 	fstrcpy( sharename, lp_const_servicename(snum));
@@ -1733,9 +1736,9 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid)
 	BOOL ret = False;
 	BOOL gotlock = False;
 
+	key.dptr = "INFO/jobs_changed";
+	key.dsize = strlen(key.dptr);
 	ZERO_STRUCT(data);
-
-	key = string_tdb_data("INFO/jobs_changed");
 
 	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
 		goto out;
@@ -2054,7 +2057,7 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 static int get_queue_status(const char* sharename, print_status_struct *status)
 {
 	fstring keystr;
-	TDB_DATA data;
+	TDB_DATA data, key;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	int len;
 
@@ -2063,8 +2066,10 @@ static int get_queue_status(const char* sharename, print_status_struct *status)
 
 	if (status) {
 		ZERO_STRUCTP(status);
-		fstr_sprintf(keystr, "STATUS/%s", sharename);
-		data = tdb_fetch(pdb->tdb, string_tdb_data(keystr));
+		slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
+		key.dptr = keystr;
+		key.dsize = strlen(keystr);
+		data = tdb_fetch(pdb->tdb, key);
 		if (data.dptr) {
 			if (data.dsize == sizeof(print_status_struct))
 				/* this memcpy is ok since the status struct was 
@@ -2174,17 +2179,18 @@ static BOOL allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 
 static BOOL add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 {
-	TDB_DATA data;
+	TDB_DATA data, key;
 	uint32 store_jobid;
 
+	key.dptr = "INFO/jobs_changed";
+	key.dsize = strlen(key.dptr);
 	SIVAL(&store_jobid, 0, jobid);
 	data.dptr = (char *)&store_jobid;
 	data.dsize = 4;
 
 	DEBUG(10,("add_to_jobs_changed: Added jobid %u\n", (unsigned int)jobid ));
 
-	return (tdb_append(pdb->tdb, string_tdb_data("INFO/jobs_changed"),
-			   data) == 0);
+	return (tdb_append(pdb->tdb, key, data) == 0);
 }
 
 /***************************************************************************
@@ -2423,7 +2429,7 @@ fail:
 
 static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcount, print_queue_struct **ppqueue)
 {
-	TDB_DATA data, cgdata;
+	TDB_DATA data, key, cgdata;
 	print_queue_struct *queue = NULL;
 	uint32 qcount = 0;
 	uint32 extra_count = 0;
@@ -2443,15 +2449,20 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 	ZERO_STRUCT(data);
 	ZERO_STRUCT(cgdata);
+	key.dptr = "INFO/linear_queue_array";
+	key.dsize = strlen(key.dptr);
 
 	/* Get the stored queue data. */
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/linear_queue_array"));
+	data = tdb_fetch(pdb->tdb, key);
 	
 	if (data.dptr && data.dsize >= sizeof(qcount))
 		len += tdb_unpack(data.dptr + len, data.dsize - len, "d", &qcount);
 		
 	/* Get the changed jobs list. */
-	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	key.dptr = "INFO/jobs_changed";
+	key.dsize = strlen(key.dptr);
+
+	cgdata = tdb_fetch(pdb->tdb, key);
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
 

@@ -81,8 +81,6 @@
 
 #include "includes.h"
 
-extern BOOL in_client;
-
 /* -------------------------------------------------------------------------- **
  * Constants...
  */
@@ -525,6 +523,7 @@ static BOOL Parse( myFILE *InFile,
 static myFILE *OpenConfFile( const char *FileName )
 {
 	const char *func = "params.c:OpenConfFile() -";
+	extern BOOL in_client;
 	int lvl = in_client?1:0;
 	myFILE *ret;
 

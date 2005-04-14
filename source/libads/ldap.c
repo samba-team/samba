@@ -481,15 +481,15 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		ber_printf(cookie_be, "{io}", (ber_int_t) 1000, "", 0);
 	}
 	ber_flatten(cookie_be, &cookie_bv);
-	PagedResults.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
+	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
 	PagedResults.ldctl_iscritical = (char) 1;
 	PagedResults.ldctl_value.bv_len = cookie_bv->bv_len;
 	PagedResults.ldctl_value.bv_val = cookie_bv->bv_val;
 
-	NoReferrals.ldctl_oid = CONST_DISCARD(char *, ADS_NO_REFERRALS_OID);
+	NoReferrals.ldctl_oid = ADS_NO_REFERRALS_OID;
 	NoReferrals.ldctl_iscritical = (char) 0;
 	NoReferrals.ldctl_value.bv_len = 0;
-	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
+	NoReferrals.ldctl_value.bv_val = "";
 
 
 	controls[0] = &NoReferrals;
@@ -831,7 +831,7 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 		   need to reset it to NULL before doing ldap modify */
 		mods[ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
 	
-	return (ADS_MODLIST)mods;
+	return mods;
 }
 
 
@@ -868,7 +868,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		memset(&modlist[curmod], 0, 
 		       ADS_MODLIST_ALLOC_SIZE*sizeof(LDAPMod *));
 		modlist[curmod+ADS_MODLIST_ALLOC_SIZE] = (LDAPMod *) -1;
-		*mods = (ADS_MODLIST)modlist;
+		*mods = modlist;
 	}
 		
 	if (!(modlist[curmod] = TALLOC_ZERO_P(ctx, LDAPMod)))
@@ -962,7 +962,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	   non-existent attribute (but allowable for the object) to run
 	*/
 	LDAPControl PermitModify = {
-                CONST_DISCARD(char *, ADS_PERMIT_MODIFY_OID),
+		ADS_PERMIT_MODIFY_OID,
 		{0, NULL},
 		(char) 1};
 	LDAPControl *controls[2];
@@ -1006,7 +1006,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	ret = ldap_add_s(ads->ld, utf8_dn, (LDAPMod**)mods);
+	ret = ldap_add_s(ads->ld, utf8_dn, mods);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
@@ -1267,7 +1267,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *host_spn, *psp1, *psp2, *psp3;
+	char *host_spn, *host_upn, *psp1, *psp2, *psp3;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
 	char *dn_string = NULL;
@@ -1293,6 +1293,11 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	strlower_m(my_fqdn);
 
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
+		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+	}
+	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm))) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);

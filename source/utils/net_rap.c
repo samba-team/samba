@@ -589,7 +589,9 @@ static int net_rap_user_usage(int argc, const char **argv)
 	return net_help_user(argc, argv);
 } 
 	
-static void user_fn(const char *user_name, void *state)
+static void user_fn(const char *user_name, const char *comment,
+		    const char * home_dir, const char * logon_script,
+		    void *state)
 {
 	d_printf("%-21.21s\n", user_name);
 }
@@ -694,7 +696,7 @@ int net_rap_user(int argc, const char **argv)
 			cli_shutdown(cli);
 			goto done;
 		}
-		ret = cli_RNetUserEnum0(cli, user_fn, NULL); 
+		ret = cli_RNetUserEnum(cli, user_fn, NULL); 
 		cli_shutdown(cli);
 		goto done;
 	}
@@ -719,7 +721,7 @@ static void long_group_fn(const char *group_name, const char *comment,
 	d_printf("%-21.21s %s\n", group_name, comment);
 }
 
-static void group_fn(const char *group_name, void *state)
+static void group_fn(const char *group_name, const char *comment, void *state)
 {
 	d_printf("%-21.21s\n", group_name);
 }
@@ -785,7 +787,7 @@ int net_rap_group(int argc, const char **argv)
 			cli_shutdown(cli);
 			return ret;
 		}
-		ret = cli_RNetGroupEnum0(cli, group_fn, NULL); 
+		ret = cli_RNetGroupEnum(cli, group_fn, NULL); 
 		cli_shutdown(cli);
 		return ret;
 	}
@@ -910,12 +912,6 @@ static int rap_service_stop(int argc, const char **argv)
 	return errmsg_not_implemented();
 }
 
-static void service_fn(const char *service_name, const char *dummy,
-		       void *state)
-{
-	d_printf("%-21.21s\n", service_name);
-}
-
 int net_rap_service(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -935,7 +931,7 @@ int net_rap_service(int argc, const char **argv)
 			d_printf("-----------------------------\n");
 			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
 		}
-		ret = cli_RNetServiceEnum(cli, service_fn, NULL); 
+		ret = cli_RNetServiceEnum(cli, group_fn, NULL); 
 		cli_shutdown(cli);
 		return ret;
 	}

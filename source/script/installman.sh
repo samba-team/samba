@@ -15,7 +15,7 @@ fi
 
 
 for lang in $langs; do
-    if [ "X$lang" = XC ]; then
+    if [ "X$lang" = Xen ]; then
 	echo Installing default man pages in $MANDIR/
 	lang=.
     else

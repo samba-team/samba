@@ -95,13 +95,15 @@ files_struct *file_new(connection_struct *conn)
 		}
 
 		DEBUG(0,("ERROR! Out of file structures\n"));
-		set_saved_error_triple(ERRSRV, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES);
+		unix_ERR_class = ERRSRV;
+		unix_ERR_code = ERRnofids;
 		return NULL;
 	}
 
 	fsp = SMB_MALLOC_P(files_struct);
 	if (!fsp) {
-		set_saved_error_triple(ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY);
+		unix_ERR_class = ERRSRV;
+		unix_ERR_code = ERRnofids;
 		return NULL;
 	}
 

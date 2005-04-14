@@ -146,7 +146,7 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 	return -1;
 }
 
-int ms_fnmatch(const char *pattern, const char *string, BOOL translate_pattern,
+int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol, 
 	       BOOL is_case_sensitive)
 {
 	wpstring p, s;
@@ -179,7 +179,7 @@ int ms_fnmatch(const char *pattern, const char *string, BOOL translate_pattern,
 		return -1;
 	}
 
-	if (translate_pattern) {
+	if (protocol <= PROTOCOL_LANMAN2) {
 		/*
 		  for older negotiated protocols it is possible to
 		  translate the pattern to produce a "new style"

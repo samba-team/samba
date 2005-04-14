@@ -44,7 +44,7 @@ static int clipfind(char **aret, int ret, char *tok);
 typedef struct file_info_struct file_info2;
 
 struct file_info_struct {
-	SMB_OFF_T size;
+	SMB_BIG_UINT size;
 	uint16 mode;
 	uid_t uid;
 	gid_t gid;
@@ -63,7 +63,6 @@ typedef struct {
 } stack;
 
 #define SEPARATORS " \t\n\r"
-extern time_t newer_than;
 extern struct cli_state *cli;
 
 /* These defines are for the do_setrattr routine, to indicate
@@ -1622,6 +1621,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 					return 0;
 				} else {
 					SMB_STRUCT_STAT stbuf;
+					extern time_t newer_than;
 	
 					if (sys_stat(argv[Optind], &stbuf) == 0) {
 						newer_than = stbuf.st_mtime;

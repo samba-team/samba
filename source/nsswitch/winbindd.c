@@ -898,6 +898,8 @@ int main(int argc, char **argv)
 		idmap_proxyonly();
 	}
 
+	generate_wellknown_sids();
+
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 

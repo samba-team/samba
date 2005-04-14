@@ -40,9 +40,6 @@
 
 #include "includes.h"
 
-extern struct pipe_id_info pipe_names[];
-extern struct current_user current_user;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -754,6 +751,7 @@ BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
                     RPC_IFACE* transfer, uint32 context_id)
 {
+	extern struct pipe_id_info pipe_names[];
 	char *pipe_name = p->name;
 	int i=0;
 	fstring pname;
@@ -767,7 +765,6 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 		
 	for ( i=0; pipe_names[i].client_pipe; i++ ) 
 	{
-		DEBUG(10,("checking %s\n", pipe_names[i].client_pipe));
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
 			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct uuid)) == 0)
@@ -1429,6 +1426,7 @@ struct current_user *get_current_user(struct current_user *user, pipes_struct *p
 	if (p->ntlmssp_auth_validated) {
 		memcpy(user, &p->pipe_user, sizeof(struct current_user));
 	} else {
+		extern struct current_user current_user;
 		memcpy(user, &current_user, sizeof(struct current_user));
 	}
 
@@ -1632,12 +1630,6 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			break;
 		case PI_NETDFS:
 			netdfs_get_pipe_fns( &cmds, &n_cmds );
-			break;
-		case PI_SVCCTL:
-			svcctl_get_pipe_fns( &cmds, &n_cmds );
-			break;
-	        case PI_EVENTLOG:
-			eventlog_get_pipe_fns( &cmds, &n_cmds );
 			break;
 #ifdef DEVELOPER
 		case PI_ECHO:

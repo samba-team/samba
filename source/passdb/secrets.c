@@ -84,11 +84,13 @@ BOOL secrets_init(void)
  */
 void *secrets_fetch(const char *key, size_t *size)
 {
-	TDB_DATA dbuf;
+	TDB_DATA kbuf, dbuf;
 	secrets_init();
 	if (!tdb)
 		return NULL;
-	dbuf = tdb_fetch(tdb, string_tdb_data(key));
+	kbuf.dptr = (char *)key;
+	kbuf.dsize = strlen(key);
+	dbuf = tdb_fetch(tdb, kbuf);
 	if (size)
 		*size = dbuf.dsize;
 	return dbuf.dptr;
@@ -98,11 +100,15 @@ void *secrets_fetch(const char *key, size_t *size)
  */
 BOOL secrets_store(const char *key, const void *data, size_t size)
 {
+	TDB_DATA kbuf, dbuf;
 	secrets_init();
 	if (!tdb)
 		return False;
-	return tdb_store(tdb, string_tdb_data(key), make_tdb_data(data, size),
-			 TDB_REPLACE) == 0;
+	kbuf.dptr = (char *)key;
+	kbuf.dsize = strlen(key);
+	dbuf.dptr = (char *)data;
+	dbuf.dsize = size;
+	return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) == 0;
 }
 
 
@@ -110,10 +116,13 @@ BOOL secrets_store(const char *key, const void *data, size_t size)
  */
 BOOL secrets_delete(const char *key)
 {
+	TDB_DATA kbuf;
 	secrets_init();
 	if (!tdb)
 		return False;
-	return tdb_delete(tdb, string_tdb_data(key)) == 0;
+	kbuf.dptr = (char *)key;
+	kbuf.dsize = strlen(key);
+	return tdb_delete(tdb, kbuf) == 0;
 }
 
 BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)

@@ -1,10 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell               1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton  1996-1997
-   Copyright (C) Paul Ashton                   1997
-   Copyright (C) Gerald (Jerry) Carter         2005
+   Copyright (C) Andrew Tridgell 1992-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Paul Ashton 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,7 +68,7 @@
 #define LSA_LOOKUPPRIVNAME     0x20
 #define LSA_PRIV_GET_DISPNAME  0x21
 #define LSA_DELETEOBJECT       0x22
-#define LSA_ENUMACCTWITHRIGHT  0x23	/* TODO: implement this one  -- jerry */
+#define LSA_ENUMACCTWITHRIGHT  0x23
 #define LSA_ENUMACCTRIGHTS     0x24
 #define LSA_ADDACCTRIGHTS      0x25
 #define LSA_REMOVEACCTRIGHTS   0x26
@@ -306,32 +305,31 @@ typedef struct lsa_r_query_info2
 	NTSTATUS status;
 } LSA_R_QUERY_INFO2;
 
-/*******************************************************/
+/* LSA_Q_ENUM_TRUST_DOM - LSA enumerate trusted domains */
+typedef struct lsa_enum_trust_dom_info
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 enum_context; /* enumeration context handle */
+	uint32 preferred_len; /* preferred maximum length */
 
-typedef struct {
-	POLICY_HND pol; 
-	uint32 enum_context; 
-	uint32 preferred_len; 	/* preferred maximum length */
 } LSA_Q_ENUM_TRUST_DOM;
 
-typedef struct {
-	UNISTR4	name;
-	DOM_SID2 *sid;
-} DOMAIN_INFO;
+/* LSA_R_ENUM_TRUST_DOM - response to LSA enumerate trusted domains */
+typedef struct lsa_r_enum_trust_dom_info
+{
+	uint32 enum_context; /* enumeration context handle */
+	uint32 num_domains; /* number of domains */
+	uint32 ptr_enum_domains; /* buffer pointer to num domains */
 
-typedef struct {
-	uint32 count;
-	DOMAIN_INFO *domains;
-} DOMAIN_LIST;
+	/* this lot is only added if ptr_enum_domains is non-NULL */
+	uint32 num_domains2; /* number of domains */
+	UNIHDR2 *hdr_domain_name;
+	UNISTR2 *uni_domain_name;
+	DOM_SID2 *domain_sid;
 
-typedef struct {
-	uint32 enum_context;
-	uint32 count;
-	DOMAIN_LIST *domlist;
-	NTSTATUS status; 
+	NTSTATUS status; /* return code */
+
 } LSA_R_ENUM_TRUST_DOM;
-
-/*******************************************************/
 
 /* LSA_Q_CLOSE */
 typedef struct lsa_q_close_info
@@ -425,7 +423,7 @@ typedef struct lsa_q_lookup_sids
 	POLICY_HND          pol; /* policy handle */
 	LSA_SID_ENUM        sids;
 	LSA_TRANS_NAME_ENUM names;
-	uint16              level;
+	LOOKUP_LEVEL        level;
 	uint32              mapped_count;
 
 } LSA_Q_LOOKUP_SIDS;
@@ -534,7 +532,7 @@ typedef struct
 typedef struct
 {
 	uint32 count;
-	UNISTR4_ARRAY *rights;
+	UNISTR2_ARRAY rights;
 	NTSTATUS status;
 } LSA_R_ENUM_ACCT_RIGHTS;
 
@@ -544,8 +542,8 @@ typedef struct
 {
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
+	UNISTR2_ARRAY rights;
 	uint32 count;
-	UNISTR4_ARRAY *rights;
 } LSA_Q_ADD_ACCT_RIGHTS;
 
 /* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
@@ -561,8 +559,8 @@ typedef struct
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
 	uint32 removeall;
+	UNISTR2_ARRAY rights;
 	uint32 count;
-	UNISTR4_ARRAY *rights;
 } LSA_Q_REMOVE_ACCT_RIGHTS;
 
 /* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */

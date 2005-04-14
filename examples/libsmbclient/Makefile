@@ -6,24 +6,19 @@ EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 	      -I/usr/include/glib-1.2 \
 	      -I/usr/lib/glib/include
 
-DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
+CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
 
-LDFLAGS = -L/usr/local/samba/lib
+LDFLAGS = -L/usr/lib
 
-TESTS=	testsmbc \
-	tree \
-	testacl \
-	testbrowse \
-	teststat \
-	testchmod \
-	testutime
-
-all:	$(TESTS) smbsh
+all: testsmbc tree testacl testbrowse
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lsmbclient -L/usr/local/lib
+
+testsmbc-static: testsmbc.o 
+	@echo Linking testsmbc
+	@$(CC) $(CFLAGS) -static $(LDFLAGS) -o $@ $< -lsmbclient -ldl -lnsl
 
 tree: tree.o
 	@echo Linking tree
@@ -37,21 +32,5 @@ testbrowse: testbrowse.o
 	@echo Linking testbrowse
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
 
-teststat: teststat.o
-	@echo Linking teststat
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
-
-testchmod: testchmod.o
-	@echo Linking testchmod
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
-
-testutime: testutime.o
-	@echo Linking testutime
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ /usr/local/samba/lib/libsmbclient.so -lpopt $<
-
-smbsh:
-	make -C smbwrapper
-
 clean:
-	@rm -f *.o *~ $(TESTS)
-	@make -C smbwrapper clean
+	@rm -f *.o *~

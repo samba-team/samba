@@ -283,19 +283,6 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 }
 
 /*******************************************************************
- Convert a (little-endian) UNISTR3 structure to an ASCII string
-********************************************************************/
-void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
-{
-	if (str == NULL) {
-		*dest='\0';
-		return;
-	}
-	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
-	          STR_NOALIGN);
-}
-	
-/*******************************************************************
 give a static string for displaying a UNISTR2
 ********************************************************************/
 const char *unistr2_static(const UNISTR2 *str)
@@ -322,6 +309,18 @@ char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
 	return s;
 }
 
+
+/*******************************************************************
+Return a number stored in a buffer
+********************************************************************/
+
+uint32 buffer2_to_uint32(BUFFER2 *str)
+{
+	if (str->buf_len == 4)
+		return IVAL(str->buffer, 0);
+	else
+		return 0;
+}
 
 /*******************************************************************
  Convert a wchar to upper case.
@@ -398,10 +397,10 @@ size_t strnlen_w(const smb_ucs2_t *src, size_t max)
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	while (*s != 0) {
-                if (c == *s) return CONST_DISCARD(smb_ucs2_t *, s);
+		if (c == *s) return (smb_ucs2_t *)s;
 		s++;
 	}
-	if (c == *s) return CONST_DISCARD(smb_ucs2_t *, s);
+	if (c == *s) return (smb_ucs2_t *)s;
 
 	return NULL;
 }
@@ -422,7 +421,7 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	if (len == 0) return NULL;
 	p += (len - 1);
 	do {
-		if (c == *p) return CONST_DISCARD(smb_ucs2_t *, p);
+		if (c == *p) return (smb_ucs2_t *)p;
 	} while (p-- != s);
 	return NULL;
 }
@@ -443,7 +442,7 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
 			n--;
 
 		if (!n)
-			return CONST_DISCARD(smb_ucs2_t *, p);
+			return (smb_ucs2_t *)p;
 	} while (p-- != s);
 	return NULL;
 }
@@ -461,7 +460,7 @@ smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 		return NULL;
 
 	inslen = strlen_w(ins);
-	r = CONST_DISCARD(smb_ucs2_t *, s);
+	r = (smb_ucs2_t *)s;
 
 	while ((r = strchr_w(r, *ins))) {
 		if (strncmp_w(r, ins, inslen) == 0) 
@@ -732,7 +731,7 @@ smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 		int i;
 		for (i=0; p[i] && *s != UCS2_CHAR(p[i]); i++) 
 			;
-		if (p[i]) return CONST_DISCARD(smb_ucs2_t *, s);
+		if (p[i]) return (smb_ucs2_t *)s;
 		s++;
 	}
 	return NULL;
@@ -747,7 +746,7 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 		return NULL;
 
 	inslen = strlen(ins);
-	r = CONST_DISCARD(smb_ucs2_t *, s);
+	r = (smb_ucs2_t *)s;
 
 	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
 		if (strncmp_wa(r, ins, inslen) == 0) 

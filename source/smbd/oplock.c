@@ -31,9 +31,6 @@ static int32 level_II_oplocks_open = 0;
 BOOL global_client_failed_oplock_break = False;
 BOOL global_oplock_break = False;
 
-extern struct timeval smb_last_time;
-extern uint32 global_client_caps;
-extern struct current_user current_user;
 extern int smb_read_error;
 
 static struct kernel_oplocks *koplocks;
@@ -521,6 +518,8 @@ static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
 
 static void wait_before_sending_break(BOOL local_request)
 {
+	extern struct timeval smb_last_time;
+
 	if(local_request) {
 		struct timeval cur_tv;
 		long wait_left = (long)lp_oplock_break_wait_time();
@@ -604,6 +603,7 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 
 static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 {
+	extern uint32 global_client_caps;
 	char outbuf[128];
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
@@ -676,6 +676,8 @@ static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, BOOL local_request)
 {
+	extern uint32 global_client_caps;
+	extern struct current_user current_user;
 	char *inbuf = NULL;
 	char *outbuf = NULL;
 	files_struct *fsp = NULL;
@@ -805,6 +807,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	saved_user_conn = current_user.conn;
 	saved_vuid = current_user.vuid;
 	saved_fsp_conn = fsp->conn;
+	change_to_root_user();
 	/*
 	 * Initialize saved_dir to something sensible: vfs_GetWd may not work well
 	 * for root: the directory may be NFS-mounted and exported with root_squash
@@ -815,16 +818,14 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Save the chain fnum. */
 	file_chain_save();
 
-	pstrcpy(file_name, fsp->fsp_name);
-
-	change_to_root_user();
-
 	/*
 	 * From Charles Hoch <hoch@exemplary.com>. If the break processing
 	 * code closes the file (as it often does), then the fsp pointer here
 	 * points to free()'d memory. We *must* revalidate fsp each time
 	 * around the loop.
 	 */
+
+	pstrcpy(file_name, fsp->fsp_name);
 
 	while((fsp = initial_break_processing(dev, inode, file_id)) &&
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
@@ -938,9 +939,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 		DEBUG(0,("oplock_break: exclusive_oplocks_open < 0 (%d). PANIC ERROR\n", exclusive_oplocks_open));
 		abort();
 	}
-
-	/* We know we have no saved errors here. */
-	set_saved_error_triple(0, 0, NT_STATUS_OK);
 
 	if( DEBUGLVL( 3 ) ) {
 		dbgtext( "oplock_break: returning success for " );

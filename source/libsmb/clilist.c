@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern file_info def_finfo;
-
 /****************************************************************************
  Interpret a long filename structure - this is mostly guesses at the moment.
  The length of the structure is returned
@@ -34,6 +32,7 @@ extern file_info def_finfo;
 static size_t interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
+	extern file_info def_finfo;
 	file_info finfo2;
 	int len;
 	char *base = p;
@@ -333,6 +332,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 static int interpret_short_filename(struct cli_state *cli, char *p,file_info *finfo)
 {
+	extern file_info def_finfo;
 
 	*finfo = def_finfo;
 

@@ -589,37 +589,6 @@ BOOL prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 }
 
 /*******************************************************************
- Stream a uint16* (allocate memory if unmarshalling)
- ********************************************************************/
-
-BOOL prs_pointer( const char *name, prs_struct *ps, int depth, 
-                 void **data, size_t data_size,
-                 BOOL(*prs_fn)(const char*, prs_struct*, int, void*) )
-{
-	uint32 data_p;
-
-	/* caputure the pointer value to stream */
-
-	data_p = (uint32) *data;
-
-	if ( !prs_uint32("ptr", ps, depth, &data_p ))
-		return False;
-
-	/* we're done if there is no data */
-
-	if ( !data_p )
-		return True;
-
-	if (UNMARSHALLING(ps)) {
-		if ( !(*data = PRS_ALLOC_MEM_VOID(ps, data_size)) )
-			return False;
-	}
-
-	return prs_fn(name, ps, depth, *data);
-}
-
-
-/*******************************************************************
  Stream a uint16.
  ********************************************************************/
 
@@ -629,12 +598,12 @@ BOOL prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 	if (q == NULL)
 		return False;
 
-	if (UNMARSHALLING(ps)) {
+    if (UNMARSHALLING(ps)) {
 		if (ps->bigendian_data)
 			*data16 = RSVAL(q,0);
 		else
 			*data16 = SVAL(q,0);
-	} else {
+    } else {
 		if (ps->bigendian_data)
 			RSSVAL(q,0,*data16);
 		else
@@ -947,28 +916,28 @@ BOOL prs_buffer5(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
  in byte chars. String is in little-endian format.
  ********************************************************************/
 
-BOOL prs_regval_buffer(BOOL charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf)
+BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *p;
-	char *q = prs_mem_get(ps, buf->buf_len);
+	char *q = prs_mem_get(ps, str->buf_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (buf->buf_len > buf->buf_max_len) {
+		if (str->buf_len > str->buf_max_len) {
 			return False;
 		}
-		if ( buf->buf_max_len ) {
-			buf->buffer = PRS_ALLOC_MEM(ps, uint16, buf->buf_max_len);
-			if ( buf->buffer == NULL )
+		if ( str->buf_max_len ) {
+			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_max_len);
+			if ( str->buffer == NULL )
 				return False;
 		}
 	}
 
-	p = (char *)buf->buffer;
+	p = (char *)str->buffer;
 
-	dbg_rw_punival(charmode, name, depth, ps, q, p, buf->buf_len/2);
-	ps->data_offset += buf->buf_len;
+	dbg_rw_punival(charmode, name, depth, ps, q, p, str->buf_len/2);
+	ps->data_offset += str->buf_len;
 
 	return True;
 }

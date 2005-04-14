@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-extern userdom_struct current_user_info;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -642,6 +640,41 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	new_printer->access_granted = access_granted;
 
 	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
+
+	return True;
+}
+
+/****************************************************************************
+ Allocate more memory for a BUFFER.
+****************************************************************************/
+
+static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
+{
+	prs_struct *ps;
+	uint32 extra_space;
+	uint32 old_offset;
+	
+	ps= &buffer->prs;
+
+	/* damn, I'm doing the reverse operation of prs_grow() :) */
+	if (buffer_size < prs_data_size(ps))
+		extra_space=0;
+	else	
+		extra_space = buffer_size - prs_data_size(ps);
+
+	/*
+	 * save the offset and move to the end of the buffer
+	 * prs_grow() checks the extra_space against the offset
+	 */
+	old_offset=prs_offset(ps);	
+	prs_set_offset(ps, prs_data_size(ps));
+	
+	if (!prs_grow(ps, extra_space))
+		return False;
+
+	prs_set_offset(ps, old_offset);
+
+	buffer->string_at_end=prs_data_size(ps);
 
 	return True;
 }
@@ -1493,10 +1526,10 @@ static void convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q
 
 	DEBUG(8,("convert_to_openprinterex\n"));
 				
-	if ( q_u->printername ) {
-		q_u_ex->printername = TALLOC_P( ctx, UNISTR2 );
-		copy_unistr2(q_u_ex->printername, q_u->printername);
-	}
+	q_u_ex->printername_ptr = q_u->printername_ptr;
+	
+	if (q_u->printername_ptr)
+		copy_unistr2(&q_u_ex->printername, &q_u->printername);
 	
 	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
 }
@@ -1590,6 +1623,7 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
+	UNISTR2 		*printername = NULL;
 	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
 	POLICY_HND 		*handle = &r_u->handle;
 
@@ -1598,13 +1632,15 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	struct current_user user;
 	Printer_entry *Printer=NULL;
 
-	if ( !q_u->printername )
+	if (q_u->printername_ptr != 0)
+		printername = &q_u->printername;
+
+	if (printername == NULL)
 		return WERR_INVALID_PRINTER_NAME;
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
-
-	unistr2_to_ascii(name, q_u->printername, sizeof(name)-1);
+	unistr2_to_ascii(name, printername, sizeof(name)-1);
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
@@ -4085,7 +4121,7 @@ static void free_dev_mode(DEVICEMODE *dev)
 	if (dev == NULL)
 		return;
 
-	SAFE_FREE(dev->private);
+		SAFE_FREE(dev->private);
 	SAFE_FREE(dev);	
 }
 
@@ -4368,14 +4404,13 @@ static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
  Spoolss_enumprinters.
 ********************************************************************/
 
-static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int snum;
 	int i;
 	int n_services=lp_numservices();
 	PRINTER_INFO_1 *tp, *printers=NULL;
 	PRINTER_INFO_1 current_prt;
-	WERROR result = WERR_OK;
 	
 	DEBUG(4,("enum_all_printers_info_1\n"));	
 
@@ -4403,36 +4438,29 @@ static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_printer_info_1(&printers[i]);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	if (!alloc_buffer_size(buffer, *needed))
+		return WERR_INSUFFICIENT_BUFFER;
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		smb_io_printer_info_1("", buffer, &printers[i], 0);	
 
-out:
 	/* clear memory */
-
 	SAFE_FREE(printers);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return WERR_OK;
 }
 
 /********************************************************************
  enum_all_printers_info_1_local.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_local(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_local(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));	
 	
@@ -4443,7 +4471,7 @@ static WERROR enum_all_printers_info_1_local(RPC_BUFFER *buffer, uint32 offered,
  enum_all_printers_info_1_name.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_name(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	char *s = name;
 	
@@ -4464,14 +4492,13 @@ static WERROR enum_all_printers_info_1_name(fstring name, RPC_BUFFER *buffer, ui
  enum_all_printers_info_1_remote.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_remote(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTER_INFO_1 *printer;
 	fstring printername;
 	fstring desc;
 	fstring comment;
 	DEBUG(4,("enum_all_printers_info_1_remote\n"));	
-	WERROR result = WERR_OK;
 
 	/* JFM: currently it's more a place holder than anything else.
 	 * In the spooler world there is a notion of server registration.
@@ -4498,27 +4525,23 @@ static WERROR enum_all_printers_info_1_remote(fstring name, RPC_BUFFER *buffer, 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_1("", buffer, printer, 0);	
 
-out:
 	/* clear memory */
 	SAFE_FREE(printer);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return WERR_OK;
 }
 
 #endif
@@ -4527,7 +4550,7 @@ out:
  enum_all_printers_info_1_network.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	char *s = name;
 
@@ -4556,14 +4579,13 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
 
-static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int snum;
 	int i;
 	int n_services=lp_numservices();
 	PRINTER_INFO_2 *tp, *printers=NULL;
 	PRINTER_INFO_2 current_prt;
-	WERROR result = WERR_OK;
 
 	for (snum=0; snum<n_services; snum++) {
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
@@ -4588,31 +4610,30 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 	for (i=0; i<*returned; i++) 
 		(*needed) += spoolss_size_printer_info_2(&printers[i]);
 	
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		for (i=0; i<*returned; i++) {
+			free_devmode(printers[i].devmode);
+		}
+		SAFE_FREE(printers);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		smb_io_printer_info_2("", buffer, &(printers[i]), 0);	
 	
-out:
 	/* clear memory */
 	for (i=0; i<*returned; i++) {
 		free_devmode(printers[i].devmode);
 	}
 	SAFE_FREE(printers);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return WERR_OK;
 }
 
 /********************************************************************
@@ -4620,7 +4641,7 @@ out:
  ********************************************************************/
 
 static WERROR enumprinters_level1( uint32 flags, fstring name,
-			         RPC_BUFFER *buffer, uint32 offered,
+			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
 	/* Not all the flags are equals */
@@ -4647,7 +4668,7 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
  ********************************************************************/
 
 static WERROR enumprinters_level2( uint32 flags, fstring servername,
-			         RPC_BUFFER *buffer, uint32 offered,
+			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
 	char *s = servername;
@@ -4676,7 +4697,7 @@ static WERROR enumprinters_level2( uint32 flags, fstring servername,
  ********************************************************************/
 
 static WERROR enumprinters_level5( uint32 flags, fstring servername,
-			         RPC_BUFFER *buffer, uint32 offered,
+			         NEW_BUFFER *buffer, uint32 offered,
 			         uint32 *needed, uint32 *returned)
 {
 /*	return enum_all_printers_info_5(buffer, offered, needed, returned);*/
@@ -4694,7 +4715,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	uint32 flags = q_u->flags;
 	UNISTR2 *servername = &q_u->servername;
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
@@ -4702,11 +4723,8 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	fstring name;
 	
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinters\n"));
 
@@ -4746,10 +4764,9 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_0(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_0(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_0 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_0)) == NULL)
 		return WERR_NOMEM;
@@ -4759,34 +4776,30 @@ static WERROR getprinter_level_0(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_0(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_0("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
-
 	SAFE_FREE(printer);
 
-	return result;
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_1(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_1(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_1 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_1)) == NULL)
 		return WERR_NOMEM;
@@ -4796,33 +4809,30 @@ static WERROR getprinter_level_1(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_1(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_1("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
 	SAFE_FREE(printer);
 
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_2(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_2(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_2))==NULL)
 		return WERR_NOMEM;
@@ -4832,34 +4842,33 @@ static WERROR getprinter_level_2(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_2(printer);
 	
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_2(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
-	if (!smb_io_printer_info_2("", buffer, printer, 0)) 
-		result = WERR_NOMEM;
+	if (!smb_io_printer_info_2("", buffer, printer, 0)) {
+		free_printer_info_2(printer);
+		return WERR_NOMEM;
+	}
 	
-out:
 	/* clear memory */
 	free_printer_info_2(printer);
 
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_3(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_3(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_3 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if (!construct_printer_info_3(print_hnd, &printer, snum))
 		return WERR_NOMEM;
@@ -4867,33 +4876,30 @@ static WERROR getprinter_level_3(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_3(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_3(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_3("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
 	free_printer_info_3(printer);
 	
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_4 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_4))==NULL)
 		return WERR_NOMEM;
@@ -4904,33 +4910,30 @@ static WERROR getprinter_level_4(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_4(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_4(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_4("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
 	free_printer_info_4(printer);
 	
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinter_level_5(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_5(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_5 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_5))==NULL)
 		return WERR_NOMEM;
@@ -4941,30 +4944,27 @@ static WERROR getprinter_level_5(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_5(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_5(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_5("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
 	free_printer_info_5(printer);
 	
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
-static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_7 *printer=NULL;
-	WERROR result = WERR_OK;
 
 	if((printer=SMB_MALLOC_P(PRINTER_INFO_7))==NULL)
 		return WERR_NOMEM;
@@ -4975,25 +4975,22 @@ static WERROR getprinter_level_7(Printer_entry *print_hnd, int snum, RPC_BUFFER 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_7(printer);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_7(printer);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_info_7("", buffer, printer, 0);	
 	
-out:
 	/* clear memory */
 	free_printer_info_7(printer);
 	
-	return result;	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
 }
 
 /****************************************************************************
@@ -5003,7 +5000,7 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 {
 	POLICY_HND *handle = &q_u->handle;
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
@@ -5011,11 +5008,8 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	int snum;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	*needed=0;
 
@@ -5439,154 +5433,149 @@ static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
 static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
 {
 	SAFE_FREE(info->dependentfiles);
+	
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level1(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level1(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_1 *info=NULL;
-	WERROR result;
+	WERROR status;
 	
 	if((info=SMB_MALLOC_P(DRIVER_INFO_1)) == NULL)
 		return WERR_NOMEM;
 	
-	result = construct_printer_driver_info_1(info, snum, servername, architecture, version);
-	if (!W_ERROR_IS_OK(result)) 
-		goto out;
+	status=construct_printer_driver_info_1(info, snum, servername, architecture, version);
+	if (!W_ERROR_IS_OK(status)) {
+		SAFE_FREE(info);
+		return status;
+	}
 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_1(info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_driver_info_1("", buffer, info, 0);	
 
-out:
 	/* clear memory */
 	SAFE_FREE(info);
 
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+
+	return WERR_OK;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level2(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level2(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_2 *info=NULL;
-	WERROR result;
+	WERROR status;
 	
 	if((info=SMB_MALLOC_P(DRIVER_INFO_2)) == NULL)
 		return WERR_NOMEM;
 	
-	result = construct_printer_driver_info_2(info, snum, servername, architecture, version);
-	if (!W_ERROR_IS_OK(result)) 
-		goto out;
+	status=construct_printer_driver_info_2(info, snum, servername, architecture, version);
+	if (!W_ERROR_IS_OK(status)) {
+		SAFE_FREE(info);
+		return status;
+	}
 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_2(info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-	
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_driver_info_2("", buffer, info, 0);	
 
-out:
 	/* clear memory */
 	SAFE_FREE(info);
 
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+	
+	return WERR_OK;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level3(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level3(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_3 info;
-	WERROR result;
+	WERROR status;
 
 	ZERO_STRUCT(info);
 
-	result = construct_printer_driver_info_3(&info, snum, servername, architecture, version);
-	if (!W_ERROR_IS_OK(result))
-		goto out;
+	status=construct_printer_driver_info_3(&info, snum, servername, architecture, version);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_3(&info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_driver_info_3(&info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_driver_info_3("", buffer, &info, 0);
 
-out:
 	free_printer_driver_info_3(&info);
 
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+
+	return WERR_OK;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriver2_level6(fstring servername, fstring architecture, uint32 version, int snum, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriver2_level6(fstring servername, fstring architecture, uint32 version, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_6 info;
-	WERROR result;
+	WERROR status;
 
 	ZERO_STRUCT(info);
 
-	result = construct_printer_driver_info_6(&info, snum, servername, architecture, version);
-	if (!W_ERROR_IS_OK(result)) 
-		goto out;
+	status=construct_printer_driver_info_6(&info, snum, servername, architecture, version);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
 
 	/* check the required size. */	
 	*needed += spoolss_size_printer_driver_info_6(&info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-	
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_driver_info_6(&info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	smb_io_printer_driver_info_6("", buffer, &info, 0);
 
-out:
 	free_printer_driver_info_6(&info);
 
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+	
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -5598,7 +5587,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	UNISTR2 *uni_arch = &q_u->architecture;
 	uint32 level = q_u->level;
 	uint32 clientmajorversion = q_u->clientmajorversion;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *servermajorversion = &r_u->servermajorversion;
@@ -5610,11 +5599,8 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	int snum;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
@@ -6029,6 +6015,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 
 static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
+	extern userdom_struct current_user_info;
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
 	pstring command;
@@ -6402,10 +6389,8 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 
 WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u)
 {
-	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) 
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
+	/* that's an [in out] buffer (despite appearences to the contrary) */
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 
 	r_u->needed = 0;
 	return WERR_INVALID_PARAM; /* this is what a NT server
@@ -6491,12 +6476,11 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
                               NT_PRINTER_INFO_LEVEL *ntprinter,
-			      RPC_BUFFER *buffer, uint32 offered,
+			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
 	JOB_INFO_1 *info;
 	int i;
-	WERROR result = WERR_OK;
 	
 	info=SMB_MALLOC_ARRAY(JOB_INFO_1,*returned);
 	if (info==NULL) {
@@ -6514,28 +6498,24 @@ static WERROR enumjobs_level1(print_queue_struct *queue, int snum,
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_job_info_1(&info[i]);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		smb_io_job_info_1("", buffer, &info[i], 0);	
 
-out:
 	/* clear memory */
 	SAFE_FREE(info);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -6544,17 +6524,19 @@ out:
 
 static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
                               NT_PRINTER_INFO_LEVEL *ntprinter,
-			      RPC_BUFFER *buffer, uint32 offered,
+			      NEW_BUFFER *buffer, uint32 offered,
 			      uint32 *needed, uint32 *returned)
 {
 	JOB_INFO_2 *info = NULL;
 	int i;
-	WERROR result = WERR_OK;
+	WERROR result;
 	DEVICEMODE *devmode = NULL;
 	
-	if ( !(info = SMB_MALLOC_ARRAY(JOB_INFO_2,*returned)) ) {
+	info=SMB_MALLOC_ARRAY(JOB_INFO_2,*returned);
+	if (info==NULL) {
 		*returned=0;
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto done;
 	}
 		
 	/* this should not be a failure condition if the devmode is NULL */
@@ -6562,7 +6544,8 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	devmode = construct_dev_mode(snum);
 
 	for (i=0; i<*returned; i++)
-		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
+		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
+				devmode);
 
 	free_a_printer(&ntprinter, 2);
 	SAFE_FREE(queue);
@@ -6572,25 +6555,28 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		(*needed) += spoolss_size_job_info_2(&info[i]);
 
 	if (*needed > offered) {
+		*returned=0;
 		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+		goto done;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info);
+		result = WERR_INSUFFICIENT_BUFFER;
+		goto done;
 	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		smb_io_job_info_2("", buffer, &info[i], 0);	
 
-out:
-	free_devmode(devmode);
-	SAFE_FREE(info);
+	result = WERR_OK;
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+ done:
+	free_a_printer(&ntprinter, 2);
+	free_devmode(devmode);
+	SAFE_FREE(queue);
+	SAFE_FREE(info);
 
 	return result;
 
@@ -6604,7 +6590,7 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 {	
 	POLICY_HND *handle = &q_u->handle;
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
@@ -6615,11 +6601,8 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	print_queue_struct *queue=NULL;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumjobs\n"));
 
@@ -6720,15 +6703,15 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
  Enumerates all printer drivers at level 1.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
 	uint32 version;
 	fstring *list = NULL;
+
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_1 *tdi1, *driver_info_1=NULL;
-	WERROR result = WERR_OK;
 
 	*returned=0;
 
@@ -6774,14 +6757,9 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 		*needed += spoolss_size_printer_driver_info_1(&driver_info_1[i]);
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;	
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(driver_info_1);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the driver structures */
@@ -6790,28 +6768,29 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 		smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
 	}
 
-out:
 	SAFE_FREE(driver_info_1);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Enumerates all printer drivers at level 2.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
 	uint32 version;
 	fstring *list = NULL;
+
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *tdi2, *driver_info_2=NULL;
-	WERROR result = WERR_OK;
 
 	*returned=0;
 
@@ -6858,14 +6837,9 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		*needed += spoolss_size_printer_driver_info_2(&(driver_info_2[i]));
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;	
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(driver_info_2);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the form structures */
@@ -6874,28 +6848,29 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 		smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
 
-out:
 	SAFE_FREE(driver_info_2);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Enumerates all printer drivers at level 3.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int i;
 	int ndrivers;
 	uint32 version;
 	fstring *list = NULL;
+
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_3 *tdi3, *driver_info_3=NULL;
-	WERROR result = WERR_OK;
 
 	*returned=0;
 
@@ -6942,32 +6917,28 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 		*needed += spoolss_size_printer_driver_info_3(&driver_info_3[i]);
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(driver_info_3);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;	
-		goto out;
-	}
-
+	
 	/* fill the buffer with the driver structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
 	}
 
-out:
 	for (i=0; i<*returned; i++)
 		SAFE_FREE(driver_info_3[i].dependentfiles);
-
+	
 	SAFE_FREE(driver_info_3);
 	
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -6977,25 +6948,22 @@ out:
 WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
+	fstring *list = NULL;
 	fstring servername;
 	fstring architecture;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
-	
-	*needed   = 0;
-	*returned = 0;
+	*needed=0;
+	*returned=0;
 
 	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture)-1);
 	unistr2_to_ascii(servername, &q_u->name, sizeof(servername)-1);
@@ -7011,6 +6979,8 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	case 3:
 		return enumprinterdrivers_level3(servername, architecture, buffer, offered, needed, returned);
 	default:
+		*returned=0;
+		SAFE_FREE(list);
 		return WERR_UNKNOWN_LEVEL;
 	}
 }
@@ -7036,7 +7006,7 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *numofforms = &r_u->numofforms;
@@ -7049,11 +7019,8 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	int i;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumforms\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
@@ -7065,8 +7032,7 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
 	*numofforms += numbuiltinforms;
 
-	if (*numofforms == 0) 
-		return WERR_NO_MORE_ITEMS;
+	if (*numofforms == 0) return WERR_NO_MORE_ITEMS;
 
 	switch (level) {
 	case 1:
@@ -7102,16 +7068,9 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 		*needed=buffer_size;		
 		
-		if (*needed > offered) {
+		if (!alloc_buffer_size(buffer, buffer_size)){
 			SAFE_FREE(forms_1);
-			*numofforms=0;
 			return WERR_INSUFFICIENT_BUFFER;
-		}
-	
-		if (!rpcbuf_alloc_size(buffer, buffer_size)){
-			SAFE_FREE(forms_1);
-			*numofforms=0;
-			return WERR_NOMEM;
 		}
 
 		/* fill the buffer with the form structures */
@@ -7126,7 +7085,12 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 		SAFE_FREE(forms_1);
 
-		return WERR_OK;
+		if (*needed > offered) {
+			*numofforms=0;
+			return WERR_INSUFFICIENT_BUFFER;
+		}
+		else
+			return WERR_OK;
 			
 	default:
 		SAFE_FREE(list);
@@ -7143,7 +7107,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 {
 	uint32 level = q_u->level;
 	UNISTR2 *uni_formname = &q_u->formname;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 
@@ -7156,11 +7120,8 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
 
@@ -7204,11 +7165,13 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 
 		*needed=spoolss_size_form_1(&form_1);
 		
-		if (*needed > offered) 
+		if (!alloc_buffer_size(buffer, buffer_size)){
 			return WERR_INSUFFICIENT_BUFFER;
+		}
 
-		if (!rpcbuf_alloc_size(buffer, buffer_size))
-			return WERR_NOMEM;
+		if (*needed > offered) {
+			return WERR_INSUFFICIENT_BUFFER;
+		}
 
 		/* fill the buffer with the form structures */
 		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
@@ -7246,11 +7209,10 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
  enumports level 1.
 ****************************************************************************/
 
-static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PORT_INFO_1 *ports=NULL;
 	int i=0;
-	WERROR result = WERR_OK;
 
 	if (*lp_enumports_cmd()) {
 		char *cmd = lp_enumports_cmd();
@@ -7312,14 +7274,9 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		*needed += spoolss_size_port_info_1(&ports[i]);
 	}
 		
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(ports);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the ports structures */
@@ -7328,24 +7285,24 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		smb_io_port_1("", buffer, &ports[i], 0);
 	}
 
-out:
 	SAFE_FREE(ports);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumports level 2.
 ****************************************************************************/
 
-static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PORT_INFO_2 *ports=NULL;
 	int i=0;
-	WERROR result = WERR_OK;
 
 	if (*lp_enumports_cmd()) {
 		char *cmd = lp_enumports_cmd();
@@ -7415,14 +7372,9 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		*needed += spoolss_size_port_info_2(&ports[i]);
 	}
 		
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(ports);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the ports structures */
@@ -7431,13 +7383,14 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		smb_io_port_2("", buffer, &ports[i], 0);
 	}
 
-out:
 	SAFE_FREE(ports);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -7447,17 +7400,14 @@ out:
 WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumports\n"));
 	
@@ -7593,7 +7543,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u)
 {
-	UNISTR2 *uni_srv_name = q_u->server_name;
+	UNISTR2 *uni_srv_name = &q_u->server_name;
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
 	DEVICEMODE *devmode = q_u->devmode_ctr.devmode;
@@ -7791,7 +7741,7 @@ static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	pstring path;
 	pstring long_archi;
@@ -7799,7 +7749,6 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	char *pservername; 
 	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
-	WERROR result = WERR_OK;
 
 	unistr2_to_ascii(servername, name, sizeof(servername)-1);
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
@@ -7829,22 +7778,19 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 	*needed += spoolss_size_driverdir_info_1(info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_driverdir_1("", buffer, info, 0);
 
-out:
 	SAFE_FREE(info);
 	
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -7855,16 +7801,13 @@ WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 	UNISTR2 *name = &q_u->name;
 	UNISTR2 *uni_environment = &q_u->environment;
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriverdirectory\n"));
 
@@ -8424,10 +8367,9 @@ done:
  enumprintprocessors level 1.
 ****************************************************************************/
 
-static WERROR enumprintprocessors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCESSOR_1 *info_1=NULL;
-	WERROR result = WERR_OK;
 	
 	if((info_1 = SMB_MALLOC_P(PRINTPROCESSOR_1)) == NULL)
 		return WERR_NOMEM;
@@ -8438,25 +8380,19 @@ static WERROR enumprintprocessors_level_1(RPC_BUFFER *buffer, uint32 offered, ui
 
 	*needed += spoolss_size_printprocessor_info_1(info_1);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	if (!alloc_buffer_size(buffer, *needed))
+		return WERR_INSUFFICIENT_BUFFER;
 
 	smb_io_printprocessor_info_1("", buffer, info_1, 0);
 
-out:
 	SAFE_FREE(info_1);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -8465,17 +8401,14 @@ out:
 WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintprocessors\n"));
 
@@ -8501,10 +8434,9 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
  enumprintprocdatatypes level 1.
 ****************************************************************************/
 
-static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTPROCDATATYPE_1 *info_1=NULL;
-	WERROR result = WERR_NOMEM;
 	
 	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
 		return WERR_NOMEM;
@@ -8515,25 +8447,19 @@ static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered,
 
 	*needed += spoolss_size_printprocdatatype_info_1(info_1);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	if (!alloc_buffer_size(buffer, *needed))
+		return WERR_INSUFFICIENT_BUFFER;
 
 	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
 
-out:
 	SAFE_FREE(info_1);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -8542,17 +8468,14 @@ out:
 WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
 	
@@ -8571,10 +8494,9 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
  enumprintmonitors level 1.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTMONITOR_1 *info_1=NULL;
-	WERROR result = WERR_OK;
 	
 	if((info_1 = SMB_MALLOC_P(PRINTMONITOR_1)) == NULL)
 		return WERR_NOMEM;
@@ -8585,35 +8507,28 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 
 	*needed += spoolss_size_printmonitor_info_1(info_1);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	if (!alloc_buffer_size(buffer, *needed))
+		return WERR_INSUFFICIENT_BUFFER;
 
 	smb_io_printmonitor_info_1("", buffer, info_1, 0);
 
-out:
 	SAFE_FREE(info_1);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumprintmonitors level 2.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTMONITOR_2 *info_2=NULL;
-	WERROR result = WERR_OK;
 	
 	if((info_2 = SMB_MALLOC_P(PRINTMONITOR_2)) == NULL)
 		return WERR_NOMEM;
@@ -8626,25 +8541,19 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 
 	*needed += spoolss_size_printmonitor_info_2(info_2);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	if (!alloc_buffer_size(buffer, *needed))
+		return WERR_INSUFFICIENT_BUFFER;
 
 	smb_io_printmonitor_info_2("", buffer, info_2, 0);
 
-out:
 	SAFE_FREE(info_2);
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-	
-	return result;
+	if (*needed > offered) {
+		*returned=0;
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -8653,17 +8562,14 @@ out:
 WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintmonitors\n"));
 
@@ -8692,13 +8598,12 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 
 static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
                              NT_PRINTER_INFO_LEVEL *ntprinter,
-                             uint32 jobid, RPC_BUFFER *buffer, uint32 offered, 
+                             uint32 jobid, NEW_BUFFER *buffer, uint32 offered, 
 			     uint32 *needed)
 {
 	int i=0;
 	BOOL found=False;
 	JOB_INFO_1 *info_1=NULL;
-	WERROR result = WERR_OK;
 
 	info_1=SMB_MALLOC_P(JOB_INFO_1);
 
@@ -8721,22 +8626,19 @@ static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
 	
 	*needed += spoolss_size_job_info_1(info_1);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		SAFE_FREE(info_1);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_job_info_1("", buffer, info_1, 0);
 
-out:
 	SAFE_FREE(info_1);
 
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -8744,20 +8646,24 @@ out:
 
 static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum, 
                              NT_PRINTER_INFO_LEVEL *ntprinter,
-                             uint32 jobid, RPC_BUFFER *buffer, uint32 offered, 
+                             uint32 jobid, NEW_BUFFER *buffer, uint32 offered, 
 			     uint32 *needed)
 {
 	int 		i = 0;
 	BOOL 		found = False;
 	JOB_INFO_2 	*info_2;
-	WERROR 		result;
+	WERROR 		ret;
 	DEVICEMODE 	*devmode = NULL;
 	NT_DEVICEMODE	*nt_devmode = NULL;
 
-	if ( !(info_2=SMB_MALLOC_P(JOB_INFO_2)) )
-		return WERR_NOMEM;
+	info_2=SMB_MALLOC_P(JOB_INFO_2);
 
 	ZERO_STRUCTP(info_2);
+
+	if (info_2 == NULL) {
+		ret = WERR_NOMEM;
+		goto done;
+	}
 
 	for ( i=0; i<count && found==False; i++ ) 
 	{
@@ -8765,10 +8671,11 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 			found = True;
 	}
 	
-	if ( !found ) {
+	if ( !found ) 
+	{
 		/* NT treats not found as bad param... yet another bad
 		   choice */
-		result = WERR_INVALID_PARAM;
+		ret = WERR_INVALID_PARAM;
 		goto done;
 	}
 	
@@ -8791,19 +8698,19 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	
 	*needed += spoolss_size_job_info_2(info_2);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto done;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		ret = WERR_INSUFFICIENT_BUFFER;
 		goto done;
 	}
 
 	smb_io_job_info_2("", buffer, info_2, 0);
 
-	result = WERR_OK;
+	if (*needed > offered) {
+		ret = WERR_INSUFFICIENT_BUFFER;
+		goto done;
+	}
+
+	ret = WERR_OK;
 	
  done:
 	/* Cleanup allocated memory */
@@ -8811,7 +8718,7 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
 
-	return result;
+	return ret;
 }
 
 /****************************************************************************
@@ -8822,7 +8729,7 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	POLICY_HND *handle = &q_u->handle;
 	uint32 jobid = q_u->jobid;
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	WERROR		wstatus = WERR_OK;
@@ -8833,11 +8740,8 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	print_status_struct prt_status;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
@@ -9403,14 +9307,13 @@ static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, cha
 
 static WERROR getprintprocessordirectory_level_1(UNISTR2 *name, 
 						 UNISTR2 *environment, 
-						 RPC_BUFFER *buffer, 
+						 NEW_BUFFER *buffer, 
 						 uint32 offered, 
 						 uint32 *needed)
 {
 	pstring path;
 	pstring long_archi;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
-	WERROR result = WERR_OK;
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
@@ -9426,38 +9329,32 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	
 	*needed += spoolss_size_printprocessordirectory_info_1(info);
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(info);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
 	smb_io_printprocessordirectory_1("", buffer, info, 0);
 
-out:
-	SAFE_FREE(info);
+	safe_free(info);
 	
-	return result;
+	if (*needed > offered)
+		return WERR_INSUFFICIENT_BUFFER;
+	else
+		return WERR_OK;
 }
 
 WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u)
 {
 	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
+	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
 	WERROR result;
 
 	/* that's an [in out] buffer */
-
-	if ( q_u->buffer ) {
-		rpcbuf_move(q_u->buffer, &r_u->buffer);
-		buffer = r_u->buffer;
-	}
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
  	DEBUG(5,("_spoolss_getprintprocessordirectory\n"));
 	

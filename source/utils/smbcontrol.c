@@ -428,8 +428,7 @@ static BOOL do_printnotify(const pid_t pid, const int argc, const char **argv)
 			return False;
 		}
 
-		notify_printer_byname(argv[2], attribute,
-                                      CONST_DISCARD(char *, argv[4]));
+		notify_printer_byname(argv[2], attribute, argv[4]);
 
 		goto send;
 	}

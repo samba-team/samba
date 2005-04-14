@@ -245,6 +245,7 @@ struct winbindd_idmap_methods {
 #include "nsswitch/winbindd_proto.h"
 
 #include "rpc_parse.h"
+#include "rpc_client.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
 #define WINBINDD_RESCAN_FREQ 300

@@ -35,7 +35,7 @@ struct smbc_dir_list {
 struct _SMBCFILE {
 	int cli_fd; 
 	char *fname;
-	SMB_OFF_T offset;
+	off_t offset;
 	struct _SMBCSRV *srv;
 	BOOL file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;

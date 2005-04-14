@@ -103,7 +103,6 @@ typedef int BOOL;
 #define DOS_OPEN_RDONLY 0
 #define DOS_OPEN_WRONLY 1
 #define DOS_OPEN_RDWR 2
-#define DOS_OPEN_EXEC 3
 #define DOS_OPEN_FCB 0xF
 
 /* define shifts and masks for share and open modes. */
@@ -194,9 +193,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
 #define PIPE_SHUTDOWN "\\PIPE\\initshutdown"
-#define PIPE_EPM      "\\PIPE\\epmapper"
-#define PIPE_SVCCTL   "\\PIPE\\svcctl"
-#define PIPE_EVENTLOG "\\PIPE\\eventlog"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -211,9 +207,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_NETDFS		8
 #define PI_ECHO 		9
 #define PI_SHUTDOWN		10
-#define PI_SVCCTL		11
-#define PI_EVENTLOG 		12
-#define PI_MAX_PIPES		13
+#define PI_MAX_PIPES		11
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
@@ -287,28 +281,10 @@ typedef struct sid_info
 
 } DOM_SID;
 
-/* Some well-known SIDs */
-extern const DOM_SID global_sid_World_Domain;
-extern const DOM_SID global_sid_World;
-extern const DOM_SID global_sid_Creator_Owner_Domain;
-extern const DOM_SID global_sid_NT_Authority;
-extern const DOM_SID global_sid_System;
-extern const DOM_SID global_sid_NULL;
-extern const DOM_SID global_sid_Authenticated_Users;
-extern const DOM_SID global_sid_Network;
-extern const DOM_SID global_sid_Creator_Owner;
-extern const DOM_SID global_sid_Creator_Group;
-extern const DOM_SID global_sid_Anonymous;
-extern const DOM_SID global_sid_Builtin;
-extern const DOM_SID global_sid_Builtin_Administrators;
-extern const DOM_SID global_sid_Builtin_Users;
-extern const DOM_SID global_sid_Builtin_Guests;
-extern const DOM_SID global_sid_Builtin_Power_Users;
-extern const DOM_SID global_sid_Builtin_Account_Operators;
-extern const DOM_SID global_sid_Builtin_Server_Operators;
-extern const DOM_SID global_sid_Builtin_Print_Operators;
-extern const DOM_SID global_sid_Builtin_Backup_Operators;
-extern const DOM_SID global_sid_Builtin_Replicator;
+typedef struct sid_list {
+	uint32 count;
+	DOM_SID *list;
+} SID_LIST;
 
 /*
  * The complete list of SIDS belonging to this user.
@@ -379,14 +355,14 @@ typedef struct time_info
 } UTIME;
 
 /* Structure used when SMBwritebmpx is active */
-typedef struct {
-	size_t wr_total_written; /* So we know when to discard this */
-	int32 wr_timeout;
-	int32 wr_errclass; /* Cached errors */
-	int32 wr_error; /* Cached errors */
-	NTSTATUS wr_status; /* Cached errors */
-	BOOL  wr_mode; /* write through mode) */
-	BOOL  wr_discard; /* discard all further data */
+typedef struct
+{
+  size_t wr_total_written; /* So we know when to discard this */
+  int32 wr_timeout;
+  int32 wr_errclass;
+  int32 wr_error; /* Cached errors */
+  BOOL  wr_mode; /* write through mode) */
+  BOOL  wr_discard; /* discard all further data */
 } write_bmpx_struct;
 
 typedef struct write_cache
@@ -1406,6 +1382,13 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
  */
 #define COPYBUF_SIZE (8*1024)
 
+/* 
+ * Values used to override error codes. 
+ */
+extern int unix_ERR_class;
+extern int unix_ERR_code;
+extern NTSTATUS unix_ERR_ntstatus;
+
 /*
  * Used in chaining code.
  */
@@ -1732,11 +1715,6 @@ struct ea_struct {
 	uint8 flags;
 	char *name;
 	DATA_BLOB value;
-};
-
-struct ea_list {
-	struct ea_list *next, *prev;
-	struct ea_struct ea;
 };
 
 /* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */

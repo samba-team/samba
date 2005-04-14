@@ -137,7 +137,7 @@ BOOL torture_casetable(int dummy)
 	}
 
 	for (c=1; c < 0x10000; c++) {
-		SMB_OFF_T size;
+		size_t size;
 
 		if (c == '.' || c == '\\') continue;
 

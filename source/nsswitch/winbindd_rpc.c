@@ -788,8 +788,7 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 	to.tv_sec = 10;
 	to.tv_usec = 0;
 
-	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)",
-                           CONST_DISCARD(char **, &attrs[0]), 0, &to, &res))
+	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &to, &res))
 		goto done;
 
 	if (ldap_count_entries(ldp, res) != 1)

@@ -431,7 +431,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
  than POSIX.
 *******************************************************************/
 
-int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times)
+int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 {
 	int ret = -1;
 
@@ -467,7 +467,7 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
  Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
 
-BOOL set_filetime(connection_struct *conn, const char *fname, time_t mtime)
+BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 {
 	struct utimbuf times;
 

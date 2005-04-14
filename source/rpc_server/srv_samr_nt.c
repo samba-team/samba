@@ -39,6 +39,8 @@
 		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
 		  SA_RIGHT_USER_SET_LOC_COM )
 
+extern DOM_SID global_sid_Builtin;
+
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
@@ -78,6 +80,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
                                      struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
+	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid, act_sid, domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;
@@ -864,7 +867,6 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	int i;
 	uint32 group_entries = 0;
 	uint32 num_entries = 0;
-	NTSTATUS result = NT_STATUS_OK;
 
 	*p_num_entries = 0;
 
@@ -882,7 +884,6 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	if (num_entries>max_entries) {
 		DEBUG(5,("Limiting to %d entries\n", max_entries));
 		num_entries=max_entries;
-		result = STATUS_MORE_ENTRIES;
 	}
 
 	*d_grp=TALLOC_ZERO_ARRAY(ctx, DOMAIN_GRP, num_entries);
@@ -905,7 +906,7 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 	DEBUG(10,("get_group_domain_entries: returning %d entries\n",
 		  *p_num_entries));
 
-	return result;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -972,19 +973,13 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	/* the domain group array is being allocated in the function below */
-	r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid,
-					       q_u->start_idx, &num_entries,
-					       MAX_SAM_ENTRIES);
-
-	if (!NT_STATUS_IS_OK(r_u->status) &&
-	    !NT_STATUS_EQUAL(r_u->status, STATUS_MORE_ENTRIES))
+	if (!NT_STATUS_IS_OK(r_u->status = get_group_domain_entries(p->mem_ctx, &grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))) {
 		return r_u->status;
+	}
 
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
-				  num_entries, grp);
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
-	init_samr_r_enum_dom_groups(r_u, q_u->start_idx+num_entries,
-				    num_entries);
+	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
 
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 
@@ -1469,9 +1464,8 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
-static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
-				  const char **names, UNIHDR **pp_hdr_name,
-				  UNISTR2 **pp_uni_name)
+static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring names[],
+	    UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
 {
 	uint32 i;
 	UNIHDR *hdr_name=NULL;
@@ -1491,7 +1485,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DEBUG(10, ("names[%d]:%s\n", i, *names[i] ? names[i] : ""));
+		DEBUG(10, ("names[%d]:%s\n", i, names[i] ? names[i] : ""));
 		init_unistr2(&uni_name[i], names[i], UNI_FLAGS_NONE);
 		init_uni_hdr(&hdr_name[i], &uni_name[i]);
 	}
@@ -1508,13 +1502,16 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 
 NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
-	const char **names;
-	uint32 *attrs = NULL;
+	fstring group_names[MAX_SAM_ENTRIES];
+	uint32 *group_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
 	int num_rids = q_u->num_rids1;
+	int i;
 	uint32 acc_granted;
+	BOOL have_mapped = False;
+	BOOL have_unmapped = False;
 	
 	r_u->status = NT_STATUS_OK;
 
@@ -1530,12 +1527,11 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
-
-	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL)))
-		return NT_STATUS_NO_MEMORY;
-
+	if (num_rids) {
+		if ((group_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids )) == NULL)
+			return NT_STATUS_NO_MEMORY;
+ 	}
+ 
 	if (!sid_equal(&pol_sid, get_global_sam_sid())) {
 		/* TODO: Sooner or later we need to look up BUILTIN rids as
 		 * well. -- vl */
@@ -1543,17 +1539,44 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	become_root();  /* lookup_sid can require root privs */
-	r_u->status = pdb_lookup_rids(p->mem_ctx, &pol_sid, num_rids, q_u->rid,
-				      &names, &attrs);
+
+	for (i = 0; i < num_rids; i++) {
+		fstring tmpname;
+		fstring domname;
+		DOM_SID sid;
+   		enum SID_NAME_USE type;
+
+		group_attrs[i] = SID_NAME_UNKNOWN;
+		*group_names[i] = '\0';
+
+		sid_copy(&sid, &pol_sid);
+		sid_append_rid(&sid, q_u->rid[i]);
+
+		if (lookup_sid(&sid, domname, tmpname, &type)) {
+			group_attrs[i] = (uint32)type;
+			fstrcpy(group_names[i],tmpname);
+			DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i],
+				 group_attrs[i]));
+			have_mapped = True;
+		} else {
+			have_unmapped = True;
+		}
+	}
+
 	unbecome_root();
 
  done:
 
-	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
-				  &hdr_name, &uni_name))
+	r_u->status = NT_STATUS_NONE_MAPPED;
+
+	if (have_mapped)
+		r_u->status =
+			have_unmapped ? STATUS_SOME_UNMAPPED : NT_STATUS_OK;
+
+	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, attrs);
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
@@ -1954,7 +1977,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	gid_t *unix_gids;
-	int i, num_gids;
+	int i, num_gids, num_sids;
 	uint32 acc_granted;
 	BOOL ret;
 	NTSTATUS result;
@@ -2004,6 +2027,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	}
 
 	sids = NULL;
+	num_sids = 0;
 
 	become_root();
 	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
@@ -2876,7 +2900,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	if (!decode_pw_buffer(id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
+	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len, STR_UNICODE)) {
 		pdb_free_sam(&pwd);
 		return False;
  	}
@@ -2927,7 +2951,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, SAM_ACCOUNT *pwd)
  set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_pw(uint8 *pass, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_pw(char *pass, SAM_ACCOUNT *pwd)
 {
 	uint32 len;
 	pstring plaintext_buf;
@@ -3073,7 +3097,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
-			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
+			if (!set_user_info_pw((char *)ctr->info.id24->pass, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -3235,8 +3259,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	int num_alias_rids;
-	uint32 *alias_rids;
+	int num_groups = 0;
+	uint32 *rids=NULL;
 	struct samr_info *info = NULL;
 	int i;
 		
@@ -3244,6 +3268,8 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	NTSTATUS ntstatus2;
 
 	DOM_SID *members;
+	DOM_SID *aliases;
+	int num_aliases;
 	BOOL res;
 
 	r_u->status = NT_STATUS_OK;
@@ -3276,20 +3302,35 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	for (i=0; i<q_u->num_sids1; i++)
 		sid_copy(&members[i], &q_u->sid[i].sid);
 
-	alias_rids = NULL;
-	num_alias_rids = 0;
-
 	become_root();
-	res = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
-					 q_u->num_sids1,
-					 &alias_rids, &num_alias_rids);
+	res = pdb_enum_alias_memberships(members,
+					 q_u->num_sids1, &aliases,
+					 &num_aliases);
 	unbecome_root();
 
 	if (!res)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	init_samr_r_query_useraliases(r_u, num_alias_rids, alias_rids,
-				      NT_STATUS_OK);
+	rids = NULL;
+	num_groups = 0;
+
+	for (i=0; i<num_aliases; i++) {
+		uint32 rid;
+
+		if (!sid_peek_check_rid(&info->sid, &aliases[i], &rid))
+			continue;
+
+		rids = TALLOC_REALLOC_ARRAY(p->mem_ctx, rids, uint32, num_groups+1);
+
+		if (rids == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		rids[num_groups] = rid;
+		num_groups += 1;
+	}
+	SAFE_FREE(aliases);
+
+	init_samr_r_query_useraliases(r_u, num_groups, rids, NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
 
@@ -3780,6 +3821,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DOM_SID user_sid;
 	SAM_ACCOUNT *sam_pass=NULL;
 	uint32 acc_granted;
+	SE_PRIV se_rights;
 	BOOL can_add_accounts;
 	BOOL ret;
 
@@ -3805,7 +3847,8 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
+	se_priv_copy( &se_rights, &se_add_users );
+	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 
 	/******** BEGIN SeAddUsers BLOCK *********/
 	
@@ -4078,6 +4121,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
 	fstring name;
+	struct group *grp;
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
@@ -4124,7 +4168,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check if the group has been successfully created */
-	if ( getgrgid(gid) == NULL )
+	if ((grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)

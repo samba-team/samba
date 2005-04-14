@@ -1,10 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   Copyright (C) Andrew Tridgell                1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton   1996-1997
-   Copyright (C) Paul Ashton                    1997
-   Copyright (C) Gerald (Jerry) Carter          2005
+   SMB parameters and setup
+   Copyright (C) Andrew Tridgell 1992-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Paul Ashton 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,15 +27,8 @@
 #define _RPC_MISC_H 
 
 #define SMB_RPC_INTERFACE_VERSION 1
-#define PRS_POINTER_CAST BOOL (*)(const char*, prs_struct*, int, void*)
 
-enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3 };
-
-
-
-/********************************************************************** 
- * well-known RIDs - Relative IDs
- **********************************************************************/
+/* well-known RIDs - Relative IDs */
 
 /* RIDs - Well-known users ... */
 #define DOMAIN_USER_RID_ADMIN          (0x000001F4L)
@@ -73,208 +65,186 @@ enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_
 #define BUILTIN_ALIAS_RID_RAS_SERVERS   (0x00000229L)
 #define BUILTIN_ALIAS_RID_PRE_2K_ACCESS (0x0000022aL)
 
-
-/********************************************************************** 
+/*
  * Masks for mappings between unix uid and gid types and
  * NT RIDS.
- **********************************************************************/
+ */
+
 
 #define BASE_RID (0x000003E8L)
 
 /* Take the bottom bit. */
-#define RID_TYPE_MASK 		1
-#define RID_MULTIPLIER 		2
+#define RID_TYPE_MASK 1
+#define RID_MULTIPLIER 2
 
 /* The two common types. */
-#define USER_RID_TYPE 		0
-#define GROUP_RID_TYPE 		1
+#define USER_RID_TYPE 0
+#define GROUP_RID_TYPE 1
 
-
-
-/********************************************************************** 
- * RPC policy handle used pretty much everywhere
- **********************************************************************/
- 
-typedef struct {
+/* ENUM_HND */
+typedef struct enum_hnd_info
+{
 	uint32 ptr_hnd;          /* pointer to enumeration handle */
 	uint32 handle;           /* enumeration handle */
 } ENUM_HND;
 
+/* LOOKUP_LEVEL - switch value */
+typedef struct lookup_level_info
+{
+	uint16 value;
+} LOOKUP_LEVEL;
 
+/* DOM_SID2 - security id */
+typedef struct sid_info_2
+{
+	uint32 num_auths; /* length, bytes, including length of len :-) */
+	DOM_SID sid;
+} DOM_SID2;
 
-/********************************************************************** 
- * RPC policy handle used pretty much everywhere
- **********************************************************************/
-
-typedef struct {
-	uint32 data1;
-	uint32 data2;
-	uint16 data3;
-	uint16 data4;
-	uint8 data5[8];
-#ifdef __INSURE__
-
-	/* To prevent the leakage of policy handles mallocate a bit of
-	   memory when a policy handle is created and free it when the
-	   handle is closed.  This should cause Insure to flag an error
-	   when policy handles are overwritten or fall out of scope without
-	   being freed. */
-
-	char *marker;
-#endif
-} POLICY_HND;
-
-
-/********************************************************************** 
- * Buffer Headers -- use by SEC_DESC_BUF in winreg and netlogon code
- **********************************************************************/
- 
-typedef struct {
-	uint32 buf_max_len;
-	uint32 buf_len;
-} BUFHDR;
-
-typedef struct {
-	uint32 info_level;
-	uint32 length;		/* uint8 chars */
-	uint32 buffer;
-} BUFHDR2;
-
-typedef struct {
-	uint32 size;
-	uint32 buffer;
-} BUFHDR4;
-
-
-/********************************************************************** 
- * Buffers 
- **********************************************************************/
-
-/* buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
-   It *may* look like a UNISTR2 but it is *not*.  This is not a goof
-   by the winreg developers.  It is a generic buffer */
-
-typedef struct {
-	uint32 buf_max_len;
-	uint32 offset;
-	uint32 buf_len;
-	uint16 *buffer;
-} REGVAL_BUFFER;
-
-/* generic rpc version of the DATA_BLOB.  Just a length and uint8 array */
-
-typedef struct {
-	uint32 buf_len;
-	uint8 *buffer;
-} RPC_DATA_BLOB;
-
-/********************************************************************** 
- * Buffers use by spoolss (i might be able to replace it with
- * an RPC_DATA_BLOB)
- **********************************************************************/
-
-typedef struct {
-	uint32 buf_len;
-	uint16 *buffer; /* data */
-} BUFFER5;
-
-
-/********************************************************************** 
- * Unicode and basic string headers 
- **********************************************************************/
- 
-typedef struct {
+/* STRHDR - string header */
+typedef struct header_info
+{
 	uint16 str_str_len;
 	uint16 str_max_len;
 	uint32 buffer; /* non-zero */
 } STRHDR;
 
-typedef struct {
+/* UNIHDR - unicode string header */
+typedef struct unihdr_info
+{
 	uint16 uni_str_len;
 	uint16 uni_max_len;
-	uint32 buffer; 
+	uint32 buffer; /* usually has a value of 4 */
 } UNIHDR;
 
-/********************************************************************** 
- * UNICODE string variations
- **********************************************************************/
+/* UNIHDR2 - unicode string header and undocumented buffer */
+typedef struct unihdr2_info
+{
+	UNIHDR unihdr;
+	uint32 buffer; /* 32 bit buffer pointer */
+} UNIHDR2;
 
-
-typedef struct {		/* UNISTR - unicode string size and buffer */
-	uint16 *buffer;		/* unicode characters. ***MUST*** be 
-				   little-endian. ***MUST*** be null-terminated */
+/* UNISTR - unicode string size and buffer */
+typedef struct unistr_info
+{
+	/* unicode characters. ***MUST*** be little-endian. ***MUST*** be null-terminated */
+	uint16 *buffer;
 } UNISTR;
 
-typedef struct {		/* UNISTR2 - unicode string size (in 
-				   uint16 unicode chars) and buffer */
+/* BUFHDR - buffer header */
+typedef struct bufhdr_info
+{
+	uint32 buf_max_len;
+	uint32 buf_len;
+} BUFHDR;
+
+/* BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer */
+/* pathetic.  some stupid team of \PIPE\winreg writers got the concept */
+/* of a unicode string different from the other \PIPE\ writers */
+typedef struct buffer2_info
+{
+	uint32 buf_max_len;
+	uint32 offset;
+	uint32 buf_len;
+	/* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
+	uint16 *buffer;
+} BUFFER2;
+
+/* BUFFER3 */
+typedef struct buffer3_info
+{
+	uint32 buf_max_len;
+	uint8  *buffer; /* Data */
+	uint32 buf_len;
+} BUFFER3;
+
+/* BUFFER5 */
+typedef struct buffer5_info
+{
+	uint32 buf_len;
+	uint16 *buffer; /* data */
+} BUFFER5;
+
+/* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
+typedef struct unistr2_info
+{
 	uint32 uni_max_len;
 	uint32 offset;
 	uint32 uni_str_len;
-	uint16 *buffer;		/* unicode characters. ***MUST*** be little-endian. 
-				  **must** be null-terminated and the uni_str_len 
-				  should include the NULL character */
+	/* unicode characters. ***MUST*** be little-endian. 
+		**must** be null-terminated and the uni_str_len should include
+		the NULL character */
+	uint16 *buffer;
 } UNISTR2;
 
-typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
+/* STRING2 - string size (in uint8 chars) and buffer */
+typedef struct string2_info
+{
+	uint32 str_max_len;
+	uint32 offset;
+	uint32 str_str_len;
+	uint8  *buffer; /* uint8 characters. **NOT** necessarily null-terminated */
+} STRING2;
+
+/* UNISTR3 - XXXX not sure about this structure */
+typedef struct unistr3_info
+{
 	uint32 uni_str_len;
 	UNISTR str;
 
 } UNISTR3;
 
-typedef struct {		/* Buffer wrapped around a UNISTR2 */
-	uint16 length;		/* number of bytes not counting NULL terminatation */
-	uint16 size;		/* number of bytes including NULL terminatation */
-	UNISTR2 *string;
-} UNISTR4;
+/* an element in a unicode string array */
+typedef struct
+{
+	uint16 length;
+	uint16 size;
+	uint32 ref_id;
+	UNISTR2 string;
+} UNISTR2_ARRAY_EL;
 
-typedef struct {
+/* an array of unicode strings */
+typedef struct 
+{
+	uint32 ref_id;
 	uint32 count;
-	UNISTR4 *strings;
-} UNISTR4_ARRAY;
+	UNISTR2_ARRAY_EL *strings;
+} UNISTR2_ARRAY;
 
 
-/********************************************************************** 
- * String variations
- **********************************************************************/
+/* an element in a sid array */
+typedef struct
+{
+	uint32 ref_id;
+	DOM_SID2 sid;
+} SID_ARRAY_EL;
 
-typedef struct {		/* STRING2 - string size (in uint8 chars) and buffer */
-	uint32 str_max_len;
-	uint32 offset;
-	uint32 str_str_len;
-	uint8  *buffer; 	/* uint8 characters. **NOT** necessarily null-terminated */
-} STRING2;
-
-
-
-
-/********************************************************************** 
- * Domain SID structures
- **********************************************************************/
-
-typedef struct {
-	uint32 num_auths; /* length, bytes, including length of len :-) */
-	DOM_SID sid;
-} DOM_SID2;
-
-
-/********************************************************************** 
- * Domain SID structures
- **********************************************************************/
+/* an array of sids */
+typedef struct 
+{
+	uint32 ref_id;
+	uint32 count;
+	SID_ARRAY_EL *sids;
+} SID_ARRAY;
 
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
-typedef struct {
+typedef struct domrid2_info
+{
 	uint8 type; /* value is SID_NAME_USE enum */
 	uint32 rid;
 	uint32 rid_idx; /* referenced domain index */
+
 } DOM_RID2;
 
-
-typedef struct {		/* DOM_RID3 - domain RID structure for samr pipe */
+/* DOM_RID3 - domain RID structure for samr pipe */
+typedef struct domrid3_info
+{
 	uint32 rid;        /* domain-relative (to a SID) id */
 	uint32 type1;      /* value is 0x1 */
 	uint32 ptr_type;   /* undocumented pointer */
 	uint32 type2;      /* value is 0x1 */
 	uint32 unk; /* value is 0x2 */
+
 } DOM_RID3;
 
 /* DOM_RID4 - rid + user attributes */
@@ -284,16 +254,6 @@ typedef struct domrid4_info
 	uint16 attr;
 	uint32 rid;  /* user RID */
 } DOM_RID4;
-
-/* DOM_GID - group id + user attributes */
-typedef struct {
-	uint32 g_rid;  /* a group RID */
-	uint32 attr;
-} DOM_GID;
-
-/********************************************************************** 
- * ????
- **********************************************************************/
 
 /* DOM_CLNT_SRV - client / server names */
 typedef struct clnt_srv_info
@@ -356,8 +316,32 @@ typedef struct owf_info
 } OWF_INFO;
 
 
+/* DOM_GID - group id + user attributes */
+typedef struct gid_info
+{
+	uint32 g_rid;  /* a group RID */
+	uint32 attr;
+} DOM_GID;
 
+/* POLICY_HND */
+typedef struct lsa_policy_info
+{
+	uint32 data1;
+	uint32 data2;
+	uint16 data3;
+	uint16 data4;
+	uint8 data5[8];
+#ifdef __INSURE__
 
+	/* To prevent the leakage of policy handles mallocate a bit of
+	   memory when a policy handle is created and free it when the
+	   handle is closed.  This should cause Insure to flag an error
+	   when policy handles are overwritten or fall out of scope without
+	   being freed. */
+
+	char *marker;
+#endif
+} POLICY_HND;
 
 /*
  * A client connection's state, pipe name, 
@@ -396,8 +380,33 @@ typedef struct uint64_s
 	uint32 high;
 } UINT64_S;
 
+/* BUFHDR2 - another buffer header, with info level */
+typedef struct bufhdr2_info
+{
+	uint32 info_level;
+	uint32 length;		/* uint8 chars */
+	uint32 buffer;
 
+}
+BUFHDR2;
 
+/* BUFHDR4 - another buffer header */
+typedef struct bufhdr4_info
+{
+	uint32 size;
+	uint32 buffer;
 
+}
+BUFHDR4;
 
+/* BUFFER4 - simple length and buffer */
+typedef struct buffer4_info
+{
+	uint32 buf_len;
+	uint8 *buffer;
+
+}
+BUFFER4;
+
+enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3 };
 #endif /* _RPC_MISC_H */

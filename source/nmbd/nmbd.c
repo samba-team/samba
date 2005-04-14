@@ -27,8 +27,6 @@ int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-extern BOOL rescan_listen_set;
-extern struct in_addr loopback_ip;
 extern BOOL global_in_nmbd;
 
 extern BOOL override_logfile;
@@ -198,6 +196,8 @@ static BOOL reload_interfaces(time_t t)
 	static time_t lastt;
 	int n;
 	struct subnet_record *subrec;
+	extern BOOL rescan_listen_set;
+	extern struct in_addr loopback_ip;
 
 	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return False;
 	lastt = t;

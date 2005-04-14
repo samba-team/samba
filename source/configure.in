@@ -248,7 +248,7 @@ fi
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
-    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
@@ -416,7 +416,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin printerdb_file"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437"
@@ -691,10 +691,8 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
-AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
-## These fail to compile on IRIX so just check for their presence
-AC_CHECK_HEADERS(rpcsvc/yp_prot.h, sys/mode.h, [], [] -)
-AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h)
+AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
+AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
@@ -729,10 +727,8 @@ AC_CHECK_HEADERS(shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
-AC_CHECK_HEADERS(sys/cdefs.h glob.h)
-
-## These faile to compile on Solaris so just check for their presence
+AC_CHECK_HEADERS(sys/acl.h sys/attributes.h attr/xattr.h sys/xattr.h sys/cdefs.h glob.h)
+# These faile to compile on Solaris so just check for their presence
 AC_CHECK_HEADERS(security/pam_modules.h net/if.h netinet/ip.h, [], [], -)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
@@ -1166,18 +1162,6 @@ AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
 AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
 AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
 AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
-# Check if we have extattr
-case "$host_os" in
-  *freebsd4* | *DragonFly* )
-    AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
-    ;;
-  *)
-    AC_CHECK_FUNCS(extattr_delete_fd extattr_delete_file extattr_delete_link)
-    AC_CHECK_FUNCS(extattr_get_fd extattr_get_file extattr_get_link)
-    AC_CHECK_FUNCS(extattr_list_fd extattr_list_file extattr_list_link)
-    AC_CHECK_FUNCS(extattr_set_fd extattr_set_file extattr_set_link)
-    ;;
-esac
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
@@ -3648,6 +3632,30 @@ else
 fi
 
 #################################################
+# choose native language(s) of man pages
+AC_MSG_CHECKING(chosen man pages' language(s))
+AC_ARG_WITH(manpages-langs,
+[  --with-manpages-langs={en,ja,pl}  Choose man pages' language(s). (en)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN(--with-manpages-langs called without argument - will use default)
+    manlangs="en"
+  ;;
+  *)
+    manlangs="$withval"
+  ;;
+  esac
+
+  AC_MSG_RESULT($manlangs)
+  manlangs=`echo $manlangs | sed "s/,/ /g"`   # replacing commas with spaces to produce a list
+  AC_SUBST(manlangs)],
+
+  [manlangs="en"
+  AC_MSG_RESULT($manlangs)
+  AC_SUBST(manlangs)]
+)
+
+#################################################
 # should we build libsmbclient?
 
 INSTALLCLIENTCMD_SH=:
@@ -4547,12 +4555,10 @@ SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC,smbd/server.o)
@@ -4589,7 +4595,6 @@ SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_catia, \$(VFS_AFSACL_OBJ), "bin/catia.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])

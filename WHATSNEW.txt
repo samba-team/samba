@@ -1,202 +1,12 @@
-                   ==================================
-                   Release Notes for Samba 3.0.15pre1
-                               Apr 11, 2005
-                   ==================================
-
-This is a preview release of the Samba 3.0.15 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  However, there have been several bug
-fixes and new features added since 3.0.14 that we feel are
-important to make available to the Samba community for wider
-testing.  There are still more changes planned before the 
-final 3.0.15 release.
-
-Additional features introduced in Samba 3.0.15pre1 include:
-
-  o Support for several new Win32 rpc pipes.
-  o Improved support for OS/2 clients.
-  o New 'net rpc service' tool for managing Win32 services.
-  o Capability to set the owner on new files and directory
-    based on the parent's ownership.
-
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.14
---------------------
-
-    Parameter Name                      Action
-    --------------                      ------
-    inherit owner			New
-    max stat cache size			New
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 2533: Fix incorrect directory listings for OS/2 clients.
-    * Ensure the old SMB search calls always ask mask_match() to 
-      translate patterns like ????????.???.
-    * Split out the check_path_syntax() into a findfirst, findnext,
-      & wildcard versions.
-    * Fix checks for matching groups in an file ACL against the
-      user's primary and supplementary group list.
-    * BUG 2541: Ensure we recognise LANMAN2.1 as OS/2 and select 
-      LANMAN2 protocol, ensure the EA size is always correctly 
-      set on a query for a file with no EA's.
-    * BUG 2551: Look at the incoming flags2 flag 
-      FLAGS2_LONG_PATH_COMPONENTS determines if a reply is 
-      uppercased on a SMBsearch request, not the protocol level.
-    * Added "volume" command to smbclient that prints out the 
-      volume name and serial number.
-    * Added "fix for broken SMB_INFO_VOLUME level used by OS/2.
-    * Add support for OS/2 Extended Attributes.
-    * Correctly check OpenX open modes.
-    * Ensure allocation size is correctly returned for OpenX. 
-    * Only set allocation on create/truncate for nttrans.
-    * Fix oplock bug in trans2open() code.
-    * Remove unix_ERR_XXX global nastiness.
-    * Only do the strange DOS error for openX, not trans2open.
-    * Ensure SMBopen replies includes the share modes as well as 
-      open modes.
-    * BUG 2581: Add size limit (in kb) to stat cache.
-
-
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 2546: Add support for FreeBSD EA API
-    
-    
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Added support for \svcctl pipe rpcs.
-    * Added 'net rpc service' subcommand for managing Win32 
-      services.
-    * Refactoring work on the rpc [un]marshalling layer and 
-      structures.
-    * Verify privilege name in 'net rpc rights privileges' in 
-      order to provide better error messages.
-    * Cleanup rpc structures in rpc_spoolss.h.
-    * Cleanups and fixes for the \winreg server code.
-    * Cleanup of rpc structures used by LsaEnumerateTrustedDomains.
-
-
-o   Jeremy Cooper <jeremy@ncircle.com>
-    * Added support for several new \winreg client rpcs.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Close handles on group creation in rpcclient to better 
-      support mass group account creation.
-    * Fix account policy key lookup for minimum and maximum
-      password lengths.
-    * Fix some compiler warnings and add missing exclude-block 
-      in 'net rpc share migrate'.
-
-
-o   Steve French <sfrench@us.ibm.com>
-    * Update list of mount options for mount.cifs.
-    * Add more defines for POSIX extensions to match the newly 
-      added client implementation.
-    * Add initial support for cifs umount utility.
-    * Fix cifs mounts to handle commas embedded in prompted 
-      password, and password and credential files.
-    * Fix cifs mounts to handle domain name and user name in 
-      username field (in form domain\user).
-
-
-o   Guenter Kukkukk <guenter.kukkukk@kukkukk.com>
-    * BUG 2541: Fix copying of file(s) from samba share to an OS/2 
-      local drive.
-    
-    
-o   Tom Lackemann <cessnatomny@yahoo.com>
-    * BUG 2242: Patch to ensure that we only set the security 
-      descriptor on an NTtransact create if we created the file.
-    
-
-o   Volker Lendecke <vl@samba.org>
-    * Port some of the non-critical changes from HEAD to 3_0. 
-      The main one is the change in pdb_enum_alias_memberships 
-      to match samr.idl a bit closer.
-    * Close handles on user creation in rpcclient to better 
-      support mass user account creation.
-    * Implement client RAP calls for enumusers/enumgroups level 0.
-    * Implement a new caching API for enumerating the pdb elements.
-    * Convert the RAP user and group enumeration functions to the 
-      utilized the pdb_search API. 
-    * BUG 2438: Partial fix for 'net rpc trustdom establish' in 
-      RestrictAnonymous environments.
-
-
-o   Herb Lewis <herb@samba.org>
-    * Compiler warning cleanups.
-
-
-o   Derrell Lipman <derrell@samba.org>
-    * add support for opening a file for write with O_APPEND 
-      in libsmbclient.
-    * Added smbsh/smbwrapper for Linux to example/libsmbclient 
-      tree.
-    * Fix smbc_stat() from returning incorrect timestamps IFF 
-      it used cli_qpathinfo2() to retrieve the timestamps (Win2k) 
-      and not if it used cli-getatr() to retrieve the timestamps 
-      (Win98). 
-    * Fix handful of compiler warnings.
-    * BUG 2498, 2484: smbc_getxattr() fixes.
-    * BUG 1133: Added provision for overloading some global 
-      configuration options via the new, per-user file 
-      ~/.smb/smb.conf.append.
-    * BUG 2543: Properly cache anonymous username when reverting 
-      to anonymous login, in libsmbclient.
-    * BUG 2505: Fix large file support in libsmbclient.
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * BUG 2483, 2468. 2469, 2478, 2093: Compiler warning fixes.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * Fixes for samr_lookup_rids() when using ldapsam:trusted=yes
-      (in conjunction with Volker).
-
-o   Marcel Müller <mueller@maazl.de>
-    * Patch to fix the OS/2 EA_FROM_LIST info level call.
-
-
-
-o   James Peach <jpeach@sgi.com>
-    * BUG 1843: Fix quotas (with no soft limits) on IRIX.
-
-
-o   Marcin Porwit <mporwit@centeris.com>
-    * Initial support for the \eventlog pipe.
-    
-
-o   Simo Sorce <idra@samba.org>
-    * Allow Domain Admins to force user sessions to close via the 
-      Windows Server Manager.
-    * Add support to 'net rpc right privileges <name>' to enumerate 
-      accounts which possess a specific privilege.
-
-
-o   Mark Weaver <mark-clist@npsl.co.uk>
-    * Patch to fix sys_select so it can't drop signals if another 
-      fd is ready to read. 
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Remove --with-manpage-languages configure option.
-
-
-
-Release Notes for older release follow:
-
-      --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.14
                             Apr 11, 2005
                    ==============================
+
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.  Please read the following important changes in this
+release.
 
 Common bugs fixed in 3.0.14 include:
 
@@ -281,6 +91,11 @@ o   <psz@maths.usyd.edu.au>
 o   Simo Sorce <irda@samba.org>
     * Debian packaging fixes.
     
+
+
+
+
+Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================

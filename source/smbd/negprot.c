@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern fstring remote_proto;
 extern enum protocol_types Protocol;
 extern int max_recv;
 BOOL global_encrypted_passwords_negotiated = False;
@@ -420,7 +419,6 @@ static const struct {
 	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"NT LM 0.12",              "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"POSIX 2",                 "NT1",      reply_nt1,      PROTOCOL_NT1},
-	{"LANMAN2.1",               "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"LM1.2X002",               "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"Samba",                   "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"DOS LM1.2X002",           "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
@@ -550,6 +548,7 @@ int reply_negprot(connection_struct *conn,
   
 	SSVAL(outbuf,smb_vwv0,choice);
 	if(choice != -1) {
+		extern fstring remote_proto;
 		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
 		reload_services(True);          
 		outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);
