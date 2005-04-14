@@ -540,13 +540,13 @@ modify and LDIF file to the new schema.
 
 Example:
 
-  $ ldapsearch .... -b "ou=people,dc=..." > sambaAcct.ldif
-  $ convertSambaAccount --sid=<Domain SID> \
+  $ ldapsearch .... -b "ou=people,dc=..." &gt; sambaAcct.ldif
+  $ convertSambaAccount --sid=&lt;Domain SID&gt; \
     --input=sambaAcct.ldif --output=sambaSamAcct.ldif \
     --changetype=[modify|add]
 
-The <DOM SID> can be obtained by running 'net getlocalsid
-<DOMAINNAME>' on the Samba PDC as root.  The changetype determines
+The &lt;DOM SID&gt; can be obtained by running 'net getlocalsid
+&lt;DOMAINNAME&gt;' on the Samba PDC as root.  The changetype determines
 the format of the generated LDIF output--either create new entries
 or modify existing entries.
 
