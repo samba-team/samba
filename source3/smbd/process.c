@@ -962,8 +962,12 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			return(ERROR_DOS(ERRSRV,ERRaccess));	    
 
 		/* load service specific parameters */
-		if (conn && !set_current_service(conn,SVAL(inbuf,smb_flg),(flags & (AS_USER|DO_CHDIR)?True:False)))
-			return(ERROR_DOS(ERRSRV,ERRaccess));
+		if (conn) {
+			if (!set_current_service(conn,SVAL(inbuf,smb_flg),(flags & (AS_USER|DO_CHDIR)?True:False))) {
+				return(ERROR_DOS(ERRSRV,ERRaccess));
+			}
+			conn->num_smb_operations++;
+		}
 
 		/* does this protocol need to be run as guest? */
 		if ((flags & AS_GUEST) && (!change_to_guest() || 
