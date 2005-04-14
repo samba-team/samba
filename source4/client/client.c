@@ -1870,7 +1870,7 @@ static int cmd_acl(const char **cmd_ptr)
 
 	query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	query.query_secdesc.in.fnum = fnum;
-	query.query_secdesc.in.secinfo_flags = 0x7;
+	query.query_secdesc.secinfo_flags = 0x7;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -310,7 +310,7 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 		return NULL;
 	}
 
-	SIVAL(tp.in.params.data, 0, fnum);
+	SSVAL(tp.in.params.data, 0, fnum);
 	SSVAL(tp.in.params.data, 2, info_level);
 
 	req = smb_raw_trans2_send(tree, &tp);
