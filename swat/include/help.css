@@ -20,15 +20,7 @@
 	display:none;
 }
 #toc {
-	margin-bottom:25px;
-}
-#toc a:visited {
-	color:#15317E !important;
-}
-#toc img {
-	position:relative;
-	top:5px;
-	margin:0 2px 0 0;
+	text-align:center;
 }
 #toc hr {
 	width:70%;
@@ -38,9 +30,8 @@
 	color:#FFF;
 }
 #toc h4 {
-	position:relative;
-	bottom:35px;
-	float:right;
+	margin:0;
+	padding:0;
 	font-size:small;
 	color:#15317E !important;
 }

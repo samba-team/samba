@@ -17,8 +17,6 @@
   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 function openHelp(url) 
 {
 	if ( (screen.width - 50) >= (window.screenX + window.outerWidth + 100) ) {
@@ -33,7 +31,9 @@ function openHelp(url)
 		top = 0;
 	}
 
-	window.open(url, 'helpPop', 'menubar=yes, resizeable=yes, scrollbars=yes, width=450px, height=530px, screenX='	+ String(left) + ', screenY=' + String(top));
+	helpPop = window.open(url, 'docsWindow', 'menubar=yes, resizeable=yes, scrollbars=yes, width=450px, height=530px, screenX='	+ String(left) + ', screenY=' + String(top));
+
+	helpPop.focus();
 }
 
 function formatHelp() 
@@ -59,67 +59,27 @@ function formatHelp()
 	head.appendChild(altLink);
 }
 
-function styleDocs()
-{
-	var docStyle = document.createElement('link');
-	docStyle.setAttribute('rel', 'stylesheet');
-	docStyle.setAttribute('href', '/swat/include/docs.css');
-	docStyle.setAttribute('type', 'text/css');
-	docStyle.setAttribute('media', 'screen');
-
-	var head = document.getElementsByTagName('head')[0];
-	head.appendChild(docStyle);
-}
-
-function addTocNav()
+function addTocTitle()
 {
 	var page = document.getElementsByTagName('body')[0];
-	var docList = document.getElementById('controls');
 
-	var toc = document.createElement('div');
-	toc.setAttribute('id', 'toc');
-
-	// Create "back" link on the fly
-	var backLink = document.createElement('a');
-	backLink.setAttribute('href', 'help');
-	var backLinkText = document.createTextNode('Back to Help');
-	backLink.appendChild(backLinkText);
-
-	var linkImg = document.createElement('img');
-	linkImg.setAttribute('src', '/swat/images/back_arrow.png');
-	linkImg.setAttribute('alt', 'Previous Page');
+	var tocTitle = document.createElement('div');
+	tocTitle.setAttribute('id', 'toc');
 
 	var helpHeading = document.createElement('h4');
-	var helpHeadingText = document.createTextNode('SWAT | Samba Docs');
-	helpHeading.appendChild(helpHeadingText);
+	helpHeading.appendChild( document.createTextNode('SWAT Help | Documentation') );
 
 	var hbar = document.createElement('hr');
 	
-	toc.appendChild(linkImg);
-	toc.appendChild(backLink);
-	toc.appendChild(helpHeading);
-	toc.appendChild(hbar);
+	tocTitle.appendChild(helpHeading);
+	tocTitle.appendChild(hbar);
 
-	// Add "back" link to top of the page
 	var topPage = page.firstChild;
-	page.insertBefore(toc, topPage);
-	
-	// Remove the docs list when done
-	var docListKids = docList.childNodes
-
-	for (i=docListKids.length - 2; i>=0; i--) {
-		docList.removeChild(docListKids[i]);
-	}
+	page.insertBefore(tocTitle, topPage);
 }
 
-// Wrapper for calling functions from onclick
-function prepForDoc()
-{
-	styleDocs();
-	addTocNav();
-}
 /*********************************************************************
- Initialize each page.
+ Initialize help pages.
 *********************************************************************/
 window.onload = function initPage() 
 {
@@ -130,10 +90,9 @@ window.onload = function initPage()
 		page.style.visibility = 'visible';
 	}
 
-	if (location.href.indexOf('help') > -1 ) {
-		// Init iframe for file loads
-		setStage();
+	if (location.href.indexOf('help') > -1) {
 		formatHelp();
+		addTocTitle();
 		page.style.visibility = 'visible';
 	}
 }
