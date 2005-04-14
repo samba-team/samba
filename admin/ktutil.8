@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd September 23, 2004
+.Dd April 14, 2005
 .Dt KTUTIL 8
 .Os HEIMDAL
 .Sh NAME
@@ -76,9 +76,11 @@ can be one of the following:
 .Op Fl -random
 .Op Fl s
 .Op Fl -no-salt
+.Op Fl H
+.Op Fl -hex
 .Xc
 Adds a key to the keytab. Options that are not specified will be
-prompted for. This requires that you know the password of the
+prompted for. This requires that you know the password or the hex key of the
 principal to add; if what you really want is to add a new principal to
 the keytab, you should consider the
 .Ar get
