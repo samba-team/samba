@@ -197,7 +197,7 @@ static NTSTATUS nttrans_query_sec_desc(struct smbsrv_request *req,
 
 	io->query_secdesc.level            = RAW_FILEINFO_SEC_DESC;
 	io->query_secdesc.in.fnum          = SVAL(trans->in.params.data, 0);
-	io->query_secdesc.in.secinfo_flags = IVAL(trans->in.params.data, 4);
+	io->query_secdesc.secinfo_flags    = IVAL(trans->in.params.data, 4);
 
 	/* call the backend - notice that we do it sync for now, until we support
 	   async nttrans requests */	
