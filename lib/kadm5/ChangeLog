@@ -1,3 +1,8 @@
+2005-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* password_quality.c: add an end tag to the external password
+	quality check protocol
+
 2005-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* password_quality.c: add external passsword quality check builtin
