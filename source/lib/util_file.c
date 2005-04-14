@@ -386,3 +386,12 @@ BOOL file_save(const char *fname, void *packet, size_t length)
 	close(fd);
 	return True;
 }
+
+/*
+  see if a file exists
+*/
+BOOL file_exists(const char *path)
+{
+	struct stat st;
+	return (stat(path, &st) == 0);
+}
