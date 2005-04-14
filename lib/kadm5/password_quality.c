@@ -178,7 +178,9 @@ external_passwd_quality (krb5_context context,
 	return 1;
     }
 
-    fprintf(in, "principal: %s\nnew-password: %.*s",
+    fprintf(in, "principal: %s\n"
+	    "new-password: %.*s\n"
+	    "end\n",
 	    p, (int)pwd->length, (char *)pwd->data);
     
     fclose(in);
