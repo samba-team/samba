@@ -28,7 +28,7 @@ highlighted by an email posting that included the following neat remark:
 </para>
 
 <blockquote><para>
-<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>vampire</tertiry></indexterm>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>vampire</tertiary></indexterm>
 I like the <quote>net rpc vampire</quote> on NT4, but that to my surprise does
 not seem to work against a Samba PDC and, if addressed in the Samba to Samba
 context in either book, I could not find it.
@@ -386,7 +386,7 @@ Num local groups: 0
 
 	<para>
 	<indexterm><primary>secrets.tdb</primary></indexterm>
-	Samba 2.x introduced the <filename>secrets.tdb<filename> file that is also stored in the
+	Samba 2.x introduced the <filename>secrets.tdb</filename> file that is also stored in the
 	<filename>/etc/samba</filename> directory, or in the <filename>/usr/local/samba/lib</filename>
 	directory sub-system.
 	</para>
@@ -627,6 +627,15 @@ Samba-2.x could be compiled with LDAP support.
 	</para>
 
 	<para>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>smbpasswd</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
+	<indexterm><primary>useradd</primary></indexterm>
+	<indexterm><primary>usermod</primary></indexterm>
+	<indexterm><primary>userdel</primary></indexterm>
+	<indexterm><primary>groupadd</primary></indexterm>
+	<indexterm><primary>groupmod</primary></indexterm>
+	<indexterm><primary>groupdel</primary></indexterm>
 	Where the <parameter>passdb backend</parameter> used is either <constant>smbpasswd</constant>
 	(the default), or the new <constant>tdbsam</constant>, the system interface scripts
 	are typically used. These involve use of operating system tools such as
@@ -634,6 +643,9 @@ Samba-2.x could be compiled with LDAP support.
 	</para>
 
 	<para>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>Idealx</primary></indexterm>
 	Where the <parameter>passdb backend</parameter> makes use of an LDAP directory
 	it will be necessary either to use the <constant>smbldap-tools</constant> provided
 	by Idealx, or else to use an alternate toolset either provided by another third
@@ -659,6 +671,8 @@ Samba-2.x could be compiled with LDAP support.
 	</para>
 
 	<para>
+	<indexterm><primary>schema</primary></indexterm>
+	<indexterm><primary>WHATSNEW.txt</primary></indexterm>
 	The Samba SAM schema required for Samba-3 is significantly different from that
 	used with Samba 2.x. This means that the LDAP directory will need to be updated
 	using the procedure outlined in the Samba WHATSNEW.txt file that accompanies
@@ -830,6 +844,7 @@ taken to update Samba-3 versions.
 </para>
 
 <para>
+<indexterm><primary>control files</primary></indexterm>
 The information in <link linkend="sbeug1"/> would not be necessary if every
 person who has ever produced Samba executable (binary) files could agree on
 the preferred location of the &smb.conf; file and other Samba control files.
@@ -837,6 +852,7 @@ Clearly, such agreement is further away than a pipe-dream.
 </para>
 
 <para>
+<indexterm><primary>vendors</primary></indexterm>
 Vendors and packagers who produce Samba binary installable packages do not,
 as a rule, use the default paths used by the Samba-Team for the location of
 the binary files, the &smb.conf; file, and the Samba control files (tdb's
@@ -851,6 +867,7 @@ effect.
 </para>
 
 <para>
+<indexterm><primary>packages</primary></indexterm>
 The best advice for those lacking in code compilation experience is to use
 only vendor (or Samba-Team) provided binary packages. The Samba packages
 that are provided by the Samba-Team are generally built to use file paths
@@ -858,6 +875,8 @@ that are compatible with the original operating system vendors' practices.
 </para>
 
 <para>
+<indexterm><primary>binary package</primary></indexterm>
+<indexterm><primary>binary files</primary></indexterm>
 If you are not sure whether or a binary package complies with the operating
 system vendors' practices it is better to ask the package maintainer via
 email to be certain than to waste much time dealing with the nuances.
@@ -891,6 +910,8 @@ the procedure outlined above.
 	<title>Updating from Samba Versions between 3.0.6 and 3.0.10</title>
 
 	<para>
+	<indexterm><primary>schema</primary></indexterm>
+	<indexterm><primary>LDAP</primary><secondary>schema</secondary></indexterm>
 	When updating versions of Samba-3 prior to 3.0.6 to 3.0.6-3.0.10
 	it is necessary only to update the LDAP schema (where LDAP is used).
 	Always use the LDAP schema file that is shipped with the latest Samba-3
@@ -898,6 +919,9 @@ the procedure outlined above.
 	</para>
 
 	<para>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
 	Samba-3.0.6 introduced the ability to remember the last 'n' number
 	of passwords a user has used. This information will work only with
 	the <constant>tdbsam</constant> and <constant>ldapsam</constant>
@@ -914,6 +938,7 @@ the procedure outlined above.
 	<title>Updating from Samba Versions after 3.0.6 to a Current Release</title>
 
 	<para>
+	<indexterm><primary>winbindd</primary></indexterm>
 	Samba-3.0.8 introduced changes in how the <parameter>username map</parameter>
 	behaves. It also included a change in behavior of <command>winbindd</command>.
 	Please refer to the man page for &smb.conf; before implementing any update
@@ -921,6 +946,7 @@ the procedure outlined above.
 	</para>
 
 	<para>
+	<indexterm><primary>privileges</primary></indexterm>
 	In Samba-3.0.11 a new privileges interface was implemented. Please
 	refer to <link linkend="ch6-ppc"/> for information regarding this new
 	feature. It is not necessary to implement the privileges interface, but it
@@ -961,6 +987,7 @@ back to searching the 'ldap suffix' in some cases.
 	<title>Replacing a Domain Member Server</title>
 
 	<para>
+	<indexterm><primary>DMS</primary></indexterm>
 	Replacement of a domain member server (DMS) should be done
 	using the same procedure as outlined in <link linkend="unixclients"/>.
 	</para>
@@ -973,6 +1000,12 @@ back to searching the 'ldap suffix' in some cases.
 	</para>
 
 	<para>
+	<indexterm><primary>smbd</primary></indexterm>
+	<indexterm><primary>nmbd</primary></indexterm>
+	<indexterm><primary>winbindd</primary></indexterm>
+	<indexterm><primary>wins.dat</primary></indexterm>
+	<indexterm><primary>browse.dat</primary></indexterm>
+	<indexterm><primary>resolution</primary></indexterm>
 	Following a change of hostname (netbios name) it is a good idea on all servers to
 	shutdown the Samba <command>smbd, nmbd</command> and <command>winbindd</command>
 	services, delete the <filename>wins.dat</filename> and <filename>browse.dat</filename>
@@ -984,9 +1017,13 @@ back to searching the 'ldap suffix' in some cases.
 	</para>
 
 	<para>
+	<indexterm><primary>DMS</primary></indexterm>
+	<indexterm><primary>/etc/passwd</primary></indexterm>
+	<indexterm><primary>/etc/shadow</primary></indexterm>
+	<indexterm><primary>/etc/group</primary></indexterm>
 	If the old DMS had local accounts, it is necessary to create on the new DMS
 	the same accounts with the same UID and GID for each account. Where the
-	<paramter>passdb backend</parameter> database is stored in the <constant>smbpasswd</constant>
+	<parameter>passdb backend</parameter> database is stored in the <constant>smbpasswd</constant>
 	or in the <constant>tdbsam</constant> format the user and group account
 	information for UNIX accounts, that match the Samba accounts, will reside in
 	the system <filename>/etc/passwd, /etc/shadow</filename> and
@@ -995,6 +1032,7 @@ back to searching the 'ldap suffix' in some cases.
 	</para>
 
 	<para>
+	<indexterm><primary>nss_ldap</primary></indexterm>
 	Where the user accounts for both UNIX and Samba are stored in LDAP, the new
 	target server must be configured to use the <command>nss_ldap</command> tool set.
 	This will then automatically ensure that the appropriate user entities are
@@ -1007,6 +1045,7 @@ back to searching the 'ldap suffix' in some cases.
 	<title>Replacing a Domain Controller</title>
 
 	<para>
+	<indexterm><primary>domain</primary><secondary>controller</secondary></indexterm>
 	In the past, people who replaced a Windows NT4 domain controller would typically
 	install a new server, create printers and file shares on it, then migrate across
 	all data that was destined to reside on it. The same can of course be done with
@@ -1110,6 +1149,7 @@ back to searching the 'ldap suffix' in some cases.
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>ADMT</primary></indexterm>
 		When migrating machines, always test first (using ADMT's test mode) 
 		and satisfy all errors before committing the migration. Note that the 
 		test will always fail, because the machine will not have been actually 
@@ -1122,6 +1162,7 @@ back to searching the 'ldap suffix' in some cases.
 
 
 	<para>
+	<indexterm><primary>ADMT</primary></indexterm>
 	There are some significant benefits of using the ADMT, besides just 
 	migrating user accounts. ADMT can be found on the Windows 2003 CD.
 	</para>
