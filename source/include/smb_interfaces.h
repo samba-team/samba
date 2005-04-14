@@ -677,10 +677,8 @@ union smb_fileinfo {
 	/* RAW_FILEINFO_SEC_DESC */
 	struct {
 		enum smb_fileinfo_level level;
-		struct {
-			uint16_t fnum;
-			uint32_t secinfo_flags;
-		} in;
+		union smb_fileinfo_in in;
+		uint32_t secinfo_flags;
 		struct {
 			struct security_descriptor *sd;
 		} out;

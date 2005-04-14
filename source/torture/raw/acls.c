@@ -71,7 +71,7 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = 
+	q.query_secdesc.secinfo_flags = 
 		SECINFO_OWNER |
 		SECINFO_GROUP |
 		SECINFO_DACL;
@@ -93,7 +93,7 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 	set.set_secdesc.file.fnum = fnum;
-	set.set_secdesc.in.secinfo_flags = q.query_secdesc.in.secinfo_flags;
+	set.set_secdesc.in.secinfo_flags = q.query_secdesc.secinfo_flags;
 	set.set_secdesc.in.sd = sd;
 
 	status = smb_raw_setfileinfo(cli->tree, &set);
@@ -181,7 +181,7 @@ static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = 
+	q.query_secdesc.secinfo_flags = 
 		SECINFO_OWNER |
 		SECINFO_GROUP |
 		SECINFO_DACL;
@@ -282,7 +282,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
@@ -520,7 +520,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
@@ -682,7 +682,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
@@ -800,7 +800,7 @@ static BOOL test_owner_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
@@ -1022,7 +1022,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
@@ -1207,7 +1207,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ACCESS_FLAGS(fnum2, SEC_RIGHTS_FILE_ALL);
 
 	q.query_secdesc.in.fnum = fnum2;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, fnum2);
@@ -1321,7 +1321,7 @@ static BOOL test_inheritance_dynamic(struct smbcli_state *cli, TALLOC_CTX *mem_c
 	printf("get the original sd\n");
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	q.query_secdesc.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	sd_orig = q.query_secdesc.out.sd;
