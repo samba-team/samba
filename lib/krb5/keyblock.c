@@ -92,3 +92,41 @@ krb5_keyblock_get_enctype(const krb5_keyblock *block)
 {
     return block->keytype;
 }
+
+/*
+ * Fill in `key' with key data of type `enctype' from `data' of length
+ * `size'. Key should be freed using krb5_free_keyblock_contents.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_keyblock_init(krb5_context context,
+		   krb5_enctype type,
+		   const void *data,
+		   size_t size,
+		   krb5_keyblock *key)
+{
+    krb5_error_code ret;
+    size_t len;
+
+    memset(key, 0, sizeof(*key));
+
+    ret = krb5_enctype_keysize(context, type, &len);
+    if (ret)
+	return ret;
+
+    if (len != size) {
+	krb5_set_error_string(context, "Encryption key %d is %lu bytes "
+			      "long, %lu was passed in",
+			      type, (unsigned long)len, (unsigned long)size);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    ret = krb5_data_copy(&key->keyvalue, data, len);
+    if(ret) {
+	krb5_set_error_string(context, "malloc failed: %lu",
+			      (unsigned long)len);
+	return ret;
+    }
+    key->keytype = type;
+
+    return 0;
+}
