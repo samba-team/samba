@@ -36,16 +36,27 @@ static struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 {
 	char *path;
 	struct ldb_context *ldb;
+	BOOL existed;
+	const char *init_ldif = 
+		"dn: @ATTRIBUTES\n" \
+		"computerName: CASE_INSENSITIVE\n" \
+		"flatname: CASE_INSENSITIVE\n";
 
 	path = smbd_tmp_path(mem_ctx, "schannel.ldb");
 	if (!path) {
 		return NULL;
 	}
+
+	existed = file_exists(path);
 	
 	ldb = ldb_wrap_connect(mem_ctx, path, 0, NULL);
 	talloc_free(path);
 	if (!ldb) {
 		return NULL;
+	}
+	
+	if (!existed) {
+		gendb_add_ldif(ldb, init_ldif);
 	}
 
 	return ldb;
