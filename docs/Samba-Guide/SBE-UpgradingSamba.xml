@@ -797,7 +797,7 @@ the procedure outlined above.
 
 	</sect3>
 
-	<sect2>
+	<sect3>
 	<title>Updating from Samba Versions between 3.0.6 and 3.0.10</title>
 
 	<para>
@@ -856,14 +856,53 @@ back to searching the 'ldap suffix' in some cases.
 	</para>
 
 	</sect3>
-
 	</sect2>
 
 	<sect2>
 	<title>Migrating Samba-3 to a New Server</title>
 
 	<para>
+	The two most likely candidates for replacement of a server are
+	domain member servers and domain controllers. Each needs to be
+	handled slightly differently.
 	</para>
+
+	<sect3>
+	<title>Replacing a Domain Member Server</title>
+
+	<para>
+	Replacement of a domain member server (DMS) should be done
+	using the same procedure as outlined in <link linkend="unixclients"/>.
+	</para>
+
+	<para>
+	Usually the new server will be introduced with a temporary name. After
+	the old server data has been migrated to the new server it is customary
+	that the new server will be renamed to that of the old server. This will
+	change its SID and will necessitate re-joining to the domain.
+	</para>
+
+	<para>
+	Following a change of hostname (netbios name) it is a good idea on all servers to
+	shutdown the Samba <command>smbd, nmbd</command> and <command>winbindd</command>
+	services, delete the <filename>wins.dat</filename> and <filename>browse.dat</filename>
+	files, then restart Samba. This will ensure that the old name and IP address
+	information is no longer able to interfere with name to IP address resolution.
+	If this is not done, there can be temporary name resolution problems. These
+	problems usually clear within 45 minutes of a name change, but can persist for
+	a longer period of time.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Replacing a Domain Controller</title>
+
+	<para>
+	This information will be added within 24 hours. JJJ.
+	</para>
+
+	</sect3>
 
 	</sect2>
 
