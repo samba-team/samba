@@ -1,3 +1,11 @@
+2005-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* add.c: add option -H --hex to the add command
+	
+	* ktutil-commands.in: add option -H --hex to the add command
+	
+	* ktutil.8: document option -H --hex to the add command
+
 2004-09-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* list.c: un c99'ify, from Anders.Magnusson@ltu.se
