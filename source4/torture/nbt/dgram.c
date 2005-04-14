@@ -297,7 +297,7 @@ BOOL torture_nbt_dgram(void)
 	BOOL ret = True;
 	
 	name.name = lp_workgroup();
-	name.type = NBT_NAME_PDC;
+	name.type = NBT_NAME_LOGON;
 	name.scope = NULL;
 
 	/* do an initial name resolution to find its IP */

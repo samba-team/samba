@@ -330,11 +330,12 @@
 	/*******************************************/
 	/* \MAILSLOT\NET\NETLOGON mailslot requests */
 	typedef enum {
-		NETLOGON_QUERY_FOR_PDC      = 0x7,	
-		NETLOGON_ANNOUNCE_UAS       = 0xa,
-		NETLOGON_RESPONSE_FROM_PDC  = 0xc,
-		NETLOGON_QUERY_FOR_PDC2     = 0x12,
-		NETLOGON_RESPONSE_FROM_PDC2 = 0x17
+		NETLOGON_QUERY_FOR_PDC           = 0x7,	
+		NETLOGON_ANNOUNCE_UAS            = 0xa,
+		NETLOGON_RESPONSE_FROM_PDC       = 0xc,
+		NETLOGON_QUERY_FOR_PDC2          = 0x12,
+		NETLOGON_RESPONSE_FROM_PDC2      = 0x17,
+		NETLOGON_RESPONSE_FROM_PDC_USER  = 0x19
 	} nbt_netlogon_command;
 
 	/* query for pdc request */
@@ -371,15 +372,27 @@
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc;
 
+	typedef [bitmap32bit] bitmap {
+		NBT_SERVER_PDC           = 0x00000001,
+		NBT_SERVER_GC            = 0x00000004,
+		NBT_SERVER_LDAP          = 0x00000008,
+		NBT_SERVER_DS            = 0x00000010,
+		NBT_SERVER_KDC           = 0x00000020,
+		NBT_SERVER_TIMESERV      = 0x00000040,
+		NBT_SERVER_CLOSEST       = 0x00000080,
+		NBT_SERVER_WRITABLE      = 0x00000100, 
+		NBT_SERVER_GOOD_TIMESERV = 0x00000200
+	} nbt_server_type;
+
 	/* response from pdc - type2 */
 	typedef struct {
 		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
-		uint32               server_type;
+		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
 		nbt_string           dns_domain;
 		nbt_string           pdc_dns_name;
-		astring              domain;
+		nbt_string           domain;
 		nbt_string           pdc_name;
 		nbt_string           user_name;
 		nbt_string           site_name;
@@ -428,6 +441,7 @@
 		[case(NETLOGON_ANNOUNCE_UAS)] nbt_netlogon_announce_uas uas;
 		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
 		[case(NETLOGON_RESPONSE_FROM_PDC2)] nbt_netlogon_response_from_pdc2 response2;
+		[case(NETLOGON_RESPONSE_FROM_PDC_USER)] nbt_netlogon_response_from_pdc2 response2;
 	} nbt_netlogon_request;
 
 	typedef [flag(NDR_NOALIGN),public] struct {
