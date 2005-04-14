@@ -78,3 +78,16 @@ int gendb_search(struct ldb_context *sam_ldb,
 	return count;
 }
 
+/*
+  setup some initial ldif in a ldb
+*/
+int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string)
+{
+	struct ldb_ldif *ldif;
+	int ret;
+	ldif = ldb_ldif_read_string(ldb, ldif_string);
+	if (ldif == NULL) return -1;
+	ret = ldb_add(ldb, ldif->msg);
+	talloc_free(ldif);
+	return ret;
+}
