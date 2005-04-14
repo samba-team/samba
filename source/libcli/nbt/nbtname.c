@@ -144,6 +144,11 @@ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		return NT_STATUS_OK;
 	}
 
+	if (s == NULL || *s == 0) {
+		return ndr_push_bytes(ndr, "", 1);
+	}
+
+
 	fullname = talloc_strdup(ndr, "");
 	NT_STATUS_HAVE_NO_MEMORY(fullname);
 
@@ -162,11 +167,14 @@ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 	   so, we can use a NBT name pointer. This allows us to fit
 	   longer names into the packet */
 	fulllen = strlen(fullname)+1;
-	for (i=0;i + fulllen < ndr->offset;i++) {
+	for (i=0;i + fulllen <= ndr->offset;i++) {
 		if (ndr->data[i] == fullname[0] &&
 		    memcmp(fullname, &ndr->data[i], fulllen) == 0) {
+			uint8_t b[2];
 			talloc_free(fullname);
-			return ndr_push_uint16(ndr, NDR_SCALARS, 0xC000 | i);
+			b[0] = 0xC0 | (i>>8);
+			b[1] = (i&0xFF);
+			return ndr_push_bytes(ndr, b, 2);
 		}
 	}
 

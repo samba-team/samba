@@ -66,6 +66,85 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 
 /*
+  reply to a ADS style GETDC request
+ */
+static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot, 
+				 struct nbt_dgram_packet *packet, 
+				 const char *src_address, int src_port,
+				 struct nbt_netlogon_packet *netlogon)
+{
+	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbt_netlogon_packet reply;
+	struct nbt_netlogon_response_from_pdc2 *pdc;
+	struct ldb_context *samctx;
+	const char *attrs[] = {"realm", "dnsDomain", "objectGUID", NULL};
+	struct ldb_message **res;
+	int ret;
+
+	/* only answer getdc requests on the PDC or LOGON names */
+	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+		return;
+	}
+
+	samctx = samdb_connect(packet);
+	if (samctx == NULL) {
+		DEBUG(2,("Unable to open sam in getdc reply\n"));
+		return;
+	}
+
+	/* try and find the domain */
+	ret = gendb_search(samctx, samctx, NULL, &res, attrs, 
+			   "(&(name=%s)(objectClass=domainDNS))", name->name);
+	if (ret != 1) {
+		DEBUG(2,("Unable to find domain '%s' in sam\n", name->name));
+		return;
+	}
+
+	/* setup a GETDC reply */
+	ZERO_STRUCT(reply);
+	if (netlogon->req.pdc2.user_name[0]) {
+		reply.command = NETLOGON_RESPONSE_FROM_PDC_USER;
+	} else {
+		reply.command = NETLOGON_RESPONSE_FROM_PDC2;
+	}
+	pdc = &reply.req.response2;
+
+	/* TODO: accurately depict which services we are running */
+	pdc->server_type      = 
+		NBT_SERVER_PDC | NBT_SERVER_GC | NBT_SERVER_LDAP |
+		NBT_SERVER_DS | NBT_SERVER_KDC | NBT_SERVER_TIMESERV |
+		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | NBT_SERVER_GOOD_TIMESERV;
+
+	pdc->domain_uuid      = samdb_result_guid(res[0], "objectGUID");
+	pdc->forest           = samdb_result_string(res[0], "realm", lp_realm());
+	pdc->dns_domain       = samdb_result_string(res[0], "dnsDomain", lp_realm());
+
+	/* TODO: get our full DNS name from somewhere else */
+	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
+						lp_netbios_name(), pdc->dns_domain);
+	pdc->domain           = name->name;
+	pdc->pdc_name         = lp_netbios_name();
+	pdc->user_name        = netlogon->req.pdc2.user_name;
+	/* TODO: we need to make sure these are in our DNS zone */
+	pdc->site_name        = "Default-First-Site-Name";
+	pdc->site_name2       = "Default-First-Site-Name";
+	pdc->unknown          = 0x10; /* what is this? */
+	pdc->unknown2         = 2; /* and this ... */
+	pdc->pdc_ip           = socket_get_my_addr(dgmslot->dgmsock->sock, packet);
+	pdc->nt_version       = 13;
+	pdc->lmnt_token       = 0xFFFF;
+	pdc->lm20_token       = 0xFFFF;
+
+	packet->data.msg.dest_name.type = 0;
+
+	dgram_mailslot_netlogon_reply(dgmslot->dgmsock, 
+				      packet, 
+				      netlogon->req.pdc2.mailslot_name,
+				      &reply);
+}
+
+
+/*
   handle incoming netlogon mailslot requests
 */
 void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot, 
@@ -101,6 +180,9 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	switch (netlogon->command) {
 	case NETLOGON_QUERY_FOR_PDC:
 		nbtd_netlogon_getdc(dgmslot, packet, src_address, src_port, netlogon);
+		break;
+	case NETLOGON_QUERY_FOR_PDC2:
+		nbtd_netlogon_getdc2(dgmslot, packet, src_address, src_port, netlogon);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
