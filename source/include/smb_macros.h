@@ -73,7 +73,7 @@
 #else
 /* redefine the assert macro for non-developer builds */
 #define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)))
+        (DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__))))
 #endif
 
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
