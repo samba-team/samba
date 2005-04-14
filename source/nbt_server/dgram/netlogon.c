@@ -80,6 +80,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	const char *attrs[] = {"realm", "dnsDomain", "objectGUID", NULL};
 	struct ldb_message **res;
 	int ret;
+	const char **services = lp_server_services();
 
 	/* only answer getdc requests on the PDC or LOGON names */
 	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
@@ -111,9 +112,18 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	/* TODO: accurately depict which services we are running */
 	pdc->server_type      = 
-		NBT_SERVER_PDC | NBT_SERVER_GC | NBT_SERVER_LDAP |
-		NBT_SERVER_DS | NBT_SERVER_KDC | NBT_SERVER_TIMESERV |
-		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | NBT_SERVER_GOOD_TIMESERV;
+		NBT_SERVER_PDC | NBT_SERVER_GC | 
+		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
+		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
+		NBT_SERVER_GOOD_TIMESERV;
+
+	/* hmm, probably a better way to do this */
+	if (lp_parm_bool(-1, "gensec", "krb5", True)) {
+		pdc->server_type |= NBT_SERVER_KDC;
+	}
+	if (str_list_check(services, "ldap")) {
+		pdc->server_type |= NBT_SERVER_LDAP;
+	}
 
 	pdc->domain_uuid      = samdb_result_guid(res[0], "objectGUID");
 	pdc->forest           = samdb_result_string(res[0], "realm", lp_realm());
