@@ -97,7 +97,6 @@ const char *dgram_mailslot_name(struct nbt_dgram_packet *packet)
 	}
 	if (packet->data.msg.dgram_body_type != DGRAM_SMB) return NULL;
 	if (packet->data.msg.body.smb.smb_command != SMB_TRANSACTION) return NULL;
-	if (packet->data.msg.body.smb.smb_command != SMB_TRANSACTION) return NULL;
 	return packet->data.msg.body.smb.body.trans.mailslot_name;
 }
 
