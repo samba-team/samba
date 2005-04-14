@@ -21,8 +21,8 @@ interface schannel
 	typedef struct {
 		astring domain;
 		astring account_name;
-		astring dnsdomain; /* in NBT dotted format */
-		astring workstation;
+		nbt_string dnsdomain; /* in NBT dotted format */
+		nbt_string workstation;
 	} schannel_bind_23;
 
 	typedef [nodiscriminant] union {
