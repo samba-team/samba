@@ -75,6 +75,12 @@ command = {
 		type = "flag"
 		help = "generate random key"
 	}
+	option = {
+		long = "hex"
+		short = "H"
+		type = "flag"
+		help = "password is a hexadecimal string"
+	}
 	function = "kt_add"
 	help = "Adds a key to a keytab."
 	max_args = "0"

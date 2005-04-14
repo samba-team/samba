@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -101,7 +101,28 @@ kt_add(struct add_options *opt, int argc, char **argv)
 	opt->password_string = buf;
     }
     if(opt->password_string) {
-	if (!opt->salt_flag) {
+	if (opt->hex_flag) {
+	    size_t len;
+	    void *data;
+	    
+	    len = (strlen(opt->password_string) + 1) / 2;
+
+	    data = malloc(len);
+	    if (data == NULL) {
+		krb5_warn(context, ENOMEM, "malloc");
+		goto out;
+	    }
+
+	    if (hex_decode(opt->password_string, data, len) != len) {
+		free(data);
+		krb5_warn(context, ENOMEM, "hex decode failed");
+		goto out;
+	    }
+
+	    ret = krb5_keyblock_init(context, enctype, 
+				     data, len, &entry.keyblock);
+	    free(data);
+	} else if (!opt->salt_flag) {
 	    krb5_salt salt;
 	    krb5_data pw;
 
