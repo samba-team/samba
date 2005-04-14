@@ -433,7 +433,24 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 7 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
+		<term>Chapter 7 &smbmdash; Updating Samba-3</term><listitem>
+		<para>
+		This chapter is the result of repeated requests for better documentation of the steps
+		that must be followed when updating or upgrading a Samba server. It attempts to cover
+		the entire subject in broad-brush but at the same time provides detailed background
+		information that is not covered elsewhere in the Samba documentation.
+		</para>
+
+		<para><emphasis>Technifo</emphasis> &smbmdash; Samba stores a lot of essential network
+		information in a large and growing collection of files. This chapter documents the
+		essentials of where those files may be located and how to find them. It also provide
+		an insight into inter-related matters that affect a Samba installation.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 8 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
 		<para>
 		Another six months have <?latex \linebreak ?>
 		 passed. Abmas has acquired yet another company. You will find a
@@ -450,7 +467,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 8 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
+		<term>Chapter 9 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
 		<para>
 		Misty Stanley-Jones has contributed information that summarizes her experience at migration
 		from a NetWare server to Samba-3.
@@ -464,7 +481,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 9 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
+		<term>Chapter 10 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
 		<para>
 		Well done, Bob, your team has achieved much. Now help Abmas integrate the entire network.
 		You want central control and central support and you need to cut costs. How can you reduce administrative
@@ -486,7 +503,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 10 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
+		<term>Chapter 11 &smbmdash; Active Directory, Kerberos and Security</term><listitem>
 		<para>
 		Abmas has acquired another company that has just migrated to running Windows Server 2003 and 
 		Active Directory. One of your staff makes offhand comments that land you in hot water.
@@ -504,7 +521,7 @@
 		</varlistentry>
 
 		<varlistentry>
-                <term>Chapter 11 &smbmdash; Integrating Additional Services</term><listitem>
+                <term>Chapter 12 &smbmdash; Integrating Additional Services</term><listitem>
                 <para>
 		The battle is almost over, Samba-3 has won the day. Your team are delighted and now you
 		find yourself at yet another cross-roads. Abmas have acquired a snack food business, you
@@ -523,7 +540,7 @@
                 </varlistentry>
 
 		<varlistentry>
-		<term>Chapter 12 &smbmdash; Performance, Reliability and Availability</term><listitem>
+		<term>Chapter 13 &smbmdash; Performance, Reliability and Availability</term><listitem>
 		<para>
 		Bob, are you sure the new Samba server is up to the load? Your network is serving many
 		users who risk becoming unproductive. What can you do to keep ahead of demand? Can you
@@ -541,7 +558,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 13 &smbmdash; Windows Networking Primer</term><listitem>
+		<term>Appendix B &smbmdash; Windows Networking Primer</term><listitem>
 		<para>
 		Here we cover practical exercises to help us to understand how MS Windows
 		network protocols function. A network protocol analyzer helps you to
