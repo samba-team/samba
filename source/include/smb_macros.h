@@ -90,6 +90,7 @@
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+			(fsp)->num_smb_operations++;\
 			} while(0)
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
