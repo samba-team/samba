@@ -539,7 +539,7 @@ an election is held at startup.
 <step performance="required">
 
 <para>
->From file manager, try to browse the server. Your Samba server should
+From file manager, try to browse the server. Your Samba server should
 appear in the browse list of your local workgroup (or the one you
 specified in &smb.conf;). You should be able to double click on the name
 of the server and get a list of shares. If you get the error message <quote>invalid password</quote>,
