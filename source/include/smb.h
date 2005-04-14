@@ -412,6 +412,7 @@ typedef struct files_struct {
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
+	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -533,6 +534,7 @@ typedef struct connection_struct
 	time_t lastused;
 	BOOL used;
 	int num_files_open;
+	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
 
 	BOOL case_sensitive;
 	BOOL case_preserve;
