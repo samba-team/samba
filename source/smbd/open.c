@@ -1159,6 +1159,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		append does not mean the same thing under dos and unix */
 
 	switch (GET_OPEN_MODE(share_mode)) {
+		case DOS_OPEN_EXEC:
 		case DOS_OPEN_RDONLY:
 			flags = O_RDONLY;
 			if (desired_access == 0)
@@ -1176,7 +1177,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		case DOS_OPEN_RDWR: 
-		case DOS_OPEN_EXEC:
 			flags = O_RDWR; 
 			if (desired_access == 0)
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
