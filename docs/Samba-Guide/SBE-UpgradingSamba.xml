@@ -31,7 +31,7 @@ context in either book, I could not find it.
 
 <para>
 So in response to the significant request for these situations to be better 
-documented this chapter has now been added. Your contributions and documentation
+documented this chapter has now been added. User contributions and documentation
 of real-world experiences will be a most welcome addition to this chapter.
 </para>
 
@@ -86,7 +86,7 @@ precaution was on the side of the victor.
 	<constant>update</constant>. The term <constant>upgrade</constant> is used to refer to
 	the installation of a version of Samba that is a whole generation or more ahead of
 	that which is installed. Generations are indicated by the first digit of the version
-	number. So far Samba has been release in generations 1.x, 2.x, 3.x and currently 4.0
+	number. So far Samba has been released in generations 1.x, 2.x, 3.x and currently 4.0
 	is in development.
 	</para>
 
@@ -196,7 +196,9 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 
 	<para>
 	Where the <filename>secrets.tdb</filename> file exists and a version of Samba 2.x or later
-	has been used there is no specific need to go through this update process.
+	has been used there is no specific need to go through this update process. Samba-3 has the
+	ability to read the older tdb file and to perform an in-situ update to the latest tdb format.
+	This is not a reversible process &smbmdash; it is a one-way upgrade.
 	</para>
 
 	<para>
@@ -212,7 +214,7 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 <screen>
 &rootprompt; smbpasswd -S PDC -Uadministrator%password
 </screen>
-	From which the SID could be copied to a file and then it could be written to the
+	From which the SID could be copied to a file and then it could be written to the Samba 2.2.x
 	<filename>secrets.tdb</filename> file by executing:
 <screen>
 &rootprompt; smbpasswd -W S-1-5-21-726309263-4128913605-1168186429
@@ -341,7 +343,8 @@ Num local groups: 0
 	<para>
 	Samba-3 provides a neat new way to track the location of all control files as well as to
 	find the compile-time options used as the Samba package was built. Here  is how the dark
-	secrets of the internals of Samba can be uncovered:
+	secrets of the internals of the location of control files within Samba executables can
+	be uncovered:
 <screen>
 &rootprompt; smbd -b | less
 Build environment:
@@ -399,7 +402,7 @@ does not use LDAP, the other does. Samba-1.9.x did not provide LDAP support.
 Samba-2.x could be compiled with LDAP support.
 </para>
 
-	<sect2>
+	<sect2 id="sbeug2">
 	<title>Samba 1.9.x and 2.x Versions Without LDAP</title>
 
 	<para>
@@ -407,7 +410,7 @@ Samba-2.x could be compiled with LDAP support.
 	the following procedure can be followed:
 	</para>
 
-	<procedure id="sbeug2">
+	<procedure>
 		<step><para>
 		Stop Samba. This can be done using the appropriate system tool
 		that is particular for each operating system or by executing the
@@ -458,7 +461,7 @@ Samba-2.x could be compiled with LDAP support.
 		<step><para>
 		When the Samba upgrade has been installed the first step that should
 		be completed is to identify the new target locations for the control
-		files. Follow the steps shown in <link linend="sbeug1"/> to locate
+		files. Follow the steps shown in <link linkend="sbeug1"/> to locate
 		the correct directories to which each control file must be moved.
 		</para></step>
 
@@ -500,6 +503,56 @@ Samba-2.x could be compiled with LDAP support.
 	</sect2>
 
 	<sect2>
+	<title>Applicable to all Samba 2.x to Samba-3 Upgrades</title>
+
+	<para>
+	Samba 2.x servers that were running as a domain controller (PDC)
+	require changes to the configuration of the scripting interface
+	tools that Samba uses to perform operating system updates for
+	users, groups and trust accounts (machines and interdomain).
+	</para>
+
+	<para>
+	The following parameters are new to Samba-3 and should be correctly
+	configured. Please refer to Chapters 3-6 in this book for examples
+	of use of the new parameters shown here:
+	</para>
+
+	<para>
+	<simplelist>
+		<member><para>add group script</para></member>
+		<member><para>add machine script</para></member>
+		<member><para>add user to group script</para></member>
+		<member><para>delete group script</para></member>
+		<member><para>delete user from group script</para></member>
+		<member><para>passdb backend</para></member>
+		<member><para>set primary group script</para></member>
+		</simplelist>
+	</para>
+
+	<para>
+	The <parameter>add machine script</parameter> functionality was previously
+	hanlded by the <parameter>add user script</parameter>, which in Samba-3 is
+	used exclusively to add user accounts.
+	</para>
+
+	<para>
+	Where the <parameter>passdb backend</parameter> used is either <constant>smbpasswd</constant>
+	(the default), or the new <constant>tdbsam</constant>, the system interface scripts
+	are typically used. These involve use of operating system tools such as
+	<command>useradd, usermod, userdel, groupadd, groupmod, groupdel</command>, etc.
+	</para>
+
+	<para>
+	Where the <parameter>passdb backend</parameter> makes use of an LDAP directory
+	it will be necessary either to use the <constant>smbldap-tools</constant> provided
+	by Idealx, or else to use an alternate toolset either provided by another third
+	party, or else home crafted tools to manage the LDAP directory accounts.
+	</para>
+
+	</sect2>
+
+	<sect2>
 	<title>Samba-2.x with LDAP support</title>
 
 	<para>
@@ -522,6 +575,73 @@ Samba-2.x could be compiled with LDAP support.
 	all releases of Samba-3. This information is repeated here directly from this
 	file:
 <screen>
+This is an extract from the Samba-3.0.x WHATSNEW.txt file:
+==========================================================
+Changes in Behavior
+-------------------
+
+The following issues are known changes in behavior between Samba 2.2 and
+Samba 3.0 that may affect certain installations of Samba.
+
+  1)  When operating as a member of a Windows domain, Samba 2.2 would
+      map any users authenticated by the remote DC to the 'guest account'
+      if a uid could not be obtained via the getpwnam() call.  Samba 3.0
+      rejects the connection as NT_STATUS_LOGON_FAILURE.  There is no
+      current work around to re-establish the 2.2 behavior.
+
+  2)  When adding machines to a Samba 2.2 controlled domain, the
+      'add user script' was used to create the UNIX identity of the
+      machine trust account.  Samba 3.0 introduces a new 'add machine
+      script' that must be specified for this purpose.  Samba 3.0 will
+      not fall back to using the 'add user script' in the absence of
+      an 'add machine script'
+
+######################################################################
+Passdb Backends and Authentication
+##################################
+
+There have been a few new changes that Samba administrators should be
+aware of when moving to Samba 3.0.
+
+  1) encrypted passwords have been enabled by default in order to
+     inter-operate better with out-of-the-box Windows client
+     installations.  This does mean that either (a) a samba account
+     must be created for each user, or (b) 'encrypt passwords = no'
+     must be explicitly defined in smb.conf.
+
+  2) Inclusion of new 'security = ads' option for integration
+     with an Active Directory domain using the native Windows
+     Kerberos 5 and LDAP protocols.
+
+     MIT kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption
+     type which is neccessary for servers on which the
+     administrator password has not been changed, or kerberos-enabled
+     SMB connections to servers that require Kerberos SMB signing.
+     Besides this one difference, either MIT or Heimdal Kerberos
+     distributions are usable by Samba 3.0.
+
+
+Samba 3.0 also includes the possibility of setting up chains
+of authentication methods (auth methods) and account storage
+backends (passdb backend).  Please refer to the smb.conf(5)
+man page for details.  While both parameters assume sane default
+values, it is likely that you will need to understand what the
+values actually mean in order to ensure Samba operates correctly.
+
+The recommended passdb backends at this time are
+
+  * smbpasswd - 2.2 compatible flat file format
+  * tdbsam - attribute rich database intended as an smbpasswd
+    replacement for stand alone servers
+  * ldapsam - attribute rich account storage and retrieval
+    backend utilizing an LDAP directory.
+  * ldapsam_compat - a 2.2 backward compatible LDAP account
+    backend
+
+Certain functions of the smbpasswd(8) tool have been split between the
+new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8)
+utility.  See the respective man pages for details.
+
 ######################################################################
 LDAP
 ####
@@ -613,21 +733,129 @@ the DN's with quotation marks.
 <title>Updating a Samba-3 Installation</title>
 
 <para>
+The key concern in this section is to deal with the changes that have been
+affected in Samba-3 between the samba-3.0.0 release and the current update.
+Network administrators have expressed concerns over the steps that should be
+taken to update Samba-3 versions.
+</para>
+
+<para>
+The information in <link linkend="sbeug1"/> would not be necessary if every
+person who has ever produced Samba executable (binary) files could agree on
+the preferred location of the &smb.conf; file and other Samba control files.
+Clearly, such agreement is further away than a pipe-dream.
+</para>
+
+<para>
+Vendors and packagers who produce Samba binary installable packages do not,
+as a rule, use the default paths used by the Samba-Team for the location of
+the binary files, the &smb.conf; file, and the Samba control files (tdb's
+as well as files such as <filename>secrets.tdb</filename>. This means that
+the network or UNIX administrator who sets out to build the Samba executable
+files from the Samba tarball must take particular care. Failure to take care
+will result in both the original vendors' version of Samba remaining installed
+as well as the new version that will be installed in the default location used
+by the Samba-Team. This can lead to confusion and to much lost time as the
+uninformed administrator deals with apparent failure of the update to take
+effect.
+</para>
+
+<para>
+The best advice for those lacking in code compilation experience is to use
+only vendor (or Samba-Team) provided binary packages. The Samba packages
+that are provided by the Samba-Team are generally built to use file paths
+that are compatible with the original operating system vendors' practices.
+</para>
+
+<para>
+If you are not sure whether or a binary package complies with the operating
+system vendors' practices it is better to ask the package maintainer via
+email to be certain than to waste much time dealing with the nuances.
+Alternately, just diagnose the paths specified by the binary files following
+the procedure outlined above.
 </para>
 
 	<sect2>
-	<title>Updating from Versions Earlier than 3.0.6</title>
+	<title>Samba-3 to Samba-3 updates on the Same Server</title>
 
 	<para>
+	The guidance in this section deals with updates to an existing
+	Samba-3 server installation.
 	</para>
 
-	</sect2>
+	<sect3>
+	<title>Updating from Samba Versions Earlier than 3.0.5</title>
+
+	<para>
+	With the provision that the binary Samba-3 package has been built
+	with the same path and feature settings as the existing Samba-3
+	package that is being updated, an update of Samab-3 versions 3.0.0
+	through 3.0.4 can be updated to 3.0.5 without loss of functionality
+	and without need to change either the &smb.conf; file or, where
+	used, the LDAP schema.
+	</para>
+
+	</sect3>
 
 	<sect2>
-	<title>Updating from Versions between 3.0.7 and 3.0.10</title>
+	<title>Updating from Samba Versions between 3.0.6 and 3.0.10</title>
 
 	<para>
+	When updating versions of Samba-3 prior to 3.0.6 to 3.0.6-3.0.10
+	it is necessary only to update the LDAP schema (where LDAP is used).
+	Always use the LDAP schema file that is shipped with the latest Samba-3
+	update.
 	</para>
+
+	<para>
+	Samba-3.0.6 introduced the ability to remember the last 'n' number
+	of passwords a user has used. This information will work only with
+	the <constant>tdbsam</constant> and <constant>ldapsam</constant>
+	<parameter>passdb backend</parameter> facilities.
+	</para>
+
+	<para>
+	After updating the LDAP schema, do not forget to reindex the LDAP database.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Updating from Samba Versions after 3.0.6 to a Current Release</title>
+
+	<para>
+	Samba-3.0.8 introduced changes in how the <parameter>username map</parameter>
+	behaves. It also included a change in behavior of <command>winbindd</command>.
+	Please refer to the man page for &smb.conf; before implementing any update
+	from versions prior to 3.0.8 to a current version.
+	</para>
+
+	<para>
+	In Samba-3.0.11 a new privileges interface was implemented. Please
+	refer to <link linkend="ch6-ppc"/> for information regarding this new
+	feature. It is not necessary to implement the privileges interface, but it
+	is one that has been requested for several years and thus may be of interest
+	at your site.
+	</para>
+
+	<para>
+	In Samba-3.0.11 there were some functional changes to the <parameter>ldap user suffix</parameter>
+	and to the <parameter>ldap machine suffix</parameter> behaviors. The following
+	information has been extracted from the WHATSNEW.txt file from this release:
+<screen>
+============
+LDAP Changes
+============
+
+If "ldap user suffix" or "ldap machine suffix" are defined in
+smb.conf, all user-accounts must reside below the user suffix,
+and all machine and inter-domain trust-accounts must be located
+below the machine suffix.  Previous Samba releases would fall
+back to searching the 'ldap suffix' in some cases.
+</screen>
+	</para>
+
+	</sect3>
 
 	</sect2>
 
@@ -639,7 +867,94 @@ the DN's with quotation marks.
 
 	</sect2>
 
+	<sect2>
+	<title>Migration of Samba Accounts to Active Directory</title>
+
+	<para>
+	Yes, it works. The Windows ADMT tool can be used to migrate Samba accounts
+	to MS Active Directory.  There are a few pitfalls to be aware of:
+	</para>
+
+	<procedure>
+		<step><para>
+		Administrator password must be THE SAME on the Samba server,
+		the 2003 ADS, and the local Administrator account on the workstations. 
+		Perhaps this goes without saying, but there needs to be an account
+		called <constant>Administrator</constant> in your Samba domain, with 
+		full administrative (root) rights to that domain.
+		</para></step>
+
+		<step><para>
+		In the Advanced/DNS section of the TCP/IP settings on your Windows 
+		workstations, make sure <parameter>DNS suffix for this 
+		connection</parameter> field is blank. 
+		</para></step>
+
+		<step><para>
+		Because you are migrating from Samba, user passwords cannot be 
+		migrated. You'll have to reset everyone's passwords. (If you were 
+		migrating from NT4 to ADS, you could migrate passwords as well.)
+		</para>
+
+		<para>
+		To date this has not been attempted with roaming profile support;
+		it has been documented as working with local profiles.
+		</para></step>
+
+		<step><para>
+		Disable the Windows Firewall on all workstations. Otherwise, 
+		workstations won't be migrated to the new domain.
+		</para></step>
+
+		<step><para>
+		When migrating machines, always test first (using ADMT's test mode) 
+		and satisfy all errors before committing the migration. Note that the 
+		test will always fail, because the machine will not have been actually 
+		migrated. You'll need to interpret the errors to know whether the 
+		failure was due to a problem, or simply due to the fact that it was just 
+		a test.
+		</para></step>
+
+	</procedure>
+
+
+	<para>
+	There are some significant benefits of using the ADMT, besides just 
+	migrating user accounts. ADMT can be found on the Windows 2003 CD.
+	</para>
+
+	<itemizedlist>
+		<listitem><para>
+		You can also migrate workstations remotely. You can specify that SIDs 
+		be simply added instead of replaced, giving you the option of joining a 
+		workstation back to the old domain if something goes awry. The 
+		workstations will be joined to the new domain.
+		</para></listitem>
+
+		<listitem><para>
+		Not only are user accounts migrated from the old domain to the new 
+		domain, but ACLs on the workstations are migrated as well. Like SIDs, 
+		ACLs can be added instead of replaced.
+		</para></listitem>
+
+		<listitem><para>
+		Locally stored user profiles on workstations are migrated as well, 
+		presenting almost no disruption to the user. Saved passwords will be 
+		lost, just as when you administratively reset the password in Windows ADS.
+		</para></listitem>
+
+		<listitem><para>
+		The ADMT lets you test all operations before actually performing the 
+		migration. Accounts and workstations can be migrated individually or in 
+		batches. User accounts can be safely migrated all at once (since no 
+		changes are made on the original domain); It is recommended to migrate only one 
+		or two workstations as a test before committing them all.
+		</para></listitem>
+
+	</itemizedlist>
+
+	</sect2>
+
 </sect1>
 
 </chapter>
-

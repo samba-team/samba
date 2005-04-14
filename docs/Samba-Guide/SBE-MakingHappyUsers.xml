@@ -703,7 +703,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	connections.
 	</para>
 
-		<sect3>
+		<sect3 id="ch6-ppc">
 		<title>Addition of Machines to the Domain</title>
 
 		<para>
