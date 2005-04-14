@@ -4,6 +4,8 @@
 <title>Updating Samba-3</title>
 
 <para>
+<indexterm><primary>migrate</primary></indexterm>
+<indexterm><primary>install</primary></indexterm>
 It was a little difficult to select an appropriate title for this chapter.
 From email messages on the Samba mailing lists it is clear that many people
 consider the updating and upgrading of Samba to be a migration matter. Others
@@ -12,6 +14,8 @@ installing a new Samba server to replace an older existing Samba server.
 </para>
 
 <para>
+<indexterm><primary>smbpasswd</primary></indexterm>
+<indexterm><primary>passdb backend</primary></indexterm>
 There has also been much talk about migration of Samba-3 from an smbpasswd
 passdb backend to the use of the tdbsam or ldapsam facilities that are new
 to Samba-3.
@@ -24,12 +28,14 @@ highlighted by an email posting that included the following neat remark:
 </para>
 
 <blockquote><para>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>vampire</tertiry></indexterm>
 I like the <quote>net rpc vampire</quote> on NT4, but that to my surprise does
 not seem to work against a Samba PDC and, if addressed in the Samba to Samba
 context in either book, I could not find it.
 </para></blockquote>
 
 <para>
+<indexterm><primary>contributions</primary></indexterm>
 So in response to the significant request for these situations to be better 
 documented this chapter has now been added. User contributions and documentation
 of real-world experiences will be a most welcome addition to this chapter.
@@ -39,6 +45,9 @@ of real-world experiences will be a most welcome addition to this chapter.
 <title>Introduction</title>
 
 <para>
+<indexterm><primary>update</primary></indexterm>
+<indexterm><primary>upgrade</primary></indexterm>
+<indexterm><primary>frustration</primary></indexterm>
 A Windows network administrator explained in an email what changes he was
 planning to make and and followed with the question: <quote>Anyone done this before?</quote>.
 Many of us have upgraded and updated Samba without incident. Others have
@@ -57,6 +66,8 @@ productivity on a user.
 </para>
 
 <warning><para>
+<indexterm><primary>configuration files</primary></indexterm>
+<indexterm><primary>down-grade</primary></indexterm>
 Samba makes it possible to upgrade and update configuration files, but it
 is not possible to downgrade the configuration files. Please ensure that
 all configuration and control files are backed up to permit a down-grade
@@ -65,6 +76,8 @@ in the rare event that this may be necessary.
 
 
 <para>
+<indexterm><primary>adequate precautions</primary></indexterm>
+<indexterm><primary>precaution</primary></indexterm>
 It is prudent also to backup all data files on the server before attempting
 to perform a major upgrade. Many administrators have experienced the consequences
 of failure to take adequate precautions. So what is adequate? That is simple!
@@ -82,6 +95,9 @@ precaution was on the side of the victor.
 	</para>
 
 	<para>
+	<indexterm><primary>update</primary></indexterm>
+	<indexterm><primary>upgrade</primary></indexterm>
+	<indexterm><primary>generation</primary></indexterm>
 	This is as good a time as any to define the terms <constant>upgrade</constant> and
 	<constant>update</constant>. The term <constant>upgrade</constant> is used to refer to
 	the installation of a version of Samba that is a whole generation or more ahead of
@@ -91,12 +107,14 @@ precaution was on the side of the victor.
 	</para>
 
 	<para>
+	<indexterm><primary>generation</primary></indexterm>
 	The term <constant>update</constant> is used to refer to a minor version number installation
 	in place of one of the same generation. For example, updating from Samba 3.0.10 to 3.0.14
 	is an update. The move from Samba 2.0.7 to 3.0.14 is an upgrade.
 	</para>
 
 	<para>
+	<indexterm><primary>functional differences</primary></indexterm>
 	While the use of these terms is an exercise in semantics, what needs to be realized
 	is that there are major functional differences between a Samba 2.x release and a Samba
 	3.0.x release. Such differences may require a significantly different approach to
@@ -116,27 +134,45 @@ precaution was on the side of the victor.
 	<title>Security Identifiers (SIDs)</title>
 
 	<para>
+	<indexterm><primary>Windows</primary><secondary>NT</secondary></indexterm>
+	<indexterm><primary>OS/2</primary></indexterm>
+	<indexterm><primary>DOS</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>networking</primary><secondary>client</secondary></indexterm>
+	<indexterm><primary>security</primary><secondary>identifier</secondary></indexterm>
 	Before the days of Windows NT and OS/2 every Windows and DOS networking client
 	that used the SMB protocols was an entirely autonomous entity. There was no concept
 	of a security identifier for a machine or a user outside of the username, the
-	machine name, and the workgroup name. In actual fact, these were not security identifies
+	machine name, and the workgroup name. In actual fact, these were not security identifiers
 	in the same context as the way that the SID is used since the development of
 	Windows NT 3.10.
 	</para>
 
 	<para>
+	<indexterm><primary>SessionSetUpAndX</primary></indexterm>
+	<indexterm><primary>SMB</primary></indexterm>
+	<indexterm><primary>CIFS</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>username</primary></indexterm>
+	<indexterm><primary>Windows</primary><secondary>client</secondary></indexterm>
 	Versions of Samba prior to 1.9 did not make use of a SID, instead they make exclusive use
 	of the username that is embedded in the SessionSetUpAndX component of the connection
 	setup process between a Windows client and an SMB/CIFS server. 
 	</para>
 
 	<para>
+	<indexterm><primary>MACHINE.SID</primary></indexterm>
+	<indexterm><primary>rpc</primary></indexterm>
+	<indexterm><primary>security</primary></indexterm>
 	Around November 1997 support was added to Samba-1.9 to handle the Windows security
 	rpc based protocols that implemented support for Samba to store a machine SID. This
 	information was stored in a file called <filename>MACHINE.SID.</filename>
 	</para>
 
 	<para>
+	<indexterm><primary>machine</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>secrets.tdb</primary></indexterm>
 	Within the life time of the early Samba 2.x series the machine SID information was
 	relocated into a tdb file called <filename>secrets.tdb</filename>, which is where is
 	is still located in Samba 3.0.x along with other information that pertains to the
@@ -144,6 +180,10 @@ precaution was on the side of the victor.
 	</para>
 
 	<para>
+	<indexterm><primary>server</primary><secondary>stand-alone</secondary></indexterm>
+	<indexterm><primary>server</primary><secondary>domain member</secondary></indexterm>
+	<indexterm><primary>DMS</primary></indexterm>
+	<indexterm><primary>SAS</primary></indexterm>
 	There are two types of SID, those pertaining to the machine itself and the domain to
 	which it may belong, and those pertaining to users and groups within the security
 	context of the local machine (in the case of stand-alone servers (SAS) and domain member
@@ -151,6 +191,12 @@ precaution was on the side of the victor.
 	</para>
 
 	<para>
+	<indexterm><primary>smbd</primary></indexterm>
+	<indexterm><primary>workgroup</primary></indexterm>
+	<indexterm><primary>hostname</primary></indexterm>
+	<indexterm><primary>daemon</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>secrets.tdb</primary></indexterm>
 	When the Samba <command>smbd</command> daemon is first started, if the <filename>secrets.tdb</filename>
 	file does not exist it is created at the first client connection attempt. If this file does
 	exist, <command>smbd</command> checks that there is a machine SID (if it is a domain controller
@@ -162,6 +208,7 @@ precaution was on the side of the victor.
 	</para>
 
 	<para>
+	<indexterm><primary>ACL</primary></indexterm>
 	The SID is the key used by MS Windows networking for all networking operations. This means
 	that when the machine or domain SID changes all security encoded objects such as profiles
 	and ACLs may become unusable.
@@ -174,6 +221,8 @@ precaution was on the side of the victor.
 	</para></note>
 
 	<para>
+	<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
+	<indexterm><primary>net</primary><secondary>setlocalsid</secondary></indexterm>
 	The local machine SID can be backed up using this procedure (Samba-3):
 <screen>
 &rootprompt; net getlocalsid > /etc/samba/my-local-SID
@@ -202,6 +251,7 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 	</para>
 
 	<para>
+	<indexterm><primary>smbpasswd</primary></indexterm>
 	In the course of the Samba 2.0.x series the <command>smbpasswd</command> was modified to
 	permit the domain SID to be captured to the <filename>secrets.tdb</filename> file by executing:
 <screen>
@@ -222,6 +272,8 @@ SID for domain FRODO is: S-1-5-21-726309263-4128913605-1168186429
 	</para>
 
 	<para>
+	<indexterm><primary>rpcclient</primary></indexterm>
+	<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>info</tertiary></indexterm>
 	Domain security information, that includes the domain SID, can be obtained from Samba-2.2.x
 	systems by executing:
 <screen>
@@ -242,6 +294,9 @@ Num local groups: 0
 	</para>
 
 	<para>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
 	Take note that the domain SID is used extensively in Samba. Where LDAP is used for the
 	<parameter>passdb backend</parameter>, all user, group, and trust accounts are encoded
 	with the domain SID. This means that if the domain SID changes for any reason the entire
@@ -254,6 +309,9 @@ Num local groups: 0
 	</para>
 
 	<para>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>profiles</primary></indexterm>
+	<indexterm><primary>RPM</primary></indexterm>
 	When the domain SID has changed roaming profiles will cease to be functional. The recovery
 	of roaming profiles will necessitate resetting of the domain portion of the user SID
 	that owns the profile. This is encoded in the <filename>NTUser.DAT</filename> and can be
@@ -270,6 +328,8 @@ Num local groups: 0
 	<title>Change of hostname</title>
 
 	<para>
+	<indexterm><primary>netbios</primary><secondary>machine  name</secondary></indexterm>
+	<indexterm><primary>netbios name</primary></indexterm>
 	Samba uses two (2) methods by which the primary NetBIOS machine name (also known as a computer
 	name or the hostname) may be determined: If the &smb.conf; file contains an entry
 	<parameter>netbios name</parameter> entry its value will be used directly. In the absence
@@ -295,12 +355,14 @@ Num local groups: 0
 	<title>Change of workgroup (domain) name</title>
 
 	<para>
+	<indexterm><primary>workgroup</primary></indexterm>
 	The domain name of a Samba server is identical with the workgroup name and is
 	set in the &smb.conf; file using the <parameter>workgroup</parameter> parameter.
 	This has been consistent throughout the history of Samba and across all versions.
 	</para>
 
 	<para>
+	<indexterm><primary>SID</primary></indexterm>
 	Be aware that when the workgroup name is changed a new SID will be generated.
 	The old domain SID can be reset using the procedure outlined earlier in this chapter.
 	</para>
@@ -311,6 +373,7 @@ Num local groups: 0
 	<title>Location of config files</title>
 
 	<para>
+	<indexterm><primary>directory</primary></indexterm>
 	The Samba 1.9.x &smb.conf; file may be found either in the <filename>/etc</filename>
 	directory or in <filename>/usr/local/samba/lib</filename>.
 	</para>
@@ -322,12 +385,14 @@ Num local groups: 0
 	</para>
 
 	<para>
-	Samba 2.x introduced the secrets.tdb file that is also stored in the
+	<indexterm><primary>secrets.tdb</primary></indexterm>
+	Samba 2.x introduced the <filename>secrets.tdb<filename> file that is also stored in the
 	<filename>/etc/samba</filename> directory, or in the <filename>/usr/local/samba/lib</filename>
 	directory sub-system.
 	</para>
 
 	<para>
+	<indexterm><primary>smbd</primary></indexterm>
 	The location at which <command>smbd</command> expects to find all configuration and control
 	files is determined at the time of compilation of Samba. For versions of Samba prior to
 	3.0 one way to find the expected location of these files is to execute:
@@ -341,6 +406,7 @@ Num local groups: 0
 	</para>
 
 	<para>
+	<indexterm><primary>compile-time</primary></indexterm>
 	Samba-3 provides a neat new way to track the location of all control files as well as to
 	find the compile-time options used as the Samba package was built. Here  is how the dark
 	secrets of the internals of the location of control files within Samba executables can
@@ -412,6 +478,9 @@ Samba-2.x could be compiled with LDAP support.
 
 	<procedure>
 		<step><para>
+		<indexterm><primary>winbindd</primary></indexterm>
+		<indexterm><primary>smbd</primary></indexterm>
+		<indexterm><primary>nmbd</primary></indexterm>
 		Stop Samba. This can be done using the appropriate system tool
 		that is particular for each operating system or by executing the
 		<command>kill</command> command on <command>smbd, nmbd</command>
@@ -434,6 +503,10 @@ Samba-2.x could be compiled with LDAP support.
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>lock directory</primary></indexterm>
+		<indexterm><primary>/usr/local/samba/var/locks</primary></indexterm>
+		<indexterm><primary>/var/cache/samba</primary></indexterm>
+		<indexterm><primary>/var/lib/samba</primary></indexterm>
 		Find the location of the lock directory. This is the directory
 		in which Samba stores all its tdb control files. The default
 		location used by the Samba Team is in
@@ -446,6 +519,7 @@ Samba-2.x could be compiled with LDAP support.
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>RPM</primary></indexterm>
 		It is now safe to ugrade the Samba installation. On Linux systems
 		it is not necessary to remove the Samba RPMs becasue a simple
 		upgrade installation will automatically remove the old files.
@@ -455,7 +529,7 @@ Samba-2.x could be compiled with LDAP support.
 		On systems that do not support a reliable package management system
 		it is advisable either to delete the Samba old installation , or to
 		move it out of the way by renaming the directories that contain the
-		Samab binary files.
+		Samba binary files.
 		</para></step>
 
 		<step><para>
@@ -474,7 +548,8 @@ Samba-2.x could be compiled with LDAP support.
 		</para></step>
 
 		<step><para>
-		Execute the <command>testparm</command> to validate the smb.conf file.
+		<indexterm><primary>testparm</primary></indexterm>
+		Execute the <command>testparm</command> to validate the &smb.conf; file.
 		This process will flag any parameters that are no longer supported.
 		It will also flag configuration settings that may be in conflict.
 		</para>
@@ -487,11 +562,13 @@ Samba-2.x could be compiled with LDAP support.
 &rootprompt; cd /etc/samba
 &rootprompt; testparm -s smb.conf.master &gt; smb.conf
 </screen>
+	<indexterm><primary>stripped</primary></indexterm>
 		The resulting &smb.conf; file will be stripped of all comments
 		and will be stripped of all non-conforming configuration settings.
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>winbindd</primary></indexterm>
 		It is now safe to start Samba using the appropriate system tool.
 		Alternately, it is possible to just execute <command>nmbd, smbd</command>
 		and <command>winbindd</command> for the command line while logged in
@@ -506,16 +583,27 @@ Samba-2.x could be compiled with LDAP support.
 	<title>Applicable to all Samba 2.x to Samba-3 Upgrades</title>
 
 	<para>
+	<indexterm><primary>PDC</primary></indexterm>
+	<indexterm><primary>domain controller</primary></indexterm>
+	<indexterm><primary>inter-domain</primary></indexterm>
 	Samba 2.x servers that were running as a domain controller (PDC)
 	require changes to the configuration of the scripting interface
 	tools that Samba uses to perform operating system updates for
-	users, groups and trust accounts (machines and interdomain).
+	users, groups and trust accounts (machines and inter-domain).
 	</para>
 
 	<para>
+	<indexterm><primary>parameters</primary></indexterm>
 	The following parameters are new to Samba-3 and should be correctly
 	configured. Please refer to Chapters 3-6 in this book for examples
 	of use of the new parameters shown here:
+	<indexterm><primary>add group script</primary></indexterm>
+	<indexterm><primary>add machine script</primary></indexterm>
+	<indexterm><primary>add user to group script</primary></indexterm>
+	<indexterm><primary>delete group script</primary></indexterm>
+	<indexterm><primary>delete user from group script</primary></indexterm>
+	<indexterm><primary>set primary group script</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
 	</para>
 
 	<para>
@@ -531,6 +619,8 @@ Samba-2.x could be compiled with LDAP support.
 	</para>
 
 	<para>
+	<indexterm><primary>add machine script</primary></indexterm>
+	<indexterm><primary>add user script</primary></indexterm>
 	The <parameter>add machine script</parameter> functionality was previously
 	hanlded by the <parameter>add user script</parameter>, which in Samba-3 is
 	used exclusively to add user accounts.
@@ -893,14 +983,88 @@ back to searching the 'ldap suffix' in some cases.
 	a longer period of time.
 	</para>
 
+	<para>
+	If the old DMS had local accounts, it is necessary to create on the new DMS
+	the same accounts with the same UID and GID for each account. Where the
+	<paramter>passdb backend</parameter> database is stored in the <constant>smbpasswd</constant>
+	or in the <constant>tdbsam</constant> format the user and group account
+	information for UNIX accounts, that match the Samba accounts, will reside in
+	the system <filename>/etc/passwd, /etc/shadow</filename> and
+	<filename>/etc/group</filename> files. In this case be sure to copy these
+	account entries to the new target server.
+	</para>
+
+	<para>
+	Where the user accounts for both UNIX and Samba are stored in LDAP, the new
+	target server must be configured to use the <command>nss_ldap</command> tool set.
+	This will then automatically ensure that the appropriate user entities are
+	available on the new server.
+	</para>
+
 	</sect3>
 
 	<sect3>
 	<title>Replacing a Domain Controller</title>
 
 	<para>
-	This information will be added within 24 hours. JJJ.
+	In the past, people who replaced a Windows NT4 domain controller would typically
+	install a new server, create printers and file shares on it, then migrate across
+	all data that was destined to reside on it. The same can of course be done with
+	Samba.
 	</para>
+
+	<para>
+	From recent mailing list postings it would seem that some administrators
+	have the intent to just replace the old Samba server with a new one with
+	the same name as the old one. In this case, simply follow the same process
+	as upgrading a Samba 2.x system in respect of the following:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>
+		Where UNIX (POSIX) user and group accounts are stored in the system
+		<filename>/etc/passwd, /etc/shadow</filename> and 
+		<filename>/etc/group</filename> files be sure to add the same accounts
+		with identical UID and GID values for each user.
+		</para>
+
+		<para>
+		Where LDAP is used, if the new system is intended to be the LDAP server
+		migrate it across by configuring the LDAP server 
+		(<filename>/etc/openldap/slapd.conf</filename>). The directory can either
+		be populated initially by setting this LDAP server up as a slave, or else
+		by dumping the data from the old LDAP server using the <command>slapcat</command>
+		command and then reloading the same data into the new LDAP server using the
+		<command>slapadd</command> command. Do not forget to install and configure
+		the <command>nss_ldap</command> tool and the <filename>/etc/nsswitch.conf</filename>
+		(as shown in Chapter 5).
+		</para></listitem>
+
+		<listitem><para>
+		Copy the &smb.conf; file from the old server to the new server into the correct
+		location as indicated previously in this chapter.
+		</para></listitem>
+
+		<listitem><para>
+		Copy the <filename>secrets.tdb</filename> file, the <filename>smbpasswd</filename>
+		file (if it is used), the <filename>/etc/samba/passdb.tdb</filename> file (only
+		used by the <constant>tdbsam</constant> backend), and all the tdb control files
+		from the old system to the correct location on the new system.
+		</para></listitem>
+
+		<listitem><para>
+		Before starting the Samba daemons, verify that the hostname of the new server
+		is identical with that of the old one. Note: The IP address can be different
+		from that of the old server.
+		</para></listitem>
+
+		<listitem><para>
+		Copy all files from the old server to the new server, taking precaution to
+		preserve all file ownership and permissions as well as any POSIX ACLs that
+		may have been created on the old server.
+		</para></listitem>
+
+	</itemizedlist>
 
 	</sect3>
 
