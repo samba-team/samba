@@ -827,6 +827,7 @@ do_kaserver(unsigned char *buf,
     krb5_ret_int32(sp, &op);
     switch (op) {
     case AUTHENTICATE :
+    case AUTHENTICATE_V2 :
 	do_authenticate (&hdr, sp, addr, reply);
 	break;
     case GETTICKET :
@@ -845,7 +846,6 @@ do_kaserver(unsigned char *buf,
     case DEBUG :
     case GETPASSWORD :
     case GETRANDOMKEY :
-    case AUTHENTICATE_V2 :
     default :
 	make_error_reply (&hdr, RXGEN_OPCODE, reply);
 	break;
