@@ -1,4 +1,14 @@
-2005-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-14 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* kdc/kaserver.c: AUTHENTICATE and AUTHENTICATE_V2 is almost the
+	same, and clients
+	(klog) can deal with that the kaserver returns the same thing for
+	both
+
+	* lib/krb5/keyblock.c: Add krb5_keyblock_init to allocate an fill
+	in a keyblock from key data.
+	
+2005-04-12  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* configure.in: rk_WIN32_EXPORT for roken
 
