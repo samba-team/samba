@@ -104,7 +104,8 @@ my %scalar_type_mappings =
      "hyper"        => "uint64_t",
      "NTTIME_1sec"  => "NTTIME",
      "NTTIME_hyper" => "NTTIME",
-     "ipv4address"  => "const char *"
+     "ipv4address"  => "const char *",
+     "nbt_string"   => "const char *"
      );
 
 # map from a IDL type to a C header type

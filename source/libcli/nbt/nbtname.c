@@ -32,7 +32,15 @@
 #define MAX_COMPONENTS 10
 
 /*
-  pull one component of a compressed name
+  print a nbt string
+*/
+void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s)
+{
+	return ndr_print_string(ndr, name, s);
+}
+
+/*
+  pull one component of a nbt_string
 */
 static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 				   uint32_t *offset, uint32_t *max_offset)
@@ -78,6 +86,97 @@ static NTSTATUS ndr_pull_component(struct ndr_pull *ndr, uint8_t **component,
 	/* too many pointers */
 	return NT_STATUS_BAD_NETWORK_NAME;
 }
+
+/*
+  pull a nbt_string from the wire
+*/
+NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
+{
+	NTSTATUS status;
+	uint32_t offset = ndr->offset;
+	uint32_t max_offset = offset;
+	unsigned num_components;
+	char *name;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	name = NULL;
+
+	/* break up name into a list of components */
+	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
+		uint8_t *component;
+		status = ndr_pull_component(ndr, &component, &offset, &max_offset);
+		NT_STATUS_NOT_OK_RETURN(status);
+		if (component == NULL) break;
+		if (name) {
+			name = talloc_asprintf_append(name, ".%s", component);
+			NT_STATUS_HAVE_NO_MEMORY(name);
+		} else {
+			name = component;
+		}
+	}
+	if (num_components == MAX_COMPONENTS) {
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
+	if (num_components == 0) {
+		name = talloc_strdup(ndr, "");
+		NT_STATUS_HAVE_NO_MEMORY(name);
+	}
+
+	(*s) = name;
+	ndr->offset = max_offset;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  push a nbt string to the wire
+*/
+NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
+{
+	int i;
+	int fulllen;
+	char *fullname;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	fullname = talloc_strdup(ndr, "");
+	NT_STATUS_HAVE_NO_MEMORY(fullname);
+
+	while (*s) {
+		int len = strcspn(s, ".");
+		fullname = talloc_asprintf_append(fullname, "%c%*.*s",
+						  (unsigned char)len,
+						  (unsigned char)len,
+						  (unsigned char)len, s);
+		NT_STATUS_HAVE_NO_MEMORY(fullname);
+		s += len;
+		if (*s == '.') s++;
+	}
+
+	/* see if we can find the fullname in the existing packet - if
+	   so, we can use a NBT name pointer. This allows us to fit
+	   longer names into the packet */
+	fulllen = strlen(fullname)+1;
+	for (i=0;i + fulllen < ndr->offset;i++) {
+		if (ndr->data[i] == fullname[0] &&
+		    memcmp(fullname, &ndr->data[i], fulllen) == 0) {
+			talloc_free(fullname);
+			return ndr_push_uint16(ndr, NDR_SCALARS, 0xC000 | i);
+		}
+	}
+
+	NDR_CHECK(ndr_push_bytes(ndr, fullname, fulllen));
+
+	talloc_free(fullname);
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   decompress a 'compressed' name component
@@ -151,57 +250,49 @@ static uint8_t *compress_name(TALLOC_CTX *mem_ctx,
 	return cname;
 }
 
+
 /*
   pull a nbt name from the wire
 */
 NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
 {
 	NTSTATUS status;
-	uint_t num_components;
-	uint32_t offset = ndr->offset;
-	uint32_t max_offset = offset;
-	uint8_t *components[MAX_COMPONENTS];
-	int i;
 	uint8_t *scope;
+	char *cname;
+	const char *s;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	/* break up name into a list of components */
-	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
-		status = ndr_pull_component(ndr, &components[num_components], 
-					    &offset, &max_offset);
-		NT_STATUS_NOT_OK_RETURN(status);
-		if (components[num_components] == NULL) break;
-	}
-	if (num_components == MAX_COMPONENTS ||
-	    num_components == 0) {
-		return NT_STATUS_BAD_NETWORK_NAME;
+	status = ndr_pull_nbt_string(ndr, ndr_flags, &s);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	scope = strchr(s, '.');
+	if (scope) {
+		*scope = 0;
+		r->scope = talloc_strdup(ndr, scope+1);
+		NT_STATUS_HAVE_NO_MEMORY(r->scope);
+	} else {
+		r->scope = NULL;
 	}
 
-	ndr->offset = max_offset;
+	cname = discard_const_p(char, s);
 
 	/* the first component is limited to 16 bytes in the DOS charset,
 	   which is 32 in the 'compressed' form */
-	if (strlen(components[0]) > 32) {
+	if (strlen(cname) > 32) {
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	/* decompress the first component */
-	status = decompress_name(components[0], &r->type);
+	status = decompress_name(cname, &r->type);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	r->name = components[0];
+	r->name = talloc_strdup(ndr, cname);
+	NT_STATUS_HAVE_NO_MEMORY(r->name);
 
-	/* combine the remaining components into the scope */
-	scope = components[1];
-	for (i=2;i<num_components;i++) {
-		scope = talloc_asprintf_append(scope, ".%s", components[i]);
-		NT_STATUS_HAVE_NO_MEMORY(scope);
-	}
-
-	r->scope = scope;
+	talloc_free(cname);
 
 	return NT_STATUS_OK;
 }
@@ -211,69 +302,28 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 */
 NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name *r)
 {
-	uint_t num_components;
-	uint8_t *components[MAX_COMPONENTS];
-	char *dscope=NULL, *p;
 	uint8_t *cname, *fullname;
-	int i;
-	int fulllen;
+	NTSTATUS status;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	if (r->scope) {
-		dscope = talloc_strdup(ndr, r->scope);
-		NT_STATUS_HAVE_NO_MEMORY(dscope);
-	}
-
 	cname = compress_name(ndr, r->name, r->type);
 	NT_STATUS_HAVE_NO_MEMORY(cname);
 
-	/* form the base components */
-	components[0] = cname;
-	num_components = 1;
-
-	while (dscope && (p=strchr(dscope, '.')) && 
-	       num_components < MAX_COMPONENTS) {
-		*p = 0;
-		components[num_components] = dscope;
-		dscope = p+1;
-		num_components++;
-	}
-	if (dscope && num_components < MAX_COMPONENTS) {
-		components[num_components++] = dscope;
-	}
-	if (num_components == MAX_COMPONENTS) {
-		return NT_STATUS_BAD_NETWORK_NAME;
-	}
-
-	fullname = talloc_asprintf(ndr, "%c%s", (unsigned char)strlen(cname), cname);
-	NT_STATUS_HAVE_NO_MEMORY(fullname);
-		
-	for (i=1;i<num_components;i++) {
-		fullname = talloc_asprintf_append(fullname, "%c%s", 
-						  (unsigned char)strlen(components[i]), components[i]);
+	if (r->scope) {
+		fullname = talloc_asprintf(ndr, "%s.%s", cname, r->scope);
 		NT_STATUS_HAVE_NO_MEMORY(fullname);
+		talloc_free(cname);
+	} else {
+		fullname = cname;
 	}
-
-	/* see if we can find the fullname in the existing packet - if
-	   so, we can use a NBT name pointer. This allows us to fit
-	   longer names into the packet */
-	fulllen = strlen(fullname)+1;
-	for (i=0;i + fulllen < ndr->offset;i++) {
-		if (ndr->data[i] == fullname[0] &&
-		    memcmp(fullname, &ndr->data[i], fulllen) == 0) {
-			talloc_free(fullname);
-			return ndr_push_uint16(ndr, NDR_SCALARS, 0xC000 | i);
-		}
-	}
-
-	NDR_CHECK(ndr_push_bytes(ndr, fullname, fulllen));
-
+	
+	status = ndr_push_nbt_string(ndr, ndr_flags, fullname);
 	talloc_free(fullname);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 

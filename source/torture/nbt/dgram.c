@@ -117,6 +117,68 @@ failed:
 }
 
 
+/* test UDP/138 netlogon requests */
+static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx, 
+			      struct nbt_name name, const char *address)
+{
+	struct dgram_mailslot_handler *dgmslot;
+	struct nbt_dgram_socket *dgmsock = nbt_dgram_socket_init(mem_ctx, NULL);
+	const char *myaddress = talloc_strdup(dgmsock, iface_best_ip(address));
+	struct nbt_netlogon_packet logon;
+	struct nbt_name myname;
+	NTSTATUS status;
+	struct timeval tv = timeval_current();
+	int replies = 0;
+
+	/* try receiving replies on port 138 first, which will only
+	   work if we are root and smbd/nmbd are not running - fall
+	   back to listening on any port, which means replies from
+	   some windows versions won't be seen */
+	status = socket_listen(dgmsock->sock, myaddress, lp_dgram_port(), 0, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		socket_listen(dgmsock->sock, myaddress, 0, 0, 0);
+	}
+
+	/* setup a temporary mailslot listener for replies */
+	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
+				      netlogon_handler, &replies);
+	
+
+	ZERO_STRUCT(logon);
+	logon.command = NETLOGON_QUERY_FOR_PDC2;
+	logon.req.pdc2.request_count = 0;
+	logon.req.pdc2.computer_name = TEST_NAME;
+	logon.req.pdc2.user_name     = "";
+	logon.req.pdc2.mailslot_name = dgmslot->mailslot_name;
+	logon.req.pdc2.nt_version    = 11;
+	logon.req.pdc2.lmnt_token    = 0xFFFF;
+	logon.req.pdc2.lm20_token    = 0xFFFF;
+
+	myname.name = TEST_NAME;
+	myname.type = NBT_NAME_CLIENT;
+	myname.scope = NULL;
+
+	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
+					      0, &myname, &logon);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to send netlogon request - %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+
+	while (timeval_elapsed(&tv) < 5 && replies == 0) {
+		event_loop_once(dgmsock->event_ctx);
+	}
+
+	talloc_free(dgmsock);
+	return True;
+
+failed:
+	talloc_free(dgmsock);
+	return False;
+}
+
+
 /*
   reply handler for ntlogon request
 */
@@ -248,6 +310,7 @@ BOOL torture_nbt_dgram(void)
 	}
 
 	ret &= nbt_test_netlogon(mem_ctx, name, address);
+	ret &= nbt_test_netlogon2(mem_ctx, name, address);
 	ret &= nbt_test_ntlogon(mem_ctx, name, address);
 
 	talloc_free(mem_ctx);
