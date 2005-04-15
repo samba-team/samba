@@ -156,7 +156,7 @@ external_passwd_quality (krb5_context context,
 
     program = krb5_config_get_string(context, NULL,
 				     "password_quality",
-				     "external-program",
+				     "external_program",
 				     NULL);
     if (program == NULL) {
 	snprintf(message, length, "external password quality "
@@ -387,7 +387,7 @@ kadm5_add_passwd_quality_verifier(krb5_context context,
 
 	tmp = krb5_config_get_strings(context, NULL, 
 				      "password_quality", 
-				      "policy-libraries", 
+				      "policy_libraries", 
 				      NULL);
 	if(tmp == NULL)
 	    return 0;
