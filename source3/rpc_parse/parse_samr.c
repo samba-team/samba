@@ -1516,75 +1516,42 @@ BOOL samr_io_q_query_dispinfo(const char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
-			     uint32 start_idx, SAM_ACCOUNT *disp_user_info,
-			     DOM_SID *domain_sid)
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 **sam,
+			     uint32 num_entries, uint32 start_idx,
+			     struct samr_displayentry *entries)
 {
 	uint32 i;
-
-	SAM_ACCOUNT *pwd = NULL;
-	ZERO_STRUCTP(sam);
 
 	DEBUG(10, ("init_sam_dispinfo_1: num_entries: %d\n", num_entries));
 
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY1, num_entries);
-	if (!sam->sam)
+	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_1, num_entries);
+	if (*sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	sam->str=TALLOC_ARRAY(ctx, SAM_STR1, num_entries);
-	if (!sam->str)
+	(*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY1, num_entries);
+	if ((*sam)->sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(sam->sam);
-	ZERO_STRUCTP(sam->str);
+	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR1, num_entries);
+	if ((*sam)->str == NULL)
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_entries ; i++) {
-		const char *username;
-		const char *fullname;
-		const char *acct_desc;
-		uint32 user_rid;
-		const DOM_SID *user_sid;
-		fstring user_sid_string, domain_sid_string;			
+		init_unistr2(&(*sam)->str[i].uni_acct_name,
+			     entries[i].account_name, UNI_FLAGS_NONE);
+		init_unistr2(&(*sam)->str[i].uni_full_name,
+			     entries[i].fullname, UNI_FLAGS_NONE);
+		init_unistr2(&(*sam)->str[i].uni_acct_desc,
+			     entries[i].description, UNI_FLAGS_NONE);
 
-		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
-		
-		pwd=&disp_user_info[i+start_idx];
-		
-		username = pdb_get_username(pwd);
-		fullname = pdb_get_fullname(pwd);
-		acct_desc = pdb_get_acct_desc(pwd);
-		
-		if (!username) 
-			username = "";
-
-		if (!fullname) 
-			fullname = "";
-		
-		if (!acct_desc) 
-			acct_desc = "";
-
-		user_sid = pdb_get_user_sid(pwd);
-
-		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
-			DEBUG(0, ("init_sam_dispinfo_1: User %s has SID %s, which conflicts with "
-				  "the domain sid %s.  Failing operation.\n", 
-				  username, 
-				  sid_to_string(user_sid_string, user_sid),
-				  sid_to_string(domain_sid_string, domain_sid)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-			
-		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd), UNI_FLAGS_NONE);
-		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd), UNI_FLAGS_NONE);
-		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd), UNI_FLAGS_NONE);
-
-		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
-				&sam->str[i].uni_acct_name, &sam->str[i].uni_full_name, &sam->str[i].uni_acct_desc,
-				user_rid, pdb_get_acct_ctrl(pwd));
-		
+		init_sam_entry1(&(*sam)->sam[i], start_idx+i+1,
+				&(*sam)->str[i].uni_acct_name,
+				&(*sam)->str[i].uni_full_name,
+				&(*sam)->str[i].uni_acct_desc,
+				entries[i].rid, entries[i].acct_flags);
 	}
 
 	return NT_STATUS_OK;
@@ -1639,58 +1606,39 @@ static BOOL sam_io_sam_dispinfo_1(const char *desc, SAM_DISPINFO_1 * sam,
 inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
-			     uint32 start_idx, SAM_ACCOUNT *disp_user_info, 
-			     DOM_SID *domain_sid )
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 **sam,
+			     uint32 num_entries, uint32 start_idx,
+			     struct samr_displayentry *entries)
 {
 	uint32 i;
-
-	SAM_ACCOUNT *pwd = NULL;
-	ZERO_STRUCTP(sam);
 
 	DEBUG(10, ("init_sam_dispinfo_2: num_entries: %d\n", num_entries));
 
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY2, num_entries)))
+	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_2, num_entries);
+	if (*sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR2, num_entries)))
+	(*sam)->sam = TALLOC_ARRAY(ctx, SAM_ENTRY2, num_entries);
+	if ((*sam)->sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(sam->sam);
-	ZERO_STRUCTP(sam->str);
+	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR2, num_entries);
+	if ((*sam)->str == NULL)
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_entries; i++) {
-		uint32 user_rid;
-		const DOM_SID *user_sid;
-		const char *username;
-		const char *acct_desc;
-		fstring user_sid_string, domain_sid_string;			
+		init_unistr2(&(*sam)->str[i].uni_srv_name,
+			     entries[i].account_name, UNI_FLAGS_NONE);
+		init_unistr2(&(*sam)->str[i].uni_srv_desc,
+			     entries[i].description, UNI_FLAGS_NONE);
 
-		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
-		pwd=&disp_user_info[i+start_idx];
-
-		username = pdb_get_username(pwd);
-		acct_desc = pdb_get_acct_desc(pwd);
-		user_sid = pdb_get_user_sid(pwd);
-
-		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
-			DEBUG(0, ("init_sam_dispinfo_2: User %s has SID %s, which conflicts with "
-				  "the domain sid %s.  Failing operation.\n", 
-				  username, 
-				  sid_to_string(user_sid_string, user_sid),
-				  sid_to_string(domain_sid_string, domain_sid)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-			
-		init_unistr2(&sam->str[i].uni_srv_name, username, UNI_FLAGS_NONE);
-		init_unistr2(&sam->str[i].uni_srv_desc, acct_desc, UNI_FLAGS_NONE);
-
-		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
-			  &sam->str[i].uni_srv_name, &sam->str[i].uni_srv_desc,
-			  user_rid, pdb_get_acct_ctrl(pwd));
+		init_sam_entry2(&(*sam)->sam[i], start_idx + i + 1,
+				&(*sam)->str[i].uni_srv_name,
+				&(*sam)->str[i].uni_srv_desc,
+				entries[i].rid, entries[i].acct_flags);
 	}
 
 	return NT_STATUS_OK;
@@ -1747,37 +1695,39 @@ static BOOL sam_io_sam_dispinfo_2(const char *desc, SAM_DISPINFO_2 * sam,
 inits a SAM_DISPINFO_3 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_entries,
-			 uint32 start_idx, DOMAIN_GRP *disp_group_info)
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 **sam,
+			     uint32 num_entries, uint32 start_idx,
+			     struct samr_displayentry *entries)
 {
 	uint32 i;
-
-	ZERO_STRUCTP(sam);
 
 	DEBUG(5, ("init_sam_dispinfo_3: num_entries: %d\n", num_entries));
 
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY3, num_entries)))
+	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_3, num_entries);
+	if (*sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR3, num_entries)))
+	if (!((*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY3, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(sam->sam);
-	ZERO_STRUCTP(sam->str);
+	if (!((*sam)->str=TALLOC_ARRAY(ctx, SAM_STR3, num_entries)))
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_entries; i++) {
-		DOMAIN_GRP *grp = &disp_group_info[i+start_idx];
-
 		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
 
-		init_unistr2(&sam->str[i].uni_grp_name, grp->name, UNI_FLAGS_NONE);
-		init_unistr2(&sam->str[i].uni_grp_desc, grp->comment, UNI_FLAGS_NONE);
+		init_unistr2(&(*sam)->str[i].uni_grp_name,
+			     entries[i].account_name, UNI_FLAGS_NONE);
+		init_unistr2(&(*sam)->str[i].uni_grp_desc,
+			     entries[i].description, UNI_FLAGS_NONE);
 
-		init_sam_entry3(&sam->sam[i], start_idx + i + 1, &sam->str[i].uni_grp_name,
-				&sam->str[i].uni_grp_desc, grp->rid);
+		init_sam_entry3(&(*sam)->sam[i], start_idx+i+1,
+				&(*sam)->str[i].uni_grp_name,
+				&(*sam)->str[i].uni_grp_desc,
+				entries[i].rid);
 	}
 
 	return NT_STATUS_OK;
@@ -1834,38 +1784,40 @@ static BOOL sam_io_sam_dispinfo_3(const char *desc, SAM_DISPINFO_3 * sam,
 inits a SAM_DISPINFO_4 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_entries,
-			 uint32 start_idx, SAM_ACCOUNT *disp_user_info)
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 **sam,
+			     uint32 num_entries, uint32 start_idx,
+			     struct samr_displayentry *entries)
 {
-	uint32 len_sam_name;
 	uint32 i;
-
-	SAM_ACCOUNT *pwd = NULL;
-	ZERO_STRUCTP(sam);
 
 	DEBUG(5, ("init_sam_dispinfo_4: num_entries: %d\n", num_entries));
 
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY4, num_entries)))
+	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_4, num_entries);
+	if (*sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR4, num_entries)))
+	(*sam)->sam = TALLOC_ARRAY(ctx, SAM_ENTRY4, num_entries);
+	if ((*sam)->sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(sam->sam);
-	ZERO_STRUCTP(sam->str);
+	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR4, num_entries);
+	if ((*sam)->str == NULL)
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_entries; i++) {
+		size_t len_sam_name = strlen(entries[i].account_name);
+
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
-		pwd=&disp_user_info[i+start_idx];
-
-		len_sam_name = strlen(pdb_get_username(pwd));
 	  
-		init_sam_entry4(&sam->sam[i], start_idx + i + 1, len_sam_name);
+		init_sam_entry4(&(*sam)->sam[i], start_idx + i + 1,
+				len_sam_name);
 
-		init_string2(&sam->str[i].acct_name, pdb_get_username(pwd), len_sam_name+1, len_sam_name);
+		init_string2(&(*sam)->str[i].acct_name,
+			     entries[i].account_name, len_sam_name+1,
+			     len_sam_name);
 	}
 	
 	return NT_STATUS_OK;
@@ -1921,37 +1873,36 @@ static BOOL sam_io_sam_dispinfo_4(const char *desc, SAM_DISPINFO_4 * sam,
 inits a SAM_DISPINFO_5 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_entries,
-			 uint32 start_idx, DOMAIN_GRP *disp_group_info)
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 **sam,
+			     uint32 num_entries, uint32 start_idx,
+			     struct samr_displayentry *entries)
 {
 	uint32 len_sam_name;
 	uint32 i;
-
-	ZERO_STRUCTP(sam);
 
 	DEBUG(5, ("init_sam_dispinfo_5: num_entries: %d\n", num_entries));
 
 	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=TALLOC_ARRAY(ctx, SAM_ENTRY5, num_entries)))
+	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_5, num_entries);
+	if (*sam == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=TALLOC_ARRAY(ctx, SAM_STR5, num_entries)))
+	if (!((*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY5, num_entries)))
 		return NT_STATUS_NO_MEMORY;
 
-	ZERO_STRUCTP(sam->sam);
-	ZERO_STRUCTP(sam->str);
+	if (!((*sam)->str=TALLOC_ARRAY(ctx, SAM_STR5, num_entries)))
+		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < num_entries; i++) {
-		DOMAIN_GRP *grp = &disp_group_info[i+start_idx];
-
 		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
 
-		len_sam_name = strlen(grp->name);
+		len_sam_name = strlen(entries[i].account_name);
 	  
-		init_sam_entry5(&sam->sam[i], start_idx + i + 1, len_sam_name);
-		init_string2(&sam->str[i].grp_name, grp->name, len_sam_name+1, len_sam_name);
+		init_sam_entry5(&(*sam)->sam[i], start_idx+i+1, len_sam_name);
+		init_string2(&(*sam)->str[i].grp_name, entries[i].account_name,
+			     len_sam_name+1, len_sam_name);
 	}
 
 	return NT_STATUS_OK;

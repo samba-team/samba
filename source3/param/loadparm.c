@@ -246,6 +246,7 @@ typedef struct
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
+	int ldap_page_size;
 	BOOL ldap_delete_dn;
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
@@ -1121,6 +1122,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
 	{"ldap timeout", P_INTEGER, P_GLOBAL, &Globals.ldap_timeout, NULL, NULL, FLAG_ADVANCED},
+	{"ldap page size", P_INTEGER, P_GLOBAL, &Globals.ldap_page_size, NULL, NULL, FLAG_ADVANCED},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
@@ -1512,6 +1514,7 @@ static void init_globals(void)
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
 	Globals.ldap_timeout = LDAP_CONNECT_DEFAULT_TIMEOUT;
+	Globals.ldap_page_size = LDAP_PAGE_SIZE;
 
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
@@ -1770,6 +1773,7 @@ FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
 FN_GLOBAL_INTEGER(lp_ldap_timeout, &Globals.ldap_timeout)
+FN_GLOBAL_INTEGER(lp_ldap_page_size, &Globals.ldap_page_size)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
