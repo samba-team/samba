@@ -3323,6 +3323,470 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	return result;
 }
 
+char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
+{
+	char *filter = NULL;
+	char *escaped = NULL;
+	char *result = NULL;
+
+	asprintf(&filter, "(&%s(objectclass=sambaSamAccount))",
+		 lp_ldap_filter());
+	if (filter == NULL) goto done;
+
+	escaped = escape_ldap_string_alloc(username);
+	if (escaped == NULL) goto done;
+
+	filter = realloc_string_sub(filter, "%u", username);
+	result = talloc_strdup(mem_ctx, filter);
+
+ done:
+	SAFE_FREE(filter);
+	SAFE_FREE(escaped);
+
+	return result;
+}
+
+const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
+{
+	int i, num = 0;
+	va_list ap;
+	const char **result;
+
+	va_start(ap, mem_ctx);
+	while (va_arg(ap, const char *) != NULL)
+		num += 1;
+	va_end(ap);
+
+	result = TALLOC_ARRAY(mem_ctx, const char *, num+1);
+
+	va_start(ap, mem_ctx);
+	for (i=0; i<num; i++)
+		result[i] = talloc_strdup(mem_ctx, va_arg(ap, const char*));
+	va_end(ap);
+
+	result[num] = NULL;
+	return result;
+}
+
+struct ldap_search_state {
+	struct smbldap_state *connection;
+
+	uint16 acct_flags;
+
+	const char *base;
+	int scope;
+	const char *filter;
+	const char **attrs;
+	int attrsonly;
+	void *pagedresults_cookie;
+
+	LDAPMessage *entries, *current_entry;
+	BOOL (*ldap2displayentry)(struct ldap_search_state *state,
+				  TALLOC_CTX *mem_ctx,
+				  LDAP *ld, LDAPMessage *entry,
+				  struct samr_displayentry *result);
+};
+
+static BOOL ldapsam_search_firstpage(struct pdb_search *search)
+{
+	struct ldap_search_state *state = search->private;
+	LDAP *ld = state->connection->ldap_struct;
+	int rc = LDAP_OPERATIONS_ERROR;
+
+	state->entries = NULL;
+
+	if (state->connection->paged_results) {
+		rc = smbldap_search_paged(state->connection, state->base,
+					  state->scope, state->filter,
+					  state->attrs, state->attrsonly,
+					  lp_ldap_page_size(), &state->entries,
+					  &state->pagedresults_cookie);
+	}
+
+	if ((rc != LDAP_SUCCESS) || (state->entries == NULL)) {
+
+		if (state->entries != NULL) {
+			/* Left over from unsuccessful paged attempt */
+			ldap_msgfree(state->entries);
+			state->entries = NULL;
+		}
+
+		rc = smbldap_search(state->connection, state->base,
+				    state->scope, state->filter, state->attrs,
+				    state->attrsonly, &state->entries);
+
+		if ((rc != LDAP_SUCCESS) || (state->entries == NULL))
+			return False;
+
+		/* Ok, the server was lying. It told us it could do paged
+		 * searches when it could not. */
+		state->connection->paged_results = False;
+	}
+
+	state->current_entry = ldap_first_entry(ld, state->entries);
+
+	if (state->current_entry == NULL) {
+		ldap_msgfree(state->entries);
+		state->entries = NULL;
+	}
+
+	return True;
+}
+
+static BOOL ldapsam_search_nextpage(struct pdb_search *search)
+{
+	struct ldap_search_state *state = search->private;
+	LDAP *ld = state->connection->ldap_struct;
+	int rc;
+
+	if (!state->connection->paged_results) {
+		/* There is no next page when there are no paged results */
+		return False;
+	}
+
+	rc = smbldap_search_paged(state->connection, state->base,
+				  state->scope, state->filter, state->attrs,
+				  state->attrsonly, lp_ldap_page_size(),
+				  &state->entries,
+				  &state->pagedresults_cookie);
+
+	if ((rc != LDAP_SUCCESS) || (state->entries == NULL))
+		return False;
+
+	state->current_entry = ldap_first_entry(ld, state->entries);
+
+	if (state->current_entry == NULL) {
+		ldap_msgfree(state->entries);
+		state->entries = NULL;
+	}
+
+	return True;
+}
+
+static BOOL ldapsam_search_next_entry(struct pdb_methods *methods,
+				      struct pdb_search *search,
+				      struct samr_displayentry *entry)
+{
+	struct ldap_search_state *state = search->private;
+	LDAP *ld = state->connection->ldap_struct;
+	BOOL result;
+
+ retry:
+	if ((state->entries == NULL) && (state->pagedresults_cookie == NULL))
+		return False;
+
+	if ((state->entries == NULL) &&
+	    !ldapsam_search_nextpage(search))
+		    return False;
+
+	result = state->ldap2displayentry(state, search->mem_ctx, ld,
+					  state->current_entry, entry);
+
+	if (!result) {
+		char *dn;
+		dn = ldap_get_dn(ld, state->current_entry);
+		DEBUG(5, ("Skipping entry %s\n", dn != NULL ? dn : "<NULL>"));
+		if (dn != NULL) ldap_memfree(dn);
+	}
+
+	state->current_entry = ldap_next_entry(ld, state->current_entry);
+
+	if (state->current_entry == NULL) {
+		ldap_msgfree(state->entries);
+		state->entries = NULL;
+	}
+
+	if (!result) goto retry;
+
+	return True;
+}
+
+static void ldapsam_search_end(struct pdb_methods *methods,
+			       struct pdb_search *search)
+{
+	struct ldap_search_state *state = search->private;
+	int rc;
+
+	if (state->pagedresults_cookie == NULL)
+		return;
+
+	if (state->entries != NULL)
+		ldap_msgfree(state->entries);
+
+	state->entries = NULL;
+	state->current_entry = NULL;
+
+	if (!state->connection->paged_results)
+		return;
+
+	/* Tell the LDAP server we're not interested in the rest anymore. */
+
+	rc = smbldap_search_paged(state->connection, state->base, state->scope,
+				  state->filter, state->attrs,
+				  state->attrsonly, 0, &state->entries,
+				  &state->pagedresults_cookie);
+
+	if (rc != LDAP_SUCCESS)
+		DEBUG(5, ("Could not end search properly\n"));
+
+	return;
+}
+
+static BOOL ldapuser2displayentry(struct ldap_search_state *state,
+				  TALLOC_CTX *mem_ctx,
+				  LDAP *ld, LDAPMessage *entry,
+				  struct samr_displayentry *result)
+{
+	char **vals;
+	DOM_SID sid;
+	uint16 acct_flags;
+
+	vals = ldap_get_values(ld, entry, "sambaAcctFlags");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(5, ("\"sambaAcctFlags\" not found\n"));
+		return False;
+	}
+	acct_flags = pdb_decode_acct_ctrl(vals[0]);
+	ldap_value_free(vals);
+
+	if ((state->acct_flags != 0) &&
+	    ((state->acct_flags & acct_flags) == 0))
+		return False;		
+
+	result->acct_flags = acct_flags;
+	result->account_name = "";
+	result->fullname = "";
+	result->description = "";
+
+	vals = ldap_get_values(ld, entry, "uid");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(5, ("\"uid\" not found\n"));
+		return False;
+	}
+	pull_utf8_talloc(mem_ctx,
+			 CONST_DISCARD(char **, &result->account_name),
+			 vals[0]);
+	ldap_value_free(vals);
+
+	vals = ldap_get_values(ld, entry, "displayName");
+	if ((vals == NULL) || (vals[0] == NULL))
+		DEBUG(8, ("\"displayName\" not found\n"));
+	else
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->fullname),
+				 vals[0]);
+	ldap_value_free(vals);
+
+	vals = ldap_get_values(ld, entry, "description");
+	if ((vals == NULL) || (vals[0] == NULL))
+		DEBUG(8, ("\"description\" not found\n"));
+	else
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->description),
+				 vals[0]);
+	ldap_value_free(vals);
+
+	if ((result->account_name == NULL) ||
+	    (result->fullname == NULL) ||
+	    (result->description == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+	
+	vals = ldap_get_values(ld, entry, "sambaSid");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(0, ("\"objectSid\" not found\n"));
+		return False;
+	}
+
+	if (!string_to_sid(&sid, vals[0])) {
+		DEBUG(0, ("Could not convert %s to SID\n", vals[0]));
+		ldap_value_free(vals);
+		return False;
+	}
+	ldap_value_free(vals);
+
+	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
+		DEBUG(0, ("%s is not our domain\n", vals[0]));
+		return False;
+	}
+
+	return True;
+}
+
+
+static BOOL ldapsam_search_users(struct pdb_methods *methods,
+				 struct pdb_search *search,
+				 uint16 acct_flags)
+{
+	struct ldapsam_privates *ldap_state = methods->private_data;
+	struct ldap_search_state *state;
+
+	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	state->connection = ldap_state->smbldap_state;
+
+	if ((acct_flags != 0) && ((acct_flags & ACB_NORMAL) != 0))
+		state->base = lp_ldap_user_suffix();
+	else if ((acct_flags != 0) &&
+		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST)) != 0))
+		state->base = lp_ldap_machine_suffix();
+	else
+		state->base = lp_ldap_suffix();
+
+	state->acct_flags = acct_flags;
+	state->base = talloc_strdup(search->mem_ctx, state->base);
+	state->scope = LDAP_SCOPE_SUBTREE;
+	state->filter = get_ldap_filter(search->mem_ctx, "*");
+	state->attrs = talloc_attrs(search->mem_ctx, "uid", "sambaSid",
+				    "displayName", "description",
+				    "sambaAcctFlags", NULL);
+	state->attrsonly = 0;
+	state->pagedresults_cookie = NULL;
+	state->entries = NULL;
+	state->ldap2displayentry = ldapuser2displayentry;
+
+	if ((state->filter == NULL) || (state->attrs == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	search->private = state;
+
+	return ldapsam_search_firstpage(search);
+}
+
+static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
+				   TALLOC_CTX *mem_ctx,
+				   LDAP *ld, LDAPMessage *entry,
+				   struct samr_displayentry *result)
+{
+	char **vals;
+	DOM_SID sid;
+
+	result->account_name = "";
+	result->fullname = "";
+	result->description = "";
+
+	vals = ldap_get_values(ld, entry, "cn");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(5, ("\"cn\" not found\n"));
+		return False;
+	}
+	pull_utf8_talloc(mem_ctx,
+			 CONST_DISCARD(char **, &result->account_name),
+			 vals[0]);
+	ldap_value_free(vals);
+
+	vals = ldap_get_values(ld, entry, "displayName");
+	if ((vals == NULL) || (vals[0] == NULL))
+		DEBUG(8, ("\"displayName\" not found\n"));
+	else
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->fullname),
+				 vals[0]);
+	ldap_value_free(vals);
+
+	vals = ldap_get_values(ld, entry, "description");
+	if ((vals == NULL) || (vals[0] == NULL))
+		DEBUG(8, ("\"description\" not found\n"));
+	else
+		pull_utf8_talloc(mem_ctx,
+				 CONST_DISCARD(char **, &result->description),
+				 vals[0]);
+	ldap_value_free(vals);
+
+	if ((result->account_name == NULL) ||
+	    (result->fullname == NULL) ||
+	    (result->description == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+	
+	vals = ldap_get_values(ld, entry, "sambaSid");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(0, ("\"objectSid\" not found\n"));
+		return False;
+	}
+
+	if (!string_to_sid(&sid, vals[0])) {
+		DEBUG(0, ("Could not convert %s to SID\n", vals[0]));
+		return False;
+	}
+
+	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
+		DEBUG(0, ("%s is not our domain\n", vals[0]));
+		return False;
+	}
+	ldap_value_free(vals);
+
+	return True;
+}
+
+static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
+				     struct pdb_search *search,
+				     enum SID_NAME_USE type)
+{
+	struct ldapsam_privates *ldap_state = methods->private_data;
+	struct ldap_search_state *state;
+
+	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	state->connection = ldap_state->smbldap_state;
+
+	state->base = talloc_strdup(search->mem_ctx, lp_ldap_group_suffix());
+	state->connection = ldap_state->smbldap_state;
+	state->scope = LDAP_SCOPE_SUBTREE;
+	state->filter =	talloc_asprintf(search->mem_ctx,
+					"(&(objectclass=sambaGroupMapping)"
+					"(sambaGroupType=%d))", type);
+	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
+				    "displayName", "description", NULL);
+	state->attrsonly = 0;
+	state->pagedresults_cookie = NULL;
+	state->entries = NULL;
+	state->ldap2displayentry = ldapgroup2displayentry;
+
+	if ((state->filter == NULL) || (state->attrs == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	search->private = state;
+
+	return ldapsam_search_firstpage(search);
+}
+
+static BOOL ldapsam_search_groups(struct pdb_methods *methods,
+				  struct pdb_search *search)
+{
+	return ldapsam_search_grouptype(methods, search, SID_NAME_DOM_GRP);
+}
+
+static BOOL ldapsam_search_aliases(struct pdb_methods *methods,
+				   struct pdb_search *search,
+				   const DOM_SID *sid)
+{
+	if (sid_check_is_domain(sid))
+		return ldapsam_search_grouptype(methods, search,
+						SID_NAME_ALIAS);
+
+	if (sid_check_is_builtin(sid))
+		return ldapsam_search_grouptype(methods, search,
+						SID_NAME_WKN_GRP);
+
+	DEBUG(5, ("Don't know SID %s\n", sid_string_static(sid)));
+	return False;
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -3381,6 +3845,11 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 	(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
+	(*pdb_method)->search_users = ldapsam_search_users;
+	(*pdb_method)->search_groups = ldapsam_search_groups;
+	(*pdb_method)->search_aliases = ldapsam_search_aliases;
+	(*pdb_method)->search_next_entry = ldapsam_search_next_entry;
+	(*pdb_method)->search_end = ldapsam_search_end;
 
 	/* TODO: Setup private data and free */
 

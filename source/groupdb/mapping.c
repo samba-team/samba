@@ -1247,53 +1247,6 @@ NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
-NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
-				  const DOM_SID *sid,
-				  uint32 start_idx, uint32 max_entries,
-				  uint32 *num_aliases,
-				  struct acct_info **info)
-{
-	GROUP_MAP *map;
-	int i, num_maps;
-	enum SID_NAME_USE type = SID_NAME_UNKNOWN;
-
-	if (sid_compare(sid, get_global_sam_sid()) == 0)
-		type = SID_NAME_ALIAS;
-
-	if (sid_compare(sid, &global_sid_Builtin) == 0)
-		type = SID_NAME_WKN_GRP;
-
-	if (!pdb_enum_group_mapping(type, &map, &num_maps, False) ||
-	    (num_maps == 0)) {
-		*num_aliases = 0;
-		*info = NULL;
-		goto done;
-	}
-
-	if (start_idx > num_maps) {
-		*num_aliases = 0;
-		*info = NULL;
-		goto done;
-	}
-
-	*num_aliases = num_maps - start_idx;
-
-	if (*num_aliases > max_entries)
-		*num_aliases = max_entries;
-
-	*info = SMB_MALLOC_ARRAY(struct acct_info, *num_aliases);
-
-	for (i=0; i<*num_aliases; i++) {
-		fstrcpy((*info)[i].acct_name, map[i+start_idx].nt_name);
-		fstrcpy((*info)[i].acct_desc, map[i+start_idx].comment);
-		sid_peek_rid(&map[i].sid, &(*info)[i+start_idx].rid);
-	}
-
- done:
-	SAFE_FREE(map);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 				   const DOM_SID *sid,
 				   struct acct_info *info)

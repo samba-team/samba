@@ -856,6 +856,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	}
 
 	ldap_state->num_failures = 0;
+	ldap_state->paged_results = False;
 
 	ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
 
@@ -864,7 +865,8 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	}
 
 	DEBUG(3, ("ldap_connect_system: succesful connection to the LDAP server\n"));
-	DEBUGADD(3, ("ldap_connect_system: LDAP server %s support paged results\n", ldap_state->paged_results?"does":"does not"));
+	DEBUGADD(10, ("ldap_connect_system: LDAP server %s support paged results\n", 
+		ldap_state->paged_results ? "does" : "does not"));
 	return rc;
 }
 
@@ -1022,20 +1024,22 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 /*********************************************************************
  ********************************************************************/
 
-int smbldap_search(struct smbldap_state *ldap_state, 
-		   const char *base, int scope, const char *filter, 
-		   const char *attrs[], int attrsonly, 
-		   LDAPMessage **res)
+static int smbldap_search_ext(struct smbldap_state *ldap_state,
+			      const char *base, int scope, const char *filter, 
+			      const char *attrs[], int attrsonly,
+			      LDAPControl **sctrls, LDAPControl **cctrls, 
+			      int sizelimit, LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_filter;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
+	struct		timeval timeout;
 
 	SMB_ASSERT(ldap_state);
 	
-	DEBUG(5,("smbldap_search: base => [%s], filter => [%s], scope => [%d]\n",
-		base, filter, scope));
+	DEBUG(5,("smbldap_search_ext: base => [%s], filter => [%s], "
+		 "scope => [%d]\n", base, filter, scope));
 
 	if (ldap_state->last_rebind.tv_sec > 0) {
 		struct timeval	tval;
@@ -1053,9 +1057,10 @@ int smbldap_search(struct smbldap_state *ldap_state,
 
 		if (sleep_time > 0) {
 			/* we wait for the LDAP replication */
-			DEBUG(5,("smbldap_search: waiting %d milliseconds for LDAP replication.\n",sleep_time));
+			DEBUG(5,("smbldap_search_ext: waiting %d milliseconds "
+				 "for LDAP replication.\n",sleep_time));
 			smb_msleep(sleep_time);
-			DEBUG(5,("smbldap_search: go on!\n"));
+			DEBUG(5,("smbldap_search_ext: go on!\n"));
 		}
 		ZERO_STRUCT(ldap_state->last_rebind);
 	}
@@ -1064,13 +1069,138 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		return LDAP_NO_MEMORY;
 	}
 
+	/* Setup timeout for the ldap_search_ext_s call - local and remote. */
+	timeout.tv_sec = lp_ldap_timeout();
+	timeout.tv_usec = 0;
+
+	/* Setup alarm timeout.... Do we need both of these ? JRA.
+	 * Yes, I think we do need both of these. The server timeout only
+	 * covers the case where the server's operation takes too long. It
+	 * does not cover the case where the request hangs on its way to the
+	 * server. The server side timeout is not strictly necessary, it's
+	 * just a bit more kind to the server. VL. */
+
+	got_alarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(lp_ldap_timeout());
+	/* End setup timeout. */
+
 	while (another_ldap_try(ldap_state, &rc, &attempts, endtime))
-		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
-				   utf8_filter,
-                                   CONST_DISCARD(char **, attrs),
-                                   attrsonly, res);
-	
+		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
+				       utf8_filter,
+				       CONST_DISCARD(char **, attrs),
+				       attrsonly, sctrls, cctrls, &timeout,
+				       sizelimit, res);
+
 	SAFE_FREE(utf8_filter);
+
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
+
+	if (got_alarm != 0)
+		return LDAP_TIMELIMIT_EXCEEDED;
+
+	return rc;
+}
+
+int smbldap_search(struct smbldap_state *ldap_state, 
+		   const char *base, int scope, const char *filter, 
+		   const char *attrs[], int attrsonly, 
+		   LDAPMessage **res)
+{
+	return smbldap_search_ext(ldap_state, base, scope, filter, attrs,
+				  attrsonly, NULL, NULL, LDAP_NO_LIMIT, res);
+}
+
+int smbldap_search_paged(struct smbldap_state *ldap_state, 
+			 const char *base, int scope, const char *filter, 
+			 const char **attrs, int attrsonly, int pagesize,
+			 LDAPMessage **res, void **cookie)
+{
+	LDAPControl     pr;
+	LDAPControl 	**rcontrols;
+	LDAPControl 	*controls[2] = { NULL, NULL};
+	BerElement 	*cookie_be = NULL;
+	struct berval 	*cookie_bv = NULL;
+	int		tmp = 0, i, rc;
+	BOOL 		critical = True;
+
+	*res = NULL;
+
+	DEBUG(3,("smbldap_search_paged: base => [%s], filter => [%s],"
+		 "scope => [%d], pagesize => [%d]\n",
+		 base, filter, scope, pagesize));
+
+	cookie_be = ber_alloc_t(LBER_USE_DER);
+	if (cookie_be == NULL) {
+		DEBUG(0,("smbldap_create_page_control: ber_alloc_t returns "
+			 "NULL\n"));
+		return LDAP_NO_MEMORY;
+	}
+
+	/* construct cookie */
+	if (*cookie != NULL) {
+		ber_printf(cookie_be, "{iO}", (ber_int_t) pagesize, *cookie);
+		ber_bvfree(*cookie); /* don't need it from last time */
+		*cookie = NULL;
+	} else {
+		ber_printf(cookie_be, "{io}", (ber_int_t) pagesize, "", 0);
+	}
+	ber_flatten(cookie_be, &cookie_bv);
+
+	pr.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
+	pr.ldctl_iscritical = (char) critical;
+	pr.ldctl_value.bv_len = cookie_bv->bv_len;
+	pr.ldctl_value.bv_val = cookie_bv->bv_val;
+
+	controls[0] = &pr;
+	controls[1] = NULL;
+
+	rc = smbldap_search_ext(ldap_state, base, scope, filter, attrs, 
+				 0, controls, NULL, LDAP_NO_LIMIT, res);
+
+	ber_free(cookie_be, 1);
+	ber_bvfree(cookie_bv);
+
+	if (rc != 0) {
+		DEBUG(3,("smbldap_search_paged: smbldap_search_ext(%s) "
+			 "failed with [%s]\n", filter, ldap_err2string(rc)));
+		goto done;
+	}
+
+	DEBUG(3,("smbldap_search_paged: search was successfull\n"));
+
+	rc = ldap_parse_result(ldap_state->ldap_struct, *res, NULL, NULL, 
+			       NULL, NULL, &rcontrols,  0);
+	if (rc != 0) {
+		DEBUG(3,("smbldap_search_paged: ldap_parse_result failed " \
+			 "with [%s]\n", ldap_err2string(rc)));
+		goto done;
+	}
+
+	if (rcontrols == NULL)
+		goto done;
+
+	for (i=0; rcontrols[i]; i++) {
+
+		if (strcmp(ADS_PAGE_CTL_OID, rcontrols[i]->ldctl_oid) != 0)
+			continue;
+
+		cookie_be = ber_init(&rcontrols[i]->ldctl_value);
+		ber_scanf(cookie_be,"{iO}", &tmp, &cookie_bv);
+		/* the berval is the cookie, but must be freed when it is all
+		   done */
+		if (cookie_bv->bv_len)
+			*cookie=ber_bvdup(cookie_bv);
+		else
+			*cookie=NULL;
+		ber_bvfree(cookie_bv);
+		ber_free(cookie_be, 1);
+		break;
+	}
+	ldap_controls_free(rcontrols);
+done:	
 	return rc;
 }
 
