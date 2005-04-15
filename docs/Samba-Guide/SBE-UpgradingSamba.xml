@@ -462,10 +462,48 @@ Paths:
 	</para>
 
 	<para>
+	<indexterm><primary></primary></indexterm>
 	It is important that both the &smb.conf; file and the <filename>secrets.tdb</filename> should
 	be backed up before attempting any upgrade. The <filename>secrets.tdb</filename> file is version
 	encoded and therefore a newer version may not work with an older version of Samba. A backup
 	means that it is always possible to revert a failed or problematic upgrade.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>International Language Support</title>
+
+	<para>
+	<indexterm><primary>unicode</primary></indexterm>
+	<indexterm><primary>character set</primary></indexterm>
+	<indexterm><primary>codepage</primary></indexterm>
+	<indexterm><primary>internationalization</primary></indexterm>
+	Samba-2.x had not support for Unicode, instead all national language character set support in file names
+	was done using particular locale codepage mapping techniques. Samba-3 supports Unicode in file names, thus
+	providing true internationalization support.
+	</para>
+
+	<para>
+	<indexterm><primary>8-bit</primary></indexterm>
+	Non-English users whose national language character set has special characters and who upgrade naively will 
+	find that many files that have the special chracters in the file name will see them garbled and jumbled up.
+	This typically happens with umlauts and accents because these characters were particular to the codepage
+	that was in use with Samba-2.x using an 8-bit encoding scheme.
+	</para>
+
+	<para>
+	<indexterm><primary>UTF-8</primary></indexterm>
+	Files that are created with Samba-3 will use UTF-8 encoding. Should the file system ever end up with a
+	mix of codepage (unix charset) encoded file names and UTF-8 encoded file names, the mess will take some
+	effort to set straight.
+	</para>
+
+	<para>
+	<indexterm><primary>convmv</primary></indexterm>
+	A very helpful tool is available from Bjorn Jacke's <ulink url="http://j3e.de/linux/convmv/">convmv</ulink>
+	work. Convmv is a tool that can be used to convert file and directory names from one encoding method to
+	another. The most common use for this tool is to convert locale encoded files to UTF-8 Unicode encoding.
 	</para>
 
 	</sect3>
