@@ -1,4 +1,11 @@
-2005-04-14 Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-15  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* doc/setup.texi: document new password policy code
+	
+	* kpasswd/kpasswdd.c: add verifier libraries with
+	kadm5_add_passwd_quality_verifier
+
+2005-04-14  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* kdc/kaserver.c: AUTHENTICATE and AUTHENTICATE_V2 is almost the
 	same, and clients
