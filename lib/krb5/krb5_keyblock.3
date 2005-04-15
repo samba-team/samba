@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd Apr 14, 2005
 .Dt KRB5_KEYBLOCK 3
 .Os HEIMDAL
 .Sh NAME
@@ -44,6 +44,7 @@
 .Nm krb5_generate_random_keyblock ,
 .Nm krb5_generate_subkey ,
 .Nm krb5_generate_subkey_extended ,
+.Nm krb5_keyblock_init ,
 .Nm krb5_keyblock_zero ,
 .Nm krb5_random_to_key
 .Nd Kerberos 5 key handling functions.
@@ -96,6 +97,14 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "const krb5_keyblock *key"
 .Fa "krb5_enctype enctype"
 .Fa "krb5_keyblock **subkey"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_keyblock_init
+.Fa "krb5_context context"
+.Fa "krb5_enctype type"
+.Fa "const void *data"
+.Fa "size_t size"
+.Fa "krb5_keyblock *key"
 .Fc
 .Ft void
 .Fo krb5_keyblock_zero
@@ -174,6 +183,18 @@ of the same type as
 .Fa key .
 The caller must free the subkey with
 .Fa krb5_free_keyblock .
+.Pp
+.Fn krb5_keyblock_init
+Fill in
+.Fa key
+with key data of type
+.Fa enctype
+from 
+.Fa data
+of length
+.Fa size .
+Key should be freed using
+.Fn krb5_free_keyblock_contents .
 .Pp
 .Fn krb5_keyblock_zero
 zeros out the keyblock to to make sure no keymaterial is in
