@@ -135,3 +135,40 @@ struct smb_composite_sesssetup {
 		uint16_t vuid;
 	} out;		
 };
+
+/*
+  query file system info
+*/
+struct smb_composite_fsinfo {
+	struct {
+		const char *dest_host;
+		int port;
+		const char *called_name;
+		const char *service;
+		const char *service_type;
+		struct cli_credentials *credentials;
+		const char *workgroup;
+		enum smb_fsinfo_level level;
+	} in;
+	
+	struct {
+		union smb_fsinfo *fsinfo;
+	} out;
+};
+
+/*
+  composite call for appending new acl to the file's security descriptor and get 
+  new full acl
+*/
+
+struct smb_composite_appendacl {
+	struct {
+		const char *fname;
+
+		const struct security_descriptor *sd;
+	} in;
+	
+	struct {
+		struct security_descriptor *sd;
+	} out;
+};
