@@ -6,10 +6,6 @@
 First you need to know how the Kerberos model works, go read the
 introduction text (@pxref{What is Kerberos?}).
 
-@macro manpage{man, section}
-@cite{\man\(\section\)}
-@end macro
-
 @menu
 * Kerberos 5 API Overview::     
 * Walkthru a sample Kerberos 5 client::  
@@ -53,6 +49,16 @@ support for Kerberos 5 keytabs, Kerberos 4 srvtab, AFS-KeyFile's,
 and for storing keys in memory.
 
 See also manual page for @manpage{krb5_keytab,3}
+
+@subsection Kerberos principal
+
+See also manual page for @manpage{krb5_principal,3}
+
+@subsection Kerberos crypto
+
+See also manual page for @manpage{krb5_crypto_init,3},
+@manpage{krb5_keyblock,3}, @manpage{krb5_create_checksum,3}, 
+and @manpage{krb5_encrypt,3}.
 
 @node Walkthru a sample Kerberos 5 client, Validating a password in a server application, Kerberos 5 API Overview, Programming with Kerberos
 @section Walkthru a sample Kerberos 5 client
