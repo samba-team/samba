@@ -260,6 +260,7 @@ static int do_cd(char *newdir)
 	struct cli_state *targetcli;
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
+	int ret = 1;
       
 	dos_format(newdir);
 
@@ -305,21 +306,23 @@ static int do_cd(char *newdir)
 			pstrcpy(cur_dir,saved_dir);
 			goto out;
 		}		
-	}
-	else {
+	} else {
 		pstrcat( targetpath, "\\" );
 		dos_clean_name( targetpath );
 		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
 			pstrcpy(cur_dir,saved_dir);
+			goto out;
 		}
 	}
 
-out:
-	pstrcpy(cd_path,cur_dir);
+	ret = 0;
 
-	return 0;
+out:
+	
+	pstrcpy(cd_path,cur_dir);
+	return ret;
 }
 
 /****************************************************************************
@@ -3170,7 +3173,13 @@ static int process(char *base_directory)
 		return 1;
 	}
 
-	if (*base_directory) do_cd(base_directory);
+	if (*base_directory) {
+		rc = do_cd(base_directory);
+		if (rc) {
+			cli_cm_shutdown();
+			return rc;
+		}
+	}
 	
 	if (cmdstr) {
 		rc = process_command_string(cmdstr);
@@ -3233,7 +3242,13 @@ static int do_tar_op(char *base_directory)
 
 	recurse=True;
 
-	if (*base_directory) do_cd(base_directory);
+	if (*base_directory)  {
+		ret = do_cd(base_directory);
+		if (ret) {
+			cli_cm_shutdown();
+			return ret;
+		}
+	}
 	
 	ret=process_tar();
 
