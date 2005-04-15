@@ -22,7 +22,9 @@ ADD_OBJ_FILES = \
 	libcli/composite/savefile.o \
 	libcli/composite/connect.o \
 	libcli/composite/sesssetup.o \
-	libcli/composite/fetchfile.o
+	libcli/composite/fetchfile.o \
+	libcli/composite/appendacl.o \
+	libcli/composite/fsinfo.o 
 REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE_BASE
 
 [SUBSYSTEM::LIBCLI_NBT]

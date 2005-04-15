@@ -50,6 +50,46 @@ struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx)
 	return sd;
 }
 
+static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
+					     const struct security_acl *oacl)
+{
+	struct security_acl *nacl;
+	int i;
+
+	nacl = talloc (mem_ctx, struct security_acl);
+	if (nacl == NULL) {
+		return NULL;
+	}
+
+	nacl->aces = talloc_memdup (nacl, oacl->aces, sizeof(struct security_ace) * oacl->num_aces);
+	if ((nacl->aces == NULL) && (oacl->num_aces > 0)) {
+		goto failed;
+	}
+
+	/* remapping array in trustee dom_sid from old acl to new acl */
+
+	for (i = 0; i < oacl->num_aces; i++) {
+		nacl->aces[i].trustee.sub_auths = 
+			talloc_memdup(nacl->aces, nacl->aces[i].trustee.sub_auths,
+				      sizeof(uint32_t) * nacl->aces[i].trustee.num_auths);
+
+		if ((nacl->aces[i].trustee.sub_auths == NULL) && (nacl->aces[i].trustee.num_auths > 0)) {
+			goto failed;
+		}
+	}
+
+	nacl->revision = oacl->revision;
+	nacl->size = oacl->size;
+	nacl->num_aces = oacl->num_aces;
+	
+	return nacl;
+
+ failed:
+	talloc_free (nacl);
+	return NULL;
+	
+}
+
 /* 
    talloc and copy a security descriptor
  */
@@ -58,11 +98,45 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 {
 	struct security_descriptor *nsd;
 
-	/* FIXME */
-	DEBUG(1, ("security_descriptor_copy(): sorry unimplemented yet\n"));
-	nsd = NULL;
+	nsd = talloc_zero(mem_ctx, struct security_descriptor);
+	if (!nsd) {
+		return NULL;
+	}
+
+	if (osd->owner_sid) {
+		nsd->owner_sid = dom_sid_dup(nsd, osd->owner_sid);
+		if (nsd->owner_sid == NULL) {
+			goto failed;
+		}
+	}
+	
+	if (osd->group_sid) {
+		nsd->group_sid = dom_sid_dup(nsd, osd->group_sid);
+		if (nsd->group_sid == NULL) {
+			goto failed;
+		}
+	}
+
+	if (osd->sacl) {
+		nsd->sacl = security_acl_dup(nsd, osd->sacl);
+		if (nsd->sacl == NULL) {
+			goto failed;
+		}
+	}
+
+	if (osd->dacl) {
+		nsd->dacl = security_acl_dup(nsd, osd->dacl);
+		if (nsd->dacl == NULL) {
+			goto failed;
+		}
+	}
 
 	return nsd;
+
+ failed:
+	talloc_free(nsd);
+
+	return NULL;
 }
 
 /*
