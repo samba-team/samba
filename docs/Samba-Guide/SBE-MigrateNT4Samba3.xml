@@ -161,6 +161,7 @@
 
 		<para>
 		<indexterm><primary>strategic</primary></indexterm>
+		<indexterm><primary>active directory</primary></indexterm>
 		Migration of an NT4 Domain user and group database to Samba-3 involves a certain strategic
 		element. Many sites have asked for instructions regarding merging of multiple different NT4
 		Domains into one Samba-3 LDAP database. It would appear that this is viewed as a significant
@@ -1492,7 +1493,7 @@ Users                 Ordinary users
 		</para>
 
 		<para>
-		If you elect to create the Posix account also, the entire UNIX account is copied to the 
+		If you elect to create the POSIX account also, the entire UNIX account is copied to the 
 		LDAP backend. The same occurs with NT groups and UNIX groups. At the conclusion of 
 		migration to the LDAP database, the accounts may be removed from the UNIX database files. 
 		In short then, all UNIX and Windows networking accounts, both in tdbsam as well as in 
