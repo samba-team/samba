@@ -670,6 +670,7 @@ sigterm(int sig)
 
 const char *check_library  = NULL;
 const char *check_function = NULL;
+static getarg_strings policy_libraries = { 0, NULL };
 char *keytab_str = "HDB:";
 char *realm_str;
 int version_flag;
@@ -682,6 +683,8 @@ struct getargs args[] = {
     { "check-library", 0, arg_string, &check_library, 
       "library to load password check function from", "library" },
     { "check-function", 0, arg_string, &check_function,
+      "password check function to load", "function" },
+    { "policy-libraries", 0, arg_strings, &policy_libraries,
       "password check function to load", "function" },
 #endif
     { "addresses",	0,	arg_strings, &addresses_str,
@@ -703,7 +706,7 @@ main (int argc, char **argv)
     krb5_keytab keytab;
     krb5_error_code ret;
     char **files;
-    int port;
+    int port, i;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -757,6 +760,17 @@ main (int argc, char **argv)
 	krb5_err(context, 1, ret, "%s", keytab_str);
     
     kadm5_setup_passwd_quality_check (context, check_library, check_function);
+
+    for (i = 0; i < policy_libraries.num_strings; i++) {
+	ret = kadm5_add_passwd_quality_verifier(context, 
+						policy_libraries.strings[i]);
+	if (ret)
+	    krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");
+    }
+    ret = kadm5_add_passwd_quality_verifier(context, NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");
+
 
     explicit_addresses.len = 0;
 

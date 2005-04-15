@@ -48,6 +48,9 @@ static char *admin_server;
 static int server_port = 0;
 static char *client_name;
 static char *keytab;
+static char *check_library  = NULL;
+static char *check_function = NULL;
+static getarg_strings policy_libraries = { 0, NULL };
 
 static struct getargs args[] = {
     {	"principal", 	'p',	arg_string,	&client_name,
@@ -75,6 +78,14 @@ static struct getargs args[] = {
 	"port to use", "port number" 
     },
     {	"ad", 		0, arg_flag, &ad_flag, "active directory admin mode" },
+#ifdef HAVE_DLOPEN
+    { "check-library", 0, arg_string, &check_library, 
+      "library to load password check function from", "library" },
+    { "check-function", 0, arg_string, &check_function,
+      "password check function to load", "function" },
+    { "policy-libraries", 0, arg_strings, &policy_libraries,
+      "password check function to load", "function" },
+#endif
     {	"local", 'l', arg_flag, &local_flag, "local admin mode" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
@@ -216,14 +227,29 @@ main(int argc, char **argv)
 	conf.mask |= KADM5_CONFIG_STASH_FILE;
     }
 
-    if(local_flag)
+    if(local_flag) {
+	int i;
+
+	kadm5_setup_passwd_quality_check (context, 
+					  check_library, check_function);
+	
+	for (i = 0; i < policy_libraries.num_strings; i++) {
+	    ret = kadm5_add_passwd_quality_verifier(context, 
+						    policy_libraries.strings[i]);
+	    if (ret)
+		krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");
+	}
+	ret = kadm5_add_passwd_quality_verifier(context, NULL);
+	if (ret)
+	    krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");
+	
 	ret = kadm5_s_init_with_password_ctx(context, 
 					     KADM5_ADMIN_SERVICE,
 					     NULL,
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-    else if (ad_flag) {
+    } else if (ad_flag) {
 	if (client_name == NULL)
 	    krb5_errx(context, 1, "keytab mode require principal name");
 	ret = kadm5_ad_init_with_password_ctx(context,
@@ -266,7 +292,7 @@ main(int argc, char **argv)
     } else {
 	while(!exit_seen) {
 	    ret = sl_command_loop(commands, "kadmin> ", NULL);
-	    if(ret != 0)
+	    if (ret != 0)
 		exit_status = 1;
 	}
     }
