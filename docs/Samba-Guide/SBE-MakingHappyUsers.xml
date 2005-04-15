@@ -697,7 +697,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para><indexterm>
-	    <primary>logon scrip</primary>
+	    <primary>logon script</primary>
 	  </indexterm>
 	A network logon script is used to deliver flexible but consistent network drive
 	connections.
