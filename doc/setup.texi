@@ -386,34 +386,67 @@ to guess them and to avoid off-line attacks (although
 pre-authentication provides
 some defense against off-line attacks).  To ensure that the users choose
 good passwords, you can enable password quality controls in
-@command{kpasswdd}.  The controls themselves are done in a shared library
-that is used by @command{kpasswdd}.  To configure in these controls, add
+@command{kpasswdd} and @command{kadmind}.  The controls themselves are done in a shared libraries or an external program that is used by @command{kpasswdd}.  To configure in these controls, add
 lines similar to the following to your @file{/etc/krb5.conf}:
 
 @example
 [password_quality]
-        check_library = @var{library}
-        check_function = @var{function}
+	policies = external-check builtin:minimum-length module:policyname
+	external-program = /bin/false
+        policy-libraries = @var{library1.so} @var{library2.so}
 @end example
 
-The function @var{function} in the shared library @var{library} will be
-called for proposed new passwords.  The function should be declared as:
+In @samp{[password_quality]:policies} the module name is optional if
+the policy name is unique in all modules.
 
-@example
-const char *
-function(krb5_context context, krb5_principal principal, krb5_data *pwd);
-@end example
+The builtin polices are
 
-The function should verify that @var{pwd} is a good password for
-@var{principal}, and if so return @code{NULL}.  If it is deemed to be of
-low quality, it should return a string explaining why that password
-should not be used.
+@itemize @bullet
+
+@item external-check
+
+Executes the program specified by @samp{[password_quality]external_program}. 
+
+As input to the command a number of key: value pair is passed in on
+each line ending with the string ``end''.
+
+If the external application approves the password ``APPROVED'' must be
+returne on standard out and exit with exit-code 0. If the program
+doesn't approved the password, a one line error explaining the problem
+should be returned on standard error and the application should exit
+with a exit-code 0. In case of a fatal error, the application should
+if possible print an error on stderr and exit with a non zero error
+code.
+
+@item minimum-length
+
+The minimum length password quality check reads the configuration file
+stanza @samp{[password_quality]min_length} and requires the password
+to be at least this length.
+
+@item character-class
+
+The character-class password quality check reads the configuration
+file stanza @samp{[password_quality]min_classes}. The policy requires
+the password to have characters from at least that many characters
+classes. Default value if not given is 3.
+
+The four diffrent characters classes are, uppercase, lowercase,
+number, special characters.
+
+@end itemize
+
+If you want to write you own shared object that checks password
+policies, see the manual page @manpage{kadm5_pwcheck,3}.
 
 Code for a password quality checking function that uses the cracklib
 library can be found in @file{lib/kadm5/sample_password_check.c} in the
 source code distribution.  It requires the cracklib library built with
 the patch available at
 @url{ftp://ftp.pdc.kth.se/pub/krb/src/cracklib.patch}.
+
+A sample policy external program is included in
+@file{lib/kadm5/check-cracklib.pl}.
 
 If no password quality checking function is configured, it is only
 verified that it is at least six characters long.
