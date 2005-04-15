@@ -194,5 +194,6 @@ struct ldapsam_privates {
 struct smbldap_state;
 
 #define LDAP_CONNECT_DEFAULT_TIMEOUT   15
+#define LDAP_PAGE_SIZE 1024
 
 #endif	/* _SMBLDAP_H */
