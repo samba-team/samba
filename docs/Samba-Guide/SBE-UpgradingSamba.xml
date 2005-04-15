@@ -221,6 +221,22 @@ precaution was on the side of the victor.
 	</para></note>
 
 	<para>
+	<indexterm><primary>domain controller</primary></indexterm>
+	<indexterm><primary>PDC</primary></indexterm>
+	<indexterm><primary>BDC</primary></indexterm>
+	<indexterm><primary>domain SID</primary></indexterm>
+	<indexterm><primary>hostname</primary></indexterm>
+	<indexterm><primary>computer name</primary></indexterm>
+	<indexterm><primary>netbios name</primary></indexterm>
+	<indexterm><primary>stand-alone server</primary></indexterm>
+	<indexterm><primary>SAS</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	In Samba-3 on a domain controller (PDC or BDC), the domain name controls the domain
+	SID. On all prior versions the hostname (computer name, or netbios name) controlled
+	the SID. On a stand-alone server (SAS) the hostname still controls the SID.
+	</para>
+
+	<para>
 	<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
 	<indexterm><primary>net</primary><secondary>setlocalsid</secondary></indexterm>
 	The local machine SID can be backed up using this procedure (Samba-3):
@@ -371,6 +387,13 @@ Num local groups: 0
 
 	<sect3 id="sbeug1">
 	<title>Location of config files</title>
+
+	<para>
+	The Samba-Team has maintained a constant default location for all Samba control files
+	throughout the life of the project. People who have produced binary packages of Samba
+	have varied the location of the Samba control files. This has led to some confusion
+	for network administrators.
+	</para>
 
 	<para>
 	<indexterm><primary>directory</primary></indexterm>
@@ -1102,8 +1125,23 @@ back to searching the 'ldap suffix' in some cases.
 		preserve all file ownership and permissions as well as any POSIX ACLs that
 		may have been created on the old server.
 		</para></listitem>
-
 	</itemizedlist>
+
+	<para>
+	When replacing a Samba domain controller (PDC or BDC) that uses LDAP, the new server
+	need simply be configured to use the LDAP directory, and for the rest it should just
+	work. The domain SID is obtained from the LDAP directory as part of the first connect
+	to the LDAP directory server.
+	</para>
+
+	<para>
+	All Samba servers, other than one that uses LDAP, depend on the tdb files, and in
+	particular the <filename>secrets.tdb</filename> file. So long as the tdb files are
+	all in place, the &smb.conf; file is preserved, and either the hostname is identical
+	or the <parameter>netbios name</parameter> is set to the original server name, Samba
+	should correctly pick up the original SID, and preserve all other settings. It is
+	sound advice to validate this before turning the system over to users.
+	</para>
 
 	</sect3>
 

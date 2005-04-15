@@ -159,9 +159,8 @@
 	<sect2>
 		<title>Technical Issues</title>
 
-	<para><indexterm>
-	    <primary>strategic</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>strategic</primary></indexterm>
 		Migration of an NT4 Domain user and group database to Samba-3 involves a certain strategic
 		element. Many sites have asked for instructions regarding merging of multiple different NT4
 		Domains into one Samba-3 LDAP database. It would appear that this is viewed as a significant
@@ -327,8 +326,8 @@
 	<title>NT4 Migration Using LDAP Backend</title>
 
 	<para>
-	In this instance, you migrate an NT4 PDC to an LDAP backend. The accounts you are about
-	to migrate are shown in <link linkend="NT4DUM"/>. In this example you make use of the
+	In this example, the migration is of an NT4 PDC to a Samba-3 PDC with an LDAP backend. The accounts about
+	to be migrated are shown in <link linkend="NT4DUM"/>. In this example use is made of the
 	smbldap-tools scripts to add the accounts that are migrated into the ldapsam passdb backend.
 	Four scripts are essential to the migration process. There are other scripts that will be required
 	for daily management, but these are not critical to migration. The critical scripts are dependant
@@ -337,9 +336,15 @@
 	</para>
 
 	<para>
-	Do verify that you have correctly specified in the &smb.conf; file the scripts, and arguments 
+	Verify that you have correctly specified in the &smb.conf; file the scripts, and arguments 
 	that should be passed to them, before attempting to perform the account migration.
 	</para>
+
+	<warning><para>
+	Under absolutely no situations should be the Samba daemons be started until instructed to do so.
+	Delete the <filename>/etc/samba/secrets.tdb</filename> file and all Samba control tdb files
+	before commencing the following configuration steps.
+	</para></warning>
 
 	<table id="ch8-vampire">
 		<title>Samba &smb.conf; Scripts Essential to Migration</title>
@@ -390,6 +395,9 @@
 	</table>
 
 	<note><para>
+	<indexterm><primary>usermod</primary></indexterm>
+	<indexterm><primary>groupmem</primary></indexterm>
+	<indexterm><primary>smbldap-tools</primary></indexterm>
 	The UNIX/Linux <command>usermod</command> utility does not permit simple user addition to (or deletion
 	of users from) groups. This is a feature provided by the smbldap-tools scripts. If you want this
 	capability you will need to create your own tool to do this. Alternately, you can search the web
@@ -398,242 +406,750 @@
 	in the formal commands provided by Linux distributions (March 2004).
 	</para></note>
 
+	<note><para>
+	<indexterm><primary>tdbdump</primary></indexterm>
+	The <command>tdbdump</command> utility is a utility that you can build from the Samba source
+	code tree. Not all Linux binary distributions include this tool. If it is missing from your
+	Linux distribution you will need to build this yourself, or else for-go its use.
+	</para></note>
+
 	<para>
-	Before starting the migration, all dead accounts were removed using the User Manager for Domains.
+	<indexterm><primary>User Manager</primary></indexterm>
+	Before starting the migration, all dead accounts were removed from the NT4 domain using the User Manager for Domains.
 	</para>
 
 	<procedure>
 		<step><para>
-		Install and configure the Samba-3 server precisely as shown in Chapter 6 for the server
-		called <constant>MASSIVE</constant>. The Domain name <constant>MEGANET</constant> must
-		match that of the NT4 Domain from which you are about to migrate. Do not execute any Samba
-		executables at this time, the appropriate time to do so is indicated below.
+		Configure the Samba &smb.conf; file to create a BDC. An example configuration is
+		given here:
+<screen>
+# Global parameters
+[global]
+        workgroup = DAMNATION
+        netbios name = MERLIN
+        interfaces = eth0, lo
+        passdb backend = ldapsam:ldap://localhost
+        username map = /etc/samba/smbusers
+        log level = 1
+        syslog = 0
+        log file = /var/log/samba/%m
+        max log size = 0
+        smb ports = 139 445
+        name resolve order = wins bcast hosts
+        show add printer wizard = Yes
+        add user script = /opt/IDEALX/sbin/smbldap-useradd -m '%u'
+#       delete user script = /opt/IDEALX/sbin/smbldap-userdel '%u'
+        add group script = /opt/IDEALX/sbin/smbldap-groupadd -p '%g'
+#       delete group script = /opt/IDEALX/sbin/smbldap-groupdel '%g'
+        add user to group script = \
+		/opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g'
+#       delete user from group script = \
+		/opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g'
+        set primary group script = \
+		/opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
+        add machine script = /opt/IDEALX/sbin/smbldap-useradd -w '%u'
+        logon script = scripts\logon.bat
+        logon path = \\%L\profiles\%U
+        logon home = \\%L\%U
+        logon drive = X:
+        domain logons = Yes
+        domain master = No
+        wins support = Yes
+        wins proxy = Yes
+        ldap admin dn = cn=Manager,dc=terpstra-world,dc=org
+        ldap group suffix = ou=Groups
+        ldap idmap suffix = ou=Idmap
+        ldap machine suffix = ou=People
+        ldap passwd sync = Yes
+        ldap suffix = dc=terpstra-world,dc=org
+        ldap ssl = no
+        ldap timeout = 20
+        ldap user suffix = ou=People
+        idmap backend = ldap:ldap://localhost
+        idmap uid = 15000-20000
+        idmap gid = 15000-20000
+        winbind nested groups = Yes
+        ea support = Yes
+        map acl inherit = Yes
+
+[apps]
+        comment = Application Data
+        path = /data/home/apps
+        read only = No
+
+[media]
+        comment = Media Files
+        path = /data/home2
+        read only = No
+
+[homes]
+        comment = Home Directories
+        path = /home/users/%U/Documents
+        valid users = %S
+        read only = No
+        browseable = No
+
+[media]
+        comment = Media Files
+        path = /data/home2
+        read only = No
+
+[homes]
+        comment = Home Directories
+        path = /home/users/%U/Documents
+        valid users = %S
+        read only = No
+        browseable = No
+
+[printers]
+        comment = SMB Print Spool
+        path = /var/spool/samba
+        guest ok = Yes
+        printable = Yes
+        use client driver = No
+        browseable = No
+
+[netlogon]
+        comment = Network Logon Service
+        path = /var/lib/samba/netlogon
+        guest ok = Yes
+        locking = No
+
+[profiles]
+        comment = Profile Share
+        path = /var/lib/samba/profiles
+        read only = No
+        profile acls = Yes
+
+[profdata]
+        comment = Profile Data Share
+        path = /var/lib/samba/profdata
+        read only = No
+        profile acls = Yes
+
+[print$]
+        comment = Printer Drivers
+        path = /var/lib/samba/drivers
+        write list = root
+</screen>
+		The delete scripts are correctly commented out so that during the process of migration
+		no account information can be deleted.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>domain master</primary>
-	      </indexterm><indexterm>
-		<primary>BDC</primary>
-	      </indexterm>
-		Edit the &smb.conf; file to temporarily change the parameter 
-		<smbconfoption name="domain master">No</smbconfoption> so
-		the Samba server functions as a BDC for the purpose of migration. Also, temporarily
-		(only during domain account migration) comment out the lines that specify deletion
-		scripts (delete user script, etc.).
+		<step><para>
+		<indexterm><primary>slapd.conf</primary></indexterm>
+		Configure OpenLDAP in preparation for the migration. An example
+		<filename>sladp.conf</filename> file is shown here:
+<screen>
+include         /etc/openldap/schema/core.schema
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+include         /etc/openldap/schema/samba3.schema
+
+pidfile         /var/run/slapd/slapd.pid
+argsfile        /var/run/slapd/slapd.args
+
+access to dn.base=""
+                by self write
+                by * auth
+
+access to attr=userPassword
+                by self write
+                by * auth
+
+access to attr=shadowLastChange
+                by self write
+                by * read
+
+access to *
+                by * read
+                by anonymous auth
+
+#loglevel       256
+
+#schemacheck     on
+idletimeout     30
+#backend         bdb
+database        bdb
+checkpoint      1024 5
+cachesize       10000
+
+suffix          "dc=terpstra-world,dc=org"
+rootdn          "cn=Manager,dc=terpstra-world,dc=org"
+
+# rootpw = not24get
+rootpw          {SSHA}86kTavd9Dw3FAz6qzWTrCOKX/c0Qe+UV
+
+directory       /var/lib/ldap
+
+# Indices to maintain
+index objectClass           eq
+index cn                    pres,sub,eq
+index sn                    pres,sub,eq
+index uid                   pres,sub,eq
+index displayName           pres,sub,eq
+index uidNumber             eq
+index gidNumber             eq
+index memberUID             eq
+index sambaSID              eq
+index sambaPrimaryGroupSID  eq
+index sambaDomainName       eq
+index default               sub
+</screen>
                 </para></step>
 
-	  <step><para><indexterm>
-		<primary>preload.LDIF</primary>
-	      </indexterm>
-		Create a file called <filename>preload.LDIF</filename> as shown in <link linkend="ch8-LDIF"/>.
-		Edit the contents so that the domain name and SID are correct for the site being installed.
-		</para></step>
-
-	  <step><para><indexterm>
-		<primary>slapadd</primary>
-	      </indexterm>
-		Preload the LDAP database so it is ready to receive the information from the NT4 PDC.
-		This pre-loads the LDAP directory with the top-level information, as well as the
-		top level containers for user, group, computer, and domain account data. Execute the
-		instruction shown here:
+		<step><para>
+		<indexterm><primary>nss_ldap</primary></indexterm>
+		<indexterm><primary>/etc/ldap.conf</primary></indexterm>
+		Install the PADL <command>nss_ldap</command> tool set, then configure the <filename>/etc/ldap.conf</filename>
+		as shown here:
 <screen>
-&rootprompt; slapadd -v -l preload.LDIF
-added: "dc=abmas,dc=biz" (00000001)
-added: "ou=People,dc=abmas,dc=biz" (00000002)
-added: "ou=Groups,dc=abmas,dc=biz" (00000003)
-added: "ou=Idmap,dc=abmas,dc=biz" (00000004)
-added: "sambaDomainName=MEGANET,dc=abmas,dc=biz" (00000005)
+host    127.0.0.1
+
+base    dc=terpstra-world,dc=org
+
+ldap_version    3
+
+binddn cn=Manager,dc=terpstra-world,dc=org
+bindpw not24get
+
+pam_password exop
+
+nss_base_passwd         ou=People,dc=terpstra-world,dc=org?one
+nss_base_shadow         ou=People,dc=terpstra-world,dc=org?one
+nss_base_group          ou=Groups,dc=terpstra-world,dc=org?one
+
+ssl off
 </screen>
 		</para></step>
 
 		<step><para>
-		Start the LDAP server.
+		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the following entries:
+<screen>
+passwd:         files #ldap
+shadow:         files #ldap
+group:          files #ldap
+
+hosts:          files dns wins
+networks:       files dns
+
+services:       files
+protocols:      files
+rpc:            files
+ethers:         files
+netmasks:       files
+netgroup:       files
+publickey:      files
+
+bootparams:     files
+automount:      files nis
+aliases:        files
+</screen>
+		Note that the LDAP entris
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>ping</primary>
-	      </indexterm>
-		Verify that the NT4 PDC can be reached:
+		<step><para>
+		Validate the the target NT4 PDC name is being correctly resolved to its IP address by
+		executing the following:
 <screen>
-&rootprompt; ping nt4s
-PING nt4s.abmas.biz (192.168.2.250) 56(84) bytes of data.
-64 bytes from NT4S (192.168.2.250): icmp_seq=1 ttl=128 time=10.2 ms
-64 bytes from NT4S (192.168.2.250): icmp_seq=2 ttl=128 time=0.518 ms
-64 bytes from NT4S (192.168.2.250): icmp_seq=3 ttl=128 time=0.578 ms
+&rootprompt; ping transgression
+PING transgression.terpstra-world.org (192.168.1.5) 56(84) bytes of data.
+64 bytes from (192.168.1.5): icmp_seq=1 ttl=128 time=0.159 ms
+64 bytes from (192.168.1.5): icmp_seq=2 ttl=128 time=0.192 ms
+64 bytes from (192.168.1.5): icmp_seq=3 ttl=128 time=0.141 ms
 
---- nt4s.abmas.biz ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2003ms
-rtt min/avg/max/mdev = 0.518/3.773/10.223/4.560 ms
+--- transgression.terpstra-world.org ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev = 0.141/0.164/0.192/0.021 ms
 </screen>
-		It can. Great.
+		Do not procede to the next step if this step fails. It is imperative that the name of the PDC
+		can be resolved to its IP address. If this is broken, fix it.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbclient</primary>
-	      </indexterm>
-		Validate that the resources on the NT4 PDC can be listed:
+		<step><para>
+		Obtain the domain SID from the target NT4 domain that is being migrated to Samba-3.
 <screen>
-&rootprompt; smbclient -L nt4s -UAdministrator%not24get
-
-        Sharename      Type      Comment
-        ---------      ----      -------
-        NETLOGON       Disk      Logon server share
-        IPC$           IPC       Remote IPC
-        UserProfiles   Disk      All Network User Profiles
-
-        Server               Comment
-        ---------            -------
-        NT4S
-
-        Workgroup            Master
-        ---------            -------
-        MEGANET              NT4S
-</screen>
-		This looks good.
-		</para></step>
-
-	  <step><para><indexterm>
-		<primary>Domain SID</primary>
-	      </indexterm><indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>getsid</tertiary>
-	      </indexterm>
-		At this point, it is necessary to fetch the Domain SID from the NT4 PDC and
-		apply that to the Samba-3 BDC (soon to be PDC):
-<screen>
-&rootprompt; net rpc getsid -S NT4S -W MEGANET
-Storing SID S-1-5-21-1988699175-926296742-1295600288 for 
-                              Domain MEGANET in secrets.tdb
-</screen>
-		Done.
-		</para></step>
-
-	  <step><para><indexterm>
-		<primary>secrets.tdb</primary>
-	      </indexterm><indexterm>
-		<primary>validate</primary>
-	      </indexterm><indexterm>
-		<primary>tdbdump</primary>
-	      </indexterm>
-		At this point, you can validate that the information is correct in the
-		<filename>secrets.tdb</filename> file, as shown here:
-<screen>
-&rootprompt; tdbdump /etc/samba/secrets.tdb
-{
-key = "SECRETS/SID/MASSIVE"
-data = "\01\04\00\00\00\00\00\05\15\00\00\00'$\89v\A6*67\A0J9M\
-00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\
-00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
-}
-{
-key = "SECRETS/LDAP_BIND_PW/cn=Manager,dc=abmas,dc=biz"
-data = "not24get\00"
-}
-</screen>
-		This has returned the information expected.
-		</para></step>
-
-<note><para>
-The <command>tdbdump</command> utility is a utility that you can build from the Samba source
-code tree. Not all Linux binary distributions include this tool. If it is missing from your
-Linux distribution you will need to build this yourself, or else for-go its use.
-</para></note>
-
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>join</tertiary>
-	      </indexterm>
-		We are ready to join the NT4 Domain as a BDC by executing the following:
-<screen>
-&rootprompt; net rpc join -S NT4S -W MEGANET -U Administrator%not24get
-Joined domain MEGANET.
-</screen>
-		Done.
-		</para></step>	
-
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>vampire</tertiary>
-	      </indexterm>
-		The Samba-3 BDC is now ready to receive the NT4 PDC accounts database, as shown here:
-<screen>
-&rootprompt; net rpc vampire -S NT4S
-Fetching DOMAIN database
-SAM_DELTA_DOMAIN_INFO not handled
-Creating account: Administrator
-Creating account: Guest
-Creating account: NT4S$
-Creating account: massive$
-Creating account: barryf
-Creating account: gdaison
-Creating account: atrikhoffer
-Creating account: hramsbotham
-Creating account: fsellerby
-Creating account: jrhapsody
-Group members of Domain Admins:
-Group members of Domain Users: NT4S$(primary),massive$(primary),
-Group members of Domain Guests: nobody(primary),
-Group members of rubberboot:
-Group members of engineers:
-Group members of accounting:
-Group members of catalyst:
-Group members of shipping:
-Group members of receiving:
-Group members of marketiod:
-Group members of sales:
-Fetching BUILTIN database
-SAM_DELTA_DOMAIN_INFO not handled
+&rootprompt; net rpc info -S TRANSGRESSION
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>domain master</primary>
-	      </indexterm><indexterm>
-		<primary>PDC</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Idealx</primary></indexterm>
+		<indexterm><primary>configure.pl</primary></indexterm>
+		<indexterm><primary>/opt/IDEALX/sbin</primary></indexterm>
+		<indexterm><primary>smbldap-tools</primary></indexterm>
+		Install the Idealx <command>smbldap-tools</command> software package. The resulting
+		perl scripts should be located in the <filename>/opt/IDEALX/sbin</filename> directory.
+		Change into that location, or where ever the scripts have been installed. Execute the
+		<filename>configure.pl</filename> script to configure the Idealx package for use.
+		Note: Use the Domain SID obtained from the immediately prior step. The following is
+		an example configuration session:
+<screen>
+merlin:/opt/IDEALX/sbin # ./configure.pl
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+       smbldap-tools script configuration
+       -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Before starting, check
+ . if your samba controller is up and running.
+ . if the domain SID is defined (you can get it with the 'net getlocalsid')
+
+ . you can leave the configuration using the Crtl-c key combination
+ . empty value can be set with the "." caracter
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Looking for configuration files...
+
+Samba Config File Location [/etc/samba/smb.conf] &gt;
+smbldap Config file Location (global parameters)
+           [/etc/smbldap-tools/smbldap.conf] &gt;
+smbldap Config file Location (bind parameters)
+      [/etc/smbldap-tools/smbldap_bind.conf] &gt;
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Let's start configuring the smbldap-tools scripts ...
+
+. workgroup name: name of the domain Samba act as a PDC
+  workgroup name [DAMNATION] &gt;
+. netbios name: netbios name of the samba controler
+  netbios name [MERLIN] &gt;
+. logon drive: local path to which the home directory
+         will be connected (for NT Workstations). Ex: 'H:'
+  logon drive [X:] &gt; H:
+. logon home: home directory location (for Win95/98 or NT Workstation).
+  (use %U as username) Ex:'\\MERLIN\home\%U'
+  logon home (leave blank if you don't want homeDirectory)
+                                     [\\MERLIN\home\%U] &gt; \\%L\%U
+. logon path: directory where roaming profiles are stored.
+                                     Ex:'\\MERLIN\profiles\%U'
+  logon path (leave blank if you don't want roaming profile)
+                            [\\MERLIN\profiles\%U] &gt; \\%L\profiles\%U
+. home directory prefix (use %U as username) [/home/%U] > /home/users/%U
+. default user netlogon script (use %U as username) 
+                               [%U.cmd] &gt; scripts\logon.cmd
+  default password validation time (time in days) [45] > 180
+. ldap suffix [dc=terpstra-world,dc=org] &gt;
+. ldap group suffix [ou=Groups] &gt;
+. ldap user suffix [ou=People] &gt;
+. ldap machine suffix [ou=People] &gt;
+. Idmap suffix [ou=Idmap] &gt;
+. sambaUnixIdPooldn: object where you want to store the next uidNumber
+  and gidNumber available for new users and groups
+  sambaUnixIdPooldn object (relative to ${suffix}) 
+                         [cn=NextFreeUnixId] > sambaDomainName=DAMNATION
+. ldap master server: 
+              IP adress or DNS name of the master (writable) ldap server
+  ldap master server [] &gt; 127.0.0.1
+. ldap master port [389] &gt;
+. ldap master bind dn [cn=Manager,dc=terpstra-world,dc=org] &gt;
+. ldap master bind password [] &gt;
+. ldap slave server: IP adress or DNS name of the slave ldap server:
+                                         can also be the master one
+  ldap slave server [] &gt; 127.0.0.1
+. ldap slave port [389] &gt;
+. ldap slave bind dn [cn=Manager,dc=terpstra-world,dc=org] &gt;
+. ldap slave bind password [] &gt;
+. ldap tls support (1/0) [0] &gt;
+. SID for domain DAMNATION: SID of the domain 
+                         (can be obtained with 'net getlocalsid MERLIN')
+  SID for domain DAMNATION []
+        &gt; S-1-5-21-1385457007-882775198-1210191635
+. unix password encryption: encryption used for unix passwords
+  unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
+. default user gidNumber [513] &gt;
+. default computer gidNumber [515] &gt;
+. default login shell [/bin/bash] &gt;
+. default domain name to append to mail adress [] &gt; terpstra-world.org
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+backup old configuration files:
+  /etc/smbldap-tools/smbldap.conf-&gt;
+                              /etc/smbldap-tools/smbldap.conf.old
+  /etc/smbldap-tools/smbldap_bind.conf-&gt;
+                              /etc/smbldap-tools/smbldap_bind.conf.old
+writing new configuration file:
+  /etc/smbldap-tools/smbldap.conf done.
+  /etc/smbldap-tools/smbldap_bind.conf done.
+</screen>
+		Note that the NT4 domain SID that was previously obtained was entered above. Also,
+		the sambaUnixIdPooldn object was specified as: sambaDomainName=DAMNATION
+		</para></step>
+
+		<step><para>
+		Start the LDAP server using the system interface script. On Novell SLES9
+		this is done as shown here:
+<screen>
+&rootprompt; rcldap start
+</screen>
+		</para></step>
+
+		<step><para>
+		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the following entries:
+<screen>
+passwd:         files ldap
+shadow:         files ldap
+group:          files ldap
+
+hosts:          files dns wins
+networks:       files dns
+
+services:       files
+protocols:      files
+rpc:            files
+ethers:         files
+netmasks:       files
+netgroup:       files
+publickey:      files
+
+bootparams:     files
+automount:      files nis
+aliases:        files
+</screen>
+		Note that the LDAP entries above have now been uncommented.
+		</para></step>
+
+		<step><para>
+		The LDAP management password must be installed into the <filename>secrets.tdb</filename>
+		file as follows:
+<screen>
+&rootprompt; smbpasswd -w not24get
+Setting stored password for 
+            "cn=Manager,dc=terpstra-world,dc=org" in secrets.tdb
+</screen>
+		</para></step>
+
+		<step><para>
+		Populate the LDAP directory as shown here:
+<screen>
+&rootprompt; /opt/IDEALX/sbin/smbldap-populate -a root -u 0
+Using workgroup name from sambaUnixIdPooldn (smbldap.conf):
+                          sambaDomainName=DAMNATION
+Using builtin directory structure
+adding new entry: dc=terpstra-world,dc=org
+adding new entry: ou=People,dc=terpstra-world,dc=org
+adding new entry: ou=Groups,dc=terpstra-world,dc=org
+entry ou=People,dc=terpstra-world,dc=org already exist.
+adding new entry: ou=Idmap,dc=terpstra-world,dc=org
+adding new entry: sambaDomainName=DAMNATION,dc=terpstra-world,dc=org
+adding new entry: uid=root,ou=People,dc=terpstra-world,dc=org
+adding new entry: uid=nobody,ou=People,dc=terpstra-world,dc=org
+adding new entry: cn=Domain Admins,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Domain Users,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Domain Guests,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Domain Computers,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Administrators,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Print Operators,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Backup Operators,ou=Groups,dc=terpstra-world,dc=org
+adding new entry: cn=Replicators,ou=Groups,dc=terpstra-world,dc=org
+</screen>
+		The script trys to add the ou=People container twice, hence the error message.
+		This is expected behavior.
+		</para></step>
+
+		<step><para>
+		Restart the LDAP server following initialization of the LDAP directory. Execute the
+		system control script provided on your system. The following steps can be used on
+		Novell SUSE SLES 9:
+<screen>
+&rootprompt; rcldap restart
+&rootprompt; chkconfig ldap on
+</screen>
+		</para></step>
+
+		<step><para>
+		Verify that the new user accounts that have been added to the LDAP directory can be
+		resolved as follows:
+<screen>
+&rootprompt; getent passwd
+...
+nobody:x:65534:65533:nobody:/var/lib/nobody:/bin/bash
+man:x:13:62:Manual pages viewer:/var/cache/man:/bin/bash
+news:x:9:13:News system:/etc/news:/bin/bash
+uucp:x:10:14:Unix-to-Unix CoPy system:/etc/uucp:/bin/bash
++::0:0:::
+root:x:998:512:Netbios Domain Administrator:/home/users/root:/bin/false
+nobody:x:999:514:nobody:/dev/null:/bin/false
+</screen>
+		Now repeat this for the group accounts as shown here:
+<screen>
+&rootprompt; getent group
+...
+nobody:x:65533:
+nogroup:x:65534:nobody
+users:x:100:
++::0:
+Domain Admins:x:512:root
+Domain Users:x:513:
+Domain Guests:x:514:
+Domain Computers:x:515:
+Administrators:x:544:
+Print Operators:x:550:
+Backup Operators:x:551:
+Replicators:x:552:
+</screen>
+		In both cases above the LDAP accounts follow the <quote>+::0:</quote> entry.
+		</para></step>
+
+		<step><para>
+		Now it is time to join the Samba BDC to the target NT4 domain that is being
+		migrated to Samba-3 by executing the following:
+<screen>
+&rootprompt; net rpc join -S TRANSGRESSION -U Administrator%not24get
+merlin:/opt/IDEALX/sbin # net rpc join -S TRANSGRESSION \
+                         -U Administrator%not24get
+Joined domain DAMNATION.
+</screen>
+		</para></step>
+
+		<step><para>
+		Set the new domain administrator (root) password for both UNIX and Windows as shown here:
+<screen>
+&rootprompt; /opt/IDEALX/sbin/smbldap-passwd root
+Changing password for root
+New password : ********
+Retype new password : ********
+</screen>
+		Note: During account migration the Windows Administrator account will not be migrated
+		the the Samba server.
+		</para></step>
+
+		<step><para>
+		Now validate that these accounts can be resolved using Samba's tools as
+		shown here for user accounts:
+<screen>
+&rootprompt; pdbedit -Lw
+root:0:84B0D8E14D158FF8417EAF50CFAC29C3:
+        AF6DD3FD4E2EA8BDE1695A3F05EFBF52:[U          ]:LCT-425F6467:
+nobody:65534:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:
+        NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:[NU         ]:LCT-00000000:
+</screen>
+		Now complete the following step to validate that group account mappings have
+		been correctly set:
+<screen>
+&rootprompt; net groupmap list
+Domain Admins (S-1-5-21-1385457007-882775198-1210191635-512)
+                                            -&gt; Domain Admins
+Domain Users (S-1-5-21-1385457007-882775198-1210191635-513) 
+                                             -&gt; Domain Users
+Domain Guests (S-1-5-21-1385457007-882775198-1210191635-514) 
+                                            -&gt; Domain Guests
+Domain Computers (S-1-5-21-1385457007-882775198-1210191635-515) 
+                                          -&gt; Domain Computers
+Administrators (S-1-5-32-544) -&gt; Administrators
+Print Operators (S-1-5-32-550) -&gt; Print Operators
+Backup Operators (S-1-5-32-551) -&gt; Backup Operators
+Replicators (S-1-5-32-552) -> Replicators
+</screen>
+		The above are the expected results for a correctly configured system.
+		</para></step>
+
+		<step><para>
+		Commence migration as shown here:
+<screen>
+&rootprompt; net rpc vampire -S TRANSGRESSION \
+       -U Administrator%not24get &gt; /tmp/vampire.log 2&gt;1
+</screen>
+		Check the vampire log to confirm that only expected errors have been
+		reported. See <link linkend="sbevam1"/>.
+		</para></step>
+
+		<step><para>
+		The migration of user accounts can be quickly validated as follows:
+<screen>
+&rootprompt; pdbedit -Lw
+root:0:84B0D8E14D158FF8417EAF50CFAC29C3:...
+nobody:65534:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:...
+Administrator:0:84B0D8E14D158FF8417EAF50CFAC29C3:...
+Guest:1:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:...
+TRANSGRESSION$:2:CC044B748CEE294CE76B6B0D1B86C1A8:...
+IUSR_TRANSGRESSION:3:64046AC81B056C375F9537FC409085F8:...
+MIDEARTH$:4:E93186E5819706D2AAD3B435B51404EE:...
+atrickhoffer:5:DC08CFE0C12B2867352502E32A407F23:...
+barryf:6:B829BCDE01FF24376E45D5F10408CFBD:...
+fsellerby:7:6A97CBEBE8F9826B417EAF50CFAC29C3:...
+gdaison:8:48F6A8C8A900024351DA8C2061C5F1D3:...
+hrambotham:9:7330D9EA0964465EAAD3B435B51404EE:...
+jrhapsody:10:ACBA7D207E2BA35D9BD41A26B01626BD:...
+maryk:11:293B5A4CA41F6CA1A7D80430B8342B73:...
+jacko:12:8E8982D86BD037C364BBD09A598E07AD:...
+bridge:13:0D2CA7D2BE67FE2193BE3A377C968336:...
+sharpec:14:8841A75CAC19D2855D8B73B1F4D430F8:...
+jimbo:15:6E8BDC904FD9EC5C17306D272A9441BB:...
+dhenwick:16:D1694A03C33584BDAAD3B435B51404EE:...
+dork:17:69E2D19E69A593D5AAD3B435B51404EE:...
+blue:18:E355EBF9559979FEAAD3B435B51404EE:...
+billw:19:EE35C3481CF7F7DB484448BC86A641A5:...
+rfreshmill:20:7EC033B58661B60CAAD3B435B51404EE:...
+MAGGOT$:21:A3B9334765AD30F7AAD3B435B51404EE:...
+TRENTWARE$:22:1D92C8DD5E7F0DDF93BE3A377C968336:...
+MORTON$:23:89342E69DCA9D3F8AAD3B435B51404EE:...
+NARM$:24:2B93E2D1D25448BDAAD3B435B51404EE:...
+LAPDOG$:25:14AA535885120943AAD3B435B51404EE:...
+SCAVENGER$:26:B6288EB6D147B56F8963805A19B0ED49:...
+merlin$:27:820C50523F368C54AB9D85AE603AD09D:...
+</screen>
+		</para></step>
+
+		<step><para>
+		The mapping of UNIX and Windows groups can be validated as show here:
+<screen>
+&rootprompt; net groupmap list
+Domain Admins (S-1-5-21-1385457007-882775198-1210191635-512)
+                                                     -&gt; Domain Admins
+Domain Users (S-1-5-21-1385457007-882775198-1210191635-513)
+                                                      -&gt; Domain Users
+Domain Guests (S-1-5-21-1385457007-882775198-1210191635-514)
+                                                     -&gt; Domain Guests
+Domain Computers (S-1-5-21-1385457007-882775198-1210191635-515)
+                                                   -&gt; Domain Computers
+Administrators (S-1-5-32-544) -&gt; Administrators
+Print Operators (S-1-5-32-550) -&gt; Print Operators
+Backup Operators (S-1-5-32-551) -&gt; Backup Operators
+Replicator (S-1-5-32-552) -&gt; Replicators
+Engineers (S-1-5-21-1385457007-882775198-1210191635-1020) -&gt; Engineers
+Marketoids (S-1-5-21-1385457007-882775198-1210191635-1022) -&gt; Marketoids
+Gnomes (S-1-5-21-1385457007-882775198-1210191635-1023) -&gt; Gnomes
+Catalyst (S-1-5-21-1385457007-882775198-1210191635-1024) -&gt; Catalyst
+Recieving (S-1-5-21-1385457007-882775198-1210191635-1025) -&gt; Recieving
+Rubberboot (S-1-5-21-1385457007-882775198-1210191635-1026) -&gt; Rubberboot
+Sales (S-1-5-21-1385457007-882775198-1210191635-1027) -&gt; Sales
+Accounting (S-1-5-21-1385457007-882775198-1210191635-1028) -&gt; Accounting
+Shipping (S-1-5-21-1385457007-882775198-1210191635-1029) -&gt; Shipping
+Account Operators (S-1-5-32-548) -&gt; Account Operators
+Guests (S-1-5-32-546) -&gt; Guests
+Server Operators (S-1-5-32-549) -&gt; Server Operators
+Users (S-1-5-32-545) -&gt; Users
+</screen>
+		It is of vital importance that the domain SID portion of all group
+		accounts are identical.
+		</para></step>
+
+		<step><para>
+		The final responsibility in the migration process is to create identical
+		shares and printing resources on the new Samba-3 server, copy all data
+		across, set up privilieges and set share and file/directory access controls.
+		</para></step>
+
+		<step><para>
+		<indexterm><primary>domain master</primary></indexterm>
+		<indexterm><primary>PDC</primary></indexterm>
 		Edit the &smb.conf; file to  reset the parameter 
 		<smbconfoption name="domain master">Yes</smbconfoption> so that
 		the Samba server functions as a PDC for the purpose of migration.
+		Also, uncomment the deletion scripts so they will now be fully functional.
                 </para></step>
+
+		<step><para>
+		Now shut down the old NT4 PDC. Only when the old NT4 PDC and all
+		NT4 BDCs have been shut down can the Samba-3 PDC be started.
+		</para></step>
+
+		<step><para>
+		All workstations should function as they did with the old NT4 PDC. All
+		inter-domain trust accounts should remain in place and fully functional.
+		All user logon accounts should also function correctly.
+		</para></step>
+
 	</procedure>
 
-<example id ="ch8-LDIF">
-<title>LDAP Preload LDIF file &smbmdash; <filename>preload.LDIF</filename></title>
+	<sect3 id="sbevam1">
+	<title>Migration Log Validation</title>
+
+	<para>
+	The following <filename>vampire.log</filename> file is typical of a valid migration.
 <screen>
-dn: dc=abmas,dc=biz
-objectClass: dcObject
-objectClass: organization
-dc: abmas
-o: Abmas Demo
-description: POSIX and Samba LDAP Identity Database
-
-dn: ou=People,dc=abmas,dc=biz
-objectClass: top
-objectClass: organizationalUnit
-ou: People
-
-dn: ou=Groups,dc=abmas,dc=biz
-objectClass: top
-objectClass: organizationalUnit
-ou: Groups
-
-dn: ou=Idmap,dc=abmas,dc=biz
-objectClass: top
-objectClass: organizationalUnit
-ou: Idmap
-
-dn: sambaDomainName=MEGANET2,dc=abmas,dc=biz
-objectClass: sambaDomain
-objectClass: sambaUnixIdPool
-sambaDomainName: MEGANET
-sambaSID: S-1-5-21-1988699175-926296742-1295600288
-uidNumber: 1000
-gidNumber: 1000
+adding user Administrator to group Domain Admins
+adding user atrickhoffer to group Engineers
+adding user dhenwick to group Engineers
+adding user dork to group Engineers
+adding user rfreshmill to group Marketoids
+adding user jacko to group Gnomes
+adding user jimbo to group Gnomes
+adding user maryk to group Gnomes
+adding user gdaison to group Gnomes
+adding user dhenwick to group Catalyst
+adding user jacko to group Catalyst
+adding user jacko to group Recieving
+adding user blue to group Recieving
+adding user hrambotham to group Rubberboot
+adding user billw to group Sales
+adding user bridge to group Sales
+adding user jrhapsody to group Sales
+adding user maryk to group Sales
+adding user rfreshmill to group Sales
+adding user fsellerby to group Sales
+adding user sharpec to group Sales
+adding user jimbo to group Accounting
+adding user gdaison to group Accounting
+adding user jacko to group Shipping
+adding user blue to group Shipping
+Fetching DOMAIN database
+Creating unix group: 'Engineers'
+Creating unix group: 'Marketoids'
+Creating unix group: 'Gnomes'
+Creating unix group: 'Catalyst'
+Creating unix group: 'Recieving'
+Creating unix group: 'Rubberboot'
+Creating unix group: 'Sales'
+Creating unix group: 'Accounting'
+Creating unix group: 'Shipping'
+Creating account: Administrator
+Creating account: Guest
+Creating account: TRANSGRESSION$
+Creating account: IUSR_TRANSGRESSION
+Creating account: MIDEARTH$
+Creating account: atrickhoffer
+Creating account: barryf
+Creating account: fsellerby
+Creating account: gdaison
+Creating account: hrambotham
+Creating account: jrhapsody
+Creating account: maryk
+Creating account: jacko
+Creating account: bridge
+Creating account: sharpec
+Creating account: jimbo
+Creating account: dhenwick
+Creating account: dork
+Creating account: blue
+Creating account: billw
+Creating account: rfreshmill
+Creating account: MAGGOT$
+Creating account: TRENTWARE$
+Creating account: MORTON$
+Creating account: NARM$
+Creating account: LAPDOG$
+Creating account: SCAVENGER$
+Creating account: merlin$
+Group members of Domain Admins: Administrator,
+Group members of Domain Users: Administrator(primary),
+TRANSGRESSION$(primary),IUSR_TRANSGRESSION(primary),
+MIDEARTH$(primary),atrickhoffer(primary),barryf(primary),
+fsellerby(primary),gdaison(primary),hrambotham(primary),
+jrhapsody(primary),maryk(primary),jacko(primary),bridge(primary),
+sharpec(primary),jimbo(primary),dhenwick(primary),dork(primary),
+blue(primary),billw(primary),rfreshmill(primary),MAGGOT$(primary),
+TRENTWARE$(primary),MORTON$(primary),NARM$(primary),
+LAPDOG$(primary),SCAVENGER$(primary),merlin$(primary),
+Group members of Domain Guests: Guest(primary),
+Group members of Engineers: atrickhoffer,dhenwick,dork,
+Group members of Marketoids: rfreshmill,
+Group members of Gnomes: jacko,jimbo,maryk,gdaison,
+Group members of Catalyst: dhenwick,jacko,
+Group members of Recieving: jacko,blue,
+Group members of Rubberboot: hrambotham,
+Group members of Sales: billw,bridge,jrhapsody,maryk,
+rfreshmill,fsellerby,sharpec,
+Group members of Accounting: jimbo,gdaison,
+Group members of Shipping: jacko,blue,
+Fetching BUILTIN database
+skipping SAM_DOMAIN_INFO delta for 'Builtin' (is not my domain)
+Creating unix group: 'Account Operators'
+Creating unix group: 'Guests'
+Creating unix group: 'Server Operators'
+Creating unix group: 'Users'
 </screen>
-</example>
+	</para>
+
+	</sect3>
 
 	</sect2>
 
