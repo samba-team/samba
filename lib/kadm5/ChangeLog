@@ -1,5 +1,7 @@
 2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-cracklib.pl: external password verifier sample
+
 	* password_quality.c (kadm5_add_passwd_quality_verifier): if NULL
 	is passed in, load defaults
 
