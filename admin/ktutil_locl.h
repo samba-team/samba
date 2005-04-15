@@ -61,6 +61,7 @@
 
 #include <sl.h>
 #include <getarg.h>
+#include <hex.h>
 
 extern krb5_context context;
 
