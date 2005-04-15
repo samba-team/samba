@@ -1680,6 +1680,7 @@ sub ParseTypedefPrint($)
 	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA});
 	deindent;
 	pidl "}";
+	pidl "";
 }
 
 #####################################################################
