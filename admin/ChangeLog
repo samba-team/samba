@@ -1,3 +1,7 @@
+2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ktutil_locl.h: include <hex.h>
+
 2005-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* add.c: add option -H --hex to the add command
