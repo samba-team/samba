@@ -152,6 +152,10 @@ to the following restrictions:
 @copyrightend
 @end titlepage
 
+@macro manpage{man, section}
+@cite{\man\(\section\)}
+@end macro
+
 @c Less filling! Tastes great!
 @iftex
 @parindent=0pt
