@@ -644,10 +644,63 @@ ou: idmap
 	      </indexterm>
 		The system is ready to join the Domain. Execute the following:
 <screen>
-&rootprompt; net rpc join -U root%not24et
+&rootprompt; net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
 		This indicates that the Domain join succeeded.
+		</para>
+
+		<para>
+		Failure to join the domain could be caused by any number of vaiables. The most common
+		causes of failure to join are:
+		</para>
+
+		<para>
+		<itemizedlist>
+			<listitem><para>Broken resolution of netbios names to the respective IP address.</para></listitem>
+			<listitem><para>Incorrect username and password credentials.</para></listitem>
+			<listitem><para>The NT4 <parameter>restrict anonymous</parameter> is set to exclude anonymous
+				connections.</para></listitem>
+		</itemizedlist> 
+		</para>
+
+		<para>
+		The connection setup can be diagnosed by executing:
+<screen>
+&rootprompt; net rpc join -S 'pdc-name' -U administrator%password -d 5
+</screen>
+		<indexterm><primary>failed</primary></indexterm>
+		<indexterm><primary>failed join</primary></indexterm>
+		<indexterm><primary>rejected</primary></indexterm>
+		<indexterm><primary>restrict anonymous</primary></indexterm>
+		Note: Use 'root' for UNIX/Linux and Samba, use 'Administrator' for Windows NT4/200X. If the cause of
+		the failure appears to be related to a rejected or failed 'NT_SESSION_SETUP*' or an error message that
+		says 'NT_STATUS_ACCESS_DENIED' immediately check the Windows registry setting that controls the
+		<constant>restrict anonymous</constant> setting. Set this to the value 0 so that an anonymous connection
+		can be sustained, then try again.
+		</para>
+
+		<para>
+		It is possible (perhaps even recommended) to use the following to validate the ability to connect
+		to an NT4 PDC/BDC:
+<screen>
+&rootprompt; net rpc info -S 'pdc-name' -U Administrator%not24get
+Domain Name: MEGANET2
+Domain SID: S-1-5-21-422319763-4138913805-7168186429
+Sequence number: 1519909596
+Num users: 7003
+Num domain groups: 821
+Num local groups: 8
+
+&rootprompt; net rpc testjoin -S 'pdc-name' -U Administrator%not24get
+Join to 'MEGANET2' is OK
+</screen>
+		If for any reason the following response is obtained to the last command above it is time to
+		call in the Networking Super-Snooper task force (i.e.: Start debugging):
+<screen>
+NT_STATUS_ACCESS_DENIED
+Join to 'MEGANET2' failed.
+</screen>
 		</para></step>
 
 		<step><para>
@@ -658,7 +711,7 @@ Joined domain MEGANET2.
 <screen>
 &rootprompt; wbinfo --set-auth-user=Administrator%not24get
 </screen>
--		The configuration is now ready to obtain ADS Domain user and group information.
+		The configuration is now ready to obtain ADS Domain user and group information.
 		</para></step>
 
 		<step><para>
@@ -1036,6 +1089,97 @@ aliases:        files
 </screen>
 </example>
 
+	</sect2>
+
+	<sect2 id="dcwonss">
+	<title>NT4/Samba Domain with Samba Domain Member Server - Without NSS Support</title>
+
+	<para>
+	No matter how many UNIX/Linux administrators there may be who believe that a UNIX operating
+	system that does not have NSS and PAM support to be outdated and antique, the fact is there
+	are still many such systems in use today. Samba can be used without NSS support, but this
+	does limit it to the use of local user and group accounts only.
+	</para>
+
+	<para>
+	The following steps may be followed to implement Samba with support for local accounts.
+	In this configuration Samba is made a domain member server. All incoming connections
+	to the Samba server will cause the look-up of the incoming user name. If the account
+	is found, it is used. If the account is not found, one will be automatically created
+	on the local machine so that it can then be used for all access controls.
+	</para>
+
+	<procedure>
+	<title>Configuration Using Local Accounts Only</title>
+
+		<step><para>
+		Using your favorite text editor, create the &smb.conf; file so it has the contents
+		shown in <link linkend="ch0-NT4DSCM"/>.
+		</para></step>
+
+		<step>
+		<para><indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
+		The system is ready to join the Domain. Execute the following:
+<screen>
+net rpc join -U root%not24et
+Joined domain MEGANET2.
+</screen>
+                This indicates that the Domain join succeed.
+		</para></step>
+
+		<step><para>
+		Be sure to run all three Samba daemons: <command>smbd, nmbd, winbindd</command>.
+		</para></step>
+
+		<step><para>
+		The Samba member server of a Windows NT4 Domain is ready for use.
+		</para></step>
+	</procedure>
+
+<smbconfexample id="ch0-NT4DSCM">
+<title>Samba Domain Member Server &smb.conf; File for NT4 Domain</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="unix charset">LOCALE</smbconfoption>
+<smbconfoption name="workgroup">MEGANET3</smbconfoption>
+<smbconfoption name="netbios name">BSDBOX</smbconfoption>
+<smbconfoption name="security">DOMAIN</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="log level">1</smbconfoption>
+<smbconfoption name="syslog">0</smbconfoption>
+<smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
+<smbconfoption name="add machine script">/usr/sbin/useradd -M '%u'</smbconfoption>
+<smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
+<smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
+<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+<smbconfoption name="max log size">0</smbconfoption>
+<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="wins server">192.168.2.1</smbconfoption>
+<smbconfoption name="printer admin">root</smbconfoption>
+<smbconfoption name="hosts allow">192.168.2., 192.168.3., 127.</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
+
+<smbconfsection name="[homes]"/>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
+
+<smbconfsection name="[printers]"/>
+<smbconfoption name="comment">SMB Print Spool</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
+
+<smbconfsection name="[print$]"/>
+<smbconfoption name="comment">Printer Drivers</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+<smbconfoption name="admin users">root, Administrator</smbconfoption>
+<smbconfoption name="write list">root</smbconfoption>
+</smbconfexample>
 	</sect2>
 
 	<sect2 id="adssdm">
@@ -1864,8 +2008,8 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         <indexterm><primary>realm</primary></indexterm>
         In the case of an NT4 or Samba-3 style Domain the <parameter>realm</parameter> is not used and the
         command used to join the domain is: <command>net rpc join</command>. The above example also demonstrates
-        advanced error reporting techniques that are documented in <link linkend="dbglvl">the chapter called
-        Reporting Bugs</link>.
+        advanced error reporting techniques that are documented in the chapter called Reporting Bugs in the
+	book <quote>The Official Samba-3 HOWTO and Reference Guide</quote> (TOSHARG).
         </para>
 
         <para>
