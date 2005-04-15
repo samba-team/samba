@@ -3,6 +3,12 @@
 	* telnetd/sys_term.c: clean_ttyname might be unused, mark it so
 	with __attribute__
 	
+2005-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/sys_term.c: use NULL as last argument to execl, not 0
+
+	* telnet/commands.c: use NULL as last argument to execl, not 0
+	
 2005-03-29  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* telnet/telnet.c: From FreeBSD:
