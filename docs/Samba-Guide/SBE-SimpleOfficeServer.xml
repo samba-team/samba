@@ -6,7 +6,7 @@
 <?latex \pagenumbering{arabic} ?>
 
 	<para>
-	This is the start of the real journey toward the successful deployment of Samba. For some this is chapter
+	This is the start of the real journey toward the successful deployment of Samba. For some this chapter
 	is the end of the road bacause their needs will have been adequately met. For others, this chapter is
 	the beginning of a journey that will take them well past the contents of this book. This book provides
 	example configurations of, for the greater part, complete networking solutions. The intent of this book
@@ -84,9 +84,10 @@
 		<indexterm><primary>Fedora</primary></indexterm>
 	Mr. Bob Jordan has asked you to install the new server as economically as possible. The central
 	server has a Pentium-IV 1.6GHz CPU, 768MB RAM, a 20GB IDE boot drive, a 160GB IDE second disk
-	to store plans, and a 100-base-T Ethernet card. You have already installed Red Hat Fedora Core2 and
+	to store plans, and a 100-base-T Ethernet card. You have already installed Red Hat Fedora CoreX and
 	have upgraded Samba to version 3.0.15 using the RPM package that is provided from the Samba
-	<ulink url="http://www.samba.org">FTP</ulink> sites.
+	<ulink url="http://www.samba.org">FTP</ulink> sites. (Note: Fedora CoreX indicates your favorite
+	version.)
 	</para>
 
 	<para><indexterm>
