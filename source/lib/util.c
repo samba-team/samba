@@ -978,6 +978,56 @@ void *realloc_array(void *p,size_t el_size, unsigned int count)
 }
 
 /****************************************************************************
+ (Hopefully) efficient array append
+****************************************************************************/
+void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
+			void *element, void **array, uint32 *num_elements,
+			ssize_t *array_size)
+{
+	if (*array_size == -1)
+		return;
+
+	if (*array == NULL) {
+		if (*array_size == 0)
+			*array_size = 128;
+
+		if (mem_ctx != NULL)
+			*array = talloc_array(mem_ctx, element_size,
+					      *array_size);
+		else
+			*array = malloc_array(element_size, *array_size);
+
+		if (*array == NULL)
+			goto error;
+	}
+
+	if (*num_elements == *array_size) {
+		*array_size *= 2;
+
+		if (mem_ctx != NULL)
+			*array = talloc_realloc_array(mem_ctx, *array,
+						      element_size,
+						      *array_size);
+		else
+			*array = realloc_array(*array, element_size,
+					       *array_size);
+
+		if (*array == NULL)
+			goto error;
+	}
+
+	memcpy((char *)(*array) + element_size*(*num_elements),
+	       element, element_size);
+	*num_elements += 1;
+
+	return;
+
+ error:
+	*num_elements = 0;
+	*array_size = -1;
+}
+
+/****************************************************************************
  Free memory, checks for NULL.
  Use directly SAFE_FREE()
  Exists only because we need to pass a function pointer somewhere --SSS

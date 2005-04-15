@@ -207,23 +207,33 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				uint32 *num_entries, 
 				struct acct_info **info)
 {
-	struct acct_info *talloced_info;
+	struct pdb_search *search;
+	struct samr_displayentry *aliases;
+	int i;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	/* Hmm. One billion aliases should be enough for a start */
+	search = pdb_search_aliases(&domain->sid);
+	if (search == NULL) goto done;
 
-	if (!pdb_enum_aliases(&domain->sid, 0, 1000000000,
-			      num_entries, info)) {
-		/* Nothing to report, just exit. */
-		return NT_STATUS_OK;
+	*num_entries = pdb_search_entries(search, 0, 0xffffffff, &aliases);
+	if (*num_entries == 0) goto done;
+
+	*info = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
+	if (*info == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-	talloced_info =	(struct acct_info *)TALLOC_MEMDUP(mem_ctx, *info,
-			      *num_entries * sizeof(struct acct_info));
+	for (i=0; i<*num_entries; i++) {
+		fstrcpy((*info)[i].acct_name, aliases[i].account_name);
+		fstrcpy((*info)[i].acct_desc, aliases[i].description);
+		(*info)[i].rid = aliases[i].rid;
+	}
 
-	SAFE_FREE(*info);
-	*info = talloced_info;
-
-	return NT_STATUS_OK;
+	result = NT_STATUS_OK;
+ done:
+	pdb_search_destroy(search);
+	return result;
 }
 
 /* convert a single name to a sid in a domain */
