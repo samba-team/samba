@@ -28,6 +28,7 @@
 #include <sys/mount.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/vfs.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <errno.h>
@@ -35,7 +36,7 @@
 #include <mntent.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "1"
+#define UNMOUNT_CIFS_VERSION_MINOR "2"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
 #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
@@ -49,7 +50,8 @@
 #define MNT_EXPIRE 0x04
 #endif
 
-#define CIFS_IOC_CHECKUMOUNT _IO('c', 2)
+#define CIFS_IOC_CHECKUMOUNT _IO(0xCF, 2)
+#define CIFS_MAGIC_NUMBER 0xFF534D42   /* the first four bytes of SMB PDU */
    
 static struct option longopts[] = {
 	{ "all", 0, NULL, 'a' },
@@ -107,7 +109,7 @@ static int umount_check_perm(char * dir)
 	if(rc == ENOTTY)
 		printf("user unmounting via %s is an optional feature of the cifs filesystem driver (cifs.ko)\n\tand requires cifs.ko version 1.32 or later\n",thisprogram);
 	else if (rc > 0)
-		printf("user unmount of %s failed with %d %s",dir,errno,strerror(errno));
+		printf("user unmount of %s failed with %d %s\n",dir,errno,strerror(errno));
 	close(fileid);
 
 	return rc;
@@ -121,6 +123,7 @@ int main(int argc, char ** argv)
 	int nomtab = 0;
 	int retry_remount = 0;
 	struct mntent mountent;
+	struct statfs statbuf;
 	char * mountpoint;
 	FILE * pmntfile;
 
@@ -199,27 +202,38 @@ int main(int argc, char ** argv)
 		printf("optind %d unmount dir %s\n",optind, mountpoint);
 
 	/* check if running effectively root */
-	if(geteuid() != 0)
+	if(geteuid() != 0) {
 		printf("Trying to unmount when %s not installed suid\n",thisprogram);
+		if(verboseflg)
+			printf("euid = %d\n",geteuid());
+		return -EACCES;
+	}
 
 	/* fixup path if needed */
+
+	/* make sure that this is a cifs filesystem */
+	rc = statfs(mountpoint, &statbuf);
+	
+	if(rc || (statbuf.f_type != CIFS_MAGIC_NUMBER)) {
+		printf("Wrong filesystem. This utility only unmounts cifs filesystems.\n");
+		return -EINVAL;
+	}
 
 	/* check if our uid was the one who mounted */
 	rc = umount_check_perm(mountpoint);
 	if (rc) {
+		printf("Not permitted to unmount\n");
 		return rc;
 	}
 
 	if(umount2(mountpoint, flags)) {
 	/* remember to kill daemon on error */
-
 		switch (errno) {
 		case 0:
-			printf("mount failed but no error number set\n");
+			printf("unmount failed but no error number set\n");
 			break;
 		default:
-			
-			printf("mount error %d = %s\n",errno,strerror(errno));
+			printf("unmount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the umount.cifs(8) manual page (e.g.man 8 umount.cifs)\n");
 		return -1;
