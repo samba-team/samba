@@ -28,28 +28,19 @@
 	failure, and much more.
 	</para>
 
-      <para><indexterm>
-	  <primary>group policies</primary>
-	</indexterm><indexterm>
-	  <primary>accounts</primary>
-	  <secondary>user</secondary>
-	</indexterm><indexterm>
-	  <primary>accounts</primary>
-	  <secondary>group</secondary>
-	</indexterm><indexterm>
-	  <primary>accounts</primary>
-	  <secondary>machine</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>group policies</primary></indexterm>
+	<indexterm><primary>accounts</primary><secondary>user</secondary></indexterm>
+	<indexterm><primary>accounts</primary><secondary>group</secondary></indexterm>
+	<indexterm><primary>accounts</primary><secondary>machine</secondary></indexterm>
 	The migration from NT4 to Samba-3 can involve a number of factors, including:
 	migration of data to another server, migration of network environment controls
 	such as group policies, and finally migration of the users, groups, and machine
 	accounts.
 	</para>
 
-      <para><indexterm>
-	  <primary>accounts</primary>
-	  <secondary>Domain</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>accounts</primary><secondary>Domain</secondary></indexterm>
 	It should be pointed out now that it is possible to migrate some systems from
 	Windows NT4 Domain environments to a Samba-3 Domain Environment. This is certainly
 	not possible in every case. It is possible to just migrate the Domain accounts
@@ -60,26 +51,23 @@
 	</para>
 
 	<sect2>
-		<title>Assignment Tasks</title>
+	<title>Assignment Tasks</title>
 
-	<para><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm><indexterm>
-	    <primary>ldapsam</primary>
-	  </indexterm><indexterm>
-	    <primary>passdb backend</primary>
-	  </indexterm>
-		You are about to migrate an MS Windows NT4 Domain accounts database to
-		a Samba-3 server. The Samba-3 server is using a 
-		<parameter>passdb backend</parameter> based on LDAP. The 
-		<constant>ldapsam</constant> is ideal because an LDAP backend can be distributed
-		for use with BDCs &smbmdash; generally essential for larger networks.
-		</para>
+	<para>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	You are about to migrate an MS Windows NT4 Domain accounts database to
+	a Samba-3 server. The Samba-3 server is using a 
+	<parameter>passdb backend</parameter> based on LDAP. The 
+	<constant>ldapsam</constant> is ideal because an LDAP backend can be distributed
+	for use with BDCs &smbmdash; generally essential for larger networks.
+	</para>
 
-		<para>
-		Your objective is to document the process of migrating user and group accounts
-		from several NT4 Domains into a single Samba-3 LDAP backend database.
-		</para>
+	<para>
+	Your objective is to document the process of migrating user and group accounts
+	from several NT4 Domains into a single Samba-3 LDAP backend database.
+	</para>
 
 	</sect2>
 </sect1>
@@ -87,69 +75,49 @@
 <sect1>
 	<title>Dissection and Discussion</title>
 
-      <para><indexterm>
-	  <primary>snap-shot</primary>
-	</indexterm><indexterm>
-	  <primary>NT4 registry</primary>
-	</indexterm><indexterm>
-	  <primary>registry</primary>
-	  <secondary>keys</secondary>
-	  <tertiary>SAM</tertiary>
-	</indexterm><indexterm>
-	  <primary>registry</primary>
-	  <secondary>keys</secondary>
-	  <tertiary>SECURITY</tertiary>
-	</indexterm><indexterm>
-	  <primary>SAM</primary>
-	</indexterm><indexterm>
-	  <primary>Security Account Manager</primary>
-	  <see>SAM</see>
-	</indexterm>
+	<para>
+	<indexterm><primary>snap-shot</primary></indexterm>
+	<indexterm><primary>NT4 registry</primary></indexterm>
+	<indexterm><primary>registry</primary><secondary>keys</secondary><tertiary>SAM</tertiary></indexterm>
+	<indexterm><primary>registry</primary><secondary>keys</secondary><tertiary>SECURITY</tertiary></indexterm>
+	<indexterm><primary>SAM</primary></indexterm>
+	<indexterm><primary>Security Account Manager</primary><see>SAM</see></indexterm>
 	The migration process takes a snap-shot of information that is stored in the
 	Windows NT4 registry based accounts database. That information resides in
 	the Security Account Manager (SAM) portion of the NT4 Registry under keys called
 	<constant>SAM</constant> and <constant>SECURITY</constant>.
 	</para>
 
-      <warning><para><indexterm>
-	    <primary>crippled</primary>
-	  </indexterm><indexterm>
-	    <primary>inoperative</primary>
-	  </indexterm>
+	<warning><para>
+	<indexterm><primary>crippled</primary></indexterm>
+	<indexterm><primary>inoperative</primary></indexterm>
 	The Windows NT4 registry keys called <constant>SAM</constant> and <constant>SECURITY</constant>
 	are protected so that you cannot view the contents. If you change the security setting
 	to reveal the contents under these hive keys, your Windows NT4 Domain is crippled. Do not
 	do this unless you are willing to render your domain controller inoperative.
 	</para></warning>
 
-      <para><indexterm>
-	  <primary>migration</primary>
-	  <secondary>objectives</secondary>
-	</indexterm><indexterm>
-	  <primary>disruptive</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>migration</primary><secondary>objectives</secondary></indexterm>
+	<indexterm><primary>disruptive</primary></indexterm>
 	Before commencing an NT4 to Samba-3 migration, you should consider what your objectives are.
 	While in some cases it is possible simply to migrate an NT4 domain to a single Samba-3 server,
-	that may not be a good idea from an administration perspective. Since you are going through a
-	certain amount of disruptive activity anyhow, why not take this as an opportunity to review
-	the structure of the network, how Windows clients are controlled and how they
+	that may not be a good idea from an administration perspective. Since the process involves going
+	through a certain amount of disruptive activity anyhow, why not take this as an opportunity to
+	review the structure of the network, how Windows clients are controlled and how they
 	interact with the network environment.
 	</para>
 
-      <para><indexterm>
-	  <primary>network</primary>
-	  <secondary>logon scripts</secondary>
-	</indexterm><indexterm>
-	  <primary>profiles share</primary>
-	</indexterm><indexterm>
-	  <primary>security descriptors</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>network</primary><secondary>logon scripts</secondary></indexterm>
+	<indexterm><primary>profiles share</primary></indexterm>
+	<indexterm><primary>security descriptors</primary></indexterm>
 	MS Windows NT4 was introduced some time around 1996. Many environments in which NT4 was deployed
 	have done little to keep the NT4 server environment up-to-date with more recent Windows releases, 
 	particularly Windows XP Professional. The migration provides opportunity to revise and update 
 	roaming profile deployment as well as folder redirection. Given that you must port the 
-	greater network configuration of this from the old NT4 server to the new Samba-3 server, you
-	also must validate the security descriptors in the profiles share as well as network logon
+	greater network configuration of this from the old NT4 server to the new Samba-3 server.
+	Do not forget to validate the security descriptors in the profiles share as well as network logon
 	scripts. Feedback from sites that are migrating to Samba-3 suggests that many are using this
 	as a good time to update desktop systems also. In all, the extra effort should constitute no
 	real disruption to users, rather with due diligence and care should make their network experience
@@ -157,157 +125,103 @@
 	</para>
 
 	<sect2>
-		<title>Technical Issues</title>
+	<title>Technical Issues</title>
 
-		<para>
-		<indexterm><primary>strategic</primary></indexterm>
-		<indexterm><primary>active directory</primary></indexterm>
-		Migration of an NT4 Domain user and group database to Samba-3 involves a certain strategic
-		element. Many sites have asked for instructions regarding merging of multiple different NT4
-		Domains into one Samba-3 LDAP database. It would appear that this is viewed as a significant
-		added value compared with the alternative of migration to Windows Server 200x and Active
-		Directory. The diagram in <link linkend="ch8-migration"/> illustrates the effect of migration
-		from a Windows NT4 Domain to a Samba Domain.
-		</para>
+	<para>
+	<indexterm><primary>strategic</primary></indexterm>
+	<indexterm><primary>active directory</primary></indexterm>
+	Migration of an NT4 Domain user and group database to Samba-3 involves a certain strategic
+	element. Many sites have asked for instructions regarding merging of multiple different NT4
+	Domains into one Samba-3 LDAP database. It would appear that this is viewed as a significant
+	added value compared with the alternative of migration to Windows Server 200x and Active
+	Directory. The diagram in <link linkend="ch8-migration"/> illustrates the effect of migration
+	from a Windows NT4 Domain to a Samba Domain.
+	</para>
 
-		<image id="ch8-migration">
-			<imagedescription>Schematic Explaining the <command>net rpc vampire</command> Process</imagedescription>
-			<imagefile scale="55">ch8-migration</imagefile>
-		</image>
+	<image id="ch8-migration">
+		<imagedescription>Schematic Explaining the <command>net rpc vampire</command> Process</imagedescription>
+		<imagefile scale="55">ch8-migration</imagefile>
+	</image>
 
-		<para>
-		In any case, the migration process involves the following steps:
-		</para>
-
-		<itemizedlist>
-			<listitem><para>
-			Prepare the target Samba-3 server. This involves configuring Samba-3 for
-			migration to either a tdbsam or an ldapsam backend.
-			</para></listitem>
-
-	  <listitem><para><indexterm>
-		<primary>uppercase</primary>
-	      </indexterm><indexterm>
-		<primary>Posix</primary>
-	      </indexterm><indexterm>
-		<primary>lower-case</primary>
-	      </indexterm>
-			Clean up the source NT4 PDC. Delete all accounts that need not be migrated.
-			Delete all files that should not be migrated. Where possible, change NT Group
-			names so there are no spaces or uppercase characters. This is important if
-			the target UNIX host insists on Posix compliant all lower-case user and group
-			names.
-			</para></listitem>
-
-			<listitem><para>
-			Step through the migration process.
-			</para></listitem>
-
-	  <listitem><para><indexterm>
-		<primary>PDC</primary>
-	      </indexterm>
-			Remove the NT4 PDC from the network.
-			</para></listitem>
-
-			<listitem><para>
-			Upgrade the Samba-3 server from a BDC to a PDC, and validate all account
-			information.
-			</para></listitem>
-		</itemizedlist>
+	<para>
+	<indexterm><primary>merge</primary></indexterm>
+	<indexterm><primary>passdb.tdb</primary></indexterm>
+	If you are wanting to merge multiple NT4 Domain account databases into one Samba Domain,
+	you must now dump the contents of the first migration and edit it as appropriate. Now clean
+	out (remove) the tdbsam backend file (<filename>passdb.tdb</filename>), or the LDAP database
+	files. You must start each migration with a new database into which you merge your NT4 
+	domains.
+	</para>
 
 	<para><indexterm>
-	    <primary>merge</primary>
-	  </indexterm><indexterm>
-	    <primary>passdb.tdb</primary>
-	  </indexterm>
-		If you are wanting to merge multiple NT4 Domain account databases into one Samba Domain,
-		you must now dump the contents of the first migration and edit it as appropriate. Now clean
-		out (remove) the tdbsam backend file (<filename>passdb.tdb</filename>), or the LDAP database
-		files. You must start each migration with a new database into which you merge your NT4 
-		domains.
-		</para>
+	<primary>dump</primary>
+	</indexterm>
+	At this point, you are ready to perform the second migration following the same steps as
+	for the first. In other words, dump the database, edit it, and then you may merge the
+	dump for the first and second migrations.
+	</para>
 
 	<para><indexterm>
-	    <primary>dump</primary>
-	  </indexterm>
-		At this point, you are ready to perform the second migration following the same steps as
-		for the first. In other words, dump the database, edit it, and then you may merge the
-		dump for the first and second migrations.
-		</para>
+	<primary>LDAP</primary>
+	</indexterm><indexterm>
+	<primary>migrate</primary>
+	</indexterm><indexterm>
+	<primary>Domain SID</primary>
+	</indexterm>
+	You must be careful. If you choose to migrate to an LDAP backend, your dump file
+	now contains the full account information, including the Domain SID. The Domain SID for each 
+	of the two NT4 Domains will be different. You must choose one, and change the Domain 
+	portion of the account SIDs so that all are the same.
+	</para>
 
-	<para><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm><indexterm>
-	    <primary>migrate</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain SID</primary>
-	  </indexterm>
-		You must be careful. If you choose to migrate to an LDAP backend, your dump file
-		now contains the full account information, including the Domain SID. The Domain SID for each 
-		of the two NT4 Domains will be different. You must choose one, and change the Domain 
-		portion of the account SIDs so that all are the same.
-		</para>
+	<para>
+	<indexterm><primary>passdb.tdb</primary></indexterm>
+	<indexterm><primary>/etc/passwd</primary></indexterm>
+	<indexterm><primary>merged</primary></indexterm>
+	<indexterm><primary>logon script</primary></indexterm>
+	<indexterm><primary>logon hours</primary></indexterm>
+	<indexterm><primary>logon machines</primary></indexterm>
+	<indexterm><primary>profile path</primary></indexterm>
+	<indexterm><primary>smbpasswd</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
+	<indexterm><primary>LDAP backend</primary></indexterm>
+	<indexterm><primary>export</primary></indexterm>
+	<indexterm><primary>import</primary></indexterm>
+	If you choose to use a tdbsam (<filename>passdb.tdb</filename>) backend file, your best choice
+	is to use <command>pdbedit</command> to export the contents of the tdbsam file into an
+	smbpasswd data file. This automatically strips out all Domain specific information,
+	such as logon hours, logon machines, logon script, profile path, as well as the Domain SID.
+	The resulting file can be easily merged with other migration attempts (each of which must start
+	with a clean file). It should also be noted that all users that end up in the merged smbpasswd
+	file must have an account in <filename>/etc/passwd</filename>. The resulting smbpasswd file
+	may be exported/imported into either a tdbsam (<filename>passdb.tdb</filename>), or else into
+	an LDAP backend.
+	</para>
 
-	<para><indexterm>
-	    <primary>passdb.tdb</primary>
-	  </indexterm><indexterm>
-	    <primary>/etc/passwd</primary>
-	  </indexterm><indexterm>
-	    <primary>merged</primary>
-	  </indexterm><indexterm>
-	    <primary>logon script</primary>
-	  </indexterm><indexterm>
-	    <primary>logon hours</primary>
-	  </indexterm><indexterm>
-	    <primary>logon machines</primary>
-	  </indexterm><indexterm>
-	    <primary>profile path</primary>
-	  </indexterm><indexterm>
-	    <primary>smbpasswd</primary>
-	  </indexterm><indexterm>
-	    <primary>tdbsam</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP backend</primary>
-	  </indexterm><indexterm>
-	    <primary>export</primary>
-	  </indexterm><indexterm>
-	    <primary>import</primary>
-	  </indexterm>
-		If you choose to use a tdbsam (<filename>passdb.tdb</filename>) backend file, your best choice
-		is to use <command>pdbedit</command> to export the contents of the tdbsam file into an
-		smbpasswd data file. This automatically strips out all Domain specific information,
-		such as logon hours, logon machines, logon script, profile path, as well as the Domain SID.
-		The resulting file can be easily merged with other migration attempts (each of which must start
-		with a clean file). It should also be noted that all users that end up in the merged smbpasswd
-		file must have an account in <filename>/etc/passwd</filename>. The resulting smbpasswd file
-		may be exported/imported into either a tdbsam (<filename>passdb.tdb</filename>), or else into
-		an LDAP backend.
-		</para>
+	<image id="NT4DUM">
+		<imagedescription>View of Accounts in NT4 Domain User Manager</imagedescription>
+		<imagefile scale="50">UserMgrNT4</imagefile>
+	</image>
 
-		<image id="NT4DUM">
-			<imagedescription>View of Accounts in NT4 Domain User Manager</imagedescription>
-			<imagefile scale="50">UserMgrNT4</imagefile>
-		</image>
-
-	</sect2>
+</sect2>
 
 
-	<sect2>
-		<title>Political Issues</title>
+<sect2>
+	<title>Political Issues</title>
 
-		<para>
-		The merging of multiple Windows NT4 style Domains into a single LDAP-backend-based Samba-3
-		Domain may be seen by those who had power over them as a loss of prestige or a loss of
-		power. The imposition of a single Domain may even be seen as a threat. So in migrating and
-		merging account databases, be consciously aware of the political fall-out in which you
-		may find yourself entangled when key staff feel a loss of prestige.
-		</para>
+	<para>
+	The merging of multiple Windows NT4 style Domains into a single LDAP-backend-based Samba-3
+	Domain may be seen by those who had power over them as a loss of prestige or a loss of
+	power. The imposition of a single Domain may even be seen as a threat. So in migrating and
+	merging account databases, be consciously aware of the political fall-out in which you
+	may find yourself entangled when key staff feel a loss of prestige.
+	</para>
 
-		<para>
-		The best advice that can be given to those who set out to merge NT4 Domains into one single
-		Samba-3 Domain is to promote (sell) the action as one that reduces costs and delivers
-		greater network interoperability and manageability.
-		</para>
+	<para>
+	The best advice that can be given to those who set out to merge NT4 Domains into one single
+	Samba-3 Domain is to promote (sell) the action as one that reduces costs and delivers
+	greater network interoperability and manageability.
+	</para>
 
 	</sect2>
 
@@ -317,10 +231,65 @@
 	<title>Implementation</title>
 
 	<para>
+	From feedback on the Samba mailing lists it would appear that most Windows NT4 migrations
+	to Samba-3 are being performed using a new server or a new installation of a Linux or UNIX
+	server. If you contemplate doing this also, please note that the steps that follow in this
+	chapter assume familiarity with the information that has been previously covered in this
+	book. The reader is particularly encouraged to be familiar with <link linkend="secure"/>,
+	<link linkend="Big500users"/> and <link linkend="happy"/>.
+	</para>
+
+	<para>
 	You can present here the steps and example output for two NT4 to Samba-3 Domain migrations. The
 	first uses an LDAP-based backend, and the second uses a tdbsam backend. In each case the
 	scripts you specify in the &smb.conf; file for the <parameter>add user script</parameter>
 	collection of parameters are used to effect the addition of accounts into the passdb backend.
+	</para>
+
+	<para>
+	Before proceeding to NT4 migration using either a tdbsam or ldapsam it is most strongly recommended to
+	review <link linkend="ch5-dnshcp-setup"/> for DNS and DHCP configuration. The importance of correctly
+	functioning name resolution must be recognized. This applies equally for hostname as for netBIOS names
+	(machine names, computer names, domain names, workgroup names &smbmdash; ALL names!).
+	</para>
+
+	<para>
+	The migration process involves the following steps:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>
+		Prepare the target Samba-3 server. This involves configuring Samba-3 for
+		migration to either a tdbsam or an ldapsam backend.
+		</para></listitem>
+
+		<listitem><para>
+		<indexterm><primary>uppercase</primary></indexterm>
+		<indexterm><primary>Posix</primary></indexterm>
+		<indexterm><primary>lower-case</primary></indexterm>
+		Clean up the source NT4 PDC. Delete all accounts that need not be migrated.
+		Delete all files that should not be migrated. Where possible, change NT Group
+		names so there are no spaces or uppercase characters. This is important if
+		the target UNIX host insists on Posix compliant all lower-case user and group
+		names.
+		</para></listitem>
+
+		<listitem><para>
+		Step through the migration process.
+		</para></listitem>
+
+		<listitem><para><indexterm><primary>PDC</primary></indexterm>
+		Remove the NT4 PDC from the network.
+		</para></listitem>
+
+		<listitem><para>
+		Upgrade the Samba-3 server from a BDC to a PDC, and validate all account
+		information.
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	It may help to use the above outline as a pre-migration check-list.
 	</para>
 
 	<sect2>
@@ -648,7 +617,14 @@ bootparams:     files
 automount:      files nis
 aliases:        files
 </screen>
-		Note that the LDAP entris
+		Note that the LDAP entries have been commented out. This is deliberate. If these
+		entries are active (not commented out), and the <filename>/ec/ldap.conf</filename>
+		file has been configured, when the LDAP server is started, the process
+		of starting the LDAP server will cause LDAP lookups. This causes the LDAP server
+		<command>slapd</command> to hang becasue it finds port 389 open and therefore
+		can not gain exclusive control of it. By commenting these entries out it is possible
+		to avoid this grid-lock situation and thus the over-all installation and configuration
+		will progress more smoothly.
 		</para></step>
 
 		<step><para>
@@ -665,12 +641,13 @@ PING transgression.terpstra-world.org (192.168.1.5) 56(84) bytes of data.
 3 packets transmitted, 3 received, 0% packet loss, time 2000ms
 rtt min/avg/max/mdev = 0.141/0.164/0.192/0.021 ms
 </screen>
-		Do not procede to the next step if this step fails. It is imperative that the name of the PDC
+		Do not proceed to the next step if this step fails. It is imperative that the name of the PDC
 		can be resolved to its IP address. If this is broken, fix it.
 		</para></step>
 
 		<step><para>
-		Obtain the domain SID from the target NT4 domain that is being migrated to Samba-3.
+		Obtain the domain SID from the target NT4 domain that is being
+		migrated to Samba-3 by executing the following:
 <screen>
 &rootprompt; net rpc info -S TRANSGRESSION
 </screen>
@@ -681,11 +658,12 @@ rtt min/avg/max/mdev = 0.141/0.164/0.192/0.021 ms
 		<indexterm><primary>configure.pl</primary></indexterm>
 		<indexterm><primary>/opt/IDEALX/sbin</primary></indexterm>
 		<indexterm><primary>smbldap-tools</primary></indexterm>
-		Install the Idealx <command>smbldap-tools</command> software package. The resulting
-		perl scripts should be located in the <filename>/opt/IDEALX/sbin</filename> directory.
+		Install the Idealx <command>smbldap-tools</command> software package following
+		the instructions given in <link linkend="sbeidealx"/>. The resulting perl scripts
+		should be located in the <filename>/opt/IDEALX/sbin</filename> directory.
 		Change into that location, or where ever the scripts have been installed. Execute the
 		<filename>configure.pl</filename> script to configure the Idealx package for use.
-		Note: Use the Domain SID obtained from the immediately prior step. The following is
+		Note: Use the Domain SID obtained from the step above. The following is
 		an example configuration session:
 <screen>
 merlin:/opt/IDEALX/sbin # ./configure.pl
@@ -770,8 +748,12 @@ writing new configuration file:
   /etc/smbldap-tools/smbldap.conf done.
   /etc/smbldap-tools/smbldap_bind.conf done.
 </screen>
+		<indexterm><primary>sambaDomainName</primary></indexterm>
 		Note that the NT4 domain SID that was previously obtained was entered above. Also,
-		the sambaUnixIdPooldn object was specified as: sambaDomainName=DAMNATION
+		the sambaUnixIdPooldn object was specified as: sambaDomainName=DAMNATION. This is
+		the location into which the Idealx smbldap-tools store the next available UID/GID
+		information. It is also where Samba stores domain specific information such as the
+		next RID, the SID, and so on.
 		</para></step>
 
 		<step><para>
@@ -1047,6 +1029,12 @@ Users (S-1-5-32-545) -&gt; Users
 		All workstations should function as they did with the old NT4 PDC. All
 		inter-domain trust accounts should remain in place and fully functional.
 		All user logon accounts should also function correctly.
+		</para></step>
+
+		<step><para>
+		The configuration of Samba-3 BDC servers can be accomplised now, or at any
+		convenient time in the future. Please refer to the carefully detailed process
+		for doing this that has been outlined in <link linkend="sbehap-bldg1"/>.
 		</para></step>
 
 	</procedure>
