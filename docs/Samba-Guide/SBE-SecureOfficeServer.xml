@@ -752,11 +752,11 @@ INTIFA="eth1"
 INTIFB="eth2"
 
 /sbin/depmod -a
-/sbin/insmod ip_tables
-/sbin/insmod ip_conntrack
-/sbin/insmod ip_conntrack_ftp
-/sbin/insmod iptable_nat
-/sbin/insmod ip_nat_ftp
+/sbin/modprobe -i ip_tables
+/sbin/modprobe -i ip_conntrack
+/sbin/modprobe -i ip_conntrack_ftp
+/sbin/modprobe -i iptable_nat
+/sbin/modprobe -i ip_nat_ftp
 $IPTABLES -P INPUT DROP
 $IPTABLES -F INPUT
 $IPTABLES -P OUTPUT ACCEPT
