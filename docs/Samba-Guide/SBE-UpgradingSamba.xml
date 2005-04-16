@@ -1009,7 +1009,7 @@ the procedure outlined above.
 	<para>
 	<indexterm><primary>privileges</primary></indexterm>
 	In Samba-3.0.11 a new privileges interface was implemented. Please
-	refer to <link linkend="ch6-ppc"/> for information regarding this new
+	refer to <link linkend="sbehap-ppc"/> for information regarding this new
 	feature. It is not necessary to implement the privileges interface, but it
 	is one that has been requested for several years and thus may be of interest
 	at your site.

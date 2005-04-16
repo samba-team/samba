@@ -636,10 +636,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 	  <filename>/etc/group</filename> 
 	or from the LDAP backend. This requires the use of the PADL <filename>nss_ldap</filename> toolset
 	that integrates with the name service switcher (NSS). The same requirements exist for resolution
-	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="ch6-LDAPdiag"/>.
+	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="sbehap-LDAPdiag"/>.
 	</para>
 
-	<image id="ch6-LDAPdiag">
+	<image id="sbehap-LDAPdiag">
 		<imagedescription>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</imagedescription>
 		<imagefile scale="50">UNIX-Samba-and-LDAP</imagefile>
 	</image>
@@ -703,7 +703,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	connections.
 	</para>
 
-		<sect3 id="ch6-ppc">
+		<sect3 id="sbehap-ppc">
 		<title>Addition of Machines to the Domain</title>
 
 		<para>
@@ -719,7 +719,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</para>
 
 
-		<table id="ch6-privs">
+		<table id="sbehap-privs">
 			<title>Current Privilege Capabilities</title>
 			<tgroup cols="2">
 				<colspec align="left"/>
@@ -840,7 +840,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		</sect3>
 
-		<sect3 id="ch6-locgrppol">
+		<sect3 id="sbehap-locgrppol">
 		<title>The Local Group Policy</title>
 	  <para><indexterm>
 	      <primary>Group Policy Objects</primary>
@@ -971,11 +971,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 		suited to the printer to which the job is dispatched.
 		</para>
 
-	  <para><indexterm>
-	      <primary>CUPS</primary>
-	    </indexterm><indexterm>
-	      <primary>Postscript</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>CUPS</primary></indexterm>
+		<indexterm><primary>Easy Software Products</primary></indexterm>
+		<indexterm><primary>Postscript</primary></indexterm>
 		The CUPS printing subsystem is capable of intelligent printing. It has the capacity to
 		detect the data format and apply a print filter. This means that it is feasible to install
 		on all Windows clients a single printer driver for use with all printers that are routed
@@ -1000,7 +999,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		</sect3>
 
-		<sect3>
+		<sect3 id="sbeavoid">
 		<title>Avoiding Failures &smbmdash; Solving Problems Before the Happen</title>
 
 		<para>
@@ -1023,6 +1022,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</para>
 
 		<para>
+		<indexterm><primary>LDAP</primary></indexterm>
 		New comers to Samba and LDAP seem to struggle a great deal at first.  If you want advice
 		regarding the best way to remedy LDAP and Samba problems: <quote>Avoid them like the plague!</quote>
 		</para>
@@ -1040,11 +1040,11 @@ clients is conservative and if followed will minimize problems - but it is not a
 		Use this resource carefully; we hope it serves you well.
 		</para>
 
-		<para>
-		Warning: Do not be lulled into thinking that you can easily adopt the examples in this
+		<warning><para>
+		Do not be lulled into thinking that you can easily adopt the examples in this
 		book and adapt them without first working through the working examples provided. A little
 		thing over-looked can cause untold pain and may permanently tarnish your experience.
-		</para>
+		</para></warning>
 
 		</sect4>
 
@@ -1052,13 +1052,18 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Debugging LDAP</title>
 
 		<para>
+		<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
+		<indexterm><primary>loglevel</primary></indexterm>
+		<indexterm><primary>slapd</primary></indexterm>
 		In the example <filename>/etc/openldap/slapd.conf</filename> control file
-		(see <link linkend="ch6-dbconf"/>) there is an entry for <constant>loglevel	256</constant>.
+		(see <link linkend="sbehap-dbconf"/>) there is an entry for <constant>loglevel	256</constant>.
 		To enable logging via the syslog infrastructure it is necessary to uncomment this parameter
 		and restart <command>slapd</command>.
 		</para>
 
 		<para>
+		<indexterm><primary>/etc/syslog.conf</primary></indexterm>
+		<indexterm><primary>/var/log/ldaplogs</primary></indexterm>
 		LDAP log information can be directed into a file that is separate from the normal system
 		log files by changing the <filename>/etc/syslog.conf</filename> file so it has the following
 		contents:
@@ -1073,6 +1078,10 @@ local4.*                        -/var/log/ldaplogs
 </screen>
 		In the above case, all LDAP related logs will be directed to the file
 		<filename>/var/log/ldaplogs</filename>. This makes it easy to track LDAP errors.
+		The above provides a simple example of usage that can be modified to suit
+		local site needs. The configuration used later in this chapter reflects such
+		customization with the intent that LDAP log files will be stored at a location
+		that meets local site needs and wishes more fully.
 		</para>
 
 		</sect4>
@@ -1106,7 +1115,7 @@ logdir /data/logs
 			</para>
 
 			<para>
-			One was this can be done is by executing:
+			One way this can be done is by executing:
 <screen>
 &rootprompt; slapcat | grep Group | grep dn
 dn: ou=Groups,dc=abmas,dc=biz
@@ -1128,12 +1137,32 @@ nss_base_group ou=Groups,dc=abmas,dc=biz?one
 			The same process may be followed to determine the appropriate dn for user accounts.
 			If the container for computer accounts is not the same as that for users (see the &smb.conf;
 			file entry for <constant>ldap machine suffix</constant>, it may be necessary to set the 
-			following DIT dn in the <filename>/etc/ldap.conf</filename>:
+			following DIT dn in the <filename>/etc/ldap.conf</filename> file:
 <screen>
 nss_base_passwd dc=abmas,dc=biz?sub
 </screen>
 			This instructs LDAP to search for machine as well as user entries from the top of the DIT
-			down. This is inefficient, but at least should work.
+			down. This is inefficient, but at least should work. Note: It is possible to specify mulitple
+			<constant>nss_base_passwd</constant> entries in the <filename>/etc/ldap.conf</filename> file, they
+			will be evaluated sequentially. Let us consider an example of use where the following DIT
+			has been implemented:
+			</para>
+
+			<para>
+			<simplelist>
+				<member><para>All user accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></member>
+				<member><para>All user login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></member>
+				<member><para>All computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></member>
+			</simplelist>
+			</para>
+
+			<para>
+			The appropriate multiple entry for the <constant>nss_base_passwd</constant> directive
+			in the <filename>/etc/ldap.conf</filename> file may be:
+<screen>
+nss_base_passwd ou=People,ou=Users,dc=abmas,dc=org?one
+nss_base_passwd ou=Computers,ou=Users,dc=abmas,dc=org?one
+</screen>
 			</para></step>
 
 			<step><para>
@@ -1287,6 +1316,7 @@ slapd[12164]: conn=1 fd=10 closed
 				<listitem><para>Printers</para></listitem>
 				<listitem><para>Share Point Directory Roots</para></listitem>
 				<listitem><para>Profile Directories</para></listitem>
+				<listitem><para>Logon Scripts</para></listitem>
 				<listitem><para>Configuration of User Rights and Privileges</para></listitem>
 			</orderedlist>
 		</listitem>
@@ -1345,7 +1375,7 @@ slapd[12164]: conn=1 fd=10 closed
 
 <note><para>
 The following information applies to Samba-3.0.15 when used with the Idealx smbldap-tools scripts
-version 0.8.7. If using a different version of Samba, or of the smbldap-tools tarball, please 
+version 0.8.8. If using a different version of Samba, or of the smbldap-tools tarball, please 
 verify that the versions you are about to use are matching.
 </para></note>
 
@@ -1419,7 +1449,7 @@ verify that the versions you are about to use are matching.
 	  <step><para><indexterm>
 		<primary>/etc/openldap/slapd.conf</primary>
 	      </indexterm>
-		Install the file shown in <link linkend="ch6-slapdconf"/> in the directory
+		Install the file shown in <link linkend="sbehap-slapdconf"/> in the directory
 		<filename>/etc/openldap</filename>.
 		</para></step>
 
@@ -1440,7 +1470,7 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 		</para></step>
 
 	<step><para><indexterm><primary>DB_CONFIG</primary></indexterm>
-		Install the file shown in <link linkend="ch6-dbconf"/> in the directory
+		Install the file shown in <link linkend="sbehap-dbconf"/> in the directory
 		<filename>/data/ldap</filename>. In the event that this file is added after <constant>ldap</constant>
 		has been started, it is possible to cause the new settings to take effect by shutting down
 		the <constant>LDAP</constant> server, executing the <command>db_recover</command> command inside the
@@ -1466,7 +1496,7 @@ local4.*        -/data/ldap/log/openldap.log
 
 	</procedure>
 
-<example id="ch6-dbconf">
+<example id="sbehap-dbconf">
 <title>LDAP DB_CONFIG File</title>
 <screen>
 set_cachesize           0 150000000 1
@@ -1477,7 +1507,7 @@ set_flags               DB_LOG_AUTOREMOVE
 </screen>
 </example>
 
-<example id="ch6-slapdconf">
+<example id="sbehap-slapdconf">
 <title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename> Part A</title>
 <screen>
 include		/etc/openldap/schema/core.schema
@@ -1524,7 +1554,7 @@ directory	/data/ldap
 </screen>
 </example>
 
-<example id="ch6-slapdconf2">
+<example id="sbehap-slapdconf2">
 <title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename> Part B</title>
 <screen>
 # Indices to maintain
@@ -1545,7 +1575,7 @@ index default               sub
 
 	</sect2>
 
-	<sect2 id="ch6-PAM-NSS">
+	<sect2 id="sbehap-PAM-NSS">
 	<title>PAM and NSS Client Configuration</title>
 
 	<para><indexterm>
@@ -1612,12 +1642,12 @@ index default               sub
 
 		<step><para>
 		On the server <constant>MASSIVE</constant>, install the file shown in 
-		<link linkend="ch6-nss01"/> into the path that was obtained from the step above.
+		<link linkend="sbehap-nss01"/> into the path that was obtained from the step above.
 		On the servers called <constant>BLDG1</constant> and <constant>BLDG2</constant>, install the file shown in
-		<link linkend="ch6-nss02"/> into the path that was obtained from the step above.
+		<link linkend="sbehap-nss02"/> into the path that was obtained from the step above.
 		</para></step>
 
-<example id="ch6-nss01">
+<example id="sbehap-nss01">
 <title>Configuration File for NSS LDAP Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
 <screen>
 host 127.0.0.1
@@ -1643,7 +1673,7 @@ ssl off
 </screen>
 </example>
 
-<example id="ch6-nss02">
+<example id="sbehap-nss02">
 <title>Configuration File for NSS LDAP Clients Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
 <screen>
 host 172.16.0.1
@@ -1745,7 +1775,7 @@ session  optional    pam_mail.so
 
 	</sect2>
 
-	<sect2 id="ch6-massive">
+	<sect2 id="sbehap-massive">
 	<title>Samba-3 PDC Configuration</title>
 
 	<para><indexterm>
@@ -1762,9 +1792,9 @@ session  optional    pam_mail.so
 	<procedure>
 	<title>Configuration of PDC Called: <constant>MASSIVE</constant></title>
 		<step><para>
-		Install the files in <link linkend="ch6-massive-smbconfa"/>, 
-		<link linkend="ch6-massive-smbconfb"/>, <link linkend="ch6-shareconfa"/>, 
-		and <link linkend="ch6-shareconfb"/> into the <filename>/etc/samba/</filename> 
+		Install the files in <link linkend="sbehap-massive-smbconfa"/>, 
+		<link linkend="sbehap-massive-smbconfb"/>, <link linkend="sbehap-shareconfa"/>, 
+		and <link linkend="sbehap-shareconfb"/> into the <filename>/etc/samba/</filename> 
 		directory. The three files should be added together to form the &smb.conf; 
 		master file. It is a good practice to call this file something like
 		<filename>smb.conf.master</filename>, and then to perform all file edits
@@ -1908,7 +1938,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	configuration of the LDAP server.
 	</para>
 
-<smbconfexample id="ch6-massive-smbconfa">
+<smbconfexample id="sbehap-massive-smbconfa">
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part A</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
@@ -1942,7 +1972,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption name="add machine script">/opt/IDEALX/sbin/smbldap-useradd -w "%u"</smbconfoption>
 </smbconfexample>
 
-<smbconfexample id="ch6-massive-smbconfb">
+<smbconfexample id="sbehap-massive-smbconfb">
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part B</title>
 	<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
 	<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
@@ -1967,7 +1997,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	</sect2>
 
 
-	<sect2>
+	<sect2 id="sbeidealx">
 	<title>Install and Configure Idealx smbldap-tools Scripts</title>
 
 	<para><indexterm>
@@ -1979,9 +2009,9 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	LDAP configuration scripts. The use of these scripts will help avoid the necessity
 	to create custom scripts. It is easy to download them from the Idealx
 	<ulink url="http://samba.idealx.org/index.en.html">Web Site.</ulink> The tarball may
-	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.7.tgz">downloaded</ulink>
+	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8.tgz">downloaded</ulink>
 	for this site, also. Alternately, you may obtain the 
-	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.7-3.src.rpm">smbldap-tools-0.8.7-3.src.rpm</ulink>
+	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8-3.src.rpm">smbldap-tools-0.8.8-3.src.rpm</ulink>
 	file that may be used to build an installable RPM package for your Linux system.
 	</para>
 
@@ -2027,7 +2057,7 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 		Copy all the <filename>smbldap-*</filename> and the <filename>configure.pl</filename> files into the 
 		<filename>/opt/IDEALX/sbin</filename> directory, as shown here:
 <screen>
-&rootprompt; cd smbldap-tools-0.8.7/
+&rootprompt; cd smbldap-tools-0.8.8/
 &rootprompt; cp smbldap-* configure.pl *pm /opt/IDEALX/sbin/
 &rootprompt; cp smbldap*conf /etc/smbldap-tools/
 &rootprompt; chmod 750 /opt/IDEALX/sbin/smbldap-*
@@ -2072,7 +2102,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 
 	<para>
 	In the event that you have elected to use the RPM package provided by Idealx, download the
-	source RPM <filename>smbldap-tools-0.8.7-3.src.rpm</filename>, then follow the following procedure:
+	source RPM <filename>smbldap-tools-0.8.8-3.src.rpm</filename>, then follow the following procedure:
 	</para>
 
 	<procedure>
@@ -2080,7 +2110,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the source RPM that has been downloaded as follows:
 <screen>
-&rootprompt; rpm -i smbldap-tools-0.8.7-5.src.rpm
+&rootprompt; rpm -i smbldap-tools-0.8.8-3.src.rpm
 </screen>
 		</para></step>
 
@@ -2117,7 +2147,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the binary package by executing:
 <screen>
-&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.7-5.noarch.rpm
+&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.8-3.noarch.rpm
 </screen>
 		</para></step>
 
@@ -2343,7 +2373,7 @@ writing new configuration file:
 	  </indexterm>
 	The following steps initialize the LDAP database, and then you can add user and group
 	accounts that Samba can use. You use the <command>smbldap-populate</command> to
-	seed the LDAP database. You then manually add the accounts shown in <link linkend="ch6-bigacct"/>. 
+	seed the LDAP database. You then manually add the accounts shown in <link linkend="sbehap-bigacct"/>. 
 	The list of users does not cover all 500 network users; it provides examples only.
 	</para>
 
@@ -2376,7 +2406,7 @@ writing new configuration file:
 	</para></note>
 
 
-	<table id="ch6-bigacct">
+	<table id="sbehap-bigacct">
 		<title>Abmas Network Users and Groups</title>
 		<tgroup cols="4">
 			<colspec align="left"/>
@@ -2523,7 +2553,7 @@ ou: idmap
 		<primary>ldapadd</primary>
 	      </indexterm>
 	        If the execution of this command does not return IDMAP entries, you need to create an LDIF
-		template file (see <link linkend="ch6-ldifadd"/>). You can add the required entries using 
+		template file (see <link linkend="sbehap-ldifadd"/>). You can add the required entries using 
 		the following command:
 <screen>
 &rootprompt; ldapadd -x -D "cn=Manager,dc=abmas,dc=biz" \
@@ -2639,7 +2669,10 @@ Domain Computers:x:553:
 		<primary>nss_ldap</primary>
 	      </indexterm>
 		This demonstrates that the <command>nss_ldap</command> library is functioning
-		as it should.
+		as it should. If these two steps fail to produce this information refer to
+		<link linkend="sbeavoid"/> for diagnostic procedures that can be followed to
+		isolate the cause of the problem. Procede to the next step only when the steps
+		above have been successfully completed.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -2928,7 +2961,7 @@ smb: \> q
 
 	</sect2>
 
-	<sect2 id="ch6-ptrcfg">
+	<sect2 id="sbehap-ptrcfg">
 	<title>Printer Configuration</title>
 
 	<para><indexterm>
@@ -3040,25 +3073,25 @@ application/octet-stream
 
 </sect1>
 
-<sect1 id="ch6-bldg1">
+<sect1 id="sbehap-bldg1">
 	<title>Samba-3 BDC Configuration</title>
 
 	<procedure>
 	<title>Configuration of BDC Called: <constant>BLDG1</constant></title>
 		<step><para>
-		Install the files in <link linkend="ch6-bldg1-smbconf"/>,
-		<link linkend="ch6-shareconfa"/>, and <link linkend="ch6-shareconfb"/>
+		Install the files in <link linkend="sbehap-bldg1-smbconf"/>,
+		<link linkend="sbehap-shareconfa"/>, and <link linkend="sbehap-shareconfb"/>
 		into the <filename>/etc/samba/</filename> directory. The three files
 		should be added together to form the &smb.conf; file.
 		</para></step>
 
 		<step><para>
 		Verify the &smb.conf; file as in step 2 of <link
-	      linkend="ch6-massive"/>.
+	      linkend="sbehap-massive"/>.
 		</para></step>
 
 		<step><para>
-		Carefully follow the steps outlined in <link linkend="ch6-PAM-NSS"/>, taking
+		Carefully follow the steps outlined in <link linkend="sbehap-PAM-NSS"/>, taking
 		particular note to install the correct <filename>ldap.conf</filename>.
 		</para></step>
 
@@ -3259,22 +3292,22 @@ smb: \> q
 
 	</procedure>
 
-	<procedure id="ch6-bldg2">
+	<procedure id="sbehap-bldg2">
 	<title>Configuration of BDC Called: <constant>BLDG2</constant></title>
 		<step><para>
-		Install the files in <link linkend="ch6-bldg2-smbconf"/>,
-		<link linkend="ch6-shareconfa"/>, and <link linkend="ch6-shareconfb"/>
+		Install the files in <link linkend="sbehap-bldg2-smbconf"/>,
+		<link linkend="sbehap-shareconfa"/>, and <link linkend="sbehap-shareconfb"/>
 		into the <filename>/etc/samba/</filename> directory. The three files
 		should be added together to form the &smb.conf; file.
 		</para></step>
 
 		<step><para>
-		Follow carefully the steps shown in <link linkend="ch6-bldg1"/>, starting at step 2.
+		Follow carefully the steps shown in <link linkend="sbehap-bldg1"/>, starting at step 2.
 		</para></step>
 
 	</procedure>
 
-<smbconfexample id="ch6-bldg1-smbconf">
+<smbconfexample id="sbehap-bldg1-smbconf">
 <title>LDAP Based &smb.conf; File, Server: BLDG1</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
@@ -3312,7 +3345,7 @@ smb: \> q
 </smbconfexample>
 
 
-<smbconfexample id="ch6-bldg2-smbconf">
+<smbconfexample id="sbehap-bldg2-smbconf">
 <title>LDAP Based &smb.conf; File, Server: BLDG2</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
@@ -3350,7 +3383,7 @@ smb: \> q
 </smbconfexample>
 
 
-<smbconfexample id="ch6-shareconfa">
+<smbconfexample id="sbehap-shareconfa">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part A</title>
 <smbconfsection name="[accounts]"/>
 	<smbconfoption name="comment">Accounting Files</smbconfoption>
@@ -3381,7 +3414,7 @@ smb: \> q
 	<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 
-<smbconfexample id="ch6-shareconfb">
+<smbconfexample id="sbehap-shareconfb">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part B</title>
 <smbconfsection name="[apps]"/>
 	<smbconfoption name="comment">Application Files</smbconfoption>
@@ -3416,7 +3449,7 @@ smb: \> q
 	<smbconfoption name="write list">root, chrisr</smbconfoption>
 </smbconfexample>
 
-<example id="ch6-ldifadd">
+<example id="sbehap-ldifadd">
 <title>LDIF IDMAP Add-On Load File &smbmdash; File: /etc/openldap/idmap.LDIF</title>
 <screen>
 dn: ou=Idmap,dc=abmas,dc=biz
@@ -3589,7 +3622,7 @@ structuralObjectClass: organizationalUnit
 	</sect2>
 
 	<sect2>
-	<title>Assigning Domain Privileges</title>
+	<title>Assigning User Rights and Privileges</title>
 
 	<para>
 	The ability to perform tasks such as joining Windows clients to the domain can be assigned to
@@ -3748,7 +3781,7 @@ SeDiskOperatorPrivilege
 	<para>
 	</para>
 
-	<procedure id="ch6-rdrfldr">
+	<procedure id="sbehap-rdrfldr">
 	<title>Redirect Folders in Default System User Profile</title>
 
 	  <step><para><indexterm>
@@ -3818,7 +3851,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		</para></step>
 
 		<step><para>
-		Now follow the procedure given in <link linkend="ch6-locgrppol"/>. Make sure that each folder you
+		Now follow the procedure given in <link linkend="sbehap-locgrppol"/>. Make sure that each folder you
 		have redirected is in the exclusion list.
 		</para></step>
 

@@ -615,14 +615,14 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 		</para></step>
 
 		<step><para>
-		Install the files shown in <link linkend="ch6-ldapreconfa"/>, <link linkend="ch6-ldapreconfb"/>,
-		and <link linkend="ch6-ldapreconfc"/> into the directory 
+		Install the files shown in <link linkend="sbehap-ldapreconfa"/>, <link linkend="sbehap-ldapreconfb"/>,
+		and <link linkend="sbehap-ldapreconfc"/> into the directory 
 		<filename>/etc/openldap/SambaInit/SMBLDAP-ldif-preconfig.sh.</filename> These three files are,
 		respectively, Part A, B, and C of the <filename>SMBLDAP-ldif-preconfig.sh</filename> file.
 		</para></step>
 
 		<step><para>
-		Install the files shown in <link linkend="ch6-ldifpata"/> and <link linkend="ch6-ldifpatb"/> into the directory
+		Install the files shown in <link linkend="sbehap-ldifpata"/> and <link linkend="sbehap-ldifpatb"/> into the directory
 		<filename>/etc/openldap/SambaInit/nit-ldif.pat.</filename> These two files are
                 Part A and B, respectively, of the <filename>init-ldif.pat</filename> file.
 		</para></step>
@@ -776,7 +776,7 @@ result: 0 Success
 
 	</sect2>
 
-<example id="ch6-ldapreconfa">
+<example id="sbehap-ldapreconfa">
 <title>LDAP Pre-configuration Script: <filename>SMBLDAP-ldif-preconfig.sh</filename> &smbmdash; Part A</title>
 <screen>
 #!/bin/bash
@@ -822,7 +822,7 @@ echo
 </screen>
 </example>
 
-<example id="ch6-ldapreconfb">
+<example id="sbehap-ldapreconfb">
 <title>LDAP Pre-configuration Script: <filename>SMBLDAP-ldif-preconfig.sh</filename> &smbmdash; Part B</title>
 <screen>
 echo -e -n "Name [$ORGNAME]: "
@@ -867,7 +867,7 @@ sed "s/DOMSID/${DOMSID}/g" &lt; $file.tmp2 &gt; $file.tmp1
 </screen>
 </example>
 
-<example id="ch6-ldapreconfc">
+<example id="sbehap-ldapreconfc">
 <title>LDAP Pre-configuration Script: <filename>SMBLDAP-ldif-preconfig.sh</filename> &smbmdash; Part C</title>
 <screen>
 cat &gt;&gt;EOL
@@ -909,7 +909,7 @@ exit 0
 </screen>
 </example>
 
-<example id="ch6-ldifpata">
+<example id="sbehap-ldifpata">
 <title>LDIF Pattern File Used to Pre-configure LDAP &smbmdash; Part A</title>
 <screen>
 dn: dc=INETDOMAIN,dc=TLDORG
@@ -953,7 +953,7 @@ structuralObjectClass: sambaDomain
 </screen>
 </example>
 
-<example id="ch6-ldifpatb">
+<example id="sbehap-ldifpatb">
 <title>LDIF Pattern File Used to Pre-configure LDAP &smbmdash; Part B</title>
 <screen>
 dn: cn=domadmins,ou=Groups,dc=INETDOMAIN,dc=TLDORG
@@ -1087,7 +1087,7 @@ want secure connections, you must configure your Apache Web server to permit con
 to LAM using only SSL.
 </para>
 
-<procedure id="ch6-laminst">
+<procedure id="sbehap-laminst">
 	<step><para>
 	Extract the LAM package with:
 <screen>
