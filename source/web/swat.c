@@ -173,7 +173,7 @@ static const char* get_parm_translated(
 		return output;
 	}
 	pstr_sprintf(output, 
-	  "<A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\"> %s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s",
+	  "<a href=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\" class=\"help_link\"> %s</a> %s",
 	  pAnchor, pHelp, pLabel);
 	return output;
 }
@@ -200,7 +200,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
+	printf("<tr><td width=\"230\">%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
 	switch (parm->type) {
 	case P_CHAR:
 		printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
@@ -210,7 +210,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_LIST:
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"",
+		printf("<input type=text size=30 name=\"parm_%s\" value=\"",
 			make_parm_name(parm->label));
 		if ((char ***)ptr && *(char ***)ptr && **(char ***)ptr) {
 			char **list = *(char ***)ptr;
@@ -248,7 +248,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_STRING:
 	case P_USTRING:
 		push_utf8_allocate(&utf8_s1, *(char **)ptr);
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
+		printf("<input type=text size=30 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), utf8_s1);
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
@@ -258,7 +258,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_GSTRING:
 	case P_UGSTRING:
 		push_utf8_allocate(&utf8_s1, (char *)ptr);
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
+		printf("<input type=text size=30 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), utf8_s1);
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
