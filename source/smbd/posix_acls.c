@@ -3852,6 +3852,23 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 				if (pgid == NULL) {
 					goto check_stat;
 				}
+
+				/* Does it match the current effective group ? */
+				if (current_user.gid == *pgid) {
+					ret = have_write;
+					DEBUG(10,("check_posix_acl_group_write: file %s \
+match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
+
+					/* If we don't have write permission this entry doesn't
+					 * prevent the subsequent enumeration of the supplementary
+					 * groups.
+					 */
+					if (have_write) {
+						goto done;
+					}
+				}
+
+				/* Continue with the supplementary groups. */
 				for (i = 0; i < current_user.ngroups; i++) {
 					if (current_user.groups[i] == *pgid) {
 						ret = have_write;
@@ -3883,6 +3900,15 @@ match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
 
 	/* Do we match on the owning group entry ? */
 
+	/* First, does it match the current effective group ? */
+	if (current_user.gid == psbuf->st_gid) {
+		ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
+		DEBUG(10,("check_posix_acl_group_write: file %s \
+match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "can write" : "cannot write"));
+		goto done;
+	}
+
+	/* If not look at the supplementary groups. */
 	for (i = 0; i < current_user.ngroups; i++) {
 		if (current_user.groups[i] == psbuf->st_gid) {
 			ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
