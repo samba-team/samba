@@ -26,8 +26,8 @@ Note that the above rsync command will give you a checked out svn
 repository. So if you also have svn you can update it to the latest
 version at some future date using:
 
-  cd samba4
-  svn up
+  $ cd samba4
+  $ svn up
 
 
 Step 2: compile Samba4
@@ -35,10 +35,10 @@ Step 2: compile Samba4
 
 Run this:
 
-  cd samba4/source
-  ./autogen.sh
-  ./configure.developer -C
-  make
+  $ cd samba4/source
+  $ ./autogen.sh
+  $ ./configure.developer -C
+  $ make
 
 If you have gcc 3.4 or newer, then run "make pch" before "make" to
 greatly speed up the compile process (about 5x faster).
@@ -51,7 +51,7 @@ Run this as a user who have permission to write to the install
 directory (defaults to /usr/local/samba). Use --prefix option to
 configure above to change this.
  
-  make install
+  # make install
 
 
 Step 4: provision Samba4
@@ -59,14 +59,14 @@ Step 4: provision Samba4
 
 The "provision" step sets up a basic user database. 
 
-  cd source
-  ./script/provision.pl --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
+  $ cd source
+  $ ./setup/provision.pl --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
 
 This will create a number of new 'ldb' database files in a directory
 newdb.XXX. You need to move these to the "private" subdirectory of
 your install. For example:
 
-  mv newdb.123/*.ldb /usr/local/samba/private/
+  # mv newdb.123/*.ldb /usr/local/samba/private/
 
 
 Step 5: Create a simple smb.conf
@@ -91,11 +91,15 @@ Step 6: starting Samba4
 The simplest is to just run "smbd", but as a developer you may find
 the following more useful:
 
-   smbd -i -M single -d3
+   # smbd -i -M single -d3
 
 that means "start smbd without messages in stdout, and running a
 single process, with level 3 debugging". That mode of operation makes
 debugging smbd with gdb particularly easy.
+
+Note that now it is no longer necessary to have an instance of nmbd
+from Samba 3 running.  If you are running any smbd or nmbd processes
+they need to be stopped before starting smbd from Samba 4.
 
 Make sure you put the bin and sbin directories from your new install
 in your $PATH. Make sure you run the right version!
@@ -106,9 +110,9 @@ Step 7: testing Samba4
 
 try these commands:
 
-      smbclient //localhost/test -Uadministrator%SOMEPASSWORD
+     $ smbclient //localhost/test -Uadministrator%SOMEPASSWORD
     or
-     ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
+     $ ./script/tests/test_posix.sh //localhost/test administrator SOMEPASSWORD
 
 
 NOTE about filesystem support
@@ -128,6 +132,11 @@ options for your filesystem. For ext3 that means you need:
    CONFIG_EXT3_FS_XATTR=y
    CONFIG_EXT3_FS_SECURITY=y
 
+If you are running a Linux 2.6 kernel with CONFIG_IKCONFIG_PROC
+defined you can check this with the following command:
+
+   $ zgrep CONFIG_EXT3_FS /proc/config.gz
+
 If you don't have a filesystem with xattr support, then you can
 simulate it by using the option:
 
@@ -143,11 +152,11 @@ Testing your filesystem
 To test your filesystem support, install the 'attr' package and run
 the following 4 commands as root:
 
-  touch test.txt
-  setfattr -n user.test -v test test.txt
-  setfattr -n security.test -v test2 test.txt
-  getfattr -d test.txt
-  getfattr -n security.test -d test.txt
+  # touch test.txt
+  # setfattr -n user.test -v test test.txt
+  # setfattr -n security.test -v test2 test.txt
+  # getfattr -d test.txt
+  # getfattr -n security.test -d test.txt
 
 You should see output like this:
 
