@@ -541,7 +541,7 @@ static const char *schema_errstring(struct ldb_module *module)
 
 static int schema_destructor(void *module_ctx)
 {
-	struct ldb_module *ctx = module_ctx;
+/* 	struct ldb_module *ctx = module_ctx; */
 	/* put your clean-up functions here */
 	return 0;
 }
