@@ -369,7 +369,7 @@ $dnsdomain = lc($opt_realm);
 $dnsname = lc($opt_hostname).".".$dnsdomain;
 $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 
-my $data = FileLoad("provision.ldif") || die "Unable to load provision.ldif\n";
+my $data = FileLoad("setup/provision.ldif") || die "Unable to load provision.ldif\n";
 
 $data .= add_foreign("S-1-5-7", "Anonymous", "\${NOBODY}");
 $data .= add_foreign("S-1-1-0", "World", "\${NOGROUP}");
@@ -400,7 +400,7 @@ print "creating $newdb/sam.ldb ...\n";
 
 system("ldbadd -H $newdb/sam.ldb $newdb/sam.ldif") == 0 || die "Failed to create sam.ldb\n";
 
-$data = FileLoad("rootdse.ldif") || die "Unable to load rootdse.ldif\n";
+$data = FileLoad("setup/rootdse.ldif") || die "Unable to load rootdse.ldif\n";
 
 $res = apply_substitutions($data);
 
@@ -410,7 +410,7 @@ print "creating $newdb/rootdse.ldb ...\n";
 
 system("ldbadd -H $newdb/rootdse.ldb $newdb/rootdse.ldif") == 0 || die "Failed to create rootdse.ldb\n";
 
-$data = FileLoad("secrets.ldif") || die "Unable to load secrets.ldif\n";
+$data = FileLoad("setup/secrets.ldif") || die "Unable to load secrets.ldif\n";
 
 $res = apply_substitutions($data);
 
@@ -420,7 +420,7 @@ print "creating $newdb/secrets.ldb ...\n";
 
 system("ldbadd -H $newdb/secrets.ldb $newdb/secrets.ldif") == 0 || die "Failed to create secrets.ldb\n";
 
-$data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
+$data = FileLoad("setup/provision.zone") || die "Unable to load provision.zone\n";
 
 $res = apply_substitutions($data);
 
@@ -430,7 +430,7 @@ FileSave("$newdb/$dnsdomain.zone", $res);
 
 print "creating $newdb/hklm.ldb ... \n";
 
-system("ldbadd -H $newdb/hklm.ldb hklm.ldif") == 0 || die "Failed to create hklm.ldb\n";
+system("ldbadd -H $newdb/hklm.ldb setup/hklm.ldif") == 0 || die "Failed to create hklm.ldb\n";
 
 print "
 
