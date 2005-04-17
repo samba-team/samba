@@ -1,4 +1,4 @@
-<samba:parameter name="stat cache"
+<samba:parameter name="max stat cache size"
                  context="G"
                  developer="1"
 		 type="integer"
