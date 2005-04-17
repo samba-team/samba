@@ -1,32 +1,34 @@
-/* Alternate styles used when accessing the help menu */
+/* Alternate styles used when accessing the help menu 
+   by Deryck Hodge <deryck@samba.org>
+*/
+
+
+/* Open up the frame ***********************************************/
 #gui {
 	width:100%;
 	margin:auto;
 }
+
+/* Remove unused sections ***************************************/
 .banner {
 	display:none;
 }
 .nav {
 	display:none;
 }
-#controls {
-	background-color:#FFF;
-}
-#controls ul {
-	list-style-type:none;
-	margin-left:-10px;
-}
 .footer {
 	display:none;
 }
+
+/* Dynamically added header ****************************************/
 #toc {
 	text-align:center;
 }
 #toc hr {
-	width:70%;
-	height:1px;
 	border:0;
 	border-top:1px outset #003062;
+	width:70%;
+	height:1px;
 	color:#FFF;
 }
 #toc h4 {
@@ -34,5 +36,14 @@
 	padding:0;
 	font-size:small;
 	color:#15317E !important;
+}
+
+/* Center section with docs list ***********************************/
+#controls {
+	background-color:#FFF;
+}
+#controls ul {
+	margin-left:-10px;
+	list-style-type:none;
 }
 

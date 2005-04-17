@@ -1,10 +1,17 @@
-/* Styles for the main SWAT pages */
+/* Styles for the main SWAT pages 
+   by Deryck Hodge <deryck@samba.org>
+*/
+
+
+/* Div that wraps the page *****************************************/
 #gui {
+	background-color:#BBBDC3;
 	width:90%;
 	margin:auto;
 	border:2px groove #161C38;
-	background-color:#BBBDC3;
 }
+
+/* Header, including title and nav *********************************/
 #banner {
 	height:30px;
 	line-height:30px;
@@ -12,11 +19,11 @@
 #banner a,
 #banner a:link,
 #banner a:visited {
-	font-size:small;
-	color:#7B7C80;
-	text-decoration:none;
-	font-weight:bold;
 	margin:0 0 0 1px;
+	font-size:small;
+	font-weight:bold;
+	text-decoration:none;
+	color:#7B7C80;
 }
 #banner a:hover {
 	color:#444;
@@ -38,11 +45,12 @@
 #nav img {
 	margin:3px 0 0 -4px;
 }
+
+/* Center section, where form, editing, etc. happen ****************/
 #controls {
 	background-color:#FFF;
 	border-left:25px solid #7B7C80;
 	border-right:25px solid #7B7C80;
-	background-color:#FFF;
 	padding:20px;
 }
 #controls p {
@@ -53,9 +61,9 @@
 #controls ul {
 	position:relative;
 	left:35px;
+	width:400px;
 	list-style-type:none;
 	line-height:20px;
-	width:400px;
 }
 #controls li {
 	background:url(/swat/images/arrow.png) top left no-repeat;
@@ -65,14 +73,24 @@
 .help_link {
 	margin:0 10px 0 0;
 }
+.view_conf {
+	position:absolute;
+	top:100px;
+	right:15%;	
+}
+.view_conf a {
+	display:block;
+}
+
+/* Footer **********************************************************/
 #footer {
 	text-align:center;
 	font-size:small;
 	font-style:italic;
 }
 #footer p {
-	margin:40px 0 0 0;
 	width:100%;
+	margin:40px 0 0 0;
 }
 #footer img {
 	position:relative;
@@ -81,11 +99,4 @@
 	height:40px;
 	margin:0 25px 0 0;
 }
-.view_conf {
-  position:absolute;
-  top:100px;
-  right:15%;	
-}
-.view_conf a {
-	display:block;
-}
+
