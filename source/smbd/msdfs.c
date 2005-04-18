@@ -282,12 +282,7 @@ should try the remaining path on the redirected server.
 *****************************************************************/
 
 static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp, 
-<<<<<<< .mine
-		      connection_struct* conn,
-		      BOOL findfirst_flag, 
-=======
 		      connection_struct* conn, BOOL search_flag, 
->>>>>>> .r6366
 		      struct referral** reflistpp, int* refcntp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
@@ -398,11 +393,7 @@ BOOL dfs_redirect( pstring pathname, connection_struct* conn, BOOL search_wcard_
 	if (!strequal(dp.servicename, lp_servicename(SNUM(conn)) )) 
 		return False;
 
-<<<<<<< .mine
-	if (resolve_dfs_path(pathname, &dp, conn, findfirst_flag, 
-=======
 	if (resolve_dfs_path(pathname, &dp, conn, search_wcard_flag,
->>>>>>> .r6366
 			     NULL, NULL, NULL, NULL)) {
 		DEBUG(3,("dfs_redirect: Redirecting %s\n", pathname));
 		return True;
