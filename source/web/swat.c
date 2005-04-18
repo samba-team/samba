@@ -564,11 +564,15 @@ static void ViewModeBoxes(int mode)
 }
 
 /****************************************************************************
-  display a welcome page  
+  display a welcome page (Read-only users under passwd only get a unique welcome)
 ****************************************************************************/
 static void welcome_page(void)
 {
-	include_html("help/welcome.html");
+	if (passwd_only && !have_write_access) {
+		include_html("help/welcome_passwd_only.html");
+	} else {
+		include_html("help/welcome.html");
+	}
 }
 
 /****************************************************************************
@@ -782,7 +786,7 @@ static void wizard_page(void)
 	printf("<form method=post action=wizard>\n");
 
 	if (have_write_access) {
-		printf("%s\n", _("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."));
+		printf("%s\n", _("The &quot;Rewrite smb.conf file&quot; button will clear the smb.conf file of all default values and of comments."));
 		printf("%s", _("The same will happen if you press the commit button."));
 		printf("<br><br>\n");
 		printf("<center>");

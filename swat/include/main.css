@@ -33,6 +33,10 @@
 }
 #banner img {
 	float:right;
+	margin:3px 0 0 0;
+}
+/* Only visible to Mozilla/Firefox */
+#banner:lang(en) img {
 	margin:-28px 1px 0 0;
 }
 #nav {

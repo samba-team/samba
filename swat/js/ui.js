@@ -20,18 +20,27 @@
 function openHelp(url) 
 {
 	if ( (screen.width - 50) >= (window.screenX + window.outerWidth + 100) ) {
-		left = (screenX + outerWidth) - 350;
+		thisLeft = (window.screenX + window.outerWidth) - 350;
 	} else {
-		left = screen.width - 450;
+		thisLeft = screen.width - 450;
 	}
 
-	if ((screenY - 50) > 0 ) {
-		top = screenY - 50; 
+	// Konqueror I tested reports screeY so that 0 == 138
+	if (navigator.appName == 'Konqueror') {
+		if ( ((window.screenY - 138) - 50) > 0 ) {
+			thisTop = (window.screenY -138) - 50; 
+		} else {
+			thisTop = 0;
+		}
 	} else {
-		top = 0;
+		if ((window.screenY - 50) > 0 ) {
+			thisTop = window.screenY - 50; 
+		} else {
+			thisTop = 0;
+		}
 	}
 
-	helpPop = window.open(url, 'docsWindow', 'menubar=yes, resizeable=yes, scrollbars=yes, width=450px, height=530px, screenX='	+ String(left) + ', screenY=' + String(top));
+	helpPop = window.open(url, 'docsWindow', 'menubar=yes, resizeable=yes, scrollbars=yes, width=450, height=530, screenX='	+ String(thisLeft) + ', screenY=' + String(thisTop));
 
 	helpPop.focus();
 }
@@ -61,7 +70,6 @@ function formatHelp()
 
 function addTocTitle()
 {
-	var page = document.getElementsByTagName('body')[0];
 
 	var tocTitle = document.createElement('div');
 	tocTitle.setAttribute('id', 'toc');
@@ -78,6 +86,37 @@ function addTocTitle()
 	page.insertBefore(tocTitle, topPage);
 }
 
+function hidePage(page, state)
+{
+	if (state == 'on') {
+		page.style.visibility = 'hidden';
+	} else if (state == 'off') {
+		page.style.visibility = 'visible';
+	}
+}
+
+function alignPasswdOnly()
+{
+	var navDiv = document.getElementById('nav');
+
+	if (navigator.appName == 'Konqueror') {
+		rhtMargin = '21px';
+	} else {
+		rhtMargin = '26px';
+	}
+
+	if (navDiv.childNodes.length <= 3) {
+		navDiv.style.textAlign = 'right';
+
+		for (i=0; i<=navDiv.childNodes.length; i++) {
+			if ( (navDiv.childNodes[i]) && (navDiv.childNodes[i].nodeName.toLowerCase() == 'img') ) {
+				navDiv.childNodes[i].style.marginRight = rhtMargin;
+			}
+		}
+	}
+}
+
+
 /*********************************************************************
  Initialize help pages.
 *********************************************************************/
@@ -87,13 +126,17 @@ window.onload = function initPage()
 
 	if (location.href.indexOf('viewconfig') > -1) {
 		formatHelp();
-		page.style.visibility = 'visible';
+		// Delay to avoid page flicker
+		setTimeout("hidePage(page, 'off')", 300);
 	}
 
 	if (location.href.indexOf('help') > -1) {
 		formatHelp();
 		addTocTitle();
-		page.style.visibility = 'visible';
+		// Delay to avoid page flicker
+		setTimeout("hidePage(page, 'off')", 300);
 	}
+
+	alignPasswdOnly();
 }
 
