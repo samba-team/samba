@@ -3463,8 +3463,7 @@ static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 	return True;
 }
 
-static BOOL ldapsam_search_next_entry(struct pdb_methods *methods,
-				      struct pdb_search *search,
+static BOOL ldapsam_search_next_entry(struct pdb_search *search,
 				      struct samr_displayentry *entry)
 {
 	struct ldap_search_state *state = search->private;
@@ -3501,8 +3500,7 @@ static BOOL ldapsam_search_next_entry(struct pdb_methods *methods,
 	return True;
 }
 
-static void ldapsam_search_end(struct pdb_methods *methods,
-			       struct pdb_search *search)
+static void ldapsam_search_end(struct pdb_search *search)
 {
 	struct ldap_search_state *state = search->private;
 	int rc;
@@ -3656,6 +3654,8 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 	}
 
 	search->private = state;
+	search->next_entry = ldapsam_search_next_entry;
+	search->search_end = ldapsam_search_end;
 
 	return ldapsam_search_firstpage(search);
 }
@@ -3761,6 +3761,8 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 	}
 
 	search->private = state;
+	search->next_entry = ldapsam_search_next_entry;
+	search->search_end = ldapsam_search_end;
 
 	return ldapsam_search_firstpage(search);
 }
@@ -3845,11 +3847,6 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 	(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
-	(*pdb_method)->search_users = ldapsam_search_users;
-	(*pdb_method)->search_groups = ldapsam_search_groups;
-	(*pdb_method)->search_aliases = ldapsam_search_aliases;
-	(*pdb_method)->search_next_entry = ldapsam_search_next_entry;
-	(*pdb_method)->search_end = ldapsam_search_end;
 
 	/* TODO: Setup private data and free */
 
@@ -3941,6 +3938,9 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->del_aliasmem = ldapsam_del_aliasmem;
 	(*pdb_method)->enum_aliasmem = ldapsam_enum_aliasmem;
 	(*pdb_method)->enum_alias_memberships = ldapsam_alias_memberships;
+	(*pdb_method)->search_users = ldapsam_search_users;
+	(*pdb_method)->search_groups = ldapsam_search_groups;
+	(*pdb_method)->search_aliases = ldapsam_search_aliases;
 
 	ldap_state = (*pdb_method)->private_data;
 	ldap_state->schema_ver = SCHEMAVER_SAMBASAMACCOUNT;
