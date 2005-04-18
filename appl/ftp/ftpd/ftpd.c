@@ -1625,7 +1625,7 @@ statcmd(void)
 	lreply(211, "%s FTP server (%s) status:", hostname, version);
 	printf("     %s\r\n", version);
 	printf("     Connected to %s", remotehost);
-	if (!isdigit(remotehost[0]))
+	if (!isdigit((unsigned char)remotehost[0]))
 		printf(" (%s)", inet_ntoa(his_addr.sin_addr));
 	printf("\r\n");
 	if (logged_in) {
