@@ -179,7 +179,7 @@ TTYstring(unsigned char *p)
 static int
 TTYget()
 {
-    char c;
+    unsigned char c;
     int e;
 
     TTYflush();
