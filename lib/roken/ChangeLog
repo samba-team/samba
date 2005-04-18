@@ -1,5 +1,8 @@
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* unvis.c: cast to unsigned char to make sure its not negative
+	when passing it to is* functions
+
 	* strptime.c: cast to unsigned char to make sure its not negative
 	when passing it to to* functions
 
