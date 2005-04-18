@@ -58,6 +58,7 @@ BOOL bLoaded = False;
 
 extern userdom_struct current_user_info;
 extern pstring user_socket_options;
+extern enum protocol_types Protocol;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -73,7 +74,7 @@ extern pstring user_socket_options;
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
-#define VALID(i) ServicePtrs[i]->valid
+#define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
 
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
@@ -183,8 +184,16 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
+        char *szEventLogOpenCommand;
+        char *szEventLogReadCommand;
+        char *szEventLogClearCommand;
+        char *szEventLogNumRecordsCommand;
+        char *szEventLogOldestRecordCommand;
+	char *szEventLogCloseCommand;
+        char **szEventLogs;
 	char *szGuestaccount;
 	char *szManglingMethod;
+	char **szServicesList;
 	int mangle_prefix;
 	int max_log_size;
 	char *szLogLevel;
@@ -237,6 +246,7 @@ typedef struct
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
+	int ldap_page_size;
 	BOOL ldap_delete_dn;
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
@@ -272,6 +282,7 @@ typedef struct
 	BOOL bNTPipeSupport;
 	BOOL bNTStatusSupport;
 	BOOL bStatCache;
+	int iMaxStatCacheSize;
 	BOOL bKernelOplocks;
 	BOOL bAllowTrustedDomains;
 	BOOL bLanmanAuth;
@@ -413,6 +424,7 @@ typedef struct
 	BOOL bBlockingLocks;
 	BOOL bInheritPerms;
 	BOOL bInheritACLS;
+	BOOL bInheritOwner;
 	BOOL bMSDfsRoot;
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
@@ -539,6 +551,7 @@ static service sDefault = {
 	True,			/* bBlockingLocks */
 	False,			/* bInheritPerms */
 	False,			/* bInheritACLS */
+	False,			/* bInheritOwner */
 	False,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
@@ -581,6 +594,7 @@ static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr
 static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_acl_compatibility( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_eventlog( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -864,6 +878,7 @@ static struct parm_struct parm_table[] = {
 	{"force unknown acl user", P_BOOL, P_LOCAL, &sDefault.bForceUnknownAclUser, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"inherit permissions", P_BOOL, P_LOCAL, &sDefault.bInheritPerms, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"inherit acls", P_BOOL, P_LOCAL, &sDefault.bInheritACLS, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"inherit owner", P_BOOL, P_LOCAL, &sDefault.bInheritOwner, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"only guest", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_HIDE}, 
 
@@ -932,6 +947,8 @@ static struct parm_struct parm_table[] = {
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 
+	{"enable svcctl", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
+
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -975,6 +992,7 @@ static struct parm_struct parm_table[] = {
 	{"cups server", P_STRING, P_GLOBAL, &Globals.szCupsServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"enable spoolss", P_BOOLREV, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_HIDE}, 
 	{"lpq command", P_STRING, P_LOCAL, &sDefault.szLpqcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"lprm command", P_STRING, P_LOCAL, &sDefault.szLprmcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"lppause command", P_STRING, P_LOCAL, &sDefault.szLppausecommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
@@ -1017,6 +1035,7 @@ static struct parm_struct parm_table[] = {
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
+	{"max stat cache size", P_INTEGER, P_GLOBAL, &Globals.iMaxStatCacheSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"stat cache", P_BOOL, P_GLOBAL, &Globals.bStatCache, NULL, NULL, FLAG_ADVANCED}, 
 	{"store dos attributes", P_BOOL, P_LOCAL, &sDefault.bStoreDosAttributes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
@@ -1103,6 +1122,7 @@ static struct parm_struct parm_table[] = {
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
 	{"ldap timeout", P_INTEGER, P_GLOBAL, &Globals.ldap_timeout, NULL, NULL, FLAG_ADVANCED},
+	{"ldap page size", P_INTEGER, P_GLOBAL, &Globals.ldap_page_size, NULL, NULL, FLAG_ADVANCED},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
@@ -1110,6 +1130,14 @@ static struct parm_struct parm_table[] = {
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
+	{"eventlog open command", P_STRING, P_GLOBAL, &Globals.szEventLogOpenCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog read command", P_STRING, P_GLOBAL, &Globals.szEventLogReadCommand, handle_eventlog, NULL, FLAG_ADVANCED}, 
+	{"eventlog clear command", P_STRING, P_GLOBAL, &Globals.szEventLogClearCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog num records command", P_STRING, P_GLOBAL, &Globals.szEventLogNumRecordsCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog oldest record command", P_STRING, P_GLOBAL, &Globals.szEventLogOldestRecordCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
@@ -1378,7 +1406,7 @@ static void init_globals(void)
 	Globals.AlgorithmicRidBase = BASE_RID;
 
 	Globals.bLoadPrinters = True;
-	Globals.PrintcapCacheTime = 0;
+	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1438,6 +1466,7 @@ static void init_globals(void)
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
+	Globals.iMaxStatCacheSize = 0;	/* unlimited size in kb by default. */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
@@ -1485,6 +1514,7 @@ static void init_globals(void)
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
 	Globals.ldap_timeout = LDAP_CONNECT_DEFAULT_TIMEOUT;
+	Globals.ldap_page_size = LDAP_PAGE_SIZE;
 
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
@@ -1527,6 +1557,12 @@ static void init_globals(void)
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
 
+	string_set(&Globals.szEventLogOpenCommand, "");
+	string_set(&Globals.szEventLogReadCommand, "");
+	string_set(&Globals.szEventLogClearCommand, "");
+	string_set(&Globals.szEventLogNumRecordsCommand, "");
+	string_set(&Globals.szEventLogOldestRecordCommand, "");
+
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnableLocalAccounts = False;
 	Globals.bWinbindEnumUsers = True;
@@ -1553,6 +1589,8 @@ static void init_globals(void)
 	   operations as root */
 
 	Globals.bEnablePrivileges = False;
+	
+	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1719,6 +1757,7 @@ FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_BOOL(lp_winbind_trusted_domains_only, &Globals.bWinbindTrustedDomainsOnly)
 FN_GLOBAL_BOOL(lp_winbind_nested_groups, &Globals.bWinbindNestedGroups)
 
+
 FN_GLOBAL_LIST(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_enable_rid_algorithm, &Globals.bEnableRidAlgorithm)
 
@@ -1734,9 +1773,18 @@ FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
 FN_GLOBAL_INTEGER(lp_ldap_timeout, &Globals.ldap_timeout)
+FN_GLOBAL_INTEGER(lp_ldap_page_size, &Globals.ldap_page_size)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
+
+FN_GLOBAL_STRING(lp_eventlog_open_cmd, &Globals.szEventLogOpenCommand)
+FN_GLOBAL_STRING(lp_eventlog_read_cmd, &Globals.szEventLogReadCommand)
+FN_GLOBAL_STRING(lp_eventlog_clear_cmd, &Globals.szEventLogClearCommand)
+FN_GLOBAL_STRING(lp_eventlog_num_records_cmd, &Globals.szEventLogNumRecordsCommand)
+FN_GLOBAL_STRING(lp_eventlog_oldest_record_cmd, &Globals.szEventLogOldestRecordCommand)
+FN_GLOBAL_STRING(lp_eventlog_close_cmd, &Globals.szEventLogCloseCommand)
+FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
@@ -1773,6 +1821,7 @@ FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
+FN_GLOBAL_INTEGER(lp_max_stat_cache_size, &Globals.iMaxStatCacheSize)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
@@ -1835,6 +1884,7 @@ FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
+FN_GLOBAL_LIST(lp_enable_svcctl, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
@@ -1907,6 +1957,7 @@ FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
+FN_LOCAL_BOOL(lp_inherit_owner, bInheritOwner)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_force_printername, bForcePrintername)
@@ -2762,6 +2813,12 @@ static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
 		string_set(ptr, pszParmValue);
 		init_iconv();
 	}
+	return True;
+}
+
+static BOOL handle_eventlog(int snum, const char *pszParmValue, char **ptr)
+{
+	string_set(ptr, pszParmValue);
 	return True;
 }
 
@@ -4311,7 +4368,6 @@ const char *lp_printcapname(void)
 
 BOOL lp_use_sendfile(int snum)
 {
-	extern enum protocol_types Protocol;
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
 		return False;

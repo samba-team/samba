@@ -45,7 +45,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!ptr)
 		return(False);
 
-	s = (char *)*ptr;
+	s = CONST_DISCARD(char *, *ptr);
 
 	/* default to simple separators */
 	if (!sep)
@@ -109,7 +109,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-	char *s=(char *)last_ptr;
+        char *s = CONST_DISCARD(char *, last_ptr);
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +132,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s=(char *)last_ptr;
+	s = CONST_DISCARD(char *, last_ptr);
 	
 	if (!(ret=iret=SMB_MALLOC_ARRAY(char *,ictok+1)))
 		return NULL;
@@ -363,16 +363,16 @@ BOOL strisnormal(const char *s, int case_default)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace(pstring s,char oldc,char newc)
+void string_replace( pstring s, char oldc, char newc )
 {
-	unsigned char *p;
+	char *p;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	for (p = (unsigned char *)s; *p; p++) {
+	for (p = s; *p; p++) {
 		if (*p & 0x80) /* mb string - slow path. */
 			break;
 		if (*p == oldc)
@@ -799,7 +799,7 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 {
 	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
-	ret_blob.length = strhex_to_str(ret_blob.data, 	
+	ret_blob.length = strhex_to_str((char*)ret_blob.data, 	
 					strlen(strhex), 
 					strhex);
 
@@ -826,7 +826,7 @@ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
  Check if a string is part of a list.
 **/
 
-BOOL in_list(char *s,char *list,BOOL casesensitive)
+BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
 	pstring tok;
 	const char *p=list;
@@ -1221,7 +1221,7 @@ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return (char *)s;
+			return CONST_DISCARD(char *, s);
 	}
 
 	if (!*s)
@@ -1238,7 +1238,7 @@ char *strchr_m(const char *src, char c)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	return CONST_DISCARD(char *, (s+strlen(s2)));
 }
 
 char *strrchr_m(const char *s, char c)
@@ -1275,7 +1275,7 @@ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-			       	return (char *)cp;
+			       	return CONST_DISCARD(char *, cp);
 			}
 		} while (cp-- != s);
 		if (!got_mb)
@@ -1294,7 +1294,7 @@ char *strrchr_m(const char *s, char c)
 			return NULL;
 		*p = 0;
 		pull_ucs2_pstring(s2, ws);
-		return (char *)(s+strlen(s2));
+		return CONST_DISCARD(char *, (s+strlen(s2)));
 	}
 }
 
@@ -1315,7 +1315,7 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	return CONST_DISCARD(char *, (s+strlen(s2)));
 }
 
 /***********************************************************************
@@ -1334,7 +1334,7 @@ char *strstr_m(const char *src, const char *findstr)
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return src;
+		return CONST_DISCARD(char *, src);
 	}
 
 	/* Samba does single character findstr calls a *lot*. */
@@ -1351,7 +1351,7 @@ char *strstr_m(const char *src, const char *findstr)
 				findstr_len = strlen(findstr);
 
 			if (strncmp(s, findstr, findstr_len) == 0) {
-				return (char *)s;
+				return CONST_DISCARD(char *, s);
 			}
 		}
 	}
@@ -1392,7 +1392,7 @@ char *strstr_m(const char *src, const char *findstr)
 		DEBUG(0,("strstr_m: dest malloc fail\n"));
 		return NULL;
 	}
-	retp = (char *)(s+strlen(s2));
+	retp = CONST_DISCARD(char *, (s+strlen(s2)));
 	SAFE_FREE(src_w);
 	SAFE_FREE(find_w);
 	SAFE_FREE(s2);
@@ -1692,6 +1692,20 @@ void str_list_free(char ***list)
 	for(; *tlist; tlist++)
 		SAFE_FREE(*tlist);
 	SAFE_FREE(*list);
+}
+
+/******************************************************************************
+ *****************************************************************************/
+
+int str_list_count( const char **list )
+{
+	int i = 0;
+
+	/* count the number of list members */
+	
+	for ( i=0; *list; i++, list++ );
+	
+	return i;
 }
 
 /******************************************************************************

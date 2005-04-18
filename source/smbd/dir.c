@@ -24,6 +24,8 @@
    This module implements directory related functions for Samba.
 */
 
+extern struct current_user current_user;
+
 /* Make directory handle internals available. */
 
 #define NAME_CACHE_SIZE 100
@@ -697,7 +699,7 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,int dirtype)
 static BOOL mangle_mask_match(connection_struct *conn, fstring filename, char *mask)
 {
 	mangle_map(filename,True,False,SNUM(conn));
-	return mask_match(filename,mask,False);
+	return mask_match_search(filename,mask,False);
 }
 
 /****************************************************************************
@@ -712,16 +714,11 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 	SMB_STRUCT_STAT sbuf;
 	pstring path;
 	pstring pathreal;
-	BOOL isrootdir;
 	pstring filename;
 	BOOL needslash;
 
 	*path = *pathreal = *filename = 0;
 
-	isrootdir = (strequal(conn->dirpath,"./") ||
-			strequal(conn->dirpath,".") ||
-			strequal(conn->dirpath,"/"));
-  
 	needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
 	if (!conn->dirptr)
@@ -744,10 +741,8 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 			see masktest for a demo
 		*/
 		if ((strcmp(mask,"*.*") == 0) ||
-		    mask_match(filename,mask,False) ||
+		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
-			if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
-				continue;
 
 			if (!mangle_is_8_3(filename, False))
 				mangle_map(filename,True,False,SNUM(conn));
@@ -792,7 +787,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 
 static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	extern struct current_user current_user;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
@@ -845,7 +839,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	extern struct current_user current_user;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;

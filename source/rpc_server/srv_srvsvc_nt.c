@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+extern struct generic_mapping file_generic_mapping;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -170,8 +172,6 @@ BOOL share_info_db_init(void)
 
 static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
-	extern DOM_SID global_sid_World;
-	extern struct generic_mapping file_generic_mapping;
 	SEC_ACCESS sa;
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
@@ -293,7 +293,6 @@ static BOOL delete_share_security(int snum)
 
 void map_generic_share_sd_bits(SEC_DESC *psd)
 {
-	extern struct generic_mapping file_generic_mapping;
 	int i;
 	SEC_ACL *ps_dacl = NULL;
 
@@ -1349,6 +1348,70 @@ WERROR _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
 }
 
 /*******************************************************************
+net sess del
+********************************************************************/
+
+WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
+{
+	struct sessionid *session_list;
+	struct current_user user;
+	int num_sessions, snum, ret;
+	fstring username;
+	fstring machine;
+	BOOL not_root = False;
+
+	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
+	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
+
+	/* strip leading backslashes if any */
+	while (machine[0] == '\\') {
+		memmove(machine, &machine[1], strlen(machine));
+	}
+
+	num_sessions = list_sessions(&session_list);
+
+	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+
+	r_u->status = WERR_ACCESS_DENIED;
+
+	get_current_user(&user, p);
+
+	/* fail out now if you are not root or not a domain admin */
+
+	if ((user.uid != sec_initial_uid()) && 
+		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
+
+		goto done;
+	}
+
+	for (snum = 0; snum < num_sessions; snum++) {
+
+		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
+		    strequal(session_list[snum].remote_machine, machine)) {
+		
+			if (user.uid != sec_initial_uid()) {
+				not_root = True;
+				become_root();
+			}
+
+			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) 
+				r_u->status = WERR_OK;
+
+			if (not_root) 
+				unbecome_root();
+		}
+	}
+
+	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+
+
+done:
+	SAFE_FREE(session_list);
+
+	return r_u->status;
+}
+
+/*******************************************************************
  Net share enum all.
 ********************************************************************/
 
@@ -1454,7 +1517,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	char *path;
 	SEC_DESC *psd = NULL;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
-	BOOL is_disk_op;
+	BOOL is_disk_op = False;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 

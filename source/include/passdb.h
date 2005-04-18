@@ -232,6 +232,30 @@ struct acct_info
     uint32 rid; /* domain-relative RID */
 };
 
+struct samr_displayentry {
+	uint32 rid;
+	uint16 acct_flags;
+	const char *account_name;
+	const char *fullname;
+	const char *description;
+};
+
+enum pdb_search_type {
+	PDB_USER_SEARCH,
+	PDB_GROUP_SEARCH,
+	PDB_ALIAS_SEARCH
+};
+
+struct pdb_search {
+	TALLOC_CTX *mem_ctx;
+	enum pdb_search_type type;
+	struct samr_displayentry *cache;
+	uint32 num_entries;
+	ssize_t cache_size;
+	BOOL search_ended;
+	void *private;
+};
+
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
@@ -310,12 +334,6 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_delete_alias)(struct pdb_context *context,
 				     const DOM_SID *sid);
 
-	NTSTATUS (*pdb_enum_aliases)(struct pdb_context *context,
-				     const DOM_SID *domain_sid,
-				     uint32 start_idx, uint32 num_entries,
-				     uint32 *num_aliases,
-				     struct acct_info **aliases);
-
 	NTSTATUS (*pdb_get_aliasinfo)(struct pdb_context *context,
 				      const DOM_SID *sid,
 				      struct acct_info *info);
@@ -337,10 +355,34 @@ typedef struct pdb_context
 				      DOM_SID **members, int *num_members);
 
 	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
+					       TALLOC_CTX *mem_ctx,
+					       const DOM_SID *domain_sid,
 					       const DOM_SID *members,
 					       int num_members,
-					       DOM_SID **aliases,
-					       int *num_aliases);
+					       uint32 **alias_rids,
+					       int *num_alias_rids);
+
+	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *domain_sid,
+				    int num_rids,
+				    uint32 *rids,
+				    const char ***names,
+				    uint32 **attrs);
+
+	BOOL (*pdb_search_users)(struct pdb_context *context,
+				 struct pdb_search *search,
+				 uint16 acct_flags);
+	BOOL (*pdb_search_groups)(struct pdb_context *context,
+				  struct pdb_search *search);
+	BOOL (*pdb_search_aliases)(struct pdb_context *context,
+				   struct pdb_search *search,
+				   const DOM_SID *sid);
+	BOOL (*pdb_search_next_entry)(struct pdb_context *context,
+				      struct pdb_search *search,
+				      struct samr_displayentry *entry);
+	void (*pdb_search_end)(struct pdb_context *context,
+			       struct pdb_search *search);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -416,11 +458,6 @@ typedef struct pdb_methods
 	NTSTATUS (*delete_alias)(struct pdb_methods *methods,
 				 const DOM_SID *sid);
 
-	NTSTATUS (*enum_aliases)(struct pdb_methods *methods,
-				 const DOM_SID *domain_sid,
-				 uint32 start_idx, uint32 max_entries,
-				 uint32 *num_aliases, struct acct_info **info);
-
 	NTSTATUS (*get_aliasinfo)(struct pdb_methods *methods,
 				  const DOM_SID *sid,
 				  struct acct_info *info);
@@ -437,9 +474,33 @@ typedef struct pdb_methods
 				  const DOM_SID *alias, DOM_SID **members,
 				  int *num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *domain_sid,
 					   const DOM_SID *members,
 					   int num_members,
-					   DOM_SID **aliases, int *num);
+					   uint32 **alias_rids,
+					   int *num_alias_rids);
+	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
+				TALLOC_CTX *mem_ctx,
+				const DOM_SID *domain_sid,
+				int num_rids,
+				uint32 *rids,
+				const char ***names,
+				uint32 **attrs);
+
+	BOOL (*search_users)(struct pdb_methods *methods,
+			     struct pdb_search *search,
+			     uint16 acct_flags);
+	BOOL (*search_groups)(struct pdb_methods *methods,
+			      struct pdb_search *search);
+	BOOL (*search_aliases)(struct pdb_methods *methods,
+			       struct pdb_search *search,
+			       const DOM_SID *sid);
+	BOOL (*search_next_entry)(struct pdb_methods *methods,
+				  struct pdb_search *search,
+				  struct samr_displayentry *entry);
+	void (*search_end)(struct pdb_methods *methods,
+			   struct pdb_search *search);
 
 	void *private_data;  /* Private data of some kind */
 	

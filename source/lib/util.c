@@ -23,6 +23,11 @@
 
 #include "includes.h"
 
+extern fstring local_machine;
+extern char *global_clobber_region_function;
+extern unsigned int global_clobber_region_line;
+extern fstring remote_arch;
+
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
 
@@ -230,7 +235,6 @@ BOOL set_netbios_aliases(const char **str_array)
 
 BOOL init_names(void)
 {
-	extern fstring local_machine;
 	char *p;
 	int n;
 
@@ -274,28 +278,11 @@ const char *tmpdir(void)
 }
 
 /****************************************************************************
- Determine whether we are in the specified group.
-****************************************************************************/
-
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
-{
-	int i;
-
-	if (group == current_gid)
-		return(True);
-
-	for (i=0;i<ngroups;i++)
-		if (group == groups[i])
-			return(True);
-
-	return(False);
-}
-
-/****************************************************************************
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
-void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
+void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+			     gid_t **gids, int *num)
 {
 	int i;
 
@@ -303,8 +290,11 @@ void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 		if ((*gids)[i] == gid)
 			return;
 	}
-	
-	*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
+
+	if (mem_ctx != NULL)
+		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num+1);
+	else
+		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
 
 	if (*gids == NULL)
 		return;
@@ -617,7 +607,7 @@ void unix_clean_name(char *s)
  Make a dir struct.
 ****************************************************************************/
 
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date)
+void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL uc)
 {  
 	char *p;
 	pstring mask2;
@@ -641,7 +631,9 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 	put_dos_date(buf,22,date);
 	SSVAL(buf,26,size & 0xFFFF);
 	SSVAL(buf,28,(size >> 16)&0xFFFF);
-	push_ascii(buf+30,fname,12,0);
+	/* We only uppercase if FLAGS2_LONG_PATH_COMPONENTS is zero in the input buf.
+	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
+	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
@@ -983,6 +975,56 @@ void *realloc_array(void *p,size_t el_size, unsigned int count)
 		return NULL;
 	}
 	return Realloc(p,el_size*count);
+}
+
+/****************************************************************************
+ (Hopefully) efficient array append
+****************************************************************************/
+void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
+			void *element, void **array, uint32 *num_elements,
+			ssize_t *array_size)
+{
+	if (*array_size == -1)
+		return;
+
+	if (*array == NULL) {
+		if (*array_size == 0)
+			*array_size = 128;
+
+		if (mem_ctx != NULL)
+			*array = talloc_array(mem_ctx, element_size,
+					      *array_size);
+		else
+			*array = malloc_array(element_size, *array_size);
+
+		if (*array == NULL)
+			goto error;
+	}
+
+	if (*num_elements == *array_size) {
+		*array_size *= 2;
+
+		if (mem_ctx != NULL)
+			*array = talloc_realloc_array(mem_ctx, *array,
+						      element_size,
+						      *array_size);
+		else
+			*array = realloc_array(*array, element_size,
+					       *array_size);
+
+		if (*array == NULL)
+			goto error;
+	}
+
+	memcpy((char *)(*array) + element_size*(*num_elements),
+	       element, element_size);
+	*num_elements += 1;
+
+	return;
+
+ error:
+	*num_elements = 0;
+	*array_size = -1;
 }
 
 /****************************************************************************
@@ -1465,8 +1507,6 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 
 #ifdef DEVELOPER
 	{
-		extern char *global_clobber_region_function;
-		extern unsigned int global_clobber_region_line;
 
 		if (global_clobber_region_function) {
 			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
@@ -1931,7 +1971,6 @@ void ra_lanman_string( const char *native_lanman )
 
 void set_remote_arch(enum remote_arch_types type)
 {
-	extern fstring remote_arch;
 	ra_type = type;
 	switch( type ) {
 	case RA_WFWG:
@@ -2172,8 +2211,12 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 
 	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
 		(*reg_type) = HKEY_LOCAL_MACHINE;
+	else if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
+		(*reg_type) = HKEY_CLASSES_ROOT;
 	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
 		(*reg_type) = HKEY_USERS;
+	else if (strequal(tmp, "HKPD")||strequal(tmp, "HKEY_PERFORMANCE_DATA"))
+		(*reg_type) = HKEY_PERFORMANCE_DATA;
 	else {
 		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
 		return False;
@@ -2469,7 +2512,23 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 	if (strcmp(pattern,".") == 0)
 		return False;
 	
-	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
+	return ms_fnmatch(pattern, string, Protocol <= PROTOCOL_LANMAN2, is_case_sensitive) == 0;
+}
+
+/*******************************************************************
+ A wrapper that handles case sensitivity and the special handling
+ of the ".." name. Varient that is only called by old search code which requires
+ pattern translation.
+*******************************************************************/
+
+BOOL mask_match_search(const char *string, char *pattern, BOOL is_case_sensitive)
+{
+	if (strcmp(string,"..") == 0)
+		string = ".";
+	if (strcmp(pattern,".") == 0)
+		return False;
+	
+	return ms_fnmatch(pattern, string, True, is_case_sensitive) == 0;
 }
 
 /*******************************************************************

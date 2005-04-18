@@ -1244,6 +1244,9 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	if(!spoolss_io_q_getjob("", &q_u, data, 0)) {
 		DEBUG(0,("spoolss_io_q_getjob: unable to unmarshall SPOOL_Q_GETJOB.\n"));
 		return False;

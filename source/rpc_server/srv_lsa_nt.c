@@ -314,8 +314,6 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
 
 static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
-	extern DOM_SID global_sid_Builtin;
 	DOM_SID local_adm_sid;
 	DOM_SID adm_sid;
 
@@ -523,6 +521,7 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	}
 
 	/* set up the lsa_enum_trust_dom response */
+
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
 
 	return r_u->status;
@@ -1337,7 +1336,7 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	int i = 0;
 	DOM_SID sid;
 	fstring privname;
-	UNISTR2_ARRAY *uni_privnames = &q_u->rights;
+	UNISTR4_ARRAY *uni_privnames = q_u->rights;
 	struct current_user user;
 	
 
@@ -1368,11 +1367,16 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	}
 		
 	for ( i=0; i<q_u->count; i++ ) {
-		unistr2_to_ascii( privname, &uni_privnames->strings[i].string, sizeof(fstring)-1 );
-		
+		UNISTR4 *uni4_str = &uni_privnames->strings[i];
+
 		/* only try to add non-null strings */
+
+		if ( !uni4_str->string )
+			continue;
+
+		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
 		
-		if ( *privname && !grant_privilege_by_name( &sid, privname ) ) {
+		if ( !grant_privilege_by_name( &sid, privname ) ) {
 			DEBUG(2,("_lsa_add_acct_rights: Failed to add privilege [%s]\n", privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
@@ -1390,7 +1394,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	int i = 0;
 	DOM_SID sid;
 	fstring privname;
-	UNISTR2_ARRAY *uni_privnames = &q_u->rights;
+	UNISTR4_ARRAY *uni_privnames = q_u->rights;
 	struct current_user user;
 	
 
@@ -1425,11 +1429,16 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	}
 		
 	for ( i=0; i<q_u->count; i++ ) {
-		unistr2_to_ascii( privname, &uni_privnames->strings[i].string, sizeof(fstring)-1 );
-		
+		UNISTR4 *uni4_str = &uni_privnames->strings[i];
+
 		/* only try to add non-null strings */
+
+		if ( !uni4_str->string )
+			continue;
+
+		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
 		
-		if ( *privname && !revoke_privilege_by_name( &sid, privname ) ) {
+		if ( !revoke_privilege_by_name( &sid, privname ) ) {
 			DEBUG(2,("_lsa_remove_acct_rights: Failed to revoke privilege [%s]\n", privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
@@ -1438,6 +1447,9 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	return NT_STATUS_OK;
 }
 
+
+/***************************************************************************
+ ***************************************************************************/
 
 NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA_R_ENUM_ACCT_RIGHTS *r_u)
 {
@@ -1477,6 +1489,9 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	return r_u->status;
 }
 
+
+/***************************************************************************
+ ***************************************************************************/
 
 NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, LSA_R_LOOKUP_PRIV_VALUE *r_u)
 {

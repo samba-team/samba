@@ -57,7 +57,7 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
  Sets up a SEC_ACE structure.
 ********************************************************************/
 
-void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
+void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;

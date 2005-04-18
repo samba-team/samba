@@ -95,7 +95,12 @@ PRIVS privs[] = {
 	{SE_END,			"",					""}
 };
 
-typedef struct priv_sid_list {
+typedef struct {
+	int count;
+	DOM_SID *list;
+} SID_LIST;
+
+typedef struct {
 	SE_PRIV privilege;
 	SID_LIST sids;
 } PRIV_SID_LIST;
@@ -492,7 +497,7 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		return 0;
 	}
 
-	add_sid_to_array( &sid, &priv->sids.list, &priv->sids.count );
+	add_sid_to_array( NULL, &sid, &priv->sids.list, &priv->sids.count );
 	
 	return 0;
 }

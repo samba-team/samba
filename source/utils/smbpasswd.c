@@ -290,7 +290,7 @@ static BOOL password_change(const char *remote_mach, char *username,
 				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
 	if(*msg_str)
-		printf(msg_str);
+		printf("%s", msg_str);
 	if(*err_str)
 		fprintf(stderr, "%s", err_str);
 

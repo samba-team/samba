@@ -40,12 +40,17 @@ static void gotalarm_sig(void)
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
 
-static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
+TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = dptr;
+	ret.dptr = CONST_DISCARD(char *, dptr);
 	ret.dsize = dsize;
 	return ret;
+}
+
+TDB_DATA string_tdb_data(const char *string)
+{
+	return make_tdb_data(string, strlen(string));
 }
 
 /****************************************************************************
@@ -57,7 +62,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
 	gotalarm = 0;
-	tdb_set_lock_alarm(&gotalarm);
+	tdb_set_lock_alarm(CONST_DISCARD(sig_atomic_t *, &gotalarm));
 
 	if (timeout) {
 		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);

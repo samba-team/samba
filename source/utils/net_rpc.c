@@ -1909,7 +1909,6 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
-	DOM_SID global_sid_Builtin;
 	BOOL global = False;
 	BOOL local = False;
 	BOOL builtin = False;
@@ -1930,8 +1929,6 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (strequal(argv[i], "builtin"))
 			builtin = True;
 	}
-
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
 	/* Get sam policy handle */
 	
@@ -2702,6 +2699,11 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 		    strequal(netname,"global")) 
 			continue;
 
+		if (opt_exclude && in_list(netname, opt_exclude, False)) {
+			printf("excluding  [%s]\n", netname);
+			continue;
+		} 
+
 		/* only work with file-shares */
 		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
 			d_printf("skipping   [%s]: not a file share.\n", netname);
@@ -2971,7 +2973,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			continue;
 		}
 
-		if (opt_exclude && in_list(netname, (char *)opt_exclude, False)) {
+		if (opt_exclude && in_list(netname, opt_exclude, False)) {
 			printf("excluding  [%s]\n", netname);
 			continue;
 		} 
@@ -3273,7 +3275,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol;
-	DOM_SID global_sid_Builtin;
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
@@ -3281,8 +3282,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 	
-	string_to_sid(&global_sid_Builtin, "S-1-5-32");
-
 	result = rpc_fetch_domain_aliases(cli, mem_ctx, &connect_pol,
 					  &global_sid_Builtin);
 
@@ -3299,14 +3298,6 @@ rpc_aliaslist_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 static void init_user_token(NT_USER_TOKEN *token, DOM_SID *user_sid)
 {
-	DOM_SID global_sid_World;
-	DOM_SID global_sid_Network;
-	DOM_SID global_sid_Authenticated_Users;
-
-	string_to_sid(&global_sid_World, "S-1-1-0");
-	string_to_sid(&global_sid_Network, "S-1-5-2");
-	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
-
 	token->num_sids = 4;
 
 	token->user_sids = SMB_MALLOC_ARRAY(DOM_SID, 4);
@@ -4472,6 +4463,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
+	const char **names;
 	DOM_SID trust_acct_sid;
 	uint32 *user_rids, num_rids, *name_types;
 	uint32 flags = 0x000003e8; /* Unknown */
@@ -4484,12 +4476,16 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	/* 
 	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
 	 */
-	 
-	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
+	acct_name = talloc_asprintf(mem_ctx, "%s$", argv[0]);
+
+	if (acct_name == NULL)
 		return NT_STATUS_NO_MEMORY;
-	}
 
 	strupper_m(acct_name);
+
+	names = TALLOC_ARRAY(mem_ctx, const char *, 1);
+	names[0] = acct_name;
+
 
 	/* Get samr policy handle */
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
@@ -4507,8 +4503,8 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	}
 
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, flags, 1,
-				       &acct_name, &num_rids, &user_rids,
-				       &name_types);
+				       names, &num_rids,
+				       &user_rids, &name_types);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -4552,7 +4548,6 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	}
 
  done:
-	SAFE_FREE(acct_name);
 	return result;
 }
 
@@ -4594,7 +4589,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
-	WKS_INFO_100 wks_info;
+	smb_ucs2_t *uni_domain_name;
 	
 	char* domain_name;
 	char* domain_name_pol;
@@ -4663,44 +4658,17 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			 for domain %s\n", domain_name));
 	}
 	 
-	/*
-	 * Call WksQueryInfo to check remote server's capabilities
-	 * note: It is now used only to get unicode domain name
-	 */
-	
-	if (!cli_nt_session_open(cli, PI_WKSSVC)) {
-		DEBUG(0, ("Couldn't not initialise wkssvc pipe\n"));
-		return -1;
-	}
-
-	if (!(mem_ctx = talloc_init("establishing trust relationship to domain %s",
-	                domain_name))) {
+	if (!(mem_ctx = talloc_init("establishing trust relationship to "
+				    "domain %s", domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		cli_shutdown(cli);
 		return -1;
 	}
 	
-   	nt_status = cli_wks_query_info(cli, mem_ctx, &wks_info);
-	
-	if (NT_STATUS_IS_ERR(nt_status)) {
-		DEBUG(0, ("WksQueryInfo call failed.\n"));
-		return -1;
-	}
-
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
-		cli_nt_session_close(cli);
-
-
 	/*
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
 	 
-	if (!(mem_ctx = talloc_init("rpc_trustdom_establish"))) {
-		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
-		return -1;
-	}
-
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
 		cli_shutdown(cli);
@@ -4718,16 +4686,19 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/* Querying info level 5 */
 	
 	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-	                                      5 /* info level */, &domain_name_pol,
-	                                      &domain_sid);
+	                                      5 /* info level */,
+					      &domain_name_pol, &domain_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
 		return -1;
 	}
 
-
-
+	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) < 0) {
+		DEBUG(0, ("Could not convert domain name %s to unicode\n",
+			  domain_name_pol));
+		return -1;
+	}
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -4736,8 +4707,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Store the password in secrets db
 	 */
 
-	if (!secrets_store_trusted_domain_password(domain_name, wks_info.uni_lan_grp.buffer,
-						   wks_info.uni_lan_grp.uni_str_len, opt_password,
+	if (!secrets_store_trusted_domain_password(domain_name,
+						   uni_domain_name,
+						   strlen_w(uni_domain_name)+1,
+						   opt_password,
 						   *domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		return -1;
@@ -4756,6 +4729,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	if (cli->nt_pipe_fnum[cli->pipe_idx])
 		cli_nt_session_close(cli);
+
+	cli_shutdown(cli);
 	 
 	talloc_destroy(mem_ctx);
 	 
@@ -5583,6 +5558,7 @@ int net_rpc(int argc, const char **argv)
 		{"vampire", rpc_vampire},
 		{"getsid", net_rpc_getsid},
 		{"rights", net_rpc_rights},
+		{"service", net_rpc_service},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};

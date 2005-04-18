@@ -4,6 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Gerald (Jerry) Carter             2005
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -126,28 +127,6 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 	if(!prs_uint32("low ", ps, depth, &nttime->low)) /* low part */
 		return False;
 	if(!prs_uint32("high", ps, depth, &nttime->high)) /* high part */
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a LOOKUP_LEVEL structure.
-********************************************************************/
-
-BOOL smb_io_lookup_level(const char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int depth)
-{
-	if (level == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_lookup_level");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint16("value", ps, depth, &level->value))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -298,6 +277,33 @@ void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
 	sid2->num_auths = sid2->sid.num_auths;
 }
 
+/*******************************************************************
+ Reads or writes a DOM_SID2 structure.
+********************************************************************/
+
+BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *sid2;
+
+	if ( !prs_uint32("dom_sid2_p", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*sid2 = PRS_ALLOC_MEM(ps, DOM_SID2, 1)) )
+		return False;
+	}
+
+	return True;
+}
 /*******************************************************************
  Reads or writes a DOM_SID2 structure.
 ********************************************************************/
@@ -507,39 +513,6 @@ BOOL smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-creates a UNIHDR2 structure.
-********************************************************************/
-
-void init_uni_hdr2(UNIHDR2 *hdr, UNISTR2 *str2)
-{
-	init_uni_hdr(&hdr->unihdr, str2);
-	hdr->buffer = (str2->uni_str_len > 0) ? 1 : 0;
-}
-
-/*******************************************************************
- Reads or writes a UNIHDR2 structure.
-********************************************************************/
-
-BOOL smb_io_unihdr2(const char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
-{
-	if (hdr2 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_unihdr2");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unihdr("hdr", &hdr2->unihdr, ps, depth))
-		return False;
-	if(!prs_uint32("buffer", ps, depth, &hdr2->buffer))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits a UNISTR structure.
 ********************************************************************/
 
@@ -581,105 +554,69 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Allocate the BUFFER3 memory.
+ Allocate the RPC_DATA_BLOB memory.
 ********************************************************************/
 
-static size_t create_buffer3(BUFFER3 *str, size_t len)
+static size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
 	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
-		smb_panic("create_buffer3: talloc fail\n");
+		smb_panic("create_rpc_blob: talloc fail\n");
 	return len;
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure from a uint32
+ Inits a RPC_DATA_BLOB structure from a uint32
 ********************************************************************/
 
-void init_buffer3_uint32(BUFFER3 *str, uint32 val)
+void init_rpc_blob_uint32(RPC_DATA_BLOB *str, uint32 val)
 {
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = str->buf_len = create_buffer3(str, sizeof(uint32));
+	str->buf_len = create_rpc_blob(str, sizeof(uint32));
 	SIVAL(str->buffer, 0, val);
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure.
+ Inits a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-void init_buffer3_str(BUFFER3 *str, const char *buf, int len)
+void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = str->buf_len = create_buffer3(str, len*2);
-	rpcstr_push(str->buffer, buf, str->buf_max_len, STR_TERMINATE);
+	str->buf_len = create_rpc_blob(str, len*2);
+	rpcstr_push(str->buffer, buf, str->buf_len, STR_TERMINATE);
 	
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure from a hex string.
+ Inits a RPC_DATA_BLOB structure from a hex string.
 ********************************************************************/
 
-void init_buffer3_hex(BUFFER3 *str, const char *buf)
+void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf)
 {
 	ZERO_STRUCTP(str);
-	str->buf_max_len = str->buf_len = create_buffer3(str, strlen(buf));
-	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
+	str->buf_len = create_rpc_blob(str, strlen(buf));
+	str->buf_len = strhex_to_str((char *)str->buffer, str->buf_len, buf);
 }
 
 /*******************************************************************
- Inits a BUFFER3 structure.
+ Inits a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, size_t len)
+void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
 	/* max buffer size (allocated size) */
 	if (buf != NULL) {
-		len = create_buffer3(str, len);
+		len = create_rpc_blob(str, len);
 		memcpy(str->buffer, buf, len);
 	}
-	str->buf_max_len = len;
-	str->buf_len = buf != NULL ? len : 0;
-}
-
-/*******************************************************************
- Reads or writes a BUFFER3 structure.
-   the uni_max_len member tells you how large the buffer is.
-   the uni_str_len member tells you how much of the buffer is really used.
-********************************************************************/
-
-BOOL smb_io_buffer3(const char *desc, BUFFER3 *buf3, prs_struct *ps, int depth)
-{
-	if (buf3 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_buffer3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("uni_max_len", ps, depth, &buf3->buf_max_len))
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		buf3->buffer = PRS_ALLOC_MEM(ps, unsigned char, buf3->buf_max_len);
-		if (buf3->buffer == NULL)
-			return False;
-	}
-
-	if(!prs_uint8s(True, "buffer     ", ps, depth, buf3->buffer, buf3->buf_max_len))
-		return False;
-
-	if(!prs_uint32("buf_len    ", ps, depth, &buf3->buf_len))
-		return False;
-
-	return True;
+	str->buf_len = len;
 }
 
 /*******************************************************************
@@ -707,10 +644,10 @@ BOOL smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Inits a BUFFER2 structure.
+ Inits a REGVAL_BUFFER structure.
 ********************************************************************/
 
-void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
+void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
@@ -723,50 +660,39 @@ void init_buffer2(BUFFER2 *str, const uint8 *buf, size_t len)
 		SMB_ASSERT(str->buf_max_len >= str->buf_len);
 		str->buffer = TALLOC_ZERO(get_talloc_ctx(), str->buf_max_len);
 		if (str->buffer == NULL)
-			smb_panic("init_buffer2: talloc fail\n");
+			smb_panic("init_regval_buffer: talloc fail\n");
 		memcpy(str->buffer, buf, str->buf_len);
 	}
 }
 
 /*******************************************************************
- Reads or writes a BUFFER2 structure.
+ Reads or writes a REGVAL_BUFFER structure.
    the uni_max_len member tells you how large the buffer is.
    the uni_str_len member tells you how much of the buffer is really used.
 ********************************************************************/
 
-BOOL smb_io_buffer2(const char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth)
+BOOL smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2)
 {
-	if (buf2 == NULL)
+
+	prs_debug(ps, depth, desc, "smb_io_regval_buffer");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
+		return False;
+	if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
+		return False;
+	if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
 		return False;
 
-	if (buffer) {
+	/* buffer advanced by indicated length of string
+	   NOT by searching for null-termination */
 
-		prs_debug(ps, depth, desc, "smb_io_buffer2");
-		depth++;
+	if(!prs_regval_buffer(True, "buffer     ", ps, depth, buf2))
+		return False;
 
-		if(!prs_align(ps))
-			return False;
-		
-		if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
-			return False;
-		if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
-			return False;
-		if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
-			return False;
-
-		/* buffer advanced by indicated length of string
-		   NOT by searching for null-termination */
-
-		if(!prs_buffer2(True, "buffer     ", ps, depth, buf2))
-			return False;
-
-	} else {
-
-		prs_debug(ps, depth, desc, "smb_io_buffer2 - NULL");
-		depth++;
-		memset((char *)buf2, '\0', sizeof(*buf2));
-
-	}
 	return True;
 }
 
@@ -933,6 +859,28 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		str->uni_max_len++;
 }
 
+/*******************************************************************
+ Inits a UNISTR4 structure.
+********************************************************************/
+
+void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags)
+{
+	uni4->string = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	init_unistr2( uni4->string, buf, flags );
+
+	uni4->length = 2 * (uni4->string->uni_str_len);
+	uni4->size   = 2 * (uni4->string->uni_max_len);
+}
+
+void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf )
+{
+	uni4->string = TALLOC_P( ctx, UNISTR2 );
+	init_unistr2_w( ctx, uni4->string, buf );
+
+	uni4->length = 2 * (uni4->string->uni_str_len);
+	uni4->size   = 2 * (uni4->string->uni_max_len);
+}
+
 /** 
  *  Inits a UNISTR2 structure.
  *  @param  ctx talloc context to allocate string on
@@ -1034,6 +982,57 @@ void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob)
 }
 
 /*******************************************************************
+ UNISTR2* are a little different in that the pointer and the UNISTR2
+ are not necessarily read/written back to back.  So we break it up 
+ into 2 separate functions.
+ See SPOOL_USER_1 in include/rpc_spoolss.h for an example.
+********************************************************************/
+
+BOOL prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2)
+{
+	uint32 data_p;
+
+	/* caputure the pointer value to stream */
+
+	data_p = (uint32) *uni2;
+
+	if ( !prs_uint32("ptr", ps, depth, &data_p ))
+		return False;
+
+	/* we're done if there is no data */
+
+	if ( !data_p )
+		return True;
+
+	if (UNMARSHALLING(ps)) {
+		if ( !(*uni2 = PRS_ALLOC_MEM(ps, UNISTR2, 1)) )
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ now read/write the actual UNISTR2.  Memory for the UNISTR2 (but
+ not UNISTR2.buffer) has been allocated previously by prs_unistr2_p()
+********************************************************************/
+
+BOOL prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
+{
+	/* just return true if there is no pointer to deal with.
+	   the memory must have been previously allocated on unmarshalling
+	   by prs_unistr2_p() */
+
+	if ( !uni2 )
+		return True;
+
+	/* just pass off to smb_io_unstr2() passing the uni2 address as 
+	   the pointer (like you would expect) */
+
+	return smb_io_unistr2( desc, uni2, (uint32)uni2, ps, depth );
+}
+
+/*******************************************************************
  Reads or writes a UNISTR2 structure.
  XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
    the uni_str_len member tells you how long the string is;
@@ -1076,32 +1075,114 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 	return True;
 }
 
+/*******************************************************************
+ now read/write UNISTR4
+********************************************************************/
 
-/*
+BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+{
+	if ( !prs_uint16("length", ps, depth, &uni4->length ))
+		return False;
+	if ( !prs_uint16("size", ps, depth, &uni4->size ))
+		return False;
+		
+	if ( !prs_pointer( desc, ps, depth, (void**)&uni4->string, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ now read/write UNISTR4 header
+********************************************************************/
+
+BOOL prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+{
+	prs_debug(ps, depth, desc, "prs_unistr4_hdr");
+	depth++;
+
+	if ( !prs_uint16("length", ps, depth, &uni4->length) )
+		return False;
+	if ( !prs_uint16("size", ps, depth, &uni4->size) )
+		return False;
+	if ( !prs_io_unistr2_p(desc, ps, depth, &uni4->string) )
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ now read/write UNISTR4 string
+********************************************************************/
+
+BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+{
+	prs_debug(ps, depth, desc, "prs_unistr4_str");
+	depth++;
+
+	if ( !prs_io_unistr2(desc, ps, depth, uni4->string) )
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a UNISTR2_ARRAY structure.
+********************************************************************/
+
+BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "prs_unistr4_array");
+	depth++;
+
+	if(!prs_uint32("count", ps, depth, &array->count))
+		return False;
+
+	if ( array->count == 0 ) 
+		return True;
+	
+	if (UNMARSHALLING(ps)) {
+		if ( !(array->strings = TALLOC_ZERO_ARRAY( get_talloc_ctx(), UNISTR4, array->count)) )
+			return False;
+	}
+	
+	/* write the headers and then the actual string buffer */
+	
+	for ( i=0; i<array->count; i++ ) {
+		if ( !prs_unistr4_hdr( "string", ps, depth, &array->strings[i]) )
+			return False;
+	}
+
+	for (i=0;i<array->count;i++) {
+		if ( !prs_unistr4_str("string", ps, depth, &array->strings[i]) ) 
+			return False;
+	}
+	
+	return True;
+}
+
+/********************************************************************
   initialise a UNISTR_ARRAY from a char**
-*/
-BOOL init_unistr2_array(UNISTR2_ARRAY *array, 
-		       uint32 count, const char **strings)
+********************************************************************/
+
+BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings )
 {
 	unsigned int i;
 
 	array->count = count;
-	array->ref_id = count?1:0;
-	if (array->count == 0) {
+
+	if ( array->count == 0 )
 		return True;
-	}
 
-	array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR2_ARRAY_EL, count );
-	if (!array->strings) {
+	/* allocate memory for the array of UNISTR4 objects */
+
+	if ( !(array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR4, count )) )
 		return False;
-	}
 
-	for (i=0;i<count;i++) {
-		init_unistr2(&array->strings[i].string, strings[i], UNI_FLAGS_NONE);
-		array->strings[i].size = array->strings[i].string.uni_max_len*2;
-		array->strings[i].length = array->strings[i].size;
-		array->strings[i].ref_id = 1;
-	}
+	for ( i=0; i<count; i++ ) 
+		init_unistr4( &array->strings[i], strings[i], STR_TERMINATE );
 
 	return True;
 }
@@ -1152,55 +1233,6 @@ BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockou
 
 	return True;
 }
-
-/*******************************************************************
- Reads or writes a UNISTR2_ARRAY structure.
-********************************************************************/
-BOOL smb_io_unistr2_array(const char *desc, UNISTR2_ARRAY *array, prs_struct *ps, int depth)
-{
-	unsigned int i;
-
-	prs_debug(ps, depth, desc, "smb_io_unistr2_array");
-	depth++;
-
-	if(!prs_uint32("ref_id", ps, depth, &array->ref_id))
-		return False;
-
-	if (! array->ref_id) {
-		return True;
-	}
-
-	if(!prs_uint32("count", ps, depth, &array->count))
-		return False;
-
-	if (array->count == 0) {
-		return True;
-	}
-
-	if (UNMARSHALLING(ps)) {
-		array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR2_ARRAY_EL, array->count );
-	}
-	if (! array->strings) {
-		return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if(!prs_uint16("length", ps, depth, &array->strings[i].length))
-			return False;
-		if(!prs_uint16("size", ps, depth, &array->strings[i].size))
-			return False;
-		if(!prs_uint32("ref_id", ps, depth, &array->strings[i].ref_id))
-			return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if (! smb_io_unistr2("string", &array->strings[i].string, array->strings[i].ref_id, ps, depth)) 
-			return False;
-	}
-	
-	return True;
-}
-
 
 /*******************************************************************
  Inits a DOM_RID2 structure.
@@ -1748,23 +1780,30 @@ BOOL smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a BUFFER4 structure.
+reads or writes a RPC_DATA_BLOB structure.
 ********************************************************************/
 
-BOOL smb_io_buffer4(const char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
+BOOL smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	prs_debug(ps, depth, desc, "smb_io_rpc_blob");
 	depth++;
 
 	prs_align(ps);
-	prs_uint32("buf_len", ps, depth, &buf4->buf_len);
+	if ( !prs_uint32("buf_len", ps, depth, &blob->buf_len) )
+		return False;
+
+	if ( blob->buf_len == 0 )
+		return True;
+
 	if (UNMARSHALLING(ps)) {
-		buf4->buffer = PRS_ALLOC_MEM(ps, uint8, buf4->buf_len);
-		if (!buf4->buffer) {
+		blob->buffer = PRS_ALLOC_MEM(ps, uint8, blob->buf_len);
+		if (!blob->buffer) {
 			return False;
 		}
 	}
-	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
+
+	if ( !prs_uint8s(True, "buffer", ps, depth, blob->buffer, blob->buf_len) )
+		return False;
 
 	return True;
 }
@@ -1797,3 +1836,22 @@ BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 
 	return True;
 }
+
+/*******************************************************************
+return the length of a UNISTR string.
+********************************************************************/  
+
+uint32 str_len_uni(UNISTR *source)
+{
+ 	uint32 i=0;
+
+	if (!source->buffer)
+		return 0;
+
+	while (source->buffer[i])
+		i++;
+
+	return i;
+}
+
+

@@ -24,6 +24,9 @@
 #include "includes.h"
 #include "winbindd.h"
 
+extern struct winbindd_methods cache_methods;
+extern struct winbindd_methods passdb_methods;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -85,25 +88,17 @@ void free_domain_list(void)
 
 static BOOL is_internal_domain(const DOM_SID *sid)
 {
-	extern DOM_SID global_sid_Builtin;
-
 	if (sid == NULL)
 		return False;
 
-	if (sid_compare_domain(sid, get_global_sam_sid()) == 0)
-		return True;
-
-	if (sid_compare_domain(sid, &global_sid_Builtin) == 0)
-		return True;
-
-	return False;
+	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
 
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
 						  struct winbindd_methods *methods,
-						  DOM_SID *sid)
+						  const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
@@ -183,7 +178,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
-	extern struct winbindd_methods cache_methods;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 	time_t t;
@@ -284,9 +278,6 @@ void rescan_trusted_domains( void )
 /* Look up global info for the winbind daemon */
 BOOL init_domain_list(void)
 {
-	extern DOM_SID global_sid_Builtin;
-	extern struct winbindd_methods cache_methods;
-	extern struct winbindd_methods passdb_methods;
 	struct winbindd_domain *domain;
 
 	/* Free existing list */
@@ -636,7 +627,7 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
-	strlower_m( user );
+        strlower_m(CONST_DISCARD(char *, user));
 
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));

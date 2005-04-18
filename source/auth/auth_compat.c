@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+extern struct auth_context *negprot_global_auth_context;
+extern BOOL global_encrypted_passwords_negotiated;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
@@ -68,7 +71,6 @@ static NTSTATUS pass_check_smb(const char *smb_name,
 
 {
 	NTSTATUS nt_status;
-	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 	if (encrypted) {		
 		auth_usersupplied_info *user_info = NULL;
@@ -94,7 +96,6 @@ BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob(NULL, 0);
-	extern BOOL global_encrypted_passwords_negotiated;
 	BOOL encrypted = (global_encrypted_passwords_negotiated && password_blob.length == 24);
 	
 	if (encrypted) {

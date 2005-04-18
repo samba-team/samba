@@ -27,40 +27,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <libsmbclient.h>
-
-void auth_fn(const char *server, const char *share,
-	     char *workgroup, int wgmaxlen, char *username, int unmaxlen,
-	     char *password, int pwmaxlen)
-{
-  char temp[128];
-
-  fprintf(stdout, "Need password for //%s/%s\n", server, share);
-
-  fprintf(stdout, "Enter workgroup: [%s] ", workgroup);
-  fgets(temp, sizeof(temp), stdin);
-
-  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
-    temp[strlen(temp) - 1] = 0x00;
-
-  if (temp[0]) strncpy(workgroup, temp, wgmaxlen - 1);
-
-  fprintf(stdout, "Enter username: [%s] ", username);
-  fgets(temp, sizeof(temp), stdin);
-
-  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
-    temp[strlen(temp) - 1] = 0x00;
-
-  if (temp[0]) strncpy(username, temp, unmaxlen - 1);
-
-  fprintf(stdout, "Enter password: [%s] ", password);
-  fgets(temp, sizeof(temp), stdin);
-
-  if (temp[strlen(temp) - 1] == 0x0a) /* A new line? */
-    temp[strlen(temp) - 1] = 0x00;
-
-  if (temp[0]) strncpy(password, temp, pwmaxlen - 1);
-
-}
+#include "get_auth_data_fn.h"
 
 int global_id = 0;
 
@@ -84,7 +51,7 @@ int main(int argc, char *argv[])
   char *dirp;
   struct stat st1, st2;
 
-  err = smbc_init(auth_fn,  10); /* Initialize things */
+  err = smbc_init(get_auth_data_fn,  10); /* Initialize things */
 
   if (err < 0) {
 
@@ -132,7 +99,7 @@ int main(int argc, char *argv[])
 	      ((struct smbc_dirent *)dirp)->comment);
 
       dirp += dsize;
-      (char *)dirc -= dsize;
+      dirc -= dsize;
 
     }
 

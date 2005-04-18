@@ -518,7 +518,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		add_sid_to_array_unique(&alias, sids, num);
+		add_sid_to_array_unique(NULL, &alias, sids, num);
 
 		if (sids == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -665,7 +665,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		if (!string_to_sid(&member, member_string))
 			continue;
 		
-		add_sid_to_array(&member, closure->sids, closure->num);
+		add_sid_to_array(NULL, &member, closure->sids, closure->num);
 	}
 
 	return 0;
@@ -1247,55 +1247,6 @@ NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
-NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
-				  const DOM_SID *sid,
-				  uint32 start_idx, uint32 max_entries,
-				  uint32 *num_aliases,
-				  struct acct_info **info)
-{
-	extern DOM_SID global_sid_Builtin;
-
-	GROUP_MAP *map;
-	int i, num_maps;
-	enum SID_NAME_USE type = SID_NAME_UNKNOWN;
-
-	if (sid_compare(sid, get_global_sam_sid()) == 0)
-		type = SID_NAME_ALIAS;
-
-	if (sid_compare(sid, &global_sid_Builtin) == 0)
-		type = SID_NAME_WKN_GRP;
-
-	if (!pdb_enum_group_mapping(type, &map, &num_maps, False) ||
-	    (num_maps == 0)) {
-		*num_aliases = 0;
-		*info = NULL;
-		goto done;
-	}
-
-	if (start_idx > num_maps) {
-		*num_aliases = 0;
-		*info = NULL;
-		goto done;
-	}
-
-	*num_aliases = num_maps - start_idx;
-
-	if (*num_aliases > max_entries)
-		*num_aliases = max_entries;
-
-	*info = SMB_MALLOC_ARRAY(struct acct_info, *num_aliases);
-
-	for (i=0; i<*num_aliases; i++) {
-		fstrcpy((*info)[i].acct_name, map[i+start_idx].nt_name);
-		fstrcpy((*info)[i].acct_desc, map[i+start_idx].comment);
-		sid_peek_rid(&map[i].sid, &(*info)[i+start_idx].rid);
-	}
-
- done:
-	SAFE_FREE(map);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 				   const DOM_SID *sid,
 				   struct acct_info *info)
@@ -1348,11 +1299,42 @@ NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
+				       TALLOC_CTX *mem_ctx,
+				       const DOM_SID *domain_sid,
 				       const DOM_SID *members,
 				       int num_members,
-				       DOM_SID **aliases, int *num)
+				       uint32 **alias_rids,
+				       int *num_alias_rids)
 {
-	return alias_memberships(members, num_members, aliases, num);
+	DOM_SID *alias_sids;
+	int i, num_alias_sids;
+	NTSTATUS result;
+
+	alias_sids = NULL;
+	num_alias_sids = 0;
+
+	result = alias_memberships(members, num_members,
+				   &alias_sids, &num_alias_sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	*alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
+	if ((alias_sids != 0) && (*alias_rids == NULL))
+		return NT_STATUS_NO_MEMORY;
+
+	*num_alias_rids = 0;
+
+	for (i=0; i<num_alias_sids; i++) {
+		if (!sid_peek_check_rid(domain_sid, &alias_sids[i],
+					&(*alias_rids)[*num_alias_rids]))
+			continue;
+		*num_alias_rids += 1;
+	}
+
+	SAFE_FREE(alias_sids);
+
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************

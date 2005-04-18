@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;
@@ -40,6 +41,8 @@ static const char *known_nt_pipes[] = {
 	"\\spoolss",
 	"\\netdfs",
 	"\\rpcecho",
+        "\\svcctl",
+	"\\eventlog",
 	NULL
 };
 
@@ -81,7 +84,6 @@ static char *nttrans_realloc(char **ptr, size_t size)
 static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_error, char *params,
                            int paramsize, char *pdata, int datasize)
 {
-	extern int max_send;
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
 	int useable_space;
@@ -353,6 +355,11 @@ static int map_share_mode( char *fname, uint32 create_options,
 	int smb_open_mode = -1;
 	uint32 original_desired_access = *desired_access;
 
+	/* This is a nasty hack - must fix... JRA. */
+	if (*desired_access == MAXIMUM_ALLOWED_ACCESS) {
+		*desired_access = FILE_GENERIC_ALL;
+	}
+
 	/*
 	 * Convert GENERIC bits to specific bits.
 	 */
@@ -581,7 +588,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
-	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	/* Breakout the oplock request bits so we can set the
@@ -630,7 +636,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	
 	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	/*
@@ -883,10 +889,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(conn, file_attributes);
-					SSVAL(outbuf, smb_flg2, 
-					      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
-					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
 				oplock_request = 0;
@@ -903,7 +907,6 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				END_PROFILE(SMBntcreateX);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
-					clear_cached_errors();
 					return -1;
 				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
@@ -915,8 +918,9 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		
 	file_len = sbuf.st_size;
 	fmode = dos_mode(conn,fname,&sbuf);
-	if(fmode == 0)
+	if(fmode == 0) {
 		fmode = FILE_ATTRIBUTE_NORMAL;
+	}
 	if (!fsp->is_directory && (fmode & aDIR)) {
 		close_file(fsp,False);
 		END_PROFILE(SMBntcreateX);
@@ -924,25 +928,27 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	} 
 	
 	/* Save the requested allocation size. */
-	allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+		allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
-	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-		if (fsp->is_directory) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			/* Can't set allocation size on a directory. */
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				/* Can't set allocation size on a directory. */
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			}
+			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+				close_file(fsp,False);
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(NT_STATUS_DISK_FULL);
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
 		}
-		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
-		}
-	} else {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)file_len);
 	}
 
 	/* 
@@ -951,11 +957,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * correct bit for extended oplock reply.
 	 */
 	
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
+	}
 	
-	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
+	}
 
 #if 0
 	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
@@ -1159,6 +1167,34 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 }
 
 /****************************************************************************
+ Read a list of EA names and data from an incoming data buffer. Create an ea_list with them.
+****************************************************************************/
+                                                                                                                             
+static struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size)
+{
+	struct ea_list *ea_list_head = NULL;
+	size_t offset = 0;
+
+	if (data_size < 4) {
+		return NULL;
+	}
+
+	while (offset + 4 <= data_size) {
+		size_t next_offset = IVAL(pdata,offset);
+		struct ea_list *tmp;
+		struct ea_list *eal = read_ea_list_entry(ctx, pdata + offset + 4, data_size - offset - 4, NULL);
+
+		DLIST_ADD_END(ea_list_head, eal, tmp);
+		if (next_offset == 0) {
+			break;
+		}
+		offset += next_offset;
+	}
+                                                                                                                             
+	return ea_list_head;
+}
+
+/****************************************************************************
  Reply to a NT_TRANSACT_CREATE call (needs to process SD's).
 ****************************************************************************/
 
@@ -1187,11 +1223,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 create_disposition;
 	uint32 create_options;
 	uint32 sd_len;
+	uint32 ea_len;
 	uint16 root_dir_fid;
-	SMB_BIG_UINT allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	time_t c_time;
+	struct ea_list *ea_list = NULL;
+	TALLOC_CTX *ctx = NULL;
+	char *pdata = NULL;
 	NTSTATUS status;
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1217,7 +1256,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if(parameter_count < 54) {
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)parameter_count));
-		return ERROR_DOS(ERRDOS,ERRnoaccess);
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	flags = IVAL(params,0);
@@ -1227,7 +1266,31 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	create_disposition = IVAL(params,28);
 	create_options = IVAL(params,32);
 	sd_len = IVAL(params,36);
+	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
+
+	/* Ensure the data_len is correct for the sd and ea values given. */
+	if ((ea_len + sd_len > data_count) ||
+			(ea_len > data_count) || (sd_len > data_count) ||
+			(ea_len + sd_len < ea_len) || (ea_len + sd_len < sd_len)) {
+		DEBUG(10,("call_nt_transact_create - ea_len = %u, sd_len = %u, data_count = %u\n",
+			(unsigned int)ea_len, (unsigned int)sd_len, (unsigned int)data_count ));
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (ea_len) {
+		if (!lp_ea_support(SNUM(conn))) {
+			DEBUG(10,("call_nt_transact_create - ea_len = %u but EA's not supported.\n",
+				(unsigned int)ea_len ));
+			return ERROR_NT(NT_STATUS_EAS_NOT_SUPPORTED);
+		}
+
+		if (ea_len < 10) {
+			DEBUG(10,("call_nt_transact_create - ea_len = %u - too small (should be more than 10)\n",
+				(unsigned int)ea_len ));
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -1238,8 +1301,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * NT values, as that's what our code is structured to accept.
 	 */    
 
-	if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-		return ERROR_DOS(ERRDOS,ERRbadmem);
+	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
 
 	/*
 	 * Get the file name.
@@ -1361,6 +1425,25 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		}
 	}
 
+	if (ea_len) {
+		ctx = talloc_init("NTTRANS_CREATE_EA");
+		if (!ctx) {
+			talloc_destroy(ctx);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+
+		pdata = data + sd_len;
+
+		/* We have already checked that ea_len <= data_count here. */
+		ea_list = read_nttrans_ea_list(ctx, pdata, ea_len);
+		if (!ea_list ) {
+			talloc_destroy(ctx);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1369,6 +1452,8 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			talloc_destroy(ctx);
+			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
@@ -1383,6 +1468,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 
 		if(!fsp) {
+			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
@@ -1398,7 +1484,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 						oplock_request,&rmode,&smb_action);
 
 		if (!fsp) { 
-
 			if(errno == EISDIR) {
 
 				/*
@@ -1407,84 +1492,113 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(conn, file_attributes);
-					SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+					return ERROR_FORCE_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
 				oplock_request = 0;
 				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 				
 				if(!fsp) {
+					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
 					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
+				talloc_destroy(ctx);
 				restore_case_semantics(conn, file_attributes);
 				if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 					/* We have re-scheduled this call. */
-					clear_cached_errors();
 					return -1;
 				}
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
-  
-		file_len = sbuf.st_size;
-		fmode = dos_mode(conn,fname,&sbuf);
-		if(fmode == 0)
-			fmode = FILE_ATTRIBUTE_NORMAL;
-
-		if (fmode & aDIR) {
-			close_file(fsp,False);
-			restore_case_semantics(conn, file_attributes);
-			return ERROR_DOS(ERRDOS,ERRnoaccess);
-		} 
-
-		/* 
-		 * If the caller set the extended oplock request bit
-		 * and we granted one (by whatever means) - set the
-		 * correct bit for extended oplock reply.
-		 */
-    
-		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-			extended_oplock_granted = True;
-  
-		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-			extended_oplock_granted = True;
 	}
 
 	/*
-	 * Now try and apply the desired SD.
+	 * According to the MS documentation, the only time the security
+	 * descriptor is applied to the opened file is iff we *created* the
+	 * file; an existing file stays the same.
+	 * 
+	 * Also, it seems (from observation) that you can open the file with
+	 * any access mask but you can still write the sd. We need to override
+	 * the granted access before we call set_sd
+	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
 	 */
 
-	if (lp_nt_acl_support(SNUM(conn)) && sd_len &&
-			!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
-		close_file(fsp,False);
-		restore_case_semantics(conn, file_attributes);
-		return ERROR_NT(status);
-	}
+	if (lp_nt_acl_support(SNUM(conn)) && sd_len && smb_action == FILE_WAS_CREATED) {
+		uint32 saved_access = fsp->desired_access;
+
+		/* We have already checked that sd_len <= data_count here. */
+
+		fsp->desired_access = FILE_GENERIC_ALL;
+
+		status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_destroy(ctx);
+			close_file(fsp,False);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(status);
+		}
+		fsp->desired_access = saved_access;
+ 	}
 	
+	if (ea_len && (smb_action == FILE_WAS_CREATED)) {
+		status = set_ea(conn, fsp, fname, ea_list);
+		talloc_destroy(ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			close_file(fsp,False);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(status);
+		}
+	}
+
 	restore_case_semantics(conn, file_attributes);
 
+	file_len = sbuf.st_size;
+	fmode = dos_mode(conn,fname,&sbuf);
+	if(fmode == 0) {
+		fmode = FILE_ATTRIBUTE_NORMAL;
+	}
+	if (!fsp->is_directory && (fmode & aDIR)) {
+		close_file(fsp,False);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
+	} 
+	
 	/* Save the requested allocation size. */
-	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
+	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(params,12);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
+		allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
 #endif
-	if (allocation_size && (allocation_size > file_len)) {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-		if (fsp->is_directory) {
-			close_file(fsp,False);
-			END_PROFILE(SMBntcreateX);
-			/* Can't set allocation size on a directory. */
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		if (allocation_size && (allocation_size > file_len)) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				close_file(fsp,False);
+				/* Can't set allocation size on a directory. */
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+			}
+			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+				close_file(fsp,False);
+				return ERROR_NT(NT_STATUS_DISK_FULL);
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
 		}
-		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-			close_file(fsp,False);
-			return ERROR_NT(NT_STATUS_DISK_FULL);
-		}
-	} else {
-		fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
+	}
+
+	/* 
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+    
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
+		extended_oplock_granted = True;
+	}
+  
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		extended_oplock_granted = True;
 	}
 
 	/* Realloc the size of parameters and data we will return */
@@ -1662,12 +1776,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&access_mode,&smb_action);
 
 	if (!fsp1) {
-		status = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			status = NT_STATUS_SHARING_VIOLATION;
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		get_saved_error_triple(NULL, NULL, &status);
+		if (NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
 		return status;
 	}
 
@@ -1676,12 +1789,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&access_mode,&smb_action);
 
 	if (!fsp2) {
-		status = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			status = NT_STATUS_SHARING_VIOLATION;
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		get_saved_error_triple(NULL, NULL, &status);
+		if (NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
 		close_file(fsp1,False);
 		return status;
 	}
@@ -1787,7 +1899,6 @@ int reply_ntrename(connection_struct *conn,
 		END_PROFILE(SMBntrename);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
@@ -1909,7 +2020,6 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 
 static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 {
-	extern DOM_SID global_sid_World;
 	size_t sd_size;
 
 	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);
@@ -1948,7 +2058,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 
 	security_info_wanted = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
+	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, info_wanted = 0x%x\n", fsp->fsp_name,
+			(unsigned int)security_info_wanted ));
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL)
@@ -2836,6 +2947,9 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
 			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
+			/* We need to re-calcuate the new length after we've read the secondary packet. */
+			length = smb_len(inbuf) + 4;
+
 			/*
 			 * The sequence number for the trans reply is always
 			 * based on the last secondary received.
@@ -2883,7 +2997,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					goto bad_param;
 				if (parameter_displacement > total_parameter_count)
 					goto bad_param;
-				if ((smb_base(inbuf) + parameter_offset + parameter_count >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length) ||
 						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
 					goto bad_param;
 				if (parameter_displacement + params < params)
@@ -2900,7 +3014,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					goto bad_param;
 				if (data_displacement > total_data_count)
 					goto bad_param;
-				if ((smb_base(inbuf) + data_offset + data_count >= inbuf + bufsize) ||
+				if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
 						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
 					goto bad_param;
 				if (data_displacement + data < data)
