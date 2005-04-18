@@ -1,8 +1,15 @@
-2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/ftpd.c (statcmd): cast argument to isdigit to unsigned char
+
+	* ftp/cmds.c (mget): cast char to unsigned char to make sure its
+	not negative when passing it to tolower
+
+2005-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/ftp.c: fix 3 'var' might be used uninitialized warnings
 
-2005-04-04 Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-04 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/cmds.c: MacOS is also a unix that doesn't define
 	__unix__/unix While here, rewrite this part of the function to not
@@ -39,7 +46,7 @@
 	* ftpd/ftpcmd.y: make cbuf 64k to handle lager tickets From:
 	MAAAAA MOOOR <huaraz@btinternet.com>
 	
-2004-03-14  Love Hörnquist Åstrand <lha@it.su.se>
+2004-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.c (main): setpag if there is krb4 OR krb5 support
 	
@@ -125,7 +132,7 @@
 
 	* ftpd/pathnames.h (_PATH_FTPUSERS): conditionalize
 
-2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.c (krb5_verify): always do krb5_afslog, remove setpag
 	(its done in main)

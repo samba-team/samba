@@ -1,3 +1,8 @@
+2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* util.c: use unsigned char * to make sure its not negative when
+	passing it to is* functions
+
 2004-05-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rcp.c: add -e (passed to rsh)
