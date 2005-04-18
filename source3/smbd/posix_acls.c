@@ -3742,6 +3742,7 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 /****************************************************************************
  Check for POSIX group ACLs. If none use stat entry.
+ Return -1 if no match, 0 if match and denied, 1 if match and allowed.
 ****************************************************************************/
 
 static int check_posix_acl_group_write(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
@@ -3781,6 +3782,12 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 		if (have_write == -1) {
 			goto check_stat;
 		}
+
+		/*
+		 * Solaris returns 2 for this if write is available.
+		 * canonicalize to 0 or 1.
+		 */	
+		have_write = (have_write ? 1 : 0);
 
 		switch(tagtype) {
 			case SMB_ACL_MASK:
@@ -3844,6 +3851,12 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 		if (have_write == -1) {
 			goto check_stat;
 		}
+
+		/*
+		 * Solaris returns 2 for this if write is available.
+		 * canonicalize to 0 or 1.
+		 */	
+		have_write = (have_write ? 1 : 0);
 
 		switch(tagtype) {
 			case SMB_ACL_GROUP:
