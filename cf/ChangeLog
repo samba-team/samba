@@ -1,9 +1,13 @@
-2005-04-04  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: ignore filename symbols
+	
+2005-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: assume symbols prefixed with _ is a sideeffekt
 	of the local linker and also just fine
 	
-2005-03-16 Love Hörnquist Åstrand <lha@it.su.se>
+2005-03-16 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-frag.m4: include <sys/socket.h> for <netinet6/in6_var.h>
 	
