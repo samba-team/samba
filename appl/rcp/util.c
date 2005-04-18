@@ -81,7 +81,7 @@ okname(cp0)
 	char *cp0;
 {
 	int c;
-	char *cp;
+	unsigned char *cp;
 
 	cp = cp0;
 	do {
