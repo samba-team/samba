@@ -40,7 +40,6 @@ RCSID("$Id$");
 
 #include <lber.h>
 #include <ldap.h>
-#include <ctype.h>
 #include <sys/un.h>
 #include <hex.h>
 
