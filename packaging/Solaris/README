@@ -3,7 +3,6 @@ INSTRUCTIONS: Preparing Samba packages for Solaris
 
 To produce a package:
 
-* Build the binaries (by running ./configure; make; in the source directory)
 * Type sh makepkg.sh
 
 The package will be created in the /tmp directory.
@@ -13,6 +12,4 @@ To change the default, modify the INSTALL_BASE variable in makepkg.sh
 This is after you have configured samba with a --prefix option of the 
 alternate samba location and then created the binaries.
 
-Shirish Kalele <kalele@samba.org>
-Date: 2000.01.12
 
