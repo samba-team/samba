@@ -55,7 +55,7 @@ main(int argc, char **argv)
 	exit(1);
     }
     for(p = argv[1]; *p; p++)
-	if(!isalnum((int)*p))
+	if(!isalnum((unsigned char)*p))
 	    *p = '_';
     fprintf(f, "#ifndef __%s__\n", argv[1]);
     fprintf(f, "#define __%s__\n", argv[1]);
