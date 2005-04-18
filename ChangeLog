@@ -1,5 +1,14 @@
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/acache.c (acc_resolve): if open_default_ccache failed
+	with ccErrCCacheNotFound try again with create_default_ccache,
+	this fixes the problem where the security server apperenly haven't
+	started yet on Mac OS X
+	
+	* lib/krb5/get_default_principal.c
+	(_krb5_get_default_principal_local): add, for use of functions
+	that in ccache layer to avoid recursive calls.
+	
 	* lib/hdb/hdb-ldap.c: drop <ctype.h>, no longer use any of the is*
 	macros in this file
 
