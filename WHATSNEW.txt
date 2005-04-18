@@ -6,12 +6,12 @@
 This is a preview release of the Samba 3.0.15 code base and
 is provided for testing only.  This release is *not* intended
 for production servers.  However, there have been several bug
-fixes and new features added since 3.0.14 that we feel are
+fixes and new features added since 3.0.14a that we feel are
 important to make available to the Samba community for wider
 testing.  There are still more changes planned before the 
 final 3.0.15 release.
 
-Additional features introduced in Samba 3.0.15pre1 include:
+Additional features introduced in Samba 3.0.15pre2 include:
 
   o Support for several new Win32 rpc pipes.
   o Improved support for OS/2 clients.
