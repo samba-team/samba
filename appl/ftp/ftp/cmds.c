@@ -737,7 +737,7 @@ mget(int argc, char **argv)
 		if (mflag && confirm(argv[0], cp)) {
 			tp = cp;
 			if (mcase) {
-				for (tp2 = tmpbuf; (ch = *tp++);)
+				for (tp2 = tmpbuf;(ch = (unsigned char)*tp++);)
 					*tp2++ = tolower(ch);
 				*tp2 = '\0';
 				tp = tmpbuf;
