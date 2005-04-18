@@ -383,6 +383,23 @@ acc_alloc(krb5_context context, krb5_ccache *id)
 }
 
 static krb5_error_code
+get_default_principal(krb5_context context, char **p)
+{
+    krb5_error_code ret;
+    krb5_principal principal;
+
+    *p = NULL;
+
+    ret = _krb5_get_default_principal_local(context, &principal);
+    if (ret)
+	return ret;
+
+    ret = krb5_unparse_name(context, principal, p);
+    krb5_free_principal(context, principal);
+    return ret;
+}
+
+static krb5_error_code
 acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 {
     krb5_error_code ret;
@@ -398,6 +415,18 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     if (res == NULL || res[0] == '\0') {    
 	error = (*a->context->func->open_default_ccache)(a->context,
 							 &a->ccache);
+	if (error == ccErrCCacheNotFound) {
+	    char *p;
+
+	    ret = get_default_principal(context, &p);
+	    if (ret == 0) {
+		error = (*a->context->func->create_default_ccache)(a->context,
+								   cc_credentials_v5,
+								   p,
+								   &a->ccache);
+		free(p);
+	    }
+	}
 	if (error == 0)
 	    a->cache_name = get_cc_name(a->ccache);
     } else {
@@ -422,20 +451,12 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 static krb5_error_code
 acc_gen_new(krb5_context context, krb5_ccache *id)
 {
-    krb5_principal principal;
     krb5_error_code ret;
     cc_int32 error;
     krb5_acc *a;
     char *p;
 
-    ret = krb5_get_default_principal(context, &principal);
-    if (ret)
-	return ret;
-
-    ret = krb5_unparse_name(context, principal, &p);
-    krb5_free_principal(context, principal);
-    if (ret)
-	return ret;
+    ret = get_default_principal(context, &p);
 
     ret = acc_alloc(context, id);
     if (ret) {
