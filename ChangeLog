@@ -1,15 +1,26 @@
-2005-04-15  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/krb5/krb5_keyblock.3: document krb5_keyblock_init
+	* lib/hdb/hdb-ldap.c: drop <ctype.h>, no longer use any of the is*
+	macros in this file
+
+	* include/make_crypto.c: cast to unsigned char to make sure its
+	not negative when passing it to is* functions
+
+2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/programming.texi: remove manpage macro, add some more
+	references to manpages
+
+	* doc/heimdal.texi: define manpage macro
 	
-2005-04-15  Love Hörnquist Åstrand <lha@it.su.se>
-
 	* doc/setup.texi: document new password policy code
 	
 	* kpasswd/kpasswdd.c: add verifier libraries with
 	kadm5_add_passwd_quality_verifier
 
-2005-04-14  Love Hörnquist Åstrand <lha@it.su.se>
+	* lib/krb5/krb5_keyblock.3: document krb5_keyblock_init
+	
+2005-04-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kaserver.c: AUTHENTICATE and AUTHENTICATE_V2 is almost the
 	same, and clients
@@ -19,7 +30,7 @@
 	* lib/krb5/keyblock.c: Add krb5_keyblock_init to allocate an fill
 	in a keyblock from key data.
 	
-2005-04-12  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: rk_WIN32_EXPORT for roken
 
@@ -33,7 +44,7 @@
 	* lib/krb5/init_creds_pw.c (process_pa_data_to_key): also check
 	for KRB5_PADATA_PK_AS_REP_19, From: Douglas Engert
 
-2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* .cvsignore: ignore more generate files
 	
