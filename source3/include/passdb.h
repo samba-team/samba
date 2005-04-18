@@ -254,6 +254,9 @@ struct pdb_search {
 	ssize_t cache_size;
 	BOOL search_ended;
 	void *private;
+	BOOL (*next_entry)(struct pdb_search *search,
+			   struct samr_displayentry *entry);
+	void (*search_end)(struct pdb_search *search);
 };
 
 /*****************************************************************
@@ -378,11 +381,6 @@ typedef struct pdb_context
 	BOOL (*pdb_search_aliases)(struct pdb_context *context,
 				   struct pdb_search *search,
 				   const DOM_SID *sid);
-	BOOL (*pdb_search_next_entry)(struct pdb_context *context,
-				      struct pdb_search *search,
-				      struct samr_displayentry *entry);
-	void (*pdb_search_end)(struct pdb_context *context,
-			       struct pdb_search *search);
 
 	void (*free_fn)(struct pdb_context **);
 	
@@ -496,11 +494,6 @@ typedef struct pdb_methods
 	BOOL (*search_aliases)(struct pdb_methods *methods,
 			       struct pdb_search *search,
 			       const DOM_SID *sid);
-	BOOL (*search_next_entry)(struct pdb_methods *methods,
-				  struct pdb_search *search,
-				  struct samr_displayentry *entry);
-	void (*search_end)(struct pdb_methods *methods,
-			   struct pdb_search *search);
 
 	void *private_data;  /* Private data of some kind */
 	
