@@ -262,7 +262,7 @@ strunvis(char *dst, const char *src)
 
 	while ((c = *src++) != '\0') {
 	again:
-		switch (unvis(dst, c, &state, 0)) {
+		switch (unvis(dst, (unsigned char)c, &state, 0)) {
 		case UNVIS_VALID:
 			dst++;
 			break;
@@ -276,7 +276,7 @@ strunvis(char *dst, const char *src)
 			return (-1);
 		}
 	}
-	if (unvis(dst, c, &state, UNVIS_END) == UNVIS_VALID)
+	if (unvis(dst, (unsigned char)c, &state, UNVIS_END) == UNVIS_VALID)
 		dst++;
 	*dst = '\0';
 	return (dst - start);
