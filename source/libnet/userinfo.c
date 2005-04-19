@@ -33,16 +33,17 @@ static void userinfo_handler(struct rpc_request *req);
 enum userinfo_stage { USERINFO_OPENUSER, USERINFO_GETUSER, USERINFO_CLOSEUSER };
 
 struct userinfo_state {
-	enum userinfo_stage stage;
-	struct dcerpc_pipe *pipe;
-	struct rpc_request *req;
-	struct policy_handle user_handle;
-	uint16_t level;
+	enum userinfo_stage       stage;
+	struct dcerpc_pipe        *pipe;
+	struct rpc_request        *req;
+	struct policy_handle      user_handle;
+	uint16_t                  level;
 	struct samr_OpenUser      openuser;
 	struct samr_QueryUserInfo queryuserinfo;
 	struct samr_Close         samrclose;	
 	union  samr_UserInfo      *info;
 };
+
 
 /**
  * Stage 1: Open user policy handle in SAM server.
@@ -76,7 +77,6 @@ failure:
 /**
  * Stage 2: Get requested user information.
  */
-
 static NTSTATUS userinfo_getuser(struct composite_context *c,
 				 struct userinfo_state *s)
 {
@@ -162,8 +162,7 @@ static void userinfo_handler(struct rpc_request *req)
  */
 struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 						      struct rpc_composite_userinfo *io)
-{	
-
+{
 	struct composite_context *c;
 	struct userinfo_state *s;
 	struct dom_sid *sid;
