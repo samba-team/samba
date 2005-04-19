@@ -281,7 +281,9 @@ If
 .Fa ret_len
 if not
 .Dv NULL ,
-it will be filled in length of the string.
+it will be filled in length of the string if size where unlimited (not
+included the final
+.Ql \e0 ) .
 .Pp
 .Fn krb5_parse_address
 Returns the resolving a hostname in
