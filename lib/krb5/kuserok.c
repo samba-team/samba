@@ -145,7 +145,15 @@ krb5_kuserok (krb5_context context,
     krb5_error_code ret;
     krb5_boolean result = FALSE;
 
-    pwd = getpwnam (luser);	/* XXX - Should use k_getpwnam? */
+#ifdef HAVE_GETPWNAM_R
+    char pwbuf[2048];
+    struct passwd pw;
+
+    if(getpwnam_r(luser, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0)
+	return FALSE;
+#else
+    pwd = getpwnam (luser);
+#endif
     if (pwd == NULL)
 	return FALSE;
 
