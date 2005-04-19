@@ -1,3 +1,11 @@
+2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/kuserok.c: use getpwnamn_r if it exists
+
+	* lib/krb5/Makefile.am: noinst_PROGRAMS += test_kuserok
+
+	* lib/krb5/test_kuserok.c: test program for krb5_kuserok
+
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/acache.c (acc_resolve): if open_default_ccache failed
