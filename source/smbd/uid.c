@@ -24,6 +24,29 @@
 extern struct current_user current_user;
 
 /****************************************************************************
+ Iterator functions for getting all gid's from current_user.
+****************************************************************************/
+
+gid_t get_current_user_gid_first(int *piterator)
+{
+	*piterator = 0;
+	return current_user.gid;
+}
+
+gid_t get_current_user_gid_next(int *piterator)
+{
+	gid_t ret;
+
+	if (!current_user.groups || *piterator >= current_user.ngroups) {
+		return (gid_t)-1;
+	}
+
+	ret = current_user.groups[*piterator];
+	(*piterator) += 1;
+	return ret;
+}
+
+/****************************************************************************
  Become the guest user without changing the security context stack.
 ****************************************************************************/
 
