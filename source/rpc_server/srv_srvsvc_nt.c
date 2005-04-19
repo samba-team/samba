@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+extern struct generic_mapping file_generic_mapping;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -170,7 +172,6 @@ BOOL share_info_db_init(void)
 
 static SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, int snum, size_t *psize)
 {
-	extern struct generic_mapping file_generic_mapping;
 	SEC_ACCESS sa;
 	SEC_ACE ace;
 	SEC_ACL *psa = NULL;
@@ -292,7 +293,6 @@ static BOOL delete_share_security(int snum)
 
 void map_generic_share_sd_bits(SEC_DESC *psd)
 {
-	extern struct generic_mapping file_generic_mapping;
 	int i;
 	SEC_ACL *ps_dacl = NULL;
 

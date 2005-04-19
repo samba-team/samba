@@ -29,6 +29,9 @@
 #define REGISTER 0
 #endif
 
+extern BOOL AllowDebugChange;
+extern BOOL override_logfile;
+extern char tar_type;
 extern BOOL in_client;
 static int port = 0;
 pstring cur_dir = "\\";
@@ -3264,6 +3267,7 @@ static int do_message_op(void)
 	struct nmb_name called, calling;
 	fstring server_name;
 	char name_type_hex[10];
+	int msg_port;
 
 	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
@@ -3276,7 +3280,11 @@ static int do_message_op(void)
 	if (have_ip) 
 		ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
+	/* we can only do messages over port 139 (to windows clients at least) */
+
+	msg_port = port ? port : 139;
+
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, msg_port) != msg_port) ||
 	    !cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
@@ -3301,13 +3309,10 @@ static int do_message_op(void)
 
  int main(int argc,char *argv[])
 {
-	extern BOOL AllowDebugChange;
-	extern BOOL override_logfile;
 	pstring base_directory;
 	int opt;
 	pstring query_host;
 	BOOL message = False;
-	extern char tar_type;
 	pstring term_code;
 	static const char *new_name_resolve_order = NULL;
 	poptContext pc;

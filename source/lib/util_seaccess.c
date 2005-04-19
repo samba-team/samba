@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern NT_USER_TOKEN anonymous_token;
+
 /*********************************************************************************
  Check an ACE against a SID.  We return the remaining needed permission
  bits not yet granted. Zero means permission allowed (no more needed bits).
@@ -212,7 +214,6 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {
-	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
 	SEC_ACL *the_acl;
 	fstring sid_str;

@@ -561,8 +561,7 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 
 	DEBUG(8,("_reg_enum_key: enumerating values for key [%s]\n", regkey->name));
 
-	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) )
-	{
+	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) ) {
 		status = WERR_NO_MORE_ITEMS;
 		goto done;
 	}
@@ -586,10 +585,6 @@ done:
 /*******************************************************************
  reg_shutdwon
  ********************************************************************/
-
-#define SHUTDOWN_R_STRING "-r"
-#define SHUTDOWN_F_STRING "-f"
-
 
 WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 {
@@ -646,9 +641,9 @@ WERROR _reg_shutdown_ex(pipes_struct *p, REG_Q_SHUTDOWN_EX *q_u, REG_R_SHUTDOWN_
 	}
 	alpha_strcpy (chkmsg, message, NULL, sizeof(message));
 		
-	fstr_sprintf( timeout, "%d", q_u->timeout );
-	fstr_sprintf( r, (q_u->reboot) ? SHUTDOWN_R_STRING : "" );
-	fstr_sprintf( f, (q_u->force) ? SHUTDOWN_F_STRING : "" );
+	fstr_sprintf(timeout, "%d", q_u->timeout);
+	fstr_sprintf(r, (q_u->reboot) ? SHUTDOWN_R_STRING : "");
+	fstr_sprintf(f, (q_u->force) ? SHUTDOWN_F_STRING : "");
 	fstr_sprintf( reason, "%d", q_u->reason );
 
 	all_string_sub( shutdown_script, "%z", chkmsg, sizeof(shutdown_script) );
@@ -659,26 +654,25 @@ WERROR _reg_shutdown_ex(pipes_struct *p, REG_Q_SHUTDOWN_EX *q_u, REG_R_SHUTDOWN_
 
 	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
 		
-	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
-	
 	/* IF someone has privs, run the shutdown script as root. OTHERWISE run it as not root
 	   Take the error return from the script and provide it as the Windows return code. */
 	   
-	if ( can_shutdown ) {
-	        DEBUG(3,("_reg_shutdown_ex: Privilege Check is OK for shutdown \n"));
+	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
+	
+	if ( can_shutdown ) 
 		become_root();
-	} 
 
 	ret = smbrun( shutdown_script, NULL );
-		
-	DEBUG(3,("_reg_shutdown_ex: Running the command `%s' gave %d\n",
-		shutdown_script, ret));
 		
 	if ( can_shutdown )
 		unbecome_root();
 
 	/********** END SeRemoteShutdownPrivilege BLOCK **********/
 	
+	DEBUG(3,("_reg_shutdown_ex: Running the command `%s' gave %d\n",
+		shutdown_script, ret));
+		
+
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
@@ -709,37 +703,74 @@ WERROR _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABO
 		
 	ret = smbrun( abort_shutdown_script, NULL );
 	
-	DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",
-		abort_shutdown_script, ret));
-		
 	if ( can_shutdown )
 		unbecome_root();
 		
 	/********** END SeRemoteShutdownPrivilege BLOCK **********/
 
+	DEBUG(3,("_reg_abort_shutdown: Running the command `%s' gave %d\n",
+		abort_shutdown_script, ret));
+		
+
 	return (ret == 0) ? WERR_OK : WERR_ACCESS_DENIED;
 }
 
 /*******************************************************************
- REG_SAVE_KEY (0x14)
+ ********************************************************************/
+
+WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_KEY *r_u)
+{
+	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	pstring         filename;
+	
+	DEBUG(5,("_reg_restore_key: Enter\n"));
+	
+	/* 
+	 * basically this is a no op function which just verifies 
+	 * that the client gave us a valid registry key handle 
+	 */
+	 
+	if ( !regkey )
+		return WERR_BADFID; 
+
+	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+
+	DEBUG(8,("_reg_restore_key: verifying restore of key [%s] from \"%s\"\n", regkey->name, filename));
+
+#if 0
+	validate_reg_filemame( filename );
+	return restore_registry_key( regkey, filename );
+#endif
+
+	return WERR_OK;
+}
+
+/*******************************************************************
  ********************************************************************/
 
 WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 {
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
+	pstring         filename;
 	
 	DEBUG(5,("_reg_save_key: Enter\n"));
 	
 	/* 
-	 * basically this is a no op function which just gverifies 
+	 * basically this is a no op function which just verifies 
 	 * that the client gave us a valid registry key handle 
 	 */
 	 
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID; 
 
-	DEBUG(8,("_reg_save_key: berifying backup of key [%s]\n", regkey->name));
+	rpcstr_pull(filename, q_u->filename.string->buffer, sizeof(filename), q_u->filename.string->uni_str_len*2, STR_TERMINATE);
+
+	DEBUG(8,("_reg_save_key: verifying backup of key [%s] to \"%s\"\n", regkey->name, filename));
 	
+#if 0
+	validate_reg_filemame( filename );
+	return backup_registry_key( regkey, filename );
+#endif
 
 	return WERR_OK;
 }

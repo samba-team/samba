@@ -24,6 +24,8 @@
    This module implements directory related functions for Samba.
 */
 
+extern struct current_user current_user;
+
 /* Make directory handle internals available. */
 
 #define NAME_CACHE_SIZE 100
@@ -785,7 +787,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 
 static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	extern struct current_user current_user;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
@@ -838,7 +839,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 
 static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
 {
-	extern struct current_user current_user;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;

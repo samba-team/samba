@@ -792,7 +792,7 @@ BOOL net_io_r_auth(const char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 
 void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
-		const DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
 
@@ -1174,27 +1174,13 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 		   const uchar * lm_chal_resp, size_t lm_chal_resp_len,
 		   const uchar * nt_chal_resp, size_t nt_chal_resp_len)
 {
-	unsigned char lm_owf[24];
-	unsigned char nt_owf[128];
 
 	DEBUG(5,("init_id_info2: %d\n", __LINE__));
 
 	id->ptr_id_info2 = 1;
 
-
 	id->param_ctrl = param_ctrl;
 	init_logon_id(&id->logon_id, log_id_low, log_id_high);
-
-	if (nt_chal_resp) {
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(nt_owf, nt_chal_resp, MIN(sizeof(nt_owf), nt_chal_resp_len));
-		nt_chal_resp = nt_owf;
-	}
-	if (lm_chal_resp) {
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(lm_owf, lm_chal_resp, MIN(sizeof(lm_owf), lm_chal_resp_len));
-		lm_chal_resp = lm_owf;
-	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
@@ -1986,8 +1972,7 @@ static BOOL net_io_sam_domain_info(const char *desc, SAM_DOMAIN_INFO * info,
                             info->hdr_oem_info.buffer, ps, depth))
                 return False;
 
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
                 return False;
 
 	if (!smb_io_account_lockout_str("account_lockout", &info->account_lockout, 
@@ -2035,8 +2020,7 @@ static BOOL net_io_sam_group_info(const char *desc, SAM_GROUP_INFO * info,
 	if (!smb_io_unistr2("uni_grp_desc", &info->uni_grp_desc,
                             info->hdr_grp_desc.buffer, ps, depth))
                 return False;
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
                 return False;
 
 	return True;
@@ -2288,8 +2272,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 	if (!prs_uint32("unknown2", ps, depth, &info->unknown2))
                 return False;
 
-	if (!smb_io_buffer4("buf_logon_hrs", &info->buf_logon_hrs,
-                            info->ptr_logon_hrs, ps, depth))
+	if (!smb_io_rpc_blob("buf_logon_hrs", &info->buf_logon_hrs, ps, depth))
                 return False;
 	prs_align(ps);
 	if (!smb_io_unistr2("uni_comment", &info->uni_comment,
@@ -2330,8 +2313,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
                         return False;
 		ps->data_offset = old_offset + len;
 	}
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
                 return False;
 	prs_align(ps);
 	if (!smb_io_unistr2("uni_profile", &info->uni_profile,
@@ -2450,8 +2432,7 @@ static BOOL net_io_sam_alias_info(const char *desc, SAM_ALIAS_INFO * info,
 	if (!smb_io_unistr2("uni_als_name", &info->uni_als_name,
                             info->hdr_als_name.buffer, ps, depth))
                 return False;
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
                 return False;
 
 	if (!smb_io_unistr2("uni_als_desc", &info->uni_als_desc,
@@ -2610,8 +2591,7 @@ static BOOL net_io_sam_policy_info(const char *desc, SAM_DELTA_POLICY *info,
 	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
 		return False;
 
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
 
 		return False;
 
@@ -2845,8 +2825,7 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 		if (!smb_io_unistr2("uni_privslist", &info->uni_privslist[i], True, ps, depth))
 			return False;
 
-	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
-                            info->hdr_sec_desc.buffer, ps, depth))
+	if (!smb_io_rpc_blob("buf_sec_desc", &info->buf_sec_desc, ps, depth))
                 return False;
 
 	return True;

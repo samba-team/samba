@@ -369,8 +369,31 @@ static BOOL api_reg_enum_value(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_save_key
- ********************************************************************/
+ ******************************************************************/
+
+static BOOL api_reg_restore_key(pipes_struct *p)
+{
+	REG_Q_RESTORE_KEY q_u;
+	REG_R_RESTORE_KEY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_restore_key("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_restore_key(p, &q_u, &r_u);
+
+	if(!reg_io_r_restore_key("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ******************************************************************/
 
 static BOOL api_reg_save_key(pipes_struct *p)
 {
@@ -412,7 +435,8 @@ static struct api_struct api_reg_cmds[] =
       { "REG_SHUTDOWN_EX"        , REG_SHUTDOWN_EX        , api_reg_shutdown_ex      },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
       { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
-      { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
+      { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
+      { "REG_RESTORE_KEY"        , REG_RESTORE_KEY        , api_reg_restore_key      }
 };
 
 void reg_get_pipe_fns( struct api_struct **fns, int *n_fns )

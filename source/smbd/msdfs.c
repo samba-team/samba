@@ -269,7 +269,9 @@ BOOL is_msdfs_link(connection_struct* conn, char * path,
  Used by other functions to decide if a dfs path is remote,
 and to get the list of referred locations for that remote path.
  
-allow_wcards: Should we allow wildcards when parsing paths.
+findfirst_flag: For findfirsts, dfs links themselves are not
+redirected, but paths beyond the links are. For normal smb calls,
+even dfs links need to be redirected.
 
 self_referralp: clients expect a dfs referral for the same share when
 they request referrals for dfs roots on a server. 
@@ -280,8 +282,7 @@ should try the remaining path on the redirected server.
 *****************************************************************/
 
 static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp, 
-		      connection_struct* conn,
-		      BOOL allow_wcards,
+		      connection_struct* conn, BOOL search_flag, 
 		      struct referral** reflistpp, int* refcntp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
@@ -313,6 +314,12 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 
 	/* check if need to redirect */
 	if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
+		if ( search_flag ) {
+			DEBUG(6,("resolve_dfs_path (FindFirst) No redirection "
+				 "for dfs link %s.\n", dfspath));
+			return False;
+		}
+		
 		DEBUG(6,("resolve_dfs_path: %s resolves to a valid Dfs link.\n", dfspath));
 		if (consumedcntp) 
 			*consumedcntp = strlen(dfspath);
@@ -326,6 +333,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 		*p = '\0';
 		pstrcpy(localpath, reqpath);
 		if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
+		
 			DEBUG(4, ("resolve_dfs_path: Redirecting %s because parent %s is dfs link\n", dfspath, localpath));
 
 			/* To find the path consumed, we truncate the original
@@ -333,6 +341,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 			   component. The length of the resulting string is
 			   the path consumed 
 			*/
+			
 			if (consumedcntp) {
 				char *q;
 				pstring buf;
@@ -359,16 +368,20 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 /*****************************************************************
   Decides if a dfs pathname should be redirected or not.
   If not, the pathname is converted to a tcon-relative local unix path
+
+  search_wcard_flag: this flag performs 2 functions bother related
+  to searches.  See resolve_dfs_path() and parse_processed_dfs_path()
+  for details.
 *****************************************************************/
 
-BOOL dfs_redirect(pstring pathname, connection_struct* conn, BOOL allow_wcards)
+BOOL dfs_redirect( pstring pathname, connection_struct* conn, BOOL search_wcard_flag )
 {
 	struct dfs_path dp;
 	
 	if (!conn || !pathname)
 		return False;
 
-	parse_processed_dfs_path(pathname, &dp, allow_wcards);
+	parse_processed_dfs_path(pathname, &dp, search_wcard_flag);
 
 	/* if dfs pathname for a non-dfs share, convert to tcon-relative
 	   path and return false */
@@ -380,7 +393,7 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn, BOOL allow_wcards)
 	if (!strequal(dp.servicename, lp_servicename(SNUM(conn)) )) 
 		return False;
 
-	if (resolve_dfs_path(pathname, &dp, conn, allow_wcards,
+	if (resolve_dfs_path(pathname, &dp, conn, search_wcard_flag,
 			     NULL, NULL, NULL, NULL)) {
 		DEBUG(3,("dfs_redirect: Redirecting %s\n", pathname));
 		return True;

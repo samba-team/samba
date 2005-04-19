@@ -20,6 +20,7 @@
 
 #include "includes.h"
 
+extern fstring remote_proto;
 extern enum protocol_types Protocol;
 extern int max_recv;
 BOOL global_encrypted_passwords_negotiated = False;
@@ -549,7 +550,6 @@ int reply_negprot(connection_struct *conn,
   
 	SSVAL(outbuf,smb_vwv0,choice);
 	if(choice != -1) {
-		extern fstring remote_proto;
 		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
 		reload_services(True);          
 		outsize = supported_protocols[protocol].proto_reply_fn(inbuf, outbuf);

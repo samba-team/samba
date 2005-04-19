@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 /***************************************************************************
 open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
@@ -30,7 +32,6 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
-	extern struct current_user current_user;
 	files_struct *fsp = file_new(conn);
 	fstring name;
 

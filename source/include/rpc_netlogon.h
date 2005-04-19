@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
-   Copyright (C) Jean François Micouleau 2002
+   Copyright (C) Jean FranÃ§ois Micouleau 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -654,7 +654,7 @@ typedef struct sam_domain_info_info
 	UNISTR2 uni_dom_name;
 	UNISTR2 buf_oem_info; 
 
-	BUFFER4 buf_sec_desc;
+	RPC_DATA_BLOB buf_sec_desc;
 
 	LOCKOUT_STRING account_lockout;
 
@@ -681,7 +681,7 @@ typedef struct sam_group_info_info
 
 	UNISTR2 uni_grp_name;
 	UNISTR2 uni_grp_desc;
-	BUFFER4 buf_sec_desc;
+	RPC_DATA_BLOB buf_sec_desc;
 
 } SAM_GROUP_INFO;
 
@@ -759,11 +759,11 @@ typedef struct sam_account_info_info
 	uint32 unknown1; /* 0x4EC */
 	uint32 unknown2; /* 0 */
 
-	BUFFER4 buf_logon_hrs;
+	RPC_DATA_BLOB buf_logon_hrs;
 	UNISTR2 uni_comment;
 	UNISTR2 uni_parameters;
 	SAM_PWD pass;
-	BUFFER4 buf_sec_desc;
+	RPC_DATA_BLOB buf_sec_desc;
 	UNISTR2 uni_profile;
 
 } SAM_ACCOUNT_INFO;
@@ -794,7 +794,7 @@ typedef struct sam_alias_info_info
 	uint8 reserved[40];
 
 	UNISTR2 uni_als_name;
-	BUFFER4 buf_sec_desc;
+	RPC_DATA_BLOB buf_sec_desc;
 	UNISTR2 uni_als_desc;
 
 } SAM_ALIAS_INFO;
@@ -840,7 +840,7 @@ typedef struct
 	UNISTR2  domain_name;
 	DOM_SID2 domain_sid;
 
-	BUFFER4  buf_sec_desc;
+	RPC_DATA_BLOB  buf_sec_desc;
 } SAM_DELTA_POLICY;
 
 /* SAM_DELTA_TRUST_DOMS */
@@ -892,7 +892,7 @@ typedef struct
 	UNIHDR *hdr_privslist;
 	UNISTR2 *uni_privslist;
 
-	BUFFER4 buf_sec_desc;
+	RPC_DATA_BLOB buf_sec_desc;
 } SAM_DELTA_PRIVS;
 
 /* SAM_DELTA_SECRET */

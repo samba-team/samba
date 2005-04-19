@@ -25,19 +25,8 @@
 #ifndef _RPC_REG_H /* _RPC_REG_H */
 #define _RPC_REG_H 
 
+/* RPC opnum */
 
-/* winreg pipe defines 
-   NOT IMPLEMENTED !!
-#define _REG_UNK_01		0x01
-#define	_REG_UNK_0D		0x0d
-#define _REG_UNK_0E		0x0e
-#define	_REG_UNK_12		0x12
-#define _REG_UNK_13		0x13
-#define	_REG_UNK_17		0x17
-
-*/
-
-/* Implemented */
 #define REG_OPEN_HKCR		0x00
 #define REG_OPEN_HKLM		0x02
 #define REG_OPEN_HKPD		0x03
@@ -53,9 +42,10 @@
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
 #define REG_INFO		0x11
+#define REG_RESTORE_KEY		0x13
 #define REG_SAVE_KEY		0x14
 #define REG_SET_KEY_SEC		0x15
-#define REG_CREATE_VALUE	0x16
+#define REG_SET_VALUE		0x16
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
 #define REG_GETVERSION		0x1a
@@ -219,12 +209,13 @@ typedef struct {
 	POLICY_HND pol;   
 	UNISTR4 name;   	
 	uint32 type;  
-	BUFFER3 *value; 
-} REG_Q_CREATE_VALUE;
+	RPC_DATA_BLOB value; 
+	uint32 size;
+} REG_Q_SET_VALUE;
 
 typedef struct { 
 	WERROR status;
-} REG_R_CREATE_VALUE;
+} REG_R_SET_VALUE;
 
 /***********************************************/
 
@@ -331,14 +322,42 @@ typedef struct {
 typedef struct {
 	POLICY_HND pol; 
 	UNISTR4 filename;
-	uint32 unknown;		/* 0x0000 0000 */
-} REG_Q_SAVE_KEY;
+	uint32 flags;
+} REG_Q_RESTORE_KEY;
 
+typedef struct {
+	WERROR status;         /* return status */
+} REG_R_RESTORE_KEY;
+
+
+/***********************************************/
+
+
+/* I have no idea if this is correct since I 
+   have not seen the full structure on the wire 
+   as of yet */
+   
+typedef struct {
+	uint32 max_len;
+	uint32 len;
+	SEC_DESC *secdesc;
+} REG_SEC_DESC_BUF;
+
+typedef struct {
+	uint32 size;		/* size in bytes of security descriptor */
+	REG_SEC_DESC_BUF secdesc;
+	uint8  inherit;		/* see MSDN for a description */
+} SECURITY_ATTRIBUTE;
+
+typedef struct {
+	POLICY_HND pol; 
+	UNISTR4 filename;
+	SECURITY_ATTRIBUTE *sec_attr;
+} REG_Q_SAVE_KEY;
 
 typedef struct {
 	WERROR status;         /* return status */
 } REG_R_SAVE_KEY;
-
 
 
 /***********************************************/
