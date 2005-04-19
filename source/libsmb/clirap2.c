@@ -369,10 +369,9 @@ int cli_RNetGroupEnum0(struct cli_state *cli,
 
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
 
-      p = rparam + WORDSIZE; /* skip result */
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE; /* skip result and converter */
       GETWORD(p, count);
 
       for (i=0,p=rdata;i<count;i++) {
@@ -543,10 +542,9 @@ int cli_NetGroupGetUsers(struct cli_state * cli, const char *group_name, void (*
   }
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
       fstring username;
-      p = rparam +WORDSIZE;
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE;
       GETWORD(p, count);
 
       for (i=0,p=rdata; i<count; i++) {
@@ -598,10 +596,9 @@ int cli_NetUserGetGroups(struct cli_state * cli, const char *user_name, void (*f
   }
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
       fstring groupname;
-      p = rparam +WORDSIZE;
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE;
       GETWORD(p, count);
 
       for (i=0,p=rdata; i<count; i++) {
@@ -800,7 +797,6 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
       char username[RAP_USERNAME_LEN];
       char userpw[RAP_UPASSWD_LEN];
       pstring comment, homedir, logonscript;
-      int pwage, priv, flags;
 
       p = rparam + WORDSIZE; /* skip result */
       GETWORD(p, converter);
@@ -810,11 +806,11 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
         GETSTRINGF(p, username, RAP_USERNAME_LEN);
         p++; /* pad byte */
         GETSTRINGF(p, userpw, RAP_UPASSWD_LEN);
-        GETDWORD(p, pwage); /* password age */
-        GETWORD(p, priv); /* 0=guest, 1=user, 2=admin */
+        p += DWORDSIZE; /* skip password age */
+        p += WORDSIZE;  /* skip priv: 0=guest, 1=user, 2=admin */
         GETSTRINGP(p, homedir, rdata, converter);
         GETSTRINGP(p, comment, rdata, converter);
-        GETWORD(p, flags);
+        p += WORDSIZE;  /* skip flags */
         GETSTRINGP(p, logonscript, rdata, converter);
 
         fn(username, comment, homedir, logonscript, cli);
@@ -868,11 +864,10 @@ int cli_RNetUserEnum0(struct cli_state *cli,
   }
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
       char username[RAP_USERNAME_LEN];
 
-      p = rparam + WORDSIZE; /* skip result */
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE; /* skip result and converter */
       GETWORD(p, count);
 
       for (i=0,p=rdata;i<count;i++) {
@@ -1473,10 +1468,9 @@ BOOL cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
     cli->rap_error = res;
 
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
 
-      p = rparam + WORDSIZE;
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE;
       GETWORD(p, count);
 
       p = rdata;
@@ -1798,10 +1792,9 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
 
   if (rdata) {
     if (res == 0 || res == ERRmoredata) {
-      int i, converter, count;
+      int i, count;
 
-      p = rparam + WORDSIZE; /* skip result */
-      GETWORD(p, converter);
+      p = rparam + WORDSIZE + WORDSIZE; /* skip result and converter */
       GETWORD(p, count);
 
       for (i=0,p=rdata;i<count;i++) {
@@ -1943,14 +1936,14 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation, void (
     res = GETRES(rparam);
     
     if (res == 0 || res == ERRmoredata) {
-      int rsize, converter;
+      int converter;
       pstring wsname, username, clitype_name;
       uint16  num_conns, num_opens, num_users;
       unsigned int    sess_time, idle_time, user_flags;
 
       p = rparam + WORDSIZE;
       GETWORD(p, converter);
-      GETWORD(p, rsize);
+      p += WORDSIZE;            /* skip rsize */
 
       p = rdata;
       GETSTRINGP(p, wsname, rdata, converter);

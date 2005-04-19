@@ -396,7 +396,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		/* cope with ticket being in the future due to clock skew */
 		if ((unsigned)credsp->times.starttime > time(NULL)) {
 			time_t t = time(NULL);
-			int time_offset =(unsigned)credsp->times.starttime-t;
+			int time_offset =(int)((unsigned)credsp->times.starttime-t);
 			DEBUG(4,("ads_krb5_mk_req: Advancing clock by %d seconds to cope with clock skew\n", time_offset));
 			krb5_set_real_time(context, t + time_offset + 1, 0);
 		}
@@ -405,7 +405,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			creds_ready = True;
 	}
 
-	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
+	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s) is valid until: (%s - %u)\n",
 		  principal, krb5_cc_default_name(context),
 		  http_timestring((unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
