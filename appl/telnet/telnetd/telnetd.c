@@ -51,6 +51,12 @@ struct	socksec ss;
 int	auth_level = 0;
 #endif
 
+#ifdef KRB5
+#define Authenticator k5_Authenticator
+#include <krb5.h>
+#undef Authenticator
+#endif
+
 extern	int utmp_len;
 int	registerd_host_only = 0;
 
