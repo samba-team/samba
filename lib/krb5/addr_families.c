@@ -598,6 +598,8 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
     size = l;
 	
     ret = krb5_print_address (&a->low, str + size, len - size, &l);
+    if (ret)
+	return ret;
     ret_len += l;
     if (len - size > l)
 	size += l;
@@ -612,6 +614,8 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
 	size = len;
 
     ret = krb5_print_address (&a->high, str + size, len - size, &l);
+    if (ret)
+	return ret;
     ret_len += l;
 
     return ret_len;
@@ -659,9 +663,10 @@ arange_order_addr(krb5_context context,
 static int
 addrport_print_addr (const krb5_address *addr, char *str, size_t len)
 {
+    krb5_error_code ret;
     krb5_address addr1, addr2;
     uint16_t port = 0;
-    size_t ret_len = 0, l;
+    size_t ret_len = 0, l, size = 0;
     krb5_storage *sp = krb5_storage_from_data((krb5_data*)&addr->address);
     /* for totally obscure reasons, these are not in network byteorder */
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -679,10 +684,24 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
     }
     l = strlcpy(str, "ADDRPORT:", len);
     ret_len += l;
-    krb5_print_address(&addr1, str + ret_len, len - ret_len, &l);
+    if (len > l)
+	size += l;
+    else
+	size = len;
+
+    ret = krb5_print_address(&addr1, str + size, len - size, &l);
+    if (ret)
+	return ret;
     ret_len += l;
-    l = snprintf(str + ret_len, len - ret_len, ",PORT=%u", port);
-    ret_len += l;
+    if (len - size > l)
+	size += l;
+    else
+	size = len;
+
+    ret = snprintf(str + size, len - size, ",PORT=%u", port);
+    if (ret < 0)
+	return EINVAL;
+    ret_len += ret;
     return ret_len;
 }
 
@@ -866,8 +885,8 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_print_address (const krb5_address *addr, 
 		    char *str, size_t len, size_t *ret_len)
 {
-    size_t ret;
     struct addr_operations *a = find_atype(addr->addr_type);
+    int ret;
 
     if (a == NULL || a->print_addr == NULL) {
 	char *s;
@@ -892,6 +911,8 @@ krb5_print_address (const krb5_address *addr,
 	return 0;
     }
     ret = (*a->print_addr)(addr, str, len);
+    if (ret < 0)
+	return EINVAL;
     if(ret_len != NULL)
 	*ret_len = ret;
     return 0;
