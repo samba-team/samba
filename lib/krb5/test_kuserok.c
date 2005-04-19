@@ -31,8 +31,29 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "krb5_locl.h"
+#include <getarg.h>
 
 RCSID("$Id$");
+
+static int version_flag = 0;
+static int help_flag	= 0;
+
+static struct getargs args[] = {
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    NULL,
+		    "principal luser");
+    exit (ret);
+}
 
 int
 main(int argc, char **argv)
@@ -41,17 +62,32 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_principal principal;
     char *p;
+    int o = 0;
 
     setprogname(argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &o))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= o;
+    argv += o;
 
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    if (argc != 3)
-	errx(1, "usage: %s principal luser", getprogname());
+    if (argc != 2)
+	usage(1);
 
-    ret = krb5_parse_name(context, argv[1], &principal);
+    ret = krb5_parse_name(context, argv[0], &principal);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
     
@@ -59,11 +95,11 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_unparse_name");
 
-    ret = krb5_kuserok(context, principal, argv[2]);
+    ret = krb5_kuserok(context, principal, argv[1]);
 
     krb5_free_context(context);
 
-    printf("%s is %sallowed to login as %s\n", p, ret ? "" : "NOT ", argv[2]);
+    printf("%s is %sallowed to login as %s\n", p, ret ? "" : "NOT ", argv[1]);
 
     return 0;
 }
