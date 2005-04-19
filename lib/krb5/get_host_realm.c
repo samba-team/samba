@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -107,8 +107,8 @@ dns_find_realm(krb5_context context,
     if(*domain == '.')
 	domain++;
     for (i = 0; labels[i] != NULL; i++) {
-	if(snprintf(dom, sizeof(dom), "%s.%s.", labels[i], domain) >=
-	    sizeof(dom))
+	ret = snprintf(dom, sizeof(dom), "%s.%s.", labels[i], domain);
+	if(ret < 0 || ret >= sizeof(dom))
 	    return -1;
     	r = dns_lookup(dom, "TXT");
     	if(r != NULL) {
