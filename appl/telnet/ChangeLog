@@ -1,4 +1,10 @@
-2005-04-07  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/sys_term.c: rewrite getpty to make use openpty when its
+	found, save the slave fd so that cleanopen can use it if its
+	available
+
+2005-04-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/sys_term.c: clean_ttyname might be unused, mark it so
 	with __attribute__
@@ -9,7 +15,7 @@
 
 	* telnet/commands.c: use NULL as last argument to execl, not 0
 	
-2005-03-29  Love Hörnquist Åstrand <lha@it.su.se>
+2005-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/telnet.c: From FreeBSD:
 	
