@@ -104,10 +104,7 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli,
 					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
-	char *up_domain;
 	uint32 sec_channel_type = 0;
-
-	up_domain = talloc_strdup(mem_ctx, domain);
 
 	if (!secrets_fetch_trust_account_password(domain,
 						  old_trust_passwd_hash, 
