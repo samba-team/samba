@@ -71,6 +71,59 @@ print_addr(krb5_context context, const char *addr)
 }
 
 static void
+truncated_addr(krb5_context context, const char *addr, 
+	       size_t truncate_len, size_t outlen)
+{
+    krb5_addresses addresses;
+    krb5_error_code ret;
+    char *buf;
+    size_t len;
+
+    buf = ecalloc(1, outlen + 1);
+
+    ret = krb5_parse_address(context, addr, &addresses);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_address");
+
+    if (addresses.len != 1)
+	krb5_err(context, 1, ret, "addresses should be one");
+    
+    krb5_print_address(&addresses.val[0], buf, truncate_len, &len);
+    
+#if 0
+    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf)); 
+#endif
+    
+    if (truncate_len > strlen(buf) + 1)
+	abort();
+    if (outlen != len)
+	abort();
+    
+    krb5_print_address(&addresses.val[0], buf, outlen + 1, &len);
+
+#if 0
+    printf("addr %s (%d/%d)\n", buf, (int)len, (int)strlen(buf)); 
+#endif
+
+    if (len != outlen)
+	abort();
+    if (strlen(buf) != len)
+	abort();
+
+    krb5_free_addresses(context, &addresses);
+    free(buf);
+}
+
+static void
+check_truncation(krb5_context context, const char *addr)
+{
+    int i, len = strlen(addr);
+
+    for (i = 0; i < len; i++)
+	truncated_addr(context, addr, i, len);
+}
+
+static void
 match_addr(krb5_context context, const char *range_addr, 
 	   const char *one_addr, int match)
 {
@@ -103,8 +156,6 @@ match_addr(krb5_context context, const char *range_addr,
     krb5_free_addresses(context, &one);
 }
 
-
-
 int
 main(int argc, char **argv)
 {
@@ -126,6 +177,13 @@ main(int argc, char **argv)
     print_addr(context, "RANGE:IPv6:fe80::209:6bff:fea0:e522/64");
     print_addr(context, "RANGE:IPv6:fe80::-IPv6:fe80::ffff:ffff:ffff:ffff");
     print_addr(context, "RANGE:fe80::-fe80::ffff:ffff:ffff:ffff");
+#endif
+
+    check_truncation(context, "IPv4:127.0.0.0");
+    check_truncation(context, "RANGE:IPv4:127.0.0.0-IPv4:127.0.0.255");
+#ifdef HAVE_IPV6
+    check_truncation(context, "IPv6:::1");
+    check_truncation(context, "IPv6:fe80::ffff:ffff:ffff:ffff");
 #endif
 
     match_addr(context, "RANGE:127.0.0.0/8", "inet:127.0.0.0", 1);
