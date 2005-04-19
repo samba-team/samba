@@ -9,7 +9,7 @@
 	* lib/krb5/addr_families.c: check return values from snprintf and
 	clean up semantics of ret_len
 
-	* lib/krb5/krb5_address.3: clearify what ret_len is in
+	* lib/krb5/krb5_address.3: clarify what ret_len is in
 	krb5_print_address
 
 	* lib/krb5/test_kuserok.c: add --version and --help
