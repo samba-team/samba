@@ -1,3 +1,9 @@
+2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sia/sia.c: fix getpw*_r calls, they return 0 even when the entry
+	isn't found and instead make it with setting return pointer to
+	NULL.  From Luke Mewburn <lukem@NetBSD.org>
+
 2004-09-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afskauthlib/verify.c: use krb5_appdefault_boolean instead of
