@@ -28,8 +28,15 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
                                            struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                            int argc, const char **argv )
 {
+	WERROR result = WERR_GENERAL_FAILURE;
+	
+	if (argc != 0 ) {
+		d_printf("Usage:    net rpc enuemrate <path> [recurse]\n");
+		d_printf("Example:: net rpc enuemrate 'HKLM\\Software\\Samba'\n");
+		return NT_STATUS_OK;
+	}
 
-	return NT_STATUS_OK;
+	return werror_to_ntstatus(result);
 }
 /********************************************************************
 ********************************************************************/
