@@ -268,11 +268,13 @@ doit(int s,
     now = time(NULL);
     from_line_length = snprintf (from_line, sizeof(from_line),
 				 "From %s %s", "push", ctime(&now));
+    if (from_line_length < 0 || from_line_length > sizeof(from_line))
+	errx (1, "snprintf failed");
 
     out_len = snprintf (out_buf, sizeof(out_buf),
 			"USER %s\r\nPASS hej\r\nSTAT\r\n",
 			user);
-    if (out_len < 0)
+    if (out_len < 0 || out_len > sizeof(out_buf))
 	errx (1, "snprintf failed");
     if (net_write (s, out_buf, out_len) != out_len)
 	err (1, "write");
@@ -490,7 +492,7 @@ doit(int s,
 	    else if(state == DELE)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "DELE %u\r\n", ++asked_deleted);
-	    if (out_len < 0)
+	    if (out_len < 0 || out_len > sizeof(out_buf))
 		errx (1, "snprintf failed");
 	    if (net_write (s, out_buf, out_len) != out_len)
 		err (1, "write");
