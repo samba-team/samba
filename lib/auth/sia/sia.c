@@ -125,7 +125,7 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
     int secure;
 #endif
 	
-    if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
+    if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0 || pwd == NULL){
 	SIA_DEBUG(("DEBUG", "failed to getpwnam(%s)", name));
 	return SIADFAIL;
     }
@@ -162,7 +162,7 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 #else
 	ouid = getuid();
 #endif
-	if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0){
+	if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0 || fpwd == NULL){
 	    SIA_DEBUG(("DEBUG", "failed to getpwuid(%u)", ouid));
 	    return SIADFAIL;
 	}
