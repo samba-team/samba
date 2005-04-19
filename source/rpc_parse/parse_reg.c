@@ -75,6 +75,8 @@ BOOL reg_io_q_open_hive(const char *desc, REG_Q_OPEN_HIVE *q_u,
 	if(!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("access", ps, depth, &q_u->access))
 		return False;
 

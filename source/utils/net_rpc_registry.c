@@ -29,12 +29,38 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
                                            int argc, const char **argv )
 {
 	WERROR result = WERR_GENERAL_FAILURE;
+	uint32 hive;
+	pstring subpath;
+	POLICY_HND pol_hive, pol_key; 
 	
-	if (argc != 0 ) {
-		d_printf("Usage:    net rpc enuemrate <path> [recurse]\n");
-		d_printf("Example:: net rpc enuemrate 'HKLM\\Software\\Samba'\n");
+	if (argc != 1 ) {
+		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
+		d_printf("Example:: net rpc enumerate 'HKLM\\Software\\Samba'\n");
 		return NT_STATUS_OK;
 	}
+	
+	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
+		d_printf("invalid registry path\n");
+		return NT_STATUS_OK;
+	}
+	
+	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Unable to connect to remote registry\n");
+		return NT_STATUS_OK;
+	}
+	
+	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Unable to open [%s]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	
+	/* cleanup */
+	
+	cli_reg_close( cli, mem_ctx, &pol_key );
+	cli_reg_close( cli, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
 }
