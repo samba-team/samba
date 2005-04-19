@@ -32,3 +32,14 @@ struct rpc_composite_userinfo {
 		union samr_UserInfo info;
 	} out;
 };
+
+
+struct rpc_composite_useradd {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+	} in;
+	struct {
+		struct policy_handle user_handle;
+	} out;
+};
