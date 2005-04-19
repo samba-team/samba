@@ -32,6 +32,7 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 	uint32 hive;
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
+	uint32 idx;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc enumerate <path> [recurse]\n");
@@ -44,6 +45,8 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		return NT_STATUS_OK;
 	}
 	
+	/* open the top level hive and then the registry key */
+	
 	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to connect to remote registry\n");
@@ -54,6 +57,53 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to open [%s]\n", argv[0]);
 		return NT_STATUS_OK;
+	}
+	
+	/* get the subkeys */
+	
+	result = WERR_OK;
+	idx = 0;
+	while ( W_ERROR_IS_OK(result) ) {
+		uint32 unknown1, unknown2;
+		time_t modtime;
+		fstring keyname;
+		
+		result = cli_reg_enum_key( cli, mem_ctx, &pol_key, idx, 
+			keyname, &unknown1, &unknown2, &modtime );
+			
+		if ( !W_ERROR_IS_OK(result) )
+			break;
+			
+		d_printf("Keyname  = %s\n", keyname );
+		d_printf("Unknown1 = 0x%x\n", unknown1 );
+		d_printf("Unknown2 = 0x%x\n", unknown2 );
+		d_printf("Modtime  = %s\n", http_timestring(modtime) );
+		d_printf("\n" );
+		idx++;
+	}
+	
+	/* get the values */
+	
+	result = WERR_OK;
+	idx = 0;
+	while ( W_ERROR_IS_OK(result) ) {
+		uint32 type;
+		fstring name;
+		REGVAL_BUFFER value;
+		
+		fstrcpy( name, "" );
+		ZERO_STRUCT( value );
+		
+		result = cli_reg_enum_val( cli, mem_ctx, &pol_key, idx, 
+			name, &type, &value );
+			
+		if ( !W_ERROR_IS_OK(result) )
+			break;
+			
+		d_printf("Valuename  = %s\n", name );
+		d_printf("Type       = %d\n", type );
+		d_printf("\n" );
+		idx++;
 	}
 	
 	

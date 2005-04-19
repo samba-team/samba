@@ -215,6 +215,9 @@ typedef struct {		/* UNISTR2 - unicode string size (in
 				  should include the NULL character */
 } UNISTR2;
 
+/* i think this is the same as a BUFFER5 used in the spoolss code --jerry */
+/* not sure about how the termination matches between the uint16 buffers thought */
+
 typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
 	uint32 uni_str_len;
 	UNISTR str;

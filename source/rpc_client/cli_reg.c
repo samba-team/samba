@@ -199,6 +199,9 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	uint32 saved_class_len = *class_len;
 
+	ZERO_STRUCT (in);
+	ZERO_STRUCT (out);
+
 	init_reg_q_query_key( &in, hnd, key_class );
 
 	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
@@ -209,6 +212,8 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	            WERR_GENERAL_FAILURE );
 
 	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
+		ZERO_STRUCT (in);
+
 		*class_len = out.class.string->uni_max_len;
 		if ( *class_len > saved_class_len )
 			return out.status;
@@ -219,6 +224,8 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		key_class[*class_len] = '\0';
 		
 		init_reg_q_query_key( &in, hnd, key_class );
+
+		ZERO_STRUCT (out);
 
 		CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
 		            in, out, 
@@ -495,9 +502,7 @@ WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	            reg_io_r_enum_key, 
 	            WERR_GENERAL_FAILURE );
 
-	/* enumeration function may take more than one round, leave that up to the caller */
-	
-	if ( !W_ERROR_IS_OK(out.status) && W_ERROR_EQUAL(out.status, WERR_MORE_DATA) )
+	if ( !W_ERROR_IS_OK(out.status) )
 		return out.status;
 
 	unistr3_to_ascii( key_name, &out.key_name, sizeof(fstring)-1 );
@@ -538,9 +543,8 @@ WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 do a REG Enum Value
 ****************************************************************************/
 WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                          POLICY_HND *hnd, int val_index, int max_valnamelen,
-                          int max_valbufsize, fstring val_name,
-                          uint32 *val_type, REGVAL_BUFFER *value)
+                          POLICY_HND *hnd, int idx,
+                          fstring val_name, uint32 *type, REGVAL_BUFFER *value)
 {
 	REG_Q_ENUM_VALUE in;
 	REG_R_ENUM_VALUE out;
@@ -549,7 +553,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT (in);
 	ZERO_STRUCT (out);
 	
-	init_reg_q_enum_val(&in, hnd, val_index, val_name, max_valbufsize);
+	init_reg_q_enum_val(&in, hnd, idx, 0x0100, 0x1000);
 
 	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
 	            in, out, 
@@ -558,13 +562,27 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	            reg_io_r_enum_val, 
 	            WERR_GENERAL_FAILURE );
 
-	/* enumeration function may take more than one round, leave that up to the caller */
-	
-	if ( !W_ERROR_IS_OK(out.status) && W_ERROR_EQUAL(out.status, WERR_MORE_DATA) )
+	if ( W_ERROR_EQUAL(out.status, WERR_MORE_DATA) ) {
+
+		ZERO_STRUCT (in);
+
+		init_reg_q_enum_val(&in, hnd, idx, *out.needed_name_len, *out.needed_buffer_len);
+
+		ZERO_STRUCT (out);
+
+		CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
+		            in, out, 
+		            qbuf, rbuf,
+		            reg_io_q_enum_val,
+		            reg_io_r_enum_val, 
+		            WERR_GENERAL_FAILURE );
+	}
+
+	if ( !W_ERROR_IS_OK(out.status) )
 		return out.status;
 
 	unistr2_to_ascii(val_name, out.name.string, sizeof(fstring)-1);
-	*val_type  = *out.type;
+	*type      = *out.type;
 	*value     = *out.value;
 	
 	return out.status;

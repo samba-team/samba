@@ -680,7 +680,7 @@ BOOL smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BU
 	if(!prs_align(ps))
 		return False;
 		
-	if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
+	if(!prs_uint32("buf_max_len", ps, depth, &buf2->buf_max_len))
 		return False;
 	if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
 		return False;
@@ -1081,6 +1081,9 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 
 BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
+	prs_debug(ps, depth, desc, "prs_unistr4");
+	depth++;
+
 	if ( !prs_uint16("length", ps, depth, &uni4->length ))
 		return False;
 	if ( !prs_uint16("size", ps, depth, &uni4->size ))
