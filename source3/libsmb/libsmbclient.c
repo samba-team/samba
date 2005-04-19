@@ -646,13 +646,10 @@ SMBCSRV *smbc_server(SMBCCTX *context,
          * Force use of port 139 for first try if share is $IPC, empty, or
          * null, so browse lists can work
          */
-        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0)
-        {
+        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0) {
                 port_try_first = 139;
                 port_try_next = 445;
-        }
-        else
-        {
+        } else {
                 port_try_first = 445;
                 port_try_next = 139;
         }
@@ -1905,6 +1902,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	fstring server, share, user, password, options;
 	pstring workgroup;
 	pstring path;
+        uint16 mode;
+        char *p;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
 	struct in_addr rem_ip;
@@ -2197,6 +2196,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 			/* Now, list the files ... */
 
+                        p = path + strlen(path);
 			pstrcat(path, "\\*");
 
 			if (cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
@@ -2207,6 +2207,27 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 					SAFE_FREE(dir);
 				}
 				errno = smbc_errno(context, &srv->cli);
+
+                                if (errno == EINVAL) {
+                                    /*
+                                     * See if they asked to opendir something
+                                     * other than a directory.  If so, the
+                                     * converted error value we got would have
+                                     * been EINVAL rather than ENOTDIR.
+                                     */
+                                    *p = '\0'; /* restore original path */
+
+                                    if (smbc_getatr(context, srv, path,
+                                                    &mode, NULL,
+                                                    NULL, NULL, NULL,
+                                                    NULL) &&
+                                        ! IS_DOS_DIR(mode)) {
+
+                                        /* It is.  Correct the error value */
+                                        errno = ENOTDIR;
+                                    }
+                                }
+
 				return NULL;
 
 			}
