@@ -1,5 +1,19 @@
 2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/kuserok.c: use asprintf to avoid truncating pathnames
+	
+	* lib/krb5/get_host_realm.c: check return value of snprintf
+	
+	* lib/krb5/test_addr.c: check address truncation
+	
+	* lib/krb5/addr_families.c: check return values from snprintf and
+	clean up semantics of ret_len
+
+	* lib/krb5/krb5_address.3: clearify what ret_len is in
+	krb5_print_address
+
+	* lib/krb5/test_kuserok.c: add --version and --help
+	
 	* lib/krb5/kuserok.c: use getpwnamn_r if it exists
 
 	* lib/krb5/Makefile.am: noinst_PROGRAMS += test_kuserok
