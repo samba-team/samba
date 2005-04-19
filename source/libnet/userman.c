@@ -38,7 +38,8 @@ struct useradd_state {
 	struct rpc_request       *req;
 	struct policy_handle     domain_handle;
 	struct samr_CreateUser   createuser;
-	struct policy_handle     *user_handle;
+	struct policy_handle     user_handle;
+	uint32_t                 user_rid;
 };
 
 
@@ -90,7 +91,6 @@ static void useradd_handler(struct rpc_request *req)
  * @param p dce/rpc call pipe 
  * @param io arguments and results of the call
  */
-
 struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 						     struct rpc_composite_useradd *io)
 {
@@ -103,7 +103,7 @@ struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 	
 	s = talloc_zero(c, struct useradd_state);
 	if (s == NULL) goto failure;
-
+	
 	s->domain_handle = io->in.domain_handle;
 	s->pipe          = p;
 	
@@ -115,6 +115,8 @@ struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
 	s->createuser.in.account_name          = talloc_zero(c, struct samr_String);
 	s->createuser.in.account_name->string  = talloc_strdup(c, io->in.username);
+	s->createuser.out.user_handle          = &s->user_handle;
+	s->createuser.out.rid                  = &s->user_rid;
 
 	/* send request */
 	s->req = dcerpc_samr_CreateUser_send(p, c, &s->createuser);
@@ -150,9 +152,9 @@ NTSTATUS rpc_composite_useradd_recv(struct composite_context *c, TALLOC_CTX *mem
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
+		/* get and return result of the call */
 		s = talloc_get_type(c->private, struct useradd_state);
-		talloc_steal(mem_ctx, s->user_handle);
-		io->out.user_handle = *s->user_handle;
+		io->out.user_handle = s->user_handle;
 	}
 
 	talloc_free(c);
