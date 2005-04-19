@@ -31,7 +31,11 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE. 
  */
-/* $Id$ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
