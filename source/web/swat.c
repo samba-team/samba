@@ -215,11 +215,11 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		if ((char ***)ptr && *(char ***)ptr && **(char ***)ptr) {
 			char **list = *(char ***)ptr;
 			for (;*list;list++) {
-				/* enclose in quotes if the string contains a space */
+				/* enclose in HTML encoded quotes if the string contains a space */
 				if ( strchr_m(*list, ' ') ) {
 					push_utf8_allocate(&utf8_s1, *list);
 					push_utf8_allocate(&utf8_s2, ((*(list+1))?", ":""));
-					printf("\'%s\'%s", utf8_s1, utf8_s2);
+					printf("&quot;%s&quot;%s", utf8_s1, utf8_s2);
 				} else {
 					push_utf8_allocate(&utf8_s1, *list);
 					push_utf8_allocate(&utf8_s2, ((*(list+1))?", ":""));
@@ -235,9 +235,9 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		if (parm->def.lvalue) {
 			char **list = (char **)(parm->def.lvalue);
 			for (; *list; list++) {
-				/* enclose in quotes if the string contains a space */
+				/* enclose in HTML encoded quotes if the string contains a space */
 				if ( strchr_m(*list, ' ') ) 
-					printf("\'%s\'%s", *list, ((*(list+1))?", ":""));
+					printf("&quot;%s&quot;%s", *list, ((*(list+1))?", ":""));
 				else
 					printf("%s%s", *list, ((*(list+1))?", ":""));
 			}
