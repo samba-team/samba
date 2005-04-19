@@ -3472,6 +3472,8 @@ static int do_message_op(void)
 
 	if ( strlen(calling_name) != 0 )
 		set_global_myname( calling_name );
+	else
+		pstrcpy( calling_name, global_myname() );
 
 	if(poptPeekArg(pc)) {
 		pstrcpy(service,poptGetArg(pc));  
