@@ -11,7 +11,8 @@ noinst_PROGRAMS =				\
 	test_get_addrs				\
 	krbhst-test				\
 	test_alname				\
-	test_crypto
+	test_crypto				\
+	test_kuserok
 
 TESTS =						\
 	aes-test				\
