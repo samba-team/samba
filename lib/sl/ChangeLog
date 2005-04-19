@@ -1,3 +1,8 @@
+2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* slc-gram.y: include <config.h> since defines _GNU_SOURCE if
+	needed, avoid asprintf warning
+
 2005-01-21  Dave Love  <d.love@dl.ac.uk>
 
 	* slc-gram.y: include <roken.h>
