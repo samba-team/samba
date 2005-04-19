@@ -101,7 +101,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			
 			(*info)[i].acct_name = talloc_strdup(mem_ctx, username );
 			(*info)[i].full_name = talloc_strdup(mem_ctx, fullname );
-			(*info)[i].user_sid = rid_to_talloced_sid(domain, mem_ctx, rid );
+			sid_compose(&(*info)[i].user_sid, &domain->sid, rid);
 			
 			/* For the moment we set the primary group for
 			   every user to be the Domain Users group.
@@ -111,8 +111,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   force group' smb.conf parameter or
 			   something like that. */
 			   
-			(*info)[i].group_sid = rid_to_talloced_sid(domain, 
-				mem_ctx, DOMAIN_GROUP_RID_USERS);
+			sid_compose(&(*info)[i].group_sid, &domain->sid, 
+				    DOMAIN_GROUP_RID_USERS);
 		}
 
 		talloc_destroy(ctx2);
@@ -340,11 +340,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 				
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			sid_string_static(user_sid)));
-			
-		user_info->user_sid  = rid_to_talloced_sid(domain, mem_ctx,
-							   user_rid);
-		user_info->group_sid = rid_to_talloced_sid(domain, mem_ctx,
-							   user->group_rid );
+
+		sid_compose(&user_info->user_sid, &domain->sid, user_rid);
+		sid_compose(&user_info->group_sid, &domain->sid,
+			    user->group_rid);
 				
 		user_info->acct_name = unistr2_tdup(mem_ctx,
 						    &user->uni_user_name);
@@ -379,9 +378,9 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	user_info->user_sid = rid_to_talloced_sid(domain, mem_ctx, user_rid);
-	user_info->group_sid = rid_to_talloced_sid(domain, mem_ctx,
-						   ctr->info.id21->group_rid);
+	sid_compose(&user_info->user_sid, &domain->sid, user_rid);
+	sid_compose(&user_info->group_sid, &domain->sid,
+		    ctr->info.id21->group_rid);
 	user_info->acct_name = unistr2_tdup(mem_ctx, 
 					    &ctr->info.id21->uni_user_name);
 	user_info->full_name = unistr2_tdup(mem_ctx, 
@@ -513,7 +512,7 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID ***sid_mem, char ***names, 
+				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -572,12 +571,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
         *names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_names);
         *name_types = TALLOC_ZERO_ARRAY(mem_ctx, uint32, *num_names);
-        *sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID *, *num_names);
+        *sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, *num_names);
 
-	for (j=0;j<(*num_names);j++) {
-		(*sid_mem)[j] = rid_to_talloced_sid(domain, mem_ctx,
-						    (rid_mem)[j]);
-	}
+	for (j=0;j<(*num_names);j++)
+		sid_compose(&(*sid_mem)[j], &domain->sid, rid_mem[j]);
 	
 	if (*num_names>0 && (!*names || !*name_types))
 		return NT_STATUS_NO_MEMORY;
@@ -650,7 +647,7 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 	to.tv_usec = 0;
 
 	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)",
-			   &attrs[0], 0, &to, &res))
+			   CONST_DISCARD(char **, attrs), 0, &to, &res))
 		goto done;
 
 	if (ldap_count_entries(ldp, res) != 1)

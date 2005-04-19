@@ -109,8 +109,8 @@ extern struct winbindd_state server_state;  /* Server information */
 typedef struct {
 	char *acct_name;
 	char *full_name;
-	DOM_SID *user_sid;                    /* NT user and primary group SIDs */
-	DOM_SID *group_sid;
+	DOM_SID user_sid;                    /* NT user and primary group SIDs */
+	DOM_SID group_sid;
 } WINBIND_USERINFO;
 
 /* Our connection to the DC */
@@ -258,7 +258,7 @@ struct winbindd_methods {
 				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *group_sid,
 				    uint32 *num_names, 
-				    DOM_SID ***sid_mem, char ***names, 
+				    DOM_SID **sid_mem, char ***names, 
 				    uint32 **name_types);
 
 	/* return the current global sequence number */

@@ -89,7 +89,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			   enum SID_NAME_USE group_name_type, 
 			   int *num_gr_mem, char **gr_mem, int *gr_mem_len)
 {
-	DOM_SID **sid_mem = NULL;
+	DOM_SID *sid_mem = NULL;
 	uint32 num_names = 0;
 	uint32 *name_types = NULL;
 	unsigned int buf_len, buf_ndx, i;
@@ -140,7 +140,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	if (DEBUGLEVEL >= 10) {
 		for (i = 0; i < num_names; i++)
-			DEBUG(10, ("\t%20s %s %d\n", names[i], sid_to_string(sid_string, sid_mem[i]),
+			DEBUG(10, ("\t%20s %s %d\n", names[i],
+				   sid_string_static(&sid_mem[i]),
 				   name_types[i]));
 	}
 

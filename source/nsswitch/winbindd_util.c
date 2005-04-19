@@ -238,7 +238,7 @@ static void trustdom_recv(void *private, BOOL success)
 	p = response->extra_data;
 
 	while ((p != NULL) && (*p != '\0')) {
-		char *sidstr, *alt_name;
+		char *q, *sidstr, *alt_name;
 		DOM_SID sid;
 
 		alt_name = strchr(p, '\\');
@@ -259,6 +259,10 @@ static void trustdom_recv(void *private, BOOL success)
 		*sidstr = '\0';
 		sidstr += 1;
 
+		q = strchr(sidstr, '\n');
+		if (q != NULL)
+			*q = '\0';
+
 		if (!string_to_sid(&sid, sidstr)) {
 			DEBUG(0, ("Got invalid trustdom response\n"));
 			break;
@@ -271,8 +275,7 @@ static void trustdom_recv(void *private, BOOL success)
 						    &sid);
 			setup_domain_child(&domain->child);
 		}
-
-		p = strchr(sidstr, '\n');
+		p=q;
 		if (p != NULL)
 			p += 1;
 	}
@@ -987,22 +990,6 @@ int winbindd_num_clients(void)
 	return _num_clients;
 }
 
-/* Help with RID -> SID conversion */
-
-DOM_SID *rid_to_talloced_sid(struct winbindd_domain *domain,
-				    TALLOC_CTX *mem_ctx,
-				    uint32 rid) 
-{
-	DOM_SID *sid;
-	sid = TALLOC_P(mem_ctx, DOM_SID);
-	if (!sid) {
-		smb_panic("rid_to_to_talloced_sid: talloc for DOM_SID failed!\n");
-	}
-	sid_copy(sid, &domain->sid);
-	sid_append_rid(sid, rid);
-	return sid;
-}
-	
 /*****************************************************************************
  For idmap conversion: convert one record to new format
  Ancient versions (eg 2.2.3a) of winbindd_idmap.tdb mapped DOMAINNAME/rid

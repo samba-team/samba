@@ -156,9 +156,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
-		DOM_SID sid;
-		DOM_SID *sid2;
-		DOM_SID *group_sid;
 		uint32 group;
 		uint32 atype;
 
@@ -170,7 +167,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
-		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
+		if (!ads_pull_sid(ads, msg, "objectSid",
+				  &(*info)[i].user_sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
 			continue;
 		}
@@ -179,20 +177,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		sid2 = TALLOC_P(mem_ctx, DOM_SID);
-		if (!sid2) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		sid_copy(sid2, &sid);
-
-		group_sid = rid_to_talloced_sid(domain, mem_ctx, group);
-
 		(*info)[i].acct_name = name;
 		(*info)[i].full_name = gecos;
-		(*info)[i].user_sid = sid2;
-		(*info)[i].group_sid = group_sid;
+		sid_compose(&(*info)[i].group_sid, &domain->sid, group);
 		i++;
 	}
 
@@ -385,8 +372,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *sid2;
-	fstring sid_string;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -403,13 +388,15 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	free(ldap_exp);
 	free(sidstr);
 	if (!ADS_ERR_OK(rc) || !msg) {
-		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
+			 sid_string_static(sid), ads_errstr(rc)));
 		goto done;
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
-		DEBUG(1,("query_user(sid=%s): Not found\n", sid_to_string(sid_string, sid)));
+		DEBUG(1,("query_user(sid=%s): Not found\n",
+			 sid_string_static(sid)));
 		goto done;
 	}
 
@@ -417,20 +404,13 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
-		DEBUG(1,("No primary group for %s !?\n", sid_to_string(sid_string, sid)));
+		DEBUG(1,("No primary group for %s !?\n",
+			 sid_string_static(sid)));
 		goto done;
 	}
-	
-	sid2 = TALLOC_P(mem_ctx, DOM_SID);
-	if (!sid2) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	sid_copy(sid2, sid);
-	
-	info->user_sid = sid2;
 
-	info->group_sid = rid_to_talloced_sid(domain, mem_ctx, group_rid);
+	sid_copy(&info->user_sid, sid);
+	sid_compose(&info->group_sid, &domain->sid, group_rid);
 
 	status = NT_STATUS_OK;
 
@@ -624,7 +604,7 @@ done:
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID ***sid_mem, char ***names, 
+				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
 	ADS_STATUS rc;
@@ -735,7 +715,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	   the problem is that the members are in the form of distinguised names
 	*/
 
-	(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID *, num_members);
+	(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
 	(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
 	(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
 
@@ -747,12 +727,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &sid)) {
 		    (*names)[*num_names] = name;
 		    (*name_types)[*num_names] = name_type;
-		    (*sid_mem)[*num_names] = TALLOC_P(mem_ctx, DOM_SID);
-		    if (!(*sid_mem)[*num_names]) {
-			    status = NT_STATUS_NO_MEMORY;
-			    goto done;
-		    }
-		    sid_copy((*sid_mem)[*num_names], &sid);
+		    sid_copy(&(*sid_mem)[*num_names], &sid);
 		    (*num_names)++;
 		}
 	}	

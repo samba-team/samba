@@ -57,7 +57,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	enum SID_NAME_USE type;
 
 	uint32 num_names;
-	DOM_SID **sid_mem;
+	DOM_SID *sid_mem;
 	char **names;
 	uint32 *types;
 
@@ -126,7 +126,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 
 	for (i=0; i<num_names; i++) {
 		DEBUG(10, ("Adding group member SID %s\n",
-			   sid_string_static(sid_mem[i])));
+			   sid_string_static(&sid_mem[i])));
 
 		if (types[i] != SID_NAME_USER) {
 			DEBUG(1, ("Hmmm. Member %s of group %s is no user. "
@@ -319,7 +319,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID ***sid_mem, char ***names, 
+				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
 	return NT_STATUS_OK;

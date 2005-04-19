@@ -180,7 +180,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
     
 	/* Now take all this information and fill in a passwd structure */	
 	if (!winbindd_fill_pwent(name_domain, user_info.acct_name, 
-				 user_info.user_sid, user_info.group_sid, 
+				 &user_info.user_sid, &user_info.group_sid, 
 				 user_info.full_name,
 				 &state->response.data.pw)) {
 		return WINBINDD_ERROR;
@@ -258,15 +258,16 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Check group has a gid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(user_info.group_sid, &gid, 0))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&user_info.group_sid,
+					      &gid, 0))) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		return WINBINDD_ERROR;
 	}
 
 	/* Fill in password structure */
 
-	if (!winbindd_fill_pwent(domain->name, user_info.acct_name, user_info.user_sid, 
-				 user_info.group_sid,
+	if (!winbindd_fill_pwent(domain->name, user_info.acct_name,
+				 &user_info.user_sid, &user_info.group_sid,
 				 user_info.full_name, &state->response.data.pw)) {
 		return WINBINDD_ERROR;
 	}
@@ -426,8 +427,10 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 		}
 		
 		/* User and group ids */
-		sid_copy(&name_list[ent->num_sam_entries+i].user_sid, info[i].user_sid);
-		sid_copy(&name_list[ent->num_sam_entries+i].group_sid, info[i].group_sid);
+		sid_copy(&name_list[ent->num_sam_entries+i].user_sid,
+			 &info[i].user_sid);
+		sid_copy(&name_list[ent->num_sam_entries+i].group_sid,
+			 &info[i].group_sid);
 	}
 		
 	ent->num_sam_entries += num_entries;

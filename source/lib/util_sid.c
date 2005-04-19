@@ -342,6 +342,12 @@ BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
 	return False;
 }
 
+BOOL sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
+{
+	sid_copy(dst, domain_sid);
+	return sid_append_rid(dst, rid);
+}
+
 /*****************************************************************
  Removes the last rid from the end of a sid
 *****************************************************************/  
