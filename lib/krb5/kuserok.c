@@ -140,7 +140,7 @@ krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
 	      const char *luser)
 {
-    char buf[BUFSIZ];
+    char *buf;
     struct passwd *pwd;
     krb5_error_code ret;
     krb5_boolean result = FALSE;
@@ -158,21 +158,23 @@ krb5_kuserok (krb5_context context,
 	return FALSE;
 
     /* check user's ~/.k5login */
-    snprintf (buf, sizeof(buf), "%s/.k5login", pwd->pw_dir);
+    if (asprintf (&buf, "%s/.k5login", pwd->pw_dir) == -1)
+	return FALSE;
     ret = check_one_file(context, buf, pwd, principal, &result);
 
     /* but if it doesn't exist, allow all principals
        matching <localuser>@<LOCALREALM> */
-    if(ret == ENOENT)
+    if(ret == ENOENT) {
+	free(buf);
 	return match_local_principals(context, principal, luser);
-
+    }
 #if notyet
     /* on the other hand, if it's a directory, check all files
        contained therein */
     if (ret == EISDIR) {
 	DIR *d = opendir(buf);
 	struct dirent *dent;
-	char buf2[BUFSIZ];
+	char *buf2;
 
 	if(d == NULL)
 	    return FALSE;
@@ -180,14 +182,17 @@ krb5_kuserok (krb5_context context,
 	    if(strcmp(dent->d_name, ".") == 0 ||
 	       strcmp(dent->d_name, "..") == 0)
 		continue;
-	    snprintf(buf2, sizeof(buf2), "%s/%s", buf, dent->d_name);
+	    if (asprintf(&buf2, "%s/%s", buf, dent->d_name) == -1)
+		break;
 	    ret = check_one_file(context, buf2, pwd, principal, &result);
+	    free(buf2);
 	    if(ret == 0 && result == TRUE)
 		break;
 	}
 	closedir(d);
     }
 #endif
+    free(buf);
     if (ret)
 	return FALSE;
     return result;
