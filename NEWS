@@ -1,5 +1,9 @@
 Changes in release 0.7
 
+ * Support for KCM, a process based credential cache
+
+ * Support CCAPI credential cache
+
  * SPNEGO support
 
  * AES (and the gssapi conterpart, CFX) support
