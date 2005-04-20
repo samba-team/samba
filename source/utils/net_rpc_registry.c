@@ -202,7 +202,7 @@ static NTSTATUS rpc_registry_backup_internal( const DOM_SID *domain_sid, const c
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
 	
-	if (argc != 1 ) {
+	if (argc != 2 ) {
 		d_printf("Usage:    net rpc backup <path> <file> \n");
 		return NT_STATUS_OK;
 	}

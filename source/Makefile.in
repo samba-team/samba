@@ -375,6 +375,8 @@ MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash
 
 CONFIG_LDAP_OBJ = param/config_ldap.o
 
+REGFIO_OBJ = registry/regfio.o
+
 SMBD_OBJ_MAIN = smbd/server.o
 
 BUILDOPT_OBJ = smbd/build_options.o
@@ -544,7 +546,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
 	   utils/net_status.o utils/net_rpc_printer.o utils/net_rpc_rights.o \
-	   utils/net_rpc_service.o utils/net_rpc_registry.o
+	   utils/net_rpc_service.o utils/net_rpc_registry.o 
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -552,7 +554,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(DUMMYROOT_OBJ) $(SERVER_MUTEX_OBJ) \
-	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(PRINTERDB_OBJ) 
+	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(PRINTERDB_OBJ) $(REGFIO_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
