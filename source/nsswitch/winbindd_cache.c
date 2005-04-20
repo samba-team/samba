@@ -1265,7 +1265,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info "
+	DEBUG(10,("lookup_useraliases: [Cached] - doing backend query for info "
 		  "for domain %s\n", domain->name ));
 
 	status = domain->backend->lookup_useraliases(domain, mem_ctx,
