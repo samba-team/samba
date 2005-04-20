@@ -24,16 +24,51 @@
 /********************************************************************
 ********************************************************************/
 
-void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
+char* dump_regval_type( uint32 type )
 {
+	static fstring string;
+	
 	switch (type) {
 	case REG_SZ:
+		fstrcpy( string, "REG_SZ" );
 		break;
 	case REG_MULTI_SZ:
+		fstrcpy( string, "REG_MULTI_SZ" );
 		break;
 	case REG_DWORD:
+		fstrcpy( string, "REG_DWORD" );
 		break;
 	case REG_BINARY:
+		fstrcpy( string, "REG_BINARY" );
+		break;
+	default:
+		fstrcpy( string, "UNKNOWN" );
+	}
+	
+	return string;
+}
+/********************************************************************
+********************************************************************/
+
+void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
+{
+	pstring string;
+	uint32 value;
+	
+	switch (type) {
+	case REG_SZ:
+		rpcstr_pull( string, buffer->buffer, sizeof(string), -1, STR_TERMINATE );
+		d_printf("%s\n", string);
+		break;
+	case REG_MULTI_SZ:
+		d_printf("\n");
+		break;
+	case REG_DWORD:
+		value = IVAL( buffer->buffer, 0 );
+		d_printf( "0x%x\n", value );
+		break;
+	case REG_BINARY:
+		d_printf("\n");
 		break;
 	
 	
@@ -128,8 +163,8 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		}
 			
 		d_printf("Valuename  = %s\n", name );
-		d_printf("Type       = %d\n", type );
-		d_printf("Data       =\n" );
+		d_printf("Type       = %s\n", dump_regval_type(type) );
+		d_printf("Data       = " );
 		dump_regval_buffer( type, &value );
 		d_printf("\n" );
 
@@ -145,6 +180,7 @@ out:
 
 	return werror_to_ntstatus(result);
 }
+
 /********************************************************************
 ********************************************************************/
 
@@ -157,9 +193,63 @@ static int rpc_registry_enumerate( int argc, const char **argv )
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS rpc_registry_backup_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	WERROR result = WERR_GENERAL_FAILURE;
+	uint32 hive;
+	pstring subpath;
+	POLICY_HND pol_hive, pol_key; 
+	
+	if (argc != 1 ) {
+		d_printf("Usage:    net rpc backup <path> <file> \n");
+		return NT_STATUS_OK;
+	}
+	
+	if ( !reg_split_hive( argv[0], &hive, subpath ) ) {
+		d_printf("invalid registry path\n");
+		return NT_STATUS_OK;
+	}
+	
+	/* open the top level hive and then the registry key */
+	
+	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Unable to connect to remote registry\n");
+		return NT_STATUS_OK;
+	}
+	
+	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Unable to open [%s]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	/* cleanup */
+	
+	cli_reg_close( cli, mem_ctx, &pol_key );
+	cli_reg_close( cli, mem_ctx, &pol_hive );
+
+	return werror_to_ntstatus(result);
+}
+
+/********************************************************************
+********************************************************************/
+
+static int rpc_registry_backup( int argc, const char **argv )
+{
+	return run_rpc_command( NULL, PI_WINREG, 0, 
+		rpc_registry_backup_internal, argc, argv );
+}
+
+/********************************************************************
+********************************************************************/
+
 static int net_help_registry( int argc, const char **argv )
 {
 	d_printf("net rpc registry enumerate <path> [recurse]  Enumerate the subkeya and values for a given registry path\n");
+	d_printf("net rpc registry backup <path> <file>        Backup a registry tree to a local file\n");
 	
 	return -1;
 }
@@ -171,6 +261,7 @@ int net_rpc_registry(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"enumerate", rpc_registry_enumerate},
+		{"backup",    rpc_registry_backup},
 		{NULL, NULL}
 	};
 	
