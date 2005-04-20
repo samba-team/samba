@@ -1,3 +1,10 @@
+2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: this lib include com_err, add -com_err to
+	CHECK_SYMBOLS
+
+	* check-symbols.sh: print the type so I don't need to ask for it
+
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: ignore filename symbols
