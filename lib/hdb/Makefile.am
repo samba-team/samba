@@ -75,7 +75,7 @@ libhdb_la_LIBADD = \
 
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
 
-CHECK_SYMBOLS = -lib hdb -asn1compile \
+CHECK_SYMBOLS = -lib hdb -asn1compile -com_err \
 	hdb_ _hdb HDBFlags2int initialize_hdb_error_table
 
 $(srcdir)/hdb-protos.h:
