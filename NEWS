@@ -6,6 +6,17 @@ Changes in release 0.7
 
  * Bug fixes
 
+Changes in release 0.6.4
+
+ * fix vulnerabilities in telnet
+
+ * rshd: encryption without separate error socket should now work
+
+ * telnet now uses appdefault for encrypt and forward/forwardable
+   settings
+
+ * bugs fixes
+
 Changes in release 0.6.3
 
  * fix vulnerabilities in ftpd
