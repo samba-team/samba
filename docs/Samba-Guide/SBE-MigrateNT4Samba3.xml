@@ -714,7 +714,7 @@ Let's start configuring the smbldap-tools scripts ...
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix}) 
-                         [cn=NextFreeUnixId] > sambaDomainName=DAMNATION
+                         [cn=NextFreeUnixId] &gt; sambaDomainName=DAMNATION
 . ldap master server: 
               IP adress or DNS name of the master (writable) ldap server
   ldap master server [] &gt; 127.0.0.1
