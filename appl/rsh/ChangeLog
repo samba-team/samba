@@ -1,3 +1,7 @@
+2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsh.c: cast size_t to unsigned long
+
 2004-09-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rshd.c: rename loop to rshd_loop

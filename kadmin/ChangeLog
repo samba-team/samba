@@ -1,7 +1,27 @@
+2005-04-20  Love Hörquist Åstrand <lha@it.su.se>
+
+	* util.c (foreach_principal): initialize ret to make sure it have
+	a value
+
 2005-04-04  Love Hörquist Åstrand <lha@it.su.se>
+
+	* kadmind.c: add verifier libraries with
+	kadm5_add_passwd_quality_verifier
+
+	* kadmin.c: add verifier libraries with
+	kadm5_add_passwd_quality_verifier
 
 	* load.c: max-life and max-renew is of unsigned int in asn1
 	compiler, use that for the parser too
+
+2005-03-26  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.8: List of attributes, from James F.  Hranicky
+	<jfh@cise.ufl.edu>
+
+2005-01-19  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* dump.c (dump): handle errors
 
 2005-01-08 Love Hörquist Åstrand <lha@it.su.se>
 
