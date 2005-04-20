@@ -19,6 +19,7 @@
  
 #include "includes.h"
 #include "utils/net.h"
+#include "regfio.h"
 
 
 /********************************************************************
@@ -106,13 +107,13 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to connect to remote registry\n");
-		return NT_STATUS_OK;
+		return werror_to_ntstatus(result);
 	}
 	
 	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to open [%s]\n", argv[0]);
-		return NT_STATUS_OK;
+		return werror_to_ntstatus(result);
 	}
 	
 	/* get the subkeys */
@@ -201,6 +202,7 @@ static NTSTATUS rpc_registry_backup_internal( const DOM_SID *domain_sid, const c
 	uint32 hive;
 	pstring subpath;
 	POLICY_HND pol_hive, pol_key; 
+	REGF_FILE *regfile;
 	
 	if (argc != 2 ) {
 		d_printf("Usage:    net rpc backup <path> <file> \n");
@@ -217,17 +219,26 @@ static NTSTATUS rpc_registry_backup_internal( const DOM_SID *domain_sid, const c
 	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to connect to remote registry\n");
-		return NT_STATUS_OK;
+		return werror_to_ntstatus(result);
 	}
 	
 	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to open [%s]\n", argv[0]);
-		return NT_STATUS_OK;
+		return werror_to_ntstatus(result);
 	}
+	
+	/* open the file */
+	
+	if ( !(regfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC), 0600 )) ) {
+		d_printf("Unable to open registry file [%s]\n", argv[1]);
+		return werror_to_ntstatus(WERR_GENERAL_FAILURE);
+	}
+	
 	
 	/* cleanup */
 	
+	regfio_close( regfile );
 	cli_reg_close( cli, mem_ctx, &pol_key );
 	cli_reg_close( cli, mem_ctx, &pol_hive );
 
@@ -246,10 +257,20 @@ static int rpc_registry_backup( int argc, const char **argv )
 /********************************************************************
 ********************************************************************/
 
+static int rpc_registry_dump( int argc, const char **argv )
+{
+
+	return 0;
+}
+
+/********************************************************************
+********************************************************************/
+
 static int net_help_registry( int argc, const char **argv )
 {
 	d_printf("net rpc registry enumerate <path> [recurse]  Enumerate the subkeya and values for a given registry path\n");
 	d_printf("net rpc registry backup <path> <file>        Backup a registry tree to a local file\n");
+	d_printf("net rpc registry dump <file>                 Dump the contents of a registry file to stdout\n");
 	
 	return -1;
 }
@@ -262,6 +283,7 @@ int net_rpc_registry(int argc, const char **argv)
 	struct functable func[] = {
 		{"enumerate", rpc_registry_enumerate},
 		{"backup",    rpc_registry_backup},
+		{"dump",      rpc_registry_dump},
 		{NULL, NULL}
 	};
 	

@@ -70,6 +70,7 @@ typedef struct {
 	REGF_HBIN *current_hbin;	/* current hbin block */
 
 	/* file format information */
+	char   header[REGF_HDR_SIZE];	/* "regf" */
 	uint32 data_offset;		/* offset to record in the first (or any?) hbin block */
 	uint32 last_block;		/* offset to last hbin block in file */
 	uint32 checksum;		/* XOR of bytes 0x0000 - 0x01FB */
