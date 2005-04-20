@@ -2239,7 +2239,8 @@ Let's start configuring the smbldap-tools scripts ...
 . Idmap suffix [ou=Idmap] &gt;
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
-  sambaUnixIdPooldn object (relative to ${suffix}) [cn=NextFreeUnixId] &gt;
+  sambaUnixIdPooldn object (relative to ${suffix})
+          [cn=NextFreeUnixId] &gt; sambaDomainName=MEGANET2
 . ldap master server: IP adress or DNS name
 	 of the master (writable) ldap server
 Use of uninitialized value in scalar chomp at ./configure.pl
