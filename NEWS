@@ -1,6 +1,6 @@
 Changes in release 0.7
 
- * SPENGO support
+ * SPNEGO support
 
  * AES (and the gssapi conterpart, CFX) support
 
