@@ -133,6 +133,15 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Reads or writes an NTTIME structure.
+********************************************************************/
+
+BOOL smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
+{
+	return smb_io_time( desc, nttime, ps, depth );
+}
+
+/*******************************************************************
  Gets an enumeration handle from an ENUM_HND structure.
 ********************************************************************/
 
@@ -1731,6 +1740,11 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 	
 	if(!prs_uint32("uni_str_len", ps, depth, &name->uni_str_len))
 		return False;
+		
+	/* we're done if there is no string */
+	
+	if ( name->uni_str_len == 0 )
+		return True;
 
 	/* don't know if len is specified by uni_str_len member... */
 	/* assume unicode string is unicode-null-terminated, instead */
@@ -1739,6 +1753,15 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ Reads or writes a UNISTR3 structure.
+********************************************************************/
+
+BOOL prs_io_unistr3(const char *desc, prs_struct *ps, int depth, UNISTR3 *name)
+{
+	return smb_io_unistr3( desc, name, ps, depth );
 }
 
 

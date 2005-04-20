@@ -1318,8 +1318,8 @@ void init_reg_r_enum_key(REG_R_ENUM_KEY *r_u, char *subkey, uint32 unknown_1,
 		r_u->ptr1 = 0x1;
 	init_unistr3( &r_u->key_name, subkey );
 	
-	r_u->ptr2 = 0x1;
-	r_u->ptr3 = 0x1;
+	r_u->class_name = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+	r_u->time       = TALLOC_ZERO_P( get_talloc_ctx(), NTTIME );
 }
 
 /*******************************************************************
@@ -1406,26 +1406,20 @@ BOOL reg_io_r_enum_key(const char *desc,  REG_R_ENUM_KEY *q_u, prs_struct *ps, i
 			return False;
 		if(!smb_io_unistr3("key_name", &q_u->key_name, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
-	if(!prs_uint32("ptr2", ps, depth, &q_u->ptr2))
+	if(!prs_align(ps))
+		return False;
+	if (!prs_pointer("class", ps, depth, (void**)&q_u->class_name, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
-	if (q_u->ptr2 != 0) {
-		if(!prs_uint8s(False, "pad2", ps, depth, q_u->pad2, sizeof(q_u->pad2)))
-			return False;
-	}
-
-	if(!prs_uint32("ptr3", ps, depth, &q_u->ptr3))
+	if(!prs_align(ps))
+		return False;
+	if (!prs_pointer("time", ps, depth, (void**)&q_u->time, sizeof(NTTIME), (PRS_POINTER_CAST)smb_io_nttime))
 		return False;
 
-	if (q_u->ptr3 != 0) {
-		if(!smb_io_time("", &q_u->time, ps, depth))
-			return False;
-	}
-
+	if(!prs_align(ps))
+		return False;
 	if(!prs_werror("status", ps, depth, &q_u->status))
 		return False;
 

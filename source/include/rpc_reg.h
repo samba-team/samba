@@ -377,15 +377,15 @@ typedef struct {
 typedef struct {
 	POLICY_HND pol; 
 	uint32 key_index;       
-	uint16 key_name_len;    /* 0x0000 */
+	uint16 key_name_len;   
 	uint16 unknown_1;       /* 0x0414 */
-	uint32 ptr1;            /* pointer */
+	uint32 ptr1;          
 	uint32 unknown_2;       /* 0x0000 020A */
-	uint8  pad1[8];         /* padding - zeros */
-	uint32 ptr2;            /* pointer */
-	uint8  pad2[8];         /* padding - zeros */
-	uint32 ptr3;            /* pointer */
-	NTTIME time;            /* current time? */
+	uint8  pad1[8];        
+	uint32 ptr2;           
+	uint8  pad2[8];        
+	uint32 ptr3;           
+	NTTIME time;           
 } REG_Q_ENUM_KEY;
 
 typedef struct { 
@@ -395,15 +395,10 @@ typedef struct {
 	uint32 ptr1;            /* pointer */
 	uint32 unknown_2;       /* 0x0000 020A */
 	uint32 unknown_3;       /* 0x0000 0000 */
-
 	UNISTR3 key_name;
 
-	uint32 ptr2;            /* pointer */
-	uint8  pad2[8];         /* padding - zeros */
-
-	uint32 ptr3;            /* pointer */
-	NTTIME time;            /* current time? */
-
+	UNISTR4 *class_name;
+	NTTIME *time;            
 	WERROR status;         /* return status */
 } REG_R_ENUM_KEY;
 

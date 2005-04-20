@@ -508,7 +508,7 @@ WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	unistr3_to_ascii( key_name, &out.key_name, sizeof(fstring)-1 );
 	*unk_1      = out.unknown_1;
 	*unk_2      = out.unknown_2;
-	*mod_time   = nt_time_to_unix(&out.time);
+	*mod_time   = nt_time_to_unix(out.time);
 
 	return out.status;
 }
