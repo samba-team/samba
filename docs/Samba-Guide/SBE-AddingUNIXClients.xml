@@ -928,7 +928,7 @@ aliases:        files
 	      </indexterm>
 		The system is ready to join the Domain. Execute the following:
 <screen>
-net rpc join -U root%not24et
+net rpc join -U root%not2g4et
 Joined domain MEGANET2.
 </screen>
                 This indicates that the Domain join succeed.
@@ -1121,7 +1121,7 @@ aliases:        files
 		<para><indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
 		The system is ready to join the Domain. Execute the following:
 <screen>
-net rpc join -U root%not24et
+net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
                 This indicates that the Domain join succeed.
