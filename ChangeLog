@@ -1,3 +1,13 @@
+2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: this lib include com_err, add -com_err to
+	CHECK_SYMBOLS
+
+2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/http_client.c: cast ssize_t to unsigned long, fix
+	printf format
+
 2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/kuserok.c: use asprintf to avoid truncating pathnames
