@@ -213,7 +213,7 @@ http_query(const char *host, const char *page,
 	if (ret == 0)
 	    break;
 	else if (ret < 0)
-	    err (1, "read: %d", ret);
+	    err (1, "read: %lu", (unsigned long)ret);
 	
 	in_buf[ret + in_len] = '\0';
 
@@ -270,7 +270,7 @@ http_query(const char *host, const char *page,
 	printf("response: %s\n", req->response);
 	for (i = 0; i < req->num_headers; i++)
 	    printf("header[%d] %s\n", i, req->headers[i]);
-	printf("body: %*.s\n", (int)req->body_size, (char *)req->body);
+	printf("body: %.*s\n", (int)req->body_size, (char *)req->body);
     }
 
     close(s);
