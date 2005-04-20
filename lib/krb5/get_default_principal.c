@@ -100,8 +100,6 @@ krb5_get_default_principal (krb5_context context,
 {
     krb5_error_code ret;
     krb5_ccache id;
-    const char *user;
-    uid_t uid;
 
     *princ = NULL;
 
