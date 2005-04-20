@@ -10,12 +10,12 @@ Changes in release 0.6.4
 
  * fix vulnerabilities in telnet
 
- * rshd: encryption without separate error socket should now work
+ * rshd: encryption without a separate error socket should now work
 
- * telnet now uses appdefault for encrypt and forward/forwardable
+ * telnet now uses appdefaults for the encrypt and forward/forwardable
    settings
 
- * bugs fixes
+ * bug fixes
 
 Changes in release 0.6.3
 
