@@ -1376,7 +1376,13 @@ slapd[12164]: conn=1 fd=10 closed
 <note><para>
 The following information applies to Samba-3.0.15 when used with the Idealx smbldap-tools scripts
 version 0.8.8. If using a different version of Samba, or of the smbldap-tools tarball, please 
-verify that the versions you are about to use are matching.
+verify that the versions you are about to use are matching. The smbldap-tools package uses counter
+entries in the LDAP directory to avoid duplication of the UIDs and GIDs that are issued for POSIX
+accounts. The LDAP rdn under which this information is stored are called <constant>uidNumber</constant>
+and <constant>gidNumber</constant> respectively. These may be located in any convenient part of the
+directory information tree (DIT). In the examples that follow they have been located under 
+<constant>dn=sambaDomainName=MEGANET2,dc=abmas,dc=org</constant>. They could just as well be located under the rdn
+<constant>cn=NextFreeUnixId</constant>.
 </para></note>
 
 	<para>
