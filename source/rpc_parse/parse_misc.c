@@ -1756,16 +1756,6 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a UNISTR3 structure.
-********************************************************************/
-
-BOOL prs_io_unistr3(const char *desc, prs_struct *ps, int depth, UNISTR3 *name)
-{
-	return smb_io_unistr3( desc, name, ps, depth );
-}
-
-
-/*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
 BOOL prs_uint64(const char *name, prs_struct *ps, int depth, UINT64_S *data64)

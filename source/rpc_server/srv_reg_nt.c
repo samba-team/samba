@@ -534,7 +534,7 @@ WERROR _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 	
 	/* subkey has the string name now */
 	
-	init_reg_r_enum_key( r_u, subkey, q_u->unknown_1, q_u->unknown_2 );
+	init_reg_r_enum_key( r_u, subkey );
 	
 	DEBUG(5,("_reg_enum_key: Exit\n"));
 	

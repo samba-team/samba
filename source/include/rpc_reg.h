@@ -389,15 +389,8 @@ typedef struct {
 } REG_Q_ENUM_KEY;
 
 typedef struct { 
-	uint16 key_name_len;    /* number of bytes in key name */
-	uint16 unknown_1;       /* 0x0414 - matches with query unknown_1 */
-
-	uint32 ptr1;            /* pointer */
-	uint32 unknown_2;       /* 0x0000 020A */
-	uint32 unknown_3;       /* 0x0000 0000 */
-	UNISTR3 key_name;
-
-	UNISTR4 *class_name;
+	UNISTR4 keyname;
+	UNISTR4 *classname;
 	NTTIME *time;            
 	WERROR status;         /* return status */
 } REG_R_ENUM_KEY;

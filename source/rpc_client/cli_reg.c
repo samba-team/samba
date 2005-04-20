@@ -484,7 +484,7 @@ do a REG Enum Key
 ****************************************************************************/
 WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                           POLICY_HND *hnd, int key_index, fstring key_name,
-                          uint32 *unk_1, uint32 *unk_2, time_t *mod_time)
+                          fstring class_name, time_t *mod_time)
 {
 	REG_Q_ENUM_KEY in;
 	REG_R_ENUM_KEY out;
@@ -505,9 +505,16 @@ WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK(out.status) )
 		return out.status;
 
-	unistr3_to_ascii( key_name, &out.key_name, sizeof(fstring)-1 );
-	*unk_1      = out.unknown_1;
-	*unk_2      = out.unknown_2;
+	if ( out.keyname.string )
+		rpcstr_pull( key_name, out.keyname.string->buffer, sizeof(fstring), -1, STR_TERMINATE );
+	else
+		fstrcpy( key_name, "(Default)" );
+
+	if ( out.classname && out.classname->string )
+		rpcstr_pull( class_name, out.classname->string->buffer, sizeof(fstring), -1, STR_TERMINATE );
+	else
+		fstrcpy( class_name, "" );
+
 	*mod_time   = nt_time_to_unix(out.time);
 
 	return out.status;

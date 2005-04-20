@@ -85,23 +85,22 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 	result = WERR_OK;
 	idx = 0;
 	while ( W_ERROR_IS_OK(result) ) {
-		uint32 unknown1, unknown2;
 		time_t modtime;
-		fstring keyname;
+		fstring keyname, classname;
 		
 		result = cli_reg_enum_key( cli, mem_ctx, &pol_key, idx, 
-			keyname, &unknown1, &unknown2, &modtime );
+			keyname, classname, &modtime );
 			
 		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
 			result = WERR_OK;
 			break;
 		}
 			
-		d_printf("Keyname  = %s\n", keyname );
-		d_printf("Unknown1 = 0x%x\n", unknown1 );
-		d_printf("Unknown2 = 0x%x\n", unknown2 );
-		d_printf("Modtime  = %s\n", http_timestring(modtime) );
+		d_printf("Keyname   = %s\n", keyname );
+		d_printf("Classname = %s\n", classname );
+		d_printf("Modtime   = %s\n", http_timestring(modtime) );
 		d_printf("\n" );
+
 		idx++;
 	}
 
@@ -133,6 +132,7 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		d_printf("Data       =\n" );
 		dump_regval_buffer( type, &value );
 		d_printf("\n" );
+
 		idx++;
 	}
 	

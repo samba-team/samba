@@ -221,7 +221,6 @@ typedef struct {		/* UNISTR2 - unicode string size (in
 typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
 	uint32 uni_str_len;
 	UNISTR str;
-
 } UNISTR3;
 
 typedef struct {		/* Buffer wrapped around a UNISTR2 */

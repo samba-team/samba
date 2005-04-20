@@ -1303,22 +1303,13 @@ void init_reg_q_enum_key(REG_Q_ENUM_KEY *q_u, POLICY_HND *pol, uint32 key_idx)
 makes a reply structure.
 ********************************************************************/
 
-void init_reg_r_enum_key(REG_R_ENUM_KEY *r_u, char *subkey, uint32 unknown_1,
-			uint32 unknown_2)
+void init_reg_r_enum_key(REG_R_ENUM_KEY *r_u, char *subkey )
 {
 	if ( !r_u )
 		return;
 		
-	r_u->unknown_1 = unknown_1;
-	r_u->unknown_2 = unknown_2;
-	r_u->unknown_3 = 0x0;
-	
-	r_u->key_name_len = (strlen(subkey)+1) * 2;
-	if (r_u->key_name_len)
-		r_u->ptr1 = 0x1;
-	init_unistr3( &r_u->key_name, subkey );
-	
-	r_u->class_name = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+	init_unistr4( &r_u->keyname, subkey, STR_TERMINATE );
+	r_u->classname = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
 	r_u->time       = TALLOC_ZERO_P( get_talloc_ctx(), NTTIME );
 }
 
@@ -1390,27 +1381,12 @@ BOOL reg_io_r_enum_key(const char *desc,  REG_R_ENUM_KEY *q_u, prs_struct *ps, i
 
 	if(!prs_align(ps))
 		return False;
+	if ( !prs_unistr4( "keyname", ps, depth, &q_u->keyname ) )
+		return False;
 	
-	if(!prs_uint16("key_name_len", ps, depth, &q_u->key_name_len))
-		return False;
-	if(!prs_uint16("unknown_1", ps, depth, &q_u->unknown_1))
-		return False;
-
-	if(!prs_uint32("ptr1", ps, depth, &q_u->ptr1))
-		return False;
-
-	if (q_u->ptr1 != 0) {
-		if(!prs_uint32("unknown_2", ps, depth, &q_u->unknown_2))
-			return False;
-		if(!prs_uint32("unknown_3", ps, depth, &q_u->unknown_3))
-			return False;
-		if(!smb_io_unistr3("key_name", &q_u->key_name, ps, depth))
-			return False;
-	}
-
 	if(!prs_align(ps))
 		return False;
-	if (!prs_pointer("class", ps, depth, (void**)&q_u->class_name, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
+	if (!prs_pointer("class", ps, depth, (void**)&q_u->classname, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
 
 	if(!prs_align(ps))
