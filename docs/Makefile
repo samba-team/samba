@@ -304,4 +304,4 @@ clean:
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber archive release everything all
+.PHONY: clean clobber archive release everything all $(TARGETS)
