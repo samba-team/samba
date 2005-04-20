@@ -331,7 +331,8 @@ krb5_make_context (kx_context *kc)
     kc->data		= malloc(sizeof(krb5_kx_context));
 
     if (kc->data == NULL) {
-	syslog (LOG_ERR, "failed to malloc %u bytes", sizeof(krb5_kx_context));
+	syslog (LOG_ERR, "failed to malloc %lu bytes", 
+		(unsigned long)sizeof(krb5_kx_context));
 	exit(1);
     }
     memset (kc->data, 0, sizeof(krb5_kx_context));
