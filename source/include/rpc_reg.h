@@ -233,8 +233,8 @@ typedef struct {
 	UNISTR4 name;
 	uint32 *type;
 	REGVAL_BUFFER *value;
-	uint32 *buffer_len;
-	uint32 *name_len;
+	uint32 *buffer_len1;
+	uint32 *buffer_len2;
 	WERROR status;
 } REG_R_ENUM_VALUE;
 

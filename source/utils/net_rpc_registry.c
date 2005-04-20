@@ -24,6 +24,27 @@
 /********************************************************************
 ********************************************************************/
 
+void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
+{
+	switch (type) {
+	case REG_SZ:
+		break;
+	case REG_MULTI_SZ:
+		break;
+	case REG_DWORD:
+		break;
+	case REG_BINARY:
+		break;
+	
+	
+	default:
+		d_printf( "\tUnknown type [%d]\n", type );
+	}
+}
+
+/********************************************************************
+********************************************************************/
+
 static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, const char *domain_name, 
                                            struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                            int argc, const char **argv )
@@ -71,8 +92,10 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		result = cli_reg_enum_key( cli, mem_ctx, &pol_key, idx, 
 			keyname, &unknown1, &unknown2, &modtime );
 			
-		if ( !W_ERROR_IS_OK(result) )
+		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			result = WERR_OK;
 			break;
+		}
 			
 		d_printf("Keyname  = %s\n", keyname );
 		d_printf("Unknown1 = 0x%x\n", unknown1 );
@@ -81,6 +104,9 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		d_printf("\n" );
 		idx++;
 	}
+
+	if ( !W_ERROR_IS_OK(result) )
+		goto out;
 	
 	/* get the values */
 	
@@ -97,16 +123,21 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		result = cli_reg_enum_val( cli, mem_ctx, &pol_key, idx, 
 			name, &type, &value );
 			
-		if ( !W_ERROR_IS_OK(result) )
+		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			result = WERR_OK;
 			break;
+		}
 			
 		d_printf("Valuename  = %s\n", name );
 		d_printf("Type       = %d\n", type );
+		d_printf("Data       =\n" );
+		dump_regval_buffer( type, &value );
 		d_printf("\n" );
 		idx++;
 	}
 	
 	
+out:
 	/* cleanup */
 	
 	cli_reg_close( cli, mem_ctx, &pol_key );

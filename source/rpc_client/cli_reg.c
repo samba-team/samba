@@ -566,7 +566,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT (in);
 
-		init_reg_q_enum_val(&in, hnd, idx, *out.needed_name_len, *out.needed_buffer_len);
+		init_reg_q_enum_val(&in, hnd, idx, 0x0100, *out.buffer_len1);
 
 		ZERO_STRUCT (out);
 

@@ -1067,7 +1067,9 @@ void init_reg_q_enum_val(REG_Q_ENUM_VALUE *q_u, POLICY_HND *pol,
 
 	q_u->val_index = val_idx;
 
-	q_u->name.length = max_name_len;
+	q_u->name.size = max_name_len*2;
+	q_u->name.string = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR2 );
+	q_u->name.string->uni_max_len = max_name_len;
 	
 	q_u->type = TALLOC_P( get_talloc_ctx(), uint32 );
 	*q_u->type = 0x0;
@@ -1110,12 +1112,10 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 	
 	/* lengths */
 
-	r_u->buffer_len  = TALLOC_P( get_talloc_ctx(), uint32 );
-	*r_u->buffer_len = real_size;
-	
-	r_u->name_len  = TALLOC_P( get_talloc_ctx(), uint32 );
-	*r_u->name_len = r_u->name.string->uni_str_len;
-		
+	r_u->buffer_len1  = TALLOC_P( get_talloc_ctx(), uint32 );
+	*r_u->buffer_len1 = real_size;
+	r_u->buffer_len2  = TALLOC_P( get_talloc_ctx(), uint32 );
+	*r_u->buffer_len2 = real_size;
 }
 
 /*******************************************************************
@@ -1188,9 +1188,9 @@ BOOL reg_io_r_enum_val(const char *desc,  REG_R_ENUM_VALUE *r_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_pointer("buffer_len", ps, depth, (void**)&r_u->buffer_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("buffer_len1", ps, depth, (void**)&r_u->buffer_len1, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-	if(!prs_pointer("name_len", ps, depth, (void**)&r_u->name_len, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
+	if(!prs_pointer("buffer_len2", ps, depth, (void**)&r_u->buffer_len2, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
