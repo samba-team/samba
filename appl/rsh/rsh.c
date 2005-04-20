@@ -639,7 +639,7 @@ construct_command (char **res, int argc, char **argv)
     len = max (1, len);
     tmp = malloc (len);
     if (tmp == NULL)
-	errx (1, "malloc %u failed", len);
+	errx (1, "malloc %lu failed", (unsigned long)len);
 
     *tmp = '\0';
     for (i = 0; i < argc - 1; ++i) {

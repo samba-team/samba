@@ -741,7 +741,7 @@ sec_login(char *host)
 
 	tmp = realloc(app_data, (*m)->size);
 	if (tmp == NULL) {
-	    warnx ("realloc %u failed", (*m)->size);
+	    warnx ("realloc %lu failed", (unsigned long)(*m)->size);
 	    return -1;
 	}
 	app_data = tmp;
