@@ -494,7 +494,7 @@ foreach_principal(const char *exp,
     char **princs;
     int num_princs;
     int i;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     krb5_principal princ_ent;
     int is_expr;
 
