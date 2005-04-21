@@ -187,7 +187,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_NET
 [SUBSYSTEM::TORTURE_NET]
 ADD_OBJ_FILES = \
-		torture/libnet/userinfo.o
+		torture/libnet/userinfo.o \
+		torture/libnet/userman.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_SAMR LIBNET
 # End SUBSYSTEM TORTURE_NET
