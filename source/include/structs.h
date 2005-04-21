@@ -162,6 +162,7 @@ struct smb_composite_appendacl;
 struct smb_composite_fsinfo;
 struct rpc_composite_userinfo;
 struct rpc_composite_useradd;
+struct rpc_composite_userdel;
 
 struct nbt_name;
 struct nbt_name_packet;

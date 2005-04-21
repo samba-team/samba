@@ -43,3 +43,14 @@ struct rpc_composite_useradd {
 		struct policy_handle user_handle;
 	} out;
 };
+
+
+struct rpc_composite_userdel {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+	} in;
+	struct {
+		struct policy_handle user_handle;
+	} out;
+};
