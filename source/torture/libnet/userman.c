@@ -159,22 +159,34 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct policy_handle h, domain_handle, user_handle;
 	struct samr_String username;
-	struct samr_CreateUser r4;
+	struct samr_CreateUser r1;
+	struct samr_Close r2;
 	uint32_t user_rid;
 
 	username.string = user;
 	
-	r4.in.domain_handle = handle;
-	r4.in.account_name = &username;
-	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r4.out.user_handle = &user_handle;
-	r4.out.rid = &user_rid;
+	r1.in.domain_handle = handle;
+	r1.in.account_name = &username;
+	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r1.out.user_handle = &user_handle;
+	r1.out.rid = &user_rid;
 
 	printf("creating user '%s'\n", username.string);
 	
-	status = dcerpc_samr_CreateUser(p, mem_ctx, &r4);
+	status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	r2.in.handle = &user_handle;
+	r2.out.handle = &user_handle;
+	
+	printf("closing user '%s'\n", username.string);
+
+	status = dcerpc_samr_Close(p, mem_ctx, &r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
