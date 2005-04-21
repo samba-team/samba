@@ -895,13 +895,13 @@ krb5_print_address (const krb5_address *addr,
 
 	s = str;
 	l = snprintf(s, len, "TYPE_%d:", addr->addr_type);
-	if (l < 0)
+	if (l < 0 || l > len)
 	    return EINVAL;
 	s += l;
 	len -= l;
 	for(i = 0; i < addr->address.length; i++) {
 	    l = snprintf(s, len, "%02x", ((char*)addr->address.data)[i]);
-	    if (l < 0)
+	    if (l < 0 || l > len)
 		return EINVAL;
 	    len -= l;
 	    s += l;
