@@ -95,6 +95,7 @@ static void useradd_handler(struct rpc_request *req)
  * @param p dce/rpc call pipe 
  * @param io arguments and results of the call
  */
+
 struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 						     struct rpc_composite_useradd *io)
 {
@@ -141,7 +142,7 @@ failure:
 /**
  * Waits for and receives result of asynchronous useradd call
  * 
- * @param c composite context returned by asynchronous userinfo call
+ * @param c composite context returned by asynchronous useradd call
  * @param mem_ctx memory context of the call
  * @param io pointer to results (and arguments) of the call
  * @return nt status code of execution
@@ -185,7 +186,7 @@ NTSTATUS rpc_composite_useradd(struct dcerpc_pipe *pipe,
 
 
 /*
- * Composite user del function
+ * Composite user delete function
  */
 
 static void userdel_handler(struct rpc_request*);
@@ -204,6 +205,9 @@ struct userdel_state {
 };
 
 
+/**
+ * Stage 1: Lookup the user name and resolve it to rid
+ */
 static NTSTATUS userdel_lookup(struct composite_context *c,
 			       struct userdel_state *s)
 {
@@ -239,6 +243,9 @@ failure:
 }
 
 
+/**
+ * Stage 2: Open user account.
+ */
 static NTSTATUS userdel_open(struct composite_context *c,
 			     struct userdel_state *s)
 {
@@ -260,6 +267,9 @@ static NTSTATUS userdel_open(struct composite_context *c,
 }
 
 
+/**
+ * Stage 3: Delete user account
+ */
 static NTSTATUS userdel_delete(struct composite_context *c,
 			       struct userdel_state *s)
 {
@@ -274,6 +284,12 @@ static NTSTATUS userdel_delete(struct composite_context *c,
 }
 
 
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
 static void userdel_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
@@ -302,6 +318,13 @@ static void userdel_handler(struct rpc_request *req)
 }
 
 
+/**
+ * Sends asynchronous userdel request
+ *
+ * @param p dce/rpc call pipe
+ * @param io arguments and results of the call
+ */
+
 struct composite_context *rpc_composite_userdel_send(struct dcerpc_pipe *p,
 						     struct rpc_composite_userdel *io)
 {
@@ -320,14 +343,17 @@ struct composite_context *rpc_composite_userdel_send(struct dcerpc_pipe *p,
 
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;
-
+	
+	/* preparing parameters to send rpc request */
 	s->lookupname.in.domain_handle = &io->in.domain_handle;
 	s->lookupname.in.num_names     = 1;
 	s->lookupname.in.names         = talloc_zero(s, struct samr_String);
 	s->lookupname.in.names->string = io->in.username;
 
+	/* send the request */
 	s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
-	
+
+	/* callback handler */
 	s->req->async.callback = userdel_handler;
 	s->req->async.private  = c;
 	s->stage = USERDEL_LOOKUP;
@@ -339,6 +365,15 @@ failure:
 	return NULL;
 }
 
+
+/**
+ * Waits for and receives results of asynchronous userdel call
+ *
+ * @param c composite context returned by asynchronous userdel call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
 
 NTSTATUS rpc_composite_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				    struct rpc_composite_userdel *io)
