@@ -28,7 +28,11 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 
-static void useradd_handler(struct rpc_request *req);
+/*
+ * Composite user add function
+ */
+
+static void useradd_handler(struct rpc_request*);
 
 enum useradd_stage { USERADD_CREATE };
 
@@ -177,4 +181,185 @@ NTSTATUS rpc_composite_useradd(struct dcerpc_pipe *pipe,
 {
 	struct composite_context *c = rpc_composite_useradd_send(pipe, io);
 	return rpc_composite_useradd_recv(c, mem_ctx, io);
+}
+
+
+/*
+ * Composite user del function
+ */
+
+static void userdel_handler(struct rpc_request*);
+
+enum userdel_stage { USERDEL_LOOKUP, USERDEL_OPEN, USERDEL_DELETE };
+
+struct userdel_state {
+	enum userdel_stage        stage;
+	struct dcerpc_pipe        *pipe;
+	struct rpc_request        *req;
+	struct policy_handle      domain_handle;
+	struct policy_handle      user_handle;
+	struct samr_LookupNames   lookupname;
+	struct samr_OpenUser      openuser;
+	struct samr_DeleteUser    deleteuser;
+};
+
+
+static NTSTATUS userdel_lookup(struct composite_context *c,
+			       struct userdel_state *s)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	if (!s->lookupname.out.rids.count) {
+		/* TODO: no such user */
+		status = NT_STATUS_NO_SUCH_USER;
+
+	} else if (!s->lookupname.out.rids.count > 1) {
+		/* TODO: ambiguous username */
+		status = NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+	
+	s->openuser.in.domain_handle = &s->domain_handle;
+	s->openuser.in.rid           = s->lookupname.out.rids.ids[0];
+	s->openuser.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
+	s->openuser.out.user_handle  = &s->user_handle;
+
+	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
+	
+	s->req->async.callback = userdel_handler;
+	s->req->async.private  = c;
+	s->stage = USERDEL_OPEN;
+	
+	return NT_STATUS_OK;
+failure:
+	talloc_free(c);
+	return status;
+}
+
+
+static NTSTATUS userdel_open(struct composite_context *c,
+			     struct userdel_state *s)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	s->deleteuser.in.user_handle   = &s->user_handle;
+	s->deleteuser.out.user_handle  = &s->user_handle;
+	
+	s->req = dcerpc_samr_DeleteUser_send(s->pipe, c, &s->deleteuser);
+	
+	s->req->async.callback = userdel_handler;
+	s->req->async.private  = c;
+	s->stage = USERDEL_DELETE;
+	
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS userdel_delete(struct composite_context *c,
+			       struct userdel_state *s)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+	
+	c->state = SMBCLI_REQUEST_DONE;
+
+	return NT_STATUS_OK;
+}
+
+
+static void userdel_handler(struct rpc_request *req)
+{
+	struct composite_context *c = req->async.private;
+	struct userdel_state *s = talloc_get_type(c->private, struct userdel_state);
+	
+	switch (s->stage) {
+	case USERDEL_LOOKUP:
+		c->status = userdel_lookup(c, s);
+		break;
+	case USERDEL_OPEN:
+		c->status = userdel_open(c, s);
+		break;
+	case USERDEL_DELETE:
+		c->status = userdel_delete(c, s);
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = SMBCLI_REQUEST_ERROR;
+	}
+
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+
+struct composite_context *rpc_composite_userdel_send(struct dcerpc_pipe *p,
+						     struct rpc_composite_userdel *io)
+{
+	struct composite_context *c;
+	struct userdel_state *s;
+	
+	c = talloc_zero(p, struct composite_context);
+	if (c == NULL) goto failure;
+
+	s = talloc_zero(c, struct userdel_state);
+	if (s == NULL) goto failure;
+
+	s->pipe = p;
+	c->state      = SMBCLI_REQUEST_SEND;
+	c->private    = s;
+	c->event_ctx  = dcerpc_event_context(p);
+
+	s->lookupname.in.domain_handle = &io->in.domain_handle;
+	s->lookupname.in.num_names     = 1;
+	s->lookupname.in.names         = talloc_zero(s, struct samr_String);
+	s->lookupname.in.names->string = io->in.username;
+
+	s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
+	
+	s->req->async.callback = userdel_handler;
+	s->req->async.private  = c;
+	s->stage = USERDEL_LOOKUP;
+
+	return c;
+
+failure:
+	talloc_free(c);
+	return NULL;
+}
+
+
+NTSTATUS rpc_composite_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				    struct rpc_composite_userdel *io)
+{
+	NTSTATUS status;
+	struct userdel_state *s;
+	
+	status = composite_wait(c);
+
+	if (NT_STATUS_IS_OK(status) && io) {
+		s  = talloc_get_type(c->private, struct userdel_state);
+		io->out.user_handle = s->user_handle;
+	}
+
+	talloc_free(c);
+	return status;
+}
+
+
+NTSTATUS rpc_composite_userdel(struct dcerpc_pipe *pipe,
+			       TALLOC_CTX *mem_ctx,
+			       struct rpc_composite_userdel *io)
+{
+	struct composite_context *c = rpc_composite_userdel_send(pipe, io);
+	return rpc_composite_userdel_recv(c, mem_ctx, io);
 }
