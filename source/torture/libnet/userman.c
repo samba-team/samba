@@ -153,6 +153,55 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+ 			    struct policy_handle *handle, const char* user)
+{
+	NTSTATUS status;
+	struct policy_handle h, domain_handle, user_handle;
+	struct samr_String username;
+	struct samr_CreateUser r4;
+	uint32_t user_rid;
+
+	username.string = user;
+	
+	r4.in.domain_handle = handle;
+	r4.in.account_name = &username;
+	r4.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r4.out.user_handle = &user_handle;
+	r4.out.rid = &user_rid;
+
+	printf("creating user '%s'\n", username.string);
+	
+	status = dcerpc_samr_CreateUser(p, mem_ctx, &r4);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
+static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle, const char *username)
+{
+	NTSTATUS status;
+	BOOL ret = False;
+	struct rpc_composite_userdel user;
+	
+	user.in.domain_handle = *handle;
+	user.in.username = username;
+	
+	status = rpc_composite_userdel(p, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to call sync rpc_composite_userdel - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
 BOOL torture_useradd(void)
 {
 	NTSTATUS status;
@@ -198,6 +247,61 @@ BOOL torture_useradd(void)
 	}
 
 	if (!test_cleanup(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+BOOL torture_userdel(void)
+{
+	NTSTATUS status;
+	const char *binding;
+	struct dcerpc_pipe *p;
+	struct dcerpc_binding *b;
+	struct policy_handle h;
+	struct samr_String domain_name;
+	char* name = TEST_USERNAME;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+
+	mem_ctx = talloc_init("test_userdel");
+	binding = lp_parm_string(-1, "torture", "binding");
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p,
+					DCERPC_SAMR_NAME,
+					DCERPC_SAMR_UUID,
+					DCERPC_SAMR_VERSION);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to parse dcerpc binding '%s'\n", binding);
+		talloc_free(mem_ctx);
+		ret = False;
+		goto done;
+	}
+
+	domain_name.string = lp_workgroup();
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_createuser(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_userdel(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}

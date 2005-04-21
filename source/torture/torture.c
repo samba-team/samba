@@ -2420,6 +2420,7 @@ static struct {
 	/* libnet tests */
 	{"NET-USERINFO", torture_userinfo, 0},
 	{"NET-USERADD", torture_useradd, 0},
+	{"NET-USERDEL", torture_userdel, 0},
 
 	{NULL, NULL, 0}};
 
