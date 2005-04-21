@@ -314,10 +314,12 @@ struct composite_context *rpc_composite_userdel_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct userdel_state);
 	if (s == NULL) goto failure;
 
-	s->pipe = p;
 	c->state      = SMBCLI_REQUEST_SEND;
 	c->private    = s;
 	c->event_ctx  = dcerpc_event_context(p);
+
+	s->pipe          = p;
+	s->domain_handle = io->in.domain_handle;
 
 	s->lookupname.in.domain_handle = &io->in.domain_handle;
 	s->lookupname.in.num_names     = 1;
