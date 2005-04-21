@@ -501,7 +501,7 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
 		DEBUG(10,("_samr_query_sec_obj: querying security on Object with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = samr_make_usr_obj_sd(p->mem_ctx, &psd,&sd_size, &pol_sid);
+		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
 	}
 	else return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
