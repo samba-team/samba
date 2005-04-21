@@ -1038,11 +1038,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
 		struct name_cache_entry *e;
 		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
-		if (dirp->offset == -1) {
-			return NULL;
-		}
 		dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
-
 		e = &dirp->name_cache[dirp->name_cache_index];
 		SAFE_FREE(e->name);
 		e->name = SMB_STRDUP(n);
