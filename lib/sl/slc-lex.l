@@ -34,6 +34,8 @@
 
 /* $Id$ */
 
+#undef ECHO
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -43,6 +45,11 @@ unsigned lineno = 1;
 
 static void handle_comment(void);
 static char * handle_string(void);
+
+#define YY_NO_UNPUT
+
+#undef ECHO
+
 %}
 %%
 [A-Za-z][-A-Za-z0-9_]*	{
