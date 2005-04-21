@@ -3423,7 +3423,8 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 		state->connection->paged_results = False;
 	}
 
-	state->current_entry = ldap_first_entry(ld, state->entries);
+	if ( ld )
+		state->current_entry = ldap_first_entry(ld, state->entries);
 
 	if (state->current_entry == NULL) {
 		ldap_msgfree(state->entries);
