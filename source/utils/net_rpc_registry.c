@@ -259,6 +259,24 @@ static int rpc_registry_backup( int argc, const char **argv )
 
 static int rpc_registry_dump( int argc, const char **argv )
 {
+	REGF_FILE *registry;
+	
+	if (argc != 1 ) {
+		d_printf("Usage:    net rpc dump <file> \n");
+		return 0;
+	}
+	
+	d_printf("Opening %s....", argv[0]);
+	if ( !(registry = regfio_open( argv[0], O_RDONLY, 0 )) ) {
+		d_printf("Failed to open %s for reading\n", argv[0]);
+		return 1;
+	}
+	d_printf("ok\n");
+	
+	
+	d_printf("Closing registry...");
+	regfio_close( registry );
+	d_printf("ok\n");
 
 	return 0;
 }

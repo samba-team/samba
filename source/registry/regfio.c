@@ -58,9 +58,6 @@ static int read_block( prs_struct *ps, off_t file_offset, int fd )
 	int bytes_read, returned;
 	char *buffer;
 	
-	if ( prs_data_size(ps) < REGF_BLOCKSIZE )
-		prs_alloc_mem( ps, REGF_BLOCKSIZE, 1 );
-		
 	buffer = prs_data_p( ps );
 	
 	if ( lseek( fd, file_offset, SEEK_SET ) == -1 ) {
@@ -161,7 +158,7 @@ static BOOL read_regf_block( REGF_FILE *file )
 		return False;
 	}
 
-	prs_init( &ps, 0, ctx, UNMARSHALL );
+	prs_init( &ps, REGF_BLOCKSIZE, ctx, UNMARSHALL );
 	
 	/* grab the first block from the file */
 		
@@ -200,6 +197,7 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		DEBUG(0,("ERROR allocating memory\n"));
 		return NULL;
 	}
+	ZERO_STRUCTP( rb );
 	
 	/* open and existing file */
 
