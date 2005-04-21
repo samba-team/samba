@@ -1,0 +1,75 @@
+##########################################
+# Converts ODL stuctures to IDL structures
+# (C) 2004-2005 Jelmer Vernooij <jelmer@samba.org>
+
+package ODL;
+
+use strict;
+
+sub FunctionAddObjArgs($)
+{
+	my $e = shift;
+	
+	unshift(@{$e->{ELEMENTS}}, {
+		'NAME' => 'ORPCthis',
+		'POINTERS' => 0,
+		'PROPERTIES' => { 'in' => '1' },
+		'TYPE' => 'ORPCTHIS'
+	});
+	unshift(@{$e->{ELEMENTS}}, {
+		'NAME' => 'ORPCthat',
+		'POINTERS' => 0,
+		'PROPERTIES' => { 'out' => '1' },
+		'TYPE' => 'ORPCTHAT'
+	});
+}
+
+sub ReplaceInterfacePointers($)
+{
+	my $e = shift;
+
+	foreach my $x (@{$e->{ELEMENTS}}) {
+		next unless (typelist::hasType($x->{TYPE}));
+		next unless typelist::getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
+		
+		$x->{TYPE} = "MInterfacePointer";
+	}
+}
+
+# Add ORPC specific bits to an interface.
+sub ODL2IDL($)
+{
+	my $odl = shift;
+	
+	foreach my $x (@{$odl}) {
+		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+		# and replace interfacepointers with MInterfacePointer
+		# for 'object' interfaces
+		if (util::has_property($x, "object")) {
+			foreach my $e (@{$x->{DATA}}) {
+				($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
+				ReplaceInterfacePointers($e);
+			}
+			# Object interfaces use ORPC
+			my @depends = ();
+			if(util::has_property($x, "depends")) {
+				@depends = split /,/, $x->{PROPERTIES}->{depends};
+			}
+			push @depends, "orpc";
+			$x->{PROPERTIES}->{depends} = join(',',@depends);
+		}
+
+		if ($x->{BASE}) {
+			my $base = util::get_interface($odl, $x->{BASE});
+
+			foreach my $fn (reverse @{$base->{DATA}}) {
+				next unless ($fn->{TYPE} eq "FUNCTION");
+				unshift (@{$x->{DATA}}, $fn);
+			}
+		}
+	}
+
+	return $odl;
+}
+
+1;
