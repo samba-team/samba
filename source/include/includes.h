@@ -866,7 +866,9 @@ extern int errno;
 
 #include "client.h"
 
+#ifdef WITH_SMBWRAPPER
 #include "smbw.h"
+#endif
 
 #include "session.h"
 

@@ -51,7 +51,7 @@ struct smbc_internal_data {
 	 */
 	int     _initialized;
 
-	/** INTERNAL: dirent pointer location 
+        /** INTERNAL: dirent pointer location
          *
          * Leave room for any urlencoded filename and the comment field.
          *
@@ -61,7 +61,7 @@ struct smbc_internal_data {
          *
          * According to <linux/limits.h>, NAME_MAX is 255.  Is it longer
          * anyplace else?
-	 */
+         */
 	char    _dirent[1024];
 
 	/** INTERNAL: server connection list
