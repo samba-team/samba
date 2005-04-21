@@ -1,3 +1,7 @@
+2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftp/security.c: cast size_t to unsigned long
+
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.c (statcmd): cast argument to isdigit to unsigned char
