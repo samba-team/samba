@@ -770,7 +770,7 @@ as_rep(KDC_REQ *req,
 		goto preauth_done;
 	    }
 	    et.flags.pre_authent = 1;
-	    kdc_log(2, "PKINIT pre-authentication succeded -- %s using %s", 
+	    kdc_log(2, "PKINIT pre-authentication succeeded -- %s using %s", 
 		    client_name, client_cert);
 	    free(client_cert);
 	    break;
@@ -868,7 +868,7 @@ as_rep(KDC_REQ *req,
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
-	    kdc_log(2, "ENC-TS Pre-authentication succeded -- %s", 
+	    kdc_log(2, "ENC-TS Pre-authentication succeeded -- %s", 
 		    client_name);
 	    break;
 	}
