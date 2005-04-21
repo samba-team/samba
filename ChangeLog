@@ -1,9 +1,13 @@
+2005-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c: spell succeeded correctly, From Sean Chittenden
+
+	* lib/krb5/addr_families.c: catch two more snprintf problems
+	
 2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/Makefile.am: this lib include com_err, add -com_err to
 	CHECK_SYMBOLS
-
-2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/test/http_client.c: cast ssize_t to unsigned long, fix
 	printf format
