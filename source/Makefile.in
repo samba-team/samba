@@ -780,29 +780,29 @@ pch:
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
+	@$(CC) $(FLAGS) $(PATH_FLAGS) -c dynconfig.c -o $@ 
 
 dynconfig.@PICSUFFIX@: dynconfig.c Makefile
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAGS@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c dynconfig.c -o $@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
 
 lib/version.o: lib/version.c include/version.h
 	@echo Compiling $*.c
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) -c $< -o $@ 
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) -c lib/version.c -o $@ 
 
 lib/version.@PICSUFFIX@: lib/version.c include/version.h
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
 	@echo Compiling $*.c with @PICFLAGS@
-	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c $< -o $*.@PICSUFFIX@
+	@$(CC) -I. -I$(srcdir) $(FLAGS) $(PATH_FLAGS) @PICFLAGS@ -c lib/version.c -o $@
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.@PICSUFFIX@$$%.o%'` $@
 
 smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
-	@$(CC) $(FLAGS) $(PATH_FLAGS) -c $< -o $@
+	@$(CC) $(FLAGS) $(PATH_FLAGS) -c smbd/build_options.c -o $@
 
 smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
