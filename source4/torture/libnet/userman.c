@@ -98,6 +98,61 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *domain_handle, const char *username)
+{
+	NTSTATUS status;
+	struct samr_LookupNames r1;
+	struct samr_OpenUser r2;
+	struct samr_DeleteUser r3;
+	struct samr_String names[2];
+	uint32_t rid;
+	struct policy_handle user_handle;
+
+	names[0].string = username;
+
+	r1.in.domain_handle  = domain_handle;
+	r1.in.num_names      = 1;
+	r1.in.names          = names;
+	
+	printf("user account lookup '%s'\n", username);
+
+	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupNames failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	rid = r1.out.rids.ids[0];
+	
+	r2.in.domain_handle  = domain_handle;
+	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
+	r2.in.rid            = rid;
+	r2.out.user_handle   = &user_handle;
+
+	printf("opening user account\n");
+
+	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	r3.in.user_handle  = &user_handle;
+	r3.out.user_handle = &user_handle;
+
+	printf("deleting user account\n");
+	
+	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteUser failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	
+	return True;
+}
+
+
 BOOL torture_useradd(void)
 {
 	NTSTATUS status;
@@ -138,6 +193,11 @@ BOOL torture_useradd(void)
 	}
 
 	if (!test_useradd(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_cleanup(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
