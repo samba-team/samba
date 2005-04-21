@@ -25,6 +25,8 @@
  */
  
 #define REGF_HDR_SIZE		4
+#define HBIN_HDR_SIZE		4
+
 #define REGF_BLOCKSIZE		0x1000
 
 /* 
@@ -57,15 +59,21 @@ typedef struct {
 } REGF_VALUE_LIST;
 
 typedef struct {
-	uint32 offset;			/* offset from fist hbin block */
+	char   header[HBIN_HDR_SIZE];	/* "hbin" */
+	uint32 first_hbin_off;		/* offset from first hbin block */
+	uint32 next_hbin_off;		/* offset from next hbin block */
 	uint32 block_size;		/* block size of this block (always 4kb) */
-	uint8 buffer[REGF_BLOCKSIZE];	/* data */
+	uint32 data_size;		/* data size of this block -- not sure .... */
+
+	prs_struct ps;			/* data */
+
 	BOOL dirty;			/* should block be flushed to disk before releasing? */
 } REGF_HBIN;
  
 typedef struct {
 	/* run time information */
 	int fd;				/* file descriptor */
+	TALLOC_CTX *mem_ctx;
 	off_t current_block;		/* offset to the current file block */
 	REGF_HBIN *current_hbin;	/* current hbin block */
 

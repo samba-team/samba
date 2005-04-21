@@ -274,6 +274,8 @@ static int rpc_registry_dump( int argc, const char **argv )
 	d_printf("ok\n");
 	
 	
+	
+	
 	d_printf("Closing registry...");
 	regfio_close( registry );
 	d_printf("ok\n");

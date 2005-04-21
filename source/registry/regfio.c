@@ -126,6 +126,35 @@ static BOOL prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 /*******************************************************************
 *******************************************************************/
 
+static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HBIN *hbin )
+{
+	prs_debug(ps, depth, desc, "prs_regf_block");
+	depth++;
+	
+	if ( !prs_uint8s( True, "header", ps, depth, hbin->header, sizeof( hbin->header )) )
+		return False;
+
+	if ( !prs_uint32( "first_hbin_off", ps, depth, &hbin->first_hbin_off ))
+		return False;
+	if ( !prs_uint32( "next_hbin_off", ps, depth, &hbin->next_hbin_off ))
+		return False;
+		
+	if ( !prs_set_offset( ps, 0x001c ) )
+		return False;
+	if ( !prs_uint32( "block_size", ps, depth, &hbin->block_size ))
+		return False;
+
+	if ( !prs_set_offset( ps, 0x0020 ) )
+		return False;
+	if ( !prs_uint32( "data_size", ps, depth, &hbin->data_size ))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
 static uint32 regf_block_checksum( prs_struct *ps )
 {
 	char *buffer = prs_data_p( ps );
@@ -150,15 +179,9 @@ static uint32 regf_block_checksum( prs_struct *ps )
 static BOOL read_regf_block( REGF_FILE *file )
 {
 	prs_struct ps;
-	TALLOC_CTX *ctx;
 	uint32 checksum;
 	
-	if ( !(ctx = talloc_init( "read_regf_block" )) ) {
-		DEBUG(0,("read_regf_block: talloc_init() failed!\n"));
-		return False;
-	}
-
-	prs_init( &ps, REGF_BLOCKSIZE, ctx, UNMARSHALL );
+	prs_init( &ps, REGF_BLOCKSIZE, file->mem_ctx, UNMARSHALL );
 	
 	/* grab the first block from the file */
 		
@@ -183,6 +206,35 @@ static BOOL read_regf_block( REGF_FILE *file )
 }
 
 /*******************************************************************
+*******************************************************************/
+
+static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
+{
+	REGF_HBIN *hbin;
+	
+	if ( !(hbin = (REGF_HBIN*)malloc(sizeof(REGF_HBIN)) ) ) 
+		return NULL;
+	ZERO_STRUCTP( hbin );
+	
+	prs_init( &hbin->ps, REGF_BLOCKSIZE, file->mem_ctx, UNMARSHALL );
+	
+	/* an offset of 0 means grab the first hbin block */
+	
+	if ( offset == 0 )
+		offset = REGF_BLOCKSIZE;
+	
+	if ( read_block( &hbin->ps, offset, file->fd ) == -1 )
+		return False;
+	
+	if ( !prs_hbin_block( "hbin", &hbin->ps, 0, hbin ) )
+		return False;	
+
+	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE ) )
+		return False;
+	
+	return hbin;
+}
+/*******************************************************************
  Open the registry file and then read in the REGF block to get the 
  first hbin offset.
 *******************************************************************/
@@ -198,6 +250,12 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		return NULL;
 	}
 	ZERO_STRUCTP( rb );
+	rb->fd = -1;
+	
+	if ( !(rb->mem_ctx = talloc_init( "read_regf_block" )) ) {
+		regfio_close( rb );
+		return NULL;
+	}
 	
 	/* open and existing file */
 
@@ -218,6 +276,12 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 	
 	if ( !read_regf_block( rb ) ) {
 		DEBUG(0,("regfio_open: Failed to read initial REGF block\n"));
+		regfio_close( rb );
+		return NULL;
+	}
+	
+	if ( !(rb->current_hbin = read_hbin_block( rb, 0x0 )) ) {
+		DEBUG(0,("regfio_open: Failed to read first hbin block\n"));
 		regfio_close( rb );
 		return NULL;
 	}
