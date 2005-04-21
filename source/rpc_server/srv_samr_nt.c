@@ -1985,13 +1985,15 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		se_priv_copy( &se_rights, &se_machine_account );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( acb_info & ACB_NORMAL )
+	/* usrmgr.exe (and net rpc trustdom grant) creates a normal user 
+	   account for domain trusts and changes the ACB flags later */
+	else if ( acb_info & ACB_NORMAL && (account[strlen(account)-1] != '$') )
 	{
 		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) 
+	else 	/* implicit assumption of a BDC or domain trust account here (we already check the flags earlier) */
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		if ( lp_enable_privileges() ) {
