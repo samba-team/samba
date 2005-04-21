@@ -356,7 +356,7 @@ compare_size(struct fileinfo *a, struct fileinfo *b)
 static int list_dir(FILE*, const char*, int);
 
 static int
-log10(int num)
+find_log10(int num)
 {
     int i = 1;
     while(num > 10) {
@@ -563,9 +563,9 @@ list_files(FILE *out, const char **files, int n_files, int flags)
 	    max_size = max_major + max_minor + 2;
 	else if(max_size - max_minor - 2 > max_major)
 	    max_major = max_size - max_minor - 2;
-	max_inode = log10(max_inode);
-	max_bsize = log10(max_bsize);
-	max_n_link = log10(max_n_link);
+	max_inode = find_log10(max_inode);
+	max_bsize = find_log10(max_bsize);
+	max_n_link = find_log10(max_n_link);
 	
 	if(n_print > 0)
 	    sec_fprintf2(out, "total %lu\r\n", (unsigned long)total_blocks);
@@ -611,8 +611,8 @@ list_files(FILE *out, const char **files, int n_files, int flags)
 	    }
 	    if(strlen(fi[i].filename) > max_len)
 		max_len = strlen(fi[i].filename);
-	    if(log10(fi[i].bsize) > size_len)
-		size_len = log10(fi[i].bsize);
+	    if(find_log10(fi[i].bsize) > size_len)
+		size_len = find_log10(fi[i].bsize);
 	}
 	if(num_files == 0)
 	    goto next;
