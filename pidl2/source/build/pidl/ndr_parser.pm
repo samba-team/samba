@@ -21,6 +21,25 @@ sub get_typefamily($)
 	return $typefamily{$n};
 }
 
+sub append_prefix($$)
+{
+	my $e = shift;
+	my $var_name = shift;
+	my $pointers = 0;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "POINTER") {
+			$pointers++;
+		} elsif ($l->{TYPE} eq "DATA") {
+			if ($l->{DATA_TYPE} eq "string") {
+				return get_value_of($var_name) unless ($pointers);
+			}
+		}
+	}
+	
+	return $var_name;
+}
+
 # see if a variable needs to be allocated by the NDR subsystem on pull
 sub need_alloc($)
 {
@@ -628,6 +647,8 @@ sub ParseElementPush($$$$$$)
 
 	my $var_name = $var_prefix.$e->{NAME};
 
+	$var_name = append_prefix($e, $var_name);
+
 	return unless $primitives or ($deferred and ContainsDeferred($e));
 
 	start_flags($e);
@@ -717,6 +738,7 @@ sub ParseElementPrint($$$)
 	my($var_name) = shift;
 	my $env = shift;
 
+	$var_name = append_prefix($e, $var_name);
 	return if (util::has_property($e, "noprint"));
 
 	if (my $value = util::has_property($e, "value")) {
@@ -885,6 +907,8 @@ sub ParseElementPull($$$$$$)
 	my $deferred = shift;
 
 	my $var_name = $var_prefix.$e->{NAME};
+
+	$var_name = append_prefix($e, $var_name);
 
 	my $previous = undef;
 
