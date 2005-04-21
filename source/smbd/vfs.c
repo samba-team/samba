@@ -894,7 +894,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
 #ifdef PATH_MAX
 				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
 #else
-				pstrcpy(pstring resolved_name_buf, tmp_fname);
+				pstrcpy(resolved_name_buf, tmp_fname);
 #endif
 				resolved_name = resolved_name_buf;
 #endif
