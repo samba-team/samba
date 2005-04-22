@@ -30,8 +30,15 @@ sub append_prefix($$)
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
 			$pointers++;
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			if (($pointers == 0) and 
+			    (not $l->{IS_FIXED}) and
+			    (not $l->{IS_INLINE})) {
+				return get_value_of($var_name) 
+			}
 		} elsif ($l->{TYPE} eq "DATA") {
-			if ($l->{DATA_TYPE} eq "string") {
+			if ($l->{DATA_TYPE} eq "string" or
+			    $l->{DATA_TYPE} eq "nbt_string") {
 				return get_value_of($var_name) unless ($pointers);
 			}
 		}
@@ -527,12 +534,12 @@ sub ParseSubcontextPushStart($$$$$)
 	my $ndr = shift;
 	my $var_name = shift;
 	my $ndr_flags = shift;
-	my $compression = util::has_property($e, "compression");
-	my $obfuscation = util::has_property($e, "obfuscation");
 	my $retndr = "_ndr_$e->{NAME}";
 
 	return unless ($ndr_flags =~ /NDR_SCALARS/);
 
+	pidl "{";
+	indent;
 	pidl "struct ndr_push *$retndr;";
 	pidl "";
 	pidl "$retndr = ndr_push_init_ctx($ndr);";
@@ -540,11 +547,11 @@ sub ParseSubcontextPushStart($$$$$)
 	pidl "$retndr->flags = $ndr->flags;";
 	pidl "";
 
-	if (defined $compression) {
+	if (defined $l->{COMPRESSION}) {
 		$retndr = ParseCompressionPushStart($e, $l, $retndr);
 	}
 
-	if (defined $obfuscation) {
+	if (defined $l->{OBFUSCATION}) {
 		$retndr = ParseObfuscationPushStart($e, $retndr);
 	}
 
@@ -556,7 +563,6 @@ sub ParseSubcontextPushEnd($$$)
 	my $e = shift;
 	my $l = shift;
 	my $ndr_flags = shift;
-	my $obfuscation = util::has_property($e, "obfuscation");
 	my $ndr = "_ndr_$e->{NAME}";
 
 	return unless ($ndr_flags =~ /NDR_SCALARS/);
@@ -565,12 +571,14 @@ sub ParseSubcontextPushEnd($$$)
 		ParseCompressionPushEnd($e, $l, $ndr);
 	}
 
-	if (defined $obfuscation) {
+	if (defined $l->{OBFUSCATION}) {
 		ParseObfuscationPushEnd($e, $ndr);
 	}
 
 	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $l->{HEADER_SIZE}, $l->{SUBCONTEXT_SIZE}, $ndr));";
 	pidl "NDR_CHECK(ndr_push_bytes(ndr, $ndr->data, $ndr->offset));";
+	deindent;
+	pidl "}";
 }
 
 sub ParseSubcontextPullStart($$$$$$)
@@ -581,8 +589,6 @@ sub ParseSubcontextPullStart($$$$$$)
 	my $var_name = shift;
 	my $ndr_flags = shift;	
 	my $env = shift;
-	my $compression = util::has_property($e, "compression");
-	my $obfuscation = util::has_property($e, "obfuscation");
 	my $retndr = "_ndr_$e->{NAME}";
 
 	pidl "if (($ndr_flags) & NDR_SCALARS) {";
@@ -595,34 +601,30 @@ sub ParseSubcontextPullStart($$$$$$)
 		$retndr = ParseCompressionPullStart($e, $l, $retndr, $env);
 	}
 
-	if (defined $obfuscation) {
+	if (defined $l->{OBFUSCATION}) {
 		$retndr = ParseObfuscationPullStart($e, $retndr);
 	}
 	
 	return ($retndr,$var_name);
 }
 
-sub ParseSubcontextPullEnd($)
+sub ParseSubcontextPullEnd($$)
 {
 	my $e = shift;
 	my $l = shift;
-	my $header_size = util::has_property($e, "subcontext");
-	my $size_is = util::has_property($e, "subcontext_size");
-	my $compression = util::has_property($e, "compression");
-	my $obfuscation = util::has_property($e, "obfuscation");
 	my $ndr = "_ndr_$e->{NAME}";
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPullEnd($e, $l, $ndr);
 	}
 
-	if (defined $obfuscation) {
+	if (defined $l->{OBFUSCATION}) {
 		ParseObfuscationPullEnd($e, $ndr);
 	}
 
 	my $advance;
 	if (defined($l->{SUBCONTEXT_SIZE})) {
-		$advance = "$size_is";
+		$advance = $l->{SUBCONTEXT_SIZE};
 	} elsif ($l->{HEADER_SIZE}) {
 		$advance = "$ndr->data_size";
 	} else {
@@ -828,7 +830,8 @@ sub ParseDataPull($$$$$)
 
 	$var_name = get_pointer_to($var_name);
 
-	if ($l->{DATA_TYPE} eq "string") {
+	if ($l->{DATA_TYPE} eq "string" or 
+	    $l->{DATA_TYPE} eq "nbt_string") {
 		$var_name = get_pointer_to($var_name);
 	}
 
@@ -962,7 +965,7 @@ sub ParseElementPull($$$$$$)
 
 		if (defined ($ndr_flags)) {
 			if ($l->{TYPE} eq "SUBCONTEXT") {
-				ParseSubcontextPullEnd($e);
+				ParseSubcontextPullEnd($e, $l);
 			}
 		}
 
@@ -1866,6 +1869,7 @@ sub ParseFunctionPull($)
 				not ($l->{POINTER_TYPE} eq "ref" and 
 				$l->{LEVEL} eq "TOP")) {
 				pidl "uint32_t _ptr_$e->{NAME};"; 
+				last;
 			}
 		}
 	}

@@ -270,11 +270,17 @@ sub HeaderFunctionInOut_needed($$)
     return undef;
 }
 
+my %headerstructs = ();
+
 #####################################################################
 # parse a function
 sub HeaderFunction($)
 {
     my($fn) = shift;
+
+    return if ($headerstructs{$fn->{NAME}});
+
+    $headerstructs{$fn->{NAME}} = 1;
 
     pidl "\nstruct $fn->{NAME} {\n";
     $tab_depth++;
