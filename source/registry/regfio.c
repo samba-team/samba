@@ -21,6 +21,7 @@
 #include "regfio.h"
 
 
+#if 0
 /*******************************************************************
 *******************************************************************/
 
@@ -49,31 +50,62 @@ static int write_block( prs_struct *ps, off_t file_offset, int fd )
 	
 	return bytes_written;
 }
+#endif
 
 /*******************************************************************
 *******************************************************************/
 
-static int read_block( prs_struct *ps, off_t file_offset, int fd )
+static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint32 block_size )
 {
 	int bytes_read, returned;
 	char *buffer;
 	
-	buffer = prs_data_p( ps );
-	
-	if ( lseek( fd, file_offset, SEEK_SET ) == -1 ) {
-		DEBUG(0,("write_block: lseek() failed! (%s)\n", strerror(errno) ));
+	/* if block_size == 0, we are parsnig HBIN records and need 
+	   to read some of the header to get the block_size from there */
+	   
+	if ( block_size == 0 ) {
+		uint8 hdr[0x20];
+
+		if ( lseek( file->fd, file_offset, SEEK_SET ) == -1 ) {
+			DEBUG(0,("read_block: lseek() failed! (%s)\n", strerror(errno) ));
+			return -1;
+		}
+
+		returned = read( file->fd, hdr, 0x20 );
+		if ( (returned == -1) || (returned < 0x20) ) {
+			DEBUG(0,("read_block: failed to read in HBIN header. Is the file corrupt?\n"));
+			return -1;
+		}
+
+		/* make sure this is an hbin header */
+
+		if ( strncmp( hdr, "hbin", HBIN_HDR_SIZE ) != 0 ) {
+			DEBUG(0,("read_block: invalid block header!\n"));
+			return -1;
+		}
+
+		block_size = IVAL( hdr, 0x08 );
+	}
+
+	DEBUG(10,("read_block: block_size == 0x%x\n", block_size ));
+
+	/* set the offset, initialize the buffer, and read the block from disk */
+
+	if ( lseek( file->fd, file_offset, SEEK_SET ) == -1 ) {
+		DEBUG(0,("read_block: lseek() failed! (%s)\n", strerror(errno) ));
 		return -1;
 	}
 	
-	/* read in regf block here */
-	
+	prs_init( ps, block_size, file->mem_ctx, UNMARSHALL );
+	buffer = prs_data_p( ps );
 	bytes_read = returned = 0;
-	while ( bytes_read < REGF_BLOCKSIZE ) {
-		if ( (returned = read( fd, buffer+bytes_read, REGF_BLOCKSIZE-bytes_read )) == -1 ) {
+
+	while ( bytes_read < block_size ) {
+		if ( (returned = read( file->fd, buffer+bytes_read, block_size-bytes_read )) == -1 ) {
 			DEBUG(0,("read_block: read() failed (%s)\n", strerror(errno) ));
 			return False;
 		}
-		if ( (returned == 0) && (bytes_read < REGF_BLOCKSIZE) ) {
+		if ( (returned == 0) && (bytes_read < block_size) ) {
 			DEBUG(0,("read_block: not a vald registry file ?\n" ));
 			return False;
 		}	
@@ -81,19 +113,7 @@ static int read_block( prs_struct *ps, off_t file_offset, int fd )
 		bytes_read += returned;
 	}
 	
-	prs_set_offset(ps, 0 );
-	
 	return bytes_read;
-}
-
-
-/*******************************************************************
-*******************************************************************/
-
-static uint32 find_hbin_container( uint32 offset )
-{
-	/* assume a 4Kb block size */
-	return ( (REGF_BLOCKSIZE + HBIN_HDR_SIZE + offset) & 0xFFFFF000 );
 }
 
 /*******************************************************************
@@ -146,11 +166,11 @@ static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 
 	if ( !prs_uint32( "first_hbin_off", ps, depth, &hbin->first_hbin_off ))
 		return False;
-	if ( !prs_uint32( "next_hbin_off", ps, depth, &hbin->next_hbin_off ))
-		return False;
-		
-	if ( !prs_set_offset( ps, 0x001c ) )
-		return False;
+
+	/* The dosreg.cpp comments say that the block size is at 0x1c.
+	   According to a WINXP NTUSER.dat file, this is wrong.  The block_size
+	   is at 0x08 */
+
 	if ( !prs_uint32( "block_size", ps, depth, &hbin->block_size ))
 		return False;
 
@@ -257,11 +277,9 @@ static BOOL read_regf_block( REGF_FILE *file )
 	prs_struct ps;
 	uint32 checksum;
 	
-	prs_init( &ps, REGF_BLOCKSIZE, file->mem_ctx, UNMARSHALL );
-	
 	/* grab the first block from the file */
 		
-	if ( read_block( &ps, 0, file->fd ) == -1 )
+	if ( read_block( file, &ps, 0, REGF_BLOCKSIZE ) == -1 )
 		return False;
 	
 	/* parse the block and verify the checksum */
@@ -290,16 +308,9 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	
 	if ( !(hbin = TALLOC_ZERO_P(file->mem_ctx, REGF_HBIN)) ) 
 		return NULL;
-	hbin->file_offset = offset;
-	
-	prs_init( &hbin->ps, REGF_BLOCKSIZE, file->mem_ctx, UNMARSHALL );
-	
-	/* an offset of 0 means grab the first hbin block */
-	
-	if ( offset == 0 )
-		offset = REGF_BLOCKSIZE;
-	
-	if ( read_block( &hbin->ps, offset, file->fd ) == -1 )
+	hbin->file_off = offset;
+		
+	if ( read_block( file, &hbin->ps, offset, 0 ) == -1 )
 		return False;
 	
 	if ( !prs_hbin_block( "hbin", &hbin->ps, 0, hbin ) )
@@ -308,6 +319,48 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE ) )
 		return False;
 	
+	return hbin;
+}
+
+/*******************************************************************
+ Input a randon offset and receive the correpsonding HBIN 
+ block for it
+*******************************************************************/
+
+static BOOL hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
+{
+	if ( !hbin )
+		return False;
+	
+	/* before this HBIN ? */
+	
+	if ( (offset > hbin->first_hbin_off) && (offset < (hbin->first_hbin_off+hbin->block_size)) )
+		return True;
+		
+	return False;
+}
+
+/*******************************************************************
+ Input a randon offset and receive the correpsonding HBIN 
+ block for it
+*******************************************************************/
+
+static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32 offset )
+{
+	REGF_HBIN *hbin = NULL;
+	uint32 block_off;
+	
+	/* start at the beginning */
+
+	block_off = REGF_BLOCKSIZE;
+	do {
+		hbin = read_hbin_block( file, block_off );
+
+		if ( hbin ) 
+			block_off = hbin->file_off + hbin->block_size;
+
+	} while ( hbin && !hbin_contains_offset( hbin, offset ) );
+
 	return hbin;
 }
 
@@ -463,11 +516,16 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 
 	for ( i=0; i<nk->num_values; i++ ) {
 		REGF_HBIN *sub_hbin = hbin;
-		uint32 hbin_offset = find_hbin_container( nk->values[i].hbin_off );
 		uint32 new_offset;
 	
-		if ( hbin_offset != hbin->file_offset )
-			sub_hbin = read_hbin_block( file, hbin_offset );
+		if ( !hbin_contains_offset( hbin, nk->values[i].hbin_off ) ) {
+			sub_hbin = lookup_hbin_block( file, nk->values[i].hbin_off );
+			if ( !sub_hbin ) {
+				DEBUG(0,("hbin_prs_vk_records: Failed to find HBIN block containing offset [0x%x]\n", 
+					nk->values[i].hbin_off));
+				return False;
+			}
+		}
 		
 		new_offset = nk->values[i].hbin_off + HBIN_HDR_SIZE - sub_hbin->first_hbin_off;
 		if ( !prs_set_offset( &sub_hbin->ps, new_offset ) )
@@ -485,7 +543,6 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
 	int depth = 0;
-	uint32 hbin_offset;
 	REGF_HBIN *sub_hbin;
 	
 	prs_debug(&hbin->ps, depth, "", "fetch_key");
@@ -498,31 +555,43 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 			
 	/* fill in values */
 	
-	sub_hbin = hbin;
-	hbin_offset = find_hbin_container( nk->values_off );
-	
-	if ( hbin_offset != hbin->file_offset )
-		sub_hbin = read_hbin_block( file, hbin_offset );
-
-	if ( !hbin_prs_vk_records( "vk_rec", sub_hbin, depth, nk, file ))
-		return False;
+	if ( nk->num_values ) {
+		sub_hbin = hbin;
+		if ( !hbin_contains_offset( hbin, nk->values_off ) ) {
+			sub_hbin = lookup_hbin_block( file, nk->values_off );
+			if ( !sub_hbin ) {
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
+					nk->values_off));
+				return False;
+			}
+		}
+		
+		if ( !hbin_prs_vk_records( "vk_rec", sub_hbin, depth, nk, file ))
+			return False;
+	}
 		
 	/* now get subkeys */
 	
-	sub_hbin = hbin;
-	hbin_offset = find_hbin_container( nk->subkeys_off );
-	
-	if ( hbin_offset != hbin->file_offset )
-		sub_hbin = read_hbin_block( file, hbin_offset );
-
-	if ( !hbin_prs_lf_records( "lf_rec", sub_hbin, depth, nk ))
-		return False;
+	if ( nk->num_subkeys ) {
+		sub_hbin = hbin;
+		if ( !hbin_contains_offset( hbin, nk->subkeys_off ) ) {
+			sub_hbin = lookup_hbin_block( file, nk->subkeys_off );
+			if ( !sub_hbin ) {
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
+					nk->subkeys_off));
+				return False;
+			}
+		}
+		
+		if ( !hbin_prs_lf_records( "lf_rec", sub_hbin, depth, nk ))
+			return False;
+	}
 
 #if 0
 	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, nk ))
 		return False;
 #endif
-		
+	
 	return True;
 }
 
@@ -614,7 +683,7 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		return NULL;
 	}
 	
-	if ( !(rb->current_hbin = read_hbin_block( rb, 0x0 )) ) {
+	if ( !(rb->current_hbin = read_hbin_block( rb, REGF_BLOCKSIZE )) ) {
 		DEBUG(0,("regfio_open: Failed to read first hbin block\n"));
 		regfio_close( rb );
 		return NULL;
@@ -709,20 +778,20 @@ REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
 {
 	REGF_NK_REC *subkey;
 	REGF_HBIN   *hbin;
-	uint32      hbin_offset, nk_offset;
+	uint32      nk_offset;
 
 	/* see if there is anything left to report */
 	
 	if ( !nk || (nk->subkey_index >= nk->num_subkeys) )
 		return NULL;
 
-	hbin_offset = find_hbin_container( nk->subkeys.hashes[nk->subkey_index].nk_off );
-	
 	/* find the HBIN block which should contain the nk record */
-	/* assume 4Kb block size here */
 	
-	if ( !(hbin = read_hbin_block( file, hbin_offset )) )
+	if ( !(hbin = lookup_hbin_block( file, nk->subkeys.hashes[nk->subkey_index].nk_off )) ) {
+		DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
+			nk->subkeys.hashes[nk->subkey_index].nk_off));
 		return NULL;
+	}
 	
 	nk_offset = nk->subkeys.hashes[nk->subkey_index].nk_off;
 	if ( !prs_set_offset( &hbin->ps, (HBIN_HDR_SIZE + nk_offset - hbin->first_hbin_off) ) )
