@@ -225,7 +225,9 @@ BOOL torture_userinfo(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	name.string = lp_workgroup();
 
