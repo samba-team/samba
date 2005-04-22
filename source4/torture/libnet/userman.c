@@ -176,6 +176,22 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			printf("User (%s) already exists - attempting to delete and recreate account again\n", user);
+			if (!test_cleanup(p, mem_ctx, handle, TEST_USERNAME)) {
+				return False;
+			}
+
+			printf("creating user account\n");
+			
+			status = dcerpc_samr_CreateUser(p, mem_ctx, &r1);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("CreateUser failed - %s\n", nt_errstr(status));
+				return False;
+			}
+			return True;
+		}		
 		return False;
 	}
 
@@ -292,12 +308,12 @@ BOOL torture_userdel(void)
 		ret = False;
 		goto done;
 	}
-
-	if (!test_userdel(p, mem_ctx, &h, name)) {
+	
+       	if (!test_userdel(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
-
+	
 done:
 	talloc_free(mem_ctx);
 	return ret;
