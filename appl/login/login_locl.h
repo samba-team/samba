@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -144,6 +144,11 @@
 #ifndef _PATH_DEFPATH
 #define _PATH_DEFPATH "/usr/bin:/bin"
 #endif
+
+#ifndef _PATH_LIMITS_CONF
+#define _PATH_LIMITS_CONF "/etc/security/limits.conf"
+#endif
+
 
 struct spwd;
 
