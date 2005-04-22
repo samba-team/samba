@@ -83,10 +83,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 				<listitem><para>
 				<indexterm><primary>traffic collisions</primary></indexterm>
 				<indexterm><primary>HUB</primary></indexterm>
-				<indexterm><primary>Etherswitch</primary></indexterm>
+				<indexterm><primary>ethernet switch</primary></indexterm>
 				Network traffic collisions due to overloading of the network
 				segment &smbmdash; one short-term workaround to this may be to replace
-				network HUBs with Ether-switches.
+				network HUBs with ethernet switches.
 				</para></listitem>
 
 				<listitem><para>
@@ -154,7 +154,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<para>
 		<indexterm><primary>data</primary><secondary>corruption</secondary></indexterm>
-		No matter what the cause, a sudden operational loss of access to network resources can
+		No matter what the cause, a sudden loss of access to network resources can
 		result in BSOD (blue screen of death) situations that necessitate rebooting of the client
 		workstation. In the case of a mild problem, retrying to access the network drive of printer
 		may restore operations, but in any case this is a serious problem as it may lead to the next
@@ -201,7 +201,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>trust account</primary></indexterm>
 	The POSIX and SambaSAMAccount components of computer (machine) accounts are both used by Samba. 
 	i.e.: Machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats 
-	them. A user account and a machine account are indistinquishable from each other, except that
+	them. A user account and a machine account are indistinguishable from each other, except that
 	the machine account ends in a '$' character, as do trust accounts.
 	</para>
 
@@ -218,8 +218,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>SID</primary></indexterm>
 	<indexterm><primary>NSS</primary></indexterm>
 	The resolution of a UID from the Windows SID is achieved within Samba through a mechanism that
-	must refer back to the host operating system on which Samba is running. The Name Service
-	Switcher (NSS) is the preferred mechanism that shields applications (like Samba) from the
+	must refer back to the host operating system on which Samba is running. The name service
+	switch (NSS) is the preferred mechanism that shields applications (like Samba) from the
 	need to know everything about every host OS it runs on.
 	</para>
 
@@ -473,8 +473,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	for a specific task orientation. It comes with a set of administrative tools that is entirely customized
 	for the purpose of running MS Windows applications that include file and print services, Microsoft Exchange
 	server, Microsoft SQL server, and more. The complexity of OpenLDAP is highly valued by the UNIX administrator
-	who wants to built a custom directory solution. Microsoft Active Directory is a generic LDAP server that has
-	been pre-configured for a specific task. Microsoft provides an application called 
+	who wants to built a custom directory solution. Microsoft provides an application called 
 	<ulink url="http://www.microsoft.com/windowsserver2003/adam/default.mspx">
 	MS ADAM</ulink> that provides more-generic LDAP services, yet it does not have the vanilla-like services
 	of OpenLDAP.
@@ -507,7 +506,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<para>
 	Some additional LDAP tools should be mentioned. Every so often a Samba user reports using one of 
 	these so it may be useful to include passing reference to them. 
-	The first is <ulink url="http://biot.com/gq">GQ</ulink>, a GTK-ased LDAP browser; 
+	The first is <ulink url="http://biot.com/gq">GQ</ulink>, a GTK-based LDAP browser; 
 	LDAP <ulink url="http://www.iit.edu/~gawojar/ldap/">Browser/Editor,</ulink> 
 	<ulink url="http://www.jxplorer.org/">JXplorer</ulink> (by Computer Associates),
 	and the last is called <ulink url="http://phpldapadmin.sourceforge.net/">phpLDAPadmin.</ulink>
@@ -610,7 +609,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	of the UNIX group name to its GID must be enabled from either the
 	  <filename>/etc/group</filename> 
 	or from the LDAP backend. This requires the use of the PADL <filename>nss_ldap</filename> toolset
-	that integrates with the name service switcher (NSS). The same requirements exist for resolution
+	that integrates with the name service switch (NSS). The same requirements exist for resolution
 	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="sbehap-LDAPdiag"/>.
 	</para>
 
@@ -626,7 +625,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	    <secondary>secure</secondary>
 	  </indexterm>
 	You configure OpenLDAP so that it is operational. Before deploying the OpenLDAP, you really
-	ought to learn how to configure secure communications over LDAP so that sites security is not
+	ought to learn how to configure secure communications over LDAP so that site security is not
 	at risk. This is not covered in the following guidance.
 	</para>
 
@@ -689,7 +688,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		Samba versions prior to 3.0.11 necessitated the use of a domain administrator account
 		that maps to the UNIX UID=0. The UNIX operating system permits only the <constant>root</constant>
 		user to add user and group accounts. Samba 3.0.11 introduced a new facility known as
-		<constant>Privilieges</constant>. This new facility introduced four new privileges that
+		<constant>Privileges</constant>. This new facility introduced four new privileges that
 		can be assigned to users and/or groups:
 		</para>
 
@@ -758,14 +757,13 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<filename>NTUSER.DAT</filename> and a number of folders (My Documents, Application Data,
 		Desktop, Start Menu, Templates, NetHood, Favorites, and so on).  When a user logs onto the 
 		network with the default configuration of MS Windows NT/200x/XPP, all this data is 
-		copied to the local machine. By default it is copied to the local machine, under the
-		<filename>C:\Documents and Settings\%USERNAME%</filename> directory. While the user is logged in, 
-		any changes made to any of these folders or to the <constant>HKEY_CURRENT_USER</constant> 
-		branch of the registry are made to the local copy of the profile.  At logout the profile 
-		data is copied back to the server. This behavior can be changed through appropriate
-		registry changes and/or through changes to the Default User profile. In the latter case,
-		it updates the registry with the values that are set in the
-	    profile <filename>NTUSER.DAT</filename>
+		copied to the local machine under the <filename>C:\Documents and Settings\%USERNAME%</filename>
+		directory. While the user is logged in, any changes made to any of these folders or to the
+		<constant>HKEY_CURRENT_USER</constant> branch of the registry are made to the local copy
+		of the profile.  At logout the profile data is copied back to the server. This behavior
+		can be changed through appropriate registry changes and/or through changes to the Default
+		User profile. In the latter case, it updates the registry with the values that are set in the
+		profile <filename>NTUSER.DAT</filename>
 		file.
 		</para>
 
@@ -843,7 +841,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<para>
 		Simply add the folders you do not wish to be copied back and forth to this 
-		semi-colon separated list. Note that this change must be made on all clients 
+		semicolon-separated list. Note that this change must be made on all clients 
 		that are using roaming profiles.
 		</para>
 
@@ -884,7 +882,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		If you are using Samba as your PDC, you should create a file-share called 
 		<constant>NETLOGON</constant> and within that create a directory called 
 		<filename>Default User</filename>, which is a copy of the desired default user 
-		configuration (including a copy of <filename>NTUSER.DAT</filename>.
+		configuration (including a copy of <filename>NTUSER.DAT</filename>).
 		If this share exists and the <filename>Default User</filename> folder exists, 
 		the first login from a new account pulls its configuration from it.
 		See also: <ulink url="http://isg.ee.ethz.ch/tools/realmen/det/skel.en.html">
@@ -957,7 +955,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</sect3>
 
 		<sect3 id="sbeavoid">
-		<title>Avoiding Failures &smbmdash; Solving Problems Before the Happen</title>
+		<title>Avoiding Failures &smbmdash; Solving Problems Before they Happen</title>
 
 		<para>
 		It has often been said that there are three types of people in the world: Those who
@@ -986,7 +984,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<para>
 		If you are now asking yourself how can problems be avoided? The best advice is to start
-		out your learning experience with an <emphasis>known-to-work</emphasis> solution. After
+		out your learning experience with a <emphasis>known-good configuration.</emphasis> After
 		you have seen a fully working solution, a good way to learn is to make slow and progressive
 		changes that cause things to break, then observe carefully how and why things ceased to work.
 		</para>
@@ -1009,10 +1007,74 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>The Name Service Caching Daemon (nscd)</title>
 
 		<para>
-		The Name Service Caching Daemon (nscd) is a primary cause of diffculties with name
+		The name service caching daemon (nscd) is a primary cause of diffculties with name
 		resolution, particularly where <command>winbind</command> is used. Winbind does its
 		own caching, thus nscd causes double caching which can lead to peculiar problems during
 		debugging. As a rule it is a good idea to turn off the name service caching daemon.
+		</para>
+
+		<para>
+		Operation of the name service caching daemon is controlled by the 
+		<filename>/etc/nscd.conf</filename> file. Typical contents of this file are as follows:
+<screen>
+# /etc/nscd.conf
+# An example Name Service Cache config file.  This file is needed by nscd.
+# Legal entries are:
+#       logfile                 &lt;file&gt;
+#       debug-level             &lt;level&gt;
+#       threads                 &lt;threads to use&gt;
+#       server-user             &lt;user to run server as instead of root&gt;
+#               server-user is ignored if nscd is started with -S parameters
+#       stat-user               &lt;user who is allowed to request statistics&gt;
+#       reload-count            unlimited|&lt;number&gt;
+#
+#       enable-cache            &lt;service&gt; &lt;yes|no&gt;
+#       positive-time-to-live   &lt;service&gt; &lt;time in seconds&gt;
+#       negative-time-to-live   &lt;service&gt; &lt;time in seconds&gt;
+#       suggested-size          &lt;service&gt; &lt;prime number&gt;
+#       check-files             &lt;service&gt; &lt;yes|no&gt;
+#       persistent              &lt;service&gt; &lt;yes|no&gt;
+#       shared                  &lt;service&gt; &lt;yes|no&gt;
+# Currently supported cache names (services): passwd, group, hosts
+#       logfile                 /var/log/nscd.log
+#       threads                 6
+#       server-user             nobody
+#       stat-user               somebody
+        debug-level             0
+#       reload-count            5
+        enable-cache            passwd          yes
+        positive-time-to-live   passwd          600
+        negative-time-to-live   passwd          20
+        suggested-size          passwd          211
+        check-files             passwd          yes
+        persistent              passwd          yes
+        shared                  passwd          yes
+        enable-cache            group           yes
+        positive-time-to-live   group           3600
+        negative-time-to-live   group           60
+        suggested-size          group           211
+        check-files             group           yes
+        persistent              group           yes
+        shared                  group           yes
+# !!!!!WARNING!!!!! Host cache is insecure!!! The mechanism in nscd to
+# cache hosts will cause your local system to not be able to trust
+# forward/reverse lookup checks. DO NOT USE THIS if your system relies on
+# this sort of security mechanism. Use a caching DNS server instead.
+        enable-cache            hosts           no
+        positive-time-to-live   hosts           3600
+        negative-time-to-live   hosts           20
+        suggested-size          hosts           211
+        check-files             hosts           yes
+        persistent              hosts           yes
+        shared                  hosts           yes
+</screen>
+	It is feasible to comment out the <constant>passwd</constant> and <constant>group</constant>
+	entries so they will not be cached. Alternately, it is often simpler to just disable the
+	<command>nscd</command> service by executing (on Novell SUSE Linux):
+<screen>
+&rootprompt; chkconfig nscd off
+&rootprompt; rcnscd off
+</screen>
 		</para>
 
 		</sect4>
@@ -1099,7 +1161,7 @@ dn: cn=Replicators,ou=Groups,dc=abmas,dc=biz
 </screen>
 			The first line is the DIT entry point for the container for POSIX groups. The correct entry
 			for the <filename>/etc/ldap.conf</filename> for the <constant>nss_base_group</constant>
-			parameter therefore is the distinquished name (dn) as applied here:
+			parameter therefore is the destinguished name (dn) as applied here:
 <screen>
 nss_base_group ou=Groups,dc=abmas,dc=biz?one
 </screen>
@@ -1118,11 +1180,11 @@ nss_base_passwd dc=abmas,dc=biz?sub
 			</para>
 
 			<para>
-			<simplelist>
-				<member><para>All user accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></member>
-				<member><para>All user login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></member>
-				<member><para>All computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></member>
-			</simplelist>
+			<itemizedlist>
+			<listitem><para>All user accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>All user login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>All computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></listitem>
+			</itemizedlist>
 			</para>
 
 			<para>
@@ -1140,13 +1202,14 @@ nss_base_passwd ou=Computers,ou=Users,dc=abmas,dc=org?one
 &rootprompt; getent passwd
 </screen>
 			Each such lookup will create an entry in the <filename>/data/log</filename> directory
-			for each such process executed. The contents of that file may provide a hint as to
-			the cause of the failure that is being investigated.
+			for each such process executed. The contents of each file created in this directory
+			may provide a hint as to the cause of the a problem that is under investigation. 
 			</para></step>
 
 			<step><para>
-			Check the contents of the <filename>/var/log/messages</filename> to see what error messages are being
-			generated as a result of the LDAP lookups. Here is an example of a successful lookup:
+			For additional diagnostic information check the contents of the <filename>/var/log/messages</filename>
+			to see what error messages are being generated as a result of the LDAP lookups. Here is an example of
+			a successful lookup:
 <screen>
 slapd[12164]: conn=0 fd=10 ACCEPT from IP=127.0.0.1:33539
 (IP=0.0.0.0:389)
@@ -1560,7 +1623,7 @@ index default               sub
 	  </indexterm><indexterm>
 	    <primary>PAM</primary>
 	  </indexterm>
-	The steps that follow involve configuration of LDAP, Name Service Switch (NSS) LDAP-based resolution
+	The steps that follow involve configuration of LDAP, name service switch (NSS) LDAP-based resolution
 	of users and groups. Also, so that LDAP-based accounts can log onto the system, the steps ahead
 	configure the Pluggable Authentication Modules (PAM) to permit LDAP-based authentication.
 	</para>
@@ -1690,6 +1753,18 @@ hosts:  files dns wins
 		added, you can validate resolution of the LDAP resolver process. The inclusion of 
 		WINS-based hostname resolution is deliberate so that all MS Windows client hostnames can be 
 		resolved to their IP addresses, whether or not they are DHCP clients.
+		</para>
+
+		<note><para>
+		Some Linux systems (Novell SUSE Linux in particular) add entries to the <filename>nsswitch.conf</filename>
+		file that may cause operational problems with the configuration methods adopted in this book. It is
+		advisable to comment out the entries <constant>passwd_compat</constant> and <constant>group_compat</constant>
+		where they are found in this file.
+		</para></note>
+
+		<para>
+		Even at the risk of overstating the issue, incorrect and inappropriate configuration of the
+		<filename>nsswitch.conf</filename> file is a significant cause of operational problems with LDAP.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -1858,7 +1933,8 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 with dn="cn=Manager,dc=abmas,dc=biz" Error: Can't contact LDAP server
         (unknown)
 [2005/03/03 23:19:48, 0] lib/smbldap.c:smbldap_search_suffix(1169)
-  smbldap_search_suffix: Problem during the LDAP search: (unknown) (Timed out)
+  smbldap_search_suffix: Problem during the LDAP search:
+        (unknown) (Timed out)
 </screen>
 		The attempt to read the SID will attempt to bind to the LDAP server. Because the LDAP server
 		is not running this operation will fail by way of a time out, as shown above. This is
