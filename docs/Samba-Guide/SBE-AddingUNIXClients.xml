@@ -1360,7 +1360,7 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		<para>
 		From this point on, you are certain that the Samba-3 build you are using has the
 		necessary capabilities. You can now configure Samba-3 and the name service 
-		switcher (NSS). 
+		switch (NSS). 
 		</para></step>
 
 		<step><para>
@@ -1890,7 +1890,7 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
         <indexterm><primary>response</primary></indexterm>
         <indexterm><primary>getent</primary></indexterm>
         In a large domain with many users it is imperative to disable enumeration of users and groups.
-        For examplem, at a site that has 22,000 users in Active Directory the winbind based user and
+        For example, at a site that has 22,000 users in Active Directory the winbind based user and
         group resolution is unavailable for nearly 12 minutes following first start-up of
         <command>winbind</command>. Disabling of such enumeration resulted in instantaneous response.
         The disabling of user and group enumeration means that it will not be possible to list users

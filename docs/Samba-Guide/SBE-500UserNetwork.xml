@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="Big500users">
-  <title>The 500-User Office</title>
+  <title>The 500 User Office</title>
 
 	<para>
 	The Samba-3 networking you explored in the previous chapter covers the finer points of 
@@ -1931,7 +1931,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		marginal use of PAM. PAM configuration handles only authentication. If you want to log onto the Domain
 		Member servers using Windows networking user names and passwords, it is necessary to configure PAM
 		to enable the use of winbind. Samba makes use only of the identity resolution facilities of the name
-		service switcher (NSS).
+		service switch (NSS).
 		</para>
 
 	</answer>

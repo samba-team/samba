@@ -60,7 +60,7 @@
 		<step><para>
 		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
 		We join the domain called MIDEARTH. See <link linkend="wxpp006"></link>.
-		<image id="wxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel.</imagedescription></image>
+		<image id="wxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -69,7 +69,7 @@
 
 		<para>
 		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="wxpp007"></link>.
-		<image id="wxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH.</imagedescription></image>
+		<image id="wxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -79,7 +79,7 @@
 
 		<para>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
-		<image id="wxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel.</imagedescription></image>
+		<image id="wxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
 		</para></step>
 
 		<step><para>
