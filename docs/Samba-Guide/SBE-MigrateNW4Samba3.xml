@@ -5,18 +5,13 @@
 
 	<para>
 	<indexterm><primary>Novell</primary></indexterm>
-	<indexterm><primary>SuSE</primary></indexterm>
-	<indexterm><primary>Ximian</primary></indexterm>
-	<indexterm><primary>FLOSS</primary><see>Free-Libre/Open Source Software</see></indexterm>
-	<indexterm><primary>Free-Libre/Open Source Software</primary></indexterm>
-	Novell is a company any seasoned IT manager has to admire. Since the acquisition of
-	the SuSE Linux company, the acquisition on Ximian, and other moves that are friendly
-	to the FLOSS (Free-Libre/Open Source Software) movement, Novell are emerging out of
-	a deep regression that almost saw the company disappear into obscurity. The now Linux
-	friendly Novell's SUSE Linux is being used as a host to which NetWare servers are being
-	migrated. It is in many ways ironic that Novell are today hosting NetWare on top of
-	Linux. At the same time older NetWare servers are still being migrated to Samba servers.
+	<indexterm><primary>SUSE</primary></indexterm>
+	Novell is a company any seasoned IT manager has to admire. They have become increasingly
+	Linux-friendly and are emerging out of a deep regression that almost saw the company
+	disappear into obscurity. Novell's SUSE Linux hosts the NetWare server and it is the
+	platform of choice to which many older NetWare servers are being migrated. 
 	It will be interesting to see what will become of NetWare over time.
+	Meanwhile, there can be no denying the fact that Novell is a Linux company.
 	</para>
 
 	<para>
@@ -85,7 +80,7 @@
 	</simplelist>
 
 	<para>
-	The company had outgrown this server several years ago and were dealing with
+	The company had outgrown this server several years before and were dealing with
 	severe growing pains. Some of the problems experienced were:
 	</para>
 		
@@ -155,7 +150,7 @@
 			<para>A DLT drive for asynchronous offline backup</para>
 		</member>
 		<member>
-			<para>SUSE Linux Professional 9.2</para>
+			<para>SUSE Linux Professional 9.1</para>
 		</member>
 	</simplelist>
 
@@ -243,7 +238,7 @@
 		<member><para>openldap2-devel (only for Samba compilation)</para></member>
 		<member><para>nss_ldap</para></member>
 		<member><para>smbldap-tools Version 0.8.7</para></member>
-		<member><para>perl-ldap</para></member>
+		<member><para>pam_ldap</para></member>
 		<member><para>samba-3.0.15 or later</para></member>
 		<member><para>samba-client-3.0.15 or later</para></member>
 		<member><para>samba-winbind-3.0.15 or later</para></member>
@@ -265,7 +260,7 @@
 <example id="ch8slapd">
 <title>OpenLDAP Control File &smbmdash; slapd.conf Part A</title>
 <screen>
-#/usr/local/etc/openldap/slapd.conf
+#/etc/openldap/slapd.conf
 #
 # See slapd.conf(5) for details on configuration options.
 # This file should NOT be world readable.
