@@ -332,8 +332,6 @@ static BOOL hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
 	if ( !hbin )
 		return False;
 	
-	/* before this HBIN ? */
-	
 	if ( (offset > hbin->first_hbin_off) && (offset < (hbin->first_hbin_off+hbin->block_size)) )
 		return True;
 		
@@ -354,6 +352,10 @@ static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32 offset )
 
 	block_off = REGF_BLOCKSIZE;
 	do {
+		/* cleanup before the next round */
+		if ( hbin )
+			prs_mem_free( &hbin->ps );
+
 		hbin = read_hbin_block( file, block_off );
 
 		if ( hbin ) 
