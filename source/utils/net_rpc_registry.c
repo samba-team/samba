@@ -254,13 +254,33 @@ static int rpc_registry_backup( int argc, const char **argv )
 		rpc_registry_backup_internal, argc, argv );
 }
 
+
+/********************************************************************
+********************************************************************/
+
+static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *parent )
+{
+	REGF_NK_REC *key;
+	pstring regpath;
+
+	/* depth first dump of the registry tree */
+
+	while ( (key = regfio_fetch_subkey( file, nk )) ) {
+		pstr_sprintf( regpath, "%s\\%s", parent, key->keyname );
+		d_printf("processed key [%s]\n", regpath );
+		dump_registry_tree( file, key, regpath );
+	}
+	
+	return True;
+}
+
 /********************************************************************
 ********************************************************************/
 
 static int rpc_registry_dump( int argc, const char **argv )
 {
 	REGF_FILE   *registry;
-	REGF_NK_REC *nk, *subkey;
+	REGF_NK_REC *nk;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc dump <file> \n");
@@ -278,14 +298,8 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	nk = regfio_rootkey( registry );
 	d_printf("processed key [%s]\n", nk->keyname);
-	
-	/* no do a breadth first search of the tree */
-	
-	while ( (subkey = regfio_fetch_subkey( registry, nk )) ) {
-		d_printf("processed key [%s]\n", subkey->keyname);
-	}
-	
-	
+
+	dump_registry_tree( registry, nk, nk->keyname );
 	
 	d_printf("Closing registry...");
 	regfio_close( registry );

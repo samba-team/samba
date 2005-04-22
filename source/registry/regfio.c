@@ -436,7 +436,7 @@ static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC
  in the prs_struct *ps.
 *******************************************************************/
 
-static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
+static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk, REGF_FILE *file )
 {
 	int i;
 
@@ -462,9 +462,17 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 	}
 
 	for ( i=0; i<nk->num_values; i++ ) {
-		if ( !prs_set_offset( &hbin->ps, nk->values[i].hbin_off+HBIN_HDR_SIZE-hbin->first_hbin_off ) )
+		REGF_HBIN *sub_hbin = hbin;
+		uint32 hbin_offset = find_hbin_container( nk->values[i].hbin_off );
+		uint32 new_offset;
+	
+		if ( hbin_offset != hbin->file_offset )
+			sub_hbin = read_hbin_block( file, hbin_offset );
+		
+		new_offset = nk->values[i].hbin_off + HBIN_HDR_SIZE - sub_hbin->first_hbin_off;
+		if ( !prs_set_offset( &sub_hbin->ps, new_offset ) )
 			return False;
-		if ( !prs_vk_rec( "vk_rec", &hbin->ps, depth, &nk->values[i] ) )
+		if ( !prs_vk_rec( "vk_rec", &sub_hbin->ps, depth, &nk->values[i] ) )
 			return False;
 	}
 
@@ -496,7 +504,7 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 	if ( hbin_offset != hbin->file_offset )
 		sub_hbin = read_hbin_block( file, hbin_offset );
 
-	if ( !hbin_prs_vk_records( "vk_rec", sub_hbin, depth, nk ))
+	if ( !hbin_prs_vk_records( "vk_rec", sub_hbin, depth, nk, file ))
 		return False;
 		
 	/* now get subkeys */
