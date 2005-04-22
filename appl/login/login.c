@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -481,6 +481,14 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	    exit(1);
     }
 #endif
+    if(rootlogin == 0) {
+	const char *file = login_conf_get_string("limits");
+	if(file == NULL)
+	    file = _PATH_LIMITS_CONF;
+
+	read_limits_conf(file, pwd);
+    }
+	    
 #ifdef HAVE_SETPCRED
     if (setpcred (pwd->pw_name, NULL) == -1)
 	warn("setpcred(%s)", pwd->pw_name);
