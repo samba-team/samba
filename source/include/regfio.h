@@ -37,12 +37,9 @@
 #define HBIN_HDR_SIZE		4
 #define REC_HDR_SIZE		2
 
-/* used by REGF_REC->type */
+/* Flags for the vk records */
 
-#define	REGF_TYPE_NK		1
-#define	REGF_TYPE_LF		2
-#define	REGF_TYPE_VK		3
-#define	REGF_TYPE_SK		4
+#define VK_FLAG_NAME_PRESENT	0x0001
 
 /* ??? List -- list of key offsets and hashed names for consistency */
 
@@ -115,18 +112,6 @@ typedef struct {
 } REGF_NK_REC;
 
 
-/* container for various record formats */
-
-typedef struct {
-	int type;		/* REGF_TYPE_XXX */
-	union {
-		REGF_NK_REC	nk;
-		REGF_LF_REC	lf;
-		REGF_VK_REC 	vk;
-		REGF_SK_REC	sk;
-	} data;
-} REGF_REC;
-
 /* HBIN block */
 
 typedef struct {
@@ -161,9 +146,9 @@ typedef struct {
 
 /* Function Declarations */
  
-REGF_FILE* regfio_open( const char *filename, int flags, int mode );
-REGF_REC*  regfio_next_record( REGF_FILE *file );
-int        regfio_close( REGF_FILE *r );
+REGF_FILE*    regfio_open( const char *filename, int flags, int mode );
+REGF_NK_REC*  regfio_next_key( REGF_FILE *file );
+int           regfio_close( REGF_FILE *r );
 
 
 #endif	/* _REGFIO_H */

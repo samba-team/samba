@@ -221,51 +221,6 @@ static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC *vk )
-{
-	prs_debug(ps, depth, desc, "prs_Vk_rec");
-	depth++;
-	
-	if ( !prs_uint8s( True, "header", ps, depth, vk->header, sizeof( vk->header )) )
-		return False;
-
-
-	return True;
-}
-
-
-/*******************************************************************
-*******************************************************************/
-
-static BOOL prs_sk_rec( const char *desc, prs_struct *ps, int depth, REGF_SK_REC *sk )
-{
-	prs_debug(ps, depth, desc, "prs_sk_rec");
-	depth++;
-	
-	if ( !prs_uint8s( True, "header", ps, depth, sk->header, sizeof( sk->header )) )
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-*******************************************************************/
-
-static BOOL prs_lf_rec( const char *desc, prs_struct *ps, int depth, REGF_LF_REC *lf )
-{
-	prs_debug(ps, depth, desc, "prs_lf_rec");
-	depth++;
-	
-	if ( !prs_uint8s( True, "header", ps, depth, lf->header, sizeof( lf->header )) )
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-*******************************************************************/
-
 static uint32 regf_block_checksum( prs_struct *ps )
 {
 	char *buffer = prs_data_p( ps );
@@ -404,6 +359,73 @@ static BOOL prs_lf_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 /*******************************************************************
 *******************************************************************/
 
+static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC *vk )
+{
+	uint32 offset;
+	uint16 name_length;
+
+	prs_debug(ps, depth, desc, "prs_vk_rec");
+	depth++;
+
+	if ( !prs_uint8s( True, "header", ps, depth, vk->header, sizeof( vk->header )) )
+		return False;
+
+	if ( !prs_uint16( "name_length", ps, depth, &name_length ))
+		return False;
+	if ( !prs_uint32( "data_size", ps, depth, &vk->data_size ))
+		return False;
+	if ( !prs_uint32( "data_off", ps, depth, &vk->data_off ))
+		return False;
+	if ( !prs_uint32( "type", ps, depth, &vk->type))
+		return False;
+	if ( !prs_uint16( "flag", ps, depth, &vk->flag))
+		return False;
+
+	offset = prs_offset( ps );
+	offset += 2;	/* skip 2 bytes */
+	prs_set_offset( ps, offset );
+
+	/* get the name */
+
+	if ( vk->flag&VK_FLAG_NAME_PRESENT ) {
+
+		if ( !(vk->valuename = PRS_ALLOC_MEM( ps, char, name_length+1 )))
+			return False;
+		if ( !prs_uint8s( True, "name", ps, depth, vk->valuename, name_length ) )
+			return False;
+	}
+
+	/* get the data if necessary */
+
+	if ( vk->data_size != 0 ) {
+		BOOL charmode = vk->type & (REG_SZ|REG_MULTI_SZ);
+
+		if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
+			return False;
+
+		/* the data is stored in the offset if the size <= 4 */
+
+		if ( vk->data_size > 4 ) {
+			/* set the offset */
+		
+			if ( !(prs_set_offset( ps, vk->data_off+HBIN_HDR_SIZE )) )
+				return False;
+
+			if ( !prs_uint8s( charmode, "data", ps, depth, vk->data, vk->data_size) )
+				return False;
+		}
+		else {
+			SIVAL( vk->data, 0, vk->data_off );
+		}
+		
+	}
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
 static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
 {
 	int i;
@@ -430,10 +452,8 @@ static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 	for ( i=0; i<nk->num_values; i++ ) {
 		if ( !prs_set_offset( ps, nk->values[i].hbin_off+HBIN_HDR_SIZE ) )
 			return False;
-#if 0
 		if ( !prs_vk_rec( "vk_rec", ps, depth, &nk->values[i] ) )
 			return False;
-#endif
 	}
 
 	return True;
@@ -442,28 +462,26 @@ static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 /*******************************************************************
 *******************************************************************/
 
-static BOOL fetch_key( REGF_HBIN *hbin, REGF_REC *rec )
+static BOOL prs_key( REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
 	int depth = 0;
 	
 	prs_debug(&hbin->ps, depth, "", "fetch_key");
 	depth++;
 	
-	rec->type = REGF_TYPE_NK;
-
 	/* get the initial nk record */
 	
-	if ( !prs_nk_rec( "nk_rec", &hbin->ps, depth, &rec->data.nk ))
+	if ( !prs_nk_rec( "nk_rec", &hbin->ps, depth, nk ))
 		return False;
 			
 	/* we now need to fill in the subkeys, values, and acls */
 		
-	if ( !prs_vk_records( "vk_rec", &hbin->ps, depth, &rec->data.nk ))
+	if ( !prs_vk_records( "vk_rec", &hbin->ps, depth, nk ))
 		return False;
-	if ( !prs_lf_records( "lf_rec", &hbin->ps, depth, &rec->data.nk ))
+	if ( !prs_lf_records( "lf_rec", &hbin->ps, depth, nk ))
 		return False;
 #if 0
-	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, &rec->data.nk ))
+	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, nk ))
 		return False;
 #endif
 		
@@ -473,12 +491,12 @@ static BOOL fetch_key( REGF_HBIN *hbin, REGF_REC *rec )
 /*******************************************************************
 *******************************************************************/
 
-REGF_REC* regfio_next_record( REGF_FILE *file )
+REGF_NK_REC* regfio_next_key( REGF_FILE *file )
 {
 	char hdr[2];
 	uint32 curr_off;
 	REGF_HBIN *hbin = file->current_hbin;
-	REGF_REC *rec;
+	REGF_NK_REC *nk;
 
 	/* peek at the next 2 bytes to get the header string */
 
@@ -487,38 +505,21 @@ REGF_REC* regfio_next_record( REGF_FILE *file )
 		return False;
 	prs_set_offset( &hbin->ps, curr_off );
 
-	if ( !(rec = PRS_ALLOC_MEM( &hbin->ps, REGF_REC, 1 )) )
+	if ( !(nk = PRS_ALLOC_MEM( &hbin->ps, REGF_NK_REC, 1 )) )
 		return NULL;
-	ZERO_STRUCTP( rec );
 
 	/* compare the header strings */
 
-	if ( strncmp( "nk", hdr, sizeof(hdr)) == 0 ) {
-		if ( !fetch_key( hbin, rec ) )
-			return False;
-				
-	}
-	else if ( strncmp( "vk", hdr, sizeof(hdr)) == 0 ) {
-		rec->type = REGF_TYPE_VK;
-		if ( !prs_vk_rec( "vk_rec", &hbin->ps, 0, &rec->data.vk ))
-			return NULL;
-	}
-	else if ( strncmp( "sk", hdr, sizeof(hdr)) == 0 ) {
-		rec->type = REGF_TYPE_SK;
-		if ( !prs_sk_rec( "sk_rec", &hbin->ps, 0, &rec->data.sk ))
-			return NULL;
-	}
-	else if ( strncmp( "lf", hdr, sizeof(hdr)) == 0 ) {
-		rec->type = REGF_TYPE_LF;
-		if ( !prs_lf_rec( "lf_rec", &hbin->ps, 0, &rec->data.lf ))
-			return NULL;
-	}
-	else {
-		DEBUG(0,("regfio_next_record: unknown record type [%x %x]\n", hdr[0], hdr[1]));
+	if ( strncmp( "nk", hdr, sizeof(hdr)) ) {
+		/* fail if we are not at the beginning of another key */
+		DEBUG(0,("regfio_next_key: dead end.  no nk_rec ready to process\n"));
 		return NULL;
 	}
 
-	return rec;
+	if ( !prs_key( hbin, nk) )
+		return NULL;
+				
+	return nk;
 
 }
 

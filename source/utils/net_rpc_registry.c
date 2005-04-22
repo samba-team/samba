@@ -259,8 +259,8 @@ static int rpc_registry_backup( int argc, const char **argv )
 
 static int rpc_registry_dump( int argc, const char **argv )
 {
-	REGF_FILE *registry;
-	REGF_REC  *rec;
+	REGF_FILE   *registry;
+	REGF_NK_REC *nk;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc dump <file> \n");
@@ -274,8 +274,8 @@ static int rpc_registry_dump( int argc, const char **argv )
 	}
 	d_printf("ok\n");
 	
-	while ( (rec = regfio_next_record( registry ) ) != NULL ) {
-		;;
+	while ( (nk = regfio_next_key( registry ) ) != NULL ) {
+		d_printf("processed key [%s]\n", nk->keyname);
 	}
 	
 	
