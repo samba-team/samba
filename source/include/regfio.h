@@ -123,6 +123,8 @@ typedef struct {
 /* HBIN block */
 
 typedef struct {
+	uint32 file_offset;		/* my offset in the regostry file */
+	
 	char   header[HBIN_HDR_SIZE];	/* "hbin" */
 	uint32 first_hbin_off;		/* offset from first hbin block */
 	uint32 next_hbin_off;		/* offset from next hbin block */

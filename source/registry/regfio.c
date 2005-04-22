@@ -86,6 +86,16 @@ static int read_block( prs_struct *ps, off_t file_offset, int fd )
 	return bytes_read;
 }
 
+
+/*******************************************************************
+*******************************************************************/
+
+static uint32 find_hbin_container( uint32 offset )
+{
+	/* assume a 4Kb block size */
+	return ( (REGF_BLOCKSIZE + HBIN_HDR_SIZE + offset) & 0xFFFFF000 );
+}
+
 /*******************************************************************
 *******************************************************************/
 
@@ -278,9 +288,9 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 {
 	REGF_HBIN *hbin;
 	
-	if ( !(hbin = (REGF_HBIN*)malloc(sizeof(REGF_HBIN)) ) ) 
+	if ( !(hbin = TALLOC_ZERO_P(file->mem_ctx, REGF_HBIN)) ) 
 		return NULL;
-	ZERO_STRUCTP( hbin );
+	hbin->file_offset = offset;
 	
 	prs_init( &hbin->ps, REGF_BLOCKSIZE, file->mem_ctx, UNMARSHALL );
 	
@@ -320,12 +330,12 @@ static BOOL prs_hash_rec( const char *desc, prs_struct *ps, int depth, REGF_HASH
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_lf_records( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
 {
 	int i;
 	REGF_LF_REC *lf = &nk->subkeys;
 
-	prs_debug(ps, depth, desc, "prs_lf_records");
+	prs_debug(&hbin->ps, depth, desc, "prs_lf_records");
 	depth++;
 
 	/* check if we have anything to do first */
@@ -333,23 +343,23 @@ static BOOL prs_lf_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 	if ( nk->num_subkeys == 0 )
 		return True;
 
-	/* move the LF record */
+	/* move to the LF record */
 
-	if ( !prs_set_offset( ps, nk->subkeys_off+HBIN_HDR_SIZE ) )
+	if ( !prs_set_offset( &hbin->ps, nk->subkeys_off + HBIN_HDR_SIZE - hbin->first_hbin_off ) )
 		return False;
 
 	
-	if ( !prs_uint8s( True, "header", ps, depth, lf->header, sizeof( lf->header )) )
+	if ( !prs_uint8s( True, "header", &hbin->ps, depth, lf->header, sizeof( lf->header )) )
 		return False;
 		
-	if ( !prs_uint16( "num_keys", ps, depth, &lf->num_keys))
+	if ( !prs_uint16( "num_keys", &hbin->ps, depth, &lf->num_keys))
 		return False;
 
-	if ( !(lf->hashes = PRS_ALLOC_MEM( ps, REGF_HASH_REC, lf->num_keys )) )
+	if ( !(lf->hashes = PRS_ALLOC_MEM( &hbin->ps, REGF_HASH_REC, lf->num_keys )) )
 		return False;
 
 	for ( i=0; i<lf->num_keys; i++ ) {
-		if ( !prs_hash_rec( "hash_rec", ps, depth, &lf->hashes[i] ) )
+		if ( !prs_hash_rec( "hash_rec", &hbin->ps, depth, &lf->hashes[i] ) )
 			return False;
 	}
 
@@ -422,13 +432,15 @@ static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC
 }
 
 /*******************************************************************
+ read a VK record which is contained in the HBIN block stored 
+ in the prs_struct *ps.
 *******************************************************************/
 
-static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
 {
 	int i;
 
-	prs_debug(ps, depth, desc, "prs_vk_records");
+	prs_debug(&hbin->ps, depth, desc, "prs_vk_records");
 	depth++;
 	
 	/* check if we have anything to do first */
@@ -436,21 +448,23 @@ static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 	if ( nk->num_values == 0 )
 		return True;
 		
-	if ( !(nk->values = PRS_ALLOC_MEM( ps, REGF_VK_REC, nk->num_values ) ) )
+	if ( !(nk->values = PRS_ALLOC_MEM( &hbin->ps, REGF_VK_REC, nk->num_values ) ) )
 		return False;
 	
-	if ( !prs_set_offset( ps, nk->values_off+HBIN_HDR_SIZE) )
+	/* convert the offset to something relative to this HBIN block */
+	
+	if ( !prs_set_offset( &hbin->ps, nk->values_off+HBIN_HDR_SIZE-hbin->first_hbin_off) )
 		return False;
 		
 	for ( i=0; i<nk->num_values; i++ ) {
-		if ( !prs_uint32( "vk_off", ps, depth, &nk->values[i].hbin_off ) )
+		if ( !prs_uint32( "vk_off", &hbin->ps, depth, &nk->values[i].hbin_off ) )
 			return False;
 	}
 
 	for ( i=0; i<nk->num_values; i++ ) {
-		if ( !prs_set_offset( ps, nk->values[i].hbin_off+HBIN_HDR_SIZE ) )
+		if ( !prs_set_offset( &hbin->ps, nk->values[i].hbin_off+HBIN_HDR_SIZE-hbin->first_hbin_off ) )
 			return False;
-		if ( !prs_vk_rec( "vk_rec", ps, depth, &nk->values[i] ) )
+		if ( !prs_vk_rec( "vk_rec", &hbin->ps, depth, &nk->values[i] ) )
 			return False;
 	}
 
@@ -460,9 +474,11 @@ static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_key( REGF_HBIN *hbin, REGF_NK_REC *nk )
+static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
 	int depth = 0;
+	uint32 hbin_offset;
+	REGF_HBIN *sub_hbin;
 	
 	prs_debug(&hbin->ps, depth, "", "fetch_key");
 	depth++;
@@ -472,12 +488,28 @@ static BOOL prs_key( REGF_HBIN *hbin, REGF_NK_REC *nk )
 	if ( !prs_nk_rec( "nk_rec", &hbin->ps, depth, nk ))
 		return False;
 			
-	/* we now need to fill in the subkeys, values, and acls */
+	/* fill in values */
+	
+	sub_hbin = hbin;
+	hbin_offset = find_hbin_container( nk->values_off );
+	
+	if ( hbin_offset != hbin->file_offset )
+		sub_hbin = read_hbin_block( file, hbin_offset );
+
+	if ( !hbin_prs_vk_records( "vk_rec", sub_hbin, depth, nk ))
+		return False;
 		
-	if ( !prs_vk_records( "vk_rec", &hbin->ps, depth, nk ))
+	/* now get subkeys */
+	
+	sub_hbin = hbin;
+	hbin_offset = find_hbin_container( nk->subkeys_off );
+	
+	if ( hbin_offset != hbin->file_offset )
+		sub_hbin = read_hbin_block( file, hbin_offset );
+
+	if ( !hbin_prs_lf_records( "lf_rec", sub_hbin, depth, nk ))
 		return False;
-	if ( !prs_lf_records( "lf_rec", &hbin->ps, depth, nk ))
-		return False;
+
 #if 0
 	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, nk ))
 		return False;
@@ -489,7 +521,7 @@ static BOOL prs_key( REGF_HBIN *hbin, REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_nk_record( REGF_HBIN *hbin, REGF_NK_REC *nk )
+static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
 	char *buffer, *p;
 	BOOL found_next_rec = False;
@@ -522,7 +554,7 @@ static BOOL next_nk_record( REGF_HBIN *hbin, REGF_NK_REC *nk )
 	
 	if ( !prs_set_offset( &hbin->ps, PTR_DIFF(p, buffer) ) )
 		return False;
-	if ( !prs_key( hbin, nk ) )
+	if ( !hbin_prs_key( file, hbin, nk ) )
 		return False;
 	
 	return True;
@@ -639,7 +671,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	
 	while ( (hbin = read_hbin_block( file, offset )) ) {
 
-		while ( next_nk_record( hbin, nk ) ) {
+		while ( next_nk_record( file, hbin, nk ) ) {
 			if ( nk->key_type == NK_TYPE_ROOTKEY ) {
 				found = True;
 				break;
@@ -669,15 +701,14 @@ REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
 {
 	REGF_NK_REC *subkey;
 	REGF_HBIN   *hbin;
-	uint32      file_offset, hbin_offset;
+	uint32      hbin_offset, nk_offset;
 
 	/* see if there is anything left to report */
 	
 	if ( !nk || (nk->subkey_index >= nk->num_subkeys) )
 		return NULL;
 
-	file_offset = REGF_BLOCKSIZE + HBIN_HDR_SIZE + nk->subkeys.hashes[nk->subkey_index].nk_off;
-	hbin_offset = file_offset & 0xfffff000;
+	hbin_offset = find_hbin_container( nk->subkeys.hashes[nk->subkey_index].nk_off );
 	
 	/* find the HBIN block which should contain the nk record */
 	/* assume 4Kb block size here */
@@ -685,14 +716,15 @@ REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
 	if ( !(hbin = read_hbin_block( file, hbin_offset )) )
 		return NULL;
 	
-	if ( !prs_set_offset( &hbin->ps, (file_offset & 0x00000fff)) )
+	nk_offset = nk->subkeys.hashes[nk->subkey_index].nk_off;
+	if ( !prs_set_offset( &hbin->ps, (HBIN_HDR_SIZE + nk_offset - hbin->first_hbin_off) ) )
 		return NULL;
 		
 	nk->subkey_index++;
 	if ( !(subkey = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) )
 		return NULL;
 		
-	if ( !prs_key( hbin, subkey ) )
+	if ( !hbin_prs_key( file, hbin, subkey ) )
 		return NULL;
 	
 	return subkey;
