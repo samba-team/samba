@@ -393,6 +393,15 @@ NTSTATUS rpc_composite_userdel_recv(struct composite_context *c, TALLOC_CTX *mem
 }
 
 
+/**
+ * Synchronous version of userdel call
+ *
+ * @param pipe dce/rpc call pipe
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS rpc_composite_userdel(struct dcerpc_pipe *pipe,
 			       TALLOC_CTX *mem_ctx,
 			       struct rpc_composite_userdel *io)
