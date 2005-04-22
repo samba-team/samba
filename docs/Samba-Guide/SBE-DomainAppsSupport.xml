@@ -1051,7 +1051,7 @@ group: files winbind
 		Samba-3 includes a number of helper tools, plug-in modules, utilities, and test/validation facilities.
 		Samba-3 includes glue modules that help provide interoperability between MS Windows clients and UNIX/Linux
 		servers and client. It includes Winbind agents that make it possible to authenticate UNIX/Linux access attempts
-		as well as logins to an SMB/CIFS authentication server backend. Samba-3 includes name service switcher modules
+		as well as logins to an SMB/CIFS authentication server backend. Samba-3 includes name service switch (NSS) modules
 		to permit Identity resolution via SMB/CIFS servers (Windows NT4/200x, Samba, and a host of other commercial
 		server products).
 		</para>

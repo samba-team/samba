@@ -667,7 +667,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	    <primary>NICs</primary>
 	  </indexterm><indexterm>
 	    <primary>defective</primary>
-	    <secondary>hubs</secondary>
+	    <secondary>HUBs</secondary>
 	  </indexterm><indexterm>
 	    <primary>defective</primary>
 	    <secondary>switches</secondary>
@@ -677,7 +677,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	  </indexterm>
 	Networking hardware prices have fallen sharply over the past five years. A surprising number
 	of Samba networking problems over this time have been traced to defective network interface
-	cards (NICs) or defective hubs, switches, and cables.
+	cards (NICs) or defective HUBs, switches, and cables.
 	</para>
 
 	<para><indexterm>
@@ -699,7 +699,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	  </indexterm><indexterm>
 	    <primary>data integrity</primary>
 	  </indexterm>
-	Defective NICs, hubs, and switches may appear as intermittent network access problems, intermittent
+	Defective NICs, HUBs, and switches may appear as intermittent network access problems, intermittent
 	or persistent data corruption, slow network throughput, low performance, or even as blue-screen-of-death (BSOD)
 	problems with MS Windows clients. In one case, a company updated several workstations with newer, faster
 	Windows client machines that triggered problems during logon as well as data integrity problems on
