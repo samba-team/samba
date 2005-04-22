@@ -1,5 +1,9 @@
 2005-04-22  Johan Danielsson  <joda@pdc.kth.se>
 
+	* login.1: document limits.conf
+	
+	* Makefile.am: limits_conf.c
+	
 	* login_locl.h: template for limits.conf
 	
 	* login.c: read limits.conf (from /etc/security by default,
