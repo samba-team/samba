@@ -400,21 +400,19 @@ static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC
 	if ( vk->data_size != 0 ) {
 		BOOL charmode = vk->type & (REG_SZ|REG_MULTI_SZ);
 
-		if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
-			return False;
-
 		/* the data is stored in the offset if the size <= 4 */
 
-		if ( vk->data_size > 4 ) {
-			/* set the offset */
-		
+		if ( vk->data_size & VK_DATA_IN_OFFSET ) {
+			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
+				return False;
 			if ( !(prs_set_offset( ps, vk->data_off+HBIN_HDR_SIZE )) )
 				return False;
-
 			if ( !prs_uint8s( charmode, "data", ps, depth, vk->data, vk->data_size) )
 				return False;
 		}
 		else {
+			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, 4 ) ) )
+				return False;
 			SIVAL( vk->data, 0, vk->data_off );
 		}
 		
