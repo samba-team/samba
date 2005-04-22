@@ -225,17 +225,8 @@ BOOL torture_userinfo(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
+	if (!NT_STATUS_IS_OK(status)) return False;
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse dcerpc binding '%s'\n", binding);
-		talloc_free(mem_ctx);
-		ret = False;
-		goto done;
-	}
 	name.string = lp_workgroup();
 
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
