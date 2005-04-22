@@ -139,7 +139,7 @@ make_result (krb5_data *data,
 }
 
 static void
-reply_error (krb5_principal server,
+reply_error (krb5_realm realm,
 	     int s,
 	     struct sockaddr *sa,
 	     int sa_size,
@@ -150,9 +150,19 @@ reply_error (krb5_principal server,
     krb5_error_code ret;
     krb5_data error_data;
     krb5_data e_data;
+    krb5_principal server = NULL;
 
     if (make_result(&e_data, result_code, expl))
 	return;
+
+    if (realm) {
+	ret = krb5_make_principal (context, &server, realm,
+				   "kadmin", "changepw", NULL);
+	if (ret) {
+	    krb5_data_free (&e_data);
+	    return;
+	}
+    }
 
     ret = krb5_mk_error (context,
 			 error_code,
@@ -163,6 +173,8 @@ reply_error (krb5_principal server,
 			 NULL,
 			 NULL,
 			 &error_data);
+    if (server)
+	krb5_free_principal(context, server);
     krb5_data_free (&e_data);
     if (ret) {
 	krb5_warn (context, ret, "Could not even generate error reply");
@@ -409,7 +421,7 @@ out:
 
 static int
 verify (krb5_auth_context *auth_context,
-	krb5_principal server,
+	krb5_realm *realms,
 	krb5_keytab keytab,
 	krb5_ticket **ticket,
 	krb5_data *out_data,
@@ -424,6 +436,7 @@ verify (krb5_auth_context *auth_context,
     u_int16_t pkt_len, pkt_ver, ap_req_len;
     krb5_data ap_req_data;
     krb5_data krb_priv_data;
+    krb5_realm *r;
 
     pkt_len = (msg[0] << 8) | (msg[1]);
     pkt_ver = (msg[2] << 8) | (msg[3]);
@@ -431,13 +444,13 @@ verify (krb5_auth_context *auth_context,
     if (pkt_len != len) {
 	krb5_warnx (context, "Strange len: %ld != %ld", 
 		    (long)pkt_len, (long)len);
-	reply_error (server, s, sa, sa_size, 0, 1, "Bad request");
+	reply_error (NULL, s, sa, sa_size, 0, 1, "Bad request");
 	return 1;
     }
     if (pkt_ver != KRB5_KPASSWD_VERS_CHANGEPW &&
 	pkt_ver != KRB5_KPASSWD_VERS_SETPW) {
 	krb5_warnx (context, "Bad version (%d)", pkt_ver);
-	reply_error (server, s, sa, sa_size, 0, 1, "Wrong program version");
+	reply_error (NULL, s, sa, sa_size, 0, 1, "Wrong program version");
 	return 1;
     }
     *version = pkt_ver;
@@ -448,26 +461,56 @@ verify (krb5_auth_context *auth_context,
     ret = krb5_rd_req (context,
 		       auth_context,
 		       &ap_req_data,
-		       server,
+		       NULL,
 		       keytab,
 		       NULL,
 		       ticket);
     if (ret) {
-	if(ret == KRB5_KT_NOTFOUND) {
-	    char *name;
-	    krb5_unparse_name(context, server, &name);
-	    krb5_warnx (context, "krb5_rd_req: %s (%s)", 
-			krb5_get_err_text(context, ret), name);
-	    free(name);
-	} else
-	    krb5_warn (context, ret, "krb5_rd_req");
-	reply_error (server, s, sa, sa_size, ret, 3, "Authentication failed");
+	krb5_warn (context, ret, "krb5_rd_req");
+	reply_error (NULL, s, sa, sa_size, ret, 3, "Authentication failed");
 	return 1;
+    }
+
+    /* verify realm and principal */
+    for (r = realms; *r != NULL; r++) {
+	krb5_principal principal;
+	krb5_boolean same;
+
+	ret = krb5_make_principal (context, 
+				   &principal,
+				   *r,
+				   "kadmin",
+				   "changepw",
+				   NULL);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_make_principal");
+
+	same = krb5_principal_compare(context, principal, (*ticket)->server);
+	krb5_free_principal(context, principal);
+	if (same == TRUE)
+	    break;
+    }
+    if (*r == NULL) {
+	char *str;
+	krb5_unparse_name(context, (*ticket)->server, &str);
+	krb5_warnx (context, "client used not valid principal %s", str);
+	free(str);
+	reply_error (NULL, s, sa, sa_size, ret, 1,
+		     "Bad request");
+	goto out;
+    }
+
+    if (strcmp((*ticket)->server->realm, (*ticket)->client->realm) != 0) {
+	krb5_warnx (context, "server realm (%s) not same a client realm (%s)",
+		    (*ticket)->server->realm, (*ticket)->client->realm);
+	reply_error ((*ticket)->server->realm, s, sa, sa_size, ret, 1,
+		     "Bad request");
+	goto out;
     }
 
     if (!(*ticket)->ticket.flags.initial) {
 	krb5_warnx (context, "initial flag not set");
-	reply_error (server, s, sa, sa_size, ret, 1,
+	reply_error ((*ticket)->server->realm, s, sa, sa_size, ret, 1,
 		     "Bad request");
 	goto out;
     }
@@ -482,7 +525,8 @@ verify (krb5_auth_context *auth_context,
     
     if (ret) {
 	krb5_warn (context, ret, "krb5_rd_priv");
-	reply_error (server, s, sa, sa_size, ret, 3, "Bad request");
+	reply_error ((*ticket)->server->realm, s, sa, sa_size, ret, 3, 
+		     "Bad request");
 	goto out;
     }
     return 0;
@@ -493,7 +537,7 @@ out:
 }
 
 static void
-process (krb5_principal server,
+process (krb5_realm *realms,
 	 krb5_keytab keytab,
 	 int s,
 	 krb5_address *this_addr,
@@ -537,7 +581,7 @@ process (krb5_principal server,
 	goto out;
     }
 
-    if (verify (&auth_context, server, keytab, &ticket, &out_data,
+    if (verify (&auth_context, realms, keytab, &ticket, &out_data,
 		&version, s, sa, sa_size, msg, len) == 0) {
 	change (auth_context,
 		ticket->client,
@@ -558,31 +602,18 @@ static int
 doit (krb5_keytab keytab, int port)
 {
     krb5_error_code ret;
-    krb5_principal server;
     int *sockets;
     int maxfd;
-    char *realm;
+    krb5_realm *realms;
     krb5_addresses addrs;
     unsigned n, i;
     fd_set real_fdset;
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
 
-    ret = krb5_get_default_realm (context, &realm);
+    ret = krb5_get_default_realms(context, &realms);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_get_default_realm");
-
-    ret = krb5_build_principal (context,
-				&server,
-				strlen(realm),
-				realm,
-				"kadmin",
-				"changepw",
-				NULL);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_build_principal");
-
-    free (realm);
+	krb5_err (context, 1, ret, "krb5_get_default_realms");
 
     if (explicit_addresses.len) {
 	addrs = explicit_addresses;
@@ -650,14 +681,14 @@ doit (krb5_keytab keytab, int port)
 			krb5_err (context, 1, errno, "recvfrom");
 		}
 
-		process (server, keytab, sockets[i],
+		process (realms, keytab, sockets[i],
 			 &addrs.val[i],
 			 sa, addrlen,
 			 buf, ret);
 	    }
     }
     krb5_free_addresses (context, &addrs);
-    krb5_free_principal (context, server);
+    krb5_free_host_realm (context, realms);
     krb5_free_context (context);
     return 0;
 }
