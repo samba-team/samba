@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 
-#define TEST_USERNAME  "libnetuserinfotest"
+#define TEST_USERNAME  "libnetusermantest"
 
 
 static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
@@ -235,17 +235,7 @@ BOOL torture_useradd(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse dcerpc binding '%s'\n", binding);
-		talloc_free(mem_ctx);
-		ret = False;
-		goto done;
-	}
+	if (!NT_STATUS_IS_OK(status)) return False;
 
 	domain_name.string = lp_workgroup();
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
@@ -290,17 +280,7 @@ BOOL torture_userdel(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to parse dcerpc binding '%s'\n", binding);
-		talloc_free(mem_ctx);
-		ret = False;
-		goto done;
-	}
+	if (!NT_STATUS_IS_OK(status)) return False;
 
 	domain_name.string = lp_workgroup();
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
