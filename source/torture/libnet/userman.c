@@ -251,7 +251,9 @@ BOOL torture_useradd(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	domain_name.string = lp_workgroup();
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
@@ -296,7 +298,9 @@ BOOL torture_userdel(void)
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	
-	if (!NT_STATUS_IS_OK(status)) return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	domain_name.string = lp_workgroup();
 	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
