@@ -1,3 +1,12 @@
+2005-04-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login_locl.h: template for limits.conf
+	
+	* login.c: read limits.conf (from /etc/security by default,
+	overridable in login.conf)
+	
+	* limits_conf.c: implement a parser for limits.conf
+	
 2004-09-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login.c: use krb5_appdefault_boolean instead of
