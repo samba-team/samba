@@ -17,46 +17,117 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
 */
 
+/************************************************************
+ * Most of this information was obtained from 
+ * http://www.wednesday.demon.co.uk/dosreg.html
+ * Thanks Nigel!
+ ***********************************************************/
+
+
 #ifndef _REGFIO_H
 #define _REGFIO_H
 
-/*
- * Macros
- */
+/* Macros */
  
-#define REGF_HDR_SIZE		4
-#define HBIN_HDR_SIZE		4
-
 #define REGF_BLOCKSIZE		0x1000
 
-/* 
- * REGF file information (including header block data)
- */
- 
-typedef struct {
+/* header sizes for various records */
 
-} REGF_NK_RECORD;
- 
+#define REGF_HDR_SIZE		4
+#define HBIN_HDR_SIZE		4
+#define REC_HDR_SIZE		2
 
-typedef struct {
+/* used by REGF_REC->type */
 
-} REGF_LF_RECORD;
+#define	REGF_TYPE_NK		1
+#define	REGF_TYPE_LF		2
+#define	REGF_TYPE_VK		3
+#define	REGF_TYPE_SK		4
 
-typedef struct {
-
-} REGF_VK_RECORD;
+/* ??? List -- list of key offsets and hashed names for consistency */
 
 typedef struct {
-
-} REGF_SK_RECORD;
-
-typedef struct {
-
-} REGF_HASH_RECORD;
+	uint32 nk_off;
+	uint8 keycheck[sizeof(uint32)];
+} REGF_HASH_REC;
 
 typedef struct {
+	char header[REC_HDR_SIZE];
+	uint16 num_keys;
+	REGF_HASH_REC *hashes;
+} REGF_LF_REC;
 
-} REGF_VALUE_LIST;
+/* Key Value */
+
+typedef struct {
+	uint32 hbin_off;
+	
+	char header[REC_HDR_SIZE];
+	char *valuename;
+	uint32 data_size;
+	uint32 data_off;
+	uint8  *data;
+	uint32 type;
+	uint16 flag;
+} REGF_VK_REC;
+
+
+/* Key Security */
+
+typedef struct {
+	char header[REC_HDR_SIZE];
+	uint32 prev_sk_off;
+	uint32 next_sk_off;
+	uint32 ref_count;
+	uint32 size;
+	SEC_DESC *sec_desc;
+} REGF_SK_REC;
+
+/* Key Name */ 
+
+typedef struct {
+	uint32 hbin_off;	/* offset from beginning of this hbin block */
+	
+	/* header information */
+	
+	char header[REC_HDR_SIZE];
+	uint16 key_type;
+	NTTIME mtime;
+	uint32 parent_off;	/* back pointer in registry hive */
+	uint32 classname_off;	
+	char *classname;
+	char *keyname;
+	
+	/* children */
+	
+	uint32 num_subkeys;
+	uint32 subkeys_off;	/* hash records that point to NK records */	
+	uint32 num_values;
+	uint32 values_off;	/* value lists which point to VK records */
+	uint32 sk_off;		/* offset to SK record */
+	
+	/* link in the other records here */
+	
+	REGF_LF_REC subkeys;
+	REGF_VK_REC *values;
+	REGF_SK_REC *acl;
+	
+} REGF_NK_REC;
+
+
+/* container for various record formats */
+
+typedef struct {
+	int type;		/* REGF_TYPE_XXX */
+	union {
+		REGF_NK_REC	nk;
+		REGF_LF_REC	lf;
+		REGF_VK_REC 	vk;
+		REGF_SK_REC	sk;
+	} data;
+} REGF_REC;
+
+/* HBIN block */
 
 typedef struct {
 	char   header[HBIN_HDR_SIZE];	/* "hbin" */
@@ -69,6 +140,8 @@ typedef struct {
 
 	BOOL dirty;			/* should block be flushed to disk before releasing? */
 } REGF_HBIN;
+
+/* REGF block */
  
 typedef struct {
 	/* run time information */
@@ -86,11 +159,10 @@ typedef struct {
 } REGF_FILE;
 
 
-/* 
- * Function Declarations
- */
+/* Function Declarations */
  
 REGF_FILE* regfio_open( const char *filename, int flags, int mode );
+REGF_REC*  regfio_next_record( REGF_FILE *file );
 int        regfio_close( REGF_FILE *r );
 
 

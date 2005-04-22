@@ -260,6 +260,7 @@ static int rpc_registry_backup( int argc, const char **argv )
 static int rpc_registry_dump( int argc, const char **argv )
 {
 	REGF_FILE *registry;
+	REGF_REC  *rec;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc dump <file> \n");
@@ -272,6 +273,11 @@ static int rpc_registry_dump( int argc, const char **argv )
 		return 1;
 	}
 	d_printf("ok\n");
+	
+	while ( (rec = regfio_next_record( registry ) ) != NULL ) {
+		;;
+	}
+	
 	
 	
 	

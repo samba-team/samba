@@ -155,6 +155,117 @@ static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 /*******************************************************************
 *******************************************************************/
 
+static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+{
+	uint16 class_length, name_length;
+	uint32 start;
+
+	nk->hbin_off = prs_offset( ps );
+	start = nk->hbin_off;
+	
+	prs_debug(ps, depth, desc, "prs_nk_rec");
+	depth++;
+	
+	if ( !prs_uint8s( True, "header", ps, depth, nk->header, sizeof( nk->header )) )
+		return False;
+		
+	if ( !prs_uint16( "key_type", ps, depth, &nk->key_type ))
+		return False;
+	if ( !smb_io_time( "mtime", &nk->mtime, ps, depth ))
+		return False;
+		
+	if ( !prs_set_offset( ps, start+0x0010 ) )
+		return False;
+	if ( !prs_uint32( "parent_off", ps, depth, &nk->parent_off ))
+		return False;
+	if ( !prs_uint32( "num_subkeys", ps, depth, &nk->num_subkeys ))
+		return False;
+		
+	if ( !prs_set_offset( ps, start+0x001c ) )
+		return False;
+	if ( !prs_uint32( "subkeys_off", ps, depth, &nk->subkeys_off ))
+		return False;
+		
+	if ( !prs_set_offset( ps, start+0x0024 ) )
+		return False;
+	if ( !prs_uint32( "num_values", ps, depth, &nk->num_values ))
+		return False;
+	if ( !prs_uint32( "values_off", ps, depth, &nk->values_off ))
+		return False;
+	if ( !prs_uint32( "sk_off", ps, depth, &nk->sk_off ))
+		return False;
+	if ( !prs_uint32( "classname_off", ps, depth, &nk->classname_off ))
+		return False;
+
+	if ( !prs_set_offset( ps, start+0x0048 ) )
+		return False;
+	if ( !prs_uint16( "name_length", ps, depth, &name_length ))
+		return False;
+	if ( !prs_uint16( "class_length", ps, depth, &class_length ))
+		return False;	
+		
+	if ( class_length ) {
+		;;
+	}
+	
+	if ( name_length ) {
+		nk->keyname = PRS_ALLOC_MEM( ps, char, name_length+1 );
+		if ( !prs_uint8s( True, "name", ps, depth, nk->keyname, name_length) )
+			return False;
+		nk->keyname[name_length] = '\0';
+	}
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC *vk )
+{
+	prs_debug(ps, depth, desc, "prs_Vk_rec");
+	depth++;
+	
+	if ( !prs_uint8s( True, "header", ps, depth, vk->header, sizeof( vk->header )) )
+		return False;
+
+
+	return True;
+}
+
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_sk_rec( const char *desc, prs_struct *ps, int depth, REGF_SK_REC *sk )
+{
+	prs_debug(ps, depth, desc, "prs_sk_rec");
+	depth++;
+	
+	if ( !prs_uint8s( True, "header", ps, depth, sk->header, sizeof( sk->header )) )
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_lf_rec( const char *desc, prs_struct *ps, int depth, REGF_LF_REC *lf )
+{
+	prs_debug(ps, depth, desc, "prs_lf_rec");
+	depth++;
+	
+	if ( !prs_uint8s( True, "header", ps, depth, lf->header, sizeof( lf->header )) )
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
 static uint32 regf_block_checksum( prs_struct *ps )
 {
 	char *buffer = prs_data_p( ps );
@@ -234,6 +345,183 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	
 	return hbin;
 }
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_hash_rec( const char *desc, prs_struct *ps, int depth, REGF_HASH_REC *hash )
+{
+	prs_debug(ps, depth, desc, "prs_hash_rec");
+	depth++;
+
+	if ( !prs_uint32( "nk_off", ps, depth, &hash->nk_off ))
+		return False;
+	if ( !prs_uint8s( True, "keycheck", ps, depth, hash->keycheck, sizeof( hash->keycheck )) )
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_lf_records( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+{
+	int i;
+	REGF_LF_REC *lf = &nk->subkeys;
+
+	prs_debug(ps, depth, desc, "prs_lf_records");
+	depth++;
+
+	/* check if we have anything to do first */
+	
+	if ( nk->num_subkeys == 0 )
+		return True;
+
+	/* move the LF record */
+
+	if ( !prs_set_offset( ps, nk->subkeys_off+HBIN_HDR_SIZE ) )
+		return False;
+
+	
+	if ( !prs_uint8s( True, "header", ps, depth, lf->header, sizeof( lf->header )) )
+		return False;
+		
+	if ( !prs_uint16( "num_keys", ps, depth, &lf->num_keys))
+		return False;
+
+	if ( !(lf->hashes = PRS_ALLOC_MEM( ps, REGF_HASH_REC, lf->num_keys )) )
+		return False;
+
+	for ( i=0; i<lf->num_keys; i++ ) {
+		if ( !prs_hash_rec( "hash_rec", ps, depth, &lf->hashes[i] ) )
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL prs_vk_records( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
+{
+	int i;
+
+	prs_debug(ps, depth, desc, "prs_vk_records");
+	depth++;
+	
+	/* check if we have anything to do first */
+	
+	if ( nk->num_values == 0 )
+		return True;
+		
+	if ( !(nk->values = PRS_ALLOC_MEM( ps, REGF_VK_REC, nk->num_values ) ) )
+		return False;
+	
+	if ( !prs_set_offset( ps, nk->values_off+HBIN_HDR_SIZE) )
+		return False;
+		
+	for ( i=0; i<nk->num_values; i++ ) {
+		if ( !prs_uint32( "vk_off", ps, depth, &nk->values[i].hbin_off ) )
+			return False;
+	}
+
+	for ( i=0; i<nk->num_values; i++ ) {
+		if ( !prs_set_offset( ps, nk->values[i].hbin_off+HBIN_HDR_SIZE ) )
+			return False;
+#if 0
+		if ( !prs_vk_rec( "vk_rec", ps, depth, &nk->values[i] ) )
+			return False;
+#endif
+	}
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL fetch_key( REGF_HBIN *hbin, REGF_REC *rec )
+{
+	int depth = 0;
+	
+	prs_debug(&hbin->ps, depth, "", "fetch_key");
+	depth++;
+	
+	rec->type = REGF_TYPE_NK;
+
+	/* get the initial nk record */
+	
+	if ( !prs_nk_rec( "nk_rec", &hbin->ps, depth, &rec->data.nk ))
+		return False;
+			
+	/* we now need to fill in the subkeys, values, and acls */
+		
+	if ( !prs_vk_records( "vk_rec", &hbin->ps, depth, &rec->data.nk ))
+		return False;
+	if ( !prs_lf_records( "lf_rec", &hbin->ps, depth, &rec->data.nk ))
+		return False;
+#if 0
+	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, &rec->data.nk ))
+		return False;
+#endif
+		
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+REGF_REC* regfio_next_record( REGF_FILE *file )
+{
+	char hdr[2];
+	uint32 curr_off;
+	REGF_HBIN *hbin = file->current_hbin;
+	REGF_REC *rec;
+
+	/* peek at the next 2 bytes to get the header string */
+
+	curr_off = prs_offset( &hbin->ps );
+	if ( !prs_uint8s( True, "header", &hbin->ps, 0, hdr, sizeof( hdr )) )
+		return False;
+	prs_set_offset( &hbin->ps, curr_off );
+
+	if ( !(rec = PRS_ALLOC_MEM( &hbin->ps, REGF_REC, 1 )) )
+		return NULL;
+	ZERO_STRUCTP( rec );
+
+	/* compare the header strings */
+
+	if ( strncmp( "nk", hdr, sizeof(hdr)) == 0 ) {
+		if ( !fetch_key( hbin, rec ) )
+			return False;
+				
+	}
+	else if ( strncmp( "vk", hdr, sizeof(hdr)) == 0 ) {
+		rec->type = REGF_TYPE_VK;
+		if ( !prs_vk_rec( "vk_rec", &hbin->ps, 0, &rec->data.vk ))
+			return NULL;
+	}
+	else if ( strncmp( "sk", hdr, sizeof(hdr)) == 0 ) {
+		rec->type = REGF_TYPE_SK;
+		if ( !prs_sk_rec( "sk_rec", &hbin->ps, 0, &rec->data.sk ))
+			return NULL;
+	}
+	else if ( strncmp( "lf", hdr, sizeof(hdr)) == 0 ) {
+		rec->type = REGF_TYPE_LF;
+		if ( !prs_lf_rec( "lf_rec", &hbin->ps, 0, &rec->data.lf ))
+			return NULL;
+	}
+	else {
+		DEBUG(0,("regfio_next_record: unknown record type [%x %x]\n", hdr[0], hdr[1]));
+		return NULL;
+	}
+
+	return rec;
+
+}
+
 /*******************************************************************
  Open the registry file and then read in the REGF block to get the 
  first hbin offset.
