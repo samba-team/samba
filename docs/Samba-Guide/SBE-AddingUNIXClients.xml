@@ -523,8 +523,8 @@
 
 	<para>
 	The instructions given here apply to the Samba environment as shown in Chapters 6 and 7.
-	If your network does not have an LDAP slave server (i.e., Chapter 6 configuration), you
-	must change the target LDAP server from <constant>lapdc</constant> to <constant>massive.</constant>
+	If the network does not have an LDAP slave server (i.e., Chapter 6 configuration), 
+	change the target LDAP server from <constant>lapdc</constant> to <constant>massive.</constant>
 	</para>
 
 	<procedure>
@@ -605,7 +605,7 @@ sammy:x:4321:
 		<primary>group membership</primary>
 	      </indexterm>
 		This shows that all is working as it should. Notice that in the LDAP database
-		the users primary and secondary group memberships are identical. It is not
+		the users' primary and secondary group memberships are identical. It is not
 		necessary to add secondary group memberships (in the group database) if the
 		user is already a member via primary group membership in the password database.
 		When using winbind, it is in fact undesirable to do this as it results in
@@ -705,7 +705,7 @@ Join to 'MEGANET2' failed.
 
 		<step><para>
 		<indexterm><primary>wbinfo</primary></indexterm>
-		Just joining the Domain is not quite enough, you must now provide a privilidged set
+		Just joining the Domain is not quite enough, you must now provide a priviledged set
 		of credentials through which <command>winbindd</command> can interact with the ADS
 		Domain servers. Execute the following to implant the necessary credentials:
 <screen>

@@ -397,7 +397,6 @@
 [global]
         workgroup = DAMNATION
         netbios name = MERLIN
-        interfaces = eth0, lo
         passdb backend = ldapsam:ldap://localhost
         username map = /etc/samba/smbusers
         log level = 1
@@ -418,7 +417,7 @@
         set primary group script = \
 		/opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
         add machine script = /opt/IDEALX/sbin/smbldap-useradd -w '%u'
-        logon script = scripts\logon.bat
+        logon script = scripts\logon.cmd
         logon path = \\%L\profiles\%U
         logon home = \\%L\%U
         logon drive = X:
@@ -646,10 +645,24 @@ rtt min/avg/max/mdev = 0.141/0.164/0.192/0.021 ms
 		</para></step>
 
 		<step><para>
-		Obtain the domain SID from the target NT4 domain that is being
+		Pull the Domain SID from the NT4 Domain that is being migrated as follows:
+<screen>
+&rootprompt; net rpc getsid -S TRANGRESSION -U Administrator%not24get
+Storing SID S-1-5-21-1385457007-882775198-1210191635 \
+                     for Domain DAMNATION in secrets.tdb
+</screen>
+		</para>
+
+		<para>
+		Another way to obtain the domain SID from the target NT4 domain that is being
 		migrated to Samba-3 by executing the following:
 <screen>
 &rootprompt; net rpc info -S TRANSGRESSION
+</screen>
+		If this method is used, do not forget to store the SID obtained into the
+		<filename>secrets.tdb</filename> file. This can be done by executing:
+<screen>
+&rootprompt; net setlocalsid S-1-5-21-1385457007-882775198-1210191635
 </screen>
 		</para></step>
 
@@ -714,7 +727,7 @@ Let's start configuring the smbldap-tools scripts ...
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix}) 
-                         [cn=NextFreeUnixId] &gt; sambaDomainName=DAMNATION
+                      [cn=NextFreeUnixId] &gt; sambaDomainName=DAMNATION
 . ldap master server: 
               IP adress or DNS name of the master (writable) ldap server
   ldap master server [] &gt; 127.0.0.1
@@ -802,7 +815,7 @@ Setting stored password for
 		<step><para>
 		Populate the LDAP directory as shown here:
 <screen>
-&rootprompt; /opt/IDEALX/sbin/smbldap-populate -a root -u 0
+&rootprompt; /opt/IDEALX/sbin/smbldap-populate -a root -k 0 -m 0
 Using workgroup name from sambaUnixIdPooldn (smbldap.conf):
                           sambaDomainName=DAMNATION
 Using builtin directory structure
@@ -848,7 +861,7 @@ man:x:13:62:Manual pages viewer:/var/cache/man:/bin/bash
 news:x:9:13:News system:/etc/news:/bin/bash
 uucp:x:10:14:Unix-to-Unix CoPy system:/etc/uucp:/bin/bash
 +::0:0:::
-root:x:998:512:Netbios Domain Administrator:/home/users/root:/bin/false
+root:x:0:0:Netbios Domain Administrator:/home/users/root:/bin/false
 nobody:x:999:514:nobody:/dev/null:/bin/false
 </screen>
 		Now repeat this for the group accounts as shown here:

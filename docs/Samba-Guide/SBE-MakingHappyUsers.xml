@@ -38,17 +38,12 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<varlistentry>
 		<term>Users experiencing difficulty logging onto the network</term>
 		<listitem><para>
-	    <indexterm>
-	      <primary>network</primary>
-	      <secondary>logon</secondary>
-	    </indexterm>
+		<indexterm><primary>network</primary><secondary>logon</secondary></indexterm>
+		<indexterm><primary>multiple domain controllers</primary></indexterm>
 		When a Windows client logs onto the network, many data packets are exchanged
 		between the client and the server that is providing the network logon services.
 		Each request between the client and the server must complete within a specific
 		time limit. This is one of the primary factors that govern the installation of
-	    <indexterm>
-	      <primary>multiple domain controllers</primary>
-	    </indexterm>
 		multiple domain controllers (usually called secondary or backup controllers).
 		As a rough rule, there should be one such backup controller for every
 		30 to 150 clients. The actual limits are determined by network operational
@@ -65,47 +60,38 @@ clients is conservative and if followed will minimize problems - but it is not a
 		print server, the number of clients it can service reliably is reduced
 		and a common rule is not to exceed 30 machines (Windows workstations plus
 		Domain Member servers) per Domain Controller.
-		</para></listitem></varlistentry>
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>Slow logons and log-offs</term>
 		<listitem><para>
-	    <indexterm>
-	      <primary>slow logon</primary>
-	    </indexterm>
+		<indexterm><primary>slow logon</primary></indexterm>
 		Slow logons and log-offs may be caused by many factors that include:
 
 			<itemizedlist>
-	      <listitem><para><indexterm>
-		    <primary>NetBIOS</primary>
-		    <secondary>name resolution</secondary>
-		    <tertiary>delays</tertiary>
-		  </indexterm><indexterm>
-		    <primary>WINS</primary>
-		    <secondary>server</secondary>
-		  </indexterm>
+				<listitem><para>
+				<indexterm><primary>NetBIOS</primary><secondary>name resolution</secondary>
+					<tertiary>delays</tertiary></indexterm>
+				<indexterm><primary>WINS</primary><secondary>server</secondary></indexterm>
 				Excessive delays in the resolution of a NetBIOS name to its IP
 				address. This may be observed when an overloaded domain controller 
 				is also the WINS server. Another cause may be the failure to use
 				a WINS server (this assumes that there is a single network segment).
 				</para></listitem>
 
-	      <listitem><para><indexterm>
-		    <primary>traffic collisions</primary>
-		  </indexterm><indexterm>
-		    <primary>HUB</primary>
-		  </indexterm><indexterm>
-		    <primary>Etherswitch</primary>
-		  </indexterm>
+				<listitem><para>
+				<indexterm><primary>traffic collisions</primary></indexterm>
+				<indexterm><primary>HUB</primary></indexterm>
+				<indexterm><primary>Etherswitch</primary></indexterm>
 				Network traffic collisions due to overloading of the network
 				segment &smbmdash; one short-term workaround to this may be to replace
 				network HUBs with Ether-switches.
 				</para></listitem>
 
-	      <listitem><para><indexterm>
-		    <primary>networking hardware</primary>
-		    <secondary>defective</secondary>
-		  </indexterm>
+				<listitem><para>
+				<indexterm><primary>networking hardware</primary>
+					<secondary>defective</secondary></indexterm>
 				Defective networking hardware. Over the past few years, we have seen
 				on the Samba mailing list a significant increase in the number of
 				problems that were traced to a defective network interface controller,
@@ -114,13 +100,11 @@ clients is conservative and if followed will minimize problems - but it is not a
 				the cause of the problem.
 				</para></listitem>
 
-	      <listitem><para><indexterm>
-		    <primary>profile</primary>
-		    <secondary>roaming</secondary>
-		  </indexterm><indexterm>
-		    <primary>MS Outlook</primary>
-		    <secondary>PST file</secondary>
-		  </indexterm>
+				<listitem><para>
+				<indexterm><primary>profile</primary>
+					<secondary>roaming</secondary></indexterm>
+				<indexterm><primary>MS Outlook</primary>
+					<secondary>PST file</secondary></indexterm>
 				Excessively large roaming profiles. This type of problem is typically
 				the result of poor user eduction, as well as poor network management.
 				It can be avoided by users not storing huge quantities of email in
@@ -129,16 +113,15 @@ clients is conservative and if followed will minimize problems - but it is not a
 				on the part of network management.
 				</para></listitem>
 
-		<listitem><para><indexterm>
-			<primary>WebClient</primary>
-			</indexterm>
+				<listitem><para>
+				<indexterm><primary>WebClient</primary></indexterm>
 				You should verify that the Windows XP WebClient service is not running.
 				The use of the WebClient service has been implicated in many Windows
 				networking related problems.
 				</para></listitem>
 			</itemizedlist>
-
-		</para></listitem></varlistentry>
+			</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>Loss of access to network drives and printer resources</term>
@@ -148,10 +131,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</para>
 
 			<itemizedlist>
-	    <listitem><para><indexterm>
-		  <primary>network</primary>
-		  <secondary>overload</secondary>
-		</indexterm>
+				<listitem><para>
+				<indexterm><primary>network</primary><secondary>overload</secondary></indexterm>
 				Network overload (typically indicated by a high network collision rate)
 				</para></listitem>
 
@@ -159,39 +140,32 @@ clients is conservative and if followed will minimize problems - but it is not a
 				Server overload
 				</para></listitem>
 
-	    <listitem><para><indexterm>
-		  <primary>network</primary>
-		  <secondary>timeout</secondary>
-		</indexterm>
+				<listitem><para>
+				<indexterm><primary>network</primary><secondary>timeout</secondary></indexterm>
 				Timeout causing the client to close a connection that is in use, but has
 				been latent (no traffic) for some time (5 minutes or more)
 				</para></listitem>
 
-	    <listitem><para><indexterm>
-		  <primary>network hardware</primary>
-		  <secondary>defective</secondary>
-		</indexterm>
+				<listitem><para>
+				<indexterm><primary>network hardware</primary><secondary>defective</secondary></indexterm>
 				Defective networking hardware
 				</para></listitem>
 			</itemizedlist>
 
-	  <para><indexterm>
-	      <primary>data</primary>
-	      <secondary>corruption</secondary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>data</primary><secondary>corruption</secondary></indexterm>
 		No matter what the cause, a sudden operational loss of access to network resources can
 		result in BSOD (blue screen of death) situations that necessitate rebooting of the client
 		workstation. In the case of a mild problem, retrying to access the network drive of printer
 		may restore operations, but in any case this is a serious problem as it may lead to the next
 		problem, data corruption.
-		</para></listitem></varlistentry>
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>Potential data corruption</term>
-		<listitem><para><indexterm>
-	      <primary>data</primary>
-	      <secondary>corruption</secondary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>data</primary><secondary>corruption</secondary></indexterm>
 		Data corruption is one of the most serious problems. It leads to uncertainty, anger, and 
 		frustration, and generally precipitates immediate corrective demands. Management response
 		to this type of problem may be rational, as well as highly irrational. There have been
@@ -200,7 +174,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 		out and replaced, only to find the problem caused by a low-cost network hardware item. There 
 		have been cases where server operating systems were replaced, or where Samba was updated, 
 		only to later isolate the problem due to defective client software.
-		</para></listitem></varlistentry>
+		</para></listitem>
+		</varlistentry>
 	</variablelist>
 
 	<para>
@@ -842,15 +817,12 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<sect3 id="sbehap-locgrppol">
 		<title>The Local Group Policy</title>
-	  <para><indexterm>
-	      <primary>Group Policy Objects</primary>
-	    </indexterm><indexterm>
-	      <primary>Active Directory</primary>
-	    </indexterm><indexterm>
-	      <primary>PDC</primary>
-	    </indexterm><indexterm>
-	      <primary>Group Policy editor</primary>
-	    </indexterm>
+
+		<para>
+		<indexterm><primary>Group Policy Objects</primary></indexterm>
+		<indexterm><primary>Active Directory</primary></indexterm>
+		<indexterm><primary>PDC</primary></indexterm>
+		<indexterm><primary>Group Policy editor</primary></indexterm>
 		Without an Active Directory PDC, you cannot take full advantage of Group Policy 
 		Objects. However, you can still make changes to the Local Group Policy by using 
 		the Group Policy editor (<command>gpedit.msc</command>).
@@ -879,11 +851,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<sect3>
 		<title>Profile Changes</title>
-	  <para><indexterm>
-	      <primary>NTUSER.DAT</primary>
-	    </indexterm><indexterm>
-	      <primary>%USERNAME%</primary>
-	    </indexterm>
+
+		<para>
+		<indexterm><primary>NTUSER.DAT</primary></indexterm>
+		<indexterm><primary>%USERNAME%</primary></indexterm>
 		There are two changes that should be done to each user's profile. Move each of 
 		the directories that you have excluded from being copied back and forth out of 
 		the usual profile path. Modify each user's <filename>NTUSER.DAT</filename> file 
@@ -891,17 +862,14 @@ clients is conservative and if followed will minimize problems - but it is not a
 		path (<filename>C:\Documents and Settings\%USERNAME%</filename>).
 		</para>
 
-	  <para><indexterm>
-	      <primary>Default User</primary>
-	    </indexterm><indexterm>
-	      <primary>regedt32</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>Default User</primary></indexterm>
+		<indexterm><primary>regedt32</primary></indexterm>
 		The above modifies existing user profiles. So that newly created profiles have 
 		these settings, you will need to modify the <filename>NTUSER.DAT</filename> in 
 		the <filename>C:\Documents and Settings\Default User</filename> folder on each 
 		client machine, changing the same registry keys.  You could do this by copying 
-		<filename>NTUSER.DAT</filename> to a Linux box and using
-	    <command>regedt32</command>.
+		<filename>NTUSER.DAT</filename> to a Linux box and using <command>regedt32</command>.
 		The basic method is described under <link linkend="redirfold"/>.
 		</para>
 
@@ -910,19 +878,16 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<sect3>
 		<title>Using a Network Default User Profile</title>
 
-	  <para><indexterm>
-	      <primary>NETLOGON</primary>
-	    </indexterm><indexterm>
-	      <primary>NTUSER.DAT</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>NETLOGON</primary></indexterm>
+		<indexterm><primary>NTUSER.DAT</primary></indexterm>
 		If you are using Samba as your PDC, you should create a file-share called 
 		<constant>NETLOGON</constant> and within that create a directory called 
 		<filename>Default User</filename>, which is a copy of the desired default user 
 		configuration (including a copy of <filename>NTUSER.DAT</filename>.
 		If this share exists and the <filename>Default User</filename> folder exists, 
 		the first login from a new account pulls its configuration from it.
-		See also: <ulink
-	      url="http://isg.ee.ethz.ch/tools/realmen/det/skel.en.html">
+		See also: <ulink url="http://isg.ee.ethz.ch/tools/realmen/det/skel.en.html">
 		the Real Men Don't Click</ulink> Web site.
 		</para>
 
@@ -931,14 +896,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<sect3>
 		<title>Installation of Printer Driver Auto-Download</title>
 
-	  <para><indexterm>
-	      <primary>printing</primary>
-	      <secondary>dumb</secondary>
-	    </indexterm><indexterm>
-	      <primary>dumb printing</primary>
-	    </indexterm><indexterm>
-	      <primary>Raw Print Through</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>printing</primary><secondary>dumb</secondary></indexterm>
+		<indexterm><primary>dumb printing</primary></indexterm>
+		<indexterm><primary>Raw Print Through</primary></indexterm>
 		The subject of printing is quite topical. Printing problems run second place to name
 		resolution issues today. So far in this book, you have experienced only what is generally
 		known as <quote>dumb</quote> printing. Dumb printing is the arrangement where all drivers
@@ -948,13 +909,9 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<command>Raw Print Through</command> printing.
 		</para>
 
-	  <para><indexterm>
-	      <primary>printing</primary>
-	      <secondary>drag-and-drop</secondary>
-	    </indexterm><indexterm>
-	      <primary>printing</primary>
-	      <secondary>point-n-click</secondary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>printing</primary><secondary>drag-and-drop</secondary></indexterm>
+		<indexterm><primary>printing</primary><secondary>point-n-click</secondary></indexterm>
 		Samba permits the configuration of <command>Smart</command> printing using the Microsoft
 		Windows point-and-click (also called drag-and-drop) printing. What this provides is
 		essentially the ability to print to any printer. If the local client does not yet have a
@@ -1045,6 +1002,18 @@ clients is conservative and if followed will minimize problems - but it is not a
 		book and adapt them without first working through the working examples provided. A little
 		thing over-looked can cause untold pain and may permanently tarnish your experience.
 		</para></warning>
+
+		</sect4>
+
+		<sect4>
+		<title>The Name Service Caching Daemon (nscd)</title>
+
+		<para>
+		The Name Service Caching Daemon (nscd) is a primary cause of diffculties with name
+		resolution, particularly where <command>winbind</command> is used. Winbind does its
+		own caching, thus nscd causes double caching which can lead to peculiar problems during
+		debugging. As a rule it is a good idea to turn off the name service caching daemon.
+		</para>
 
 		</sect4>
 
@@ -2491,7 +2460,7 @@ Starting ldap-server                           done
 		<step><para>
 		Execute the script that will populate the LDAP database as shown here:
 <screen>
-&rootprompt; ./smbldap-populate -a root -k 0
+&rootprompt; ./smbldap-populate -a root -k 0 -m 0
 </screen>
 		The expected output from this is:
 <screen>
