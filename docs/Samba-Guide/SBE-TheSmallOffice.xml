@@ -187,8 +187,8 @@
 		</para>
 
 		<para>
-		<indexterm><primary>ether-switch</primary></indexterm>
-		You have split the network into two separate areas. Each has its own ether-switch.
+		<indexterm><primary>ethernet switch</primary></indexterm>
+		You have split the network into two separate areas. Each has its own ethernet switch.
 		There are 20 users on the accounting network and 32 users on the financial services
 		network. The server has two network interfaces, one serving each network. The 
 		network printers will be located in a central area. You plan to install the new 
@@ -621,14 +621,14 @@ subnet 127.0.0.0 netmask 255.0.0.0 {
 		</para></step>
 
 		<step><para>
-		<indexterm><primary>Name Service Switch</primary></indexterm>
-		<indexterm><primary>NSS</primary><see>Name Service Switch</see></indexterm>
+		<indexterm><primary>name service switch</primary></indexterm>
+		<indexterm><primary>NSS</primary><see>same service switch</see></indexterm>
 	    <indexterm><primary>DNS</primary></indexterm><indexterm>
 	      <primary>DNS server</primary>
 	    </indexterm>
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
-		Configure the Name Service Switch (NSS) to handle WINS based name resolution.
+		Configure the name service switch (NSS) to handle WINS based name resolution.
 		Since this system does not use a DNS server, it is safe to remove this option from
 		the NSS configuration. Edit the <filename>/etc/nsswitch.conf</filename> file so that
 		the <constant>hosts:</constant> entry looks like this:
