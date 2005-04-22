@@ -42,6 +42,12 @@
 #define VK_FLAG_NAME_PRESENT	0x0001
 #define VK_DATA_IN_OFFSET	0x10000000
 
+/* NK record macros */
+
+#define NK_TYPE_LINKKEY		0x0010
+#define NK_TYPE_NORMALKEY	0x0020
+#define NK_TYPE_ROOTKEY		0x002c
+
 /* ??? List -- list of key offsets and hashed names for consistency */
 
 typedef struct {
@@ -85,6 +91,7 @@ typedef struct {
 
 typedef struct {
 	uint32 hbin_off;	/* offset from beginning of this hbin block */
+	uint32 subkey_index;	/* index to next subkey record to return */
 	
 	/* header information */
 	
@@ -148,8 +155,12 @@ typedef struct {
 /* Function Declarations */
  
 REGF_FILE*    regfio_open( const char *filename, int flags, int mode );
-REGF_NK_REC*  regfio_next_key( REGF_FILE *file );
 int           regfio_close( REGF_FILE *r );
+
+REGF_NK_REC*  regfio_rootkey( REGF_FILE *file );
+REGF_NK_REC*  regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk );
+
+void          regfio_mem_free( REGF_FILE *file );
 
 
 #endif	/* _REGFIO_H */

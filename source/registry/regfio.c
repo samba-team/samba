@@ -489,36 +489,43 @@ static BOOL prs_key( REGF_HBIN *hbin, REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-REGF_NK_REC* regfio_next_key( REGF_FILE *file )
+static BOOL next_nk_record( REGF_HBIN *hbin, REGF_NK_REC *nk )
 {
-	char hdr[2];
-	uint32 curr_off;
-	REGF_HBIN *hbin = file->current_hbin;
-	REGF_NK_REC *nk;
-
-	/* peek at the next 2 bytes to get the header string */
-
-	curr_off = prs_offset( &hbin->ps );
-	if ( !prs_uint8s( True, "header", &hbin->ps, 0, hdr, sizeof( hdr )) )
+	char *buffer, *p;
+	BOOL found_next_rec = False;
+	
+	if ( !hbin || !nk )
 		return False;
-	prs_set_offset( &hbin->ps, curr_off );
-
-	if ( !(nk = PRS_ALLOC_MEM( &hbin->ps, REGF_NK_REC, 1 )) )
-		return NULL;
-
-	/* compare the header strings */
-
-	if ( strncmp( "nk", hdr, sizeof(hdr)) ) {
-		/* fail if we are not at the beginning of another key */
-		DEBUG(0,("regfio_next_key: dead end.  no nk_rec ready to process\n"));
-		return NULL;
+		
+	buffer  = prs_data_p( &hbin->ps );
+	
+	p = buffer + prs_offset( &hbin->ps );
+	
+	/* scan for the record start */
+	
+	while ( PTR_DIFF(p, buffer) < prs_data_size(&hbin->ps) ) {
+		if ( strncmp( p, "nk", REC_HDR_SIZE ) == 0 ) {
+			found_next_rec = True;
+			break;
+		}
+		p++;
 	}
-
-	if ( !prs_key( hbin, nk) )
-		return NULL;
-				
-	return nk;
-
+	
+	/* mark prs_struct as done ( at end ) if no molre NK records */
+	
+	if ( !found_next_rec ) {
+		prs_set_offset( &hbin->ps, prs_data_size(&hbin->ps) );
+		return False;
+	}
+	
+	/* read the NK record into the structure */
+	
+	if ( !prs_set_offset( &hbin->ps, PTR_DIFF(p, buffer) ) )
+		return False;
+	if ( !prs_key( hbin, nk ) )
+		return False;
+	
+	return True;
 }
 
 /*******************************************************************
@@ -595,5 +602,101 @@ int regfio_close( REGF_FILE *r )
 
 	return close( fd );
 }
+
+/*******************************************************************
+*******************************************************************/
+
+void regfio_mem_free( REGF_FILE *file )
+{
+	/* free any talloc()'d memory */
+	
+	if ( file && file->mem_ctx )
+		talloc_destroy( file->mem_ctx );	
+}
+
+/*******************************************************************
+ There should be only *one* root key in the registry file based 
+ on my experience.  --jerry
+*******************************************************************/
+
+REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
+{
+	REGF_NK_REC *nk;
+	REGF_HBIN   *hbin;
+	uint32      offset = REGF_BLOCKSIZE;
+	BOOL        found = False;
+	
+	if ( !file )
+		return NULL;
+		
+	if ( !(nk = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) ) {
+		DEBUG(0,("regfio_rootkey: talloc() failed!\n"));
+		return NULL;
+	}
+	
+	/* scan through the file on HBIN block at a time looking 
+	   for an NK record with a type == 0x002c */
+	
+	while ( (hbin = read_hbin_block( file, offset )) ) {
+
+		while ( next_nk_record( hbin, nk ) ) {
+			if ( nk->key_type == NK_TYPE_ROOTKEY ) {
+				found = True;
+				break;
+			}
+		}
+		
+		if ( found ) 
+			break;
+
+		offset += hbin->block_size;
+	}
+	
+	if ( !found ) {
+		DEBUG(0,("regfio_rootkey: corrupt registry file ?  No root key record located\n"));
+		return NULL;
+	}
+
+	return nk;		
+}
+
+/*******************************************************************
+ This acts as an interator over the subkeys defined for a given 
+ NK record.  Remember that offsets are from the *first* HBIN block.
+*******************************************************************/
+
+REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
+{
+	REGF_NK_REC *subkey;
+	REGF_HBIN   *hbin;
+	uint32      file_offset, hbin_offset;
+
+	/* see if there is anything left to report */
+	
+	if ( !nk || (nk->subkey_index >= nk->num_subkeys) )
+		return NULL;
+
+	file_offset = REGF_BLOCKSIZE + HBIN_HDR_SIZE + nk->subkeys.hashes[nk->subkey_index].nk_off;
+	hbin_offset = file_offset & 0xfffff000;
+	
+	/* find the HBIN block which should contain the nk record */
+	/* assume 4Kb block size here */
+	
+	if ( !(hbin = read_hbin_block( file, hbin_offset )) )
+		return NULL;
+	
+	if ( !prs_set_offset( &hbin->ps, (file_offset & 0x00000fff)) )
+		return NULL;
+		
+	nk->subkey_index++;
+	if ( !(subkey = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) )
+		return NULL;
+		
+	if ( !prs_key( hbin, subkey ) )
+		return NULL;
+	
+	return subkey;
+}
+
 
 

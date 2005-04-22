@@ -260,7 +260,7 @@ static int rpc_registry_backup( int argc, const char **argv )
 static int rpc_registry_dump( int argc, const char **argv )
 {
 	REGF_FILE   *registry;
-	REGF_NK_REC *nk;
+	REGF_NK_REC *nk, *subkey;
 	
 	if (argc != 1 ) {
 		d_printf("Usage:    net rpc dump <file> \n");
@@ -274,11 +274,16 @@ static int rpc_registry_dump( int argc, const char **argv )
 	}
 	d_printf("ok\n");
 	
-	while ( (nk = regfio_next_key( registry ) ) != NULL ) {
-		d_printf("processed key [%s]\n", nk->keyname);
+	/* get the root of the registry file */
+	
+	nk = regfio_rootkey( registry );
+	d_printf("processed key [%s]\n", nk->keyname);
+	
+	/* no do a breadth first search of the tree */
+	
+	while ( (subkey = regfio_fetch_subkey( registry, nk )) ) {
+		d_printf("processed key [%s]\n", subkey->keyname);
 	}
-	
-	
 	
 	
 	
