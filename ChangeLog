@@ -1,3 +1,9 @@
+2005-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswdd.c: Support multi-realms databases, requires
+	that all the realms are configured on the KDC in krb5.conf with
+	[libdefaults]default_realm stanzas.
+
 2005-04-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: spell succeeded correctly, From Sean Chittenden
