@@ -70,7 +70,7 @@ static BOOL pack_devicemode_alloc(NT_DEVICEMODE *nt_devmode,
 {
 	*buflen = pack_devicemode(nt_devmode, NULL, 0);
 
-	*buf = malloc(*buflen);
+	*buf = SMB_MALLOC(*buflen);
 
 	if (*buf == NULL)
 		return False;
@@ -83,15 +83,6 @@ static BOOL pack_devicemode_alloc(NT_DEVICEMODE *nt_devmode,
 
 	return True;
 }
-
-#define ADD_TO_ARRAY_TALLOC(mem_ctx, elem, array, num) \
-do { \
-       *(array) = talloc_realloc(mem_ctx, (*(array)), \
-                                 ((*(num)+1) * sizeof(**(array)))); \
-       if ((*(array)) != NULL) { \
-       (*(array))[*(num)] = (elem); \
-       (*(num)) += 1; } \
-} while (0)
 
 /* already defined in include/ldap_smb.h */
 #if 0 
@@ -139,7 +130,7 @@ static struct ldap_entry *ldap_entry_init(void)
 	if (mem_ctx == NULL)
 		return NULL;
 
-	result = talloc(mem_ctx, sizeof(struct ldap_entry));
+	result = TALLOC_P(mem_ctx, struct ldap_entry);
 	if (result == NULL) {
 		talloc_destroy(mem_ctx);
 		return NULL;
@@ -190,9 +181,8 @@ static void ldapmsg2entry(LDAP *ld, LDAPMessage *msg,
 		if (attribute.name == NULL)
 			return;
 
-		attribute.values = talloc(result->mem_ctx,
-					  attribute.num_values *
-					  sizeof(DATA_BLOB));
+		attribute.values = TALLOC_ARRAY(result->mem_ctx, DATA_BLOB,
+						attribute.num_values);
 		if (attribute.values == NULL)
 			return;
 
@@ -207,8 +197,8 @@ static void ldapmsg2entry(LDAP *ld, LDAPMessage *msg,
 
 		ldap_value_free_len(values);
 
-		ADD_TO_ARRAY_TALLOC(result->mem_ctx, attribute,
-				    &result->attribs, &result->num_attribs);
+		ADD_TO_ARRAY(result->mem_ctx, struct ldap_attribute, attribute,
+			     &result->attribs, &result->num_attribs);
 
 		result->has_error |= (result->attribs == NULL);
 
@@ -254,7 +244,7 @@ static void ldap_entry_bin(struct ldap_entry *entry, const char *attrname,
 		new_attrib.name = talloc_strdup(entry->mem_ctx, attrname);
 		new_attrib.num_values = 0;
 		new_attrib.values = NULL;
-		ADD_TO_ARRAY_TALLOC(entry->mem_ctx, new_attrib,
+		ADD_TO_ARRAY(entry->mem_ctx, struct ldap_attribute, new_attrib,
 				    &entry->attribs, &entry->num_attribs);
 
 		if (entry->attribs == NULL) {
@@ -267,7 +257,7 @@ static void ldap_entry_bin(struct ldap_entry *entry, const char *attrname,
 
 	value = data_blob_talloc(entry->mem_ctx, val, len);
 
-	ADD_TO_ARRAY_TALLOC(entry->mem_ctx, value, &attribute->values,
+	ADD_TO_ARRAY(entry->mem_ctx, DATA_BLOB, value, &attribute->values,
 			    &attribute->num_values);
 
 	entry->has_error = (attribute->values == NULL);
@@ -358,7 +348,7 @@ static void ldap_fetch_fstrings(struct ldap_entry *entry, const char *attrname,
 	else
 		num = attr->num_values;
 
-	*result = malloc(sizeof(fstring)*(num+1));
+	*result = SMB_MALLOC_ARRAY(fstring, num+1);
 	if (*result == NULL)
 		return;
 
@@ -387,7 +377,7 @@ static BOOL add_blob_to_bvals(DATA_BLOB value, struct berval ***bvals)
 	int num = 0;
 
 	if (*bvals == NULL) {
-		*bvals = malloc(sizeof(**bvals));
+		*bvals = SMB_MALLOC_P(struct berval *);
 		if (*bvals == NULL)
 			return False;
 		(*bvals)[0] = NULL;
@@ -396,11 +386,11 @@ static BOOL add_blob_to_bvals(DATA_BLOB value, struct berval ***bvals)
 	while ((*bvals)[num] != NULL)
 		num += 1;
 
-	*bvals = realloc(*bvals, (num+2) * sizeof(**bvals));
+	*bvals = SMB_REALLOC_ARRAY(*bvals, struct berval *, (num+2));
 	if (*bvals == NULL)
 		return False;
 
-	(*bvals)[num] = malloc(sizeof(struct berval));
+	(*bvals)[num] = SMB_MALLOC_P(struct berval);
 	if ((*bvals)[num] == NULL)
 		return False;
 
@@ -419,7 +409,7 @@ static BOOL add_mod_to_mods(struct ldapmod *mod, struct ldapmod ***mods)
 	int num = 0;
 
 	if (*mods == NULL) {
-		*mods = malloc(sizeof(**mods));
+		*mods = SMB_MALLOC_P(struct ldapmod *);
 		if (*mods == NULL)
 			return False;
 		(*mods)[0] = NULL;
@@ -428,7 +418,7 @@ static BOOL add_mod_to_mods(struct ldapmod *mod, struct ldapmod ***mods)
 	while ((*mods)[num] != NULL)
 		num += 1;
 
-	*mods = realloc(*mods, (num+2) * sizeof(**mods));
+	*mods = SMB_REALLOC_ARRAY(*mods, struct ldapmod *, (num+2));
 	if (*mods == NULL)
 		return False;
 
@@ -465,12 +455,12 @@ static struct ldapmod *delete_old_values(const struct ldap_attribute *old,
 	if (bvals == NULL)
 	    return NULL;
 
-	result = malloc(sizeof(*result));
+	result = SMB_MALLOC_P(struct ldapmod);
 	if (result == NULL)
 		return NULL;
 
 	result->mod_op = LDAP_MOD_DELETE | LDAP_MOD_BVALUES;
-	result->mod_type = strdup(old->name);
+	result->mod_type = SMB_STRDUP(old->name);
 	result->mod_bvalues = bvals;
 	return result;
 }
@@ -504,12 +494,12 @@ static struct ldapmod *add_new_values(const struct ldap_attribute *old,
 	if (bvals == NULL)
 		return NULL;
 
-	result = malloc(sizeof(*result));
+	result = SMB_MALLOC_P(struct ldapmod);
 	if (result == NULL)
 		return NULL;
 
 	result->mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
-	result->mod_type = strdup(new->name);
+	result->mod_type = SMB_STRDUP(new->name);
 	result->mod_bvalues = bvals;
 	return result;
 }
@@ -670,8 +660,8 @@ static BOOL ldap_split_dn(const char *dn, char **rdn, char **base)
 	if ((rdns[0] == NULL) || (rdns[1] == NULL))
 		goto done;
 
-	*rdn = strdup(rdns[0]);
-	*base = strdup(rdns[1]);
+	*rdn = SMB_STRDUP(rdns[0]);
+	*base = SMB_STRDUP(rdns[1]);
 
 	if ((*rdn == NULL) || (*base == NULL))
 		goto done;
@@ -963,7 +953,7 @@ NT_PRINTER_INFO_LEVEL_2 *prldap_get_printer(const char *sharename)
 	if (!init_ldap_conn())
 		return False;
 
-	printer = malloc(sizeof(*printer));
+	printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL_2);
 
 	if (printer == NULL)
 		return NULL;
@@ -1199,7 +1189,7 @@ NT_PRINTER_DRIVER_INFO_LEVEL_3 *prldap_get_driver(const char *drivername,
 	if (!init_ldap_conn())
 		return False;
 
-	driver = malloc(sizeof(*driver));
+	driver = SMB_MALLOC_P(NT_PRINTER_DRIVER_INFO_LEVEL_3);
 
 	if (driver == NULL)
 		return NULL;

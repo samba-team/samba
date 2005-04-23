@@ -155,7 +155,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 	extra_data_len = strlen(extra_data);
 
 	if (extra_data_len > 0) {
-		state->response.extra_data = strdup(extra_data);
+		state->response.extra_data = SMB_STRDUP(extra_data);
 		state->response.length += extra_data_len+1;
 	}
 

@@ -731,7 +731,7 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 	REGF_SK_REC *sk;
 	uint32 offset;
 	
-	if ( !(rb = (REGF_FILE*)malloc( sizeof(REGF_FILE) )) ) {
+	if ( !(rb = SMB_MALLOC_P(REGF_FILE*)) ) {
 		DEBUG(0,("ERROR allocating memory\n"));
 		return NULL;
 	}
