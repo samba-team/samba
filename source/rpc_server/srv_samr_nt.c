@@ -1938,7 +1938,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL can_add_account;
+	BOOL can_add_account = False;
 	SE_PRIV se_rights;
 
 	/* Get the domain SID stored in the domain policy */
