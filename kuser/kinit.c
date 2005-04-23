@@ -41,6 +41,7 @@ RCSID("$Id$");
 struct krb5_pk_identity;
 struct krb5_pk_cert;
 struct ContentInfo;
+struct _krb5_krb_auth_data;
 #include "krb5-private.h"
 
 int forwardable_flag	= -1;
