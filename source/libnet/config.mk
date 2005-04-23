@@ -11,6 +11,6 @@ ADD_OBJ_FILES = \
 		libnet/libnet_user.o \
 		libnet/userinfo.o \
 		libnet/userman.o
-REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_SRVSVC
+REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_SRVSVC LIBCLI_COMPOSITE
 # End SUBSYSTEM LIBNET
 #################################
