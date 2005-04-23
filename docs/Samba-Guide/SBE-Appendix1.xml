@@ -40,8 +40,8 @@
 
 		<step><para>
 		The opening panel is the same one that can be reached by clicking <guimenu>System</guimenu> on the Control Panel.
-		See <link linkend="wxpp001"></link>.
-		<image id="wxpp001"><imagefile>wxpp001</imagefile><imagedescription>The General Panel.</imagedescription></image>
+		See <link linkend="swxpp001"></link>.
+		<image id="swxpp001"><imagefile>wxpp001</imagefile><imagedescription>The General Panel.</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -53,14 +53,14 @@
 		<para>
 		Clicking the <guimenu>Network ID</guimenu> button launches the configuration wizard. Do not use this with
 		Samba-3. If you wish to change the computer name, or join or leave the domain, click the <guimenu>Change</guimenu> button.
-		See <link linkend="wxpp004"></link>.
-		<image id="wxpp004"><imagefile>wxpp004</imagefile><imagedescription>The Computer Name Panel.</imagedescription></image>
+		See <link linkend="swxpp004"></link>.
+		<image id="swxpp004"><imagefile>wxpp004</imagefile><imagedescription>The Computer Name Panel.</imagedescription></image>
 		</para></step>
 
 		<step><para>
 		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
-		We join the domain called MIDEARTH. See <link linkend="wxpp006"></link>.
-		<image id="wxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel</imagedescription></image>
+		We join the domain called MIDEARTH. See <link linkend="swxpp006"></link>.
+		<image id="swxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -68,8 +68,8 @@
 		</para>
 
 		<para>
-		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="wxpp007"></link>.
-		<image id="wxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
+		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="swxpp007"></link>.
+		<image id="swxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -78,8 +78,8 @@
 		</para>
 
 		<para>
-		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
-		<image id="wxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
+		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="swxpp008"></link>.
+		<image id="swxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
 		</para></step>
 
 		<step><para>
