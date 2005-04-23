@@ -303,7 +303,7 @@ static BOOL read_regf_block( REGF_FILE *file )
 	prs_mem_free( &ps );
 	
 	if ( file->checksum !=  checksum ) {
-		DEBUG(0,("regfio_open: invalid checksum\n" ));
+		DEBUG(0,("read_regf_block: invalid checksum\n" ));
 		return False;
 	}
 
@@ -428,6 +428,39 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 		if ( !prs_hash_rec( "hash_rec", &hbin->ps, depth, &lf->hashes[i] ) )
 			return False;
 	}
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
+{
+	prs_struct *ps = &hbin->ps;
+	uint16 tag = 0xffff;
+
+	prs_debug(ps, depth, desc, "hbin_prs_sk_rec");
+	depth++;
+
+	if ( !prs_uint8s( True, "header", ps, depth, sk->header, sizeof( sk->header )) )
+		return False;
+	if ( !prs_uint16( "tag", ps, depth, &tag))
+		return False;
+
+	/* hack for checking if this really is an SK record */
+
+	if ( tag != 0xffff )
+		return False;
+
+	if ( !prs_uint32( "prev_sk_off", ps, depth, &sk->prev_sk_off))
+		return False;
+	if ( !prs_uint32( "next_sk_off", ps, depth, &sk->next_sk_off))
+		return False;
+	if ( !prs_uint32( "ref_count", ps, depth, &sk->ref_count))
+		return False;
+	if ( !prs_uint32( "size", ps, depth, &sk->size))
+		return False;
 
 	return True;
 }
@@ -611,23 +644,20 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 			return False;
 	}
 
-#if 0
-	if ( !prs_sk_record( "sk_rec", &hbin->ps, depth, nk ))
-		return False;
-#endif
-	
+	/* FIXME!  link to the security descriptor */
+		
 	return True;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
+static BOOL next_record( REGF_HBIN *hbin, const char *hdr )
 {
 	char *buffer, *p;
 	BOOL found_next_rec = False;
 	
-	if ( !hbin || !nk )
+	if ( !hbin )
 		return False;
 		
 	buffer  = prs_data_p( &hbin->ps );
@@ -636,29 +666,57 @@ static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 	
 	/* scan for the record start */
 	
-	while ( PTR_DIFF(p, buffer) < prs_data_size(&hbin->ps) ) {
-		if ( strncmp( p, "nk", REC_HDR_SIZE ) == 0 ) {
+	while ( PTR_DIFF((p+REC_HDR_SIZE), buffer) < prs_data_size(&hbin->ps) ) {
+		if ( memcmp( p, hdr, REC_HDR_SIZE ) == 0 ) {
 			found_next_rec = True;
 			break;
 		}
 		p++;
 	}
 	
-	/* mark prs_struct as done ( at end ) if no molre NK records */
+	/* mark prs_struct as done ( at end ) if no more SK records */
 	
 	if ( !found_next_rec ) {
 		prs_set_offset( &hbin->ps, prs_data_size(&hbin->ps) );
 		return False;
 	}
-	
-	/* read the NK record into the structure */
-	
+		
 	if ( !prs_set_offset( &hbin->ps, PTR_DIFF(p, buffer) ) )
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
+{
+	if ( !next_record( hbin, "nk" ) )
 		return False;
 	if ( !hbin_prs_key( file, hbin, nk ) )
 		return False;
 	
 	return True;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static REGF_SK_REC* next_sk_record( REGF_HBIN *hbin )
+{
+	REGF_SK_REC *sk;
+
+	if ( !(sk = (REGF_SK_REC*)SMB_MALLOC_P( REGF_SK_REC )) )
+		return NULL;
+
+	if ( next_record(hbin, "sk") && hbin_prs_sk_rec("next_sk_record", hbin, 0, sk) )
+		return sk;
+
+	/* cleanup on failure */
+
+	SAFE_FREE( sk );
+	return NULL;
 }
 
 /*******************************************************************
@@ -669,8 +727,9 @@ static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 {
 	REGF_FILE *rb;
-
-	
+	REGF_HBIN *hbin;
+	REGF_SK_REC *sk;
+	uint32 offset;
 	
 	if ( !(rb = (REGF_FILE*)malloc( sizeof(REGF_FILE) )) ) {
 		DEBUG(0,("ERROR allocating memory\n"));
@@ -683,6 +742,8 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		regfio_close( rb );
 		return NULL;
 	}
+
+	rb->open_flags = flags;
 	
 	/* open and existing file */
 
@@ -707,14 +768,22 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		return NULL;
 	}
 	
-	if ( !(rb->current_hbin = read_hbin_block( rb, REGF_BLOCKSIZE )) ) {
-		DEBUG(0,("regfio_open: Failed to read first hbin block\n"));
-		regfio_close( rb );
-		return NULL;
+	/* read in the list of security descriptors here */
+
+	offset = REGF_BLOCKSIZE;
+	while ( (hbin = read_hbin_block( rb, offset )) ) {
+
+		/* FIXME! We could exit this loop prematurely here 
+		   if we fine the 'sk' string in a randon record */
+
+		while ( (sk = next_sk_record( hbin )) != NULL ) {
+			DLIST_ADD( rb->sec_desc_list, sk );
+		}
+		
+		offset += hbin->block_size;
 	}
-
+	
 	return rb;
-
 }
 
 /*******************************************************************

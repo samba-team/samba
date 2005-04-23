@@ -77,8 +77,11 @@ typedef struct {
 
 
 /* Key Security */
+struct _regf_sk_rec;
 
-typedef struct {
+typedef struct _regf_sk_rec {
+	struct _regf_sk_rec *next, *prev;
+
 	char header[REC_HDR_SIZE];
 	uint32 prev_sk_off;
 	uint32 next_sk_off;
@@ -115,7 +118,7 @@ typedef struct {
 	
 	REGF_LF_REC subkeys;
 	REGF_VK_REC *values;
-	REGF_SK_REC *acl;
+	REGF_SK_REC *sec_desc;
 	
 } REGF_NK_REC;
 
@@ -140,9 +143,10 @@ typedef struct {
 typedef struct {
 	/* run time information */
 	int fd;				/* file descriptor */
+	int open_flags;			/* flags passed to the open() call */
 	TALLOC_CTX *mem_ctx;
-	off_t current_block;		/* offset to the current file block */
-	REGF_HBIN *current_hbin;	/* current hbin block */
+
+	REGF_SK_REC *sec_desc_list;	/* list of security descriptors referenced by NK records */
 
 	/* file format information */
 	char   header[REGF_HDR_SIZE];	/* "regf" */
