@@ -98,7 +98,7 @@
 	</indexterm><indexterm>
 	  <primary>DNS</primary>
 	</indexterm>
-	The screen capture shown in <link linkend="wxpp007"/> has a button labeled <guimenu>More...</guimenu>. This button opens a
+	The screen capture shown in <link linkend="swxpp007"/> has a button labeled <guimenu>More...</guimenu>. This button opens a
 	panel in which you can set (or change) the Primary DNS suffix of the computer. This is a parameter that mainly affects members
 	of Microsoft Active Directory. Active Directory is heavily oriented around the DNS name space.
 	</para>
