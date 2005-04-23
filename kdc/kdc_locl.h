@@ -74,12 +74,6 @@ extern int enable_pkinit;
 extern int enable_pkinit_princ_in_cert;
 #endif
 
-#ifdef KRB4
-extern char *v4_realm;
-extern int enable_v4;
-extern krb5_boolean enable_kaserver;
-#endif
-
 #define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
 #define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"
 
@@ -111,18 +105,6 @@ krb5_error_code encode_v4_ticket (void*, size_t, const EncTicketPart*,
 				  const PrincipalName*, size_t*);
 krb5_error_code do_524 (const Ticket*, krb5_data*, const char*, struct sockaddr*);
 
-#ifdef KRB4
-krb5_error_code db_fetch4 (const char*, const char*, const char*, hdb_entry**);
-krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
-			     struct sockaddr_in*);
-int maybe_version4 (unsigned char*, int);
-#endif
-
-#ifdef KRB4
-krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*, 
-			     struct sockaddr_in*);
-#endif
-
 #ifdef HAVE_OPENSSL
 #define des_new_random_key des_random_key
 #endif
@@ -143,5 +125,23 @@ krb5_error_code pk_check_client(krb5_context, krb5_principal,
 				pk_client_params *, char **);
 void pk_free_client_param(krb5_context, pk_client_params *);
 #endif
+
+/*
+ * Kerberos 4
+ */
+
+extern char *v4_realm;
+extern int enable_v4;
+extern krb5_boolean enable_kaserver;
+
+krb5_error_code db_fetch4 (const char*, const char*, const char*, hdb_entry**);
+krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
+			     struct sockaddr_in*);
+int maybe_version4 (unsigned char*, int);
+
+krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*, 
+			     struct sockaddr_in*);
+
+
 
 #endif /* __KDC_LOCL_H__ */
