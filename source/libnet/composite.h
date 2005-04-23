@@ -19,7 +19,7 @@
 */
 
 /*
-  composite function definitions
+  composite function io definitions
 */
 
 struct rpc_composite_userinfo {
