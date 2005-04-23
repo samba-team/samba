@@ -124,6 +124,9 @@ struct krb5_pk_cert;
 struct ContentInfo;
 typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
 
+/* v4 glue */
+struct _krb5_krb_auth_data;
+
 #include <der.h>
 
 #include <krb5.h>
@@ -144,6 +147,8 @@ typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
 #define O_BINARY 0
 #endif
 
+#define KRB5_BUFSIZ 1024
+
 typedef enum {
     KRB5_PA_PAC_DONT_CARE = 0, 
     KRB5_PA_PAC_REQ_TRUE,
@@ -159,6 +164,7 @@ struct _krb5_get_init_creds_opt_private {
     krb5_get_init_creds_req_pac req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
+    int canonicalize;
 };
 
 #endif /* __KRB5_LOCL_H__ */
