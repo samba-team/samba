@@ -1,6 +1,6 @@
-
-# ldap support is optional edit WITH_LDAP to suit
-WITH_LDAP=1
+CC = @CC@
+GCOV = @GCOV@
+YODL2MAN = @YODL2MAN@
 
 ifeq ($(WITH_LDAP),1)
 OPENLDAP_PREFIX=/usr
@@ -20,7 +20,7 @@ CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
 #GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
 #GCOV_LIBS = -lgcov
 
-CFLAGS = $(CFLAGS1) $(GCOV_FLAGS)
+CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
 
 LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(GCOV_LIBS)
 
@@ -79,8 +79,13 @@ bin/ldbrename: tools/ldbrename.o $(LIBS)
 bin/ldbtest: tools/ldbtest.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
 
-manpages:
-	-man/build_manpages.sh
+.SUFFIXES: .1 .2 .3 .yo
+
+.yo.3: 
+	echo Creating $@ from $<
+	-$(YODL2MAN) -o $@ `dirname $<`/`basename $< .yo` || rm -f $@
+	
+manpages: $(patsubst %.yo,%.3,$(wildcard man/man3/*.yo))
 
 clean:
 	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
@@ -103,8 +108,8 @@ test-schema:
 test: test-tdb test-ldap test-schema
 
 gcov:
-	gcov -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
-	gcov -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
-	gcov -po common common/*.c 2| tee common.report.gcov
-	gcov -po modules modules/*.c 2| tee modules.report.gcov
-	gcov -po tools tools/*.c 2| tee tools.report.gcov
+	$(GCOV) -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
+	$(GCOV) -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
+	$(GCOV) -po common common/*.c 2| tee common.report.gcov
+	$(GCOV) -po modules modules/*.c 2| tee modules.report.gcov
+	$(GCOV) -po tools tools/*.c 2| tee tools.report.gcov
