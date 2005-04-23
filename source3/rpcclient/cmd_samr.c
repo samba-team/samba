@@ -145,19 +145,19 @@ static const char* server_role_str(uint32 server_role)
 {
 	switch(server_role) {
 		case ROLE_STANDALONE:
-			return strdup("ROLE_STANDALONE");
+			return SMB_STRDUP("ROLE_STANDALONE");
 			break;
 		case ROLE_DOMAIN_MEMBER:
-			return strdup("ROLE_DOMAIN_MEMBER");
+			return SMB_STRDUP("ROLE_DOMAIN_MEMBER");
 			break;
 		case ROLE_DOMAIN_BDC:
-			return strdup("ROLE_DOMAIN_BDC");
+			return SMB_STRDUP("ROLE_DOMAIN_BDC");
 			break;
 		case ROLE_DOMAIN_PDC:
-			return strdup("ROLE_DOMAIN_PDC");
+			return SMB_STRDUP("ROLE_DOMAIN_PDC");
 			break;
 		default:
-			return strdup("Unknown -- internal error?");
+			return SMB_STRDUP("Unknown -- internal error?");
 			break;
 	}
 }
