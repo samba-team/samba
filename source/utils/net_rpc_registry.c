@@ -36,6 +36,9 @@ char* dump_regval_type( uint32 type )
 	case REG_MULTI_SZ:
 		fstrcpy( string, "REG_MULTI_SZ" );
 		break;
+	case REG_EXPAND_SZ:
+		fstrcpy( string, "REG_EXPAND_SZ" );
+		break;
 	case REG_DWORD:
 		fstrcpy( string, "REG_DWORD" );
 		break;
@@ -43,7 +46,7 @@ char* dump_regval_type( uint32 type )
 		fstrcpy( string, "REG_BINARY" );
 		break;
 	default:
-		fstrcpy( string, "UNKNOWN" );
+		fstr_sprintf( string, "UNKNOWN [%d]", type );
 	}
 	
 	return string;
@@ -258,6 +261,50 @@ static int rpc_registry_backup( int argc, const char **argv )
 /********************************************************************
 ********************************************************************/
 
+static void dump_values( REGF_NK_REC *nk )
+{
+	int i, j;
+	pstring data_str;
+	uint32 data_size, data;
+
+	for ( i=0; i<nk->num_values; i++ ) {
+		d_printf( "\"%s\" = ", nk->values[i].valuename ? nk->values[i].valuename : "(default)" );
+		d_printf( "(%s) ", dump_regval_type( nk->values[i].type ) );
+
+		data_size = nk->values[i].data_size & ~VK_DATA_IN_OFFSET;
+		switch ( nk->values[i].type ) {
+			case REG_SZ:
+				rpcstr_pull( data_str, nk->values[i].data, sizeof(data_str), -1, STR_TERMINATE );
+				d_printf( "%s", data_str );
+				break;
+			case REG_MULTI_SZ:
+			case REG_EXPAND_SZ:
+				for ( j=0; j<data_size; j++ ) {
+					d_printf( "%c", nk->values[i].data[j] );
+				}
+				break;
+			case REG_DWORD:
+				data = IVAL( nk->values[i].data, 0 );
+				d_printf("0x%x", data );
+				break;
+			case REG_BINARY:
+				for ( j=0; j<data_size; j++ ) {
+					d_printf( "%x", nk->values[i].data[j] );
+				}
+				break;
+			default:
+				d_printf("unknown");
+				break;
+		}
+
+		d_printf( "\n" );
+	}
+
+}
+
+/********************************************************************
+********************************************************************/
+
 static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *parent )
 {
 	REGF_NK_REC *key;
@@ -267,7 +314,9 @@ static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 
 	while ( (key = regfio_fetch_subkey( file, nk )) ) {
 		pstr_sprintf( regpath, "%s\\%s", parent, key->keyname );
-		d_printf("processed key [%s]\n", regpath );
+		d_printf("[%s]\n", regpath );
+		dump_values( key );
+		d_printf("\n");
 		dump_registry_tree( file, key, regpath );
 	}
 	
@@ -297,7 +346,9 @@ static int rpc_registry_dump( int argc, const char **argv )
 	/* get the root of the registry file */
 	
 	nk = regfio_rootkey( registry );
-	d_printf("processed key [%s]\n", nk->keyname);
+	d_printf("[%s]\n", nk->keyname);
+	dump_values( nk );
+	d_printf("\n");
 
 	dump_registry_tree( registry, nk, nk->keyname );
 	

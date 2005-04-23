@@ -59,6 +59,17 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 {
 	int bytes_read, returned;
 	char *buffer;
+	SMB_STRUCT_STAT sbuf;
+
+	/* check for end of file */
+
+	if ( sys_fstat( file->fd, &sbuf ) ) {
+		DEBUG(0,("read_block: stat() failed! (%s)\n", strerror(errno)));
+		return -1;
+	}
+
+	if ( (size_t)file_offset >= sbuf.st_size )
+		return -1;
 	
 	/* if block_size == 0, we are parsnig HBIN records and need 
 	   to read some of the header to get the block_size from there */
@@ -311,13 +322,13 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	hbin->file_off = offset;
 		
 	if ( read_block( file, &hbin->ps, offset, 0 ) == -1 )
-		return False;
+		return NULL;
 	
 	if ( !prs_hbin_block( "hbin", &hbin->ps, 0, hbin ) )
-		return False;	
+		return NULL;	
 
 	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE ) )
-		return False;
+		return NULL;
 	
 	return hbin;
 }
@@ -424,10 +435,11 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC *vk )
+static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_VK_REC *vk, REGF_FILE *file )
 {
 	uint32 offset;
 	uint16 name_length;
+	prs_struct *ps = &hbin->ps;
 
 	prs_debug(ps, depth, desc, "prs_vk_rec");
 	depth++;
@@ -467,13 +479,23 @@ static BOOL prs_vk_rec( const char *desc, prs_struct *ps, int depth, REGF_VK_REC
 
 		/* the data is stored in the offset if the size <= 4 */
 
-		if ( vk->data_size & VK_DATA_IN_OFFSET ) {
+		if ( !(vk->data_size & VK_DATA_IN_OFFSET) ) {
+			REGF_HBIN *hblock = hbin;
+
 			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
 				return False;
-			if ( !(prs_set_offset( ps, vk->data_off+HBIN_HDR_SIZE )) )
+
+			/* this data can be in another hbin */
+			if ( !hbin_contains_offset( hbin, vk->data_off ) ) {
+				if ( !(hblock = lookup_hbin_block( file, vk->data_off )) )
+					return False;
+			}
+			if ( !(prs_set_offset( &hblock->ps, (vk->data_off+HBIN_HDR_SIZE-hblock->first_hbin_off) )) )
 				return False;
-			if ( !prs_uint8s( charmode, "data", ps, depth, vk->data, vk->data_size) )
+			if ( !prs_uint8s( charmode, "data", &hblock->ps, depth, vk->data, vk->data_size) )
 				return False;
+			if ( hblock != hbin )
+				prs_mem_free( &hblock->ps );
 		}
 		else {
 			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, 4 ) ) )
@@ -532,7 +554,7 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 		new_offset = nk->values[i].hbin_off + HBIN_HDR_SIZE - sub_hbin->first_hbin_off;
 		if ( !prs_set_offset( &sub_hbin->ps, new_offset ) )
 			return False;
-		if ( !prs_vk_rec( "vk_rec", &sub_hbin->ps, depth, &nk->values[i] ) )
+		if ( !hbin_prs_vk_rec( "vk_rec", sub_hbin, depth, &nk->values[i], file ) )
 			return False;
 	}
 

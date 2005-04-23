@@ -40,7 +40,7 @@
 /* Flags for the vk records */
 
 #define VK_FLAG_NAME_PRESENT	0x0001
-#define VK_DATA_IN_OFFSET	0x10000000
+#define VK_DATA_IN_OFFSET	0x80000000
 
 /* NK record macros */
 
