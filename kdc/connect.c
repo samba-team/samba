@@ -135,11 +135,11 @@ add_standard_ports (int family)
 	add_port_service(family, "krb524", 4444, "udp");
 	add_port_service(family, "krb524", 4444, "tcp");
     }
-#ifdef KRB4
     if(enable_v4) {
 	add_port_service(family, "kerberos-iv", 750, "udp");
 	add_port_service(family, "kerberos-iv", 750, "tcp");
     }
+#ifdef KRB4
     if (enable_kaserver)
 	add_port_service(family, "afs3-kaserver", 7004, "udp");
 #endif
@@ -391,11 +391,11 @@ process_request(unsigned char *buf,
 	ret = do_524(&ticket, reply, from, addr);
 	free_Ticket(&ticket);
 	return ret;
-#ifdef KRB4
     } else if(maybe_version4(buf, len)){
 	*sendlength = 0; /* elbitapmoc sdrawkcab XXX */
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
 	return 0;
+#ifdef KRB4
     } else if (enable_kaserver) {
 	ret = do_kaserver (buf, len, reply, from, (struct sockaddr_in*)addr);
 	return ret;

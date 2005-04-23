@@ -72,11 +72,9 @@ krb5_addresses explicit_addresses;
 
 static int disable_des = -1;
 
-#ifdef KRB4
 char *v4_realm;
 int enable_v4 = -1;
 int enable_kaserver = -1;
-#endif
 
 int enable_524 = -1;
 int enable_v4_cross_realm = -1;
@@ -113,6 +111,7 @@ static struct getargs args[] = {
 	"kaserver", 'K', arg_flag,   &enable_kaserver,
 	"enable kaserver support"
     },
+#endif
     {	"kerberos4",	0, 	arg_flag, &enable_v4,
 	"respond to kerberos 4 requests" 
     },
@@ -120,7 +119,6 @@ static struct getargs args[] = {
 	"v4-realm",	'r',	arg_string, &v4_realm, 
 	"realm to serve v4-requests for"
     },
-#endif
     {	"kerberos4-cross-realm",	0, 	arg_flag,
 	&enable_v4_cross_realm,
 	"respond to kerberos 4 requests from foreign realms" 
@@ -349,13 +347,9 @@ configure(int argc, char **argv)
 	}
     }
 
-#ifdef KRB4
     if(enable_v4 == -1)
 	enable_v4 = krb5_config_get_bool_default(context, NULL, FALSE, "kdc", 
 						 "enable-kerberos4", NULL);
-#else
-#define enable_v4 0
-#endif
     if(enable_v4_cross_realm == -1)
 	enable_v4_cross_realm =
 	    krb5_config_get_bool_default(context, NULL,
@@ -399,7 +393,6 @@ configure(int argc, char **argv)
 	krb5_errx(context, 1, "enforce-transited-policy deprecated, "
 		  "use [kdc]transited-policy instead");
 
-#ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (context, NULL, 
 				    "kdc",
@@ -411,6 +404,7 @@ configure(int argc, char **argv)
 		krb5_errx(context, 1, "out of memory");
 	}
     }
+#ifdef KRB4
     if (enable_kaserver == -1)
 	enable_kaserver = krb5_config_get_bool_default(context, NULL, FALSE,
 						       "kdc",
@@ -475,15 +469,17 @@ configure(int argc, char **argv)
     }
 #endif
 
-#ifdef KRB4
     if(v4_realm == NULL){
+#ifdef KRB4
 	v4_realm = malloc(40); /* REALM_SZ */
 	if (v4_realm == NULL)
 	    krb5_errx(context, 1, "out of memory");
 	krb_get_lrealm(v4_realm, 1);
-    }
+#else
+	krb5_errx(context, 1, "No Kerberos 4 realm configured");
 #endif
-    if(disable_des == -1) 
+    }
+    if(disable_des == -1)
 	disable_des = krb5_config_get_bool_default(context, NULL, 
 						   0,
 						   "kdc",
@@ -495,5 +491,13 @@ configure(int argc, char **argv)
 	krb5_enctype_disable(context, ETYPE_DES_CBC_NONE);
 	krb5_enctype_disable(context, ETYPE_DES_CFB64_NONE);
 	krb5_enctype_disable(context, ETYPE_DES_PCBC_NONE);
+
+	kdc_log(0, "DES was disabled, turned off Kerberos V4, 524 "
+		"and kaserver");
+	enable_v4 = 0;
+	enable_524 = 0;
+#ifdef KRB4
+	enable_kaserver = 0;
+#endif
     }
 }
