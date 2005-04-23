@@ -319,7 +319,7 @@ do_version4(unsigned char *buf,
 	break;
     }
     case AUTH_MSG_APPL_REQUEST: {
-	_krb5_krb_auth_data ad;
+	struct _krb5_krb_auth_data ad;
 	int8_t kvno;
 	int8_t ticket_len;
 	int8_t req_len;
