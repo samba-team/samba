@@ -51,8 +51,21 @@
 	</para>
 
 	<para>
+	The priority that Misty faced was one of migration of the data files off the NetWare 4.11
+	server and onto a Samba based Windows file and print server. This chapter does not pretend
+	to document all the different methods that could be used to migrate user and group accounts
+	off a NetWare server, its focus is on migration of data files.
+	</para>
+
+	<para>
 	This chapter tells its own story, so ride along, ... maybe the information here presented
 	will help to smooth over a similar migration challenge in your favorite networking environment.
+	</para>
+
+	<para>
+	File paths have been modified to permit use of RPM packages provided by Novell. In the
+	original documenation contributed by Misty a the Courier-IMAP package had been built
+	directly from the original source tarball.
 	</para>
 
 <sect1>
@@ -120,10 +133,26 @@
 	Misty has provided this summary of her migration experience in the hope
 	that it will help someone to avoid the challenges she faced. Perhaps her
 	configuration files and background will accelerate your learning as you
-	grapple with a similar migration challenge.
+	grapple with a similar migration challenge. Let there be no confusion,
+	the information presented in this chapter is provided to demonstrate
+	how Misty dealt with a particular NetWare migration requirement and
+	it provides an over-all approach to the implementation of a Samba-3
+	environment that is significantly divergent from that presented in
+	<link linkend="happy"/>.
 	</para>
 
 	<para>
+	The complete removal of all site-specific information in order to produce	
+	a generic migration solution would rob this chapter of its character.
+	It should be recognized therefore, that the examples given will require
+	significant adaptation to suit local needs and thus it is recoognized that
+	there are some gaps in the example files. That is not Misty's fault, it
+	is the result of treatement given to her files in an attempt to make
+	the overall information more useful to you.
+	</para>
+
+	<para>
+	<indexterm><primary>cost-benefit</primary></indexterm>
 	After presenting a cost-benefit report to management, as well as an estimated
 	time-to-completion, approval was given proceed with the solution proposed.
 	The server was built from purchased components. The total project cost
@@ -209,10 +238,62 @@
 	</para>
 
 	<para>
-	Given that a decision had been made to use Courier-IMAP the schema <quote>courier.schema</quote>
+	Given that a decision had been made to use Courier-IMAP the schema <quote>authldap.schema</quote>
 	from the Courier-IMAP source tarball is ncessary to resolve Courier-specific LDAP directory
-	needs.
+	needs. Where the Courier-IMAP file provided by SUSE is used this file is named
+	<filename>courier.schema</filename>.
 	</para>
+
+	<para>
+	Looking back, it would have been much easier to populate the LDAP directory using a convenient
+	tool such as <command>phpLDAPAdmin</command> from the outset. An excessive amount of time was
+	spent trying to generate LDIF files that could be parsed using the <command>ldapmodify</command>
+	so that necessary changes could be written to the directory. This was a learning experience!
+	</para>
+
+	<para>
+	An attempt was made to use the PADL POSIX account migration scripts but I gave up trying to
+	make them work. Instead, even though it is most ineligant, I wrote a simple script that did
+	what I needed. It is enclosed as a simple example to demonstrate that you do not need to be
+	a guru to make light of otherwise painful repetition. This file is listed in <link linkend="sbeamg"/>.
+	</para>
+
+<example id="sbeamg">
+<title>A Rought Tool to Create an LDIF File from the System Account Files</title>
+<screen>
+#!/bin/bash
+
+cat /etc/passwd | while read l; do
+  uid=`echo $l | cut -d : -f 1`
+  uidNumber=`echo $l | cut -d : -f 3`
+  gidNumber=`echo $1 | cut -d : -f 4`
+  gecos=`echo $l | cut -d : -f 5`
+  homeDirectory=`echo $l | cut -d : -f 6`
+  loginShell=`echo $l | cut -d : -f 6`
+  userPassword=`cat /etc/shadow | grep $uid | cut -d : -f 2`
+
+  echo "dn: cn=$gecos,ou=people,dc=mycompany,dc=com"
+  echo "objectClass: account"
+  echo "objectClass: posixAccount"
+  echo "cn: $gecos"
+  echo "uid: $uid"
+  echo "uidNumber: $uidNumber"
+  echo "gidNumber: $gidNumber"
+  echo "homeDirectory: $homeDirectory"
+  echo "loginShell: $loginShell"
+  echo "userPassword: $userPassword"
+done
+</screen>
+</example>
+
+	<note><para>
+	<title>Editors' Note</title>
+	The PADL MigrationTools are recommended for migration of the UNIX account information into
+	the LDAP directory. The tools consist of a set of Perl scripts for migration of users, groups,
+	aliases, hosts, netgroups, networks, protocols, PRCs, and services from the existing ascii text
+	files (or from a name service such as NIS). This too set can be obtained from the <ulink url=
+	"http://www.padl.com">PADL</ulink> web site.
+	</para></note>
 
 	</sect2>
 
@@ -233,15 +314,17 @@
 	</para>
 
 	<simplelist>
-		<member><para>openldap2</para></member>
+		<member><para>courier-imap</para></member>
+		<member><para>courier-imap-ldap</para></member>
+		<member><para>nss_ldap</para></member>
 		<member><para>openldap2-client</para></member>
 		<member><para>openldap2-devel (only for Samba compilation)</para></member>
-		<member><para>nss_ldap</para></member>
-		<member><para>smbldap-tools Version 0.8.7</para></member>
+		<member><para>openldap2</para></member>
 		<member><para>pam_ldap</para></member>
 		<member><para>samba-3.0.15 or later</para></member>
 		<member><para>samba-client-3.0.15 or later</para></member>
 		<member><para>samba-winbind-3.0.15 or later</para></member>
+		<member><para>smbldap-tools Version 0.8.8</para></member>
 	</simplelist>
 
 	<para>
@@ -254,12 +337,8 @@
 	<title>LDAP Server Configuration</title>
 
 	<para>
-	The <filename>/etc/openldap/slapd.conf</filename> file Misty used is shown in <link linkend="ch8slapd"/>.
-	</para>
-
-<example id="ch8slapd">
-<title>OpenLDAP Control File &smbmdash; slapd.conf Part A</title>
-<screen>
+	The <filename>/etc/openldap/slapd.conf</filename> file Misty used is shown here:
+<programlisting>
 #/etc/openldap/slapd.conf
 #
 # See slapd.conf(5) for details on configuration options.
@@ -269,14 +348,14 @@ include   /etc/openldap/schema/core.schema
 include   /etc/openldap/schema/cosine.schema
 include   /etc/openldap/schema/inetorgperson.schema
 include   /etc/openldap/schema/nis.schema
-include   /etc/openldap/schema/samba.schema
+include   /etc/openldap/schema/samba3.schema
 include   /etc/openldap/schema/dhcp.schema
 include   /etc/openldap/schema/misc.schema
 include   /etc/openldap/schema/idpool.schema
 include   /etc/openldap/schema/eduperson.schema
 include   /etc/openldap/schema/commURI.schema
 include   /etc/openldap/schema/local.schema
-include   /etc/openldap/schema/authldap.schema
+include   /etc/openldap/schema/courier.schema
 
 pidfile   /var/run/slapd/run/slapd.pid
 argsfile  /var/run/slapd/run/slapd.args
@@ -302,13 +381,7 @@ TLSCertificateFile    /etc/ssl/certs/private/abmas-cert.pem
 TLSCertificateKeyFile /etc/ssl/certs/private/abmas-key.pem
 password-hash   {SSHA}
 defaultsearchbase "dc=abmas,dc=biz"
-</screen>
-</example>
 
-
-<example id="ch8slapd2">
-<title>OpenLDAP Control File &smbmdash; slapd.conf Part B</title>
-<screen>
 #######################################################################
 # bdb database definitions
 #######################################################################
@@ -350,57 +423,83 @@ replica         host=ns.abmas.org:389
                 credentials=verysecret
                 bindmethod=simple
                 tls=yes
-</screen>
-</example>
 
-<example id="ch8slapd3">
-<title>OpenLDAP Control File &smbmdash; slapd.conf Part C</title>
-<screen>
 #######################################################################
 # ACL section
 #######################################################################
 ## MOST RESTRICTIVE RULES MUST GO FIRST!
+# Admins get access to everything. This way I do not have to rename.
+access to *
+  by group/groupOfUniqueNames/uniqueMember="cn=LDAP
+Administrators,ou=groups,dc=abmas,dc=biz" write
+  by * break
 
-## Users can change their own passwords.
-## Nobody else can read the password
-access to attrs=userPassword
-  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators, \
-		dc=abmas,dc=biz" write
+## Users can change their own passwords. 
+access to 
+attrs=userPassword,sambaNTPassword,sambaLMPassword,sambaPwdLastSet,
+sambaPwdMustChange,sambaPwdCanChange
   by self write
   by * auth
 
-## Home contact info restricted to the logged-in user
-access to attrs=hometelephoneNumber,homePostalAddress,\
-		mobileTelephoneNumber,pagerTelephoneNumber
-  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,\
-		dc=abmas,dc=biz" write
+## Home contact info restricted to the logged-in user and the HR dept
+access to attrs=hometelephoneNumber,homePostalAddress,
+mobileTelephoneNumber,pagerTelephoneNumber
+  by group/groupOfUniqueNames/uniqueMember="cn=hr_admin,
+ou=groups,dc=abmas,dc=biz" 
+write
   by self write
   by * none
 
-## Only admins can manage email aliases
+## Everyone can read email aliases
 access to dn.sub="ou=Email Aliases,dc=abmas,dc=biz"
-  filter=(roleOccupant=*)
-  attrs=maildrop
+  by * read
+
+## Only admins can manage email aliases
+## If someone is the role occupant of an alias they can change it -- this
+## is accomplished by the "organizationalRole" objectclass and is
+## pretty cool -- like a groupOfUniqueNames but for individual
+## users.
+access to dn.children="ou=Email Aliases,dc=abmas,dc=biz"
   by dnattr=roleOccupant write
   by * read
 
-## Allow delegated management of certain aliases which are 
-## for mailman-style mailing lists.
-access to dn.sub="ou=Email Aliases,dc=abmas,dc=biz"
-  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,\
-		dc=abmas,dc=biz" write
+## Admins and HR can add and delete users
+access to dn.sub="ou=people,dc=abmas,dc=biz"
+  by group/groupOfUniqueNames/uniqueMember="cn=hr_admin,
+ou=groups,dc=abmas,dc=biz" 
+write
+  by * read
+
+## Admins and HR can add and delete bizputers
+access to dn.sub="ou=bizputers,dc=abmas,dc=biz"
+  by group/groupOfUniqueNames/uniqueMember="cn=hr_admin,
+ou=groups,dc=abmas,dc=biz" 
+write
+  by * read
+
+## Admins and HR can add and delete groups
+access to dn.sub="ou=groups,dc=abmas,dc=biz"
+  by group/groupOfUniqueNames/uniqueMember="cn=hr_admin,
+ou=groups,dc=abmas,dc=biz" 
+write
+  by * read
+
+## This is used to quickly deactivate any LDAP object only Admins have access.
+access to dn.sub="ou=inactive,dc=abmas,dc=biz"
+  by * none
+
+## This is for programs like Windows Address Book that can 
+## detect the default search base.
+access to attrs=namingcontexts,supportedControl
+  by anonymous =cs
   by * read
 
 ## Default to read-only access
 access to *
-  by dn.base="cn=replica,ou=people,ou=corp,dc=abmas,dc=biz" write
-  by group/groupOfUniqueNames/uniqueMember="cn=LDAP Administrators,\
-		dc=abmas,dc=biz" write
+  by dn.base="cn=replica,ou=people,dc=abmas,dc=biz" write
   by * read
-access to attrs=namingcontexts
-  by anonymous read
-</screen>
-</example>
+</programlisting>
+</para>
 
 	<para>
 	<indexterm><primary>/etc/ldap.conf</primary></indexterm>
@@ -458,9 +557,8 @@ tls_cacertfile /etc/ssl/certs/private/abmas-cert.pem
 # This file controls the resolve order for system databases.
 
 # the following two lines obviate the "+" entry in /etc/passwd and /etc/group.
-passwd:   files ldap
-group:    files ldap
-shadow:   files ldap
+passwd:   compat ldap
+group:    compat ldap
 # The above are all that I store in LDAP at this point. There are 
 # possibilities to store hosts, services, ethers, and lots of other things.
 </screen>
@@ -470,10 +568,51 @@ shadow:   files ldap
 	<indexterm><primary>PAM</primary></indexterm>
 	<indexterm><primary>NSS</primary></indexterm>
 	In my setup, users authenticate via PAM and NSS using LDAP-based accounts.
+	The configuration file that controls the behavior of the PAM <command>pam_unix2</command>
+	module is shown in <link linkend="sbepu2"/> file.
 	This works out of the box with the configuration files in this chapter. It
 	enables you to have no local accounts for users (it is highly advisable 
 	to have a local account for the root user).  Traps for the unwary include:
 	</para>
+
+<example id="sbepu2">
+<title>The PAM Control File <filename>/etc/security/pam_unix2.conf</filename></title>
+<screen>
+# pam_unix2 config file
+#
+# This file contains options for the pam_unix2.so module.
+# It contains a list of options for every type of management group,
+# which will be used for authentication, account management and
+# password management. Not all options will be used from all types of
+# management groups.
+#
+# At first, pam_unix2 will read this file and then uses the local
+# options. Not all options can be set her global.
+#
+# Allowed options are:
+#
+# debug                 (account, auth, password, session)
+# nullok                (auth)
+# md5                   (password / overwrites /etc/default/passwd)
+# bigcrypt              (password / overwrites /etc/default/passwd)
+# blowfish              (password / overwrites /etc/default/passwd)
+# crypt_rounds=XX
+# none                  (session)
+# trace                 (session)
+# call_modules=x,y,z    (account, auth, password)
+#
+#  Example:
+#  auth:        nullok
+#  account:
+#  password:    nullok blowfish crypt_rounds=8
+#  session:     none
+#
+auth: use_ldap
+account: use_ldap
+password: use_ldap
+session: none
+</screen>
+</example>
 
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>authenticate</primary></indexterm>
@@ -546,6 +685,7 @@ shadow:   files ldap
 <smbconfoption name="time server">Yes</smbconfoption>
 <smbconfoption name="printcap name">cups</smbconfoption>
 <smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="cups options">Raw</smbconfoption>
 <smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m "%u"</smbconfoption>
 <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</smbconfoption>
 <smbconfoption name="add user to group script"></smbconfoption>
@@ -742,20 +882,73 @@ shadow:   files ldap
 	<indexterm><primary>rsync</primary></indexterm>
 	<indexterm><primary>rsyncd.conf</primary></indexterm>
 	<indexterm><primary>synchronize</primary></indexterm>
-	Note: During the process of building the new server, I kept data files up-to-date
-	with the Novell server via use of <command>rsync</command>.  On a separate system (my workstation
-	in fact) which could be rebooted whenever necessary, I set up a mount point to the
-	Novell server via <command>ncpmount</command>. I then created a
-	<filename>rsyncd.conf</filename> to share that mount point out to my new server,
-	and synchronized once an hour. The script I used to synchronize is quite nice, so
-	I will include it in an appendix. The reason I had to have the
-	<command>rsync</command> daemon running on a system which could be rebooted
-	frequently is because <constant>ncpfs</constant> has a nasty habit of creating
-	stale mount points which cannot be recovered without a reboot.  The reason for
-	hourly synchronization is because some part of the chain was very slow and
-	performance-heavy (whether <command>rsync</command> itself, the network, or
-	the Novell server I am not sure probably the Novell server).
+	Note: During the process of building the new server, I kept data files
+	up-to-date with the Novell server via use of <command>rsync</command>. 
+	On a separate system (my workstation in fact) which could be rebooted
+	whenever necessary, I set up a mount point to the Novell server via
+	<command>ncpmount</command>. I then created a
+	<filename>rsyncd.conf</filename> to share that mount point out to my
+	new server, and synchronized once an hour. The script I used to synchronize
+	is shown in <link linkend="sbersync"/>. The files exclusion list I used
+	is shown in <link linkend="sbexcld"/>.  The reason I had to have the
+	<command>rsync</command> daemon running on a system which could be
+	rebooted frequently is because <constant>ncpfs</constant>
+	(part of the MARS Netware Emulation package) has a nasty habit of creating stale
+	mount points which cannot be recovered without a reboot. The reason for hourly
+	synchronization is because some part of the chain was very slow and
+	performance-heavy (whether <command>rsync</command> itself, the network,
+	or the Novell server I am not sure probably the Novell server).
 	</para>
+
+<example id="sbersync">
+<title>Rsync Script</title>
+<screen>
+#!/bin/bash
+# Part 1 - rsync the Novell directories to the new server
+echo "#############################################"
+echo "New sync operation starting at `date`"
+if ! pgrep -fl '^rsync\&gt; ; then
+        echo "Good, no rsync is running!"
+  echo "Synchronizing oink to BHPRO"
+        rsync -av --exclude-from=/root/excludes.txt 
+baa.corp:/BHPRO/SYS1/ /data/samba/shares/SYS1
+        retval=$?
+        [ ${retval} = 0 ] &amp;&amp; echo "Sync operation completed at `date`"
+        echo "Fixing permissions"
+        # I had a whole lot more permission-fixing stuff here.  It got
+        # pared down as groups got moved over.  The problem
+        # was that the way I was mounting the directory, everything
+        # was owned by the Novell administrator which translated to
+        # Root.  This is also why I could only do one-way sync because
+        # I could not fix the ACLs on the Novell side.
+        find /data/samba/shares/Engr/ -perm +770 -exec chmod 770 {} \;
+        find /data/samba/shares/Engr/ ! -group engr -exec chgrp engr {} \;
+else
+        # This rsync took ages and ages -- I had it set to run every hour but
+        # I needed a way to prevent it running into itself.
+        echo "Oh no, rsync is already running!"
+echo "#############################################"
+fi
+</screen>
+</example>
+
+<example id="sbexcld">
+<title>Rsync Files Exclusion List &smbmdash; <filename>/root/excludes.txt</filename></title>
+<screen>
+/Acct/
+/Apps/
+/DATA/
+/Engr/*.pc3
+/Engr/plotter
+/Engr/APPOLO/
+/Engr/LIBRARY/
+/Home/Accounting/
+/Home/Angie/
+/Home/AngieY/
+/Home/Brandon/
+/Home/Carl/
+</screen>
+</example>
 
 	<para>
 	After Samba had been configured, I initialized the LDAP database. So the first
@@ -1426,7 +1619,7 @@ ENDIF
 	<para>
 	<indexterm><primary>upgrade</primary></indexterm>
 	At this point I was able to add the users. This is the part that really falls
-	into “upgrade. I moved the users over one group at a time, starting with the
+	into upgrade. I moved the users over one group at a time, starting with the
 	people who used the least amount of resources on the network. With each group
 	that I moved, I first logged in as a “standard” user in that group and took
 	careful note of their environment, mainly the printers they used, their PATH,
