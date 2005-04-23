@@ -2343,7 +2343,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		goto done;
 	}
 
-	sid_filter = strdup("(&(objectClass=sambaSamAccount)(|");
+	sid_filter = SMB_STRDUP("(&(objectClass=sambaSamAccount)(|");
 	if (sid_filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3170,7 +3170,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (i=0; i<num_rids; i++)
 		(*attrs)[i] = SID_NAME_UNKNOWN;
 
-	allsids = strdup("");
+	allsids = SMB_STRDUP("");
 	if (allsids == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_rids; i++) {

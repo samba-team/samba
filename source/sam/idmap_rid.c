@@ -81,7 +81,8 @@ static NTSTATUS rid_idmap_parse(const char *init_param,
 		DEBUG(3,("rid_idmap_parse: parsing entry: %d\n", trust.number));
 
 		/* reinit sizes */
-		trust.dom = (struct dom_entry *) realloc(trust.dom, sizeof(struct dom_entry)*(trust.number+1));
+		trust.dom = SMB_REALLOC_ARRAY(trust.dom, struct dom_entry,
+					      trust.number+1);
 
 		if ( trust.dom == NULL ) {
 			return NT_STATUS_NO_MEMORY;
@@ -163,8 +164,8 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 
 	/* put the results together */
 	*num_domains = 1;
-	*domain_names = (fstring *) malloc(sizeof(fstring) * *num_domains);
-	*domain_sids = (DOM_SID *) malloc(sizeof(DOM_SID) * *num_domains); 
+	*domain_names = SMB_MALLOC_ARRAY(fstring, *num_domains);
+	*domain_sids = SMB_MALLOC_ARRAY(DOM_SID, *num_domains);
 
 	/* avoid calling a DC when trusted domains are not allowed anyway */
 	if (!lp_allow_trusted_domains()) {
@@ -276,8 +277,9 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 
 	/* put the results together */
 	*num_domains = trusted_num_domains + own_domains;
-	*domain_names = (fstring *) realloc(*domain_names, sizeof(fstring) * *num_domains);
-	*domain_sids = (DOM_SID *) realloc(*domain_sids, sizeof(DOM_SID) * *num_domains); 
+	*domain_names = SMB_REALLOC_ARRAY(*domain_names, fstring,
+					  *num_domains);
+	*domain_sids = SMB_REALLOC_ARRAY(*domain_sids, DOM_SID, *num_domains);
 
 	/* first add mydomain */
 	fstrcpy((*domain_names)[0], domain_name);
@@ -352,7 +354,7 @@ static NTSTATUS rid_idmap_init(char *init_param)
 	}
 
 	/* init sizes */
-	trust.dom = (struct dom_entry *) malloc(sizeof(struct dom_entry));
+	trust.dom = SMB_MALLOC_P(struct dom_entry);
 	if (trust.dom == NULL) { 
 		return NT_STATUS_NO_MEMORY;
 	}

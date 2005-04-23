@@ -607,7 +607,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 						       group_sidstr, sidstr);
 		}
 
-		command = strdup(lp_log_nt_token_command());
+		command = SMB_STRDUP(lp_log_nt_token_command());
 		command = realloc_string_sub(command, "%s", user_sidstr);
 		command = realloc_string_sub(command, "%t", group_sidstr);
 		DEBUG(8, ("running command: [%s]\n", command));

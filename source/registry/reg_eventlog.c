@@ -40,7 +40,7 @@ static int eventlog_topkey_values( char *key, REGVAL_CTR *val )
     
     if ( key ) 
     {
-	key2 = strdup( key );
+	key2 = SMB_STRDUP( key );
 	keystr = key2;
 	reg_split_path( keystr, &base, &new_path );
 	

@@ -449,7 +449,7 @@ WERROR cli_reg_get_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (*sec_buf_size != 0)
 	{
-		sec_buf->sec = (SEC_DESC*)talloc(mem_ctx, *sec_buf_size);
+		sec_buf->sec = TALLOC(mem_ctx, *sec_buf_size);
 	}
 
 	if (!reg_io_r_get_key_sec("", &r_o, &rbuf, 0))
