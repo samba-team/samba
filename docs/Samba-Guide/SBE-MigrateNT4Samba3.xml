@@ -391,7 +391,13 @@
 	<procedure>
 		<step><para>
 		Configure the Samba &smb.conf; file to create a BDC. An example configuration is
-		given here:
+		given in <link linkend="sbent4smb"/>.
+		The delete scripts are correctly commented out so that during the process of migration
+		no account information can be deleted.
+		</para></step>
+
+<example id="sbent4smb">
+<title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: A</title>
 <screen>
 # Global parameters
 [global]
@@ -410,12 +416,9 @@
 #       delete user script = /opt/IDEALX/sbin/smbldap-userdel '%u'
         add group script = /opt/IDEALX/sbin/smbldap-groupadd -p '%g'
 #       delete group script = /opt/IDEALX/sbin/smbldap-groupdel '%g'
-        add user to group script = \
-		/opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g'
-#       delete user from group script = \
-		/opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g'
-        set primary group script = \
-		/opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
+        add user to group script = /opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g'
+#       delete user from group script = /opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g'
+        set primary group script = /opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
         add machine script = /opt/IDEALX/sbin/smbldap-useradd -w '%u'
         logon script = scripts\logon.cmd
         logon path = \\%L\profiles\%U
@@ -440,7 +443,12 @@
         winbind nested groups = Yes
         ea support = Yes
         map acl inherit = Yes
+</screen>
+</example>
 
+<example id="sbent4smb2">
+<title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: B</title>
+<screen>
 [apps]
         comment = Application Data
         path = /data/home/apps
@@ -483,7 +491,12 @@
         path = /var/lib/samba/netlogon
         guest ok = Yes
         locking = No
+</screen>
+</example>
 
+<example id="sbent4smb3">
+<title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: C</title>
+<screen>
 [profiles]
         comment = Profile Share
         path = /var/lib/samba/profiles
@@ -501,14 +514,15 @@
         path = /var/lib/samba/drivers
         write list = root
 </screen>
-		The delete scripts are correctly commented out so that during the process of migration
-		no account information can be deleted.
-		</para></step>
-
+</example>
 		<step><para>
 		<indexterm><primary>slapd.conf</primary></indexterm>
 		Configure OpenLDAP in preparation for the migration. An example
-		<filename>sladp.conf</filename> file is shown here:
+		<filename>sladp.conf</filename> file is shown in <link linkend="sbentslapd"/>.
+                </para></step>
+
+<example id="sbentslapd">
+<title>NT4 Migration LDAP Server Configuration File: <filename>/etc/openldap/slapd.conf</filename> &smbmdash; Part A</title>
 <screen>
 include         /etc/openldap/schema/core.schema
 include         /etc/openldap/schema/cosine.schema
@@ -534,7 +548,12 @@ access to attr=shadowLastChange
 access to *
                 by * read
                 by anonymous auth
+</screen>
+</example>
 
+<example id="sbentslapd2">
+<title>NT4 Migration LDAP Server Configuration File: <filename>/etc/openldap/slapd.conf</filename> &smbmdash; Part B</title>
+<screen>
 #loglevel       256
 
 #schemacheck     on
@@ -566,13 +585,17 @@ index sambaPrimaryGroupSID  eq
 index sambaDomainName       eq
 index default               sub
 </screen>
-                </para></step>
+</example>
 
 		<step><para>
 		<indexterm><primary>nss_ldap</primary></indexterm>
 		<indexterm><primary>/etc/ldap.conf</primary></indexterm>
 		Install the PADL <command>nss_ldap</command> tool set, then configure the <filename>/etc/ldap.conf</filename>
-		as shown here:
+		as shown in <link linkend="sbrntldapconf"/>.
+		</para></step>
+
+<example id="sbrntldapconf">
+<title>NT4 Migration NSS LDAP File: <filename>/etc/ldap.conf</filename></title>
 <screen>
 host    127.0.0.1
 
@@ -591,11 +614,23 @@ nss_base_group          ou=Groups,dc=terpstra-world,dc=org?one
 
 ssl off
 </screen>
-		</para></step>
+</example>
 
 		<step><para>
 		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
-		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the following entries:
+		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the entries shown
+		in <link linkend="sbentnss"/>. Note that the LDAP entries have been commented out.
+		This is deliberate. If these entries are active (not commented out), and the
+		<filename>/ec/ldap.conf</filename> file has been configured, when the LDAP server
+		is started, the process of starting the LDAP server will cause LDAP lookups. This
+		causes the LDAP server <command>slapd</command> to hang becasue it finds port 389
+		open and therefore can not gain exclusive control of it. By commenting these entries
+		out it is possible to avoid this grid-lock situation and thus the over-all
+		installation and configuration will progress more smoothly.
+		</para></step>
+
+<example id="sbentnss">
+<title>NT4 Migration NSS Control File: <filename>/etc/nsswitch.conf</filename> (Stage:1)</title>
 <screen>
 passwd:         files #ldap
 shadow:         files #ldap
@@ -615,16 +650,10 @@ publickey:      files
 bootparams:     files
 automount:      files nis
 aliases:        files
+#passwd_compat: ldap       #Not needed.
+#group_compat:  ldapa      #Not needed.
 </screen>
-		Note that the LDAP entries have been commented out. This is deliberate. If these
-		entries are active (not commented out), and the <filename>/ec/ldap.conf</filename>
-		file has been configured, when the LDAP server is started, the process
-		of starting the LDAP server will cause LDAP lookups. This causes the LDAP server
-		<command>slapd</command> to hang becasue it finds port 389 open and therefore
-		can not gain exclusive control of it. By commenting these entries out it is possible
-		to avoid this grid-lock situation and thus the over-all installation and configuration
-		will progress more smoothly.
-		</para></step>
+</example>
 
 		<step><para>
 		Validate the the target NT4 PDC name is being correctly resolved to its IP address by
@@ -779,6 +808,11 @@ writing new configuration file:
 
 		<step><para>
 		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the following entries:
+		Note that the LDAP entries above have now been uncommented.
+		</para></step>
+
+<example id="sbentnss2">
+<title>NT4 Migration NSS Control File: <filename>/etc/nsswitch.conf</filename> (Stage:2)</title>
 <screen>
 passwd:         files ldap
 shadow:         files ldap
@@ -798,9 +832,10 @@ publickey:      files
 bootparams:     files
 automount:      files nis
 aliases:        files
+#passwd_compat: ldap       #Not needed.
+#group_compat:  ldapa      #Not needed.
 </screen>
-		Note that the LDAP entries above have now been uncommented.
-		</para></step>
+</example>
 
 		<step><para>
 		The LDAP management password must be installed into the <filename>secrets.tdb</filename>
