@@ -142,6 +142,7 @@ libkrb5_la_SOURCES =				\
 	ticket.c				\
 	time.c					\
 	transited.c				\
+	v4_glue.c				\
 	verify_init.c				\
 	verify_user.c				\
 	version.c				\
