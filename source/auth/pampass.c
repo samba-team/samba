@@ -130,7 +130,7 @@ static int smb_pam_conv(int num_msg,
 		return PAM_CONV_ERR;
 	}
 
-	reply = malloc(sizeof(struct pam_response) * num_msg);
+	reply = SMB_MALLOC_ARRAY(struct pam_response, num_msg);
 	if (!reply)
 		return PAM_CONV_ERR;
 
@@ -211,7 +211,7 @@ static struct chat_struct *make_pw_chat(char *p)
 	struct chat_struct *tmp;
 
 	while (1) {
-		t = (struct chat_struct *)malloc(sizeof(*t));
+		t = SMB_MALLOC_P(struct chat_struct);
 		if (!t) {
 			DEBUG(0,("make_pw_chat: malloc failed!\n"));
 			return NULL;
@@ -290,7 +290,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		return PAM_CONV_ERR;
 	}
 
-	reply = malloc(sizeof(struct pam_response) * num_msg);
+	reply = SMB_MALLOC_ARRAY(struct pam_response, num_msg);
 	if (!reply) {
 		DEBUG(0,("smb_pam_passchange_conv: malloc for reply failed!\n"));
 		free_pw_chat(pw_chat);
@@ -406,8 +406,8 @@ static void smb_free_pam_conv(struct pam_conv *pconv)
 static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, const char *user,
 					const char *passwd, const char *newpass)
 {
-	struct pam_conv *pconv = (struct pam_conv *)malloc(sizeof(struct pam_conv));
-	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)malloc(sizeof(struct smb_pam_userdata));
+	struct pam_conv *pconv = SMB_MALLOC_P(struct pam_conv);
+	struct smb_pam_userdata *udp = SMB_MALLOC_P(struct smb_pam_userdata);
 
 	if (pconv == NULL || udp == NULL) {
 		SAFE_FREE(pconv);

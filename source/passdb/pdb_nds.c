@@ -241,7 +241,7 @@ static int berDecodeLoginData(
 	if(retData)
 	{
 		retOctStrLen = *retDataLen + 1;
-		retOctStr = (char *)malloc(retOctStrLen);
+		retOctStr = SMB_MALLOC(retOctStrLen);
 		if(!retOctStr)
 		{
 			err = LDAP_OPERATIONS_ERROR;
@@ -404,7 +404,7 @@ static int nmasldap_get_simple_pwd(
 	size_t  pwdBufLen, bufferLen;
 
 	bufferLen = pwdBufLen = pwdLen+2;
-	pwdBuf = (char *)malloc(pwdBufLen); /* digest and null */
+	pwdBuf = SMB_MALLOC(pwdBufLen); /* digest and null */
 	if(pwdBuf == NULL)
 	{
 		return LDAP_NO_MEMORY;
@@ -568,7 +568,7 @@ static int nmasldap_get_password(
 	}
 
 	bufferLen = pwdBufLen = *pwdSize;
-	pwdBuf = (char *)malloc(pwdBufLen+2);
+	pwdBuf = SMB_MALLOC(pwdBufLen+2);
 	if(pwdBuf == NULL)
 	{
 		return LDAP_NO_MEMORY;
@@ -890,7 +890,7 @@ static NTSTATUS pdb_init_NDS_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHOD
 	(*pdb_method)->update_login_attempts = pdb_nds_update_login_attempts;
 
 	/* Save location for use in pdb_nds_update_login_attempts */
-	ldap_state->location = strdup(location);
+	ldap_state->location = SMB_STRDUP(location);
 
 	return NT_STATUS_OK;
 }
