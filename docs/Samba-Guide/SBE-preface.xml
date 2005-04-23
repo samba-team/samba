@@ -433,55 +433,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Chapter 7 &smbmdash; Updating Samba-3</term><listitem>
-		<para>
-		This chapter is the result of repeated requests for better documentation of the steps
-		that must be followed when updating or upgrading a Samba server. It attempts to cover
-		the entire subject in broad-brush but at the same time provides detailed background
-		information that is not covered elsewhere in the Samba documentation.
-		</para>
-
-		<para><emphasis>Technifo</emphasis> &smbmdash; Samba stores a lot of essential network
-		information in a large and growing collection of files. This chapter documents the
-		essentials of where those files may be located and how to find them. It also provide
-		an insight into inter-related matters that affect a Samba installation.
-		</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>Chapter 8 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
-		<para>
-		Another six months have <?latex \linebreak ?>
-		 passed. Abmas has acquired yet another company. You will find a
-		way to migrate all users off the old network onto the existing network without loss
-		of passwords and will effect the change-over during one weekend. May the force (and caffeine) be with
-		you, may you keep your back to the wind and may the sun shine on your face.
-		</para>
-
-		<para><emphasis>TechInfo</emphasis> &smbmdash; This chapter demonstrates the use of
-		the <command>net rpc migrate</command> facility using an LDAP ldapsam backend, and also
-		using a tdbsam passdb backend. Both are much-asked-for examples of NT4 Domain migration.
-		</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>Chapter 9 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
-		<para>
-		Misty Stanley-Jones has contributed information that summarizes her experience at migration
-		from a NetWare server to Samba-3.
-		</para>
-
-		<para><emphasis>TechInfo</emphasis> &smbmdash; The documentation provided demonstrates
-		how one site miigrated from NetWare to Samba. Some alternatives tools are mentioned. These
-		could be used to provide another pathway to a successful migration.
-		</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>Chapter 10 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
+		<term>Chapter 7 &smbmdash; Adding UNIX/Linux Servers and Clients</term><listitem>
 		<para>
 		Well done, Bob, your team has achieved much. Now help Abmas integrate the entire network.
 		You want central control and central support and you need to cut costs. How can you reduce administrative
@@ -498,6 +450,54 @@
 		and UNIX and Linux network clients. Users who convert to Linux want to be able to log on
 		using Windows network accounts. You explore nss_ldap, pam_ldap, winbind, and a few neat
 		techniques for taking control. Are you ready for this?
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 8 &smbmdash; Updating Samba-3</term><listitem>
+		<para>
+		This chapter is the result of repeated requests for better documentation of the steps
+		that must be followed when updating or upgrading a Samba server. It attempts to cover
+		the entire subject in broad-brush but at the same time provides detailed background
+		information that is not covered elsewhere in the Samba documentation.
+		</para>
+
+		<para><emphasis>Technifo</emphasis> &smbmdash; Samba stores a lot of essential network
+		information in a large and growing collection of files. This chapter documents the
+		essentials of where those files may be located and how to find them. It also provide
+		an insight into inter-related matters that affect a Samba installation.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 9 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
+		<para>
+		Another six months have <?latex \linebreak ?>
+		 passed. Abmas has acquired yet another company. You will find a
+		way to migrate all users off the old network onto the existing network without loss
+		of passwords and will effect the change-over during one weekend. May the force (and caffeine) be with
+		you, may you keep your back to the wind and may the sun shine on your face.
+		</para>
+
+		<para><emphasis>TechInfo</emphasis> &smbmdash; This chapter demonstrates the use of
+		the <command>net rpc migrate</command> facility using an LDAP ldapsam backend, and also
+		using a tdbsam passdb backend. Both are much-asked-for examples of NT4 Domain migration.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 10 &smbmdash; Migrating NetWare 4.11 Server to Samba</term><listitem>
+		<para>
+		Misty Stanley-Jones has contributed information that summarizes her experience at migration
+		from a NetWare server to Samba-3.
+		</para>
+
+		<para><emphasis>TechInfo</emphasis> &smbmdash; The documentation provided demonstrates
+		how one site miigrated from NetWare to Samba. Some alternatives tools are mentioned. These
+		could be used to provide another pathway to a successful migration.
 		</para>
 		</listitem>
 		</varlistentry>
