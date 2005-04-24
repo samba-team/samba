@@ -7,7 +7,7 @@
 
 	<para>
 	This is the start of the real journey toward the successful deployment of Samba. For some this chapter
-	is the end of the road bacause their needs will have been adequately met. For others, this chapter is
+	is the end of the road because their needs will have been adequately met. For others, this chapter is
 	the beginning of a journey that will take them well past the contents of this book. This book provides
 	example configurations of, for the greater part, complete networking solutions. The intent of this book
 	is to help you to get your Samba installation working with least pain and agony.
@@ -71,7 +71,7 @@
 	<para>
 	Our fictitious company is called <emphasis>Abmas Design Inc.</emphasis> This is a three-person
 	computer-aided design (CAD) business that often has more work than can be handled. The 
-	business owner hires contract draftspeople from wherever he can. They bring their own 
+	business owner hires contract drafts-people from wherever he can. They bring their own 
 	notebook computers into the office. There are four permanent drafting machines. Abmas has a 
 	collection of over 10 years of plans that must be available for all draftsmen to reference. 
 	Abmas hires the services of an experienced network engineer to update the 

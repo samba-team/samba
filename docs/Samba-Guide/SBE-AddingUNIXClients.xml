@@ -479,7 +479,7 @@
 	      </indexterm><indexterm>
 		<primary>nisplus</primary>
 	      </indexterm><indexterm>
-		<primary>hesoid</primary>
+		<primary>hesiod</primary>
 	      </indexterm><indexterm>
 		<primary>ldap</primary>
 	      </indexterm><indexterm>
@@ -489,7 +489,7 @@
 	      </indexterm>
 		Resolution via NSS. On NSS-enabled systems, there is usually a facility to resolve IDs
 		via multiple methods. The methods typically include: <command>files, compat, db, ldap, 
-		nis, nisplus, hesoid.</command>  When correctly installed, Samba adds to this list
+		nis, nisplus, hesiod.</command>  When correctly installed, Samba adds to this list
 		the <command>winbindd</command> facility. The ldap facility is frequently the nss_ldap
 		tool provided by PADL Software.
 		</para></listitem>
@@ -651,7 +651,7 @@ Joined domain MEGANET2.
 		</para>
 
 		<para>
-		Failure to join the domain could be caused by any number of vaiables. The most common
+		Failure to join the domain could be caused by any number of variables. The most common
 		causes of failure to join are:
 		</para>
 
@@ -705,7 +705,7 @@ Join to 'MEGANET2' failed.
 
 		<step><para>
 		<indexterm><primary>wbinfo</primary></indexterm>
-		Just joining the Domain is not quite enough, you must now provide a priviledged set
+		Just joining the Domain is not quite enough, you must now provide a privileged set
 		of credentials through which <command>winbindd</command> can interact with the ADS
 		Domain servers. Execute the following to implant the necessary credentials:
 <screen>
@@ -1270,7 +1270,7 @@ Joined domain MEGANET2.
    HAVE_KRB5_STRING_TO_KEY_SALT
    HAVE_LIBKRB5
 </screen>
-		The above output was obtained on a SuSE Linux system and shows the output for
+		The above output was obtained on a SUSE Linux system and shows the output for
 		Samba that has been compiled and linked with the Heimdal Kerberos libraries.
 		The following is a typical output that will be found on a Red Hat Linux system that
 		has been linked with the MIT Kerberos libraries:
@@ -1434,7 +1434,7 @@ Joined 'FRAN' to realm 'LONDON.ABMAS.BIZ'
 		      <primary>name resolution</primary>
 		      <secondary>Defective</secondary>
 		    </indexterm>
-			Defective or misconfigured DNS name resolution.
+			Defective or mis-configured DNS name resolution.
 			</para></listitem>
 
 		<listitem><para><indexterm>
@@ -1948,7 +1948,7 @@ BIGJOE$@'s password:
 Join to domain is not valid
 </screen>
                 The specific error message may differ from the above as it depends on the type of failure that
-                may have occured. Increase the <parameter>log level</parameter> to 10, repeat the above test
+                may have occurred. Increase the <parameter>log level</parameter> to 10, repeat the above test
                 and then examine the log files produced to identify the nature of the failure.
                 </para></step>
 
@@ -2164,7 +2164,7 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
 
         <para>
         <indexterm><primary>diagnostic</primary></indexterm>
-        Follow the diagnositic procedures shown earlier in this chapter to identify success or failure of the join.
+        Follow the diagnostic procedures shown earlier in this chapter to identify success or failure of the join.
         In many cases a failure is indicated by a silent return to the command prompt with no indication of the
         reason for failure.
         </para>
@@ -2743,7 +2743,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 		<primary>mapped drives</primary>
 	      </indexterm>
 		Many UNIX administrators mock the model that the Personal Computer industry has adopted
-		as normative since the early days of Novell Netware. One may well argue that the old
+		as normative since the early days of Novell NetWare. One may well argue that the old
 		perception of the necessity to keep users off file and print servers was a result of
 		fears concerning the security and integrity of data. It was a simple and generally
 		effective measure to keep users away from servers, except through mapped drives.
