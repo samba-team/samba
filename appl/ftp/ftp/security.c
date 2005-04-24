@@ -540,13 +540,13 @@ void ccc(void)
 void mec(char *msg, enum protection_level level)
 {
     void *buf;
-    size_t len;
+    size_t len, buf_size;
     if(!sec_complete) {
 	reply(503, "Incomplete security data exchange.");
 	return;
     }
-    buf = malloc(strlen(msg) + 2); /* XXX go figure out where that 2
-				      comes from :-) */
+    buf_size = strlen(msg) + 2;
+    buf = malloc(buf_size);
     len = base64_decode(msg, buf);
     command_prot = level;
     if(len == (size_t)-1) {
@@ -560,7 +560,7 @@ void mec(char *msg, enum protection_level level)
     }
     ((char*)buf)[len] = '\0';
     if(strstr((char*)buf, "\r\n") == NULL)
-	strcat((char*)buf, "\r\n");
+	strlcat((char*)buf, "\r\n", buf_size);
     new_ftp_command(buf);
 }
 
