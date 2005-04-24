@@ -95,7 +95,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 				Defective networking hardware. Over the past few years, we have seen
 				on the Samba mailing list a significant increase in the number of
 				problems that were traced to a defective network interface controller,
-				a defective HUB or Etherswitch, or defective cabling. In most cases,
+				a defective HUB or Ethernet switch, or defective cabling. In most cases,
 				it was the erratic nature of the problem that ultimately pointed to
 				the cause of the problem.
 				</para></listitem>
@@ -485,7 +485,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</indexterm><indexterm>
 	  <primary>passdb backend</primary>
 	</indexterm>
-	You may wish to consider outsourcing the development of your OpenLDAP directory to an expert, particularly
+	You may wish to consider out-sourcing the development of your OpenLDAP directory to an expert, particularly
 	if you find the challenge of learning about LDAP directories, schemas, configuration, and management
 	tools, and the creation of shell and Perl scripts a bit
 	challenging. OpenLDAP can be easily customized, though it includes
@@ -608,7 +608,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<ulink url="http://www.padl.com/Contents/OpenSourceSoftware.html">PADL LDAP tools.</ulink> The resolution 
 	of the UNIX group name to its GID must be enabled from either the
 	  <filename>/etc/group</filename> 
-	or from the LDAP backend. This requires the use of the PADL <filename>nss_ldap</filename> toolset
+	or from the LDAP backend. This requires the use of the PADL <filename>nss_ldap</filename> tool-set
 	that integrates with the name service switch (NSS). The same requirements exist for resolution
 	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="sbehap-LDAPdiag"/>.
 	</para>
@@ -772,7 +772,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		from the profile server as roaming profiles are processed.  This includes removing 
 		all the shortcuts in the Recent directory, making sure the cache used by the web browser 
 		is not being dumped into the <filename>Application Data</filename> folder, removing the 
-		Java plug-in's cache (the .jpi_cache directory in the profile), as well as training the 
+		Java plug-ins cache (the .jpi_cache directory in the profile), as well as training the 
 		user to not place large files on the Desktop and to use his mapped home directory for
 		saving documents instead of the <filename>My Documents</filename> folder.
 		</para>
@@ -1007,7 +1007,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>The Name Service Caching Daemon (nscd)</title>
 
 		<para>
-		The name service caching daemon (nscd) is a primary cause of diffculties with name
+		The name service caching daemon (nscd) is a primary cause of difficulties with name
 		resolution, particularly where <command>winbind</command> is used. Winbind does its
 		own caching, thus nscd causes double caching which can lead to peculiar problems during
 		debugging. As a rule it is a good idea to turn off the name service caching daemon.
@@ -1161,7 +1161,7 @@ dn: cn=Replicators,ou=Groups,dc=abmas,dc=biz
 </screen>
 			The first line is the DIT entry point for the container for POSIX groups. The correct entry
 			for the <filename>/etc/ldap.conf</filename> for the <constant>nss_base_group</constant>
-			parameter therefore is the destinguished name (dn) as applied here:
+			parameter therefore is the distinguished name (dn) as applied here:
 <screen>
 nss_base_group ou=Groups,dc=abmas,dc=biz?one
 </screen>
@@ -1173,7 +1173,7 @@ nss_base_group ou=Groups,dc=abmas,dc=biz?one
 nss_base_passwd dc=abmas,dc=biz?sub
 </screen>
 			This instructs LDAP to search for machine as well as user entries from the top of the DIT
-			down. This is inefficient, but at least should work. Note: It is possible to specify mulitple
+			down. This is inefficient, but at least should work. Note: It is possible to specify multiple
 			<constant>nss_base_passwd</constant> entries in the <filename>/etc/ldap.conf</filename> file, they
 			will be evaluated sequentially. Let us consider an example of use where the following DIT
 			has been implemented:
@@ -1286,7 +1286,7 @@ slapd[12164]: conn=1 fd=10 closed
 		</para>
 
 		<para>
-		Search for hints of what may have failed by lokking for the words <emphasis>fail</emphasis>
+		Search for hints of what may have failed by looking for the words <emphasis>fail</emphasis>
 		and <emphasis>error</emphasis>.
 		</para>
 
@@ -1400,7 +1400,7 @@ slapd[12164]: conn=1 fd=10 closed
 	</indexterm><indexterm>
 	  <primary>Red Hat Linux</primary>
 	</indexterm>
-	All configuration files and locations are shown for SUSE Linux 9.2 and are equaly valid for SUSE
+	All configuration files and locations are shown for SUSE Linux 9.2 and are equally valid for SUSE
 	Linux Enterprise Server 9. The file locations for Red Hat Linux are similar. You may need to
 	adjust the locations for your particular Linux system distribution/implementation.
 	</para>
@@ -1516,7 +1516,7 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 		</para></step>
 
 	<step><para><indexterm><primary>syslog</primary></indexterm>
-		Performance logging can be enabled and should preferrably be sent to a file on
+		Performance logging can be enabled and should preferably be sent to a file on
 		a file system that is large enough to handle significantly sized logs. To enable
 		the logging at a verbose level to permit detailed analysis uncomment the entry in
 		the <filename>/etc/openldap/slapd.conf</filename> shown as <quote>loglevel 256</quote>.
@@ -1835,7 +1835,7 @@ session  optional    pam_mail.so
 	before following the steps below. If Samba-3.0.15 (or later) is not installed, you have the
 	choice to either build your own or to obtain the packages from a dependable source.
 	Packages for SUSE Linux 8.x, 9.x and SUSE Linux Enterprise Server 9, as well as for 
-	Red Hat Fedora Core and Red Hat Enteprise Linux Server 3 and 4 are included on the CD-ROM that
+	Red Hat Fedora Core and Red Hat Enterprise Linux Server 3 and 4 are included on the CD-ROM that
 	is included at the back of this book.
 	</para>
 
@@ -2063,7 +2063,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8.tgz">downloaded</ulink>
 	for this site, also. Alternately, you may obtain the 
 	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8-3.src.rpm">smbldap-tools-0.8.8-3.src.rpm</ulink>
-	file that may be used to build an installable RPM package for your Linux system.
+	file that may be used to build an install-able RPM package for your Linux system.
 	</para>
 
 <note><para>
@@ -2191,7 +2191,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 <screen>
 &rootprompt; rpmbuild -ba -v smbldap-tools.spec
 </screen>
-		A build process that has completed without error will place the installable binary
+		A build process that has completed without error will place the install-able binary
 		files in the directory <filename>../RPMS/noarch</filename>.
 		</para></step>
 
@@ -2251,7 +2251,7 @@ Before starting, check
  . if the domain SID is defined (you can get it with the 'net getlocalsid')
 
  . you can leave the configuration using the Crtl-c key combination
- . empty value can be set with the "." caracter
+ . empty value can be set with the "." character
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Looking for configuration files...
 
@@ -2265,7 +2265,7 @@ Let's start configuring the smbldap-tools scripts ...
 
 . workgroup name: name of the domain Samba act as a PDC
   workgroup name [MEGANET2] &gt;
-. netbios name: netbios name of the samba controler
+. netbios name: netbios name of the samba controller
   netbios name [MASSIVE] &gt;
 . logon drive: local path to which the home directory
 	 will be connected (for NT Workstations). Ex: 'H:'
@@ -2292,7 +2292,7 @@ Let's start configuring the smbldap-tools scripts ...
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix})
           [cn=NextFreeUnixId] &gt; sambaDomainName=MEGANET2
-. ldap master server: IP adress or DNS name
+. ldap master server: IP address or DNS name
 	 of the master (writable) ldap server
 Use of uninitialized value in scalar chomp at ./configure.pl
 	 line 138, &lt;STDIN&gt; line 17.
@@ -2306,7 +2306,7 @@ Use of uninitialized value in string at ./configure.pl
 . ldap master port [389] &gt;
 . ldap master bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
 . ldap master bind password [] &gt;
-. ldap slave server: IP adress or DNS name of the slave
+. ldap slave server: IP address or DNS name of the slave
 	 ldap server: can also be the master one
 Use of uninitialized value in scalar chomp at ./configure.pl
 	 line 138, &lt;STDIN&gt; line 21.
@@ -2331,7 +2331,7 @@ Use of uninitialized value in string at ./configure.pl line 145,
 . default user gidNumber [513] &gt;
 . default computer gidNumber [515] &gt;
 . default login shell [/bin/bash] &gt;
-. default domain name to append to mail adress [] &gt; abmas.biz
+. default domain name to append to mail address [] &gt; abmas.biz
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
   /etc/smbldap-tools/smbldap.conf-&gt;
@@ -2723,7 +2723,7 @@ Domain Computers:x:553:
 		This demonstrates that the <command>nss_ldap</command> library is functioning
 		as it should. If these two steps fail to produce this information refer to
 		<link linkend="sbeavoid"/> for diagnostic procedures that can be followed to
-		isolate the cause of the problem. Procede to the next step only when the steps
+		isolate the cause of the problem. Proceed to the next step only when the steps
 		above have been successfully completed.
 		</para></step>
 
@@ -2767,11 +2767,11 @@ stans:x:1001:513:System User:/home/stans:/bin/bash
 chrisr:x:1002:513:System User:/home/chrisr:/bin/bash
 maryv:x:1003:513:System User:/home/maryv:/bin/bash
 </screen>
-		This demonstates that user account resolution via LDAP is working.
+		This demonstrates that user account resolution via LDAP is working.
 		</para></step>
 
 		<step><para>
-		This step will determin
+		This step will determine
 <screen>
 &rootprompt; id chrisr
 uid=1002(chrisr) gid=513(Domain Users) groups=513(Domain Users)
@@ -2911,7 +2911,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 </screen>
 		This is looking good. Congratulations &smbmdash; it works! Note that in the above output
 		the lines where shortened by replacing the middle value (1010554828) of the SID with the 
-		elipsis (...).
+		ellipsis (...).
 		</para></step>
 
 		<step><para>
@@ -4148,7 +4148,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<step><para>
 		The printer properties panel for the <guimenu>ps01-color</guimenu> printer on the server 
 		<constant>MASSIVE</constant> is displayed. Click the <guimenu>Advanced</guimenu> tab.
-		Note that the box labelled <guimenu>Driver</guimenu> is empty. Click the <guimenu>New Driver</guimenu>
+		Note that the box labeled <guimenu>Driver</guimenu> is empty. Click the <guimenu>New Driver</guimenu>
 		button that is next to the <guimenu>Driver</guimenu> box. This launches the quote<quote>Add Printer Wizard</quote>.
 		</para></step>
 
@@ -4257,7 +4257,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</para></blockquote>
 
 	<blockquote><para>
-	Defragment the hard disk &smbmdash; While not obvious to the uninitiated, defragmentation results
+	De-fragment the hard disk &smbmdash; While not obvious to the uninitiated, de-fragmentation results
 	in better performance and often significantly reduces the size of the compressed disk image. That
 	also means it will take less time to deploy the image onto 500 workstations.
 	</para></blockquote>
@@ -4307,8 +4307,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 		<listitem><para>
 		Implementation of Samba Primary and Secondary Domain Controllers with a common LDAP backend
-		for user and group accounts that is shared with the UNIX system through the PADL nns_ldap and
-		pam_ldap toolsets.
+		for user and group accounts that is shared with the UNIX system through the PADL nss_ldap and
+		pam_ldap tool-sets.
 		</para></listitem>
 
 		<listitem><para>
@@ -4406,7 +4406,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		need to be familiar with. Over the years many people have approached me wanting to
 		know the details of exactly how to implement a DHCP and Dynamic DNS server with Samba
 		and WINS. In this chapter, it is plain to see what needs to be configured to provide
-		transparent interoperability. Likewise for CUPS and Samba interoperation. These are
+		transparent interoperability. Likewise for CUPS and Samba inter-operation. These are
 		key stumbling areas for many people.
 		</para>
 

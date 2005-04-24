@@ -487,7 +487,7 @@ Paths:
 	<para>
 	<indexterm><primary>8-bit</primary></indexterm>
 	Non-English users whose national language character set has special characters and who upgrade naively will 
-	find that many files that have the special chracters in the file name will see them garbled and jumbled up.
+	find that many files that have the special characters in the file name will see them garbled and jumbled up.
 	This typically happens with umlauts and accents because these characters were particular to the codepage
 	that was in use with Samba-2.x using an 8-bit encoding scheme.
 	</para>
@@ -581,8 +581,8 @@ Samba-2.x could be compiled with LDAP support.
 
 		<step><para>
 		<indexterm><primary>RPM</primary></indexterm>
-		It is now safe to ugrade the Samba installation. On Linux systems
-		it is not necessary to remove the Samba RPMs becasue a simple
+		It is now safe to upgrade the Samba installation. On Linux systems
+		it is not necessary to remove the Samba RPMs because a simple
 		upgrade installation will automatically remove the old files.
 		</para>
 
@@ -683,7 +683,7 @@ Samba-2.x could be compiled with LDAP support.
 	<indexterm><primary>add machine script</primary></indexterm>
 	<indexterm><primary>add user script</primary></indexterm>
 	The <parameter>add machine script</parameter> functionality was previously
-	hanlded by the <parameter>add user script</parameter>, which in Samba-3 is
+	handled by the <parameter>add user script</parameter>, which in Samba-3 is
 	used exclusively to add user accounts.
 	</para>
 
@@ -709,7 +709,7 @@ Samba-2.x could be compiled with LDAP support.
 	<indexterm><primary>Idealx</primary></indexterm>
 	Where the <parameter>passdb backend</parameter> makes use of an LDAP directory
 	it will be necessary either to use the <constant>smbldap-tools</constant> provided
-	by Idealx, or else to use an alternate toolset either provided by another third
+	by Idealx, or else to use an alternate tool-set either provided by another third
 	party, or else home crafted tools to manage the LDAP directory accounts.
 	</para>
 
@@ -779,7 +779,7 @@ aware of when moving to Samba 3.0.
      Kerberos 5 and LDAP protocols.
 
      MIT kerberos 1.3.1 supports the ARCFOUR-HMAC-MD5 encryption
-     type which is neccessary for servers on which the
+     type which is necessary for servers on which the
      administrator password has not been changed, or kerberos-enabled
      SMB connections to servers that require Kerberos SMB signing.
      Besides this one difference, either MIT or Heimdal Kerberos
@@ -914,7 +914,7 @@ Clearly, such agreement is further away than a pipe-dream.
 
 <para>
 <indexterm><primary>vendors</primary></indexterm>
-Vendors and packagers who produce Samba binary installable packages do not,
+Vendors and packagers who produce Samba binary install-able packages do not,
 as a rule, use the default paths used by the Samba-Team for the location of
 the binary files, the &smb.conf; file, and the Samba control files (tdb's
 as well as files such as <filename>secrets.tdb</filename>. This means that
@@ -959,7 +959,7 @@ the procedure outlined above.
 	<para>
 	With the provision that the binary Samba-3 package has been built
 	with the same path and feature settings as the existing Samba-3
-	package that is being updated, an update of Samab-3 versions 3.0.0
+	package that is being updated, an update of Samba-3 versions 3.0.0
 	through 3.0.4 can be updated to 3.0.5 without loss of functionality
 	and without need to change either the &smb.conf; file or, where
 	used, the LDAP schema.
@@ -990,7 +990,7 @@ the procedure outlined above.
 	</para>
 
 	<para>
-	After updating the LDAP schema, do not forget to reindex the LDAP database.
+	After updating the LDAP schema, do not forget to re-index the LDAP database.
 	</para>
 
 	</sect3>

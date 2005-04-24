@@ -60,7 +60,7 @@
 	</para>
 
 	<para>
-	The Samba mailing list's users have asked for sample configuration files
+	The Samba mailing lists users have asked for sample configuration files
 	that work. It is natural to question one's own ability to correctly
 	configure a complex tool such as Samba until a minimum necessary
 	knowledge level has been attained.
@@ -272,7 +272,7 @@
 	<para>
 	Clearly the first edition contained most of what was needed and that was missing
 	from other books that cover this difficult subject. The new arrangement adds
-	additional material to meet consumer requests and includeis changes that originated
+	additional material to meet consumer requests and includes changes that originated
 	as suggestions for improvement.
 	</para>
 
@@ -463,7 +463,7 @@
 		information that is not covered elsewhere in the Samba documentation.
 		</para>
 
-		<para><emphasis>Technifo</emphasis> &smbmdash; Samba stores a lot of essential network
+		<para><emphasis>TechInfo</emphasis> &smbmdash; Samba stores a lot of essential network
 		information in a large and growing collection of files. This chapter documents the
 		essentials of where those files may be located and how to find them. It also provide
 		an insight into inter-related matters that affect a Samba installation.
@@ -496,7 +496,7 @@
 		</para>
 
 		<para><emphasis>TechInfo</emphasis> &smbmdash; The documentation provided demonstrates
-		how one site miigrated from NetWare to Samba. Some alternatives tools are mentioned. These
+		how one site migrated from NetWare to Samba. Some alternatives tools are mentioned. These
 		could be used to provide another pathway to a successful migration.
 		</para>
 		</listitem>

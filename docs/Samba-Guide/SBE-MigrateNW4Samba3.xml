@@ -64,7 +64,7 @@
 
 	<para>
 	File paths have been modified to permit use of RPM packages provided by Novell. In the
-	original documenation contributed by Misty a the Courier-IMAP package had been built
+	original documentation contributed by Misty a the Courier-IMAP package had been built
 	directly from the original source tarball.
 	</para>
 
@@ -145,9 +145,9 @@
 	The complete removal of all site-specific information in order to produce	
 	a generic migration solution would rob this chapter of its character.
 	It should be recognized therefore, that the examples given will require
-	significant adaptation to suit local needs and thus it is recoognized that
+	significant adaptation to suit local needs and thus it is recognized that
 	there are some gaps in the example files. That is not Misty's fault, it
-	is the result of treatement given to her files in an attempt to make
+	is the result of treatment given to her files in an attempt to make
 	the overall information more useful to you.
 	</para>
 
@@ -239,7 +239,7 @@
 
 	<para>
 	Given that a decision had been made to use Courier-IMAP the schema <quote>authldap.schema</quote>
-	from the Courier-IMAP source tarball is ncessary to resolve Courier-specific LDAP directory
+	from the Courier-IMAP source tarball is necessary to resolve Courier-specific LDAP directory
 	needs. Where the Courier-IMAP file provided by SUSE is used this file is named
 	<filename>courier.schema</filename>.
 	</para>
@@ -253,13 +253,13 @@
 
 	<para>
 	An attempt was made to use the PADL POSIX account migration scripts but I gave up trying to
-	make them work. Instead, even though it is most ineligant, I wrote a simple script that did
+	make them work. Instead, even though it is most inelegant, I wrote a simple script that did
 	what I needed. It is enclosed as a simple example to demonstrate that you do not need to be
 	a guru to make light of otherwise painful repetition. This file is listed in <link linkend="sbeamg"/>.
 	</para>
 
 <example id="sbeamg">
-<title>A Rought Tool to Create an LDIF File from the System Account Files</title>
+<title>A Rough Tool to Create an LDIF File from the System Account Files</title>
 <screen>
 #!/bin/bash
 
@@ -290,7 +290,7 @@ done
 	<title>Editors' Note</title>
 	The PADL MigrationTools are recommended for migration of the UNIX account information into
 	the LDAP directory. The tools consist of a set of Perl scripts for migration of users, groups,
-	aliases, hosts, netgroups, networks, protocols, PRCs, and services from the existing ascii text
+	aliases, hosts, netgroups, networks, protocols, PRCs, and services from the existing ASCII text
 	files (or from a name service such as NIS). This too set can be obtained from the <ulink url=
 	"http://www.padl.com">PADL</ulink> web site.
 	</para></note>
@@ -529,7 +529,7 @@ ldap_version 3
 rootbinddn cn=Manager,dc=abmas,dc=biz
 
 # Filter to AND with uid=%s
-pam_filter objectclass=posixAccoun
+pam_filter objectclass=posixAccount
 
 # The user ID attribute (defaults to uid)
 pam_login_attribute uid
@@ -893,7 +893,7 @@ session: none
 	is shown in <link linkend="sbexcld"/>.  The reason I had to have the
 	<command>rsync</command> daemon running on a system which could be
 	rebooted frequently is because <constant>ncpfs</constant>
-	(part of the MARS Netware Emulation package) has a nasty habit of creating stale
+	(part of the MARS NetWare Emulation package) has a nasty habit of creating stale
 	mount points which cannot be recovered without a reboot. The reason for hourly
 	synchronization is because some part of the chain was very slow and
 	performance-heavy (whether <command>rsync</command> itself, the network,
@@ -1141,9 +1141,9 @@ userHomeDrive=""
 
 # The default user netlogon script name (%U username substitution)
 # if not used, will be automatically username.cmd
-# make sure script file is edited under dos
+# make sure script file is edited under DOS
 # Ex: %U.cmd
-# userScript="startup.cmd" # make sure script file is edited under dos
+# userScript="startup.cmd" # make sure script file is edited under DOS
 userScript=""
 
 # Domain appended to the users "mail"-attribute
@@ -1182,7 +1182,7 @@ smbpasswd="/usr/bin/smbpasswd"
 ############################
 # Credential Configuration #
 ############################
-# Notes: you can specify two differents configuration if you use a
+# Notes: you can specify two different configuration if you use a
 # master ldap for writing access and a slave ldap server for reading access
 # By default, we will use the same DN (so it will work for standard Samba
 # release)
@@ -1250,7 +1250,7 @@ ou: Idmap
 	<indexterm><primary>smbldap-groupadd</primary></indexterm>
 	<indexterm><primary>RID</primary></indexterm>
 	<indexterm><primary>sambaGroupMapping</primary></indexterm>
-	With the LDAP directory now intialized it is time to create the Windows and POSIX
+	With the LDAP directory now initialized it is time to create the Windows and POSIX
 	(UNIX) group accounts as well as the mappings from Windows groups to UNIX groups.
 	The easiest way to do this is to use <command>smbldap-groupadd</command> command.
 	It will create the group with the posixGroup and sambaGroupMapping attributes, a
@@ -1381,7 +1381,7 @@ sambaAcctFlags: [W          ]
 	So now I can log in with a test user from the machine w2kengrspare. It's all fine and
 	good, but that user is in no groups yet so has pretty boring access.  We can fix that
 	by writing the login script! To write the login script, I used
-	<ulink url="http://www.kixtart.org">Kixstart</ulink>. I used it because it will work
+	<ulink url="http://www.kixtart.org">Kixtart</ulink>. I used it because it will work
 	with every architecture of Windows, has an active and helpful user base, and was both
 	easier to learn and more powerful than the standard netlogon scripts I have seen.
 	I also did not have to do a logon script per user or per group.
@@ -1409,7 +1409,7 @@ kxrpc.exe &lt;-- Probably useless as it has to run on the server and can
 	</para>
 
 <example id="ch8kix">
-<title>Kixstart Control File &smbmdash; File: logon.kix</title>
+<title>Kixtart Control File &smbmdash; File: logon.kix</title>
 <screen>
 ; This script just calls the other scripts.
 
@@ -1440,7 +1440,7 @@ ENDIF
 </example>
 
 <example id="ch8kix2">
-<title>Kixstart Control File &smbmdash; File: main.kix</title>
+<title>Kixtart Control File &smbmdash; File: main.kix</title>
 <screen>
 break on
 
@@ -1476,19 +1476,19 @@ USE N: \\massive\network
 </example>
 
 <example id="ch8kix3">
-<title>Kixstart Control File &smbmdash; File: setup.kix, Part A</title>
+<title>Kixtart Control File &smbmdash; File: setup.kix, Part A</title>
 <screen>
 ; My setup.kix is where all of the redirection stuff happens.  Note that with 
-; the use of registry keys, ths only happens the first time they log in ,or if 
+; the use of registry keys, this only happens the first time they log in ,or if 
 ; I delete the pertinent registry keys which triggers it to happen again:
 
-; Check to see if we have written the Borkholder subkey before
-$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder")
+; Check to see if we have written the abmas sub-key before
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\abmas")
 IF NOT $RETURNCODE = 0
-; Add key for Borkholder-specific things on the first login
-  ADDKEY("HKEY_CURRENT_USER\Borkholder")
+; Add key for abmas-specific things on the first login
+  ADDKEY("HKEY_CURRENT_USER\abmas")
   ; The following key gets deleted at the end of the first login
-  ADDKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+  ADDKEY("HKEY_CURRENT_USER\abmas\FIRST_LOGIN")
 ENDIF
 
 ; People with laptops need My Documents to be in their profile.  People with
@@ -1498,14 +1498,14 @@ ENDIF
 ; Check to see if this is the first login -- doesn't make sense to do this
 ; at the very first login
 
-$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+$RETURNCODE = EXISTKEY("HKEY_CURRENT_USER\abmas\FIRST_LOGIN")
 IF NOT $RETURNCODE = 0
 
 ; We don't want to do this stuff for people with laptops or people in the FURN
 ; group.  (They store their profiles in a different server)
 
   IF NOT INGROUP("MASSIVE\Laptop","MASSIVE\FURN")
-    $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+    $RETURNCODE=EXISTKEY("HKEY_CURRENT_USER\abmas\profile_copied")
 
 ; A  crude way to tell what OS our profile is for and copy the "My Documents"
 ; to the redirected folder on the server.  It works because the profiles
@@ -1527,12 +1527,12 @@ IF NOT $RETURNCODE = 0
 </example>
 
 <example id="ch8kix3b">
-<title>Kixstart Control File &smbmdash; File: setup.kix, Part B</title>
+<title>Kixtart Control File &smbmdash; File: setup.kix, Part B</title>
 <screen>
 ; Now we will write the registry values to redirect the locations of "My 
 Documents"
 ; and other folders.
-      ADDKEY("HKEY_CURRENT_USER\Borkholder\profile_copied")
+      ADDKEY("HKEY_CURRENT_USER\abmas\profile_copied")
       WRITEVALUE("HKEY_CURRENT_USER\Software\Microsoft\
 Windows\CurrentVersion\Explorer\User 
 Shell Folders", "Personal","\\massive\@userID","REG_SZ")
@@ -1554,18 +1554,18 @@ Shell Folders", "My eBooks", "\\massive\@userID\My eBooks", "REG_SZ")
     ENDIF
   ENDIF
 
-; Now we will delete the FIRST_LOGIN subkey that we made before.
-; Note - to run this script again you will want to delete the HKCU\Borkholder
-; subkey, log out, and log back in.
-$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+; Now we will delete the FIRST_LOGIN sub-key that we made before.
+; Note - to run this script again you will want to delete the HKCU\abmas
+; sub-key, log out, and log back in.
+$RETURNVALUE = EXISTKEY("HKEY_CURRENT_USER\abmas\FIRST_LOGIN")
 IF $RETURNVALUE = 0
-  DELKEY("HKEY_CURRENT_USER\Borkholder\FIRST_LOGIN")
+  DELKEY("HKEY_CURRENT_USER\abmas\FIRST_LOGIN")
 ENDIF
 </screen>
 </example>
 
 <example id="ch8kix4">
-<title>Kixstart Control File &smbmdash; File: acct.kix</title>
+<title>Kixtart Control File &smbmdash; File: acct.kix</title>
 <screen>
 ; And here is one group-oriented script to show what can be
 ; done that way: acct.kix:
@@ -1590,11 +1590,11 @@ ENDIF
 
 	<para>
 	As you can see in the script, I redirect the My Documents to the user's home
-	share if they are not in the “Laptop” group. I also add printers on a
+	share if they are not in the Laptop group. I also add printers on a
 	group-by-group basis, and if applicable I setthe group printer. For this to
 	be effective, the print drivers must be installed on the Samba server in the
-	<filename>[print$]</filename> share. Ample documentation exists about how to do that so I did not
-	cover it.
+	<filename>[print$]</filename> share. Ample documentation exists about how to
+	do that so I did not cover it.
 	</para>
 
 	<para>
@@ -1609,11 +1609,12 @@ ENDIF
 	<para>
 	Also of note for Win9x is that the drive mappings and printer setup will not
 	work because they rely on RPC. One merely has to put the appropriate settings
-	into the <filename>c:\autoexec.bat</filename> file or map the drives manually.  One option would
-	be to check the OS as part of the Kixtart script, and if it is Win9x and if
-	it is the first login, copy a pre-made <filename>autoexec.bat</filename> to the <filename>C:</filename> drive. I only
-	have three such machines and one is going away in the very near future, so it
-	was easier to do it by hand.
+	into the <filename>c:\autoexec.bat</filename> file or map the drives manually.
+	One option would be to check the OS as part of the Kixtart script, and if it
+	is Win9x and if it is the first login, copy a pre-made
+	<filename>autoexec.bat</filename> to the <filename>C:</filename> drive. I
+	only have three such machines and one is going away in the very near future,
+	so it was easier to do it by hand.
 	</para>
 
 	<para>
@@ -1621,7 +1622,7 @@ ENDIF
 	At this point I was able to add the users. This is the part that really falls
 	into upgrade. I moved the users over one group at a time, starting with the
 	people who used the least amount of resources on the network. With each group
-	that I moved, I first logged in as a “standard” user in that group and took
+	that I moved, I first logged in as a standard user in that group and took
 	careful note of their environment, mainly the printers they used, their PATH,
 	and what network resources they had access to (most importantly which ones
 	they actually needed access to).
@@ -1700,7 +1701,7 @@ ENDIF
 
 	<para>
 	After all these steps are accomplished, only cleanup details are left. Make sure user's
-	shortcuts and “Network Places” point to the appropriate place on the new server, check
+	shortcuts and Network Places point to the appropriate place on the new server, check
 	the important applications to be sure they work as expected and troubleshoot any problems
 	that might arise, check to be sure the user's printers are present and working. By the
 	way, if there are any network printers installed as system printers (the Novell way)
@@ -1742,7 +1743,7 @@ ENDIF
 	the printer in a raw format. CUPS sends them in Postscript by default. I had
 	to make a second printer definition for one printer and tell CUPS specifically
 	to send raw data to the printer, and assign this printer to the LPT port with
-	Kixtart's version of the “net use”command.
+	Kixtart's version of the net use command.
 	</para>
 
 	<para>
@@ -1766,10 +1767,10 @@ ENDIF
 	I went from a very high load on the server to an average load of between 1
 	and 2 runnable processes on the server. I have improved the security and
 	robustness of the system. I have also implemented
-	<ulink url="http://www.clamav.net">ClamAV</ulink> Antivirus
+	<ulink url="http://www.clamav.net">ClamAV</ulink> Anti-virus
 	which scans the entire Samba server for viruses every two hours and
 	quarantines them. I have found it much less problematic than our ancient
-	version of Norton Antivirus Corporate Edition, and much more up-to-date.
+	version of Norton Anti-virus Corporate Edition, and much more up-to-date.
 	</para>
 
 	<para>
