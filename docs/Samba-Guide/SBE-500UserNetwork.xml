@@ -1689,7 +1689,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		When you are satisfied that the staging systems are complete, use the appropriate procedure to
 		remove the client from the domain. Reboot the system, and then log on as the local administrator
 		and clean out all temporary files stored on the system. Before shutting down, use the disk
-		defragmentation tool so that the file system is in an optimal condition before replication.
+		de-fragmentation tool so that the file system is in an optimal condition before replication.
 		</para></step>
 
 		<step><para>

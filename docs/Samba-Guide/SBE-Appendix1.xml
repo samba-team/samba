@@ -160,7 +160,7 @@
 	</para>
 
       <para><indexterm>
-	  <primary>Free Standards Grou</primary>
+	  <primary>Free Standards Group</primary>
 	  <see>FSG</see>
 	</indexterm><indexterm>
 	  <primary>FSG</primary>
@@ -297,7 +297,7 @@ samba3-cifsmount-3.0.15-1
 	</para>
 
 <example id="ch12SL">
-<title>A Useful Samba Control Script for SuSE Linux</title>
+<title>A Useful Samba Control Script for SUSE Linux</title>
 <screen>
 #!/bin/bash
 #
@@ -597,9 +597,9 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	    <primary>SID</primary>
 	  </indexterm>
 	The first step to get the LDAP server ready for action is to create the LDIF file from
-	which the LDAP database will be preloaded. This is necessary to create the containers
+	which the LDAP database will be pre-loaded. This is necessary to create the containers
 	into which the user, group, and so on, accounts is written. It is also necessary to
-	preload the well-known Windows NT Domain Groups, as they must have the correct SID so
+	pre-load the well-known Windows NT Domain Groups, as they must have the correct SID so
 	that they can be recognized as special NT Groups by the MS Windows clients.
 	</para>
 
@@ -670,7 +670,7 @@ Enter the top level org name or press Enter to continue:
 		</para></step>
 
 		<step><para>
-		It is now time to preload the LDAP database with the following
+		It is now time to pre-load the LDAP database with the following
 		command:
 <screen>
 &rootprompt; slapadd -v -l MEGANET2.ldif
@@ -1102,7 +1102,7 @@ example:
 	
 	<step><para>
 	Copy the extracted files to the document root directory of your Web server.
-	For example, on SuSE Linux Enterprise Server 8, copy to the 
+	For example, on SUSE Linux Enterprise Server 8, copy to the 
 	<filename>/srv/web/htdocs</filename> directory.
 	</para></step>
 
@@ -1538,14 +1538,14 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	<title>Opportunistic Locking Controls</title>
 
 	<para><indexterm>
-	    <primary>file cacheing</primary>
+	    <primary>file caching</primary>
 	  </indexterm>
 	Third-party Windows applications may not be compatible with the use of opportunistic file
 	and record locking. For applications that are known not to be compatible,<footnote>Refer to
 	the application manufacturers' installation guidelines and knowledge base for specific
 	information regarding compatibility. It is often safe to assume that if the software
 	manufacturer does not specifically mention incompatibilities with opportunistic file
-	and record locking, or with Windows client file cacheing, the application is probably
+	and record locking, or with Windows client file caching, the application is probably
 	compatible with Windows (as well as Samba) default settings.</footnote> oplock
 	support may need to be disabled both on the Samba server and on the Windows workstations.
 	</para>

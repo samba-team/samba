@@ -51,7 +51,7 @@
 	<note><para>
 	The successful completion of this chapter requires that you capture network traffic
 	using <command>ethereal</command>. It is recommended that you use a hub, not an
-	etherswitch. It is necessary for the device used to act as a repeater, not as a
+	Ethernet switch. It is necessary for the device used to act as a repeater, not as a
 	filter. Ethernet switches may filter out traffic that is not directed at the machine
 	that is used to monitor traffic; this would not allow you to complete the projects.
 	</para></note>
@@ -271,7 +271,7 @@
 
 		<para>
 		The summary of the first 10 minutes of the packet capture should look like <link linkend="pktcap01"/>.
-		A screenshot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
+		A screen-shot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
 		</para>
 
 		<image id="pktcap01">

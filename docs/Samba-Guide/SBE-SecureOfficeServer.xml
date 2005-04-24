@@ -363,7 +363,7 @@ Basic OS        256.0             256            256
 		estimate of 0.1 MBytes/sec per user.  This would suggest that 100-Base-T (approx. 10 MBytes/sec)
 		would deliver below acceptable capacity for the initial user load. It is, therefore, a good
 		idea to begin with 1 Gigabit ethernet cards for the two internal networks, each attached
-		to a 1 Gigabit Etherswitch that provides connectivity to an expandable array of 100-Base-T
+		to a 1 Gigabit Ethernet switch that provides connectivity to an expandable array of 100-Base-T
 		switched ports.
 		</para>
 
@@ -411,7 +411,7 @@ Given 500 Users and 2 years:
 	    <indexterm>
 	      <primary>storage capacity</primary>
 	    </indexterm>
-		The preferred storage capacity should be approximately 1 TeraByte. Use of RAID level 5
+		The preferred storage capacity should be approximately 1 Terabyte. Use of RAID level 5
 		with two hot spare drives would require an 8 drive by 200 GByte capacity per drive array.
 		</para>
 

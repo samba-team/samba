@@ -88,7 +88,7 @@
 	</indexterm>
 	Problems reported by users fall into three categories: configurations that do not work, those 
 	that have broken behavior, and poor performance. The term <emphasis>broken behavior</emphasis>
-	means that the function of a partciluar Samba component appears to work sometimes, but not at
+	means that the function of a particular Samba component appears to work sometimes, but not at
 	others. The resulting intermittent operation is clearly unacceptable. An example of 
 	<emphasis>broken behavior</emphasis> known to many Windows networking users occurs when the
 	list of Windows machines in MS Explorer changes, sometimes listing machines that are running
@@ -379,7 +379,7 @@
 	      <secondary>collisions</secondary>
 	    </indexterm><indexterm>
 	      <primary>network</primary>
-	      <secondary>tiemouts</secondary>
+	      <secondary>timeouts</secondary>
 	    </indexterm><indexterm>
 	      <primary>collision rates</primary>
 	    </indexterm><indexterm>
