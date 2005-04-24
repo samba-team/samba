@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -155,6 +155,35 @@ krb5_cc_gen_new(krb5_context context,
     p->ops = ops;
     *id = p;
     return p->ops->gen_new(context, id);
+}
+
+/*
+ * Generates a new unique ccache of `type` in `id'. If `type' is NULL,
+ * the library chooses the default credential cache type. The supplied
+ * `hint' (that can be NULL) is a string that the credential cache
+ * type can use to base the name of the credential on, this is to make
+ * its easier for the user to differentiate the credentials.
+ *
+ *  Returns 0 or an error code.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_new_unique(krb5_context context, const char *type, 
+		   const char *hint, krb5_ccache *id)
+{
+    const krb5_cc_ops *ops;
+
+    if (type == NULL)
+	type = "FILE";
+
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL) {
+	krb5_set_error_string(context, "Credential cache type %s is unknown",
+			      type);
+	return KRB5_CC_UNKNOWN_TYPE;
+    }
+
+    return krb5_cc_gen_new(context, ops, id);
 }
 
 /*
