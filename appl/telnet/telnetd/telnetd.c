@@ -635,7 +635,7 @@ getterminaltype(char *name, size_t name_sz)
 		     */
 		    _gettermname();
 		    if (strncmp(first, terminaltype, sizeof(first)) != 0)
-			strcpy(terminaltype, first);
+			strlcpy(terminaltype, first, sizeof(terminaltype));
 		    break;
 		}
 	    }
@@ -751,7 +751,7 @@ Please contact your net administrator");
      */
     *user_name = 0;
     level = getterminaltype(user_name, sizeof(user_name));
-    esetenv("TERM", terminaltype ? terminaltype : "network", 1);
+    esetenv("TERM", terminaltype[0] ? terminaltype : "network", 1);
 
 #ifdef _SC_CRAY_SECURE_SYS
     if (secflag) {

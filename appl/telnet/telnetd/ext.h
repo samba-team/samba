@@ -57,7 +57,7 @@ extern const char *new_login;
 
 extern slcfun	slctab[NSLC + 1];	/* slc mapping table */
 
-extern char	*terminaltype;
+extern char	terminaltype[41];
 
 /*
  * I/O data buffers, pointers, and counters.
