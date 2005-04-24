@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-
+#include <krb5-v4compat.h>
 #include <rx.h>
 
 #define KA_AUTHENTICATION_SERVICE 731
@@ -250,27 +250,35 @@ create_reply_ticket (struct rx_header *hdr,
 		     const char *sname, const char *sinstance,
 		     u_int32_t challenge,
 		     const char *label,
-		     des_cblock *key,
+		     krb5_keyblock *key,
 		     krb5_data *reply)
 {
-    KTEXT_ST ticket;
-    des_cblock session;
+    krb5_data ticket;
+    krb5_keyblock session;
     krb5_storage *sp;
     krb5_data enc_data;
-    des_key_schedule schedule;
     struct rx_header reply_hdr;
-    des_cblock zero;
+    char zero[8];
     size_t pad;
     unsigned fyrtiosjuelva;
 
     /* create the ticket */
 
-    des_new_random_key(&session);
+    krb5_generate_random_keyblock(context, ETYPE_DES_PCBC_NONE, &session);
 
-    krb_create_ticket (&ticket, 0, name, instance, realm,
-		       addr->sin_addr.s_addr,
-		       &session, life, kdc_time,
-		       sname, sinstance, skey->key.keyvalue.data);
+    _krb5_krb_create_ticket(context,
+			    0,
+			    name,
+			    instance,
+			    realm,
+			    addr->sin_addr.s_addr,
+			    &session,
+			    life,
+			    kdc_time,
+			    sname,
+			    sinstance,
+			    &skey->key,
+			    &ticket);
 
     /* create the encrypted part of the reply */
     sp = krb5_storage_emem ();
@@ -278,10 +286,10 @@ create_reply_ticket (struct rx_header *hdr,
     fyrtiosjuelva &= 0xffffffff;
     krb5_store_int32 (sp, fyrtiosjuelva);
     krb5_store_int32 (sp, challenge);
-    krb5_storage_write  (sp, session, 8);
-    memset (&session, 0, sizeof(session));
+    krb5_storage_write  (sp, session.keyvalue.data, 8);
+    krb5_free_keyblock_contents(context, &session);
     krb5_store_int32 (sp, kdc_time);
-    krb5_store_int32 (sp, kdc_time + krb_life_to_time (0, life));
+    krb5_store_int32 (sp, kdc_time + _krb5_krb_life_to_time (0, life));
     krb5_store_int32 (sp, kvno);
     krb5_store_int32 (sp, ticket.length);
     krb5_store_stringz (sp, name);
@@ -293,7 +301,7 @@ create_reply_ticket (struct rx_header *hdr,
 #endif
     krb5_store_stringz (sp, sname);
     krb5_store_stringz (sp, sinstance);
-    krb5_storage_write (sp, ticket.dat, ticket.length);
+    krb5_storage_write (sp, ticket.data, ticket.length);
     krb5_storage_write (sp, label, strlen(label));
 
     /* pad to DES block */
@@ -311,14 +319,21 @@ create_reply_ticket (struct rx_header *hdr,
     }
 
     /* encrypt it */
-    des_set_key (key, schedule);
-    des_pcbc_encrypt (enc_data.data,
-		      enc_data.data,
-		      enc_data.length,
-		      schedule,
-		      key,
-		      DES_ENCRYPT);
-    memset (&schedule, 0, sizeof(schedule));
+    {
+        DES_key_schedule schedule;
+	DES_cblock deskey;
+	
+	memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
+	DES_set_key (&deskey, &schedule);
+	DES_pcbc_encrypt (enc_data.data,
+			  enc_data.data,
+			  enc_data.length,
+			  &schedule,
+			  &deskey,
+			  DES_ENCRYPT);
+	memset (&schedule, 0, sizeof(schedule));
+	memset (&deskey, 0, sizeof(deskey));
+    }
 
     /* create the reply packet */
     init_reply_header (hdr, &reply_hdr, HT_DATA, HF_LAST);
@@ -389,8 +404,6 @@ do_authenticate (struct rx_header *hdr,
     hdb_entry *server_entry = NULL;
     Key *ckey = NULL;
     Key *skey = NULL;
-    des_cblock key;
-    des_key_schedule schedule;
     krb5_storage *reply_sp;
     time_t max_life;
     u_int8_t life;
@@ -453,19 +466,26 @@ do_authenticate (struct rx_header *hdr,
 	goto out;
     }
 
-    /* try to decode the `request' */
-    memcpy (&key, ckey->key.keyvalue.data, sizeof(key));
-    des_set_key (&key, schedule);
-    des_pcbc_encrypt (request.data,
-		      request.data,
-		      request.length,
-		      schedule,
-		      &key,
-		      DES_DECRYPT);
-    memset (&schedule, 0, sizeof(schedule));
+    {
+	DES_cblock key;
+	DES_key_schedule schedule;
+	
+	/* try to decode the `request' */
+	memcpy (&key, ckey->key.keyvalue.data, sizeof(key));
+	DES_set_key (&key, &schedule);
+	DES_pcbc_encrypt (request.data,
+			  request.data,
+			  request.length,
+			  &schedule,
+			  &key,
+			  DES_DECRYPT);
+	memset (&schedule, 0, sizeof(schedule));
+	memset (&key, 0, sizeof(key));
+    }
 
     /* check for the magic label */
     if (memcmp ((char *)request.data + 4, "gTGS", 4) != 0) {
+	kdc_log(0, "preauth failed for %s", client_name);
 	make_error_reply (hdr, KABADREQUEST, reply);
 	goto out;
     }
@@ -498,8 +518,7 @@ do_authenticate (struct rx_header *hdr,
 			 max_seq_len,
 			 "krbtgt", v4_realm,
 			 chal + 1, "tgsT",
-			 &key, reply);
-    memset (&key, 0, sizeof(key));
+			 &ckey->key, reply);
 
 out:
     if (request.length) {
@@ -589,20 +608,20 @@ do_getticket (struct rx_header *hdr,
     hdb_entry *krbtgt_entry = NULL;
     Key *kkey = NULL;
     Key *skey = NULL;
-    des_cblock key;
-    des_key_schedule schedule;
-    des_cblock session;
+    DES_cblock key;
+    DES_key_schedule schedule;
+    DES_cblock session;
     time_t max_life;
     int8_t life;
     time_t start_time, end_time;
-    char pname[ANAME_SZ];
-    char pinst[INST_SZ];
-    char prealm[REALM_SZ];
     char server_name[256];
     char client_name[256];
+    struct _krb5_krb_auth_data ad;
 
     krb5_data_zero (&aticket);
     krb5_data_zero (&times);
+
+    memset(&ad, 0, sizeof(ad));
 
     unparse_getticket_args (sp, &kvno, &auth_domain, &aticket,
 			    &name, &instance, &times, &max_seq_len);
@@ -652,56 +671,52 @@ do_getticket (struct rx_header *hdr,
 
     /* unpack the ticket */
     {
-	KTEXT_ST ticket;
-	u_char flags;
-	int life;
-	u_int32_t time_sec;
-	char sname[ANAME_SZ];
-	char sinstance[SNAME_SZ];
-	u_int32_t paddress;
+	char *sname = NULL;
+	char *sinstance = NULL;
 
-	if (aticket.length > sizeof(ticket.dat)) {
-	    kdc_log(0, "ticket too long (%u > %u)",
-		    (unsigned)aticket.length,
-		    (unsigned)sizeof(ticket.dat));
+	ret = _krb5_krb_decomp_ticket(context, &aticket, &kkey->key, 
+				      v4_realm, &sname, &sinstance, &ad);
+	if (ret) {
+	    kdc_log(0, "kaserver: decomp failed for %s.%s with %d",
+		    sname, sinstance, ret);
 	    make_error_reply (hdr, KABADTICKET, reply);
 	    goto out;
 	}
-
-	ticket.length = aticket.length;
-	memcpy (ticket.dat, aticket.data, ticket.length);
-
-	des_set_key (&key, schedule);
-	decomp_ticket (&ticket, &flags, pname, pinst, prealm,
-		       &paddress, session, &life, &time_sec,
-		       sname, sinstance, 
-		       &key, schedule);
 
 	if (strcmp (sname, "krbtgt") != 0
 	    || strcmp (sinstance, v4_realm) != 0) {
 	    kdc_log(0, "no TGT: %s.%s for %s.%s@%s",
 		    sname, sinstance,
-		    pname, pinst, prealm);
+		    ad.pname, ad.pinst, ad.prealm);
 	    make_error_reply (hdr, KABADTICKET, reply);
+	    free(sname);
+	    free(sinstance);
 	    goto out;
 	}
+	free(sname);
+	free(sinstance);
 
-	if (kdc_time > krb_life_to_time(time_sec, life)) {
+	if (kdc_time > _krb5_krb_life_to_time(ad.time_sec, ad.life)) {
 	    kdc_log(0, "TGT expired: %s.%s@%s",
-		    pname, pinst, prealm);
+		    ad.pname, ad.pinst, ad.prealm);
 	    make_error_reply (hdr, KABADTICKET, reply);
 	    goto out;
 	}
     }
 
     snprintf (client_name, sizeof(client_name),
-	      "%s.%s@%s", pname, pinst, prealm);
+	      "%s.%s@%s", ad.pname, ad.pinst, ad.prealm);
 
-    ret = db_fetch4 (pname, pinst, prealm, &client_entry);
-    if(ret != HDB_ERR_NOENTRY || 
-       (ret == HDB_ERR_NOENTRY && strcmp(prealm, v4_realm) == 0)) {
-	kdc_log(0, "Client not found in database: %s: %s",
+    ret = db_fetch4 (ad.pname, ad.pinst, ad.prealm, &client_entry);
+    if(ret && ret != HDB_ERR_NOENTRY) {
+	kdc_log(0, "Client not found in database: (krb4) %s: %s",
 		client_name, krb5_get_err_text(context, ret));
+	make_error_reply (hdr, KANOENT, reply);
+	goto out;
+    }
+    if (client_entry == NULL && strcmp(ad.prealm, v4_realm) == 0) {
+	kdc_log(0, "Local client not found in database: (krb4) "
+		"%s", client_name);
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
@@ -715,12 +730,14 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* decrypt the times */
-    des_set_key (&session, schedule);
-    des_ecb_encrypt (times.data,
+    memcpy(&session, ad.session.keyvalue.data, sizeof(session));
+    DES_set_key (&session, &schedule);
+    DES_ecb_encrypt (times.data,
 		     times.data,
-		     schedule,
+		     &schedule,
 		     DES_DECRYPT);
     memset (&schedule, 0, sizeof(schedule));
+    memset (&session, 0, sizeof(session));
 
     /* and extract them */
     {
@@ -750,18 +767,18 @@ do_getticket (struct rx_header *hdr,
     if (client_entry && client_entry->max_life)
 	max_life = min(max_life, *client_entry->max_life);
 
-    life = krb_time_to_life(kdc_time, kdc_time + max_life);
+    life = _krb5_krb_time_to_life(kdc_time, kdc_time + max_life);
 
     create_reply_ticket (hdr, skey,
-			 pname, pinst, prealm,
+			 ad.pname, ad.pinst, ad.prealm,
 			 addr, life, server_entry->kvno,
 			 max_seq_len,
 			 name, instance,
 			 0, "gtkt",
-			 &session, reply);
-    memset (&session, 0, sizeof(session));
+			 &ad.session, reply);
     
 out:
+    _krb5_krb_free_auth_data(context, &ad);
     if (aticket.length) {
 	memset (aticket.data, 0, aticket.length);
 	krb5_data_free (&aticket);
