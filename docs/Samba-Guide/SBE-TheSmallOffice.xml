@@ -187,8 +187,8 @@
 		</para>
 
 		<para>
-		<indexterm><primary>ethernet switch</primary></indexterm>
-		You have split the network into two separate areas. Each has its own ethernet switch.
+		<indexterm><primary>Ethernet switch</primary></indexterm>
+		You have split the network into two separate areas. Each has its own Ethernet switch.
 		There are 20 users on the accounting network and 32 users on the financial services
 		network. The server has two network interfaces, one serving each network. The 
 		network printers will be located in a central area. You plan to install the new 
@@ -611,7 +611,7 @@ subnet 127.0.0.0 netmask 255.0.0.0 {
 	      <primary>chkconfig</primary>
 	    </indexterm>
 <screen>
-&rootprompt; chkconfig dhpc on
+&rootprompt; chkconfig dhcp on
 &rootprompt; chkconfig smb on
 &rootprompt; chkconfig cups on
 &rootprompt; /etc/rc.d/init.d/dhcp restart

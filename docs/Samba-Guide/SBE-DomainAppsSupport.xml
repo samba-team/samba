@@ -40,7 +40,7 @@
 	<para>
 	With this acquisition comes new challenges for you and your team. Abmas Snack 
 	Foods is a well-developed business with a huge and heterogeneous network. They 
-	already have Windows, Netware, and Proprietary UNIX, but as yet no Samba or Linux. 
+	already have Windows, NetWare, and Proprietary UNIX, but as yet no Samba or Linux. 
 	The network is mature and well established, and there is no question of their chosen 
 	user authentication scheme being changed for now. You need to take a wise new 
 	approach.
@@ -181,7 +181,7 @@
 
 		<itemizedlist>
 			<listitem><para>
-			Preparing the necessary environment using preconfigured packages
+			Preparing the necessary environment using pre-configured packages
 			</para></listitem>
 
 			<listitem><para>
@@ -299,7 +299,7 @@
 	  </indexterm><indexterm>
 	    <primary>MIT</primary>
 	  </indexterm>
-	If the requirement is for interoperation with MS Windows Server 2003, it
+	If the requirement is for inter-operation with MS Windows Server 2003, it
 	will be necessary to ensure that you are using MIT Kerberos version 1.3.1
 	or later. Red Hat Linux 9 ships with MIT Kerberos 1.2.7 and thus requires
 	updating.
@@ -320,7 +320,7 @@
 	<para><indexterm>
 	    <primary>Squid</primary>
 	  </indexterm>
-	If Samba and/or Squid rpms are installed, they should be updated. You can 
+	If Samba and/or Squid RPMs are installed, they should be updated. You can 
 	build both from source.
 	</para>
 
@@ -331,7 +331,7 @@
 	  </indexterm><indexterm>
 	    <primary>squid</primary>
 	  </indexterm>
-	Locating the packages to be uninstalled can be achieved by running:
+	Locating the packages to be un-installed can be achieved by running:
 <screen>
 &rootprompt; rpm -qa | grep -i samba
 &rootprompt; rpm -qa | grep -i squid

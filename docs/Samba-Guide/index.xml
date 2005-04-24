@@ -57,7 +57,7 @@ The examples have been tested with Red Hat Fedora Core 2, Novell SUSE Linux Prof
 9.2 and Novell SUSE Linux Enterprise Server (SLES) 9. The principals of implementation
 apply to all Linux and UNIX systems in general, though some system files and tools will 
 be different and the location of some Samba file locations will be different since these 
-are determinered by the person who packages Samba for each platform.
+are determined by the person who packages Samba for each platform.
 </para>
 
 </partintro>

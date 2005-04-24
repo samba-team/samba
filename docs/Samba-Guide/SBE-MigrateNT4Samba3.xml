@@ -249,7 +249,7 @@
 	<para>
 	Before proceeding to NT4 migration using either a tdbsam or ldapsam it is most strongly recommended to
 	review <link linkend="ch5-dnshcp-setup"/> for DNS and DHCP configuration. The importance of correctly
-	functioning name resolution must be recognized. This applies equally for hostname as for netBIOS names
+	functioning name resolution must be recognized. This applies equally for hostname as for NetBIOS names
 	(machine names, computer names, domain names, workgroup names &smbmdash; ALL names!).
 	</para>
 
@@ -623,7 +623,7 @@ ssl off
 		This is deliberate. If these entries are active (not commented out), and the
 		<filename>/ec/ldap.conf</filename> file has been configured, when the LDAP server
 		is started, the process of starting the LDAP server will cause LDAP lookups. This
-		causes the LDAP server <command>slapd</command> to hang becasue it finds port 389
+		causes the LDAP server <command>slapd</command> to hang because it finds port 389
 		open and therefore can not gain exclusive control of it. By commenting these entries
 		out it is possible to avoid this grid-lock situation and thus the over-all
 		installation and configuration will progress more smoothly.
@@ -651,7 +651,7 @@ bootparams:     files
 automount:      files nis
 aliases:        files
 #passwd_compat: ldap       #Not needed.
-#group_compat:  ldapa      #Not needed.
+#group_compat:  ldap      #Not needed.
 </screen>
 </example>
 
@@ -717,7 +717,7 @@ Before starting, check
  . if the domain SID is defined (you can get it with the 'net getlocalsid')
 
  . you can leave the configuration using the Crtl-c key combination
- . empty value can be set with the "." caracter
+ . empty value can be set with the "." character
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Looking for configuration files...
 
@@ -731,7 +731,7 @@ Let's start configuring the smbldap-tools scripts ...
 
 . workgroup name: name of the domain Samba act as a PDC
   workgroup name [DAMNATION] &gt;
-. netbios name: netbios name of the samba controler
+. netbios name: netbios name of the samba controller
   netbios name [MERLIN] &gt;
 . logon drive: local path to which the home directory
          will be connected (for NT Workstations). Ex: 'H:'
@@ -758,12 +758,12 @@ Let's start configuring the smbldap-tools scripts ...
   sambaUnixIdPooldn object (relative to ${suffix}) 
                       [cn=NextFreeUnixId] &gt; sambaDomainName=DAMNATION
 . ldap master server: 
-              IP adress or DNS name of the master (writable) ldap server
+              IP address or DNS name of the master (writable) ldap server
   ldap master server [] &gt; 127.0.0.1
 . ldap master port [389] &gt;
 . ldap master bind dn [cn=Manager,dc=terpstra-world,dc=org] &gt;
 . ldap master bind password [] &gt;
-. ldap slave server: IP adress or DNS name of the slave ldap server:
+. ldap slave server: IP address or DNS name of the slave ldap server:
                                          can also be the master one
   ldap slave server [] &gt; 127.0.0.1
 . ldap slave port [389] &gt;
@@ -779,7 +779,7 @@ Let's start configuring the smbldap-tools scripts ...
 . default user gidNumber [513] &gt;
 . default computer gidNumber [515] &gt;
 . default login shell [/bin/bash] &gt;
-. default domain name to append to mail adress [] &gt; terpstra-world.org
+. default domain name to append to mail address [] &gt; terpstra-world.org
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
   /etc/smbldap-tools/smbldap.conf-&gt;
@@ -833,7 +833,7 @@ bootparams:     files
 automount:      files nis
 aliases:        files
 #passwd_compat: ldap       #Not needed.
-#group_compat:  ldapa      #Not needed.
+#group_compat:  ldap      #Not needed.
 </screen>
 </example>
 
@@ -871,7 +871,7 @@ adding new entry: cn=Print Operators,ou=Groups,dc=terpstra-world,dc=org
 adding new entry: cn=Backup Operators,ou=Groups,dc=terpstra-world,dc=org
 adding new entry: cn=Replicators,ou=Groups,dc=terpstra-world,dc=org
 </screen>
-		The script trys to add the ou=People container twice, hence the error message.
+		The script tries to add the ou=People container twice, hence the error message.
 		This is expected behavior.
 		</para></step>
 
@@ -1056,7 +1056,7 @@ Users (S-1-5-32-545) -&gt; Users
 		<step><para>
 		The final responsibility in the migration process is to create identical
 		shares and printing resources on the new Samba-3 server, copy all data
-		across, set up privilieges and set share and file/directory access controls.
+		across, set up privileges and set share and file/directory access controls.
 		</para></step>
 
 		<step><para>
@@ -1080,7 +1080,7 @@ Users (S-1-5-32-545) -&gt; Users
 		</para></step>
 
 		<step><para>
-		The configuration of Samba-3 BDC servers can be accomplised now, or at any
+		The configuration of Samba-3 BDC servers can be accomplished now, or at any
 		convenient time in the future. Please refer to the carefully detailed process
 		for doing this that has been outlined in <link linkend="sbehap-bldg1"/>.
 		</para></step>
@@ -1525,7 +1525,7 @@ Users                 Ordinary users
 		When migrating a <filename>smbpasswd</filename> file to an LDAP backend, the
 		UID of each account is taken together with the account information in the 
 		<filename>/etc/passwd</filename> and both sets of data are used to create the account
-		entrt in the LDAP database. 
+		entry in the LDAP database. 
 		</para>
 
 		<para>
