@@ -374,6 +374,7 @@ exit 0
 	</para>
 
 <example id="ch12RHscript">
+<title>A Sample Samba Control Script for Red Hat Linux</title>
 <screen>
 #!/bin/sh
 #
