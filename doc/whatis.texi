@@ -46,13 +46,13 @@ services can authenticate each other.
 @end macro
 @end ifhtml
 
-@ifdocbook
-@macro sub{arg}
-@docbook
-<subscript>\arg\</subscript>
-@end docbook
-@end macro
-@end ifdocbook
+@c ifdocbook
+@c macro sub{arg}
+@c docbook
+@c <subscript>\arg\</subscript>
+@c end docbook
+@c end macro
+@c end ifdocbook
 
 @quotation
 @strong{Note} This discussion is about Kerberos version 4, but version
