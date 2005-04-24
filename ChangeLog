@@ -1,5 +1,33 @@
 2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/Makefile.am: always add kaserver
+	
+	* lib/krb5/krb5_ccache.3: document krb5_cc_new_unique
+
+	* lib/krb5/cache.c (krb5_cc_new_unique): new function to create a
+	new credential cache
+
+	* kdc/headers.h: don't include kerberos 4 headers here
+
+	* kdc/hpropd.c: include kerberos 4 headers here
+
+	* kdc/connect.c: add kaserver support independ of having krb4
+	support
+	
+	* kdc/config.c: add kaserver support unconditionally, make kdc
+	only fail to start when there are no v4 realm configured and
+	krb4/kaserver is turned on
+
+	* kdc/kaserver.c: Use the new Kerberos 4 functions in libkrb5 and
+	so kaserver support is always compiled in (still default disabled)
+	
+	* lib/krb5/v4_glue.c: simplify error handling
+
+	* doc/whatis.texi: add docbook version macro of @sub
+	
+	* doc/heimdal.texi: change the wrapping around the Top node to
+	ifnottex, make html generation work
+
 	* lib/krb5/krb5_krbhst_init.3: spelling, from Björn Sandell
 	<biorn@dce.chalmers.se>
 
