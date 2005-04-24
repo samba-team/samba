@@ -36,6 +36,14 @@ RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
+/*
+ *
+ */
+
+#define RCHECK(r,func,label) \
+	do { (r) = func ; if (r) goto label; } while(0);
+
+
 /* include this here, to avoid dependencies on libkrb */
 
 static const int _tkt_lifetimes[TKTLIFENUMFIXED] = {
@@ -237,38 +245,22 @@ _krb5_krb_tf_setup(krb5_context context,
     krb5_clear_error_string(context);
 
     if (!append) {
-	ret = krb5_store_stringz(sp, v4creds->pname);
-	if (ret < 0)
-	    goto error;
-	ret = krb5_store_stringz(sp, v4creds->pinst);
-	if (ret < 0)
-	    goto error;
+	RCHECK(ret, krb5_store_stringz(sp, v4creds->pname), error);
+	RCHECK(ret, krb5_store_stringz(sp, v4creds->pinst), error);
     }
 
     /* cred */
-    ret = krb5_store_stringz(sp, v4creds->service);
-    if (ret < 0)
-	goto error;
-    ret = krb5_store_stringz(sp, v4creds->instance);
-    if (ret < 0)
-	goto error;
-    ret = krb5_store_stringz(sp, v4creds->realm);
-    if (ret < 0)
-	goto error;
+    RCHECK(ret, krb5_store_stringz(sp, v4creds->service), error);
+    RCHECK(ret, krb5_store_stringz(sp, v4creds->instance), error);
+    RCHECK(ret, krb5_store_stringz(sp, v4creds->realm), error);
     ret = krb5_storage_write(sp, v4creds->session, 8);
     if (ret != 8) {
 	ret = KRB5_CC_IO;
 	goto error;
     }
-    ret = krb5_store_int32(sp, v4creds->lifetime);
-    if (ret)
-	goto error;
-    ret = krb5_store_int32(sp, v4creds->kvno);
-    if (ret)
-	goto error;
-    ret = krb5_store_int32(sp, v4creds->ticket_st.length);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int32(sp, v4creds->lifetime), error);
+    RCHECK(ret, krb5_store_int32(sp, v4creds->kvno), error);
+    RCHECK(ret, krb5_store_int32(sp, v4creds->ticket_st.length), error);
 
     ret = krb5_storage_write(sp, v4creds->ticket_st.dat, 
 			     v4creds->ticket_st.length);
@@ -276,9 +268,7 @@ _krb5_krb_tf_setup(krb5_context context,
 	ret = KRB5_CC_IO;
 	goto error;
     }
-    ret = krb5_store_int32(sp, v4creds->issue_date);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int32(sp, v4creds->issue_date), error);
 
     ret = write_v4_cc(context, tkfile, sp, append);
 
@@ -395,18 +385,13 @@ put_nir(krb5_storage *sp, const char *name,
 {
     krb5_error_code ret;
 
-    ret = krb5_store_stringz(sp, name);
-    if (ret)
-	return ret;
-    ret = krb5_store_stringz(sp, instance);
-    if (ret)
-	return ret;
+    RCHECK(ret, krb5_store_stringz(sp, name), error);
+    RCHECK(ret, krb5_store_stringz(sp, instance), error);
     if (realm) {
-	ret = krb5_store_stringz(sp, realm);
-	if (ret)
-	    return ret;
+	RCHECK(ret, krb5_store_stringz(sp, realm), error);
     }
-    return 0;
+ error:
+    return ret;
 }
 
 /*
@@ -440,20 +425,9 @@ _krb5_krb_create_ticket(krb5_context context,
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
-    /* flags */
-    ret = krb5_store_int8(sp, flags);
-    if (ret)
-	goto error;
-
-    /* client nir */
-    ret = put_nir(sp, pname, pinstance, prealm);
-    if (ret)
-	goto error;
-
-    /* address */
-    ret = krb5_store_int32(sp, ntohl(paddress));
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int8(sp, flags), error);
+    RCHECK(ret, put_nir(sp, pname, pinstance, prealm), error);
+    RCHECK(ret, krb5_store_int32(sp, ntohl(paddress)), error);
 
     /* session key */
     ret = krb5_storage_write(sp,
@@ -464,20 +438,9 @@ _krb5_krb_create_ticket(krb5_context context,
 	goto error;
     }
 
-    /* life time */
-    ret = krb5_store_int8(sp, life);
-    if (ret)
-	goto error;
-
-    /* issue time */
-    ret = krb5_store_int32(sp, life_sec);
-    if (ret)
-	goto error;
-
-    /* service nir */
-    ret = put_nir(sp, sname, sinstance, NULL);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int8(sp, life), error);
+    RCHECK(ret, krb5_store_int32(sp, life_sec), error);
+    RCHECK(ret, put_nir(sp, sname, sinstance, NULL), error);
 
     ret = storage_to_etext(context, sp, key, enc_data);
 
@@ -527,34 +490,16 @@ _krb5_krb_create_ciph(krb5_context context,
 	goto error;
     }
 
-    ret = put_nir(sp, service, instance, realm);
-    if (ret)
-	goto error;
-
-    /* life time */
-    ret = krb5_store_int8(sp, life);
-    if (ret)
-	goto error;
-
-    /* kvno */
-    ret = krb5_store_int8(sp, kvno);
-    if (ret)
-	goto error;
-
-    /* ticket */
-    ret = krb5_store_int8(sp, ticket->length);
-    if (ret)
-	goto error;
+    RCHECK(ret, put_nir(sp, service, instance, realm), error);
+    RCHECK(ret, krb5_store_int8(sp, life), error);
+    RCHECK(ret, krb5_store_int8(sp, kvno), error);
+    RCHECK(ret, krb5_store_int8(sp, ticket->length), error);
     ret = krb5_storage_write(sp, ticket->data, ticket->length);
     if (ret != ticket->length) {
 	ret = EINVAL;
 	goto error;
     }
-
-    /* kdc time */
-    ret = krb5_store_int32(sp, kdc_time);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int32(sp, kdc_time), error);
 
     ret = storage_to_etext(context, sp, key, enc_data);
 
@@ -594,37 +539,14 @@ _krb5_krb_create_auth_reply(krb5_context context,
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
-    ret = krb5_store_int8(sp, KRB_PROT_VERSION);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int8(sp, AUTH_MSG_KDC_REPLY);
-    if (ret)
-	goto error;
-
-    ret = put_nir(sp, pname, pinst, prealm);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int32(sp, time_ws);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int8(sp, n);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int32(sp, x_date);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int8(sp, kvno);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int16(sp, cipher->length);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int8(sp, KRB_PROT_VERSION), error);
+    RCHECK(ret, krb5_store_int8(sp, AUTH_MSG_KDC_REPLY), error);
+    RCHECK(ret, put_nir(sp, pname, pinst, prealm), error);
+    RCHECK(ret, krb5_store_int32(sp, time_ws), error);
+    RCHECK(ret, krb5_store_int8(sp, n), error);
+    RCHECK(ret, krb5_store_int32(sp, x_date), error);
+    RCHECK(ret, krb5_store_int8(sp, kvno), error);
+    RCHECK(ret, krb5_store_int16(sp, cipher->length), error);
     ret = krb5_storage_write(sp, cipher->data, cipher->length);
     if (ret != cipher->length) {
 	ret = EINVAL;
@@ -660,6 +582,11 @@ _krb5_krb_cr_err_reply(krb5_context context,
 
     krb5_data_zero(data);
 
+    if (name == NULL) name = "";
+    if (inst == NULL) inst = "";
+    if (realm == NULL) realm = "";
+    if (e_string == NULL) e_string = "";
+
     sp = krb5_storage_emem();
     if (sp == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -667,36 +594,12 @@ _krb5_krb_cr_err_reply(krb5_context context,
     }
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
-    ret = krb5_store_int8(sp, KRB_PROT_VERSION);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int8(sp, AUTH_MSG_ERR_REPLY);
-    if (ret)
-	goto error;
-
-    if (name == NULL) name = "";
-    if (inst == NULL) inst = "";
-    if (realm == NULL) realm = "";
-
-    ret = put_nir(sp, name, inst, realm);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int32(sp, time_ws);
-    if (ret)
-	goto error;
-
-    ret = krb5_store_int32(sp, e);
-    if (ret)
-	goto error;
-
-    if (e_string == NULL)
-	e_string = "";
-
-    ret = krb5_store_stringz(sp, e_string);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_store_int8(sp, KRB_PROT_VERSION), error);
+    RCHECK(ret, krb5_store_int8(sp, AUTH_MSG_ERR_REPLY), error);
+    RCHECK(ret, put_nir(sp, name, inst, realm), error);
+    RCHECK(ret, krb5_store_int32(sp, time_ws), error);
+    RCHECK(ret, krb5_store_int32(sp, e), error);
+    RCHECK(ret, krb5_store_stringz(sp, e_string), error);
 
     ret = krb5_storage_to_data(sp, data);
 
@@ -728,27 +631,28 @@ get_v4_stringz(krb5_storage *sp, char **str, size_t max_len)
  *
  */
 
-static krb5_error_code KRB5_LIB_FUNCTION
-decomp_ticket(krb5_context context,
-	      const krb5_data *enc_ticket,
-	      const krb5_keyblock *key,
-	      const char *local_realm,
-	      char **sname,
-	      char **sinstance,
-	      struct _krb5_krb_auth_data *ad)
+krb5_error_code KRB5_LIB_FUNCTION
+_krb5_krb_decomp_ticket(krb5_context context,
+			const krb5_data *enc_ticket,
+			const krb5_keyblock *key,
+			const char *local_realm,
+			char **sname,
+			char **sinstance,
+			struct _krb5_krb_auth_data *ad)
 {
     krb5_error_code ret;
     krb5_ssize_t size;
-    krb5_storage *sp;
+    krb5_storage *sp = NULL;
     krb5_data ticket;
     unsigned char des_key[8];
+
+    memset(ad, 0, sizeof(*ad));
+    krb5_data_zero(&ticket);
 
     *sname = NULL;
     *sinstance = NULL;
 
-    ret = decrypt_etext(context, key, enc_ticket, &ticket);
-    if (ret)
-	return ret;
+    RCHECK(ret, decrypt_etext(context, key, enc_ticket, &ticket), error);
 
     sp = krb5_storage_from_data(&ticket);
     if (sp == NULL) {
@@ -759,21 +663,32 @@ decomp_ticket(krb5_context context,
 
     krb5_storage_set_eof_code(sp, EINVAL); /* XXX */
 
-    ret = krb5_ret_int8(sp, &ad->k_flags);
-    if (ret)
+    RCHECK(ret, krb5_ret_int8(sp, &ad->k_flags), error);
+    RCHECK(ret, get_v4_stringz(sp, &ad->pname, ANAME_SZ), error);
+    RCHECK(ret, get_v4_stringz(sp, &ad->pinst, INST_SZ), error);
+    RCHECK(ret, get_v4_stringz(sp, &ad->prealm, REALM_SZ), error);
+    RCHECK(ret, krb5_ret_int32(sp, &ad->address), error);
+	
+    size = krb5_storage_read(sp, des_key, sizeof(des_key));
+    if (size != sizeof(des_key)) {
+	ret = EINVAL; /* XXX */
 	goto error;
+    }
 
-    /* XXX check lengths of principals */
+    RCHECK(ret, krb5_ret_int8(sp, &ad->life), error);
 
-    ret = get_v4_stringz(sp, &ad->pname, ANAME_SZ);
-    if (ret)
-	goto error;
+    if (ad->k_flags & 1)
+	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
+    else
+	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
-    ret = get_v4_stringz(sp, &ad->pinst, INST_SZ);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_ret_int32(sp, &ad->time_sec), error);
 
-    ret = get_v4_stringz(sp, &ad->prealm, REALM_SZ);
+    RCHECK(ret, get_v4_stringz(sp, sname, ANAME_SZ), error);
+    RCHECK(ret, get_v4_stringz(sp, sinstance, INST_SZ), error);
+
+    ret = krb5_keyblock_init(context, ETYPE_DES_PCBC_NONE,
+			     des_key, sizeof(des_key), &ad->session);
     if (ret)
 	goto error;
 
@@ -786,42 +701,10 @@ decomp_ticket(krb5_context context,
 	}
     }
 
-    ret = krb5_ret_int32(sp, &ad->address);
-    if (ret)
-	goto error;
-	
-    size = krb5_storage_read(sp, des_key, sizeof(des_key));
-    if (size != sizeof(des_key)) {
-	ret = EINVAL; /* XXX */
-	goto error;
-    }
-
-    ret = krb5_keyblock_init(context, ETYPE_DES_PCBC_NONE,
-			     des_key, sizeof(des_key), &ad->session);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int8(sp, &ad->life);
-    if (ret)
-	goto error;
-
-    if (ad->k_flags & 1)
-	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
-    else
-	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
-
-    krb5_ret_int32(sp, &ad->time_sec);
-
-    ret = get_v4_stringz(sp, sname, ANAME_SZ);
-    if (ret)
-	goto error;
-
-    ret = get_v4_stringz(sp, sinstance, INST_SZ);
-    if (ret)
-	goto error;
-
  error:
-    krb5_storage_free(sp);
+    memset(des_key, 0, sizeof(des_key));
+    if (sp)
+	krb5_storage_free(sp);
     krb5_data_free(&ticket);
     if (ret) {
 	if (*sname) {
@@ -909,25 +792,11 @@ _krb5_krb_rd_req(krb5_context context,
 	goto error;
     }
 
-    ret = krb5_ret_int8(sp, &s_kvno);
-    if (ret)
-	goto error;
-
-    ret = get_v4_stringz(sp, &realm, REALM_SZ);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int8(sp, &ticket_length);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int8(sp, &eaut_length);
-    if (ret)
-	goto error;
-
-    ret = krb5_data_alloc(&ticket, ticket_length);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_ret_int8(sp, &s_kvno), error);
+    RCHECK(ret, get_v4_stringz(sp, &realm, REALM_SZ), error);
+    RCHECK(ret, krb5_ret_int8(sp, &ticket_length), error);
+    RCHECK(ret, krb5_ret_int8(sp, &eaut_length), error);
+    RCHECK(ret, krb5_data_alloc(&ticket, ticket_length), error);
 
     size = krb5_storage_read(sp, ticket.data, ticket.length);
     if (size != ticket.length) {
@@ -936,14 +805,12 @@ _krb5_krb_rd_req(krb5_context context,
     }
 
     /* Decrypt and take apart ticket */
-    ret = decomp_ticket(context, &ticket, key, local_realm, 
-			&sname, &sinstance, ad);
+    ret = _krb5_krb_decomp_ticket(context, &ticket, key, local_realm, 
+				  &sname, &sinstance, ad);
     if (ret)
 	goto error;
 
-    ret = krb5_data_alloc(&eaut, eaut_length);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_data_alloc(&eaut, eaut_length), error);
 
     size = krb5_storage_read(sp, eaut.data, eaut.length);
     if (size != eaut.length) {
@@ -970,28 +837,13 @@ _krb5_krb_rd_req(krb5_context context,
     else
 	krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_BE);
 
+    RCHECK(ret, get_v4_stringz(sp, &r_name, ANAME_SZ), error);
+    RCHECK(ret, get_v4_stringz(sp, &r_instance, INST_SZ), error);
+    RCHECK(ret, get_v4_stringz(sp, &r_realm, REALM_SZ), error);
 
-    ret = get_v4_stringz(sp, &r_name, ANAME_SZ);
-    if (ret)
-	goto error;
-    ret = get_v4_stringz(sp, &r_instance, INST_SZ);
-    if (ret)
-	goto error;
-    ret = get_v4_stringz(sp, &r_realm, REALM_SZ);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int32(sp, &ad->checksum);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int8(sp, &time_5ms);
-    if (ret)
-	goto error;
-
-    ret = krb5_ret_int32(sp, &r_time_sec);
-    if (ret)
-	goto error;
+    RCHECK(ret, krb5_ret_int32(sp, &ad->checksum), error);
+    RCHECK(ret, krb5_ret_int8(sp, &time_5ms), error);
+    RCHECK(ret, krb5_ret_int32(sp, &r_time_sec), error);
 
     if (strcmp(ad->pname, r_name) != 0 ||
 	strcmp(ad->pinst, r_instance) != 0 ||
