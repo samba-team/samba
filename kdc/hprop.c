@@ -33,6 +33,13 @@
 
 #include "hprop.h"
 
+#ifdef KRB4
+#include <krb.h>
+#include <prot.h>
+#define Principal Principal4
+#include <krb_db.h>
+#endif
+
 RCSID("$Id$");
 
 static int version_flag;

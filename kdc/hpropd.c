@@ -36,6 +36,11 @@
 RCSID("$Id$");
 
 #ifdef KRB4
+#include <krb.h>
+#include <prot.h>
+#define Principal Principal4
+#include <krb_db.h>
+
 static des_cblock mkey4;
 static des_key_schedule msched4;
 
