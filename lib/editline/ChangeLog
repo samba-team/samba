@@ -1,3 +1,12 @@
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* *.[ch]: unexpose undefined part of the API, included strlcat
+
+2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* editline.c (TTYget): use unsigned char to make sure a positive
+	number is returned when successful
+
 2005-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: "must set with '=' before using '+='"

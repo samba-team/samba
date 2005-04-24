@@ -1,3 +1,7 @@
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* password_quality.c: don't use sizeof(pointer)
+	
 2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-cracklib.pl: external password verifier sample
