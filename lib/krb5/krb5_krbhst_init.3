@@ -1,4 +1,4 @@
-.\" Copyright (c) 2001 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2001-2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd June 17, 2001
+.Dd April 24, 2005
 .Dt KRB5_KRBHST_INIT 3
 .Os HEIMDAL
 .Sh NAME
@@ -110,7 +110,7 @@ this is a large message, so use transport that can handle that.
 .Pp
 For each call to
 .Fn krb5_krbhst_next
-information a new host is returned. The former function returns in
+information on a new host is returned. The former function returns in
 .Fa host
 a pointer to a structure containing information about the host, such
 as protocol, hostname, and port:
@@ -155,7 +155,7 @@ that will return a
 that can then be used for communicating with the server mentioned.
 .Sh EXAMPLES
 The following code will print the KDCs of the realm
-.Dq MY.REALM .
+.Dq MY.REALM :
 .Bd -literal -offset indent
 krb5_krbhst_handle handle;
 char host[MAXHOSTNAMELEN];
