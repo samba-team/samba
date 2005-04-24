@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April 13, 2004
+.Dd April 24, 2005
 .Dt KRB5_CCACHE 3
 .Os HEIMDAL
 .Sh NAME
@@ -57,6 +57,7 @@
 .Nm krb5_cc_initialize ,
 .Nm krb5_cc_next_cred ,
 .Nm krb5_cc_next_cred_match ,
+.Nm krb5_cc_new_unique ,
 .Nm krb5_cc_register ,
 .Nm krb5_cc_remove_cred ,
 .Nm krb5_cc_resolve ,
@@ -218,6 +219,13 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_flags whichfields"
 .Fa "const krb5_creds *mcreds"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_cc_new_unique
+.Fa "krb5_context context"
+.Fa "const char *type"
+.Fa "const char *hint"
+.Fa "krb5_ccache *id"
+.Fc
 .Sh DESCRIPTION
 The
 .Li krb5_ccache
@@ -264,8 +272,31 @@ in
 Return 0 or an error code.
 The Heimdal version of this function also runs
 .Fn krb5_cc_initialize
-on the credential cache, but since the MIT version doesn't portable
+on the credential cache, but since the MIT version doesn't, portable
 code must call krb5_cc_initialize.
+.Pp
+.Fn krb5_cc_new_unique
+generates a new unique credential cache of
+.Fa type
+in
+.Fa id .
+If type is
+.Dv NULL ,
+the library chooses the default credential cache type.
+The supplied
+.Fa hint
+(that can be
+.Dv NULL )
+is a string that the credential cache type can use to base the name of
+the credential on, this is to make its easier for the user to
+differentiate the credentials.
+The returned credential cache
+.Fa id
+should be freed using
+.Fn krb5_cc_close
+or
+.Fn krb5_cc_destroy .
+Returns 0 or an error code.
 .Pp
 .Fn krb5_cc_resolve
 finds and allocates a credential cache in
