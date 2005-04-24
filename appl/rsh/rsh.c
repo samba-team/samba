@@ -990,7 +990,7 @@ main(int argc, char **argv)
 	errx (1, "Only one of -u and -U allowed.");
 
     if (do_unique_tkfile)
-	strcpy(tkfile,"-u ");
+	strlcpy(tkfile,"-u ", sizeof(tkfile));
     else if (unique_tkfile != NULL) {
 	if (strchr(unique_tkfile,' ') != NULL) {
 	    warnx("Space is not allowed in tkfilename");
