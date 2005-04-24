@@ -481,7 +481,6 @@ acc_gen_new(krb5_context context, krb5_ccache *id)
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }	
-    printf("name: %s\n", a->cache_name);
     return 0;
 }
 
