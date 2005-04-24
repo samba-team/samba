@@ -1,3 +1,8 @@
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/global.c, telnetd/state.c, telnetd/telnetd.c,
+	telentd/ext.h: remove another strcpy
+
 2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/sys_term.c: rewrite getpty to make use openpty when its
