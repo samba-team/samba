@@ -21,7 +21,7 @@
 **  History and file completion functions for editline library.
 */
 #include <config.h>
-#include "editline.h"
+#include "edit_locl.h"
 
 RCSID("$Id$");
 
@@ -160,7 +160,7 @@ rl_complete_filename(char *pathname, int *unique)
 	    memcpy(p, av[0] + len, j);
 	    asprintf(&new, "%s%s", pathname, p);
 	    if(new != NULL) {
-		rl_add_slash(new, p);
+		rl_add_slash(new, p, j + 1);
 		free(new);
 	    }
 	}

@@ -57,5 +57,8 @@
 #ifndef HAVE_VASNPRINTF
 #define vasnprintf _editline_vasnprintf
 #endif
+#ifndef HAVE_STRLCPU
+#define strlcpy _editline_strlcpy
+#endif
 
 #endif /* __roken_rename_h__ */

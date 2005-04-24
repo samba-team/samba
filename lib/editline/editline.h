@@ -1,64 +1,33 @@
-/*  $Revision$
-**
-**  Internal header file for editline library.
-*/
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+/*  Copyright 1992 Simmule Turner and Rich Salz.  All rights reserved. 
+ *
+ *  This software is not subject to any license of the American Telephone 
+ *  and Telegraph Company or of the Regents of the University of California. 
+ *
+ *  Permission is granted to anyone to use this software for any purpose on
+ *  any computer system, and to alter it and redistribute it freely, subject
+ *  to the following restrictions:
+ *  1. The authors are not responsible for the consequences of use of this
+ *     software, no matter how awful, even if they arise from flaws in it.
+ *  2. The origin of this software must not be misrepresented, either by
+ *     explicit claim or by omission.  Since few users ever read sources,
+ *     credits must appear in the documentation.
+ *  3. Altered versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.  Since few users
+ *     ever read sources, credits must appear in the documentation.
+ *  4. This notice may not be removed or altered.
+ */
+/*  $Id$ */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/* This a modifed version of editline */
 
-#define CRLF		"\r\n"
+#ifndef __HEIM_EDITLINE
+#define __HEIM_EDITLINE 1
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-typedef struct dirent	DIRENTRY;
-#else
-#include <sys/dir.h>
-typedef struct direct	DIRENTRY;
-#endif
-
-#include <roken.h>
-
-#if	!defined(S_ISDIR)
-#define S_ISDIR(m)		(((m) & S_IFMT) == S_IFDIR)
-#endif	/* !defined(S_ISDIR) */
-
-typedef unsigned char	CHAR;
-
-#define MEM_INC		64
-#define SCREEN_INC	256
-
-/*
-**  Variables and routines internal to this package.
-*/
-extern int	rl_eof;
-extern int	rl_erase;
-extern int	rl_intr;
-extern int	rl_kill;
-extern int	rl_quit;
-
-typedef char* (*rl_complete_func_t)(char*, int*);
-
-typedef int (*rl_list_possib_func_t)(char*, char***);
-
+void	rl_initialize (void);
 void	add_history (char*);
 char*	readline (const char* prompt);
-void	rl_add_slash (char*, char*);
-char*	rl_complete (char*, int*);
-void	rl_initialize (void);
-int	rl_list_possib (char*, char***);
+char*	rl_complete (char*, int*); /* warning diffrent api the gnu readline */
 void	rl_reset_terminal (char*);
-void	rl_ttyset (int);
-rl_complete_func_t	rl_set_complete_func (rl_complete_func_t);
-rl_list_possib_func_t	rl_set_list_possib_func (rl_list_possib_func_t);
- 
+
+#endif
+

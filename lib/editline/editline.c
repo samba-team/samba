@@ -21,7 +21,7 @@
 **  Main editing routines for editline library.
 */
 #include <config.h>
-#include "editline.h"
+#include "edit_locl.h"
 #include <ctype.h>
 #include <errno.h>
 

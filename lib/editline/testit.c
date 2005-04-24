@@ -13,7 +13,7 @@
 #endif
 #include <getarg.h>
 
-#include "editline.h"
+#include "edit_locl.h"
 
 static int n_flag	= 0;
 static int version_flag = 0;
