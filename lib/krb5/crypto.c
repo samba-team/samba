@@ -3064,9 +3064,9 @@ krb5_enctype_to_oid(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_oid_to_enctype(krb5_context context,
-		    const heim_oid *oid,
-		    krb5_enctype *etype)
+_krb5_oid_to_enctype(krb5_context context,
+		     const heim_oid *oid,
+		     krb5_enctype *etype)
 {
     int i;
     for(i = 0; i < num_etypes; i++) {
