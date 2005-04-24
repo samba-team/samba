@@ -123,7 +123,7 @@ TOP:
 			if (bell && c->c_bell) {
 				putchar('\007');
 			}
-			strcpy(line, line2);
+			strlcpy(line, line2, sizeof(line));
 			makeargv();
 			argc = margc;
 			argv = margv;
