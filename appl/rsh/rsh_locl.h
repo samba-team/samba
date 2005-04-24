@@ -102,6 +102,11 @@
 #endif
 #ifdef KRB5
 #include <krb5.h>
+/* XXX */
+struct krb5_pk_identity;
+struct krb5_pk_cert;
+struct ContentInfo;
+struct _krb5_krb_auth_data;
 #include <krb5-private.h> /* for _krb5_{get,put}_int */
 #endif
 #if defined(KRB4) || defined(KRB5)
