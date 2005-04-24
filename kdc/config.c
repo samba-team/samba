@@ -106,12 +106,10 @@ static struct getargs args[] = {
     {	"524",		0, 	arg_negative_flag, &enable_524,
 	"don't respond to 524 requests" 
     },
-#ifdef KRB4
     {
 	"kaserver", 'K', arg_flag,   &enable_kaserver,
 	"enable kaserver support"
     },
-#endif
     {	"kerberos4",	0, 	arg_flag, &enable_v4,
 	"respond to kerberos 4 requests" 
     },
@@ -404,13 +402,11 @@ configure(int argc, char **argv)
 		krb5_errx(context, 1, "out of memory");
 	}
     }
-#ifdef KRB4
     if (enable_kaserver == -1)
 	enable_kaserver = krb5_config_get_bool_default(context, NULL, FALSE,
 						       "kdc",
 						       "enable-kaserver",
 						       NULL);
-#endif
 
     encode_as_rep_as_tgs_rep = krb5_config_get_bool(context, NULL, "kdc", 
 						    "encode_as_rep_as_tgs_rep", 
@@ -469,7 +465,7 @@ configure(int argc, char **argv)
     }
 #endif
 
-    if(v4_realm == NULL){
+    if(v4_realm == NULL && (enable_kaserver || enable_v4)){
 #ifdef KRB4
 	v4_realm = malloc(40); /* REALM_SZ */
 	if (v4_realm == NULL)
@@ -496,8 +492,6 @@ configure(int argc, char **argv)
 		"and kaserver");
 	enable_v4 = 0;
 	enable_524 = 0;
-#ifdef KRB4
 	enable_kaserver = 0;
-#endif
     }
 }
