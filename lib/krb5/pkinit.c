@@ -1402,9 +1402,9 @@ pk_rd_pa_reply_enckey(krb5_context context,
     params.data = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data;
     params.length = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length;
 
-    ret = krb5_oid_to_enctype(context,
-			      &ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
-			      &tmp_key.keytype);
+    ret = _krb5_oid_to_enctype(context,
+			       &ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
+			       &tmp_key.keytype);
     if (ret)
 	goto out;
 
