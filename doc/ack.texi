@@ -4,7 +4,8 @@
 @comment  node-name,  next,  previous,  up
 @appendix Acknowledgments
 
-Eric Young wrote ``libdes''.
+Eric Young wrote ``libdes''. Heimdal used to use libdes, without it
+kth-krb would never have existed.
 
 The University of California at Berkeley initially wrote @code{telnet},
 and @code{telnetd}.  The authentication and encryption code of
@@ -17,7 +18,8 @@ The @code{popper} was also a Berkeley program initially.
 Some of the functions in @file{libroken} also come from Berkeley by way
 of NetBSD/FreeBSD.
 
-@code{editline} was written by Simmule Turner and Rich Salz.
+@code{editline} was written by Simmule Turner and Rich Salz. Heimdal
+contains a modifed copy.
 
 The @code{getifaddrs} implementation for Linux was written by Hideaki
 YOSHIFUJI for the Usagi project.
