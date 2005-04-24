@@ -643,11 +643,11 @@ construct_command (char **res, int argc, char **argv)
 
     *tmp = '\0';
     for (i = 0; i < argc - 1; ++i) {
-	strcat (tmp, argv[i]);
-	strcat (tmp, " ");
+	strlcat (tmp, argv[i], max);
+	strlcat (tmp, " ", max);
     }
     if (argc > 0)
-	strcat (tmp, argv[argc-1]);
+	strlcat (tmp, argv[argc-1], max);
     *res = tmp;
     return len;
 }
