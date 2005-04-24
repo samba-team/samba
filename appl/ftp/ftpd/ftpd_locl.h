@@ -166,7 +166,7 @@ extern int LIBPREFIX(fclose)      (FILE *);
 
 int fclose(FILE *stream);
 
-int yyparse();
+int yyparse(void);
 
 #ifndef LOG_FTP
 #define LOG_FTP LOG_DAEMON
