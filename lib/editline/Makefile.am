@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 if do_roken_rename
-ES = snprintf.c strdup.c
+ES = snprintf.c strdup.c strlcat.c
 endif
 
 AM_CPPFLAGS += $(ROKEN_RENAME)
@@ -45,3 +45,5 @@ snprintf.c:
 	$(LN_S) $(srcdir)/../roken/snprintf.c .
 strdup.c:
 	$(LN_S) $(srcdir)/../roken/strdup.c .
+strlcat.c:
+	$(LN_S) $(srcdir)/../roken/strlcat.c .
