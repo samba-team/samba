@@ -1,5 +1,13 @@
 2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/whatis.texi: comment out docbook stuff for now
+	
+	* kuser/klist.c: use strlcpy
+	
+	* doc/ack.texi: we no longer use eay libdes, make acknowledgment
+	still be there, but claim that we no longer use it. Mark editline
+	to be a modified version as required by the license.
+	
 	* lib/krb5/pkinit.c: use the unexported oid_to_enctype function
 	
 	* lib/krb5/crypto.c: unexport the oid_to_enctype function, not for
