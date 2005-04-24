@@ -1,3 +1,38 @@
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_krbhst_init.3: spelling, from Björn Sandell
+	<biorn@dce.chalmers.se>
+
+	* lib/krb5/krb5_get_krbhst.3: spelling, from Björn Sandell
+	<biorn@dce.chalmers.se>
+
+	* lib/krb5/krb5_data.3: spelling, from Björn Sandell
+	<biorn@dce.chalmers.se>
+
+	* lib/krb5/krb5_aname_to_localname.3: spelling, from Björn Sandell
+	<biorn@dce.chalmers.se>
+
+	* lib/krb5/krb5_address.3: spelling, from Björn Sandell
+	<biorn@dce.chalmers.se>
+
+2005-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/config.c: Use the new Kerberos 4 functions in libkrb5 and so
+	kerberos 4 is always compiled in (still default disabled)
+
+	* kdc/kerberos4.c: Use the new Kerberos 4 functions in libkrb5 and
+	so kerberos 4 is always compiled in (still default disabled)
+
+	* lib/krb5/krb5_locl.h: forward declaration of _krb5_krb_auth_data
+	
+	* lib/krb5/convert_creds.c: Move the kerberos v4 replacement
+	functions to v4_glue.c
+
+	* lib/krb5/v4_glue.c: Implement enough of kerberos 4 protocol to
+	be a KDC, move the v4 bits over here
+	
+	* lib/krb5/krb5-v4compat.h: add more v4 defines
+	
 2005-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kpasswd/kpasswdd.c: Support multi-realms databases, requires
