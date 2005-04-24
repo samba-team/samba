@@ -213,8 +213,9 @@ from
 .Fa addr
 and
 .Fa port .
-.Fa Sa_size
-should be initially contain the size of the
+The argument
+.Fa sa_size
+should initially contain the size of the
 .Fa sa ,
 and after the call, it will contain the actual length of the address.
 .Pp
@@ -243,7 +244,8 @@ and the
 .Xr gethostbyname 3 )
 .Fa h_addr_list
 component.
-.Fa Sa_size
+The argument
+.Fa sa_size
 should initially contain the size of the
 .Fa sa ,
 and after the call, it will contain the actual length of the address.
@@ -263,8 +265,9 @@ fills in a
 that can be used to
 .Xf bind 2
 to.
-.Fa Sa_size
-should be initially contain the size of the
+The argument
+.Fa sa_size
+should initially contain the size of the
 .Fa sa ,
 and after the call, it will contain the actual length of the address.
 .Pp
