@@ -698,12 +698,12 @@
 
 	<image id="chap7net">
 		<imagedescription>Network Topology &smbmdash; 2000 User Complex Design A</imagedescription>
-		<imagefile scale="60">chap7-net-Ar</imagefile>
+		<imagefile scale="70">chap7-net-Ar</imagefile>
 	</image>
 
 	<image id="chap7net2">
 		<imagedescription>Network Topology &smbmdash; 2000 User Complex Design B</imagedescription>
-		<imagefile scale="60">chap7-net2-Br</imagefile>
+		<imagefile scale="70">chap7-net2-Br</imagefile>
 	</image>
 
 	</sect3>
