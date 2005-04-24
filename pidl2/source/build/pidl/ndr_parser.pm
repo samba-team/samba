@@ -296,36 +296,6 @@ sub ParseArrayPrint($$$$)
 	}
 }
 
-#####################################################################
-# check the size_is and length_is constraints
-sub CheckArraySizes($$$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $var_name = shift;
-	my $env = shift;
-
-	if ($l->{IS_CONFORMANT}) {
-		my $size = ParseExpr($l->{SIZE_IS}, $env);
-		pidl "if ($var_name) {";
-		indent;
-		check_null_pointer($size);
-		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
-		deindent;
-		pidl "}";
-	}
-
-	if ($l->{IS_VARYING}) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env);
-		pidl "if ($var_name) {";
-		indent;
-		check_null_pointer($length);
-		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
-		deindent;
-		pidl "}"
-	}
-}
-
 sub ParseArrayPullPreceding($$$$)
 {
 	my $e = shift;
@@ -369,9 +339,6 @@ sub ParseArrayPull($$$$$$)
 		ParseArrayPullPreceding($e, $l, $var_name, $ndr_flags);
 	}
 
-	if (!$l->{IS_FIXED}) {
-		AllocateArrayLevel($e,$l,$ndr,$env,$size);
-	}
 
 	if ($l->{IS_VARYING}) {
 		pidl "NDR_CHECK(ndr_pull_array_length($ndr, " . get_pointer_to($var_name) . "));";
@@ -383,9 +350,25 @@ sub ParseArrayPull($$$$$$)
 	if ($length ne $size) {
 		pidl "if ($length > $size) {";
 		indent;
-		pidl "return ndr_pull_error($ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $size, $length);";
+		pidl "return ndr_pull_error($ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should exceed array length %u\", $size, $length);";
 		deindent;
 		pidl "}";
+	}
+
+	if ($l->{IS_CONFORMANT}) {
+		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		check_null_pointer($size);
+		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
+	}
+
+	if ($l->{IS_VARYING}) {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		check_null_pointer($length);
+		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
+	}
+
+	if (!$l->{IS_FIXED}) {
+		AllocateArrayLevel($e,$l,$ndr,$env,$size);
 	}
 
 	if (Ndr::is_scalar_type($e->{TYPE})) {
@@ -623,7 +606,7 @@ sub ParseSubcontextPullEnd($$)
 	}
 
 	my $advance;
-	if (defined($l->{SUBCONTEXT_SIZE})) {
+	if (defined($l->{SUBCONTEXT_SIZE}) and ($l->{SUBCONTEXT_SIZE} ne "-1")) {
 		$advance = $l->{SUBCONTEXT_SIZE};
 	} elsif ($l->{HEADER_SIZE}) {
 		$advance = "$ndr->data_size";
@@ -1004,6 +987,7 @@ sub ParsePtrPull($$$$)
 	}
 
 	pidl "NDR_ALLOC($ndr, $var_name);";
+	#pidl "memset($var_name, 0, sizeof($var_name));";
 	if ($l->{POINTER_TYPE} eq "relative") {
 		pidl "NDR_CHECK(ndr_pull_relative_ptr1($ndr, $var_name, _ptr_$e->{NAME}));";
 	}
@@ -1334,13 +1318,6 @@ sub ParseStructPull($$)
 	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
-	}
-
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		foreach my $l (@{$e->{LEVELS}}) {
-			next unless ($l->{TYPE} eq "ARRAY");
-			CheckArraySizes($e, $l, "r->$e->{NAME}", $env);
-		}
 	}
 
 	pidl "ndr_pull_struct_end(ndr);";
@@ -1829,22 +1806,11 @@ sub AllocateArrayLevel($$$$$)
 
 	check_null_pointer($size);
 	pidl "NDR_ALLOC_N($ndr, $var, $size);";
+	#pidl "memset($var, 0, $size * sizeof(" . $var . "[0]));";
 	if (grep(/in/,@{$e->{DIRECTION}}) and
 	    grep(/out/,@{$e->{DIRECTION}})) {
 		pidl "memcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));";
 	}
-}
-
-sub AllocateDataLevel($$$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $env = shift;
-
-	my $var = ParseExpr($e->{NAME}, $env);
-
-	pidl "NDR_ALLOC($ndr, $var);";
 }
 
 #####################################################################
@@ -1893,14 +1859,6 @@ sub ParseFunctionPull($)
 		ParseElementPull($e, "ndr", "r->in.", $env, 1, 1);
 	}
 
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless grep (/in/, @{$e->{DIRECTION}});
-		foreach my $l (@{$e->{LEVELS}}) {
-			next unless ($l->{TYPE} eq "ARRAY");
-			CheckArraySizes($e, $l, "r->in.$e->{NAME}", $env);
-		}
-	}
-
 	pidl "ndr_out:";
 	pidl "if (!(flags & NDR_OUT)) goto done;";
 	pidl "";
@@ -1908,14 +1866,6 @@ sub ParseFunctionPull($)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
 		ParseElementPull($e, "ndr", "r->out.", $env, 1, 1);
-	}
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		next unless grep(/out/, @{$e->{DIRECTION}});
-		foreach my $l (@{$e->{LEVELS}}) {
-			next unless ($l->{TYPE} eq "ARRAY");
-			CheckArraySizes($e, $l, "r->out.$e->{NAME}", $env);
-		}
 	}
 
 	if ($fn->{RETURN_TYPE}) {

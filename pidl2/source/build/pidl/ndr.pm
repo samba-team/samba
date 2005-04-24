@@ -213,8 +213,11 @@ sub is_surrounding_string($)
 {
 	my $e = shift;
 
-	return ($e->{TYPE} eq "string") and
-		util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*");
+	return 0; #FIXME
+
+	return ($e->{TYPE} eq "string") and ($e->{POINTERS} == 0) 
+		and util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*") 
+		and $e->{PARENT}->{TYPE} ne "FUNCTION";
 }
 
 #####################################################################
