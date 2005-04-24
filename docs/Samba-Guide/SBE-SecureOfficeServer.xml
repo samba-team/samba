@@ -152,7 +152,7 @@
 
 		<image id="ch04net">
 			<imagedescription>Abmas Network Topology &smbmdash; 130 Users</imagedescription>
-			<imagefile scale="60">chap4-net</imagefile>
+			<imagefile scale="65">chap4-net</imagefile>
 		</image>
 
 		<para>
@@ -512,7 +512,8 @@ Given 500 Users and 2 years:
 	      <primary>name resolve order</primary>
 	    </indexterm>
 		WINS serving is enabled by the <smbconfoption name="wins support">Yes</smbconfoption>,
-		and name resolution is set to use it by means of the <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption> entry.
+		and name resolution is set to use it by means of the
+		<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption> entry.
 		</para></listitem>
 
 	<listitem><para><indexterm>
@@ -546,16 +547,18 @@ Given 500 Users and 2 years:
 		to enable workstations to join the Domain, and is also important so that you can use
 		the Windows NT4 Domain User Manager, as well as the Domain Server Manager. These tools
 		are provided as part of the <filename>SRVTOOLS.EXE</filename> toolkit that can be 
-		downloaded from the Microsoft FTP <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">site.</ulink>
+		downloaded from the Microsoft FTP
+		<ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">site.</ulink>
 		</para></listitem>
 
 	<listitem><para><indexterm>
 	      <primary>User Mode</primary>
 	    </indexterm>
 		The &smb.conf; file specifies that the Samba server will operate in (default) <parameter>
-			security = user</parameter> mode<footnote><para>See <emphasis>TOSHARG</emphasis>, Chapter 3. This is necessary
-		so that Samba can act as a Domain Controller (PDC); see <emphasis>TOSHARG</emphasis>, Chapter 4 for 
-		additional information.</para></footnote> (User Mode).
+		security = user</parameter> mode<footnote><para>See <emphasis>TOSHARG</emphasis>, Chapter 3.
+		This is necessary so that Samba can act as a Domain Controller (PDC); see
+		<emphasis>TOSHARG</emphasis>, Chapter 4 for additional information.</para></footnote>
+		(User Mode).
 		</para></listitem>
 
 	<listitem><para><indexterm>
@@ -574,7 +577,8 @@ Given 500 Users and 2 years:
 	    </indexterm><indexterm>
 	      <primary>profile share</primary>
 	    </indexterm>
-		Roaming profiles are enabled through the specification of the parameter, <smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>. The value of this parameter translates the
+		Roaming profiles are enabled through the specification of the parameter,
+		<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>. The value of this parameter translates the
 		<constant>%L</constant> to the name by which the Samba server is called by the client (for this
 		configuration, it translates to the name <constant>DIAMOND</constant>), and the <constant>%U</constant>
 		will translate to the name of the user within the context of the connection made to the profile share.
@@ -867,7 +871,8 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="bind interfaces only">Yes</smbconfoption>
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
 <smbconfoption name="pam password change">Yes</smbconfoption>
-<smbconfoption name="passwd chat">*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</smbconfoption>
+<smbconfoption name="passwd chat"></smbconfoption>
+<member><parameter>*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</parameter></member>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="unix password sync">Yes</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>

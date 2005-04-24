@@ -292,7 +292,7 @@
 
 	<image id="acct2net">
 		<imagedescription>Abmas Accounting &smbmdash; 52 User Network Topology</imagedescription>
-		<imagefile scale="65">acct2net</imagefile>
+		<imagefile scale="100">acct2net</imagefile>
 	</image>
 
 	<procedure>
@@ -644,7 +644,8 @@ hosts:	files wins
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
-<smbconfoption name="passwd chat">*New*Password* %n\n*Re-enter*new*password* %n\n *Password*changed*</smbconfoption>
+<smbconfoption name="passwd chat"></smbconfoption>
+<member><parameter>*New*Password* %n\n*Re-enter*new*password* %n\n *Password*changed*</parameter></member>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
@@ -655,7 +656,8 @@ hosts:	files wins
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
 <smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
 <smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
-<smbconfoption name="add machine script">/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</smbconfoption>
+<smbconfoption name="add machine script"></smbconfoption>
+<member><parameter>/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</parameter></member>
 <smbconfoption name="logon script">scripts\login.bat</smbconfoption>
 <smbconfoption name="logon path"> </smbconfoption>
 <smbconfoption name="logon drive">X:</smbconfoption>

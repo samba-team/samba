@@ -504,7 +504,7 @@
 
 		<image id="charitynet">
 			<imagedescription>Charity Administration Office Network</imagedescription>
-			<imagefile scale="66">Charity-Network</imagefile>
+			<imagefile scale="80">Charity-Network</imagefile>
 		</image>
 
 		<procedure>
@@ -589,9 +589,9 @@ Password changed
 				with the same owner and group as the directory in which they are created. Any new
 				directories created still have the same owner, group, and permissions as the
 				directory they are in. This should eliminate all permissions-based file access problems.
-				For more information on this subject, refer to <emphasis>TOSHARG</emphasis>, Chapter 13, <emphasis>File, Directory
-				and Share Access Controls</emphasis>, or refer to the UNIX man page for the 
-				<command>chmod</command> and the <command>chown</command> commands.
+				For more information on this subject, refer to <emphasis>TOSHARG</emphasis>,
+				Chapter on: <emphasis>File, Directory and Share Access Controls</emphasis>, or refer to
+				the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
 				
 				</para></step>
 
@@ -996,7 +996,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 
 		<image id="acctingnet2">
 			<imagedescription>Accounting Office Network Topology</imagedescription>
-			<imagefile scale="66">AccountingNetwork</imagefile>
+			<imagefile scale="85">AccountingNetwork</imagefile>
 		</image>
 
 		<table id="acctingnet">
@@ -1300,7 +1300,6 @@ application/octet-stream
 <smbconfsection name="[files]"/>
 <smbconfoption name="comment">Work area files</smbconfoption>
 <smbconfoption name="path">/data/%U</smbconfoption>
-<smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection name="[master]"/>
