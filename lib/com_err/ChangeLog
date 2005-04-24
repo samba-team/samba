@@ -1,3 +1,7 @@
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* include strlcpy and *printf and use them
+
 2005-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* com_right.h: de-__P
