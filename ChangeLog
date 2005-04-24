@@ -1,5 +1,10 @@
 2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: use the unexported oid_to_enctype function
+	
+	* lib/krb5/crypto.c: unexport the oid_to_enctype function, not for
+	external consumers
+
 	* kdc/Makefile.am: always add kaserver
 	
 	* lib/krb5/krb5_ccache.3: document krb5_cc_new_unique
