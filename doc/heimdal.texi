@@ -168,10 +168,10 @@ to the following restrictions:
 @paragraphindent 0
 @end ifinfo
 
-@ifinfo
+@ifnottex
 @node Top, Introduction, (dir), (dir)
 @top Heimdal
-@end ifinfo
+@end ifnottex
 
 @menu
 * Introduction::                
