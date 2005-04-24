@@ -107,7 +107,7 @@ char_class_passwd_quality (krb5_context context,
     len = pwd->length + 1;
     pw = malloc(len);
     if (pw == NULL) {
-	strlcpy(message, "out of memory", sizeof(message));
+	strlcpy(message, "out of memory", length);
 	return 1;
     }
     strlcpy(pw, pwd->data, len);
@@ -166,7 +166,7 @@ external_passwd_quality (krb5_context context,
 
     ret = krb5_unparse_name(context, principal, &p);
     if (ret) {
-	strlcpy(message, "out of memory", sizeof(message));
+	strlcpy(message, "out of memory", length);
 	return 1;
     }
 
