@@ -1,5 +1,11 @@
+2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* dump_log.c: use the newly generated units function
+
 2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dump_log.c: use strlcpy
+	
 	* password_quality.c: don't use sizeof(pointer)
 	
 2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
