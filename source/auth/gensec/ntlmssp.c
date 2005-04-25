@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell      2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2005
+   Copyright (C) Stefan Metzmacher 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,8 +56,6 @@ static const struct ntlmssp_callbacks {
 	{NTLMSSP_SERVER, NTLMSSP_NEGOTIATE, ntlmssp_server_negotiate},
 	{NTLMSSP_CLIENT, NTLMSSP_CHALLENGE, ntlmssp_client_challenge},
 	{NTLMSSP_SERVER, NTLMSSP_AUTH, ntlmssp_server_auth},
-	{NTLMSSP_CLIENT, NTLMSSP_UNKNOWN, NULL},
-	{NTLMSSP_SERVER, NTLMSSP_UNKNOWN, NULL}
 };
 
 
@@ -215,9 +214,9 @@ NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
- * Next state function for the NTLMSSP state machine
+ * Next state function for the wrapped NTLMSSP state machine
  * 
- * @param ntlmssp_state NTLMSSP State
+ * @param gensec_security GENSEC state, initialised to NTLMSSP
  * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
  * @param in The request, as a DATA_BLOB
  * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
@@ -225,10 +224,13 @@ NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state, 
-			TALLOC_CTX *out_mem_ctx, 
-			const DATA_BLOB in, DATA_BLOB *out) 
+static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+				      const DATA_BLOB in, DATA_BLOB *out) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+	NTSTATUS status;
+
 	DATA_BLOB input;
 	uint32_t ntlmssp_command;
 	int i;
@@ -280,18 +282,41 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	for (i=0; ntlmssp_callbacks[i].fn; i++) {
+	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
 		if (ntlmssp_callbacks[i].role == ntlmssp_state->role 
-		    && ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command 
-		    && ntlmssp_callbacks[i].fn) {
-			return ntlmssp_callbacks[i].fn(ntlmssp_state, out_mem_ctx, input, out);
+		    && ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
+			status = ntlmssp_callbacks[i].fn(ntlmssp_state, out_mem_ctx, input, out);
+			break;
 		}
 	}
 
-	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
-		  ntlmssp_state->role, ntlmssp_command)); 
+	if (i == ARRAY_SIZE(ntlmssp_callbacks)) {
+		
+		DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
+			  ntlmssp_state->role, ntlmssp_command)); 
+		
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	return NT_STATUS_INVALID_PARAMETER;
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	gensec_ntlmssp_state->have_features = 0;
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SIGN;
+	}
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SEAL;
+	}
+
+	if (gensec_ntlmssp_state->ntlmssp_state->session_key.data) {
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SESSION_KEY;
+	}
+
+	return status;
 }
 
 /**
@@ -1271,7 +1296,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
-NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
+static NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
 {
 	*ntlmssp_state = talloc(mem_ctx, struct ntlmssp_state);
 	if (!*ntlmssp_state) {
@@ -1320,3 +1345,297 @@ NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmss
 	return NT_STATUS_OK;
 }
 
+/**
+ * Return the challenge as determined by the authentication subsystem 
+ * @return an 8 byte random challenge
+ */
+
+static const uint8_t *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
+	NTSTATUS status;
+	const uint8_t *chal;
+
+	status = auth_get_challenge(gensec_ntlmssp_state->auth_context, &chal);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	return chal;
+}
+
+/**
+ * Some authentication methods 'fix' the challenge, so we may not be able to set it
+ *
+ * @return If the effective challenge used by the auth subsystem may be modified
+ */
+static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
+
+	return auth_challenge_may_be_modified(gensec_ntlmssp_state->auth_context);
+}
+
+/**
+ * NTLM2 authentication modifies the effective challenge, 
+ * @param challenge The new challenge value
+ */
+static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
+{
+	NTSTATUS nt_status;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_context *auth_context = gensec_ntlmssp_state->auth_context;
+	const uint8_t *chal;
+
+	if (challenge->length != 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	chal = challenge->data;
+
+	nt_status = auth_context_set_challenge(auth_context, chal, "NTLMSSP callback (NTLM2)");
+
+	return nt_status;
+}
+
+/**
+ * Check the password on an NTLMSSP login.  
+ *
+ * Return the session keys used on the connection.
+ */
+
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_usersupplied_info *user_info = NULL;
+	NTSTATUS nt_status;
+
+	nt_status = make_user_info_map(ntlmssp_state, 
+				       gensec_ntlmssp_state->ntlmssp_state->user, 
+				       gensec_ntlmssp_state->ntlmssp_state->domain, 
+				       gensec_ntlmssp_state->ntlmssp_state->workstation, 
+	                               gensec_ntlmssp_state->ntlmssp_state->lm_resp.data ? &gensec_ntlmssp_state->ntlmssp_state->lm_resp : NULL, 
+	                               gensec_ntlmssp_state->ntlmssp_state->nt_resp.data ? &gensec_ntlmssp_state->ntlmssp_state->nt_resp : NULL, 
+				       NULL, NULL, NULL, True,
+				       &user_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	nt_status = auth_check_password(gensec_ntlmssp_state->auth_context, gensec_ntlmssp_state,
+					user_info, &gensec_ntlmssp_state->server_info);
+	talloc_free(user_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
+		DEBUG(10, ("Got NT session key of length %u\n", gensec_ntlmssp_state->server_info->user_session_key.length));
+		*user_session_key = data_blob_talloc(ntlmssp_state, 
+						   gensec_ntlmssp_state->server_info->user_session_key.data,
+						   gensec_ntlmssp_state->server_info->user_session_key.length);
+	}
+	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
+		DEBUG(10, ("Got LM session key of length %u\n", gensec_ntlmssp_state->server_info->lm_session_key.length));
+		*lm_session_key = data_blob_talloc(ntlmssp_state, 
+						   gensec_ntlmssp_state->server_info->lm_session_key.data,
+						   gensec_ntlmssp_state->server_info->lm_session_key.length);
+	}
+	return nt_status;
+}
+
+static int gensec_ntlmssp_destroy(void *ptr)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ptr;
+
+	if (gensec_ntlmssp_state->ntlmssp_state) {
+		ntlmssp_end(&gensec_ntlmssp_state->ntlmssp_state);
+	}
+
+	return 0;
+}
+
+static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+	
+	gensec_ntlmssp_state = talloc(gensec_security, struct gensec_ntlmssp_state);
+	if (!gensec_ntlmssp_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gensec_ntlmssp_state->ntlmssp_state = NULL;
+	gensec_ntlmssp_state->auth_context = NULL;
+	gensec_ntlmssp_state->server_info = NULL;
+	gensec_ntlmssp_state->have_features = 0;
+
+	talloc_set_destructor(gensec_ntlmssp_state, gensec_ntlmssp_destroy); 
+
+	gensec_security->private_data = gensec_ntlmssp_state;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
+{
+	NTSTATUS nt_status;
+	struct ntlmssp_state *ntlmssp_state;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+
+	nt_status = gensec_ntlmssp_start(gensec_security);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	gensec_ntlmssp_state = gensec_security->private_data;
+
+	nt_status = ntlmssp_server_start(gensec_ntlmssp_state, &gensec_ntlmssp_state->ntlmssp_state);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), &gensec_ntlmssp_state->auth_context);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+	ntlmssp_state->auth_context = gensec_ntlmssp_state;
+	ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
+	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
+	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
+	ntlmssp_state->check_password = auth_ntlmssp_check_password;
+	ntlmssp_state->server_role = lp_server_role();
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
+	const char *password = NULL;
+	NTSTATUS nt_status;
+
+	nt_status = gensec_ntlmssp_start(gensec_security);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	gensec_ntlmssp_state = gensec_security->private_data;
+	nt_status = ntlmssp_client_start(gensec_ntlmssp_state,
+					 &gensec_ntlmssp_state->ntlmssp_state);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+		/*
+		 * We need to set this to allow a later SetPassword
+		 * via the SAMR pipe to succeed. Strange.... We could
+		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
+		 * 
+		 * Without this, Windows will not create the master key
+		 * that it thinks is only used for NTLMSSP signing and 
+		 * sealing.  (It is actually pulled out and used directly) 
+		 */
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	nt_status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
+				       cli_credentials_get_domain(gensec_security->credentials));
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+	
+	nt_status = ntlmssp_set_username(gensec_ntlmssp_state->ntlmssp_state, 
+					 cli_credentials_get_username(gensec_security->credentials));
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	password = cli_credentials_get_password(gensec_security->credentials);
+
+	nt_status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, password);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	nt_status = ntlmssp_set_workstation(gensec_ntlmssp_state->ntlmssp_state,
+					    cli_credentials_get_workstation(gensec_security->credentials));
+
+	gensec_security->private_data = gensec_ntlmssp_state;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
+					   DATA_BLOB *session_key)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+
+	return ntlmssp_session_key(gensec_ntlmssp_state->ntlmssp_state, session_key);
+}
+
+/** 
+ * Return the credentials of a logged on user, including session keys
+ * etc.
+ *
+ * Only valid after a successful authentication
+ *
+ * May only be called once per authentication.
+ *
+ */
+
+static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
+					    struct auth_session_info **session_info) 
+{
+	NTSTATUS nt_status;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+
+	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_ntlmssp_state->server_info, session_info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	(*session_info)->session_key = data_blob_talloc(*session_info, 
+							gensec_ntlmssp_state->ntlmssp_state->session_key.data,
+							gensec_ntlmssp_state->ntlmssp_state->session_key.length);
+
+	return NT_STATUS_OK;
+}
+
+static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
+					uint32_t feature)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	if (gensec_ntlmssp_state->have_features & feature) {
+		return True;
+	}
+
+	return False;
+}
+
+static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
+	.name		= "ntlmssp",
+	.sasl_name	= "NTLM",
+	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
+	.oid            = GENSEC_OID_NTLMSSP,
+	.client_start   = gensec_ntlmssp_client_start,
+	.server_start   = gensec_ntlmssp_server_start,
+	.update 	= gensec_ntlmssp_update,
+	.sig_size	= gensec_ntlmssp_sig_size,
+	.sign_packet	= gensec_ntlmssp_sign_packet,
+	.check_packet	= gensec_ntlmssp_check_packet,
+	.seal_packet	= gensec_ntlmssp_seal_packet,
+	.unseal_packet	= gensec_ntlmssp_unseal_packet,
+	.wrap           = gensec_ntlmssp_wrap,
+	.unwrap         = gensec_ntlmssp_unwrap,
+	.session_key	= gensec_ntlmssp_session_key,
+	.session_info   = gensec_ntlmssp_session_info,
+	.have_feature   = gensec_ntlmssp_have_feature,
+	.enabled        = True
+};
+
+
+NTSTATUS gensec_ntlmssp_init(void)
+{
+	NTSTATUS ret;
+	ret = gensec_register(&gensec_ntlmssp_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_ntlmssp_security_ops.name));
+		return ret;
+	}
+
+	return ret;
+}

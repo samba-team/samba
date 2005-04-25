@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   basic raw test suite for change notify
+   Small self-tests for the NTLMSSP code
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -20,17 +20,33 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "lib/cmdline/popt_common.h"
 
 BOOL torture_ntlmssp_self_check(void) 
 {
+	struct gensec_security *gensec_security;
 	struct ntlmssp_state *ntlmssp_state;
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
 	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(ntlmssp_client_start(NULL, &ntlmssp_state))) {
+	status = gensec_client_start(NULL, &gensec_security);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	gensec_set_credentials(gensec_security, cmdline_credentials);
+
+	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	gensec_ntlmssp_state = gensec_security->private_data;
+	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
 	ntlmssp_state->session_key = strhex_to_data_blob("0102030405060708090a0b0c0d0e0f00");
 	dump_data_pw("NTLMSSP session key: \n", 
@@ -46,8 +62,8 @@ BOOL torture_ntlmssp_self_check(void)
 	}
 
 	data = strhex_to_data_blob("6a43494653");
-	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state, 
-			    data.data, data.length, data.data, data.length, &sig);
+	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
+				   data.data, data.length, data.data, data.length, &sig);
 
 	expected_sig = strhex_to_data_blob("01000000e37f97f2544f4d7e00000000");
 
@@ -63,11 +79,24 @@ BOOL torture_ntlmssp_self_check(void)
 		return False;
 	}
 
-	ntlmssp_end(&ntlmssp_state);
+	talloc_free(gensec_security);
 
-	if (!NT_STATUS_IS_OK(ntlmssp_client_start(NULL, &ntlmssp_state))) {
+	status = gensec_client_start(NULL, &gensec_security);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	gensec_set_credentials(gensec_security, cmdline_credentials);
+
+	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	gensec_ntlmssp_state = gensec_security->private_data;
+	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
 	ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
 	dump_data_pw("NTLMSSP session key: \n", 
@@ -83,7 +112,7 @@ BOOL torture_ntlmssp_self_check(void)
 	}
 
 	data = strhex_to_data_blob("6a43494653");
-	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state, 
+	gensec_ntlmssp_sign_packet(gensec_security, gensec_security,
 			    data.data, data.length, data.data, data.length, &sig);
 
 	expected_sig = strhex_to_data_blob("0100000078010900397420fe0e5a0f89");
@@ -99,6 +128,8 @@ BOOL torture_ntlmssp_self_check(void)
 	if (memcmp(sig.data+8, expected_sig.data+8, sig.length-8)) {
 		return False;
 	}
+
+	talloc_free(gensec_security);
 
 	return True;
 }

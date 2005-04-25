@@ -54,9 +54,8 @@ ADD_OBJ_FILES = \
 [MODULE::gensec_ntlmssp]
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_ntlmssp_init
-INIT_OBJ_FILES = auth/gensec/gensec_ntlmssp.o
+INIT_OBJ_FILES = auth/gensec/ntlmssp.o
 ADD_OBJ_FILES = \
-		auth/gensec/ntlmssp.o \
 		auth/gensec/ntlmssp_parse.o \
 		auth/gensec/ntlmssp_sign.o
 REQUIRED_SUBSYSTEMS = AUTH

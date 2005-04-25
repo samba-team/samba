@@ -103,7 +103,7 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 				TALLOC_CTX *mem_ctx, 
 				uint8_t *data, size_t length, 
 				const uint8_t *whole_pdu, size_t pdu_length, 
-				DATA_BLOB *sig)
+				const DATA_BLOB *sig)
 {
 	struct schannel_state *state = gensec_security->private_data;
 	
