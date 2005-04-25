@@ -25,50 +25,6 @@
 #include "rpc_server/dcerpc_server.h"
 
 /*
-  startup the cryptographic side of an authenticated dcerpc server
-*/
-NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
-			       struct dcesrv_auth *auth)
-{
-	NTSTATUS status;
-	if (auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY &&
-	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_CONNECT) {
-		DEBUG(2,("auth_level %d not supported in dcesrv auth\n", 
-			 auth->auth_info->auth_level));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (auth->gensec_security != NULL) {
-		/* TODO:
-		 * this this function should not be called
-		 * twice per dcesrv_connection!
-		 * 
-		 * so we need to find out the right
-		 * dcerpc error to return
-		 */
-	}
-
-	status = gensec_server_start(dce_conn, &auth->gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
-					       auth->auth_info->auth_level);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC mech-specific server code (%d): %s\n", 
-			  (int)auth->auth_info->auth_type,
-			  nt_errstr(status)));
-		return status;
-	}
-
-	return status;
-}
-
-/*
   parse any auth information from a dcerpc bind request
   return False if we can't handle the auth request for some 
   reason (in which case we send a bind_nak)
@@ -77,6 +33,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 {
 	struct dcerpc_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
+	struct dcesrv_auth *auth = &dce_conn->auth_state;
 	NTSTATUS status;
 
 	if (pkt->u.bind.auth_info.length == 0) {
@@ -97,8 +54,19 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = dcesrv_crypto_select_type(dce_conn, &dce_conn->auth_state);
+	status = gensec_server_start(dce_conn, &auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+		return False;
+	}
+
+	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
+					       auth->auth_info->auth_level);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC mech-specific server code (%d): %s\n", 
+			  (int)auth->auth_info->auth_type,
+			  nt_errstr(status)));
 		return False;
 	}
 
@@ -131,7 +99,7 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 			return False;
 		}
 
-		/* Now that we are authenticated, got back to the generic session key... */
+		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return True;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
