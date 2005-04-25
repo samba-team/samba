@@ -652,8 +652,9 @@ sub ParseElementPush($$$$$$)
 				ParsePtrPush($e, $l, $var_name);
 			} elsif ($l->{TYPE} eq "ARRAY") {
 
-				ParseArrayPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
+				ParseArrayPush($e, $l, $ndr, $var_name, "NDR_SCALARS|NDR_BUFFERS", $env); #FIXME
 				last; #FIXME
+				ParseArrayPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "SWITCH") {
 				ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "DATA") {
@@ -910,8 +911,9 @@ sub ParseElementPull($$$$$$)
 			if ($l->{TYPE} eq "SUBCONTEXT") {
 				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "ARRAY") {
-				ParseArrayPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
+				ParseArrayPull($e, $l, $ndr, $var_name, "NDR_SCALARS|NDR_BUFFERS", $env); #FIXME
 				last; #FIXME
+				ParseArrayPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "POINTER") {
 				ParsePtrPull($e, $l, $ndr, $var_name);
 			} elsif ($l->{TYPE} eq "SWITCH") {
