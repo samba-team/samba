@@ -36,8 +36,8 @@
  * 
  * @param ntlmssp_state NTLMSSP State
  * @param out_mem_ctx The DATA_BLOB *out will be allocated on this context
- * @param in The request, as a DATA_BLOB.  reply.data must be NULL
- * @param out The reply, as an talloc()ed DATA_BLOB, on out_mem_ctx
+ * @param in A NULL data blob (input ignored)
+ * @param out The initial negotiate request to the server, as an talloc()ed DATA_BLOB, on out_mem_ctx
  * @return Errors or NT_STATUS_OK. 
  */
 
@@ -46,16 +46,15 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
-	if (ntlmssp_state->unicode) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+	if (gensec_ntlmssp_state->unicode) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 	} else {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
 	}
 	
-	if (ntlmssp_state->use_ntlmv2) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+	if (gensec_ntlmssp_state->use_ntlmv2) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	/* generate the ntlmssp negotiate packet */
@@ -63,11 +62,11 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		  out, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
-		  ntlmssp_state->neg_flags,
-		  ntlmssp_state->get_domain(), 
+		  gensec_ntlmssp_state->neg_flags,
+		  gensec_ntlmssp_state->get_domain(), 
 		  cli_credentials_get_workstation(gensec_security->credentials));
 
-	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
+	gensec_ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
@@ -75,9 +74,10 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 /**
  * Next state function for the Challenge Packet.  Generate an auth packet.
  * 
- * @param ntlmssp_state NTLMSSP State
- * @param request The request, as a DATA_BLOB.  reply.data must be NULL
- * @param request The reply, as an allocated DATA_BLOB, caller to free.
+ * @param gensec_security GENSEC state
+ * @param out_mem_ctx Memory context for *out
+ * @param in The server challnege, as a DATA_BLOB.  reply.data must be NULL
+ * @param out The next request (auth packet) to the server, as an allocated DATA_BLOB, on the out_mem_ctx context
  * @return Errors or NT_STATUS_OK. 
  */
 
@@ -86,7 +86,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
@@ -104,7 +103,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	const char *user, *domain, *password;
 
-	if (!msrpc_parse(ntlmssp_state, 
+	if (!msrpc_parse(out_mem_ctx,
 			 &in, "CdBd",
 			 "NTLMSSP",
 			 &ntlmssp_command, 
@@ -121,9 +120,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DEBUG(3, ("Got challenge flags:\n"));
 	debug_ntlmssp_flags(chal_flags);
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, chal_flags, ntlmssp_state->allow_lm_key);
+	ntlmssp_handle_neg_flags(gensec_ntlmssp_state, chal_flags, gensec_ntlmssp_state->allow_lm_key);
 
-	if (ntlmssp_state->unicode) {
+	if (gensec_ntlmssp_state->unicode) {
 		if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) {
 			chal_parse_string = "CdUdbddB";
 		} else {
@@ -141,9 +140,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
-	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
+	debug_ntlmssp_flags(gensec_ntlmssp_state->neg_flags);
 
-	if (!msrpc_parse(ntlmssp_state, 
+	if (!msrpc_parse(out_mem_ctx,
 			 &in, chal_parse_string,
 			 "NTLMSSP",
 			 &ntlmssp_command, 
@@ -157,7 +156,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ntlmssp_state->server_domain = server_domain;
+	gensec_ntlmssp_state->server_domain = server_domain;
 
 	if (challenge_blob.length != 8) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -182,12 +181,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* do nothing - blobs are zero length */
 
 		/* session key is all zeros */
-		session_key = data_blob_talloc(ntlmssp_state, zeros, 16);
-		lm_session_key = data_blob_talloc(ntlmssp_state, zeros, 16);
+		session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
+		lm_session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
 
 		/* not doing NLTM2 without a password */
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-	} else if (ntlmssp_state->use_ntlmv2) {
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+	} else if (gensec_ntlmssp_state->use_ntlmv2) {
 
 		if (!struct_blob.length) {
 			/* be lazy, match win2k - we can't do NTLMv2 without it */
@@ -210,9 +209,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		}
 
 		/* LM Key is incompatible... */
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 
-	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+	} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		struct MD5Context md5_session_nonce_ctx;
 		uint8_t nt_hash[16];
 		uint8_t session_nonce[16];
@@ -220,7 +219,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		uint8_t user_session_key[16];
 		E_md4hash(password, nt_hash);
 		
-		lm_response = data_blob_talloc(ntlmssp_state, NULL, 24);
+		lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 		generate_random_buffer(lm_response.data, 8);
 		memset(lm_response.data+8, 0, 16);
 
@@ -236,35 +235,35 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		DEBUG(5, ("challenge is: \n"));
 		dump_data(5, session_nonce_hash, 8);
 		
-		nt_response = data_blob_talloc(ntlmssp_state, NULL, 24);
+		nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 		SMBNTencrypt(password,
 			     session_nonce_hash,
 			     nt_response.data);
 
-		session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
+		session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
 
 		SMBsesskeygen_ntv1(nt_hash, user_session_key);
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
 		/* LM Key is incompatible... */
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	} else {
 		uint8_t nt_hash[16];
 
-		if (ntlmssp_state->use_nt_response) {
-			nt_response = data_blob_talloc(ntlmssp_state, NULL, 24);
+		if (gensec_ntlmssp_state->use_nt_response) {
+			nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 			SMBNTencrypt(password,challenge_blob.data,
 				     nt_response.data);
 			E_md4hash(password, nt_hash);
-			session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
+			session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, session_key.data);
 			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 		}
 
 		/* lanman auth is insecure, it may be disabled */
 		if (lp_client_lanman_auth()) {
-			lm_response = data_blob_talloc(ntlmssp_state, NULL, 24);
+			lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 			if (!SMBencrypt(password,challenge_blob.data,
 					lm_response.data)) {
 				/* If the LM password was too long (and therefore the LM hash being
@@ -272,26 +271,26 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				data_blob_free(&lm_response);
 
 				/* LM Key is incompatible with 'long' passwords */
-				ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+				gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 			} else {
 				E_deshash(password, lm_hash);
-				lm_session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
+				lm_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
 				memcpy(lm_session_key.data, lm_hash, 8);
 				memset(&lm_session_key.data[8], '\0', 8);
 
-				if (!ntlmssp_state->use_nt_response) {
+				if (!gensec_ntlmssp_state->use_nt_response) {
 					session_key = lm_session_key;
 				}
 			}
 		} else {
 			/* LM Key is incompatible... */
-			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+			gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 		}
 	}
 	
-	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
+	if ((gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 	    && lp_client_lanman_auth() && lm_session_key.length == 16) {
-		DATA_BLOB new_session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
+		DATA_BLOB new_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
 		if (lm_response.length == 24) {
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
 						  new_session_key.data);
@@ -308,20 +307,20 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	/* Key exchange encryptes a new client-generated session key with
 	   the password-derived key */
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		/* Make up a new session key */
 		uint8_t client_session_key[16];
 		generate_random_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */
-		encrypted_session_key = data_blob_talloc(ntlmssp_state, 
+		encrypted_session_key = data_blob_talloc(gensec_ntlmssp_state, 
 							 client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
 		arcfour_crypt(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */
-		session_key = data_blob_talloc(ntlmssp_state, client_session_key, sizeof(client_session_key));
+		session_key = data_blob_talloc(gensec_ntlmssp_state, client_session_key, sizeof(client_session_key));
 	}
 
 	/* this generates the actual auth packet */
@@ -335,23 +334,23 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       user, 
 		       cli_credentials_get_workstation(gensec_security->credentials),
 		       encrypted_session_key.data, encrypted_session_key.length,
-		       ntlmssp_state->neg_flags)) {
+		       gensec_ntlmssp_state->neg_flags)) {
 		
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ntlmssp_state->session_key = session_key;
+	gensec_ntlmssp_state->session_key = session_key;
 
 	/* The client might be using 56 or 40 bit weakened keys */
-	ntlmssp_weaken_keys(ntlmssp_state);
+	ntlmssp_weaken_keys(gensec_ntlmssp_state);
 
-	ntlmssp_state->chal = challenge_blob;
-	ntlmssp_state->lm_resp = lm_response;
-	ntlmssp_state->nt_resp = nt_response;
+	gensec_ntlmssp_state->chal = challenge_blob;
+	gensec_ntlmssp_state->lm_resp = lm_response;
+	gensec_ntlmssp_state->nt_resp = nt_response;
 
-	ntlmssp_state->expected_state = NTLMSSP_DONE;
+	gensec_ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	nt_status = ntlmssp_sign_init(ntlmssp_state);
+	nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
 			  nt_errstr(nt_status)));
@@ -359,52 +358,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	return nt_status;
-}
-
-static NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state **ntlmssp_state)
-{
-	*ntlmssp_state = talloc(mem_ctx, struct ntlmssp_state);
-	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(*ntlmssp_state);
-
-	(*ntlmssp_state)->role = NTLMSSP_CLIENT;
-
-	(*ntlmssp_state)->get_domain = lp_workgroup;
-
-	(*ntlmssp_state)->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);
-
-	(*ntlmssp_state)->use_nt_response = lp_parm_bool(-1, "ntlmssp_client", "send_nt_reponse", True);
-
-	(*ntlmssp_state)->allow_lm_key = (lp_lanman_auth() 
-					  && lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False));
-
-	(*ntlmssp_state)->use_ntlmv2 = lp_client_ntlmv2_auth();
-
-	(*ntlmssp_state)->expected_state = NTLMSSP_INITIAL;
-
-	(*ntlmssp_state)->neg_flags = 
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_REQUEST_TARGET;
-
-	if (lp_parm_bool(-1, "ntlmssp_client", "128bit", True)) {
-		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_128;		
-	}
-
-	if (lp_parm_bool(-1, "ntlmssp_client", "keyexchange", True)) {
-		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
-	}
-
-	if (lp_parm_bool(-1, "ntlmssp_client", "ntlm2", True)) {
-		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
-	} else {
-		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
-		(*ntlmssp_state)->use_ntlmv2 = False;
-	}
-
-	return NT_STATUS_OK;
 }
 
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
@@ -416,9 +369,40 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	nt_status = ntlmssp_client_start(gensec_ntlmssp_state,
-					 &gensec_ntlmssp_state->ntlmssp_state);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	gensec_ntlmssp_state->role = NTLMSSP_CLIENT;
+
+	gensec_ntlmssp_state->get_domain = lp_workgroup;
+
+	gensec_ntlmssp_state->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);
+
+	gensec_ntlmssp_state->use_nt_response = lp_parm_bool(-1, "ntlmssp_client", "send_nt_reponse", True);
+
+	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth() 
+					  && lp_parm_bool(-1, "ntlmssp_client", "allow_lm_key", False));
+
+	gensec_ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
+
+	gensec_ntlmssp_state->expected_state = NTLMSSP_INITIAL;
+
+	gensec_ntlmssp_state->neg_flags = 
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_REQUEST_TARGET;
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "128bit", True)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "keyexchange", True)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "ntlm2", True)) {
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
+	} else {
+		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
+		gensec_ntlmssp_state->use_ntlmv2 = False;
+	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		/*
@@ -430,13 +414,13 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		 * that it thinks is only used for NTLMSSP signing and 
 		 * sealing.  (It is actually pulled out and used directly) 
 		 */
-		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	gensec_security->private_data = gensec_ntlmssp_state;
