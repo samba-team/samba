@@ -208,16 +208,18 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 
 	val = ldb_msg_find_ldb_val(res[0], "sessionKey");
 	if (val == NULL || val->length != 16) {
+		DEBUG(1,("schannel: record in schannel DB must contain a sessionKey of length 16, when searching for client: %s\n", computer_name));
 		talloc_free(ldb);
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	memcpy((*creds)->session_key, val->data, 16);
 
 	val = ldb_msg_find_ldb_val(res[0], "seed");
 	if (val == NULL || val->length != 8) {
+		DEBUG(1,("schannel: record in schannel DB must contain a vaid seed of length 8, when searching for client: %s\n", computer_name));
 		talloc_free(ldb);
-		return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	memcpy((*creds)->seed.data, val->data, 8);
