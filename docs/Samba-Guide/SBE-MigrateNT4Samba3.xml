@@ -426,8 +426,11 @@
         logon drive = X:
         domain logons = Yes
         domain master = No
-        wins support = Yes
-        wins proxy = Yes
+# Uncomment the wins support setting after migration
+#       wins support = Yes
+# Set the WINS server address to that of the PDC
+# Comment the wins server setting out after migration
+	wins server = 192.168.123.124
         ldap admin dn = cn=Manager,dc=terpstra-world,dc=org
         ldap group suffix = ou=Groups
         ldap idmap suffix = ou=Idmap
@@ -466,18 +469,6 @@
         read only = No
         browseable = No
 
-[media]
-        comment = Media Files
-        path = /data/home2
-        read only = No
-
-[homes]
-        comment = Home Directories
-        path = /home/users/%U/Documents
-        valid users = %S
-        read only = No
-        browseable = No
-
 [printers]
         comment = SMB Print Spool
         path = /var/spool/samba
@@ -491,12 +482,7 @@
         path = /var/lib/samba/netlogon
         guest ok = Yes
         locking = No
-</screen>
-</example>
 
-<example id="sbent4smb3">
-<title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: C</title>
-<screen>
 [profiles]
         comment = Profile Share
         path = /var/lib/samba/profiles
@@ -1065,7 +1051,25 @@ Users (S-1-5-32-545) -&gt; Users
 		Edit the &smb.conf; file to  reset the parameter 
 		<smbconfoption name="domain master">Yes</smbconfoption> so that
 		the Samba server functions as a PDC for the purpose of migration.
-		Also, uncomment the deletion scripts so they will now be fully functional.
+		Also, uncomment the deletion scripts so they will now be fully functional,
+		enable the <parameter>wins support = yes</parameter> parameter and
+		comment out the <parameter>wins server</parameter>. Validate the configuration
+		with the <command>testparm</command> utility as shown here:
+<screen>
+&rootprompt; testparm
+Load smb config files from /etc/samba/smb.conf
+Processing section "[apps]"
+Processing section "[media]"
+Processing section "[homes]"
+Processing section "[printers]"
+Processing section "[netlogon]"
+Processing section "[profiles]"
+Processing section "[profdata]"
+Processing section "[print$]"
+Loaded services file OK.
+Server role: ROLE_DOMAIN_PDC
+Press enter to see a dump of your service definitions
+</screen>
                 </para></step>
 
 		<step><para>
