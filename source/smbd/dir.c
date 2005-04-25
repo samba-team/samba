@@ -946,7 +946,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 			return False;
 		}
 		/* Honour _hide_special_ option */
-		if (hide_special && !file_is_special(conn, entry, pst)) {
+		if (hide_special && file_is_special(conn, entry, pst)) {
 			SAFE_FREE(entry);
 			return False;
 		}
