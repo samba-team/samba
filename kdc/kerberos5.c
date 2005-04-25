@@ -959,7 +959,8 @@ as_rep(KDC_REQ *req,
     
     {
 	char str[128];
-	unparse_flags(KDCOptions2int(f), KDCOptions_units, str, sizeof(str));
+	unparse_flags(KDCOptions2int(f), asn1_KDCOptions_units(), 
+		      str, sizeof(str));
 	if(*str)
 	    kdc_log(2, "Requested flags: %s", str);
     }
@@ -1977,7 +1978,8 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ret = krb5_unparse_name(context, cp, &cpn);
 	if (ret)
 	    goto out;
-	unparse_flags (KDCOptions2int(b->kdc_options), KDCOptions_units,
+	unparse_flags (KDCOptions2int(b->kdc_options),
+		       asn1_KDCOptions_units(),
 		       opt_str, sizeof(opt_str));
 	if(*opt_str)
 	    kdc_log(0, "TGS-REQ %s from %s for %s [%s]", 

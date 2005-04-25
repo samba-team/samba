@@ -150,7 +150,7 @@ print_entry(kadm5_server_context *server_context,
 	}
 	if(mask & KADM5_ATTRIBUTES) {
 	    unparse_flags(HDBFlags2int(ent.flags), 
-			  HDBFlags_units, t, sizeof(t));
+			  asn1_HDBFlags_units(), t, sizeof(t));
 	    printf("    attributes = %s\n", t);
 	}
 	if(mask & KADM5_MAX_LIFE) {
