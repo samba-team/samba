@@ -75,18 +75,21 @@ attributetype ( 1.3.6.1.4.1.5322.10.1.6
 
 attributetype ( 1.3.6.1.4.1.5322.10.1.7
 	NAME 'krb5ValidStart'
+	EQUALITY generalizedTimeMatch
 	ORDERING generalizedTimeOrderingMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
 	SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.5322.10.1.8
 	NAME 'krb5ValidEnd'
+	EQUALITY generalizedTimeMatch
 	ORDERING generalizedTimeOrderingMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
 	SINGLE-VALUE )
 
 attributetype ( 1.3.6.1.4.1.5322.10.1.9
 	NAME 'krb5PasswordEnd'
+	EQUALITY generalizedTimeMatch
 	ORDERING generalizedTimeOrderingMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
 	SINGLE-VALUE )
