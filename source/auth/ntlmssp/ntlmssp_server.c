@@ -74,42 +74,6 @@ static NTSTATUS ntlmssp_set_workstation(struct gensec_ntlmssp_state *gensec_ntlm
 }
 
 /**
- * Default challenge generation code.
- *
- */
-   
-static const uint8_t *get_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
-{
-	uint8_t *chal = talloc_size(gensec_ntlmssp_state, 8);
-	generate_random_buffer(chal, 8);
-
-	return chal;
-}
-
-/**
- * Default 'we can set the challenge to anything we like' implementation
- *
- */
-   
-static BOOL may_set_challenge(const struct gensec_ntlmssp_state *gensec_ntlmssp_state)
-{
-	return True;
-}
-
-/**
- * Default 'we can set the challenge to anything we like' implementation
- *
- * Does not actually do anything, as the value is always in the structure anyway.
- *
- */
-   
-static NTSTATUS set_challenge(struct gensec_ntlmssp_state *gensec_ntlmssp_state, DATA_BLOB *challenge)
-{
-	SMB_ASSERT(challenge->length == 8);
-	return NT_STATUS_OK;
-}
-
-/**
  * Determine correct target name flags for reply, given server role 
  * and negotiated flags
  * 
@@ -295,6 +259,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 	/* zero these out */
 	data_blob_free(&gensec_ntlmssp_state->lm_resp);
 	data_blob_free(&gensec_ntlmssp_state->nt_resp);
+	data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
 
 	gensec_ntlmssp_state->user = NULL;
 	gensec_ntlmssp_state->domain = NULL;
@@ -733,10 +698,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
-	gensec_ntlmssp_state->get_challenge = get_challenge;
-	gensec_ntlmssp_state->set_challenge = set_challenge;
-	gensec_ntlmssp_state->may_set_challenge = may_set_challenge;
-
 	gensec_ntlmssp_state->workstation = NULL;
 	gensec_ntlmssp_state->server_name = lp_netbios_name();
 
@@ -753,6 +714,10 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	
 	gensec_ntlmssp_state->neg_flags = 
 		NTLMSSP_NEGOTIATE_NTLM;
+
+	gensec_ntlmssp_state->lm_resp = data_blob(NULL, 0);
+	gensec_ntlmssp_state->nt_resp = data_blob(NULL, 0);
+	gensec_ntlmssp_state->encrypted_session_key = data_blob(NULL, 0);
 
 	if (lp_parm_bool(-1, "ntlmssp_server", "128bit", True)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
