@@ -106,10 +106,6 @@ struct ntlmssp_state
 	
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
-	/* internal variables used by NTLM2 */
-	BOOL doing_ntlm2; 
-	uint8_t session_nonce[16];
-
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
 	
@@ -162,21 +158,28 @@ struct ntlmssp_state
 	const char *server_name;
 	const char *(*get_domain)(void);
 
-	/* SMB Signing */
-	uint32_t ntlm_seq_num;
-	uint32_t ntlm2_send_seq_num;
-	uint32_t ntlm2_recv_seq_num;
+	BOOL doing_ntlm2; 
 
-	/* ntlmv2 */
-	DATA_BLOB send_sign_key;
-	DATA_BLOB recv_sign_key;
+	union {
+		/* NTLM */
+		struct {
+			uint32_t seq_num;
+			struct arcfour_state *arcfour_state;
+		} ntlm;
 
-	struct arcfour_state *send_seal_hash;
-	struct arcfour_state *recv_seal_hash;
+		/* NTLM2 */
+		struct {
+			uint32_t send_seq_num;
+			uint32_t recv_seq_num;
+			DATA_BLOB send_sign_key;
+			DATA_BLOB recv_sign_key;
+			struct arcfour_state *send_seal_arcfour_state;
+			struct arcfour_state *recv_seal_arcfour_state;
 
-	/* ntlmv1 */
-	struct arcfour_state *ntlmssp_hash;
-
+			/* internal variables used by NTLM2 */
+			uint8_t session_nonce[16];
+		} ntlm2;
+	};
 };
 
 struct gensec_ntlmssp_state {
