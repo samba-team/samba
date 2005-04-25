@@ -35,7 +35,7 @@
 static const struct ntlmssp_callbacks {
 	enum ntlmssp_role role;
 	enum ntlmssp_message_type ntlmssp_command;
-	NTSTATUS (*fn)(struct ntlmssp_state *ntlmssp_state, 
+	NTSTATUS (*fn)(struct gensec_security *gensec_security, 
 		       TALLOC_CTX *out_mem_ctx, 
 		       DATA_BLOB in, DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
@@ -89,68 +89,6 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
 }
 
-/** 
- * Set a username on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) 
-{
-	if (!user) {
-		/* it should be at least "" */
-		DEBUG(1, ("NTLMSSP failed to set username - cannot accept NULL username\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
-	if (!ntlmssp_state->user) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a password on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) 
-{
-	if (!password) {
-		ntlmssp_state->password = NULL;
-	} else {
-		ntlmssp_state->password = talloc_strdup(ntlmssp_state, password);
-		if (!ntlmssp_state->password) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a domain on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) 
-{
-	ntlmssp_state->domain = talloc_strdup(ntlmssp_state, domain);
-	if (!ntlmssp_state->domain) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set a workstation on an NTLMSSP context - ensures it is talloc()ed 
- *
- */
-NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) 
-{
-	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
-	if (!ntlmssp_state->workstation) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 /**
  *  Store a DATA_BLOB containing an NTLMSSP response, for use later.
  *  This copies the data blob
@@ -175,7 +113,8 @@ NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
+static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
+				      TALLOC_CTX *out_mem_ctx, 
 				      const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
@@ -236,7 +175,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, T
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
 		if (ntlmssp_callbacks[i].role == ntlmssp_state->role 
 		    && ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
-			status = ntlmssp_callbacks[i].fn(ntlmssp_state, out_mem_ctx, input, out);
+			status = ntlmssp_callbacks[i].fn(gensec_security, out_mem_ctx, input, out);
 			break;
 		}
 	}
