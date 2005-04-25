@@ -401,12 +401,16 @@ recv_krb5_auth (int s, u_char *buf,
 	if (strncmp (*client_username + 3, "FILE:", 5) == 0) {
 	    temp_tkfile = tkfile;
 	} else {
-	    strcpy (tkfile, "FILE:");
+	    strlcpy (tkfile, "FILE:", sizeof(tkfile));
 	    temp_tkfile = tkfile + 5;
 	}
 	end = strchr(*client_username + 3,' ');
-	strncpy(temp_tkfile, *client_username + 3, end - *client_username - 3);
-	temp_tkfile[end - *client_username - 3] = '\0';
+	if (end == NULL)
+	    syslog_and_die("missing argument after -U");
+	snprintf(temp_tkfile, sizeof(tkfile) - (temp_tkfile - tkfile),
+		 "%.*s",
+		 (int)(end - *client_username - 3),
+		 *client_username + 3);
 	memmove (*client_username, end + 1, strlen(end+1)+1);
     }
 
