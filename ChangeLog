@@ -1,5 +1,12 @@
 2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/asn1/gen_glue.c: switch the units variable to a
+	function. gcc-4.1 needs the size of the structure if its defined
+	as extern struct units foo_units[] an we don't want to include
+	<parse_units.h> in the generate headerfile
+
+2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* lib/hdb/hdb.schema: add EQUALITY rule for krb5ValidStart,
 	krb5ValidEnd, krb5PasswordEnd From Howard Chu
 
