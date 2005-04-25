@@ -132,8 +132,6 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel context");
 	char *test_machine_account = talloc_asprintf(NULL, "%s$", TEST_MACHINE_NAME);
 
-	credentials = cli_credentials_init(mem_ctx);
-
 	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), 
 					   acct_flags, &machine_password);
 	if (!join_ctx) {
@@ -150,6 +148,9 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
+
+	credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(credentials);
 
 	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
 	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
