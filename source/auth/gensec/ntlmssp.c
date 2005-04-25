@@ -325,33 +325,18 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, T
  * @param ntlmssp_state NTLMSSP State
  */
 
-NTSTATUS ntlmssp_session_key(struct ntlmssp_state *ntlmssp_state,
-			     DATA_BLOB *session_key)
+NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
+				    DATA_BLOB *session_key)
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+
 	if (!ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	*session_key = ntlmssp_state->session_key;
 
 	return NT_STATUS_OK;
-}
-
-/**
- * End an NTLMSSP state machine
- * 
- * @param ntlmssp_state NTLMSSP State, free()ed by this function
- */
-
-void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
-{
-	(*ntlmssp_state)->ref_count--;
-
-	if ((*ntlmssp_state)->ref_count == 0) {
-		talloc_free(*ntlmssp_state);
-	}
-
-	*ntlmssp_state = NULL;
-	return;
 }
 
 /**
@@ -1440,17 +1425,6 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
-static int gensec_ntlmssp_destroy(void *ptr)
-{
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = ptr;
-
-	if (gensec_ntlmssp_state->ntlmssp_state) {
-		ntlmssp_end(&gensec_ntlmssp_state->ntlmssp_state);
-	}
-
-	return 0;
-}
-
 static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
@@ -1464,8 +1438,6 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
 	gensec_ntlmssp_state->have_features = 0;
-
-	talloc_set_destructor(gensec_ntlmssp_state, gensec_ntlmssp_destroy); 
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 	return NT_STATUS_OK;
@@ -1558,14 +1530,6 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	gensec_security->private_data = gensec_ntlmssp_state;
 
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
-					   DATA_BLOB *session_key)
-{
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-
-	return ntlmssp_session_key(gensec_ntlmssp_state->ntlmssp_state, session_key);
 }
 
 /** 
