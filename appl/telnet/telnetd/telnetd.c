@@ -779,8 +779,9 @@ show_issue(void)
 	f = fopen(SYSCONFDIR "/issue", "r");
     if(f){
 	while(fgets(buf, sizeof(buf)-2, f)){
-	    strcpy(buf + strcspn(buf, "\r\n"), "\r\n");
-	    writenet((unsigned char*)buf, strlen(buf));
+	    size_t len = strcspn(buf, "\r\n");
+	    len = strlcpy(buf + len, "\r\n", sizeof(buf) - len);
+	    writenet((unsigned char*)buf, len);
 	}
 	fclose(f);
     }
