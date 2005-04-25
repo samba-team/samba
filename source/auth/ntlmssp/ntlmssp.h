@@ -77,7 +77,6 @@ enum ntlmssp_message_type
 
 struct ntlmssp_state 
 {
-	uint_t ref_count;
 	enum ntlmssp_role role;
 	enum samr_Role server_role;
 	uint32_t expected_state;
@@ -170,21 +169,14 @@ struct ntlmssp_state
 
 	/* ntlmv2 */
 	DATA_BLOB send_sign_key;
-	DATA_BLOB send_seal_key;
 	DATA_BLOB recv_sign_key;
-	DATA_BLOB recv_seal_key;
 
-	uint8_t send_seal_hash[258];
-	uint8_t recv_seal_hash[258];
+	struct arcfour_state *send_seal_hash;
+	struct arcfour_state *recv_seal_hash;
 
 	/* ntlmv1 */
-	uint8_t ntlmssp_hash[258];
+	struct arcfour_state *ntlmssp_hash;
 
-	/* it turns out that we don't always get the
-	   response in at the time we want to process it.
-	   Store it here, until we need it */
-	DATA_BLOB stored_response; 
-	
 };
 
 struct gensec_ntlmssp_state {
