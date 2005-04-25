@@ -37,6 +37,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 		return cred;
 	}
 
+	cred->netlogon_creds = NULL;
 	cred->machine_account_pending = False;
 	cred->workstation_obtained = CRED_UNINITIALISED;
 	cred->username_obtained = CRED_UNINITIALISED;
