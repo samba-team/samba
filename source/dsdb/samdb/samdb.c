@@ -79,15 +79,6 @@ int samdb_search_domain(struct ldb_context *sam_ldb,
 }
 
 /*
-  free up a search result
-*/
-int samdb_search_free(struct ldb_context *sam_ldb,
-		      TALLOC_CTX *mem_ctx, struct ldb_message **res)
-{
-	return ldb_search_free(sam_ldb, res);
-}
-
-/*
   search the sam for a single string attribute in exactly 1 record
 */
 const char *samdb_search_string_v(struct ldb_context *sam_ldb,
@@ -106,7 +97,7 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 			 attr_name, format, count));
 	}
 	if (count != 1) {
-		samdb_search_free(sam_ldb, mem_ctx, res);
+		talloc_free(res);
 		return NULL;
 	}
 
@@ -235,14 +226,14 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 		if (res[i]->num_elements != 1) {
 			DEBUG(1,("samdb: search for %s %s not single valued\n", 
 				 attr_name, format));
-			samdb_search_free(sam_ldb, mem_ctx, res);
+			talloc_free(res);
 			return -1;
 		}
 	}
 
 	*strs = talloc_array(mem_ctx, const char *, count+1);
 	if (! *strs) {
-		samdb_search_free(sam_ldb, mem_ctx, res);
+		talloc_free(res);
 		return -1;
 	}
 

@@ -66,8 +66,6 @@ dit(bf(ldb_connect(3))) connect to a ldb backend
 
 dit(bf(ldb_search(3))) perform a database search
 
-dit(bf(ldb_search_free(3))) free the results of a ldb_search
-
 dit(bf(ldb_add(3))) add a record to the database
 
 dit(bf(ldb_delete(3))) delete a record from the database

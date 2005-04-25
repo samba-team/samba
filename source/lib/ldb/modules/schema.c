@@ -166,7 +166,7 @@ static int get_entry_attributes(struct ldb_context *ldb, const char *dn, struct 
 	/* set flags to 0 as flags on search have undefined values */
 	ret = get_msg_attributes(ss, *srch, 0);
 	if (ret != 0) {
-		ldb_search_free(ldb, srch);
+		talloc_free(srch);
 		return ret;
 	}
 
@@ -304,12 +304,6 @@ static int schema_search(struct ldb_module *module, const char *base,
 		       const char * const *attrs, struct ldb_message ***res)
 {
 	return ldb_next_search(module, base, scope, expression, attrs, res); 
-}
-
-/* search_free */
-static int schema_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	return ldb_next_search_free(module, res);
 }
 
 /* add_record */
@@ -549,7 +543,6 @@ static int schema_destructor(void *module_ctx)
 static const struct ldb_module_ops schema_ops = {
 	"schema",
 	schema_search,
-	schema_search_free,
 	schema_add_record,
 	schema_modify_record,
 	schema_delete_record,

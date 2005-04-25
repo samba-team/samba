@@ -44,12 +44,6 @@ static int skel_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res); 
 }
 
-/* search_free */
-static int skel_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	return ldb_next_search_free(module, res);
-}
-
 /* add_record */
 static int skel_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
@@ -102,7 +96,6 @@ static int skel_destructor(void *module_ctx)
 static const struct ldb_module_ops skel_ops = {
 	"skel",
 	skel_search,
-	skel_search_free,
 	skel_add_record,
 	skel_modify_record,
 	skel_delete_record,

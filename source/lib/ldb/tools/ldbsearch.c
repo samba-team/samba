@@ -81,9 +81,9 @@ static int do_search(struct ldb_context *ldb,
 	}
 
 	if (ret > 0) {
-		ret = ldb_search_free(ldb, msgs);
+		ret = talloc_free(msgs);
 		if (ret == -1) {
-			fprintf(stderr, "search_free failed\n");
+			fprintf(stderr, "talloc_free failed\n");
 			exit(1);
 		}
 	}

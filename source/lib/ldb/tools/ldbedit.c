@@ -427,9 +427,9 @@ static void usage(void)
 	do_edit(ldb, msgs, ret, editor);
 
 	if (ret > 0) {
-		ret = ldb_search_free(ldb, msgs);
+		ret = talloc_free(msgs);
 		if (ret == -1) {
-			fprintf(stderr, "search_free failed - %s\n", ldb_errstring(ldb));
+			fprintf(stderr, "talloc_free failed\n");
 			exit(1);
 		}
 	}

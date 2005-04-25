@@ -81,6 +81,9 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
   search the database given a LDAP-like search expression
 
   return the number of records found, or -1 on error
+
+  Use talloc_free to free the ldb_message returned in 'res'
+
 */
 int ldb_search(struct ldb_context *ldb, 
 	       const char *base,
@@ -90,15 +93,6 @@ int ldb_search(struct ldb_context *ldb,
 {
 	return ldb->modules->ops->search(ldb->modules, base, scope, expression, attrs, res);
 }
-
-/* 
-   free a set of messages returned by ldb_search
-*/
-int ldb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
-{
-	return ldb->modules->ops->search_free(ldb->modules, msgs);
-}
-
 
 /*
   add a record to the database. Will fail if a record with the given class and key

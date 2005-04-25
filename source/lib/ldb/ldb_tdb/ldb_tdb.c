@@ -797,7 +797,6 @@ static const char *ltdb_errstring(struct ldb_module *module)
 static const struct ldb_module_ops ltdb_ops = {
 	"tdb",
 	ltdb_search,
-	ltdb_search_free,
 	ltdb_add,
 	ltdb_modify,
 	ltdb_delete,
