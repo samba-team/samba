@@ -64,7 +64,7 @@ make_signal_socket (krb5_context context)
 }
 
 static int
-make_listen_socket (krb5_context context)
+make_listen_socket (krb5_context context, const char *port_str)
 {
     int fd;
     int one = 1;
@@ -76,8 +76,24 @@ make_listen_socket (krb5_context context)
     setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port   = krb5_getportbyname (context,
-					  IPROP_SERVICE, "tcp", IPROP_PORT);
+
+    if (port_str) {
+	addr.sin_port = krb5_getportbyname (context,
+					      port_str, "tcp", 
+					      0);
+	if (addr.sin_port == 0) {
+	    char *ptr;
+	    long port;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		krb5_errx (context, 1, "bad port `%s'", port_str);
+	    addr.sin_port = htons(port);
+	}
+    } else {
+	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE, 
+					    "tcp", IPROP_PORT);
+    }
     if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	krb5_err (context, 1, errno, "bind");
     if (listen(fd, SOMAXCONN) < 0)
@@ -588,6 +604,7 @@ static int help_flag;
 static char *keytab_str = "HDB:";
 static char *database;
 static char *config_file;
+static char *port_str;
 #ifdef HAVE_DAEMON
 static int detach_from_console = 0;
 #endif
@@ -604,6 +621,8 @@ static struct getargs args[] = {
       "time before slave is polled for presence", "time"},
     { "time-gone", 0, arg_string, &slave_time_gone,
       "time of inactivity after which a slave is considered gone", "time"},
+    { "port", 0, arg_string, &port_str,
+      "port ipropd will listen too", "port"},
 #ifdef HAVE_DAEMON
     { "detach", 0, arg_flag, &detach_from_console, 
       "detach from console" },
@@ -695,7 +714,7 @@ main(int argc, char **argv)
 		  server_context->log_context.log_file);
 
     signal_fd = make_signal_socket (context);
-    listen_fd = make_listen_socket (context);
+    listen_fd = make_listen_socket (context, port_str);
 
     signal (SIGPIPE, SIG_IGN);
 

@@ -40,7 +40,8 @@ static char *server_time_lost = "5 min";
 static int time_before_lost;
 
 static int
-connect_to_master (krb5_context context, const char *master)
+connect_to_master (krb5_context context, const char *master,
+		   const char *port_str)
 {
     int fd;
     struct sockaddr_in addr;
@@ -51,8 +52,23 @@ connect_to_master (krb5_context context, const char *master)
 	krb5_err (context, 1, errno, "socket AF_INET");
     memset (&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port   = krb5_getportbyname (context,
-					  IPROP_SERVICE, "tcp", IPROP_PORT);
+    if (port_str) {
+	addr.sin_port = krb5_getportbyname (context,
+					    port_str, "tcp", 
+					    0);
+	if (addr.sin_port == 0) {
+	    char *ptr;
+	    long port;
+	    
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		krb5_errx (context, 1, "bad port `%s'", port_str);
+	    addr.sin_port = htons(port);
+	}
+    } else {
+	addr.sin_port = krb5_getportbyname (context, IPROP_SERVICE, 
+					    "tcp", IPROP_PORT);
+    }
     he = roken_gethostbyname (master);
     if (he == NULL)
 	krb5_errx (context, 1, "gethostbyname: %s", hstrerror(h_errno));
@@ -348,6 +364,7 @@ static char *realm;
 static int version_flag;
 static int help_flag;
 static char *keytab_str;
+static char *port_str;
 #ifdef HAVE_DAEMON
 static int detach_from_console = 0;
 #endif
@@ -359,6 +376,8 @@ static struct getargs args[] = {
       "keytab to get authentication from", "kspec" },
     { "time-lost", 0, arg_string, &server_time_lost,
       "time before server is considered lost", "time" },
+    { "port", 0, arg_string, &port_str,
+      "port ipropd-slave will connect to", "port"},
 #ifdef HAVE_DAEMON
     { "detach", 0, arg_flag, &detach_from_console, 
       "detach from console" },
@@ -460,7 +479,7 @@ main(int argc, char **argv)
 
     get_creds(context, keytab_str, &ccache, master);
 
-    master_fd = connect_to_master (context, master);
+    master_fd = connect_to_master (context, master, port_str);
 
     ret = krb5_sname_to_principal (context, master, IPROP_NAME,
 				   KRB5_NT_SRV_HST, &server);
