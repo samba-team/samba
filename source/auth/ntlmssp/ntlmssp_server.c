@@ -28,6 +28,51 @@
 #include "lib/crypto/crypto.h"
 #include "pstring.h"
 
+/** 
+ * Set a username on an NTLMSSP context - ensures it is talloc()ed 
+ *
+ */
+
+static NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) 
+{
+	if (!user) {
+		/* it should be at least "" */
+		DEBUG(1, ("NTLMSSP failed to set username - cannot accept NULL username\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
+	if (!ntlmssp_state->user) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a domain on an NTLMSSP context - ensures it is talloc()ed 
+ *
+ */
+static NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) 
+{
+	ntlmssp_state->domain = talloc_strdup(ntlmssp_state, domain);
+	if (!ntlmssp_state->domain) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Set a workstation on an NTLMSSP context - ensures it is talloc()ed 
+ *
+ */
+static NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) 
+{
+	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state, workstation);
+	if (!ntlmssp_state->workstation) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
 /**
  * Default challenge generation code.
  *
@@ -102,10 +147,12 @@ static const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or MORE_PROCESSING_REQUIRED if a reply is sent. 
  */
 
-NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
+NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security, 
 				  TALLOC_CTX *out_mem_ctx, 
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	DATA_BLOB struct_blob;
 	fstring dnsname, dnsdomname;
 	uint32_t neg_flags = 0;
@@ -516,10 +563,12 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
  * @return Errors, NT_STATUS_MORE_PROCESSING_REQUIRED or NT_STATUS_OK. 
  */
 
-NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
+NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security, 
 			     TALLOC_CTX *out_mem_ctx, 
 			     const DATA_BLOB in, DATA_BLOB *out) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	DATA_BLOB user_session_key = data_blob(NULL, 0);
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;

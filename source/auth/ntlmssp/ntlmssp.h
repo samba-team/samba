@@ -96,7 +96,6 @@ struct ntlmssp_state
 	char *user;
 	char *domain;
 	const char *workstation;
-	char *password;
 	char *server_domain;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */

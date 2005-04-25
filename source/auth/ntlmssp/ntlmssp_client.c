@@ -41,10 +41,13 @@
  * @return Errors or NT_STATUS_OK. 
  */
 
-NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state, 
+NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security, 
 				TALLOC_CTX *out_mem_ctx, 
 				DATA_BLOB in, DATA_BLOB *out) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+
 	if (ntlmssp_state->unicode) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 	} else {
@@ -62,7 +65,7 @@ NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
 		  ntlmssp_state->get_domain(), 
-		  ntlmssp_state->workstation);
+		  cli_credentials_get_workstation(gensec_security->credentials));
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
@@ -78,10 +81,12 @@ NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK. 
  */
 
-NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state, 
+NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security, 
 				  TALLOC_CTX *out_mem_ctx,
 				  const DATA_BLOB in, DATA_BLOB *out) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
@@ -96,6 +101,8 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
+
+	const char *user, *domain, *password;
 
 	if (!msrpc_parse(ntlmssp_state, 
 			 &in, "CdBd",
@@ -156,7 +163,21 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!ntlmssp_state->password) {
+	/* Correctly handle username in the original form of user@REALM, which is valid */
+	if (gensec_security->credentials->realm_obtained
+	    > gensec_security->credentials->domain_obtained) {
+		user = talloc_asprintf(out_mem_ctx, "%s@%s", 
+				       cli_credentials_get_username(gensec_security->credentials), 
+				       cli_credentials_get_realm(gensec_security->credentials));
+		domain = NULL;
+	} else {
+		user = cli_credentials_get_username(gensec_security->credentials);
+		domain = cli_credentials_get_domain(gensec_security->credentials);
+	}
+
+	password = cli_credentials_get_password(gensec_security->credentials);
+
+	if (!password) {
 		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
 
@@ -177,9 +198,9 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
 		
-		if (!SMBNTLMv2encrypt(ntlmssp_state->user, 
-				      ntlmssp_state->domain, 
-				      ntlmssp_state->password, &challenge_blob, 
+		if (!SMBNTLMv2encrypt(user, 
+				      domain, 
+				      password, &challenge_blob, 
 				      &struct_blob, 
 				      &lm_response, &nt_response, 
 				      NULL, &session_key)) {
@@ -197,7 +218,7 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		uint8_t session_nonce[16];
 		uint8_t session_nonce_hash[16];
 		uint8_t user_session_key[16];
-		E_md4hash(ntlmssp_state->password, nt_hash);
+		E_md4hash(password, nt_hash);
 		
 		lm_response = data_blob_talloc(ntlmssp_state, NULL, 24);
 		generate_random_buffer(lm_response.data, 8);
@@ -216,7 +237,7 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		dump_data(5, session_nonce_hash, 8);
 		
 		nt_response = data_blob_talloc(ntlmssp_state, NULL, 24);
-		SMBNTencrypt(ntlmssp_state->password,
+		SMBNTencrypt(password,
 			     session_nonce_hash,
 			     nt_response.data);
 
@@ -233,9 +254,9 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		if (ntlmssp_state->use_nt_response) {
 			nt_response = data_blob_talloc(ntlmssp_state, NULL, 24);
-			SMBNTencrypt(ntlmssp_state->password,challenge_blob.data,
+			SMBNTencrypt(password,challenge_blob.data,
 				     nt_response.data);
-			E_md4hash(ntlmssp_state->password, nt_hash);
+			E_md4hash(password, nt_hash);
 			session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, session_key.data);
 			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
@@ -244,7 +265,7 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* lanman auth is insecure, it may be disabled */
 		if (lp_client_lanman_auth()) {
 			lm_response = data_blob_talloc(ntlmssp_state, NULL, 24);
-			if (!SMBencrypt(ntlmssp_state->password,challenge_blob.data,
+			if (!SMBencrypt(password,challenge_blob.data,
 					lm_response.data)) {
 				/* If the LM password was too long (and therefore the LM hash being
 				   of the first 14 chars only), don't send it */
@@ -253,7 +274,7 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				/* LM Key is incompatible with 'long' passwords */
 				ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 			} else {
-				E_deshash(ntlmssp_state->password, lm_hash);
+				E_deshash(password, lm_hash);
 				lm_session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 				memcpy(lm_session_key.data, lm_hash, 8);
 				memset(&lm_session_key.data[8], '\0', 8);
@@ -310,9 +331,9 @@ NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		       NTLMSSP_AUTH, 
 		       lm_response.data, lm_response.length,
 		       nt_response.data, nt_response.length,
-		       ntlmssp_state->domain, 
-		       ntlmssp_state->user, 
-		       ntlmssp_state->workstation, 
+		       domain, 
+		       user, 
+		       cli_credentials_get_workstation(gensec_security->credentials),
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags)) {
 		
@@ -351,7 +372,6 @@ static NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state *
 
 	(*ntlmssp_state)->role = NTLMSSP_CLIENT;
 
-	(*ntlmssp_state)->workstation = lp_netbios_name();
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 
 	(*ntlmssp_state)->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);
@@ -392,7 +412,6 @@ static NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state *
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
-	const char *password = NULL;
 	NTSTATUS nt_status;
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
@@ -421,22 +440,6 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
-
-	nt_status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
-				       cli_credentials_get_domain(gensec_security->credentials));
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-	
-	nt_status = ntlmssp_set_username(gensec_ntlmssp_state->ntlmssp_state, 
-					 cli_credentials_get_username(gensec_security->credentials));
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	password = cli_credentials_get_password(gensec_security->credentials);
-
-	nt_status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, password);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	nt_status = ntlmssp_set_workstation(gensec_ntlmssp_state->ntlmssp_state,
-					    cli_credentials_get_workstation(gensec_security->credentials));
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 
