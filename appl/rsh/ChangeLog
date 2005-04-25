@@ -1,3 +1,15 @@
+2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rshd.c: use snprintf to format tkfile
+	
+2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsh.c: use strlcat
+
+	* rsh.c: use strlcpy
+
+	* rsh_locl.h: forward declaration for private structures
+
 2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsh.c: cast size_t to unsigned long
