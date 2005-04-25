@@ -3330,14 +3330,14 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 	if (ret > 1) {
-		samdb_search_free(sam_ctx, mem_ctx, msgs);
+		talloc_free(msgs);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	r->out.info.min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
 	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
-	samdb_search_free(sam_ctx, mem_ctx, msgs);
+	talloc_free(msgs);
 
 	talloc_free(sam_ctx);
 	return NT_STATUS_OK;

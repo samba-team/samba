@@ -49,12 +49,6 @@ static int timestamps_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
-static int timestamps_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_search_free\n");
-	return ldb_next_search_free(module, res);
-}
-
 static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
@@ -255,7 +249,6 @@ static int timestamps_destructor(void *module_ctx)
 static const struct ldb_module_ops timestamps_ops = {
 	"timestamps",
 	timestamps_search,
-	timestamps_search_free,
 	timestamps_add_record,
 	timestamps_modify_record,
 	timestamps_delete_record,

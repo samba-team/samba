@@ -51,12 +51,6 @@ static int samldb_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
-static int samldb_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search_free\n");
-	return ldb_next_search_free(module, res);
-}
-
 /*
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
@@ -74,13 +68,13 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, "nextRid=*", attrs, &res);
 	if (ret != 1) {
-		if (res) ldb_search_free(ldb, res);
+		if (res) talloc_free(res);
 		return -1;
 	}
 	str = ldb_msg_find_string(res[0], "nextRid", NULL);
 	if (str == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", dn);
-		ldb_search_free(ldb, res);
+		talloc_free(res);
 		return -1;
 	}
 
@@ -88,10 +82,10 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	if ((*id)+1 == 0) {
 		/* out of IDs ! */
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Are we out of valid IDs ?\n");
-		ldb_search_free(ldb, res);
+		talloc_free(res);
 		return -1;
 	}
-	ldb_search_free(ldb, res);
+	talloc_free(res);
 
 	/* we do a delete and add as a single operation. That prevents
 	   a race */
@@ -150,7 +144,7 @@ static char *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx
 		sdn++;
 
 		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, "objectClass=domain", NULL, &res);
-		ldb_search_free(module->ldb, res);
+		talloc_free(res);
 
 		if (ret == 1)
 			break;
@@ -195,14 +189,14 @@ static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
 	if (ret != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
-		if (res) ldb_search_free(module->ldb, res);
+		if (res) talloc_free(res);
 		return NULL;
 	}
 
 	dom_sid = ldb_msg_find_string(res[0], "objectSid", NULL);
 	if (dom_sid == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
-		ldb_search_free(module->ldb, res);
+		talloc_free(res);
 		return NULL;
 	}
 
@@ -218,7 +212,7 @@ static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 	}
 	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", dom_dn);
-		ldb_search_free(module->ldb, res);
+		talloc_free(res);
 		return NULL;
 	}
 
@@ -226,7 +220,8 @@ static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 
 	obj_sid = talloc_asprintf(mem_ctx, "%s-%u", dom_sid, rid);
 
-	ldb_search_free(module->ldb, res);
+	talloc_free(res);
+
 
 	return obj_sid;
 }
@@ -349,13 +344,13 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 							    NULL,
 							    (char *)el->values[j].data)) {
 				ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Attribute adding failed...\n");
-				ldb_search_free(module->ldb, res);
+				talloc_free(res);
 				return -1;
 			}
 		}
 	}
 
-	ldb_search_free(module->ldb, res);
+	talloc_free(res);
 
 	return 0;
 }
@@ -606,7 +601,6 @@ static int samldb_destructor(void *module_ctx)
 static const struct ldb_module_ops samldb_ops = {
 	"samldb",
 	samldb_search,
-	samldb_search_free,
 	samldb_add_record,
 	samldb_modify_record,
 	samldb_delete_record,

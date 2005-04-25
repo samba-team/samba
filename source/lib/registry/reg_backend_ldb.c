@@ -102,12 +102,12 @@ static int reg_close_ldb_key (void *data)
 	struct ldb_context *c = key->hive->backend_data;
 
 	if (kd->subkeys) {
-		ldb_search_free(c, kd->subkeys); 
+		talloc_free(kd->subkeys); 
 		kd->subkeys = NULL;
 	}
 
 	if (kd->values) {
-		ldb_search_free(c, kd->values); 
+		talloc_free(kd->values); 
 		kd->values = NULL;
 	}
 	return 0;
@@ -224,7 +224,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 	(*key)->backend_data = newkd = talloc_zero(*key, struct ldb_key_data);
 	newkd->dn = talloc_strdup(mem_ctx, msg[0]->dn); 
 
-	ldb_search_free(c, msg);
+	talloc_free(msg);
 
 	return WERR_OK;
 }

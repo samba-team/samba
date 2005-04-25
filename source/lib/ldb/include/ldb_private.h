@@ -57,7 +57,6 @@ struct ldb_module_ops {
 	const char *name;
 	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
 		      const char *, const char * const [], struct ldb_message ***);
-	int (*search_free)(struct ldb_module *, struct ldb_message **);
 	int (*add_record)(struct ldb_module *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_module *, const char *);
@@ -89,7 +88,6 @@ int ldb_next_search(struct ldb_module *module,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res);
-int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msg);
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message);
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message);
 int ldb_next_delete_record(struct ldb_module *module, const char *dn);

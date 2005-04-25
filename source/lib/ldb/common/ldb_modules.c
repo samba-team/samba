@@ -224,14 +224,6 @@ int ldb_next_search(struct ldb_module *module,
 	return module->next->ops->search(module->next, base, scope, expression, attrs, res);
 }
 
-int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msg)
-{
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->search_free(module->next, msg);
-}
-
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
 {
 	if (!module->next) {

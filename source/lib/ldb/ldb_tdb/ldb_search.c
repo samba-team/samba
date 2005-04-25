@@ -416,20 +416,6 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 
 /*
-  free a set of search results
-*/
-int ltdb_search_free(struct ldb_module *module, struct ldb_message **msgs)
-{
-	struct ltdb_private *ltdb = module->private_data;
-
-	ltdb->last_err_string = NULL;
-	
-	talloc_free(msgs);
-
-	return 0;
-}
-
-/*
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
