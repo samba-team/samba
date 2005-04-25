@@ -47,6 +47,7 @@ sub smb_build_main($)
 		"nbt_server/config.mk",
 		"auth/gensec/gensec.mk",
 		"auth/kerberos/kerberos.mk",
+		"auth/ntlmssp/ntlmssp.mk",
 		"libcli/auth/config.mk",
 		"libcli/ldap/config.mk",
 		"libcli/config.mk",

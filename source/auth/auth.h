@@ -22,7 +22,6 @@
 #ifndef _SAMBA_AUTH_H
 #define _SAMBA_AUTH_H
 
-#include "auth/gensec/ntlmssp.h"
 #include "libcli/auth/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/spnego.h"

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 
 BOOL torture_ntlmssp_self_check(void) 
