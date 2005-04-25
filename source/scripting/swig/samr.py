@@ -394,6 +394,32 @@ class DomainHandle(SamrHandle):
         return ([dcerpc.uint32_array_getitem(r.data_out.rids.ids, i) for i in range(r.data_out.rids.count)],
                 [dcerpc.uint32_array_getitem(r.data_out.types.ids, i) for i in range(r.data_out.types.count)])
 
+    def CreateDomainGroup(self, domain_name, access_mask = 0x02000000):
+
+        r = dcerpc.samr_CreateDomainGroup()
+        r.data_in.domain_handle = self.handle
+        r.data_in.name = dcerpc.samr_String()
+        r.data_in.name.string = domain_name
+        r.data_in.access_mask = access_mask
+
+        call_fn(dcerpc.dcerpc_samr_CreateDomainGroup, self.pipe, r)
+
+    def GetAliasMembership(self, sids):
+
+        r = dcerpc.samr_GetAliasMembership()
+        r.data_in.domain_handle = self.handle
+        r.data_in.sids = dcerpc.lsa_SidArray()
+        r.data_in.sids.num_sids = len(sids)
+        r.data_in.sids.sids = dcerpc.new_lsa_SidPtr_array(len(sids))
+
+        for i in range(len(sids)):
+            s = dcerpc.lsa_SidPtr()
+            s.sid = string_to_sid(sids[i])
+            dcerpc.lsa_SidPtr_array_setitem(r.data_in.sids.sids, i, s)
+
+        call_fn(dcerpc.dcerpc_samr_GetAliasMembership, self.pipe, r)
+
+        return [r.ids[x] x in range(r.count)]
 
 class UserHandle(SamrHandle):
 
@@ -526,10 +552,6 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
     
-    
-# CreateDomainGroup
-# GetAliasMembership
-# LookupNames
 # QueryGroupInfo
 # SetGroupInfo
 # AddGroupMember
