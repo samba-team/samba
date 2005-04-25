@@ -74,6 +74,7 @@ struct spnego_data;
 struct gensec_security;
 typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
 					     char **password);
+struct gensec_ntlmssp_state;
 
 struct asn1_data;
 
@@ -200,3 +201,4 @@ struct wrepl_pull_table;
 struct wrepl_pull_names;
 
 struct arcfour_state;
+
