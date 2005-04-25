@@ -435,23 +435,25 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
+static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
 {
 	prs_struct *ps = &hbin->ps;
-	uint16 tag = 0xffff;
+	uint16 tag;
+	REGF_SK_REC *sk = nk->sec_desc;
+
 
 	prs_debug(ps, depth, desc, "hbin_prs_sk_rec");
 	depth++;
+
+	if ( !prs_set_offset( &hbin->ps, nk->sk_off + HBIN_HDR_SIZE - hbin->first_hbin_off ) )
+		return False;
 
 	if ( !prs_uint8s( True, "header", ps, depth, sk->header, sizeof( sk->header )) )
 		return False;
 	if ( !prs_uint16( "tag", ps, depth, &tag))
 		return False;
 
-	/* hack for checking if this really is an SK record */
-
-	if ( tag != 0xffff )
-		return False;
+	/* if tag == 0xffff it means the sk record is not in use */
 
 	if ( !prs_uint32( "prev_sk_off", ps, depth, &sk->prev_sk_off))
 		return False;
@@ -460,6 +462,9 @@ static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	if ( !prs_uint32( "ref_count", ps, depth, &sk->ref_count))
 		return False;
 	if ( !prs_uint32( "size", ps, depth, &sk->size))
+		return False;
+
+	if ( !sec_io_desc( "sec_desc", &sk->sec_desc, ps, depth )) 
 		return False;
 
 	return True;
@@ -594,6 +599,25 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 	return True;
 }
 
+
+/*******************************************************************
+*******************************************************************/
+
+static REGF_SK_REC* find_sk_record_in_list( REGF_FILE *file, uint32 offset )
+{
+	REGF_SK_REC *p_sk;
+	
+	if ( !file )
+		return NULL;
+		
+	for ( p_sk=file->sec_desc_list; p_sk; p_sk=p_sk->next ) {
+		if ( p_sk->sk_off == offset ) 
+			return p_sk;
+	}
+	
+	return NULL;
+}
+
 /*******************************************************************
 *******************************************************************/
 
@@ -617,7 +641,7 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 		if ( !hbin_contains_offset( hbin, nk->values_off ) ) {
 			sub_hbin = lookup_hbin_block( file, nk->values_off );
 			if ( !sub_hbin ) {
-				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing value_list_offset [0x%x]\n", 
 					nk->values_off));
 				return False;
 			}
@@ -634,7 +658,7 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 		if ( !hbin_contains_offset( hbin, nk->subkeys_off ) ) {
 			sub_hbin = lookup_hbin_block( file, nk->subkeys_off );
 			if ( !sub_hbin ) {
-				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing subkey_offset [0x%x]\n", 
 					nk->subkeys_off));
 				return False;
 			}
@@ -644,7 +668,30 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 			return False;
 	}
 
-	/* FIXME!  link to the security descriptor */
+	/* get the to the security descriptor.  First look if we have already parsed it */
+	
+	if ( !( nk->sec_desc = find_sk_record_in_list( file, nk->sk_off )) ) {
+
+		sub_hbin = hbin;
+		if ( !hbin_contains_offset( hbin, nk->sk_off ) ) {
+			sub_hbin = lookup_hbin_block( file, nk->sk_off );
+			if ( !sub_hbin ) {
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing sk_offset [0x%x]\n", 
+					nk->subkeys_off));
+				return False;
+			}
+		}
+		
+		if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
+			return False;
+		if ( !hbin_prs_sk_rec( "sk_rec", sub_hbin, depth, nk ))
+			return False;
+			
+		/* add to the list of security descriptors (ref_count has been read from the files) */
+
+		nk->sec_desc->sk_off = nk->sk_off;
+		DLIST_ADD( file->sec_desc_list, nk->sec_desc );
+	}
 		
 	return True;
 }
@@ -652,7 +699,7 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_record( REGF_HBIN *hbin, const char *hdr )
+static BOOL next_record( REGF_HBIN *hbin, const char *hdr, BOOL *eob )
 {
 	char *buffer, *p;
 	BOOL found_next_rec = False;
@@ -675,9 +722,11 @@ static BOOL next_record( REGF_HBIN *hbin, const char *hdr )
 	}
 	
 	/* mark prs_struct as done ( at end ) if no more SK records */
+	/* mark end-of-block as True */
 	
 	if ( !found_next_rec ) {
 		prs_set_offset( &hbin->ps, prs_data_size(&hbin->ps) );
+		*eob = True;
 		return False;
 	}
 		
@@ -690,33 +739,12 @@ static BOOL next_record( REGF_HBIN *hbin, const char *hdr )
 /*******************************************************************
 *******************************************************************/
 
-static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
+static BOOL next_nk_record( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk, BOOL *eob )
 {
-	if ( !next_record( hbin, "nk" ) )
-		return False;
-	if ( !hbin_prs_key( file, hbin, nk ) )
-		return False;
+	if ( next_record( hbin, "nk", eob ) && hbin_prs_key( file, hbin, nk ) )
+		return True;
 	
-	return True;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-static REGF_SK_REC* next_sk_record( REGF_HBIN *hbin )
-{
-	REGF_SK_REC *sk;
-
-	if ( !(sk = (REGF_SK_REC*)SMB_MALLOC_P( REGF_SK_REC )) )
-		return NULL;
-
-	if ( next_record(hbin, "sk") && hbin_prs_sk_rec("next_sk_record", hbin, 0, sk) )
-		return sk;
-
-	/* cleanup on failure */
-
-	SAFE_FREE( sk );
-	return NULL;
+	return False;
 }
 
 /*******************************************************************
@@ -727,11 +755,8 @@ static REGF_SK_REC* next_sk_record( REGF_HBIN *hbin )
 REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 {
 	REGF_FILE *rb;
-	REGF_HBIN *hbin;
-	REGF_SK_REC *sk;
-	uint32 offset;
 	
-	if ( !(rb = SMB_MALLOC_P(REGF_FILE*)) ) {
+	if ( !(rb = SMB_MALLOC_P(REGF_FILE)) ) {
 		DEBUG(0,("ERROR allocating memory\n"));
 		return NULL;
 	}
@@ -766,21 +791,6 @@ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 		DEBUG(0,("regfio_open: Failed to read initial REGF block\n"));
 		regfio_close( rb );
 		return NULL;
-	}
-	
-	/* read in the list of security descriptors here */
-
-	offset = REGF_BLOCKSIZE;
-	while ( (hbin = read_hbin_block( rb, offset )) ) {
-
-		/* FIXME! We could exit this loop prematurely here 
-		   if we fine the 'sk' string in a randon record */
-
-		while ( (sk = next_sk_record( hbin )) != NULL ) {
-			DLIST_ADD( rb->sec_desc_list, sk );
-		}
-		
-		offset += hbin->block_size;
 	}
 	
 	return rb;
@@ -827,6 +837,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	REGF_HBIN   *hbin;
 	uint32      offset = REGF_BLOCKSIZE;
 	BOOL        found = False;
+	BOOL        eob;
 	
 	if ( !file )
 		return NULL;
@@ -837,14 +848,19 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	}
 	
 	/* scan through the file on HBIN block at a time looking 
-	   for an NK record with a type == 0x002c */
+	   for an NK record with a type == 0x002c.
+	   Normally this is the first nk record in the first hbin 
+	   block (but I'm not assuming that for now) */
 	
 	while ( (hbin = read_hbin_block( file, offset )) ) {
+		eob = False;
 
-		while ( next_nk_record( file, hbin, nk ) ) {
-			if ( nk->key_type == NK_TYPE_ROOTKEY ) {
-				found = True;
-				break;
+		while ( !eob) {
+			if ( next_nk_record( file, hbin, nk, &eob ) ) {
+				if ( nk->key_type == NK_TYPE_ROOTKEY ) {
+					found = True;
+					break;
+				}
 			}
 		}
 		

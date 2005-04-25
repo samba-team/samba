@@ -82,6 +82,9 @@ struct _regf_sk_rec;
 typedef struct _regf_sk_rec {
 	struct _regf_sk_rec *next, *prev;
 
+	uint32 sk_off;			/* offset parsed from NK record used as a key
+					   to lookup reference to this SK record */
+
 	char header[REC_HDR_SIZE];
 	uint32 prev_sk_off;
 	uint32 next_sk_off;
