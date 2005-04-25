@@ -1738,8 +1738,8 @@ enum {
 		{ "lm-response", 0, POPT_ARG_STRING, &hex_lm_response, OPT_LM, "LM Response to the challenge (HEX encoded)"},
 		{ "nt-response", 0, POPT_ARG_STRING, &hex_nt_response, OPT_NT, "NT or NTLMv2 Response to the challenge (HEX encoded)"},
 		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
-		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retreive LM session key"},
-		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retreive User (NT) session key"},
+		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
+		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
 		POPT_COMMON_SAMBA
