@@ -637,8 +637,6 @@ static NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state *
 	(*ntlmssp_state)->server_use_session_keys = True;
 	(*ntlmssp_state)->server_multiple_authentications = False;
 	
-	(*ntlmssp_state)->ref_count = 1;
-
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_NTLM;
 

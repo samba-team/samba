@@ -22,3 +22,9 @@
 #include "lib/crypto/md4.h"
 #include "lib/crypto/hmacmd5.h"
 #include "lib/crypto/crc32.h"
+
+struct arcfour_state {
+	uint8_t sbox[256];
+	uint8_t index_i;
+	uint8_t index_j;
+};
