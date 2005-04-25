@@ -75,7 +75,7 @@ enum ntlmssp_message_type
 
 #define NTLMSSP_SIG_SIZE 16
 
-struct ntlmssp_state 
+struct gensec_ntlmssp_state
 {
 	enum ntlmssp_role role;
 	enum samr_Role server_role;
@@ -109,8 +109,6 @@ struct ntlmssp_state
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
 	
-	void *auth_context;
-
 	/**
 	 * Callback to get the 'challenge' used for NTLM authentication.  
 	 *
@@ -118,7 +116,7 @@ struct ntlmssp_state
 	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
-	const uint8_t *(*get_challenge)(const struct ntlmssp_state *ntlmssp_state);
+	const uint8_t *(*get_challenge)(const struct gensec_ntlmssp_state *);
 
 	/**
 	 * Callback to find if the challenge used by NTLM authentication may be modified 
@@ -130,7 +128,7 @@ struct ntlmssp_state
 	 * @return Can the challenge be set to arbitary values?
 	 *
 	 */
-	BOOL (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
+	BOOL (*may_set_challenge)(const struct gensec_ntlmssp_state *);
 
 	/**
 	 * Callback to set the 'challenge' used for NTLM authentication.  
@@ -142,7 +140,7 @@ struct ntlmssp_state
 	 * @param challange 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
 	 *
 	 */
-	NTSTATUS (*set_challenge)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
+	NTSTATUS (*set_challenge)(struct gensec_ntlmssp_state *, DATA_BLOB *challenge);
 
 	/**
 	 * Callback to check the user's password.  
@@ -153,7 +151,8 @@ struct ntlmssp_state
 	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
 	 *
 	 */
-	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+	NTSTATUS (*check_password)(struct gensec_ntlmssp_state *, 
+				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	const char *server_name;
 	const char *(*get_domain)(void);
@@ -180,12 +179,9 @@ struct ntlmssp_state
 			uint8_t session_nonce[16];
 		} ntlm2;
 	};
-};
 
-struct gensec_ntlmssp_state {
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
-	struct ntlmssp_state *ntlmssp_state;
 	uint32_t have_features;
 };
 

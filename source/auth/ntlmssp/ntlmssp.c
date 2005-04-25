@@ -105,7 +105,6 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 				      const DATA_BLOB input, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	NTSTATUS status;
 
 	uint32_t ntlmssp_command;
@@ -113,18 +112,18 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 
 	*out = data_blob(NULL, 0);
 
-	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
+	if (gensec_ntlmssp_state->expected_state == NTLMSSP_DONE) {
 		return NT_STATUS_OK;
 	}
 
 	if (!out_mem_ctx) {
 		/* if the caller doesn't want to manage/own the memory, 
 		   we can put it on our context */
-		out_mem_ctx = ntlmssp_state;
+		out_mem_ctx = gensec_ntlmssp_state;
 	}
 
 	if (!input.length) {
-		switch (ntlmssp_state->role) {
+		switch (gensec_ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
@@ -134,7 +133,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 			break;
 		}
 	} else {
-		if (!msrpc_parse(ntlmssp_state, 
+		if (!msrpc_parse(gensec_ntlmssp_state, 
 				 &input, "Cd",
 				 "NTLMSSP",
 				 &ntlmssp_command)) {
@@ -144,13 +143,13 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		}
 	}
 
-	if (ntlmssp_command != ntlmssp_state->expected_state) {
-		DEBUG(1, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, ntlmssp_state->expected_state));
+	if (ntlmssp_command != gensec_ntlmssp_state->expected_state) {
+		DEBUG(1, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, gensec_ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
-		if (ntlmssp_callbacks[i].role == ntlmssp_state->role 
+		if (ntlmssp_callbacks[i].role == gensec_ntlmssp_state->role 
 		    && ntlmssp_callbacks[i].ntlmssp_command == ntlmssp_command) {
 			status = ntlmssp_callbacks[i].fn(gensec_security, out_mem_ctx, input, out);
 			break;
@@ -160,26 +159,27 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	if (i == ARRAY_SIZE(ntlmssp_callbacks)) {
 		
 		DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
-			  ntlmssp_state->role, ntlmssp_command)); 
+			  gensec_ntlmssp_state->role, ntlmssp_command)); 
 		
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		/* error or more processing required */
 		return status;
 	}
 	
 	gensec_ntlmssp_state->have_features = 0;
 
-	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
 		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SIGN;
 	}
 
-	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
 		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SEAL;
 	}
 
-	if (gensec_ntlmssp_state->ntlmssp_state->session_key.data) {
+	if (gensec_ntlmssp_state->session_key.data) {
 		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SESSION_KEY;
 	}
 
@@ -189,77 +189,76 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 /**
  * Return the NTLMSSP master session key
  * 
- * @param ntlmssp_state NTLMSSP State
+ * @param gensec_ntlmssp_state NTLMSSP State
  */
 
 NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
 				    DATA_BLOB *session_key)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
-	if (!ntlmssp_state->session_key.data) {
+	if (!gensec_ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	*session_key = ntlmssp_state->session_key;
+	*session_key = gensec_ntlmssp_state->session_key;
 
 	return NT_STATUS_OK;
 }
 
-void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
+void ntlmssp_handle_neg_flags(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
 			      uint32_t neg_flags, BOOL allow_lm)
 {
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
-		ntlmssp_state->unicode = True;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
+		gensec_ntlmssp_state->unicode = True;
 	} else {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-		ntlmssp_state->unicode = False;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_UNICODE;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+		gensec_ntlmssp_state->unicode = False;
 	}
 
-	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm && !ntlmssp_state->use_ntlmv2) {
+	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm && !gensec_ntlmssp_state->use_ntlmv2) {
 		/* other end forcing us to use LM */
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
 		if (neg_flags & NTLMSSP_NEGOTIATE_56) {
-			ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
+			gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
 		}
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
+		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
 	}
 
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
+		gensec_ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
 	
 }
@@ -272,24 +271,24 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
    by the client lanman auth/lanman auth parameters, it isn't too bad.
 */
 
-void ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state) 
+void ntlmssp_weaken_keys(struct gensec_ntlmssp_state *gensec_ntlmssp_state) 
 {
 	/* Key weakening not performed on the master key for NTLM2
 	   and does not occour for NTLM1.  Therefore we only need
 	   to do this for the LM_KEY.  
 	*/
 
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			
-		} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
-			ntlmssp_state->session_key.data[7] = 0xa0;
+		} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
+			gensec_ntlmssp_state->session_key.data[7] = 0xa0;
 		} else { /* forty bits */
-			ntlmssp_state->session_key.data[5] = 0xe5;
-			ntlmssp_state->session_key.data[6] = 0x38;
-			ntlmssp_state->session_key.data[7] = 0xb0;
+			gensec_ntlmssp_state->session_key.data[5] = 0xe5;
+			gensec_ntlmssp_state->session_key.data[6] = 0x38;
+			gensec_ntlmssp_state->session_key.data[7] = 0xb0;
 		}
-		ntlmssp_state->session_key.length = 8;
+		gensec_ntlmssp_state->session_key.length = 8;
 	}
 }
 
@@ -313,7 +312,6 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	gensec_ntlmssp_state->ntlmssp_state = NULL;
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
 	gensec_ntlmssp_state->have_features = 0;
