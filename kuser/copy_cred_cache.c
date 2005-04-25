@@ -96,13 +96,13 @@ parse_ticket_flags(krb5_context context,
 		   const char *flags_string, krb5_ticket_flags *ret_flags)
 {
     TicketFlags ff;
-    int flags = parse_flags(flags_string, TicketFlags_units, 0);
+    int flags = parse_flags(flags_string, asn1_TicketFlags_units(), 0);
     if (flags == -1)	/* XXX */
 	krb5_errx(context, 1, "bad flags specified: \"%s\"", flags_string);
 
     memset(&ff, 0, sizeof(ff));
     ff.proxy = 1;
-    if (parse_flags("proxy", TicketFlags_units, 0) == TicketFlags2int(ff))
+    if (parse_flags("proxy", asn1_TicketFlags_units(), 0) == TicketFlags2int(ff))
 	ret_flags->i = flags;
     else
 	ret_flags->i = bitswap32(flags);
