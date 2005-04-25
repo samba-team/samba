@@ -385,8 +385,6 @@ static NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx, struct ntlmssp_state *
 
 	(*ntlmssp_state)->expected_state = NTLMSSP_INITIAL;
 
-	(*ntlmssp_state)->ref_count = 1;
-
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;

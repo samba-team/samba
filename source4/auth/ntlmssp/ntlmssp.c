@@ -90,19 +90,6 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 }
 
 /**
- *  Store a DATA_BLOB containing an NTLMSSP response, for use later.
- *  This copies the data blob
- */
-
-NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
-				DATA_BLOB response) 
-{
-	ntlmssp_state->stored_response = data_blob_talloc(ntlmssp_state, 
-							  response.data, response.length);
-	return NT_STATUS_OK;
-}
-
-/**
  * Next state function for the wrapped NTLMSSP state machine
  * 
  * @param gensec_security GENSEC state, initialised to NTLMSSP
@@ -115,13 +102,12 @@ NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
 
 static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
 				      TALLOC_CTX *out_mem_ctx, 
-				      const DATA_BLOB in, DATA_BLOB *out) 
+				      const DATA_BLOB input, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	NTSTATUS status;
 
-	DATA_BLOB input;
 	uint32_t ntlmssp_command;
 	int i;
 
@@ -135,15 +121,6 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		/* if the caller doesn't want to manage/own the memory, 
 		   we can put it on our context */
 		out_mem_ctx = ntlmssp_state;
-	}
-
-	if (!in.length && ntlmssp_state->stored_response.length) {
-		input = ntlmssp_state->stored_response;
-		
-		/* we only want to read the stored response once - overwrite it */
-		ntlmssp_state->stored_response = data_blob(NULL, 0);
-	} else {
-		input = in;
 	}
 
 	if (!input.length) {

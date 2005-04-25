@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/crypto/crypto.h"
 
 /* NOTES: 
 
@@ -365,51 +366,46 @@ void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int
 }
 
 /* initialise the arcfour sbox with key */
-void arcfour_init(uint8_t s_box[258], const DATA_BLOB *key) 
+void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key) 
 {
 	int ind;
 	uint8_t j = 0;
-	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (uint8_t)ind;
+	for (ind = 0; ind < sizeof(state->sbox); ind++) {
+		state->sbox[ind] = (uint8_t)ind;
 	}
 	
-	for (ind = 0; ind < 256; ind++) {
+	for (ind = 0; ind < sizeof(state->sbox); ind++) {
 		uint8_t tc;
 		
-		j += (s_box[ind] + key->data[ind%key->length]);
+		j += (state->sbox[ind] + key->data[ind%key->length]);
 		
-		tc = s_box[ind];
-		s_box[ind] = s_box[j];
-		s_box[j] = tc;
+		tc = state->sbox[ind];
+		state->sbox[ind] = state->sbox[j];
+		state->sbox[j] = tc;
 	}
-	s_box[256] = 0; /* i */
-	s_box[257] = 0; /* j */
-	
+	state->index_i = 0;
+	state->index_j = 0;
 }
 
 /* crypt the data with arcfour */
-void arcfour_crypt_sbox(uint8_t s_box[258], uint8_t *data, int len) 
+void arcfour_crypt_sbox(struct arcfour_state *state, uint8_t *data, int len) 
 {
-	uint8_t index_i = s_box[256];
-	uint8_t index_j = s_box[257];
 	int ind;
 	
 	for (ind = 0; ind < len; ind++) {
 		uint8_t tc;
 		uint8_t t;
 
-		index_i++;
-		index_j += s_box[index_i];
+		state->index_i++;
+		state->index_j += state->sbox[state->index_i];
 
-		tc = s_box[index_i];
-		s_box[index_i] = s_box[index_j];
-		s_box[index_j] = tc;
+		tc = state->sbox[state->index_i];
+		state->sbox[state->index_i] = state->sbox[state->index_j];
+		state->sbox[state->index_j] = tc;
 		
-		t = s_box[index_i] + s_box[index_j];
-		data[ind] = data[ind] ^ s_box[t];
+		t = state->sbox[state->index_i] + state->sbox[state->index_j];
+		data[ind] = data[ind] ^ state->sbox[t];
 	}
-	s_box[256] = index_i;
-	s_box[257] = index_j;
 }
 
 /*
@@ -417,9 +413,9 @@ void arcfour_crypt_sbox(uint8_t s_box[258], uint8_t *data, int len)
 */
 void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key) 
 {
-	uint8_t s_box[258];
-	arcfour_init(s_box, key);
-	arcfour_crypt_sbox(s_box, data, len);
+	struct arcfour_state state;
+	arcfour_init(&state, key);
+	arcfour_crypt_sbox(&state, data, len);
 }
 
 /*
