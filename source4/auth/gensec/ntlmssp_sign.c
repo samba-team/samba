@@ -3,7 +3,7 @@
  *  Version 3.0
  *  NTLMSSP Signing routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2001
- *  Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
+ *  Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2005
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,16 +32,10 @@
 /**
  * Some notes on then NTLM2 code:
  *
- * This code works correctly for the sealing part of the problem.  If
- * we disable the check for valid client signatures, then we see that
- * the output of a rpcecho 'sinkdata' at smbd is correct.  We get the
- * valid data, and it is validly decrypted.
- * 
- * This means that the quantity of data passing though the RC4 sealing
- * pad is correct.  
- *
- * This code also correctly matches test values that I have obtained,
- * claiming to be the correct output of NTLM2 signature generation.
+ * NTLM2 is a AEAD system.  This means that the data encrypted is not
+ * all the data that is signed.  In DCE-RPC case, the headers of the
+ * DCE-RPC packets are also signed.  This prevents some of the
+ * fun-and-games one might have by changing them.
  *
  */
 
@@ -128,12 +122,15 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
-			     TALLOC_CTX *sig_mem_ctx, 
-			     const uint8_t *data, size_t length, 
-			     const uint8_t *whole_pdu, size_t pdu_length, 
-			     DATA_BLOB *sig) 
+NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security, 
+					   TALLOC_CTX *sig_mem_ctx, 
+					   const uint8_t *data, size_t length, 
+					   const uint8_t *whole_pdu, size_t pdu_length, 
+					   DATA_BLOB *sig)
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot check sign packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -155,12 +152,15 @@ NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
-			      TALLOC_CTX *sig_mem_ctx, 
-			      const uint8_t *data, size_t length, 
-			      const uint8_t *whole_pdu, size_t pdu_length, 
-			      const DATA_BLOB *sig) 
+NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security, 
+				     TALLOC_CTX *sig_mem_ctx, 
+				     const uint8_t *data, size_t length, 
+				     const uint8_t *whole_pdu, size_t pdu_length, 
+				     const DATA_BLOB *sig)
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
+
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
 
@@ -222,12 +222,14 @@ NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
-			     TALLOC_CTX *sig_mem_ctx, 
-			     uint8_t *data, size_t length,
-			     const uint8_t *whole_pdu, size_t pdu_length, 
-			     DATA_BLOB *sig)
-{	
+NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security, 
+				    TALLOC_CTX *sig_mem_ctx, 
+				    uint8_t *data, size_t length, 
+				    const uint8_t *whole_pdu, size_t pdu_length, 
+				    DATA_BLOB *sig)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	NTSTATUS nt_status;
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
@@ -284,12 +286,17 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
-			       TALLOC_CTX *sig_mem_ctx, 
-			       uint8_t *data, size_t length,
-			       const uint8_t *whole_pdu, size_t pdu_length, 
-			       DATA_BLOB *sig)
+/*
+  wrappers for the ntlmssp_*() functions
+*/
+NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security, 
+				      TALLOC_CTX *sig_mem_ctx, 
+				      uint8_t *data, size_t length, 
+				      const uint8_t *whole_pdu, size_t pdu_length, 
+				      const DATA_BLOB *sig)
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	DATA_BLOB local_sig;
 	NTSTATUS nt_status;
 	if (!ntlmssp_state->session_key.length) {
@@ -327,7 +334,7 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 	} else {
 		arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, data, length);
 		dump_data_pw("ntlmssp clear data\n", data, length);
-		return ntlmssp_check_packet(ntlmssp_state, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+		return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 	}
 }
 
@@ -447,3 +454,102 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 
 	return NT_STATUS_OK;
 }
+
+size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security) 
+{
+	return NTLMSSP_SIG_SIZE;
+}
+
+NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security, 
+			     TALLOC_CTX *sig_mem_ctx, 
+			     const DATA_BLOB *in, 
+			     DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	DATA_BLOB sig;
+	NTSTATUS nt_status;
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+
+		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
+
+	        nt_status = gensec_ntlmssp_seal_packet(gensec_security, sig_mem_ctx, 
+						       out->data + NTLMSSP_SIG_SIZE, 
+						       out->length - NTLMSSP_SIG_SIZE, 
+						       out->data + NTLMSSP_SIG_SIZE, 
+						       out->length - NTLMSSP_SIG_SIZE, 
+						       &sig);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
+		}
+		return nt_status;
+
+	} else if ((gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		   || (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+
+		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
+		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
+
+	        nt_status = gensec_ntlmssp_sign_packet(gensec_security, sig_mem_ctx, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						out->data + NTLMSSP_SIG_SIZE, 
+						out->length - NTLMSSP_SIG_SIZE, 
+						&sig);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
+		}
+		return nt_status;
+
+	} else {
+		*out = *in;
+		return NT_STATUS_OK;
+	}
+}
+
+
+NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security, 
+			       TALLOC_CTX *sig_mem_ctx, 
+			       const DATA_BLOB *in, 
+			       DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	DATA_BLOB sig;
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		if (in->length < NTLMSSP_SIG_SIZE) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		sig.data = in->data;
+		sig.length = NTLMSSP_SIG_SIZE;
+
+		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
+		
+	        return gensec_ntlmssp_unseal_packet(gensec_security, sig_mem_ctx, 
+						    out->data, out->length, 
+						    out->data, out->length, 
+						    &sig);
+						  
+	} else if ((gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
+		   || (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+		if (in->length < NTLMSSP_SIG_SIZE) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		sig.data = in->data;
+		sig.length = NTLMSSP_SIG_SIZE;
+
+		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
+		
+	        return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, 
+					    out->data, out->length, 
+					    out->data, out->length, 
+					    &sig);
+	} else {
+		*out = *in;
+		return NT_STATUS_OK;
+	}
+}
+

@@ -406,7 +406,7 @@ static NTSTATUS gensec_gsskrb5_unseal_packet(struct gensec_security *gensec_secu
 					    TALLOC_CTX *mem_ctx, 
 					    uint8_t *data, size_t length, 
 					    const uint8_t *whole_pdu, size_t pdu_length,
-					    DATA_BLOB *sig)
+					    const DATA_BLOB *sig)
 {
 	struct gensec_gsskrb5_state *gensec_gsskrb5_state = gensec_security->private_data;
 	OM_uint32 maj_stat, min_stat;
