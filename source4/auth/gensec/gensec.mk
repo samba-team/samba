@@ -50,19 +50,6 @@ ADD_OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE gensec_ntlmssp
-[MODULE::gensec_ntlmssp]
-SUBSYSTEM = GENSEC
-INIT_FUNCTION = gensec_ntlmssp_init
-INIT_OBJ_FILES = auth/gensec/ntlmssp.o
-ADD_OBJ_FILES = \
-		auth/gensec/ntlmssp_parse.o \
-		auth/gensec/ntlmssp_sign.o
-REQUIRED_SUBSYSTEMS = AUTH
-# End MODULE gensec_ntlmssp
-################################################
-
-################################################
 # Start MODULE gensec_schannel
 [MODULE::gensec_schannel]
 SUBSYSTEM = GENSEC
@@ -71,7 +58,7 @@ INIT_OBJ_FILES = auth/gensec/schannel.o
 ADD_OBJ_FILES = \
 		auth/gensec/schannel_sign.o
 REQUIRED_SUBSYSTEMS = AUTH SCHANNELDB
-# End MODULE gensec_ntlmssp
+# End MODULE gensec_schannel
 ################################################
 
 ################################################

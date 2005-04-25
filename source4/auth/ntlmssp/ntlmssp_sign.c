@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
