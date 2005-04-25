@@ -1,7 +1,9 @@
-# $OpenLDAP: pkg/ldap/servers/slapd/schema/krb5-kdc.schema,v 1.1.2.1 2000/09/05 18:28:34 kurt Exp $
-# $Id$
 # Definitions for a Kerberos V KDC schema
-
+#
+# $Id$
+#
+# This version is compatible with OpenLDAP 1.8
+#
 # OID Base is iso(1) org(3) dod(6) internet(1) private(4) enterprise(1) padl(5322) kdcSchema(10)
 #
 # Syntaxes are under 1.3.6.1.4.1.5322.10.0
