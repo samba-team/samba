@@ -247,10 +247,15 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
-	}
-	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
+	} else if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+		/* Default features */
+	} else {
+		DEBUG(2,("auth_level %d not supported in DCE/RPC authentication\n", 
+			 auth_level));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return gensec_start_mech(gensec_security);

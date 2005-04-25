@@ -188,3 +188,11 @@ struct ntlmssp_state
 	
 };
 
+struct gensec_ntlmssp_state {
+	struct auth_context *auth_context;
+	struct auth_serversupplied_info *server_info;
+	struct ntlmssp_state *ntlmssp_state;
+	uint32_t have_features;
+};
+
+
