@@ -55,7 +55,7 @@ static int ldb_delete_recursive(struct ldb_context *ldb, const char *dn)
 		}
 	}
 
-	ldb_search_free(ldb, res);
+	talloc_free(res);
 
 	if (total == 0) {
 		return -1;

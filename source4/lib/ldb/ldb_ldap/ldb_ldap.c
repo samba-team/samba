@@ -126,16 +126,6 @@ static int lldb_delete(struct ldb_module *module, const char *dn)
 }
 
 /*
-  free a search result
-*/
-static int lldb_search_free(struct ldb_module *module, struct ldb_message **res)
-{
-	talloc_free(res);
-	return 0;
-}
-
-
-/*
   add a single set of ldap message values to a ldb_message
 */
 static int lldb_add_msg_attr(struct ldb_context *ldb,
@@ -290,7 +280,7 @@ static int lldb_search(struct ldb_module *module, const char *base,
 	return msg_count;
 
 failed:
-	if (*res) lldb_search_free(module, *res);
+	if (*res) talloc_free(*res);
 	return -1;
 }
 
@@ -459,7 +449,6 @@ static const char *lldb_errstring(struct ldb_module *module)
 static const struct ldb_module_ops lldb_ops = {
 	"ldap",
 	lldb_search,
-	lldb_search_free,
 	lldb_add,
 	lldb_modify,
 	lldb_delete,

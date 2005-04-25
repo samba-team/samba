@@ -248,7 +248,7 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 		}
 
 		if (ret > 0) {
-			ldb_search_free(ldb, res);
+			talloc_free(res);
 		}
 
 		printf("testing uid %d/%d - %d  \r", i, uid, ret);
