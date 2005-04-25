@@ -26,7 +26,6 @@
 BOOL torture_ntlmssp_self_check(void) 
 {
 	struct gensec_security *gensec_security;
-	struct ntlmssp_state *ntlmssp_state;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	DATA_BLOB data;
 	DATA_BLOB sig, expected_sig;
@@ -47,17 +46,16 @@ BOOL torture_ntlmssp_self_check(void)
 	}
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
-	ntlmssp_state->session_key = strhex_to_data_blob("0102030405060708090a0b0c0d0e0f00");
+	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405060708090a0b0c0d0e0f00");
 	dump_data_pw("NTLMSSP session key: \n", 
-		     ntlmssp_state->session_key.data,  
-		     ntlmssp_state->session_key.length);
+		     gensec_ntlmssp_state->session_key.data,  
+		     gensec_ntlmssp_state->session_key.length);
 
-	ntlmssp_state->server_use_session_keys = True;
-	ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
+	gensec_ntlmssp_state->server_use_session_keys = True;
+	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
 		printf("Failed to sign_init: %s\n", nt_errstr(status));
 		return False;
 	}
@@ -97,17 +95,16 @@ BOOL torture_ntlmssp_self_check(void)
 	}
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 
-	ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
+	gensec_ntlmssp_state->session_key = strhex_to_data_blob("0102030405e538b0");
 	dump_data_pw("NTLMSSP session key: \n", 
-		     ntlmssp_state->session_key.data,  
-		     ntlmssp_state->session_key.length);
+		     gensec_ntlmssp_state->session_key.data,  
+		     gensec_ntlmssp_state->session_key.length);
 
-	ntlmssp_state->server_use_session_keys = True;
-	ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
+	gensec_ntlmssp_state->server_use_session_keys = True;
+	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
 		printf("Failed to sign_init: %s\n", nt_errstr(status));
 		return False;
 	}
