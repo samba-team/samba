@@ -65,9 +65,12 @@ TOP:
 		}
 		cp2 = line;
 		while (*cp1 != '\0') {
+		      size_t len;
 		      switch(*cp1) {
 		   	    case '\\':
-				 *cp2++ = *++cp1;
+				if (line + sizeof(line) - 2 < cp2)
+				    goto out;
+				*cp2++ = *++cp1;
 				 break;
 			    case '$':
 				 if (isdigit((unsigned char)*(cp1+1))) {
@@ -77,7 +80,9 @@ TOP:
 				    }
 				    cp1--;
 				    if (argc - 2 >= j) {
-					strcpy(cp2, argv[j+1]);
+					len = sizeof(line) - (cp2 - line) - 1;
+					if (strlcpy(cp2, argv[j+1], len) >= len)
+					    goto out;
 					cp2 += strlen(argv[j+1]);
 				    }
 				    break;
@@ -86,13 +91,17 @@ TOP:
 					loopflg = 1;
 					cp1++;
 					if (count < argc) {
-					   strcpy(cp2, argv[count]);
+					   len = sizeof(line) - (cp2 - line) - 1;
+					   if (strlcpy(cp2, argv[count], len) >= len)
+					       goto out;
 					   cp2 += strlen(argv[count]);
 					}
 					break;
 				}
 				/* intentional drop through */
 			    default:
+				if (line + sizeof(line) - 2 < cp2)
+				    goto out;
 				*cp2++ = *cp1;
 				break;
 		      }
@@ -100,6 +109,7 @@ TOP:
 			 cp1++;
 		      }
 		}
+	out:
 		*cp2 = '\0';
 		makeargv();
 		c = getcmd(margv[0]);
