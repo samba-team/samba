@@ -67,6 +67,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	uint16 rap_jobid;
 	TDB_DATA data, key;
 	struct rap_jobid_key jinfo;
+	uint8 buf[2];
 
 	DEBUG(10,("pjobid_to_rap: called.\n"));
 
@@ -96,7 +97,8 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	rap_jobid = ++next_rap_jobid;
 	if (rap_jobid == 0)
 		rap_jobid = ++next_rap_jobid;
-	data.dptr = (char *)&rap_jobid;
+	SSVAL(buf,0,rap_jobid);
+	data.dptr = buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_store(rap_tdb, key, data, TDB_REPLACE);
 	tdb_store(rap_tdb, data, key, TDB_REPLACE);
@@ -109,13 +111,15 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 BOOL rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 {
 	TDB_DATA data, key;
+	uint8 buf[2];
 
 	DEBUG(10,("rap_to_pjobid called.\n"));
 
 	if (!rap_tdb)
 		return False;
 
-	key.dptr = (char *)&rap_jobid;
+	SSVAL(buf,0,rap_jobid);
+	key.dptr = buf;
 	key.dsize = sizeof(rap_jobid);
 	data = tdb_fetch(rap_tdb, key);
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) ) 
@@ -140,6 +144,7 @@ static void rap_jobid_delete(const char* sharename, uint32 jobid)
 	TDB_DATA key, data;
 	uint16 rap_jobid;
 	struct rap_jobid_key jinfo;
+	uint8 buf[2];
 
 	DEBUG(10,("rap_jobid_delete: called.\n"));
 
@@ -165,7 +170,8 @@ static void rap_jobid_delete(const char* sharename, uint32 jobid)
 
 	rap_jobid = SVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
-	data.dptr = (char *)&rap_jobid;
+	SSVAL(buf,0,rap_jobid);
+	data.dptr=buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_delete(rap_tdb, key);
 	tdb_delete(rap_tdb, data);
