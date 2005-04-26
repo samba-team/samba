@@ -84,7 +84,7 @@ bin/ldbtest: tools/ldbtest.o $(LIBS)
 .yo.3: 
 	echo Creating $@ from $<
 	-$(YODL2MAN) -o $@ `dirname $<`/`basename $< .yo` || rm -f $@
-	
+
 manpages: $(patsubst %.yo,%.3,$(wildcard man/man3/*.yo))
 
 clean:
