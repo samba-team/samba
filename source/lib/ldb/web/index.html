@@ -58,16 +58,20 @@ bugzilla</a> bug tracking system.
 <h2>Download</h2>
 
 You can download the latest release either via rsync or anonymous
-svn. To fetch via svn use the following command:
+svn. To fetch via svn use the following commands:
 
 <pre>
   svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/ldb ldb
+  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/tdb tdb
+  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc talloc
 </pre>
 
-To fetch via rsync use this command:
+To fetch via rsync use these commands:
 
 <pre>
   rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/ldb .
+  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/tdb .
+  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
 </pre>
 
 <hr>
