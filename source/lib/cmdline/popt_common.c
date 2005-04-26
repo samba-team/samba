@@ -197,7 +197,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 			cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
 
-			if ((lp=strchr_m(arg,'%'))) {
+			if (cmdline_credentials->password && (lp=strchr_m(arg,'%'))) {
 				memset(lp,0,strlen(cmdline_credentials->password));
 			}
 		}
