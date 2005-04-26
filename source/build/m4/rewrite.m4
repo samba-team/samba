@@ -734,7 +734,7 @@ esac
 AC_SUBST(SMBD_EXTRA_OBJS)
 AC_SUBST(SMBD_EXTRA_LIBS)
 
-SMB_INCLUDE_M4(libads/config.m4)
+SMB_INCLUDE_M4(lib/ldb/ldap.m4)
 
 ###############################################
 # test for where we get crypt() from
