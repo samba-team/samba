@@ -4,4 +4,4 @@ AC_INIT(talloc.h)
 AC_PROG_CC
 AC_PATH_PROG(GCOV,gcov)
 sinclude(config.m4)
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile talloc.pc)
