@@ -13,8 +13,6 @@ if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
 
-AC_VALIDATE_CACHE_SYSTEM_TYPE
-
 SMB_INFO_BUILD_ENV=""
 
 sinclude(build/smb_build/check_path.m4)
