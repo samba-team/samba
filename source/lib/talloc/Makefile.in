@@ -1,0 +1,20 @@
+#OPT = -g -ftest-coverage -fprofile-arcs 
+#LIBS = -lgcov
+OPT = -O
+
+CFLAGS = $(OPT) -Wall
+
+LIBOBJ = talloc.o
+
+all: libtalloc.a testsuite 
+
+testsuite: $(LIBOBJ) testsuite.o
+	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
+
+libtalloc.a: libtalloc.a($(LIBOBJ))
+
+clean:
+	rm -f *~ *.o testsuite *.gc??
+
+gcov:
+	gcov talloc.c
