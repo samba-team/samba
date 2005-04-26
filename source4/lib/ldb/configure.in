@@ -1,9 +1,9 @@
 AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_INIT(include/ldb.h)
+AC_PROG_CC
 AC_FUNC_MMAP
 AC_PATH_PROG(YODL2MAN,yodl2man)
 AC_PATH_PROG(GCOV,gcov)
-AC_PROG_CC
 sinclude(config.m4)
 AC_OUTPUT(Makefile)
