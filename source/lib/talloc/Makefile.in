@@ -1,6 +1,10 @@
 #OPT = -g -ftest-coverage -fprofile-arcs 
 #LIBS = -lgcov
 OPT = -O
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
 
 CFLAGS = $(OPT) -Wall
 
@@ -12,6 +16,11 @@ testsuite: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
 
 libtalloc.a: libtalloc.a($(LIBOBJ))
+
+install:
+	cp libtalloc.a $(libdir)
+	cp talloc.h $(includedir)
+	cp talloc.pc $(libdir)/pkgconfig
 
 clean:
 	rm -f *~ *.o testsuite *.gc??
