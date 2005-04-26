@@ -911,7 +911,8 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 
 	q_u->user_switch = 1;
 	
-	q_u->user_ctr.level           = 1;
+	q_u->user_ctr.level                 = 1;
+	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
 	q_u->user_ctr.user.user1->size      = strlen(clientname) + strlen(user_name) + 10;
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2;
