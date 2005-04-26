@@ -177,6 +177,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	password = cli_credentials_get_password(gensec_security->credentials);
 
 	if (!password) {
+		static const uint8_t zero[1];
 		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
 
@@ -184,6 +185,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
 		lm_session_key = data_blob_talloc(gensec_ntlmssp_state, zeros, 16);
 
+		lm_response = data_blob_talloc(gensec_ntlmssp_state, zero, 1);
+		nt_response = data_blob(NULL, 0);
+		
 		/* not doing NLTM2 without a password */
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else if (gensec_ntlmssp_state->use_ntlmv2) {
