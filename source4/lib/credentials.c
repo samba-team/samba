@@ -363,6 +363,11 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 {
 	char *uname, *p;
 
+	if (strcmp("%",data) == 0) {
+		cli_credentials_set_anonymous(credentials);
+		return;
+	}
+
 	uname = talloc_strdup(credentials, data); 
 	if ((p = strchr_m(uname,'%'))) {
 		*p = 0;
