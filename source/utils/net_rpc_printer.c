@@ -1960,6 +1960,12 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 
 		}
 
+		if (strlen(drivername) == 0) {
+			DEBUGADD(1,("Did not get driver for printer %s\n",
+				    printername));
+			goto done;
+		}
+
 		/* setdriver dst */
 		init_unistr(&info_ctr_dst.printers_2->drivername, drivername);
 		
@@ -2297,28 +2303,34 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 			DEBUG(3,("republished printer\n"));
 		}
 
-		/* copy devmode (info level 2) */
-		ctr_dst.printers_2->devmode = TALLOC_MEMDUP(mem_ctx, 
-			ctr_enum.printers_2[i].devmode, sizeof(DEVICEMODE));
+		if (ctr_enum.printers_2[i].devmode != NULL) {
 
-		/* do not copy security descriptor (we have another command for that) */
-		ctr_dst.printers_2->secdesc = NULL;
+			/* copy devmode (info level 2) */
+			ctr_dst.printers_2->devmode =
+				TALLOC_MEMDUP(mem_ctx,
+					      ctr_enum.printers_2[i].devmode,
+					      sizeof(DEVICEMODE));
+
+			/* do not copy security descriptor (we have another
+			 * command for that) */
+			ctr_dst.printers_2->secdesc = NULL;
 
 #if 0
-		if (asprintf(&devicename, "\\\\%s\\%s", longname, printername) < 0) {
-			nt_status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
+			if (asprintf(&devicename, "\\\\%s\\%s", longname,
+				     printername) < 0) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 
-		init_unistr(&ctr_dst.printers_2->devmode->devicename, devicename); 
+			init_unistr(&ctr_dst.printers_2->devmode->devicename,
+				    devicename); 
 #endif
-		if (!net_spoolss_setprinter(cli_dst, mem_ctx, &hnd_dst, 
-						level, &ctr_dst)) 
-			goto done;
+			if (!net_spoolss_setprinter(cli_dst, mem_ctx, &hnd_dst,
+						    level, &ctr_dst)) 
+				goto done;
 		
-		DEBUGADD(1,("\tSetPrinter of DEVICEMODE succeeded\n"));
-
-
+			DEBUGADD(1,("\tSetPrinter of DEVICEMODE succeeded\n"));
+		}
 
 		/* STEP 2: COPY REGISTRY VALUES */
 	
