@@ -1,6 +1,11 @@
 CC = @CC@
 GCOV = @GCOV@
 YODL2MAN = @YODL2MAN@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
+bindir = @bindir@
 
 ifeq ($(WITH_LDAP),1)
 OPENLDAP_PREFIX=/usr
@@ -106,6 +111,12 @@ test-schema:
 	tests/test-schema.sh
 
 test: test-tdb test-ldap test-schema
+
+install: all
+	cp include/ldb.h $(includedir)
+	cp $(LDB_LIB) $(libdir)
+	cp $(BINS) $(bindir)
+	cp ldb.pc $(libdir)/pkgconfig
 
 gcov:
 	$(GCOV) -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
