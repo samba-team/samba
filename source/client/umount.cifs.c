@@ -34,9 +34,10 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
+#include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "2"
+#define UNMOUNT_CIFS_VERSION_MINOR "3"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
 #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
@@ -48,6 +49,13 @@
 
 #ifndef MNT_EXPIRE
 #define MNT_EXPIRE 0x04
+#endif
+
+#ifndef MOUNTED_LOCK
+#define MOUNTED_LOCK    "/etc/mtab~"
+#endif
+#ifndef MOUNTED_TEMP
+#define MOUNTED_TEMP    "/etc/mtab.tmp"
 #endif
 
 #define CIFS_IOC_CHECKUMOUNT _IO(0xCF, 2)
@@ -115,6 +123,73 @@ static int umount_check_perm(char * dir)
 	return rc;
 }
 
+int remove_from_mtab(char * mountpoint)
+{
+	int rc = 0;
+	FILE * org_fd;
+	FILE * new_fd;
+	struct mntent * mount_entry;
+
+	/* Do we need to check if it is a symlink to e.g. /proc/mounts
+	in which case we probably do not want to update it? */
+
+	/* Do we first need to check if it is writable? */ 
+
+	/* BB lock_mtab - the smbumount and mount-utils package appear to lock 
+	in a different incompat. way, and it seems that mount-utils have
+	changed the way they lock a few times. We should fix this someday
+	or at least find out how the mount-utils are supposed to handle this */
+
+	if(verboseflg)
+		printf("attempting to remove from mtab\n");
+
+	org_fd = setmntent(MOUNTED, "r");
+
+	if(org_fd == NULL) {
+		printf("Can not open %s\n",MOUNTED);
+		return -EIO;
+	}
+
+	new_fd = setmntent(MOUNTED_TEMP,"w");
+	if(new_fd == NULL) {
+		printf("Can not open temp file %s", MOUNTED_TEMP);
+		endmntent(org_fd);
+		return -EIO;
+	}
+
+	/* BB fix so we only remove the last entry that matches BB */
+	while((mount_entry = getmntent(org_fd)) != NULL) {
+		if(strcmp(mount_entry->mnt_dir, mountpoint) != 0) {
+			addmntent(new_fd, mount_entry);
+		} else {
+			if(verboseflg)
+				printf("entry not copied (removed)\n");
+		}
+
+	}
+
+	if(verboseflg)
+		printf("done updating tmp file\n");
+	rc = fchmod (fileno (new_fd), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	if(rc < 0) {
+		printf("error %s changing mode of %s\n", strerror(errno),
+			MOUNTED_TEMP);
+	}
+	endmntent(new_fd);
+
+	rc = rename(MOUNTED_TEMP, MOUNTED);
+
+	if(rc < 0) {
+		printf("failure %s renaming %s to %s\n",strerror(errno),
+			MOUNTED_TEMP, MOUNTED);
+		return -EIO;
+	}
+
+	/* BB unlock_mtab - unlink(MOUNTED_LOCK) */
+	
+	return rc;
+}
+
 int main(int argc, char ** argv)
 {
 	int c;
@@ -122,10 +197,8 @@ int main(int argc, char ** argv)
 	int flags = 0;
 	int nomtab = 0;
 	int retry_remount = 0;
-	struct mntent mountent;
 	struct statfs statbuf;
 	char * mountpoint;
-	FILE * pmntfile;
 
 	if(argc && argv) {
 		thisprogram = argv[0];
@@ -238,48 +311,10 @@ int main(int argc, char ** argv)
 		printf("Refer to the umount.cifs(8) manual page (e.g.man 8 umount.cifs)\n");
 		return -1;
 	} else {
-		pmntfile = setmntent(MOUNTED, "a+");
-		if(pmntfile) {
-/*			mountent.mnt_fsname = share_name;
-			mountent.mnt_dir = mountpoint; 
-			mountent.mnt_type = "cifs"; 
-			mountent.mnt_opts = malloc(220);
-			if(mountent.mnt_opts) {
-				char * mount_user = getusername();
-				memset(mountent.mnt_opts,0,200);
-				if(flags & MS_RDONLY)
-					strcat(mountent.mnt_opts,"ro");
-				else
-					strcat(mountent.mnt_opts,"rw");
-				if(flags & MS_MANDLOCK)
-					strcat(mountent.mnt_opts,",mand");
-				else
-					strcat(mountent.mnt_opts,",nomand");
-				if(flags & MS_NOEXEC)
-					strcat(mountent.mnt_opts,",noexec");
-				if(flags & MS_NOSUID)
-					strcat(mountent.mnt_opts,",nosuid");
-				if(flags & MS_NODEV)
-					strcat(mountent.mnt_opts,",nodev");
-				if(flags & MS_SYNCHRONOUS)
-					strcat(mountent.mnt_opts,",synch");
-				if(mount_user) {
-					if(getuid() != 0) {
-						strcat(mountent.mnt_opts,",user=");
-						strcat(mountent.mnt_opts,mount_user);
-					}
-					free(mount_user);
-				}
-			}
-			mountent.mnt_freq = 0;
-			mountent.mnt_passno = 0;
-			rc = addmntent(pmntfile,&mountent);
-			endmntent(pmntfile);
-			if(mountent.mnt_opts)
-				free(mountent.mnt_opts);*/
-		} else {
-		    printf("could not update mount table\n");
-		}
+		if(verboseflg)
+			printf("umount2 succeeded\n");
+		if(nomtab == 0)
+			remove_from_mtab(mountpoint);
 	}
 
 	return 0;
