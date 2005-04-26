@@ -1591,7 +1591,7 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 		}
 
 		levels = trace_back_stack(0, addrs, names,
-				BACKTRACE_STACK_SIZE, NAMESIZE);
+				BACKTRACE_STACK_SIZE, NAMESIZE - 1);
 
 		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
 		for (i = 0; i < levels; i++) {
