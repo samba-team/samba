@@ -15,6 +15,13 @@ if test "$enable_pthread_support" = maybe; then
 case "$host" in 
 *-*-solaris2*)
 	enable_pthread_support=yes
+	if test "$GCC" = yes; then
+		PTHREADS_CFLAGS=-pthreads
+		PTHREADS_LIBS=-pthreads
+	else
+		PTHREADS_CFLAGS=-mt
+		PTHREADS_LIBS=-mt
+	fi
 	;;
 *-*-netbsd*)
 	enable_pthread_support="if running netbsd 1.6T or newer"
@@ -24,10 +31,18 @@ case "$host" in
 *-*-freebsd5*)
 	enable_pthread_support=yes
 	;;
-*-*-linux2[4-9]*)
-	enable_pthread_support=yes
+*-*-linux* | *-*-linux-gnu)
+	case `uname -r` in
+	2.*)
+		enable_pthread_support=yes
+		PTHREADS_CFLAGS=-pthread
+		;;
+	esac
 	;;
 *-*-aix*)
+	enable_pthread_support=yes
+	;;
+mips-sgi-irix6.[[5-9]])  # maybe works for earlier versions too
 	enable_pthread_support=yes
 	;;
 *)
