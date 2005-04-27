@@ -68,8 +68,8 @@ kernel log.
 
 		<listitem><para>specifies the username to connect as. If
 				this is not given, then the environment variable <emphasis>USER</emphasis> is used. This option can also take the
-form "user%password" or "user/workgroup" or
-"user/workgroup%password" to allow the password and workgroup
+form "user%password" or "workgroup/user" or
+"workgroup/user%password" to allow the password and workgroup
 to be specified as part of the username.
 		</para>
 
@@ -149,6 +149,15 @@ port 445 is tried and if no response then port 139 is tried.
 		</para></listitem>
 	</varlistentry>
 
+        <varlistentry>
+                <term>netbiosname=<replaceable>arg</replaceable></term>
+
+                <listitem><para>When mounting to servers via port 139, specifies the RFC1001
+                source name to use to represent the client netbios machine
+                name when doing the RFC1001 netbios session initialize.
+		</para></listitem>
+        </varlistentry>
+
 	<varlistentry>
 		<term>file_mode=<replaceable>arg</replaceable></term>
 
@@ -207,6 +216,146 @@ port 445 is tried and if no response then port 139 is tried.
 		<listitem><para>mount read-write</para></listitem>
 	</varlistentry>
 
+        <varlistentry>
+                <term>setuids</term>
+                <listitem><para>If the CIFS Unix extensions are negotiated with the server
+                the client will attempt to set the effective uid and gid of
+                the local process on newly created files, directories, and
+                devices (create, mkdir, mknod).</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>nosetuids</term>
+                <listitem><para>The client will not attempt to set the uid and gid on
+                on newly created files, directories, and devices (create,
+                mkdir, mknod) which will result in the server setting the
+                uid and gid to the default (usually the server uid of the
+                usern who mounted the share).  Letting the server (rather than
+                the client) set the uid and gid is the default. This
+                parameter has no effect if the CIFS Unix Extensions are not
+                negotiated.</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>perm</term>
+                <listitem><para>Client does permission checks (vfs_permission check of uid
+                and gid of the file against the mode and desired operation),
+                Note that this is in addition to the normal ACL check on the
+                target machine done by the server software.
+                Client permission checking is enabled by default.</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>noperm</term>
+                <listitem><para>Client does not do permission checks.  This can expose
+                files on this mount to access by other users on the local
+                client system. It is typically only needed when the server
+                supports the CIFS Unix Extensions but the UIDs/GIDs on the
+                client and server system do not match closely enough to allow
+                access by the user doing the mount.
+                Note that this does not affect the normal ACL check on the
+                target machine done by the server software (of the server
+                ACL against the user name provided at mount time).</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>directio</term>
+                <listitem><para>Do not do inode data caching on files opened on this mount.
+                This precludes mmaping files on this mount. In some cases
+                with fast networks and little or no caching benefits on the
+                client (e.g. when the application is doing large sequential
+                reads bigger than page size without rereading the same data)
+                this can provide better performance than the default
+                behavior which caches reads (reaadahead) and writes
+                (writebehind) through the local Linux client pagecache
+                if oplock (caching token) is granted and held. Note that
+                direct allows write operations larger than page size
+                to be sent to the server. On some kernels this requires the cifs.ko module
+		to be built with the CIFS_EXPERIMENTAL configure option.</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>mapchars</term>
+                <listitem><para>Translate six of the seven reserved characters (not backslash)
+                        *?<>|:
+                to the remap range (above 0xF000), which also
+                allows the CIFS client to recognize files created with
+                such characters by Windows's POSIX emulation. This can
+                also be useful when mounting to most versions of Samba
+                (which also forbids creating and opening files
+                whose names contain any of these seven characters).
+                This has no effect if the server does not support
+                Unicode on the wire.<para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>nomapchars</term>
+                <listitem><para>Do not translate any of these seven characters (default)</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>intr</term>
+                <listitem><para>currently unimplemented</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>nointr</term>
+                <listitem><para>(default) currently unimplemented </para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>hard</term>
+                <listitem><para>The  program  accessing  a file on the cifs mounted file system will hang when the
+              server crashes.</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>soft</term>
+                <listitem><para>(default) The  program  accessing  a file on the cifs mounted file system will not hang when the server crashes and will return errors to the user application.</para></listitem>
+        </varlistentry>
+
+
+	<varlisstentry>
+                <term>noacl</term>
+                <listitem><para>Do not allow POSIX ACL operations even if server would support them.</para><para>
+		The CIFS client can get and set POSIX ACLs (getfacl, setfacl) to Samba servers
+		version 3.10 and later.  Setting POSIX ACLs requires enabling both XATTR and
+		then POSIX support in the CIFS configuration options when building the cifs
+		module.  POSIX ACL support can be disabled on a per mount basic by specifying
+		"noacl" on mount.</para>
+	</listitem>
+	</varlistentry>
+
+        <varlistentry>
+                <term>serverino</term>
+                <listitem><para>Use servers inode numbers instead of generating automatically
+                incrementing inode numbers on the client.  Although this will
+                make it easier to spot hardlinked files (as they will have
+                the same inode numbers) and inode numbers may be persistent,
+                note that the server does not guarantee that the inode numbers
+                are unique if multiple server side mounts are exported under a
+                single share (since inode numbers on the servers might not
+                be unique if multiple filesystems are mounted under the same
+                shared higher level directory).  Note that this requires that
+                the server support the CIFS Unix Extensions as other servers
+                do not return a unique IndexNumber on SMB FindFirst (most
+                servers return zero as the IndexNumber).  Parameter has no
+                effect to Windows servers and others which do not support the
+                CIFS Unix Extensions.
+		</para></listitem>
+        </varlistentry>
+
+        <varlistentry>
+                <term>noserverino</term>
+                <listitem><para>client generates inode numbers (rather than using the actual one
+                from the server) by default.
+        </varlistentry>
+
+        <varlistentry>
+                <term>nouser_xattr</term>
+                <listitem><para>(default) Do not allow getfattr/setfattr to get/set xattrs, even if server would support it otherwise. </para></listitem>
+        </varlistentry>
+
 	<varlistentry>
 		<term>rsize</term>
 		<listitem><para>default network read size</para></listitem>
@@ -264,9 +413,8 @@ For more information see the kernel file <filename>fs/cifs/README</filename>.
 <refsect1>
 	<title>BUGS</title>
 
-	<para>Passwords and other options containing , can not be handled.
-For passwords an alternative way of passing them is in a credentials
-file or in the PASSWD environment.</para>
+	<para>Mounting using the CIFS URL specification is currently not supported.
+	</para>
 
 	<para>The credentials file does not handle usernames or passwords with
 		leading space.</para>
@@ -285,8 +433,8 @@ server type you are trying to contact.
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 1.0.6 of 
-	the cifs vfs filesystem (roughly Linux kernel 2.6.6).</para>
+	<para>This man page is correct for version 1.34 of 
+	the cifs vfs filesystem (roughly Linux kernel 2.6.12).</para>
 </refsect1>
 
 <refsect1>
@@ -295,6 +443,9 @@ server type you are trying to contact.
 	Documentation/filesystems/cifs.txt and fs/cifs/README in the linux kernel
 	source tree may contain additional options and information.
 </para>
+        <para><citerefentry><refentrytitle>umount.cifs</refentrytitle>
+        <manvolnum>8</manvolnum></citerefentry></para>
+
 </refsect1>
 
 <refsect1>
