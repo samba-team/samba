@@ -83,7 +83,7 @@ static void mount_cifs_usage(void)
 	printf(" to a local directory.\n\nOptions:\n");
 	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
 	printf("\nLess commonly used options:");
-	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio");
+	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio,mapchars,nomapchars");
 	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions\n\t(e.g. most Samba versions):");
 	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>");
 	printf("\n\nRarely used options:");
