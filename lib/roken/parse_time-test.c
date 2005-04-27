@@ -64,15 +64,21 @@ main(int argc, char **argv)
     for (i = 0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
 	char *buf;
 
+	sz = unparse_time(tests[i].val, NULL, 0);
+	if  (sz != tests[i].size)
+	    errx(1, "sz (%lu) != tests[%d].size (%lu)",
+		 (unsigned long)sz, i, (unsigned long)tests[i].size);
+	
 	for (buf_sz = 0; buf_sz < tests[i].size + 2; buf_sz++) {
 
 	    buf = rk_test_mem_alloc(RK_TM_OVERRUN, "overrun",
 				    NULL, buf_sz);
 	    sz = unparse_time(tests[i].val, buf, buf_sz);
 	    if (sz != tests[i].size)
-		errx(1, "sz (%lu) != tests[%d].size (%lu)",
-		     (unsigned long)buf_sz, i, 
-		     (unsigned long)tests[i].size);
+		errx(1, "sz (%lu) != tests[%d].size (%lu) with in size %lu",
+		     (unsigned long)sz, i, 
+		     (unsigned long)tests[i].size,
+		     (unsigned long)buf_sz);
 	    if (buf_sz > 0 && memcmp(buf, tests[i].str, buf_sz - 1) != 0)
 		errx(1, "test %i wrong result %s vs %s", i, buf, tests[i].str);
 	    rk_test_mem_free("overrun");
@@ -81,8 +87,10 @@ main(int argc, char **argv)
 				    NULL, tests[i].size);
 	    sz = unparse_time(tests[i].val, buf, buf_sz);
 	    if (sz != tests[i].size)
-		errx(1, "sz (%lu) != tests[%d].size (%lu)",
-		     (unsigned long)sz, i, (unsigned long)tests[i].size);
+		errx(1, "sz (%lu) != tests[%d].size (%lu) with insize %lu",
+		     (unsigned long)sz, i,
+		     (unsigned long)tests[i].size,
+		     (unsigned long)buf_sz);
 	    if (buf_sz > 0 && strncmp(buf, tests[i].str, buf_sz - 1) != 0)
 		errx(1, "test %i wrong result %s vs %s", i, buf, tests[i].str);
 	    rk_test_mem_free("underrun");
