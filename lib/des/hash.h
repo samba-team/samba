@@ -39,6 +39,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
