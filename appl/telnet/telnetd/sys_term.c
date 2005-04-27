@@ -408,6 +408,7 @@ int getpty(int *ptynum)
 			  "/dev/ptym/clone", 0 };
 	
 	char **q;
+	int p;
 	for(q=clone; *q; q++){
 	    p=open(*q, O_RDWR);
 	    if(p >= 0){
