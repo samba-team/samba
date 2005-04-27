@@ -1,3 +1,13 @@
+2005-04-27  Dave Love <fx@gnu.org>
+
+	* sha.c: Include hash.h first.
+	
+	* md4.c: Include hash.h first.
+	
+	* md5.c: Include hash.h first.
+	
+	* hash.h: Include krb5-types.h
+	
 2005-04-26  Dave Love  <fx@gnu.org>
 
 	* mdtest.c: Maybe include stdlib.h
