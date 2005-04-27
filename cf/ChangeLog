@@ -1,3 +1,13 @@
+2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pthreads.m4: Add support for Solaris, Irix, and modern
+	Linux. From David Love <fx@gnu.org>
+
+2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: limit the units functions to
+	asn1_[A-Za-z0-9]*_units$
+
 2005-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: this lib include com_err, add -com_err to
