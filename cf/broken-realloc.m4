@@ -20,7 +20,6 @@ if test "$ac_cv_func_realloc_broken" = yes ; then
 	AC_DEFINE(BROKEN_REALLOC, 1, [Define if realloc(NULL) doesn't work.])
 fi
 AH_BOTTOM([#ifdef BROKEN_REALLOC
-#define realloc(X, Y) isoc_realloc((X), (Y))
-#define isoc_realloc(X, Y) ((X) ? realloc((X), (Y)) : malloc(Y))
+#define realloc(X, Y) rk_realloc((X), (Y))
 #endif])
 ])
