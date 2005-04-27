@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 				break;
 			}
 
-			(char*)dirsize += dirptr->dirlen;
+			dirsize += dirptr->dirlen;
 
 		}
 		
