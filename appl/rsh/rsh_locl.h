@@ -160,6 +160,7 @@ extern des_cblock iv;
 #endif
 
 #define RSH_BUFSIZ (5 * 1024) /* MIT kcmd can't handle larger buffers */
+#define RSHD_BUFSIZ (16 * 1024) /* Old maxize for Heimdal 0.4 rsh */
 
 #define PATH_RSH BINDIR "/rsh"
 
