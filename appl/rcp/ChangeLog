@@ -1,3 +1,7 @@
+2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rcp_locl.h: use BINDIR instead of "/usr/bin/ with _PATH_RSH
+
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* util.c: use unsigned char * to make sure its not negative when
