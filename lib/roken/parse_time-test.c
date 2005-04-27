@@ -81,6 +81,8 @@ main(int argc, char **argv)
 		     (unsigned long)buf_sz);
 	    if (buf_sz > 0 && memcmp(buf, tests[i].str, buf_sz - 1) != 0)
 		errx(1, "test %i wrong result %s vs %s", i, buf, tests[i].str);
+	    if (buf_sz > 0 && buf[buf_sz - 1] != '\0')
+		errx(1, "test %i not zero terminated", i);
 	    rk_test_mem_free("overrun");
 
 	    buf = rk_test_mem_alloc(RK_TM_UNDERRUN, "underrun", 
@@ -93,6 +95,8 @@ main(int argc, char **argv)
 		     (unsigned long)buf_sz);
 	    if (buf_sz > 0 && strncmp(buf, tests[i].str, buf_sz - 1) != 0)
 		errx(1, "test %i wrong result %s vs %s", i, buf, tests[i].str);
+	    if (buf_sz > 0 && buf[buf_sz - 1] != '\0')
+		errx(1, "test %i not zero terminated", i);
 	    rk_test_mem_free("underrun");
 	}
 	buf = rk_test_mem_alloc(RK_TM_OVERRUN, "overrun",
