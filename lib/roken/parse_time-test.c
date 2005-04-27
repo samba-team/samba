@@ -45,9 +45,13 @@ static struct testcase {
     time_t val;
     char *str;
 } tests[] = {
-    { 8, 1, "1 second" },
-    { 17, 61, "1 minute 1 second" },
-    { 18, 62, "1 minute 2 seconds" }
+    { 8, 1,		"1 second" },
+    { 17, 61,		"1 minute 1 second" },
+    { 18, 62,		"1 minute 2 seconds" },
+    { 8, 60,		"1 minute" },
+    { 6, 3600,	 	"1 hour" },
+    { 15, 3601,	 	"1 hour 1 second" },
+    { 16, 3602,	 	"1 hour 2 seconds" }
 };
 
 int
