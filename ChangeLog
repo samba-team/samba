@@ -1,3 +1,8 @@
+2005-04-26  Dave Love  <fx@gnu.org>
+
+	* lib/krb5/krb5_locl.h: define _POSIX_PTHREAD_SEMANTICS so we get
+	posix getpwnam_r
+
 2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/gen_glue.c: switch the units variable to a
