@@ -1,5 +1,8 @@
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* broken-realloc.m4: use rk_realloc if realloc is broken, this
+	makes "host-tools" not beeing able to use realloc
+
 	* pthreads.m4: Add support for Solaris, Irix, and modern
 	Linux. From David Love <fx@gnu.org>
 
