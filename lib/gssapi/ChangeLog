@@ -1,3 +1,8 @@
+2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* prefix all sequence symbols with _, they are not part of the
+	GSS-API api. By comment from Wynn Wilkes <wynnw@vintela.com>
+
 2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* accept_sec_context.c: break out the processing of the delegated
