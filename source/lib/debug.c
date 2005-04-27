@@ -165,6 +165,7 @@ static const char *default_classname_table[] = {
 	"quota",	     /* DBGC_QUOTA	  */
 	"acls",		     /* DBGC_ACLS	  */
 	"printerdb",	     /* DBGC_PRINTERDB	  */
+	"locking",	     /* DBGC_LOCKING	  */
 	NULL
 };
 
