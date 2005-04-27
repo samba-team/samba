@@ -197,10 +197,10 @@ gss_import_sec_context (
 
     gsskrb5_is_cfx(*context_handle, &is_cfx);
 
-    ret = gssapi_msg_order_create(minor_status,
-				  &(*context_handle)->order,
-				  gssapi_msg_order_f((*context_handle)->flags),
-				  0, 0, is_cfx);
+    ret = _gssapi_msg_order_create(minor_status,
+				   &(*context_handle)->order,
+				   _gssapi_msg_order_f((*context_handle)->flags),
+				   0, 0, is_cfx);
     if (ret)
 	goto failure;
 
@@ -219,7 +219,7 @@ failure:
     if (remotep)
 	krb5_free_address (gssapi_krb5_context, remotep);
     if((*context_handle)->order)
-	gssapi_msg_order_destroy(&(*context_handle)->order);
+	_gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     krb5_storage_free (sp);
     free (*context_handle);

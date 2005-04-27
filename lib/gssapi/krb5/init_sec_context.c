@@ -427,10 +427,10 @@ init_auth
 
 	gsskrb5_is_cfx(*context_handle, &is_cfx);
 
-	ret = gssapi_msg_order_create(minor_status,
-				      &(*context_handle)->order,
-				      gssapi_msg_order_f(flags),
-				      seq_number, 0, is_cfx);
+	ret = _gssapi_msg_order_create(minor_status,
+				       &(*context_handle)->order,
+				       _gssapi_msg_order_f(flags),
+				       seq_number, 0, is_cfx);
 	if (ret)
 	    goto failure;
 
@@ -456,7 +456,7 @@ init_auth
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
     if((*context_handle)->order)
-	gssapi_msg_order_destroy(&(*context_handle)->order);
+	_gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
@@ -521,10 +521,10 @@ repl_mutual
 
     gsskrb5_is_cfx(*context_handle, &is_cfx);
 
-    ret = gssapi_msg_order_create(minor_status,
-				  &(*context_handle)->order,
-				  gssapi_msg_order_f((*context_handle)->flags),
-				  seq_number, 0, is_cfx);
+    ret = _gssapi_msg_order_create(minor_status,
+				   &(*context_handle)->order,
+				   _gssapi_msg_order_f((*context_handle)->flags),
+				   seq_number, 0, is_cfx);
     if (ret) {
 	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	return ret;

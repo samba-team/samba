@@ -521,14 +521,14 @@ gsskrb5_accept_sec_context
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,
 				      &seq_number);
-	ret = gssapi_msg_order_create(minor_status,
-				      &(*context_handle)->order,
-				      gssapi_msg_order_f(flags),
- 				      seq_number, 0, is_cfx);
+	ret = _gssapi_msg_order_create(minor_status,
+				       &(*context_handle)->order,
+				       _gssapi_msg_order_f(flags),
+				       seq_number, 0, is_cfx);
 	if (ret)
 	    goto failure;
 	
-	if ((flags & GSS_C_MUTUAL_FLAG) == 0 && gssapi_msg_order_f(flags)) {
+	if ((flags & GSS_C_MUTUAL_FLAG) == 0 && _gssapi_msg_order_f(flags)) {
 	    krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
 					     (*context_handle)->auth_context,
 					     seq_number);
@@ -554,7 +554,7 @@ gsskrb5_accept_sec_context
     *minor_status = 0;
     return GSS_S_COMPLETE;
 
-  failure:
+ failure:
     if (fwd_data.length > 0)
 	free(fwd_data.data);
     if (ticket != NULL)
@@ -568,7 +568,7 @@ gsskrb5_accept_sec_context
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
     if((*context_handle)->order)
-	gssapi_msg_order_destroy(&(*context_handle)->order);
+	_gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     if (src_name != NULL) {

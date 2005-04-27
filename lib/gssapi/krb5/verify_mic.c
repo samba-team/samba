@@ -116,7 +116,7 @@ verify_mic_des
     return GSS_S_BAD_MIC;
   }
 
-  ret = gssapi_msg_order_check(context_handle->order, seq_number);
+  ret = _gssapi_msg_order_check(context_handle->order, seq_number);
   if (ret) {
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
       return ret;
@@ -221,7 +221,7 @@ retry:
       return GSS_S_BAD_MIC;
   }
 
-  ret = gssapi_msg_order_check(context_handle->order, seq_number);
+  ret = _gssapi_msg_order_check(context_handle->order, seq_number);
   if (ret) {
       krb5_crypto_destroy (gssapi_krb5_context, crypto);
       *minor_status = 0;

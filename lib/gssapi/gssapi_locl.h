@@ -247,16 +247,16 @@ gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 /* sequence */
 
 OM_uint32
-gssapi_msg_order_create(OM_uint32 *, struct gss_msg_order **, 
-			OM_uint32, OM_uint32, OM_uint32, int);
+_gssapi_msg_order_create(OM_uint32 *, struct gss_msg_order **, 
+			 OM_uint32, OM_uint32, OM_uint32, int);
 OM_uint32
-gssapi_msg_order_destroy(struct gss_msg_order **);
+_gssapi_msg_order_destroy(struct gss_msg_order **);
 
 OM_uint32
-gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
+_gssapi_msg_order_check(struct gss_msg_order *, OM_uint32);
 
 OM_uint32
-gssapi_msg_order_f(OM_uint32);
+_gssapi_msg_order_f(OM_uint32);
 
 /* 8003 */
 

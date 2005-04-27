@@ -316,7 +316,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     }
     
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    omret = gssapi_msg_order_check(context_handle->order, seq_number);
+    omret = _gssapi_msg_order_check(context_handle->order, seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (omret)
 	return omret;
@@ -345,8 +345,8 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	*conf_state = 0;
 
     datalen = input_message_buffer->length + 1 /* padding */;
-    len = datalen + 30;
-    gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+    len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE - 2;  /* encap_length adds 2 */
+    _gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
 
     output_message_buffer->length = total_len;
     output_message_buffer->value  = malloc (total_len);
@@ -623,7 +623,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     }
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    omret = gssapi_msg_order_check(context_handle->order, seq_number);
+    omret = _gssapi_msg_order_check(context_handle->order, seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (omret)
 	return omret;

@@ -88,16 +88,17 @@ test_seq(int t, OM_uint32 flags, OM_uint32 start_seq,
     OM_uint32 maj_stat, min_stat;
     int i;
 
-    maj_stat = gssapi_msg_order_create(&min_stat, &o, flags, start_seq, 20, 0);
+    maj_stat = _gssapi_msg_order_create(&min_stat, &o, flags, 
+					start_seq, 20, 0);
     if (maj_stat)
 	err(1, "create: %d %d", maj_stat, min_stat);
 
     for (i = 0; i < pattern_len; i++) {
-	maj_stat = gssapi_msg_order_check(o, pattern[i]);
+	maj_stat = _gssapi_msg_order_check(o, pattern[i]);
 	if (maj_stat)
 	    return maj_stat;
     }
-    gssapi_msg_order_destroy(&o);
+    _gssapi_msg_order_destroy(&o);
 
     return 0;
 }

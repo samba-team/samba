@@ -51,12 +51,12 @@ struct gss_msg_order {
  */
 
 OM_uint32
-gssapi_msg_order_create(OM_uint32 *minor_status,
-			struct gss_msg_order **o, 
-			OM_uint32 flags, 
-			OM_uint32 seq_num, 
-			OM_uint32 jitter_window,
-			int use_64)
+_gssapi_msg_order_create(OM_uint32 *minor_status,
+			 struct gss_msg_order **o, 
+			 OM_uint32 flags, 
+			 OM_uint32 seq_num, 
+			 OM_uint32 jitter_window,
+			 int use_64)
 {
     size_t len;
 
@@ -84,7 +84,7 @@ gssapi_msg_order_create(OM_uint32 *minor_status,
 }
 
 OM_uint32
-gssapi_msg_order_destroy(struct gss_msg_order **m)
+_gssapi_msg_order_destroy(struct gss_msg_order **m)
 {
     free(*m);
     *m = NULL;
@@ -120,7 +120,7 @@ elem_insert(struct gss_msg_order *o,
 /* rule 4+5: seqnum in [seqnum(first),seqnum(last)]  */
 
 OM_uint32
-gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
+_gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
 {
     OM_uint32 r;
     int i;
@@ -183,7 +183,7 @@ gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
 }
 
 OM_uint32
-gssapi_msg_order_f(OM_uint32 flags)
+_gssapi_msg_order_f(OM_uint32 flags)
 {
     return flags & (GSS_C_SEQUENCE_FLAG|GSS_C_REPLAY_FLAG);
 }

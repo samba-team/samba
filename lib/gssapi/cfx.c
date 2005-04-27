@@ -481,7 +481,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    ret = gssapi_msg_order_check(context_handle->order, seq_number_lo);
+    ret = _gssapi_msg_order_check(context_handle->order, seq_number_lo);
     if (ret != 0) {
 	*minor_status = 0;
 	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -773,7 +773,7 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     }
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    ret = gssapi_msg_order_check(context_handle->order, seq_number_lo);
+    ret = _gssapi_msg_order_check(context_handle->order, seq_number_lo);
     if (ret != 0) {
 	*minor_status = 0;
 	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
