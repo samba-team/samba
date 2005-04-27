@@ -39,6 +39,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef KRB5
+#include <krb5-types.h>
+#endif
 
 #ifndef min
 #define min(a,b) (((a)>(b))?(b):(a))
