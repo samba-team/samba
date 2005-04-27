@@ -135,8 +135,8 @@ int main(int argc, char** argv)
 
 			}
 
-			(char *)dirptr += direntsize;
-			(char *)diramount -= direntsize;
+			dirptr = (struct smbc_dirent *) ((char *) dirptr + direntsize);
+			diramount -= direntsize;
 			j++;
 
 		}
