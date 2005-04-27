@@ -27,6 +27,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 #define ZERO_ZERO 0
 
 /* This contains elements that differentiate locks. The smbpid is a
