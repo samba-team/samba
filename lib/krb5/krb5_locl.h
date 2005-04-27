@@ -61,6 +61,9 @@
 #include <sys/ioctl.h>
 #endif
 #ifdef HAVE_PWD_H
+#undef _POSIX_PTHREAD_SEMANTICS
+/* This gets us the 5-arg getpwnam_r on Solaris 9.  */
+#define _POSIX_PTHREAD_SEMANTICS
 #include <pwd.h>
 #endif
 
