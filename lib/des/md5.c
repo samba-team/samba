@@ -37,8 +37,8 @@
 RCSID("$Id$");
 #endif
 
-#include "md5.h"
 #include "hash.h"
+#include "md5.h"
 
 #define A m->counter[0]
 #define B m->counter[1]

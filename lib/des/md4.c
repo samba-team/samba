@@ -37,8 +37,8 @@
 RCSID("$Id$");
 #endif
 
-#include "md4.h"
 #include "hash.h"
+#include "md4.h"
 
 #define A m->counter[0]
 #define B m->counter[1]
