@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /*
  * The POSIX locking database handle.
  */

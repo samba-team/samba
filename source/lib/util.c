@@ -1793,6 +1793,9 @@ void free_namearray(name_compare_entry *name_array)
 	SAFE_FREE(name_array);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
@@ -1842,6 +1845,9 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 
 	return(True);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /*******************************************************************
  Is the name specified one of my netbios names.

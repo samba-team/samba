@@ -2129,6 +2129,9 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	return -1;
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Reply to a lockread (core+ protocol).
 ****************************************************************************/
@@ -2221,6 +2224,9 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	END_PROFILE(SMBlockread);
 	return(outsize);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a read.
@@ -2610,6 +2616,9 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Reply to a writeunlock (core+).
 ****************************************************************************/
@@ -2673,6 +2682,9 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	END_PROFILE(SMBwriteunlock);
 	return outsize;
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a write.
@@ -3121,6 +3133,9 @@ int reply_writeclose(connection_struct *conn,
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Reply to a lock.
 ****************************************************************************/
@@ -3200,6 +3215,9 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	END_PROFILE(SMBunlock);
 	return(outsize);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a tdis.
@@ -4652,6 +4670,9 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Get a lock pid, dealing with large count requests.
 ****************************************************************************/
@@ -4988,6 +5009,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 	END_PROFILE(SMBlockingX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a SMBreadbmpx (read block multiplex) request.

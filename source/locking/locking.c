@@ -37,6 +37,9 @@
 #include "includes.h"
 uint16 global_smbpid;
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
