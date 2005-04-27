@@ -376,6 +376,9 @@ void ROKEN_LIB_FUNCTION
 warnerr(int doerrno, const char *fmt, va_list ap)
     __attribute__ ((format (printf, 2, 0)));
 
+void * ROKEN_LIB_FUNCTION
+rk_realloc(void *, size_t);
+
 ROKEN_CPP_END
 
 #endif /* __ROKEN_COMMON_H__ */
