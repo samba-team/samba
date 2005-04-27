@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -469,6 +469,7 @@ rshd_loop (int from0, int to0,
     fd_set real_readset;
     int max_fd;
     int count = 2;
+    char *buf;
 
     if(from0 >= FD_SETSIZE || from1 >= FD_SETSIZE || from2 >= FD_SETSIZE)
 	errx (1, "fd too large");
@@ -483,10 +484,14 @@ rshd_loop (int from0, int to0,
     FD_SET(from1, &real_readset);
     FD_SET(from2, &real_readset);
     max_fd = max(from0, max(from1, from2)) + 1;
+
+    buf = malloc(max(RSHD_BUFSIZ, RSH_BUFSIZ));
+    if (buf == NULL)
+	syslog_and_die("out of memory");
+
     for (;;) {
 	int ret;
 	fd_set readset = real_readset;
-	char buf[RSH_BUFSIZ];
 
 	ret = select (max_fd, &readset, NULL, NULL, NULL);
 	if (ret < 0) {
@@ -496,7 +501,7 @@ rshd_loop (int from0, int to0,
 		syslog_and_die ("select: %m");
 	}
 	if (FD_ISSET(from0, &readset)) {
-	    ret = do_read (from0, buf, sizeof(buf), ivec_in[0]);
+	    ret = do_read (from0, buf, RSHD_BUFSIZ, ivec_in[0]);
 	    if (ret < 0)
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
@@ -507,7 +512,7 @@ rshd_loop (int from0, int to0,
 		net_write (to0, buf, ret);
 	}
 	if (FD_ISSET(from1, &readset)) {
-	    ret = read (from1, buf, sizeof(buf));
+	    ret = read (from1, buf, RSH_BUFSIZ);
 	    if (ret < 0)
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
@@ -520,7 +525,7 @@ rshd_loop (int from0, int to0,
 		do_write (to1, buf, ret, ivec_out[0]);
 	}
 	if (FD_ISSET(from2, &readset)) {
-	    ret = read (from2, buf, sizeof(buf));
+	    ret = read (from2, buf, RSH_BUFSIZ);
 	    if (ret < 0)
 		syslog_and_die ("read: %m");
 	    else if (ret == 0) {
