@@ -314,6 +314,10 @@ port 445 is tried and if no response then port 139 is tried.
                 <listitem><para>(default) The  program  accessing  a file on the cifs mounted file system will not hang when the server crashes and will return errors to the user application.</para></listitem>
         </varlistentry>
 
+        <varlistentry>
+                <term>--verbose</term>
+                <listitem><para>print additional debugging information for the mount. Note that this parameter must be specified before the -o. For example:</para><para>mount -t cifs //server/share /mnt --verbose -o user=username</para></listitem>
+        </varlistentry>
 
 	<varlisstentry>
                 <term>noacl</term>
@@ -357,12 +361,12 @@ port 445 is tried and if no response then port 139 is tried.
         </varlistentry>
 
 	<varlistentry>
-		<term>rsize</term>
+		<term>rsize=<replaceable>arg</replaceable></term>
 		<listitem><para>default network read size</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
-		<term>wsize</term>
+		<term>wsize=<replaceable>arg</replaceable></term>
 
 		<listitem><para>default network write size</para></listitem>
 	</varlistentry>
