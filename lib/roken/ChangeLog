@@ -1,3 +1,11 @@
+2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-common.h: add rk_realloc
+
+	* Makefile.am: add realloc
+
+	* realloc.c: add rk_realloc, unbroken version of realloc
+
 2005-04-26  Dave Love  <fx@gnu.org>
 
 	* getusershell.c: Include roken.h
