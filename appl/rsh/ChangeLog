@@ -1,3 +1,11 @@
+2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsh_locl.h: Use larger buffer for recving data to be compatible
+	with older versions of heimdal (0.4 branch specificly)
+
+	* rshd.c: Use larger buffer for recving data to be compatible with
+	older versions of heimdal (0.4 branch specificly)
+
 2005-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rshd.c: use snprintf to format tkfile
