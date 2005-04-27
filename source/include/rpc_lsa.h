@@ -46,11 +46,11 @@
 #define LSA_CLEARAUDITLOG      0x09
 #define LSA_CREATEACCOUNT      0x0a
 #define LSA_ENUM_ACCOUNTS      0x0b
-#define LSA_CREATETRUSTDOM     0x0c
+#define LSA_CREATETRUSTDOM     0x0c	/* TODO: implement this one  -- jerry */
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
-#define LSA_CREATESECRET       0x10
+#define LSA_CREATESECRET       0x10	/* TODO: implement this one  -- jerry */
 #define LSA_OPENACCOUNT	       0x11
 #define LSA_ENUMPRIVSACCOUNT   0x12
 #define LSA_ADDPRIVS           0x13
@@ -59,16 +59,16 @@
 #define LSA_SETQUOTAS          0x16
 #define LSA_GETSYSTEMACCOUNT   0x17
 #define LSA_SETSYSTEMACCOUNT   0x18
-#define LSA_OPENTRUSTDOM       0x19
+#define LSA_OPENTRUSTDOM       0x19	/* TODO: implement this one  -- jerry */
 #define LSA_QUERYTRUSTDOM      0x1a
 #define LSA_SETINFOTRUSTDOM    0x1b
-#define LSA_OPENSECRET         0x1c
-#define LSA_SETSECRET          0x1d
+#define LSA_OPENSECRET         0x1c	/* TODO: implement this one  -- jerry */
+#define LSA_SETSECRET          0x1d	/* TODO: implement this one  -- jerry */
 #define LSA_QUERYSECRET        0x1e
 #define LSA_LOOKUPPRIVVALUE    0x1f
 #define LSA_LOOKUPPRIVNAME     0x20
 #define LSA_PRIV_GET_DISPNAME  0x21
-#define LSA_DELETEOBJECT       0x22
+#define LSA_DELETEOBJECT       0x22	/* TODO: implement this one  -- jerry */
 #define LSA_ENUMACCTWITHRIGHT  0x23	/* TODO: implement this one  -- jerry */
 #define LSA_ENUMACCTRIGHTS     0x24
 #define LSA_ADDACCTRIGHTS      0x25
@@ -741,5 +741,92 @@ typedef struct lsa_r_removeprivs
 {
 	NTSTATUS status;
 } LSA_R_REMOVEPRIVS;
+
+/*******************************************************/
+
+typedef struct {
+	POLICY_HND	handle;
+	uint32		count;	/* ??? this is what ethereal calls it */
+	DOM_SID		sid;
+} LSA_Q_OPEN_TRUSTED_DOMAIN;
+
+typedef struct {
+	POLICY_HND	handle;
+	NTSTATUS	status;
+} LSA_R_OPEN_TRUSTED_DOMAIN;
+
+
+/*******************************************************/
+#if 0	/* This one is correct but until I fixed the 
+	   in parse_lsa.c, leave the previously defined
+	   LSA_Q_OPEN_SECRET & LSA_R_OPEN_SECRET */
+
+typedef struct {
+	POLICY_HND	handle;	
+	UNISTR4		secretname;
+	uint32		access;
+} LSA_Q_OPEN_SECRET;
+
+typedef struct {
+	POLICY_HND	handle;
+	NTSTATUS	status;
+} LSA_R_OPEN_SECRET;
+#endif
+
+
+/*******************************************************/
+
+typedef struct {
+	POLICY_HND	handle;
+} LSA_Q_DELETE_OBJECT;
+
+typedef struct {
+	NTSTATUS 	status;
+} LSA_R_DELETE_OBJECT;
+
+
+/*******************************************************/
+
+typedef struct {
+	POLICY_HND      handle;
+	UNISTR4         secretname;
+	uint32          access;
+} LSA_Q_CREATE_SECRET;
+
+typedef struct {
+	POLICY_HND      handle;
+	NTSTATUS        status;
+} LSA_R_CREATE_SECRET;
+
+
+/*******************************************************/
+
+typedef struct {
+	POLICY_HND	handle;	
+	UNISTR4		secretname;
+	uint32		access;
+} LSA_Q_CREATE_TRUSTED_DOMAIN;
+
+typedef struct {
+	POLICY_HND	handle;
+	NTSTATUS	status;
+} LSA_R_CREATE_TRUSTED_DOMAIN;
+
+
+/*******************************************************/
+
+typedef struct {
+	POLICY_HND	handle;	
+	REGVAL_BUFFER	*new_value;	/* not entirely true; the actual 
+					   data on the wire includes 2 additional
+					   uint32's (both containing the size from 
+					   the regval_buffer */
+	REGVAL_BUFFER	*old_value;
+} LSA_Q_SET_SECRET;
+
+typedef struct {
+	NTSTATUS	status;
+} LSA_R_SET_SECRET;
+
 
 #endif /* _RPC_LSA_H */
