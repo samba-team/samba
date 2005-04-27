@@ -1,3 +1,7 @@
+2005-04-26  Dave Love  <fx@gnu.org>
+
+	* getusershell.c: Include roken.h
+
 2005-04-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* unvis.c: cast to unsigned char to make sure its not negative

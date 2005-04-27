@@ -1,3 +1,7 @@
+2005-04-26  Dave Love  <fx@gnu.org>
+
+	* mdtest.c: Maybe include stdlib.h
+	
 2005-04-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sha.h,md5.h, md4.h: don't include bit types, the user must do
