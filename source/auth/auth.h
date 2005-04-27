@@ -103,7 +103,14 @@ struct auth_method_context;
 struct auth_operations {
 	const char *name;
 
+	/* If you are using this interface, then you are probably
+	 * getting something wrong.  This interface is only for
+	 * security=server, and makes a number of compromises to allow
+	 * that.  It is not compatible with being a PDC.  */
+
 	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge);
+
+	/* Given the user supplied info, check a password */
 
 	NTSTATUS (*check_password)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,
