@@ -207,6 +207,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
                         } while (0)
 
 static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
+					TALLOC_CTX *mem_ctx,
 					struct rap_NetShareEnum *r)
 {
 	struct rap_call *call;
@@ -241,8 +242,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_array(call, union rap_shareenum_info,
-				     r->out.count);
+	r->out.info = talloc_array(mem_ctx, union rap_shareenum_info, r->out.count);
 
 	if (r->out.info == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -262,7 +262,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 					      (uint8_t *)&r->out.info[i].info1.pad, 1));
 			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
 					       NDR_SCALARS, &r->out.info[i].info1.type));
-			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
+			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 			break;
@@ -280,11 +280,12 @@ static BOOL test_netshareenum(struct smbcli_state *cli)
 {
 	struct rap_NetShareEnum r;
 	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(cli);
 
 	r.in.level = 1;
 	r.in.bufsize = 8192;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, tmp_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -293,10 +294,13 @@ static BOOL test_netshareenum(struct smbcli_state *cli)
 		       r.out.info[i].info1.comment);
 	}
 
+	talloc_free(tmp_ctx);
+
 	return True;
 }
 
 static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
+					  TALLOC_CTX *mem_ctx,
 					  struct rap_NetServerEnum2 *r)
 {
 	struct rap_call *call;
@@ -335,8 +339,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
-	r->out.info = talloc_array(call, union rap_server_info,
-				     r->out.count);
+	r->out.info = talloc_array(mem_ctx, union rap_server_info, r->out.count);
 
 	if (r->out.info == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -358,7 +361,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 					      &r->out.info[i].info1.version_minor, 1));
 			NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
 					       NDR_SCALARS, &r->out.info[i].info1.servertype));
-			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
+			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 		}
@@ -375,6 +378,7 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(cli);
 
 	r.in.level = 0;
 	r.in.bufsize = 8192;
@@ -382,7 +386,7 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 	r.in.servertype = 0x80000000;
 	r.in.domain = NULL;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, tmp_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -397,6 +401,8 @@ static BOOL test_netserverenum(struct smbcli_state *cli)
 			break;
 		}
 	}
+
+	talloc_free(tmp_ctx);
 
 	return True;
 }
