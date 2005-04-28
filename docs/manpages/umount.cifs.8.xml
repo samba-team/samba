@@ -31,7 +31,7 @@
 	<para>umount.cifs unmounts a Linux CIFS filesystem. It can be invoked
 indirectly by the
 <citerefentry><refentrytitle>umount</refentrytitle><manvolnum>8</manvolnum></citerefentry> command 
-when using the "-i" option. The umount.cifs command only works in Linux, and the kernel must
+when umount.cifs is in /sbin directory, unless you specify the "-i" option to umount.  Specifying -i to umount avoids execution of umount helpers such as umount.cifs. The umount.cifs command only works in Linux, and the kernel must
 support the cifs filesystem. The CIFS protocol is the successor to the 
 SMB protocol and is supported by most Windows servers and many other
 commercial servers and Network Attached Storage appliances as well as 
