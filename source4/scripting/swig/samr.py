@@ -374,6 +374,7 @@ class DomainHandle(SamrHandle):
 
         r = dcerpc.samr_RidToSid()
         r.data_in.domain_handle = self.handle
+        r.data_in.rid = rid
 
         call_fn(dcerpc.dcerpc_samr_RidToSid, self.pipe, r)
 
@@ -430,6 +431,61 @@ class DomainHandle(SamrHandle):
         call_fn(dcerpc.dcerpc_samr_GetAliasMembership, self.pipe, r)
 
         return [r.ids[x] for x in range(r.count)]
+
+    def QueryDisplayInfo(self, level):
+
+        # TODO: Handle more data returns
+
+        r = dcerpc.samr_QueryDisplayInfo()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
+        r.data_in.start_idx = 0
+        r.data_in.max_entries = 1000
+        r.data_in.buf_size = -1
+
+        call_fn(dcerpc.dcerpc_samr_QueryDisplayInfo, self.pipe, r)
+
+        # TODO: Return a mapping of the various samr_DispInfo
+        # structures here.
+
+        return getattr(r.data_out.info, 'info%d' % level)
+    
+    def QueryDisplayInfo2(self, level):
+
+        # TODO: Handle more data returns
+
+        r = dcerpc.samr_QueryDisplayInfo2()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
+        r.data_in.start_idx = 0
+        r.data_in.max_entries = 1000
+        r.data_in.buf_size = -1
+
+        call_fn(dcerpc.dcerpc_samr_QueryDisplayInfo2, self.pipe, r)
+
+        # TODO: Return a mapping of the various samr_DispInfo
+        # structures here.
+
+        return getattr(r.data_out.info, 'info%d' % level)
+
+    def QueryDisplayInfo3(self, level):
+
+        # TODO: Handle more data returns
+
+        r = dcerpc.samr_QueryDisplayInfo3()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
+        r.data_in.start_idx = 0
+        r.data_in.max_entries = 1000
+        r.data_in.buf_size = -1
+
+        call_fn(dcerpc.dcerpc_samr_QueryDisplayInfo3, self.pipe, r)
+
+        # TODO: Return a mapping of the various samr_DispInfo
+        # structures here.
+
+        return getattr(r.data_out.info, 'info%d' % level)
+
 
 class UserHandle(SamrHandle):
 
@@ -576,17 +632,13 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # SetUserInfo
 # ChangePasswordUser
 # GetGroupsForUser
-# QueryDisplayInfo
 # GetDisplayEnumerationIndex
 # TestPrivateFunctionsDomain
 # TestPrivateFunctionsUser
 # GetUserPwInfo
 # RemoveMemberFromForeignDomain
-# QueryDomainInfo2
 # QueryUserInfo2
-# QueryDisplayInfo2
 # GetDisplayEnumerationIndex2
-# QueryDisplayInfo3
 # RemoveMultipleMembersFromAlias
 # OemChangePasswordUser2
 # ChangePasswordUser2
