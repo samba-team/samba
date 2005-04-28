@@ -228,6 +228,16 @@ class DomainHandle(SamrHandle):
 
         return getattr(r.data_out.info, 'info%d' % level)       
 
+    def SetDomainInfo(self, level, info):
+
+        r = dcerpc.samr_SetDomainInfo()
+        r.data_in.domain_handle = self.handle
+        r.data_in.level = level
+        r.data_in.info = dcerpc.samr_DomainInfo()
+        setattr(r.data_in.info, 'info%d' % level, info)
+
+        call_fn(dcerpc.dcerpc_samr_SetDomainInfo, self.pipe, r)
+
     def EnumDomainGroups(self):
 
         r = dcerpc.samr_EnumDomainGroups()
@@ -419,7 +429,7 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_GetAliasMembership, self.pipe, r)
 
-        return [r.ids[x] x in range(r.count)]
+        return [r.ids[x] for x in range(r.count)]
 
 class UserHandle(SamrHandle):
 
