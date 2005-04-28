@@ -276,8 +276,7 @@ port 445 is tried and if no response then port 139 is tried.
 
         <varlistentry>
                 <term>mapchars</term>
-                <listitem><para>Translate six of the seven reserved characters (not backslash)
-                        *?<>|:
+                <listitem><para>Translate six of the seven reserved characters (not backslash, but including the colon, question mark, pipe, asterik, greater than and less than characters)
                 to the remap range (above 0xF000), which also
                 allows the CIFS client to recognize files created with
                 such characters by Windows's POSIX emulation. This can
@@ -319,7 +318,7 @@ port 445 is tried and if no response then port 139 is tried.
                 <listitem><para>print additional debugging information for the mount. Note that this parameter must be specified before the -o. For example:</para><para>mount -t cifs //server/share /mnt --verbose -o user=username</para></listitem>
         </varlistentry>
 
-	<varlisstentry>
+	<varlistentry>
                 <term>noacl</term>
                 <listitem><para>Do not allow POSIX ACL operations even if server would support them.</para><para>
 		The CIFS client can get and set POSIX ACLs (getfacl, setfacl) to Samba servers
