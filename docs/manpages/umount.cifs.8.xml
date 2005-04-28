@@ -86,7 +86,7 @@ For more information see the kernel file <filename>fs/cifs/README</filename>.
 	<para>At this time umount.cifs does not lock the mount table using the same lock as the umount utility does, so do not attempt to do multiple unmounts from different processes (unmounts of a cifs mount and another type of filesystem mount at the same time.
 	</para>
 
-	<para>If the same mount point is mounted multiple times by cifs, umount.cifs will remove all of the matching entries from the mount table (although only actually unmount the last one), rather than only removing the last matching entry in /etc/mtab.  The pseudofile /proc/mounts will display correct information though, and the lack of an entry in /etc/mtab does not prevent subsequent unmounts.
+	<para>If the same mount point is mounted multiple times by cifs, umount.cifs will remove all of the matching entries from the mount table (although only actually unmount the last one), rather than only removing the last matching entry in /etc/mtab.  The pseudofile /proc/mounts will display correct information though, and the lack of an entry in /etc/mtab does not prevent subsequent unmounts.</para>
 
 	<para>
 Note that the typical response to a bug report is a suggestion
