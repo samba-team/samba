@@ -1,3 +1,7 @@
+2005-04-28  David Love <fx@gnu.org>
+
+	* pthreads.m4: Set PTHREADS_LIBS on Irix.
+
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* broken-realloc.m4: use rk_realloc if realloc is broken, this
