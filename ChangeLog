@@ -1,3 +1,9 @@
+2005-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/context.c (krb5_set_config_files): ignore permission
+	denied on configuration files, user might no be allowed to read
+	/var/heimdal/kdc.conf
+
 2005-04-26  Dave Love  <fx@gnu.org>
 
 	* lib/krb5/krb5_locl.h: define _POSIX_PTHREAD_SEMANTICS so we get
