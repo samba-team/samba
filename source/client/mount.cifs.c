@@ -494,6 +494,8 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
 			*filesys_flags &= ~MS_RDONLY;
+                } else if (strncmp(data, "remount", 7) == 0) {
+                        *filesys_flags |= MS_REMOUNT;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
 			if (value && *value) {
 				vol->port =
