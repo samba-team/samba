@@ -1,3 +1,8 @@
+2005-04-28  Dave Love  <fx@gnu.org>
+
+	* limits_conf.c: Maybe include sys/resource.h.  Use various
+	RLIMIT_ macros conditionally.  For Solaris, Irix and Tru64.
+
 2005-04-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login.1: document limits.conf
