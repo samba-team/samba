@@ -178,7 +178,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX  
 		modifing a user account. It will specify the user's logon
 		script path.</para>
 
-		<para>Example: <command>-s "\\\\BERSERKER\\netlogon\\sorce.bat"</command>
+		<para>Example: <command>-S "\\\\BERSERKER\\netlogon\\sorce.bat"</command>
 		</para>
 		</listitem>
 		</varlistentry>
