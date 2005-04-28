@@ -461,6 +461,42 @@ void *talloc_init(const char *fmt, ...)
 	return ptr;
 }
 
+/*
+  this is a replacement for the Samba3 talloc_destroy_pool functionality. It
+  should probably not be used in new code. It's in here to keep the talloc
+  code consistent across Samba 3 and 4.
+*/
+void talloc_free_children(void *ptr)
+{
+	struct talloc_chunk *tc;
+
+	if (ptr == NULL) {
+		return;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
+
+	while (tc->child) {
+		/* we need to work out who will own an abandoned child
+		   if it cannot be freed. In priority order, the first
+		   choice is owner of any remaining reference to this
+		   pointer, the second choice is our parent, and the
+		   final choice is the null context. */
+		void *child = tc->child+1;
+		const void *new_parent = null_context;
+		if (tc->child->refs) {
+			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
+			if (p) new_parent = p+1;
+		}
+		if (talloc_free(child) == -1) {
+			if (new_parent == null_context) {
+				struct talloc_chunk *p = talloc_parent_chunk(ptr);
+				if (p) new_parent = p+1;
+			}
+			talloc_steal(new_parent, child);
+		}
+	}
+}
 
 /* 
    free a talloc pointer. This also frees all child pointers of this 
@@ -498,26 +534,7 @@ int talloc_free(void *ptr)
 		tc->destructor = NULL;
 	}
 
-	while (tc->child) {
-		/* we need to work out who will own an abandoned child
-		   if it cannot be freed. In priority order, the first
-		   choice is owner of any remaining reference to this
-		   pointer, the second choice is our parent, and the
-		   final choice is the null context. */
-		void *child = tc->child+1;
-		const void *new_parent = null_context;
-		if (tc->child->refs) {
-			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
-			if (p) new_parent = p+1;
-		}
-		if (talloc_free(child) == -1) {
-			if (new_parent == null_context) {
-				struct talloc_chunk *p = talloc_parent_chunk(ptr);
-				if (p) new_parent = p+1;
-			}
-			talloc_steal(new_parent, child);
-		}
-	}
+	talloc_free_children(ptr);
 
 	if (tc->parent) {
 		_TLIST_REMOVE(tc->parent->child, tc);

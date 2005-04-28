@@ -106,6 +106,14 @@ talloc_free() operates recursively on its children.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+int talloc_free_children(void *ptr);
+
+The talloc_free_children() walks along the list of all children of a
+talloc context and talloc_free()s only the children, not the context
+itself.
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_reference(const void *context, const void *ptr);
 
 The talloc_reference() function makes "context" an additional parent
