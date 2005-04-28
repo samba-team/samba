@@ -497,7 +497,35 @@ class UserHandle(SamrHandle):
         call_fn(dcerpc.dcerpc_samr_DeleteUser, self.pipe, r)
 
         self.handle = None
-    
+
+    def GetUserPwInfo(self):
+
+        r = dcerpc.samr_GetUserPwInfo()
+        r.data_in.user_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_GetUserPwInfo, self.pipe, r)
+
+        return r.data_out.info
+
+    def QueryUserInfo(self, level):
+
+        r = dcerpc.samr_QueryUserInfo()
+        r.data_in.user_handle = self.handle
+        r.data_in.level = level
+
+        call_fn(dcerpc.dcerpc_samr_QueryUserInfo, self.pipe, r)
+
+        return r.data_out.info
+
+    def QueryUserInfo2(self, level):
+
+        r = dcerpc.samr_QueryUserInfo2()
+        r.data_in.user_handle = self.handle
+        r.data_in.level = level
+
+        call_fn(dcerpc.dcerpc_samr_QueryUserInfo2, self.pipe, r)
+
+        return r.data_out.info
 
 class GroupHandle(SamrHandle):
     pass
@@ -603,7 +631,6 @@ def Connect4(pipe, system_name = '', access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
-
 def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 
     r = dcerpc.samr_Connect5()
@@ -628,16 +655,13 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 # AddAliasMember
 # DeleteAliasMember
 # GetMembersinAlias
-# QueryUserInfo
 # SetUserInfo
 # ChangePasswordUser
 # GetGroupsForUser
 # GetDisplayEnumerationIndex
 # TestPrivateFunctionsDomain
 # TestPrivateFunctionsUser
-# GetUserPwInfo
 # RemoveMemberFromForeignDomain
-# QueryUserInfo2
 # GetDisplayEnumerationIndex2
 # RemoveMultipleMembersFromAlias
 # OemChangePasswordUser2
