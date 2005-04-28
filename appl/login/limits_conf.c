@@ -37,6 +37,9 @@ RCSID("$Id$");
 
 #include <errno.h>
 #include <limits.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 struct limit {
     const char *name;
@@ -50,10 +53,16 @@ struct limit {
     LIM(CPU, 60),
     LIM(DATA, 1024),
     LIM(FSIZE, 1024),
+#ifdef RLIMIT_LOCK
     LIM(MEMLOCK, 1024),
+#endif
     LIM(NOFILE, 1),
+#ifdef RLIMIT_NPROC
     LIM(NPROC, 1),
+#endif
+#ifdef RLIMIT_RSS
     LIM(RSS, 1024),
+#endif
     LIM(STACK, 1024),
 
 #ifdef RLIMIT_AS
