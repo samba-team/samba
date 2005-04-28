@@ -37,7 +37,7 @@
 #include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "3"
+#define UNMOUNT_CIFS_VERSION_MINOR "4"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
 #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
@@ -93,6 +93,7 @@ static void umount_cifs_usage(void)
 	printf("\n\tman 8 umount.cifs\n");
 	printf("\nTo display the version number of the cifs umount utility:");
 	printf("\n\t%s -V\n",thisprogram);
+	printf("\nNote that invoking the umount utility on cifs mounts, can execute /sbin/umount.cifs (if it is present and -i is not specified to umount).\n");
 }
 
 static int umount_check_perm(char * dir)
@@ -100,8 +101,11 @@ static int umount_check_perm(char * dir)
 	int fileid;
 	int rc;
 
-	/* presumably can not chdir into the target as we do on mount */
+	/* allow root to unmount, no matter what */
+	if(getuid() == 0)
+		return 0;
 
+	/* presumably can not chdir into the target as we do on mount */
 	fileid = open(dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW, 0);
 	if(fileid == -1) {
 		if(verboseflg)
