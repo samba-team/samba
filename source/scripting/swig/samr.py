@@ -195,11 +195,11 @@ class ConnectHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_Shutdown, self.pipe, r)
 
-    def GetDomPwInfo(self, system_name):
+    def GetDomPwInfo(self, domain_name):
 
         r = dcerpc.samr_GetDomPwInfo()
         r.data_in.domain_name = dcerpc.samr_String()
-        r.data_in.domain_name.string = system_name
+        r.data_in.domain_name.string = domain_name
 
         call_fn(dcerpc.dcerpc_samr_GetDomPwInfo, self.pipe, r)
 
