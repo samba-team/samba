@@ -44,6 +44,7 @@ case "$host" in
 	;;
 mips-sgi-irix6.[[5-9]])  # maybe works for earlier versions too
 	enable_pthread_support=yes
+	PTHREADS_LIBS="-lpthread"
 	;;
 *)
 	enable_pthread_support=no
