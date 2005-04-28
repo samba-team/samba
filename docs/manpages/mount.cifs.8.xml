@@ -284,7 +284,7 @@ port 445 is tried and if no response then port 139 is tried.
                 (which also forbids creating and opening files
                 whose names contain any of these seven characters).
                 This has no effect if the server does not support
-                Unicode on the wire.<para></listitem>
+                Unicode on the wire.</para></listitem>
         </varlistentry>
 
         <varlistentry>
@@ -352,6 +352,7 @@ port 445 is tried and if no response then port 139 is tried.
                 <term>noserverino</term>
                 <listitem><para>client generates inode numbers (rather than using the actual one
                 from the server) by default.
+		</para></listitem>
         </varlistentry>
 
         <varlistentry>
