@@ -344,7 +344,7 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_OpenGroup, self.pipe, r)
 
-        return GroupHandle(pipe, r.data_out.group_handle)
+        return GroupHandle(self.pipe, r.data_out.group_handle)
 
     def OpenAlias(self, rid, access_mask = 0x02000000):
 
