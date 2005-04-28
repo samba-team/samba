@@ -1,3 +1,10 @@
+2005-04-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* telnetd/utility.c (putf): %t: the regular and streamspty case
+	are functionally equivalent, so merge them, this also makes it
+	work better on machines that puts their devices in a subdirectory
+	to /dev
+
 2005-04-27  Dave Love  <fx@gnu.org>
 
 	* telnetd/sys_term.c (getpty): Declare p.
