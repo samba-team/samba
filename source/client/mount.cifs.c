@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "7"
+#define MOUNT_CIFS_VERSION_MINOR "8"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -185,13 +185,41 @@ static int open_cred_file(char * file_name)
 					} else
 						memset(mountpassword,0,64);
 					if(mountpassword) {
-						/* BB add handling for commas in password here */
 						strncpy(mountpassword,temp_val,length);
 						got_password = 1;
 					}
 				}
 			}
-		}
+                } else if (strncasecmp("domain",line_buf+i,6) == 0) {
+                        temp_val = strchr(line_buf+i,'=');
+                        if(temp_val) {
+                                /* go past equals sign */
+                                temp_val++;
+				if(verboseflag)
+					printf("\nDomain %s\n",temp_val);
+                                for(length = 0;length<65;length++) {
+                                        if(temp_val[length] == '\n')
+                                                break;
+                                }
+                                if(length > 64) {
+                                        printf("mount.cifs failed: domain in credentials file too long\n");
+                                        if(mountpassword) {
+                                                memset(mountpassword,0,64);
+                                        }
+                                        exit(1);
+                                } else {
+                                        if(domain_name == NULL) {
+                                                domain_name = calloc(65,1);
+                                        } else
+                                                memset(domain_name,0,64);
+                                        if(domain_name) {
+                                                strncpy(domain_name,temp_val,length);
+                                                got_domain = 1;
+                                        }
+                                }
+                        }
+                }
+
 	}
 	fclose(fs);
 	if(line_buf) {
@@ -888,6 +916,7 @@ int main(int argc, char ** argv)
 			break;
 		case 'd':
 			domain_name = optarg; /* BB fix this - currently ignored */
+			got_domain = 1;
 			break;
 		case 'p':
 			if(mountpassword == NULL)
@@ -1017,7 +1046,8 @@ mount_retry:
 
 	if(user_name) {
 		/* check for syntax like user=domain\user */
-		domain_name = check_for_domain(&user_name);
+		if(got_domain == 0)
+			domain_name = check_for_domain(&user_name);
 		strncat(options,",user=",6);
 		strcat(options,user_name);
 	}
