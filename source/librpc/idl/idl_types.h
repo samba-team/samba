@@ -15,71 +15,71 @@
   a UCS2 string prefixed with [size] [offset] [length], all 32 bits
   not null terminated
 */
-#define unistr_noterm [flag(STR_NOTERM|STR_SIZE4|STR_LEN4)] string
+#define unistr_noterm	[flag(STR_NOTERM|STR_SIZE4|STR_LEN4)] string
 
 /*
   a UCS2 string prefixed with [size] [offset] [length], all 32 bits
 */
-#define unistr        [flag(STR_SIZE4|STR_LEN4)]            string
+#define unistr		[flag(STR_SIZE4|STR_LEN4)] string
 
 /*
   a UCS2 string prefixed with [size], 32 bits
 */
-#define lstring       [flag(STR_SIZE4)]                     string
+#define lstring		[flag(STR_SIZE4)] string
 
 /*
   a null terminated UCS2 string
 */
-#define nstring       [flag(STR_NULLTERM)]                  string
+#define nstring		[flag(STR_NULLTERM)] string
 
 /*
   fixed length 32 character UCS-2 string
 */
-#define string32       [flag(STR_FIXLEN32)]                 string
+#define string32	[flag(STR_FIXLEN32)] string
 
 /*
   fixed length 16 character ascii string
 */
-#define astring15       [flag(STR_ASCII|STR_FIXLEN15)]                 string
+#define astring15       [flag(STR_ASCII|STR_FIXLEN15)] string
 
 /*
   an ascii string prefixed with [size] [offset] [length], all 32 bits
   null terminated
 */
-#define ascstr        [flag(STR_ASCII|STR_SIZE4|STR_LEN4)]  string
+#define ascstr		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)] string
 
 /*
   an ascii string prefixed with [offset] [length], both 32 bits
   null terminated
 */
-#define ascstr2       [flag(STR_ASCII|STR_LEN4)]            string
+#define ascstr2		[flag(STR_ASCII|STR_LEN4)] string
 
 /*
   an ascii string prefixed with [size], 32 bits
 */
-#define asclstr       [flag(STR_ASCII|STR_SIZE4)]                     string
+#define asclstr		[flag(STR_ASCII|STR_SIZE4)] string
 
 /*
   an ascii string prefixed with [size], 16 bits
   null terminated
 */
-#define ascstr3       [flag(STR_ASCII|STR_SIZE2)]            string
+#define ascstr3		[flag(STR_ASCII|STR_SIZE2)] string
 
 /*
   an ascii string prefixed with [size] [offset] [length], all 32 bits
   not null terminated
 */
-#define ascstr_noterm        [flag(STR_NOTERM|STR_ASCII|STR_SIZE4|STR_LEN4)]  string
+#define ascstr_noterm	[flag(STR_NOTERM|STR_ASCII|STR_SIZE4|STR_LEN4)] string
 
 /*
   a null terminated ascii string
 */
-#define astring       [flag(STR_ASCII|STR_NULLTERM)]                  string
+#define astring		[flag(STR_ASCII|STR_NULLTERM)] string
 
 /*
   a null terminated UTF8 string
 */
-#define utf8string       [flag(STR_UTF8|STR_NULLTERM)]                string
+#define utf8string	[flag(STR_UTF8|STR_NULLTERM)] string
 
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
 #define NDR_REMAINING     LIBNDR_FLAG_REMAINING
