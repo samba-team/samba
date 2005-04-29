@@ -216,35 +216,6 @@ sub find_largest_alignment($)
 	return $align;
 }
 
-my %scalar_alignments = 
-(
-     "char"           => 1,
-     "int8"           => 1,
-     "uint8"          => 1,
-     "short"          => 2,
-     "wchar_t"        => 2,
-     "int16"          => 2,
-     "uint16"         => 2,
-     "long"           => 4,
-     "int32"          => 4,
-     "uint32"         => 4,
-     "dlong"          => 4,
-     "udlong"         => 4,
-     "udlongr"        => 4,
-     "NTTIME"         => 4,
-     "NTTIME_1sec"    => 4,
-     "time_t"         => 4,
-     "DATA_BLOB"      => 4,
-     "error_status_t" => 4,
-     "WERROR"         => 4,
-	 "NTSTATUS" 	  => 4,
-     "boolean32"      => 4,
-     "unsigned32"     => 4,
-     "ipv4address"    => 4,
-     "hyper"          => 8,
-     "NTTIME_hyper"   => 8
-);
-
 #####################################################################
 # align a type
 sub align_type
@@ -266,10 +237,10 @@ sub align_type
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
 		return find_largest_alignment($dt);
 	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return $scalar_alignments{$dt->{NAME}};
-	} else { 
-		die("Unknown data type type $dt->{TYPE}");
+		return typelist::getScalarAlignment($dt->{NAME});
 	}
+
+	die("Unknown data type type $dt->{TYPE}");
 }
 
 # determine if an element needs a reference pointer on the wire
