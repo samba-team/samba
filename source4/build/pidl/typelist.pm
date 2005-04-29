@@ -9,6 +9,147 @@ use strict;
 
 my %typedefs = ();
 
+# a list of known scalar types
+my $scalars = {
+	# 0 byte types
+	"void"		=> {
+				C_TYPE		=> "void",
+				NDR_ALIGN	=> 0
+			},
+
+	# 1 byte types
+	"char"		=> {
+				C_TYPE		=> "char",
+				NDR_ALIGN	=> 1
+			},
+	"int8"		=> {
+				C_TYPE		=> "int8_t",
+				NDR_ALIGN	=> 1
+			},
+	"uint8"		=> {
+				C_TYPE		=> "uint8_t",
+				NDR_ALIGN	=> 1
+			},
+
+	# 2 byte types
+	"int16"		=> {
+				C_TYPE		=> "int16_t",
+				NDR_ALIGN	=> 2
+			},
+	"uint16"	=> {	C_TYPE		=> "uint16_t",
+				NDR_ALIGN	=> 2
+			},
+
+	# 4 byte types
+	"int32"		=> {
+				C_TYPE		=> "int32_t",
+				NDR_ALIGN	=> 4
+			},
+	"uint32"	=> {	C_TYPE		=> "uint32_t",
+				NDR_ALIGN	=> 4
+			},
+
+	# 8 byte types
+	"int64"		=> {
+				C_TYPE		=> "int64_t",
+				NDR_ALIGN	=> 8
+			},
+	"uint64"	=> {
+				C_TYPE		=> "uint64_t",
+				NDR_ALIGN	=> 8
+			},
+	"hyper"		=> {
+				C_TYPE		=> "uint64_t",
+				NDR_ALIGN	=> 8
+			},
+	"dlong"		=> {
+				C_TYPE		=> "int64_t",
+				NDR_ALIGN	=> 4
+			},
+	"udlong"	=> {
+				C_TYPE		=> "uint64_t",
+				NDR_ALIGN	=> 4
+			},
+	"udlongr"	=> {
+				C_TYPE		=> "uint64_t",
+				NDR_ALIGN	=> 4
+			},
+
+	# DATA_BLOB types
+	"DATA_BLOB"	=> {
+				C_TYPE		=> "DATA_BLOB",
+				NDR_ALIGN	=> 4
+			},
+
+	# string types
+	"string"	=> {
+				C_TYPE		=> "const char *",
+				NDR_ALIGN	=> 4 #???
+			},
+
+	# time types
+	"time_t"	=> {
+				C_TYPE		=> "time_t",
+				NDR_ALIGN	=> 4
+			},
+	"NTTIME"	=> {
+				C_TYPE		=> "NTTIME",
+				NDR_ALIGN	=> 4
+			},
+	"NTTIME_1sec"	=> {
+				C_TYPE		=> "NTTIME",
+				NDR_ALIGN	=> 4
+			},
+	"NTTIME_hyper"	=> {
+				C_TYPE		=> "NTTIME",
+				NDR_ALIGN	=> 8
+			},
+
+
+	# error code types
+	"WERROR"	=> {
+				C_TYPE		=> "WERROR",
+				NDR_ALIGN	=> 4
+			},
+	"NTSTATUS"	=> {
+				C_TYPE		=> "NTSTATUS",
+				NDR_ALIGN	=> 4
+			},
+
+	# special types
+	"nbt_string"	=> {
+				C_TYPE		=> "const char *",
+				NDR_ALIGN	=> 4 #???
+			},
+	"ipv4address"	=> {
+				C_TYPE		=> "const char *",
+				NDR_ALIGN	=> 4
+			}
+};
+
+# map from a IDL type to a C header type
+sub mapScalarType($)
+{
+	my $name = shift;
+
+	# it's a bug when a type is not in the list
+	# of known scalars or has no mapping
+	return $scalars->{$name}{C_TYPE} if defined($scalars->{$name}) and defined($scalars->{$name}{C_TYPE});
+
+	die("Unknown scalar type $name");
+}
+
+sub getScalarAlignment($)
+{
+	my $name = shift;
+
+	# it's a bug when a type is not in the list
+	# of known scalars or has no mapping
+	return $scalars->{$name}{NDR_ALIGN} if defined($scalars->{$name}) and defined($scalars->{$name}{NDR_ALIGN});
+
+	die("Unknown scalar type $name");
+}
+
 sub addType($)
 {
 	my $t = shift;
@@ -38,17 +179,9 @@ sub hasType($)
 	return 0;
 }
 
-sub RegisterPrimitives()
+sub RegisterScalars()
 {
-	my @primitives = (
-		"char", "int8", "uint8", "short", "wchar_t", 
-		"int16", "uint16", "long", "int32", "uint32", 
-		"dlong", "udlong", "udlongr", "NTTIME", "NTTIME_1sec", 
-		"time_t", "DATA_BLOB", "error_status_t", "WERROR", 
-		"NTSTATUS", "boolean32", "unsigned32", "ipv4address", 
-		"hyper", "NTTIME_hyper");
-		
-	foreach my $k (@primitives) {
+	foreach my $k (keys %{$scalars}) {
 		$typedefs{$k} = {
 			NAME => $k,
 			TYPE => "TYPEDEF",
@@ -83,39 +216,6 @@ sub bitmap_type_fn($)
 		return "uint64";
 	}
 	return "uint32";
-}
-
-# provide mappings between IDL base types and types in our headers
-my %scalar_type_mappings = 
-    (
-     "int8"         => "int8_t",
-     "uint8"        => "uint8_t",
-     "short"        => "int16_t",
-     "wchar_t"      => "uint16_t",
-     "int16"        => "int16_t",
-     "uint16"       => "uint16_t",
-     "int32"        => "int32_t",
-     "uint32"       => "uint32_t",
-     "int64"        => "int64_t",
-     "uint64"       => "uint64_t",
-     "dlong"        => "int64_t",
-     "udlong"       => "uint64_t",
-     "udlongr"      => "uint64_t",
-     "hyper"        => "uint64_t",
-     "NTTIME_1sec"  => "NTTIME",
-     "NTTIME_hyper" => "NTTIME",
-     "ipv4address"  => "const char *",
-     "nbt_string"   => "const char *"
-     );
-
-# map from a IDL type to a C header type
-sub mapScalarType($)
-{
-	my $name = shift;
-	if (my $ret = $scalar_type_mappings{$name}) {
-		return $ret;
-	}
-	return $name;
 }
 
 sub mapType($)
@@ -165,7 +265,6 @@ sub LoadIdl($)
 	}
 }
 
-RegisterPrimitives();
-
+RegisterScalars();
 
 1;
