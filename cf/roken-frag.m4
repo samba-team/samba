@@ -85,8 +85,14 @@ AC_CHECK_HEADERS([\
 	userconf.h				\
 	usersec.h				\
 	util.h					\
-	vis.h					\
 ])
+
+dnl Sunpro 5.2 has a vis.h which is something different.
+AC_CHECK_HEADERS(vis.h, , , [
+#include <vis.h>
+#ifndef VIS_SP
+#error invis
+#endif])
 	
 AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
 #if HAVE_SYS_SOCKET_H
