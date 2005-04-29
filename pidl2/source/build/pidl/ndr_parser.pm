@@ -128,7 +128,7 @@ sub ParseExpr($$)
 	}
 
 	if (defined($varlist->{$expr})) {
-		return $prefix.$varlist->{$expr};
+		return $prefix.$varlist->{$expr}.$postfix;
 	}
 
 	return $prefix.$expr.$postfix;
@@ -210,8 +210,11 @@ sub GenerateFunctionEnv($)
 	my %env;
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
-		foreach my $d (@{$e->{DIRECTION}}) {
-			$env{$e->{NAME}} = "r->$d.$e->{NAME}";
+		if (grep (/out/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = "r->out.$e->{NAME}";
+		}
+		if (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = "r->in.$e->{NAME}";
 		}
 	}
 
@@ -877,7 +880,10 @@ sub ContainsDeferred($)
 {
 	my $e = shift;
 
-	foreach my $l (@{$e->{LEVELS}}) { return 1 if ($l->{IS_DEFERRED}); }
+	foreach my $l (@{$e->{LEVELS}}) { 
+		return 1 if ($l->{IS_DEFERRED}); 
+		return 1 if ($l->{CONTAINS_DEFERRED});
+	}
 	
 	return 0;
 }
