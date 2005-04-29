@@ -5,6 +5,7 @@ INIT_OBJ_FILES = \
 		librpc/ndr/ndr.o
 ADD_OBJ_FILES = \
 		librpc/ndr/ndr_basic.o \
+		librpc/ndr/ndr_string.o \
 		librpc/ndr/ndr_compression.o \
 		librpc/ndr/ndr_obfuscate.o \
 		librpc/ndr/ndr_misc.o
