@@ -1561,7 +1561,7 @@ access to dn.base=""
 		by self write
 		by * auth
 
-access to attr=userPassword
+access to attr=userPassword,sambaLMPassword,sambaNTPassword
 		by self write
 		by * auth
 
@@ -2966,7 +2966,7 @@ Joined domain MEGANET2.
 
         Sharename      Type      Comment
         ---------      ----      -------
-        IPC$           IPC       IPC Service (Samba 3.0.1)
+        IPC$           IPC       IPC Service (Samba 3.0.15)
         accounts       Disk      Accounting Files
         service        Disk      Financial Services Files
         pidata         Disk      Property Insurance Files
@@ -2974,11 +2974,11 @@ Joined domain MEGANET2.
         netlogon       Disk      Network Logon Service
         profiles       Disk      Profile Share
         profdata       Disk      Profile Data Share
-        ADMIN$         IPC       IPC Service (Samba 3.0.1)
+        ADMIN$         IPC       IPC Service (Samba 3.0.15)
 
         Server               Comment
         ---------            -------
-        MASSIVE              Samba 3.0.1
+        MASSIVE              Samba 3.0.15
 
         Workgroup            Master
         ---------            -------
@@ -3152,12 +3152,12 @@ application/octet-stream
 		to 1 and back to 5 before the NSS LDAP resolver functions. Follow these
 		commands:
 <screen>
-&rootprompt; init 1
+&rootprompt; telinit 1
 </screen>
 		After the run level has been achieved, you are prompted to provide the
 		<constant>root</constant> password. Log on, and then execute:
 <screen>
-&rootprompt; init 5
+&rootprompt; telinit 5
 </screen>
 		When the normal logon prompt appears, log into the system as
 	    <constant>root</constant>
@@ -3654,8 +3654,7 @@ structuralObjectClass: organizationalUnit
 	NT/200x/XP client logs onto the network, it tries to obtain the file
 	  <filename>logon.bat</filename>
 	from the fully qualified path <filename>/var/lib/samba/netlogon/scripts</filename>. This fully
-	qualified path should, therefore, exist whether you install the
-	  <filename>logon.bat</filename>.
+	qualified path should, therefore, exist where you install the <filename>logon.bat</filename>.
 	</para>
 
 	<para>
