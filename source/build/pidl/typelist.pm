@@ -223,8 +223,6 @@ sub mapType($)
 	my $e = shift;
 	my $dt;
 
-	return "const char *" if ($e->{TYPE} =~ "string");
-
 	if ($e->{TYPE} eq "ENUM" or $e->{TYPE} eq "BITMAP") {
 		$dt = getType($e->{PARENT}->{NAME});
 	}
