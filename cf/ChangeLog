@@ -1,3 +1,7 @@
+2005-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am.common: add LIB_com_err
+	
 2005-04-29  David Love  <fx@gnu.org>
 
 	* roken-frag.m4: Check for correct vis.h.
