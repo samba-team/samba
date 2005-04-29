@@ -13,7 +13,7 @@ check_PROGRAMS = destest mdtest rctest rc2test #md5crypt_test
 
 TESTS = $(check_PROGRAMS)
 
-LDADD = $(lib_LTLIBRARIES)
+LDADD = $(lib_LTLIBRARIES) $(LIB_roken)
 
 libdes_la_SOURCES =	\
 	aes.c		\
