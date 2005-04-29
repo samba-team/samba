@@ -471,8 +471,6 @@
 	      </indexterm><indexterm>
 		<primary>compat</primary>
 	      </indexterm><indexterm>
-		<primary>compat</primary>
-	      </indexterm><indexterm>
 		<primary>ldap</primary>
 	      </indexterm><indexterm>
 		<primary>nis</primary>
@@ -801,8 +799,9 @@ ssl     no
 <example id="ch9-sdmnss">
 <title>NSS using LDAP for Identity Resolution &smbmdash; File: <filename>/etc/nsswitch.conf</filename></title>
 <screen>
-passwd:         compat ldap
-group:          compat ldap
+passwd:         files ldap
+shadow:         files ldap
+group:          files ldap
 
 hosts:          files dns wins
 networks:       files dns
@@ -918,7 +917,7 @@ aliases:        files
 		<primary>/etc/nsswitch.conf</primary>
 	      </indexterm>
 		Edit the <filename>/etc/nsswitch.conf</filename> so it has the entries shown in
-		<link linkend="ch9-nsswbnd"/>.
+		<link linkend="ch9-sdmnss"/>.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -1063,31 +1062,6 @@ MEGANET2+PIOps:x:10005:
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
 </smbconfexample>
-
-<example id="ch9-nsswbnd">
-<title>Name Service Switch Control File: <filename>/etc/nsswitch.conf</filename></title>
-<screen>
-# /etc/nsswitch.conf
-
-passwd:         compat winbind
-group:          compat winbind
-
-hosts:          files dns wins
-networks:       files dns
-
-services:       files
-protocols:      files
-rpc:            files
-ethers:         files
-netmasks:       files
-netgroup:       files
-publickey:      files
-
-bootparams:     files
-automount:      files
-aliases:        files
-</screen>
-</example>
 
 	</sect2>
 
@@ -1370,7 +1344,7 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		</para></step>
 
 		<step><para>
-		Edit or create the NSS control file so it has the contents shown in <link linkend="ch9-nsswbnd"/>.
+		Edit or create the NSS control file so it has the contents shown in <link linkend="ch9-sdmnss"/>.
 		</para></step>
 
 	  <step><para><indexterm>
@@ -1981,10 +1955,11 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         </para>
 
         <para>
-        The following example is for an ADS style domain:
+        The example in <link linkend="sbeunxa"/> is for an ADS style domain.
         </para>
 
-        <para>
+<example id="sbeunxa">
+<title>Typical ADS Style Domain &smb.conf; File</title>
 <screen>
 # Global parameters
 [global]
@@ -2003,7 +1978,8 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         template shell = /bin/bash
         winbind use default domain = Yes
 </screen>
-        </para>
+</example>
+
         <para>
         <indexterm><primary>realm</primary></indexterm>
         In the case of an NT4 or Samba-3 style Domain the <parameter>realm</parameter> is not used and the
