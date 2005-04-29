@@ -40,6 +40,7 @@ LIB_setsockopt		= @LIB_setsockopt@
 LIB_socket		= @LIB_socket@
 LIB_syslog		= @LIB_syslog@
 LIB_tgetent		= @LIB_tgetent@
+LIB_com_err		= @LIB_com_err@
 
 HESIODLIB = @HESIODLIB@
 HESIODINCLUDE = @HESIODINCLUDE@
