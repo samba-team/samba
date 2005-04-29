@@ -61,7 +61,7 @@
 
 	<para>
 	  Starting with the configuration files for the server called
-	  <constant>MASSIVE</constant> in Chapter 6, you now deal with the
+	  <constant>MASSIVE</constant> in Chapter 5, you now deal with the
 	  issues that are particular to large distributed networks. Your task
 	  is simple &smbmdash; identify the challenges, consider the 
 	  alternatives, and then design and implement a solution.</para>
@@ -1159,7 +1159,7 @@ index default               sub
 <smbconfoption name="log level">1</smbconfoption>
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
-<smbconfoption name="max log size">0</smbconfoption>
+<smbconfoption name="max log size">50</smbconfoption>
 <smbconfoption name="smb ports">139 445</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="time server">Yes</smbconfoption>
