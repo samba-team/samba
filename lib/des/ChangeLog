@@ -1,4 +1,8 @@
-2005-04-27  Dave Love <fx@gnu.org>
+2005-04-29  Dave Love  <fx@gnu.org>
+
+	* Makefile.am: Add LIB_roken.
+	
+2005-04-27  Dave Love  <fx@gnu.org>
 
 	* sha.c: Include hash.h first.
 	

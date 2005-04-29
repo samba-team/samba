@@ -1,4 +1,8 @@
-2005-04-28  David Love <fx@gnu.org>
+2005-04-29  David Love  <fx@gnu.org>
+
+	* roken-frag.m4: Check for correct vis.h.
+	
+2005-04-28  David Love  <fx@gnu.org>
 
 	* pthreads.m4: Set PTHREADS_LIBS on Irix.
 
