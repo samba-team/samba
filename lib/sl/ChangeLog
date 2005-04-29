@@ -1,3 +1,7 @@
+2005-04-29  Dave Love  <d.love@dl.ac.uk>
+
+	* Makefile.am (LDADD): Add libsl.la.
+
 2005-04-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* slc-gram.y: include <config.h> since defines _GNU_SOURCE if
