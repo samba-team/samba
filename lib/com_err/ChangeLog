@@ -1,3 +1,7 @@
+2005-04-29  Dave Love  <fx@gnu.org>
+
+	* Makefile.am (LDADD): Add libcom_err.la
+
 2005-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* include strlcpy and *printf and use them
