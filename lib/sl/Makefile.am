@@ -40,6 +40,7 @@ CLEANFILES = lex.c parse.c parse.h snprintf.c strtok_r.c strdup.c strupr.c getpr
 $(mk_cmds_OBJECTS): parse.h parse.c
 
 LDADD =						\
+	libsl.la				\
 	$(LIB_roken)				\
 	$(LEXLIB)
 
