@@ -1,5 +1,11 @@
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* snprintf.c (vsnprintf): don't write the NUL into the string if
+	the length was 0
+
+	* snprintf-test.c: add check that snprintf doesn't write the NUL
+	into the last byte when its a zero length input string
+
 	* parse_time-test.c: Include <err.h>.
 	
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
