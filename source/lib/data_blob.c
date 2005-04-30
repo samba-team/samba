@@ -29,7 +29,7 @@ DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 {
 	DATA_BLOB ret;
 
-	if (length == 0) {
+	if (p == NULL && length == 0) {
 		ZERO_STRUCT(ret);
 		return ret;
 	}
