@@ -2101,7 +2101,7 @@ static void usage(void)
  int main(int argc, char *argv[])
 {
 	int opt;
-	int i;
+	int i, username_count=0;
 	BOOL ret;
 
 	setlinebuf(stdout);
@@ -2130,6 +2130,11 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
+	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
+	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
+	cli_credentials_guess(servers[0].credentials);
+	cli_credentials_guess(servers[1].credentials);
+
 	options.seed = time(NULL);
 	options.numops = 1000;
 	options.max_open_handles = 20;
@@ -2138,8 +2143,13 @@ static void usage(void)
 	while ((opt = getopt(argc, argv, "U:s:o:ad:i:AOhS:LFXC")) != EOF) {
 		switch (opt) {
 		case 'U':
-			i = servers[0].credentials->username?1:0;
-			cli_credentials_parse_string(servers[i].credentials, optarg, CRED_SPECIFIED);
+			if (username_count == 2) {
+				usage();
+				exit(1);
+			}
+			cli_credentials_parse_string(servers[username_count].credentials, 
+						     optarg, CRED_SPECIFIED);
+			username_count++;
 			break;
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
@@ -2189,13 +2199,12 @@ static void usage(void)
 
 	gentest_init_subsystems;
 
-	if (!servers[0].credentials->username) {
+	if (username_count == 0) {
 		usage();
 		return -1;
 	}
-	if (!servers[1].credentials->username) {
-		servers[1].credentials->username = servers[0].credentials->username;
-		servers[1].credentials->password = servers[0].credentials->password;
+	if (username_count == 1) {
+		servers[1].credentials = servers[0].credentials;
 	}
 
 	printf("seed=%u\n", options.seed);
