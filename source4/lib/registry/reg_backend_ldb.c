@@ -99,7 +99,7 @@ static int reg_close_ldb_key (void *data)
 {
 	struct registry_key *key = data;
 	struct ldb_key_data *kd = key->backend_data;
-	struct ldb_context *c = key->hive->backend_data;
+/*	struct ldb_context *c = key->hive->backend_data; */
 
 	if (kd->subkeys) {
 		talloc_free(kd->subkeys); 
