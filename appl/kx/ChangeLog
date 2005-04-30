@@ -1,3 +1,7 @@
+2005-04-30  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kx.c (connect_host): make sure s is initialized
+	
 2005-04-20  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* krb5.c: cast size_t to unsigned long
