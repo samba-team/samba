@@ -470,6 +470,7 @@ get_new_tickets(krb5_context context,
 						 pk_x509_anchors,
 						 flags,
 						 NULL,
+						 NULL,
 						 NULL);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
