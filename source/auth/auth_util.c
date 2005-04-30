@@ -65,17 +65,6 @@ void auth_add_user_script(const char *domain, const char *username)
 	
 	if ( *lp_adduser_script() )
 		smb_create_user(domain, username, NULL);
-	else {
-		DEBUG(10,("auth_add_user_script: no 'add user script'.  Asking winbindd\n"));
-		
-		/* should never get here is we a re a domain member running winbindd
-		   However, a host set for 'security = server' might run winbindd for 
-		   account allocation */
-		   
-		if ( !winbind_create_user(username, NULL) ) {
-			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
-		}
-	}
 }
 
 /****************************************************************************

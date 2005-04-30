@@ -2018,24 +2018,14 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	if ( can_add_account )
 		become_root();
 
-	if ( !pw ) {
-		if (*add_script) {
-  			int add_ret;
-			
-  			all_string_sub(add_script, "%u", account, sizeof(add_script));
-  			add_ret = smbrun(add_script,NULL);
- 			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
-  		}
-		else	/* no add user script -- ask winbindd to do it */
-		{
-			if ( !winbind_create_user( account, &new_rid ) ) {
-				DEBUG(3,("_samr_create_user: winbind_create_user(%s) failed\n", 
-					account));
-			}
-		}
-		
+	if ((pw == NULL) && (*add_script != '\0')) {
+		int add_ret;
+
+		all_string_sub(add_script, "%u", account, sizeof(add_script));
+		add_ret = smbrun(add_script,NULL);
+		DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
 	}
-	
+
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
 	flush_pwnam_cache();
@@ -3422,18 +3412,6 @@ static int smb_delete_user(const char *unix_user)
 {
 	pstring del_script;
 	int ret;
-
-	/* try winbindd first since it is impossible to determine where 
-	   a user came from via NSS.  Try the delete user script if this fails
-	   meaning the user did not exist in winbindd's list of accounts */
-
-	if ( winbind_delete_user( unix_user ) ) {
-		DEBUG(3,("winbind_delete_user: removed user (%s)\n", unix_user));
-		return 0;
-	}
-
-
-	/* fall back to 'delete user script' */
 
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)

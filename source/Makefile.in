@@ -668,8 +668,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_passdb.o \
 		nsswitch/winbindd_dual.o \
 		nsswitch/winbindd_ldap.o \
-		nsswitch/winbindd_async.o \
-		nsswitch/winbindd_acct.o
+		nsswitch/winbindd_async.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
