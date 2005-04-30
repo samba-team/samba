@@ -260,7 +260,7 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					       i, nt_errstr(status));
 					ret = False;
 				} else if (r[i].out.result != r[i].in.seconds) {
-					printf("Failed - Slept for %u seconds (but we said %u seconds and the reply takes only %u seconds)\n", 
+					printf("Failed - Asked to sleep for %u seconds (server replied with %u seconds and the reply takes only %u seconds)\n", 
 					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec);
 					ret = False;
 				} else {
