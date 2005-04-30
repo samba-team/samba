@@ -364,8 +364,6 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
 
 	r->generic.out.error_string = r2.generic.out.error_string;
-
-	/* store in secrets.ldb or samdb.ldb, depending on secret type */
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
