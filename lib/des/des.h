@@ -57,7 +57,7 @@ int	DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
 
-int	UI_UTIL_read_pw_string(char *, int, char *, int); /* XXX */
+int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
 void	DES_rand_data(unsigned char *, int);
 void	DES_set_random_generator_seed(DES_cblock *);
