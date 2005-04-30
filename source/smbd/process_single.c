@@ -56,7 +56,7 @@ static void single_accept_connection(struct event_context *ev,
 
 	talloc_steal(private, sock);
 
-	new_conn(ev, sock2, socket_get_fd(sock), private);
+	new_conn(ev, sock2, socket_get_fd(sock2), private);
 }
 
 /*
