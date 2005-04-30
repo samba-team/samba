@@ -225,6 +225,14 @@ test_null (void)
     return snprintf (NULL, 0, "foo") != 3;
 }
 
+static int
+test_length (void)
+{
+    char ch = 'a';
+    snprintf (&ch, 0, "foo");
+    return ch != 'a';
+}
+
 int
 main (int argc, char **argv)
 {
@@ -236,5 +244,6 @@ main (int argc, char **argv)
     ret += cmp_with_sprintf_long_long ();
 #endif
     ret += test_null ();
+    ret += test_length ();
     return ret;
 }
