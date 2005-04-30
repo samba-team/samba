@@ -1,6 +1,6 @@
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/krb5/test_kuserok.c: add <err.h>
+	* lib/krb5: add <err.h> in test programs
 	
 	* lib/krb5/Makefile.am: use LIB_com_err for libkrb5.la
 

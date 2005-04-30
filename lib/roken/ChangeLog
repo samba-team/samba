@@ -1,5 +1,8 @@
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* getifaddrs.c: add break on default: statements, from Douglas
+	E. Engert
+
 	* snprintf.c (vsnprintf): don't write the NUL into the string if
 	the length was 0
 
