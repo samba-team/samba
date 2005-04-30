@@ -42,11 +42,12 @@ return (CONFTEST_CODE2 - CONFTEST_CODE1) != 127;}
 fi
 AC_MSG_RESULT(${krb_cv_compile_et})
 if test "${krb_cv_compile_et}" = "yes" -a "${krb_cv_compile_et_cross}" = no; then
-  AC_MSG_CHECKING(for if com_err needs to have a initialize_error_table_r)
-  AC_EGREP_CPP(initialize_error_table_r,[#include "conftest_et.c"],
-     [krb_cv_com_err_need_r="initialize_error_table_r(0,0,0,0);"])
+  AC_MSG_CHECKING([for if com_err generates a initialize_conf_error_table_r])
+  AC_EGREP_CPP(initialize_conf_error_table_r,[#include "conftest_et.h"],
+     [krb_cv_com_err_need_r="ok"])
   if test X"$krb_cv_com_err_need_r" = X ; then
     AC_MSG_RESULT(no)
+    krb_cv_compile_et=no
   else
     AC_MSG_RESULT(yes)
   fi
@@ -64,7 +65,7 @@ elif test "${krb_cv_compile_et}" = "yes"; then
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <com_err.h>]],[[
     const char *p;
     p = error_message(0);
-    $krb_cv_com_err_need_r
+    initialize_error_table_r(0,0,0,0);
   ]])],[krb_cv_com_err="yes"],[krb_cv_com_err="no"; CPPFLAGS="${save_CPPFLAGS}"])
   AC_MSG_RESULT(${krb_cv_com_err})
   LIBS="${krb_cv_save_LIBS}"
