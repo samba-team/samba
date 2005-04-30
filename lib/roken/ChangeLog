@@ -1,5 +1,11 @@
+2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse_time-test.c: Include <err.h>.
+	
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* parse_time-test.c: improve testing
+	
 	* roken-common.h: add rk_realloc
 
 	* Makefile.am: add realloc
