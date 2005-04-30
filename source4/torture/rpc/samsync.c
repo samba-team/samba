@@ -583,7 +583,10 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (info3->base.account_name.string) {
 			TEST_STRING_EQUAL(user->account_name, info3->base.account_name);
 		}
-		TEST_STRING_EQUAL(user->full_name, info3->base.full_name);
+		/* this is NULL from Win2k3 */
+		if (info3->base.full_name.string) {
+			TEST_STRING_EQUAL(user->full_name, info3->base.full_name);
+		}
 		TEST_STRING_EQUAL(user->logon_script, info3->base.logon_script);
 		TEST_STRING_EQUAL(user->profile_path, info3->base.profile_path);
 		TEST_STRING_EQUAL(user->home_directory, info3->base.home_directory);
