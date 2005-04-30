@@ -43,6 +43,7 @@ RCSID("$Id$");
 #include <termios.h>
 #include <roken.h>
 
+#include <des.h>
 
 static sig_atomic_t intr_flag;
 
@@ -126,7 +127,7 @@ read_string(const char *preprompt, const char *prompt,
 }
 
 int
-UI_UTIL_read_pw_string(char *buf, int length, char *prompt, int verify)
+UI_UTIL_read_pw_string(char *buf, int length, const char *prompt, int verify)
 {
     int ret;
 
