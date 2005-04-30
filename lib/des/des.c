@@ -50,7 +50,7 @@ RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <krb5-types.h>
 
 #include "des.h"
