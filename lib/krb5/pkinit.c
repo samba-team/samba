@@ -44,6 +44,7 @@ RCSID("$Id$");
 #include <openssl/dh.h>
 #include <openssl/bn.h>
 #include <openssl/engine.h>
+#include <openssl/ui.h>
 
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -84,6 +85,16 @@ enum {
   }									\
 }
 
+/* ENGING_load_private_key requires a UI_METHOD and data  
+ * if to be usable from PAM 
+ */
+
+struct krb5_ui_data {
+    krb5_context context;
+    krb5_prompter_fct prompter;
+    void * prompter_data;
+};
+
 struct krb5_pk_identity {
     EVP_PKEY *private_key;
     STACK_OF(X509) *cert;
@@ -123,6 +134,76 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     integer->negative = bn->neg;
     return 0;
 }
+
+/*
+ * UI ex_data has the callback_data as passed to Engine. This is far
+ * from being complete, we will only process one prompt
+ */
+
+static int
+krb5_ui_method_read_string(UI *ui, UI_STRING *uis)
+{
+    char *buffer;
+    size_t length;
+    krb5_error_code ret;
+    krb5_prompt prompt;
+    krb5_data password_data;
+    struct krb5_ui_data *ui_data;
+  
+    ui_data = (struct krb5_ui_data *)UI_get_app_data(ui);
+
+    switch (UI_get_string_type(uis)) {
+    case UIT_INFO:
+    case UIT_ERROR:
+	/* looks like the RedHat pam_prompter might handle 
+	 * INFO and ERROR, Will see what happens */
+    case UIT_VERIFY:
+    case UIT_PROMPT:
+	length = UI_get_result_maxsize(uis);
+	buffer = malloc(password_data.length);
+	if (buffer == NULL) {
+	    krb5_set_error_string(ui_data->context, "malloc: out of memory");
+	    return 0;
+	}
+	password_data.data = buffer;
+	password_data.length = length;
+
+	prompt.prompt = UI_get0_output_string(uis);
+	prompt.hidden = !(UI_get_input_flags(uis) & UI_INPUT_FLAG_ECHO);
+	prompt.reply  = &password_data;
+	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
+  
+	ret = (*ui_data->prompter)(ui_data->context, 
+				   ui_data->prompter_data, 
+				   NULL, NULL, 1, &prompt);
+	if (ret == 0) {
+	    buffer[length - 1] = '\0';
+	    UI_set_result(ui, uis, password_data.data);
+
+	    /*
+	     * RedHat pam_krb5 pam_prompter does a strdup but others
+	     * may copy into buffer. XXX should we just leak the
+	     * memory instead ?
+	     */
+
+	    if (buffer != password_data.data)
+		free(password_data.data);
+	    memset (buffer, 0, length);
+	    free(buffer);
+	    return 1;
+	}
+	memset (buffer, 0, length);
+	free(buffer);
+	break;
+    case UIT_NONE:
+    case UIT_BOOLEAN:
+	/* XXX for now do not handle */
+	break;
+
+    }
+    return 0;
+}
+
 
 static krb5_error_code
 set_digest_alg(DigestAlgorithmIdentifier *id,
@@ -1789,6 +1870,7 @@ static krb5_error_code
 load_openssl_file(krb5_context context,
 		  char *password,
 		  krb5_prompter_fct prompter,
+		  void *prompter_data,
 		  const char *user_id,
 		  struct krb5_pk_identity *id)
 {
@@ -1969,6 +2051,7 @@ static krb5_error_code
 load_openssl_engine(krb5_context context,
 		    char *password,
 		    krb5_prompter_fct prompter,
+		    void *prompter_data,
 		    const char *string,
 		    struct krb5_pk_identity *id)
 {
@@ -2045,23 +2128,70 @@ load_openssl_engine(krb5_context context,
 			      "PKINIT: openssl engine init %s failed: %s", 
 			      ctx.engine_name,
 			      ERR_error_string(ERR_get_error(), NULL));
+	ENGINE_free(e);
 	goto out;
     }
-    ENGINE_free(e);
 
     ret = eval_pairs(context, e, ctx.engine_name, "post", 
 		     ctx.post_cmds, ctx.num_post);
     if (ret)
 	goto out;
 
-    ret = load_openssl_cert(context, ctx.cert_file, &id->cert);
-    if (ret)
-	goto out;
+    /*
+     * If the engine supports a LOAD_CERT_CTRL function, lets try
+     * it. OpenSC support this function. Eventially this should be
+     * a ENGINE_load_cert function if it failes, treat it like a
+     * non fatal error.
+     */
+    {
+	struct {
+	    const char * cert_id;
+	    X509 * cert;
+	} parms;
 
-    id->private_key = ENGINE_load_private_key(e,
-					      ctx.key_id, 
-					      NULL,
-					      NULL);
+	parms.cert_id = ctx.cert_file;
+	parms.cert = NULL;
+	ENGINE_ctrl_cmd(e, "LOAD_CERT_CTRL", 0, &parms, NULL, 1); 
+	if (parms.cert) {
+	    id->cert = sk_X509_new_null();
+	    sk_X509_insert(id->cert, parms.cert, 0);	
+	}  
+    }
+
+    if (id->cert == NULL) {
+	ret = load_openssl_cert(context, ctx.cert_file, &id->cert);
+	if (ret)
+	    goto out;
+    }
+
+    {
+	UI_METHOD * krb5_ui_method = NULL;
+	struct krb5_ui_data ui_data;
+
+	krb5_ui_method = UI_create_method("Krb5 ui method");
+	if (krb5_ui_method == NULL) {
+	    krb5_set_error_string(context,
+				  "PKINIT: failed to setup prompter "
+				  "function: %s",
+				  ERR_error_string(ERR_get_error(), NULL));
+	    ret = HEIM_PKINIT_NO_PRIVATE_KEY;
+	    goto out;
+	}
+	UI_method_set_reader(krb5_ui_method, krb5_ui_method_read_string);
+
+	ui_data.context = context;
+	ui_data.prompter = prompter;
+	if (prompter == NULL)
+	    ui_data.prompter = krb5_prompter_posix;
+	ui_data.prompter_data = prompter_data;
+
+    	id->private_key = ENGINE_load_private_key(e,
+						  ctx.key_id, 
+						  krb5_ui_method,
+						  (void*) &ui_data);
+	UI_destroy_method(krb5_ui_method);
+    }
+	
     if (id->private_key == NULL) {
 	krb5_set_error_string(context,
 			      "PKINIT: failed to load private key: %s",
@@ -2093,8 +2223,10 @@ load_openssl_engine(krb5_context context,
 	free(user_conf);
     if (file_conf)
 	free(file_conf);
-    if (e)
+    if (e) {
+	ENGINE_finish(e); /* make sure all shared libs are unloaded */
 	ENGINE_free(e);
+    }
 	
     return ret;
 }
@@ -2105,6 +2237,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 			 const char *user_id,
 			 const char *x509_anchors,
 			 krb5_prompter_fct prompter,
+			 void *prompter_data,
 			 char *password)
 {
     STACK_OF(X509) *trusted_certs = NULL;
@@ -2117,6 +2250,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
     krb5_error_code (*load_pair)(krb5_context, 
 				 char *, 
 				 krb5_prompter_fct prompter,
+				 void * prompter_data,
 				 const char *,
 				 struct krb5_pk_identity *) = NULL;
 
@@ -2166,7 +2300,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
     ERR_load_crypto_strings();
 
     
-    ret = (*load_pair)(context, password, prompter, user_id, id);
+    ret = (*load_pair)(context, password, prompter, prompter_data, user_id, id);
     if (ret)
 	goto out;
 
@@ -2275,6 +2409,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
     ctx = opt->private->pk_init_ctx;
     if (ctx->dh)
 	DH_free(ctx->dh);
+	ctx->dh = NULL;
     if (ctx->id) {
 	if (ctx->id->cert)
 	    sk_X509_pop_free(ctx->id->cert, X509_free);
@@ -2282,9 +2417,13 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	    sk_X509_pop_free(ctx->id->trusted_certs, X509_free);
 	if (ctx->id->private_key)
 	    EVP_PKEY_free(ctx->id->private_key);
-	if (ctx->id->engine)
+	if (ctx->id->engine) {
+		ENGINE_finish(ctx->id->engine); /* unload shared libs etc */
 	    ENGINE_free(ctx->id->engine);
+		ctx->id->engine = NULL;
+	}
 	free(ctx->id);
+	ctx->id = NULL;
     }
     opt->private->pk_init_ctx = NULL;
 #endif
@@ -2298,6 +2437,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   const char *x509_anchors,
 				   int flags,
 				   krb5_prompter_fct prompter,
+				   void *prompter_data,
 				   char *password)
 {
 #ifdef PKINIT
@@ -2320,6 +2460,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   user_id,
 				   x509_anchors,
 				   prompter,
+				   prompter_data,
 				   password);
     if (ret) {
 	free(opt->private->pk_init_ctx);
