@@ -1,3 +1,9 @@
+2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ui.c (UI_UTIL_read_pw_string): remove unused variable plen
+	
+	* des.c: replace <strings.h> with <string.h>
+	
 2005-04-29  Dave Love  <fx@gnu.org>
 
 	* Makefile.am: Add LIB_roken.
