@@ -99,7 +99,7 @@ connect_host (kx_context *kc)
     int error;
     char portstr[NI_MAXSERV];
     socklen_t addrlen;
-    int s;
+    int s = -1;
     struct sockaddr_storage thisaddr_ss;
     struct sockaddr *thisaddr = (struct sockaddr *)&thisaddr_ss;
 
