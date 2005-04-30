@@ -32,6 +32,7 @@
  */
 
 #include "kadm5_locl.h"
+#include <err.h>
 
 RCSID("$Id$");
 
@@ -48,7 +49,8 @@ print_keys(krb5_context context, Key *keys, size_t nkeys)
 
 	ret = krb5_enctype_to_string(context, keys[i].key.keytype, &str);
 	if (ret)
-	    errx(1, "krb5_enctype_to_string: %d\n", (int)keys[i].key.keytype);
+	    krb5_err(context, ret, 1, "krb5_enctype_to_string: %d\n",
+		     (int)keys[i].key.keytype);
 
 	printf("\tenctype %s", str);
 	free(str);
@@ -67,8 +69,9 @@ print_keys(krb5_context context, Key *keys, size_t nkeys)
 		printf("unknown salt: %d", keys[i].salt->type);
 		break;
 	    }
-	    printf("%.*s", (int)keys[i].salt->salt.length,
-		   (char *)keys[i].salt->salt.data);
+	    if (keys[i].salt->salt.length)
+		printf("%.*s", (int)keys[i].salt->salt.length,
+		       (char *)keys[i].salt->salt.data);
 	}	
 	printf("\n");
     }
@@ -104,7 +107,7 @@ main(int argc, char **argv)
 
     ret = krb5_parse_name(context, "lha@SU.SE", &principal);
     if (ret)
-	errx(1, "krb5_parse_name");
+	krb5_err(context, ret, 1, "krb5_parse_name");
 
     parse_file(context, principal, 0);
     parse_file(context, principal, 1);
