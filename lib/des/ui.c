@@ -128,7 +128,6 @@ read_string(const char *preprompt, const char *prompt,
 int
 UI_UTIL_read_pw_string(char *buf, int length, char *prompt, int verify)
 {
-    size_t plen;
     int ret;
 
     ret = read_string("", prompt, buf, length, 0);
