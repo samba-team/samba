@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "asn_1.h"
