@@ -1122,6 +1122,7 @@ pk_initialize(const char *user_id, const char *x509_anchors)
 				   user_id,
 				   x509_anchors,
 				   NULL,
+				   NULL,
 				   NULL);
     if (ret) {
 	krb5_warn(context, ret, "PKINIT: failed to load");
