@@ -32,6 +32,7 @@
 
 #include "krb5_locl.h"
 #include <getarg.h>
+#include <err.h>
 
 RCSID("$Id$");
 
