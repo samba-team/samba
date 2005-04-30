@@ -36,7 +36,7 @@ LDADD = libkrb5.la \
 	$(LIB_roken)
 
 libkrb5_la_LIBADD = \
-	../com_err/error.lo ../com_err/com_err.lo \
+	$(LIB_com_err) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
