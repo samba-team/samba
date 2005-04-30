@@ -1129,8 +1129,8 @@ static int tdb_update_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, TDB_DATA db
 /* find an entry in the database given a key */
 /* If an entry doesn't exist tdb_err will be set to
  * TDB_ERR_NOEXIST. If a key has no data attached
- * tdb_err will not be set. Both will return a
- * zero pptr and zero dsize.
+ * then the TDB_DATA will have zero length but
+ * a non-zero pointer
  */
 
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
@@ -1145,11 +1145,8 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	if (!(rec_ptr = tdb_find_lock_hash(tdb,key,hash,F_RDLCK,&rec)))
 		return tdb_null;
 
-	if (rec.data_len)
-		ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
-					  rec.data_len);
-	else
-		ret.dptr = NULL;
+	ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
+				  rec.data_len);
 	ret.dsize = rec.data_len;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 	return ret;
