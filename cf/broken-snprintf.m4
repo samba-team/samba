@@ -10,7 +10,7 @@ int main()
 {
 	char foo[[3]];
 	snprintf(foo, 2, "12");
-	return strcmp(foo, "1");
+	return strcmp(foo, "1") || snprintf(NULL, 0, "%d", 12) != 2;
 }]])],[:],[ac_cv_func_snprintf_working=no],[:]))
 
 if test "$ac_cv_func_snprintf_working" = yes; then
@@ -39,10 +39,19 @@ int foo(int num, ...)
 	return strcmp(bar, "1");
 }
 
+int bar(int num, int len, ...)
+{
+	int r;
+	va_list arg;
+	va_start(arg, len);
+	r = vsnprintf(NULL, 0, "%s", arg);
+	va_end(arg);
+	return r != len;
+}
 
 int main()
 {
-	return foo(0, "12");
+	return foo(0, "12") || bar(0, 2, "12");
 }]])],[:],[ac_cv_func_vsnprintf_working=no],[:]))
 
 if test "$ac_cv_func_vsnprintf_working" = yes; then
