@@ -32,6 +32,7 @@
 
 #include "krb5_locl.h"
 #include <hex.h>
+#include <err.h>
 
 #ifdef HAVE_OPENSSL
 #include <openssl/evp.h>
