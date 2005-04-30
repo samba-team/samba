@@ -39,6 +39,7 @@ RCSID("$Id$");
 #include "roken.h"
 #include "parse_time.h"
 #include "test-mem.h"
+#include "err.h"
 
 static struct testcase {
     size_t size;
