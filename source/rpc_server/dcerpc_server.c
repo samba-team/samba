@@ -963,7 +963,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !dcesrv_auth_request(call, &blob)) {
 		dce_partial_advance(dce_conn, blob.length);
-		return dcesrv_fault(call, DCERPC_FAULT_LOGON_FAILURE);		
+		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);		
 	}
 
 	dce_partial_advance(dce_conn, blob.length);
