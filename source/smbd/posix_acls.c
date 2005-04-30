@@ -2005,8 +2005,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
  then a simple POSIX permission of rw-r--r-- should really map to 5 entries,
 
  Entry 0: owner : deny all except read and write.
- Entry 1: group : deny all except read.
- Entry 2: owner : allow read and write.
+ Entry 1: owner : allow read and write.
+ Entry 2: group : deny all except read.
  Entry 3: group : allow read.
  Entry 4: Everyone : allow read.
 
