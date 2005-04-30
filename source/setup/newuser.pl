@@ -40,7 +40,7 @@ sub search($$)
 {
 	my $expr = shift;
 	my $attrib = shift;
-	my $res = `ldbsearch \"$expr\" $attrib | grep ^$attrib | cut -d' ' -f2- | head -1`;
+	my $res = `ldbsearch -H $opt_samdb \"$expr\" $attrib | grep ^$attrib | cut -d' ' -f2- | head -1`;
 	chomp $res;
 	return $res;
 }
@@ -96,7 +96,7 @@ $ENV{"LDB_URL"} = $opt_samdb;
 my $domain_sid = search("(objectClass=domainDNS)", "objectSid");
 my $domain_dn = search("(objectClass=domainDNS)", "dn");
 
-my $ldif = `ldbsearch 'cn=TemplateUser' | grep -v Template | grep -v '^#'`;
+my $ldif = `ldbsearch -H $opt_samdb 'cn=TemplateUser' | grep -v Template | grep -v '^#'`;
 chomp $ldif;
 
 my $sid;
