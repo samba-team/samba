@@ -172,6 +172,7 @@ ifa_sa_len(sa_family_t family, int len)
     size = (size_t)(((struct sockaddr *)NULL)->sa_data) + len;
     if (size < sizeof(struct sockaddr))
       size = sizeof(struct sockaddr);
+    break;
   }
   return size;
 }
@@ -670,6 +671,7 @@ getifaddrs(struct ifaddrs **ifap)
 	    case IFLA_QDISC:
 	      break;
 	    default:
+	      break;
 	    }
 	    break;
 	  case RTM_NEWADDR:
@@ -710,6 +712,7 @@ getifaddrs(struct ifaddrs **ifap)
 	    case IFA_CACHEINFO:
 	      break;
 	    default:
+	      break;
 	    }
 	  }
 	}
