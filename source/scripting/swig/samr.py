@@ -17,7 +17,6 @@ def sid_to_string(sid):
 
     return result
 
-
 def string_to_sid(string):
     """Convert a string SID to a Python dictionary SID.  Throws a
     ValueError if the SID string was badly formed."""
@@ -88,7 +87,6 @@ def string_to_sid(string):
 
     return sid
 
-
 def call_fn(fn, pipe, args):
     """Wrap up a RPC call and throw an exception is an error was returned."""
     
@@ -98,8 +96,7 @@ def call_fn(fn, pipe, args):
         raise dcerpc.NTSTATUS(result, dcerpc.nt_errstr(result));
 
     return result;
-
-    
+   
 class SamrHandle:
 
     def __init__(self, pipe, handle):
@@ -139,7 +136,6 @@ class SamrHandle:
         r.data_in.sdbuf = sdbuf
 
         call_fn(dcerpc.dcerpc_samr_SetSecurity, self.pipe, r)
-
         
 class ConnectHandle(SamrHandle):
 
@@ -205,6 +201,16 @@ class ConnectHandle(SamrHandle):
 
         return r.data_out.info
 
+
+    def SetBootKeyInformation(self, unknown1, unknown2, unknown3):
+        
+        r = dcerpc.samr_GetBootKeyInformation()
+        r.data_in.connect_handle = self.handle
+        r.data_in.unknown1 = unknown1
+        r.data_in.unknown2 = unknown2
+        r.data_in.unknown3 = unknown3
+
+        call_fn(dcerpc.dcerpc_samr_SetBootKeyInformation, self.pipe, r)
 
 class DomainHandle(SamrHandle):
 
@@ -402,8 +408,10 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_LookupNames, self.pipe, r)
 
-        return ([dcerpc.uint32_array_getitem(r.data_out.rids.ids, i) for i in range(r.data_out.rids.count)],
-                [dcerpc.uint32_array_getitem(r.data_out.types.ids, i) for i in range(r.data_out.types.count)])
+        return ([dcerpc.uint32_array_getitem(r.data_out.rids.ids, i)
+                 for i in range(r.data_out.rids.count)],
+                [dcerpc.uint32_array_getitem(r.data_out.types.ids, i)
+                 for i in range(r.data_out.types.count)])
 
     def CreateDomainGroup(self, domain_name, access_mask = 0x02000000):
 
@@ -486,6 +494,28 @@ class DomainHandle(SamrHandle):
 
         return getattr(r.data_out.info, 'info%d' % level)
 
+    def GetBootKeyInformation(self):
+
+        r = dcerpc.samr_GetBootKeyInformation()
+        r.data_in.domain_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_GetBootKeyInformation, self.pipe, r)
+
+        return r.data_out.unknown
+
+    def SetBootKeyInformation(self):
+
+        r = dcerpc.samr_GetBootKeyInformation()
+        r.data_in.domain_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_GetBootKeyInformation, self.pipe, r)
+
+    def TestPrivateFunctionsDomain(self):
+
+        r = dcerpc.samr_TestPrivateFunctionsDomain()
+        r.data_in.domain_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_TestPrivateFunctionsDomain, self.pipe, r)
 
 class UserHandle(SamrHandle):
 
@@ -527,10 +557,57 @@ class UserHandle(SamrHandle):
 
         return r.data_out.info
 
-class GroupHandle(SamrHandle):
-    pass
-    
+    def GetGroupsForUser(self):
 
+        r = dcerpc.samr_GetGroupsForUser()
+        r.data_in.user_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_GetGroupsForUser, self.pipe, r)
+
+        rid_types = [dcerpc.samr_RidType_array_getitem(r.data_out.rids.rid, x)
+                     for x in range(r.data_out.rids.count)]
+
+        return [(x.rid, x.type) for x in rid_types]
+
+    def TestPrivateFunctionsUser(self):
+
+        r = dcerpc.samr_TestPrivateFunctionsUser()
+        r.data_in.user_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_TestPrivateFunctionsUser, self.pipe, r)
+            
+class GroupHandle(SamrHandle):
+
+    def QueryGroupInfo(self, level):
+
+        r = dcerpc.samr_QueryGroupInfo()
+        r.data_in.group_handle = self.handle
+        r.data_in.level = level
+
+        call_fn(dcerpc.dcerpc_samr_QueryGroupInfo, self.pipe, r)
+
+        return r.data_out.info
+
+    def SetGroupInfo(self, level, info):
+
+        r = dcerpc.samr_SetGroupInfo()
+        r.data_in.group_handle = self.handle
+        r.data_in.level = level
+        r.data_in.info = info
+
+        call_fn(dcerpc.dcerpc_samr_SetGroupInfo, self.pipe, r)
+
+    def QueryGroupMember(self):
+
+        r = dcerpc.samr_QueryGroupMember()
+        r.data_in.group_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_QueryGroupMember, self.pipe, r)
+
+        return [(dcerpc.uint32_array_getitem(r.data_out.rids.rids, x),
+                 dcerpc.uint32_array_getitem(r.data_out.rids.unknown, x))
+                for x in range(r.data_out.rids.count)]
+    
 class AliasHandle(SamrHandle):
 
     def DeleteDomAlias(self):
@@ -584,6 +661,18 @@ class AliasHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_AddMultipleMembersToAlias, self.pipe, r)
 
+    def GetMembersInAlias(self):
+
+        r = dcerpc.samr_GetMembersInAlias()
+        r.data_in.alias_handle = self.handle
+
+        call_fn(dcerpc.dcerpc_samr_GetMembersInAlias, self.pipe, r)
+
+        return [
+            sid_to_string(
+                dcerpc.lsa_SidPtr_array_getitem(r.data_out.sids.sids, x).sid)
+            for x in range(r.data_out.sids.num_sids)]
+
 def Connect(pipe, access_mask = 0x02000000):
 
     r = dcerpc.samr_Connect()
@@ -595,7 +684,6 @@ def Connect(pipe, access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
 
-
 def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
 
@@ -606,7 +694,6 @@ def Connect2(pipe, system_name = '', access_mask = 0x02000000):
     call_fn(dcerpc.dcerpc_samr_Connect2, pipe, r)
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
-
 
 def Connect3(pipe, system_name = '', access_mask = 0x02000000):
 
@@ -645,30 +732,22 @@ def Connect5(pipe, system_name = '', access_mask = 0x02000000):
 
     return ConnectHandle(pipe, r.data_out.connect_handle)
     
-# QueryGroupInfo
-# SetGroupInfo
 # AddGroupMember
 # DeleteDomainGroup
 # DeleteGroupMember
-# QueryGroupMember
 # SetMemberAttributesofGroup
 # AddAliasMember
 # DeleteAliasMember
 # GetMembersinAlias
 # SetUserInfo
 # ChangePasswordUser
-# GetGroupsForUser
 # GetDisplayEnumerationIndex
-# TestPrivateFunctionsDomain
-# TestPrivateFunctionsUser
 # RemoveMemberFromForeignDomain
 # GetDisplayEnumerationIndex2
 # RemoveMultipleMembersFromAlias
 # OemChangePasswordUser2
 # ChangePasswordUser2
 # SetUserInfo2
-# SetBootKeyInformation
-# GetBootKeyInformation
 # ChangePasswordUser3
 # SetDsrmPassword
 # ValidatePassword
