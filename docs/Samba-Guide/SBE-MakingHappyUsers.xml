@@ -382,7 +382,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 	<listitem><para>
 	<indexterm><primary>Sun ONE Identity Server</primary></indexterm>
-		Sun ulink url="http://www.sun.com/software/sunone/identity/index.html">ONE Identity Server.</ulink>
+		Sun <ulink url="http://www.sun.com/software/sunone/identity/index.html">ONE Identity Server.</ulink>
 		This product suite provides an LDAP server that can be used for Samba. Example schema files are 
 		provided in the Samba source code tarball under the directory <filename>~samba/example/LDAP.</filename>
 	</para></listitem>
@@ -2151,7 +2151,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 	</para>
 
 	<procedure>
-	<title>Configuration of <filename>smbldap.conf</title>
+	<title>Configuration of <filename>smbldap.conf</filename></title>
 
 		<step><para>
 		Change into the directory that contains the <filename>configure.pl</filename> script.
@@ -2954,7 +2954,7 @@ smb: \> q
 	</para>
 
 	<procedure>
-	<title>Configuration of Raw Printers<title>
+	<title>Configuration of Raw Printers</title>
 
                 <step><para>
                 Configure all network attached printers to have a fixed IP address.
