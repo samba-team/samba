@@ -389,6 +389,8 @@
 	</para>
 
 	<procedure>
+	<title>User Migration Steps</title>
+
 		<step><para>
 		Configure the Samba &smb.conf; file to create a BDC. An example configuration is
 		given in <link linkend="sbent4smb"/>.
@@ -1208,6 +1210,8 @@ Creating unix group: 'Users'
 	</para>
 
 	<procedure>
+	<title>Migration Steps Using tdbsam</title>
+
 		<step><para>
 		Prepare a Samba-3 server precisely per the instructions shown in Chapter 5.
 		Set the workgroup name to <constant>MEGANET</constant>.
