@@ -142,9 +142,11 @@ void echo_TestSurrounding(echo_Surrounding *data)
 short echo_TestDoublePointer(short ***data)
 {
 	if (!*data) {
+		printf("WARNING: *data == NULL\n");
 		return 0;
 	}
 	if (!**data) {
+		printf("WARNING: **data == NULL\n");
 		return 0;
 	}
 	printf("Incoming double pointer: %d\n", ***data);

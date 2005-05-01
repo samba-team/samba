@@ -301,6 +301,23 @@ void main(int argc, char **argv)
 			continue;
 		}
 
+		if (strcmp(argv[0], "double") == 0) {
+			typedef unsigned short uint16;
+			uint16 v = 13;
+			uint16 *pv = &v;
+			uint16 **ppv = &pv;
+			uint16 ret;
+
+			argc -= 1;
+			argv += 1;
+
+			ret = echo_TestDoublePointer(&ppv);
+
+			printf("TestDoublePointer v=%d ret=%d\n", v, ret);
+			
+			continue;
+		}
+
 		if (strcmp(argv[0], "sleep") == 0) {
 			long arg, result;
 
