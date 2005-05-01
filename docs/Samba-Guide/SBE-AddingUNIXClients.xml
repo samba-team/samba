@@ -2257,10 +2257,10 @@ hosts:  files wins
 
 	<para><indexterm>
 	    <primary>Single Sign-On</primary>
-	    <see>SOS</see>
+	    <see>SSO</see>
 	  </indexterm>
 	The ability to use a common set of user credential across a variety of network systems
-	is generally regarded as a Single Sign-On (SOS) solution. SOS systems are sold by a
+	is generally regarded as a Single Sign-On (SSO) solution. SSO systems are sold by a
 	large number of vendors and include a range of technologies such as:
 	</para>
 
