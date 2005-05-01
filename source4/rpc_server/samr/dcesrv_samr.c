@@ -1741,7 +1741,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 	struct samr_account_state *a_state;
 	struct ldb_message **res;
 	struct ldb_message_element *el;
-	struct samr_ridArray *array;
+	struct samr_RidTypeArray *array;
 	const char * const attrs[2] = { "member", NULL };
 	int ret;
 
@@ -1757,7 +1757,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	array = talloc(mem_ctx, struct samr_ridArray);
+	array = talloc(mem_ctx, struct samr_RidTypeArray);
 
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -1776,9 +1776,9 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 		if (array->rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		array->unknown = talloc_array(mem_ctx, uint32_t,
-						el->num_values);
-		if (array->unknown == NULL)
+		array->types = talloc_array(mem_ctx, uint32_t,
+					    el->num_values);
+		if (array->types == NULL)
 			return NT_STATUS_NO_MEMORY;
 
 		for (i=0; i<el->num_values; i++) {
@@ -1797,7 +1797,7 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 			if (array->rids[i] == 0)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-			array->unknown[i] = 7; /* Not sure what this is.. */
+			array->types[i] = 7; /* RID type of some kind, not sure what the value means. */
 		}
 	}
 
@@ -2809,7 +2809,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	struct ldb_message **res;
 	struct dom_sid *domain_sid;
 	const char * const attrs[2] = { "objectSid", NULL };
-	struct samr_RidArray *array;
+	struct samr_RidWithTypeArray *array;
 	int count;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
@@ -2829,19 +2829,19 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	array = talloc(mem_ctx, struct samr_RidArray);
+	array = talloc(mem_ctx, struct samr_RidWithTypeArray);
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	array->count = 0;
-	array->rid = NULL;
+	array->rids = NULL;
 
 	if (count > 0) {
 		int i;
-		array->rid = talloc_array(mem_ctx, struct samr_RidType,
+		array->rids = talloc_array(mem_ctx, struct samr_RidWithType,
 					    count);
 
-		if (array->rid == NULL)
+		if (array->rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
 		for (i=0; i<count; i++) {
@@ -2854,9 +2854,9 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 				continue;
 			}
 
-			array->rid[array->count].rid =
+			array->rids[array->count].rid =
 				group_sid->sub_auths[group_sid->num_auths-1];
-			array->rid[array->count].type = 7;
+			array->rids[array->count].type = 7;
 			array->count += 1;
 		}
 	}

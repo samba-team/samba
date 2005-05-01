@@ -700,7 +700,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 		l.in.rids = talloc_array(mem_ctx, uint32_t, g.out.rids->count);
 
 		for (i=0; i<g.out.rids->count; i++)
-			l.in.rids[i] = g.out.rids->rid[i].rid;
+			l.in.rids[i] = g.out.rids->rids[i].rid;
 
 		status = dcerpc_samr_LookupRids(p, mem_ctx, &l);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -896,7 +896,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 		for (i=0; i<g.out.rids->count; i++) {
 			sids.sids[i+2].sid = dom_sid_add_rid(mem_ctx,
 							     domain_sid,
-							     g.out.rids->rid[i].rid);
+							     g.out.rids->rids[i].rid);
 		}
 		ga.in.sids = &sids;
 		ga.out.rids = &rids;
