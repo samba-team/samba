@@ -603,40 +603,6 @@ void unix_clean_name(char *s)
 	trim_string(s,NULL,"/..");
 }
 
-/****************************************************************************
- Make a dir struct.
-****************************************************************************/
-
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL uc)
-{  
-	char *p;
-	pstring mask2;
-
-	pstrcpy(mask2,mask);
-
-	if ((mode & aDIR) != 0)
-		size = 0;
-
-	memset(buf+1,' ',11);
-	if ((p = strchr_m(mask2,'.')) != NULL) {
-		*p = 0;
-		push_ascii(buf+1,mask2,8, 0);
-		push_ascii(buf+9,p+1,3, 0);
-		*p = '.';
-	} else
-		push_ascii(buf+1,mask2,11, 0);
-
-	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
-	SCVAL(buf,21,mode);
-	put_dos_date(buf,22,date);
-	SSVAL(buf,26,size & 0xFFFF);
-	SSVAL(buf,28,(size >> 16)&0xFFFF);
-	/* We only uppercase if FLAGS2_LONG_PATH_COMPONENTS is zero in the input buf.
-	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
-	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
-	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
-}
-
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
