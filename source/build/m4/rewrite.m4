@@ -11,6 +11,8 @@ AC_SUBST(PICFLAG)
 AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
 AC_SYS_LARGEFILE
 
+AC_CANONICAL_HOST
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
