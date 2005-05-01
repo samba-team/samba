@@ -91,7 +91,12 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 	if (sid == NULL)
 		return False;
 
-	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
+	if ( sid_compare_domain( sid, get_global_sam_sid() ) == 0 )
+		return True;
+	if ( sid_compare_domain( sid, &global_sid_Builtin ) == 0 )
+		return True;
+
+	return False;
 }
 
 
