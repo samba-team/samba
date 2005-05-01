@@ -2325,6 +2325,7 @@ static struct {
 	{"BENCH-TORTURE", NULL, run_torture},
 	{"BENCH-NBT",     torture_bench_nbt, 0},
 	{"BENCH-WINS",    torture_bench_wins, 0},
+	{"BENCH-RPC",     torture_bench_rpc, 0},
 
 	/* RAW smb tests */
 	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
