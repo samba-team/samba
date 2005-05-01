@@ -42,6 +42,7 @@ uint16 global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
+static TDB_CONTEXT *deferred_open_tdb;
 
 struct locking_data {
         union {
@@ -318,7 +319,21 @@ BOOL locking_init(int read_only)
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
-	
+
+	if (!read_only && !deferred_open_tdb) {
+		deferred_open_tdb = tdb_open_log(lock_path("deferred_open.tdb"), 
+		       0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, 
+		       O_RDWR|O_CREAT,
+		       0644);
+
+		if (!deferred_open_tdb) {
+			DEBUG(0,("ERROR: Failed to initialise deferred open database\n"));
+			tdb_close(tdb);
+			tdb = NULL;
+			return False;
+		}
+	}
+
 	if (!posix_locking_init(read_only))
 		return False;
 
@@ -333,15 +348,20 @@ BOOL locking_init(int read_only)
 
 BOOL locking_end(void)
 {
+	BOOL ret = True;
 
 	brl_shutdown(open_read_only);
 	if (tdb) {
-
 		if (tdb_close(tdb) != 0)
-			return False;
+			ret = False;
 	}
 
-	return True;
+	if (deferred_open_tdb) {
+		if (tdb_close(tdb) != 0)
+			ret = False;
+	}
+		
+	return ret;
 }
 
 /*******************************************************************
@@ -975,7 +995,7 @@ int get_deferred_opens(connection_struct *conn,
 
 	*pp_de_entries = NULL;
 
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(deferred_open_tdb, key);
 	if (!dbuf.dptr)
 		return 0;
 
@@ -1032,13 +1052,13 @@ int get_deferred_opens(connection_struct *conn,
 			dbuf.dsize -= del_count * sizeof(deferred_open_entry);
 
 			if (data->u.num_deferred_open_entries == 0) {
-				if (tdb_delete(tdb, key) == -1) {
+				if (tdb_delete(deferred_open_tdb, key) == -1) {
 					SAFE_FREE(de_entries);
 					SAFE_FREE(dbuf.dptr);
 					return 0;
 				}
 			} else {
-				if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
+				if (tdb_store(deferred_open_tdb, key, dbuf, TDB_REPLACE) == -1) {
 					SAFE_FREE(de_entries);
 					SAFE_FREE(dbuf.dptr);
 					return 0;
@@ -1082,7 +1102,7 @@ BOOL delete_deferred_open_entry(deferred_open_entry *entry)
 	TDB_DATA key = deferred_open_locking_key(entry->dev, entry->inode);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(deferred_open_tdb, key);
 	if (!dbuf.dptr)
 		return -1;
 
@@ -1125,10 +1145,10 @@ BOOL delete_deferred_open_entry(deferred_open_entry *entry)
 
 		/* store it back in the database */
 		if (data->u.num_deferred_open_entries == 0) {
-			if (tdb_delete(tdb, key) == -1)
+			if (tdb_delete(deferred_open_tdb, key) == -1)
 				ret = False;
 		} else {
-			if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+			if (tdb_store(deferred_open_tdb, key, dbuf, TDB_REPLACE) == -1)
 				ret = False;
 		}
 	}
@@ -1170,7 +1190,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 	BOOL ret = True;
 		
 	/* read in the existing deferred open records if any */
-	dbuf = tdb_fetch(tdb, key);
+	dbuf = tdb_fetch(deferred_open_tdb, key);
 	if (!dbuf.dptr) {
 		size_t offset;
 		/* we'll need to create a new record */
@@ -1190,7 +1210,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode, port);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
-		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+		if (tdb_store(deferred_open_tdb, key, dbuf, TDB_REPLACE) == -1)
 			ret = False;
 
 		print_deferred_open_table((struct deferred_open_data *)p);
@@ -1220,7 +1240,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
-	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
+	if (tdb_store(deferred_open_tdb, key, dbuf, TDB_REPLACE) == -1)
 		ret = False;
 	print_deferred_open_table((struct deferred_open_data *)p);
 	SAFE_FREE(p);
