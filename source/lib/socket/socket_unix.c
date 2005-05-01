@@ -38,9 +38,22 @@ static NTSTATUS unixdom_error(int ernum)
 
 static NTSTATUS unixdom_init(struct socket_context *sock)
 {
-	sock->fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	int type;
+
+	switch (sock->type) {
+	case SOCKET_TYPE_STREAM:
+		type = SOCK_STREAM;
+		break;
+	case SOCKET_TYPE_DGRAM:
+		type = SOCK_DGRAM;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sock->fd = socket(PF_UNIX, type, 0);
 	if (sock->fd == -1) {
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
+		return map_nt_error_from_unix(errno);
 	}
 	sock->private_data = NULL;
 
@@ -126,9 +139,11 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 		return unixdom_error(errno);
 	}
 
-	ret = listen(sock->fd, queue_size);
-	if (ret == -1) {
-		return unixdom_error(errno);
+	if (sock->type == SOCKET_TYPE_STREAM) {
+		ret = listen(sock->fd, queue_size);
+		if (ret == -1) {
+			return unixdom_error(errno);
+		}
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
@@ -150,6 +165,10 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 	struct sockaddr_un cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
 	int new_fd;
+
+	if (sock->type != SOCKET_TYPE_STREAM) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
@@ -290,8 +309,5 @@ static const struct socket_ops unixdom_ops = {
 
 const struct socket_ops *socket_unixdom_ops(enum socket_type type)
 {
-	if (type != SOCKET_TYPE_STREAM) {
-		return NULL;
-	}
 	return &unixdom_ops;
 }
