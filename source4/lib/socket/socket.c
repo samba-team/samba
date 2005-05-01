@@ -159,7 +159,8 @@ NTSTATUS socket_recv(struct socket_context *sock, void *buf,
 		     size_t wantlen, size_t *nread, uint32_t flags)
 {
 	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
-	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
+	    sock->state != SOCKET_STATE_SERVER_CONNECTED &&
+	    sock->type  != SOCKET_TYPE_DGRAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
