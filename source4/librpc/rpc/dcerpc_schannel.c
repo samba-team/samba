@@ -30,8 +30,7 @@
 */
 static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx, 
 				    struct dcerpc_pipe *p,
-				    struct cli_credentials *credentials,
-				    int chan_type)
+				    struct cli_credentials *credentials)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *b;
@@ -109,7 +108,8 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 
 	a.in.server_name = r.in.server_name;
 	a.in.account_name = cli_credentials_get_username(credentials);
-	a.in.secure_channel_type = chan_type;
+	a.in.secure_channel_type = 
+		cli_credentials_get_secure_channel_type(credentials);
 	a.in.computer_name = cli_credentials_get_workstation(credentials);
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
@@ -143,20 +143,10 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct cli_credentials *credentials)
 {
 	NTSTATUS status;
-	int chan_type = 0;
-
-	if (p->conn->flags & DCERPC_SCHANNEL_BDC) {
-		chan_type = SEC_CHAN_BDC;
-	} else if (p->conn->flags & DCERPC_SCHANNEL_WORKSTATION) {
-		chan_type = SEC_CHAN_WKSTA;
-	} else if (p->conn->flags & DCERPC_SCHANNEL_DOMAIN) {
-		chan_type = SEC_CHAN_DOMAIN;
-	}
 
 	/* Fills in NETLOGON credentials */
 	status = dcerpc_schannel_key(tmp_ctx, 
-				     p, credentials,
-				     chan_type);
+				     p, credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to setup credentials for account %s: %s\n",

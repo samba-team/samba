@@ -123,7 +123,6 @@ extern int errno;
 #include "smb.h"
 #include "byteorder.h"
 #include "module.h"
-#include "credentials.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
@@ -134,6 +133,7 @@ extern int errno;
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "lib/com/com.h"
+#include "credentials.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

@@ -210,12 +210,12 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 			       NULL,
 	};
 
-	const char *domain_attrs[] =  {"name", "objectSid"};
+	const char *domain_attrs[] =  {"flatname", "objectSid"};
 
 	if (domain_name) {
 		/* find the domain's DN */
 		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
-					  "(&(|(realm=%s)(name=%s))(objectclass=domain))", 
+					  "(&(|(realm=%s)(flatname=%s))(objectclass=domain))", 
 					  domain_name, domain_name);
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -410,13 +410,9 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	server_info->n_domain_groups = group_ret;
 	server_info->domain_groups = groupSIDs;
 
-	str = samdb_result_string(msgs[0], "sAMAccountName", "");
-	server_info->account_name = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+	server_info->account_name = talloc_reference(server_info, samdb_result_string(msgs[0], "sAMAccountName", NULL));
 
-	str = samdb_result_string(msgs_domain[0], "name", "");
-	server_info->domain_name = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+	server_info->domain_name = talloc_reference(server_info, samdb_result_string(msgs_domain[0], "flatname", NULL));
 
 	str = samdb_result_string(msgs[0], "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
