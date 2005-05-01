@@ -538,6 +538,8 @@ Samba-2.x could be compiled with LDAP support.
 	</para>
 
 	<procedure>
+	<title>Upgrading from a Pre-Samba-3 Version</title>
+
 		<step><para>
 		<indexterm><primary>winbindd</primary></indexterm>
 		<indexterm><primary>smbd</primary></indexterm>
@@ -1194,6 +1196,8 @@ back to searching the 'ldap suffix' in some cases.
 	</para>
 
 	<procedure>
+	<title>Migration to Active Directory</title>
+
 		<step><para>
 		Administrator password must be THE SAME on the Samba server,
 		the 2003 ADS, and the local Administrator account on the workstations. 
