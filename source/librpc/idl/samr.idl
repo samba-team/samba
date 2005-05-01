@@ -432,12 +432,12 @@
 	typedef struct {
 		uint32 count;
 		[size_is(count)] uint32 *rids[];
-		[size_is(count)] uint32 *unknown[];
-	} samr_ridArray;
+		[size_is(count)] uint32 *types[];
+	} samr_RidTypeArray;
 
 	NTSTATUS samr_QueryGroupMember(
 		[in,ref]  policy_handle *group_handle,
-		[out]     samr_ridArray *rids
+		[out]     samr_RidTypeArray *rids
 		);
 
 
@@ -813,19 +813,19 @@
 	/************************/
 	/* Function    0x27     */
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 rid;
 		uint32 type;
-	} samr_RidType;
+	} samr_RidWithType;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32     count;
-		[size_is(count)] samr_RidType *rid[];
-	} samr_RidArray;
+		[size_is(count)] samr_RidWithType *rids[];
+	} samr_RidWithTypeArray;
 
 	NTSTATUS samr_GetGroupsForUser(
 		[in,ref]   policy_handle *user_handle,
-		[out]      samr_RidArray  *rids
+		[out]      samr_RidWithTypeArray  *rids
 		);
 
 	/************************/

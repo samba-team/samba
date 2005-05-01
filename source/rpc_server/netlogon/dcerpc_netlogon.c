@@ -522,8 +522,28 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	sam->bad_password_count = sam->bad_password_count;
 	sam->rid = server_info->account_sid->sub_auths[server_info->account_sid->num_auths-1];
 	sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
-	sam->group_count = 0;
-	sam->groupids = NULL;
+
+	sam->groups.count = 0;
+	sam->groups.rids = NULL;
+
+	if (server_info->n_domain_groups > 0) {
+		int i;
+		sam->groups.rids = talloc_array(mem_ctx, struct samr_RidWithType,
+						server_info->n_domain_groups);
+
+		if (sam->groups.rids == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		for (i=0; i<server_info->n_domain_groups; i++) {
+			
+			struct dom_sid *group_sid = server_info->domain_groups[i];
+			sam->groups.rids[sam->groups.count].rid =
+				group_sid->sub_auths[group_sid->num_auths-1];
+			sam->groups.rids[sam->groups.count].type = 7;
+			sam->groups.count += 1;
+		}
+	}
+
 	sam->user_flags = 0; /* TODO: w2k3 uses 0x120 - what is this? */
 	sam->acct_flags = server_info->acct_flags;
 	sam->logon_server.string = lp_netbios_name();
