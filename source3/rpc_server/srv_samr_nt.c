@@ -730,9 +730,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	struct samr_displayentry *aliases;
 	struct pdb_search **search = NULL;
 	uint32 num_aliases = 0;
-	NTSTATUS status;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
@@ -752,14 +749,16 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	if (sid_check_is_builtin(&info->sid))
 		search = &info->disp_info.builtins;
 
-	if (search == NULL) return NT_STATUS_INVALID_HANDLE;
+	if (search == NULL) 
+		return NT_STATUS_INVALID_HANDLE;
 
 	become_root();
 	if (*search == NULL)
 		*search = pdb_search_aliases(&info->sid);
 	unbecome_root();
 
-	if (*search == NULL) return NT_STATUS_ACCESS_DENIED;
+	if (*search == NULL) 
+		return NT_STATUS_ACCESS_DENIED;
 
 	become_root();
 	num_aliases = pdb_search_entries(*search, q_u->start_idx,
@@ -768,8 +767,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_aliases, aliases);
-
-	if (!NT_STATUS_IS_OK(status)) return status;
 
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_aliases,
 				     num_aliases);
@@ -3849,6 +3846,10 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
+
+	/* they created it; let the user do what he wants with it */
+
+	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
