@@ -428,10 +428,7 @@
         logon drive = X:
         domain logons = Yes
         domain master = No
-# Uncomment the wins support setting after migration
 #       wins support = Yes
-# Set the WINS server address to that of the PDC
-# Comment the wins server setting out after migration
 	wins server = 192.168.123.124
         ldap admin dn = cn=Manager,dc=terpstra-world,dc=org
         ldap group suffix = ou=Groups
@@ -864,6 +861,7 @@ adding new entry: cn=Replicators,ou=Groups,dc=terpstra-world,dc=org
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>Novell SUSE SLES 9</primary></indexterm>
 		Restart the LDAP server following initialization of the LDAP directory. Execute the
 		system control script provided on your system. The following steps can be used on
 		Novell SUSE SLES 9:
@@ -1082,7 +1080,7 @@ Press enter to see a dump of your service definitions
 		<step><para>
 		All workstations should function as they did with the old NT4 PDC. All
 		inter-domain trust accounts should remain in place and fully functional.
-		All user logon accounts should also function correctly.
+		All machine accounts and user logon accounts should also function correctly.
 		</para></step>
 
 		<step><para>
