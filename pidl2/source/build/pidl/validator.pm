@@ -42,6 +42,7 @@ my %property_list = (
 	"uuid"			=> {},
 	"endpoint"		=> {},
 	"pointer_default"	=> {},
+	"pointer_default_top"	=> {},
 	"depends"		=> {},
 	"authservice"		=> {},
 
@@ -103,7 +104,6 @@ my %property_list = (
 	"range"			=> {},
 	"size_is"		=> {},
 	"length_is"		=> {},
-	"length_of"		=> {}, # what is that? --metze
 );
 
 #####################################################################

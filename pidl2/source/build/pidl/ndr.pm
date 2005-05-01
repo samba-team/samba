@@ -479,7 +479,7 @@ sub ParseFunction($$$)
 	my $rettype = undef;
 
 	CheckPointerTypes($d, 
-		$ndr->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
+		$ndr->{PROPERTIES}->{pointer_default_top}
 	);
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
@@ -542,6 +542,10 @@ sub ParseInterface($)
 		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
 		# and "unique" in Microsoft Extensions mode (default)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
+	}
+
+	if (not util::has_property($idl, "pointer_default_top")) {
+		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
 	}
 
 	foreach my $d (@{$idl->{DATA}}) {
