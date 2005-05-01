@@ -1345,12 +1345,14 @@ BOOL torture_rpc_samlogon(void)
 	 * with INTERNAL_ERROR */
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
 	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
 	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
 	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(credentials,
+						SEC_CHAN_WKSTA);
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,

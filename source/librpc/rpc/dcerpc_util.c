@@ -927,7 +927,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	p->conn->binding_string = dcerpc_binding_string(p, binding);
 
 	if (!cli_credentials_is_anonymous(credentials) &&
-		(binding->flags & DCERPC_SCHANNEL_ANY) && 
+		(binding->flags & DCERPC_SCHANNEL) && 
 		!cli_credentials_get_netlogon_creds(credentials)) {
 		
 		/* If we don't already have netlogon credentials for
@@ -952,7 +952,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
 		} else if (binding->flags & DCERPC_AUTH_KRB5) {
 			auth_type = DCERPC_AUTH_TYPE_KRB5;
-		} else if (binding->flags & DCERPC_SCHANNEL_ANY) {
+		} else if (binding->flags & DCERPC_SCHANNEL) {
 			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
 		} else {
 			auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
@@ -986,7 +986,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 	struct smbcli_state *cli;
 	const char *pipe_name = NULL;
 
-	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+	if (binding->flags & DCERPC_SCHANNEL) {
 		struct cli_credentials *anon_creds
 			= cli_credentials_init(tmp_ctx);
 		cli_credentials_set_anonymous(anon_creds);

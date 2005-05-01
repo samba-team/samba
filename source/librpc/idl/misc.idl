@@ -22,4 +22,13 @@ interface misc
 		uint32 handle_type;
 		GUID   uuid;
 	} policy_handle;
+
+	/* secure channel types */
+	/* Only SEC_CHAN_WKSTA can forward requests to other domains. */
+
+	typedef [public] enum {
+		SEC_CHAN_WKSTA   = 2,
+		SEC_CHAN_DOMAIN  = 4,
+		SEC_CHAN_BDC     = 6
+	} netr_SchannelType;
 }
