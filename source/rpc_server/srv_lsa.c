@@ -6,6 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Jeremy Allison                    2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002-2003.
+ *  Copyright (C) Gerald (Jerry) Carter             2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -765,6 +766,156 @@ static BOOL api_lsa_lookup_priv_value(pipes_struct *p)
 	return True;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+
+static BOOL api_lsa_open_trust_dom(pipes_struct *p)
+{
+	LSA_Q_OPEN_TRUSTED_DOMAIN q_u;
+	LSA_R_OPEN_TRUSTED_DOMAIN r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_open_trusted_domain("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_open_trust_dom: failed to unmarshall LSA_Q_OPEN_TRUSTED_DOMAIN .\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_open_trusted_domain(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_open_trusted_domain("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_open_trust_dom: Failed to marshall LSA_R_OPEN_TRUSTED_DOMAIN.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+static BOOL api_lsa_create_trust_dom(pipes_struct *p)
+{
+	LSA_Q_CREATE_TRUSTED_DOMAIN q_u;
+	LSA_R_CREATE_TRUSTED_DOMAIN r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_create_trusted_domain("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_create_trust_dom: failed to unmarshall LSA_Q_CREATE_TRUSTED_DOMAIN .\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_create_trusted_domain(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_create_trusted_domain("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_create_trust_dom: Failed to marshall LSA_R_CREATE_TRUSTED_DOMAIN.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+static BOOL api_lsa_create_secret(pipes_struct *p)
+{
+	LSA_Q_CREATE_SECRET q_u;
+	LSA_R_CREATE_SECRET r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_create_secret("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_create_secret: failed to unmarshall LSA_Q_CREATE_SECRET.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_create_secret(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_create_secret("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_create_secret: Failed to marshall LSA_R_CREATE_SECRET.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+static BOOL api_lsa_set_secret(pipes_struct *p)
+{
+	LSA_Q_SET_SECRET q_u;
+	LSA_R_SET_SECRET r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_set_secret("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_set_secret: failed to unmarshall LSA_Q_SET_SECRET.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_set_secret(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_set_secret("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_set_secret: Failed to marshall LSA_R_SET_SECRET.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+static BOOL api_lsa_delete_object(pipes_struct *p)
+{
+	LSA_Q_DELETE_OBJECT q_u;
+	LSA_R_DELETE_OBJECT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_delete_object("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_delete_object: failed to unmarshall LSA_Q_DELETE_OBJECT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_delete_object(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_delete_object("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_delete_object: Failed to marshall LSA_R_DELETE_OBJECT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
 #if 0	/* AD DC work in ongoing in Samba 4 */
 
 /***************************************************************************
@@ -827,7 +978,13 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights },
 	{ "LSA_ENUMACCTRIGHTS"  , LSA_ENUMACCTRIGHTS  , api_lsa_enum_acct_rights },
 	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
-	{ "LSA_LOOKUPPRIVVALUE" , LSA_LOOKUPPRIVVALUE , api_lsa_lookup_priv_value }
+	{ "LSA_LOOKUPPRIVVALUE" , LSA_LOOKUPPRIVVALUE , api_lsa_lookup_priv_value },
+	{ "LSA_OPENTRUSTDOM"    , LSA_OPENTRUSTDOM    , api_lsa_open_trust_dom },
+	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret },
+	{ "LSA_CREATETRUSTDOM"  , LSA_CREATETRUSTDOM  , api_lsa_create_trust_dom },
+	{ "LSA_CREATSECRET"     , LSA_CREATESECRET    , api_lsa_create_secret },
+	{ "LSA_SETSECRET"       , LSA_SETSECRET       , api_lsa_set_secret },
+	{ "LSA_DELETEOBJECT"    , LSA_DELETEOBJECT    , api_lsa_delete_object }
 #if 0	/* AD DC work in ongoing in Samba 4 */
 	/* be careful of the adding of new RPC's.  See commentrs below about
 	   ADS DC capabilities                                               */

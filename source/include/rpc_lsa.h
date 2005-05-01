@@ -475,25 +475,6 @@ typedef struct lsa_r_lookup_names
 	NTSTATUS status; /* return code */
 } LSA_R_LOOKUP_NAMES;
 
-/* This is probably a policy handle but at the moment we
-   never read it - so use a dummy struct. */
-
-typedef struct lsa_q_open_secret
-{
-	uint32 dummy;
-} LSA_Q_OPEN_SECRET;
-
-/* We always return "not found" at present - so just marshal the minimum. */
-
-typedef struct lsa_r_open_secret
-{
-	uint32 dummy1;
-	uint32 dummy2;
-	uint32 dummy3;
-	uint32 dummy4;
-	NTSTATUS status;
-} LSA_R_OPEN_SECRET;
-
 typedef struct lsa_enum_priv_entry
 {
 	UNIHDR hdr_name;
@@ -757,9 +738,6 @@ typedef struct {
 
 
 /*******************************************************/
-#if 0	/* This one is correct but until I fixed the 
-	   in parse_lsa.c, leave the previously defined
-	   LSA_Q_OPEN_SECRET & LSA_R_OPEN_SECRET */
 
 typedef struct {
 	POLICY_HND	handle;	
@@ -771,7 +749,6 @@ typedef struct {
 	POLICY_HND	handle;
 	NTSTATUS	status;
 } LSA_R_OPEN_SECRET;
-#endif
 
 
 /*******************************************************/
@@ -816,12 +793,17 @@ typedef struct {
 /*******************************************************/
 
 typedef struct {
+	uint32	size;	/* size is written on the wire twice so I 
+			   can only assume that one is supposed to 
+			   be a max length and one is a size */
+	UNISTR2	*data;	/* not really a UNICODE string but the parsing 
+			   is the same */
+} LSA_DATA_BLOB;
+
+typedef struct {
 	POLICY_HND	handle;	
-	REGVAL_BUFFER	*new_value;	/* not entirely true; the actual 
-					   data on the wire includes 2 additional
-					   uint32's (both containing the size from 
-					   the regval_buffer */
-	REGVAL_BUFFER	*old_value;
+	LSA_DATA_BLOB   *old_value;
+	LSA_DATA_BLOB	*new_value;
 } LSA_Q_SET_SECRET;
 
 typedef struct {

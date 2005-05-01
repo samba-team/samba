@@ -129,17 +129,20 @@ typedef struct {
  * Buffer Headers -- use by SEC_DESC_BUF in winreg and netlogon code
  **********************************************************************/
  
+/* TODO: replace this with an encompassing buffer structure */
 typedef struct {
 	uint32 buf_max_len;
 	uint32 buf_len;
 } BUFHDR;
 
+/* this is a BUFHDR + a pointer to a buffer */
 typedef struct {
 	uint32 info_level;
 	uint32 length;		/* uint8 chars */
 	uint32 buffer;
 } BUFHDR2;
 
+/* generic buffer ?  wrapped around void*? */
 typedef struct {
 	uint32 size;
 	uint32 buffer;
@@ -152,7 +155,8 @@ typedef struct {
 
 /* buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
    It *may* look like a UNISTR2 but it is *not*.  This is not a goof
-   by the winreg developers.  It is a generic buffer */
+   by the winreg developers.  It is a generic buffer.  buffer length
+   is stored in bytes (not # of uint16's) */
 
 typedef struct {
 	uint32 buf_max_len;
