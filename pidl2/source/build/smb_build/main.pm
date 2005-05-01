@@ -1,0 +1,87 @@
+###########################################################
+### SMB Build System					###
+### - the main program					###
+###							###
+###  Copyright (C) Stefan (metze) Metzmacher 2004	###
+###  Released under the GNU GPL				###
+###########################################################
+
+use makefile;
+use smb_build_h;
+use input;
+use config_mk;
+use output;
+use dot;
+use strict;
+
+sub smb_build_main($)
+{
+	my $INPUT = shift;
+	my %SMB_BUILD_CTX = (
+		INPUT => $INPUT
+	);
+
+	my @mkfiles = (
+		"dsdb/config.mk",
+		"gtk/config.mk",
+		"smbd/config.mk",
+		"smbd/process_model.mk",
+		"libnet/config.mk",
+		"auth/config.mk",
+		"nsswitch/config.mk",
+		"lib/basic.mk",
+		"lib/socket/config.mk",
+		"lib/ldb/config.mk",
+		"lib/talloc/config.mk",
+		"lib/tdb/config.mk",
+		"lib/registry/config.mk",
+		"lib/messaging/config.mk",
+		"lib/events/config.mk",
+		"lib/popt/config.mk",
+		"lib/cmdline/config.mk",
+		"lib/socket_wrapper/config.mk",
+		"smb_server/config.mk",
+		"rpc_server/config.mk",
+		"ldap_server/config.mk",
+		"winbind/config.mk",
+		"nbt_server/config.mk",
+		"auth/gensec/gensec.mk",
+		"auth/kerberos/kerberos.mk",
+		"auth/ntlmssp/ntlmssp.mk",
+		"libcli/auth/config.mk",
+		"libcli/ldap/config.mk",
+		"libcli/config.mk",
+		"utils/net/config.mk",
+		"utils/config.mk",
+		"ntvfs/posix/config.mk",
+		"ntvfs/config.mk",
+		"ntvfs/unixuid/config.mk",
+		"torture/config.mk",
+		"librpc/config.mk",
+		"client/config.mk",
+		"libcli/libsmb.mk",
+		"libcli/config.mk",
+		"libcli/security/config.mk",
+		"lib/com/config.mk",
+		"scripting/swig/config.mk",
+	);
+
+	$| = 1;
+
+	for my $mkfile (@mkfiles) {
+		config_mk::import_file($SMB_BUILD_CTX{INPUT}, $mkfile);
+	}
+
+	%{$SMB_BUILD_CTX{DEPEND}} = input::check(\%SMB_BUILD_CTX);
+	
+	%{$SMB_BUILD_CTX{OUTPUT}} = output::create_output($SMB_BUILD_CTX{DEPEND});
+
+	makefile::create_makefile_in($SMB_BUILD_CTX{OUTPUT});
+
+	smb_build_h::create_smb_build_h($SMB_BUILD_CTX{OUTPUT});
+
+	open DOTTY, ">samba4-deps.dot";
+	print DOTTY dot::generate($SMB_BUILD_CTX{DEPEND});
+	close DOTTY;
+}
+1;

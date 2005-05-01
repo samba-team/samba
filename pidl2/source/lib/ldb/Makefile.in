@@ -1,0 +1,129 @@
+CC = @CC@
+GCOV = @GCOV@
+YODL2MAN = @YODL2MAN@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
+bindir = @bindir@
+WITH_GCOV = @WITH_GCOV@
+
+ifeq ($(WITH_LDAP),1)
+OPENLDAP_PREFIX=/usr
+LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
+LDAP_FLAGS=-DHAVE_LDAP=1
+LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
+endif
+
+TDBDIR=../tdb
+TALLOCDIR=../talloc
+
+CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
+       -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. \
+       -I$(TDBDIR)/include -I$(TALLOCDIR) -DUSE_MMAP=1 $(LDAP_FLAGS)
+
+# enable the following two lines to build with gcov code coverage support
+ifeq ($(WITH_GCOV),1)
+GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
+GCOV_LIBS = -lgcov
+endif
+
+CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
+
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(GCOV_LIBS)
+
+TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
+TALLOC_OBJ=$(TALLOCDIR)/talloc.o
+
+LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
+	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
+	ldb_tdb/ldb_cache.o
+
+
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
+	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
+	   common/ldb_debug.o common/ldb_modules.o
+
+MODULES_OBJ=modules/timestamps.o modules/schema.o
+
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ)
+
+LDB_LIB = lib/libldb.a
+
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest
+
+LIBS = $(LDB_LIB)($(OBJS))
+
+DIRS = lib bin
+
+all: $(DIRS) $(BINS) $(LIBS) manpages
+
+lib:
+	mkdir -p lib
+
+bin:
+	mkdir -p bin
+
+lib/libldb.a: $(OBJS)
+
+bin/ldbadd: tools/ldbadd.o $(LIBS)
+	$(CC) -o bin/ldbadd tools/ldbadd.o $(LIB_FLAGS)
+
+bin/ldbsearch: tools/ldbsearch.o $(LIBS)
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o $(LIB_FLAGS)
+
+bin/ldbdel: tools/ldbdel.o $(LIBS)
+	$(CC) -o bin/ldbdel tools/ldbdel.o $(LIB_FLAGS)
+
+bin/ldbmodify: tools/ldbmodify.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o $(LIB_FLAGS)
+
+bin/ldbedit: tools/ldbedit.o $(LIBS)
+	$(CC) -o bin/ldbedit tools/ldbedit.o $(LIB_FLAGS)
+
+bin/ldbrename: tools/ldbrename.o $(LIBS)
+	$(CC) -o bin/ldbrename tools/ldbrename.o $(LIB_FLAGS)
+
+bin/ldbtest: tools/ldbtest.o $(LIBS)
+	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
+
+.SUFFIXES: .1 .2 .3 .yo
+
+.yo.3: 
+	echo Creating $@ from $<
+	-$(YODL2MAN) -o $@ `dirname $<`/`basename $< .yo` || rm -f $@
+
+manpages: $(patsubst %.yo,%.3,$(wildcard man/man3/*.yo))
+
+clean:
+	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
+
+etags:
+	etags */*.[ch]
+
+test-tdb:
+	@echo "STARTING TDB BACKEND TEST"
+	tests/test-tdb.sh
+
+test-ldap:
+	@echo "STARTING LDAP BACKEND TEST"
+	tests/test-ldap.sh
+
+test-schema:
+	@echo "STARTING SCHEMA MODULE TEST"
+	tests/test-schema.sh
+
+test: test-tdb test-ldap test-schema
+
+install: all
+	cp include/ldb.h $(includedir)
+	cp $(LDB_LIB) $(libdir)
+	cp $(BINS) $(bindir)
+	cp ldb.pc $(libdir)/pkgconfig
+
+gcov:
+	$(GCOV) -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
+	$(GCOV) -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
+	$(GCOV) -po common common/*.c 2| tee common.report.gcov
+	$(GCOV) -po modules modules/*.c 2| tee modules.report.gcov
+	$(GCOV) -po tools tools/*.c 2| tee tools.report.gcov
