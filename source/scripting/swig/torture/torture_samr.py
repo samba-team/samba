@@ -42,17 +42,42 @@ def test_UserHandle(user_handle):
             if arg[0] != 0xc0000003L:   # NT_STATUS_INVALID_INFO_CLASS
                 raise
 
+    # GetGroupsForUser()
+
+    user_handle.GetGroupsForUser()
+
+    # TestPrivateFunctionsUser()
+
+    try:
+        user_handle.TestPrivateFunctionsUser()
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xC0000002L:
+            raise
+
 def test_GroupHandle(group_handle):
 
     # QuerySecurity()/SetSecurity()
 
     group_handle.SetSecurity(group_handle.QuerySecurity())
 
+    # QueryGroupInfo()
+
+    for level in [1, 2, 3, 4, 5]:
+        info = group_handle.QueryGroupInfo(level)
+
+    # TODO: SetGroupinfo()
+
+    # QueryGroupMember()
+
+    group_handle.QueryGroupMember()
+
 def test_AliasHandle(alias_handle):
 
     # QuerySecurity()/SetSecurity()
 
     alias_handle.SetSecurity(alias_handle.QuerySecurity())
+
+    print alias_handle.GetMembersInAlias()
 
 def test_DomainHandle(name, sid, domain_handle):
 
@@ -141,6 +166,21 @@ def test_DomainHandle(name, sid, domain_handle):
     # RemoveMemberFromForeignDomain
     # CreateDomainGroup
     # GetAliasMembership
+
+    # GetBootKeyInformation()
+
+    try:
+        domain_handle.GetBootKeyInformation()
+    except dcerpc.NTSTATUS, arg:
+        pass
+
+    # TestPrivateFunctionsDomain()
+
+    try:
+        domain_handle.TestPrivateFunctionsDomain()
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xC0000002L:
+            raise
 
 def test_ConnectHandle(connect_handle):
 
