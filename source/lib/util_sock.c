@@ -98,6 +98,15 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_NODELAY
   {"TCP_NODELAY",       IPPROTO_TCP,   TCP_NODELAY,     0,                 OPT_BOOL},
 #endif
+#ifdef TCP_KEEPCNT
+  {"TCP_KEEPCNT",       IPPROTO_TCP,   TCP_KEEPCNT,     0,                 OPT_INT},
+#endif
+#ifdef TCP_KEEPIDLE
+  {"TCP_KEEPIDLE",      IPPROTO_TCP,   TCP_KEEPIDLE,    0,                 OPT_INT},
+#endif
+#ifdef TCP_KEEPINTVL
+  {"TCP_KEEPINTVL",     IPPROTO_TCP,   TCP_KEEPINTVL,   0,                 OPT_INT},
+#endif
 #ifdef IPTOS_LOWDELAY
   {"IPTOS_LOWDELAY",    IPPROTO_IP,    IP_TOS,          IPTOS_LOWDELAY,    OPT_ON},
 #endif
