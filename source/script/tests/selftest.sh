@@ -3,16 +3,16 @@ DOMAIN=SAMBADOMAIN
 REALM=$DOMAIN
 PASSWORD=penguin
 SRCDIR=`pwd`
-PREFIX=$SRCDIR/prefix
 SOCKET_WRAPPER_DIR=$PREFIX/sockdir
 TMPDIR=$PREFIX/tmp
 
-if [ ! -z "$BUILD" ]
+if [ $# -lt 1 ]
 then
-	./configure --prefix=$PREFIX --enable-socket-wrapper
-	mkdir -p $PREFIX $TMPDIR
-	make proto all install
+	echo "$0 PREFIX"
+	exit
 fi
+
+PREFIX=$1
 
 rm -f $PREFIX/private/*
 ./setup/provision.pl --quiet --outputdir $PREFIX/private --domain $DOMAIN --realm $REALM --adminpass $PASSWORD
