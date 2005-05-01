@@ -30,11 +30,13 @@
 /* Macros */
  
 #define REGF_BLOCKSIZE		0x1000
+#define REGF_ALLOC_BLOCK	0x1000
 
 /* header sizes for various records */
 
 #define REGF_HDR_SIZE		4
 #define HBIN_HDR_SIZE		4
+#define HBIN_HEADER_REC_SIZE	0x24
 #define REC_HDR_SIZE		2
 
 /* Flags for the vk records */
@@ -56,6 +58,8 @@ typedef struct {
 } REGF_HASH_REC;
 
 typedef struct {
+	uint32 rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
+
 	char header[REC_HDR_SIZE];
 	uint16 num_keys;
 	REGF_HASH_REC *hashes;
@@ -65,6 +69,7 @@ typedef struct {
 
 typedef struct {
 	uint32 hbin_off;
+	uint32 rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
 	
 	char header[REC_HDR_SIZE];
 	char *valuename;
@@ -81,9 +86,10 @@ struct _regf_sk_rec;
 
 typedef struct _regf_sk_rec {
 	struct _regf_sk_rec *next, *prev;
+	uint32 rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
 
-	uint32 sk_off;			/* offset parsed from NK record used as a key
-					   to lookup reference to this SK record */
+	uint32 sk_off;		/* offset parsed from NK record used as a key
+				   to lookup reference to this SK record */
 
 	char header[REC_HDR_SIZE];
 	uint32 prev_sk_off;
@@ -98,6 +104,7 @@ typedef struct _regf_sk_rec {
 typedef struct {
 	uint32 hbin_off;	/* offset from beginning of this hbin block */
 	uint32 subkey_index;	/* index to next subkey record to return */
+	uint32 rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
 	
 	/* header information */
 	
@@ -130,33 +137,44 @@ typedef struct {
 
 typedef struct {
 	uint32 file_off;		/* my offset in the registry file */
+	uint32 free_off;		/* offset to free space within the hbin record */
 	
 	char   header[HBIN_HDR_SIZE];	/* "hbin" */
 	uint32 first_hbin_off;		/* offset from first hbin block */
-	uint32 block_size;		/* block size of this block (always 4kb) */
-	uint32 data_size;		/* data size of this block -- not sure .... */
+	uint32 block_size;		/* block size of this blockually a multiple of 4096Kb) */
 
 	prs_struct ps;			/* data */
-
-	BOOL dirty;			/* should block be flushed to disk before releasing? */
 } REGF_HBIN;
 
 /* REGF block */
  
 typedef struct {
 	/* run time information */
+
 	int fd;				/* file descriptor */
 	int open_flags;			/* flags passed to the open() call */
-	TALLOC_CTX *mem_ctx;
-
-	REGF_SK_REC *sec_desc_list;	/* list of security descriptors referenced by NK records */
+	TALLOC_CTX *mem_ctx;		/* memory context for run-time file access information */
+	REGF_HBIN *hbin_free_space;	/* most recent hbin record that has available space */
 
 	/* file format information */
+
 	char   header[REGF_HDR_SIZE];	/* "regf" */
 	uint32 data_offset;		/* offset to record in the first (or any?) hbin block */
 	uint32 last_block;		/* offset to last hbin block in file */
 	uint32 checksum;		/* XOR of bytes 0x0000 - 0x01FB */
 	NTTIME mtime;
+	
+	REGF_SK_REC *sec_desc_list;	/* list of security descriptors referenced by NK records */
+
+	/* unknowns used to simply writing */
+	
+	uint32 unknown1;
+	uint32 unknown2;
+	uint32 unknown3;
+	uint32 unknown4;
+	uint32 unknown5;
+	uint32 unknown6;
+	
 } REGF_FILE;
 
 
@@ -167,6 +185,11 @@ int           regfio_close( REGF_FILE *r );
 
 REGF_NK_REC*  regfio_rootkey( REGF_FILE *file );
 REGF_NK_REC*  regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk );
+BOOL          regfio_write_key( REGF_FILE *file, REGF_NK_REC *nk );
+REGF_NK_REC*  regfio_create_nk_record( REGF_FILE *file, const char *name,
+                                       REGVAL_CTR *values, REGSUBKEY_CTR *subkeys,
+                                       REGF_NK_REC *parent );
+
 
 void          regfio_mem_free( REGF_FILE *file );
 

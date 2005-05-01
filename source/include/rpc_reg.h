@@ -25,6 +25,8 @@
 #ifndef _RPC_REG_H /* _RPC_REG_H */
 #define _RPC_REG_H 
 
+#include "reg_objects.h"
+
 /* RPC opnum */
 
 #define REG_OPEN_HKCR		0x00
@@ -80,36 +82,6 @@
 #define REG_FULL_RESOURCE_DESCRIPTOR   9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
 
-/*
- * INTERNAL REGISTRY STRUCTURES 
- */
-
-/* structure to contain registry values */
-
-typedef struct {
-	fstring		valuename;
-	uint16		type;
-	uint32		size;	/* in bytes */
-	uint8           *data_p;
-} REGISTRY_VALUE;
-
-/* container for registry values */
-
-typedef struct {
-	TALLOC_CTX      *ctx;
-	uint32          num_values;
-	REGISTRY_VALUE	**values;
-} REGVAL_CTR;
-
-/* container for registry subkey names */
-
-typedef struct {
-	TALLOC_CTX	*ctx;
-	uint32          num_subkeys;
-	char            **subkeys;
-} REGSUBKEY_CTR;
-
-
 /* 
  * container for function pointers to enumeration routines
  * for vitural registry view 
@@ -127,7 +99,6 @@ typedef struct {
 	const char	*keyname;	/* full path to name of key */
 	REGISTRY_OPS	*ops;		/* registry function hooks */
 } REGISTRY_HOOK;
-
 
 
 /* structure to store the registry handles */

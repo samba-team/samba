@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "regfio.h"
+#include "reg_objects.h"
 
 
 /********************************************************************
@@ -326,6 +327,46 @@ static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 /********************************************************************
 ********************************************************************/
 
+static BOOL translate_nk_to_regobj( REGF_FILE *infile, REGF_NK_REC *nk, 
+                                REGF_NK_REC *parent, REGF_FILE *outfile )
+{
+	REGF_NK_REC *key;
+	REGVAL_CTR values;
+	REGSUBKEY_CTR subkeys;
+	int i;
+
+	ZERO_STRUCT( values );
+	ZERO_STRUCT( subkeys );
+
+	regsubkey_ctr_init( &subkeys );
+	regval_ctr_init( &values );
+	
+	/* copy values into the REGVAL_CTR */
+	
+	for ( i=0; i<nk->num_values; i++ ) {
+		regval_ctr_addvalue( &values, nk->values[i].valuename, nk->values[i].type,
+			nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
+	}
+
+	/* copy subkeys into the REGSUBKEY_CTR */
+	
+	while ( (key = regfio_fetch_subkey( infile, nk )) ) {
+		regsubkey_ctr_addkey( &subkeys, key->keyname );
+	}
+	
+	key = regfio_create_nk_record( outfile, nk->keyname, &values, &subkeys, parent );
+	
+	regval_ctr_destroy( &values );
+	regsubkey_ctr_destroy( &subkeys );
+
+	d_printf("[%s]\n\n", nk->keyname );
+	
+	return True;
+}
+
+/********************************************************************
+********************************************************************/
+
 static int rpc_registry_dump( int argc, const char **argv )
 {
 	REGF_FILE   *registry;
@@ -337,7 +378,7 @@ static int rpc_registry_dump( int argc, const char **argv )
 	}
 	
 	d_printf("Opening %s....", argv[0]);
-	if ( !(registry = regfio_open( argv[0], O_RDONLY, 0 )) ) {
+	if ( !(registry = regfio_open( argv[0], O_RDONLY, 0)) ) {
 		d_printf("Failed to open %s for reading\n", argv[0]);
 		return 1;
 	}
@@ -354,6 +395,51 @@ static int rpc_registry_dump( int argc, const char **argv )
 	
 	d_printf("Closing registry...");
 	regfio_close( registry );
+	d_printf("ok\n");
+
+	return 0;
+}
+
+/********************************************************************
+********************************************************************/
+
+static int rpc_registry_copy( int argc, const char **argv )
+{
+	REGF_FILE   *infile, *outfile;
+	REGF_NK_REC *nk;
+	
+	if (argc != 2 ) {
+		d_printf("Usage:    net rpc copy <srcfile> <newfile>\n");
+		return 0;
+	}
+	
+	d_printf("Opening %s....", argv[0]);
+	if ( !(infile = regfio_open( argv[0], O_RDONLY, 0 )) ) {
+		d_printf("Failed to open %s for reading\n", argv[0]);
+		return 1;
+	}
+	d_printf("ok\n");
+
+	d_printf("Opening %s....", argv[1]);
+	if ( !(outfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC), (S_IREAD|S_IWRITE) )) ) {
+		d_printf("Failed to open %s for writing\n", argv[1]);
+		return 1;
+	}
+	d_printf("ok\n");
+	
+	/* get the root of the registry file */
+	
+	nk = regfio_rootkey( infile );
+	d_printf("RootKey: [%s]\n", nk->keyname);
+
+	translate_nk_to_regobj( infile, nk, NULL, outfile );
+
+	d_printf("Closing %s...", argv[1]);
+	regfio_close( outfile );
+	d_printf("ok\n");
+
+	d_printf("Closing %s...", argv[0]);
+	regfio_close( infile );
 	d_printf("ok\n");
 
 	return 0;
@@ -380,6 +466,7 @@ int net_rpc_registry(int argc, const char **argv)
 		{"enumerate", rpc_registry_enumerate},
 		{"backup",    rpc_registry_backup},
 		{"dump",      rpc_registry_dump},
+		{"copy",      rpc_registry_copy},
 		{NULL, NULL}
 	};
 	
