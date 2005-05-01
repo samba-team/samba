@@ -791,6 +791,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				<filename>\\server\office</filename>. Make this a permanent drive connection as follows:
 				</para>
 					<procedure>
+					<title>Creating Permanent Drive Mappings</title>
+
 						<step><para>
 							<menuchoice>
 								<guimenu>(Right-click) My Network</guimenu>
@@ -820,6 +822,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				manufacturer's instructions.
 				</para>
 					<procedure>
+					<title>Handling Application Needs</title>
+
 					<step><para>
 					During installation, you are prompted for the name of the Windows 98
 					server. Enter the name <constant>SERVER</constant>.
@@ -848,6 +852,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</para>
 
 					<procedure>
+					<title>Printer Installation Steps</title>
+
 						<step><para>
 						Click <menuchoice>
 							<guimenu>Start</guimenu>
@@ -1235,6 +1241,7 @@ application/octet-stream
 			</para>
 
 				<procedure>
+				<title>Data Migration Steps</title>
 
 					<step><para>
 					Logon to Alan's workstation as the user <constant>alan</constant>.

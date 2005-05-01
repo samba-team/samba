@@ -13,9 +13,8 @@
 	operates. Some creativity is helpful, but do keep it under control.
 	</para>
 
-    <para><indexterm>
-	<primary>Netware</primary>
-      </indexterm>
+	<para>
+	<indexterm><primary>Netware</primary></indexterm>
 	Five years ago there were two companies from which a lesson can be learned.	
 	In one case the network administrator spent three months building a new
 	network to replace an old Netware server. What he delivered had all the
@@ -283,9 +282,8 @@
 	rights and privileges within the Windows environment.
 	</para>
 
-      <para><indexterm>
-	  <primary>sticky bit</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>sticky bit</primary></indexterm>
 	The user <command>alanm</command> will be made the owner of all files. This will be preserved
 	by setting the sticky bit (set UID/GID) on the top-level directories.
 	</para>
@@ -296,6 +294,8 @@
 	</image>
 
 	<procedure>
+	<title>Implementation Procedure</title>
+
 		<step><para>
 		Using UNIX/Linux system tools, name the server <constant>sleeth</constant>.
 		</para></step>
@@ -711,6 +711,7 @@ hosts:	files wins
 		</para>
 
 		<procedure>
+		<title>Validation Steps</title>
 
 	  <step><para><indexterm>
 		<primary>testparm</primary>
@@ -905,6 +906,8 @@ smb: \> q
 		</para>
 
 			<procedure>
+			<title>Printer Installation</title>
+
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
@@ -1173,6 +1176,8 @@ smb: \> q
 		</para>
 
 		<procedure>
+		<title>Re-creating the Samba <constant>root</constant> Account</title>
+
 			<step><para>
 			Back up your existing configuration files in case you need to restore them.
 			</para></step>
