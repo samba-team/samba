@@ -6,6 +6,7 @@ exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
+WITH_GCOV = @WITH_GCOV@
 
 ifeq ($(WITH_LDAP),1)
 OPENLDAP_PREFIX=/usr
@@ -22,8 +23,10 @@ CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
        -I$(TDBDIR)/include -I$(TALLOCDIR) -DUSE_MMAP=1 $(LDAP_FLAGS)
 
 # enable the following two lines to build with gcov code coverage support
-#GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
-#GCOV_LIBS = -lgcov
+ifeq ($(WITH_GCOV),1)
+GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
+GCOV_LIBS = -lgcov
+endif
 
 CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
 
