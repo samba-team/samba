@@ -248,7 +248,7 @@ interface netlogon
 		[in] uint16 logon_level,
 		[in] [switch_is(logon_level)] netr_LogonLevel logon
 		);
-
+	
 
 
 	/*****************/
@@ -263,15 +263,6 @@ interface netlogon
 
 	/*****************/
 	/* Function 0x05 */
-
-	/* secure channel types */
-	/* Only SEC_CHAN_WKSTA can forward requests to other domains. */
-
-	typedef enum {
-		SEC_CHAN_WKSTA   = 2,
-		SEC_CHAN_DOMAIN  = 4,
-		SEC_CHAN_BDC     = 6
-	} netr_SchannelType;
 
 	NTSTATUS netr_ServerAuthenticate(
 		[in]         unistr *server_name,

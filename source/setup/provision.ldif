@@ -51,6 +51,7 @@ objectClass: top
 objectClass: domain
 objectClass: domainDNS
 name: ${DOMAIN}
+flatname: ${DOMAIN}
 realm: ${REALM}
 dnsDomain: ${DNSDOMAIN}
 dc: ${DOMAIN}

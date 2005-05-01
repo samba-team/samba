@@ -113,12 +113,7 @@ struct dcerpc_pipe {
 #define DCERPC_PUSH_BIGENDIAN          (1<<7)
 #define DCERPC_PULL_BIGENDIAN          (1<<8)
 
-#define DCERPC_SCHANNEL_BDC            (1<<9)
-#define DCERPC_SCHANNEL_WORKSTATION    (1<<10)
-#define DCERPC_SCHANNEL_DOMAIN         (1<<11)
-#define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
-					DCERPC_SCHANNEL_DOMAIN| \
-					DCERPC_SCHANNEL_WORKSTATION)
+#define DCERPC_SCHANNEL                (1<<9)
 
 /* use a 128 bit session key */
 #define DCERPC_SCHANNEL_128            (1<<12)
@@ -129,7 +124,7 @@ struct dcerpc_pipe {
 /* set LIBNDR_FLAG_REF_ALLOC flag when decoding NDR */
 #define DCERPC_NDR_REF_ALLOC           (1<<14)
 
-#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY|DCERPC_AUTH_SPNEGO|DCERPC_AUTH_KRB5)
+#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL|DCERPC_AUTH_SPNEGO|DCERPC_AUTH_KRB5)
 
 /* enable spnego auth */
 #define DCERPC_AUTH_SPNEGO             (1<<15)

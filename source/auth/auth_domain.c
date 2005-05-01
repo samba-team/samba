@@ -76,7 +76,7 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 
 	/* We like schannel */
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL | DCERPC_SCHANNEL_128;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128;
 
 	/* Setup schannel */
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 

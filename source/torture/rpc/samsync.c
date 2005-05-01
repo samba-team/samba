@@ -1499,7 +1499,7 @@ BOOL torture_rpc_samsync(void)
 	}
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
 
 	credentials = cli_credentials_init(mem_ctx);
 
@@ -1507,6 +1507,8 @@ BOOL torture_rpc_samsync(void)
 	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
 	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(credentials,
+						SEC_CHAN_BDC);
 
 	status = dcerpc_pipe_connect_b(samsync_state,
 				       &samsync_state->p, b, 
@@ -1536,7 +1538,7 @@ BOOL torture_rpc_samsync(void)
 	}
 
 	b_netlogon_wksta->flags &= ~DCERPC_AUTH_OPTIONS;
-	b_netlogon_wksta->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN;
+	b_netlogon_wksta->flags |= DCERPC_SCHANNEL | DCERPC_SIGN;
 
 	credentials_wksta = cli_credentials_init(mem_ctx);
 
@@ -1544,6 +1546,8 @@ BOOL torture_rpc_samsync(void)
 	cli_credentials_set_domain(credentials_wksta, lp_workgroup(), CRED_SPECIFIED);
 	cli_credentials_set_username(credentials_wksta, test_wksta_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials_wksta, wksta_machine_password, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(credentials_wksta,
+						SEC_CHAN_WKSTA);
 
 	status = dcerpc_pipe_connect_b(samsync_state, 
 				       &samsync_state->p_netlogon_wksta, 
