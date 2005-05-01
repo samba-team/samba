@@ -624,11 +624,11 @@ BOOL dptr_fill(char *buf1,unsigned int key)
 		DEBUG(1,("filling null dirptr %d\n",key));
 		return(False);
 	}
-	offset = TellDir(dptr->dir_hnd);
+	offset = (uint32)TellDir(dptr->dir_hnd);
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
 		(long)dptr->dir_hnd,(int)offset));
 	buf[0] = key;
-	SIVAL(buf,1,offset | DPTR_MASK);
+	SIVAL(buf,1,offset);
 	return(True);
 }
 
@@ -641,16 +641,22 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
 	unsigned int key = *(unsigned char *)buf;
 	struct dptr_struct *dptr = dptr_get(key, False);
 	uint32 offset;
+	long seekoff;
 
 	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",key));
 		return(NULL);
 	}
 	*num = key;
-	offset = IVAL(buf,1)&~DPTR_MASK;
-	SeekDir(dptr->dir_hnd,(long)offset);
+	offset = IVAL(buf,1);
+	if (offset == (uint32)-1) {
+		seekoff = -1;
+	} else {
+		seekoff = (long)offset;
+	}
+	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
-		key,dptr_path(key),offset));
+		key,dptr_path(key),(int)seekoff));
 	return(dptr);
 }
 
