@@ -55,27 +55,26 @@ static void exit_message(struct messaging_context *msg, void *private,
 */
 static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 {
-	struct event_context *ev = event_context_init(mem_ctx);
+	struct event_context *ev;
 	struct messaging_context *msg_ctx;
+	struct messaging_context *msg_ctx2;
 	int ping_count = 0;
 	int pong_count = 0;
 	BOOL ret = True;
 	struct timeval tv;
 
-	if (fork() == 0) {
-		struct messaging_context *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
-	
-		if (!msg_ctx2) {
-			exit(1);
-		}
-		
-		messaging_register(msg_ctx2, NULL, MY_PING, ping_message);
-		messaging_register(msg_ctx2, mem_ctx, MY_EXIT, exit_message);
-		event_loop_wait(ev);
-		exit(0);
-	}
+	lp_set_cmdline("lock dir", "lockdir.tmp");
 
-	sleep(2);
+	ev = event_context_init(mem_ctx);
+
+	msg_ctx2 = messaging_init(mem_ctx, 1, ev);
+	
+	if (!msg_ctx2) {
+		exit(1);
+	}
+		
+	messaging_register(msg_ctx2, NULL, MY_PING, ping_message);
+	messaging_register(msg_ctx2, mem_ctx, MY_EXIT, exit_message);
 
 	msg_ctx = messaging_init(mem_ctx, 2, ev);
 
@@ -124,7 +123,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	messaging_send(msg_ctx, 1, MY_EXIT, NULL);
 
 	if (ping_count != pong_count) {
-		printf("ping test failed! received %d, sent %d\n", pong_count, ping_count);
+		printf("ping test failed! received %d, sent %d\n", 
+		       pong_count, ping_count);
 		ret = False;
 	}
 
@@ -134,6 +134,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	talloc_free(msg_ctx);
 
 	talloc_free(ev);
+
 	return ret;
 }
 
