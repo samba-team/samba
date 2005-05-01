@@ -225,16 +225,10 @@ true if two IP addresses are equal
 	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
 
 /****************************************************************************
- Used by dptr_zero.
-****************************************************************************/
-
-#define DPTR_MASK ((uint32)(((uint32)1)<<31))
-
-/****************************************************************************
  Return True if the offset is at zero.
 ****************************************************************************/
 
-#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
+#define dptr_zero(buf) (IVAL(buf,1) == 0)
 
 /*******************************************************************
 copy an IP address from one buffer to another
