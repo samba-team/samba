@@ -472,9 +472,14 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	struct ldb_parse_tree *tree;
 	int ret;
 
+	if (ltdb_lock_read(module) != 0) {
+		return -1;
+	}
+
 	ltdb->last_err_string = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock_read(module);
 		return -1;
 	}
 
@@ -484,6 +489,7 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	tree = ldb_parse_tree(ldb, expression);
 	if (!tree) {
 		ltdb->last_err_string = "expression parse failed";
+		ltdb_unlock_read(module);
 		return -1;
 	}
 
@@ -501,6 +507,7 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	}
 
 	ldb_parse_tree_free(ldb, tree);
+	ltdb_unlock_read(module);
 
 	return ret;
 }
