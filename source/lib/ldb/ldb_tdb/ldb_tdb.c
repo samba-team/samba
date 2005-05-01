@@ -249,6 +249,40 @@ static int ltdb_unlock(struct ldb_module *module, const char *lockname)
 
 
 /*
+  lock the database for read - use by ltdb_search
+*/
+int ltdb_lock_read(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	TDB_DATA key;
+	int ret;
+	key = ltdb_key(module, LDBLOCK);
+	if (!key.dptr) {
+		return -1;
+	}
+	ret = tdb_chainlock_read(ltdb->tdb, key);
+	talloc_free(key.dptr);
+	return ret;
+}
+
+/*
+  unlock the database after a ltdb_lock_read()
+*/
+int ltdb_unlock_read(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	TDB_DATA key;
+	key = ltdb_key(module, LDBLOCK);
+	if (!key.dptr) {
+		return -1;
+	}
+	tdb_chainunlock_read(ltdb->tdb, key);
+	talloc_free(key.dptr);
+	return 0;
+}
+
+
+/*
   we've made a modification to a dn - possibly reindex and 
   update sequence number
 */
