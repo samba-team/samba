@@ -14,6 +14,8 @@ my $opt_nobody;
 my $opt_nogroup;
 my $opt_wheel;
 my $opt_users;
+my $opt_outputdir;
+my $opt_quiet;
 my $dnsdomain;
 my $netbiosname;
 my $dnsname;
@@ -274,11 +276,13 @@ provision.pl [options]
  --host-ip	IPADDRESS	set ipaddress
  --host-guid	GUID		set hostguid (otherwise random)
  --invocationid	GUID		set invocationid (otherwise random)
+ --outputdir	OUTPUTDIR	set output directory
  --adminpass	PASSWORD	choose admin password (otherwise random)
  --nobody	USERNAME	choose 'nobody' user
  --nogroup	GROUPNAME	choose 'nogroup' group
  --wheel	GROUPNAME	choose 'wheel' privileged group
  --users	GROUPNAME	choose 'users' group
+ --quiet			Be quiet
 
 You must provide at least a realm and domain
 
@@ -303,6 +307,8 @@ GetOptions(
 	    'nogroup=s' => \$opt_nogroup,
 	    'wheel=s' => \$opt_wheel,
 	    'users=s' => \$opt_users,
+	    'outputdir=s' => \$opt_outputdir,
+	    'quiet' => \$opt_quiet
 	    );
 
 if ($opt_help || 
@@ -326,7 +332,7 @@ if (!$opt_hostip) {
 	}
 }
 
-print "Provisioning host '$opt_hostname'[$opt_hostip] for domain '$opt_domain' in realm '$opt_realm'\n";
+$opt_quiet or print "Provisioning host '$opt_hostname'[$opt_hostip] for domain '$opt_domain' in realm '$opt_realm'\n"; 
 
 if (!$opt_nobody) {
 	if (defined getpwnam("nobody")) {
@@ -361,9 +367,9 @@ $opt_nogroup || die "Unable to determine a group for 'nogroup'\n";
 $opt_users || die "Unable to determine a group for 'users'\n";
 $opt_wheel || die "Unable to determine a group for 'wheel'\n";
 
-print "Using nobody='$opt_nobody'  nogroup='$opt_nogroup'  wheel='$opt_wheel'  users='$opt_users'\n";
+$opt_quiet or print "Using nobody='$opt_nobody'  nogroup='$opt_nogroup'  wheel='$opt_wheel'  users='$opt_users'\n";
 
-print "generating ldif ...\n";
+$opt_quiet or print "generating ldif ...\n";
 
 $dnsdomain = lc($opt_realm);
 $dnsname = lc($opt_hostname).".".$dnsdomain;
@@ -388,15 +394,21 @@ $ENV{"PATH"} .= ":bin:../bin";
 
 my $res = apply_substitutions($data);
 
-my $newdb = "newdb." . int(rand(1000));
+my $newdb = $opt_outputdir;
 
-print "Putting new database files in $newdb\n";
+unless ($newdb) {
+	$newdb = "newdb." . int(rand(1000));
+}
 
-mkdir($newdb) || die "Unable to create temporary directory $newdb\n";
+$opt_quiet or print "Putting new database files in $newdb\n";
+
+unless ($opt_outputdir) {
+	mkdir($newdb) || die "Unable to create temporary directory $newdb\n";
+}
 
 FileSave("$newdb/sam.ldif", $res);
 
-print "creating $newdb/sam.ldb ...\n";
+$opt_quiet or print "creating $newdb/sam.ldb ...\n";
 
 system("ldbadd -H $newdb/sam.ldb $newdb/sam.ldif") == 0 || die "Failed to create sam.ldb\n";
 
@@ -406,7 +418,7 @@ $res = apply_substitutions($data);
 
 FileSave("$newdb/rootdse.ldif", $res);
 
-print "creating $newdb/rootdse.ldb ...\n";
+$opt_quiet or print "creating $newdb/rootdse.ldb ...\n";
 
 system("ldbadd -H $newdb/rootdse.ldb $newdb/rootdse.ldif") == 0 || die "Failed to create rootdse.ldb\n";
 
@@ -416,7 +428,7 @@ $res = apply_substitutions($data);
 
 FileSave("$newdb/secrets.ldif", $res);
 
-print "creating $newdb/secrets.ldb ...\n";
+$opt_quiet or print "creating $newdb/secrets.ldb ...\n";
 
 system("ldbadd -H $newdb/secrets.ldb $newdb/secrets.ldif") == 0 || die "Failed to create secrets.ldb\n";
 
@@ -424,20 +436,18 @@ $data = FileLoad("setup/provision.zone") || die "Unable to load provision.zone\n
 
 $res = apply_substitutions($data);
 
-print "saving dns zone to $newdb/$dnsdomain.zone ...\n";
+$opt_quiet or print "saving dns zone to $newdb/$dnsdomain.zone ...\n";
 
 FileSave("$newdb/$dnsdomain.zone", $res);
 
-print "creating $newdb/hklm.ldb ... \n";
+$opt_quiet or print "creating $newdb/hklm.ldb ... \n";
 
 system("ldbadd -H $newdb/hklm.ldb setup/hklm.ldif") == 0 || die "Failed to create hklm.ldb\n";
 
-print "
+$opt_quiet or print "
 
 Installation:
 - Please move $newdb/*.ldb to the private/ directory of your
   Samba4 installation
 - Please use $newdb/$dnsdomain.zone in BIND on your dns server
 ";
-
-
