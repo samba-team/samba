@@ -249,7 +249,8 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 	}
 
 	/* only allow pseudo loopback connections */
-	if (((const struct sockaddr_in *)serv_addr)->sin_addr.s_addr != 
+	if (serv_addr->sa_family == AF_INET &&
+		((const struct sockaddr_in *)serv_addr)->sin_addr.s_addr != 
 	    htonl(INADDR_LOOPBACK)) {
 		errno = ENETUNREACH;
 		return -1;
