@@ -231,6 +231,7 @@ char *nt_errstr(NTSTATUS nt_code);
 %array_functions(struct samr_String, samr_String_array);
 %array_functions(struct samr_SamEntry, samr_SamEntry_array);
 %array_functions(union samr_ConnectInfo, samr_ConnectInfo_array);
+%array_functions(struct samr_RidType, samr_RidType_array);
 
 %array_functions(struct lsa_SidPtr, lsa_SidPtr_array);
 
