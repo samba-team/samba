@@ -338,16 +338,16 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	server_info->primary_group_sid = dom_sid_add_rid(server_info, base->domain_sid, base->primary_gid);
 	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
 
-	server_info->n_domain_groups = base->group_count;
-	if (base->group_count) {
-		server_info->domain_groups = talloc_array(server_info, struct dom_sid*, base->group_count);
+	server_info->n_domain_groups = base->groups.count;
+	if (base->groups.count) {
+		server_info->domain_groups = talloc_array(server_info, struct dom_sid*, base->groups.count);
 		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups);
 	} else {
 		server_info->domain_groups = NULL;
 	}
 
-	for (i = 0; i < base->group_count; i++) {
-		server_info->domain_groups[i] = dom_sid_add_rid(server_info, base->domain_sid, base->groupids[i].rid);
+	for (i = 0; i < base->groups.count; i++) {
+		server_info->domain_groups[i] = dom_sid_add_rid(server_info, base->domain_sid, base->groups.rids[i].rid);
 		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups[i]);
 	}
 

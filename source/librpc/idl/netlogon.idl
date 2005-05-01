@@ -156,8 +156,7 @@ interface netlogon
 		uint16 bad_password_count;
 		uint32 rid;
 		uint32 primary_gid;
-		uint32 group_count;
-		[size_is(group_count)] netr_GroupMembership *groupids[];
+		samr_RidWithTypeArray groups;
 		uint32 user_flags;
 		netr_UserSessionKey key;
 		netr_String logon_server;

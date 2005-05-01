@@ -409,6 +409,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	struct samr_QueryUserInfo q;
 	struct policy_handle user_handle;
 
+	struct samr_GetGroupsForUser getgroups;
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
 		return False;
@@ -431,9 +432,27 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	TEST_SEC_DESC_EQUAL(user->sdbuf, samr, &user_handle);
 
 	nt_status = dcerpc_samr_QueryUserInfo(samsync_state->p_samr, mem_ctx, &q);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("QueryUserInfo level %u failed - %s\n", 
+		       q.in.level, nt_errstr(nt_status));
+		ret = False;
+	}
+
+	getgroups.in.user_handle = &user_handle;
+	
+	nt_status = dcerpc_samr_GetGroupsForUser(samsync_state->p_samr, mem_ctx, &getgroups);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("GetGroupsForUser failed - %s\n",
+		       nt_errstr(nt_status));
+		ret = False;
+	}
+
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &user_handle)) {
 		printf("samr_handle_Close failed - %s\n", 
 		       nt_errstr(nt_status));
+		ret = False;
+	}
+	if (!ret) {
 		return False;
 	}
 
@@ -607,6 +626,32 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		if (!((user->last_logoff == 0) 
 		      || (info3->base.last_logoff == 0x7fffffffffffffffLL))) {
 			TEST_TIME_EQUAL(user->last_logoff, info3->base.last_logoff);
+		}
+
+		TEST_INT_EQUAL(getgroups.out.rids->count, info3->base.groups.count);
+		if (getgroups.out.rids->count == info3->base.groups.count) {
+			int i, j;
+			int count = getgroups.out.rids->count;
+			BOOL *matched = talloc_zero_array(mem_ctx, BOOL, getgroups.out.rids->count);
+				
+			for (i = 0; i < count; i++) {
+				for (j = 0; j < count; j++) {
+					if ((getgroups.out.rids->rids[i].rid == 
+					     info3->base.groups.rids[j].rid)
+					    && (getgroups.out.rids->rids[i].type == 
+						info3->base.groups.rids[j].type)) {
+							matched[i] = True;
+						}
+				}
+			}
+
+			for (i = 0; i < getgroups.out.rids->count; i++) {
+				if (matched[i] == False) {
+					ret = False;
+					printf("Could not find group RID %u found in getgroups in NETLOGON reply\n",
+					       getgroups.out.rids->rids[i].rid); 
+				}
+			}
 		}
 		return ret;
 	} else {

@@ -26,8 +26,7 @@ interface krb5pac
 		uint32 unknown[5];
 		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
-		uint32 res_groups_count;
-		[size_is(res_groups_count)] netr_GroupMembership *res_groups[];
+		samr_RidWithTypeArray res_groups;
     	} PAC_LOGON_INFO;
 
 	const uint8 PAC_TYPE_LOGON_INFO = 1;
