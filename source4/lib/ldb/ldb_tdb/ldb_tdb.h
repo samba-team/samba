@@ -104,6 +104,8 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const char *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_lock_read(struct ldb_module *module);
+int ltdb_unlock_read(struct ldb_module *module);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_match.c  */
 int ltdb_val_equal(struct ldb_module *module,
