@@ -28,12 +28,10 @@ class rpcclient(Cmd):
 
     prompt = 'rpcclient$ '
 
-    def __init__(self, server, domain, username, password):
+    def __init__(self, server, cred):
         Cmd.__init__(self)
         self.server = server
-        self.domain = domain
-        self.username = username
-        self.password = password
+        self.cred = cred
 
     def emptyline(self):
 
@@ -85,7 +83,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
 
@@ -107,7 +105,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
 
@@ -128,7 +126,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -155,7 +153,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -182,7 +180,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)	
 	domain_handle = connect_handle.OpenDomain(args[0])
@@ -207,7 +205,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
         domain_handle = connect_handle.OpenDomain(args[0])
@@ -231,7 +229,7 @@ class rpcclient(Cmd):
         pipe = dcerpc.pipe_connect(
             'ncacn_np:%s' % self.server,
             dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            (self.domain, self.username, self.password))
+            self.cred)
 
         connect_handle = samr.Connect(pipe)
         domain_handle = connect_handle.OpenDomain(args[0])
@@ -268,7 +266,9 @@ if __name__ == '__main__':
 
     options, args = parser.parse_args()
 
-    # Break --username up into domain, usernamd and password
+    # Break --username up into domain, username and password
+
+    cred = None
 
     if not options.username:
         options.username = '%'
@@ -283,9 +283,12 @@ if __name__ == '__main__':
 
     username = options.username
 
+    if username != '':
+	cred = (domain, username, password)
+
     # Run command loop
 
-    c = rpcclient(server, domain, username, password)
+    c = rpcclient(server, cred)
 
     if options.command:
         c.onecmd(options.command)
