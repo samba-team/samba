@@ -28,6 +28,8 @@
 #define SYS_DQBLK dqblk
 #endif
 
+ int autoconf_quota(void);
+
  int autoconf_quota(void)
 {
 	int ret = -1;

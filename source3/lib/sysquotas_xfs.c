@@ -329,5 +329,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 }
 
 #else /* HAVE_XFS_QUOTAS */
+ void dummy_sysquotas_xfs(void);
+
  void dummy_sysquotas_xfs(void){}
 #endif /* HAVE_XFS_QUOTAS */

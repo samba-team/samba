@@ -248,7 +248,7 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
  Setting principal to NULL deletes this entry.
  ************************************************************************/
 
- BOOL kerberos_secrets_store_salting_principal(const char *service,
+BOOL kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
 					      const char *principal)
 {

@@ -311,5 +311,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	return &koplocks;
 }
 #else
+ void oplock_linux_dummy(void);
+
  void oplock_linux_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */
