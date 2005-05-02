@@ -151,14 +151,8 @@ pch_clean:
 basics: idl proto_exists
 
 test: all
-	./script/tests/selftest.sh $(prefix)
+	./script/tests/selftest.sh `pwd`/prefix-test
 	
-export SOCKET_WRAPPER_DIR=$(shell pwd)/sockdir
-
-test-swrap: all
-	mkdir -p $(SOCKET_WRAPPER_DIR)
-	./script/tests/selftest.sh $(prefix)
-
 __EOD__
 
 	return $output;
