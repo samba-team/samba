@@ -201,3 +201,6 @@ struct wrepl_pull_table;
 struct wrepl_pull_names;
 
 struct arcfour_state;
+
+union libnet_SamDump;
+
