@@ -1,3 +1,10 @@
+2005-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: Now that we fixed the signed-ness of
+	nonce for windows, remove the code that removed the signed
+	bit. Instead add comment that they still need to be the same
+	(Kerberos protocol nonce and pk-init nonce) for Windows.
+	
 2005-05-02  David Love  <fx@gnu.org>
 
 	* lib/krb5/crypto.c: Don't declare des_salt &c as static with
