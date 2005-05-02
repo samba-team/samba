@@ -22,6 +22,8 @@
 /* Stupid dummy functions required due to the horrible dependency mess
    in Samba. */
 
+void decrement_smbd_process_count( void );
+
 void decrement_smbd_process_count( void )
 {
 	return;

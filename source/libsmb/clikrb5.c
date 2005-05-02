@@ -525,11 +525,13 @@ failed:
 
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
+
  const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
 {
 	static krb5_data kdata;
 
-	kdata.data = krb5_principal_get_comp_string(context, principal, i);
+	kdata.data = (char *)krb5_principal_get_comp_string(context, principal, i);
 	kdata.length = strlen(kdata.data);
 	return &kdata;
 }
