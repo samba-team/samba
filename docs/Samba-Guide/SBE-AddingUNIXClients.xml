@@ -521,7 +521,7 @@
 
 	<para>
 	The instructions given here apply to the Samba environment as shown in Chapters 6 and 7.
-	If the network does not have an LDAP slave server (i.e., Chapter 6 configuration), 
+	If the network does not have an LDAP slave server (i.e., <link linkend="happy"/> configuration), 
 	change the target LDAP server from <constant>lapdc</constant> to <constant>massive.</constant>
 	</para>
 
