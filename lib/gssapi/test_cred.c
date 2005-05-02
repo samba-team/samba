@@ -143,6 +143,7 @@ main(int argc, char **argv)
     gss_name_t name;
     int optind = 0;
 
+    setprogname(argv[0]);
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
     
