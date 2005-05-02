@@ -104,7 +104,6 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	int i;
 	BOOL timed_out;
 
-	/* we consider a cancel to be a timeout */
 	timed_out = (reason != PVFS_WAIT_EVENT);
 
 	locks = lck->lockx.in.locks + lck->lockx.in.ulock_cnt;
@@ -117,16 +116,21 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 
 	DLIST_REMOVE(f->pending_list, pending);
 
-	status = brl_lock(pvfs->brl_context,
-			  &f->handle->brl_locking_key,
-			  req->smbpid,
-			  f->fnum,
-			  locks[pending->pending_lock].offset,
-			  locks[pending->pending_lock].count,
-			  rw, NULL);
-
+	/* we don't retry on a cancel */
+	if (reason == PVFS_WAIT_CANCEL) {
+		status = NT_STATUS_CANCELLED;
+	} else {
+		status = brl_lock(pvfs->brl_context,
+				  &f->handle->brl_locking_key,
+				  req->smbpid,
+				  f->fnum,
+				  locks[pending->pending_lock].offset,
+				  locks[pending->pending_lock].count,
+				  rw, NULL);
+	}
 	if (NT_STATUS_IS_OK(status)) {
 		f->lock_count++;
+		timed_out = False;
 	}
 
 	/* if we have failed and timed out, or succeeded, then we
@@ -153,14 +157,10 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 	}
 
 	/* if we haven't timed out yet, then we can do more pending locks */
-	if (timed_out) {
-		pending = NULL;
+	if (rw == READ_LOCK) {
+		rw = PENDING_READ_LOCK;
 	} else {
-		if (rw == READ_LOCK) {
-			rw = PENDING_READ_LOCK;
-		} else {
-			rw = PENDING_WRITE_LOCK;
-		}
+		rw = PENDING_WRITE_LOCK;
 	}
 
 	/* we've now got the pending lock. try and get the rest, which might
