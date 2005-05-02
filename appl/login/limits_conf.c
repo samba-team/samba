@@ -53,7 +53,7 @@ struct limit {
     LIM(CPU, 60),
     LIM(DATA, 1024),
     LIM(FSIZE, 1024),
-#ifdef RLIMIT_LOCK
+#ifdef RLIMIT_MEMLOCK
     LIM(MEMLOCK, 1024),
 #endif
     LIM(NOFILE, 1),
