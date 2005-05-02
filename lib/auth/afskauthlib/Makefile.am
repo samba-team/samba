@@ -17,10 +17,12 @@ OBJS = verify.o
 CLEANFILES = $(foo_DATA) $(OBJS) so_locations
 
 afskauthlib.so: $(OBJS)
-	$(LINK) -shared $(OBJS) $(L)
+	$(LIBTOOL) --mode=link $(CC) -shared -o $@ $(OBJS) $(L) $(LDFLAGS)
 
 .c.o:
-	$(COMPILE) -c $<
+	$(CC) $(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
+	-c `test -f '$<' || echo '$(srcdir)/'`$<
 
 KAFS = $(top_builddir)/lib/kafs/libkafs.la
 
