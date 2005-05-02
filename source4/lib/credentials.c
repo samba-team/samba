@@ -458,6 +458,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 		"samAccountName",
 		"flatname",
 		"realm",
+		"secureChannelType",
 		NULL
 	};
 	
@@ -512,7 +513,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	}
 	
 	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
-	if (!sct) {
+	if (sct) {
 		cli_credentials_set_secure_channel_type(cred, sct);
 	} else {
 		DEBUG(1, ("Domain join for acocunt %s did not have a secureChannelType set!\n",
