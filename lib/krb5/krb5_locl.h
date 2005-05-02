@@ -112,6 +112,14 @@ struct sockaddr_dl;
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif
+
+#ifdef HAVE_CRYPT_H
+#undef des_encrypt
+#define des_encrypt wingless_pigs_mostly_fail_to_fly
+#include <crypt.h>
+#undef des_encrypt
+#endif
+
 #include <roken.h>
 #include <parse_time.h>
 #include <base64.h>
