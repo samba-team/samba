@@ -276,7 +276,6 @@
 #include <net/if.h>
 #endif
 
-
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif
@@ -786,6 +785,11 @@ extern int errno;
 
 #ifndef NGROUPS_MAX
 #define NGROUPS_MAX 32 /* Guess... */
+#endif
+
+#ifdef SOCKET_WRAPPER
+#define SOCKET_WRAPPER_REPLACE
+#include "include/socket_wrapper.h"
 #endif
 
 /* Our own pstrings and fstrings */
