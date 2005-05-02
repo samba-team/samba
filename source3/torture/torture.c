@@ -4861,6 +4861,9 @@ static void usage(void)
 {
 	int i;
 
+	printf("WARNING samba4 test suite is much more complete nowadays.\n");
+	printf("Please use samba4 torture.\n\n");
+
 	printf("Usage: smbtorture //server/share <options> TEST1 TEST2 ...\n");
 
 	printf("\t-d debuglevel\n");
