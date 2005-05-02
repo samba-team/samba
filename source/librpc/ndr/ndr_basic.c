@@ -577,7 +577,7 @@ NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr, const void *p)
 	if (p == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
-	return ndr_push_uint32(ndr, NDR_SCALARS, 0);
+	return ndr_push_uint32(ndr, NDR_SCALARS, 0xAEF1AEF1);
 }
 
 
