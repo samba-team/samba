@@ -1,3 +1,7 @@
+2005-05-02  Dave Love  <fx@gnu.org>
+
+	* test_cred.c (main): Call setprogname.
+
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* prefix all sequence symbols with _, they are not part of the

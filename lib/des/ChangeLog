@@ -1,4 +1,13 @@
+2005-05-02  Dave Love  <fx@gnu.org>
+
+	* mdtest.c: Include <krb5-types.h>.
+
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ui.c: Include <des.h>.
+	(UI_UTIL_read_pw_string): make the prompt argument const.
+
+	* des.h (UI_UTIL_read_pw_string): make the prompt argument const
 
 	* ui.c (UI_UTIL_read_pw_string): remove unused variable plen
 	
