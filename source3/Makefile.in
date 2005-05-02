@@ -181,6 +181,8 @@ ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
+SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
+
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -202,7 +204,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o
+	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
 LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o lib/dummyroot.o
 
