@@ -440,6 +440,14 @@ $opt_quiet or print "saving dns zone to $newdb/$dnsdomain.zone ...\n";
 
 FileSave("$newdb/$dnsdomain.zone", $res);
 
+$data = FileLoad("setup/provision.smb.conf") || die "Unable to load provision.smb.conf\n";
+
+$res = apply_substitutions($data);
+
+$opt_quiet or print "saving smb.conf to $newdb/smb.conf ...\n";
+
+FileSave("$newdb/smb.conf", $res);
+
 $opt_quiet or print "creating $newdb/hklm.ldb ... \n";
 
 system("ldbadd -H $newdb/hklm.ldb setup/hklm.ldif") == 0 || die "Failed to create hklm.ldb\n";
@@ -448,6 +456,8 @@ $opt_quiet or print "
 
 Installation:
 - Please move $newdb/*.ldb to the private/ directory of your
+  Samba4 installation
+- Please move $newdb/smb.conf to the lib/ directory of your
   Samba4 installation
 - Please use $newdb/$dnsdomain.zone in BIND on your dns server
 ";
