@@ -243,5 +243,7 @@ struct cnotify_fns *kernel_notify_init(void)
 }
 
 #else
+ void notify_kernel_dummy(void);
+
  void notify_kernel_dummy(void) {}
 #endif /* HAVE_KERNEL_CHANGE_NOTIFY */

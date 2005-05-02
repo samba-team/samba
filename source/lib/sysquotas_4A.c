@@ -335,5 +335,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 }
 
 #else /* HAVE_QUOTACTL_4A */
+ void dummy_sysquotas_4A(void);
+
  void dummy_sysquotas_4A(void){}
 #endif /* HAVE_QUOTACTL_4A */
