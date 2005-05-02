@@ -60,7 +60,7 @@ sub HeaderElement($)
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
-    if ($element->{POINTERS} && $element->{TYPE} ne "string") {
+    if ($element->{POINTERS} && not $element->{TYPE} =~ "string") {
 	    for (my($i)=$element->{POINTERS}; $i > 0; $i--) {
 		    pidl "*";
 	    }

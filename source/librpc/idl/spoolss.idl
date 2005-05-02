@@ -409,7 +409,7 @@
 		[relative] nstring *data_file;
 		[relative] nstring *config_file;
 		[relative] nstring *help_file;
-		[relative] nstring *dependent_files; /* array */
+		[relative] nstring_array *dependent_files;
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
 	} spoolss_DriverInfo3;
@@ -422,10 +422,10 @@
 		[relative] nstring *data_file;
 		[relative] nstring *config_file;
 		[relative] nstring *help_file;
-		[relative] nstring *dependent_files; /* array */
+		[relative] nstring_array *dependent_files;
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
-		[relative] nstring *previous_names; /* array */
+		[relative] nstring_array *previous_names;
 	} spoolss_DriverInfo4;
 
 	typedef struct {
@@ -448,10 +448,10 @@
 		[relative] nstring *data_file;
 		[relative] nstring *config_file;
 		[relative] nstring *help_file;
-		[relative] nstring *dependent_files; /* array */
+		[relative] nstring_array *dependent_files;
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
-		[relative] nstring *previous_names; /* array */
+		[relative] nstring_array *previous_names;
 		NTTIME driver_data;
 		hyper driver_version;
 		[relative] nstring *manufacturer_name;
