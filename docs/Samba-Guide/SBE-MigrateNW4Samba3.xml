@@ -962,7 +962,7 @@ fi
 
 <note><para>
 The Idealx smbldap-tools package can be configured using a script called 
-<command>configure.pl</command> that is provided as part of the tool. See Chapter 6
+<command>configure.pl</command> that is provided as part of the tool. See <link linkend="happy"/>
 for an example of its use. Many administrators, like Misty, choose to do this manually
 so as to maintain greater awareness of how the tool-chain works, and possibly to avoid
 undesirable actions from occurring un-noticed.

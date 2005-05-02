@@ -392,6 +392,8 @@
 	</para>
 
 	<procedure>
+	<title>Kerberos Configuration Steps</title>
+
 	  <step><para><indexterm>
 		<primary>krb5.conf</primary>
 	      </indexterm>
@@ -495,6 +497,8 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 	</para>
 
 	<procedure>
+	<title>Securing Samba-3 With ADS Support Steps</title>
+
 	    <step><para><indexterm>
 		  <primary>Red Hat Linux</primary>
 		</indexterm><indexterm>
@@ -688,12 +692,10 @@ password: XXXXXXXX
 	For Squid to benefit from Samba-3, NSS must be updated to allow winbind as a valid route to user authentication.
 	</para>
 
-	<procedure>
-		<step><para>
-		Edit your <filename>/etc/nsswitch.conf</filename> file so it has the parameters shown
-		in <link linkend="ch10-etcnsscfg"/>.
-		</para></step>
-	</procedure>
+	<para>
+	Edit your <filename>/etc/nsswitch.conf</filename> file so it has the parameters shown
+	in <link linkend="ch10-etcnsscfg"/>.
+	</para>
 
 <smbconfexample id="ch10-smbconf">
 <title>Samba Configuration &smbmdash; File: <filename>/etc/samba/smb.conf</filename></title>
@@ -751,6 +753,8 @@ group: files winbind
 	<title>Configuration</title></sect2>
 
 	<procedure>
+	<title>Squid Configuration Steps</title>
+
 	<step><para><indexterm>
 	      <primary>SUSE Linux</primary>
 	    </indexterm><indexterm>

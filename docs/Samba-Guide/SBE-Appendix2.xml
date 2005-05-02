@@ -124,7 +124,7 @@
 	</para>
 
 	<sect2>
-		<title>Assignment Tasks</title>
+	<title>Assignment Tasks</title>
 
 	<para><indexterm>
 	    <primary>browsing</primary>
@@ -147,7 +147,7 @@
 		</para>
 
 		<procedure id="chap01tasks">
-			<title>Chapter 1 &smbmdash; Tasks</title>
+		<title>Diagnostic Tasks</title>
 
 	  <step><para><indexterm>
 		<primary>network</primary>
@@ -228,6 +228,8 @@
 	</para>
 
 	<procedure>
+	<title>Monitoring Windows 9x Steps</title>
+
 		<step><para>
 		Start the machine from which network activity will be monitored (using <command>ethereal</command>).
 		Launch <command>ethereal</command>, click
@@ -439,6 +441,8 @@
 	</para>
 
 	<procedure>
+	<title>Monitoring of Second Machine Activity</title>
+
 		<step><para>
 		On the machine from which network activity will be monitored (using <command>ethereal</command>),
 		launch <command>ethereal</command> and click
@@ -603,6 +607,8 @@
 	</para>
 
 	<procedure>
+	<title>Client Connection Exploration Steps</title>
+
 		<step><para>
 		Configure a Windows 9x/Me machine (MILGATE98) with a share called <constant>Stuff</constant>.
 		Create a <parameter>Full Access</parameter> control password on this share.
@@ -771,6 +777,7 @@
 	</para>
 
 	<procedure>
+	<title>Steps to Explore Windows XP Pro Connection Set-up</title>
 
 		<step><para>
 		Start your Domain Controller. Also, start the ethereal monitoring machine, launch ethereal,

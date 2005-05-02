@@ -3,37 +3,45 @@
 <chapter id="2000users">
   <title>A Distributed 2000 User Network</title>
 
-    <para>There is something indeed mystical about things that are
-      big. Large networks exhibit a certain magnetism and exude a sense of
-      importance that obscures reality. You and I know that it is no more
-      difficult to secure a large network than it is a small one. We all
-      know that over and above a particular number of network clients, the
-      rules no longer change; the only real dynamic is the size of the domain
-      (much like a kingdom) over which the network ruler (oops, administrator)
-      has control. The real dynamic then transforms from the technical to the
-      political. Then again, that point is often reached well before the
-      kingdom (or queendom) grows large.</para>
+	<para>
+	There is something indeed mystical about things that are
+	big. Large networks exhibit a certain magnetism and exude a sense of
+	importance that obscures reality. You and I know that it is no more
+	difficult to secure a large network than it is a small one. We all
+	know that over and above a particular number of network clients, the
+	rules no longer change; the only real dynamic is the size of the domain
+	(much like a kingdom) over which the network ruler (oops, administrator)
+	has control. The real dynamic then transforms from the technical to the
+	political. Then again, that point is often reached well before the
+	kingdom (or queendom) grows large.
+	</para>
 
-    <para>If you have systematically worked your way to this chapter, hopefully you
-      have found some gems and techniques that are applicable in your
-      world. The network designs you have worked with in this book with have their
-      strong points as well as weak ones. That is to be expected given that
-      they are based on real business environments, excepting that the facts
-      have been moulded to serve the purposes of this book.</para>
+	<para>
+	If you have systematically worked your way to this chapter, hopefully you
+	have found some gems and techniques that are applicable in your
+	world. The network designs you have worked with in this book with have their
+	strong points as well as weak ones. That is to be expected given that
+	they are based on real business environments, excepting that the facts
+	have been moulded to serve the purposes of this book.
+	</para>
 
-    <para>This chapter is intent on wrapping up issues that are central to
-    implementation and design of progressively larger networks. Are you ready
-    for this chapter? Good, it is time to move on.</para>
+	<para>
+	This chapter is intent on wrapping up issues that are central to
+	implementation and design of progressively larger networks. Are you ready
+	for this chapter? Good, it is time to move on.
+	</para>
 
-    <para>In previous chapters, you made the assumption that your network
-      administration staff need detailed instruction right down to the
-      nuts-and-bolts of implementing the solution. That's is still the case,
-      but they have graduated now. You decide to document only those issues,
-      methods and techniques that are new or complex. Routine tasks such as
-      implementing a DNS or a DHCP server are under control. Even the basics of
-      Samba are largely under control. So in this section you focus on the
-      specifics of implementing LDAP changes, Samba changes, and approach and
-      design of the solution and its deployment.</para>
+	<para>
+	In previous chapters, you made the assumption that your network
+	administration staff need detailed instruction right down to the
+	nuts-and-bolts of implementing the solution. That's is still the case,
+	but they have graduated now. You decide to document only those issues,
+	methods and techniques that are new or complex. Routine tasks such as
+	implementing a DNS or a DHCP server are under control. Even the basics of
+	Samba are largely under control. So in this section you focus on the
+	specifics of implementing LDAP changes, Samba changes, and approach and
+	design of the solution and its deployment.
+	</para>
 
 <sect1>
 	<title>Introduction</title>
@@ -48,47 +56,54 @@
 	Samba server just to change the way your network should function.
 	</para>
 
-      <para><indexterm>
-	  <primary>LDAP</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LDAP</primary></indexterm>
 	Network growth is common to all organizations. In this exercise,
 	your preoccupation is with the mechanics of implementing Samba and
 	LDAP so that network users on each network segment can work
-        without impediment.</para>
+        without impediment.
+	</para>
 
 	<sect2>
-		<title>Assignment Tasks</title>
+	<title>Assignment Tasks</title>
 
 	<para>
-	  Starting with the configuration files for the server called
-	  <constant>MASSIVE</constant> in Chapter 5, you now deal with the
-	  issues that are particular to large distributed networks. Your task
-	  is simple &smbmdash; identify the challenges, consider the 
-	  alternatives, and then design and implement a solution.</para>
+	Starting with the configuration files for the server called
+	<constant>MASSIVE</constant> in Chapter 5, you now deal with the
+	issues that are particular to large distributed networks. Your task
+	is simple &smbmdash; identify the challenges, consider the 
+	alternatives, and then design and implement a solution.
+	</para>
 
-	<para><indexterm>
-	    <primary>VPN</primary>
-	  </indexterm>
-	  Remember, you have users based in London (UK), Los Angeles,
-	  Washington DC, and three buildings in New York. A significant portion
-	  of your workforce have notebook computers and roam all over the
-	  world. Some dial into the office, others use VPN connections over the
-	  Internet and others just move between buildings.</para>
+	<para>
+	<indexterm><primary>VPN</primary></indexterm>
+	Remember, you have users based in London (UK), Los Angeles,
+	Washington DC, and three buildings in New York. A significant portion
+	of your workforce have notebook computers and roam all over the
+	world. Some dial into the office, others use VPN connections over the
+	Internet and others just move between buildings.
+	</para>
 
-	<para>What do you say to an employee who normally uses a desktop
-	  system but must spend six weeks on the road with a notebook computer?
-	  She is concerned over email access and how to keep co-workers current
-	  with changing documents.</para>
+	<para>
+	What do you say to an employee who normally uses a desktop
+	system but must spend six weeks on the road with a notebook computer?
+	She is concerned over email access and how to keep co-workers current
+	with changing documents.
+	</para>
 
-	<para>To top it all off, you have one network support person and one 
-  	  Help desk person based in London, a single person dedicated to all 
-	  network operations in Los Angeles, five staff for user administration 
-	  and Help desk in New York, plus one <emphasis>floater</emphasis> for 
-	  Washington DC.</para>
+	<para>
+	To top it all off, you have one network support person and one 
+	Help desk person based in London, a single person dedicated to all 
+	network operations in Los Angeles, five staff for user administration 
+	and Help desk in New York, plus one <emphasis>floater</emphasis> for 
+	Washington DC.
+	</para>
 
-	<para>You have out-sourced all desktop deployment and management to
-	  DirectPointe,Inc. Your concern is server maintenance and third-level
-	  support. Build a plan and show what must be done.</para>
+	<para>
+	You have out-sourced all desktop deployment and management to
+	DirectPointe,Inc. Your concern is server maintenance and third-level
+	support. Build a plan and show what must be done.
+	</para>
 
 	</sect2>
 </sect1>
@@ -96,29 +111,23 @@
 <sect1>
 	<title>Dissection and Discussion</title>
 
-      <para><indexterm>
-	  <primary>passdb backend</primary>
-	</indexterm><indexterm>
-	  <primary>LDAP</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
 	In the previous chapter, you implemented an LDAP server that provided the
 	<parameter>passdb backend</parameter> for the Samba servers. You
 	explored ways to accelerate Windows desktop profile handling and you
 	took control of network performance.
 	</para>
 
-      <para><indexterm>
-	  <primary>ldapsam</primary>
-	</indexterm><indexterm>
-	  <primary>tdbsam</primary>
-	</indexterm><indexterm>
-	  <primary>smbpasswd</primary>
-	</indexterm><indexterm>
-	  <primary>replicated</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
+	<indexterm><primary>smbpasswd</primary></indexterm>
+	<indexterm><primary>replicated</primary></indexterm>
 	The implementation of an LDAP-based passdb backend (known as
 	<emphasis>ldapsam</emphasis> in Samba parlance), or some form of database
-        that can be distributed, is essential to permit the deployment of Samba
+	that can be distributed, is essential to permit the deployment of Samba
 	Primary and Backup Domain Controllers (PDC/BDCs). You see, the problem
 	is that the <emphasis>tdbsam</emphasis> style passdb backend does not
 	lend itself to being replicated. The older plain-text-based
@@ -126,87 +135,79 @@
 	using a tool such as <command>rsync</command>, but
 	<emphasis>smbpasswd</emphasis> suffers the drawback that it does not
 	support the range of account facilities demanded by modern network
-	managers.</para>
+	managers.
+	</para>
 
-      <para><indexterm>
-	  <primary>XML</primary>
-	</indexterm><indexterm>
-	  <primary>SQL</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>XML</primary></indexterm>
+	<indexterm><primary>SQL</primary></indexterm>
 	The new <emphasis>tdbsam</emphasis> facility supports functionality
-        that is similar to an <emphasis>ldapsam</emphasis>, but the lack of
+	that is similar to an <emphasis>ldapsam</emphasis>, but the lack of
 	distributed infrastructure sorely limits the scope for its
 	deployment. This does raise the following questions: "Why can't I just use
 	an XML based backend, or for that matter, why not use an SQL based
 	backend?" "Is support for these tools broken?" No. Answers to these
-	questions require a bit of background.</para>
+	questions require a bit of background.
+	</para>
 
-      <para><indexterm>
-	  <primary>directory</primary>
-	</indexterm><indexterm>
-	  <primary>database</primary>
-	</indexterm><indexterm>
-	  <primary>transaction processing</primary>
-	</indexterm><indexterm>
-	  <primary>LDAP</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>directory</primary></indexterm>
+	<indexterm><primary>database</primary></indexterm>
+	<indexterm><primary>transaction processing</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
 	<emphasis>What is a directory?</emphasis> A directory is a
 	collection of information regarding objects that can be accessed to
 	rapidly find information that is relevant in a particular and
 	consistent manner. A directory differs from a database in that it is
 	generally more often searched (read) than updated. As a consequence, the
 	information is organized to facilitate read access rather than to
-	support transaction processing.</para>
+	support transaction processing.
+	</para>
 
-      <para><indexterm>
-	  <primary>Lightweight Directory Access Protocol </primary>
-	  <see>LDAP</see>
-	</indexterm><indexterm>
-	  <primary>LDAP</primary>
-	</indexterm><indexterm>
-	  <primary>master</primary>
-	</indexterm><indexterm>
-	  <primary>slave</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Lightweight Directory Access Protocol</primary><see>LDAP</see></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>master</primary></indexterm>
+	<indexterm><primary>slave</primary></indexterm>
 	The Lightweight Directory Access Protocol (LDAP) differs
 	considerably from a traditional database. It has a simple search
 	facility that uniquely makes a highly preferred mechanism for managing
 	user identities. LDAP provides a scalable mechanism for distributing
 	the data repository and for keeping all copies (slaves) in sync with
-	the master repository.</para>
+	the master repository.
+	</para>
 
-      <para><indexterm>
-	  <primary>identity management</primary>
-	</indexterm><indexterm>
-	  <primary>Active Directory</primary>
-	</indexterm><indexterm>
-	  <primary>OpenLDAP</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>identity management</primary></indexterm>
+	<indexterm><primary>Active Directory</primary></indexterm>
+	<indexterm><primary>OpenLDAP</primary></indexterm>
 	Samba is a flexible and powerful file and print sharing
 	technology. It can use many external authentication sources and can be
 	part of a total authentication and identity management
 	infrastructure. The two most important external sources for large sites
-        are Microsoft Active Directory and LDAP. Sites that specifically wish to
+	are Microsoft Active Directory and LDAP. Sites that specifically wish to
 	avoid the proprietary implications of Microsoft Active Directory
-	naturally gravitate toward OpenLDAP.</para>
+	naturally gravitate toward OpenLDAP.i
+	</para>
 
-      <para><indexterm>
-	  <primary>network</primary>
-	  <secondary>routed</secondary>
-	</indexterm>
-	In Chapter 6, you had to deal with a locally routed
+	<para>
+	<indexterm><primary>network</primary><secondary>routed</secondary></indexterm>
+	In <link linkend="happy"/>, you had to deal with a locally routed
 	network. All deployment concerns focused around making users happy,
 	and that simply means taking control over all network practices and
 	usage so that no one user is disadvantaged by any other. The real
 	lesson is one of understanding that no matter how much network
-	bandwidth you provide, bandwidth remains a precious resource.</para>
+	bandwidth you provide, bandwidth remains a precious resource.
+	</para>
 
-      <para>In this chapter, you must now consider how the overall network must
+	<para>
+	In this chapter, you must now consider how the overall network must
 	function. In particular, you must be concerned with users who move
-        between offices. You must take into account the way users need to
+	between offices. You must take into account the way users need to
 	access information globally. And you must make the network robust
 	enough so that it can sustain partial breakdown without causing loss of
-        productivity.</para>
+	productivity.
+	</para>
 
 	<sect2>
 		<title>Technical Issues</title>
@@ -310,7 +311,7 @@
 	      <primary>redirected folders</primary>
 	    </indexterm>
 	    One way to reduce the network bandwidth impact of user logon
-	    traffic is through folder redirection. In Chapter 6, you
+	    traffic is through folder redirection. In <link linkend="happy"/>, you
 	    implemented this in the new Windows XP Professional standard
 	    desktop configuration. When desktop folders such as <guimenu>My
 	    Documents</guimenu> are redirected to a network drive, they should
@@ -573,7 +574,7 @@
 	      <primary>LDAP</primary>
 	      <secondary>slave</secondary>
 	    </indexterm>
-	    In Chapter 6, you implemented a single LDAP server for the
+	    In <link linkend="happy"/>, you implemented a single LDAP server for the
 	    entire network. This may work for smaller networks, but almost
 	    certainly fails to meet the needs of large and complex networks. The
 	    following section documents how one may implement a single
@@ -860,17 +861,14 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 	</para></note>
 
       <para>It is assumed that the network you are working with follows in a
-	pattern similar to what has been covered in Chapter 6. The following steps
+	pattern similar to what has been covered in <link linkend="happy"/>. The following steps
         permit the operation of a Master/Slave OpenLDAP arrangement.</para>
 
 	<procedure>
+	<title>LDAP Master/Slave Configuration</title>
 
 		<step><para>
-	    <indexterm>
-	      <primary>SUSE Linux</primary>
-	    </indexterm><indexterm>
-	      <primary>Red Hat Linux</primary>
-	    </indexterm>
+		<indexterm><primary>SUSE Linux</primary></indexterm><indexterm><primary>Red Hat Linux</primary></indexterm>
 		Log onto the master LDAP server as <constant>root</constant>.
 		You are about to change the configuration of the LDAP server, so it
 		makes sense to temporarily halt it. Stop OpenLDAP from running on 
@@ -1017,7 +1015,7 @@ added: "cn=PIOps,ou=Groups,dc=abmas,dc=biz" (00000013)
 	      <primary>smbldap-useradd</primary>
 	    </indexterm>
 		On the master ldap server you may now add an account to validate that replication
-		is working. Assuming the configuration shown in Chapter 6, execute:
+		is working. Assuming the configuration shown in <link linkend="happy"/>, execute:
 <screen>
 &rootprompt; /var/lib/samba/sbin/smbldap-useradd -a fruitloop
 </screen>
