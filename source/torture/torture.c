@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+extern char *optarg;
+extern int optind;
+
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
@@ -4902,8 +4905,6 @@ static void usage(void)
 	char *p;
 	int gotuser = 0;
 	int gotpass = 0;
-	extern char *optarg;
-	extern int optind;
 	BOOL correct = True;
 
 	dbf = x_stdout;

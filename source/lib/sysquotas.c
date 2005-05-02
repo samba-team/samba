@@ -497,6 +497,8 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 }
 
 #else /* HAVE_SYS_QUOTAS */
+ void dummy_sysquotas_c(void);
+
  void dummy_sysquotas_c(void)
 {
 	return;
