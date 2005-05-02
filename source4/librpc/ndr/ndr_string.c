@@ -497,3 +497,75 @@ uint32_t ndr_size_string(int ret, const char * const* string, int flags)
 	if(!(*string)) return ret;
 	return ret+strlen(*string)+1;
 }
+
+/*
+  pull a general string array from the wire
+*/
+NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
+{
+	const char **a = *_a;
+	uint32_t count;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	for (count = 0;; count++) {
+		const char *s = NULL;
+		a = talloc_realloc(ndr, a, const char *, count + 2);
+		NT_STATUS_HAVE_NO_MEMORY(a);
+		a[count]   = NULL;
+		a[count+1]   = NULL;
+
+		NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+		if (strcmp("", s)==0) {
+			a[count] = NULL;
+			break;
+		} else {
+			a[count] = s;
+		}
+	}
+
+	*_a =a;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a general string array onto the wire
+*/
+NTSTATUS ndr_push_string_array(struct ndr_push *ndr, int ndr_flags, const char **a)
+{
+	uint32_t count;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	for (count = 0; a && a[count]; count++) {
+		NDR_CHECK(ndr_push_string(ndr, ndr_flags, a[count]));
+	}
+
+	NDR_CHECK(ndr_push_string(ndr, ndr_flags, ""));
+
+	return NT_STATUS_OK;
+}
+
+void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char **a)
+{
+	uint32_t count;
+	uint32_t i;
+
+	for (count = 0; a && a[count]; count++) {}
+
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			ndr_print_string(ndr, idx, a[i]);
+			free(idx);
+		}
+	}
+	ndr->depth--;
+}

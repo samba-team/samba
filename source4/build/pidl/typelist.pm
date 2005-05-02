@@ -86,6 +86,10 @@ my $scalars = {
 				C_TYPE		=> "const char *",
 				NDR_ALIGN	=> 4 #???
 			},
+	"string_array"	=> {
+				C_TYPE		=> "const char **",
+				NDR_ALIGN	=> 4 #???
+			},
 
 	# time types
 	"time_t"	=> {
