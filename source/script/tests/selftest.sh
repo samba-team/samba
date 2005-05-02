@@ -3,7 +3,6 @@ DOMAIN=SAMBADOMAIN
 REALM=$DOMAIN
 PASSWORD=penguin
 SRCDIR=`pwd`
-SOCKET_WRAPPER_DIR=$PREFIX/sockdir
 TMPDIR=$PREFIX/tmp
 
 if [ $# -lt 1 ]
@@ -17,7 +16,6 @@ PREFIX=$1
 rm -f $PREFIX/private/*
 ./setup/provision.pl --quiet --outputdir $PREFIX/private --domain $DOMAIN --realm $REALM --adminpass $PASSWORD
 
-mkdir -p $SOCKET_WRAPPER_DIR
 cat >$PREFIX/lib/smb.conf <<EOF
 [global]
 	workgroup = $DOMAIN
@@ -31,9 +29,9 @@ export SOCKET_WRAPPER_DIR
 cd $PREFIX
 ./sbin/smbd
 sleep 2
-$PREFIX/bin/smbtorture ncalrpc: LOCAL-*
-$SRCDIR/script/tests/test_rpc.sh localhost administrator $PASSWORD $DOMAIN
-$SRCDIR/script/tests/test_binding_string.sh localhost administrator $PASSWORD $DOMAIN
-$SRCDIR/script/tests/test_echo.sh localhost administrator $PASSWORD $DOMAIN
-$SRCDIR/script/tests/test_posix.sh //localhost/tmp administrator $PASSWORD 
+$SRCDIR/script/tests/test_rpc.sh localhost administrator $PASSWORD $DOMAIN || exit 1
+$SRCDIR/script/tests/test_binding_string.sh localhost administrator $PASSWORD $DOMAIN || exit 1
+$SRCDIR/script/tests/test_echo.sh localhost administrator $PASSWORD $DOMAIN || exit 1
+$SRCDIR/script/tests/test_posix.sh //localhost/tmp administrator $PASSWORD || exit 1
+$PREFIX/bin/smbtorture ncalrpc: LOCAL-* || exit 1
 kill `cat $PREFIX/var/locks/smbd.pid`
