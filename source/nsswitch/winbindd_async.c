@@ -101,6 +101,7 @@ enum winbindd_result idmap_set_mapping_async(TALLOC_CTX *mem_ctx,
 					     void *private)
 {
 	struct winbindd_request request;
+	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_IDMAPSET;
 	if (id_type == ID_USERID)
 		request.data.dual_idmapset.uid = id.uid;
@@ -646,10 +647,8 @@ static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			 struct winbindd_response *response,
 			 void *c, void *private);
 
-void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
-			    void (*cont)(void *private,
-					 BOOL success,
+void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			    void (*cont)(void *private, BOOL success,
 					 gid_t gid),
 			    void *private)
 {
@@ -683,8 +682,12 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx,
 	state->cont = cont;
 	state->private = private;
 
-	winbindd_lookup_sid_async(mem_ctx, sid, sid2gid_lookup_sid_recv,
-				  state);
+	if (winbindd_lookup_sid_async(mem_ctx, sid, sid2gid_lookup_sid_recv,
+				      state) == WINBINDD_ERROR) {
+		DEBUG(0, ("Could not trigger lookupsid\n"));
+		cont(private, False, 0);
+		return;
+	}
 }
 
 static void sid2gid_lookup_sid_recv(void *private, BOOL success,
@@ -723,4 +726,133 @@ static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	}
 
 	state->cont(state->private, True, response->data.gid);
+}
+
+struct sid2uid_state {
+	TALLOC_CTX *mem_ctx;
+	DOM_SID sid;
+	void (*cont)(void *private, BOOL success, uid_t uid);
+	void *private;
+};
+
+static void sid2uid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type);
+static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			 struct winbindd_response *response,
+			 void *c, void *private);
+
+void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			    void (*cont)(void *private, BOOL success,
+					 uid_t uid),
+			    void *private)
+{
+	struct sid2uid_state *state;
+	NTSTATUS result;
+	uid_t uid;
+
+	if (idmap_proxyonly()) {
+		cont(private, False, 0);
+		return;
+	}
+
+	/* Query only the local tdb, everything else might possibly block */
+
+	result = idmap_sid_to_uid(sid, &uid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		cont(private, True, uid);
+		return;
+	}
+
+	state = TALLOC_P(mem_ctx, struct sid2uid_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->sid = *sid;
+	state->cont = cont;
+	state->private = private;
+
+	if (winbindd_lookup_sid_async(mem_ctx, sid, sid2uid_lookup_sid_recv,
+				      state) == WINBINDD_ERROR) {
+		DEBUG(0, ("Could not trigger lookupsid\n"));
+		cont(private, False, 0);
+		return;
+	}
+}
+
+static void sid2uid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type)
+{
+	struct sid2uid_state *state = private;
+	struct winbindd_request request;
+
+	if ((!success) ||
+	    ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))) {
+		DEBUG(5, ("SID is not a user\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_SID2UID;
+	fstrcpy(request.data.dual_sid2id.sid, sid_string_static(&state->sid));
+	fstrcpy(request.data.dual_sid2id.name, name);
+
+	do_async(state->mem_ctx, idmap_child(), &request,
+		 sid2uid_recv, NULL, state);
+}
+
+static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			 struct winbindd_response *response,
+			 void *c, void *private)
+{
+	struct sid2uid_state *state = private;
+
+	if (!success) {
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->cont(state->private, True, response->data.uid);
+}
+
+static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			    struct winbindd_response *response,
+			    void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, const char *acct_name,
+		     const char *full_name, uint32 group_rid) = c;
+
+	if (!success) {
+		cont(private, False, NULL, NULL, -1);
+		return;
+	}
+
+	cont(private, True, response->data.user_info.acct_name,
+	     response->data.user_info.full_name,
+	     response->data.user_info.group_rid);
+}
+
+enum winbindd_result query_user_async(TALLOC_CTX *mem_ctx,
+				      struct winbindd_domain *domain,
+				      const DOM_SID *sid,
+				      void (*cont)(void *private,
+						   BOOL success,
+						   const char *acct_name,
+						   const char *full_name,
+						   uint32 group_rid),
+				      void *private)
+{
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_USERINFO;
+	sid_to_string(request.data.sid, sid);
+	return do_async(mem_ctx, &domain->child, &request,
+			query_user_recv, cont, private);
 }

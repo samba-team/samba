@@ -47,8 +47,9 @@ enum winbindd_result winbindd_lookupsid_async(struct winbindd_cli_state *state)
 	domain = find_lookup_domain_from_sid(&sid);
 
 	if (domain == NULL) {
-		DEBUG(1,("Can't find domain from sid\n"));
-		return False;
+		DEBUG(1,("Can't find domain from sid %s\n",
+			 sid_string_static(&sid)));
+		return WINBINDD_ERROR;
 	}
 
 	return async_request(state->mem_ctx, &domain->child,

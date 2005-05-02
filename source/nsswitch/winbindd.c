@@ -229,8 +229,8 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
-	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
+	{ WINBINDD_GETPWNAM, winbindd_getpwnam_async, "GETPWNAM" },
+	{ WINBINDD_GETPWUID, winbindd_getpwuid_async, "GETPWUID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
@@ -466,6 +466,11 @@ static void response_main_sent(void *private, BOOL success)
 {
 	struct winbindd_cli_state *state = private;
 
+	if (state->mem_ctx != NULL) {
+		talloc_destroy(state->mem_ctx);
+		state->mem_ctx = NULL;
+	}
+
 	if (!success) {
 		state->finished = True;
 		return;
@@ -484,8 +489,6 @@ static void response_main_sent(void *private, BOOL success)
 
 void request_finished(struct winbindd_cli_state *state)
 {
-	talloc_destroy(state->mem_ctx);
-	state->mem_ctx = NULL;
 	setup_async_write(&state->fd_event, &state->response,
 			  sizeof(state->response), response_main_sent, state);
 }

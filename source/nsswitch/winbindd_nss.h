@@ -118,6 +118,7 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_UID2NAME,
 	WINBINDD_DUAL_GID2NAME,
 	WINBINDD_DUAL_IDMAPSET,
+	WINBINDD_DUAL_USERINFO,
 	/* Return the list of aliases for a list of SIDs */
 	WINBINDD_DUAL_GETSIDALIASES,
 
@@ -305,6 +306,11 @@ struct winbindd_response {
 			BOOL primary;
 			uint32 sequence_number;
 		} domain_info;
+		struct {
+			fstring acct_name;
+			fstring full_name;
+			uint32 group_rid;
+		} user_info;
 	} data;
 
 	/* Variable length return data */

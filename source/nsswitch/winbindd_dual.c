@@ -433,6 +433,7 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_DUAL_UID2NAME, winbindd_dual_uid2name, "DUAL_UID2NAME" },
 	{ WINBINDD_DUAL_GID2NAME, winbindd_dual_gid2name, "DUAL_GID2NAME" },
 	{ WINBINDD_DUAL_IDMAPSET, winbindd_dual_idmapset, "DUAL_IDMAPSET" },
+	{ WINBINDD_DUAL_USERINFO, winbindd_dual_userinfo, "DUAL_USERINFO" },
 	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
 	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
 	  "ALLOCATE_RID_AND_GID" },

@@ -654,7 +654,7 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 	centry_put_string(centry, info->full_name);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
-	centry_end(centry, "U/%s", sid_string_static(&info->user_sid));
+	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
 	DEBUG(10,("wcache_save_user: %s (acct_name %s)\n", sid_string, info->acct_name));
 	centry_free(centry);
 }
