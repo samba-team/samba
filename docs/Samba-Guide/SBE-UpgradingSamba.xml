@@ -1139,7 +1139,7 @@ back to searching the 'ldap suffix' in some cases.
 		command and then reloading the same data into the new LDAP server using the
 		<command>slapadd</command> command. Do not forget to install and configure
 		the <command>nss_ldap</command> tool and the <filename>/etc/nsswitch.conf</filename>
-		(as shown in Chapter 5).
+		(as shown in <link linkend="happy"/>).
 		</para></listitem>
 
 		<listitem><para>
