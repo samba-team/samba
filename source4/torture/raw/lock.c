@@ -543,11 +543,13 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	t = time(NULL);
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (time(NULL) > t+2) {
-		printf("lock cancel by unlock was not immediate (%s)\n", __location__);
+		printf("lock cancel by unlock was not immediate (%s) - took %d secs\n", 
+		       __location__, (int)time(NULL)-t);
 		ret = False;
 		goto done;
 	}
