@@ -30,6 +30,8 @@
 	</para>
 
 	<procedure>
+	<title>Steps to Join a Domain</title>
+
 		<step><para>
 		Click <guimenu>Start</guimenu>.
 		</para></step>
@@ -605,6 +607,8 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	</para>
 
 	<procedure id="ldapinit">
+	<title>LDAP Directory Pre-Load Steps</title>
+
 		<step><para>
 		Create a directory in which to store the files you use to generate
 		the LDAP LDIF file for your system. Execute the following:
@@ -1089,6 +1093,8 @@ to LAM using only SSL.
 </para>
 
 <procedure id="sbehap-laminst">
+<title>Apache Condiguration Steps for LAM</title>
+
 	<step><para>
 	Extract the LAM package with:
 <screen>

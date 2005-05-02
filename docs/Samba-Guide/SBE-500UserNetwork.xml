@@ -501,6 +501,8 @@
 	</para>
 
 		<procedure>
+		<title>Server Preparation Steps</title>
+
 			<step><para>
 			Using the UNIX/Linux system tools, set the name of the server as shown in the network
 			topology diagram in <link linkend="chap05net"/>. For SUSE Linux products, the tool
@@ -700,6 +702,8 @@ application/octet-stream
 		<title>Configuration for Server: <constant>MASSIVE</constant></title>
 
 		<procedure>
+		<title>Function Specific Configuration Steps</title>
+
 			<step><para>
 			<indexterm><primary>/etc/rc.d/boot.local</primary></indexterm>
 			<indexterm><primary>IP forwarding</primary></indexterm>
@@ -882,6 +886,8 @@ Added user <parameter>username</parameter>.
 		<title>Configuration Specific to Domain Member Servers: <constant>BLDG1, BLDG2</constant></title>
 
 		<procedure>
+		<title>Domain Member Specific Steps</title>
+
                         <step><para>
                         <indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
                         The final step that must be completed is to edit the <filename>/etc/nsswitch.conf</filename> file.
@@ -1532,6 +1538,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
         </para>
 
         <procedure>
+	<title>Daemon Start-up Steps</title>
+
                 <step><para>
                 Use the standard system tool to configure each service to restart
                 automatically at every system reboot. For example:
@@ -1573,6 +1581,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	</para>
 
 	<procedure>
+	<title>Windows Client Configuration Steps</title>
+
 		<step><para>
 		Install MS Windows XP Professional. During installation, configure the client to use DHCP for 
 		TCP/IP protocol configuration.
@@ -1625,6 +1635,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		Install printers on each machine using the following steps:
 
 			<procedure>
+			<title>Printer Confuiguration Steps</title>
+
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
