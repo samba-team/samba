@@ -1,3 +1,9 @@
+2005-05-02  David Love  <fx@gnu.org>
+
+	* kcm/connect.c (init_socket): rename variable sun to un to avoid
+	namespace collision.
+	(handle_stream): Cast arg of krb5_warnx.
+
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: if we are using PKINIT, strip of the
