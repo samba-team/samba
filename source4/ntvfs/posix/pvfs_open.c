@@ -856,7 +856,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
-	BOOL stream_existed;
+	BOOL stream_existed, stream_truncate=False;
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. */
@@ -892,13 +892,16 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	flags = 0;
+
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
-		flags = O_TRUNC;
-		break;
-
 	case NTCREATEX_DISP_OVERWRITE_IF:
-		flags = O_TRUNC;
+		if (name->stream_name == NULL) {
+			flags = O_TRUNC;
+		} else {
+			stream_truncate = True;
+		}
 		break;
 
 	case NTCREATEX_DISP_OPEN:
@@ -912,7 +915,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (!name->stream_exists) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
-		flags = O_TRUNC;
+		if (name->stream_name == NULL) {
+			flags = O_TRUNC;
+		} else {
+			stream_truncate = True;
+		}
 		break;
 
 	case NTCREATEX_DISP_CREATE:
@@ -1074,6 +1081,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
 			return status;
+		}
+		if (stream_truncate) {
+			status = pvfs_stream_truncate(pvfs, f->handle->name, fd, 0);
+			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(lck);
+				return status;
+			}
 		}
 	}
 

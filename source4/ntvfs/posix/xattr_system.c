@@ -37,7 +37,7 @@ NTSTATUS pull_xattr_blob_system(struct pvfs_state *pvfs,
 #if HAVE_XATTR_SUPPORT
 	int ret;
 
-	*blob = data_blob_talloc(mem_ctx, NULL, estimated_size);
+	*blob = data_blob_talloc(mem_ctx, NULL, estimated_size+16);
 	if (blob->data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
