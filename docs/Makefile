@@ -41,6 +41,7 @@ help:
 
 $(DOCBOOKDIR)/Samba-Guide.xml: $(filter-out Samba-Guide/index.xml,$(wildcard Samba-Guide/*.xml))
 $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml: $(filter-out Samba-HOWTO-Collection/index.xml,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
+Samba-HOWTO-Collection/manpages.xml: $(MANPAGEDIR)/smb.conf.5.xml
 $(DOCBOOKDIR)/Samba-Developers-Guide.xml: $(filter-out Samba-Developers-Guide/index.xml,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
 
 # Pseudo targets 
