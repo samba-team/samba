@@ -864,8 +864,59 @@ rc2_schedule(krb5_context context,
  *
  */
 
-static struct salt_type des_salt[], 
-    des3_salt[], des3_salt_derived[], arcfour_salt[], AES_salt[];
+static struct salt_type des_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	krb5_DES_string_to_key
+    },
+    {
+	KRB5_AFS3_SALT,
+	"afs3-salt",
+	DES_AFS3_string_to_key
+    },
+    { 0 }
+};
+
+static struct salt_type des3_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	DES3_string_to_key
+    },
+    { 0 }
+};
+
+static struct salt_type des3_salt_derived[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	DES3_string_to_key_derived
+    },
+    { 0 }
+};
+
+static struct salt_type AES_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	AES_string_to_key
+    },
+    { 0 }
+};
+
+static struct salt_type arcfour_salt[] = {
+    {
+	KRB5_PW_SALT,
+	"pw-salt",
+	ARCFOUR_string_to_key
+    },
+    { 0 }
+};
+
+/*
+ *
+ */
 
 static struct key_type keytype_null = {
     KEYTYPE_NULL,
@@ -1005,56 +1056,6 @@ _find_keytype(krb5_keytype type)
     return NULL;
 }
 
-
-static struct salt_type des_salt[] = {
-    {
-	KRB5_PW_SALT,
-	"pw-salt",
-	krb5_DES_string_to_key
-    },
-    {
-	KRB5_AFS3_SALT,
-	"afs3-salt",
-	DES_AFS3_string_to_key
-    },
-    { 0 }
-};
-
-static struct salt_type des3_salt[] = {
-    {
-	KRB5_PW_SALT,
-	"pw-salt",
-	DES3_string_to_key
-    },
-    { 0 }
-};
-
-static struct salt_type des3_salt_derived[] = {
-    {
-	KRB5_PW_SALT,
-	"pw-salt",
-	DES3_string_to_key_derived
-    },
-    { 0 }
-};
-
-static struct salt_type AES_salt[] = {
-    {
-	KRB5_PW_SALT,
-	"pw-salt",
-	AES_string_to_key
-    },
-    { 0 }
-};
-
-static struct salt_type arcfour_salt[] = {
-    {
-	KRB5_PW_SALT,
-	"pw-salt",
-	ARCFOUR_string_to_key
-    },
-    { 0 }
-};
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_salttype_to_string (krb5_context context,
