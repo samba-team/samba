@@ -6,7 +6,7 @@
     pointer_default(unique),
 	depends(orpc),
  	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
-		  "ncalrpc:[EPMAPPER]", "ncacn_unix_stream:[/tmp/epmapper]")
+		  "ncalrpc:[EPMAPPER]")
 ] interface rot
 {
 	WERROR rot_add (
