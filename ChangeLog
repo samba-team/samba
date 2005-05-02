@@ -1,5 +1,14 @@
 2005-05-02  David Love  <fx@gnu.org>
 
+	* lib/krb5/crypto.c: Don't declare des_salt &c as static with
+	incomplete type (invalid in c89, at least).
+	
+2005-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_locl.h: include <crypt.h>
+
+2005-05-02  David Love  <fx@gnu.org>
+
 	* kcm/connect.c (init_socket): rename variable sun to un to avoid
 	namespace collision.
 	(handle_stream): Cast arg of krb5_warnx.
