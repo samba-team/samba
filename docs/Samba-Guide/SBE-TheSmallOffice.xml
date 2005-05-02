@@ -640,7 +640,7 @@ hosts:	files wins
 	</procedure>
 
 <smbconfexample id="acct2conf">
-<title>Accounting Office Network &smb.conf; File &smbmdash; [globals] Section</title>
+<title>Accounting Office Network &smb.conf; File &smbmdash; [global] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
