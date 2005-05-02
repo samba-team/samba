@@ -153,10 +153,9 @@ basics: idl proto_exists
 test: all
 	./script/tests/selftest.sh $(prefix)
 	
-SOCKET_WRAPPER_DIR=`pwd`/sockdir
+export SOCKET_WRAPPER_DIR=$(shell pwd)/sockdir
 
 test-swrap: all
-	export SOCKET_WRAPPER_DIR
 	mkdir -p $(SOCKET_WRAPPER_DIR)
 	./script/tests/selftest.sh $(prefix)
 
