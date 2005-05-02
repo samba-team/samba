@@ -1209,11 +1209,7 @@ init_cred_loop(krb5_context context,
     /* Set a new nonce. */
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
     ctx->nonce &= 0xffffffff;
-#ifdef PKINIT
-    /* XXX check if it isn't the that nonce is an unsigned
-     * variable so its just a asn1 mismatch */
-    ctx->nonce &= 0x7fffffff;
-#endif
+    /* XXX these just needs to be the same when using Windows PK-INIT */
     ctx->pk_nonce = ctx->nonce;
 
 #define MAX_PA_COUNTER 3 
