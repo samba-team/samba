@@ -22,8 +22,7 @@
 /* Stupid dummy functions required due to the horrible dependency mess
    in Samba. */
 
-void become_root(void);
-void unbecome_root(void);
+#include "includes.h"
 
 void become_root(void)
 {
