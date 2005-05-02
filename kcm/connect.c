@@ -155,20 +155,20 @@ update_client_creds(int s, kcm_client *peer)
 static void 
 init_socket(struct descr *d)
 {
-    struct sockaddr_un sun;
-    struct sockaddr *sa = (struct sockaddr *)&sun;
-    krb5_socklen_t sa_size = sizeof(sun);
+    struct sockaddr_un un;
+    struct sockaddr *sa = (struct sockaddr *)&un;
+    krb5_socklen_t sa_size = sizeof(un);
 
     init_descr (d);
 
-    sun.sun_family = AF_UNIX;
+    un.sun_family = AF_UNIX;
 
     if (socket_path != NULL)
 	d->path = socket_path;
     else
 	d->path = _PATH_KCM_SOCKET;
 
-    strlcpy(sun.sun_path, d->path, sizeof(sun.sun_path));
+    strlcpy(un.sun_path, d->path, sizeof(un.sun_path));
 
     d->s = socket(AF_UNIX, SOCK_STREAM, 0);
     if (d->s < 0){
@@ -194,14 +194,14 @@ init_socket(struct descr *d)
     unlink(d->path);
 
     if (bind(d->s, sa, sa_size) < 0) {
-	krb5_warn(kcm_context, errno, "bind %s", sun.sun_path);
+	krb5_warn(kcm_context, errno, "bind %s", un.sun_path);
 	close(d->s);
 	d->s = -1;
 	return;
     }
 
     if (listen(d->s, SOMAXCONN) < 0) {
-	krb5_warn(kcm_context, errno, "listen %s", sun.sun_path);
+	krb5_warn(kcm_context, errno, "listen %s", un.sun_path);
 	close(d->s);
 	d->s = -1;
 	return;
@@ -432,9 +432,9 @@ handle_stream(struct descr *d, int index, int min_free)
 	krb5_warn(kcm_context, errno, "recvfrom");
 	return;
     } else if (n == 0) {
-	krb5_warnx(kcm_context, "connection closed before end of data after %lu "
-		   "bytes from process %d",
-		   (unsigned long)d[index].len, d[index].peercred.pid);
+	krb5_warnx(kcm_context, "connection closed before end of data "
+		   "after %lu bytes from process %ld",
+		   (unsigned long) d[index].len, (long) d[index].peercred.pid);
 	clear_descr (d + index);
 	return;
     }
