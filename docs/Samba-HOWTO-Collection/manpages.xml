@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE reference PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<reference id="manuals" xmlns:xi="http://www.w3.org/2003/XInclude">                                 <title>Manual pages</title>
+
+	<para>This appendix contains most of the manual pages from the official Samba distribution. All manual pages have been written by members of 
+		<ulink url="http://samba.org/samba/team.html">the Samba Team</ulink>.</para>
+
+	<xi:include href="../manpages/smb.conf.5.xml"/>
+	<xi:include href="../manpages/nmblookup.1.xml"/>
+	<xi:include href="../manpages/rpcclient.1.xml"/>
+	<xi:include href="../manpages/smbcacls.1.xml"/>
+	<xi:include href="../manpages/smbcacls.1.xml"/>
+	<xi:include href="../manpages/net.8.xml"/>
+	<xi:include href="../manpages/nmbd.8.xml"/>
+	<xi:include href="../manpages/pdbedit.8.xml"/>
+	<xi:include href="../manpages/smbcquotas.1.xml"/>
+	<xi:include href="../manpages/smbd.8.xml"/>
+	<xi:include href="../manpages/smbpasswd.5.xml"/>
+	<xi:include href="../manpages/smbpasswd.8.xml"/>
+	<xi:include href="../manpages/smbstatus.1.xml"/>
+	<xi:include href="../manpages/smbtree.1.xml"/>
+	<xi:include href="../manpages/testparm.1.xml"/>
+	<xi:include href="../manpages/wbinfo.1.xml"/>
+	<xi:include href="../manpages/winbindd.8.xml"/>
+
+</reference>
