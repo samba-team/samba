@@ -855,7 +855,7 @@ bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ @SOCKWRAP@
 
 bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1268,15 +1268,15 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ) @SOCKWRAP@
 
 bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ) @SOCKWRAP@
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBDUMP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBDUMP_OBJ) @SOCKWRAP@
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
@@ -1569,3 +1569,10 @@ check: check-programs
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
 check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
+
+test: all
+	@if test -z "$(SMB4TORTURE)"; then \
+		echo "Please set the SMB4TORTURE environment variable"; \
+		exit 1; \
+	fi
+	./script/smb4torture.sh `pwd`/prefix-test $(SMB4TORTURE)
