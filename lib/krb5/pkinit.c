@@ -160,7 +160,7 @@ krb5_ui_method_read_string(UI *ui, UI_STRING *uis)
     case UIT_VERIFY:
     case UIT_PROMPT:
 	length = UI_get_result_maxsize(uis);
-	buffer = malloc(password_data.length);
+	buffer = malloc(length);
 	if (buffer == NULL) {
 	    krb5_set_error_string(ui_data->context, "malloc: out of memory");
 	    return 0;
