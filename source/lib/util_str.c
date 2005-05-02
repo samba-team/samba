@@ -395,6 +395,7 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 
  valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
 
+
 **/
 size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {

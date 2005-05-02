@@ -40,6 +40,15 @@ INIT_OBJ_FILES = \
 # End SUBSYSTEM LIBCOMPRESION
 ################################################
 
+
+################################################
+# Start SUBSYSTEM LIBSAMBA3
+[SUBSYSTEM::LIBSAMBA3]
+INIT_OBJ_FILES = \
+		lib/samba3/smbpasswd.o
+# End SUBSYSTEM LIBSAMBA3
+################################################
+
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]

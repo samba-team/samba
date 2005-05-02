@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   
-   Copyright (C) Stefan Metzmacher	2004
+
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,19 +18,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct libnet_context {
-	TALLOC_CTX *mem_ctx;
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
-	/* here we need:
-	 * a client env context
-	 * a user env context
-	 */
-	struct cli_credentials *credentials;
+/* struct and enum for doing a remote domain join */
+enum libnet_SamDump_level {
+	LIBNET_SAMDUMP_GENERIC,
+	LIBNET_SAMDUMP_NETLOGON,
 };
 
-#include "libnet/libnet_passwd.h"
-#include "libnet/libnet_time.h"
-#include "libnet/libnet_rpc.h"
-#include "libnet/libnet_join.h"
-#include "libnet/libnet_vampire.h"
-#include "libnet/libnet_user.h"
+union libnet_SamDump {
+	struct {
+		enum libnet_SamDump_level level;
+		char *error_string;
+	} generic;
+
+	struct {
+		enum libnet_SamDump_level level;
+		char *error_string;
+	} netlogon;
+};
+

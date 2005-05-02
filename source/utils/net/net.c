@@ -105,6 +105,7 @@ static const struct net_functable net_functable[] = {
 	{"password", "change password\n", net_password, net_password_usage},
 	{"time", "get remote server's time\n", net_time, net_time_usage},
 	{"join", "join a domain\n", net_join, net_join_usage},
+	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"user", "manage user accounts\n", net_user, net_user_usage},
 	{NULL, NULL, NULL, NULL}
 };
