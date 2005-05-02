@@ -141,15 +141,15 @@ The chapters in this part each cover specific Samba features.
 <part id="Appendix">
 <title>Appendixes</title>
 
-<!-- Comment out the following line to include the manpages.
-	 *Please* do not commit with the line below enabled! -->
-<!--<xi:include href="manpages.xml"/>-->
 	<xi:include href="TOSHARG-Compiling.xml"/>
 	<xi:include href="TOSHARG-Portability.xml"/>
 	<xi:include href="TOSHARG-Other-Clients.xml"/>
 	<xi:include href="TOSHARG-Speed.xml"/>
 	<xi:include href="TOSHARG-DNS-DHCP-Configuration.xml"/>
 
+<!-- Comment out the following line to include the manpages.
+	 *Please* do not commit with the line below enabled! -->
+	<!--<xi:include href="manpages.xml"/>-->
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 
 	<xi:include href="TOSHARG-glossary.xml"/>
