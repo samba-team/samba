@@ -1,3 +1,7 @@
+2005-05-02  Dave Love  <d.love@dl.ac.uk>
+
+	* ktutil.c (help): Don't use non-constant initializer for `fake'.
+
 2005-04-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ktutil_locl.h: include <hex.h>

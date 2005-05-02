@@ -1,3 +1,7 @@
+2005-05-02  Dave Love  <d.love@dl.ac.uk>
+
+	* kadmin.c (help): Don't use non-constant initializer for `fake'.
+
 2005-04-20  Love Hörquist Åstrand <lha@it.su.se>
 
 	* util.c (foreach_principal): initialize ret to make sure it have
