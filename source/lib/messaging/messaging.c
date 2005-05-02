@@ -156,7 +156,7 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 		return;
 	}
 
-	rec->data = data_blob_talloc(rec, data, rec->header.length);
+	rec->data = data_blob_talloc(rec, data+sizeof(rec->header), rec->header.length);
 	if (rec->data.data == NULL) {
 		talloc_free(rec);
 		return;
