@@ -862,7 +862,7 @@ echo -e "\nNAT firewall done.\n"
 		file. The final, fully qualified path for this file should be <filename>/etc/samba/smb.conf</filename>.
 
 <smbconfexample id="promisnet">
-<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [globals] Section</title>
+<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [global] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">PROMISES</smbconfoption>
