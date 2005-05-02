@@ -3614,7 +3614,8 @@ structuralObjectClass: organizationalUnit
 
 	<para>
 	By default, even Samba 3.0.11 does not grant any rights even to the <constant>Domain Admins</constant>
-	group. Here we will grant this group all privileges.
+	group. Here we will grant this group all privileges. The assignment of user rights and privileges
+	requires that the parameter <parameter>enable privileges = Yes</parameter> must be set in the &smb.conf; file.
 	</para>
 
 	<para>
