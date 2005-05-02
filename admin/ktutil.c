@@ -118,7 +118,8 @@ help(void *opt, int argc, char **argv)
 		     argv[0]);
 	} else {
 	    if(c->func) {
-		char *fake[] = { argv[0], "--help", NULL };
+		char *fake[] = { NULL, "--help", NULL };
+		fake[0] = argv[0];
 		(*c->func)(2, fake);
 		fprintf(stderr, "\n");
 	    }
