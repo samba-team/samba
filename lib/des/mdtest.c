@@ -41,6 +41,9 @@ RCSID("$Id$");
 #include <stdlib.h>
 #endif
 #include <string.h>
+#ifdef KRB5
+#include <krb5-types.h>
+#endif
 #include <md4.h>
 #include <md5.h>
 #include <sha.h>
