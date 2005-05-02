@@ -876,6 +876,35 @@ sub CalcNdrFlags($$$)
 	return undef;
 }
 
+sub GetPrevLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+	my $prev = undef;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		(return $prev) if ($l == $fl);
+		$prev = $l;
+	}
+
+	return undef;
+}
+
+sub GetNextLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+
+	my $seen = 0;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		return $l if ($seen);
+		($seen = 1) if ($l == $fl);
+	}
+
+	return undef;
+}
+
 sub ContainsDeferred($)
 {
 	my $e = shift;
@@ -982,28 +1011,40 @@ sub ParsePtrPull($$$$)
 	my $ndr = shift;
 	my($var_name) = shift;
 
+	my $nl = GetNextLevel($e, $l);
+	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
+
 	if ($l->{POINTER_TYPE} eq "ref") {
 		unless ($l->{LEVEL} eq "TOP") {
 			pidl "NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));";
 		}
-		pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-		indent;
+
+		unless ($next_is_array) {
+			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
+			pidl "\tNDR_ALLOC($ndr, $var_name);"; 
+			pidl "}";
+		}
+		
+		return;
 	} else {
 		pidl "NDR_CHECK(ndr_pull_unique_ptr($ndr, &_ptr_$e->{NAME}));";
 		pidl "if (_ptr_$e->{NAME}) {";
 		indent;
 	}
 
-	pidl "NDR_ALLOC($ndr, $var_name);";
+	# Don't do this for arrays, they're allocated at the actual level 
+	# of the array
+	unless ($next_is_array) { 
+		pidl "NDR_ALLOC($ndr, $var_name);"; 
+	}
+
 	#pidl "memset($var_name, 0, sizeof($var_name));";
 	if ($l->{POINTER_TYPE} eq "relative") {
 		pidl "NDR_CHECK(ndr_pull_relative_ptr1($ndr, $var_name, _ptr_$e->{NAME}));";
 	}
 	deindent;
-	if ($l->{POINTER_TYPE} ne "ref") {
-		pidl "} else {";
-		pidl "\t$var_name = NULL;";
-	}
+	pidl "} else {";
+	pidl "\t$var_name = NULL;";
 	pidl "}";
 }
 
@@ -1813,7 +1854,16 @@ sub AllocateArrayLevel($$$$$)
 	my $var = ParseExpr($e->{NAME}, $env);
 
 	check_null_pointer($size);
-	pidl "NDR_ALLOC_N($ndr, $var, $size);";
+	my $pl = GetPrevLevel($e, $l);
+	if (defined($pl) and 
+	    $pl->{TYPE} eq "POINTER" and 
+	    $pl->{POINTER_TYPE} eq "ref") {
+	    pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
+	    pidl "\tNDR_ALLOC_N($ndr, $var, $size);";
+	    pidl "}";
+	} else {
+		pidl "NDR_ALLOC_N($ndr, $var, $size);";
+	}
 	#pidl "memset($var, 0, $size * sizeof(" . $var . "[0]));";
 	if (grep(/in/,@{$e->{DIRECTION}}) and
 	    grep(/out/,@{$e->{DIRECTION}})) {

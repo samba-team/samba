@@ -157,6 +157,16 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
 
+	if (acct_flags == ACB_WSTRUST) {
+		cli_credentials_set_secure_channel_type(credentials,
+							SEC_CHAN_WKSTA);
+	} else if (acct_flags == ACB_SVRTRUST) {
+		cli_credentials_set_secure_channel_type(credentials,
+							SEC_CHAN_BDC);
+	} else {
+		goto failed;
+	}
+
 	status = dcerpc_pipe_connect_b(test_ctx, 
 				       &p, b, 
 				       DCERPC_SAMR_UUID,
@@ -238,14 +248,14 @@ BOOL torture_rpc_schannel(void)
 		uint32_t dcerpc_flags;
 		uint32_t schannel_type;
 	} tests[] = {
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN,                       3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL,                       3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128, 3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL | DCERPC_SCHANNEL_128, 3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SIGN,                               3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SEAL,                               3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SIGN | DCERPC_SCHANNEL_128,         3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SEAL | DCERPC_SCHANNEL_128,         3 }
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN,                       3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL,                       3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128, 3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128, 3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN,                               3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL,                               3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128,         3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128,         3 }
 	};
 	int i;
 

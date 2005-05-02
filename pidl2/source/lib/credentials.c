@@ -465,6 +465,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	const char *password;
 	const char *domain;
 	const char *realm;
+	enum netr_SchannelType sct;
 	
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = False;
@@ -510,6 +511,15 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	
+	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
+	if (!sct) {
+		cli_credentials_set_secure_channel_type(cred, sct);
+	} else {
+		DEBUG(1, ("Domain join for acocunt %s did not have a secureChannelType set!\n",
+			  machine_account));
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	
 	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
@@ -519,7 +529,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	if (realm) {
 		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
 	}
-	
+
 	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 	cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	talloc_free(mem_ctx);
@@ -558,6 +568,25 @@ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred,
 struct creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
 {
 	return cred->netlogon_creds;
+}
+
+/** 
+ * Set NETLOGON secure channel type
+ */
+
+void cli_credentials_set_secure_channel_type(struct cli_credentials *cred,
+					     enum netr_SchannelType secure_channel_type)
+{
+	cred->secure_channel_type = secure_channel_type;
+}
+
+/**
+ * Return NETLOGON secure chanel type
+ */
+
+enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred)
+{
+	return cred->secure_channel_type;
 }
 
 /**
