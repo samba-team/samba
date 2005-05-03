@@ -747,6 +747,10 @@ void build_options(BOOL screen);
 		log_stdout = True;
 	}
 
+	if (interactive && (DEBUGLEVEL >= 9)) {
+		talloc_enable_leak_report();
+	}
+
 	if (log_stdout && Fork) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
@@ -951,14 +955,6 @@ void build_options(BOOL screen);
 	smbd_process();
 	
 	namecache_shutdown();
-
-	if (interactive) {
-		TALLOC_CTX *mem_ctx = talloc_init("end_description");
-		char *description = talloc_describe_all(mem_ctx);
-
-		DEBUG(3, ("tallocs left:\n%s\n", description));
-		talloc_destroy(mem_ctx);
-	}
 
 	exit_server("normal exit");
 	return(0);

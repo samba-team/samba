@@ -130,7 +130,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 		if (strequal(printer, pq->msg->printer)) {
 			if (!flatten_message(pq)) {
 				DEBUG(0,("print_notify_send_messages: Out of memory\n"));
-				talloc_destroy_pool(send_ctx);
+				talloc_free_children(send_ctx);
 				num_messages = 0;
 				return;
 			}
@@ -143,7 +143,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 	buf = TALLOC(send_ctx, offset);
 	if (!buf) {
 		DEBUG(0,("print_notify_send_messages: Out of memory\n"));
-		talloc_destroy_pool(send_ctx);
+		talloc_free_children(send_ctx);
 		num_messages = 0;
 		return;
 	}
@@ -201,7 +201,7 @@ void print_notify_send_messages(unsigned int timeout)
 	while (print_notify_messages_pending())
 		print_notify_send_messages_to_printer(notify_queue_head->msg->printer, timeout);
 
-	talloc_destroy_pool(send_ctx);
+	talloc_free_children(send_ctx);
 	num_messages = 0;
 }
 

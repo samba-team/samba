@@ -536,11 +536,12 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
  a complete PDU.
 ****************************************************************************/
 
-void free_pipe_context(pipes_struct *p)
+static void free_pipe_context(pipes_struct *p)
 {
 	if (p->mem_ctx) {
-		DEBUG(3,("free_pipe_context: destroying talloc pool of size %lu\n", (unsigned long)talloc_pool_size(p->mem_ctx) ));
-		talloc_destroy_pool(p->mem_ctx);
+		DEBUG(3,("free_pipe_context: destroying talloc pool of size "
+			 "%llu\n", talloc_total_size(p->mem_ctx) ));
+		talloc_free_children(p->mem_ctx);
 	} else {
 		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);
 		if (p->mem_ctx == NULL)

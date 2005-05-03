@@ -276,23 +276,25 @@ copy an IP address from one buffer to another
 /* limiting size of ipc replies */
 #define SMB_REALLOC_LIMIT(ptr,size) SMB_REALLOC(ptr,MAX((size),4*1024))
 
-/* #define PARANOID_MALLOC_CHECKER 1 */
+/* The new talloc is paranoid malloc checker safe. */
+
+#define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
+#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
+#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup(ctx, ptr, size, __location__)
+#define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
+#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
+#define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
+#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
+#define talloc_destroy(ctx) talloc_free(ctx)
+
+#define PARANOID_MALLOC_CHECKER 1
 
 #if defined(PARANOID_MALLOC_CHECKER)
 
-#define TALLOC(ctx, size) talloc_((ctx),(size))
-#define TALLOC_P(ctx, type) (type *)talloc_((ctx),sizeof(type))
-#define TALLOC_ARRAY(ctx, type, count) (type *)talloc_array_((ctx),sizeof(type),(count))
-#define TALLOC_MEMDUP(ctx, ptr, size) talloc_memdup_((ctx),(ptr),(size))
-#define TALLOC_ZERO(ctx, size) talloc_zero_((ctx),(size))
-#define TALLOC_ZERO_P(ctx, type) (type *)talloc_zero_((ctx),sizeof(type))
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)talloc_zero_array_((ctx),sizeof(type),(count))
-#define TALLOC_REALLOC(ctx, ptr, count) talloc_realloc_((ctx),(ptr),(count))
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array_((ctx),(ptr),sizeof(type),(count))
-
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
 #define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem_((ps),(size),1)
-
 
 /* Get medieval on our ass about malloc.... */
 
@@ -330,15 +332,10 @@ copy an IP address from one buffer to another
 
 #else
 
-#define TALLOC(ctx, size) talloc((ctx),(size))
-#define TALLOC_P(ctx, type) (type *)talloc((ctx),sizeof(type))
-#define TALLOC_ARRAY(ctx, type, count) (type *)talloc_array((ctx),sizeof(type),(count))
-#define TALLOC_MEMDUP(ctx, ptr, size) talloc_memdup((ctx),(ptr),(size))
-#define TALLOC_ZERO(ctx, size) talloc_zero((ctx),(size))
-#define TALLOC_ZERO_P(ctx, type) (type *)talloc_zero((ctx),sizeof(type))
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)talloc_zero_array((ctx),sizeof(type),(count))
-#define TALLOC_REALLOC(ctx, ptr, count) talloc_realloc((ctx),(ptr),(count))
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array((ctx),(ptr),sizeof(type),(count))
+#define _STRING_LINE_(s)    #s
+#define _STRING_LINE2_(s)   _STRING_LINE_(s)
+#define __LINESTR__       _STRING_LINE2_(__LINE__)
+#define __location__ __FILE__ ":" __LINESTR__
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
 #define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)
