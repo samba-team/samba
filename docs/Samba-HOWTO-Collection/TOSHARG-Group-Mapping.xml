@@ -69,7 +69,8 @@
 	<para>
 	<indexterm><primary>IDMAP</primary></indexterm>
 	In both cases, when winbindd is not running, only locally resolvable groups can be recognized. Please refer to
-	<link linkend="idmap-sid2gid">IDMAP: group SID to GID resolution</link> and <link linkend="idmap-gid2sid">IDMAP: GID resolution to matching SID</link>. 
+	<link linkend="idmap-sid2gid">IDMAP: group SID to GID resolution</link> and
+	<link linkend="idmap-gid2sid">IDMAP: GID resolution to matching SID</link>. 
 	The <command>net groupmap</command> is
 	used to establish UNIX group to NT SID mappings as shown in <link linkend="idmap-store-gid2sid">IDMAP: storing group mappings</link>.
 	</para>
@@ -198,6 +199,25 @@
 	you are using. Future versions of the tools may perform the verification automatically,
 	but for now the burden is on you.
 	</para>
+
+	<sect2>
+	<title>Warning &smbmmdsh; User Private Group Problems</title>
+
+	<para>
+	Windows does not permit user and group accounts to have the same name.
+	This has serious implications for all sites that use private group accounts.
+	A private group account is an administrative practice whereby users are each
+	given their own group account. Red Hat Linux, as well as several free distributions
+	of Linux by default create private groups.
+	</para>
+
+	<para>
+	When mapping a UNIX/Linux group to a Windows group account all conflict can
+	be avoided by assuring that the Windows domain group name does not overlap
+	with any user account name.
+	</para>
+
+	</sect2>
 
 	<sect2>
 	<title>Important Administrative Information</title>
