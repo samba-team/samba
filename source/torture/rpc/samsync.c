@@ -1069,7 +1069,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 	NTSTATUS status;
 	TALLOC_CTX *loop_ctx, *delta_ctx, *trustdom_ctx;
 	struct netr_DatabaseSync r;
-	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
+	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i, d;
 	BOOL ret = True;
 	struct samsync_trusted_domain *t;
