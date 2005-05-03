@@ -35,6 +35,9 @@
 #include <config.h>
 RCSID("$Id$");
 #endif
+#if defined(TEST_SNPRINTF)
+#include "snprintf-test.h"
+#endif /* TEST_SNPRINTF */
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -64,10 +67,6 @@ struct snprintf_state {
     void (*append_char)(struct snprintf_state *, unsigned char);
     /* XXX - methods */
 };
-
-#if defined(TEST_SNPRINTF)
-#include "snprintf-test.h"
-#endif /* TEST_SNPRINTF */
 
 #if !defined(HAVE_VSNPRINTF) || defined(TEST_SNPRINTF)
 static int
