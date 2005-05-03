@@ -256,7 +256,7 @@ GType gtk_select_host_dialog_get_type (void)
 	return mytype;
 }
                                                                                                                              
-GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe, BOOL nocredentials)
+GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe)
 {
         return GTK_WIDGET ( g_object_new (gtk_select_host_dialog_get_type (), NULL ));
 }

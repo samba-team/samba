@@ -87,10 +87,11 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 {
 	GtkRpcBindingDialog *d;
 	NTSTATUS status;
+	struct cli_credentials *credentials;
 	gint result;
 	TALLOC_CTX *mem_ctx;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 		case GTK_RESPONSE_ACCEPT:
@@ -102,12 +103,16 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 
 	mem_ctx = talloc_init("gwcrontab_connect");
 	/* If connected, get list of jobs */
+
+	credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_guess(credentials);
+	cli_credentials_set_gtk_callbacks(credentials);
 	
 	status = dcerpc_pipe_connect_b(mem_ctx, &at_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
 				       DCERPC_ATSVC_UUID,
 				       DCERPC_ATSVC_VERSION,
-				       gtk_rpc_binding_dialog_get_credentials(d));
+				       credentials);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "Error while connecting to at service", status);
