@@ -165,6 +165,7 @@ static void terminate(void)
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
 
+#if 0
 	if (interactive) {
 		TALLOC_CTX *mem_ctx = talloc_init("end_description");
 		char *description = talloc_describe_all(mem_ctx);
@@ -172,6 +173,7 @@ static void terminate(void)
 		DEBUG(3, ("tallocs left:\n%s\n", description));
 		talloc_destroy(mem_ctx);
 	}
+#endif
 
 	exit(0);
 }

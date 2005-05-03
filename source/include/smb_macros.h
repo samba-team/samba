@@ -285,7 +285,12 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
 
-#define PARANOID_MALLOC_CHECKER 1
+/* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
+   the smbmount utils */
+
+#if defined(DEVELOPER) && !defined(SMBMOUNT_MALLOC)
+#  define PARANOID_MALLOC_CHECKER 1
+#endif
 
 #if defined(PARANOID_MALLOC_CHECKER)
 

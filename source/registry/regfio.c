@@ -377,7 +377,9 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 
 	/* Find the available free space offset.  Always at the end,
 	   so walk the record list and stop when you get to the end.
-	   The end is defined by a record header of 0xffffffff */
+	   The end is defined by a record header of 0xffffffff.  The 
+	   previous 4 bytes contains the amount of free space remaining 
+	   in the hbin block. */
 
 	/* remember that the record_size is in the 4 bytes preceeding the record itself */
 

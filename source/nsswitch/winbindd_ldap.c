@@ -449,9 +449,11 @@ static void process_ldap_loop(void)
 	main_loop_talloc_free();
 
 	if (do_sigterm) {
+#if 0
 		TALLOC_CTX *mem_ctx = talloc_init("describe");
 		DEBUG(0, ("%s\n", talloc_describe_all(mem_ctx)));
 		talloc_destroy(mem_ctx);
+#endif
 		exit(0);
 	}
 

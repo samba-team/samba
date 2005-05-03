@@ -225,8 +225,8 @@ static NTSTATUS ldap_config_load(
 	if (count) {
 		int i;
 
-		share_dn = talloc(mem_ctx, (count + 1) * sizeof(char *));
-		share_name = talloc(mem_ctx, (count) * sizeof(char *));
+		share_dn = TALLOC_ARRAY(mem_ctx, char*, count + 1);
+		share_name = TALLOC_ARRAY(mem_ctx, char*, count );
 		if (!share_dn || !share_name) {
 			DEBUG(0,("config_ldap: Out of memory!\n"));
 			goto done;
