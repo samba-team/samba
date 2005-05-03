@@ -1,4 +1,13 @@
+2005-05-02  Dave Love  <fx@gnu.org>
+
+	* configure.in: sys/tty.h (for sys/ptyvar.h) might need termios.h.
+
 2005-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/krb5-config.in: add com_err to required libs
+	
+	* lib/krb5/pkinit.c (krb5_ui_method_read_string): use the fill in
+	length
 
 	* lib/krb5/init_creds_pw.c: Now that we fixed the signed-ness of
 	nonce for windows, remove the code that removed the signed

@@ -1,3 +1,8 @@
+2005-05-03  Dave Love  <fx@gnu.org>
+
+	* test-mem.c: Add member fd to map.
+	(rk_test_mem_alloc, rk_test_mem_free): Use it.
+
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* getifaddrs.c: add break on default: statements, from Douglas
