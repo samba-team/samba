@@ -1660,7 +1660,7 @@ static int cmd_deltree(const char **cmd_ptr)
 		return 1;
 	}
 	pstrcat(dname,buf);
-
+	
 	ret = smbcli_deltree(cli->tree, dname);
 
 	if (ret == -1) {
@@ -1674,166 +1674,179 @@ static int cmd_deltree(const char **cmd_ptr)
 }
 
 typedef struct {
-  const char  *level_name;
-  enum smb_fsinfo_level level;
+	const char  *level_name;
+	enum smb_fsinfo_level level;
 } fsinfo_level_t;
 
 fsinfo_level_t fsinfo_levels[] = {
-  {"generic", RAW_QFS_GENERIC},
-  {"dskattr", RAW_QFS_DSKATTR},
-  {"allocation", RAW_QFS_ALLOCATION},
-  {"volume", RAW_QFS_VOLUME},
-  {"volumeinfo", RAW_QFS_VOLUME_INFO},
-  {"sizeinfo", RAW_QFS_SIZE_INFO},
-  {"deviceinfo", RAW_QFS_DEVICE_INFO},
-  {"attributeinfo", RAW_QFS_ATTRIBUTE_INFO},
-  {"unixinfo", RAW_QFS_UNIX_INFO},
-  {"volume-information", RAW_QFS_VOLUME_INFORMATION},
-  {"size-information", RAW_QFS_SIZE_INFORMATION},
-  {"device-information", RAW_QFS_DEVICE_INFORMATION},
-  {"attribute-information", RAW_QFS_ATTRIBUTE_INFORMATION},
-  {"quota-information", RAW_QFS_QUOTA_INFORMATION},
-  {"fullsize-information", RAW_QFS_FULL_SIZE_INFORMATION},
-  {"objectid", RAW_QFS_OBJECTID_INFORMATION},
-  {NULL, RAW_QFS_GENERIC}
+	{"dskattr", RAW_QFS_DSKATTR},
+	{"allocation", RAW_QFS_ALLOCATION},
+	{"volume", RAW_QFS_VOLUME},
+	{"volumeinfo", RAW_QFS_VOLUME_INFO},
+	{"sizeinfo", RAW_QFS_SIZE_INFO},
+	{"deviceinfo", RAW_QFS_DEVICE_INFO},
+	{"attributeinfo", RAW_QFS_ATTRIBUTE_INFO},
+	{"unixinfo", RAW_QFS_UNIX_INFO},
+	{"volume-information", RAW_QFS_VOLUME_INFORMATION},
+	{"size-information", RAW_QFS_SIZE_INFORMATION},
+	{"device-information", RAW_QFS_DEVICE_INFORMATION},
+	{"attribute-information", RAW_QFS_ATTRIBUTE_INFORMATION},
+	{"quota-information", RAW_QFS_QUOTA_INFORMATION},
+	{"fullsize-information", RAW_QFS_FULL_SIZE_INFORMATION},
+	{"objectid", RAW_QFS_OBJECTID_INFORMATION},
+	{NULL, RAW_QFS_GENERIC}
 };
-  
+
 
 static int cmd_fsinfo(const char **cmd_ptr)
 {
-  pstring level_name;
-  fstring buf;
-  int ret = 0;
-  union smb_fsinfo fsinfo;
-  NTSTATUS status;
-  TALLOC_CTX *mem_ctx;
-  fsinfo_level_t *fsinfo_level;
+	fstring buf;
+	int ret = 0;
+	union smb_fsinfo fsinfo;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	fsinfo_level_t *fsinfo_level;
+	
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
+		d_printf("fsinfo <level>, where level is one of following:\n");
+		fsinfo_level = fsinfo_levels;
+		while(fsinfo_level->level_name) {
+			d_printf("%s\n", fsinfo_level->level_name);
+			fsinfo_level++;
+		}
+		return 1;
+	}
+	
+	fsinfo_level = fsinfo_levels;
+	while(fsinfo_level->level_name && !strequal(buf,fsinfo_level->level_name)) {
+		fsinfo_level++;
+	}
   
-  if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-    d_printf("fsinfo <level>, where level is one of following:\n");
-    fsinfo_level = fsinfo_levels;
-    while(fsinfo_level->level_name) {
-      d_printf("%s\n", fsinfo_level->level_name);
-      fsinfo_level++;
-    }
-    return 1;
-  }
+	if (!fsinfo_level->level_name) {
+		d_printf("wrong level name!\n");
+		return 1;
+	}
+  
+	mem_ctx = talloc_init("fsinfo-level-%s", fsinfo_level->level_name);
+	fsinfo.generic.level = fsinfo_level->level;
+	status = smb_raw_fsinfo(cli->tree, mem_ctx, &fsinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("fsinfo-level-%s - %s\n", fsinfo_level->level_name, nt_errstr(status));
+		ret = 1;
+		goto done;
+	}
 
-  fsinfo_level = fsinfo_levels;
-  while(fsinfo_level->level_name && !strequal(buf,fsinfo_level->level_name)) {
-    fsinfo_level++;
-  }
-  
-  if (!fsinfo_level->level_name) {
-    d_printf("wrong level name!\n");
-    return 1;
-  }
-  
-  mem_ctx = talloc_init("fsinfo-level-%s", fsinfo_level->level_name);
-  fsinfo.generic.level = fsinfo_level->level;
-  status = smb_raw_fsinfo(cli->tree, mem_ctx, &fsinfo);
-  if (!NT_STATUS_IS_OK(status)) {
-    d_printf("fsinfo-level-%s - %s\n", fsinfo_level->level_name, nt_errstr(status));
-    ret = 1;
-    goto done;
-  }
-
-  d_printf("fsinfo-level-%s:\n", fsinfo_level->level_name);
-  switch(fsinfo.generic.level) {
-  case RAW_QFS_GENERIC:
-    d_printf("\tblock_size:                 %lu\n", fsinfo.generic.out.block_size);
-    d_printf("\tblocks_total:               %llu\n", fsinfo.generic.out.blocks_total);
-    d_printf("\tblocks_free:                %llu\n", fsinfo.generic.out.blocks_free);
-    d_printf("\tfs_id:                      %lu\n", fsinfo.generic.out.fs_id);
-    d_printf("\tcreate_time:                %s\n", nt_time_string(mem_ctx,fsinfo.generic.out.create_time));
-    d_printf("\tserial_number:              %lu\n", fsinfo.generic.out.serial_number);
-    d_printf("\tfs_attr:                    %lx\n", fsinfo.generic.out.fs_attr);
-    d_printf("\tmax_file_component_length:  %lu\n", fsinfo.generic.out.max_file_component_length);
-    d_printf("\tdevice_type:                %lu\n", fsinfo.generic.out.device_type);
-    d_printf("\tdevice_characteristics:     %lx\n", fsinfo.generic.out.device_characteristics);
-    d_printf("\tquota_soft:                 %llu\n", fsinfo.generic.out.quota_soft);
-    d_printf("\tquota_hard:                 %llu\n", fsinfo.generic.out.quota_hard);
-    d_printf("\tquota_flags:                %llx\n", fsinfo.generic.out.quota_flags);
-    d_printf("\tGUID:                       %s\n", GUID_string(mem_ctx,&fsinfo.generic.out.guid));
-    d_printf("\tvolume_name:                %s\n", fsinfo.generic.out.volume_name);
-    d_printf("\tfs_type:                    %s\n", fsinfo.generic.out.fs_type);
-    break;
-  case RAW_QFS_DSKATTR:
-    d_printf("\tunits_total:                %hu\n", fsinfo.dskattr.out.units_total);
-    d_printf("\tblocks_per_unit:            %hu\n", fsinfo.dskattr.out.blocks_per_unit);
-    d_printf("\tblocks_size:                %hu\n", fsinfo.dskattr.out.block_size);
-    d_printf("\tunits_free:                 %hu\n", fsinfo.dskattr.out.units_free);
-    break;
-  case RAW_QFS_ALLOCATION:
-    d_printf("\tfs_id:                      %lu\n", fsinfo.allocation.out.fs_id);
-    d_printf("\tsectors_per_unit:           %lu\n", fsinfo.allocation.out.sectors_per_unit);
-    d_printf("\ttotal_alloc_units:          %lu\n", fsinfo.allocation.out.total_alloc_units);
-    d_printf("\tavail_alloc_units:          %lu\n", fsinfo.allocation.out.avail_alloc_units);
-    d_printf("\tbytes_per_sector:           %hu\n", fsinfo.allocation.out.bytes_per_sector);
-    break;
-  case RAW_QFS_VOLUME:
-    d_printf("\tserial_number:              %lu\n", fsinfo.volume.out.serial_number);
-    d_printf("\tvolume_name:                %s\n", fsinfo.volume.out.volume_name.s);
-    break;
-  case RAW_QFS_VOLUME_INFO:
-  case RAW_QFS_VOLUME_INFORMATION:
-    d_printf("\tcreate_time:                %s\n", nt_time_string(mem_ctx,fsinfo.volume_info.out.create_time));
-    d_printf("\tserial_number:              %lu\n", fsinfo.volume_info.out.serial_number);
-    d_printf("\tvolume_name:                %s\n", fsinfo.volume_info.out.volume_name.s);
-    break;
-  case RAW_QFS_SIZE_INFO:
-  case RAW_QFS_SIZE_INFORMATION:
-    d_printf("\ttotal_alloc_units:          %llu\n", fsinfo.size_info.out.total_alloc_units);
-    d_printf("\tavail_alloc_units:          %llu\n", fsinfo.size_info.out.avail_alloc_units);
-    d_printf("\tsectors_per_unit:           %lu\n", fsinfo.size_info.out.sectors_per_unit);
-    d_printf("\tbytes_per_sector:           %lu\n", fsinfo.size_info.out.bytes_per_sector);
-    break;
-  case RAW_QFS_DEVICE_INFO:
-  case RAW_QFS_DEVICE_INFORMATION:
-    d_printf("\tdevice_type:                %lu\n", fsinfo.device_info.out.device_type);
-    d_printf("\tcharacteristics:            %lx\n", fsinfo.device_info.out.characteristics);
-    break;
-  case RAW_QFS_ATTRIBUTE_INFORMATION:
-  case RAW_QFS_ATTRIBUTE_INFO:
-    d_printf("\tfs_attr:                    %lx\n", fsinfo.attribute_info.out.fs_attr);
-    d_printf("\tmax_file_component_length:  %lu\n", fsinfo.attribute_info.out.max_file_component_length);
-    d_printf("\tfs_type:                    %s\n", fsinfo.attribute_info.out.fs_type.s);
-    break;
-  case RAW_QFS_UNIX_INFO:
-    d_printf("\tmajor_version:              %hu\n", fsinfo.unix_info.out.major_version);
-    d_printf("\tminor_version:              %hu\n", fsinfo.unix_info.out.minor_version);
-    d_printf("\tcapability:                 %llx\n", fsinfo.unix_info.out.capability);
-    break;
-  case RAW_QFS_QUOTA_INFORMATION:
-    d_printf("\tunknown[3]:                 [%llu,%llu,%llu]\n", fsinfo.quota_information.out.unknown[0],
-	     fsinfo.quota_information.out.unknown[1],
-	     fsinfo.quota_information.out.unknown[2]);
-    d_printf("\tquota_soft:                 %llu\n", fsinfo.quota_information.out.quota_soft);
-    d_printf("\tquota_hard:                 %llu\n", fsinfo.quota_information.out.quota_hard);
-    d_printf("\tquota_flags:                %llx\n", fsinfo.quota_information.out.quota_flags);
-    break;
-  case RAW_QFS_FULL_SIZE_INFORMATION:
-    d_printf("\ttotal_alloc_units:          %llu\n", fsinfo.full_size_information.out.total_alloc_units);
-    d_printf("\tcall_avail_alloc_units:     %llu\n", fsinfo.full_size_information.out.call_avail_alloc_units);
-    d_printf("\tactual_avail_alloc_units:   %llu\n", fsinfo.full_size_information.out.actual_avail_alloc_units);
-    d_printf("\tsectors_per_unit:           %lu\n", fsinfo.full_size_information.out.sectors_per_unit);
-    d_printf("\tbytes_per_sector:           %lu\n", fsinfo.full_size_information.out.bytes_per_sector);
-    break;
-  case RAW_QFS_OBJECTID_INFORMATION:
-    d_printf("\tGUID:                       %s\n", GUID_string(mem_ctx,&fsinfo.objectid_information.out.guid));
-    d_printf("\tunknown[6]:                 [%llu,%llu,%llu,%llu,%llu,%llu]\n", 
-	     fsinfo.objectid_information.out.unknown[0],
-	     fsinfo.objectid_information.out.unknown[2],
-	     fsinfo.objectid_information.out.unknown[3],
-	     fsinfo.objectid_information.out.unknown[4],
-	     fsinfo.objectid_information.out.unknown[5],
-	     fsinfo.objectid_information.out.unknown[6] );
-    break;
-  }
+	d_printf("fsinfo-level-%s:\n", fsinfo_level->level_name);
+	switch(fsinfo.generic.level) {
+	case RAW_QFS_DSKATTR:
+		d_printf("\tunits_total:                %hu\n", 
+			 (unsigned short) fsinfo.dskattr.out.units_total);
+		d_printf("\tblocks_per_unit:            %hu\n", 
+			 (unsigned short) fsinfo.dskattr.out.blocks_per_unit);
+		d_printf("\tblocks_size:                %hu\n", 
+			 (unsigned short) fsinfo.dskattr.out.block_size);
+		d_printf("\tunits_free:                 %hu\n", 
+			 (unsigned short) fsinfo.dskattr.out.units_free);
+		break;
+	case RAW_QFS_ALLOCATION:
+		d_printf("\tfs_id:                      %lu\n", 
+			 (unsigned long) fsinfo.allocation.out.fs_id);
+		d_printf("\tsectors_per_unit:           %lu\n", 
+			 (unsigned long) fsinfo.allocation.out.sectors_per_unit);
+		d_printf("\ttotal_alloc_units:          %lu\n", 
+			 (unsigned long) fsinfo.allocation.out.total_alloc_units);
+		d_printf("\tavail_alloc_units:          %lu\n", 
+			 (unsigned long) fsinfo.allocation.out.avail_alloc_units);
+		d_printf("\tbytes_per_sector:           %hu\n", 
+			 (unsigned short) fsinfo.allocation.out.bytes_per_sector);
+		break;
+	case RAW_QFS_VOLUME:
+		d_printf("\tserial_number:              %lu\n", 
+			 (unsigned long) fsinfo.volume.out.serial_number);
+		d_printf("\tvolume_name:                %s\n", fsinfo.volume.out.volume_name.s);
+		break;
+	case RAW_QFS_VOLUME_INFO:
+	case RAW_QFS_VOLUME_INFORMATION:
+		d_printf("\tcreate_time:                %s\n",
+			 nt_time_string(mem_ctx,fsinfo.volume_info.out.create_time));
+		d_printf("\tserial_number:              %lu\n", 
+			 (unsigned long) fsinfo.volume_info.out.serial_number);
+		d_printf("\tvolume_name:                %s\n", fsinfo.volume_info.out.volume_name.s);
+		break;
+	case RAW_QFS_SIZE_INFO:
+	case RAW_QFS_SIZE_INFORMATION:
+		d_printf("\ttotal_alloc_units:          %llu\n", 
+			 (unsigned long long) fsinfo.size_info.out.total_alloc_units);
+		d_printf("\tavail_alloc_units:          %llu\n", 
+			 (unsigned long long) fsinfo.size_info.out.avail_alloc_units);
+		d_printf("\tsectors_per_unit:           %lu\n", 
+			 (unsigned long) fsinfo.size_info.out.sectors_per_unit);
+		d_printf("\tbytes_per_sector:           %lu\n", 
+			 (unsigned long) fsinfo.size_info.out.bytes_per_sector);
+		break;
+	case RAW_QFS_DEVICE_INFO:
+	case RAW_QFS_DEVICE_INFORMATION:
+		d_printf("\tdevice_type:                %lu\n", 
+			 (unsigned long) fsinfo.device_info.out.device_type);
+		d_printf("\tcharacteristics:            0x%lx\n", 
+			 (unsigned long) fsinfo.device_info.out.characteristics);
+		break;
+	case RAW_QFS_ATTRIBUTE_INFORMATION:
+	case RAW_QFS_ATTRIBUTE_INFO:
+		d_printf("\tfs_attr:                    0x%lx\n", 
+			 (unsigned long) fsinfo.attribute_info.out.fs_attr);
+		d_printf("\tmax_file_component_length:  %lu\n", 
+			 (unsigned long) fsinfo.attribute_info.out.max_file_component_length);
+		d_printf("\tfs_type:                    %s\n", fsinfo.attribute_info.out.fs_type.s);
+		break;
+	case RAW_QFS_UNIX_INFO:
+		d_printf("\tmajor_version:              %hu\n", 
+			 (unsigned short) fsinfo.unix_info.out.major_version);
+		d_printf("\tminor_version:              %hu\n", 
+			 (unsigned short) fsinfo.unix_info.out.minor_version);
+		d_printf("\tcapability:                 0x%llx\n", 
+			 (unsigned long long) fsinfo.unix_info.out.capability);
+		break;
+	case RAW_QFS_QUOTA_INFORMATION:
+		d_printf("\tunknown[3]:                 [%llu,%llu,%llu]\n", 
+			 (unsigned long long) fsinfo.quota_information.out.unknown[0],
+			 (unsigned long long) fsinfo.quota_information.out.unknown[1],
+			 (unsigned long long) fsinfo.quota_information.out.unknown[2]);
+		d_printf("\tquota_soft:                 %llu\n", 
+			 (unsigned long long) fsinfo.quota_information.out.quota_soft);
+		d_printf("\tquota_hard:                 %llu\n", 
+			 (unsigned long long) fsinfo.quota_information.out.quota_hard);
+		d_printf("\tquota_flags:                0x%llx\n", 
+			 (unsigned long long) fsinfo.quota_information.out.quota_flags);
+		break;
+	case RAW_QFS_FULL_SIZE_INFORMATION:
+		d_printf("\ttotal_alloc_units:          %llu\n", 
+			 (unsigned long long) fsinfo.full_size_information.out.total_alloc_units);
+		d_printf("\tcall_avail_alloc_units:     %llu\n", 
+			 (unsigned long long) fsinfo.full_size_information.out.call_avail_alloc_units);
+		d_printf("\tactual_avail_alloc_units:   %llu\n", 
+			 (unsigned long long) fsinfo.full_size_information.out.actual_avail_alloc_units);
+		d_printf("\tsectors_per_unit:           %lu\n", 
+			 (unsigned long) fsinfo.full_size_information.out.sectors_per_unit);
+		d_printf("\tbytes_per_sector:           %lu\n", 
+			 (unsigned long) fsinfo.full_size_information.out.bytes_per_sector);
+		break;
+	case RAW_QFS_OBJECTID_INFORMATION:
+		d_printf("\tGUID:                       %s\n", 
+			 GUID_string(mem_ctx,&fsinfo.objectid_information.out.guid));
+		d_printf("\tunknown[6]:                 [%llu,%llu,%llu,%llu,%llu,%llu]\n", 
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[0],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[2],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[3],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[4],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[5],
+			 (unsigned long long) fsinfo.objectid_information.out.unknown[6] );
+		break;
+	}
   
  done:
-  talloc_free(mem_ctx);
-  return ret;
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 /****************************************************************************
