@@ -244,7 +244,7 @@ operation to permit the Samba Team to fix the problem.
 <para>
 Compile with <constant>-g</constant> to ensure you have symbols in place. 
 Add the following line to the &smb.conf; file global section:
-</screen>
+<screen>
 panic action = "/bin/sleep 90000"
 </screen>
 to catch any panics. If <command>smbd</command> seems to be frozen look for any sleep
