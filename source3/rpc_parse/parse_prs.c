@@ -153,11 +153,7 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 
 	if (size) {
 		/* We can't call the type-safe version here. */
-#if defined(PARANOID_MALLOC_CHECKER)
-		ret = talloc_zero_array_(ps->mem_ctx, size, count);
-#else
-		ret = talloc_zero_array(ps->mem_ctx, size, count);
-#endif
+		ret = _talloc_zero_array(ps->mem_ctx, size, count, "parse_prs");
 	}
 	return ret;
 }

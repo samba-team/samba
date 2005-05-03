@@ -33,19 +33,18 @@
 void msg_pool_usage(int msg_type, pid_t src_pid,
 		    void *UNUSED(buf), size_t UNUSED(len))
 {
-	char *reply;
-	TALLOC_CTX *reply_pool = talloc_init("msg_pool_usage");
+	off_t reply;
+	fstring reply_str;
 
 	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
 
-	reply = talloc_describe_all(reply_pool);
+	reply = talloc_total_size(NULL);
+	fstr_sprintf(reply_str, "%lld", reply);
 	
 	message_send_pid(src_pid, MSG_POOL_USAGE,
-			 reply, strlen(reply)+1, True);
-
-	talloc_destroy(reply_pool);
+			 reply_str, strlen(reply_str)+1, True);
 }
 
 /**

@@ -640,7 +640,8 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 			memcpy(&(dom->sid), &(pass->domain_sid), sizeof(dom->sid));
 			
 			/* copy unicode domain name */
-			dom->name = talloc_strdup_w(ctx, pass->uni_name);
+			dom->name = TALLOC_MEMDUP(ctx, pass->uni_name,
+						  (strlen_w(pass->uni_name) + 1) * sizeof(smb_ucs2_t));
 			
 			(*domains)[idx - start_idx] = dom;
 			
