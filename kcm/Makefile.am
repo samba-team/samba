@@ -21,6 +21,8 @@ kcm_SOURCES =		\
 	protocol.c	\
 	renew.c
 
+man_MANS = kcm.8
+
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
