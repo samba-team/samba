@@ -352,10 +352,12 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	An overview of the permissions field can be found in <link linkend="access1">Overview of UNIX permissions field</link>.
 	</para>
 
-	<image id="access1"><imagedescription>Overview of UNIX permissions field.</imagedescription><imagefile scale="40">access1</imagefile></image>
+	<image id="access1"><imagedescription>Overview of UNIX permissions field.</imagedescription>
+		<imagefile scale="40">access1</imagefile></image>
 
 	<para>
-	Any bit flag may be unset. An unset bit flag is the equivalent of <quote>cannot</quote> and is represented as a <quote>-</quote> character.
+		Any bit flag may be unset. An unset bit flag is the equivalent of <quote>cannot</quote> and is represented
+		as a <quote>-</quote> character.
 
 	<example>
 		<title>Example File</title>
@@ -373,9 +375,9 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	</para>
 
 	<para>
-	The letters <constant>rwxXst</constant> set permissions for the user, group and others as: read (r), write (w), execute (or access for directories) (x),
-	execute  only  if  the  file  is a directory or already has execute permission for some user (X), set user or group ID on execution (s),
-	sticky (t).
+	The letters <constant>rwxXst</constant> set permissions for the user, group and others as: read (r), write (w),
+	execute (or access for directories) (x), execute  only  if  the  file  is a directory or already has execute
+	permission for some user (X), set user or group ID on execution (s), sticky (t).
 	</para>
 
 	<para>
@@ -406,11 +408,21 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	For example, Windows NT/2K/XP provides the capacity to set access controls on a directory into which people can
 	write files but not delete them. It is possible to set an ACL on a Windows file that permits the file to be written to
 	but not deleted. Such concepts are foreign to the UNIX operating system file space. Within the UNIX file system
-	anyone who has the ability to create a file can write to it, and has the capability to delete it. Of necessity, Samba
-	is subject to the file system semantics of the host operating system. Samba is therefore limited in the file system
-	capabilities that can be made available through Windows ACLs, and therefore performs a <quote>best fit</quote>
-	translation to POSIX ACLs. Some UNIX file systems do however support a feature known as extended attributes. Only
-	the Windows concept of <quote>inheritance</quote> is implemented by Samba through the appropriate extended attribute.
+	anyone who has the ability to create a file can write to it, and has the capability to delete it.
+	</para>
+
+	<para>
+	For the record, in the UNIX environment the ability to delete a file is controlled by the permissions on
+	the directory that the file is in. In other words, a user can delete a file in a directory to which that
+	user had write access, even if that user does not own the file.
+	</para>
+	
+	<para>
+	Of necessity, Samba is subject to the file system semantics of the host operating system. Samba is therefore
+	limited in the file system capabilities that can be made available through Windows ACLs, and therefore performs
+	a <quote>best fit</quote> translation to POSIX ACLs. Some UNIX file systems do however support a feature known
+	as extended attributes. Only the Windows concept of <quote>inheritance</quote> is implemented by Samba through
+	the appropriate extended attribute.
 	</para>	
 
 	<para>
