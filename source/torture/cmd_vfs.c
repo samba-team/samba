@@ -54,7 +54,7 @@ static NTSTATUS cmd_populate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	}
 	c = argv[1][0];
 	size = atoi(argv[2]);
-	vfs->data = (char *)talloc(mem_ctx, size);
+	vfs->data = TALLOC_ARRAY(mem_ctx, char, size);
 	if (vfs->data == NULL) {
 		printf("populate: error=-1 (not enough memory)");
 		return NT_STATUS_UNSUCCESSFUL;
@@ -364,7 +364,7 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	/* do some error checking on these */
 	fd = atoi(argv[1]);
 	size = atoi(argv[2]);
-	vfs->data = (char *)talloc(mem_ctx, size);
+	vfs->data = TALLOC_ARRAY(mem_ctx, char, size);
 	if (vfs->data == NULL) {
 		printf("read: error=-1 (not enough memory)");
 		return NT_STATUS_UNSUCCESSFUL;

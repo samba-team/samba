@@ -3,8 +3,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
-   Copyright (C) Andrew Tridgell 2000
-   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+
+   Copyright (C) Andrew Tridgell 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,52 +21,107 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/**
- * @ingroup talloc
- * @{
- * @sa talloc.c
- */
+/* this is only needed for compatibility with the old talloc */
+typedef void TALLOC_CTX;
 
-/**
- * talloc allocation pool.  All allocated blocks can be freed in one go.
- **/
+/*
+  this uses a little trick to allow __LINE__ to be stringified
+*/
+#define _STRING_LINE_(s)    #s
+#define _STRING_LINE2_(s)   _STRING_LINE_(s)
+#define __LINESTR__       _STRING_LINE2_(__LINE__)
+#define __location__ __FILE__ ":" __LINESTR__
 
-struct talloc_chunk {
-	struct talloc_chunk *next;
-	size_t size;
-	void *ptr;
-};
+#ifndef TALLOC_DEPRECATED
+#define TALLOC_DEPRECATED 0
+#endif
 
-struct talloc_ctx {
-	struct talloc_chunk *list;
-	size_t total_alloc_size;
+/* useful macros for creating type checked pointers */
+#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
 
-	/** The name recorded for this pool, if any.  Should describe
-	 * the purpose for which it was allocated.  The string is
-	 * allocated within the pool. **/
-	char *name;
+#define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
 
-	/** Pointer to the next allocate talloc pool, so that we can
-	 * summarize all talloc memory usage. **/
-	struct talloc_ctx *next_ctx;
-};
+#define talloc_zero(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define talloc_zero_size(ctx, size) _talloc_zero(ctx, size, __location__)
 
-typedef struct talloc_ctx TALLOC_CTX;
+#define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
+#define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
+#define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
 
-TALLOC_CTX *talloc_init(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
+#define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
+#define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
 
-char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
-	PRINTF_ATTRIBUTE(2, 0);
+#define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
-char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
-	PRINTF_ATTRIBUTE(2, 3);
+#define malloc_p(type) (type *)malloc(sizeof(type))
+#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
+#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
-char *talloc_vasprintf_append(TALLOC_CTX *t, char *, const char *, va_list ap)
-	PRINTF_ATTRIBUTE(3, 0);
+#define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
+#define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
-char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
-	PRINTF_ATTRIBUTE(3, 4);
 
-/** @} */
+#if TALLOC_DEPRECATED
+#define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
+#define talloc_p(ctx, type) talloc(ctx, type)
+#define talloc_array_p(ctx, type, count) talloc_array(ctx, type, count)
+#define talloc_realloc_p(ctx, p, type, count) talloc_realloc(ctx, p, type, count)
+#define talloc_destroy(ctx) talloc_free(ctx)
+#endif
 
-#endif /* ndef _TALLOC_H_ */
+#ifndef PRINTF_ATTRIBUTE
+#if (__GNUC__ >= 3)
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+#endif
+
+
+/* The following definitions come from talloc.c  */
+void *_talloc(const void *context, size_t size);
+void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
+void talloc_increase_ref_count(const void *ptr);
+void *talloc_reference(const void *context, const void *ptr);
+int talloc_unlink(const void *context, void *ptr);
+void talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+void talloc_set_name_const(const void *ptr, const char *name);
+void *talloc_named(const void *context, size_t size, 
+		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+void *talloc_named_const(const void *context, size_t size, const char *name);
+const char *talloc_get_name(const void *ptr);
+void *talloc_check_name(const void *ptr, const char *name);
+void talloc_report_depth(const void *ptr, FILE *f, int depth);
+void *talloc_parent(const void *ptr);
+void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
+int talloc_free(void *ptr);
+void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *name);
+void *talloc_steal(const void *new_ctx, const void *ptr);
+off_t talloc_total_size(const void *ptr);
+off_t talloc_total_blocks(const void *ptr);
+void talloc_report_full(const void *ptr, FILE *f);
+void talloc_report(const void *ptr, FILE *f);
+void talloc_enable_null_tracking(void);
+void talloc_enable_leak_report(void);
+void talloc_enable_leak_report_full(void);
+void *_talloc_zero(const void *ctx, size_t size, const char *name);
+void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
+char *talloc_strdup(const void *t, const char *p);
+char *talloc_strndup(const void *t, const char *p, size_t n);
+char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_append(char *s,
+			     const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
+void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
+void *talloc_autofree_context(void);
+
+#endif
+
