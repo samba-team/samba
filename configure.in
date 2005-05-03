@@ -30,6 +30,10 @@ dnl
 AC_DEFINE([_GNU_SOURCE], 1,
 	[Define to enable extensions on glibc-based systems such as Linux.])
 
+if test -f $srcdir/lib/asn1/pkcs12.asn1 ; then
+	AC_DEFINE([PKINIT], 1, [Define to enable PKINIT.])
+fi
+
 AC_OBJEXT
 AC_EXEEXT
 
