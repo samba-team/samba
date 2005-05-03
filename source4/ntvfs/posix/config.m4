@@ -31,3 +31,10 @@ AC_CHECK_FUNCS(flistxattr)
 if test x"$ac_cv_func_flistxattr" = x"yes"; then
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
 fi
+
+AC_CHECK_HEADERS(blkid/blkid.h)
+AC_SEARCH_LIBS(blkid_get_cache, [blkid])
+AC_CHECK_FUNCS(blkid_get_cache)
+if test x"$ac_cv_func_blkid_get_cache" = x"yes"; then
+	AC_DEFINE(HAVE_LIBBLKID,1,[Whether we have blkid support (e2fsprogs)])
+fi
