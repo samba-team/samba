@@ -1,5 +1,7 @@
 2005-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kcm/kcm.8: more text about usage
+	
 	* kcm/Makefile.am: man_MANS += kcm.8
 
 	* kcm/kcm.8: initial manpage
