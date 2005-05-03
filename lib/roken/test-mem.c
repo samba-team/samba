@@ -54,6 +54,7 @@ struct {
     void *data_start;
     size_t data_size;
     enum rk_test_mem_type type;
+    int fd;
 } map;
 
 struct sigaction sa, osa;
@@ -120,6 +121,7 @@ rk_test_mem_alloc(enum rk_test_mem_type type, const char *name,
     if(fd < 0)
 	err (1, "open /dev/zero");
 #endif
+    map.fd = fd;
     flags |= MAP_PRIVATE;
 
     map.size = size + pagesize - (size % pagesize) + pagesize * 2;
@@ -187,6 +189,8 @@ rk_test_mem_free(const char *map_name)
     ret = munmap (map.start, map.size);
     if (ret < 0)
 	err (1, "munmap");
+    if (map.fd > 0)
+	close(map.fd);
 #endif
     free(testname);
     testname = NULL;
