@@ -347,6 +347,55 @@ See the documentation in the <ulink url="http://support.microsoft.com/default.as
 </para>
 </sect2>
 
+<sect2>
+	<title>Limiting Logon Connections</title>
+
+	<para>
+		Sometimes it is necessary to limit the number of concurrent connections to a
+		Samba shared resource. For example, a site may wish to permit only one network
+		logon per user.
+	</para>
+
+	<para>
+		The Samba <parameter>preexec script</parameter> parameter can be used to permit only one
+		connection per user. Though this method is not fool-proof, and may have side-effects
+		the following contributed method may inspire someone to provide a better solution.
+	</para>
+
+	<para>
+		This is not a perfect solution because Windows clients can drop idle connections
+		with an auto-reconnect capability that could result in the appearance that a share
+		is no longer in use, while actually it is. Even so, it demonstrates the principle
+		of use of the <parameter>preexec script</parameter> parameter.
+	</para>
+
+	<para>
+		The following share configuration demonstrates use of the script shown in <link linkend="Tpees"/>:
+		<programlisting>
+[myshare]
+	...
+	preexec script = /sbin/PermitSingleLogon.sh
+	preexec close = Yes
+	...
+		</programlisting>
+	</para>
+
+<example id="Tpees">
+	<title>Script to Enforce Single Resource Logon</title>
+<screen>
+#!/bin/bash
+
+IFS="-"
+RESULT=$(smbstatus -S -u $1 2> /dev/null | awk 'NF > 6 {print $1}' | sort | uniq -d)
+
+if [ "X${RESULT}" == X  ]; then
+  exit 0
+else
+  exit 1
+fi
+</screen>
+</example>
+
 </sect1>
 
 </chapter>
