@@ -103,6 +103,16 @@ typedef int mode_t;
 #define TDB_CONVERT 16 /* convert endian (internal use) */
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 
+/* Throw an IOError exception if tdb_open() or tdb_open_ex() returns NULL */
+
+%exception {
+	$action
+	if (result == NULL) {
+		PyErr_SetFromErrno(PyExc_IOError);
+		SWIG_fail;
+	}
+}
+
 %rename tdb_open open;
 TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
@@ -112,6 +122,8 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn,
 			 tdb_hash_func hash_fn);
+
+%exception;
 
 %rename tdb_reopen reopen;
 int tdb_reopen(TDB_CONTEXT *tdb);
