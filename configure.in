@@ -284,6 +284,7 @@ AC_CHECK_HEADERS([\
 	sys/un.h				\
 	termcap.h				\
 	termio.h				\
+	termios.h				\
 	time.h					\
 	tmpdir.h				\
 	udb.h					\
@@ -301,6 +302,9 @@ AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
 #endif])
 
 AC_CHECK_HEADERS(sys/ptyvar.h, , , [AC_INCLUDES_DEFAULT
+#if HAVE_TERMIOS_H
+#include <termios.h>
+#endif
 #if HAVE_SYS_TTY_H
 #include <sys/tty.h>
 #endif])
