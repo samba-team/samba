@@ -76,7 +76,7 @@ struct _GtkSelectHostDialogClass
 GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe);
 GType gtk_select_domain_dialog_get_type (void);
 struct policy_handle gtk_select_domain_dialog_get_handle(GtkSelectDomainDialog *d);
-GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe, BOOL nocredentials);
+GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe);
 const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d);
 GType gtk_select_host_dialog_get_type (void);
 

@@ -396,9 +396,10 @@ static void on_open_local_activate(GtkMenuItem *menuitem, gpointer user_data)
 static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	char *tmp;
-	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(FALSE, NULL));
+	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(NULL));
 	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
 	WERROR error;
+	struct cli_credentials *creds;
 	
 	if(result != GTK_RESPONSE_ACCEPT)
 	{
@@ -406,8 +407,12 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 		return;
 	}
 
+	creds = cli_credentials_init(mem_ctx);
+	cli_credentials_guess(creds);
+	cli_credentials_set_gtk_callbacks(creds);
+
 	error = reg_open_remote(&registry, 
-			gtk_rpc_binding_dialog_get_credentials(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+			creds,
 			gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
 
 	if(!W_ERROR_IS_OK(error)) {
