@@ -151,7 +151,7 @@ static NTSTATUS add_socket_rpc_unix(struct dcesrv_context *dce_ctx, struct dcesr
 	uint16_t port = 1;
 	NTSTATUS status;
 
-	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -186,12 +186,12 @@ static NTSTATUS add_socket_rpc_ncalrpc(struct dcesrv_context *dce_ctx, struct dc
 
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lp_ncalrpc_dir(), e->ep_description->endpoint);
 
-	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
 	dcesrv_sock->endpoint		= e;
-	dcesrv_sock->dcesrv_ctx		= dce_ctx;
+	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
 	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
 				     "unix", full_path, &port, dcesrv_sock);
@@ -217,12 +217,12 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 		port = atoi(e->ep_description->endpoint);
 	}
 
-	dcesrv_sock = talloc(dce_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
 	dcesrv_sock->endpoint		= e;
-	dcesrv_sock->dcesrv_ctx		= dce_ctx;
+	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
 	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
 				     "ipv4", address, &port, dcesrv_sock);
