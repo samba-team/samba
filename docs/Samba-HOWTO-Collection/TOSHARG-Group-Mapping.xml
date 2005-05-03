@@ -201,7 +201,7 @@
 	</para>
 
 	<sect2>
-	<title>Warning &smbmmdsh; User Private Group Problems</title>
+	<title>Warning &smbmdash; User Private Group Problems</title>
 
 	<para>
 	Windows does not permit user and group accounts to have the same name.
