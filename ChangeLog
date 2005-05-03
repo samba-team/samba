@@ -1,5 +1,9 @@
 2005-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kcm/Makefile.am: man_MANS += kcm.8
+
+	* kcm/kcm.8: initial manpage
+
 	* configure.in: if we have a $srcdir/lib/asn1/pkcs12.asn1, define
 	PKINIT
 	
