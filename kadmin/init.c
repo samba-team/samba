@@ -175,11 +175,16 @@ init(struct init_options *opt, int argc, char **argv)
 	/* Create `kadmin/changepw' */
 	krb5_make_principal(context, &princ, realm, 
 			    "kadmin", "changepw", NULL);
+	/*
+	 * The Windows XP (at least) password changing protocol
+	 * request the `kadmin/changepw' ticket with `renewable_ok,
+	 * renewable, forwardable' and so fails if we disallow
+	 * forwardable here.
+	 */
 	create_random_entry(princ, 5*60, 5*60, 
 			    KRB5_KDB_DISALLOW_TGT_BASED|
 			    KRB5_KDB_PWCHANGE_SERVICE|
 			    KRB5_KDB_DISALLOW_POSTDATED|
-			    KRB5_KDB_DISALLOW_FORWARDABLE|
 			    KRB5_KDB_DISALLOW_RENEWABLE|
 			    KRB5_KDB_DISALLOW_PROXIABLE|
 			    KRB5_KDB_REQUIRES_PRE_AUTH);
