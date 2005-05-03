@@ -116,13 +116,13 @@ sub check_library($$)
 	$lib->{OUTPUT_TYPE} = "SHARED_LIBRARY";
 
 	if (defined($lib->{MAJOR_VERSION})) {
-	    $lib->{MAJOR_VERSION} = join('', $lib->{MAJOR_VERSION});
+	    $lib->{MAJOR_VERSION} = join('', @{$lib->{MAJOR_VERSION}});
 	}
 	if (defined($lib->{MINOR_VERSION})) {
-	    $lib->{MINOR_VERSION} = join('', $lib->{MINOR_VERSION});
+	    $lib->{MINOR_VERSION} = join('', @{$lib->{MINOR_VERSION}});
 	}
 	if (defined($lib->{RELEASE_VERSION})) {
-	    $lib->{RELEASE_VERSION} = join('', $lib->{RELEASE_VERSION});
+	    $lib->{RELEASE_VERSION} = join('', @{$lib->{RELEASE_VERSION}});
 	}
 }
 
