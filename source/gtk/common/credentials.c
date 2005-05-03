@@ -21,41 +21,65 @@
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
 
-static const char *gtk_get_userpassword(struct cli_credentials *credentials)
+static void gtk_get_credentials(struct cli_credentials *credentials)
 {
-	char *prompt;
 	const char *ret;
 	GtkWidget *dialog;
-	GtkWidget *dialog_vbox1;
-	GtkWidget *hbox;
 	GtkWidget *label;
+	GtkWidget *table;
+	GtkWidget *entry_username;
 	GtkWidget *entry_password;
+	GtkWidget *entry_domain;
 	GtkWidget *dialog_action_area1;
 	GtkWidget *cancelbutton1;
 	GtkWidget *okbutton1;
+	GtkWidget *anonymous;
 
 	dialog = gtk_dialog_new ();
-	gtk_window_set_title (GTK_WINDOW (dialog), "Enter Password");
+	gtk_window_set_title (GTK_WINDOW (dialog), "Credentials");
 	gtk_window_set_resizable (GTK_WINDOW (dialog), FALSE);
 	gtk_window_set_type_hint (GTK_WINDOW (dialog), GDK_WINDOW_TYPE_HINT_DIALOG);
 
-	dialog_vbox1 = GTK_DIALOG (dialog)->vbox;
+	table = gtk_table_new(4, 2, FALSE);
+	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	hbox = gtk_hbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX (dialog_vbox1), hbox, TRUE, TRUE, 0);
+	label = gtk_label_new ("Domain:");
 
-	prompt = talloc_asprintf(NULL, "Password for [%s\\%s]:", 
-							 cli_credentials_get_domain(credentials),
-							 cli_credentials_get_username(credentials));
+	gtk_table_attach(GTK_TABLE(table),label,0,1,0,1,GTK_FILL,0,0,0);
 
-	label = gtk_label_new (prompt);
+	entry_domain = gtk_entry_new ();
+	gtk_table_attach(GTK_TABLE(table), entry_domain, 1,2,0,1, GTK_FILL, 0,0,0);
+	gtk_entry_set_activates_default (GTK_ENTRY (entry_domain), TRUE);
 
-	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+	if (credentials->domain_obtained != CRED_UNINITIALISED) {
+		gtk_entry_set_text(GTK_ENTRY(entry_domain), credentials->domain);
+	}
+
+	label = gtk_label_new ("Username:");
+
+	gtk_table_attach(GTK_TABLE(table),label,0,1,1,2,GTK_FILL,0,0,0);
+
+	entry_username = gtk_entry_new ();
+	gtk_table_attach(GTK_TABLE(table),entry_username,1,2,1,2,GTK_FILL,0,0,0);
+	gtk_entry_set_activates_default (GTK_ENTRY (entry_username), TRUE);
+	if (credentials->username_obtained != CRED_UNINITIALISED) {
+		gtk_entry_set_text(GTK_ENTRY(entry_username), credentials->username);
+	}
+
+	label = gtk_label_new ("Password:");
+
+	gtk_table_attach(GTK_TABLE(table),label,0,1,3,4,GTK_FILL,0,0,0);
 
 	entry_password = gtk_entry_new ();
-	gtk_box_pack_start (GTK_BOX (hbox), entry_password, TRUE, TRUE, 0);
+	gtk_table_attach(GTK_TABLE(table),entry_password,1,2,3,4,GTK_FILL,0,0,0);
 	gtk_entry_set_visibility (GTK_ENTRY (entry_password), FALSE);
 	gtk_entry_set_activates_default (GTK_ENTRY (entry_password), TRUE);
+	if (credentials->password_obtained != CRED_UNINITIALISED) {
+		gtk_entry_set_text(GTK_ENTRY(entry_password), credentials->password);
+	}
+
+	anonymous = gtk_check_button_new_with_mnemonic("_Anonymous");
+	gtk_table_attach(GTK_TABLE(table),anonymous,0,2,4,5,GTK_FILL,0,0,0);
 
 	dialog_action_area1 = GTK_DIALOG (dialog)->action_area;
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
@@ -72,7 +96,13 @@ static const char *gtk_get_userpassword(struct cli_credentials *credentials)
 
     switch (gtk_dialog_run (GTK_DIALOG (dialog))) {
 	case GTK_RESPONSE_OK:
-		ret = talloc_strdup(credentials, gtk_entry_get_text(GTK_ENTRY(entry_password)));
+		cli_credentials_set_username(credentials, gtk_entry_get_text(GTK_ENTRY(entry_username)), CRED_SPECIFIED);
+		cli_credentials_set_password(credentials, gtk_entry_get_text(GTK_ENTRY(entry_password)), CRED_SPECIFIED);
+		cli_credentials_set_domain(credentials, gtk_entry_get_text(GTK_ENTRY(entry_domain)), CRED_SPECIFIED);
+
+		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(anonymous))) {
+			cli_credentials_set_anonymous(credentials);
+		}
 		break;
 	default:
 		ret = NULL;
@@ -80,10 +110,24 @@ static const char *gtk_get_userpassword(struct cli_credentials *credentials)
 	}
 
 	gtk_widget_destroy (dialog);
+}
 
-	talloc_free(prompt);
-	
-	return ret;
+static const char *gtk_get_username(struct cli_credentials *credentials)
+{
+	gtk_get_credentials(credentials);
+	return credentials->username;
+}
+
+static const char *gtk_get_userpassword(struct cli_credentials *credentials)
+{
+	gtk_get_credentials(credentials);
+	return credentials->password;
+}
+
+static const char *gtk_get_domain(struct cli_credentials *credentials)
+{
+	gtk_get_credentials(credentials);
+	return credentials->domain;
 }
 
 void cli_credentials_set_gtk_callbacks(struct cli_credentials *cred)
@@ -91,5 +135,15 @@ void cli_credentials_set_gtk_callbacks(struct cli_credentials *cred)
 	if (cred->password_obtained <= CRED_CALLBACK) {
 		cred->password_cb = gtk_get_userpassword;
 		cred->password_obtained = CRED_CALLBACK;
+	}
+
+	if (cred->username_obtained <= CRED_CALLBACK) {
+		cred->username_cb = gtk_get_username;
+		cred->username_obtained = CRED_CALLBACK;
+	}
+
+	if (cred->domain_obtained <= CRED_CALLBACK) {
+		cred->domain_cb = gtk_get_domain;
+		cred->domain_obtained = CRED_CALLBACK;
 	}
 }

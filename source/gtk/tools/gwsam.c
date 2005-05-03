@@ -113,10 +113,11 @@ static void connect_sam(void)
 	GtkRpcBindingDialog *d;
 	NTSTATUS status;
 	struct samr_Connect r;
+	struct cli_credentials *cred;
 	TALLOC_CTX *mem_ctx;
 	gint result;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 	case GTK_RESPONSE_ACCEPT:
@@ -127,12 +128,14 @@ static void connect_sam(void)
 	}
 
 	mem_ctx = talloc_init("gwsam_connect");
+	cred = cli_credentials_init(mem_ctx);
+	cli_credentials_guess(cred);
+	cli_credentials_set_gtk_callbacks(cred);
+
 	/* If connected, get list of jobs */
 	status = dcerpc_pipe_connect_b(mem_ctx, &sam_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
-				       DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION,
-				       gtk_rpc_binding_dialog_get_credentials(d)
-					   );
+				       DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, cred );
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "While connecting to SAMR interface", status);

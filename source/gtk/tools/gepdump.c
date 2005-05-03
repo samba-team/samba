@@ -178,7 +178,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	gint result;
 	struct cli_credentials *credentials;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(TRUE, NULL));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 	case GTK_RESPONSE_ACCEPT:
