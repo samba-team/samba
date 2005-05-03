@@ -22,7 +22,12 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
+/* We use libblkid out of e2fsprogs to identify UUID of a volume */
+#ifdef HAVE_LIBBLKID
+#include <blkid/blkid.h>
+#endif
 
 /*
   return filesystem space info
@@ -136,8 +141,27 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 
 	case RAW_QFS_OBJECTID_INFORMATION:
-		ZERO_STRUCT(fs->objectid_information.out);
-		return NT_STATUS_OK;
+		{
+#ifdef HAVE_LIBBLKID
+			NTSTATUS status;
+			blkid_cache blk_cache = NULL;
+			const char *uuid_value;
+			const char *blkid_devname;
+			
+#endif
+			ZERO_STRUCT(fs->objectid_information.out);
+#ifdef HAVE_LIBBLKID
+			blkid_devname = blkid_devno_to_devname(st.st_dev);
+			if (!blk_cache && blkid_get_cache(&blk_cache,NULL) < 0 ) {
+			  return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+			}
+			if ((uuid_value = blkid_get_tag_value(blk_cache, "UUID", blkid_devname))) {
+			  GUID_from_string(uuid_value, &fs->objectid_information.out.guid);
+			  free(uuid_value);
+			}			
+#endif
+			return NT_STATUS_OK;
+		}
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
