@@ -117,6 +117,7 @@ The chapters in this part each cover specific Samba features.
 	<xi:include href="TOSHARG-Backup.xml"/>
 	<xi:include href="TOSHARG-HighAvailability.xml"/>
 	<xi:include href="TOSHARG-LargeFile.xml"/>
+	<!--	<xi:include href="TOSHARG-SecureLDAP.xml"/> -->
 
 </part>
 
@@ -149,7 +150,7 @@ The chapters in this part each cover specific Samba features.
 
 <!-- Comment out the following line to include the manpages.
 	 *Please* do not commit with the line below enabled! -->
-	<!--<xi:include href="manpages.xml"/>-->
+	 <!--	 <xi:include href="manpages.xml"/> -->
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 
 	<xi:include href="TOSHARG-glossary.xml"/>
