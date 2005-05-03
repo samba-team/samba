@@ -1459,8 +1459,7 @@ rpc_alias_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 	/* We've got a comment to set */
 
-	alias_info.switch_value1 = 3;
-	alias_info.switch_value2 = 3;
+	alias_info.level = 3;
 	init_samr_alias_info3(&alias_info.alias.info3, opt_comment);
 
 	result = cli_samr_set_aliasinfo(cli, mem_ctx, &alias_pol, &alias_info);
@@ -2026,7 +2025,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_tdup(mem_ctx,
-								   &ctr.alias.info3.uni_acct_desc);
+								   ctr.alias.info3.description.string);
 				}
 			}
 			
@@ -2081,7 +2080,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_tdup(mem_ctx,
-								   &ctr.alias.info3.uni_acct_desc);
+								   ctr.alias.info3.description.string);
 				}
 			}
 			

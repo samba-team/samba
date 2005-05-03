@@ -985,17 +985,18 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	if ( !ret )
 		return NT_STATUS_NO_SUCH_ALIAS;
 
-	switch (q_u->switch_level) {
+	if ( !(r_u->ctr = TALLOC_ZERO_P( p->mem_ctx, ALIAS_INFO_CTR )) ) 
+		return NT_STATUS_NO_MEMORY;
+
+
+	switch (q_u->level ) {
 	case 1:
-		r_u->ptr = 1;
-		r_u->ctr.switch_value1 = 1;
-		init_samr_alias_info1(&r_u->ctr.alias.info1,
-				      info.acct_name, 1, info.acct_desc);
+		r_u->ctr->level = 1;
+		init_samr_alias_info1(&r_u->ctr->alias.info1, info.acct_name, 1, info.acct_desc);
 		break;
 	case 3:
-		r_u->ptr = 1;
-		r_u->ctr.switch_value1 = 3;
-		init_samr_alias_info3(&r_u->ctr.alias.info3, info.acct_desc);
+		r_u->ctr->level = 3;
+		init_samr_alias_info3(&r_u->ctr->alias.info3, info.acct_desc);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -3984,11 +3985,13 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		
 	ctr=&q_u->ctr;
 
-	switch (ctr->switch_value1) {
+	switch (ctr->level) {
 		case 3:
-			unistr2_to_ascii(info.acct_desc,
-					 &(ctr->alias.info3.uni_acct_desc),
-					 sizeof(info.acct_desc)-1);
+			if ( ctr->alias.info3.description.string ) {
+				unistr2_to_ascii( info.acct_desc, 
+					ctr->alias.info3.description.string, 
+					sizeof(info.acct_desc)-1 );
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
