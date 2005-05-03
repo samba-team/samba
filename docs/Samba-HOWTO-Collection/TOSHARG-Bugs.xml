@@ -235,6 +235,28 @@ using the client. The debugger should catch the fault and tell you
 where it occurred.
 </para>
 
+<para>
+Sometimes it is necessary to build a Samba binary files that have debugging
+symbols so as to make it possible to capture enough information from a crashed
+operation to permit the Samba Team to fix the problem.
+</para>
+
+<para>
+Compile with <constant>-g</constant> to ensure you have symbols in place. 
+Add the following line to the &smb.conf; file global section:
+</screen>
+panic action = "/bin/sleep 90000"
+</screen>
+to catch any panics. If <command>smbd</command> seems to be frozen look for any sleep
+processes. If it is not, and appears to be spinning, find the process id
+of the spinning process and type:
+<screen>
+gdb /usr/local/samba/sbin/smbd
+</screen>
+then <quote>attach 'pid'</quote> (of the spinning process), then type <quote>bt</quote> to
+get a backtrace to see where the smbd is in the call path.
+</para>
+
 </sect1>
 
 <sect1>
