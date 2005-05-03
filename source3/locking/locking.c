@@ -357,7 +357,7 @@ BOOL locking_end(void)
 	}
 
 	if (deferred_open_tdb) {
-		if (tdb_close(tdb) != 0)
+		if (tdb_close(deferred_open_tdb) != 0)
 			ret = False;
 	}
 		
