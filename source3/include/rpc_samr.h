@@ -1180,73 +1180,51 @@ typedef struct r_samr_create_dom_alias_info
 
 } SAMR_R_CREATE_DOM_ALIAS;
 
-/* SAMR_Q_QUERY_ALIASINFO - SAM Alias Info */
-typedef struct q_samr_query_alias_info
-{
-	POLICY_HND pol;        /* policy handle */
 
-	uint16 switch_level;    /* 0x0003 seen */
+/********************************************************/
 
-} SAMR_Q_QUERY_ALIASINFO;
-
-typedef struct samr_alias_info1
-{
-	UNIHDR hdr_acct_name;
-	UNIHDR hdr_acct_desc;
+typedef struct {
+	UNISTR4 name;
+	UNISTR4 description;
 	uint32 num_member;
-	UNISTR2 uni_acct_name;
-	UNISTR2 uni_acct_desc;
-
 } ALIAS_INFO1;
 
-typedef struct samr_alias_info3
-{
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
+typedef struct {
+	UNISTR4 description;
 } ALIAS_INFO3;
 
-/* ALIAS_INFO_CTR */
-typedef struct alias_info_ctr
-{
-	uint16 switch_value1;
-	uint16 switch_value2;
+typedef struct {
+	POLICY_HND pol;        /* policy handle */
+	uint16 level;    /* 0x0003 seen */
+} SAMR_Q_QUERY_ALIASINFO;
 
-	union
- 	{
+typedef struct {
+	uint16 level;
+	union {
 		ALIAS_INFO1 info1;
 		ALIAS_INFO3 info3;
-
 	} alias;
-
 } ALIAS_INFO_CTR;
 
-/* SAMR_R_QUERY_ALIASINFO - SAM alias info */
-typedef struct r_samr_query_aliasinfo_info
-{
-	uint32 ptr;        
-	ALIAS_INFO_CTR ctr;
-
+typedef struct {
+	ALIAS_INFO_CTR *ctr;
 	NTSTATUS status;
-
 } SAMR_R_QUERY_ALIASINFO;
 
 
-/* SAMR_Q_SET_ALIASINFO - SAM Alias Info */
-typedef struct q_samr_set_alias_info
-{
+/********************************************************/
+
+typedef struct {
 	POLICY_HND alias_pol;        /* policy handle */
 	ALIAS_INFO_CTR ctr;
-
 } SAMR_Q_SET_ALIASINFO;
 
-/* SAMR_R_SET_ALIASINFO - SAM alias info */
-typedef struct r_samr_set_aliasinfo_info
-{
+typedef struct {
 	NTSTATUS status;
-
 } SAMR_R_SET_ALIASINFO;
 
+
+/********************************************************/
 
 /* SAMR_Q_QUERY_USERGROUPS - */
 typedef struct q_samr_query_usergroup_info
