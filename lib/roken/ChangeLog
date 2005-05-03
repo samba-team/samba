@@ -1,5 +1,7 @@
 2005-05-03  Dave Love  <fx@gnu.org>
 
+	* snprintf.c: Include snprintf-test.h earlier.
+	
 	* test-mem.c: Add member fd to map.
 	(rk_test_mem_alloc, rk_test_mem_free): Use it.
 
