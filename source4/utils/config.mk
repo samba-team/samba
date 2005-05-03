@@ -83,18 +83,3 @@ REQUIRED_SUBSYSTEMS = \
 		LIB_SECURITY_NDR
 # End BINARY nmblookup
 #################################
-
-#################################
-# Start BINARY getnacl
-[BINARY::getntacl]
-OBJ_FILES = \
-		utils/getntacl.o
-REQUIRED_SUBSYSTEMS = \
-		CONFIG \
-		LIBBASIC \
-		LIBTALLOC \
-		NDR_XATTR \
-		LIB_SECURITY \
-		NDR_MISC
-# End BINARY getntacl
-#################################
