@@ -1,3 +1,8 @@
+2005-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: if we have a $srcdir/lib/asn1/pkcs12.asn1, define
+	PKINIT
+	
 2005-05-02  Dave Love  <fx@gnu.org>
 
 	* configure.in: sys/tty.h (for sys/ptyvar.h) might need termios.h.
