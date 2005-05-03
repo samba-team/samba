@@ -26,9 +26,13 @@
 
 /* We use libblkid out of e2fsprogs to identify UUID of a volume */
 #ifdef HAVE_LIBBLKID
-#include <blkid/blkid.h>
+static int blkid_cache_destructor(void * cache_wrap) {
+	blkid_cache_wrap_t * cache = (blkid_cache_wrap_t *)cache_wrap;
+	blkid_put_cache(cache->cache);
+	if(cache->devname) free((void *)cache->devname);
+	return 0;
+}
 #endif
-
 /*
   return filesystem space info
 */
@@ -141,28 +145,40 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 
 	case RAW_QFS_OBJECTID_INFORMATION:
-		{
+	{
 #ifdef HAVE_LIBBLKID
-			NTSTATUS status;
-			blkid_cache blk_cache = NULL;
-			const char *uuid_value;
-			const char *blkid_devname;
+		NTSTATUS status;
+		const char *uuid_value;
+#endif
+		ZERO_STRUCT(fs->objectid_information.out);
+#ifdef HAVE_LIBBLKID
+		if (!pvfs->blkid_cache) {
+			pvfs->blkid_cache = talloc(ntvfs, blkid_cache_wrap_t);
 			
-#endif
-			ZERO_STRUCT(fs->objectid_information.out);
-#ifdef HAVE_LIBBLKID
-			blkid_devname = blkid_devno_to_devname(st.st_dev);
-			if (!blk_cache && blkid_get_cache(&blk_cache,NULL) < 0 ) {
-			  return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+			if (!pvfs->blkid_cache) {
+				return NT_STATUS_NO_MEMORY;
 			}
-			if ((uuid_value = blkid_get_tag_value(blk_cache, "UUID", blkid_devname))) {
-			  GUID_from_string(uuid_value, &fs->objectid_information.out.guid);
-			  free(uuid_value);
-			}			
-#endif
-			return NT_STATUS_OK;
+			
+			pvfs->blkid_cache->cache = NULL;
+			pvfs->blkid_cache->devname = blkid_devno_to_devname(st.st_dev);
+			
+			talloc_set_destructor(pvfs->blkid_cache, blkid_cache_destructor);
+			
+			if (blkid_get_cache(&pvfs->blkid_cache->cache,NULL) < 0 ) {
+				return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+			}
 		}
+		
+		if ((uuid_value = blkid_get_tag_value(pvfs->blkid_cache->cache, 
+						      "UUID", pvfs->blkid_cache->devname))) {
+			GUID_from_string(uuid_value, &fs->objectid_information.out.guid);
+			free((void*)uuid_value);
+		}
+#endif
+		return NT_STATUS_OK;
 	}
-
+	default:
+		break;
+	}
 	return NT_STATUS_INVALID_LEVEL;
 }
