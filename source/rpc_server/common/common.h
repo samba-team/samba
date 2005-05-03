@@ -35,6 +35,12 @@
 	return r->out.result; \
 } while(0)
 
+/* a useful macro for generating a RPC fault in the backend code */
+#define DCESRV_FAULT_VOID(code) do { \
+	dce_call->fault_code = code; \
+	return; \
+} while(0)
+
 /* a useful macro for checking the validity of a dcerpc policy handle
    and giving the right fault code if invalid */
 #define DCESRV_CHECK_HANDLE(h) do {if (!(h)) DCESRV_FAULT(DCERPC_FAULT_CONTEXT_MISMATCH); } while (0)
