@@ -1357,7 +1357,7 @@ NTSTATUS cli_samr_query_alias_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*ctr = r.ctr;
+	*ctr = *r.ctr;
 
  done:
 	prs_mem_free(&qbuf);

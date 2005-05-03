@@ -3472,13 +3472,9 @@ void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member
 {
 	DEBUG(5, ("init_samr_alias_info1\n"));
 
-	init_unistr2(&al1->uni_acct_name, acct_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&al1->hdr_acct_name, &al1->uni_acct_name);
-
-	al1->num_member=num_member;
-
-	init_unistr2(&al1->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
-	init_uni_hdr(&al1->hdr_acct_desc, &al1->uni_acct_name);
+	init_unistr4(&al1->name, acct_name, UNI_FLAGS_NONE);
+	al1->num_member = num_member;
+	init_unistr4(&al1->description, acct_desc, UNI_FLAGS_NONE);
 }
 
 /*******************************************************************
@@ -3497,22 +3493,20 @@ BOOL samr_io_alias_info1(const char *desc, ALIAS_INFO1 * al1,
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_unihdr("hdr_acct_name", &al1->hdr_acct_name, ps, depth))
+	if ( !prs_unistr4_hdr("name", ps, depth, &al1->name) )
 		return False;
-	if(!prs_uint32("num_member", ps, depth, &al1->num_member))
+	if ( !prs_uint32("num_member", ps, depth, &al1->num_member) )
 		return False;
-	if(!smb_io_unihdr("hdr_acct_desc", &al1->hdr_acct_desc, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("uni_acct_name", &al1->uni_acct_name,
-		       al1->hdr_acct_name.buffer, ps, depth))
+	if ( !prs_unistr4_hdr("description", ps, depth, &al1->description) )
 		return False;
 
-	if(!prs_align(ps))
+	if ( !prs_unistr4_str("name", ps, depth, &al1->name) )
 		return False;
-
-	if(!smb_io_unistr2("uni_acct_desc", &al1->uni_acct_desc,
-		       al1->hdr_acct_desc.buffer, ps, depth))
+	if ( !prs_align(ps) )
+		return False;
+	if ( !prs_unistr4_str("description", ps, depth, &al1->description) )
+		return False;
+	if ( !prs_align(ps) )
 		return False;
 
 	return True;
@@ -3526,15 +3520,14 @@ void init_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_alias_info3\n"));
 
-	init_unistr2(&al3->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
-	init_uni_hdr(&al3->hdr_acct_desc, &al3->uni_acct_desc);
+	init_unistr4(&al3->description, acct_desc, UNI_FLAGS_NONE);
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 * al3,
+BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 *al3,
 			 prs_struct *ps, int depth)
 {
 	if (al3 == NULL)
@@ -3546,10 +3539,7 @@ BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 * al3,
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_unihdr("hdr_acct_desc", &al3->hdr_acct_desc, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni_acct_desc", &al3->uni_acct_desc,
-		       al3->hdr_acct_desc.buffer, ps, depth))
+	if (!prs_unistr4("description", ps, depth, &al3->description))
 		return False;
 
 	return True;
@@ -3559,21 +3549,20 @@ BOOL samr_io_alias_info3(const char *desc, ALIAS_INFO3 * al3,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_alias_info_ctr(const char *desc, ALIAS_INFO_CTR * ctr,
-			 prs_struct *ps, int depth)
+BOOL samr_alias_info_ctr(const char *desc, prs_struct *ps, int depth, ALIAS_INFO_CTR * ctr)
 {
-	if (ctr == NULL)
+	if ( !ctr )
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_alias_info_ctr");
 	depth++;
 
-	if(!prs_uint16("switch_value1", ps, depth, &ctr->switch_value1))
-		return False;
-	if(!prs_uint16("switch_value2", ps, depth, &ctr->switch_value2))
+	if ( !prs_uint16("level", ps, depth, &ctr->level) )
 		return False;
 
-	switch (ctr->switch_value1) {
+	if(!prs_align(ps))
+		return False;
+	switch (ctr->level) {
 	case 1: 
 		if(!samr_io_alias_info1("alias_info1", &ctr->alias.info1, ps, depth))
 			return False;
@@ -3595,22 +3584,22 @@ inits a SAMR_Q_QUERY_ALIASINFO structure.
 ********************************************************************/
 
 void init_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO * q_e,
-				 POLICY_HND *pol, uint16 switch_level)
+				 POLICY_HND *pol, uint32 switch_level)
 {
 	DEBUG(5, ("init_samr_q_query_aliasinfo\n"));
 
 	q_e->pol = *pol;
-	q_e->switch_level = switch_level;
+	q_e->level = switch_level;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_query_aliasinfo(const char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
+BOOL samr_io_q_query_aliasinfo(const char *desc, SAMR_Q_QUERY_ALIASINFO *in,
 			       prs_struct *ps, int depth)
 {
-	if (q_e == NULL)
+	if ( !in )
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_io_q_query_aliasinfo");
@@ -3619,10 +3608,10 @@ BOOL samr_io_q_query_aliasinfo(const char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("pol", &(q_e->pol), ps, depth))
+	if ( !smb_io_pol_hnd("pol", &(in->pol), ps, depth) )
 		return False;
 
-	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
+	if ( !prs_uint16("level", ps, depth, &in->level) )
 		return False;
 
 	return True;
@@ -3632,24 +3621,23 @@ BOOL samr_io_q_query_aliasinfo(const char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
 inits a SAMR_R_QUERY_ALIASINFO structure.
 ********************************************************************/
 
-void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
+void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *out,
 				 ALIAS_INFO_CTR * ctr, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_aliasinfo\n"));
 
-	r_u->ptr = (NT_STATUS_IS_OK(status) && ctr != NULL) ? 1 : 0;
-	r_u->ctr = *ctr;
-	r_u->status = status;
+	out->ctr = ctr;
+	out->status = status;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
+BOOL samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO *out,
 			       prs_struct *ps, int depth)
 {
-	if (r_u == NULL)
+	if ( !out )
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_aliasinfo");
@@ -3658,17 +3646,12 @@ BOOL samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
+	if ( !prs_pointer("alias", ps, depth, (void**)&out->ctr, sizeof(ALIAS_INFO_CTR), (PRS_POINTER_CAST)samr_alias_info_ctr))
 		return False;
-
-	if (r_u->ptr != 0) {
-		if(!samr_alias_info_ctr("ctr", &r_u->ctr, ps, depth))
-			return False;
-	}
-
 	if(!prs_align(ps))
 		return False;
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+
+	if(!prs_ntstatus("status", ps, depth, &out->status))
 		return False;
 
 	return True;
@@ -3705,7 +3688,7 @@ BOOL samr_io_q_set_aliasinfo(const char *desc, SAMR_Q_SET_ALIASINFO * q_u,
 
 	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
 		return False;
-	if(!samr_alias_info_ctr("ctr", &q_u->ctr, ps, depth))
+	if(!samr_alias_info_ctr("ctr", ps, depth, &q_u->ctr))
 		return False;
 
 	return True;
