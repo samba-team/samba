@@ -1,3 +1,7 @@
+2005-05-04  Dave Love  <fx@gnu.org>
+
+	* snprintf-test.c: Include snprintf-test.h earlier.
+
 2005-05-03  Dave Love  <fx@gnu.org>
 
 	* snprintf.c: Include snprintf-test.h earlier.
