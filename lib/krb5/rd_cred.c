@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,6 +34,24 @@
 #include <krb5_locl.h>
 
 RCSID("$Id$");
+
+static krb5_error_code
+compare_addrs(krb5_context context,
+	      krb5_address *a,
+	      krb5_address *b,
+	      const char *message)
+{
+    char a_str[64], b_str[64];
+    size_t len;
+
+    if(krb5_address_compare (context, a, b))
+	return 0;
+
+    krb5_print_address (a, a_str, sizeof(a_str), &len);
+    krb5_print_address (b, b_str, sizeof(b_str), &len);
+    krb5_set_error_string(context, "%s: %s != %s", message, b_str, a_str);
+    return KRB5KRB_AP_ERR_BADADDR;
+}
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_cred(krb5_context context,
@@ -115,7 +133,6 @@ krb5_rd_cred(krb5_context context,
 	&& auth_context->remote_address
 	&& auth_context->remote_port) {
 	krb5_address *a;
-	int cmp;
 
 	ret = krb5_make_addrport (context, &a,
 				  auth_context->remote_address,
@@ -124,18 +141,12 @@ krb5_rd_cred(krb5_context context,
 	    goto out;
 
 
-	cmp = krb5_address_compare (context,
-				    a,
-				    enc_krb_cred_part.s_address);
-
-	krb5_free_address (context, a);
-	free (a);
-
-	if (cmp == 0) {
-	    krb5_clear_error_string (context);
-	    ret = KRB5KRB_AP_ERR_BADADDR;
+	ret = compare_addrs(context, a, enc_krb_cred_part.s_address, 
+			    "sender address is wrong in received creds");
+	krb5_free_address(context, a);
+	free(a);
+	if(ret)
 	    goto out;
-	}
     }
 
     /* check receiver address */
@@ -145,32 +156,24 @@ krb5_rd_cred(krb5_context context,
 	if(auth_context->local_port &&
 	   enc_krb_cred_part.r_address->addr_type == KRB5_ADDRESS_ADDRPORT) {
 	    krb5_address *a;
-	    int cmp;
 	    ret = krb5_make_addrport (context, &a,
 				      auth_context->local_address,
 				      auth_context->local_port);
 	    if (ret)
 		goto out;
 	    
-	    cmp = krb5_address_compare (context,
-					a,
-					enc_krb_cred_part.r_address);
-	    krb5_free_address (context, a);
-	    free (a);
-	    
-	    if (cmp == 0) {
-		krb5_clear_error_string (context);
-		ret = KRB5KRB_AP_ERR_BADADDR;
+	    ret = compare_addrs(context, a, enc_krb_cred_part.r_address, 
+				"receiver address is wrong in received creds");
+	    krb5_free_address(context, a);
+	    free(a);
+	    if(ret)
 		goto out;
-	    }
 	} else {
-	    if(!krb5_address_compare (context,
-				      auth_context->local_address,
-				      enc_krb_cred_part.r_address)) {
-		krb5_clear_error_string (context);
-		ret = KRB5KRB_AP_ERR_BADADDR;
+	    ret = compare_addrs(context, auth_context->local_address,
+				enc_krb_cred_part.r_address,
+				"receiver address is wrong in received creds");
+	    if(ret)
 		goto out;
-	    }		
 	}
     }
 
