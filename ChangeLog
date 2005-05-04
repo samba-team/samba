@@ -1,3 +1,12 @@
+2005-05-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_kuserok.3: check the user's ~/.k5login.d directory
+	for access files, all of which is handled like the regular
+	~/.k5login
+
+	* lib/krb5/kuserok.c: check the user's ~/.k5login.d directory for
+	access files, all of which is handled like the regular ~/.k5login
+	
 2005-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kcm/kcm.8: more text about usage
