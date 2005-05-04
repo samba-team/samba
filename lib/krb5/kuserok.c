@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,9 +36,8 @@
 
 RCSID("$Id$");
 
-/*
- * Return TRUE iff `principal' is allowed to login as `luser'.
- */
+/* see if principal is mentioned in the filename access file, return
+   TRUE (in result) if so, FALSE otherwise */
 
 static krb5_error_code
 check_one_file(krb5_context context, 
@@ -78,8 +77,9 @@ check_one_file(krb5_context context,
 
     while (fgets (buf, sizeof(buf), f) != NULL) {
 	krb5_principal tmp;
+	char *newline = buf + strcspn(buf, "\n");
 
-	if(buf[strcspn(buf, "\n")] != '\n') {
+	if(*newline != '\n') {
 	    int c;
 	    c = fgetc(f);
 	    if(c != EOF) {
@@ -89,7 +89,7 @@ check_one_file(krb5_context context,
 		continue;
 	    }
 	}
-	buf[strcspn(buf, "\n")] = '\0';
+	*newline = '\0';
 	ret = krb5_parse_name (context, buf, &tmp);
 	if (ret)
 	    continue;
@@ -102,6 +102,68 @@ check_one_file(krb5_context context,
     }
     fclose (f);
     return 0;
+}
+
+static krb5_error_code
+check_directory(krb5_context context, 
+		const char *dirname, 
+		struct passwd *pwd,
+		krb5_principal principal, 
+		krb5_boolean *result)
+{
+    DIR *d;
+    struct dirent *dent;
+    char buf[BUFSIZ];
+    krb5_error_code ret = 0;
+    struct stat st;
+
+    *result = FALSE;
+
+    if(lstat(buf, &st) < 0)
+	return errno;
+
+    if (!S_ISDIR(st.st_mode))
+	return ENOTDIR;
+    
+    if (st.st_uid != pwd->pw_uid && st.st_uid != 0)
+	return EACCES;
+    if ((st.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+	return EACCES;
+
+    if((d = opendir(buf)) == NULL) 
+	return errno;
+
+#ifdef HAVE_DIRFD
+    {
+	int fd;
+	struct stat st2;
+
+	fd = dirfd(d);
+	if(fstat(fd, &st2) < 0) {
+	    closedir(d);
+	    return errno;
+	}
+	if(st.st_dev != st2.st_dev || st.st_ino != st2.st_ino) {
+	    closedir(d);
+	    return EACCES;
+	}
+    }
+#endif
+
+    while((dent = readdir(d)) != NULL) {
+	if(strcmp(dent->d_name, ".") == 0 ||
+	   strcmp(dent->d_name, "..") == 0 ||
+	   dent->d_name[0] == '#' ||			  /* emacs autosave */
+	   dent->d_name[strlen(dent->d_name) - 1] == '~') /* emacs backup */
+	    continue;
+	snprintf(buf, sizeof(buf), "%s/%s", dirname, dent->d_name);
+	ret = check_one_file(context, buf, pwd, principal, result);
+	if(ret == 0 && *result == TRUE)
+	    break;
+	ret = 0; /* don't propagate errors upstream */
+    }
+    closedir(d);
+    return ret;
 }
 
 static krb5_boolean
@@ -135,15 +197,22 @@ match_local_principals(krb5_context context,
     return result;
 }
 
+/**
+ * Return TRUE iff `principal' is allowed to login as `luser'.
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
 	      const char *luser)
 {
     char *buf;
+    size_t buflen;
     struct passwd *pwd;
     krb5_error_code ret;
     krb5_boolean result = FALSE;
+
+    krb5_boolean found_file = FALSE;
 
 #ifdef HAVE_GETPWNAM_R
     char pwbuf[2048];
@@ -157,43 +226,37 @@ krb5_kuserok (krb5_context context,
     if (pwd == NULL)
 	return FALSE;
 
-    /* check user's ~/.k5login */
-    if (asprintf (&buf, "%s/.k5login", pwd->pw_dir) == -1)
+#define KLOGIN "/.k5login"
+    buflen = strlen(pwd->pw_dir) + sizeof(KLOGIN) + 2; /* 2 for .d */
+    buf = malloc(buflen);
+    if(buf == NULL)
 	return FALSE;
+    /* check user's ~/.k5login */
+    strlcpy(buf, pwd->pw_dir, buflen);
+    strlcat(buf, KLOGIN, buflen);
     ret = check_one_file(context, buf, pwd, principal, &result);
 
-    /* but if it doesn't exist, allow all principals
-       matching <localuser>@<LOCALREALM> */
-    if(ret == ENOENT) {
+    if(ret == 0 && result == TRUE) {
 	free(buf);
-	return match_local_principals(context, principal, luser);
+	return TRUE;
     }
-#if notyet
-    /* on the other hand, if it's a directory, check all files
-       contained therein */
-    if (ret == EISDIR) {
-	DIR *d = opendir(buf);
-	struct dirent *dent;
-	char *buf2;
 
-	if(d == NULL)
-	    return FALSE;
-	while((dent = readdir(d)) != NULL) {
-	    if(strcmp(dent->d_name, ".") == 0 ||
-	       strcmp(dent->d_name, "..") == 0)
-		continue;
-	    if (asprintf(&buf2, "%s/%s", buf, dent->d_name) == -1)
-		break;
-	    ret = check_one_file(context, buf2, pwd, principal, &result);
-	    free(buf2);
-	    if(ret == 0 && result == TRUE)
-		break;
-	}
-	closedir(d);
-    }
-#endif
+    if(ret != ENOENT) 
+	found_file = TRUE;
+
+    strlcat(buf, ".d", buflen);
+    ret = check_directory(context, buf, pwd, principal, &result);
     free(buf);
-    if (ret)
-	return FALSE;
-    return result;
+    if(ret == 0 && result == TRUE)
+	return TRUE;
+
+    if(ret != ENOENT && ret != ENOTDIR) 
+	found_file = TRUE;
+
+    /* finally if no files exist, allow all principals matching
+       <localuser>@<LOCALREALM> */
+    if(found_file == FALSE)
+	return match_local_principals(context, principal, luser);
+
+    return FALSE;
 }
