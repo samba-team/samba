@@ -1,5 +1,7 @@
 2005-05-04  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/rd_cred.c: put address comparison in separate function
+	
 	* lib/krb5/krb5_kuserok.3: check the user's ~/.k5login.d directory
 	for access files, all of which is handled like the regular
 	~/.k5login
