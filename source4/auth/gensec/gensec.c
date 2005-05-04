@@ -324,7 +324,7 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 			      TALLOC_CTX *mem_ctx, 
 			      uint8_t *data, size_t length, 
 			      const uint8_t *whole_pdu, size_t pdu_length, 
-			      DATA_BLOB *sig)
+			      const DATA_BLOB *sig)
 {
 	if (!gensec_security->ops->unseal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
