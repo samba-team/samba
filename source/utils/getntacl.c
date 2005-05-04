@@ -27,14 +27,6 @@
 
 #if HAVE_XATTR_SUPPORT	
 
-/* eww - crappy dependencies */
-
-NTSTATUS samdb_privilege_setup(struct security_token *token)
-{
-	token->privilege_mask = 0;
-	return NT_STATUS_OK;
-}
-
 static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;

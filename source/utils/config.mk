@@ -38,7 +38,8 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC \
-		LIBRPC
+		LIBRPC \
+		NDR_XATTR
 # End BINARY getntacl
 #################################
 
