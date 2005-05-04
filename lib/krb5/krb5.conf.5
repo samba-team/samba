@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd December  8, 2004
+.Dd May  4, 2005
 .Dt KRB5.CONF 5
 .Os HEIMDAL
 .Sh NAME
@@ -251,6 +251,15 @@ Each binding in this section looks like:
 The domain can be either a full name of a host or a trailing
 component, in the latter case the domain-string should start with a
 period.
+
+The trailing component version only matches hosts that are in the same
+domain, ie
+.Dq .example.com
+matches
+.Dq foo.example.com ,
+but not
+.Dq foo.test.example.com .
+.Pp
 The realm may be the token `dns_locate', in which case the actual
 realm will be determined using DNS (independently of the setting
 of the `dns_lookup_realm' option).
