@@ -48,6 +48,9 @@ struct composite_context {
 		void (*fn)(struct composite_context *);
 		void *private;
 	} async;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
