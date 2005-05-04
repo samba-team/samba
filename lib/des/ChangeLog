@@ -1,3 +1,7 @@
+2005-05-03  Dave Love  <fx@gnu.org>
+
+	* mdtest.c: Fix typo for HAVE_STDLIB_H.
+
 2005-05-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rnd_keys.c: Enabled to build on cygwin, based on patch from
