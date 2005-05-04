@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 
@@ -127,24 +128,36 @@ static void userinfo_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
+	struct monitor_msg msg;
 	
 	/* Stages of the call */
 	switch (s->stage) {
 	case USERINFO_OPENUSER:
 		c->status = userinfo_openuser(c, s);
+		msg.type = rpc_open_user;
+		msg.data.rpc_open_user.rid = s->openuser.in.rid;
+		msg.data.rpc_open_user.access_mask = s->openuser.in.access_mask;
 		break;
 
 	case USERINFO_GETUSER:
 		c->status = userinfo_getuser(c, s);
+		msg.type = rpc_query_user;
+		msg.data.rpc_query_user.level = s->queryuserinfo.in.level;
 		break;
 		
 	case USERINFO_CLOSEUSER:
 		c->status = userinfo_closeuser(c, s);
+		msg.type = rpc_close_user;
+		msg.data.rpc_close_user.rid = s->openuser.in.rid;
 		break;
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
+	}
+	
+	if (c->monitor_fn) {
+		c->monitor_fn(&msg);
 	}
 
 	if (c->state >= SMBCLI_REQUEST_DONE &&
