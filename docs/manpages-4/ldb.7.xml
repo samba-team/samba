@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="ldb.7">
+
+<refmeta>
+	<refentrytitle>ldb</refentrytitle>
+	<manvolnum>7</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>ldb</refname>
+	<refpurpose>Lightweight DataBase</refpurpose>
+</refnamediv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>Ldb is a library providing simple LDAP-like database system that 
+		can use either tdb or LDAP as its backend. It's internal API is similar to 
+	that of LDAP.</para>
+
+	<para>ldb is used heavily in Samba 4. It's aim is to provide a LDAP-like 
+		database system at all times, even when no LDAP server is available.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>LDB URLS</title>
+
+	<para>FIXME</para>
+
+</refsect1>
+
+<refsect1>
+	<title>FUNCTIONS</title>
+
+	<variablelist>
+		<varlistentry><term>ldb_connect(2)</term>
+			<listitem><para>
+					Connect to an LDAP server or local LDB database stored in TDB.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_close(2)</term>
+			<listitem><para>
+					Close connection to the server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_search(2)</term>
+			<listitem><para>
+					Search for specified attributes of records that match a LDAP-like search string.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_search_free(2)</term>
+			<listitem><para>
+					Free search results.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_add(2)</term>
+			<listitem><para>
+					Add records.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_modify(2)</term>
+			<listitem><para>
+					Modify records.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_delete(2)</term>
+			<listitem><para>
+					Delete records.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_errstring(2)</term>
+			<listitem><para>
+					Return extended error information from last call.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry><term>ldb_casefold(2)</term>
+			<listitem><para>
+					Casefold a string.
+			</para></listitem>
+		</varlistentry>
+		<!-- FIXME -->
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>PERFORMANCE</title>
+
+	<para>FIXME</para>
+</refsect1>
+
+<refsect1>
+	<title>COMPATIBILITY WITH LDAP</title>
+	<para>FIXME</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+
+	<para>ldap</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4.0 of the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>ldb was written by Andrew Tridgell. </para>
+
+	<para>This manpage was written by Jelmer Vernooij. </para>
+	
+</refsect1>
+
+</refentry>
