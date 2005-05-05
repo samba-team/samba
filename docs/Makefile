@@ -8,11 +8,12 @@ include Makefile.settings
 
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
-MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
+MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
+MANPAGES4 = $(wildcard $(MANPAGEDIR4)/*.?.xml)
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
-MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
+MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES3))
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
@@ -31,23 +32,24 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,dvi,ps,manpages,txt,pearson,fo,htmlhelp - Build specific output format"
+	@echo " pdf,tex,dvi,ps,manpages{3,4},txt,pearson,fo,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
-	@echo " htmlman - Build HTML version of manpages"
+	@echo " htmlman3 - Build HTML version of manpages"
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 	@echo " files - Extract other files"
 
 $(DOCBOOKDIR)/Samba-Guide.xml: $(filter-out Samba-Guide/index.xml,$(wildcard Samba-Guide/*.xml))
 $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml: $(filter-out Samba-HOWTO-Collection/index.xml,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
-Samba-HOWTO-Collection/manpages.xml: $(MANPAGEDIR)/smb.conf.5.xml
-$(DOCBOOKDIR)/Samba-Developers-Guide.xml: $(filter-out Samba-Developers-Guide/index.xml,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
+Samba-HOWTO-Collection/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
+$(DOCBOOKDIR)/Samba3-Developers-Guide.xml: $(filter-out Samba3-Developers-Guide/index.xml,$(wildcard Samba3-Developers-Guide/*.xml)) Samba3-Developers-Guide-attributions.xml
+$(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
 
 # Pseudo targets 
 all: $(TARGETS)
-everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson 
-release: manpages htmlman html pdf 
+everything: manpages3 manpages4 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
+release: manpages3 htmlman3 html pdf 
 
 # Output format targets
 pdf: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
@@ -60,11 +62,12 @@ fo-pdf: $(patsubst %,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
 tex: $(addsuffix .tex,$(MAIN_DOCS))
 texi: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
-manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
+manpages3: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
+manpages4: $(patsubst $(MANPAGEDIR4)/%.xml,$(OUTPUTDIR)/manpages-4/%,$(MANPAGES4))
 pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
 pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
 plucker: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
-htmlman: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES)) $(HTMLDIR)/manpages.html
+htmlman3: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages.html
 html-single: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
@@ -76,7 +79,11 @@ $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
+$(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
+	mkdir -p $(@D)
+	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+
+$(DOCBOOKDIR)/manpages-4/%.xml: $(MANPAGEDIR4)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
@@ -229,7 +236,7 @@ $(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
 	$(MAKEINFO) --no-validate --force -o $@ "$<"
 
 # Manpages
-$(MANPAGEDIR)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
+$(MANPAGEDIR3)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
 
 $(SMBDOTCONFDOC)/parameters.all.xml: $(shell find $(SMBDOTCONFDOC) -type f -name '*.xml' -mindepth 2 | sort -t/ -k3 | xargs) $(SMBDOTCONFDOC)/generate-file-list.sh
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
@@ -240,7 +247,7 @@ $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SM
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
-$(MANDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
+$(OUTPUTDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
