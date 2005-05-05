@@ -64,9 +64,12 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		/* to support this we'd need to have access to the full domain name */
 		bind_schannel.bind_type = 23;
 		bind_schannel.u.info23.domain = cli_credentials_get_domain(gensec_security->credentials);
-		bind_schannel.u.info23.account_name = cli_credentials_get_username(gensec_security->credentials);
-		bind_schannel.u.info23.dnsdomain = str_format_nbt_domain(out_mem_ctx, fulldomainname);
-		bind_schannel.u.info23.workstation = str_format_nbt_domain(out_mem_ctx, cli_credentials_get_workstation(gensec_security->credentials));
+		bind_schannel.u.info23.workstation = cli_credentials_get_workstation(gensec_security->credentials);
+		bind_schannel.u.info23.dnsdomain = cli_credentials_get_realm(gensec_security->credentials);
+		/* w2k3 refuses us if we use the full DNS workstation?
+		 why? perhaps because we don't fill in the dNSHostName
+		 attribute in the machine account? */
+		bind_schannel.u.info23.dnsworkstation = cli_credentials_get_workstation(gensec_security->credentials);
 #else
 		bind_schannel.bind_type = 3;
 		bind_schannel.u.info3.domain = cli_credentials_get_domain(gensec_security->credentials);
