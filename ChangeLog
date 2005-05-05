@@ -1,3 +1,7 @@
+2005-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: spelling
+
 2005-05-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: expand on what "trailing component" means
