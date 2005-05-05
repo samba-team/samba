@@ -33,9 +33,9 @@ for a in "$@" $esym; do
     symbols="\$3 !~ /^_?${a}/ ${symbols:+&&} ${symbols}"
 done
 
-# F is filename
+# F is filename, N for debugsymbols
 
 (nm .libs/lib${lib}.a || nm .libs/lib${lib}.so*)  |
 awk "BEGIN { stat = 0 }
-NF == 3 && \$2 ~ /[A-EG-Z]/ && $symbols { printf \"%s should not be exported (type %s)\\n\", \$3, \$2; ++stat } END { exit stat }"
+NF == 3 && \$2 ~ /[A-EG-MO-Z]/ && $symbols { printf \"%s should not be exported (type %s)\\n\", \$3, \$2; ++stat } END { exit stat }"
 
