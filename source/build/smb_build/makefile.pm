@@ -150,9 +150,15 @@ pch_clean:
 
 basics: idl proto_exists
 
-test: all
+test: @DEFAULT_TEST_TARGET@
+
+test-swrap: all
+	export SOCKET_WRAPPER_DIR=.
 	./script/tests/selftest.sh `pwd`/prefix-test
 	
+test-noswrap: all
+	./script/tests/selftest.sh `pwd`/prefix-test
+
 __EOD__
 
 	return $output;
