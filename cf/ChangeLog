@@ -1,4 +1,11 @@
+2005-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: ignore N symbols too
+
 2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* broken-snprintf.m4: include checking if snprintf(NULL, 0, "")
+	works
 
 	* check-compile-et.m4: require compile_et to generate a
 	initialize_FOO_error_table_r (they are used in libkrb5), and
