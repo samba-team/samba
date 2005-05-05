@@ -185,8 +185,6 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	status = dgram_mailslot_netlogon_parse(dgmslot, netlogon, packet, netlogon);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	NDR_PRINT_DEBUG(nbt_netlogon_packet, netlogon);
-
 	switch (netlogon->command) {
 	case NETLOGON_QUERY_FOR_PDC:
 		nbtd_netlogon_getdc(dgmslot, packet, src_address, src_port, netlogon);
@@ -197,6 +195,7 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
 			 netlogon->command, src_address, src_port));
+		NDR_PRINT_DEBUG(nbt_netlogon_packet, netlogon);
 		break;
 	}
 
