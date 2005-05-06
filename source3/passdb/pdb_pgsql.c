@@ -131,7 +131,7 @@ static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
   
   SET_DATA( data, methods ) ;
   
-  query = sql_account_query_select(data->location, update, SQL_SEARCH_NONE, NULL);
+  query = sql_account_query_select(NULL, data->location, update, SQL_SEARCH_NONE, NULL);
   
   /* Do it */
   DEBUG( 5, ("Executing query %s\n", query) ) ;
@@ -155,7 +155,7 @@ static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
     retval = NT_STATUS_OK ;
   }
   
-  SAFE_FREE(query);
+  talloc_free(query);
   return retval ;
 }
 
@@ -224,7 +224,7 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
   DEBUG( 5, ("pgsqlsam_select_by_field: getting data where %d = %s(nonescaped)\n", field, sname) ) ;
   
   /* Escape sname */
-  esc = malloc(strlen(sname) * 2 + 1);
+  esc = talloc_array(NULL, char, strlen(sname) * 2 + 1);
   if ( !esc )
   {
     DEBUG(0, ("Can't allocate memory to store escaped name\n"));
@@ -234,7 +234,7 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
   //tmp_sname = smb_xstrdup(sname);
   PQescapeString( esc, sname, strlen(sname) ) ;
   
-  query = sql_account_query_select(data->location, True, field, esc);
+  query = sql_account_query_select(NULL, data->location, True, field, esc);
   
   /* Do it */
   DEBUG( 5, ("Executing query %s\n", query) ) ;
@@ -256,8 +256,8 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
     retval = row_to_sam_account( result, 0, user ) ;
   }
   
-  SAFE_FREE( esc   ) ;
-  SAFE_FREE( query ) ;
+  talloc_free( esc   ) ;
+  talloc_free( query ) ;
   
   PQclear( result ) ;
   
@@ -324,7 +324,7 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
   }
   
   /* Escape sname */
-  esc = malloc(strlen(sname) * 2 + 1);
+  esc = talloc_array(NULL, char, strlen(sname) * 2 + 1);
   if ( !esc )
   {
     DEBUG(0, ("Can't allocate memory to store escaped name\n"));
@@ -333,7 +333,7 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
   
   PQescapeString( esc, sname, strlen(sname) ) ;
   
-  query = sql_account_query_delete(data->location, esc);
+  query = sql_account_query_delete(NULL, data->location, esc);
   
   /* Do it */
   result = PQexec( data->handle, query ) ;
@@ -354,8 +354,8 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
     retval = NT_STATUS_OK ;
   }
   
-  SAFE_FREE( esc ) ;
-  SAFE_FREE( query ) ;
+  talloc_free( esc ) ;
+  talloc_free( query ) ;
   
   return retval ;
 }
@@ -380,7 +380,7 @@ static NTSTATUS pgsqlsam_replace_sam_account( struct pdb_methods *methods, const
     return NT_STATUS_INVALID_HANDLE ;
   }
 
-  query = sql_account_query_update(data->location, newpwd, isupdate);
+  query = sql_account_query_update(NULL, data->location, newpwd, isupdate);
 
   result = PQexec( data->handle, query ) ;
 
@@ -396,7 +396,7 @@ static NTSTATUS pgsqlsam_replace_sam_account( struct pdb_methods *methods, const
     DEBUG( 0, ("Error executing %s, %s\n", query, PQresultErrorMessage( result ) ) ) ;
     return NT_STATUS_INVALID_PARAMETER;
   }
-  SAFE_FREE(query);
+  talloc_free(query);
   
   return NT_STATUS_OK;
 }
@@ -438,7 +438,7 @@ static NTSTATUS pgsqlsam_init ( struct pdb_context *pdb_context, struct pdb_meth
   (*pdb_method)->update_sam_account = pgsqlsam_update_sam_account ;
   (*pdb_method)->delete_sam_account = pgsqlsam_delete_sam_account ;
   
-  data = talloc( pdb_context->mem_ctx, sizeof( struct pdb_pgsql_data ) ) ;
+  data = talloc( pdb_context->mem_ctx, struct pdb_pgsql_data ) ;
   (*pdb_method)->private_data = data ;
   data->handle = NULL ;
   data->pwent  = NULL ;

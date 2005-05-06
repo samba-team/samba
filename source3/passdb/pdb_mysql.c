@@ -132,10 +132,10 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	query = sql_account_query_select(data->location, update, SQL_SEARCH_NONE, NULL);
+	query = sql_account_query_select(NULL, data->location, update, SQL_SEARCH_NONE, NULL);
 
 	ret = mysql_query(data->handle, query);
-	SAFE_FREE(query);
+	talloc_free(query);
 
 	if (ret) {
 		DEBUG(0,
@@ -208,42 +208,45 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	int mysql_ret;
 	struct pdb_mysql_data *data;
 	char *tmp_sname;
+	TALLOC_CTX *mem_ctx = talloc_init("mysqlsam_select_by_field");
 
 	SET_DATA(data, methods);
 
-	esc_sname = malloc(strlen(sname) * 2 + 1);
+	esc_sname = talloc_array(mem_ctx, char, strlen(sname) * 2 + 1);
 	if (!esc_sname) {
+		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY; 
 	}
 
-	tmp_sname = smb_xstrdup(sname);
+	tmp_sname = talloc_strdup(mem_ctx, sname);
 	
 	/* Escape sname */
 	mysql_real_escape_string(data->handle, esc_sname, tmp_sname,
 							 strlen(tmp_sname));
 
-	SAFE_FREE(tmp_sname);
+	talloc_free(tmp_sname);
 
 	if (user == NULL) {
 		DEBUG(0, ("pdb_getsampwnam: SAM_ACCOUNT is NULL.\n"));
-		SAFE_FREE(esc_sname);
+		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	query = sql_account_query_select(data->location, True, field, esc_sname);
+	query = sql_account_query_select(mem_ctx, data->location, True, field, esc_sname);
 
-	SAFE_FREE(esc_sname);
+	talloc_free(esc_sname);
 
 	DEBUG(5, ("Executing query %s\n", query));
 	
 	mysql_ret = mysql_query(data->handle, query);
 	
-	SAFE_FREE(query);
+	talloc_free(query);
 	
 	if (mysql_ret) {
 		DEBUG(0,
 			("Error while executing MySQL query %s\n", 
 				mysql_error(data->handle)));
+		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -251,11 +254,13 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	if (res == NULL) {
 		DEBUG(0,
 			("Error storing results: %s\n", mysql_error(data->handle)));
+		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	ret = row_to_sam_account(res, user);
 	mysql_free_result(res);
+	talloc_free(mem_ctx);
 
 	return ret;
 }
@@ -311,7 +316,7 @@ static NTSTATUS mysqlsam_delete_sam_account(struct pdb_methods *methods,
 	int ret;
 	struct pdb_mysql_data *data;
 	char *tmp_sname;
-
+	TALLOC_CTX *mem_ctx;
 	SET_DATA(data, methods);
 
 	if (!methods) {
@@ -330,36 +335,40 @@ static NTSTATUS mysqlsam_delete_sam_account(struct pdb_methods *methods,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	mem_ctx = talloc_init("mysqlsam_delete_sam_account");
+	
 	/* Escape sname */
-	esc = malloc(strlen(sname) * 2 + 1);
+	esc = talloc_array(mem_ctx, char, strlen(sname) * 2 + 1);
 	if (!esc) {
 		DEBUG(0, ("Can't allocate memory to store escaped name\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	tmp_sname = smb_xstrdup(sname);
+	tmp_sname = talloc_strdup(mem_ctx, sname);
 	
 	mysql_real_escape_string(data->handle, esc, tmp_sname,
 							 strlen(tmp_sname));
 
-	SAFE_FREE(tmp_sname);
+	talloc_free(tmp_sname);
 
-	query = sql_account_query_delete(data->location, esc);
+	query = sql_account_query_delete(mem_ctx, data->location, esc);
 
-	SAFE_FREE(esc);
+	talloc_free(esc);
 
 	ret = mysql_query(data->handle, query);
 
-	SAFE_FREE(query);
+	talloc_free(query);
 
 	if (ret) {
 		DEBUG(0,
 			  ("Error while executing query: %s\n",
 			   mysql_error(data->handle)));
+		talloc_free(mem_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(5, ("User '%s' deleted\n", sname));
+	talloc_free(mem_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -381,16 +390,18 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	query = sql_account_query_update(data->location, newpwd, isupdate);
+	query = sql_account_query_update(NULL, data->location, newpwd, isupdate);
 	
 	/* Execute the query */
 	if (mysql_query(data->handle, query)) {
 		DEBUG(0,
 			  ("Error executing %s, %s\n", query,
 			   mysql_error(data->handle)));
+		talloc_free(query);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	SAFE_FREE(query);
+
+	talloc_free(query);
 
 	return NT_STATUS_OK;
 }
@@ -441,7 +452,7 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 	(*pdb_method)->update_sam_account = mysqlsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = mysqlsam_delete_sam_account;
 
-	data = talloc(pdb_context->mem_ctx, sizeof(struct pdb_mysql_data));
+	data = talloc(pdb_context->mem_ctx, struct pdb_mysql_data);
 	(*pdb_method)->private_data = data;
 	data->handle = NULL;
 	data->pwent = NULL;
