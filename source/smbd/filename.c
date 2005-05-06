@@ -318,7 +318,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 */
 
 				if (mangle_is_mangled(start, SNUM(conn))) {
-					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name) );
+					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name), SNUM(conn));
 				}
 
 				DEBUG(5,("New file %s\n",start));
@@ -447,7 +447,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	 * (JRA).
 	 */
 	if (mangled)
-		mangled = !mangle_check_cache( name, maxlength );
+		mangled = !mangle_check_cache( name, maxlength, SNUM(conn));
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(conn, path))) {
