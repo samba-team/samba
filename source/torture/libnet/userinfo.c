@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
+#include "libcli/composite/monitor.h"
 
 #define TEST_USERNAME  "libnetuserinfotest"
 
@@ -185,9 +186,9 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct rpc_composite_userinfo user;
 	struct dom_sid *user_sid;
-
+	
 	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
-
+	
 	user.in.domain_handle = *domain_handle;
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = 5;       /* this should be extended */
@@ -196,6 +197,57 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = rpc_composite_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync rpc_composite_userinfo - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
+void msg_handler(struct monitor_msg *m)
+{
+	switch (m->type) {
+	case rpc_open_user:
+		printf("monitor_msg: user opened (rid=%d, access_mask=0x%08x)\n",
+		       m->data.rpc_open_user.rid, m->data.rpc_open_user.access_mask);
+		break;
+	case rpc_query_user:
+		printf("monitor_msg: user queried (level=%d)\n", m->data.rpc_query_user.level);
+		break;
+	case rpc_close_user:
+		printf("monitor_msg: user closed (rid=%d)\n", m->data.rpc_close_user.rid);
+		break;
+	}
+}
+
+
+static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				struct policy_handle *domain_handle,
+				struct dom_sid2 *domain_sid, const char* user_name,
+				uint32_t *rid)
+{
+	NTSTATUS status;
+	struct composite_context *c;
+	struct rpc_composite_userinfo user;
+	struct dom_sid *user_sid;
+
+	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
+
+	user.in.domain_handle = *domain_handle;
+	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
+	user.in.level         = 10;       /* this should be extended */
+
+	printf("Testing async rpc_composite_userinfo\n");
+
+	c = rpc_composite_userinfo_send(p, &user, msg_handler);
+	if (!c) {
+		printf("Failed to call sync rpc_composite_userinfo_send\n");
+		return False;
+	}
+
+	status = rpc_composite_userinfo_recv(c, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Calling async rpc_composite_userinfo failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -231,6 +283,9 @@ BOOL torture_userinfo(void)
 
 	name.string = lp_workgroup();
 
+	/*
+	 * Testing synchronous version
+	 */
 	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
 		ret = False;
 		goto done;
@@ -250,6 +305,30 @@ BOOL torture_userinfo(void)
 		ret = False;
 		goto done;
 	}
+
+	/*
+	 * Testing asynchronous version and monitor messages
+	 */
+	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_userinfo_async(p, mem_ctx, &h, &sid, TEST_USERNAME, &rid)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
+		ret = False;
+		goto done;
+	}
+
 done:
 	talloc_free(mem_ctx);
 
