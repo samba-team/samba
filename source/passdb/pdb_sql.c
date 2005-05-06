@@ -54,7 +54,6 @@
 
 typedef struct pdb_sql_query {
 	char update;
-	TALLOC_CTX *mem_ctx;
 	char *part1;
 	char *part2;
 } pdb_sql_query;
@@ -66,19 +65,19 @@ static void pdb_sql_int_field(struct pdb_sql_query *q, const char *name, int val
 
 	if (q->update) {
 		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1,
+			talloc_asprintf_append(q->part1,
 								   "%s = %d,", name, value);
 	} else {
 		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1, "%s,", name);
+			talloc_asprintf_append(q->part1, "%s,", name);
 		q->part2 =
-			talloc_asprintf_append(q->mem_ctx, q->part2, "%d,", value);
+			talloc_asprintf_append(q->part2, "%d,", value);
 	}
 }
 
-char *sql_escape_string(const char *unesc)
+char *sql_escape_string(TALLOC_CTX *mem_ctx, const char *unesc)
 {
-	char *esc = SMB_MALLOC(strlen(unesc) * 2 + 3);
+	char *esc = talloc_array(mem_ctx, char, strlen(unesc) * 2 + 3);
 	size_t pos_unesc = 0, pos_esc = 0;
 
 	for(pos_unesc = 0; unesc[pos_unesc]; pos_unesc++) {
@@ -106,21 +105,21 @@ static NTSTATUS pdb_sql_string_field(struct pdb_sql_query *q,
 	if (!name || !value || !strcmp(value, "") || strchr(name, '\''))
 		return NT_STATUS_INVALID_PARAMETER;   /* This field shouldn't be set by module */
 
-	esc_value = sql_escape_string(value);
+	esc_value = sql_escape_string(q, value);
 
 	if (q->update) {
 		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1,
+			talloc_asprintf_append(q->part1,
 								   "%s = '%s',", name, esc_value);
 	} else {
 		q->part1 =
-			talloc_asprintf_append(q->mem_ctx, q->part1, "%s,", name);
+			talloc_asprintf_append(q->part1, "%s,", name);
 		q->part2 =
-			talloc_asprintf_append(q->mem_ctx, q->part2, "'%s',",
+			talloc_asprintf_append(q->part2, "'%s',",
 								   esc_value);
 	}
 
-	SAFE_FREE(esc_value);
+	talloc_free(esc_value);
 
 	return NT_STATUS_OK;
 }
@@ -187,7 +186,7 @@ static const char * config_value_read(const char *location, const char *name, co
 	return (const char *)v;
 }
 
-char *sql_account_query_select(const char *data, BOOL update, enum sql_search_field field, const char *value)
+char *sql_account_query_select(TALLOC_CTX *mem_ctx, const char *data, BOOL update, enum sql_search_field field, const char *value)
 {
 	const char *field_string;
 	char *query;
@@ -212,7 +211,7 @@ char *sql_account_query_select(const char *data, BOOL update, enum sql_search_fi
 		break;
 	}
 
-	asprintf(&query,
+	query = talloc_asprintf(mem_ctx,
 			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
@@ -278,52 +277,52 @@ char *sql_account_query_select(const char *data, BOOL update, enum sql_search_fi
 	 return query;
 }
 
-char *sql_account_query_delete(const char *data, const char *esc) 
+char *sql_account_query_delete(TALLOC_CTX *mem_ctx, const char *data, const char *esc) 
 {
 	char *query;
 	
-	asprintf(&query, "DELETE FROM %s WHERE %s = '%s'",
+	query = talloc_asprintf(mem_ctx, "DELETE FROM %s WHERE %s = '%s'",
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT),
 			 config_value_read(data, "username column",
 							   CONFIG_USERNAME_DEFAULT), esc);
 	return query;
 }
 
-char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, char isupdate)
+char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const SAM_ACCOUNT *newpwd, char isupdate)
 {
 	char *ret;
 	pstring temp;
-	pdb_sql_query query;
 	fstring sid_str;
+	pdb_sql_query *query;
 
-	query.update = isupdate;
+	query = talloc(mem_ctx, pdb_sql_query);
+	query->update = isupdate;
 
 	/* I know this is somewhat overkill but only the talloc 
 	 * functions have asprint_append and the 'normal' asprintf 
 	 * is a GNU extension */
-	query.mem_ctx = talloc_init("sql_query_update");
-	query.part2 = talloc_asprintf(query.mem_ctx, "%s", "");
-	if (query.update) {
-		query.part1 =
-			talloc_asprintf(query.mem_ctx, "UPDATE %s SET ",
+	query->part2 = talloc_asprintf(query, "%s", "");
+	if (query->update) {
+		query->part1 =
+			talloc_asprintf(query, "UPDATE %s SET ",
 							config_value(location, "table",
 										 CONFIG_TABLE_DEFAULT));
 	} else {
-		query.part1 =
-			talloc_asprintf(query.mem_ctx, "INSERT INTO %s (",
+		query->part1 =
+			talloc_asprintf(query, "INSERT INTO %s (",
 							config_value(location, "table",
 										 CONFIG_TABLE_DEFAULT));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_ACCTCTRL)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 						config_value_write(location, "acct ctrl column",
 										   CONFIG_ACCT_CTRL_DEFAULT),
 						pdb_get_acct_ctrl(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONTIME)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logon time column",
 											   CONFIG_LOGON_TIME_DEFAULT),
@@ -331,7 +330,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGOFFTIME)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logoff time column",
 											   CONFIG_LOGOFF_TIME_DEFAULT),
@@ -339,7 +338,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_KICKOFFTIME)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "kickoff time column",
 											   CONFIG_KICKOFF_TIME_DEFAULT),
@@ -347,7 +346,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_CANCHANGETIME)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass can change time column",
 											   CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT),
@@ -355,7 +354,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_MUSTCHANGETIME)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass must change time column",
 											   CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT),
@@ -363,7 +362,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_PASSLASTSET)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass last set time column",
 											   CONFIG_PASS_LAST_SET_TIME_DEFAULT),
@@ -371,7 +370,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_HOURSLEN)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "hours len column",
 											   CONFIG_HOURS_LEN_DEFAULT),
@@ -379,7 +378,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONDIVS)) {
-		pdb_sql_int_field(&query,
+		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logon divs column",
 											   CONFIG_LOGON_DIVS_DEFAULT),
@@ -387,7 +386,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERSID)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "user sid column",
 											  CONFIG_USER_SID_DEFAULT),
 						   sid_to_string(sid_str, 
@@ -395,7 +394,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_GROUPSID)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "group sid column",
 											  CONFIG_GROUP_SID_DEFAULT),
 						   sid_to_string(sid_str,
@@ -403,21 +402,21 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "username column",
 											  CONFIG_USERNAME_DEFAULT),
 						   pdb_get_username(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_DOMAIN)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "domain column",
 											  CONFIG_DOMAIN_DEFAULT),
 						   pdb_get_domain(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "nt username column",
 											  CONFIG_NT_USERNAME_DEFAULT),
@@ -425,14 +424,14 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_FULLNAME)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "fullname column",
 											  CONFIG_FULLNAME_DEFAULT),
 						   pdb_get_fullname(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONSCRIPT)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "logon script column",
 											  CONFIG_LOGON_SCRIPT_DEFAULT),
@@ -440,7 +439,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_PROFILE)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "profile path column",
 											  CONFIG_PROFILE_PATH_DEFAULT),
@@ -448,21 +447,21 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_DRIVE)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "dir drive column",
 											  CONFIG_DIR_DRIVE_DEFAULT),
 						   pdb_get_dir_drive(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_SMBHOME)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "home dir column",
 											  CONFIG_HOME_DIR_DEFAULT),
 						   pdb_get_homedir(newpwd));
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_WORKSTATIONS)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "workstations column",
 											  CONFIG_WORKSTATIONS_DEFAULT),
@@ -470,7 +469,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_UNKNOWNSTR)) {
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "unknown string column",
 											  CONFIG_UNKNOWN_STR_DEFAULT),
@@ -480,7 +479,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	if (IS_SAM_CHANGED(newpwd, PDB_LMPASSWD)) {
 		pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "lanman pass column",
 											  CONFIG_LM_PW_DEFAULT), temp);
@@ -489,30 +488,30 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 	if (IS_SAM_CHANGED(newpwd, PDB_NTPASSWD)) {
 		pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
-		pdb_sql_string_field(&query,
+		pdb_sql_string_field(query,
 						   config_value_write(location, "nt pass column",
 											  CONFIG_NT_PW_DEFAULT), temp);
 	}
 
-	if (query.update) {
-		query.part1[strlen(query.part1) - 1] = '\0';
-		query.part1 =
-			talloc_asprintf_append(query.mem_ctx, query.part1,
+	if (query->update) {
+		query->part1[strlen(query->part1) - 1] = '\0';
+		query->part1 =
+			talloc_asprintf_append(query->part1,
 								   " WHERE %s = '%s'",
 								   config_value_read(location,
 													 "user sid column",
 													 CONFIG_USER_SID_DEFAULT),
 								   sid_to_string(sid_str, pdb_get_user_sid (newpwd)));
 	} else {
-		query.part2[strlen(query.part2) - 1] = ')';
-		query.part1[strlen(query.part1) - 1] = ')';
-		query.part1 =
-			talloc_asprintf_append(query.mem_ctx, query.part1,
-								   " VALUES (%s", query.part2);
+		query->part2[strlen(query->part2) - 1] = ')';
+		query->part1[strlen(query->part1) - 1] = ')';
+		query->part1 =
+			talloc_asprintf_append(query->part1,
+								   " VALUES (%s", query->part2);
 	}
 
-	ret = SMB_STRDUP(query.part1);
-	talloc_destroy(query.mem_ctx);
+	ret = talloc_strdup(mem_ctx, query->part1);
+	talloc_free(query);
 	return ret;
 }
 
