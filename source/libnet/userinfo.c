@@ -174,7 +174,8 @@ static void userinfo_handler(struct rpc_request *req)
  * @param io arguments and results of the call
  */
 struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
-						      struct rpc_composite_userinfo *io)
+						      struct rpc_composite_userinfo *io,
+						      void (*monitor)(struct monitor_msg *))
 {
 	struct composite_context *c;
 	struct userinfo_state *s;
@@ -192,9 +193,10 @@ struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	sid = dom_sid_parse_talloc(s, io->in.sid);
 	if (sid == NULL) goto failure;
 	
-	c->state     = SMBCLI_REQUEST_SEND;
-	c->private   = s;
-	c->event_ctx = dcerpc_event_context(p);
+	c->state       = SMBCLI_REQUEST_SEND;
+	c->private     = s;
+	c->event_ctx   = dcerpc_event_context(p);
+	c->monitor_fn  = monitor;
 
 	/* preparing parameters to send rpc request */
 	s->openuser.in.domain_handle  = &io->in.domain_handle;
@@ -261,6 +263,6 @@ NTSTATUS rpc_composite_userinfo(struct dcerpc_pipe *pipe,
 				TALLOC_CTX *mem_ctx,
 				struct rpc_composite_userinfo *io)
 {
-	struct composite_context *c = rpc_composite_userinfo_send(pipe, io);
+	struct composite_context *c = rpc_composite_userinfo_send(pipe, io, NULL);
 	return rpc_composite_userinfo_recv(c, mem_ctx, io);
 }
