@@ -1064,7 +1064,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, conn->case_sensitive)))
 			got_match = mask_match(fname, mask, conn->case_sensitive);
 
-		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False)) {
+		if(!got_match && check_mangled_names && !mangle_is_8_3(fname, False, SNUM(conn))) {
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -1286,7 +1286,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_FILE_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True);
+			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1422,7 +1422,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
 			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_ID_BOTH_DIRECTORY_INFO\n"));
-			was_8_3 = mangle_is_8_3(fname, True);
+			was_8_3 = mangle_is_8_3(fname, True, SNUM(conn));
 			p += 4;
 			SIVAL(p,0,reskey); p += 4;
 			put_long_date(p,cdate); p += 8;
@@ -1813,7 +1813,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!mangle_is_8_3_wildcards( mask, False))
+	if(!mangle_is_8_3_wildcards( mask, False, SNUM(conn)))
 		mangle_map(mask, True, True, SNUM(conn));
 
 	return(-1);
@@ -2007,7 +2007,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * could be mangled. Ensure we check the unmangled name.
 		 */
 
-		if (mangle_is_mangled(resume_name)) {
+		if (mangle_is_mangled(resume_name, SNUM(conn))) {
 			mangle_check_cache(resume_name, sizeof(resume_name)-1);
 		}
 
@@ -3044,7 +3044,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
 			pstrcpy(short_name,base_name);
 			/* Mangle if not already 8.3 */
-			if(!mangle_is_8_3(short_name, True)) {
+			if(!mangle_is_8_3(short_name, True, SNUM(conn))) {
 				mangle_map(short_name,True,True,SNUM(conn));
 			}
 			len = srvstr_push(outbuf, pdata+4, short_name, -1, STR_UNICODE);

@@ -20,10 +20,8 @@
 
 #include "includes.h"
 
-extern char magic_char;
 extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
-
 
 /****************************************************************************
  Load parameters specific to a connection/service.
@@ -80,7 +78,6 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 			conn->case_sensitive = False;
 			break;
 	}
-	magic_char = lp_magicchar(snum);
 	return(True);
 }
 
