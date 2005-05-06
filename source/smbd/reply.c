@@ -281,6 +281,100 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname)
 }
 
 /****************************************************************************
+ Check the path for a POSIX client.
+ We're assuming here that '/' is not the second byte in any multibyte char
+ set (a safe assumption).
+****************************************************************************/
+
+NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
+{
+	char *d = destname;
+	const char *s = srcname;
+	NTSTATUS ret = NT_STATUS_OK;
+	BOOL start_of_name_component = True;
+
+	while (*s) {
+		if (*s == '/') {
+			/*
+			 * Safe to assume is not the second part of a mb char as this is handled below.
+			 */
+			/* Eat multiple '/' or '\\' */
+			while (*s == '/') {
+				s++;
+			}
+			if ((d != destname) && (*s != '\0')) {
+				/* We only care about non-leading or trailing '/' */
+				*d++ = '/';
+			}
+
+			start_of_name_component = True;
+			continue;
+		}
+
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (s[2] == '/' || s[2] == '\0')) {
+				/* Uh oh - "/../" or "/..\0" ! */
+
+				/*
+				 * No mb char starts with '.' so we're safe checking the directory separator here.
+				 */
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
+					d--;
+				}
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+					break;
+				}
+				/* Go back one level... */
+				/* We know this is safe as '/' cannot be part of a mb sequence. */
+				/* NOTE - if this assumption is invalid we are not in good shape... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/')
+						break;
+				}
+				s += 2; /* Else go past the .. */
+				continue;
+
+			} else if ((s[0] == '.') && ((s[1] == '\0') || (s[1] == '/'))) {
+				/* Eat the '.' */
+				s++;
+				continue;
+			}
+		}
+
+		if (!(*s & 0x80)) {
+			*d++ = *s++;
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					DEBUG(0,("check_path_syntax_posix: character length assumptions invalid !\n"));
+					*d = '\0';
+					return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		start_of_name_component = False;
+	}
+
+	*d = '\0';
+	return ret;
+}
+
+/****************************************************************************
  Pull a string and check the path - provide for error return.
 ****************************************************************************/
 
@@ -3529,7 +3623,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
-	if( strchr_m(directory, ':')) {
+	if( is_ntfs_stream_name(directory)) {
 		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
 		END_PROFILE(SMBmkdir);
 		return ERROR_FORCE_DOS(ERRDOS, ERRinvalidname);
