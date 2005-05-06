@@ -1,3 +1,8 @@
+2005-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* arcfour.c (_gssapi_wrap_arcfour): fix calculating the encap
+	length. From: Tom Maher <tmaher@eecs.berkeley.edu>
+
 2005-05-02  Dave Love  <fx@gnu.org>
 
 	* test_cred.c (main): Call setprogname.
