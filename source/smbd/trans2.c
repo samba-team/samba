@@ -2008,7 +2008,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 */
 
 		if (mangle_is_mangled(resume_name, SNUM(conn))) {
-			mangle_check_cache(resume_name, sizeof(resume_name)-1);
+			mangle_check_cache(resume_name, sizeof(resume_name)-1, SNUM(conn));
 		}
 
 		/*
