@@ -5,6 +5,8 @@
  *
  */
 
+#define SMBMOUNT_MALLOC 1
+
 #include "includes.h"
 
 #include <mntent.h>
