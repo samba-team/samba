@@ -227,13 +227,15 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		return False;
 	}
 
-	if(!backends) static_init_vfs;
+	if(!backends) {
+		static_init_vfs;
+	}
 
 	DEBUG(3, ("Initialising custom vfs hooks from [%s]\n", vfs_object));
 
 	module_name = smb_xstrdup(vfs_object);
 
-	p = strchr(module_name, ':');
+	p = strchr_m(module_name, ':');
 
 	if (p) {
 		*p = 0;
