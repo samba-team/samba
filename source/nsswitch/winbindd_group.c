@@ -1071,8 +1071,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	}
 
 	if ( domain->primary && lp_winbind_trusted_domains_only()) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getgroups() for %s\\%s.\n", 
-			name_domain, name_user));
+		DEBUG(7,("winbindd_getgroups: My domain -- rejecting "
+			 "getgroups() for %s\\%s.\n", name_domain, name_user));
 		return WINBINDD_ERROR;
 	}	
 	
