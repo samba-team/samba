@@ -585,8 +585,7 @@ void tdb_dump_all(TDB_CONTEXT *tdb)
 	for (i=0;i<tdb->header.hash_size;i++) {
 		tdb_dump_chain(tdb, i);
 	}
-	printf("freelist:\n");
-	tdb_dump_chain(tdb, -1);
+	tdb_printfreelist(tdb);
 }
 
 int tdb_printfreelist(TDB_CONTEXT *tdb)
