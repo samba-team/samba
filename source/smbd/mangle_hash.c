@@ -276,12 +276,14 @@ done:
 	return ret;
 }
 
-static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards)
+static BOOL is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, int snum)
 {
 	const char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t size;
+
+	magic_char = lp_magicchar(snum);
 
 	if (!fname || !*fname)
 		return False;
@@ -362,9 +364,11 @@ static void init_chartest( void )
  *
  * ************************************************************************** **
  */
-static BOOL is_mangled(const char *s)
+static BOOL is_mangled(const char *s, int snum)
 {
 	char *magic;
+
+	magic_char = lp_magicchar(snum);
 
 	if( !ct_initialized )
 		init_chartest();
@@ -460,11 +464,13 @@ static void cache_mangled_name( const char mangled_name[13], char *raw_name )
  * ************************************************************************** **
  */
 
-static BOOL check_cache( char *s, size_t maxlen )
+static BOOL check_cache( char *s, size_t maxlen, int snum )
 {
 	TDB_DATA data_val;
 	char *ext_start = NULL;
 	char *saved_ext = NULL;
+
+	magic_char = lp_magicchar(snum);
 
 	/* If the cache isn't initialized, give up. */
 	if( !tdb_mangled_cache )
@@ -604,9 +610,11 @@ static void to_8_3(char *s, int default_case)
  * ****************************************************************************
  */
 
-static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case)
+static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, int snum)
 {
 	smb_ucs2_t *OutName_ucs2;
+	magic_char = lp_magicchar(snum);
+
 	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
 		 need83 ? "True" : "False", cache83 ? "True" : "False"));
 	
@@ -643,9 +651,9 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case)
   to drop in an alternative mangling implementation
 */
 static struct mangle_fns mangle_fns = {
+	mangle_reset,
 	is_mangled,
 	is_8_3,
-	mangle_reset,
 	check_cache,
 	name_map
 };

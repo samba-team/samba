@@ -784,7 +784,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False))
+			if (!mangle_is_8_3(filename, False, SNUM(conn)))
 				mangle_map(filename,True,False,SNUM(conn));
 
 			pstrcpy(fname,filename);

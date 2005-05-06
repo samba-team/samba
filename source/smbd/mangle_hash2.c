@@ -268,7 +268,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
    directory separators. It should return true if any component is
    mangled
  */
-static BOOL is_mangled(const char *name)
+static BOOL is_mangled(const char *name, int snum)
 {
 	const char *p;
 	const char *s;
@@ -293,7 +293,7 @@ static BOOL is_mangled(const char *name)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
+static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards, int snum)
 {
 	int len, i;
 	char *dot_p;
@@ -370,7 +370,7 @@ static void mangle_reset(void)
   try to find a 8.3 name in the cache, and if found then
   replace the string with the original long name. 
 */
-static BOOL check_cache(char *name, size_t maxlen)
+static BOOL check_cache(char *name, size_t maxlen, int snum)
 {
 	u32 hash, multiplier;
 	unsigned int i;
@@ -378,7 +378,7 @@ static BOOL check_cache(char *name, size_t maxlen)
 	char extension[4];
 
 	/* make sure that this is a mangled name from this cache */
-	if (!is_mangled(name)) {
+	if (!is_mangled(name, snum)) {
 		M_DEBUG(10,("check_cache: %s -> not mangled\n", name));
 		return False;
 	}
@@ -506,7 +506,7 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
+static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case, int snum)
 {
 	char *dot_p;
 	char lead_chars[7];
@@ -520,7 +520,7 @@ static void name_map(fstring name, BOOL need83, BOOL cache83, int default_case)
 	if (!is_reserved_name(name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(name, False, False)) {
+		if (is_8_3(name, False, False, snum)) {
 			return;
 		}
 
@@ -679,14 +679,13 @@ static void init_tables(void)
 	}
 }
 
-
 /*
   the following provides the abstraction layer to make it easier
   to drop in an alternative mangling implementation */
 static struct mangle_fns mangle_fns = {
+	mangle_reset,
 	is_mangled,
 	is_8_3,
-	mangle_reset,
 	check_cache,
 	name_map
 };
