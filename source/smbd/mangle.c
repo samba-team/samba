@@ -67,29 +67,28 @@ static void mangle_init(void)
 void mangle_reset_cache(void)
 {
 	mangle_init();
-
 	mangle_fns->reset();
 }
 
 /*
   see if a filename has come out of our mangling code
 */
-BOOL mangle_is_mangled(const char *s)
+BOOL mangle_is_mangled(const char *s, int snum)
 {
-	return mangle_fns->is_mangled(s);
+	return mangle_fns->is_mangled(s, snum);
 }
 
 /*
   see if a filename matches the rules of a 8.3 filename
 */
-BOOL mangle_is_8_3(const char *fname, BOOL check_case)
+BOOL mangle_is_8_3(const char *fname, BOOL check_case, int snum)
 {
-	return mangle_fns->is_8_3(fname, check_case, False);
+	return mangle_fns->is_8_3(fname, check_case, False, snum);
 }
 
-BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case)
+BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case, int snum)
 {
-	return mangle_fns->is_8_3(fname, check_case, True);
+	return mangle_fns->is_8_3(fname, check_case, True, snum);
 }
 
 /*
@@ -98,9 +97,9 @@ BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case)
   looking for a matching name if it doesn't. It should succeed most of the time
   or there will be a huge performance penalty
 */
-BOOL mangle_check_cache(char *s, size_t maxlen)
+BOOL mangle_check_cache(char *s, size_t maxlen, int snum)
 {
-	return mangle_fns->check_cache(s, maxlen);
+	return mangle_fns->check_cache(s, maxlen, snum);
 }
 
 /* 
@@ -120,5 +119,5 @@ void mangle_map(pstring OutName, BOOL need83, BOOL cache83, int snum)
 
 	/* invoke the inane "mangled map" code */
 	mangle_map_filename(OutName, snum);
-	mangle_fns->name_map(OutName, need83, cache83, lp_defaultcase(snum));
+	mangle_fns->name_map(OutName, need83, cache83, lp_defaultcase(snum), snum);
 }

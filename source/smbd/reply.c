@@ -30,7 +30,6 @@
 extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
-extern char magic_char;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
@@ -1753,7 +1752,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	
-	if (!rc && mangle_is_mangled(mask))
+	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
 		mangle_check_cache( mask, sizeof(pstring)-1 );
 	
 	if (!has_wild) {
@@ -4055,7 +4054,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask))
+	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
 		mangle_check_cache( mask, sizeof(pstring)-1 );
 
 	has_wild = ms_has_wild(mask);
@@ -4064,7 +4063,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = mangle_is_8_3(name, True);
+		BOOL is_short_name = mangle_is_8_3(name, True, SNUM(conn));
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -4536,7 +4535,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask))
+	if (!rc && mangle_is_mangled(mask, SNUM(conn)))
 		mangle_check_cache( mask, sizeof(pstring)-1 );
 
 	has_wild = ms_has_wild(mask);
