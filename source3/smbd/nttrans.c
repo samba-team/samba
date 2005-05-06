@@ -73,7 +73,6 @@ static char *nttrans_realloc(char **ptr, size_t size)
 	return tptr;
 }
 
-
 /****************************************************************************
  Send the required number of replies back.
  We assume all fields other than the data fields are
@@ -260,6 +259,15 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 	} 
 
 	return 0;
+}
+
+/****************************************************************************
+ Is it an NTFS stream name ?
+****************************************************************************/
+
+BOOL is_ntfs_stream_name(const char *fname)
+{
+	return (strchr_m(fname, ':') != NULL) ? True : False;
 }
 
 /****************************************************************************
@@ -668,7 +676,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			if( strchr_m(fname, ':')) {
+			if( is_ntfs_stream_name(fname)) {
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			}
@@ -717,7 +725,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( strchr_m(fname, ':')) {
+		if( is_ntfs_stream_name(fname)) {
 			
 #ifdef HAVE_SYS_QUOTAS
 			if ((fake_file_type=is_fake_file(fname))!=FAKE_FILE_TYPE_NONE) {
@@ -1329,8 +1337,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			 * Check to see if this is a mac fork of some kind.
 			 */
 
-			if( strchr_m(fname, ':'))
+			if( is_ntfs_stream_name(fname)) {
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			}
 
 			return ERROR_DOS(ERRDOS,ERRbadfid);
 		}
@@ -1369,8 +1378,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Check to see if this is a mac fork of some kind.
 		 */
 
-		if( strchr_m(fname, ':'))
+		if( is_ntfs_stream_name(fname)) {
 			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		}
 	}
 
 	/*
@@ -1854,7 +1864,7 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 
-	if( strchr_m(oldname, ':')) {
+	if( is_ntfs_stream_name(oldname)) {
 		/* Can't rename a stream. */
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
