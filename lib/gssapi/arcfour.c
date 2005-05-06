@@ -345,8 +345,8 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 	*conf_state = 0;
 
     datalen = input_message_buffer->length + 1 /* padding */;
-    len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE - 2;  /* encap_length adds 2 */
-    _gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    len = datalen + GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+     _gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
 
     output_message_buffer->length = total_len;
     output_message_buffer->value  = malloc (total_len);
