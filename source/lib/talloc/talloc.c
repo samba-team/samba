@@ -29,6 +29,16 @@
 
 #ifdef _SAMBA_BUILD_
 #include "includes.h"
+#if ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
+/* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
+ * we trust ourselves... */
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef realloc
+#undef realloc
+#endif
+#endif
 #else
 #include <stdio.h>
 #include <stdlib.h>
@@ -1080,7 +1090,6 @@ void *talloc_autofree_context(void)
 	}
 	return cleanup_context;
 }
-
 
 size_t talloc_get_size(const void *context)
 {
