@@ -804,7 +804,6 @@ extern int errno;
 #include "tdb/tdb.h"
 #include "tdb/spinlock.h"
 #include "tdb/tdbutil.h"
-#define _SAMBA_BUILD_ 1
 #include "talloc.h"
 #include "nt_status.h"
 #include "ads.h"
