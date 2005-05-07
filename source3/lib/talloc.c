@@ -1081,4 +1081,13 @@ void *talloc_autofree_context(void)
 	return cleanup_context;
 }
 
+size_t talloc_get_size(const void *context) {
+	struct talloc_chunk *tc;
 
+	if (context == NULL)
+		return 0;
+
+	tc = talloc_chunk_from_ptr(context);
+
+	return tc->size;
+}
