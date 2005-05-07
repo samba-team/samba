@@ -268,6 +268,9 @@ static void dump_values( REGF_NK_REC *nk )
 	pstring data_str;
 	uint32 data_size, data;
 
+	if ( !nk->values )
+		return;
+
 	for ( i=0; i<nk->num_values; i++ ) {
 		d_printf( "\"%s\" = ", nk->values[i].valuename ? nk->values[i].valuename : "(default)" );
 		d_printf( "(%s) ", dump_regval_type( nk->values[i].type ) );
@@ -354,8 +357,8 @@ static BOOL translate_nk_to_regobj( REGF_FILE *infile, REGF_NK_REC *nk,
 		regsubkey_ctr_addkey( &subkeys, key->keyname );
 	}
 	
-	key = regfio_create_nk_record( outfile, nk->keyname, &values, &subkeys, parent );
-	
+	key = regfio_write_key( outfile, nk->keyname, &values, &subkeys, parent );
+
 	regval_ctr_destroy( &values );
 	regsubkey_ctr_destroy( &subkeys );
 
@@ -392,7 +395,10 @@ static int rpc_registry_dump( int argc, const char **argv )
 	d_printf("\n");
 
 	dump_registry_tree( registry, nk, nk->keyname );
-	
+
+#if 0
+	talloc_report_full( registry->mem_ctx, stderr );
+#endif	
 	d_printf("Closing registry...");
 	regfio_close( registry );
 	d_printf("ok\n");
