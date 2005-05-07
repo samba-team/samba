@@ -122,6 +122,7 @@ void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const 
 void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
 void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 void *talloc_autofree_context(void);
+size_t talloc_get_size(const void *ctx);
 
 #endif
 
