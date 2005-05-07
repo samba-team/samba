@@ -38,7 +38,7 @@ typedef enum {False=0,True=1} BOOL;
 #endif
 
 /* Samba3 does not define the timeval functions below */
-#if !defined(_SAMBA_BUILD_) || (SAMBA_VERSION_MAJOR<4)
+#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR==0))
 
 static struct timeval timeval_current(void)
 {
@@ -839,7 +839,7 @@ BOOL torture_local_talloc(void)
 
 
 
-#if !defined(_SAMBA_BUILD_) || (SAMBA_VERSION_MAJOR<4)
+#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR==0))
  int main(void)
 {
 	if (!torture_local_talloc()) {
