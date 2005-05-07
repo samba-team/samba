@@ -7,6 +7,7 @@ includedir = @includedir@
 libdir = @libdir@
 mandir = @mandir@
 XSLTPROC = @XSLTPROC@
+INSTALLCMD=@INSTALL@
 
 CFLAGS = $(OPT) -Wall
 
@@ -20,10 +21,13 @@ testsuite: $(LIBOBJ) testsuite.o
 libtalloc.a: libtalloc.a($(LIBOBJ))
 
 install: all doc
-	cp libtalloc.a $(libdir)
-	cp talloc.h $(includedir)
-	cp talloc.pc $(libdir)/pkgconfig
-	cp talloc.3 $(mandir)/man3
+	${INSTALLCMD} -d ${libdir}
+	${INSTALLCMD} -m 755 libtalloc.a $(libdir)
+	${INSTALLCMD} -d ${includedir}
+	${INSTALLCMD} -m 644 talloc.h $(includedir)
+	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
+	${INSTALLCMD} -d ${mandir}/man3
+	${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
 
 doc: talloc.3
 
@@ -35,6 +39,9 @@ doc: talloc.3
 
 clean:
 	rm -f *~ *.o testsuite *.gc??
+
+test: testsuite
+	./testsuite
 
 gcov:
 	gcov talloc.c
