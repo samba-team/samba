@@ -307,17 +307,19 @@
 
 	<para>
 	Verify that you have correctly specified in the &smb.conf; file the scripts, and arguments 
-	that should be passed to them, before attempting to perform the account migration.
+	that should be passed to them, before attempting to perform the account migration. Note also
+	that the deletion scripts must be commented out during migration. These should be uncommented
+	following successful migration of the NT4 Domain accounts.
 	</para>
 
 	<warning><para>
-	Under absolutely no situations should be the Samba daemons be started until instructed to do so.
+	Under absolutely no situations should the Samba daemons be started until instructed to do so.
 	Delete the <filename>/etc/samba/secrets.tdb</filename> file and all Samba control tdb files
 	before commencing the following configuration steps.
 	</para></warning>
 
 	<table id="ch8-vampire">
-		<title>Samba &smb.conf; Scripts Essential to Migration</title>
+		<title>Samba &smb.conf; Scripts Essential to Samba Operation</title>
 		<tgroup cols="3">
 			<colspec align="left"/>
 			<colspec align="center"/>
@@ -394,7 +396,7 @@
 		<step><para>
 		Configure the Samba &smb.conf; file to create a BDC. An example configuration is
 		given in <link linkend="sbent4smb"/>.
-		The delete scripts are correctly commented out so that during the process of migration
+		The delete scripts are commented out so that during the process of migration
 		no account information can be deleted.
 		</para></step>
 
@@ -416,10 +418,10 @@
         show add printer wizard = Yes
         add user script = /opt/IDEALX/sbin/smbldap-useradd -m '%u'
 #       delete user script = /opt/IDEALX/sbin/smbldap-userdel '%u'
-        add group script = /opt/IDEALX/sbin/smbldap-groupadd -p '%g'
+        add group script = /opt/IDEALX/sbin/smbldap-groupadd -p '%g' -t domain
 #       delete group script = /opt/IDEALX/sbin/smbldap-groupdel '%g'
-        add user to group script = /opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g'
-#       delete user from group script = /opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g'
+        add user to group script = /opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g' -t domain
+#       delete user from group script = /opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g' -t domain
         set primary group script = /opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
         add machine script = /opt/IDEALX/sbin/smbldap-useradd -w '%u'
         logon script = scripts\logon.cmd
@@ -429,7 +431,7 @@
         domain logons = Yes
         domain master = No
 #       wins support = Yes
-	wins server = 192.168.123.124
+        wins server = 192.168.123.124
         ldap admin dn = cn=Manager,dc=terpstra-world,dc=org
         ldap group suffix = ou=Groups
         ldap idmap suffix = ou=Idmap
@@ -504,7 +506,9 @@
 		<indexterm><primary>slapd.conf</primary></indexterm>
 		Configure OpenLDAP in preparation for the migration. An example
 		<filename>sladp.conf</filename> file is shown in <link linkend="sbentslapd"/>.
-                </para></step>
+		The <constant>rootpw</constant> value is an encrypted password string that can
+		be obtained by executing the <command>slappasswd</command> command.
+		</para></step>
 
 <example id="sbentslapd">
 <title>NT4 Migration LDAP Server Configuration File: <filename>/etc/openldap/slapd.conf</filename> &smbmdash; Part A</title>
@@ -606,7 +610,7 @@ ssl off
 		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the entries shown
 		in <link linkend="sbentnss"/>. Note that the LDAP entries have been commented out.
 		This is deliberate. If these entries are active (not commented out), and the
-		<filename>/ec/ldap.conf</filename> file has been configured, when the LDAP server
+		<filename>/etc/ldap.conf</filename> file has been configured, when the LDAP server
 		is started, the process of starting the LDAP server will cause LDAP lookups. This
 		causes the LDAP server <command>slapd</command> to hang because it finds port 389
 		open and therefore can not gain exclusive control of it. By commenting these entries
@@ -792,8 +796,8 @@ writing new configuration file:
 		</para></step>
 
 		<step><para>
-		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the following entries:
-		Note that the LDAP entries above have now been uncommented.
+		Edit the <filename>/etc/nsswitch.conf</filename> file so it has the entries shown in
+		<link linkend="sbentnss2"/>. Note that the LDAP entries have now been uncommented.
 		</para></step>
 
 <example id="sbentnss2">
@@ -925,7 +929,7 @@ New password : ********
 Retype new password : ********
 </screen>
 		Note: During account migration the Windows Administrator account will not be migrated
-		the the Samba server.
+		to the Samba server.
 		</para></step>
 
 		<step><para>
