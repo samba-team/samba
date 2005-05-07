@@ -29,6 +29,7 @@
 
 #ifdef _SAMBA_BUILD_
 #include "includes.h"
+#if (SAMBA_VERSION_MAJOR<4)
 /* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
  * we trust ourselves... */
 #ifdef malloc
@@ -36,6 +37,7 @@
 #endif
 #ifdef realloc
 #undef realloc
+#endif
 #endif
 #else
 #include <stdio.h>
