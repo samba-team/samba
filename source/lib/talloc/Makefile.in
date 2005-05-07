@@ -45,3 +45,6 @@ test: testsuite
 
 gcov:
 	gcov talloc.c
+
+installcheck: 
+	$(MAKE) test
