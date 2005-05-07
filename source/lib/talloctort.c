@@ -35,6 +35,10 @@
 /* the test suite can be built standalone, or as part of Samba */
 #ifndef _SAMBA_BUILD_
 typedef enum {False=0,True=1} BOOL;
+#endif
+
+/* Samba3 does not define the timeval functions below */
+#if !defined(_SAMBA_BUILD_) || (SAMBA_VERSION_MAJOR<4)
 
 static struct timeval timeval_current(void)
 {
@@ -51,6 +55,14 @@ static double timeval_elapsed(struct timeval *tv)
 }
 #endif /* _SAMBA_BUILD_ */
 
+#if SAMBA_VERSION_MAJOR<4
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef strdup
+#undef strdup
+#endif
+#endif
 
 #define CHECK_SIZE(ptr, tsize) do { \
 	if (talloc_total_size(ptr) != (tsize)) { \
@@ -827,7 +839,7 @@ BOOL torture_local_talloc(void)
 
 
 
-#ifndef _SAMBA_BUILD_
+#if !defined(_SAMBA_BUILD_) || (SAMBA_VERSION_MAJOR<4)
  int main(void)
 {
 	if (!torture_local_talloc()) {
