@@ -2,6 +2,7 @@ AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_INIT(talloc.h)
 AC_PROG_CC
+AC_PROG_INSTALL
 AC_PATH_PROG(XSLTPROC,xsltproc)
 AC_PATH_PROG(GCOV,gcov)
 sinclude(config.m4)
