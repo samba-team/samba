@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef _SAMBA_BUILD
+#ifdef _SAMBA_BUILD_
 #include "includes.h"
 #include "system/network.h"
 #else

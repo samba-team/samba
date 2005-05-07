@@ -26,9 +26,6 @@
 
 #include "winbind_client.h"
 
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
-
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */

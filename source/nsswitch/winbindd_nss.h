@@ -10,6 +10,15 @@
    products. You do not need to give any attribution.  
 */
 
+
+#ifndef CONST_DISCARD
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#endif
+
+#ifndef CONST_ADD
+#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
+#endif
+
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if(x) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
 #endif
