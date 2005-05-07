@@ -29,7 +29,7 @@
 
 #ifdef _SAMBA_BUILD_
 #include "includes.h"
-#if (SAMBA_VERSION_MAJOR<4)
+#if ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR==0))
 /* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
  * we trust ourselves... */
 #ifdef malloc
