@@ -559,3 +559,11 @@ talloc_get_type() to do type checking on void* pointers.
 
 It is equivalent to this:
    talloc_set_name_const(ptr, #type)
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+talloc_get_size(const void *ctx);
+
+This function lets you know the amount of memory alloced so far by
+this context. It does NOT account for subcontext memory.
+This can be used to calculate the size of an array.
+
