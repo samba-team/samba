@@ -1,3 +1,13 @@
+2005-05-07  Love  <lha@kth.se>
+
+	* lib/krb5/addr_families.c (krb5_print_address): catch when the
+	unknown adress don't fit. From Björn Sandell <biorn@dce.chalmers.se>
+
+2005-05-05  Dave Love  <d.love@dl.ac.uk>
+
+	* configure.in: fix type right test, include <termios.h> for
+	sys/strtty.h, not sys/ptyvar.h
+	
 2005-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: spelling
