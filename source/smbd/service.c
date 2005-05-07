@@ -29,7 +29,6 @@ extern userdom_struct current_user_info;
 
 BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 {
-	extern char magic_char;
 	static connection_struct *last_conn;
 	static uint16 last_flags;
 	int snum;
