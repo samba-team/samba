@@ -52,10 +52,10 @@ static char **completion_fn(char *text, int start, int end)
 	if (!commands) 
 		return NULL;
 
-	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
 
-	matches[count++] = strdup(text);
+	matches[count++] = SMB_STRDUP(text);
 	if (!matches[0]) return NULL;
 
 	while (commands && count < MAX_COMPLETIONS-1) 
@@ -68,7 +68,7 @@ static char **completion_fn(char *text, int start, int end)
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
 				commands->cmd_set[i].fn) 
 			{
-				matches[count] = strdup(commands->cmd_set[i].name);
+				matches[count] = SMB_STRDUP(commands->cmd_set[i].name);
 				if (!matches[count]) 
 					return NULL;
 				count++;
@@ -81,7 +81,7 @@ static char **completion_fn(char *text, int start, int end)
 
 	if (count == 2) {
 		SAFE_FREE(matches[0]);
-		matches[0] = strdup(matches[1]);
+		matches[0] = SMB_STRDUP(matches[1]);
 	}
 	matches[count] = NULL;
 	return matches;
@@ -248,7 +248,7 @@ static void add_command_set(struct cmd_set *cmd_set)
 {
 	struct cmd_list *entry;
 
-	if (!(entry = (struct cmd_list *)malloc(sizeof(struct cmd_list)))) {
+	if (!(entry = SMB_MALLOC_P(struct cmd_list))) {
 		DEBUG(0, ("out of memory\n"));
 		return;
 	}
@@ -274,7 +274,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
  again:
 	while(next_token(&p, buf, " ", sizeof(buf))) {
 		if (argv) {
-			argv[argc] = strdup(buf);
+			argv[argc] = SMB_STRDUP(buf);
 		}
 		
 		argc++;
@@ -284,7 +284,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 
 		/* Create argument list */
 
-		argv = (char **)malloc(sizeof(char *) * argc);
+		argv = SMB_MALLOC_ARRAY(char *, argc);
 		memset(argv, 0, sizeof(char *) * argc);
 
 		if (!argv) {

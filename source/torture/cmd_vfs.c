@@ -284,7 +284,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	vfs->files[fd] = (struct files_struct *)malloc(sizeof(struct files_struct));
+	vfs->files[fd] = SMB_MALLOC_P(struct files_struct);
 	vfs->files[fd]->fsp_name = SMB_STRDUP(argv[1]);
 	vfs->files[fd]->fd = fd;
 	vfs->files[fd]->conn = vfs->conn;

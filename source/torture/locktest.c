@@ -423,7 +423,7 @@ static void test_locks(char *share[NSERVERS])
 	ZERO_STRUCT(fnum);
 	ZERO_STRUCT(cli);
 
-	recorded = (struct record *)malloc(sizeof(*recorded) * numops);
+	recorded = SMB_MALLOC_ARRAY(struct record, numops);
 
 	for (n=0; n<numops; n++) {
 #if PRESETS
