@@ -694,7 +694,7 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	state->cont = cont;
 	state->private = private;
 
-	domain = find_domain_from_sid(user_sid);
+	domain = find_domain_from_sid_noinit(user_sid);
 	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain from SID %s\n",
 			  sid_string_static(user_sid)));

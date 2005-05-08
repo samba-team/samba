@@ -214,8 +214,8 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
 
-	async_request(mem_ctx, &domain->child, request, response,
-		      trustdom_recv, state);
+	async_domain_request(mem_ctx, domain, request, response,
+			     trustdom_recv, state);
 }
 
 static void trustdom_recv(void *private, BOOL success)
@@ -325,6 +325,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
+	struct winbindd_domain *our_domain;
 
 	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
@@ -369,8 +370,14 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	async_request(mem_ctx, &find_our_domain()->child, request, response,
-		      init_child_getdc_recv, state);
+	our_domain = find_our_domain();
+	if (our_domain == NULL) {
+		DEBUG(5, ("Could not find our domain\n"));
+		return WINBINDD_ERROR;
+	}
+
+	async_domain_request(mem_ctx, our_domain, request, response,
+			     init_child_getdc_recv, state);
 	return WINBINDD_PENDING;
 }
 
@@ -655,7 +662,7 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 {
 	if (IS_DC || strequal(domain_name, "BUILTIN") ||
 	    strequal(domain_name, get_global_sam_name()))
-		return find_domain_from_name(domain_name);
+		return find_domain_from_name_noinit(domain_name);
 
 	return find_our_domain();
 }

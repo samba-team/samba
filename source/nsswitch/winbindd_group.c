@@ -324,7 +324,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 
 	/* Fill in group structure */
 
-	domain = find_domain_from_sid(&group_sid);
+	domain = find_domain_from_sid_noinit(&group_sid);
 
 	if (!domain) {
 		DEBUG(1,("Can't find domain from sid\n"));
@@ -912,7 +912,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	
 	/* Get info for the domain */
 
-	s->domain = find_domain_from_name(s->domname);
+	s->domain = find_domain_from_name_noinit(s->domname);
 
 	if (s->domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s\n", 
@@ -1099,14 +1099,14 @@ enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)
 	}
 
 	/* Get info for the domain */	
-	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
+	if ((domain = find_domain_from_sid_noinit(&user_sid)) == NULL) {
 		DEBUG(0,("could not find domain entry for sid %s\n", 
 			 sid_string_static(&user_sid)));
 		return WINBINDD_ERROR;
 	}
 
-	async_request(state->mem_ctx, &domain->child, &state->request,
-		      &state->response, request_finished_cont, state);
+	async_domain_request(state->mem_ctx, domain, &state->request,
+			     &state->response, request_finished_cont, state);
 	return WINBINDD_PENDING;
 }
 

@@ -175,7 +175,7 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 	}
 
 	s->state = state;
-	s->domain = find_domain_from_sid(sid);
+	s->domain = find_domain_from_sid_noinit(sid);
 	if (s->domain == NULL) {
 		DEBUG(3, ("Could not find domain for sid %s\n",
 			  sid_string_static(sid)));
