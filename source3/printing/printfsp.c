@@ -66,7 +66,6 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
