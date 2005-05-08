@@ -151,7 +151,8 @@ void idmap_set_mapping_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		 cont, private);
 }
 
-enum winbindd_result winbindd_dual_idmapset(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_idmapset(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	unid_t id;
@@ -207,7 +208,8 @@ void winbindd_uid2name_async(TALLOC_CTX *mem_ctx, uid_t uid,
 		 cont, private);
 }
 
-enum winbindd_result winbindd_dual_uid2name(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_uid2name(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
 {
 	struct passwd *pw;
 
@@ -260,7 +262,8 @@ void winbindd_gid2name_async(TALLOC_CTX *mem_ctx, gid_t gid,
 		 cont, private);
 }
 
-enum winbindd_result winbindd_dual_gid2name(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_gid2name(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
 {
 	struct group *gr;
 
@@ -325,7 +328,8 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			cont, private);
 }
 
-enum winbindd_result winbindd_dual_lookupsid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
+					     struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
 	DOM_SID sid;
@@ -416,12 +420,12 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
 			cont, private);
 }
 
-enum winbindd_result winbindd_dual_lookupname(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
+					      struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
 	char *name_domain, *name_user;
 	DOM_SID sid;
-	struct winbindd_domain *domain;
 	char *p;
 
 	/* Ensure null termination */
@@ -443,12 +447,6 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
-
-	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not find domain entry for domain %s\n", 
-			  name_domain));
-		return WINBINDD_ERROR;
-	}
 
 	/* Lookup name from PDC using lsa_lookup_names() */
 	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
@@ -582,9 +580,9 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 			cont, private);
 }
 
-enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
+						 struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
 	char *key = state->request.data.dual_sidaliases.cache_key;
@@ -599,13 +597,6 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_cli_state *stat
         state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
         state->request.data.dual_sidaliases.cache_key
 		[sizeof(state->request.data.dual_sidaliases.cache_key)-1]='\0';
-
-	domain = find_domain_from_name(state->request.domain_name);
-	if (domain == NULL) {
-		DEBUG(0, ("Could not find domain %s\n",
-			  state->request.domain_name));
-		return WINBINDD_ERROR;
-	}
 
 	sidstr = cache_retrieve_request_data(state->mem_ctx, key);
 	if (sidstr == NULL)

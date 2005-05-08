@@ -133,7 +133,7 @@ static struct winbindd_child static_idmap_child;
 
 BOOL init_idmap_child(void)
 {
-	return setup_domain_child(&static_idmap_child);
+	return setup_domain_child(NULL, &static_idmap_child);
 }
 
 struct winbindd_child *idmap_child(void)
@@ -216,7 +216,8 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 /* Child part of winbindd_sid2uid. We already know for sure it's a user, as
  * well as the user's name */
 
-enum winbindd_result winbindd_dual_sid2uid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS result;
@@ -335,7 +336,8 @@ static void winbindd_sid2gid_recv(void *private, BOOL success,
 /* Child part of winbindd_sid2gid. We already know for sure it's a user, as
  * well as the user's name */
 
-enum winbindd_result winbindd_dual_sid2gid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS result;
@@ -654,7 +656,8 @@ enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
+						struct winbindd_cli_state *state)
 {
 	/* We tell idmap to always allocate a user RID. There might be a good
 	 * reason to keep RID allocation for users to even and groups to
@@ -682,7 +685,8 @@ enum winbindd_result winbindd_allocate_rid_and_gid(struct winbindd_cli_state *st
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_domain *domain,
+							struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	DOM_SID sid;

@@ -48,7 +48,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *domain,
+						      struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int num_retries = 0;
@@ -127,9 +128,9 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
+							struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
 	uint32 i, num_domains;
 	char **names, **alt_names;
 	DOM_SID *sids;
@@ -139,8 +140,6 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_cli_stat
 
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
-
-	domain = find_our_domain();
 
 	result = domain->methods->trusted_domains(domain, state->mem_ctx,
 						  &num_domains, &names,
@@ -195,9 +194,9 @@ enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_getdcname(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
+					     struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
 	fstring dcname_slash;
 	char *p;
 	struct rpc_pipe_client *cli;
@@ -208,8 +207,6 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
-
-	domain = find_our_domain();
 
 	{
 		/* These var's can be ignored -- we're not requesting
@@ -356,26 +353,13 @@ static void sequence_recv(void *private, BOOL success)
 /* This is the child-only version of --sequence. It only allows for a single
  * domain (ie "our" one) to be displayed. */
 
-enum winbindd_result winbindd_dual_show_sequence(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
+						 struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
-
 	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
 
 	/* Ensure null termination */
 	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
-
-	domain = find_domain_from_name_noinit(state->request.domain_name);
-	if (domain == NULL) {
-		DEBUG(0, ("Domain %s not found\n",
-			  state->request.domain_name));
-		return WINBINDD_ERROR;
-	}
-
-	if (!domain->initialized) {
-		DEBUG(0, ("Domain %s not initialized\n", domain->name));
-		return WINBINDD_ERROR;
-	}
 
 	domain->methods->sequence_number(domain, &domain->sequence_number);
 

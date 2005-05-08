@@ -416,7 +416,14 @@ static void domain_init_recv(void *private, BOOL success)
 		      state->continuation, state->private);
 }
 
-static struct winbindd_dispatch_table child_dispatch_table[] = {
+struct winbindd_child_dispatch_table {
+	enum winbindd_cmd cmd;
+	enum winbindd_result (*fn)(struct winbindd_domain *domain,
+				   struct winbindd_cli_state *state);
+	const char *winbindd_cmd_name;
+};
+
+static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID, winbindd_dual_lookupsid, "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME, winbindd_dual_lookupname, "LOOKUPNAME" },
@@ -449,9 +456,10 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
-static void child_process_request(struct winbindd_cli_state *state)
+static void child_process_request(struct winbindd_domain *domain,
+				  struct winbindd_cli_state *state)
 {
-	struct winbindd_dispatch_table *table;
+	struct winbindd_child_dispatch_table *table;
 
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
@@ -469,7 +477,7 @@ static void child_process_request(struct winbindd_cli_state *state)
 		if (state->request.cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n",
 				  table->winbindd_cmd_name ));
-			state->response.result = table->fn(state);
+			state->response.result = table->fn(domain, state);
 			break;
 		}
 	}
@@ -483,7 +491,8 @@ static void child_process_request(struct winbindd_cli_state *state)
 	talloc_destroy(state->mem_ctx);
 }
 
-BOOL setup_domain_child (struct winbindd_child *child)
+BOOL setup_domain_child(struct winbindd_domain *domain,
+			struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
@@ -562,7 +571,7 @@ BOOL setup_domain_child (struct winbindd_child *child)
 			}
 
 			state.request.null_term = '\0';
-			child_process_request(&state);
+			child_process_request(domain, &state);
 
 			if (state.response.result == WINBINDD_OK)
 				cache_store_response(sys_getpid(),

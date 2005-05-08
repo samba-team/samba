@@ -224,7 +224,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_pam_auth(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
 	fstring name_domain, name_user;
@@ -563,7 +564,8 @@ enum winbindd_result winbindd_crap_auth(struct winbindd_cli_state *state)
 }
 
 
-enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
+						 struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
 	const char *srv_name_slash;

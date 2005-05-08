@@ -270,7 +270,7 @@ static void trustdom_recv(void *private, BOOL success)
 			domain = add_trusted_domain(p, alt_name,
 						    &cache_methods,
 						    &sid);
-			setup_domain_child(&domain->child);
+			setup_domain_child(domain, &domain->child);
 		}
 		p=q;
 		if (p != NULL)
@@ -428,9 +428,9 @@ static void init_child_recv(void *private, BOOL success)
 	talloc_destroy(state->mem_ctx);
 }
 
-enum winbindd_result winbindd_dual_init_connection(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
+						   struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
 	struct in_addr ipaddr;
 
 	/* Ensure null termination */
@@ -438,14 +438,6 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_cli_state *st
 		[sizeof(state->request.domain_name)-1]='\0';
 	state->request.data.init_conn.dcname
 		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
-
-	domain = find_domain_from_name_noinit(state->request.domain_name);
-
-	if (domain == NULL) {
-		DEBUG(1, ("Could not find domain %s\n",
-			  state->request.domain_name));
-		return WINBINDD_ERROR;
-	}
 
 	fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
 
@@ -515,20 +507,20 @@ void init_domain_list(void)
 	}
 
 	domain->primary = True;
-	setup_domain_child(&domain->child);
+	setup_domain_child(domain, &domain->child);
 	init_child_connection(domain, NULL, NULL);
 
 	/* Add our local SAM domains */
 
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
-	setup_domain_child(&domain->child);
+	setup_domain_child(domain, &domain->child);
 
 	if (!IS_DC) {
 		domain = add_trusted_domain(get_global_sam_name(), NULL,
 					    &passdb_methods,
 					    get_global_sam_sid());
-		setup_domain_child(&domain->child);
+		setup_domain_child(domain, &domain->child);
 	}
 }
 

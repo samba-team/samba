@@ -1110,10 +1110,10 @@ enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *domain,
+						    struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
-	struct winbindd_domain *domain;
 	NTSTATUS status;
 
 	int i, num_groups, len, bufsize;
@@ -1125,14 +1125,6 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_cli_state *s
 	if (!string_to_sid(&user_sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
 			  state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	/* Get info for the domain */	
-	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
-		DEBUG(0,("could not find domain entry for sid %s\n", 
-			 sid_string_static(&user_sid)));
-
 		return WINBINDD_ERROR;
 	}
 

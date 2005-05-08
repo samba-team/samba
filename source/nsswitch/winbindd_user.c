@@ -108,9 +108,9 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 
 /* Wrapper for domain->methods->query_user, only on the parent->child pipe */
 
-enum winbindd_result winbindd_dual_userinfo(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
 {
-	struct winbindd_domain *domain;
 	DOM_SID sid;
 	WINBIND_USERINFO user_info;
 	NTSTATUS status;
@@ -123,13 +123,6 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_cli_state *state)
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	domain = find_domain_from_sid(&sid);
-	if (domain == NULL) {
-		DEBUG(1, ("Can't find domain from sid %s\n",
-			  sid_string_static(&sid)));
 		return WINBINDD_ERROR;
 	}
 
