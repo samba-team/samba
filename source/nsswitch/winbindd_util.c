@@ -214,12 +214,8 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	request->length = sizeof(*request);
 	request->cmd = WINBINDD_LIST_TRUSTDOM;
 
-	if (async_request(mem_ctx, &domain->child, request, response,
-			  trustdom_recv, state) != WINBINDD_PENDING) {
-		DEBUG(0, ("Could not send trustdom request\n"));
-		talloc_destroy(mem_ctx);
-		return;
-	}
+	async_request(mem_ctx, &domain->child, request, response,
+		      trustdom_recv, state);
 }
 
 static void trustdom_recv(void *private, BOOL success)
@@ -361,9 +357,9 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 		request->data.init_conn.is_primary = True;
 		fstrcpy(request->data.init_conn.dcname, "");
 
-		return async_request(mem_ctx, &domain->child,
-				     request, response,
-				     init_child_recv, state);
+		async_request(mem_ctx, &domain->child, request, response,
+			      init_child_recv, state);
+		return WINBINDD_PENDING;
 	}
 
 	/* This is *not* the primary domain, let's ask our DC about a DC
@@ -372,9 +368,9 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	return async_request(mem_ctx, &find_our_domain()->child,
-			     request, response,
-			     init_child_getdc_recv, state);
+	async_request(mem_ctx, &find_our_domain()->child, request, response,
+		      init_child_getdc_recv, state);
+	return WINBINDD_PENDING;
 }
 
 static void init_child_getdc_recv(void *private, BOOL success)

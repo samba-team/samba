@@ -262,17 +262,18 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
 	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains_async, "LIST_TRUSTDOM" },
-	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence_async, "SHOW_SEQUENCE" },
+	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
+	  "LIST_TRUSTDOM" },
+	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 
 	/* SID related functions */
 
-	{ WINBINDD_LOOKUPSID, winbindd_lookupsid_async, "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname_async, "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 
 	/* Lookup related functions */
 
-	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid_async, "SID_TO_UID" },
+	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid_async, "SID_TO_GID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid_async, "UID_TO_SID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid_async, "GID_TO_SID" },
@@ -289,8 +290,9 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
-	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
-	{ WINBINDD_GETDCNAME, winbindd_getdcname_async, "GETDCNAME" },
+	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
+	  "WINBINDD_PRIV_PIPE_DIR" },
+	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
 
 	/* WINS functions */
 
@@ -451,7 +453,13 @@ static void response_extra_sent(void *private, BOOL success);
 
 static void response_extra_sent(void *private, BOOL success)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
+	if (state->mem_ctx != NULL) {
+		talloc_destroy(state->mem_ctx);
+		state->mem_ctx = NULL;
+	}
 
 	if (!success) {
 		state->finished = True;
@@ -466,12 +474,8 @@ static void response_extra_sent(void *private, BOOL success)
 
 static void response_main_sent(void *private, BOOL success)
 {
-	struct winbindd_cli_state *state = private;
-
-	if (state->mem_ctx != NULL) {
-		talloc_destroy(state->mem_ctx);
-		state->mem_ctx = NULL;
-	}
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;
@@ -479,6 +483,11 @@ static void response_main_sent(void *private, BOOL success)
 	}
 
 	if (state->response.length == sizeof(state->response)) {
+		if (state->mem_ctx != NULL) {
+			talloc_destroy(state->mem_ctx);
+			state->mem_ctx = NULL;
+		}
+
 		setup_async_read(&state->fd_event, &state->request,
 				 sizeof(uint32), request_len_recv, state);
 		return;
@@ -497,7 +506,9 @@ void request_finished(struct winbindd_cli_state *state)
 
 void request_finished_cont(void *private, BOOL success)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
 	if (!success)
 		state->response.result = WINBINDD_ERROR;
 	request_finished(state);
@@ -505,7 +516,8 @@ void request_finished_cont(void *private, BOOL success)
 
 static void request_recv(void *private, BOOL success)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;
@@ -520,7 +532,8 @@ static void request_recv(void *private, BOOL success)
 
 static void request_len_recv(void *private, BOOL success)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;
@@ -563,10 +576,9 @@ static void new_connection(int listen_sock, BOOL privileged)
 	
 	/* Create new connection structure */
 	
-	if ((state = SMB_MALLOC_P(struct winbindd_cli_state)) == NULL)
+	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL)
 		return;
 	
-	ZERO_STRUCTP(state);
 	state->sock = sock;
 
 	state->last_access = time(NULL);	
@@ -617,7 +629,7 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* Remove from list and free */
 		
 		winbindd_remove_client(state);
-		SAFE_FREE(state);
+		talloc_free(state);
 	}
 }
 

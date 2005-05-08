@@ -929,9 +929,9 @@ enum winbindd_result winbindd_getgroups_async(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	return winbindd_lookup_name_async(state->mem_ctx, s->domname,
-					  s->username,
-					  getgroups_usersid_recv, s);
+	winbindd_lookupname_async(state->mem_ctx, s->domname, s->username,
+				  getgroups_usersid_recv, s);
+	return WINBINDD_PENDING;
 }
 
 static void getgroups_usersid_recv(void *private, BOOL success,
@@ -1040,8 +1040,9 @@ enum winbindd_result winbindd_getusersids_async(struct winbindd_cli_state *state
 		return WINBINDD_ERROR;
 	}
 
-	return winbindd_gettoken_async(state->mem_ctx, user_sid,
-				       getusersids_recv, state);
+	winbindd_gettoken_async(state->mem_ctx, user_sid, getusersids_recv,
+				state);
+	return WINBINDD_PENDING;
 }
 
 static void getusersids_recv(void *private, BOOL success, DOM_SID *sids,
@@ -1104,9 +1105,9 @@ enum winbindd_result winbindd_getuserdomgroups_async(struct winbindd_cli_state *
 		return WINBINDD_ERROR;
 	}
 
-	return async_request(state->mem_ctx, &domain->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, &domain->child, &state->request,
+		      &state->response, request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
 enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)

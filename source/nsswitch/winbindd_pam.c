@@ -218,9 +218,10 @@ enum winbindd_result winbindd_pam_auth_async(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	return async_domain_request(state->mem_ctx, domain,
-				    &state->request, &state->response,
-				    request_finished_cont, state);
+	async_domain_request(state->mem_ctx, domain,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
@@ -543,10 +544,12 @@ enum winbindd_result winbindd_crap_auth_async(struct winbindd_cli_state *state)
 	if (domain_name != NULL)
 		domain = find_auth_domain(domain_name);
 
-	if (domain != NULL)
-		return async_domain_request(state->mem_ctx, domain,
-					    &state->request, &state->response,
-					    request_finished_cont, state);
+	if (domain != NULL) {
+		async_domain_request(state->mem_ctx, domain,
+				     &state->request, &state->response,
+				     request_finished_cont, state);
+		return WINBINDD_PENDING;
+	}
 
 	result = NT_STATUS_NO_SUCH_USER;
 

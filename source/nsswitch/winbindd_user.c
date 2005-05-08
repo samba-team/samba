@@ -191,13 +191,8 @@ static void winbindd_getpwsid_async(struct winbindd_cli_state *state,
 
 	sid_copy(&s->user_sid, sid);
 
-	if (query_user_async(s->state->mem_ctx, s->domain, sid,
-			     getpwsid_queryuser_recv, s) == WINBINDD_ERROR) {
-		DEBUG(3, ("Could not trigger query_user for sid %s\n",
-			  sid_string_static(sid)));
-		goto error;
-	}
-
+	query_user_async(s->state->mem_ctx, s->domain, sid,
+			 getpwsid_queryuser_recv, s);
 	return;
 
  error:
@@ -209,7 +204,8 @@ static void getpwsid_queryuser_recv(void *private, BOOL success,
 				    const char *acct_name,
 				    const char *full_name, uint32 group_rid)
 {
-	struct getpwsid_state *s = private;
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not query user %s\\%s\n", s->domain->name,
@@ -230,10 +226,11 @@ static void getpwsid_queryuser_recv(void *private, BOOL success,
 
 static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid)
 {
-	struct getpwsid_state *s = private;
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not query user's %s\\%s\n uid",
+		DEBUG(5, ("Could not query user's %s\\%s uid\n",
 			  s->domain->name, s->username));
 		s->state->response.result = WINBINDD_ERROR;
 		request_finished(s->state);
@@ -247,7 +244,8 @@ static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid)
 
 static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid)
 {
-	struct getpwsid_state *s = private;
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
 	struct winbindd_pw *pw;
 	fstring output_username;
 	char *homedir;
@@ -324,7 +322,8 @@ enum winbindd_result winbindd_getpwnam_async(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
 
-	if (!parse_domain_user(state->request.data.username, domname, username)) {
+	if (!parse_domain_user(state->request.data.username, domname,
+			       username)) {
 		DEBUG(0, ("Could not parse domain user: %s\n",
 			  state->request.data.username));
 		return WINBINDD_ERROR;
@@ -335,7 +334,8 @@ enum winbindd_result winbindd_getpwnam_async(struct winbindd_cli_state *state)
 	domain = find_lookup_domain_from_name(domname);
 
 	if (domain == NULL) {
-		DEBUG(7, ("could not find domain entry for domain %s\n", domname));
+		DEBUG(7, ("could not find domain entry for domain %s\n",
+			  domname));
 		return WINBINDD_ERROR;
 	}
 
@@ -347,8 +347,9 @@ enum winbindd_result winbindd_getpwnam_async(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	return winbindd_lookup_name_async(state->mem_ctx, domname, username,
-					  getpwnam_name2sid_recv, state);
+	winbindd_lookupname_async(state->mem_ctx, domname, username,
+				  getpwnam_name2sid_recv, state);
+	return WINBINDD_PENDING;
 }
 
 static void getpwnam_name2sid_recv(void *private, BOOL success,
@@ -356,9 +357,16 @@ static void getpwnam_name2sid_recv(void *private, BOOL success,
 {
 	struct winbindd_cli_state *state = private;
 
-	if ((!success) ||
-	    ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))) {
-		DEBUG(5, ("%s is not a user\n", sid_string_static(sid)));
+	if (!success) {
+		DEBUG(5, ("Could not lookup name for user %s\n",
+			  state->request.data.username));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
+	}
+
+	if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER)) {
+		DEBUG(5, ("%s is not a user\n", state->request.data.username));
 		state->response.result = WINBINDD_ERROR;
 		request_finished(state);
 		return;

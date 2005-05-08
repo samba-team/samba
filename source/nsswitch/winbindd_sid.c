@@ -28,41 +28,13 @@
 
 /* Convert a string  */
 
-enum winbindd_result winbindd_lookupsid_async(struct winbindd_cli_state *state)
-{
-	struct winbindd_domain *domain;
-	DOM_SID sid;
-
-	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
-		  state->request.data.sid));
-
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	domain = find_lookup_domain_from_sid(&sid);
-
-	if (domain == NULL) {
-		DEBUG(1,("Can't find domain from sid %s\n",
-			 sid_string_static(&sid)));
-		return WINBINDD_ERROR;
-	}
-
-	return async_request(state->mem_ctx, &domain->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
-}
+static void lookupsid_recv(void *private, BOOL success,
+			   const char *dom_name, const char *name,
+			   enum SID_NAME_USE type);
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
-	enum SID_NAME_USE type;
 	DOM_SID sid;
-	fstring name;
-	fstring dom_name;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -70,75 +42,46 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));
 
-	/* Lookup sid from PDC using lsa_lookup_sids() */
-
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
-	/* Lookup the sid */
+	winbindd_lookupsid_async(state->mem_ctx, &sid, lookupsid_recv, state);
+	return WINBINDD_PENDING;
+}
 
-	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, dom_name, name,
-					 &type)) {
-		return WINBINDD_ERROR;
+static void lookupsid_recv(void *private, BOOL success,
+			   const char *dom_name, const char *name,
+			   enum SID_NAME_USE type)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("lookupsid returned an error\n"));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
 	}
 
 	fstrcpy(state->response.data.name.dom_name, dom_name);
 	fstrcpy(state->response.data.name.name, name);
-
 	state->response.data.name.type = type;
-
-	return WINBINDD_OK;
+	state->response.result =  WINBINDD_OK;
+	request_finished(state);
 }
 
 /**
  * Look up the SID for a qualified name.  
  **/
-enum winbindd_result winbindd_lookupname_async(struct winbindd_cli_state *state)
-{
-	char *name_domain, *name_user;
-	struct winbindd_domain *domain;
-	char *p;
 
-	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
-
-	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
-
-	/* cope with the name being a fully qualified name */
-	p = strstr(state->request.data.name.name, lp_winbind_separator());
-	if (p) {
-		*p = 0;
-		name_domain = state->request.data.name.name;
-		name_user = p+1;
-	} else {
-		name_domain = state->request.data.name.dom_name;
-		name_user = state->request.data.name.name;
-	}
-
-	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
-		  name_domain, lp_winbind_separator(), name_user));
-
-	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not find domain entry for domain %s\n", 
-			  name_domain));
-		return WINBINDD_ERROR;
-	}
-
-	return async_request(state->mem_ctx, &domain->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
-}
+static void lookupname_recv(void *private, BOOL success,
+			    const DOM_SID *sid, enum SID_NAME_USE type);
 
 enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 {
-	enum SID_NAME_USE type;
-	fstring sid_str;
 	char *name_domain, *name_user;
-	DOM_SID sid;
-	struct winbindd_domain *domain;
 	char *p;
 
 	/* Ensure null termination */
@@ -161,23 +104,29 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
 
-	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
-		DEBUG(0, ("could not find domain entry for domain %s\n", 
-			  name_domain));
-		return WINBINDD_ERROR;
+	winbindd_lookupname_async(state->mem_ctx, name_domain, name_user,
+				  lookupname_recv, state);
+	return WINBINDD_PENDING;
+}
+
+static void lookupname_recv(void *private, BOOL success,
+			    const DOM_SID *sid, enum SID_NAME_USE type)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
+	if (!success) {
+		DEBUG(5, ("lookupname returned an error\n"));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
 	}
 
-	/* Lookup name from PDC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
-					 name_user, &sid, &type)) {
-		return WINBINDD_ERROR;
-	}
-
-	sid_to_string(sid_str, &sid);
-	fstrcpy(state->response.data.sid.sid, sid_str);
+	sid_to_string(state->response.data.sid.sid, sid);
 	state->response.data.sid.type = type;
-
-	return WINBINDD_OK;
+	state->response.result = WINBINDD_OK;
+	request_finished(state);
+	return;
 }
 
 static struct winbindd_child static_idmap_child;
@@ -199,7 +148,7 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 				    const char *dom_name, const char *name,
 				    enum SID_NAME_USE type);
 
-enum winbindd_result winbindd_sid_to_uid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS result;
@@ -227,9 +176,9 @@ enum winbindd_result winbindd_sid_to_uid_async(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(result))
 		return WINBINDD_OK;
 
-	return winbindd_lookup_sid_async(state->mem_ctx, &sid,
-					 sid2uid_lookup_sid_recv,
-					 state);
+	winbindd_lookupsid_async(state->mem_ctx, &sid,
+				 sid2uid_lookup_sid_recv, state);
+	return WINBINDD_PENDING;
 }
 
 static void sid2uid_lookup_sid_recv(void *private, BOOL success,
@@ -514,8 +463,9 @@ enum winbindd_result winbindd_uid_to_sid_async(struct winbindd_cli_state *state)
 	uid2sid_state->cli_state = state;
 	uid2sid_state->uid = state->request.data.uid;
 
-	return winbindd_uid2name_async(state->mem_ctx, state->request.data.uid,
-				       uid2sid_uid2name_recv, uid2sid_state);
+	winbindd_uid2name_async(state->mem_ctx, state->request.data.uid,
+				uid2sid_uid2name_recv, uid2sid_state);
+	return WINBINDD_PENDING;
 }
 
 static void uid2sid_uid2name_recv(void *private, BOOL success,
@@ -534,9 +484,9 @@ static void uid2sid_uid2name_recv(void *private, BOOL success,
 		return;
 	}
 
-	winbindd_lookup_name_async(state->cli_state->mem_ctx,
-				   find_our_domain()->name, username,
-				   uid2sid_lookupname_recv, state);
+	winbindd_lookupname_async(state->cli_state->mem_ctx,
+				  find_our_domain()->name, username,
+				  uid2sid_lookupname_recv, state);
 }
 
 static void uid2sid_lookupname_recv(void *private, BOOL success,
@@ -631,8 +581,9 @@ enum winbindd_result winbindd_gid_to_sid_async(struct winbindd_cli_state *state)
 	gid2sid_state->cli_state = state;
 	gid2sid_state->gid = state->request.data.gid;
 
-	return winbindd_gid2name_async(state->mem_ctx, state->request.data.gid,
-				       gid2sid_gid2name_recv, gid2sid_state);
+	winbindd_gid2name_async(state->mem_ctx, state->request.data.gid,
+				gid2sid_gid2name_recv, gid2sid_state);
+	return WINBINDD_PENDING;
 }
 
 static void gid2sid_gid2name_recv(void *private, BOOL success,
@@ -651,9 +602,9 @@ static void gid2sid_gid2name_recv(void *private, BOOL success,
 		return;
 	}
 
-	winbindd_lookup_name_async(state->cli_state->mem_ctx,
-				   find_our_domain()->name, username,
-				   gid2sid_lookupname_recv, state);
+	winbindd_lookupname_async(state->cli_state->mem_ctx,
+				  find_our_domain()->name, username,
+				  gid2sid_lookupname_recv, state);
 }
 
 static void gid2sid_lookupname_recv(void *private, BOOL success,
@@ -697,9 +648,10 @@ enum winbindd_result winbindd_allocate_rid_async(struct winbindd_cli_state *stat
 		return WINBINDD_ERROR;
 	}
 
-	return async_request(state->mem_ctx, idmap_child(),
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, idmap_child(),
+		      &state->request, &state->response,
+		      request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
 enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
@@ -724,9 +676,10 @@ enum winbindd_result winbindd_allocate_rid_and_gid_async(struct winbindd_cli_sta
 		return WINBINDD_ERROR;
 	}
 
-	return async_request(state->mem_ctx, idmap_child(),
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, idmap_child(),
+		      &state->request, &state->response,
+		      request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
 enum winbindd_result winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)

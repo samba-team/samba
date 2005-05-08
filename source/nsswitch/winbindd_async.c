@@ -3,6 +3,8 @@
 
    Async helpers for blocking functions
 
+   Copyright (C) Volker Lendecke 2005
+   
    The helpers always consist of three functions: 
 
    * A request setup function that takes the necessary parameters together
@@ -14,8 +16,6 @@
 
    * A worker function that is called inside the appropriate child process.
 
-   Copyright (C) Volker Lendecke 2005
-   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -50,19 +50,19 @@ struct do_async_state {
 
 static void do_async_recv(void *private, BOOL success)
 {
-	struct do_async_state *state = private;
+	struct do_async_state *state =
+		talloc_get_type_abort(private, struct do_async_state);
+
 	state->cont(state->mem_ctx, success, &state->response,
 		    state->c, state->private);
 }
 
-static enum winbindd_result do_async(TALLOC_CTX *mem_ctx,
-				     struct winbindd_child *child,
-				     const struct winbindd_request *request,
-				     void (*cont)(TALLOC_CTX *mem_ctx,
-						  BOOL success,
-						  struct winbindd_response *response,
-						  void *c, void *private),
-				     void *c, void *private)
+static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
+		     const struct winbindd_request *request,
+		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+				  struct winbindd_response *response,
+				  void *c, void *private),
+		     void *c, void *private)
 {
 	struct do_async_state *state;
 
@@ -70,7 +70,7 @@ static enum winbindd_result do_async(TALLOC_CTX *mem_ctx,
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(mem_ctx, False, NULL, c, private);
-		return WINBINDD_ERROR;
+		return;
 	}
 
 	state->mem_ctx = mem_ctx;
@@ -80,8 +80,8 @@ static enum winbindd_result do_async(TALLOC_CTX *mem_ctx,
 	state->c = c;
 	state->private = private;
 
-	return async_request(mem_ctx, child, &state->request, &state->response,
-			     do_async_recv, state);
+	async_request(mem_ctx, child, &state->request,
+		      &state->response, do_async_recv, state);
 }
 
 
@@ -90,15 +90,26 @@ static void idmap_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				   void *c, void *private)
 {
 	void (*cont)(void *priv, BOOL succ) = c;
-	cont(private, ((success) && (response->result == WINBINDD_OK)));
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger idmap_set_mapping\n"));
+		cont(private, False);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("idmap_set_mapping returned an error\n"));
+		cont(private, False);
+		return;
+	}
+
+	cont(private, True);
 }
 
-enum winbindd_result idmap_set_mapping_async(TALLOC_CTX *mem_ctx,
-					     const DOM_SID *sid, unid_t id,
-					     int id_type,
-					     void (*cont)(void *private,
-							  BOOL success),
-					     void *private)
+void idmap_set_mapping_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			     unid_t id, int id_type,
+			     void (*cont)(void *private, BOOL success),
+			     void *private)
 {
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
@@ -110,8 +121,8 @@ enum winbindd_result idmap_set_mapping_async(TALLOC_CTX *mem_ctx,
 	request.data.dual_idmapset.type = id_type;
 	sid_to_string(request.data.dual_idmapset.sid, sid);
 
-	return do_async(mem_ctx, idmap_child(), &request,
-			idmap_set_mapping_recv, cont, private);
+	do_async(mem_ctx, idmap_child(), &request, idmap_set_mapping_recv,
+		 cont, private);
 }
 
 enum winbindd_result winbindd_dual_idmapset(struct winbindd_cli_state *state)
@@ -141,23 +152,33 @@ static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  void *c, void *private)
 {
 	void (*cont)(void *priv, BOOL succ, const char *name) = c;
-	cont(private, ((success) && (response->result == WINBINDD_OK)),
-	     response->data.name.name);
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger uid2name\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("uid2name returned an error\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	cont(private, True, response->data.name.name);
 }
 
-enum winbindd_result winbindd_uid2name_async(TALLOC_CTX *mem_ctx,
-					     uid_t uid,
-					     void (*cont)(void *private,
-							  BOOL success,
-							  const char *name),
-					     void *private)
+void winbindd_uid2name_async(TALLOC_CTX *mem_ctx, uid_t uid,
+			     void (*cont)(void *private, BOOL success,
+					  const char *name),
+			     void *private)
 {
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_UID2NAME;
 	request.data.uid = uid;
-	return do_async(mem_ctx, idmap_child(), &request,
-			uid2name_recv, cont, private);
+	do_async(mem_ctx, idmap_child(), &request, uid2name_recv,
+		 cont, private);
 }
 
 enum winbindd_result winbindd_dual_uid2name(struct winbindd_cli_state *state)
@@ -184,23 +205,33 @@ static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  void *c, void *private)
 {
 	void (*cont)(void *priv, BOOL succ, const char *name) = c;
-	cont(private, ((success) && (response->result == WINBINDD_OK)),
-	     response->data.name.name);
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger gid2name\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("gid2name returned an error\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	cont(private, True, response->data.name.name);
 }
 
-enum winbindd_result winbindd_gid2name_async(TALLOC_CTX *mem_ctx,
-					     gid_t gid,
-					     void (*cont)(void *private,
-							  BOOL success,
-							  const char *name),
-					     void *private)
+void winbindd_gid2name_async(TALLOC_CTX *mem_ctx, gid_t gid,
+			     void (*cont)(void *private, BOOL success,
+					  const char *name),
+			     void *private)
 {
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GID2NAME;
 	request.data.gid = gid;
-	return do_async(mem_ctx, idmap_child(), &request,
-			gid2name_recv, cont, private);
+	do_async(mem_ctx, idmap_child(), &request, gid2name_recv,
+		 cont, private);
 }
 
 enum winbindd_result winbindd_dual_gid2name(struct winbindd_cli_state *state)
@@ -219,26 +250,35 @@ enum winbindd_result winbindd_dual_gid2name(struct winbindd_cli_state *state)
 }
 
 
-static void lookup_sid_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			    struct winbindd_response *response,
-			    void *c, void *private)
+static void lookupsid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			   struct winbindd_response *response,
+			   void *c, void *private)
 {
 	void (*cont)(void *priv, BOOL succ, const char *dom_name,
 		     const char *name, enum SID_NAME_USE type) = c;
 
-	cont(private, ((success) && (response->result == WINBINDD_OK)),
-	     response->data.name.dom_name, response->data.name.name,
-	     response->data.name.type);
+	if (!success) {
+		DEBUG(5, ("Could not trigger lookupsid\n"));
+		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("lookupsid returned an error\n"));
+		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
+	cont(private, True, response->data.name.dom_name,
+	     response->data.name.name, response->data.name.type);
 }
 
-enum winbindd_result winbindd_lookup_sid_async(TALLOC_CTX *mem_ctx,
-					       const DOM_SID *sid,
-					       void (*cont)(void *private,
-							    BOOL success,
-							    const char *dom_name,
-							    const char *name,
-							    enum SID_NAME_USE type),
-					       void *private)
+void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			      void (*cont)(void *private, BOOL success,
+					   const char *dom_name,
+					   const char *name,
+					   enum SID_NAME_USE type),
+			      void *private)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_request request;
@@ -248,27 +288,67 @@ enum winbindd_result winbindd_lookup_sid_async(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("Could not find domain for sid %s\n",
 			  sid_string_static(sid)));
 		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
-		return WINBINDD_ERROR;
+		return;
 	}
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_LOOKUPSID;
 	fstrcpy(request.data.sid, sid_string_static(sid));
 
-	return do_async(mem_ctx, &domain->child, &request,
-			lookup_sid_recv, cont, private);
+	do_async(mem_ctx, &domain->child, &request, lookupsid_recv,
+		 cont, private);
 }
 
+enum winbindd_result winbindd_dual_lookupsid(struct winbindd_cli_state *state)
+{
+	enum SID_NAME_USE type;
+	DOM_SID sid;
+	fstring name;
+	fstring dom_name;
 
-static void lookup_name_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			     struct winbindd_response *response,
-			     void *c, void *private)
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
+		  state->request.data.sid));
+
+	/* Lookup sid from PDC using lsa_lookup_sids() */
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Lookup the sid */
+
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, dom_name, name,
+					 &type)) {
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(state->response.data.name.dom_name, dom_name);
+	fstrcpy(state->response.data.name.name, name);
+	state->response.data.name.type = type;
+
+	return WINBINDD_OK;
+}
+
+static void lookupname_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			    struct winbindd_response *response,
+			    void *c, void *private)
 {
 	void (*cont)(void *priv, BOOL succ, const DOM_SID *sid,
 		     enum SID_NAME_USE type) = c;
 	DOM_SID sid;
 
-	if ((!success) || (response->result != WINBINDD_OK)) {
+	if (!success) {
+		DEBUG(5, ("Could not trigger lookup_name\n"));
+		cont(private, False, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("lookup_name returned an error\n"));
 		cont(private, False, NULL, SID_NAME_UNKNOWN);
 		return;
 	}
@@ -283,14 +363,12 @@ static void lookup_name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	cont(private, True, &sid, response->data.sid.type);
 }
 
-enum winbindd_result winbindd_lookup_name_async(TALLOC_CTX *mem_ctx,
-					       const char *dom_name,
-					       const char *name,
-					       void (*cont)(void *private,
-							    BOOL success,
-							    const DOM_SID *sid,
-							    enum SID_NAME_USE type),
-					       void *private)
+void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
+			       const char *name,
+			       void (*cont)(void *private, BOOL success,
+					    const DOM_SID *sid,
+					    enum SID_NAME_USE type),
+			       void *private)
 {
 	struct winbindd_request request;
 	struct winbindd_domain *domain;
@@ -300,7 +378,7 @@ enum winbindd_result winbindd_lookup_name_async(TALLOC_CTX *mem_ctx,
 	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain for name %s\n", dom_name));
 		cont(private, False, NULL, SID_NAME_UNKNOWN);
-		return WINBINDD_ERROR;
+		return;
 	}
 
 	ZERO_STRUCT(request);
@@ -308,8 +386,54 @@ enum winbindd_result winbindd_lookup_name_async(TALLOC_CTX *mem_ctx,
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
 
-	return do_async(mem_ctx, &domain->child, &request,
-			lookup_name_recv, cont, private);
+	do_async(mem_ctx, &domain->child, &request, lookupname_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_lookupname(struct winbindd_cli_state *state)
+{
+	enum SID_NAME_USE type;
+	char *name_domain, *name_user;
+	DOM_SID sid;
+	struct winbindd_domain *domain;
+	char *p;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+
+	/* cope with the name being a fully qualified name */
+	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	if (p) {
+		*p = 0;
+		name_domain = state->request.data.name.name;
+		name_user = p+1;
+	} else {
+		name_domain = state->request.data.name.dom_name;
+		name_user = state->request.data.name.name;
+	}
+
+	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
+		  name_domain, lp_winbind_separator(), name_user));
+
+	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
+		DEBUG(0, ("could not find domain entry for domain %s\n", 
+			  name_domain));
+		return WINBINDD_ERROR;
+	}
+
+	/* Lookup name from PDC using lsa_lookup_names() */
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
+					 name_user, &sid, &type)) {
+		return WINBINDD_ERROR;
+	}
+
+	sid_to_string(state->response.data.sid.sid, &sid);
+	state->response.data.sid.type = type;
+
+	return WINBINDD_OK;
 }
 
 static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
@@ -366,13 +490,21 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	int num_sids = 0;
 
 	if (!success) {
+		DEBUG(5, ("Could not trigger getsidaliases\n"));
 		cont(private, success, NULL, 0);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("getsidaliases returned an error\n"));
+		cont(private, False, NULL, 0);
 		return;
 	}
 
 	aliases_str = response->extra_data;
 
 	if (aliases_str == NULL) {
+		DEBUG(10, ("getsidaliases return 0 SIDs\n"));
 		cont(private, True, NULL, 0);
 		return;
 	}
@@ -522,13 +654,10 @@ static void gettoken_recvaliases(void *private, BOOL success,
 				 int num_aliases);
 				 
 
-enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
-					     const DOM_SID *user_sid,
-					     void (*cont)(void *private,
-							  BOOL success,
-							  DOM_SID *sids,
-							  int num_sids),
-					     void *private)
+void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
+			     void (*cont)(void *private, BOOL success,
+					  DOM_SID *sids, int num_sids),
+			     void *private)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_request request;
@@ -537,7 +666,8 @@ enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
 	state = TALLOC_P(mem_ctx, struct gettoken_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
+		cont(private, False, NULL, 0);
+		return;
 	}
 
 	state->mem_ctx = mem_ctx;
@@ -551,32 +681,36 @@ enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
 	if (domain == NULL) {
 		DEBUG(5, ("Could not find domain from SID %s\n",
 			  sid_string_static(user_sid)));
-		return WINBINDD_ERROR;
+		cont(private, False, NULL, 0);
+		return;
 	}
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_GETUSERDOMGROUPS;
 	fstrcpy(request.data.sid, sid_string_static(user_sid));
 
-	return do_async(mem_ctx, &domain->child, &request,
-			gettoken_recvdomgroups, NULL, state);
+	do_async(mem_ctx, &domain->child, &request, gettoken_recvdomgroups,
+		 NULL, state);
 }
 
 static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 				   struct winbindd_response *response,
 				   void *c, void *private)
 {
-	struct gettoken_state *state = private;
+	struct gettoken_state *state =
+		talloc_get_type_abort(private, struct gettoken_state);
 	char *sids_str;
 	
 	if (!success) {
-		state->cont(state->private, success, NULL, 0);
+		DEBUG(10, ("Could not get domain groups\n"));
+		state->cont(state->private, False, NULL, 0);
 		return;
 	}
 
 	sids_str = response->extra_data;
 
 	if (sids_str == NULL) {
+		DEBUG(10, ("Received no domain groups\n"));
 		state->cont(state->private, True, NULL, 0);
 		return;
 	}
@@ -595,6 +729,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 	}
 
 	if (state->alias_domain == NULL) {
+		DEBUG(10, ("Don't expand domain local groups\n"));
 		state->cont(state->private, True, state->sids,
 			    state->num_sids);
 		return;
@@ -613,6 +748,7 @@ static void gettoken_recvaliases(void *private, BOOL success,
 	int i;
 
 	if (!success) {
+		DEBUG(10, ("Could not receive domain local groups\n"));
 		state->cont(state->private, False, NULL, 0);
 		return;
 	}
@@ -623,6 +759,7 @@ static void gettoken_recvaliases(void *private, BOOL success,
 
 	if (state->builtin_domain != NULL) {
 		struct winbindd_domain *builtin_domain = state->builtin_domain;
+		DEBUG(10, ("Expanding our own local groups\n"));
 		state->builtin_domain = NULL;
 		winbindd_getsidaliases_async(builtin_domain, state->mem_ctx,
 					     state->sids, state->num_sids,
@@ -657,6 +794,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	gid_t gid;
 
 	if (idmap_proxyonly()) {
+		DEBUG(10, ("idmap proxy only\n"));
 		cont(private, False, 0);
 		return;
 	}
@@ -682,12 +820,7 @@ void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	state->cont = cont;
 	state->private = private;
 
-	if (winbindd_lookup_sid_async(mem_ctx, sid, sid2gid_lookup_sid_recv,
-				      state) == WINBINDD_ERROR) {
-		DEBUG(0, ("Could not trigger lookupsid\n"));
-		cont(private, False, 0);
-		return;
-	}
+	winbindd_lookupsid_async(mem_ctx, sid, sid2gid_lookup_sid_recv, state);
 }
 
 static void sid2gid_lookup_sid_recv(void *private, BOOL success,
@@ -697,9 +830,14 @@ static void sid2gid_lookup_sid_recv(void *private, BOOL success,
 	struct sid2gid_state *state = private;
 	struct winbindd_request request;
 
-	if ((!success) ||
-	    (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
-	      (type != SID_NAME_WKN_GRP)))) {
+	if (!success) {
+		DEBUG(5, ("Could not trigger lookup_sid\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	if (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	     (type != SID_NAME_WKN_GRP))) {
 		DEBUG(5, ("SID is not a group\n"));
 		state->cont(state->private, False, 0);
 		return;
@@ -721,6 +859,7 @@ static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	struct sid2gid_state *state = private;
 
 	if (!success) {
+		DEBUG(5, ("Could not trigger sid2gid\n"));
 		state->cont(state->private, False, 0);
 		return;
 	}
@@ -752,6 +891,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	uid_t uid;
 
 	if (idmap_proxyonly()) {
+		DEBUG(10, ("idmap proxy only\n"));
 		cont(private, False, 0);
 		return;
 	}
@@ -777,12 +917,7 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	state->cont = cont;
 	state->private = private;
 
-	if (winbindd_lookup_sid_async(mem_ctx, sid, sid2uid_lookup_sid_recv,
-				      state) == WINBINDD_ERROR) {
-		DEBUG(0, ("Could not trigger lookupsid\n"));
-		cont(private, False, 0);
-		return;
-	}
+	winbindd_lookupsid_async(mem_ctx, sid, sid2uid_lookup_sid_recv, state);
 }
 
 static void sid2uid_lookup_sid_recv(void *private, BOOL success,
@@ -792,8 +927,13 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 	struct sid2uid_state *state = private;
 	struct winbindd_request request;
 
-	if ((!success) ||
-	    ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))) {
+	if (!success) {
+		DEBUG(5, ("Could not trigger lookup_sid\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER)) {
 		DEBUG(5, ("SID is not a user\n"));
 		state->cont(state->private, False, 0);
 		return;
@@ -815,6 +955,7 @@ static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	struct sid2uid_state *state = private;
 
 	if (!success) {
+		DEBUG(5, ("Could not trigger sid2uid\n"));
 		state->cont(state->private, False, 0);
 		return;
 	}
@@ -830,6 +971,7 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		     const char *full_name, uint32 group_rid) = c;
 
 	if (!success) {
+		DEBUG(5, ("Could not trigger query_user\n"));
 		cont(private, False, NULL, NULL, -1);
 		return;
 	}
@@ -839,20 +981,19 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	     response->data.user_info.group_rid);
 }
 
-enum winbindd_result query_user_async(TALLOC_CTX *mem_ctx,
-				      struct winbindd_domain *domain,
-				      const DOM_SID *sid,
-				      void (*cont)(void *private,
-						   BOOL success,
-						   const char *acct_name,
-						   const char *full_name,
-						   uint32 group_rid),
-				      void *private)
+void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+		      const DOM_SID *sid,
+		      void (*cont)(void *private, BOOL success,
+				   const char *acct_name,
+				   const char *full_name,
+				   uint32 group_rid),
+		      void *private)
 {
 	struct winbindd_request request;
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_USERINFO;
 	sid_to_string(request.data.sid, sid);
-	return do_async(mem_ctx, &domain->child, &request,
-			query_user_recv, cont, private);
+	do_async(mem_ctx, &domain->child, &request, query_user_recv,
+		 cont, private);
 }
+

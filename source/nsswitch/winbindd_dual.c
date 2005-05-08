@@ -265,13 +265,11 @@ static void async_request_sent(void *private, BOOL success);
 static void async_reply_recv(void *private, BOOL success);
 static void schedule_async_request(struct winbindd_child *child);
 
-enum winbindd_result async_request(TALLOC_CTX *mem_ctx,
-				   struct winbindd_child *child,
-				   struct winbindd_request *request,
-				   struct winbindd_response *response,
-				   void (*continuation)(void *private,
-							BOOL success),
-				   void *private)
+void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
+		   struct winbindd_request *request,
+		   struct winbindd_response *response,
+		   void (*continuation)(void *private, BOOL success),
+		   void *private)
 {
 	struct winbindd_async_request *state, *tmp;
 
@@ -279,7 +277,8 @@ enum winbindd_result async_request(TALLOC_CTX *mem_ctx,
 
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
+		continuation(private, False);
+		return;
 	}
 
 	state->mem_ctx = mem_ctx;
@@ -293,12 +292,13 @@ enum winbindd_result async_request(TALLOC_CTX *mem_ctx,
 
 	schedule_async_request(child);
 
-	return WINBINDD_PENDING;
+	return;
 }
 
 static void async_request_sent(void *private, BOOL success)
 {
-	struct winbindd_async_request *state = private;
+	struct winbindd_async_request *state =
+		talloc_get_type_abort(private, struct winbindd_async_request);
 
 	if (!success) {
 		DEBUG(5, ("Could not send async request"));
@@ -319,7 +319,8 @@ static void async_request_sent(void *private, BOOL success)
 
 static void async_reply_recv(void *private, BOOL success)
 {
-	struct winbindd_async_request *state = private;
+	struct winbindd_async_request *state =
+		talloc_get_type_abort(private, struct winbindd_async_request);
 	struct winbindd_child *child = state->child;
 
 	state->response->length = sizeof(struct winbindd_response);
@@ -367,25 +368,26 @@ struct domain_request_state {
 
 static void domain_init_recv(void *private, BOOL success);
 
-enum winbindd_result async_domain_request(TALLOC_CTX *mem_ctx,
-					  struct winbindd_domain *domain,
-					  struct winbindd_request *request,
-					  struct winbindd_response *response,
-					  void (*continuation)(void *private,
-							       BOOL success),
-					  void *private)
+void async_domain_request(TALLOC_CTX *mem_ctx,
+			  struct winbindd_domain *domain,
+			  struct winbindd_request *request,
+			  struct winbindd_response *response,
+			  void (*continuation)(void *private, BOOL success),
+			  void *private)
 {
 	struct domain_request_state *state;
 
-	if (domain->initialized)
-		return async_request(mem_ctx, &domain->child,
-				     request, response,
-				     continuation, private);
+	if (domain->initialized) {
+		async_request(mem_ctx, &domain->child, request, response,
+			      continuation, private);
+		return;
+	}
 
 	state = TALLOC_P(mem_ctx, struct domain_request_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
+		continuation(private, False);
+		return;
 	}
 
 	state->mem_ctx = mem_ctx;
@@ -395,35 +397,36 @@ enum winbindd_result async_domain_request(TALLOC_CTX *mem_ctx,
 	state->continuation = continuation;
 	state->private = private;
 
-	return init_child_connection(domain, domain_init_recv, state);
+	init_child_connection(domain, domain_init_recv, state);
 }
 
 static void domain_init_recv(void *private, BOOL success)
 {
-	struct domain_request_state *state = private;
+	struct domain_request_state *state =
+		talloc_get_type_abort(private, struct domain_request_state);
 
 	if (!success) {
+		DEBUG(5, ("Domain init returned an error\n"));
 		state->continuation(state->private, False);
 		return;
 	}
 
-	if (async_request(state->mem_ctx, &state->domain->child,
-			  state->request, state->response,
-			  state->continuation, state->private)
-	    != WINBINDD_PENDING)
-		state->continuation(state->private, False);
+	async_request(state->mem_ctx, &state->domain->child,
+		      state->request, state->response,
+		      state->continuation, state->private);
 }
 
 static struct winbindd_dispatch_table child_dispatch_table[] = {
 	
-	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains,
+	{ WINBINDD_LOOKUPSID, winbindd_dual_lookupsid, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPNAME, winbindd_dual_lookupname, "LOOKUPNAME" },
+	{ WINBINDD_LIST_TRUSTDOM, winbindd_dual_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
 	{ WINBINDD_INIT_CONNECTION, winbindd_init_connection,
 	  "INIT_CONNECTION" },
-	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
-	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
+	{ WINBINDD_GETDCNAME, winbindd_dual_getdcname, "GETDCNAME" },
+	{ WINBINDD_SHOW_SEQUENCE, winbindd_dual_show_sequence,
+	  "SHOW_SEQUENCE" },
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct,

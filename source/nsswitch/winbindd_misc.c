@@ -34,9 +34,10 @@ enum winbindd_result winbindd_check_machine_acct_async(struct winbindd_cli_state
 	DEBUG(3, ("[%5lu]: check machine account\n",
 		  (unsigned long)state->pid));
 
-	return async_request(state->mem_ctx, &find_our_domain()->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, &find_our_domain()->child,
+		      &state->request, &state->response,
+		      request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
@@ -103,7 +104,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-enum winbindd_result winbindd_list_trusted_domains_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
@@ -112,12 +113,13 @@ enum winbindd_result winbindd_list_trusted_domains_async(struct winbindd_cli_sta
 
 	domain = find_our_domain();
 
-	return async_request(state->mem_ctx, &domain->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, &domain->child,
+		      &state->request, &state->response,
+		      request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	uint32 i, num_domains;
@@ -162,7 +164,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 	return WINBINDD_OK;
 }
 
-enum winbindd_result winbindd_getdcname_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
 {
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
@@ -170,12 +172,13 @@ enum winbindd_result winbindd_getdcname_async(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	return async_request(state->mem_ctx, &find_our_domain()->child,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
+	async_request(state->mem_ctx, &find_our_domain()->child,
+		      &state->request, &state->response,
+		      request_finished_cont, state);
+	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_getdcname(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring dcname_slash;
@@ -234,8 +237,7 @@ struct sequence_state {
 
 static void sequence_recv(void *private, BOOL success);
 
-enum winbindd_result winbindd_show_sequence_async(
-	struct winbindd_cli_state *state)
+enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 {
 	struct sequence_state *seq;
 
@@ -248,9 +250,10 @@ enum winbindd_result winbindd_show_sequence_async(
 			state->request.domain_name);
 		if (domain == NULL)
 			return WINBINDD_ERROR;
-		return async_domain_request(state->mem_ctx, domain,
-					    &state->request, &state->response,
-					    request_finished_cont, state);
+		async_domain_request(state->mem_ctx, domain,
+				     &state->request, &state->response,
+				     request_finished_cont, state);
+		return WINBINDD_PENDING;
 	}
 
 	/* Ask all domains in sequence, collect the results in sequence_recv */
@@ -284,9 +287,10 @@ enum winbindd_result winbindd_show_sequence_async(
 	seq->request->cmd = WINBINDD_SHOW_SEQUENCE;
 	fstrcpy(seq->request->domain_name, seq->domain->name);
 
-	return async_domain_request(state->mem_ctx, seq->domain,
-				    seq->request, seq->response,
-				    sequence_recv, seq);
+	async_domain_request(state->mem_ctx, seq->domain,
+			     seq->request, seq->response,
+			     sequence_recv, seq);
+	return WINBINDD_PENDING;
 }
 
 static void sequence_recv(void *private, BOOL success)
@@ -335,7 +339,7 @@ static void sequence_recv(void *private, BOOL success)
 /* This is the child-only version of --sequence. It only allows for a single
  * domain (ie "our" one) to be displayed. */
 
-enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_show_sequence(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
