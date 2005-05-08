@@ -65,7 +65,6 @@ files_struct *open_fake_file_shared1(enum FAKE_FILE_TYPE fake_file_type, connect
 	fsp->inode = psbuf->st_ino;
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
-	fsp->size = psbuf->st_size;
 	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
