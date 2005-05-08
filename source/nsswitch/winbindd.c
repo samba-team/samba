@@ -231,16 +231,16 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM, winbindd_getpwnam_async, "GETPWNAM" },
-	{ WINBINDD_GETPWUID, winbindd_getpwuid_async, "GETPWUID" },
+	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
+	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
-	{ WINBINDD_GETGROUPS, winbindd_getgroups_async, "GETGROUPS" },
-	{ WINBINDD_GETUSERSIDS, winbindd_getusersids_async, "GETUSERSIDS" },
-	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups_async,
+	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
+	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
+	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
 	  "GETUSERDOMGROUPS" },
 
 	/* Group functions */
@@ -254,8 +254,8 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 
 	/* PAM auth functions */
 
-	{ WINBINDD_PAM_AUTH, winbindd_pam_auth_async, "PAM_AUTH" },
-	{ WINBINDD_PAM_AUTH_CRAP, winbindd_crap_auth_async, "AUTH_CRAP" },
+	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
+	{ WINBINDD_PAM_AUTH_CRAP, winbindd_crap_auth, "AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */
@@ -274,19 +274,20 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	/* Lookup related functions */
 
 	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
-	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid_async, "SID_TO_GID" },
-	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid_async, "UID_TO_SID" },
-	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid_async, "GID_TO_SID" },
-	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid_async, "ALLOCATE_RID" },
-	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid_async,
+	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
+	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
+	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
+	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
+	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
 	  "ALLOCATE_RID_AND_GID" },
 
 	/* Miscellaneous */
 
-	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct_async, "CHECK_MACHACC" },
+	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
-	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
+	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
+	  "INTERFACE_VERSION" },
 	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },

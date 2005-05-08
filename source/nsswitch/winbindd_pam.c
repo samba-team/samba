@@ -185,7 +185,7 @@ static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
  Authenticate a user with a clear text password
 **********************************************************************/
 
-enum winbindd_result winbindd_pam_auth_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
@@ -224,7 +224,7 @@ enum winbindd_result winbindd_pam_auth_async(struct winbindd_cli_state *state)
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_dual_pam_auth(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
 	fstring name_domain, name_user;
@@ -499,7 +499,7 @@ done:
  Challenge Response Authentication Protocol 
 **********************************************************************/
 
-enum winbindd_result winbindd_crap_auth_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_crap_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain = NULL;
 	const char *domain_name = NULL;
@@ -563,7 +563,7 @@ enum winbindd_result winbindd_crap_auth_async(struct winbindd_cli_state *state)
 }
 
 
-enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
+enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
 	const char *srv_name_slash;

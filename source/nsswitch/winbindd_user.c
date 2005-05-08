@@ -170,8 +170,8 @@ static void getpwsid_queryuser_recv(void *private, BOOL success,
 static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid);
 static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid);
 
-static void winbindd_getpwsid_async(struct winbindd_cli_state *state,
-				    const DOM_SID *sid)
+static void winbindd_getpwsid(struct winbindd_cli_state *state,
+			      const DOM_SID *sid)
 {
 	struct getpwsid_state *s;
 
@@ -311,7 +311,7 @@ static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid)
 static void getpwnam_name2sid_recv(void *private, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type);
 
-enum winbindd_result winbindd_getpwnam_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring domname, username;
@@ -372,12 +372,12 @@ static void getpwnam_name2sid_recv(void *private, BOOL success,
 		return;
 	}
 
-	winbindd_getpwsid_async(state, sid);
+	winbindd_getpwsid(state, sid);
 }
 
 /* Return a password structure given a uid number */
 
-enum winbindd_result winbindd_getpwuid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	NTSTATUS status;
@@ -400,7 +400,7 @@ enum winbindd_result winbindd_getpwuid_async(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	winbindd_getpwsid_async(state, &user_sid);
+	winbindd_getpwsid(state, &user_sid);
 	return WINBINDD_PENDING;
 }
 

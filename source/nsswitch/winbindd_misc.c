@@ -29,7 +29,7 @@
 
 /* Check the machine account password is valid */
 
-enum winbindd_result winbindd_check_machine_acct_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: check machine account\n",
 		  (unsigned long)state->pid));
@@ -40,7 +40,7 @@ enum winbindd_result winbindd_check_machine_acct_async(struct winbindd_cli_state
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         int num_retries = 0;

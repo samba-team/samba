@@ -881,7 +881,7 @@ static void getgroups_tokensids_recv(void *private, BOOL success,
 				     DOM_SID *token_sids, int num_token_sids);
 static void getgroups_sid2gid_recv(void *private, BOOL success, gid_t gid);
 
-enum winbindd_result winbindd_getgroups_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 {
 	struct getgroups_state *s;
 
@@ -1021,7 +1021,7 @@ static void getgroups_sid2gid_recv(void *private, BOOL success, gid_t gid)
 static void getusersids_recv(void *private, BOOL success, DOM_SID *sids,
 			     int num_sids);
 
-enum winbindd_result winbindd_getusersids_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 {
 	DOM_SID *user_sid;
 
@@ -1084,7 +1084,7 @@ static void getusersids_recv(void *private, BOOL success, DOM_SID *sids,
 	request_finished(state);
 }
 
-enum winbindd_result winbindd_getuserdomgroups_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
@@ -1110,7 +1110,7 @@ enum winbindd_result winbindd_getuserdomgroups_async(struct winbindd_cli_state *
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;

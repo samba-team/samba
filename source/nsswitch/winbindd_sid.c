@@ -290,7 +290,7 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_cli_state *state)
 static void winbindd_sid2gid_recv(void *private, BOOL success,
 				  gid_t gid);
 
-enum winbindd_result winbindd_sid_to_gid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
@@ -420,7 +420,7 @@ static void uid2sid_lookupname_recv(void *private, BOOL success,
 				    enum SID_NAME_USE type);
 static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success);
 
-enum winbindd_result winbindd_uid_to_sid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
@@ -538,7 +538,7 @@ static void gid2sid_lookupname_recv(void *private, BOOL success,
 				    enum SID_NAME_USE type);
 static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success);
 
-enum winbindd_result winbindd_gid_to_sid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
@@ -640,7 +640,7 @@ static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success)
 	request_finished(state->cli_state);
 }
 
-enum winbindd_result winbindd_allocate_rid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
@@ -654,7 +654,7 @@ enum winbindd_result winbindd_allocate_rid_async(struct winbindd_cli_state *stat
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_cli_state *state)
 {
 	/* We tell idmap to always allocate a user RID. There might be a good
 	 * reason to keep RID allocation for users to even and groups to
@@ -668,7 +668,7 @@ enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-enum winbindd_result winbindd_allocate_rid_and_gid_async(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
@@ -682,7 +682,7 @@ enum winbindd_result winbindd_allocate_rid_and_gid_async(struct winbindd_cli_sta
 	return WINBINDD_PENDING;
 }
 
-enum winbindd_result winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	DOM_SID sid;

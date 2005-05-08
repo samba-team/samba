@@ -425,7 +425,7 @@ static void init_child_recv(void *private, BOOL success)
 	talloc_destroy(state->mem_ctx);
 }
 
-enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_dual_init_connection(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	struct in_addr ipaddr;
