@@ -31,12 +31,20 @@
 
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
+	struct winbindd_domain *domain;
+
 	DEBUG(3, ("[%5lu]: check machine account\n",
 		  (unsigned long)state->pid));
 
-	async_request(state->mem_ctx, &find_our_domain()->child,
-		      &state->request, &state->response,
-		      request_finished_cont, state);
+	domain = find_our_domain();
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
+		return WINBINDD_ERROR;
+	}
+
+	async_domain_request(state->mem_ctx, domain,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
 	return WINBINDD_PENDING;
 }
 
@@ -113,9 +121,9 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 
 	domain = find_our_domain();
 
-	async_request(state->mem_ctx, &domain->child,
-		      &state->request, &state->response,
-		      request_finished_cont, state);
+	async_domain_request(state->mem_ctx, domain,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
 	return WINBINDD_PENDING;
 }
 
@@ -166,15 +174,24 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_cli_stat
 
 enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
 {
+	struct winbindd_domain *domain;
+
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	async_request(state->mem_ctx, &find_our_domain()->child,
-		      &state->request, &state->response,
-		      request_finished_cont, state);
+	domain = find_our_domain();
+
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
+		return WINBINDD_ERROR;
+	}
+
+	async_domain_request(state->mem_ctx, domain,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
 	return WINBINDD_PENDING;
 }
 

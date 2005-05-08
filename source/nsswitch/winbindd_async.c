@@ -84,6 +84,32 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		      &state->response, do_async_recv, state);
 }
 
+static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+			    const struct winbindd_request *request,
+			    void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+					 struct winbindd_response *response,
+					 void *c, void *private),
+			    void *c, void *private)
+{
+	struct do_async_state *state;
+
+	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		cont(mem_ctx, False, NULL, c, private);
+		return;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->request = *request;
+	state->request.length = sizeof(state->request);
+	state->cont = cont;
+	state->c = c;
+	state->private = private;
+
+	async_domain_request(mem_ctx, domain, &state->request,
+			     &state->response, do_async_recv, state);
+}
 
 static void idmap_set_mapping_recv(TALLOC_CTX *mem_ctx, BOOL success,
 				   struct winbindd_response *response,
@@ -295,8 +321,8 @@ void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	request.cmd = WINBINDD_LOOKUPSID;
 	fstrcpy(request.data.sid, sid_string_static(sid));
 
-	do_async(mem_ctx, &domain->child, &request, lookupsid_recv,
-		 cont, private);
+	do_async_domain(mem_ctx, domain, &request, lookupsid_recv,
+			cont, private);
 }
 
 enum winbindd_result winbindd_dual_lookupsid(struct winbindd_cli_state *state)
@@ -386,8 +412,8 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx, const char *dom_name,
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
 
-	do_async(mem_ctx, &domain->child, &request, lookupname_recv,
-		 cont, private);
+	do_async_domain(mem_ctx, domain, &request, lookupname_recv,
+			cont, private);
 }
 
 enum winbindd_result winbindd_dual_lookupname(struct winbindd_cli_state *state)
@@ -552,8 +578,8 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 	fstrcpy(request.domain_name, domain->name);
 	fstrcpy(request.data.dual_sidaliases.cache_key, keystr);
 
-	do_async(mem_ctx, &domain->child, &request, getsidaliases_recv,
-		 cont, private);
+	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
+			cont, private);
 }
 
 enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_cli_state *state)
@@ -689,8 +715,8 @@ void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 	request.cmd = WINBINDD_GETUSERDOMGROUPS;
 	fstrcpy(request.data.sid, sid_string_static(user_sid));
 
-	do_async(mem_ctx, &domain->child, &request, gettoken_recvdomgroups,
-		 NULL, state);
+	do_async_domain(mem_ctx, domain, &request, gettoken_recvdomgroups,
+			NULL, state);
 }
 
 static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
@@ -993,7 +1019,7 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_USERINFO;
 	sid_to_string(request.data.sid, sid);
-	do_async(mem_ctx, &domain->child, &request, query_user_recv,
-		 cont, private);
+	do_async_domain(mem_ctx, domain, &request, query_user_recv,
+			cont, private);
 }
 

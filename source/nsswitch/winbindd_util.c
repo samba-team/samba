@@ -221,7 +221,8 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 static void trustdom_recv(void *private, BOOL success)
 {
 	extern struct winbindd_methods cache_methods;
-	struct trustdom_state *state = private;
+	struct trustdom_state *state =
+		talloc_get_type_abort(private, struct trustdom_state);
 	struct winbindd_response *response = state->response;
 	char *p;
 
@@ -375,7 +376,8 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 
 static void init_child_getdc_recv(void *private, BOOL success)
 {
-	struct init_child_state *state = private;
+	struct init_child_state *state =
+		talloc_get_type_abort(private, struct init_child_state);
 	const char *dcname = "";
 
 	DEBUG(10, ("Received getdcname response\n"));
@@ -396,7 +398,8 @@ static void init_child_getdc_recv(void *private, BOOL success)
 
 static void init_child_recv(void *private, BOOL success)
 {
-	struct init_child_state *state = private;
+	struct init_child_state *state =
+		talloc_get_type_abort(private, struct init_child_state);
 
 	if ((!success) || (state->response->result != WINBINDD_OK)) {
 		DEBUG(3, ("Could not init child\n"));
