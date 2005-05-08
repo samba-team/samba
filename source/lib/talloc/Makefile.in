@@ -5,7 +5,8 @@ includedir = @includedir@
 libdir = @libdir@
 mandir = @mandir@
 XSLTPROC = @XSLTPROC@
-INSTALLCMD=@INSTALL@
+INSTALLCMD = @INSTALL@
+CC = @CC@
 
 CFLAGS = $(OPT)
 
