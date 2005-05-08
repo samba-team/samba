@@ -2190,21 +2190,18 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	maxcount = MIN(65535,maxcount);
 
 	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-		SMB_OFF_T size = fsp->size;
-		SMB_OFF_T sizeneeded = startpos + maxcount;
+		SMB_STRUCT_STAT st;
+		SMB_OFF_T size = 0;
   
-		if (size < sizeneeded) {
-			SMB_STRUCT_STAT st;
-			if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0)
-				size = st.st_size;
-			if (!fsp->can_write) 
-				fsp->size = size;
+		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
+			size = st.st_size;
 		}
 
-		if (startpos >= size)
+		if (startpos >= size) {
 			nread = 0;
-		else
+		} else {
 			nread = MIN(maxcount,(size - startpos));	  
+		}
 	}
 
 #if 0 /* mincount appears to be ignored in a W2K server. JRA. */
