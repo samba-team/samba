@@ -1,4 +1,9 @@
-2005-05-07  Love  <lha@kth.se>
+2005-05-09  Love  <lha@kth.se>
+
+	* lib/krb5/kuserok.c (krb5_kuserok): use POSIX_GETPWNAM_R instead
+	of HAVE_GETPWNAM_R From: Dave Love <d.love@dl.ac.uk>
+
+2005-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/addr_families.c (krb5_print_address): catch when the
 	unknown adress don't fit. From Björn Sandell <biorn@dce.chalmers.se>
