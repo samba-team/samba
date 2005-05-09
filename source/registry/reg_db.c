@@ -44,10 +44,56 @@ static BOOL init_registry_data( void )
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	regsubkey_ctr_addkey( &subkeys, "SYSTEM" );
+	regsubkey_ctr_addkey( &subkeys, "SOFTWARE" ); 
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
-		
+
+
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE" );
+	regsubkey_ctr_addkey( &subkeys, "Microsoft" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+	regsubkey_ctr_destroy( &subkeys );
+
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft" );
+	regsubkey_ctr_addkey( &subkeys, "Windows NT" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+	regsubkey_ctr_destroy( &subkeys );
+
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT" );
+	regsubkey_ctr_addkey( &subkeys, "CurrentVersion" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+	regsubkey_ctr_destroy( &subkeys );
+
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+
+
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion" );
+	regsubkey_ctr_addkey( &subkeys, "SystemRoot" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+	regsubkey_ctr_destroy( &subkeys );
+
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/SystemRoot" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+
+
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM" );
@@ -65,13 +111,6 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 
-#ifdef REG_TEST_CODE
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-#endif
-
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
@@ -81,15 +120,22 @@ static BOOL init_registry_data( void )
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 
+	regsubkey_ctr_init( &subkeys ); 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/ProductOptions" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys ); /* added */
+
+	/* ProductType is a VALUE under ProductOptions */
 
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services" );
 	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
+	regsubkey_ctr_addkey( &subkeys, "Tcpip" );
+	regsubkey_ctr_addkey( &subkeys, "Eventlog" ); 
+
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
@@ -101,11 +147,29 @@ static BOOL init_registry_data( void )
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
-		
+
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon/Parameters" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+
+	regsubkey_ctr_init( &subkeys ); /*added */
+	pstrcpy( keyname, KEY_HKLM );  /*added */
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Tcpip" ); 
+	regsubkey_ctr_addkey( &subkeys, "Parameters" );  
+	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
+		return False; 
+	regsubkey_ctr_destroy( &subkeys ); 
+		
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Tcpip/Parameters" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
+		return False;
+
+	pstrcpy( keyname, KEY_HKLM ); 
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Eventlog" ); 
+	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
+		return False; 
 	
 	/* HKEY_USER */
 		
@@ -290,7 +354,39 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 
 int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
 {
-	return 0;
+	UNISTR2 data;
+	int    num_vals;
+	char   *hname;
+	fstring mydomainname;
+
+	DEBUG(10,("regdb_fetch_reg_values: Looking for value of key [%s] \n", key));
+
+	num_vals = 0;
+
+	if ( strequal(key, "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" ) ) {
+		DEBUG(10,("regdb_fetch_reg_values: Supplying SystemRoot \n"));
+		init_unistr2( &data, "c:\\Windows", UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "SystemRoot",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		num_vals = 1;
+	} else if ( strequal(key, "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" ) ) {
+		DEBUG(10,("regdb_fetch_reg_values: Supplying ProductType \n"));
+		init_unistr2( &data, "WinNT", UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "ProductType",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		num_vals = 1;
+	} else if ( strequal(key, "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters" ) ) {
+		DEBUG(10,("regdb_fetch_reg_values: Supplying Hostname & Domain Name\n"));
+		hname = SMB_STRDUP(myhostname());
+		get_mydnsdomname(mydomainname);
+		init_unistr2( &data, hname, UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "Hostname",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		init_unistr2( &data, mydomainname, UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "Domain",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		num_vals = 2;
+	}
+
+
+
+	return num_vals;
 }
 
 /***********************************************************************
