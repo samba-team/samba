@@ -59,6 +59,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	struct in_addr ip;
 	pstring servicename;
 	char *sharename;
+	fstring newserver, newshare;
 	
 	/* make a copy so we don't modify the global string 'service' */
 	pstrcpy(servicename, share);
@@ -155,8 +156,19 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	}
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, sharename, "?????",
-			    password, strlen(password)+1)) {
+	/* here's the fun part....to support 'msdfs proxy' shares
+	   (on Samba or windows) we have to issues a TRANS_GET_DFS_REFERRAL 
+	   here before trying to connect to the original share.
+	   check_dfs_proxy() will fail if it is a normal share. */
+
+	if ( cli_check_msdfs_proxy( c, sharename, newserver, newshare ) ) {
+		cli_shutdown(c);
+		return do_connect( newserver, newshare, False );
+	}
+
+	/* must be a normal share */
+
+	if (!cli_send_tconX(c, sharename, "?????", password, strlen(password)+1)) {
 		d_printf("tree connect failed: %s\n", cli_errstr(c));
 		cli_shutdown(c);
 		return NULL;
@@ -414,7 +426,7 @@ static void clean_path( pstring clean, const char *path )
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL make_full_path( pstring path, const char *server, const char *share,
+BOOL cli_dfs_make_full_path( pstring path, const char *server, const char *share,
                             const char *dir )
 {
 	pstring servicename;
@@ -583,7 +595,7 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	/* send a trans2_query_path_info to check for a referral */
 	
 	clean_path( cleanpath, 	path );
-	make_full_path( fullpath, rootcli->desthost, rootcli->share, cleanpath );
+	cli_dfs_make_full_path( fullpath, rootcli->desthost, rootcli->share, cleanpath );
 
 	/* don't bother continuing if this is not a dfs root */
 	
@@ -612,7 +624,7 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 	/* just store the first referral for now
 	   Make sure to recreate the original string including any wildcards */
 	
-	make_full_path( fullpath, rootcli->desthost, rootcli->share, path );
+	cli_dfs_make_full_path( fullpath, rootcli->desthost, rootcli->share, path );
 	pathlen = strlen( fullpath )*2;
 	consumed = MIN(pathlen, consumed );
 	pstrcpy( targetpath, &fullpath[consumed/2] );
@@ -652,5 +664,52 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 		}
 	}
 
+	return True;
+}
+
+/********************************************************************
+********************************************************************/
+
+BOOL cli_check_msdfs_proxy( struct cli_state *cli, const char *sharename,
+                            fstring newserver, fstring newshare )
+{
+	CLIENT_DFS_REFERRAL *refs = NULL;
+	size_t num_refs;
+	uint16 consumed;
+	struct cli_state *cli_ipc;
+	pstring fullpath;
+	
+	if ( !cli || !sharename )
+		return False;
+
+	/* special case.  never check for a referral on the IPC$ share */
+
+	if ( strequal( sharename, "IPC$" ) )
+		return False;
+		
+	/* send a trans2_query_path_info to check for a referral */
+	
+	pstr_sprintf( fullpath, "\\%s\\%s", cli->desthost, sharename );
+
+	/* check for the referral */
+
+	if ( !(cli_ipc = cli_cm_open( cli->desthost, "IPC$", False )) )
+		return False;
+	
+	if ( !cli_dfs_get_referral(cli_ipc, fullpath, &refs, &num_refs, &consumed) 
+		|| !num_refs )
+	{
+		return False;
+	}
+	
+	split_dfs_path( refs[0].dfspath, newserver, newshare );
+
+	/* check that this is not a self-referral */
+
+	if ( strequal( cli->desthost, newserver ) && strequal( sharename, newshare ) )
+		return False;
+	
+	SAFE_FREE( refs );
+	
 	return True;
 }
