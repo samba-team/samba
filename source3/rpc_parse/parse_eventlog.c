@@ -304,7 +304,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 	if(r_u->num_bytes_in_resp != 0)
 		r_u->sent_size = r_u->num_bytes_in_resp;
 	else
-		r_u->real_size = entry->record.length;
+		r_u->real_size = r_u->bytes_in_next_record;
 
 	if(!(prs_align(ps)))
 		return False;
