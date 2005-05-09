@@ -167,7 +167,7 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 		/* Convert list to char ** array */
 
 		num_names = PyList_Size(py_names);
-		names = (const char **)talloc(mem_ctx, num_names * sizeof(char *));
+		names = (const char **)_talloc(mem_ctx, num_names * sizeof(char *));
 		
 		for (i = 0; i < num_names; i++) {
 			PyObject *obj = PyList_GetItem(py_names, i);
@@ -180,7 +180,7 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 		/* Just a single element */
 
 		num_names = 1;
-		names = (const char **)talloc(mem_ctx, sizeof(char *));
+		names = (const char **)_talloc(mem_ctx, sizeof(char *));
 
 		names[0] = PyString_AsString(py_names);
 	}
@@ -241,7 +241,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		/* Convert dictionary to char ** array */
 		
 		num_sids = PyList_Size(py_sids);
-		sids = (DOM_SID *)talloc(mem_ctx, num_sids * sizeof(DOM_SID));
+		sids = (DOM_SID *)_talloc(mem_ctx, num_sids * sizeof(DOM_SID));
 		
 		memset(sids, 0, num_sids * sizeof(DOM_SID));
 		
@@ -259,7 +259,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		/* Just a single element */
 
 		num_sids = 1;
-		sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID));
+		sids = (DOM_SID *)_talloc(mem_ctx, sizeof(DOM_SID));
 
 		if (!string_to_sid(&sids[0], PyString_AsString(py_sids))) {
 			PyErr_SetString(PyExc_ValueError, "string_to_sid failed");

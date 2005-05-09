@@ -93,7 +93,7 @@ PyObject *srvsvc_netservergetinfo(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	server = strdup(unc_name + 2);
+	server = SMB_XSTRDUP(unc_name + 2);
 
 	if (strchr(server, '\\')) {
 		char *c = strchr(server, '\\');

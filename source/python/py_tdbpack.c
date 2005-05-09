@@ -441,13 +441,14 @@ static void pack_le_uint32(unsigned long val_long, unsigned char *pbuf)
 }
 
 
+#if 0	/* not used */
 static void pack_bytes(long len, const char *from,
 		       unsigned char **pbuf)
 {
 	memcpy(*pbuf, from, len);
 	(*pbuf) += len;
 }
-
+#endif
 
 
 static PyObject *

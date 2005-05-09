@@ -291,7 +291,7 @@ BOOL py_to_PRINTER_INFO_2(PRINTER_INFO_2 *info, PyObject *dict,
 	    || !PyDict_Check(obj))
 		goto done;
 
-	info->devmode = talloc(mem_ctx, sizeof(DEVICEMODE));
+	info->devmode = _talloc(mem_ctx, sizeof(DEVICEMODE));
 
 	if (!py_to_DEVICEMODE(info->devmode, obj))
 		goto done;
