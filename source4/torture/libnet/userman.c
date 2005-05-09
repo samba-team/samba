@@ -157,7 +157,7 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
  			    struct policy_handle *handle, const char* user)
 {
 	NTSTATUS status;
-	struct policy_handle h, domain_handle, user_handle;
+	struct policy_handle user_handle;
 	struct samr_String username;
 	struct samr_CreateUser r1;
 	struct samr_Close r2;
@@ -214,7 +214,6 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, const char *username)
 {
 	NTSTATUS status;
-	BOOL ret = False;
 	struct rpc_composite_userdel user;
 	
 	user.in.domain_handle = *handle;
@@ -235,7 +234,6 @@ BOOL torture_useradd(void)
 	NTSTATUS status;
 	const char *binding;
 	struct dcerpc_pipe *p;
-	struct dcerpc_binding *b;
 	struct policy_handle h;
 	struct samr_String domain_name;
 	char* name = TEST_USERNAME;
@@ -282,7 +280,6 @@ BOOL torture_userdel(void)
 	NTSTATUS status;
 	const char *binding;
 	struct dcerpc_pipe *p;
-	struct dcerpc_binding *b;
 	struct policy_handle h;
 	struct samr_String domain_name;
 	char* name = TEST_USERNAME;
