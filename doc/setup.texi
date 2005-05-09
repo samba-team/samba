@@ -386,18 +386,21 @@ to guess them and to avoid off-line attacks (although
 pre-authentication provides
 some defense against off-line attacks).  To ensure that the users choose
 good passwords, you can enable password quality controls in
-@command{kpasswdd} and @command{kadmind}.  The controls themselves are done in a shared libraries or an external program that is used by @command{kpasswdd}.  To configure in these controls, add
+@command{kpasswdd} and @command{kadmind}.  The controls themselves are
+done in a shared library or an external program that is used by
+@command{kpasswdd}.  To configure in these controls, add
 lines similar to the following to your @file{/etc/krb5.conf}:
 
 @example
 [password_quality]
 	policies = external-check builtin:minimum-length module:policyname
-	external-program = /bin/false
-        policy-libraries = @var{library1.so} @var{library2.so}
+	external_program = /bin/false
+	policy_libraries = @var{library1.so} @var{library2.so}
 @end example
 
-In @samp{[password_quality]:policies} the module name is optional if
-the policy name is unique in all modules.
+In @samp{[password_quality]policies} the module name is optional if
+the policy name is unique in all modules (members of
+@samp{policy_libraries}).
 
 The builtin polices are
 
@@ -407,16 +410,23 @@ The builtin polices are
 
 Executes the program specified by @samp{[password_quality]external_program}. 
 
-As input to the command a number of key: value pair is passed in on
-each line ending with the string ``end''.
+A number of key/value pairs is passed as input to the program, one per
+line, ending with the string @samp{end}.  The key/value lines are of
+the form
+@example
+principal: @var{principal}
+new-password: @var{password}
+@end example
+where @var{password} is the password to check for the previous
+@var{principal}.
 
-If the external application approves the password ``APPROVED'' must be
-returne on standard out and exit with exit-code 0. If the program
-doesn't approved the password, a one line error explaining the problem
-should be returned on standard error and the application should exit
-with a exit-code 0. In case of a fatal error, the application should
-if possible print an error on stderr and exit with a non zero error
-code.
+If the external application approves the password, it should return
+@samp{APPROVED} on standard out and exit with exit code 0.  If it
+doesn't approve the password, a one line error message explaining the
+problem should be returned on standard error and the application
+should exit with exit code 0.  In case of a fatal error, the
+application should, if possible, print an error message on standard
+error and exit with a non-zero error code.
 
 @item minimum-length
 
