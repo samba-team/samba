@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+
+<chapter id="NetCommand">
+<chapterinfo>
+	&author.jht;
+	<pubdate>May 9, 2005</pubdate>
+</chapterinfo>
+
+<title>Remote and Local Management &smbmdash; The Net Command</title>
+
+<para>
+The <command>net</command> command is one of the new features of Samba-3 and is an attempt to provide a useful
+tool into which the majority of remote management operations necessary for common tasks. The
+<command>net</command> tool is flexible by design and is intended for command line use as well as for scripted
+control application.
+</para>
+
+<para>
+Originally introduced with the intent to mimick the Microsoft Windows command that has the same name, the
+<command>net</command> command has morphed into a very powerful instrument that has become an essential part
+of the Samba network administrator's toolbox. The Samba Team have introduced tools, such as
+<command>smbgroupedit, rpcclient</command> from which really useful have been integrated into the
+<command>net</command>. The <command>smbgroupedit</command> command was absorbed entirely into the
+<command>net</command>, while only some features of the <command>rpcclient</command> command have been
+ported to it. Anyone who finds older references to these utilities and to the functionality they provided
+should look at the <command>net</command> command before searching elsewhere.
+</para>
+
+<para>
+
+</para>
+
+	<sect1>
+	<title>Stuff</title>
+
+	</sect1>
+
+</chapter>
