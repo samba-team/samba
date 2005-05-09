@@ -673,25 +673,6 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
 		return False;
 		
-	/* Sanity Check - look for unknown specversions, but don't fail if we see one.
-	   Let the size determine that */
-	   
-	switch (devmode->specversion) {
-		/* list of observed spec version's */
-		case 0x0320:
-		case 0x0400:
-		case 0x0401:
-		case 0x040d:
-			break;
-			
-		default:
-			DEBUG(0,("spoolss_io_devmode: Unknown specversion in devicemode [0x%x]\n",
-				devmode->specversion));
-			DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
-			break;
-	}
-			
-	
 	if (!prs_uint16("driverversion",    ps, depth, &devmode->driverversion))
 		return False;
 	if (!prs_uint16("size",             ps, depth, &devmode->size))
