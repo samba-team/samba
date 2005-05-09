@@ -98,6 +98,7 @@ The chapters in this part each cover specific Samba features.
 	<xi:include href="TOSHARG-Passdb.xml"/>
 	<xi:include href="TOSHARG-Group-Mapping.xml"/>
 	<xi:include href="TOSHARG-IDMAP.xml"/>
+	<xi:include href="TOSHARG-TheNetCommand.xml"/>
 	<xi:include href="TOSHARG-RightsAndPriviliges.xml"/>
 	<xi:include href="TOSHARG-AccessControls.xml"/>
 	<xi:include href="TOSHARG-locking.xml"/>
