@@ -1,3 +1,9 @@
+2005-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sl.c (sl_command_loop): new return code -2 for EOF
+	(sl_loop): treat all return value from sl_command_loop >= 0 as ok, and
+	continue.
+
 2005-04-29  Dave Love  <fx@gnu.org>
 
 	* Makefile.am (LDADD): Add libsl.la.

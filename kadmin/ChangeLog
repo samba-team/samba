@@ -1,3 +1,7 @@
+2005-05-09  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.c (main): catch -2 as EOF
+
 2005-05-03  Dave Love  <d.love@dl.ac.uk>
 
 	* init.c (init): Don't disable forwardable for kadmin/changepw.
@@ -6,12 +10,12 @@
 
 	* kadmin.c (help): Don't use non-constant initializer for `fake'.
 
-2005-04-20  Love Hörquist Åstrand <lha@it.su.se>
+2005-04-20  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* util.c (foreach_principal): initialize ret to make sure it have
 	a value
 
-2005-04-04  Love Hörquist Åstrand <lha@it.su.se>
+2005-04-04  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmind.c: add verifier libraries with
 	kadm5_add_passwd_quality_verifier
