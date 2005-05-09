@@ -293,7 +293,11 @@ static char *sl_readline(const char *prompt)
     return s;
 }
 
-/* return values: 0 on success, -1 on fatal error, or return value of command */
+/* return values: 
+ * 0 on success,
+ * -1 on fatal error,
+ * -2 if EOF, or
+ * return value of command */
 int
 sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
 {
@@ -305,7 +309,7 @@ sl_command_loop(SL_cmd *cmds, const char *prompt, void **data)
     ret = 0;
     buf = sl_readline(prompt);
     if(buf == NULL)
-	return 1;
+	return -2;
 
     if(*buf)
 	add_history(buf);
@@ -332,7 +336,7 @@ sl_loop(SL_cmd *cmds, const char *prompt)
 {
     void *data = NULL;
     int ret;
-    while((ret = sl_command_loop(cmds, prompt, &data)) == 0)
+    while((ret = sl_command_loop(cmds, prompt, &data)) >= 0)
 	;
     return ret;
 }
