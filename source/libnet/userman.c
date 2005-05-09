@@ -101,7 +101,6 @@ struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 {
 	struct composite_context *c;
 	struct useradd_state *s;
-	struct dom_sid *sid;
 	
 	c = talloc_zero(p, struct composite_context);
 	if (c == NULL) goto failure;
@@ -249,8 +248,6 @@ failure:
 static NTSTATUS userdel_open(struct composite_context *c,
 			     struct userdel_state *s)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 	
@@ -273,8 +270,6 @@ static NTSTATUS userdel_open(struct composite_context *c,
 static NTSTATUS userdel_delete(struct composite_context *c,
 			       struct userdel_state *s)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 	
