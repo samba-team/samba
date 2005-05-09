@@ -294,8 +294,6 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("count=%d\n", *count);
 
 	for (i=0; i < num_ops; i++) {
-		struct security_descriptor sd;
-
 		status = smb_composite_appendacl_recv(c[i], io[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("appendacl[%d] failed - %s\n", i, nt_errstr(status));
