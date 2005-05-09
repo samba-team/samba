@@ -1730,6 +1730,11 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		/* check smb.conf parameters and the the sec_desc */
 		
+		if ( !check_access(smbd_server_fd(), lp_hostsallow(snum), lp_hostsdeny(snum)) ) {    
+			DEBUG(3, ("access DENIED (hosts allow/deny) for printer open\n"));
+			return WERR_ACCESS_DENIED;
+		}
+
 		if (!user_ok(uidtoname(user.uid), snum, user.groups, user.ngroups) || !print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
