@@ -286,16 +286,19 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	const char *full_name;
 	int retry;
 
-	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
-
-	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
-	
+        if(name == NULL || *name=='\0') {
+                DEBUG(3,("rpc: name_to_sid name=%s\n", domain_name));
+                full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
+        } else {
+                DEBUG(3,("rpc: name_to_sid name=%s\\%s\n", domain_name, name));
+                full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
+        }
 	if (!full_name) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name, domain_name ));
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name?name:"", domain_name ));
 
 	retry = 0;
 	do {
