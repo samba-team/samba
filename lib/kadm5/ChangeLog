@@ -1,4 +1,12 @@
-2005-04-30  Love  <lha@kth.se>
+2005-05-09  Dave Love  <fx@gnu.org>
+
+	* password_quality.c (find_func): Fix off-by-one and logic error.
+	(external_passwd_quality): Improve messages.
+
+	* test_pw_quality.c (main): Call kadm5_setup_passwd_quality_check
+	and kadm5_add_passwd_quality_verifier.
+
+2005-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* default_keys.c: #include <err.h>, only print salt it its longer
 	then 0, use krb5_err instead of errx where appropriate
