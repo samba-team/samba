@@ -214,7 +214,7 @@ krb5_kuserok (krb5_context context,
 
     krb5_boolean found_file = FALSE;
 
-#ifdef HAVE_GETPWNAM_R
+#ifdef POSIX_GETPWNAM_R
     char pwbuf[2048];
     struct passwd pw;
 
