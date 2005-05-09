@@ -224,7 +224,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 			/* if the SID was empty, we better set it now */
 			
 			if ( sid_equal(&dom_sids[i], &null_sid) ) {
-			
+				enum SID_NAME_USE type;
 				new_domain = find_domain_from_name(names[i]);
 				 
 				/* this should never happen */
@@ -237,7 +237,12 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 				/* call the cache method; which will operate on the winbindd_domain \
 				   passed in and choose either rpc or ads as appropriate */
 
-				result = domain->methods->domain_sid( new_domain, &new_domain->sid );
+				result = domain->methods->name_to_sid( domain,
+					mem_ctx,
+					new_domain->name,
+					NULL,
+					&new_domain->sid,
+					&type);
 				 
 				if ( NT_STATUS_IS_OK(result) )
 				 	sid_copy( &dom_sids[i], &new_domain->sid );
