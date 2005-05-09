@@ -1,4 +1,8 @@
-2005-05-09  Love  <lha@kth.se>
+2005-05-09  Dave Love  <fx@gnu.org>
+
+	* doc/setup.texi: Fix and clarify password quality check examples.
+	
+2005-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/kuserok.c (krb5_kuserok): use POSIX_GETPWNAM_R instead
 	of HAVE_GETPWNAM_R From: Dave Love <d.love@dl.ac.uk>
