@@ -235,7 +235,7 @@ static PyObject *py_smb_read(PyObject *self, PyObject *args, PyObject *kw)
 	if (size < 1 || size > fsize - offset)
 		size = fsize - offset;
 
-	if (!(data = (char *) malloc((size_t) size))) {
+	if (!(data = SMB_XMALLOC_ARRAY(char, size))) {
 		PyErr_SetString(PyExc_RuntimeError, "malloc failed");
 		return NULL;
 	}
