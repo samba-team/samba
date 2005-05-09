@@ -189,12 +189,12 @@ external_passwd_quality (krb5_context context,
 
 	if (fgets(reply, sizeof(reply), error) == NULL) {
 	    snprintf(message, length, "external password quality "
-		     "program fail without error");
+		     "program failed without error");
 
 	} else {
 	    reply[strcspn(reply, "\n")] = '\0';
 	    snprintf(message, length, "External password quality "
-		     "program fail: %s", reply);
+		     "program failed: %s", reply);
 	}
 
 	fclose(out);
@@ -420,7 +420,7 @@ find_func(krb5_context context, const char *name)
     p = strchr(name, ':');
     if (p) {
 	func = p + 1;
-	module = strndup(name, p - name - 1);
+	module = strndup(name, p - name);
 	if (module == NULL)
 	    return NULL;
     } else
@@ -440,7 +440,7 @@ find_func(krb5_context context, const char *name)
     /* Lets try try the builtin modules */
     if (module == NULL || strcmp(module, "builtin") == 0) {
 	for (f = builtin_verifier.funcs; f->name ; f++)
-	    if (strcmp(name, f->name) == 0) {
+	    if (strcmp(func, f->name) == 0) {
 		if (module)
 		    free(module);
 		return f;
