@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003, 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,6 +78,11 @@ main(int argc, char **argv)
 
     pw_data.data = password;
     pw_data.length = strlen(password);
+
+    kadm5_setup_passwd_quality_check (context, NULL, NULL);
+    ret = kadm5_add_passwd_quality_verifier(context, NULL);
+    if (ret)
+	krb5_errx(context, 1, "kadm5_add_passwd_quality_verifier");
 
     s = kadm5_check_password_quality (context, p, &pw_data);
     if (s)
