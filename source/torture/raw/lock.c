@@ -549,7 +549,7 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	if (time(NULL) > t+2) {
 		printf("lock cancel by unlock was not immediate (%s) - took %d secs\n", 
-		       __location__, (int)time(NULL)-t);
+		       __location__, (int)(time(NULL)-t));
 		ret = False;
 		goto done;
 	}
