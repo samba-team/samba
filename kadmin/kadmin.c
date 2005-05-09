@@ -288,12 +288,16 @@ main(int argc, char **argv)
 	ret = sl_command (commands, argc, argv);
 	if(ret == -1)
 	    krb5_warnx (context, "unrecognized command: %s", argv[0]);
+	else if (ret == -2)
+	    ret = 0;
 	if(ret != 0)
 	    exit_status = 1;
     } else {
 	while(!exit_seen) {
 	    ret = sl_command_loop(commands, "kadmin> ", NULL);
-	    if (ret != 0)
+	    if (ret == -2)
+		exit_seen = 1;
+	    else if (ret != 0)
 		exit_status = 1;
 	}
     }
