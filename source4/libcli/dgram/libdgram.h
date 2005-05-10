@@ -24,7 +24,7 @@
 
 
 /*
-  a nbt name request
+  a datagram name request
 */
 struct nbt_dgram_request {
 	struct nbt_dgram_request *next, *prev;
