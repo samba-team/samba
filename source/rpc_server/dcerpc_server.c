@@ -742,6 +742,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	call->state_flags	= call->conn->dce_ctx->state_flags;
 	call->time		= timeval_current();
 
+	if (!gensec_have_feature(call->conn->auth_state.gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
+		call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MAY_ASYNC;
+	}
+
 	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
 	if (context == NULL) {
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
