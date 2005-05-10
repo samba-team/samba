@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "slc.h"
 #include "slc-gram.h"
 unsigned lineno = 1;
