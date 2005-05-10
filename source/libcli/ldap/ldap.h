@@ -149,7 +149,7 @@ struct ldap_SearchRequest {
 	uint32_t timelimit;
 	uint32_t sizelimit;
 	BOOL attributesonly;
-	char *filter;
+	const char *filter;
 	int num_attributes;
 	const char **attributes;
 };
@@ -251,9 +251,9 @@ struct ldap_Control {
 
 struct ldap_message {
 	TALLOC_CTX	       *mem_ctx;
-	uint32_t                  messageid;
-	uint8_t                   type;
-	union  ldap_Request     r;
+	uint32_t                messageid;
+	enum ldap_request_tag   type;
+	union ldap_Request      r;
 	int			num_controls;
 	struct ldap_Control    *controls;
 };

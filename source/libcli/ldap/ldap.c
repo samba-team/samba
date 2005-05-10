@@ -107,6 +107,40 @@ static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
 					       const char **s);
 
 /*
+   decode a RFC2254 binary string representation of a buffer.
+   Used in LDAP filters.
+*/
+static struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
+{
+	int i, j;
+	struct ldap_val ret;
+	int slen = strlen(str);
+
+	ret.data = talloc_size(mem_ctx, slen);
+	ret.length = 0;
+	if (ret.data == NULL) return ret;
+
+	for (i=j=0;i<slen;i++) {
+		if (str[i] == '\\') {
+			unsigned c;
+			if (sscanf(&str[i+1], "%02X", &c) != 1) {
+				talloc_free(ret.data);
+				ZERO_STRUCT(ret);
+				return ret;
+			}
+			((uint8_t *)ret.data)[j++] = c;
+			i += 2;
+		} else {
+			((uint8_t *)ret.data)[j++] = str[i];
+		}
+	}
+	ret.length = j;
+
+	return ret;
+}
+
+
+/*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
 static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
@@ -139,8 +173,7 @@ static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
 
 	ret->operation = LDAP_OP_SIMPLE;
 	ret->u.simple.attr = l;
-	ret->u.simple.value.data = val;
-	ret->u.simple.value.length = val?strlen(val):0;
+	ret->u.simple.value = ldap_binary_decode(ret, val);
 
 	return ret;
 }
@@ -696,9 +729,12 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 }
 
 static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-			       char **filter)
+			       const char **filterp)
 {
 	uint8_t filter_tag, tag_desc;
+	char *filter = NULL;
+
+	*filterp = NULL;
 
 	if (!asn1_peek_uint8(data, &filter_tag))
 		return False;
@@ -715,22 +751,21 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 		asn1_start_tag(data, ASN1_CONTEXT(0));
 
-		*filter = talloc_strdup(mem_ctx, "(&");
-		if (*filter == NULL)
+		filter = talloc_strdup(mem_ctx, "(&");
+		if (filter == NULL)
 			return False;
 
 		while (asn1_tag_remaining(data) > 0) {
-			char *subfilter;
+			const char *subfilter;
 			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
 				return False;
-			*filter = talloc_asprintf(mem_ctx, "%s%s", *filter,
-						  subfilter);
-			if (*filter == NULL)
+			filter = talloc_asprintf_append(filter, "%s", subfilter);
+			if (filter == NULL)
 				return False;
 		}
 		asn1_end_tag(data);
 
-		*filter = talloc_asprintf(mem_ctx, "%s)", *filter);
+		filter = talloc_asprintf(mem_ctx, "%s)", filter);
 		break;
 	}
 	case 1: {
@@ -740,23 +775,22 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 		asn1_start_tag(data, ASN1_CONTEXT(1));
 
-		*filter = talloc_strdup(mem_ctx, "(|");
-		if (*filter == NULL)
+		filter = talloc_strdup(mem_ctx, "(|");
+		if (filter == NULL)
 			return False;
 
 		while (asn1_tag_remaining(data) > 0) {
-			char *subfilter;
+			const char *subfilter;
 			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
 				return False;
-			*filter = talloc_asprintf(mem_ctx, "%s%s", *filter,
-						  subfilter);
-			if (*filter == NULL)
+			filter = talloc_asprintf_append(filter, "%s", subfilter);
+			if (filter == NULL)
 				return False;
 		}
 
 		asn1_end_tag(data);
 
-		*filter = talloc_asprintf(mem_ctx, "%s)", *filter);
+		filter = talloc_asprintf(mem_ctx, "%s)", filter);
 		break;
 	}
 	case 3: {
@@ -770,7 +804,7 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		asn1_end_tag(data);
 		if ((data->has_error) || (attrib == NULL) || (value == NULL))
 			return False;
-		*filter = talloc_asprintf(mem_ctx, "(%s=%s)", attrib, value);
+		filter = talloc_asprintf(mem_ctx, "(%s=%s)", attrib, value);
 		break;
 	}
 	case 7: {
@@ -787,7 +821,7 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			return False;
 		asn1_read(data, attr_name, attr_len);
 		attr_name[attr_len] = '\0';
-		*filter = talloc_asprintf(mem_ctx, "(%s=*)", attr_name);
+		filter = talloc_asprintf(mem_ctx, "(%s=*)", attr_name);
 		SAFE_FREE(attr_name);
 		asn1_end_tag(data);
 		break;
@@ -795,8 +829,11 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 	default:
 		return False;
 	}
-	if (*filter == NULL)
+	if (filter == NULL)
 		return False;
+
+	*filterp = filter;
+
 	return True;
 }
 
@@ -1260,3 +1297,5 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 
 	return (*host != NULL);
 }
+
+
