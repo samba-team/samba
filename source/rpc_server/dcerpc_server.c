@@ -742,7 +742,9 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	call->state_flags	= call->conn->dce_ctx->state_flags;
 	call->time		= timeval_current();
 
-	if (!gensec_have_feature(call->conn->auth_state.gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
+	/* if authenticated, and the mech we use can't do async replies, don't use them... */
+	if (call->conn->auth_state.gensec_security && 
+	    !gensec_have_feature(call->conn->auth_state.gensec_security, GENSEC_FEATURE_ASYNC_REPLIES)) {
 		call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MAY_ASYNC;
 	}
 
