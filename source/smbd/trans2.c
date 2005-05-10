@@ -2405,7 +2405,6 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	return -1;
 }
 
-#ifdef HAVE_SYS_QUOTAS
 /****************************************************************************
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
@@ -2517,7 +2516,6 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 
 	return outsize;
 }
-#endif /* HAVE_SYS_QUOTAS */
 
 /****************************************************************************
  Utility function to set bad path error.
@@ -4997,14 +4995,13 @@ int reply_trans2(connection_struct *conn,
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
 
-#ifdef HAVE_SYS_QUOTAS
 	case TRANSACT2_SETFSINFO:
 		START_PROFILE_NESTED(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, length, bufsize, 
 					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_setfsinfo);
 		break;
-#endif
+
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
 		START_PROFILE_NESTED(Trans2_qpathinfo);
