@@ -450,6 +450,52 @@
 	} nbt_netlogon_packet;
 
 	/*******************************************/
+	/* CLDAP netlogon response                 */
+
+	typedef enum {
+		CLDAP_NETLOGON_19                = 0x13,
+		CLDAP_NETLOGON_23                = 0x17
+	} nbt_cldap_netlogon_command;
+
+	/* cldap type 19 netlogon response */
+	typedef struct {
+		nstring              pdc_name;
+		nstring              unknown;
+		nstring              domain_name;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;		
+	} nbt_cldap_netlogon_19;
+
+	/* cldap type 23 netlogon response */
+	typedef struct {
+		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           site_name;
+		nbt_string           site_name2;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_23;
+
+	typedef [nodiscriminant] union {
+		[case(CLDAP_NETLOGON_19)] nbt_cldap_netlogon_19 logon19;
+		[case(CLDAP_NETLOGON_23)] nbt_cldap_netlogon_23 logon23;
+	} nbt_cldap_netlogon_info;
+
+	typedef [flag(NDR_NOALIGN),public] struct {
+		nbt_cldap_netlogon_command command;
+		[switch_is(command)] nbt_cldap_netlogon_info info;
+	} nbt_cldap_netlogon;
+
+	/*******************************************/
 	/* \MAILSLOT\NET\NTLOGON mailslot requests */
 	typedef enum {
 		NTLOGON_SAM_LOGON       = 0x12,
