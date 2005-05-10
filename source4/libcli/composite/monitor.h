@@ -27,6 +27,7 @@
  */
 
 enum monitor_type {
+	rpc_create_user,
 	rpc_open_user,
 	rpc_query_user,
 	rpc_close_user
@@ -35,6 +36,10 @@ enum monitor_type {
 struct monitor_msg {
 	enum monitor_type type;
 	union monitor_data {
+		struct rpc_create_user {
+			uint32_t rid;
+		} rpc_create_user;
+
 		struct rpc_open_user {
 			uint32_t rid, access_mask;
 		} rpc_open_user;
