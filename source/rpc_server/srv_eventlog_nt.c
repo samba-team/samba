@@ -31,6 +31,8 @@ typedef struct eventlog_info
     fstring handle_string;
     uint32 num_records;
     uint32 oldest_entry;
+    uint32 active_entry;
+    uint32 flags;
 } Eventlog_info;
 
 static void free_eventlog_info(void *ptr)
@@ -415,7 +417,7 @@ WERROR _eventlog_close_eventlog(pipes_struct *p,
     return WERR_OK;
 }
 
-static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
+static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *eor)
 {
     char *start = NULL, *stop = NULL;
     pstring temp;
@@ -423,8 +425,13 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  
     start = line;
 
+    /* empty line signyfiying record delimeter, or we're at the end of the buffer */
     if(start == NULL || strlen(start) == 0)
-	return False;
+    {
+	DEBUG(6, ("_eventlog_read_parse_line: found end-of-record indicator.\n"));
+	*eor = True;
+	return True;
+    }
     if(!(stop = strchr(line, ':')))
 	return False;
     
@@ -514,8 +521,11 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SRC", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", temp);
-	temp_len = strlen(temp);
+	stop++;
+	while(isspace(stop[0]))
+	    stop++;
+	temp_len = strlen(stop);
+	strncpy(temp, stop, temp_len);
 	rpcstr_push((void *)(entry->data_record.source_name), temp, 
 		    sizeof(entry->data_record.source_name), STR_TERMINATE);
 	entry->data_record.source_name_len = (strlen_w(entry->data_record.source_name)* 2) + 2;
@@ -523,8 +533,11 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SRN", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", temp);
-	temp_len = strlen(temp);
+	stop++;
+	while(isspace(stop[0]))
+	    stop++;
+	temp_len = strlen(stop);
+	strncpy(temp, stop, temp_len);
 	rpcstr_push((void *)(entry->data_record.computer_name), temp,
 		    sizeof(entry->data_record.computer_name), STR_TERMINATE);
 	entry->data_record.computer_name_len = (strlen_w(entry->data_record.computer_name)* 2) + 2;
@@ -532,8 +545,11 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
     else if(0 == strncmp(start, "SID", stop - start))
     {
 	memset(temp, 0, sizeof(temp));
-	sscanf(stop+1, "%s", temp);
-	temp_len = strlen(temp);
+	stop++;
+	while(isspace(stop[0]))
+	    stop++;
+	temp_len = strlen(stop);
+	strncpy(temp, stop, temp_len);
 	rpcstr_push((void *)(entry->data_record.sid), temp,
 		    sizeof(entry->data_record.sid), STR_TERMINATE);
 	entry->record.user_sid_length = (strlen_w(entry->data_record.sid) * 2) + 2;
@@ -597,6 +613,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  *            between the oldest_record and oldest_record+num_records, and the buffer size is the
  *            maximum size of the buffer that the client can accomodate.
  *     OUTPUT: A buffer containing a set of entries, one to a line, of the format:
+ *             Multiple log entries can be contained in the buffer, delimited by an empty line
  *               line type:line data
  *             These are the allowed line types:
  *               RS1:(uint32) - reserved. All M$ entries seem to have int(1699505740) for now
@@ -615,16 +632,21 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry)
  *               STR:[(uint8)] - String data. One string per line. Multiple strings can be specified using consecutive "STR" lines,
  *                               up to a total aggregate string length of 1024 characters.
  *               DAT:[(uint8)] - The user-defined data portion of the event log. Can not be multiple lines.
+ *               <empty line>  - end-of-record indicator 
  */
-static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *entry, const char *direction, int starting_record, int buffer_size, BOOL *eof)
+static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info,
+					 Eventlog_entry *entry, 
+					 const char *direction, 
+					 int starting_record, 
+					 int buffer_size, 
+					 BOOL *eof,
+					 char ***buffer,
+					 int *numlines)
 {
     char *cmd = lp_eventlog_read_cmd();
-    char **qlines;
     pstring command;
-    int numlines = 0;
     int ret;
     int fd = -1;
-    int i;
 
     if(info == NULL)
 	return False;
@@ -643,6 +665,8 @@ static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *en
 	     buffer_size,
 	     info->handle_string);
 
+    *numlines = 0;
+
     DEBUG(10, ("Running [%s]\n", command));
     ret = smbrun(command, &fd);
     DEBUGADD(10, ("returned [%d]\n", ret));
@@ -654,38 +678,40 @@ static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info, Eventlog_entry *en
 	return False;
     }
 
-    qlines = fd_lines_load(fd, &numlines);
-    DEBUGADD(10, ("Lines returned = [%d]\n", numlines));
+    *buffer = fd_lines_load(fd, numlines);
+    DEBUGADD(10, ("Lines returned = [%d]\n", *numlines));
     close(fd);
     
-    if(numlines)
+    if(*numlines)
     {
+	/*
 	for(i = 0; i < numlines; i++)
 	{
 	    DEBUGADD(10, ("Line[%d] = %s\n", i, qlines[i]));
 	    _eventlog_read_parse_line(qlines[i], entry);
 	}
 	file_lines_free(qlines);
+	*/
+	*eof = False;
 	return True;
     }
-    else
-	*eof = True;
+    *eof = True;
 
-    file_lines_free(qlines);
+/*    file_lines_free(qlines);*/
     return False;
 }
 	
-static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
-					       EVENTLOG_Q_READ_EVENTLOG *q_u,
-					       EVENTLOG_R_READ_EVENTLOG *r_u,
-					       Eventlog_entry *entry)
+static Eventlog_entry *_eventlog_read_package_entry(prs_struct *ps,
+						    EVENTLOG_Q_READ_EVENTLOG *q_u,
+						    EVENTLOG_R_READ_EVENTLOG *r_u,
+						    Eventlog_entry *entry)
 {
     uint8 *offset;
-    Eventlog_entry *new = NULL, *insert_point = NULL;
+    Eventlog_entry *new = NULL;
 
     new = PRS_ALLOC_MEM(ps, Eventlog_entry, 1);
     if(new == NULL)
-	return False;
+	return NULL;
 
     entry->data_record.sid_padding = ((4 - ((entry->data_record.source_name_len 
 				      + entry->data_record.computer_name_len) % 4)) %4);
@@ -714,7 +740,7 @@ static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
     DEBUG(10, ("entry->record.length is [%d].\n", entry->record.length));
     entry->data = PRS_ALLOC_MEM(ps, uint8, entry->record.length - sizeof(Eventlog_record) - sizeof(entry->record.length));
     if(entry->data == NULL)
-	return False;
+	return NULL;
     offset = entry->data;
     memcpy(offset, &(entry->data_record.source_name), entry->data_record.source_name_len);
     offset += entry->data_record.source_name_len;
@@ -734,8 +760,18 @@ static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
     entry->record.data_offset = sizeof(Eventlog_record) + (offset - entry->data);
     memcpy(offset, &(entry->data_record.user_data), entry->data_record.user_data_len);
     offset += entry->data_record.user_data_len;
-    /* Now that we've massaged the current entry, copy it into the new entry and add it
-       to end of the list */
+
+    memcpy(&(new->record), &entry->record, sizeof(Eventlog_record));
+    memcpy(&(new->data_record), &entry->data_record, sizeof(Eventlog_data_record));
+    new->data = entry->data;
+
+    return new;
+}
+
+static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *new)
+{
+    Eventlog_entry *insert_point;
+
     insert_point=r_u->entry;
 
     if (NULL == insert_point) 
@@ -752,65 +788,97 @@ static BOOL _eventlog_read_prepare_data_buffer(prs_struct *ps,
 	new->next = NULL;
 	insert_point->next = new;
     }
-
-    memcpy(&(new->record), &entry->record, sizeof(Eventlog_record));
-    memcpy(&(new->data_record), &entry->data_record, sizeof(Eventlog_data_record));
-    new->data = entry->data;
-
     r_u->num_records++; 
-    r_u->num_bytes_in_resp += entry->record.length;
+    r_u->num_bytes_in_resp += new->record.length;
 
     return True;
 }
-
+    
 WERROR _eventlog_read_eventlog(pipes_struct *p,
 			       EVENTLOG_Q_READ_EVENTLOG *q_u,
 			       EVENTLOG_R_READ_EVENTLOG *r_u)
 {
     Eventlog_info *info = NULL;
     POLICY_HND *handle;
-    Eventlog_entry entry;
-    BOOL eof = False;
+    Eventlog_entry entry, *new;
+    BOOL eof = False, eor = False;
     const char *direction = "";
-    int starting_record;
+    uint32 num_records_read = 0;
     prs_struct *ps;
+    int numlines, i;
+    char **buffer;
 
     if(!q_u || !r_u)
 	return WERR_NOMEM;
 
     handle = &(q_u->handle);
     info = find_eventlog_info_by_hnd(p, handle);
+    info->flags = q_u->flags;
     ps = &p->out_data.rdata;
-    /* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
-       we'll just go to the offset specified in the request, or the oldest entry
-       if no offset is specified */
-    if(q_u->offset > 0)
-	starting_record = q_u->offset;
-    else
-	starting_record = info->oldest_entry;
+    /* if this is the first time we're reading on this handle */
+    if(info->active_entry == 0)
+    {
+	/* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
+	   we'll just go to the offset specified in the request, or the oldest entry
+	   if no offset is specified */
+	if(q_u->offset > 0)
+	    info->active_entry = q_u->offset;
+	else
+	    info->active_entry = info->oldest_entry;
+	
+    }
+    
     if(q_u->flags & EVENTLOG_FORWARDS_READ)
 	direction = "forward";
     else if(q_u->flags & EVENTLOG_BACKWARDS_READ)
 	direction = "backward";
 
-    do
+    if(!(_eventlog_read_eventlog_hook(info, &entry, direction, info->active_entry, q_u->max_read_size, &eof, &buffer, &numlines)))
+    {
+	if(eof == False)
+	    return WERR_NOMEM;
+    }
+    if(numlines > 0)
     {
 	ZERO_STRUCT(entry);
-	if(!(_eventlog_read_eventlog_hook(info, &entry, direction, starting_record, q_u->max_read_size, &eof)))
+	for(i = 0; i < numlines; i++)
 	{
-	    if(eof == False)
-		return WERR_NOMEM;
+	    num_records_read = r_u->num_records;
+	    DEBUGADD(10, ("Line[%d] = [%s]\n", i, buffer[i]));
+	    _eventlog_read_parse_line(buffer[i], &entry, &eor);
+	    if(eor == True)
+	    {
+		/* package new entry */
+		if((new = _eventlog_read_package_entry(ps, q_u, r_u, &entry)) == NULL)
+		{
+		    free(buffer);
+		    return WERR_NOMEM;
+		}
+		/* Now see if there is enough room to add */
+		if(r_u->num_bytes_in_resp + new->record.length > q_u->max_read_size)
+		{
+		    r_u->bytes_in_next_record = new->record.length;
+		    /* response would be too big to fit in client-size buffer */
+		    break;
+		}
+		_eventlog_add_record_to_resp(r_u, new);
+		ZERO_STRUCT(entry);
+		eor=False;
+		num_records_read = r_u->num_records - num_records_read;
+		DEBUG(10, ("_eventlog_read_eventlog: read [%d] records for a total of [%d] records using [%d] bytes out of a max of [%d].\n",
+			   num_records_read,
+			   r_u->num_records,
+			   r_u->num_bytes_in_resp,
+			   q_u->max_read_size));
+		/* update the active record */
+		if(info->flags & EVENTLOG_FORWARDS_READ)
+		    info->active_entry += num_records_read;
+		else if(info->flags & EVENTLOG_BACKWARDS_READ)
+		    info->active_entry -= num_records_read;
+	    }
 	}
-	if(eof == False)
-	{
-	    /* only if the read hook returned data */
-	    if(!(_eventlog_read_prepare_data_buffer(ps, q_u, r_u, &entry)))
-		return WERR_NOMEM;
-	    DEBUG(10, ("_eventlog_read_eventlog: read [%d] bytes out of a max of [%d].\n",
-		       r_u->num_bytes_in_resp,
-		       q_u->max_read_size));
-	}
-    } while((r_u->num_bytes_in_resp <= q_u->max_read_size) && (eof != True));
+	free(buffer);
+    }
 
     return WERR_OK;
 }

@@ -99,7 +99,7 @@ static uint16 *to_dependentfiles(PyObject *list, TALLOC_CTX *mem_ctx)
 		size+=PyString_Size(borrowedRef)+1;
 	}
 
-	if (!(ret = (uint16*) talloc(mem_ctx,(size+1)*sizeof(uint16))))
+	if (!(ret = (uint16*)_talloc(mem_ctx,((size+1)*sizeof(uint16)))))
 		goto done;
 
 	/* create null terminated sequence of null terminated strings */

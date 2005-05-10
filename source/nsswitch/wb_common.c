@@ -604,8 +604,6 @@ NSS_STATUS winbindd_request(int req_type,
 /* Use putenv() instead of setenv() in these functions as not all
    environments have the latter. */
 
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-
 BOOL winbind_off( void )
 {
 	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");

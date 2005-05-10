@@ -734,9 +734,19 @@ static int do_get(char *rname, char *lname, BOOL reget)
 		return 1;
 	}
 
-
 	GetTimeOfDay(&tp_start);
 	
+	if ( targetcli->dfsroot ) {
+		pstring path;
+
+		/* we need to refer to the full \server\share\path format 
+		   for dfs shares */
+
+		pstrcpy( path, targetname );
+		cli_dfs_make_full_path( targetname, targetcli->desthost, 
+			targetcli->share, path);
+	}
+
 	fnum = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
@@ -3440,8 +3450,11 @@ static int do_message_op(void)
 
 	poptGetArg(pc);
 
-	if ( have_ip )
-	
+	/* check for the -P option */
+
+	if ( port != 0 )
+		cli_cm_set_port( port );
+
 	/*
 	 * Don't load debug level from smb.conf. It should be
 	 * set by cmdline arg or remain default (0)

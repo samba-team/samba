@@ -671,7 +671,6 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	DOM_SID alias;
 	DOM_SID *members;
 	int i, num;
-	NTSTATUS result;
 
 	if ( (argc != 1) || 
 	     !string_to_sid(&alias, argv[0]) ) {
@@ -680,8 +679,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	}
 
 	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
-		d_printf("Could not list members for sid %s: %s\n",
-			 argv[0], nt_errstr(result));
+		d_printf("Could not list members for sid %s\n", argv[0]);
 		return -1;
 	}
 
