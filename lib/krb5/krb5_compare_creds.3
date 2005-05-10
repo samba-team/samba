@@ -1,4 +1,4 @@
-.\" Copyright (c) 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2004-2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April 25, 2004
+.Dd May 10, 2005
 .Dt KRB5_COMPARE_CREDS 3
 .Os HEIMDAL
 .Sh NAME
@@ -73,7 +73,7 @@ normally only called indirectly via
 The following flags, set in
 .Fa whichfields ,
 affects the comparison:
-.Bl -tag -compact -offset indent
+.Bl -tag -width KRB5_TC_MATCH_SRV_NAMEONLY -compact -offset indent
 .It KRB5_TC_MATCH_SRV_NAMEONLY
 Consider all realms equal when comparing the service principal.
 .It KRB5_TC_MATCH_KEYTYPE

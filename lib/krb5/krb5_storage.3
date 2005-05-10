@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd May 10, 2005
 .Dt KRB5_STORAGE 3
 .Os HEIMDAL
 .Sh NAME
@@ -211,7 +211,7 @@ and
 .Fn krb5_storage_clear_flags
 modifies the behavior of the storage functions.
 .Pp
-.Bl -tag -compact -offset indent
+.Bl -tag -width "Fan vet..." -compact -offset indent
 .It KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS
 Stores the number of principal componets one too many when storing
 principal namees, used for compatibility with version 1 of file
@@ -234,7 +234,7 @@ Stores the integers in host byte order, used for compatibility with
 version 1 of file keytabs and version 1 and 2 of file credential
 caches.
 .It KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER
-store the credential flags in a krb5_creds in the reverse bit order.
+Store the credential flags in a krb5_creds in the reverse bit order.
 .El
 .Pp
 .Fn krb5_storage_set_byteorder
@@ -260,7 +260,7 @@ bytes in the storage
 The
 .Fa whence
 argument is one of
-.Bl -tag -compact -offset indent
+.Bl -tag -width SEEK_SET -compact -offset indent
 .It SEEK_SET
 offset is from begining of storage.
 .It SEEK_CUR

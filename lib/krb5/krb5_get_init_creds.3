@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd November  9, 2004
+.Dd May 10, 2005
 .Dt KRB5_GET_INIT_CREDS 3
 .Os HEIMDAL
 .Sh NAME
@@ -260,10 +260,10 @@ device.
 .Fa reply
 must be preallocated, it will not be allocated in by the prompter
 function.
-Possible value for the
+Possible values for the
 .Fa type
 element are:
-.Bl -tag -compact -offset indent
+.Bl -tag -width Ds -compact -offset indent
 .It KRB5_PROMPT_TYPE_PASSWORD
 .It KRB5_PROMPT_TYPE_NEW_PASSWORD
 .It KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN

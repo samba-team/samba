@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April 24, 2005
+.Dd May 10, 2005
 .Dt KRB5_KRBHST_INIT 3
 .Os HEIMDAL
 .Sh NAME
@@ -80,7 +80,7 @@ of interest and the type of service to lookup. The
 .Fa type
 can be one of:
 .Pp
-.Bl -tag -compact -offset indent
+.Bl -tag -width Ds -compact -offset indent
 .It KRB5_KRBHST_KDC
 .It KRB5_KRBHST_ADMIN
 .It KRB5_KRBHST_CHANGEPW
@@ -101,7 +101,7 @@ is the same flags as
 uses.
 Possible values are:
 .Pp
-.Bl -tag -compact -offset indent
+.Bl -tag -width KRB5_KRBHST_FLAGS_LARGE_MSG -compact -offset indent
 .It KRB5_KRBHST_FLAGS_MASTER
 only talk to master (readwrite) KDC
 .It KRB5_KRBHST_FLAGS_LARGE_MSG
