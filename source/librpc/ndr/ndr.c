@@ -760,6 +760,27 @@ NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *
 }
 
 /*
+  pull a struct from a blob using NDR - failing if all bytes are not consumed
+*/
+NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+				  ndr_pull_flags_fn_t fn)
+{
+	struct ndr_pull *ndr;
+	NTSTATUS status;
+
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) return status;
+	if (ndr->offset != ndr->data_size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	return status;
+}
+
+/*
   push a struct to a blob using NDR
 */
 NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
