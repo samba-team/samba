@@ -183,6 +183,11 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SESSION_KEY;
 	}
 
+	/* only NTLMv2 can handle async replies */
+	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_ASYNC_REPLIES;
+	}
+
 	return status;
 }
 
