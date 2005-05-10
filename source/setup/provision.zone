@@ -1,5 +1,5 @@
 ; generate by provision.pl
-$ORIGIN ${DNSDOMAIN}
+$ORIGIN ${DNSDOMAIN}.
 $TTL 1W
 @               IN SOA  @   hostmaster (
                                 42              ; serial (d. adams)
