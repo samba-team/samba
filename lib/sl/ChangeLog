@@ -1,3 +1,7 @@
+2005-05-10  Dave Love  <fx@gnu.org>
+
+	* slc-lex.l: Include <stdlib.h>.
+
 2005-05-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sl.c (sl_command_loop): new return code -2 for EOF
