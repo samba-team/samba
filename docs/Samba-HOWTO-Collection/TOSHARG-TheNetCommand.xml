@@ -28,11 +28,204 @@ should look at the <command>net</command> command before searching elsewhere.
 </para>
 
 <para>
-
+A Samba-3 administrator can not afford to gloss over this chapter because to do so will almost certainly cause
+the infliction of self induced pain, agony and desperation. Be warned, this is an important chapter.
 </para>
 
 	<sect1>
-	<title>Stuff</title>
+	<title>Self-Defense Overview</title>
+
+	<para>
+	The tasks that follow the installation of a Samba-3 server, whether Stand-Alone, Domain Member, of a
+	Domain Controller (PDC or BDC) begins with the need to create administrative rights. Of course, the
+	creation of user and group accounts is essential for both a Stand-Alone server as well as for a PDC.
+	In the case of a BDC or a Domain Member server (DMS) Domain user and group accounts are obtained from
+	the central domain authentication backend.
+	</para>
+
+	<para>
+	Regardless of the type of server being installed, local UNIX groups must be mapped to the Windows
+	networking domain global group accounts. Do you ask, why? Because Samba always limits its access to
+	the resources of the host server by way of traditional UNIX UID/GID controls. This means that local
+	groups must be mapped to domain global groups so that domain users who are members of the domain
+	global groups can be given access rights based on UIDs and GIDs local to the server that is hosting
+	Samba. Such mappings are implemented using the <command>net</command> command.
+	</para>
+
+	<para>
+	UNIX systems that are hosting a Samba-3 server that is running as a member (PDC, BDC, or DMS) must have
+	a machine security account in the domain authentication database (or directory). The creation of such
+	security (or trust) accounts is also handled using the <command>net</command> command.
+	</para>
+
+	<para>
+	The establishment of interdomain trusts is achieved using the <command>net</command> command also, as
+	may a plethora of typical administrative duties such as: user management, group management, share and
+	printer management, file and printer migration, security identifier management, and so on.
+	</para>
+
+	<para>
+	The over-all picture should be clear now, the <command>net</command> command plays a central role
+	on the Samba-3 stage. This role will continue to be developed. The inclusion of this chapter is
+	evidence of its importance, one that has grown in complexity to the point that it is no longer considered
+	prudent to cover its use fully in the on-line UNIX man pages.
+	</para>
+
+	</sect1>
+
+	
+	<sect1>
+	<title>Administrative Tasks And Methods</title>
+
+	<para>
+	Stuff goes here - this is a work in progress.
+	</para>
+
+	<sect2>
+	<title>UNIX and Windows Group Management</title>
+
+	<para>
+	More stuff.
+	</para>
+
+	<sect3>
+	<title>Create, Change, Delete Group Accounts</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Manipulating Group Memberships</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+
+	</sect2>
+
+	<sect2>
+	<title>UNIX and Windows User Management</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Administering User Rights and Privileges</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Managing Trust Relationships</title>
+
+	<para>
+	</para>
+
+	<sect3>
+	<title>Machine Trust Accounts</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Inter-Domain Trusts</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>Managing Security Identifiers (SIDS)</title>
+
+	<para>
+	</para>
+
+	</sect2>
+	
+	<sect2>
+	<title>Share Management</title>
+
+	<para>
+	</para>
+
+	<sect3>
+	<title>Creating, Editing, and Removing Shares</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Creating and Changing Share ACLs</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Migration of Files Across Servers</title>
+
+	<para>
+	</para>
+
+	</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>Controlling Open Files</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Session and Connection Management</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Printers and ADS</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Manipulating the Samba Cache</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Other Miscellaneous Operations</title>
+
+	<para>
+	</para>
+
+	</sect2>
 
 	</sect1>
 
