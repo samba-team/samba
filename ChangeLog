@@ -1,5 +1,17 @@
 2005-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: handle pkinit-9, pkinit-19, and pkinit-25
+	enckey, still no DH
+	
+	* kdc/pkinit.c: handle pkinit-9, pkinit-19, and pkinit-25 enckey,
+	still no DH
+
+	* kdc/kerberos5.c (as_rep): search for pkinit-9, pkinit-19, and
+	pkinit-25 pa-data, return empty pkinit pa-data in the
+	PREAUTH_REQUIRED krb-error
+
+	* doc/ack.texi: add pkinit people
+
 	* lib/krb5/krb5_storage.3: document krb5_storage_is_flags
 
 	* lib/krb5/{krb5_compare_creds.3,krb5_get_init_creds.3,
