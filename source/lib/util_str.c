@@ -853,29 +853,6 @@ size_t strlen_m_term(const char *s)
 }
 
 /**
- Return a RFC2254 binary string representation of a buffer.
- Used in LDAP filters.
- Caller must free.
-**/
-char *binary_string(char *buf, int len)
-{
-	char *s;
-	int i, j;
-	const char *hex = "0123456789ABCDEF";
-	s = malloc(len * 3 + 1);
-	if (!s)
-		return NULL;
-	for (j=i=0;i<len;i++) {
-		s[j] = '\\';
-		s[j+1] = hex[((uint8_t)buf[i]) >> 4];
-		s[j+2] = hex[((uint8_t)buf[i]) & 0xF];
-		j += 3;
-	}
-	s[j] = 0;
-	return s;
-}
-
-/**
  Unescape a URL encoded string, in place.
 **/
 
