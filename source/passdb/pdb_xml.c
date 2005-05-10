@@ -563,7 +563,7 @@ static NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method
 	(*pdb_method)->delete_group_mapping_entry = NULL;
 	(*pdb_method)->enum_group_mapping = NULL;
 
-	data = talloc(pdb_context->mem_ctx, sizeof(pdb_xml));
+	data = _talloc(pdb_context->mem_ctx, sizeof(pdb_xml));
 	data->location = talloc_strdup(pdb_context->mem_ctx, (location ? location : "passdb.xml"));
 	data->pwent = NULL;
 	data->written = 0;
