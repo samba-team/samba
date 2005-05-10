@@ -741,21 +741,33 @@ as_rep(KDC_REQ *req,
 #ifdef PKINIT
 	kdc_log(5, "Looking for PKINIT pa-data -- %s", client_name);
 
-	i = 0;
 	e_text = "No PKINIT PA found";
-	while((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ))){
+
+	i = 0;
+	if ((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ)))
+	    ;
+	if (pa == NULL) {
+	    i = 0;
+	    if((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_19)))
+		;
+	}
+	if (pa == NULL) {
+	    i = 0;
+	    if((pa = find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_WIN)))
+		;
+	}
+	if (pa) {
 	    char *client_cert = NULL;
-	    found_pa = 1;
-	    
+
 	    ret = pk_rd_padata(context, req, pa, &pkp);
 	    if (ret) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(5, "Failed to decode PKINIT PA-DATA -- %s", 
 			client_name);
-		continue;
+		goto ts_enc;
 	    }
 	    if (ret == 0 && pkp == NULL)
-		continue;
+		goto ts_enc;
 
 	    ret = pk_check_client(context, 
 				  client_princ, 
@@ -767,16 +779,17 @@ as_rep(KDC_REQ *req,
 		    "impersonate principal";
 		pk_free_client_param(context, pkp);
 		pkp = NULL;
-		goto preauth_done;
+		goto ts_enc;
 	    }
+	    found_pa = 1;
 	    et.flags.pre_authent = 1;
 	    kdc_log(2, "PKINIT pre-authentication succeeded -- %s using %s", 
 		    client_name, client_cert);
 	    free(client_cert);
-	    break;
+	    if (pkp)
+		goto preauth_done;
 	}
-	if (pkp)
-	    goto preauth_done;
+    ts_enc:
 #endif
 	kdc_log(5, "Looking for ENC-TS pa-data -- %s", client_name);
 
@@ -903,6 +916,20 @@ as_rep(KDC_REQ *req,
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
+#ifdef PKINIT
+	ret = realloc_method_data(&method_data);
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+
+	ret = realloc_method_data(&method_data);
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_19;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+#endif
+
 	/* XXX check ret */
 	if (only_older_enctype_p(req))
 	    ret = get_pa_etype_info(&method_data, client, 
@@ -920,7 +947,7 @@ as_rep(KDC_REQ *req,
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
 	krb5_mk_error(context,
 		      ret,
-		      "Need to use PA-ENC-TIMESTAMP",
+		      "Need to use PA-ENC-TIMESTAMP/PA-PK-AS-REQ",
 		      &foo_data,
 		      client_princ,
 		      server_princ,
@@ -928,7 +955,8 @@ as_rep(KDC_REQ *req,
 		      NULL,
 		      reply);
 	free(buf);
-	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
+	kdc_log(0, "No preauth found, returning PREAUTH-REQUIRED -- %s",
+		client_name);
 	ret = 0;
 	goto out2;
     }
