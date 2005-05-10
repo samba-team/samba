@@ -1,7 +1,10 @@
 2005-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* krb5_compare_creds.3, krb5_get_init_creds.3, krb5_krbhst_init.3,
-	krb5_storage.3: make more pretty, from Björn Sandell
+	* lib/krb5/krb5_storage.3: document krb5_storage_is_flags
+
+	* lib/krb5/{krb5_compare_creds.3,krb5_get_init_creds.3,
+	krb5_krbhst_init.3,krb5_storage.3}:
+	make more pretty, from Björn Sandell
 
 2005-05-09  Dave Love  <fx@gnu.org>
 
