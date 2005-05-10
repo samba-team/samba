@@ -1329,7 +1329,7 @@ entries in the LDAP directory to avoid duplication of the UIDs and GIDs that are
 accounts. The LDAP rdn under which this information is stored are called <constant>uidNumber</constant>
 and <constant>gidNumber</constant> respectively. These may be located in any convenient part of the
 directory information tree (DIT). In the examples that follow they have been located under 
-<constant>dn=sambaDomainName=MEGANET2,dc=abmas,dc=org</constant>. They could just as well be located under the rdn
+<constant>dn=sambaDomainName=MEGANET2,dc=abmas,dc=biz</constant>. They could just as well be located under the rdn
 <constant>cn=NextFreeUnixId</constant>.
 </para></note>
 
@@ -1490,8 +1490,8 @@ access to attr=shadowLastChange
 		by * read
 
 access to *
-                by * read
-                by anonymous auth
+        by * read
+        by anonymous auth
 
 #loglevel	256
 
