@@ -127,7 +127,7 @@ struct cldap_netlogon {
 		uint8_t version;
 	} in;
 	struct {
-		struct nbt_cldap_netlogon netlogon;
+		union nbt_cldap_netlogon netlogon;
 	} out;
 };
 
