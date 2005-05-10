@@ -112,8 +112,9 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
+		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
 		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_default failed (%s)\n", 
-			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+			  last_error_message));
 		goto out;
 	}
 
@@ -122,15 +123,13 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 	 * try verifying the ticket using that principal. */
 
 	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
-	if (ret) {
+	if (ret == KRB5_KT_END || ret == ENOENT ) {
+		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
+	} else if (ret) {
 		last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
 		DEBUG(1, ("ads_keytab_verify_ticket: krb5_kt_start_seq_get failed (%s)\n", 
 			  last_error_message));
-		goto out;
-	}
-  
-	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
-	if (ret != KRB5_KT_END && ret != ENOENT ) {
+	} else {
 		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN; /* Pick an error... */
 		while (ret && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
 			krb5_error_code upn_ret;
@@ -219,7 +218,9 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
  Try to verify a ticket using the secrets.tdb.
 ***********************************************************************************/
 
-static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_context context, 
+static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,	
+						 struct cli_credentials *machine_account,
+						 krb5_context context, 
 						 krb5_auth_context auth_context,
 						 krb5_principal host_princ,
 						 const DATA_BLOB *ticket, krb5_data *p_packet, 
@@ -231,43 +232,16 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	int i;
-	const struct ldb_val *password_v;
-	struct ldb_context *ldb;
-	int ldb_ret;
-	struct ldb_message **msgs;
-	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
-	const char *attrs[] = {
-		"secret",
-		NULL
-	};
-	
+	char *password_s = talloc_strdup(mem_ctx, cli_credentials_get_password(machine_account));
+	if (!password_s) {
+		DEBUG(1, ("ads_secrets_verify_ticket: Could not obtain password for our local machine account!\n"));
+		return ENOENT;
+	}
+
 	ZERO_STRUCTP(keyblock);
 
-	/* Local secrets are stored in secrets.ldb */
-	ldb = secrets_db_connect(mem_ctx);
-	if (!ldb) {
-		return ENOENT;
-	}
-
-	/* search for the secret record */
-	ldb_ret = gendb_search(ldb,
-			       mem_ctx, base_dn, &msgs, attrs,
-			       SECRETS_PRIMARY_REALM_FILTER,
-			       lp_realm());
-	if (ldb_ret == 0) {
-		DEBUG(1, ("Could not find domain join record for %s\n",
-			  lp_realm()));
-		return ENOENT;
-	} else if (ldb_ret != 1) {
-		DEBUG(1, ("Found %d records matching cn=%s under DN %s\n", ldb_ret, 
-			  lp_realm(), base_dn));
-		return ENOENT;
-	}
-
-	password_v = ldb_msg_find_ldb_val(msgs[0], "secret");
-
-	password.data = password_v->data;
-	password.length = password_v->length;
+	password.data = password_s;
+	password.length = strlen(password_s);
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
@@ -358,16 +332,6 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
 
-	asprintf(&host_princ_s, "%s$", lp_netbios_name());
-	strlower_m(host_princ_s);
-	ret = krb5_parse_name(context, host_princ_s, &host_princ);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
-			 host_princ_s, error_message(ret)));
-		goto out;
-	}
-
-
 	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
 	 * code surrounding the replay cache... */
 
@@ -397,18 +361,41 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 	ret = ads_keytab_verify_ticket(mem_ctx, context, auth_context, 
 				       service, ticket, &packet, &tkt, keyblock);
 	if (ret) {
-		DEBUG(10, ("ads_secrets_verify_ticket: using host principal: [%s]\n", host_princ_s));
-		ret = ads_secrets_verify_ticket(mem_ctx, context, auth_context,
-						host_princ, ticket, 
-						&packet, &tkt, keyblock);
+		NTSTATUS creds_nt_status;
+		struct cli_credentials *credentials;
+		credentials = cli_credentials_init(mem_ctx);
+		cli_credentials_set_conf(credentials);
+		creds_nt_status = cli_credentials_set_machine_account(credentials);
+		
+		if (!NT_STATUS_IS_OK(creds_nt_status)) {
+			DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
+		} else {
+
+			host_princ_s = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+			host_princ_s = talloc_strlower(mem_ctx, host_princ_s);
+			if (!host_princ_s) {
+				ret = ENOMEM;
+			} else {
+				ret = krb5_parse_name(context, host_princ_s, &host_princ);
+			}
+
+			if (ret) {
+				DEBUG(1,("ads_verify_ticket: krb5_parse_name(%s) failed (%s)\n",
+					 host_princ_s, error_message(ret)));
+			} else {
+
+				DEBUG(10, ("ads_secrets_verify_ticket: using host principal: [%s]\n", host_princ_s));
+				ret = ads_secrets_verify_ticket(mem_ctx, credentials, context, auth_context,
+								host_princ, ticket, 
+								&packet, &tkt, keyblock);
+			}
+		}
 	}
 
 	release_server_mutex();
 	got_replay_mutex = False;
 
 	if (ret) {
-		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
-			 smb_get_krb5_error_message(context, ret, mem_ctx)));
 		goto out;
 	}
 
