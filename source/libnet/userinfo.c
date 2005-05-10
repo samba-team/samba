@@ -175,7 +175,7 @@ static void userinfo_handler(struct rpc_request *req)
  */
 struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 						      struct rpc_composite_userinfo *io,
-						      void (*monitor)(struct monitor_msg *))
+						      void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct userinfo_state *s;
@@ -191,8 +191,7 @@ struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	s->pipe  = p;
 	
 	sid = dom_sid_parse_talloc(s, io->in.sid);
-	if (sid == NULL) goto failure;
-	
+	if (sid == NULL) goto failure;	
 	c->state       = SMBCLI_REQUEST_SEND;
 	c->private     = s;
 	c->event_ctx   = dcerpc_event_context(p);
