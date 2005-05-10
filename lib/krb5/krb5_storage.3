@@ -210,6 +210,12 @@ until the storage is freed.
 and
 .Fn krb5_storage_clear_flags
 modifies the behavior of the storage functions.
+.Fn krb5_storage_is_flags
+tests if the
+.Fa flags
+are set on the
+.Li krb5_storage .
+Valid flags to set, is and clear is are:
 .Pp
 .Bl -tag -width "Fan vet..." -compact -offset indent
 .It KRB5_STORAGE_PRINCIPAL_WRONG_NUM_COMPONENTS
