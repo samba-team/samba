@@ -264,6 +264,8 @@ interface netlogon
 	/*****************/
 	/* Function 0x05 */
 
+	declare enum netr_SchannelType;
+
 	NTSTATUS netr_ServerAuthenticate(
 		[in]         unistr *server_name,
 		[in]         unistr account_name,
