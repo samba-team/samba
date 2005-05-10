@@ -367,19 +367,10 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 
 	/* we select a random transaction id unless the user supplied one */
 	if (request->name_trn_id == 0) {
-		request->name_trn_id = generate_random() % UINT16_MAX;
-	}
-
-	/* choose the next available transaction id >= the one asked for.
-	   The strange 2nd call is to try to make the ids less guessable
-	   and less likely to collide. It's not possible to make NBT secure 
-	   to ID guessing, but this at least makes accidential collisions
-	   less likely */
-	id = idr_get_new_above(req->nbtsock->idr, req, 
-			       request->name_trn_id, UINT16_MAX);
-	if (id == -1) {
-		id = idr_get_new_above(req->nbtsock->idr, req, 
-				       1+(generate_random()%(UINT16_MAX/2)),
+		id = idr_get_new_random(req->nbtsock->idr, req, UINT16_MAX);
+	} else {
+		if (idr_find(req->nbtsock->idr, request->name_trn_id)) goto failed;
+		id = idr_get_new_above(req->nbtsock->idr, req, request->name_trn_id, 
 				       UINT16_MAX);
 	}
 	if (id == -1) goto failed;
