@@ -464,7 +464,7 @@ static NTSTATUS gensec_gsskrb5_sign_packet(struct gensec_security *gensec_securi
 	ssize_t sig_length = 0;
 
 	input_token.length = length;
-	input_token.value = data;
+	input_token.value = discard_const_p(uint8_t *, data);
 
 	maj_stat = gss_wrap(&min_stat, 
 			    gensec_gsskrb5_state->gssapi_context,
