@@ -69,6 +69,10 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @email{fvdl@@netbsd.org}
 @item Cizzi Storm
 @email{cizzi@@it.su.se}
+@item Petr Holub
+@email{Holub.Petr@@atlas.cz}
+@item Mario Strasser
+@email{mario.strasser@@zhwin.ch}
 @item David Love
 @email{fx@@gnu.org}
 @item and we hope that those not mentioned here will forgive us.
