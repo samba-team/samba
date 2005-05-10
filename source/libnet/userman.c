@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 
@@ -71,15 +72,22 @@ static void useradd_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct useradd_state *s = talloc_get_type(c->private, struct useradd_state);
+	struct monitor_msg msg;
 	
 	switch (s->stage) {
 	case USERADD_CREATE:
 		c->status = useradd_create(c, s);
+		msg.type = rpc_create_user;
+		msg.data.rpc_create_user.rid = *s->createuser.out.rid;
 		break;
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
+	}
+
+	if (c->monitor_fn) {
+		c->monitor_fn(&msg);
 	}
 
 	if (c->state >= SMBCLI_REQUEST_DONE &&
@@ -97,7 +105,8 @@ static void useradd_handler(struct rpc_request *req)
  */
 
 struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
-						     struct rpc_composite_useradd *io)
+						     struct rpc_composite_useradd *io,
+						     void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct useradd_state *s;
@@ -111,9 +120,10 @@ struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
 	s->domain_handle = io->in.domain_handle;
 	s->pipe          = p;
 	
-	c->state     = SMBCLI_REQUEST_SEND;
-	c->private   = s;
-	c->event_ctx = dcerpc_event_context(p);
+	c->state       = SMBCLI_REQUEST_SEND;
+	c->private     = s;
+	c->event_ctx   = dcerpc_event_context(p);
+	c->monitor_fn  = monitor;
 
 	/* preparing parameters to send rpc request */
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
@@ -179,7 +189,7 @@ NTSTATUS rpc_composite_useradd(struct dcerpc_pipe *pipe,
 			       TALLOC_CTX *mem_ctx,
 			       struct rpc_composite_useradd *io)
 {
-	struct composite_context *c = rpc_composite_useradd_send(pipe, io);
+	struct composite_context *c = rpc_composite_useradd_send(pipe, io, NULL);
 	return rpc_composite_useradd_recv(c, mem_ctx, io);
 }
 
