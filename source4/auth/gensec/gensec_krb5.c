@@ -284,7 +284,12 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	}
 
 	if (lp_realm() && *lp_realm()) {
-		ret = krb5_set_default_realm(gensec_krb5_state->context, lp_realm());
+		char *upper_realm = strupper_talloc(gensec_krb5_state, lp_realm());
+		if (!upper_realm) {
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
+			return NT_STATUS_NO_MEMORY;
+		}
+		ret = krb5_set_default_realm(gensec_krb5_state->context, upper_realm);
 		if (ret) {
 			DEBUG(1,("gensec_krb5_start: krb5_set_default_realm failed (%s)\n", error_message(ret)));
 			return NT_STATUS_INTERNAL_ERROR;
