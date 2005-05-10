@@ -285,7 +285,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 		return NULL;
 	}
 
-	status = gensec_set_target_service(session->gensec, "CIFS");
+	status = gensec_set_target_service(session->gensec, "cifs");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
