@@ -448,7 +448,7 @@ Offset Size         Name
 #define SMB_FIND_FILE_UNIX             0x202
 
 /*
- Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus
+ Info level for TRANS2_QFSINFO - returns version of CIFS UNIX extensions, plus
  64-bits worth of capability fun :-).
 */
 
@@ -472,7 +472,14 @@ Offset Size         Name
 						security and trusted */
 #define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
 						(chflags) and lsattr */
-						
+#define CIFS_UNIX_POSIX_PATHNAMES_CAP	   0x10 /* Use POSIX pathnames on the wire. */
+
+/*
+ Info level for TRANSACT2_SETFSINFO - takes 64-bits of capabilies in the data section.
+*/
+
+#define SMB_SET_CIFS_UNIX_INFO      0x200
+
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
