@@ -345,6 +345,24 @@ int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int l
 }
 
 /*
+  allocate a new id randomly in the given range
+*/
+int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
+{
+	int id;
+
+	/* first try a random starting point in the whole range, and if that fails,
+	   then start randomly in the bottom half of the range. This can only
+	   fail if the range is over half full */
+	id = idr_get_new_above(idp, ptr, 1+(generate_random() % limit), limit);
+	if (id == -1) {
+		id = idr_get_new_above(idp, ptr, 1+(generate_random()%(limit/2)), limit);
+	}
+	
+	return id;
+}
+
+/*
   find a pointer value previously set with idr_get_new given an id
 */
 void *idr_find(struct idr_context *idp, int id)
