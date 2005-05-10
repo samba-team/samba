@@ -452,24 +452,38 @@
 	/*******************************************/
 	/* CLDAP netlogon response                 */
 
-	typedef enum {
-		CLDAP_NETLOGON_19                = 0x13,
-		CLDAP_NETLOGON_23                = 0x17
-	} nbt_cldap_netlogon_command;
+	/* note that these structures are very similar to, but not
+	   quite identical to, the netlogon structures above */
 
-	/* cldap type 19 netlogon response */
 	typedef struct {
+		[value(19)] uint16   type;
 		nstring              pdc_name;
 		nstring              unknown;
 		nstring              domain_name;
 		uint32               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;		
-	} nbt_cldap_netlogon_19;
+	} nbt_cldap_netlogon_1;
 
-	/* cldap type 23 netlogon response */
 	typedef struct {
-		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
+		[value(19)] uint16   type;
+		nstring              pdc_name;
+		nstring              unknown;
+		nstring              domain_name;
+		GUID                 domain_uuid;
+		GUID                 unknown_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		ipv4address          pdc_ip;
+		nbt_server_type      server_type;
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;		
+	} nbt_cldap_netlogon_2;
+
+	typedef struct {
+		[value(23)] uint32   type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -483,16 +497,40 @@
 		uint32               nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
-	} nbt_cldap_netlogon_23;
+	} nbt_cldap_netlogon_3;
 
-	typedef [nodiscriminant] union {
-		[case(CLDAP_NETLOGON_19)] nbt_cldap_netlogon_19 logon19;
-		[case(CLDAP_NETLOGON_23)] nbt_cldap_netlogon_23 logon23;
-	} nbt_cldap_netlogon_info;
+	typedef struct {
+		[value(23)] uint32   type;
+		nbt_server_type      server_type;
+		GUID                 domain_uuid;
+		nbt_string           forest;
+		nbt_string           dns_domain;
+		nbt_string           pdc_dns_name;
+		nbt_string           domain;
+		nbt_string           pdc_name;
+		nbt_string           user_name;
+		nbt_string           site_name;
+		nbt_string           site_name2;
+		uint8                unknown;
+		uint32               unknown2;
+		[flag(NDR_BIG_ENDIAN)] 
+	          ipv4address          pdc_ip;
+		uint32               unknown3[2];
+		uint32               nt_version;
+		uint16               lmnt_token;
+		uint16               lm20_token;
+	} nbt_cldap_netlogon_4;
 
-	typedef [flag(NDR_NOALIGN),public] struct {
-		nbt_cldap_netlogon_command command;
-		[switch_is(command)] nbt_cldap_netlogon_info info;
+	typedef [flag(NDR_NOALIGN),public,nodiscriminant] union {
+		[case(0)]  nbt_cldap_netlogon_1 logon1;
+		[case(1)]  nbt_cldap_netlogon_1 logon1;
+		[case(2)]  nbt_cldap_netlogon_2 logon2;
+		[case(3)]  nbt_cldap_netlogon_2 logon2;
+		[case(4)]  nbt_cldap_netlogon_3 logon3;
+		[case(5)]  nbt_cldap_netlogon_3 logon3;
+		[case(6)]  nbt_cldap_netlogon_3 logon3;
+		[case(7)]  nbt_cldap_netlogon_3 logon3;
+		[default]  nbt_cldap_netlogon_4 logon4;
 	} nbt_cldap_netlogon;
 
 	/*******************************************/

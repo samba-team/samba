@@ -37,25 +37,19 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	struct cldap_netlogon search;
 	int i;
 
-	search.in.dest_address  = dest;
-	search.in.realm   = lp_realm();
-	search.in.host    = lp_netbios_name();
-	search.in.version = 6;
-	status = cldap_netlogon(cldap, mem_ctx, &search);
+	search.in.dest_address = dest;
+	search.in.realm        = lp_realm();
+	search.in.host         = lp_netbios_name();
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("netlogon failed - %s\n", nt_errstr(status));
-	} else {
-		NDR_PRINT_DEBUG(nbt_cldap_netlogon, &search.out.netlogon);
-	}
-
-	for (i=0;i<20;i++) {
+	for (i=0;i<256;i++) {
 		search.in.version = i;
+		printf("Trying netlogon level %d\n", i);
 		status = cldap_netlogon(cldap, mem_ctx, &search);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("netlogon[%d] failed - %s\n", i, nt_errstr(status));
 		} else {
-			NDR_PRINT_DEBUG(nbt_cldap_netlogon, &search.out.netlogon);
+			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, i & 0xF, 
+					      &search.out.netlogon);
 		}
 	}
 
