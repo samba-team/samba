@@ -204,7 +204,7 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-void msg_handler(struct monitor_msg *m)
+static void msg_handler(struct monitor_msg *m)
 {
 	switch (m->type) {
 	case rpc_open_user:
