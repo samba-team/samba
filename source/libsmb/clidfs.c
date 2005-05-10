@@ -464,7 +464,7 @@ BOOL cli_dfs_make_full_path( pstring path, const char *server, const char *share
  check for dfs referral
 ********************************************************************/
 
-static BOOL cli_dfs_check_error( struct cli_state *cli )
+static BOOL cli_dfs_check_error( struct cli_state *cli, NTSTATUS status )
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
 
@@ -473,7 +473,7 @@ static BOOL cli_dfs_check_error( struct cli_state *cli )
 	if ( !( (flgs2&FLAGS2_32_BIT_ERROR_CODES) && (flgs2&FLAGS2_UNICODE_STRINGS) ) )
 		return False;
 
-	if ( NT_STATUS_EQUAL( NT_STATUS_PATH_NOT_COVERED, NT_STATUS(IVAL(cli->inbuf,smb_rcls)) ) )
+	if ( NT_STATUS_EQUAL( status, NT_STATUS(IVAL(cli->inbuf,smb_rcls)) ) )
 		return True;
 
 	return False;
@@ -605,9 +605,17 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 		return True;
 	}
 
+	/* special case where client asked for a path that does not exist */
+
+	if ( cli_dfs_check_error(rootcli, NT_STATUS_OBJECT_NAME_NOT_FOUND) ) {
+		*targetcli = rootcli;
+		pstrcpy( targetpath, path );
+		return True;
+	}
+
 	/* we got an error, check for DFS referral */
 			
-	if ( !cli_dfs_check_error(rootcli) ) 
+	if ( !cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED) ) 
 		return False;
 
 	/* check for the referral */
