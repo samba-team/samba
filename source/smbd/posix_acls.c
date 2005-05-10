@@ -1097,13 +1097,28 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 
 		if (setting_acl) {
+			/* See if the owning user is in any of the other groups in
+			   the ACE. If so, OR in the permissions from that group. */
+
+			BOOL group_matched = False;
+			canon_ace *pace_iter;
+
+			for (pace_iter = *pp_ace; pace_iter; pace_iter = pace_iter->next) {
+				if (pace_iter->type == SMB_ACL_GROUP_OBJ || pace_iter->type == SMB_ACL_GROUP) {
+					if (uid_entry_in_group(pace, pace_iter)) {
+						pace->perms |= pace_iter->perms;
+						group_matched = True;
+					}
+				}
+			}
+
 			/* If we only got an "everyone" perm, just use that. */
-			if (!got_grp && got_other)
-				pace->perms = pace_other->perms;
-			else if (got_grp && uid_entry_in_group(pace, pace_group))
-				pace->perms = pace_group->perms;
-			else
-				pace->perms = 0;
+			if (!group_matched) {
+				if (got_other)
+					pace->perms = pace_other->perms;
+				else
+					pace->perms = 0;
+			}
 
 			apply_default_perms(fsp, pace, S_IRUSR);
 		} else {
