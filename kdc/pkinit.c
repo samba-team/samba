@@ -66,7 +66,14 @@ struct krb5_pk_cert {
     X509 *cert;
 };
 
+enum pkinit_type {
+    PKINIT_COMPAT_WIN2K = 1,
+    PKINIT_COMPAT_19 = 2,
+    PKINIT_COMPAT_25 = 3
+};
+
 struct pk_client_params {
+    enum pkinit_type type;
     BIGNUM *dh_public_key;
     struct krb5_pk_cert *certificate;
     unsigned nonce;
@@ -113,6 +120,23 @@ static struct pk_principal_mapping principal_mappings;
  */
 
 static krb5_error_code
+pk_check_pkauthenticator_win2k(krb5_context context,
+			       PKAuthenticator_Win2k *a,
+			       KDC_REQ *req)
+{
+    krb5_timestamp now;
+
+    krb5_timeofday (context, &now);
+
+    /* XXX cusec */
+    if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
+	krb5_clear_error_string(context);
+	return KRB5KRB_AP_ERR_SKEW;
+    }
+    return 0;
+}
+
+static krb5_error_code
 pk_check_pkauthenticator_19(krb5_context context,
 			    PKAuthenticator_19 *a,
 			    KDC_REQ *req)
@@ -131,6 +155,13 @@ pk_check_pkauthenticator_19(krb5_context context,
 	return KRB5KRB_AP_ERR_SKEW;
     }
 
+    if (a->paChecksum.cksumtype != CKSUMTYPE_RSA_MD5 &&
+	a->paChecksum.cksumtype != CKSUMTYPE_SHA1)
+    {
+	krb5_clear_error_string(context);
+	ret = KRB5KRB_ERR_GENERIC;
+    }
+
     ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, &req->req_body, &len, ret);
     if (ret) {
 	krb5_clear_error_string(context);
@@ -145,6 +176,59 @@ pk_check_pkauthenticator_19(krb5_context context,
 	krb5_clear_error_string(context);
 
     free(buf);
+    return ret;
+}
+
+static krb5_error_code
+pk_check_pkauthenticator(krb5_context context,
+			 PKAuthenticator *a,
+			 KDC_REQ *req)
+{
+    u_char *buf = NULL;
+    size_t buf_size;
+    krb5_error_code ret;
+    size_t len;
+    krb5_timestamp now;
+    Checksum checksum;
+
+    krb5_timeofday (context, &now);
+
+    /* XXX cusec */
+    if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
+	krb5_clear_error_string(context);
+	return KRB5KRB_AP_ERR_SKEW;
+    }
+
+    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, &req->req_body, &len, ret);
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
+    if (buf_size != len)
+	krb5_abortx(context, "Internal error in ASN.1 encoder");
+
+    ret = krb5_create_checksum(context,
+			       NULL,
+			       0,
+			       CKSUMTYPE_SHA1,
+			       buf,
+			       len,
+			       &checksum);
+    free(buf);
+    if (ret) {
+	krb5_clear_error_string(context);
+	return ret;
+    }
+	
+    if (a->paChecksum.length != checksum.checksum.length ||
+	memcmp(a->paChecksum.data, checksum.checksum.data, 
+	       checksum.checksum.length) != 0)
+    {
+	krb5_clear_error_string(context);
+	ret = KRB5KRB_ERR_GENERIC;
+    }
+    free_Checksum(&checksum);
+
     return ret;
 }
 
@@ -368,110 +452,20 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
     return ret;
 }
 
-krb5_error_code
-pk_rd_padata(krb5_context context,
-             KDC_REQ *req,
-             PA_DATA *pa,
-	     pk_client_params **ret_params)
+#if 0
+/* 
+ * XXX We only need this function if there are several certs for the
+ * KDC to choose from, and right now, we can't handle that so punt for
+ * now.
+ *
+ * If client has sent a list of CA's trusted by him, make sure our
+ * CA is in the list.
+ *
+ */
+
+static void
+verify_trusted_ca(PA_PK_AS_REQ_19 *r)
 {
-    pk_client_params *client_params;
-    krb5_error_code ret;
-    PA_PK_AS_REQ_19 r;
-    AuthPack_19 ap;
-    heim_oid eContentType = { 0, NULL };
-    krb5_data eContent;
-    int i;
-
-    *ret_params = NULL;
-    
-    if (!enable_pkinit) {
-	krb5_clear_error_string(context);
-	return 0;
-    }
-
-    memset(&ap, 0, sizeof(ap));
-    memset(&r, 0, sizeof(r));
-    krb5_data_zero(&eContent);
-
-    client_params = malloc(sizeof(*client_params));
-    if (client_params == NULL) {
-	krb5_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-    memset(client_params, 0, sizeof(*client_params));
-
-    if (pa->padata_type !=  KRB5_PADATA_PK_AS_REQ) {
-	krb5_clear_error_string(context);
-	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
-	goto out;
-    }
-
-    ret = decode_PA_PK_AS_REQ_19(pa->padata_value.data,
-				 pa->padata_value.length,
-				 &r,
-				 NULL);
-    if (ret) {
-	krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
-	return ret;
-    }
-
-    if (heim_oid_cmp(&r.signedAuthPack.contentType, oid_id_pkcs7_signedData())) {
-	krb5_set_error_string(context, "PK-AS-REQ invalid content type oid");
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
-  
-    if (r.signedAuthPack.content == NULL) {
-	krb5_set_error_string(context, "PK-AS-REQ no signed auth pack");
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
-
-    ret = _krb5_pk_verify_sign(context,
-			       r.signedAuthPack.content->data,
-			       r.signedAuthPack.content->length,
-			       kdc_identity,
-			       &eContentType,
-			       &eContent,
-			       &client_params->certificate);
-    if (ret)
-	goto out;
-
-    /* Signature is correct, now verify the signed message */
-    if (heim_oid_cmp(&eContentType, oid_id_pkauthdata())) {
-	krb5_set_error_string(context, "got wrong oid for pkauthdata");
-	ret = KRB5_BADMSGTYPE;
-	goto out;
-    }
-
-    ret = decode_AuthPack_19(eContent.data,
-			     eContent.length,
-			     &ap,
-			     NULL);
-    if (ret) {
-	krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
-	goto out;
-    }
-  
-    ret = pk_check_pkauthenticator_19(context, 
-				      &ap.pkAuthenticator,
-				      req);
-    if (ret)
-	goto out;
-
-    client_params->nonce = ap.pkAuthenticator.nonce;
-
-    if (ap.clientPublicValue) {
-	ret = get_dh_param(context, ap.clientPublicValue, client_params);
-	if (ret)
-	    goto out;
-    }
-
-    /* 
-     * If client has sent a list of CA's trusted by him, make sure our
-     * CA is in the list.
-     */
 
     if (r.trustedCertifiers != NULL) {
 	X509_NAME *kdc_issuer;
@@ -513,21 +507,326 @@ pk_rd_padata(krb5_context context,
 	if (ret)
 	    goto out;
     }
+}
+#endif /* 0 */
+
+krb5_error_code
+pk_rd_padata(krb5_context context,
+             KDC_REQ *req,
+             PA_DATA *pa,
+	     pk_client_params **ret_params)
+{
+    pk_client_params *client_params;
+    krb5_error_code ret;
+    heim_oid eContentType = { 0, NULL };
+    krb5_data eContent = { 0, NULL };
+    krb5_data signed_content = { 0, NULL };
+    const char *type = "unknown type";
+    const heim_oid *pa_contentType;
+
+    *ret_params = NULL;
+    
+    if (!enable_pkinit) {
+	krb5_clear_error_string(context);
+	return 0;
+    }
+
+    client_params = malloc(sizeof(*client_params));
+    if (client_params == NULL) {
+	krb5_clear_error_string(context);
+	ret = ENOMEM;
+	goto out;
+    }
+    memset(client_params, 0, sizeof(*client_params));
+
+    if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
+	PA_PK_AS_REQ_Win2k r;
+	ContentInfo info;
+
+	type = "PK-INIT-Win2k";
+	pa_contentType = oid_id_pkcs7_data();
+
+	ret = decode_PA_PK_AS_REQ_Win2k(pa->padata_value.data,
+					pa->padata_value.length,
+					&r,
+					NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't decode "
+				  "PK-AS-REQ-Win2k: %d", ret);
+	    goto out;
+	}
+	
+	ret = decode_ContentInfo(r.signed_auth_pack.data,
+				 r.signed_auth_pack.length, &info, NULL);
+	free_PA_PK_AS_REQ_Win2k(&r);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
+	    goto out;
+	}
+
+	if (heim_oid_cmp(&info.contentType, oid_id_pkcs7_signedData())) {
+	    krb5_set_error_string(context, "PK-AS-REQ-Win2k invalid content "
+				  "type oid");
+	    free_ContentInfo(&info);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	
+	if (info.content == NULL) {
+	    krb5_set_error_string(context,
+				  "PK-AS-REQ-Win2k no signed auth pack");
+	    free_ContentInfo(&info);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+
+	signed_content.data = malloc(info.content->length);
+	if (signed_content.data == NULL) {
+	    ret = ENOMEM;
+	    free_ContentInfo(&info);
+	    krb5_set_error_string(context, "PK-AS-REQ-Win2k out of memory");
+	    goto out;
+	}
+	signed_content.length = info.content->length;
+	memcpy(signed_content.data, info.content->data, signed_content.length);
+
+	free_ContentInfo(&info);
+
+    } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_19) {
+	PA_PK_AS_REQ_19 r;
+
+	type = "PK-INIT-19";
+	pa_contentType = oid_id_pkauthdata();
+
+	ret = decode_PA_PK_AS_REQ_19(pa->padata_value.data,
+				     pa->padata_value.length,
+				     &r,
+				     NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't decode "
+				  "PK-AS-REQ-19: %d", ret);
+	    goto out;
+	}
+	
+	if (heim_oid_cmp(&r.signedAuthPack.contentType, 
+			 oid_id_pkcs7_signedData()))
+	{
+	    krb5_set_error_string(context, "PK-AS-REQ-19 invalid content "
+				  "type oid");
+	    free_PA_PK_AS_REQ_19(&r);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	
+	if (r.signedAuthPack.content == NULL) {
+	    krb5_set_error_string(context, "PK-AS-REQ-19 no signed auth pack");
+	    free_PA_PK_AS_REQ_19(&r);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+
+	signed_content.data = malloc(r.signedAuthPack.content->length);
+	if (signed_content.data == NULL) {
+	    ret = ENOMEM;
+	    free_PA_PK_AS_REQ_19(&r);
+	    krb5_set_error_string(context, "PK-AS-REQ-19 out of memory");
+	    goto out;
+	}
+	signed_content.length = r.signedAuthPack.content->length;
+	memcpy(signed_content.data, r.signedAuthPack.content->data,
+	       signed_content.length);
+
+	free_PA_PK_AS_REQ_19(&r);
+    } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ) {
+	PA_PK_AS_REQ r;
+	ContentInfo info;
+
+	type = "PK-INIT-25";
+	pa_contentType = oid_id_pkauthdata();
+
+	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
+				  pa->padata_value.length,
+				  &r,
+				  NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
+	    goto out;
+	}
+	
+	ret = decode_ContentInfo(r.signedAuthPack.data,
+				 r.signedAuthPack.length, &info, NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "Can't decode PK-AS-REQ: %d", ret);
+	    goto out;
+	}
+
+	if (heim_oid_cmp(&info.contentType, oid_id_pkcs7_signedData())) {
+	    krb5_set_error_string(context, "PK-AS-REQ invalid content "
+				  "type oid");
+	    free_ContentInfo(&info);
+	    free_PA_PK_AS_REQ(&r);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	
+	if (info.content == NULL) {
+	    krb5_set_error_string(context, "PK-AS-REQ no signed auth pack");
+	    free_PA_PK_AS_REQ(&r);
+	    free_ContentInfo(&info);
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+
+	signed_content.data = malloc(info.content->length);
+	if (signed_content.data == NULL) {
+	    ret = ENOMEM;
+	    free_ContentInfo(&info);
+	    free_PA_PK_AS_REQ(&r);
+	    krb5_set_error_string(context, "PK-AS-REQ out of memory");
+	    goto out;
+	}
+	signed_content.length = info.content->length;
+	memcpy(signed_content.data, info.content->data, signed_content.length);
+
+	free_ContentInfo(&info);
+	free_PA_PK_AS_REQ(&r);
+
+    } else { 
+	krb5_clear_error_string(context);
+	ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+	goto out;
+    }
+
+    ret = _krb5_pk_verify_sign(context,
+			       signed_content.data,
+			       signed_content.length,
+			       kdc_identity,
+			       &eContentType,
+			       &eContent,
+			       &client_params->certificate);
+    if (ret)
+	goto out;
+
+    /* Signature is correct, now verify the signed message */
+    if (heim_oid_cmp(&eContentType, pa_contentType)) {
+	krb5_set_error_string(context, "got wrong oid for pkauthdata");
+	ret = KRB5_BADMSGTYPE;
+	goto out;
+    }
+
+    if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
+	AuthPack_Win2k ap;
+
+	ret = decode_AuthPack_Win2k(eContent.data,
+				    eContent.length,
+				    &ap,
+				    NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
+	    goto out;
+	}
+  
+	ret = pk_check_pkauthenticator_win2k(context, 
+					     &ap.pkAuthenticator,
+					     req);
+	if (ret) {
+	    free_AuthPack_Win2k(&ap);
+	    goto out;
+	}
+
+	client_params->type = PKINIT_COMPAT_WIN2K;
+	client_params->nonce = ap.pkAuthenticator.nonce;
+
+	if (ap.clientPublicValue) {
+	    krb5_set_error_string(context, "DH not supported for windows");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	free_AuthPack_Win2k(&ap);
+
+    } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_19) {
+	AuthPack_19 ap;
+
+	ret = decode_AuthPack_19(eContent.data,
+				 eContent.length,
+				 &ap,
+				 NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
+	    free_AuthPack_19(&ap);
+	    goto out;
+	}
+  
+	ret = pk_check_pkauthenticator_19(context, 
+					  &ap.pkAuthenticator,
+					  req);
+	if (ret) {
+	    free_AuthPack_19(&ap);
+	    goto out;
+	}
+
+	client_params->type = PKINIT_COMPAT_19;
+	client_params->nonce = ap.pkAuthenticator.nonce;
+
+	if (ap.clientPublicValue) {
+	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
+	    if (ret) {
+		free_AuthPack_19(&ap);
+		goto out;
+	    }
+	}
+	free_AuthPack_19(&ap);
+    } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ) {
+	AuthPack ap;
+
+	ret = decode_AuthPack(eContent.data,
+			      eContent.length,
+			      &ap,
+			      NULL);
+	if (ret) {
+	    krb5_set_error_string(context, "can't decode AuthPack: %d", ret);
+	    free_AuthPack(&ap);
+	    goto out;
+	}
+  
+	ret = pk_check_pkauthenticator(context, 
+				       &ap.pkAuthenticator,
+				       req);
+	if (ret) {
+	    free_AuthPack(&ap);
+	    goto out;
+	}
+
+	client_params->type = PKINIT_COMPAT_25;
+	client_params->nonce = ap.pkAuthenticator.nonce;
+
+	if (ap.clientPublicValue) {
+	    krb5_set_error_string(context, "PK-INIT, no support for DH");
+	    ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+	    free_AuthPack(&ap);
+	    goto out;
+	}
+	free_AuthPack(&ap);
+    } else
+	krb5_abortx(context, "internal pkinit error");
 
     /* 
      * Remaining fields (ie kdcCert and encryptionCert) in the request
      * are ignored for now.
      */
 
+    kdc_log(0, "PK-INIT request of type %s", type);
+
  out:
+
+    if (signed_content.data)
+	free(signed_content.data);
     krb5_data_free(&eContent);
     free_oid(&eContentType);
     if (ret)
 	pk_free_client_param(context, client_params);
     else
 	*ret_params = client_params;
-    free_PA_PK_AS_REQ_19(&r);
-    free_AuthPack_19(&ap);
     return ret;
 }
 
@@ -551,9 +850,9 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 
 static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
-      	              pk_client_params *client_params,
+		      pk_client_params *client_params,
 		      const KDC_REQ *req,
-                      krb5_keyblock *reply_key,
+		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
     KeyTransRecipientInfo *ri;
@@ -629,8 +928,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
     enc_alg->parameters->data = params.data;
     enc_alg->parameters->length = params.length;
 
-    {
-	ReplyKeyPack_19 kp;
+    if (client_params->type == PKINIT_COMPAT_WIN2K || client_params->type == PKINIT_COMPAT_19 || client_params->type == PKINIT_COMPAT_25) {
+	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
@@ -640,8 +939,10 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	kp.nonce = client_params->nonce;
 	
-	ASN1_MALLOC_ENCODE(ReplyKeyPack_19, buf.data, buf.length, &kp, &size,ret);
-	free_ReplyKeyPack_19(&kp);
+	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
+	free_ReplyKeyPack(&kp);
+    } else {
+	krb5_abortx(context, "internal pkinit error");
     }
     if (ret) {
 	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
@@ -879,10 +1180,10 @@ pk_mk_pa_reply(krb5_context context,
 	       METHOD_DATA *md)
 {
     krb5_error_code ret;
-    PA_PK_AS_REP_19 rep;
     void *buf;
     size_t len, size;
     krb5_enctype enctype;
+    int pa_type;
     int i;
 
     if (!enable_pkinit) {
@@ -890,63 +1191,180 @@ pk_mk_pa_reply(krb5_context context,
 	return 0;
     }
 
-    memset(&rep, 0, sizeof(rep));
+    if (req->req_body.etype.len > 0) {
+	for (i = 0; i < req->req_body.etype.len; i++)
+	    if (krb5_enctype_valid(context, req->req_body.etype.val[i]) == 0)
+		break;
+	if (req->req_body.etype.len <= i) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_string(context,
+				  "No valid enctype available from client");
+	    goto out;
+	}	
+	enctype = req->req_body.etype.val[i];
+    } else
+	enctype = ETYPE_DES3_CBC_SHA1;
 
-    if (req->req_body.etype.len < 1) {
-    }
+    if (client_params->type == PKINIT_COMPAT_25) {
+	PA_PK_AS_REP rep;
 
-    /* XXX select best/allowed enctype */
-    for (i = 0; i < req->req_body.etype.len; i++)
-	if (krb5_enctype_valid(context, req->req_body.etype.val[i]) == 0)
-	    break;
-    if (req->req_body.etype.len <= i) {
-	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_string(context,
-			      "No valid enctype available from client");
-	goto out;
-    }	
-    enctype = req->req_body.etype.val[i];
+	pa_type = KRB5_PADATA_PK_AS_REP;
 
-    if (client_params->dh == NULL) {
-	rep.element = choice_PA_PK_AS_REP_19_encKeyPack;
+	memset(&rep, 0, sizeof(rep));
 
-	krb5_generate_random_keyblock(context, enctype, 
-				      &client_params->reply_key);
+	if (client_params->dh == NULL) {
+	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
+	    ContentInfo info;
 
-	ret = pk_mk_pa_reply_enckey(context,
-				    client_params,
-				    req,
+	    krb5_generate_random_keyblock(context, enctype, 
+					  &client_params->reply_key);
+	    ret = pk_mk_pa_reply_enckey(context,
+					client_params,
+					req,
+					&client_params->reply_key,
+					&info);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
+	    ASN1_MALLOC_ENCODE(ContentInfo, rep.u.encKeyPack.data, 
+			       rep.u.encKeyPack.length, &info, &size, 
+			       ret);
+	    free_ContentInfo(&info);
+	    if (ret) {
+		krb5_set_error_string(context, "encoding of Key ContentInfo "
+				      "failed %d", ret);
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
+	    if (rep.u.encKeyPack.length != size)
+		krb5_abortx(context, "Internal ASN.1 encoder error");
+
+	} else {
+	    krb5_set_error_string(context, "DH -25 not implemented");
+	    ret = KRB5KRB_ERR_GENERIC;
+	}
+	if (ret) {
+	    free_PA_PK_AS_REP(&rep);
+	    goto out;
+	}
+
+	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
+	free_PA_PK_AS_REP(&rep);
+	if (ret) {
+	    krb5_set_error_string(context, "encode PA-PK-AS-REP failed %d",
+				  ret);
+	    goto out;
+	}
+	if (len != size)
+	    krb5_abortx(context, "Internal ASN.1 encoder error");
+
+    } else if (client_params->type == PKINIT_COMPAT_19) {
+	PA_PK_AS_REP_19 rep;
+
+	pa_type = KRB5_PADATA_PK_AS_REP_19;
+
+	memset(&rep, 0, sizeof(rep));
+
+	if (client_params->dh == NULL) {
+	    rep.element = choice_PA_PK_AS_REP_19_encKeyPack;
+	    krb5_generate_random_keyblock(context, enctype, 
+					  &client_params->reply_key);
+	    ret = pk_mk_pa_reply_enckey(context,
+					client_params,
+					req,
+					&client_params->reply_key,
+					&rep.u.encKeyPack);
+	} else {
+	    rep.element = choice_PA_PK_AS_REP_19_dhSignedData;
+
+	    ret = check_dh_params(client_params->dh);
+	    if (ret)
+		return ret;
+
+	    ret = generate_dh_keyblock(context, client_params, enctype,
+				       &client_params->reply_key);
+	    if (ret)
+		return ret;
+
+	    ret = pk_mk_pa_reply_dh(context, client_params->dh,
+				    client_params, 
 				    &client_params->reply_key,
-				    &rep.u.encKeyPack);
-    } else {
-	rep.element = choice_PA_PK_AS_REP_19_dhSignedData;
+				    &rep.u.dhSignedData);
+	}
+	if (ret) {
+	    free_PA_PK_AS_REP_19(&rep);
+	    goto out;
+	}
 
-	ret = check_dh_params(client_params->dh);
-	if (ret)
-	    return ret;
+	ASN1_MALLOC_ENCODE(PA_PK_AS_REP_19, buf, len, &rep, &size, ret);
+	free_PA_PK_AS_REP_19(&rep);
+	if (ret) {
+	    krb5_set_error_string(context, 
+				  "encode PA-PK-AS-REP-19 failed %d", ret);
+	    goto out;
+	}
+	if (len != size)
+	    krb5_abortx(context, "Internal ASN.1 encoder error");
+    } else if (client_params->type == PKINIT_COMPAT_WIN2K) {
+	PA_PK_AS_REP_Win2k rep;
 
-	ret = generate_dh_keyblock(context, client_params, enctype,
-				   &client_params->reply_key);
-	if (ret)
-	    return ret;
+	pa_type = KRB5_PADATA_PK_AS_REP_19;
 
-	ret = pk_mk_pa_reply_dh(context, client_params->dh,
-				client_params, 
-				&client_params->reply_key,
-				&rep.u.dhSignedData);
-    }
-    if (ret)
-	goto out;
+	memset(&rep, 0, sizeof(rep));
 
-    ASN1_MALLOC_ENCODE(PA_PK_AS_REP_19, buf, len, &rep, &size, ret);
-    if (ret) {
-	krb5_set_error_string(context, "encode PA-PK-AS-REP failed %d", ret);
-	goto out;
-    }
-    if (len != size)
-	krb5_abortx(context, "Internal ASN.1 encoder error");
+	if (client_params->dh) {
+	    krb5_set_error_string(context, "DH -25 not implemented");
+	    ret = KRB5KRB_ERR_GENERIC;
+	} else {
+	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
+	    ContentInfo info;
 
-    ret = krb5_padata_add(context, md, KRB5_PADATA_PK_AS_REP, buf, len);
+	    krb5_generate_random_keyblock(context, enctype, 
+					  &client_params->reply_key);
+	    ret = pk_mk_pa_reply_enckey(context,
+					client_params,
+					req,
+					&client_params->reply_key,
+					&info);
+	    if (ret) {
+		free_PA_PK_AS_REP_Win2k(&rep);
+		goto out;
+	    }
+	    ASN1_MALLOC_ENCODE(ContentInfo, rep.u.encKeyPack.data, 
+			       rep.u.encKeyPack.length, &info, &size, 
+			       ret);
+	    free_ContentInfo(&info);
+	    if (ret) {
+		krb5_set_error_string(context, "encoding of Key ContentInfo "
+				      "failed %d", ret);
+		free_PA_PK_AS_REP_Win2k(&rep);
+		goto out;
+	    }
+	    if (rep.u.encKeyPack.length != size)
+		krb5_abortx(context, "Internal ASN.1 encoder error");
+
+	}
+	if (ret) {
+	    free_PA_PK_AS_REP_Win2k(&rep);
+	    goto out;
+	}
+
+	ASN1_MALLOC_ENCODE(PA_PK_AS_REP_Win2k, buf, len, &rep, &size, ret);
+	free_PA_PK_AS_REP_Win2k(&rep);
+	if (ret) {
+	    krb5_set_error_string(context, 
+				  "encode PA-PK-AS-REP-Win2k failed %d", ret);
+	    goto out;
+	}
+	if (len != size)
+	    krb5_abortx(context, "Internal ASN.1 encoder error");
+
+    } else
+	krb5_abortx(context, "PK-INIT internal error");
+
+
+    ret = krb5_padata_add(context, md, pa_type, buf, len);
     if (ret) {
 	krb5_set_error_string(context, "failed adding "
 			      "PA-PK-AS-REP-19 %d", ret);
@@ -955,7 +1373,6 @@ pk_mk_pa_reply(krb5_context context,
  out:
     if (ret == 0)
 	*reply_key = &client_params->reply_key;
-    free_PA_PK_AS_REP_19(&rep);
     return ret;
 }
 

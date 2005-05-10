@@ -814,6 +814,18 @@ pk_mk_padata(krb5_context context,
     } else if (compat == COMPAT_25) {
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
+
+	ASN1_MALLOC_ENCODE(ContentInfo,
+			   req.signedAuthPack.data,
+			   req.signedAuthPack.length,
+			   &content_info,
+			   &size,
+			   ret);
+	if (ret)
+	    goto out;
+	if (req.signedAuthPack.length != size)
+	    krb5_abortx(context, "Internal ASN1 encoder error");
+
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
 			   &req, &size, ret);
 
@@ -851,7 +863,7 @@ _krb5_pk_mk_padata(krb5_context context,
     int win2k_compat;
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
-						TRUE,
+						FALSE,
 						"realms",
 						req_body->realm,
 						"win2k_pkinit",
@@ -867,11 +879,10 @@ _krb5_pk_mk_padata(krb5_context context,
 	ret = pk_mk_padata(context, COMPAT_19, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
-#if 0
+
 	ret = pk_mk_padata(context, COMPAT_25, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
-#endif
     }
 
     provisioning_server =
@@ -1724,78 +1735,125 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 {
     krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
-    PA_PK_AS_REP_19 rep;
-    PA_PK_AS_REP_Win2k w2krep;
     ContentInfo ci;
     size_t size;
 
-    memset(&rep, 0, sizeof(rep));
+    /* Check for PK-INIT -25 */
+    {
+	PA_PK_AS_REP rep;
 
-    ret = decode_PA_PK_AS_REP_19(pa->padata_value.data,
-				 pa->padata_value.length,
-				 &rep,
-				 &size);
-    if (ret == 0) {
-	switch(rep.element) {
-	case choice_PA_PK_AS_REP_19_dhSignedData:
-	    ret = pk_rd_pa_reply_dh(context, &rep.u.dhSignedData, ctx,
-				    etype, nonce, pa, key);
-	    break;
-	case choice_PA_PK_AS_REP_19_encKeyPack:
-	    ret = pk_rd_pa_reply_enckey(context, 0,
-					&rep.u.encKeyPack, ctx,
-					etype, nonce, pa, key);
-	    break;
-	default:
-	    krb5_set_error_string(context, "PKINIT: reply invalid "
-				  "content type");
-	    ret = EINVAL;
-	    break;
-	}
-	free_PA_PK_AS_REP_19(&rep);
+	memset(&rep, 0, sizeof(rep));
 
+	ret = decode_PA_PK_AS_REP(pa->padata_value.data,
+				  pa->padata_value.length,
+				  &rep,
+				  &size);
+	if (ret == 0) {
+	    
+	    switch (rep.element) {
+	    case choice_PA_PK_AS_REP_encKeyPack:
+		ret = decode_ContentInfo(rep.u.encKeyPack.data,
+					 rep.u.encKeyPack.length,
+					 &ci,
+					 &size);
+		if (ret) {
+		    krb5_set_error_string(context,
+					  "PKINIT: -25 decoding failed "
+					  "ContentInfo: %d", ret);
+		    return ret;
+		}
+		ret = pk_rd_pa_reply_enckey(context, 0, &ci, ctx,
+					    etype, nonce, pa, key);
+		free_ContentInfo(&ci);
+		break;
+	    default:
+		krb5_set_error_string(context, "PKINIT: -25 reply "
+				      "invalid content type");
+		ret = EINVAL;
+		break;
+	    }
+	}    
+	free_PA_PK_AS_REP(&rep);
 	if (ret == 0)
 	    return 0;
     }
 
-    /* Check for Windows encoding of the AS-REP pa data */ 
+    /* Check for PK-INIT -19 */
+    {
+	PA_PK_AS_REP_19 rep19;
 
-    memset(&w2krep, 0, sizeof(w2krep));
-    
-    ret = decode_PA_PK_AS_REP_Win2k(pa->padata_value.data,
-				    pa->padata_value.length,
-				    &w2krep,
-				    &size);
-    if (ret) {
-	krb5_set_error_string(context, "PKINIT: Failed decoding windows"
-			      "pkinit reply %d", ret);
-	return ret;
+	memset(&rep19, 0, sizeof(rep19));
+
+	ret = decode_PA_PK_AS_REP_19(pa->padata_value.data,
+				     pa->padata_value.length,
+				     &rep19,
+				     &size);
+	if (ret == 0) {
+	    switch(rep19.element) {
+	    case choice_PA_PK_AS_REP_19_dhSignedData:
+		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
+					etype, nonce, pa, key);
+		break;
+	    case choice_PA_PK_AS_REP_19_encKeyPack:
+		ret = pk_rd_pa_reply_enckey(context, 0,
+					    &rep19.u.encKeyPack, ctx,
+					    etype, nonce, pa, key);
+		break;
+	    default:
+		krb5_set_error_string(context, "PKINIT: -19 reply invalid "
+				      "content type");
+		ret = EINVAL;
+		break;
+	    }
+	    free_PA_PK_AS_REP_19(&rep19);
+
+	    if (ret == 0)
+		return 0;
+	}
     }
-    
-    switch (w2krep.element) {
-    case choice_PA_PK_AS_REP_Win2k_encKeyPack:
-	ret = decode_ContentInfo(w2krep.u.encKeyPack.data,
-				 w2krep.u.encKeyPack.length,
-				 &ci,
-				 &size);
+
+    /* Check for Windows encoding of the AS-REP pa data */ 
+    {
+	PA_PK_AS_REP_Win2k w2krep;
+
+	memset(&w2krep, 0, sizeof(w2krep));
+	
+	ret = decode_PA_PK_AS_REP_Win2k(pa->padata_value.data,
+					pa->padata_value.length,
+					&w2krep,
+					&size);
 	if (ret) {
-	    krb5_set_error_string(context,
-				  "PKINIT: decoding failed ContentInfo: %d",
-				  ret);
+	    krb5_set_error_string(context, "PKINIT: Failed decoding windows"
+				  "pkinit reply %d", ret);
 	    return ret;
 	}
-	ret = pk_rd_pa_reply_enckey(context, 1, &ci, ctx,
-				    etype, nonce, pa, key);
-	free_ContentInfo(&ci);
 	
-	break;
-    default:
-	krb5_set_error_string(context, "PKINIT: reply invalid content type");
-	ret = EINVAL;
-	break;
-    }
+	switch (w2krep.element) {
+	case choice_PA_PK_AS_REP_Win2k_encKeyPack:
+	    ret = decode_ContentInfo(w2krep.u.encKeyPack.data,
+				     w2krep.u.encKeyPack.length,
+				     &ci,
+				     &size);
+	    if (ret) {
+		krb5_set_error_string(context,
+				      "PKINIT: decoding failed "
+				      "ContentInfo: %d",
+				      ret);
+		return ret;
+	    }
+	    ret = pk_rd_pa_reply_enckey(context, 1, &ci, ctx,
+					etype, nonce, pa, key);
+	    free_ContentInfo(&ci);
+	    break;
+	default:
+	    krb5_set_error_string(context, "PKINIT: win2k reply invalid "
+				  "content type");
+	    ret = EINVAL;
+	    break;
+	}
     
-    free_PA_PK_AS_REP_Win2k(&w2krep);
+	free_PA_PK_AS_REP_Win2k(&w2krep);
+    }
 
     return ret;
 }
