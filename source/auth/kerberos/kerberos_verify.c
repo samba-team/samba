@@ -372,7 +372,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 		} else {
 
 			host_princ_s = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
-			host_princ_s = talloc_strlower(mem_ctx, host_princ_s);
+			host_princ_s = strlower_talloc(mem_ctx, host_princ_s);
 			if (!host_princ_s) {
 				ret = ENOMEM;
 			} else {
