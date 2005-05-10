@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
+#include "libcli/composite/monitor.h"
 
 #define TEST_USERNAME  "libnetusermantest"
 
@@ -88,6 +89,8 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.domain_handle = *domain_handle;
 	user.in.username      = name;
 
+	printf("Testing rpc_composite_useradd\n");
+
 	status = rpc_composite_useradd(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync rpc_composite_userinfo - %s\n", nt_errstr(status));
@@ -95,6 +98,46 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 	
 	return ret;
+}
+
+
+static void msg_handler(struct monitor_msg *m)
+{
+	switch (m->type) {
+	case rpc_create_user:
+		printf("monitor_msg: user created (rid=%d)\n", m->data.rpc_create_user.rid);
+		break;
+	}
+}
+
+
+static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle, const char* username)
+{
+	NTSTATUS status;
+	BOOL ret = True;
+	struct composite_context *c;
+	struct rpc_composite_useradd user;
+
+	user.in.domain_handle = *handle;
+	user.in.username      = username;
+	
+	printf("Testing async rpc_composite_useradd\n");
+	
+	c = rpc_composite_useradd_send(p, &user, msg_handler);
+	if (!c) {
+		printf("Failed to call async rpc_composite_useradd\n");
+		return False;
+	}
+
+	status = rpc_composite_useradd_recv(c, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Calling async rpc_composite_useradd failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+
 }
 
 
@@ -260,6 +303,21 @@ BOOL torture_useradd(void)
 	}
 
 	if (!test_useradd(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_cleanup(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_useradd_async(p, mem_ctx, &h, name)) {
 		ret = False;
 		goto done;
 	}
