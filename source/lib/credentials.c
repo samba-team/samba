@@ -175,10 +175,14 @@ char *cli_credentials_get_principal(struct cli_credentials *cred,
 			       cli_credentials_get_realm(cred));
 }
 
+/**
+ * Set the realm for this credentials context, and force it to
+ * uppercase for the sainity of our local kerberos libraries 
+ */
 BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
 {
 	if (obtained >= cred->realm_obtained) {
-		cred->realm = talloc_strdup(cred, val);
+		cred->realm = strupper_talloc(cred, val);
 		cred->realm_obtained = obtained;
 		return True;
 	}
