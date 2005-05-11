@@ -50,6 +50,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE server_service_nbtd
 ################################################
 
+################################################
+# Start MODULE server_service_cldapd
+[MODULE::server_service_cldap]
+INIT_FUNCTION = server_service_cldapd_init
+SUBSYSTEM = SERVER_SERVICE
+REQUIRED_SUBSYSTEMS = \
+		CLDAPD
+# End MODULE server_service_cldapd
+################################################
+
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
