@@ -178,7 +178,7 @@ struct gensec_ntlmssp_state
 			/* internal variables used by NTLM2 */
 			uint8_t session_nonce[16];
 		} ntlm2;
-	} v;
+	};
 
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
