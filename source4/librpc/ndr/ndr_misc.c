@@ -91,6 +91,16 @@ struct GUID GUID_random(void)
 	return guid;
 }
 
+/* generate a random GUID */
+struct GUID GUID_zero(void)
+{
+	struct GUID guid;
+
+	ZERO_STRUCT(guid);
+
+	return guid;
+}
+
 BOOL GUID_all_zero(const struct GUID *u)
 {
 	if (u->time_low != 0 ||
