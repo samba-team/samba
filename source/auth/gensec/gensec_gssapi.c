@@ -656,6 +656,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.name		= "gssapi_krb5",
 	.sasl_name	= "GSSAPI",
+	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
 	.oid            = GENSEC_OID_KERBEROS5,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
