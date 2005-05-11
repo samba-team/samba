@@ -323,6 +323,7 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 			if (response() < 0)
 				goto next;
 		}
+#undef MODEMASK
 #define	MODEMASK	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
 		snprintf(buf, sizeof(buf), "C%04o %lu %s\n",
 			 stb.st_mode & MODEMASK,
