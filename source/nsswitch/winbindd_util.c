@@ -408,6 +408,9 @@ static void init_child_recv(void *private, BOOL success)
 	struct init_child_state *state =
 		talloc_get_type_abort(private, struct init_child_state);
 
+	DEBUG(5, ("Received child initialization response for domain %s\n",
+		  state->domain->name));
+
 	if ((!success) || (state->response->result != WINBINDD_OK)) {
 		DEBUG(3, ("Could not init child\n"));
 		state->continuation(state->private, False);
@@ -515,7 +518,6 @@ void init_domain_list(void)
 
 	domain->primary = True;
 	setup_domain_child(domain, &domain->child);
-	init_child_connection(domain, NULL, NULL);
 
 	/* Add our local SAM domains */
 
