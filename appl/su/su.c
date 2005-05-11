@@ -49,6 +49,9 @@ RCSID("$Id$");
 #endif
 
 #include <pwd.h>
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
 
 #include "crypto-headers.h"
 #ifdef KRB5

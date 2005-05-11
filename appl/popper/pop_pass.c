@@ -5,6 +5,10 @@
  */
 
 #include <popper.h>
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+
 RCSID("$Id$");
 
 #ifdef KRB4
