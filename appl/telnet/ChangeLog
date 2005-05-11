@@ -1,3 +1,8 @@
+2005-05-11  Dave Love  <fx@gnu.org>
+
+	* telnet/telnet.c: undef ISASCII before we define our own (problem
+	on Irix)
+
 2005-04-28  Johan Danielsson  <joda@pdc.kth.se>
 
 	* telnetd/utility.c (putf): %t: the regular and streamspty case
