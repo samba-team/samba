@@ -1,3 +1,7 @@
+2005-05-10  Dave Love  <fx@gnu.org>
+
+	* login.c: Include <crypt.h>.
+
 2005-05-02  Dave Love  <fx@gnu.org>
 
 	* limits_conf.c: Check RLIMIT_MEMLOCK, not RLIMIT_LOCK.

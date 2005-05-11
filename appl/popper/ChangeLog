@@ -1,3 +1,7 @@
+2005-05-10  Dave Love  <fx@gnu.org>
+
+	* pop_pass.c: Include <crypt.h>.
+
 2004-08-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* popper.c: add message to NOOP result to appease gcc

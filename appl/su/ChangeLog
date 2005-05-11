@@ -1,3 +1,7 @@
+2005-05-10  Dave Love  <fx@gnu.org>
+
+	* su.c: Include <crypt.h>.
+
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* su.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
