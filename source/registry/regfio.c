@@ -1365,8 +1365,9 @@ static void update_free_space( REGF_HBIN *hbin, uint32 size_used )
 
 static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 {
-	REGF_HBIN *hbin = NULL;
+	REGF_HBIN *hbin, *p_hbin;
 	uint32 block_off;
+	BOOL cached;
 
 	/* check open block list */
 
@@ -1395,8 +1396,27 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 
 		hbin = read_hbin_block( file, block_off );
 
-		if ( hbin ) 
+		if ( hbin ) {
+
+			/* make sure that we don't already have this block in memory */
+
+			cached = False;
+			for ( p_hbin=file->block_list; p_hbin!=NULL; p_hbin=p_hbin->next ) {
+				if ( p_hbin->file_off == hbin->file_off ) {
+					cached = True;	
+					break;
+				}
+			}
+
 			block_off = hbin->file_off + hbin->block_size;
+
+			if ( cached ) {
+				prs_mem_free( &hbin->ps );
+				hbin = NULL;
+				continue;
+			}
+		}
+
 
 	} while ( hbin && (hbin->free_size < size) );
 	
@@ -1428,6 +1448,15 @@ done:
 
 	if ( !prs_uint32("allocated_size", &hbin->ps, 0, &size) )
 		return False;
+#if 0
+	if ( !prs_uint8s(True, "allocated_header", &hbin->ps, 0, header, REC_HDR_SIZE) )
+		return False;
+
+	/* reset pointer to beginning of clean record */
+
+	if ( !prs_set_offset( &hbin->ps, hbin->free_off ) )
+		return NULL;
+#endif
 
 	update_free_space( hbin, size );
 	
@@ -1553,7 +1582,7 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 
 	/* store the parent offset (or -1 if a the root key */
 
-	nk->parent_off = parent ? (parent->hbin_off + parent->hbin->file_off - REGF_BLOCKSIZE + HBIN_HDR_SIZE ) : REGF_OFFSET_NONE;
+	nk->parent_off = parent ? (parent->hbin_off + parent->hbin->file_off - REGF_BLOCKSIZE - HBIN_HDR_SIZE ) : REGF_OFFSET_NONE;
 
 	/* no classname currently */
 
