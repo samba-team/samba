@@ -749,12 +749,16 @@ static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	/* get the data if necessary */
 
 	if ( vk->data_size != 0 ) {
-		BOOL charmode = vk->type & (REG_SZ|REG_MULTI_SZ);
+		BOOL charmode = False;
+
+		if ( (vk->type == REG_SZ) || (vk->type == REG_MULTI_SZ) )
+			charmode = True;
 
 		/* the data is stored in the offset if the size <= 4 */
 
 		if ( !(vk->data_size & VK_DATA_IN_OFFSET) ) {
 			REGF_HBIN *hblock = hbin;
+			uint32 data_rec_size;
 
 			if ( UNMARSHALLING(&hbin->ps) ) {
 				if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
@@ -766,7 +770,14 @@ static BOOL hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 				if ( !(hblock = lookup_hbin_block( file, vk->data_off )) )
 					return False;
 			}
-			if ( !(prs_set_offset( &hblock->ps, (vk->data_off+HBIN_HDR_SIZE-hblock->first_hbin_off) )) )
+			if ( !(prs_set_offset( &hblock->ps, (vk->data_off+HBIN_HDR_SIZE-hblock->first_hbin_off)-sizeof(uint32) )) )
+				return False;
+
+			if ( MARSHALLING(&hblock->ps) ) {
+				data_rec_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
+				data_rec_size = ( data_rec_size - 1 ) ^ 0xFFFFFFFF;
+			}
+			if ( !prs_uint32( "data_rec_size", &hblock->ps, depth, &data_rec_size ))
 				return False;
 			if ( !prs_uint8s( charmode, "data", &hblock->ps, depth, vk->data, vk->data_size) )
 				return False;
@@ -1448,15 +1459,6 @@ done:
 
 	if ( !prs_uint32("allocated_size", &hbin->ps, 0, &size) )
 		return False;
-#if 0
-	if ( !prs_uint8s(True, "allocated_header", &hbin->ps, 0, header, REC_HDR_SIZE) )
-		return False;
-
-	/* reset pointer to beginning of clean record */
-
-	if ( !prs_set_offset( &hbin->ps, hbin->free_off ) )
-		return NULL;
-#endif
 
 	update_free_space( hbin, size );
 	
@@ -1470,9 +1472,9 @@ static uint32 vk_record_data_size( REGF_VK_REC *vk )
 {
 	uint32 size = 0;
 
-	/* the record size is sizeof(hdr) + name + static members i+ data_size_field */
+	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = sizeof(REC_HDR_SIZE) + sizeof(uint16) + (sizeof(uint32)*3) + sizeof(uint32);
+	size = sizeof(REC_HDR_SIZE) + (sizeof(uint16)*2) + (sizeof(uint32)*3) + sizeof(uint32);
 
 	if ( vk->valuename )
 		size += strlen(vk->valuename);
@@ -1541,7 +1543,7 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 	vk->type      = regval_type( value );
 
 	if ( vk->data_size > sizeof(uint32) ) {
-		uint32 data_size = ( vk->data_size & 0xfffffff8 ) + 8;
+		uint32 data_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
 
 		vk->data = TALLOC_MEMDUP( file->mem_ctx, regval_data_p(value), vk->data_size );
 
