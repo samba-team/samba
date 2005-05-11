@@ -110,7 +110,8 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
 	}
 
-	if (strcmp(gensec_security->ops->oid, GENSEC_OID_KERBEROS5) == 0) {
+	if ((strcmp(gensec_security->ops->oid, GENSEC_OID_KERBEROS5) == 0)
+		|| (strcmp(gensec_security->ops->oid, GENSEC_OID_KERBEROS5_OLD) == 0)) {
 		gensec_gssapi_state->gss_oid = &gensec_gss_krb5_mechanism_oid_desc;
 	} else if (strcmp(gensec_security->ops->oid, GENSEC_OID_SPNEGO) == 0) {
 		gensec_gssapi_state->gss_oid = &gensec_gss_spnego_mechanism_oid_desc;
@@ -673,6 +674,27 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 
 };
 
+/* As a server, this could in theory accept any GSSAPI mech */
+static const struct gensec_security_ops gensec_gssapi_ms_krb5_security_ops = {
+	.name		= "gssapi_ms_krb5",
+	.oid            = GENSEC_OID_KERBEROS5_OLD,
+	.client_start   = gensec_gssapi_client_start,
+	.server_start   = gensec_gssapi_server_start,
+	.update 	= gensec_gssapi_update,
+	.session_key	= gensec_gssapi_session_key,
+	.session_info	= gensec_gssapi_session_info,
+	.sig_size	= gensec_gssapi_sig_size,
+	.sign_packet	= gensec_gssapi_sign_packet,
+	.check_packet	= gensec_gssapi_check_packet,
+	.seal_packet	= gensec_gssapi_seal_packet,
+	.unseal_packet	= gensec_gssapi_unseal_packet,
+	.wrap           = gensec_gssapi_wrap,
+	.unwrap         = gensec_gssapi_unwrap,
+	.have_feature   = gensec_gssapi_have_feature,
+	.enabled        = False
+
+};
+
 static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.name		= "gssapi_spnego",
 	.sasl_name	= "GSS-SPNEGO",
@@ -700,6 +722,14 @@ NTSTATUS gensec_gssapi_init(void)
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_gssapi_krb5_security_ops.name));
+		return ret;
+	}
+
+
+	ret = gensec_register(&gensec_gssapi_ms_krb5_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_gssapi_ms_krb5_security_ops.name));
 		return ret;
 	}
 
