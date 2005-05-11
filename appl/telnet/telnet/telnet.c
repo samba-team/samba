@@ -579,6 +579,7 @@ mklist(char *buf, char *name)
 		 * Skip entries with spaces or non-ascii values.
 		 * Convert lower case letters to upper case.
 		 */
+#undef ISASCII
 #define ISASCII(c) (!((c)&0x80))
 		if ((c == ' ') || !ISASCII(c))
 			n = 1;
