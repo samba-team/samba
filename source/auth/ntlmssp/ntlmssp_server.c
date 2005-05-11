@@ -350,11 +350,11 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 			
 			gensec_ntlmssp_state->doing_ntlm2 = True;
 
-			memcpy(gensec_ntlmssp_state->ntlm2.session_nonce, gensec_ntlmssp_state->internal_chal.data, 8);
-			memcpy(&gensec_ntlmssp_state->ntlm2.session_nonce[8], gensec_ntlmssp_state->lm_resp.data, 8);
+			memcpy(gensec_ntlmssp_state->crypt.ntlm2.session_nonce, gensec_ntlmssp_state->internal_chal.data, 8);
+			memcpy(&gensec_ntlmssp_state->crypt.ntlm2.session_nonce[8], gensec_ntlmssp_state->lm_resp.data, 8);
 			
 			MD5Init(&md5_session_nonce_ctx);
-			MD5Update(&md5_session_nonce_ctx, gensec_ntlmssp_state->ntlm2.session_nonce, 16);
+			MD5Update(&md5_session_nonce_ctx, gensec_ntlmssp_state->crypt.ntlm2.session_nonce, 16);
 			MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 			
 			gensec_ntlmssp_state->chal = data_blob_talloc(gensec_ntlmssp_state, 
@@ -366,7 +366,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 			/* We changed the effective challenge - set it */
 			if (!NT_STATUS_IS_OK(nt_status = 
 					     gensec_ntlmssp_state->set_challenge(gensec_ntlmssp_state, 
-									  &gensec_ntlmssp_state->chal))) {
+										 &gensec_ntlmssp_state->chal))) {
 				/* zero this out */
 				data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
 				return nt_status;
@@ -387,10 +387,11 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
  * @return Errors or NT_STATUS_OK. 
  */
 
-static NTSTATUS ntlmssp_server_postauth(struct gensec_ntlmssp_state *gensec_ntlmssp_state,
+static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security, 
 					DATA_BLOB *user_session_key, 
 					DATA_BLOB *lm_session_key) 
 {
+	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	NTSTATUS nt_status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
@@ -404,8 +405,8 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_ntlmssp_state *gensec_ntlm
 	if (gensec_ntlmssp_state->doing_ntlm2) {
 		if (user_session_key && user_session_key->data && user_session_key->length == 16) {
 			session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-			hmac_md5(user_session_key->data, gensec_ntlmssp_state->ntlm2.session_nonce, 
-				 sizeof(gensec_ntlmssp_state->ntlm2.session_nonce), session_key.data);
+			hmac_md5(user_session_key->data, gensec_ntlmssp_state->crypt.ntlm2.session_nonce, 
+				 sizeof(gensec_ntlmssp_state->crypt.ntlm2.session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 			
@@ -500,7 +501,12 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_ntlmssp_state *gensec_ntlm
  	/* The server might need us to use a partial-strength session key */
  	ntlmssp_weaken_keys(gensec_ntlmssp_state);
 
-	nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
+	if ((gensec_security->want_features & GENSEC_FEATURE_SIGN)
+	    || (gensec_security->want_features & GENSEC_FEATURE_SEAL)) {
+		nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
+	} else {
+		nt_status = NT_STATUS_OK;
+	}
 
 	data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
 	
@@ -531,7 +537,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_ntlmssp_state *gensec_ntlm
 NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security, 
 			     TALLOC_CTX *out_mem_ctx, 
 			     const DATA_BLOB in, DATA_BLOB *out) 
-{
+{	
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	DATA_BLOB user_session_key = data_blob(NULL, 0);
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
@@ -559,7 +565,7 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	}
 	
 	if (gensec_ntlmssp_state->server_use_session_keys) {
-		return ntlmssp_server_postauth(gensec_ntlmssp_state, &user_session_key, &lm_session_key);
+		return ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
 	} else {
 		gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
 		return NT_STATUS_OK;
