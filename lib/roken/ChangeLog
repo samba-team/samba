@@ -1,3 +1,10 @@
+2005-05-10  Dave Love  <fx@gnu.org>
+
+	* roken.h.in: Get daemon declared on Solaris (it's in unistd.h but
+	masked by a feature test), just to avoid a warning, since it has
+	int args. Include err.h unconditionally, since it's always
+	supplied.
+
 2005-05-04  Dave Love  <fx@gnu.org>
 
 	* snprintf-test.c: Include snprintf-test.h earlier.

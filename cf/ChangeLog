@@ -1,3 +1,9 @@
+2005-05-10  David Love  <fx@gnu.org>
+
+	* roken-frag.m4: Get daemon declared on Solaris (it's in unistd.h
+	but masked by a feature test), just to avoid a warning, since it
+	has int args.
+
 2005-05-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-var.m4: AC_CHECK_DECL and AC_CHECK_DECLS have a subtile
