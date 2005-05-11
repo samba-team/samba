@@ -1,3 +1,8 @@
+2005-05-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-var.m4: AC_CHECK_DECL and AC_CHECK_DECLS have a subtile
+	diffrence, the later defines HAVE_ cpp symbols, the first doesn't.
+
 2005-05-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: ignore N symbols too
