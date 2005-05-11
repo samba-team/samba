@@ -107,7 +107,12 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_CONF_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
+#ifndef GSS_C_DCE_STYLE
+		/* GSSAPI won't give us the session keys, without the right hook */
+		return NT_STATUS_INVALID_PARAMETER;
+#else
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
+#endif
 	}
 
 	if ((strcmp(gensec_security->ops->oid, GENSEC_OID_KERBEROS5) == 0)
