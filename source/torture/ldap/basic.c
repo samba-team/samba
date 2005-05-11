@@ -137,8 +137,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 
 static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 {
-	BOOL ret = True;
-	struct ldap_message *msg, *result;
+	struct ldap_message *req, *rep;
 	const char *val;
 
 	printf("Testing SASL Compare: %s\n", basedn);
@@ -149,37 +148,33 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 
 	conn->next_msgid = 55;
 
-	msg = new_ldap_message(conn);
-	if (!msg) {
+	req = new_ldap_message(conn);
+	if (!req) {
 		return False;
 	}
 
-	msg->type = LDAP_TAG_CompareRequest;
-	msg->r.CompareRequest.dn = basedn;
-	msg->r.CompareRequest.attribute = talloc_strdup(msg->mem_ctx, "objectClass");
+	req->type = LDAP_TAG_CompareRequest;
+	req->r.CompareRequest.dn = basedn;
+	req->r.CompareRequest.attribute = talloc_strdup(req->mem_ctx, "objectClass");
 	val = "domain";
-	msg->r.CompareRequest.value = data_blob_talloc(msg->mem_ctx, val, strlen(val));
+	req->r.CompareRequest.value = data_blob_talloc(req->mem_ctx, val, strlen(val));
 
-	if (!ldap_sasl_send_msg(conn, msg, NULL)) {
+	rep = ldap_transaction(conn, req);
+	if (!rep) {
 		return False;
 	}
 
 	DEBUG(5,("Code: %d DN: [%s] ERROR:[%s] REFERRAL:[%s]\n",
-		msg->r.CompareResponse.resultcode,
-		msg->r.CompareResponse.dn,
-		msg->r.CompareResponse.errormessage,
-		msg->r.CompareResponse.referral));
+		rep->r.CompareResponse.resultcode,
+		rep->r.CompareResponse.dn,
+		rep->r.CompareResponse.errormessage,
+		rep->r.CompareResponse.referral));
+
+	if (rep->type != LDAP_TAG_CompareResponse) {
+		return False;
+	}
 
 	return True;
-	if (!result) {
-		return False;
-	}
-
-	if (result->type != LDAP_TAG_CompareResponse) {
-		return False;
-	}
-
-	return ret;
 }
 
 BOOL torture_ldap_basic(void)
@@ -199,7 +194,7 @@ BOOL torture_ldap_basic(void)
 
 	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
 
-	status = torture_ldap_connection(mem_ctx, &conn, url, userdn, secret);
+	status = torture_ldap_connection2(mem_ctx, &conn, url, userdn, secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

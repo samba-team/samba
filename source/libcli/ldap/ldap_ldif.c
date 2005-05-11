@@ -305,6 +305,53 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 	return True;
 }
 
+static BOOL fill_modrdn(struct ldap_message *msg, char **chunk)
+{
+	struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
+	const char *attr_name;
+	struct ldap_val value;
+
+	r->newrdn	= NULL;
+	r->deleteolddn	= False;
+	r->newsuperior	= NULL;
+
+	if (next_attr(chunk, &attr_name, &value) != 0) {
+		return False;
+	}
+
+	if (!strequal(attr_name, "newrdn")) {
+		return False;
+	}
+
+	r->newrdn = value.data;
+
+	if (next_attr(chunk, &attr_name, &value) != 0) {
+		return False;
+	}
+
+	if (!strequal(attr_name, "deleteoldrdn")) {
+		return False;
+	}
+
+	if (value.data && (((char *)value.data)[0] != '0')) {
+		r->deleteolddn = True;
+	}
+
+	if (next_attr(chunk, &attr_name, &value) != 0) {
+		/* newsuperior is optional */
+		return True;
+	}
+
+	if (!strequal(attr_name, "newsuperior")) {
+		return False;
+	}
+
+	r->newsuperior = value.data;
+
+	return True;
+}
+
+
 /*
  read from a LDIF source, creating a ldap_message
 */
@@ -376,6 +423,17 @@ static struct ldap_message *ldif_read(TALLOC_CTX *mem_ctx, int (*fgetc_fn)(void 
 		msg->r.ModifyRequest.dn = dn;
 
 		if (!fill_mods(msg, &s))
+			goto failed;
+
+		return msg;
+	}
+
+	if (strequal(value.data, "modrdn")) {
+		msg->type = LDAP_TAG_ModifyDNRequest;
+
+		msg->r.ModifyDNRequest.dn = dn;
+
+		if (!fill_modrdn(msg, &s))
 			goto failed;
 
 		return msg;
