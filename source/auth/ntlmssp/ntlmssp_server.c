@@ -350,11 +350,11 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_ntlmssp_state *gensec_ntlms
 			
 			gensec_ntlmssp_state->doing_ntlm2 = True;
 
-			memcpy(gensec_ntlmssp_state->v.ntlm2.session_nonce, gensec_ntlmssp_state->internal_chal.data, 8);
-			memcpy(&gensec_ntlmssp_state->v.ntlm2.session_nonce[8], gensec_ntlmssp_state->lm_resp.data, 8);
+			memcpy(gensec_ntlmssp_state->ntlm2.session_nonce, gensec_ntlmssp_state->internal_chal.data, 8);
+			memcpy(&gensec_ntlmssp_state->ntlm2.session_nonce[8], gensec_ntlmssp_state->lm_resp.data, 8);
 			
 			MD5Init(&md5_session_nonce_ctx);
-			MD5Update(&md5_session_nonce_ctx, gensec_ntlmssp_state->v.ntlm2.session_nonce, 16);
+			MD5Update(&md5_session_nonce_ctx, gensec_ntlmssp_state->ntlm2.session_nonce, 16);
 			MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 			
 			gensec_ntlmssp_state->chal = data_blob_talloc(gensec_ntlmssp_state, 
@@ -404,8 +404,8 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_ntlmssp_state *gensec_ntlm
 	if (gensec_ntlmssp_state->doing_ntlm2) {
 		if (user_session_key && user_session_key->data && user_session_key->length == 16) {
 			session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-			hmac_md5(user_session_key->data, gensec_ntlmssp_state->v.ntlm2.session_nonce, 
-				 sizeof(gensec_ntlmssp_state->v.ntlm2.session_nonce), session_key.data);
+			hmac_md5(user_session_key->data, gensec_ntlmssp_state->ntlm2.session_nonce, 
+				 sizeof(gensec_ntlmssp_state->ntlm2.session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 			
