@@ -141,6 +141,39 @@ static struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
 
 
 /*
+   encode a blob as a RFC2254 binary string, escaping any
+   non-printable or '\' characters
+*/
+static const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
+{
+	int i;
+	char *ret;
+	int len = blob.length;
+	for (i=0;i<blob.length;i++) {
+		if (!isprint(blob.data[i]) || blob.data[i] == '\\') {
+			len += 2;
+		}
+	}
+	ret = talloc_array(mem_ctx, char, len+1);
+	if (ret == NULL) return NULL;
+
+	len = 0;
+	for (i=0;i<blob.length;i++) {
+		if (!isprint(blob.data[i]) || blob.data[i] == '\\') {
+			snprintf(ret+len, 4, "\\%02X", blob.data[i]);
+			len += 3;
+		} else {
+			ret[len++] = blob.data[i];
+		}
+	}
+
+	ret[len] = 0;
+
+	return ret;	
+}
+
+
+/*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
 static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
@@ -765,7 +798,7 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		}
 		asn1_end_tag(data);
 
-		filter = talloc_asprintf(mem_ctx, "%s)", filter);
+		filter = talloc_asprintf_append(filter, ")");
 		break;
 	}
 	case 1: {
@@ -790,21 +823,24 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 		asn1_end_tag(data);
 
-		filter = talloc_asprintf(mem_ctx, "%s)", filter);
+		filter = talloc_asprintf_append(filter, ")");
 		break;
 	}
 	case 3: {
 		/* equalityMatch */
-		const char *attrib, *value;
+		const char *attrib;
+		DATA_BLOB value;
 		if (tag_desc != 0xa0) /* context compound */
 			return False;
 		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
-		asn1_read_OctetString_talloc(mem_ctx, data, &value);
+		asn1_read_OctetString(data, &value);
 		asn1_end_tag(data);
-		if ((data->has_error) || (attrib == NULL) || (value == NULL))
+		if ((data->has_error) || (attrib == NULL) || (value.data == NULL))
 			return False;
-		filter = talloc_asprintf(mem_ctx, "(%s=%s)", attrib, value);
+		filter = talloc_asprintf(mem_ctx, "(%s=%s)", 
+					 attrib, ldap_binary_encode(mem_ctx, value));
+		data_blob_free(&value);
 		break;
 	}
 	case 7: {
