@@ -108,6 +108,10 @@ struct cldap_search {
 
 struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx, 
 				       struct event_context *event_ctx);
+NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
+				    void (*handler)(struct cldap_socket *, struct ldap_message *, 
+						    const char *, int ),
+				    void *private);
 struct cldap_request *cldap_search_send(struct cldap_socket *cldap, 
 					struct cldap_search *io);
 NTSTATUS cldap_search_recv(struct cldap_request *req, TALLOC_CTX *mem_ctx, 

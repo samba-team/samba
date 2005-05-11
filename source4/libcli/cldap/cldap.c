@@ -41,7 +41,6 @@
 #include "include/asn_1.h"
 
 #define CLDAP_MAX_PACKET_SIZE 2048
-const unsigned CLDAP_PORT = 389;
 
 /*
   destroy a pending request
@@ -112,8 +111,12 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	/* find the pending request */
 	req = idr_find(cldap->idr, ldap_msg.messageid);
 	if (req == NULL) {
-		DEBUG(2,("Mismatched cldap reply %u from %s:%d\n",
-			 ldap_msg.messageid, src_addr, src_port));
+		if (cldap->incoming.handler) {
+			cldap->incoming.handler(cldap, &ldap_msg, src_addr, src_port);
+		} else {
+			DEBUG(2,("Mismatched cldap reply %u from %s:%d\n",
+				 ldap_msg.messageid, src_addr, src_port));
+		}
 		talloc_free(tmp_ctx);
 		return;
 	}
@@ -249,6 +252,7 @@ struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx,
 				      cldap_socket_handler, cldap);
 
 	cldap->send_queue = NULL;
+	cldap->incoming.handler = NULL;
 	
 	return cldap;
 
@@ -257,6 +261,20 @@ failed:
 	return NULL;
 }
 
+
+/*
+  setup a handler for incoming requests
+*/
+NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
+				  void (*handler)(struct cldap_socket *, struct ldap_message *, 
+						  const char *, int ),
+				  void *private)
+{
+	cldap->incoming.handler = handler;
+	cldap->incoming.private = private;
+	EVENT_FD_READABLE(cldap->fde);
+	return NT_STATUS_OK;
+}
 
 /*
   queue a cldap request for send
@@ -278,7 +296,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 
 	req->dest_addr = talloc_strdup(req, io->in.dest_address);
 	if (req->dest_addr == NULL) goto failed;
-	req->dest_port = CLDAP_PORT;
+	req->dest_port = lp_cldap_port();
 
 	req->message_id = idr_get_new_random(cldap->idr, req, UINT16_MAX);
 	if (req->message_id == -1) goto failed;
