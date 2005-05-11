@@ -107,9 +107,7 @@ struct sockaddr_dl;
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#ifdef HAVE_ERR_H
 #include <err.h>
-#endif
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
 #endif
@@ -315,7 +313,7 @@ int ROKEN_LIB_FUNCTION initgroups(const char *name, gid_t basegid);
 int ROKEN_LIB_FUNCTION fchown(int fd, uid_t owner, gid_t group);
 #endif
 
-#ifndef HAVE_DAEMON
+#if !defined(HAVE_DAEMON) || defined(NEED_DAEMON_PROTO)
 int ROKEN_LIB_FUNCTION daemon(int nochdir, int noclose);
 #endif
 
