@@ -89,10 +89,166 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	</para>
 
 	<sect3>
-	<title>Create, Change, Delete Group Accounts</title>
+	<title>Adding, Renaming, or Deletion of Group Accounts</title>
+
+	<sect4>
+	<title>Adding or Creating a New Group</title>
 
 	<para>
+	Before attempting to add a Windows group account the currently available groups can be listed as shown
+here:
+<screen>
+&rootprompt; net rpc group list -Uroot%not24get
+Password:
+Domain Admins
+Domain Users
+Domain Guests
+Print Operators
+Backup Operators
+Replicator
+Domain Computers
+Engineers
+</screen>
+	A Windows group account called <quote>SupportEngrs</quote> can be added by executing the following
+command:
+<screen>
+&rootprompt; net rpc group add "SupportEngrs" -Uroot%not24get
+</screen>
+	The addition will result in immediate availability of the new group account as validated by executing the
+this command:
+<screen>
+&rootprompt; net rpc group list -Uroot%not24get
+Password:
+Domain Admins
+Domain Users
+Domain Guests
+Print Operators
+Backup Operators
+Replicator
+Domain Computers
+Engineers
+SupportEngrs
+</screen>
 	</para>
+
+	<para>
+	The following demonstrates that the POSIX (UNIX/Linux system account) group has been created by calling
+	the <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</smbconfoption> interface
+	script:
+<screen>
+&rootprompt; getent group
+...
+Domain Admins:x:512:root
+Domain Users:x:513:jht,lct,ajt,met
+Domain Guests:x:514:
+Print Operators:x:550:
+Backup Operators:x:551:
+Replicator:x:552:
+Domain Computers:x:553:
+Engineers:x:1002:jht
+SupportEngrs:x:1003:
+</screen>
+	The following demonstrates that the use of the <command>net</command> command to add a group account
+results in immediate mapping of the POSIX group that has been created to the Windows group account as whown
+here:
+<screen>
+merlin:~ # net groupmap list
+Domain Admins (S-1-5-21-72630-4128915-11681869-512) -> Domain Admins
+Domain Users (S-1-5-21-72630-4128915-11681869-513) -> Domain Users
+Domain Guests (S-1-5-21-72630-4128915-11681869-514) -> Domain Guests
+Print Operators (S-1-5-21-72630-4128915-11681869-550) -> Print Operators
+Backup Operators (S-1-5-21-72630-4128915-11681869-551) -> Backup Operators
+Replicator (S-1-5-21-72630-4128915-11681869-552) -> Replicator
+Domain Computers (S-1-5-21-72630-4128915-11681869-553) -> Domain Computers
+Engineers (S-1-5-21-72630-4128915-11681869-3005) -> Engineers
+SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
+</screen>
+	</para>
+
+	</sect4>
+
+	<sect4>
+	<title>Mapping Windows Groups to UNIX Groups</title>
+
+	<para>
+	Windows groups must be mapped to UNIX system (POSIX) groups so that file system access controls
+	can be asserted in a manner that is consistent with the methods appropriate to the operating
+	system that is hosting the Samba server.
+	</para>
+
+	<para>
+	Samba depends on default mappings for the <constant>Domain Admins, Domain Users</constant> and
+	<constant>Domain Guests</constant> global groups. Additional groups may be added as shown in the
+	examples just given. There are times when it is necessary to map an existing UNIX group account
+	to a Windows group. This operation, in effect, creates a Windows group account as a consequence
+	of creation of the mapping.
+	</para>
+
+	<para>
+	The operations that are permitted includes: <constant>add, modify, delete</constant>. An example
+	of each operation is shown here.
+	</para>
+
+	<para>
+	An existing UNIX group may be mapped to an existing Windows group by this example:
+<screen>
+&rootprompt; net groupmap modify ntgroup="Domain Users" unixgroup=users
+</screen>
+	An existing UNIX group may be mapped to a new Windows group as shown here:
+<screen>
+&rootprompt; net groupmap add ntgroup="EliteEngrs" unixgroup=Engineers type=d
+</screen>
+	A Windows group may be deleted while preserving the UNIX group using this command:
+<screen>
+&rootprompt; net groupmap modify ntgroup=EngineDrivers unixgroup=Engineers type=d
+</screen>
+	</para>
+
+	<para>
+	The reason for using the <constant>modify</constant> method is to avoid any attempt to create a new
+	UNIX group, the default operation of the <constant>add</constant> method. The <constant>add</constant>
+	method creates a new group and then maps it to the Windows group name. It is the mapping that creates
+	the Windows group; the <constant>modify</constant> method performs only the mapping and avoids the
+	creation of the POSIX group account.
+	</para>
+
+	</sect4>
+
+	<sect4>
+	<title>Deleting a Group Account</title>
+
+	<para>
+	A group account may be deleted by executing the following command:
+<screen>
+&rootprompt; net rpc group delete SupportEngineers -Uroot%not24get
+</screen>
+	</para>
+
+	<para>
+	Validation of the deletion is advisable. The same commands may be executed as shown above.
+	</para>
+
+	</sect4>
+	<sect4>
+	<title>How to Rename a Group Account</title>
+
+	<note><para>
+	This command is not documented in the man pages, it is implemented in the source code, but it does not
+	work. The example given documents (from the source code) how it should work. Watch the release notes
+	of a future release to see when this may have been be fixed.
+	</para></note>
+
+	<para>
+	Sometimes it is necessary to rename a group account. Good administrators know how painful some managers
+	demands can be if this simple request is ignored. The following command demonstrates how the Windows group
+	<quote>SupportEngrs</quote> can be renamed to <quote>CustomerSupport</quote>:
+<screen>
+&rootprompt; net rpc group rename SupportEngrs \
+    CustomerSupport -Uroot%not24get
+</screen>
+	</para>
+
+	</sect4>
 
 	</sect3>
 
@@ -119,6 +275,76 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	<title>Administering User Rights and Privileges</title>
 
 	<para>
+<screen>
+&rootprompt; net rpc rights list accounts -U root%not24get
+BUILTIN\Print Operators
+No privileges assigned
+
+BUILTIN\Account Operators
+No privileges assigned
+
+BUILTIN\Backup Operators
+No privileges assigned
+
+BUILTIN\Server Operators
+No privileges assigned
+
+BUILTIN\Administrators
+No privileges assigned
+
+Everyone
+No privileges assigned
+
+&rootprompt; net rpc rights list -U root%not24get
+     SeMachineAccountPrivilege  Add machines to domain
+      SePrintOperatorPrivilege  Manage printers
+           SeAddUsersPrivilege  Add users and groups to the domain
+     SeRemoteShutdownPrivilege  Force shutdown from a remote system
+       SeDiskOperatorPrivilege  Manage disk shares
+&rootprompt; net rpc rights grant "MIDEARTH\Domain Admins" \
+    SeMachineAccountPrivilege SePrintOperatorPrivilege \
+    SeAddUsersPrivilege SeRemoteShutdownPrivilege \
+    SeDiskOperatorPrivilege  -U root%not24get
+Successfully granted rights.
+&rootprompt; net rpc rights grant "MIDEARTH\jht" \
+    SeMachineAccountPrivilege SePrintOperatorPrivilege \
+    SeAddUsersPrivilege SeDiskOperatorPrivilege \
+    -U root%not24get
+Successfully granted rights.
+&rootprompt; net rpc rights list accounts -U root%not24get
+MIDEARTH\jht
+SeMachineAccountPrivilege
+SePrintOperatorPrivilege
+SeAddUsersPrivilege
+SeDiskOperatorPrivilege
+
+BUILTIN\Print Operators
+No privileges assigned
+
+BUILTIN\Account Operators
+No privileges assigned
+
+BUILTIN\Backup Operators
+No privileges assigned
+
+BUILTIN\Server Operators
+No privileges assigned
+
+BUILTIN\Administrators
+No privileges assigned
+
+Everyone
+No privileges assigned
+
+MIDEARTH\Domain Admins
+SeMachineAccountPrivilege
+SePrintOperatorPrivilege
+SeAddUsersPrivilege
+SeRemoteShutdownPrivilege
+SeDiskOperatorPrivilege
+
+&rootprompt;                            
+</screen>
 	</para>
 
 	</sect2>
@@ -133,6 +359,10 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	<title>Machine Trust Accounts</title>
 
 	<para>
+<screen>
+&rootprompt; net rpc testjoin
+Join to 'MIDEARTH' is OK
+</screen>
 	</para>
 
 	</sect3>
@@ -223,6 +453,15 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	<title>Other Miscellaneous Operations</title>
 
 	<para>
+<screen>
+&rootprompt; net rpc info
+Domain Name: MIDEARTH
+Domain SID: S-1-5-21-726309263-4128913605-1168186429
+Sequence number: 1115878548
+Num users: 5
+Num domain groups: 8
+Num local groups: 0
+</screen>
 	</para>
 
 	</sect2>
