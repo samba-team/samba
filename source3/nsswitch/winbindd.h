@@ -210,10 +210,6 @@ struct winbindd_methods {
 				    char ***alt_names,
 				    DOM_SID **dom_sids);
 
-	/* find the domain sid */
-	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
-			       DOM_SID *sid);
-
 	/* setup the list of alternate names for the domain, if any */
 	NTSTATUS (*alternate_name)(struct winbindd_domain *domain);
 };

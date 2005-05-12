@@ -1021,44 +1021,6 @@ done:
 	return result;
 }
 
-/* find the domain sid for a domain */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	TALLOC_CTX *mem_ctx;
-	CLI_POLICY_HND *hnd;
-	char *level5_dom;
-	DOM_SID *alloc_sid;
-	int retry;
-
-	DEBUG(3,("rpc: domain_sid\n"));
-
-	if (!(mem_ctx = talloc_init("domain_sid[rpc]")))
-		return NT_STATUS_NO_MEMORY;
-
-	retry = 0;
-	do {
-		/* Get lsa handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain, &hnd)))
-			goto done;
-
-		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
-					   &hnd->pol, 0x05, &level5_dom, &alloc_sid);
-	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1) &&  hnd && hnd->cli && hnd->cli->fd == -1);
-
-	if (NT_STATUS_IS_OK(result)) {
-		if (alloc_sid) {
-			sid_copy(sid, alloc_sid);
-		} else {
-			result = NT_STATUS_NO_MEMORY;
-		}
-	}
-
-done:
-	talloc_destroy(mem_ctx);
-	return result;
-}
-
 /* find alternate names list for the domain - none for rpc */
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
 {
@@ -1080,6 +1042,5 @@ struct winbindd_methods msrpc_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };
