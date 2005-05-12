@@ -842,6 +842,29 @@ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 }
 
 /*
+  push a union to a blob using NDR
+*/
+NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			     uint32_t level, ndr_push_flags_fn_t fn)
+{
+	NTSTATUS status;
+	struct ndr_push *ndr;
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr_push_set_switch_value(ndr, p, level);
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*blob = ndr_push_blob(ndr);
+
+	return NT_STATUS_OK;
+}
+
+/*
   generic ndr_size_*() handler for structures
 */
 size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
