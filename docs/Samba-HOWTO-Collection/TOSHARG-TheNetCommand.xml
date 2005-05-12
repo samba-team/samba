@@ -265,64 +265,28 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	<title>Nested Group Support</title>
 
 	<para>
+	It is possible in Windows (and now in Samba also) to great a local group that has members (contains)
+	domain users and domain global groups.  Creation of the local group <constant>demo</constant> is
+	achieved by executing:
 <screen>
-Windows supports the concept of nested groups to ease
-administration. You can create a so-called local group on
-any machine and add users and global (domain) groups from
-any trusted SAM to it. This way you might be able to reduce
-the amount of ACL entries you have to set on any file or
-directory. Another prominent example is the use of administrative
-privileges on workstations that are domain members. Administrative
-privileges are given to all members of the builtin local group
-Administrators on each workstation. To make sure that all
-domain administrators also have full rights on any workstation,
-upon domain join the Domain Admins group is added to the local
-Administrators group. Thus anybody logged into the domain as
-member of the Domain Admins group is also granted local admin
-privileges on each workstation.
+&rootprompt; net rpc group add demo -L -Uroot%not24get
+</screen>
+	The -L switch means create a local group. Use the -S argument to direct the operation to a particular
+	server. The parameters to the -U argument should be for a user who has appropriate administrative right
+	and privileges on the machine.
+	</para>
 
-Unix does not support the concept of nested groups, and thus Samba
-has for a long time not supported them either. The problem is that
-you would have to put unix groups as auxiliary members of a group
-into /etc/group which is not possible. Since Samba 2.2 winbind is
-the daemon that can provide /etc/group entries on demand by asking
-the Domain Controller of the domain Samba is a member of on the fly.
-So Samba since that time has control over the /etc/group file via
-the dynamic libnss_winbind mechanism. Beginning with Samba 3.0.3
-this facility is used to provide local groups in the same manner
-as Windows does it. It works by expanding the local groups on the
-fly while being accessed. So when you put for example the Domain
-Users group of your domain as a member of the local alias "all",
-whenever asking for the members of "all" winbind asks the DC
-for all members of the Domain Users group. By definition it can
-only contain user objects which can then be faked to be member of
-the Unix group "all".
-
-To be able to use nested groups, you need to run winbindd and
-nss_winbind.  Creation and administration of the local groups
-is done best via the Windows User Manager for Domains or its
-Samba equivalent, the utility "net rpc group". Creating the
-local group "all" can be done by
-
-net rpc group add all -L
-
-where the -L switch denotes that you want to create a local group.
-Please add -S and -U switches for accessing the correct host via a
-user with root priviliges as needed. Adding and removing group
-members can be done via the addmem and delmem subcommands of "net
-rpc group". For example adding "DOM\Domain Users" to the local
-group "all" would be done by
-
-net rpc group addmem all "DOM\Domain Users"
-
-Having done these two steps you will find that "getent group all"
-will show all members of the global Domain Users group as members
-of  the group "all".  Certainly this also works with any local or
-domain user. In case the domain DOM trusts another domain, it is
-also possible to add global users and groups of the trusted domain
-as members of "all".
+	<para>
+	Addition and removal of group members can be achieved using the <constant>addmem</constant> and
+	<constant>delmem</constant> subcommands of <command>net rpc group</command> command. For example,
+	addition of <quote>DOM\Domain Users</quote> to the local group <constant>demo</constant> would be
+	done by executing:
+<screen>
+&rootprompt; net rpc group addmem demo "DOM\Domain Users" -Uroot%not24get
 </screen>
 	</para>
+
+	
 
 	</sect3>
 
