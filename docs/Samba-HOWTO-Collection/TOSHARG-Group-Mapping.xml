@@ -92,8 +92,6 @@
 	UNIX/Linux group, an attempt that will of course fail.
 	</para>
 
-
-
 	<para>
 	<indexterm><primary>GID</primary></indexterm>
 	<indexterm><primary>SID</primary></indexterm>
@@ -215,6 +213,105 @@
 	When mapping a UNIX/Linux group to a Windows group account all conflict can
 	be avoided by assuring that the Windows domain group name does not overlap
 	with any user account name.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Nested Groups: Adding Windows Domain Groups to Windows Local Groups</title>
+
+	<indexterm><primary>groups</primary><secondary>nested</secondary></indexterm>
+
+	<para>
+	This functionality is known as <constant>nested groups</constant> and was first added to
+	Samba-3.0.3.
+	</para>
+
+	<para>
+	All Microsoft Windows products since the release of Windows NT 3.10 support the use of nested groups.
+	Many Windows network administrators depend on this capability becasue it greatly simplifies security
+	administration.
+	</para>
+
+	<para>
+	The nested group architecture was designed with the premise that day-to-day user and group membership
+	management should be performed on the domain security database. The application of group security
+	should be implemented on domain member servers using only local groups. On the domain member server
+	all file system security controls are then limited to use of the local groups which will contain
+	domain global groups and domain global users.
+	</para>
+
+	<para>
+	You may ask, What are the benefits of this arrangement? The answer is obvious to those who have plumbed
+	the dark depths of Windows networking architecture. Consider for a moment a server on which are stored
+	200,000 files, each with individual domain user and domain group settings. The company that owns the
+	file server is bought by another company resulting in the server being moved to another location and then
+	it is made a member of a different domain. Who would you think now owns all the files and directories?
+	Answer: Account Unknown.
+	</para>
+
+	<para>
+	Unravelling the file ownership mess is an unenviable administrative task that can be avoided simply
+	by using local groups to control all file and directory access control. In this case, only the members
+	of the local groups will have been lost. The files and directories in the storage subsystem will still
+	be owned by the local groups. The same goes for all ACLs on them. It is administratively much simpler
+	to delete the <constant>Account Unknown</constant> membership entries inside local groups with appropriate
+	entries for domain global groups in the new domain that the server has been made a member of.
+	</para>
+
+	<para>
+	Another prominent example of the use of nested groups involves implementation of administrative privileges
+	on domain member workstations and servers. Administrative privileges are given to all members of the
+	builtin
+	local group <constant>Administrators</constant> on each domain member machine. To ensure that all domain
+	administrators have full rights on the member server or workstation, on joining the domain the
+	<constant>Domain Admins</constant> group is added to the local Administrators group. Thus everyone who is
+	logged into the domain as a member of the Domain Admins group is also granted local adminitrative
+	privileges on each domain member.
+	</para>
+
+	<para>
+	UNIX/Linux has no concept of support for nested groups, and thus Samba has for a long time not supported
+	them either. The problem is that you would have to enter unix groups as auxiliary members of a group in
+	<filename>/etc/group</filename>. This does not work because it was not a design requirement at the time
+	the UNIX file system security model was implemented. Since Samba-2.2 the winbind daemon can provide
+	<filename>/etc/group</filename> entries on demand by obtaining user and group information from the Domain
+	Controller that the Samba server is a member of.
+	</para>
+	<para>
+	In effect, Samba supplements the <filename>/etc/group</filename> data via the dynamic
+	<command>libnss_winbind</command> mechanism. Beginning with Samba-3.0.3 this facility is used to provide
+	local groups in the same manner as Windows does it. It works by expanding the local groups on the
+	fly as they are accessed. For example, the <constant>Domain Users</constant> group of the domain is made
+	a member of the local group <constant>demo</constant>. Whenever Samba needs to resolve membership of the
+	<constant>demo</constant> local (alias) group winbind asks the DC for demo members of the Domain Users
+	group. By definition it can only contain user objects which can then be faked to be member of the
+	UNIX/Linux group <constant>demo</constant>.
+	</para>
+
+	<para>
+	To enable the use of nested groups, <command>winbindd</command> must be used together with NSS winbind.
+	Creation and administration of the local groups is done best via the Windows Domain User Manager or its
+	Samba equivalent, the utility <command>net rpc group</command>. Creating the local group
+	<constant>demo</constant> is achieved by executing:
+	<screen>
+	&rootprompt; net rpc group add demo -L -Uroot%not24get
+	</screen>
+	Here the -L switch means that you want to create a local group. It may be necessary to add -S and -U
+	switches for accessing the correct host with appropriate user or root priviliges. Adding and removing
+	group
+	members can be done via the <constant>addmem</constant> and <constant>delmem</constant> subcommands of
+	<command>net rpc group</command> command. For example addition of <quote>DOM\Domain Users</quote> to the
+	local
+	group <constant>demo</constant> would be done by executing:
+	<screen>
+	net rpc group addmem demo "DOM\Domain Users"
+	</screen>
+	Having completed these two steps the execution of <command>getent group demo</command> will show demo
+	members of the global <constant>Domain Users</constant> group as members of  the group
+	<constant>demo</constant>.  This also works with any local or domain user. In case the domain DOM trusts
+	another domain, it is also possible to add global users and groups of the trusted domain as members of
+	<constant>demo</constant>.
 	</para>
 
 	</sect2>
@@ -627,17 +724,6 @@ manually before putting them into active service.
 		third is the option is to manually create a UNIX/Linux group account that can substitute
 		for the MS Windows group name, then use the procedure listed above to map that group
 		to the MS Windows group.
-		</para>
-
-	</sect2>
-
-	<sect2>
-	<title>Adding MS Windows Groups to MS Windows Groups Fails</title>
-
-	<indexterm><primary>groups</primary><secondary>nested</secondary></indexterm>
-
-		<para>
-		Samba-3 does not support nested groups from the MS Windows control environment.
 		</para>
 
 	</sect2>
