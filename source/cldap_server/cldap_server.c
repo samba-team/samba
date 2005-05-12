@@ -27,7 +27,6 @@
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 
-
 /*
   handle incoming cldap requests
 */
@@ -35,15 +34,26 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 				   struct ldap_message *ldap_msg, 
 				   const char *src_address, int src_port)
 {
-	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private,
-						       struct cldapd_server);
+	struct ldap_SearchRequest *search;
 	if (ldap_msg->type != LDAP_TAG_SearchRequest) {
 		DEBUG(0,("Invalid CLDAP request type %d from %s:%d\n", 
 			 ldap_msg->type, src_address, src_port));
 		return;
 	}
-	DEBUG(0,("CLDAP search for '%s'\n", ldap_msg->r.SearchRequest.filter));
+
+	search = &ldap_msg->r.SearchRequest;
+
+	if (search->num_attributes == 1 &&
+	    strcasecmp(search->attributes[0], "netlogon") == 0) {
+		cldapd_netlogon_request(cldap, ldap_msg->messageid,
+					search->filter, src_address, src_port);
+	} else {
+		DEBUG(0,("Unknown CLDAP search for '%s'\n", 
+			 ldap_msg->r.SearchRequest.filter));
+		cldap_empty_reply(cldap, ldap_msg->messageid, src_address, src_port);
+	}
 }
+
 
 /*
   start listening on the given address
@@ -81,7 +91,7 @@ NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd)
 	NTSTATUS status;
 
 	/* if we are allowing incoming packets from any address, then
-	   we also need to bind to the wildcard address */
+	   we need to bind to the wildcard address */
 	if (!lp_bind_interfaces_only()) {
 		status = cldapd_add_socket(cldapd, "0.0.0.0");
 		NT_STATUS_NOT_OK_RETURN(status);

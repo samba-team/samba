@@ -192,6 +192,7 @@ struct nbtd_server;
 struct nbtd_interface;
 struct wins_server;
 
+struct cldap_socket;
 struct cldapd_server;
 
 struct mutex_ops;
