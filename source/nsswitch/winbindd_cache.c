@@ -1398,18 +1398,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 					       names, alt_names, dom_sids);
 }
 
-/* find the domain sid */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	get_cache(domain);
-
-	DEBUG(10,("domain_sid: [Cached] - doing backend query for info for domain %s\n",
-		domain->name ));
-
-	/* we don't cache this call */
-	return domain->backend->domain_sid(domain, sid);
-}
-
 /* find the alternate names for the domain, if any */
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
 {
@@ -1476,6 +1464,5 @@ struct winbindd_methods cache_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };

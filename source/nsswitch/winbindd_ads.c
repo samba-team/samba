@@ -892,36 +892,6 @@ done:
 	return result;
 }
 
-/* find the domain sid for a domain */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	ADS_STRUCT *ads;
-	ADS_STATUS rc;
-
-	DEBUG(3,("ads: domain_sid\n"));
-
-	ads = ads_cached_connection(domain);
-
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	rc = ads_domain_sid(ads, sid);
-
-	if (!ADS_ERR_OK(rc)) {
-	
-		/* its a dead connection; don't destroy it though
-		   since that has already been done indirectly 
-		   by ads_domain_sid() */
-
-		domain->private = NULL;
-	}
-
-	return ads_ntstatus(rc);
-}
-
-
 /* find alternate names list for the domain - for ADS this is the
    netbios name */
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
@@ -972,7 +942,6 @@ struct winbindd_methods ads_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };
 

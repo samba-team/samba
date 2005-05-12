@@ -373,13 +373,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return nt_status;
 }
 
-/* find the domain sid for a domain */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	sid_copy(sid, &domain->sid);
-	return NT_STATUS_OK;
-}
-
 /* find alternate names list for the domain 
  * should we look for netbios aliases?? 
 				SSS	*/
@@ -405,6 +398,5 @@ struct winbindd_methods passdb_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };
