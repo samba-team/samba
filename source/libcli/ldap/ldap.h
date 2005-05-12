@@ -323,6 +323,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result);
 BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg);
 BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 			  char **host, uint16_t *port, BOOL *ldaps);
+struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
+						 const char *s);
 
 /* The following definitions come from libcli/ldap/ldap_client.c  */
 

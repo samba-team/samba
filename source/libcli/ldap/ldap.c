@@ -150,7 +150,7 @@ static const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
 	char *ret;
 	int len = blob.length;
 	for (i=0;i<blob.length;i++) {
-		if (!isprint(blob.data[i]) || blob.data[i] == '\\') {
+		if (!isprint(blob.data[i]) || strchr(" *()\\&|!", blob.data[i])) {
 			len += 2;
 		}
 	}
@@ -159,7 +159,7 @@ static const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
 
 	len = 0;
 	for (i=0;i<blob.length;i++) {
-		if (!isprint(blob.data[i]) || blob.data[i] == '\\') {
+		if (!isprint(blob.data[i]) || strchr(" *()\\&|!", blob.data[i])) {
 			snprintf(ret+len, 4, "\\%02X", blob.data[i]);
 			len += 3;
 		} else {
@@ -318,7 +318,7 @@ static struct ldap_parse_tree *ldap_parse_filtercomp(TALLOC_CTX *mem_ctx,
   <filter> ::= '(' <filtercomp> ')'
 */
 static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
-					       const char **s)
+						 const char **s)
 {
 	char *l, *s2;
 	const char *p, *p2;
@@ -1335,3 +1335,13 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 }
 
 
+
+/* 
+   externally callable version of filter string parsing - used in the
+   cldap server
+*/
+struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
+						 const char *s)
+{
+	return ldap_parse_filter(mem_ctx, &s);
+}
