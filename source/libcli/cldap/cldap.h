@@ -46,6 +46,8 @@ struct cldap_request {
 	int timeout;
 	int num_retries;
 
+	BOOL is_reply;
+
 	/* the ldap message_id */
 	int message_id;
 
@@ -121,6 +123,19 @@ NTSTATUS cldap_search(struct cldap_socket *cldap, TALLOC_CTX *mem_ctx,
 
 
 /*
+  a general cldap reply
+*/
+struct cldap_reply {
+	uint32_t messageid;
+	const char *dest_address;
+	int dest_port;
+	struct ldap_SearchResEntry *response;
+	struct ldap_Result         *result;
+};
+
+NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io);
+
+/*
   a netlogon cldap request  
 */
 struct cldap_netlogon {
@@ -142,3 +157,13 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 			     struct cldap_netlogon *io);
 NTSTATUS cldap_netlogon(struct cldap_socket *cldap, 
 			TALLOC_CTX *mem_ctx, struct cldap_netlogon *io);
+
+
+NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
+			   uint32_t message_id,
+			   const char *src_address, int src_port);
+NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
+			      uint32_t message_id,
+			      const char *src_address, int src_port,
+			      uint32_t version,
+			      union nbt_cldap_netlogon *netlogon);

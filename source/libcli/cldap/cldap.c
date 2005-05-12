@@ -51,7 +51,7 @@ static int cldap_request_destructor(void *ptr)
 	if (req->state == CLDAP_REQUEST_SEND) {
 		DLIST_REMOVE(req->cldap->send_queue, req);
 	}
-	if (req->message_id != 0) {
+	if (!req->is_reply && req->message_id != 0) {
 		idr_remove(req->cldap->idr, req->message_id);
 		req->message_id = 0;
 	}
@@ -191,13 +191,17 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 
 		DLIST_REMOVE(cldap->send_queue, req);
 
-		req->state = CLDAP_REQUEST_WAIT;
+		if (req->is_reply) {
+			talloc_free(req);
+		} else {
+			req->state = CLDAP_REQUEST_WAIT;
 
-		req->te = event_add_timed(cldap->event_ctx, req, 
-					  timeval_current_ofs(req->timeout, 0),
-					  cldap_request_timeout, req);
+			req->te = event_add_timed(cldap->event_ctx, req, 
+						  timeval_current_ofs(req->timeout, 0),
+						  cldap_request_timeout, req);
 
-		EVENT_FD_READABLE(cldap->fde);
+			EVENT_FD_READABLE(cldap->fde);
+		}
 	}
 
 	EVENT_FD_NOT_WRITEABLE(cldap->fde);
@@ -293,6 +297,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	req->state       = CLDAP_REQUEST_SEND;
 	req->timeout     = io->in.timeout;
 	req->num_retries = io->in.retries;
+	req->is_reply    = False;
 
 	req->dest_addr = talloc_strdup(req, io->in.dest_address);
 	if (req->dest_addr == NULL) goto failed;
@@ -303,7 +308,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 
 	talloc_set_destructor(req, cldap_request_destructor);
 
-	msg.mem_ctx         = cldap;
+	msg.mem_ctx         = req;
 	msg.messageid       = req->message_id;
 	msg.type            = LDAP_TAG_SearchRequest;
 	msg.num_controls    = 0;
@@ -336,6 +341,78 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 failed:
 	talloc_free(req);
 	return NULL;
+}
+
+
+/*
+  queue a cldap reply for send
+*/
+NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
+{
+	struct ldap_message msg;
+	struct cldap_request *req;
+	DATA_BLOB blob1, blob2;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	req = talloc_zero(cldap, struct cldap_request);
+	if (req == NULL) goto failed;
+
+	req->cldap       = cldap;
+	req->state       = CLDAP_REQUEST_SEND;
+	req->is_reply    = True;
+
+	req->dest_addr = talloc_strdup(req, io->dest_address);
+	if (req->dest_addr == NULL) goto failed;
+	req->dest_port = io->dest_port;
+
+	talloc_set_destructor(req, cldap_request_destructor);
+
+	msg.mem_ctx         = req;
+	msg.messageid       = io->messageid;
+	msg.num_controls    = 0;
+	msg.controls        = NULL;
+	
+	if (io->response) {
+		msg.type = LDAP_TAG_SearchResultEntry;
+		msg.r.SearchResultEntry = *io->response;
+
+		if (!ldap_encode(&msg, &blob1)) {
+			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
+				 req->dest_addr, req->dest_port));
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto failed;
+		}
+		talloc_steal(req, blob1.data);
+	} else {
+		blob1 = data_blob(NULL, 0);
+	}
+
+	msg.type = LDAP_TAG_SearchResultDone;
+	msg.r.SearchResultDone = *io->result;
+
+	if (!ldap_encode(&msg, &blob2)) {
+		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
+			 req->dest_addr, req->dest_port));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto failed;
+	}
+	talloc_steal(req, blob2.data);
+
+	req->encoded = data_blob_talloc(req, NULL, blob1.length + blob2.length);
+	if (req->encoded.data == NULL) goto failed;
+
+	memcpy(req->encoded.data, blob1.data, blob1.length);
+	memcpy(req->encoded.data+blob1.length, blob2.data, blob2.length);
+
+	DLIST_ADD_END(cldap->send_queue, req, struct cldap_request *);
+
+	EVENT_FD_WRITEABLE(cldap->fde);
+
+	return NT_STATUS_OK;
+
+failed:
+	talloc_free(req);
+	return status;
 }
 
 /*
@@ -490,3 +567,78 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 	struct cldap_request *req = cldap_netlogon_send(cldap, io);
 	return cldap_netlogon_recv(req, mem_ctx, io);
 }
+
+
+/*
+  send an empty reply (used on any error, so the client doesn't keep waiting
+  or send the bad request again)
+*/
+NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
+			   uint32_t message_id,
+			   const char *src_address, int src_port)
+{
+	NTSTATUS status;
+	struct cldap_reply reply;
+	struct ldap_Result result;
+
+	reply.messageid    = message_id;
+	reply.dest_address = src_address;
+	reply.dest_port    = src_port;
+	reply.response     = NULL;
+	reply.result       = &result;
+
+	ZERO_STRUCT(result);
+
+	status = cldap_reply_send(cldap, &reply);
+
+	return status;
+}
+
+
+/*
+  send a netlogon reply 
+*/
+NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
+			      uint32_t message_id,
+			      const char *src_address, int src_port,
+			      uint32_t version,
+			      union nbt_cldap_netlogon *netlogon)
+{
+	NTSTATUS status;
+	struct cldap_reply reply;
+	struct ldap_SearchResEntry response;
+	struct ldap_Result result;
+	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
+	DATA_BLOB blob;
+
+	status = ndr_push_union_blob(&blob, tmp_ctx, netlogon, version & 0xF, 
+				     (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	reply.messageid    = message_id;
+	reply.dest_address = src_address;
+	reply.dest_port    = src_port;
+	reply.response     = &response;
+	reply.result       = &result;
+
+	ZERO_STRUCT(result);
+
+	response.dn = "";
+	response.num_attributes = 1;
+	response.attributes = talloc(tmp_ctx, struct ldap_attribute);
+	NT_STATUS_HAVE_NO_MEMORY(response.attributes);
+	response.attributes->name = "netlogon";
+	response.attributes->num_values = 1;
+	response.attributes->values = &blob;
+
+	status = cldap_reply_send(cldap, &reply);
+
+	talloc_free(tmp_ctx);
+
+	return status;
+}
+
+
