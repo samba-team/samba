@@ -276,8 +276,10 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	nbtsrv->winssrv = talloc(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
-	nbtsrv->winssrv->max_ttl = lp_max_wins_ttl();
-	nbtsrv->winssrv->min_ttl = lp_min_wins_ttl();
+	nbtsrv->winssrv->max_ttl     = lp_max_wins_ttl();
+	nbtsrv->winssrv->min_ttl     = lp_min_wins_ttl();
+	nbtsrv->winssrv->min_version = 0;
+	nbtsrv->winssrv->max_version = 0;
 
 	return winsdb_init(nbtsrv->winssrv);
 }
