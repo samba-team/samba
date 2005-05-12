@@ -3390,7 +3390,7 @@ struct ldap_search_state {
 static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 {
 	struct ldap_search_state *state = search->private;
-	LDAP *ld = state->connection->ldap_struct;
+	LDAP *ld;
 	int rc = LDAP_OPERATIONS_ERROR;
 
 	state->entries = NULL;
@@ -3423,8 +3423,13 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 		state->connection->paged_results = False;
 	}
 
-	if ( ld )
-		state->current_entry = ldap_first_entry(ld, state->entries);
+        ld = state->connection->ldap_struct;
+        if ( ld == NULL) {
+                DEBUG(5, ("Don't have an LDAP connection right after a "
+			  "search\n"));
+                return False;
+        }
+        state->current_entry = ldap_first_entry(ld, state->entries);
 
 	if (state->current_entry == NULL) {
 		ldap_msgfree(state->entries);
