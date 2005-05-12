@@ -75,7 +75,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include "nsswitch/winbind_nss.h"
 
 /* I'm trying really hard not to include anything from smb.h with the
