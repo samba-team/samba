@@ -198,18 +198,19 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 <screen>
 &rootprompt; net groupmap add ntgroup="EliteEngrs" unixgroup=Engineers type=d
 </screen>
-	A Windows group may be deleted while preserving the UNIX group using this command:
+	A Windows group may be deleted, and then a new Windows group can be mapped to the UNIX group by
+	executing these commands:
 <screen>
-&rootprompt; net groupmap modify ntgroup=EngineDrivers unixgroup=Engineers type=d
+&rootprompt; net groupmap delete ntgroup=Engineers
+&rootprompt; net groupmap add ntgroup=EngineDrivers unixgroup=Engineers type=d
 </screen>
 	</para>
 
 	<para>
-	The reason for using the <constant>modify</constant> method is to avoid any attempt to create a new
-	UNIX group, the default operation of the <constant>add</constant> method. The <constant>add</constant>
-	method creates a new group and then maps it to the Windows group name. It is the mapping that creates
-	the Windows group; the <constant>modify</constant> method performs only the mapping and avoids the
-	creation of the POSIX group account.
+	Both the Windows group as well as the UNIX group can be deleted by executing:
+<screen>
+&rootprompt; net groupmap delete ntgroup=
+</screen>
 	</para>
 
 	</sect4>
@@ -260,6 +261,70 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 
 	</sect3>
 
+	<sect3>
+	<title>Nested Group Support</title>
+
+	<para>
+<screen>
+Windows supports the concept of nested groups to ease
+administration. You can create a so-called local group on
+any machine and add users and global (domain) groups from
+any trusted SAM to it. This way you might be able to reduce
+the amount of ACL entries you have to set on any file or
+directory. Another prominent example is the use of administrative
+privileges on workstations that are domain members. Administrative
+privileges are given to all members of the builtin local group
+Administrators on each workstation. To make sure that all
+domain administrators also have full rights on any workstation,
+upon domain join the Domain Admins group is added to the local
+Administrators group. Thus anybody logged into the domain as
+member of the Domain Admins group is also granted local admin
+privileges on each workstation.
+
+Unix does not support the concept of nested groups, and thus Samba
+has for a long time not supported them either. The problem is that
+you would have to put unix groups as auxiliary members of a group
+into /etc/group which is not possible. Since Samba 2.2 winbind is
+the daemon that can provide /etc/group entries on demand by asking
+the Domain Controller of the domain Samba is a member of on the fly.
+So Samba since that time has control over the /etc/group file via
+the dynamic libnss_winbind mechanism. Beginning with Samba 3.0.3
+this facility is used to provide local groups in the same manner
+as Windows does it. It works by expanding the local groups on the
+fly while being accessed. So when you put for example the Domain
+Users group of your domain as a member of the local alias "all",
+whenever asking for the members of "all" winbind asks the DC
+for all members of the Domain Users group. By definition it can
+only contain user objects which can then be faked to be member of
+the Unix group "all".
+
+To be able to use nested groups, you need to run winbindd and
+nss_winbind.  Creation and administration of the local groups
+is done best via the Windows User Manager for Domains or its
+Samba equivalent, the utility "net rpc group". Creating the
+local group "all" can be done by
+
+net rpc group add all -L
+
+where the -L switch denotes that you want to create a local group.
+Please add -S and -U switches for accessing the correct host via a
+user with root priviliges as needed. Adding and removing group
+members can be done via the addmem and delmem subcommands of "net
+rpc group". For example adding "DOM\Domain Users" to the local
+group "all" would be done by
+
+net rpc group addmem all "DOM\Domain Users"
+
+Having done these two steps you will find that "getent group all"
+will show all members of the global Domain Users group as members
+of  the group "all".  Certainly this also works with any local or
+domain user. In case the domain DOM trusts another domain, it is
+also possible to add global users and groups of the trusted domain
+as members of "all".
+</screen>
+	</para>
+
+	</sect3>
 
 	</sect2>
 
@@ -411,6 +476,202 @@ Join to 'MIDEARTH' is OK
 	<title>Migration of Files Across Servers</title>
 
 	<para>
+<screen>
+MIGRATING WINDOWS FILE- AND PRINT-SERVERS
+=========================================
+
+In a similar way as account-information like users, groups, group-memberships
+and passwords can be migrated using the "net rpc vampire"-facility, "net" also
+provides a framework to move files, directories, printers and all
+printer-relevant data from a Windows Server to a Samba Server. 
+
+A couple of command-line switches allow "net" to create almost 1:1 clones of
+your Windows-Systems. To give an example: When migrating a file-server,
+file-ACLs and DOS-Attributes that are existing on your Windows-System can be
+included in the migration process and will reappear - in a most identical way -
+on your Samba-System once the migration is finished.
+
+The way the "net rpc printer" and "net rpc share" commands are implemented may
+require your local Samba Server to be started before migration. Both commands
+use SMB- and MSRPC-Calls to do the migration-work. This allows rather flexible
+migration-scenarios: a host named "client" (where the "net"-command is run) can
+act as a intermediate host while migrating data from "server1" to "server2".
+The default is to migrate to the local machine though, to the machine where
+"net" is called.
+
+Be warned of taking any migration easy. To succeed and to have a real clone of
+the system you want to replace with Samba you need a good understanding of how
+the migration-process works and of any possible caveats.
+
+In the following, the terms "original", "source" or "originating" always mean a
+remote system that you want to migrate to a "destinating", "destination" or
+"target" system. The default target is "localhost".
+
+
+Migrating a File-Server
+=======================
+
+Migrating plain file-shares
+-----------------------------------------------------------
+
+"net" allows to migrate plain share-definitions. These consists of a
+share-name, a directory-path in the file-system, an optional description and
+security-settings that allow share-access. If your migration-destination is a
+Samba-System (the most obvious case), you need to have a "add share command"
+configured in smb.conf. Otherwise the share-add on the destination-system will
+fail. There is an example script that is suitable for the "add share command"
+available under $SAMBA_SOURCES/examples/misc/. In addition, the account that is
+used during migration must have enough permissions to add shares on the
+destination system. See the privileges-chapter elsewhere in this document for a
+description of how to set up the required privileges.
+
+* Syntax: 
+
+	net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
+		[--destination=localhost] [--exclude=share1,share2] [-v]
+
+If &lt;sharename&gt; is ommited, all shares will be migrated. The (possibly huge)
+list of offered shares on the remote system can be limited with the
+"--exclude"-switch in that case.
+
+* Example: 
+
+	"net rpc share migrate shares myshare -S win2k -U administrator%secret"
+
+	- will migrate the share "myshare" from the server "win2k" to your
+	  local Samba Server using the account "administrator" and the password
+	  "secret". Note that "administrator" must exist on "win2k" and on your local samba
+	  server with the same password. All the files and directories that are shared inside
+	  "myshare" are not migrated yet.
+
+
+Migrate files and directories of file-shares
+-----------------------------------------------------------
+
+Of more interest than the plain share-migration is getting all files and
+directories recursively from a remote server to your local system. "net" allows
+to do exactly that. As several other Windows-based utilities (robocopy, scopy
+and xcopy to name only a few), "net" can keep the original file-ACLs and
+DOS-attributes during the file-copy-process. Please note that including ACLs
+only makes sense when it is planned that the destination system is run under
+the same security-context as the source system. This is true if the destination
+system is run either as a domain-member or as domain-controller of a
+"vampired" domain. Also note that the migrated share (as share-definition)
+*must* already exist on the destination system.
+
+* Syntax:
+
+	net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
+		[--destination=localhost] [--exclude=share1,share2]
+		[--acls] [--attrs] [--timestamps] [-v]
+
+If &lt;sharename&gt; is ommited, all shares will be migrated. The (possibly huge)
+list of offered shares on the remote system can be limited with the
+"--exclude"-switch. 
+
+File-ACLs are included when run with the "--acls"-switch, DOS-attributes
+(hidden-, archive-bit, etc.) are included with "--attrs", the original
+timestamps are kept when "--timestamps" is choosen. Note that the resulting set
+of ACLs, attributes and timestamps is strongly dependent on the capabilities of
+your destination system. You may already have noticed the differences between
+NTFS-ACLs (that all Windows-Server provide) and POSIX-ACLs (that are available
+on Samba-Servers). As the file-copy is done using native Microsoft Network
+Protocols, "net" does not alter e.g. ACLs in any ways, it just copies them
+one-by-one. Anyway, the resulting ACLs on Samba will most probably not match
+the originating ACLs. The ACL-migration may even fail when files and
+directories on your source system are owned by a group. As group-ownership of
+files and directories is not implemented by Samba3, the copy of the whole ACL
+will fail on that file. This is not critical for the whole migration process
+and there is a valid workaround: You can use "force unknown acl user = yes" on
+the shares on the Samba-side. That way, group-ownership is silently converted
+into a user-ownership to the user that is used by the "net"-migration-command.
+
+* Example:
+	
+	net rpc share migrate files -S nt4box --acls --attrs -U administrator%secret
+
+	- will migrate all files and directories from all file-shares shared on
+	  "nt4box" to your to local Samba server using the
+	  "Administrator"-account - including all file-ACLs and all DOS-attributes If.
+	  files are owned by a group on "nt4box" they will be owned by "administrator" on
+	  the Samba server only when all samba-shares use "force unknown acl user = yes".
+
+
+Migrating shares including files and directories
+-----------------------------------------------------------
+
+This mode is just a combination of the two above. It first migrates
+share-definitions and then all shared files and directories afterwards.
+
+* Syntax:
+
+	net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
+		[--exclude=share1, share2] [--acls] [--attrs] [--timestamps] [-v]
+
+' Example:
+
+	net rpc share migrate all -S w2k3server -U administrator%secret
+
+	- will generate a full file-server clone of "w2k3server" using the
+	  "administrator"-account.
+
+
+Migrating a Print-Server
+========================
+
+Migrating printers
+-----------------------------------------------------------
+
+net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]
+        migrates printers from remote to local server
+
+
+Migrating printer-drivers
+-----------------------------------------------------------
+
+net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]
+        migrates printer-drivers from remote to local server
+
+
+Migrating printer-forms
+-----------------------------------------------------------
+
+net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]
+        migrates printer-forms from remote to local server
+
+
+Migrating printer security-settings
+-----------------------------------------------------------
+
+net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]
+        migrates printer-ACLs from remote to local server
+
+
+Migrating printer-settings
+-----------------------------------------------------------
+
+net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]
+        migrates printer-settings from remote to local server
+
+
+Migrating printers including all the above mentioned sets of information
+-----------------------------------------------------------
+
+net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
+        migrates drivers, forms, queues, settings and acls from
+        remote to local print-server
+
+
+
+Known Limitations
+-----------------------------------------------------------
+
+* net requires that the given credentials exist both on the migration source
+  and the migration target.
+
+* printer-settings may not be fully or incorrectly migrated. This might in
+  particular happen when migrating a Windows 2003 print-server to Samba.
+</screen>
 	</para>
 
 	</sect3>
