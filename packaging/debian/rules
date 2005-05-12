@@ -4,8 +4,7 @@
 # based on the sample debian/rules file for GNU hello by Ian Jackson.
 
 
-SOURCEPATH=../source
-DOCSPATH=../docs
+SOURCEPATH=../../source
 
 package=samba4
 
@@ -25,21 +24,17 @@ configure:
 		--with-syslog \
 		--with-readline \
 		--with-ldap 
-	cd $(DOCSPATH) && autoreconf
-	cd $(DOCSPATH) && ./configure
 	touch configure
 
 build: configure
 	$(checkdir)
 	cd $(SOURCEPATH) && $(MAKE) proto all
-	cd $(DOCSPATH) && $(MAKE) htmlman manpages
 	touch build
 
 clean:
 	$(checkdir)
 	rm -f build
 	-cd $(SOURCEPATH) && $(MAKE) clean
-	-cd $(DOCSPATH) && $(MAKE) clean
 	rm -f `find . -name "*~"`
 	rm -rf debian/tmp `find debian/* -type d ! -name CVS` debian/files* core
 	rm -f debian/*substvars
@@ -58,8 +53,6 @@ binary-arch: checkroot build
 	cd $(SOURCEPATH) && $(MAKE) install DESTDIR=`pwd`/../packaging/debian/tmp
 	mkdir -p debian/tmp/usr/share/man/man1 
 	mkdir -p debian/tmp/usr/share/man/man7 
-	cp $(DOCSPATH)/output/manpages/*.1 debian/tmp/usr/share/man/man1
-	cp $(DOCSPATH)/output/manpages/*.7 debian/tmp/usr/share/man/man7
 	cp $(SOURCEPATH)/build/pidl/pidl.pl debian/tmp/usr/bin/pidl
 	debstd 
 	dpkg-gencontrol -isp -psamba4

@@ -1,3 +1,9 @@
+samba4 (3.9.0-SVN-build-6710-1) unstable; urgency=low
+
+  * Newer upstream version
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Thu, 12 May 2005 14:04:05 +0200
+
 samba4 (3.9.0-SVN-build-655-1) unstable; urgency=low
 
   * Initial release.
