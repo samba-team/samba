@@ -33,6 +33,7 @@
 static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 				     TALLOC_CTX *mem_ctx,
 				     const char *domain,
+				     const char *user,
 				     const char *src_address,
 				     uint32_t version,
 				     union nbt_cldap_netlogon *netlogon)
@@ -57,6 +58,11 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	if (samctx == NULL) {
 		DEBUG(2,("Unable to open sam in cldap netlogon reply\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* the domain has an optional trailing . */
+	if (domain[strlen(domain)-1] == '.') {
+		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 	}
 
 	/* try and find the domain */
@@ -87,7 +93,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   lp_netbios_name(), dns_domain);
 	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
-	site_name        = "Default-First-Site-Name";
+	site_name        = "Default-First-Site-Name.bludom.tridgell.net";
 	site_name2       = "";
 	pdc_ip           = iface_best_ip(src_address);
 
@@ -129,7 +135,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 		netlogon->logon3.pdc_dns_name = pdc_dns_name;
 		netlogon->logon3.domain       = flatname;
 		netlogon->logon3.pdc_name     = pdc_name;
-		netlogon->logon3.user_name    = "";
+		netlogon->logon3.user_name    = user;
 		netlogon->logon3.site_name    = site_name;
 		netlogon->logon3.site_name2   = site_name2;
 		netlogon->logon3.nt_version   = 3;
@@ -144,7 +150,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 		netlogon->logon4.pdc_dns_name = pdc_dns_name;
 		netlogon->logon4.domain       = flatname;
 		netlogon->logon4.pdc_name     = lp_netbios_name();
-		netlogon->logon4.user_name    = "";
+		netlogon->logon4.user_name    = user;
 		netlogon->logon4.site_name    = site_name;
 		netlogon->logon4.site_name2   = site_name2;
 		netlogon->logon4.unknown      = 10;
@@ -172,11 +178,14 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	int i;
 	const char *domain = NULL;
 	const char *host = NULL;
+	const char *user = "";
 	int version = -1;
 	union nbt_cldap_netlogon netlogon;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
+
+	DEBUG(0,("cldap filter='%s'\n", filter));
 
 	tree = ldap_parse_filter_string(tmp_ctx, filter);
 	if (tree == NULL) goto failed;
@@ -197,6 +206,11 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 					      t->u.simple.value.data,
 					      t->u.simple.value.length);
 		}
+		if (strcasecmp(t->u.simple.attr, "User") == 0) {
+			user = talloc_strndup(tmp_ctx, 
+					      t->u.simple.value.data,
+					      t->u.simple.value.length);
+		}
 		if (strcasecmp(t->u.simple.attr, "NtVer") == 0 &&
 		    t->u.simple.value.length == 4) {
 			version = IVAL(t->u.simple.value.data, 0);
@@ -207,10 +221,10 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	DEBUG(2,("cldap netlogon query domain=%s host=%s version=%d\n",
-		 domain, host, version));
+	DEBUG(0,("cldap netlogon query domain=%s host=%s user=%s version=%d\n",
+		 domain, host, user, version));
 
-	status = cldapd_netlogon_fill(cldap, tmp_ctx, domain, src_address, 
+	status = cldapd_netlogon_fill(cldap, tmp_ctx, domain, user, src_address, 
 				      version, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
