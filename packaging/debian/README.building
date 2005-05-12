@@ -8,7 +8,7 @@ where source/ and packaging/ can be found).
 
 Now, go to packaging/, and run:
 
-dpkg-buildpackage -rfakeroot
+svn-buildpackage -rfakeroot
 
 See the Debian docs for more information about the debian build 
 process.
