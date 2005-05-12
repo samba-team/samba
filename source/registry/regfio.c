@@ -276,6 +276,7 @@ static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	uint16 class_length, name_length;
 	uint32 start;
 	uint32 data_size, start_off, end_off;
+	uint32 unknown_off = REGF_OFFSET_NONE;
 
 	nk->hbin_off = prs_offset( ps );
 	start = nk->hbin_off;
@@ -309,6 +310,8 @@ static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	if ( !prs_set_offset( ps, start+0x001c ) )
 		return False;
 	if ( !prs_uint32( "subkeys_off", ps, depth, &nk->subkeys_off ))
+		return False;
+	if ( !prs_uint32( "unknown_off", ps, depth, &unknown_off) )
 		return False;
 		
 	if ( !prs_set_offset( ps, start+0x0024 ) )
@@ -1066,7 +1069,7 @@ static BOOL init_regf_block( REGF_FILE *file )
 	
 	/* hard coded values...no diea what these are ... maybe in time */
 	
-	file->unknown1 = 0x1;
+	file->unknown1 = 0x2;
 	file->unknown2 = 0x1;
 	file->unknown3 = 0x3;
 	file->unknown4 = 0x0;
@@ -1353,6 +1356,8 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	if ( !write_hbin_block( file, hbin ) )
 		return NULL;
 
+	file->last_block = hbin->file_off;
+
 	return hbin;
 }
 
@@ -1566,7 +1571,7 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 
 REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
                                REGVAL_CTR *values, REGSUBKEY_CTR *subkeys, 
-                               REGF_NK_REC *parent )
+                               SEC_DESC *secdesc, REGF_NK_REC *parent )
 {
 	REGF_NK_REC *nk;
 	REGF_HBIN *vlist_hbin;

@@ -359,7 +359,7 @@ static BOOL translate_nk_to_regobj( REGF_FILE *infile, REGF_NK_REC *nk,
 		regsubkey_ctr_addkey( &subkeys, subkey->keyname );
 	}
 	
-	key = regfio_write_key( outfile, nk->keyname, &values, &subkeys, parent );
+	key = regfio_write_key( outfile, nk->keyname, &values, &subkeys, nk->sec_desc->sec_desc, parent );
 
 	/* write each one of the subkeys out */
 

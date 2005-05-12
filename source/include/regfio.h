@@ -202,7 +202,7 @@ REGF_NK_REC*  regfio_rootkey( REGF_FILE *file );
 REGF_NK_REC*  regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk );
 REGF_NK_REC*  regfio_write_key ( REGF_FILE *file, const char *name,
                                  REGVAL_CTR *values, REGSUBKEY_CTR *subkeys,
-                                 REGF_NK_REC *parent );
+                                 SEC_DESC *sec_desc, REGF_NK_REC *parent );
 
 
 #endif	/* _REGFIO_H */
