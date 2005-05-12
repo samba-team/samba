@@ -547,8 +547,8 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 		    && (memcmp(gensec_gssapi_state->gss_oid->elements, gensec_gss_krb5_mechanism_oid_desc.elements, gensec_gssapi_state->gss_oid->length) == 0)) {
 			return True;
 		}
-	}
 #endif 
+	}
 	return False;
 }
 
