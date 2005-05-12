@@ -272,7 +272,13 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 	attrs = ldb_msg_find_string(ltdb->cache->attributes, attr_name, NULL);
 
 	if (!attrs) {
-		return ret;
+
+		/* check if theres a wildcard attribute */
+		attrs = ldb_msg_find_string(ltdb->cache->attributes, "*", NULL);
+
+		if (!attrs) {
+			return ret;
+		}
 	}
 
 	/* we avoid using strtok and friends due to their nasty
