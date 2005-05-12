@@ -919,7 +919,7 @@ char *talloc_strndup(const void *t, const char *p, size_t n)
 	size_t len;
 	char *ret;
 
-	for (len=0; p[len] && len<n; len++) ;
+	for (len=0; len<n && p[len]; len++) ;
 
 	ret = _talloc(t, len + 1);
 	if (!ret) { return NULL; }
