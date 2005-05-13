@@ -1289,6 +1289,11 @@ start_login(const char *host, int autologin, char *name)
     char *user;
     int save_errno;
 
+#ifdef ENCRYPTION
+    encrypt_output = NULL;
+    decrypt_input = NULL;
+#endif
+    
 #ifdef HAVE_UTMPX_H
     int pid = getpid();
     struct utmpx utmpx;
