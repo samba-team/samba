@@ -144,7 +144,7 @@ static struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
    encode a blob as a RFC2254 binary string, escaping any
    non-printable or '\' characters
 */
-static const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
+const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
 {
 	int i;
 	char *ret;
@@ -1345,3 +1345,6 @@ struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
 {
 	return ldap_parse_filter(mem_ctx, &s);
 }
+
+
+
