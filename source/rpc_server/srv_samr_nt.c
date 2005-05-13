@@ -2389,7 +2389,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
 	
-	se_priv_add( &se_rights, &se_add_users );
+	se_priv_copy( &se_rights, &se_add_users );
 	
 	
 	status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
