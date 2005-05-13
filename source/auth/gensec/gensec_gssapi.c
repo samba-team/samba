@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "system/network.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
