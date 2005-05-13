@@ -325,6 +325,7 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 			  char **host, uint16_t *port, BOOL *ldaps);
 struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
 						 const char *s);
+const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob);
 
 /* The following definitions come from libcli/ldap/ldap_client.c  */
 
@@ -377,5 +378,11 @@ BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod **mods,
 				    int *num_mods);
 struct ldap_message *ldap_ldif2msg(TALLOC_CTX *mem_ctx, const char *s);
+
+/* The following definitions come from libcli/ldap/ldap_ndr.c  */
+
+const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value);
+const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid);
+const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid);
 
 #endif

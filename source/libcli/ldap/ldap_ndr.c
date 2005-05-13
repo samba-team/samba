@@ -1,0 +1,76 @@
+/* 
+   Unix SMB/CIFS mplementation.
+
+   wrap/unwrap NDR encoded elements for ldap calls
+   
+   Copyright (C) Andrew Tridgell  2005
+    
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+*/
+
+#include "includes.h"
+#include "libcli/ldap/ldap.h"
+#include "librpc/gen_ndr/ndr_security.h"
+
+/*
+  encode a NDR uint32 as a ldap filter element
+*/
+const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
+{
+	uint8_t buf[4];
+	DATA_BLOB blob;
+	SIVAL(buf, 0, value);
+	blob.data = buf;
+	blob.length = 4;
+	return ldap_binary_encode(mem_ctx, blob);
+}
+
+/*
+  encode a NDR dom_sid as a ldap filter element
+*/
+const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+	const char *ret;
+	status = ndr_push_struct_blob(&blob, mem_ctx, sid, 
+				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	ret = ldap_binary_encode(mem_ctx, blob);
+	data_blob_free(&blob);
+	return ret;
+}
+
+
+/*
+  encode a NDR GUID as a ldap filter element
+*/
+const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+	const char *ret;
+	status = ndr_push_struct_blob(&blob, mem_ctx, guid, 
+				      (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	ret = ldap_binary_encode(mem_ctx, blob);
+	data_blob_free(&blob);
+	return ret;
+}
