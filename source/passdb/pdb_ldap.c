@@ -3098,8 +3098,6 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
-	talloc_destroy(mem_ctx);
-
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
