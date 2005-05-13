@@ -81,7 +81,7 @@ AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 		unsigned long size, const AES_KEY *key,
 		unsigned char *iv, int encrypt)
 {
-    char tmp[AES_BLOCK_SIZE];
+    unsigned char tmp[AES_BLOCK_SIZE];
     int i;
 
     if (encrypt) {
