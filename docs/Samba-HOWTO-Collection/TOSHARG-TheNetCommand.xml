@@ -4,6 +4,7 @@
 <chapter id="NetCommand">
 <chapterinfo>
 	&author.jht;
+	&author.gd;
 	<pubdate>May 9, 2005</pubdate>
 </chapterinfo>
 
@@ -78,14 +79,14 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	<title>Administrative Tasks And Methods</title>
 
 	<para>
-	Stuff goes here - this is a work in progress.
+	Stuff goes here - this is a work in progress.!!!!!
 	</para>
 
 	<sect2>
 	<title>UNIX and Windows Group Management</title>
 
 	<para>
-	More stuff.
+	More stuff.!!!!!!!!!!
 	</para>
 
 	<sect3>
@@ -257,6 +258,7 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	<title>Manipulating Group Memberships</title>
 
 	<para>
+	Fix me by adding stuff here!!!!!!
 	</para>
 
 	</sect3>
@@ -286,7 +288,23 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 </screen>
 	</para>
 
-	
+	<para>
+	The members of a nested group can be listed by executing the following:
+<screen>
+&rootprompt; net rpc group members demo -Uroot%not24get
+DOM\Domain Users
+DOM\Engineers
+DOM\jamesf
+DOM\jht
+</screen>
+	</para>
+
+	<para>
+	Nest group members can be removed (deleted) as shown here:
+<screen>
+&rootprompt; net rpc group delmem demo "DOM\jht" -Uroot%not24get
+</screen>
+	</para>
 
 	</sect3>
 
@@ -296,6 +314,7 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	<title>UNIX and Windows User Management</title>
 
 	<para>
+	Put somethings useful here man!!!!!!
 	</para>
 
 	</sect2>
@@ -382,6 +401,7 @@ SeDiskOperatorPrivilege
 	<title>Managing Trust Relationships</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	<sect3>
@@ -400,6 +420,7 @@ Join to 'MIDEARTH' is OK
 	<title>Inter-Domain Trusts</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect3>
@@ -410,6 +431,7 @@ Join to 'MIDEARTH' is OK
 	<title>Managing Security Identifiers (SIDS)</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect2>
@@ -418,12 +440,64 @@ Join to 'MIDEARTH' is OK
 	<title>Share Management</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	<sect3>
 	<title>Creating, Editing, and Removing Shares</title>
 
 	<para>
+	A share can be added using the <command>net rpc share</command> command capabilities.
+	The target machine may be local or remote and is specified by the -S option. It must be noted
+	that the addition and deletion of shares using this tool depends on the availability of a suitable
+	interface script. The interface scripts Samba's <command>smbd</command> uses are called:
+	<smbconfoption name="add share script"/> and <smbconfoption name="delete share script"/>.
+	A set of example scripts are provided in the Samba source code tarball in the directory
+	<filename>~samba/examples/scripts</filename>.
+	</para>
+
+	<para>
+	The following steps demonstrate the use of the share management capabilities of the <command>net</command>
+	utility. In the first step a share called <constant>Bulge</constant> is added. The share-point within the
+	file system is the directory <filename>/data</filename>. The command that can be executed to perform the
+	addition of this share is shown here:
+<screen>
+&rootprompt; net rpc share add Bulge=/data -S merlin -Uroot%not24get
+</screen>
+	Validation is an important process, and by executing the command <command>net rpc share</command>
+	with no other operators a listing of available shares is shown here:
+<screen>
+&rootprompt; net rpc share -S merlin -Uroot%not24get
+profdata
+archive
+Bulge   &lt;--- This one was added
+print$
+netlogon
+profiles
+IPC$
+kyocera
+ADMIN$
+</screen>
+	</para>
+
+	<para>
+	Often times it is desirable also to permit a share to be removed using a command-line tool.
+	The following step permits the share that was previously added to be removed:
+<screen>
+&rootprompt; net rpc share delete Bulge -S merlin -Uroot%not24get
+</screen>
+	A simple validation shown here demonstrates that the share has been removed:
+<screen>
+&rootprompt; net rpc share -S merlin -Uroot%not24get
+profdata
+archive
+print$
+netlogon
+profiles
+IPC$
+ADMIN$
+kyocera
+</screen>
 	</para>
 
 	</sect3>
@@ -437,47 +511,49 @@ Join to 'MIDEARTH' is OK
 	</sect3>
 
 	<sect3>
-	<title>Migration of Files Across Servers</title>
+	<title>Migration of Shares and Files</title>
+
+	<para>
+	Shares and files can be migrated in the same manner as user, machine and group accounts.
+	It is possible to preserve access control settings (ACLs) as well as security settings
+	throughout the migration process. The <command>net rpc vampire</command> facility is used
+	to migrate accounts from a Windows NT4 (or later) domain to a Samba server. This process
+	preserves passwords and account security settings and is a precursor to the migration
+	of shares and files.
+	</para>
+
+	<para>
+	The <command>net rpc share</command> command may be used to migratio share, directories
+	files, printers, and all relevant data from a Windows server to a Samba server.
+	</para>
+
+	<para>
+	A set of command-line switches permit the creation of almost direct clones of Windows file
+	servers. For example, when migrating a file-server, file ACLs and DOS file attributes from
+	the Windows server can be included in the migration process and will reappear, almost identicaly
+	on the Samba server when the migration has been completed.
+	</para>
+
+	<para>
+	The migration process can be completed only with the Samba server already being fully operational.
+	This means that the user and group accounts must be migrated before attempting to migrate data
+	share, files, and printers. The migration of files and printer configurations involves the use
+	of both SMB and MS DCE RPC services. The benefit of the manner in which the migration process has
+	been implemented, the possibility now exists to use a Samba server as a man-in-middle migration
+	service that affects a transfer of data from one server to another. For example, if the Samba
+	server is called <constant>MESSER</constant>, the source Windows NT4 server is called
+	<constant>PEPPY</constant>, and the target Samba server is called <constant>GONZALES</constant>
+	MESSER can be used to affect the migration of all data (files and shares) from PEPPY to
+	GONZALES. If the target machine is not specified, the local server is assumed by default.
+	</para>
+
+	<para>
+	The success of server migration requires a firm understanding of the structure of ther source
+	server (or domain) as well as  the processes on which the migration is critically dependant.
+	</para>
 
 	<para>
 <screen>
-MIGRATING WINDOWS FILE- AND PRINT-SERVERS
-=========================================
-
-In a similar way as account-information like users, groups, group-memberships
-and passwords can be migrated using the "net rpc vampire"-facility, "net" also
-provides a framework to move files, directories, printers and all
-printer-relevant data from a Windows Server to a Samba Server. 
-
-A couple of command-line switches allow "net" to create almost 1:1 clones of
-your Windows-Systems. To give an example: When migrating a file-server,
-file-ACLs and DOS-Attributes that are existing on your Windows-System can be
-included in the migration process and will reappear - in a most identical way -
-on your Samba-System once the migration is finished.
-
-The way the "net rpc printer" and "net rpc share" commands are implemented may
-require your local Samba Server to be started before migration. Both commands
-use SMB- and MSRPC-Calls to do the migration-work. This allows rather flexible
-migration-scenarios: a host named "client" (where the "net"-command is run) can
-act as a intermediate host while migrating data from "server1" to "server2".
-The default is to migrate to the local machine though, to the machine where
-"net" is called.
-
-Be warned of taking any migration easy. To succeed and to have a real clone of
-the system you want to replace with Samba you need a good understanding of how
-the migration-process works and of any possible caveats.
-
-In the following, the terms "original", "source" or "originating" always mean a
-remote system that you want to migrate to a "destinating", "destination" or
-"target" system. The default target is "localhost".
-
-
-Migrating a File-Server
-=======================
-
-Migrating plain file-shares
------------------------------------------------------------
-
 "net" allows to migrate plain share-definitions. These consists of a
 share-name, a directory-path in the file-system, an optional description and
 security-settings that allow share-access. If your migration-destination is a
@@ -646,6 +722,7 @@ Known Limitations
 	<title>Controlling Open Files</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect2>
@@ -654,6 +731,7 @@ Known Limitations
 	<title>Session and Connection Management</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect2>
@@ -662,6 +740,7 @@ Known Limitations
 	<title>Printers and ADS</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect2>
@@ -670,6 +749,7 @@ Known Limitations
 	<title>Manipulating the Samba Cache</title>
 
 	<para>
+	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
 	</sect2>
