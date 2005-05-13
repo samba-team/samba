@@ -1,3 +1,12 @@
+2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rc2.c: use unsigned char to avoid signess warning
+
+	* des.c: use unsigned char to avoid signess warning
+
+	* aes.c (AES_cbc_encrypt): use unsigned char to avoid signess
+	warning
+
 2005-05-03  Dave Love  <fx@gnu.org>
 
 	* mdtest.c: Fix typo for HAVE_STDLIB_H.
