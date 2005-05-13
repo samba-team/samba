@@ -93,7 +93,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   lp_netbios_name(), dns_domain);
 	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
-	site_name        = "Default-First-Site-Name.bludom.tridgell.net";
+	site_name        = talloc_asprintf(mem_ctx, "Default-First-Site-Name.%s",
+					   dns_domain);
 	site_name2       = "";
 	pdc_ip           = iface_best_ip(src_address);
 
@@ -179,6 +180,9 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	const char *domain = NULL;
 	const char *host = NULL;
 	const char *user = "";
+	const char *domain_guid = NULL;
+	const char *domain_sid = NULL;
+	int acct_control = -1;
 	int version = -1;
 	union nbt_cldap_netlogon netlogon;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
@@ -206,6 +210,16 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 					      t->u.simple.value.data,
 					      t->u.simple.value.length);
 		}
+		if (strcasecmp(t->u.simple.attr, "DomainGuid") == 0) {
+			domain_guid = talloc_strndup(tmp_ctx, 
+						     t->u.simple.value.data,
+						     t->u.simple.value.length);
+		}
+		if (strcasecmp(t->u.simple.attr, "DomainSid") == 0) {
+			domain_sid = talloc_strndup(tmp_ctx, 
+						    t->u.simple.value.data,
+						    t->u.simple.value.length);
+		}
 		if (strcasecmp(t->u.simple.attr, "User") == 0) {
 			user = talloc_strndup(tmp_ctx, 
 					      t->u.simple.value.data,
@@ -214,6 +228,10 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		if (strcasecmp(t->u.simple.attr, "NtVer") == 0 &&
 		    t->u.simple.value.length == 4) {
 			version = IVAL(t->u.simple.value.data, 0);
+		}
+		if (strcasecmp(t->u.simple.attr, "AAC") == 0 &&
+		    t->u.simple.value.length == 4) {
+			acct_control = IVAL(t->u.simple.value.data, 0);
 		}
 	}
 
