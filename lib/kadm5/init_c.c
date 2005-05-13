@@ -99,9 +99,9 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
     }
 
     if ((*ctx)->admin_server == NULL) {
-	return ENOMEM;
 	free((*ctx)->realm);
 	free(*ctx);
+	return ENOMEM;
     }
     colon = strchr ((*ctx)->admin_server, ':');
     if (colon != NULL)
