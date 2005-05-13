@@ -80,6 +80,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying with a GUID\n");
+	search.in.realm       = NULL;
 	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -89,11 +90,17 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	search.in.user        = NULL;
 	search.in.domain_guid = GUID_string(mem_ctx, &guid);
 	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+
+	printf("Trying with a incorrect domain and correct guid\n");
+	search.in.realm       = "test.example.com";
+	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
+	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying with a incorrect domain\n");
+	printf("Trying with a incorrect domain and incorrect guid\n");
 	search.in.realm       = "test.example.com";
-	search.in.domain_guid = NULL;
+	search.in.domain_guid = GUID_string(mem_ctx, &guid);
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
 
@@ -106,6 +113,20 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	printf("Trying with a bad AAC\n");
 	search.in.acct_control = 0xFF00FF00;
 	search.in.realm = lp_realm();
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying with a user only\n");
+	search.in.acct_control = -1;
+	search.in.user = "Administrator";
+	search.in.realm = NULL;
+	search.in.domain_guid = NULL;
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying without any attributes\n");
+	search.in.user = NULL;
+	search.in.host = NULL;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
