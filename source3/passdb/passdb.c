@@ -1194,6 +1194,7 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 	become_root();
 	if ( !pdb_getsampwsid(sampw, psid) ) {
 		unbecome_root();
+		pdb_free_sam(&sampw);
 		DEBUG(8,("local_sid_to_uid: Could not find SID %s in passdb\n",
 			sid_string_static(psid)));
 		return False;
@@ -1217,7 +1218,7 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		(unsigned int)*puid, user_name ));
 
 	*name_type = SID_NAME_USER;
-	
+	pdb_free_sam( &sampw );
 	return True;
 }
 
