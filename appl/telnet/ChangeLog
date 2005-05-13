@@ -1,3 +1,8 @@
+2005-05-13  Johan Danielsson  <joda@pdc.kth.se>
+
+	* telnetd/sys_term.c (start_login): set encryption pointers to
+	NULL, so we don't try to do either
+	
 2005-05-11  Dave Love  <fx@gnu.org>
 
 	* telnet/telnet.c: undef ISASCII before we define our own (problem
