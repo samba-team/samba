@@ -48,7 +48,6 @@ static int net_rpc_join_ok(const char *domain)
 	uchar stored_md4_trust_password[16];
 	int retval = 1;
 	uint32 channel;
-	NTSTATUS result;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -69,7 +68,7 @@ static int net_rpc_join_ok(const char *domain)
 	
 	/* ensure that schannel uses the right domain */
 	fstrcpy(cli->domain, domain);
-	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
+	if (! NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
 		DEBUG(0,("Error in domain join verfication (fresh connection)\n"));
 		goto done;
 	}
