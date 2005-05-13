@@ -143,7 +143,11 @@ struct cldap_netlogon {
 		const char *dest_address;
 		const char *realm;
 		const char *host;
-		uint8_t version;
+		const char *user;
+		const char *domain_guid;
+		const char *domain_sid;
+		int acct_control;
+		uint32_t version;
 	} in;
 	struct {
 		union nbt_cldap_netlogon netlogon;

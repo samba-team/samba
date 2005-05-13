@@ -489,6 +489,7 @@ NTSTATUS cldap_search(struct cldap_socket *cldap,
 }
 
 
+
 /*
   queue a cldap netlogon for send
 */
@@ -499,11 +500,36 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 	char *filter;
 	struct cldap_request *req;
 	const char *attr[] = { "NetLogon", NULL };
+	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 
-	filter = talloc_asprintf(cldap, 
-				 "(&(DnsDomain=%s)(Host=%s)(NtVer=\\%02X\\00\\00\\00))", 
-				 io->in.realm, io->in.host, io->in.version);
-	if (filter == NULL) return NULL;
+	filter = talloc_asprintf(tmp_ctx, 
+				 "(&(DnsDomain=%s)(Host=%s)(NtVer=%s)", 
+				 io->in.realm, io->in.host, 
+				 ldap_encode_ndr_uint32(tmp_ctx, io->in.version));
+	if (filter == NULL) goto failed;
+	if (io->in.user) {
+		filter = talloc_asprintf_append(filter, "(User=%s)", io->in.user);
+	}
+	if (io->in.acct_control != -1) {
+		filter = talloc_asprintf_append(filter, "(AAC=%s)", 
+						ldap_encode_ndr_uint32(tmp_ctx, io->in.acct_control));
+	}
+	if (io->in.domain_sid) {
+		struct dom_sid *sid = dom_sid_parse_talloc(tmp_ctx, io->in.domain_sid);
+		if (sid == NULL) goto failed;
+		filter = talloc_asprintf_append(filter, "(domainSid=%s)",
+						ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	}
+	if (io->in.domain_guid) {
+		struct GUID guid;
+		NTSTATUS status;
+		status = GUID_from_string(io->in.domain_guid, &guid);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+		filter = talloc_asprintf_append(filter, "(DomainGuid=%s)",
+						ldap_encode_ndr_GUID(tmp_ctx, &guid));
+	}
+	filter = talloc_asprintf_append(filter, ")");
+	if (filter == NULL) goto failed;
 
 	search.in.dest_address = io->in.dest_address;
 	search.in.filter       = filter;
@@ -513,9 +539,11 @@ struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap,
 
 	req = cldap_search_send(cldap, &search);
 
-	talloc_free(filter);
-
+	talloc_free(tmp_ctx);
 	return req;
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
 }
 
 
@@ -535,7 +563,7 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 		return status;
 	}
 	if (search.out.response == NULL) {
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	if (search.out.response->num_attributes != 1 ||
