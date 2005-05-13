@@ -73,7 +73,7 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 }
 
 /*
-  allocate a new version id for a record
+  remove a version id
 */
 static void winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
 {
