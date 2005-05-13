@@ -1,3 +1,8 @@
+2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_c.c (_kadm5_c_init_context): fix memory leak in case of
+	failure
+
 2005-05-09  Dave Love  <fx@gnu.org>
 
 	* password_quality.c (find_func): Fix off-by-one and logic error.
