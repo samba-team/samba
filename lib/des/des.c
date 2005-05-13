@@ -288,7 +288,7 @@ DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -311,7 +311,7 @@ DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -351,7 +351,7 @@ DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -374,7 +374,7 @@ DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -453,7 +453,7 @@ DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -476,7 +476,7 @@ DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
 	    output += DES_CBLOCK_LEN;
 	}
 	if (length) {
-	    char tmp[DES_CBLOCK_LEN];
+	    unsigned char tmp[DES_CBLOCK_LEN];
 	    memcpy(tmp, input, length);
 	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	    load(tmp, u);
@@ -573,7 +573,7 @@ DES_cbc_cksum(const unsigned char *input, DES_cblock *output,
 	input += DES_CBLOCK_LEN;
     }
     if (length) {
-	char tmp[DES_CBLOCK_LEN];
+	unsigned char tmp[DES_CBLOCK_LEN];
 	memcpy(tmp, input, length);
 	memset(tmp + length, 0, DES_CBLOCK_LEN - length);
 	load(tmp, u);

@@ -200,7 +200,7 @@ void
 RC2_cbc_encrypt(const unsigned char *in, unsigned char *out, long size,
 		RC2_KEY *key, unsigned char *iv, int encrypt)
 {
-    char tmp[RC2_BLOCK_SIZE];
+    unsigned char tmp[RC2_BLOCK_SIZE];
     int i;
 
     if (encrypt) {
