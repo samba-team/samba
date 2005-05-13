@@ -896,7 +896,6 @@ BOOL get_local_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 
 BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 {
-	struct group *grp;
 	BOOL ret;
 	
 
@@ -920,7 +919,7 @@ BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 		return False;
 	}
 
-	if ( (grp=getgrgid(map->gid)) == NULL) {
+	if ( getgrgid(map->gid) == NULL) {
 		return False;
 	}
 
@@ -934,7 +933,6 @@ Returns a GROUP_MAP struct based on the gid.
 ****************************************************************************/
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 {
-	struct group *grp;
 	BOOL ret;
 
 	if(!init_group_mapping()) {
@@ -942,7 +940,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 		return(False);
 	}
 
-	if ( (grp=getgrgid(gid)) == NULL)
+	if ( getgrgid(gid) == NULL)
 		return False;
 
 	become_root();
