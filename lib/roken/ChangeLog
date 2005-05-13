@@ -1,3 +1,8 @@
+2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* issuid.c (issuid): change the #ifdef order to avoid unreachable
+	code warning.
+
 2005-05-10  Dave Love  <fx@gnu.org>
 
 	* roken.h.in: Get daemon declared on Solaris (it's in unistd.h but
