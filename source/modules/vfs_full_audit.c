@@ -497,6 +497,9 @@ static struct {
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
+	{ SMB_VFS_OP_SEEKDIR,   "seekdir" },
+	{ SMB_VFS_OP_TELLDIR,   "telldir" },
+	{ SMB_VFS_OP_REWINDDIR, "rewinddir" },
 	{ SMB_VFS_OP_MKDIR,	"mkdir" },
 	{ SMB_VFS_OP_RMDIR,	"rmdir" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
@@ -648,6 +651,11 @@ static void init_bitmap(struct bitmap **bm, const char **ops)
 		}
 
 		for (i=0; i<SMB_VFS_OP_LAST; i++) {
+			if (vfs_op_names[i].name == NULL) {
+				smb_panic("vfs_full_audit.c: name table not "
+					  "in sync with vfs.h\n");
+			}
+
 			if (strequal(*ops, vfs_op_names[i].name)) {
 				bitmap_set(*bm, i);
 				found = True;
