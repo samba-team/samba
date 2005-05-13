@@ -93,8 +93,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   lp_netbios_name(), dns_domain);
 	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
-	site_name        = talloc_asprintf(mem_ctx, "Default-First-Site-Name.%s",
-					   dns_domain);
+	site_name        = "Default-First-Site-Name";
 	site_name2       = "";
 	pdc_ip           = iface_best_ip(src_address);
 
