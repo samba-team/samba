@@ -42,19 +42,28 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 {
 	struct cldap_socket *cldap = cldap_socket_init(mem_ctx, NULL);
 	NTSTATUS status;
-	struct cldap_netlogon search;
+	struct cldap_netlogon search, empty_search;
 	union nbt_cldap_netlogon n1;
 	struct GUID guid;
 	int i;
 	BOOL ret = True;
 
+	ZERO_STRUCT(search);
 	search.in.dest_address = dest;
-	search.in.realm        = lp_realm();
-	search.in.host         = lp_netbios_name();
-	search.in.user         = NULL;
-	search.in.domain_guid  = NULL;
-	search.in.domain_sid   = NULL;
 	search.in.acct_control = -1;
+	search.in.version = 6;
+
+	empty_search = search;
+
+	printf("Trying without any attributes\n");
+	search = empty_search;
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	n1 = search.out.netlogon;
+
+	search.in.realm        = n1.logon4.dns_domain;
+	search.in.host         = "__cldap_torture__";
 
 	printf("Scanning for netlogon levels\n");
 	for (i=0;i<256;i++) {
@@ -68,10 +77,21 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 		}
 	}
 
+	printf("Scanning for netlogon level bits\n");
+	for (i=0;i<31;i++) {
+		search.in.version = (1<<i);
+		printf("Trying netlogon level 0x%x\n", i);
+		status = cldap_netlogon(cldap, mem_ctx, &search);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (DEBUGLVL(10)) {
+			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, i & 0xF, 
+					      &search.out.netlogon);
+		}
+	}
+
 	search.in.version = 6;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	n1 = search.out.netlogon;
 
 	printf("Trying with User=Administrator\n");
 
@@ -92,41 +112,48 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
 
-	printf("Trying with a incorrect domain and correct guid\n");
-	search.in.realm       = "test.example.com";
-	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
-	status = cldap_netlogon(cldap, mem_ctx, &search);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("Trying with a incorrect domain and incorrect guid\n");
-	search.in.realm       = "test.example.com";
-	search.in.domain_guid = GUID_string(mem_ctx, &guid);
-	status = cldap_netlogon(cldap, mem_ctx, &search);
-	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
-
 	printf("Trying with a AAC\n");
 	search.in.acct_control = 0x180;
-	search.in.realm = lp_realm();
+	search.in.realm = n1.logon4.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying with a bad AAC\n");
 	search.in.acct_control = 0xFF00FF00;
-	search.in.realm = lp_realm();
+	search.in.realm = n1.logon4.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying with a user only\n");
-	search.in.acct_control = -1;
+	search = empty_search;
 	search.in.user = "Administrator";
-	search.in.realm = NULL;
-	search.in.domain_guid = NULL;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying without any attributes\n");
-	search.in.user = NULL;
-	search.in.host = NULL;
+	printf("Trying with just a bad username\n");
+	search.in.user = "___no_such_user___";
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying with just a bad domain\n");
+	search = empty_search;
+	search.in.realm = "___no_such_domain___";
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+
+	printf("Trying with a incorrect domain and correct guid\n");
+	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying with a incorrect domain and incorrect guid\n");
+	search.in.domain_guid = GUID_string(mem_ctx, &guid);
+	status = cldap_netlogon(cldap, mem_ctx, &search);
+	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
+
+	printf("Trying with a incorrect GUID and correct domain\n");
+	search.in.domain_guid = GUID_string(mem_ctx, &guid);
+	search.in.realm = n1.logon4.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
