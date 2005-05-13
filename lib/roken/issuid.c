@@ -43,7 +43,8 @@ issuid(void)
 {
 #if defined(HAVE_ISSETUGID)
     return issetugid();
-#endif
+#else /* !HAVE_ISSETUGID */
+
 #if defined(HAVE_GETUID) && defined(HAVE_GETEUID)
     if(getuid() != geteuid())
 	return 1;
@@ -52,5 +53,7 @@ issuid(void)
     if(getgid() != getegid())
 	return 2;
 #endif
+
     return 0;
+#endif /* HAVE_ISSETUGID */
 }
