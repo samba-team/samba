@@ -248,16 +248,19 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
 
-	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
-
-	full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
-	
+        if(name == NULL || *name=='\0') {
+                DEBUG(3,("rpc: name_to_sid name=%s\n", domain_name));
+                full_name = talloc_asprintf(mem_ctx, "%s", domain_name);
+        } else {
+                DEBUG(3,("rpc: name_to_sid name=%s\\%s\n", domain_name, name));
+                full_name = talloc_asprintf(mem_ctx, "%s\\%s", domain_name, name);
+        }
 	if (!full_name) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name, domain_name ));
+	DEBUG(3,("name_to_sid [rpc] %s for domain %s\n", name?name:"", domain_name ));
 
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))
@@ -872,40 +875,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find the domain sid for a domain */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	TALLOC_CTX *mem_ctx;
-	char *level5_dom;
-	DOM_SID *alloc_sid;
-	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
-
-	DEBUG(3,("rpc: domain_sid\n"));
-
-	if (!(mem_ctx = talloc_init("domain_sid[rpc]")))
-		return NT_STATUS_NO_MEMORY;
-
-	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	result = rpccli_lsa_query_info_policy(cli, mem_ctx, &lsa_policy, 0x05,
-					      &level5_dom, &alloc_sid);
-
-	if (NT_STATUS_IS_OK(result)) {
-		if (alloc_sid) {
-			sid_copy(sid, alloc_sid);
-		} else {
-			result = NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	talloc_destroy(mem_ctx);
-	return result;
-}
-
 /* find alternate names list for the domain - none for rpc */
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
 {
@@ -927,6 +896,5 @@ struct winbindd_methods msrpc_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };

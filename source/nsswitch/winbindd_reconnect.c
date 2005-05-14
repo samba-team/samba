@@ -242,19 +242,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	return result;
 }
 
-/* find the domain sid for a domain */
-static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
-{
-	NTSTATUS result;
-
-	result = msrpc_methods.domain_sid(domain, sid);
-
-	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
-		result = msrpc_methods.domain_sid(domain, sid);
-
-	return result;
-}
-
 static NTSTATUS alternate_name(struct winbindd_domain *domain)
 {
 	NTSTATUS result;
@@ -282,6 +269,5 @@ struct winbindd_methods reconnect_methods = {
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
-	domain_sid,
 	alternate_name
 };
