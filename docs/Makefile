@@ -136,7 +136,6 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
-	touch $@
 
 $(PDFDIR)/%.pdf: %.pdf
 	mkdir -p $(@D)
@@ -156,10 +155,8 @@ $(PDFDIR)/%.pdf: %.pdf
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
 	@echo "$*-images-latex-png: \$$(addsuffix .png, \$$($*-images-latex))" >> $@
-	@echo "	touch \$$@" >> $@
 	@echo >> $@
 	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
-	@echo "	touch \$$@" >> $@
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
 	@echo "	mkdir -p \$$(@D)" >> $@
@@ -174,11 +171,8 @@ $(PDFDIR)/%.pdf: %.pdf
 	@echo "	cp \$$< \$$@" >> $@
 	@echo >> $@
 	@echo "$*-images-html-single: \$$(addprefix \$$(HTMLDIR)/, \$$($*-images-html))" >> $@
-	@echo "	touch \$$@" >> $@
 	@echo "$*-images-html-chunks: \$$(addprefix \$$(HTMLDIR)/$*/, \$$($*-images-html))" >> $@
-	@echo "	touch \$$@" >> $@
 	@echo "$*-images-htmlhelp: \$$(addprefix \$$(HTMLHELPDIR)/$*/, \$$($*-images-html))" >> $@
-	@echo "	touch \$$@" >> $@
 
 ifdef OUTPUTDIR 
 ifneq ($(MAKECMDGOALS),clobber)
@@ -313,11 +307,13 @@ clobber: clean
 
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f *.xml *.d
+	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	rm -f *-images-html*
+	rm -f *-images-latex-* latexfigures
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
-.PHONY: clean clobber archive release everything all $(TARGETS)
+.PHONY: clean clobber archive release everything all $(TARGETS) latexfigures
