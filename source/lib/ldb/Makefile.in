@@ -7,8 +7,9 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 WITH_GCOV = @WITH_GCOV@
+WITH_LDAP = @WITH_LDAP@
 
-ifeq ($(WITH_LDAP),1)
+ifeq ($(WITH_LDAP),yes)
 OPENLDAP_PREFIX=/usr
 LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
 LDAP_FLAGS=-DHAVE_LDAP=1
