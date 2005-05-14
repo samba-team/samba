@@ -349,16 +349,19 @@ No privileges assigned
            SeAddUsersPrivilege  Add users and groups to the domain
      SeRemoteShutdownPrivilege  Force shutdown from a remote system
        SeDiskOperatorPrivilege  Manage disk shares
+
 &rootprompt; net rpc rights grant "MIDEARTH\Domain Admins" \
     SeMachineAccountPrivilege SePrintOperatorPrivilege \
     SeAddUsersPrivilege SeRemoteShutdownPrivilege \
     SeDiskOperatorPrivilege  -U root%not24get
 Successfully granted rights.
+
 &rootprompt; net rpc rights grant "MIDEARTH\jht" \
     SeMachineAccountPrivilege SePrintOperatorPrivilege \
     SeAddUsersPrivilege SeDiskOperatorPrivilege \
     -U root%not24get
 Successfully granted rights.
+
 &rootprompt; net rpc rights list accounts -U root%not24get
 MIDEARTH\jht
 SeMachineAccountPrivilege
@@ -390,8 +393,6 @@ SePrintOperatorPrivilege
 SeAddUsersPrivilege
 SeRemoteShutdownPrivilege
 SeDiskOperatorPrivilege
-
-&rootprompt;                            
 </screen>
 	</para>
 
@@ -614,80 +615,102 @@ net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
 
 	<para>
 	Everything covered to this point has been done in preparation for the migration of file and directory
-	data. For many people preparation is potentially boring and the real excitement only happens when file
-	data can be used. 
+	data. For many people preparation is potentially boring and the real excitement only begins when file
+	data can be used. The next steps demonstrates the techniques that can be used to transfer (migrate)
+	data files using the <command>net</command> command.
+	</para>
 
+	<para>
+	Transfer of files from one server to another has always been a challenge for Microsoft Windows
+	administrators because Windows NT and 200X servers do not include the tools needed. The
+	<command>xcopy</command> is not capable of preserving file and directory ACLs. Microsoft do provide a
+	utility that can copy ACLs (security settings) called <command>scopy</command>, but it is provided only
+	as part of the Windows NT or 200X Server Resource Kit.
+	</para>
+
+	<para>
+	There are several tools, both commercial and freeware, that can be used from Windows server to copy files
+	and directories with full preservation of security settings. One of the best known of the free tools is
+	called <command>robocopy</command>.
+	</para>
+
+	<para>
+	The <command>net</command> utility can be used to copy files and directories with full preservation of
+	ACLs as well as DOS file attributes. Note that including ACLs makes sense only where the destination
+	system will operate within the same security context as the source system. This applies to both a domain
+	member server (DMS) as well as for domain controllers (DCs) that result from a vampired domain.
+	Before file and directory migration all shares must already exist.
+	</para>
+
+	<para>
+	The syntax for the migration commands is shown here:
 <screen>
-Migrate files and directories of file-shares
------------------------------------------------------------
-
-Of more interest than the plain share-migration is getting all files and
-directories recursively from a remote server to your local system. "net" allows
-to do exactly that. As several other Windows-based utilities (robocopy, scopy
-and xcopy to name only a few), "net" can keep the original file-ACLs and
-DOS-attributes during the file-copy-process. Please note that including ACLs
-only makes sense when it is planned that the destination system is run under
-the same security-context as the source system. This is true if the destination
-system is run either as a domain-member or as domain-controller of a
-"vampired" domain. Also note that the migrated share (as share-definition)
-*must* already exist on the destination system.
-
-* Syntax:
-
-	net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
-		[--destination=localhost] [--exclude=share1,share2]
-		[--acls] [--attrs] [--timestamps] [-v]
-
-If &lt;sharename&gt; is ommited, all shares will be migrated. The (possibly huge)
-list of offered shares on the remote system can be limited with the
-"--exclude"-switch. 
-
-File-ACLs are included when run with the "--acls"-switch, DOS-attributes
-(hidden-, archive-bit, etc.) are included with "--attrs", the original
-timestamps are kept when "--timestamps" is choosen. Note that the resulting set
-of ACLs, attributes and timestamps is strongly dependent on the capabilities of
-your destination system. You may already have noticed the differences between
-NTFS-ACLs (that all Windows-Server provide) and POSIX-ACLs (that are available
-on Samba-Servers). As the file-copy is done using native Microsoft Network
-Protocols, "net" does not alter e.g. ACLs in any ways, it just copies them
-one-by-one. Anyway, the resulting ACLs on Samba will most probably not match
-the originating ACLs. The ACL-migration may even fail when files and
-directories on your source system are owned by a group. As group-ownership of
-files and directories is not implemented by Samba3, the copy of the whole ACL
-will fail on that file. This is not critical for the whole migration process
-and there is a valid workaround: You can use "force unknown acl user = yes" on
-the shares on the Samba-side. That way, group-ownership is silently converted
-into a user-ownership to the user that is used by the "net"-migration-command.
-
-* Example:
-	
-	net rpc share migrate files -S nt4box --acls --attrs -U administrator%secret
-
-	- will migrate all files and directories from all file-shares shared on
-	  "nt4box" to your to local Samba server using the
-	  "Administrator"-account - including all file-ACLs and all DOS-attributes If.
-	  files are owned by a group on "nt4box" they will be owned by "administrator" on
-	  the Samba server only when all samba-shares use "force unknown acl user = yes".
-
-
-Migrating shares including files and directories
------------------------------------------------------------
-
-This mode is just a combination of the two above. It first migrates
-share-definitions and then all shared files and directories afterwards.
-
-* Syntax:
-
-	net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
-		[--exclude=share1, share2] [--acls] [--attrs] [--timestamps] [-v]
-
-' Example:
-
-	net rpc share migrate all -S w2k3server -U administrator%secret
-
-	- will generate a full file-server clone of "w2k3server" using the
-	  "administrator"-account.
+net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
+    [--destination=localhost] [--exclude=share1,share2]
+    [--acls] [--attrs] [--timestamps] [-v]
 </screen>
+	If the &lt;sharename&gt; parameter is ommited, all shares will be migrated. The potentially large
+	list of shares on the source system can be restricted using the <parameter>--exclude</parameter> command
+	switch.
+	</para>
+
+	<para>
+	Where it is necessary to preserve all file ACLs, the <parameter>--acls</parameter> switch should be added
+	to the above command line. Original file time stamps can be preserved by specifying the
+	<parameter>--timestamps</parameter> switch, and the DOS file attributs (i.e.: hidden, archive, etc.) cab
+	be preserved by specifying the <parameter>--attrs</parameter> switch.
+	</para>
+
+	<note><para>
+	The ability to preserve ACLs depends on appropriate support for ACLs, as well as the general file system
+	semantics of the host operating system on the target server. A migration from one Windows file server to
+	another will perfectly preserve all file attributes. Because of the difficulty of mapping Windows ACLs
+	onto a POSIX ACLs supporting system, there can be no perfect migration of Windows ACLs to a Samba server.
+	</para></note>
+
+	<para>
+	The ACLs that result on a Samba server will most probably not match the originating ACLs. Windows support
+	the possibility of files that are owned only by a group. Group-alone file ownership is not possible under
+	UNIX/Linux. Errors in migrating group-owned files can be avoided by using the &smb.conf; file
+	<smbconfoption name="force unknown acl user">yes</smbconfoption> parameter. This facility will
+	automatically convert group-owned files into correctly user-owned files on the Samba server.
+	</para>
+
+	<para>
+	An example for migration of files from a machine called <constant>nt4box</constant> to the Samba server
+	from which the process will be handled is shown here:
+<screen>
+&rootprompt; net rpc share migrate files -S nt4box --acls \
+    --attrs -U administrator%secret
+</screen>
+	</para>
+
+	<para>
+	The above command  will migrate all files and directories from all file shares on the Windows server called
+	<constant>nt4box</constant> to the Samba server from which migration is initiated. Files that are group-owned
+	will be owned by the user account <constant>administrator</constant>.
+	</para>
+
+	</sect4>
+
+	<sect4>
+	<title>Simultaneous Share and File Migration</title>
+
+	<para>
+	This operating mode shown here is just a combination of the two above. It first migrates
+	share-definitions and then all shared files and directories afterwards:
+<screen>
+net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
+    [--exclude=share1, share2] [--acls] [--attrs] [--timestamps] [-v]
+</screen>
+	</para>
+
+	<para>
+	An example of simultaneous migration is shown here:
+<screen>
+&rootprompt; net rpc share migrate all -S w2k3server -U administrator%secret
+</screen>
+	This will generate a complete server clone of the <parameter>w2k3server</parameter> server.
 	</para>
 
 	</sect4>
