@@ -54,9 +54,11 @@ add_dynamic_entries()
 		echo f none bin/smbsh 0755 root other
 	fi
 
-	echo "#\n# nss_winbind.so\n#"
+	echo "#\n# nss_winbind.so and nss_wins.so\n#"
 	echo f none /lib/nss_winbind.so.1=lib/nss_winbind.so.1 0755 root other
+	echo f none /lib/nss_wins.so.1=lib/nss_wins.so.1 0755 root other
 	# echo s none /lib/nss_winbind.so.1=/usr/lib/nss_winbind.so.1 0755 root other
+	# echo s none /lib/nss_wins.so.1=/usr/lib/nss_wins.so.1 0755 root other
 	if [ -f lib/pam_winbind.so ]; then
 		echo f none /usr/lib/security/pam_winbind.so=lib/pam_winbind.so 0755 root other
 	fi
@@ -146,6 +148,7 @@ SBINDIR=`bin/smbd -b | grep SBINDIR | awk '{print $2}'`
 BINDIR=`bin/smbd -b | grep BINDIR | grep -v SBINDIR |  awk '{print $2}'`
 SWATDIR=`bin/smbd -b | grep SWATDIR | awk '{print $2}'`
 CONFIGFILE=`bin/smbd -b | grep CONFIGFILE | awk '{print $2}'`
+LOCKDIR=`bin/smbd -b | grep LOCKDIR | awk '{print $2}'`
 CONFIGDIR=`dirname $CONFIGFILE`
 LOGFILEBASE=`bin/smbd -b | grep LOGFILEBASE | awk '{print $2}'`
 LIBDIR=`bin/smbd -b | grep LIBDIR | awk '{print $2}'`
@@ -154,8 +157,9 @@ PRIVATE_DIR=`bin/smbd -b | grep PRIVATE_DIR | awk '{print $2}'`
 DOCDIR=$INSTALL_BASE/docs
 
 ## 
-## copy some misc files that are ont done as part of 'make install'
+## copy some misc files that are not done as part of 'make install'
 ##
+cp -fp nsswitch/libnss_wins.so $TMPINSTALLDIR/$LIBDIR/nss_wins.so.1
 cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/nss_winbind.so.1
 if [ -f nsswitch/pam_winbind.so ]; then
 	cp -fp nsswitch/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
@@ -198,6 +202,7 @@ done
 ##
 echo "CONFIGDIR=$CONFIGDIR" >> pkginfo
 echo "LOGFILEBASE=$LOGFILEBASE" >> pkginfo
+echo "LOCKDIR=$LOCKDIR" >> pkginfo
 echo "PIDDIR=$PIDDIR" >> pkginfo
 echo "PRIVATE_DIR=$PRIVATE_DIR" >> pkginfo
 
