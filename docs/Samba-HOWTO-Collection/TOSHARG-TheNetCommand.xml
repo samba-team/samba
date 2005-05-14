@@ -511,7 +511,7 @@ kyocera
 	</sect3>
 
 	<sect3>
-	<title>Migration of Shares and Files</title>
+	<title>Share, Directory and File Migration</title>
 
 	<para>
 	Shares and files can be migrated in the same manner as user, machine and group accounts.
@@ -523,7 +523,7 @@ kyocera
 	</para>
 
 	<para>
-	The <command>net rpc share</command> command may be used to migratio share, directories
+	The <command>net rpc share</command> command may be used to migrate shares, directories
 	files, printers, and all relevant data from a Windows server to a Samba server.
 	</para>
 
@@ -541,10 +541,10 @@ kyocera
 	of both SMB and MS DCE RPC services. The benefit of the manner in which the migration process has
 	been implemented, the possibility now exists to use a Samba server as a man-in-middle migration
 	service that affects a transfer of data from one server to another. For example, if the Samba
-	server is called <constant>MESSER</constant>, the source Windows NT4 server is called
-	<constant>PEPPY</constant>, and the target Samba server is called <constant>GONZALES</constant>
-	MESSER can be used to affect the migration of all data (files and shares) from PEPPY to
-	GONZALES. If the target machine is not specified, the local server is assumed by default.
+	server is called MESSER, the source Windows NT4 server is called PEPPY, and the target Samba
+	server is called GONZALES, the machien MESSER can be used to affect the migration of all data
+	(files and shares) from PEPPY to GONZALES. If the target machine is not specified, the local
+	server is assumed by default.
 	</para>
 
 	<para>
@@ -552,39 +552,72 @@ kyocera
 	server (or domain) as well as  the processes on which the migration is critically dependant.
 	</para>
 
+	<sect4>
+	<title>Share Migration</title>
+
 	<para>
+	The <command>net rpc share migrate</command> command operation permits the migration of plain
+	share stanzas. A stanza contains the parameters within which a file or print share are defined.
+	The use of this migration method will create share stanzas that have as parameters the file
+	system directory path, an optional description, and simple security settings that permit write
+	access to files. One of the first steps necessary following migration is to review the share
+	stanzas to ensure that the settings are suitable for use.
+	</para>
+
+	<para>
+	The shares are created on-the-fly as part of the migration process. The <command>smbd</command>
+	application does this by calling on the operating system to execute the script specified by the 
+	&smb.conf; parameter <parameter>add share command</parameter>.
+	</para>
+
+	<para>
+	There is a suitable example script for the <parameter>add share command</parameter> in the
+	<filename>$SAMBA_SOURCES/examples/scripts</filename> directory. It should be noted that
+	the account that is used to drive the migration must, of necessity, have appropriate file system
+	access privileges and have the right to create shares and to set ACLs on them. Such rights are
+	conferred by these rights: <parameter>SeAddUsersPrivilege, SeDiskOperatorPrivilege</parameter>.
+	For more information regarding rights and privileges please refer to <link linkend="rights"/>.
+	</para>
+
+	<para>
+	The syntax of the share migration command is shown here:
 <screen>
-"net" allows to migrate plain share-definitions. These consists of a
-share-name, a directory-path in the file-system, an optional description and
-security-settings that allow share-access. If your migration-destination is a
-Samba-System (the most obvious case), you need to have a "add share command"
-configured in smb.conf. Otherwise the share-add on the destination-system will
-fail. There is an example script that is suitable for the "add share command"
-available under $SAMBA_SOURCES/examples/misc/. In addition, the account that is
-used during migration must have enough permissions to add shares on the
-destination system. See the privileges-chapter elsewhere in this document for a
-description of how to set up the required privileges.
+net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
+        [--destination=localhost] [--exclude=share1,share2] [-v]
+</screen>
+	When the parameter &lt;sharename&gt; is ommited, all shares will be migrated. The potentially
+	large list of available shares on the system that is being migrated can be limited using the
+	<parameter>--exclude</parameter> switch. For example:
+<screen>
+&rootprompt; net rpc share migrate shares myshare\
+         -S win2k -U administrator%secret"
+</screen>
+	This will migrate the share <constant>myshare</constant> from the server <constant>win2k</constant>
+	to the Samba Server using the permissions that are tied to the account <constant>administrator</constant> 
+	with the password <constant>secret</constant>. The account that is used must be the same on both the
+	migration source server, as well as on the target Samba server. The use of the <command>net rpc
+	vampire</command>, prior to attempting the migration of shares, will ensure that accounts will be
+	identical on both systems. One precaution worth taking before commencement of migration of shares is
+	to validate that the migrated accounts (on the Samba server) have the needed rights and privileges.
+	This can be done as shown here:
+<screen>
+&rootprompt; net rpc right list accounts -Uroot%not24get
+</screen>
+	The steps taken so far performs only the migration of shares. Directories and directory contents
+	are not migrated by the steps covered up to this point.
+	</para>
 
-* Syntax: 
+	</sect4>
 
-	net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
-		[--destination=localhost] [--exclude=share1,share2] [-v]
+	<sect4>
+	<title>File and Directory Migration</title>
 
-If &lt;sharename&gt; is ommited, all shares will be migrated. The (possibly huge)
-list of offered shares on the remote system can be limited with the
-"--exclude"-switch in that case.
+	<para>
+	Everything covered to this point has been done in preparation for the migration of file and directory
+	data. For many people preparation is potentially boring and the real excitement only happens when file
+	data can be used. 
 
-* Example: 
-
-	"net rpc share migrate shares myshare -S win2k -U administrator%secret"
-
-	- will migrate the share "myshare" from the server "win2k" to your
-	  local Samba Server using the account "administrator" and the password
-	  "secret". Note that "administrator" must exist on "win2k" and on your local samba
-	  server with the same password. All the files and directories that are shared inside
-	  "myshare" are not migrated yet.
-
-
+<screen>
 Migrate files and directories of file-shares
 -----------------------------------------------------------
 
@@ -654,11 +687,18 @@ share-definitions and then all shared files and directories afterwards.
 
 	- will generate a full file-server clone of "w2k3server" using the
 	  "administrator"-account.
+</screen>
+	</para>
 
+	</sect4>
 
-Migrating a Print-Server
-========================
+	</sect3>
 
+	<sect3>
+	<title>Printer Migration</title>
+
+<para>
+<screen>
 Migrating printers
 -----------------------------------------------------------
 
