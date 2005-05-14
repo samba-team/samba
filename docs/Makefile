@@ -246,7 +246,7 @@ $(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
 # Manpages
 $(MANPAGEDIR3)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
 
-$(SMBDOTCONFDOC)/parameters.all.xml: $(shell find $(SMBDOTCONFDOC) -type f -name '*.xml' -mindepth 2 | sort -t/ -k3 | xargs) $(SMBDOTCONFDOC)/generate-file-list.sh
+$(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBDOTCONFDOC)/generate-file-list.sh
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
