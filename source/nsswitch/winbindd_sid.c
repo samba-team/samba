@@ -188,7 +188,8 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 				    const char *dom_name, const char *name,
 				    enum SID_NAME_USE type)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
 	struct winbindd_request *request;
 
 	if (!success) {
@@ -343,7 +344,8 @@ static void sid2gid_lookup_sid_recv(void *private, BOOL success,
 				    const char *dom_name, const char *name,
 				    enum SID_NAME_USE type)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
 	struct winbindd_request *request;
 
 	if (!success) {
@@ -524,7 +526,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 static void uid2sid_uid2name_recv(void *private, BOOL success,
 				  const char *username)
 {
-	struct uid2sid_state *state = private;
+	struct uid2sid_state *state =
+		talloc_get_type_abort(private, struct uid2sid_state);
 
 	DEBUG(10, ("uid2sid: uid %lu has name %s\n",
 		   (unsigned long)state->uid, username));
@@ -545,7 +548,8 @@ static void uid2sid_uid2name_recv(void *private, BOOL success,
 static void uid2sid_lookupname_recv(void *private, BOOL success,
 				    const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct uid2sid_state *state = private;
+	struct uid2sid_state *state =
+		talloc_get_type_abort(private, struct uid2sid_state);
 	unid_t id;
 
 	if ((!success) || (type != SID_NAME_USER)) {
@@ -564,7 +568,8 @@ static void uid2sid_lookupname_recv(void *private, BOOL success,
 
 static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success)
 {
-	struct uid2sid_state *state = private;
+	struct uid2sid_state *state =
+		talloc_get_type_abort(private, struct uid2sid_state);
 
 	/* don't fail if we can't store it */
 
@@ -647,7 +652,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 static void gid2sid_gid2name_recv(void *private, BOOL success,
 				  const char *username)
 {
-	struct gid2sid_state *state = private;
+	struct gid2sid_state *state =
+		talloc_get_type_abort(private, struct gid2sid_state);
 
 	DEBUG(10, ("gid2sid: gid %lu has name %s\n",
 		   (unsigned long)state->gid, username));
@@ -668,7 +674,8 @@ static void gid2sid_gid2name_recv(void *private, BOOL success,
 static void gid2sid_lookupname_recv(void *private, BOOL success,
 				    const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct gid2sid_state *state = private;
+	struct gid2sid_state *state =
+		talloc_get_type_abort(private, struct gid2sid_state);
 	unid_t id;
 
 	if ((!success) ||
