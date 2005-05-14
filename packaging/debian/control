@@ -2,8 +2,8 @@ Source: samba4
 Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
-Standards-Version: 3.5.8
-Build-Depends: debmake, libgtk2.0-dev, libgconf2-dev, libldap-dev
+Standards-Version: 3.6.1.0
+Build-Depends: debmake, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0)
 
 Package: samba4
 Architecture: any
@@ -31,10 +31,10 @@ Description: Testsuite from Samba4
 Package: samba4-server
 Architecture: any
 Depends: ${shlibs:Depends}, samba4-common
-Description: GPL'ed SMB Server
- Contains smbd, the Samba server.
+Description: SMB Server
+ Contains smbd, the Samba server. 
 
-Package: gregedit
+Package: samba4-gtk-frontends
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: Graphical tool for viewing and editing registry files
@@ -60,7 +60,7 @@ Description: IDL compiler written in Perl
  
 Package: samba4-dev
 Architecture: any
-Depends: pidl
+Depends: pidl, libc6-dev, pkg-config (>= 0.14.0)
 Description: Tools for extending Samba
  Contains Samba includes and tools
 
