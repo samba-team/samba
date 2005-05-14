@@ -153,6 +153,7 @@ struct security_ace;
 struct lsa_RightSet;
 
 struct composite_context;
+struct monitor_msg;
 
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
@@ -190,6 +191,9 @@ struct stream_server_ops;
 struct nbtd_server;
 struct nbtd_interface;
 struct wins_server;
+
+struct cldap_socket;
+struct cldapd_server;
 
 struct mutex_ops;
 

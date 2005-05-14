@@ -2411,6 +2411,7 @@ static struct {
 
 	/* ldap testers */
 	{"LDAP-BASIC", torture_ldap_basic, 0},
+	{"LDAP-CLDAP", torture_cldap, 0},
 
 	/* nbt tests */
 	{"NBT-REGISTER", torture_nbt_register, 0},

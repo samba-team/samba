@@ -303,6 +303,23 @@ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 }
 
 /*
+  a useful helper function for printing idl unions via DEBUG()
+*/
+void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr)
+{
+	struct ndr_print *ndr;
+
+	ndr = talloc_zero(NULL, struct ndr_print);
+	if (!ndr) return;
+	ndr->print = ndr_print_debug_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	ndr_print_set_switch_value(ndr, ptr, level);
+	fn(ndr, name, ptr);
+	talloc_free(ndr);
+}
+
+/*
   a useful helper function for printing idl function calls via DEBUG()
 */
 void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int flags, void *ptr)
@@ -738,6 +755,49 @@ NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *
 }
 
 /*
+  pull a struct from a blob using NDR - failing if all bytes are not consumed
+*/
+NTSTATUS ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+				  ndr_pull_flags_fn_t fn)
+{
+	struct ndr_pull *ndr;
+	NTSTATUS status;
+
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) return status;
+	if (ndr->offset != ndr->data_size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	return status;
+}
+
+/*
+  pull a union from a blob using NDR, given the union discriminator
+*/
+NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			     uint32_t level, ndr_pull_flags_fn_t fn)
+{
+	struct ndr_pull *ndr;
+	NTSTATUS status;
+
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr_pull_set_switch_value(ndr, p, level);
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) return status;
+	if (ndr->offset != ndr->data_size) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	return status;
+}
+
+/*
   push a struct to a blob using NDR
 */
 NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
@@ -749,6 +809,29 @@ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*blob = ndr_push_blob(ndr);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  push a union to a blob using NDR
+*/
+NTSTATUS ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			     uint32_t level, ndr_push_flags_fn_t fn)
+{
+	NTSTATUS status;
+	struct ndr_push *ndr;
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr_push_set_switch_value(ndr, p, level);
 	status = fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

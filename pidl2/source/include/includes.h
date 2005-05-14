@@ -70,6 +70,14 @@
 #include <varargs.h>
 #endif
 
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
