@@ -153,14 +153,16 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	NTSTATUS result;
 
-	if (idmap_proxyonly())
-		return WINBINDD_ERROR;
-
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
 		  state->request.data.sid));
+
+	if (idmap_proxyonly()) {
+		DEBUG(8, ("IDMAP proxy only\n"));
+		return WINBINDD_ERROR;
+	}
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
@@ -173,8 +175,9 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
 				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
-	if (NT_STATUS_IS_OK(result))
+	if (NT_STATUS_IS_OK(result)) {
 		return WINBINDD_OK;
+	}
 
 	winbindd_lookupsid_async(state->mem_ctx, &sid,
 				 sid2uid_lookup_sid_recv, state);
@@ -188,8 +191,16 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 	struct winbindd_cli_state *state = private;
 	struct winbindd_request *request;
 
-	if ((!success) ||
-	    ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))) {
+	if (!success) {
+		DEBUG(5, ("Could not lookup sid %s\n",
+			  state->request.data.sid));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
+	}
+		
+	if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER)) {
+		DEBUG(5, ("SId %s is not a user\n", state->request.data.sid));
 		state->response.result = WINBINDD_ERROR;
 		request_finished(state);
 		return;
@@ -288,12 +299,14 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 /* Convert a sid to a gid.  We assume we only have one rid attached to the
    sid.*/
 
-static void winbindd_sid2gid_recv(void *private, BOOL success,
-				  gid_t gid);
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type);
 
 enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	NTSTATUS result;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -301,39 +314,72 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
 		  state->request.data.sid));
 
+	if (idmap_proxyonly()) {
+		DEBUG(8, ("IDMAP proxy only\n"));
+		return WINBINDD_ERROR;
+	}
+
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
 			  state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
-	state->response.result = WINBINDD_PENDING;
+	/* Query only the local tdb, everything else might possibly block */
 
-	winbindd_sid2gid_async(state->mem_ctx, &sid, winbindd_sid2gid_recv,
-			       state);
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
-	/* winbindd_sid2gid_recv might have been called directly from within
-	   winbindd_sid2gid_async and might have modified the result */
-
-	return state->response.result;
-}
-
-static void winbindd_sid2gid_recv(void *private, BOOL success,
-				  gid_t gid)
-{
-	struct winbindd_cli_state *state = private;
-
-	if (!success) {
-		state->response.result = WINBINDD_ERROR;
-		request_finished(state);
+	if (NT_STATUS_IS_OK(result)) {
+		return WINBINDD_OK;
 	}
 
-	state->response.result = WINBINDD_OK;
-	state->response.data.gid = gid;
-	request_finished(state);
+	winbindd_lookupsid_async(state->mem_ctx, &sid,
+				 sid2gid_lookup_sid_recv, state);
+	return WINBINDD_PENDING;
 }
 
-/* Child part of winbindd_sid2gid. We already know for sure it's a user, as
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type)
+{
+	struct winbindd_cli_state *state = private;
+	struct winbindd_request *request;
+
+	if (!success) {
+		DEBUG(5, ("Could not lookup sid %s\n",
+			  state->request.data.sid));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
+	}
+
+	if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS)) {
+		DEBUG(5, ("SId %s is not a group\n", state->request.data.sid));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
+	}
+
+	request = TALLOC_ZERO_P(state->mem_ctx, struct winbindd_request);
+
+	if (request == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		request_finished_cont(state, False);
+		return;
+	}
+
+	request->length = sizeof(*request);
+	request->cmd = WINBINDD_DUAL_SID2GID;
+	fstrcpy(request->data.dual_sid2id.sid, state->request.data.sid);
+	fstrcpy(request->data.dual_sid2id.name, name);
+
+	async_request(state->mem_ctx, idmap_child(),
+		      request, &state->response,
+		      request_finished_cont, state);
+}
+
+/* Child part of winbindd_sid2gid. We already know for sure it's a group, as
  * well as the user's name */
 
 enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
@@ -430,6 +476,11 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
+
+	if (idmap_proxyonly()) {
+		DEBUG(8, ("IDMAP proxy only\n"));
+		return WINBINDD_ERROR;
+	}
 
 	status = idmap_uid_to_sid(&sid, state->request.data.uid,
 				  ID_QUERY_ONLY | ID_CACHE_ONLY);
@@ -548,6 +599,11 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.gid));
+
+	if (idmap_proxyonly()) {
+		DEBUG(8, ("IDMAP proxy only\n"));
+		return WINBINDD_ERROR;
+	}
 
 	status = idmap_gid_to_sid(&sid, state->request.data.gid,
 				  ID_QUERY_ONLY | ID_CACHE_ONLY);
