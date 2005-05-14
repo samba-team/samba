@@ -15,6 +15,7 @@ d none $CONFIGDIR ? ? ?
 d initscript /etc/init.d ? ? ?
 f initscript /etc/init.d/samba=scripts/samba.init 0744 root sys
 d initscript /etc/rc3.d ? ? ?
+f initscript /sbin/samba=scripts/samba.init 0750 root root
 #
 # Stuff to set up SWAT
 #
@@ -27,6 +28,7 @@ e swat /etc/inet/inetd.conf=scripts/inetd.conf ? ? ?
 d none docs 755 root other
 d none man 755 root other
 d none $CONFIGDIR 755 root sys
+d none $LOCKDIR 755 root other
 d none $PRIVATE_DIR 700 root sys
 d none sbin 0755 root other
 d none bin 0755 root other
