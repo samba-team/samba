@@ -325,11 +325,16 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
+static const char *gensec_ntlmssp_oids[] = { 
+	GENSEC_OID_NTLMSSP, 
+	NULL
+};
+
 static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
 	.sasl_name	= "NTLM",
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
-	.oid            = GENSEC_OID_NTLMSSP,
+	.oid            = gensec_ntlmssp_oids,
 	.client_start   = gensec_ntlmssp_client_start,
 	.server_start   = gensec_ntlmssp_server_start,
 	.update 	= gensec_ntlmssp_update,
