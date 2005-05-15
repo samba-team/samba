@@ -31,7 +31,7 @@ const char *gtk_select_domain_dialog_get_domain(GtkSelectDomainDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_domain));
 }
 
-void gtk_select_domain_dialog_init (GtkSelectDomainDialog *select_domain_dialog)
+static void gtk_select_domain_dialog_init (GtkSelectDomainDialog *select_domain_dialog)
 {
 	GtkWidget *dialog_vbox1;
 	GtkWidget *hbox1;
@@ -184,7 +184,7 @@ const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d)
 	return gtk_entry_get_text(GTK_ENTRY(d->entry_host));
 }
 
-void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
+static void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
 {
 	GtkWidget *dialog_vbox2;
 	GtkWidget *hbox2;

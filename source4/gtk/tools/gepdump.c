@@ -45,8 +45,8 @@ static GtkWidget *mnu_refresh;
 TALLOC_CTX *eps_ctx = NULL;
 TALLOC_CTX *conn_ctx = NULL;
 
-struct dcerpc_pipe *epmapper_pipe;
-struct dcerpc_pipe *mgmt_pipe;
+static struct dcerpc_pipe *epmapper_pipe;
+static struct dcerpc_pipe *mgmt_pipe;
 
 static void on_quit1_activate (GtkMenuItem *menuitem, gpointer user_data)
 {

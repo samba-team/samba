@@ -187,7 +187,7 @@ static struct registry_key *cmd_exit(TALLOC_CTX *mem_ctx, struct registry_contex
 
 static struct registry_key *cmd_help(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *, int, char **);
 
-struct {
+static struct {
 	const char *name;
 	const char *alias;
 	const char *help;

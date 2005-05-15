@@ -576,7 +576,7 @@ typedef struct command_ops_s {
   int (*exec_cmd)(CMD *cmd);
 } CMD_OPS;
 
-CMD_OPS default_cmd_ops[] = {
+static CMD_OPS default_cmd_ops[] = {
   {0, regedit4_file_type, regedit4_get_cmd, regedit4_exec_cmd},
   {1, editreg_1_0_file_type, editreg_1_0_get_cmd, editreg_1_0_exec_cmd},
   {-1,  NULL, NULL, NULL}

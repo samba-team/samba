@@ -87,12 +87,6 @@ NTSTATUS socket_create(const char *name, enum socket_type type,
 	return socket_create_with_ops(NULL, ops, new_sock, type, flags);
 }
 
-void socket_destroy(struct socket_context *sock)
-{
-	/* the close is handled by the destructor */
-	talloc_free(sock);
-}
-
 NTSTATUS socket_connect(struct socket_context *sock,
 			const char *my_address, int my_port,
 			const char *server_address, int server_port,

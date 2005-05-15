@@ -25,7 +25,7 @@
 #include "libcli/ldap/ldap.h"
 #include "lib/cmdline/popt_common.h"
 
-BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
+static BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	NTSTATUS status;
 	BOOL ret = True;
@@ -38,7 +38,7 @@ BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const ch
 	return ret;
 }
 
-BOOL test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
+static BOOL test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	BOOL ret = True;
@@ -53,7 +53,7 @@ BOOL test_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 	return ret;
 }
 
-BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
+static BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
 	BOOL ret = True;
 

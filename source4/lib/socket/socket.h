@@ -107,7 +107,6 @@ struct socket_context {
 /* prototypes */
 NTSTATUS socket_create(const char *name, enum socket_type type, 
 		       struct socket_context **new_sock, uint32_t flags);
-void socket_destroy(struct socket_context *sock);
 NTSTATUS socket_connect(struct socket_context *sock,
 			const char *my_address, int my_port,
 			const char *server_address, int server_port,
