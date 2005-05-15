@@ -1,7 +1,7 @@
 AllowedWorkstationNames and Krb5
 --------------------------------
 
-Microsoft uses the clientAddresses *multiple value* feild in the krb5
+Microsoft uses the clientAddresses *multiple value* field in the krb5
 protocol to communicate it's netbios name.  This is (my guess) to
 permit the userWorkstations field to work.
 
