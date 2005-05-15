@@ -93,7 +93,8 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 
 	/* Generate the list of principal names which we expect
 	 * clients might want to use for authenticating to the file
-	 * service.  We allow name$,{host,cifs}/{name,fqdn,name.REALM}. */
+	 * service.  We allow name$,{host,service}/{name,fqdn,name.REALM}.
+	 * (where service is specified by the caller) */
 
 	my_name = lp_netbios_name();
 
@@ -103,9 +104,9 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 	asprintf(&valid_princ_formats[1], "host/%s@%s", my_name, lp_realm());
 	asprintf(&valid_princ_formats[2], "host/%s@%s", my_fqdn, lp_realm());
 	asprintf(&valid_princ_formats[3], "host/%s.%s@%s", my_name, lp_realm(), lp_realm());
-	asprintf(&valid_princ_formats[4], "cifs/%s@%s", my_name, lp_realm());
-	asprintf(&valid_princ_formats[5], "cifs/%s@%s", my_fqdn, lp_realm());
-	asprintf(&valid_princ_formats[6], "cifs/%s.%s@%s", my_name, lp_realm(), lp_realm());
+	asprintf(&valid_princ_formats[4], "%s/%s@%s", service, my_name, lp_realm());
+	asprintf(&valid_princ_formats[5], "%s/%s@%s", service, my_fqdn, lp_realm());
+	asprintf(&valid_princ_formats[6], "%s/%s.%s@%s", service, my_name, lp_realm(), lp_realm());
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(kt_cursor);
