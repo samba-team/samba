@@ -137,7 +137,7 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 	}
 	
 	if (!(gensec_security->want_features & GENSEC_FEATURE_SIGN)) {
-		DEBUG(3, ("GENSEC Signing not requested - cannot seal packet!\n"));
+		DEBUG(3, ("GENSEC Signing not requested - cannot sign packet!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

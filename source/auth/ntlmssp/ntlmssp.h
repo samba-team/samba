@@ -87,8 +87,6 @@ struct gensec_ntlmssp_state
 	BOOL allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
 				  very secure anyway */
 
-	BOOL server_use_session_keys; /* Set to 'False' for authentication only, 
-					 that will never return a session key */
 	BOOL server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
 						  style 'challenge caching' */
 
