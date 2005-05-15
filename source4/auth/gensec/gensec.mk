@@ -30,16 +30,6 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5 AUTH
 ################################################
 
 ################################################
-# Start MODULE gensec_gsskrb5
-[MODULE::gensec_gsskrb5]
-SUBSYSTEM = GENSEC
-INIT_FUNCTION = gensec_gsskrb5_init
-INIT_OBJ_FILES = auth/gensec/gensec_gsskrb5.o 
-REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
-# End MODULE gensec_gsskrb5
-################################################
-
-################################################
 # Start MODULE gensec_spnego
 [MODULE::gensec_spnego]
 SUBSYSTEM = GENSEC
