@@ -34,7 +34,7 @@ Samba 3.0 for eDirectory.  Hmm...
 GSSAPI layer requirements
 -------------------------
 
-Welcome to the wonderful world of canonocalisation
+Welcome to the wonderful world of canonicalisation
 
 The Heimdal GSSAPI libs do not support kinit returning a different
 relam to what the client asked for, even just in case differences.
@@ -46,12 +46,12 @@ Principal Names, long and short names
 -------------------------------------
 
 As far as servicePrincipalNames are concerned, these are not
-canonacolised, except as regards the realm in the reply.  That is, the
+canonicalised, except as regards the realm in the reply.  That is, the
 client gets back the principal it asked for, with the realm portion
 'fixed' to uppercase, long form.  
 
 The short name of the realm seems to be accepted for at least AS_REQ
-operations, but because the server performs canocalisation, this
+operations, but because the server performs canonicalisation, this
 causes pain for current client libraries. 
 
 
