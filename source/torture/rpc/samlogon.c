@@ -1260,6 +1260,12 @@ BOOL torture_rpc_samlogon(void)
 			True
 		},
 		{
+			cli_credentials_get_realm(cmdline_credentials),
+			cli_credentials_get_username(cmdline_credentials),
+			cli_credentials_get_password(cmdline_credentials),
+			True
+		},
+		{
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 

@@ -215,7 +215,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	if (domain_name) {
 		/* find the domain's DN */
 		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
-					  "(&(|(realm=%s)(flatname=%s))(objectclass=domain))", 
+					  "(|(&(dnsDomain=%s)(objectClass=domainDNS))(&(flatname=%s)(objectclass=domain)))", 
 					  domain_name, domain_name);
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
