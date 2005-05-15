@@ -382,6 +382,8 @@ static NTSTATUS gensec_spnego_client_parse_negTokenInit(struct gensec_security *
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 			talloc_free(spnego_state->sub_sec_security);
 			spnego_state->sub_sec_security = NULL;
+			/* If the mech failed on first packet generation, pretend it never actually started */
+			continue;
 		}
 		return nt_status;
 	}
