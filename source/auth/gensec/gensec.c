@@ -42,11 +42,15 @@ static const struct gensec_security_ops *gensec_security_by_authtype(uint8_t aut
 
 static const struct gensec_security_ops *gensec_security_by_oid(const char *oid_string)
 {
-	int i;
+	int i, j;
 	for (i=0; i < gensec_num_backends; i++) {
-		if (generic_security_ops[i]->oid &&
-		    (strcmp(generic_security_ops[i]->oid, oid_string) == 0)) {
-			return generic_security_ops[i];
+		if (generic_security_ops[i]->oid) {
+			for (j=0; generic_security_ops[i]->oid[j]; j++) { 
+				if (generic_security_ops[i]->oid[j] &&
+				    (strcmp(generic_security_ops[i]->oid[j], oid_string) == 0)) {
+					return generic_security_ops[i];
+				}
+			}
 		}
 	}
 
@@ -85,16 +89,99 @@ const struct gensec_security_ops **gensec_security_all(int *num_backends_out)
 	return generic_security_ops;
 }
 
-const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip) 
+/**
+ * Return a unique list of security subsystems from those specified in
+ * the OID list.  That is, where two OIDs refer to the same module,
+ * return that module only once 
+ *
+ * The list is in the exact order of the OIDs asked for, where available.
+ */
+
+const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(TALLOC_CTX *mem_ctx, 
+								      const char **oid_strings,
+								      const char *skip)
 {
-	int i, j = 0;
-	const char **oid_list;
+	struct gensec_security_ops_wrapper *backends_out;
+	const struct gensec_security_ops **backends;
+	int i, j, k, oid_idx;
+	int num_backends_out = 0;
 	int num_backends;
-	const struct gensec_security_ops **ops = gensec_security_all(&num_backends);
+
+	if (!oid_strings) {
+		return NULL;
+	}
+
+	backends = gensec_security_all(&num_backends);
+
+	backends_out = talloc_array(mem_ctx, struct gensec_security_ops_wrapper, 1);
+	if (!backends_out) {
+		return NULL;
+	}
+	backends_out[0].op = NULL;
+	backends_out[0].oid = NULL;
+
+	for (oid_idx = 0; oid_strings[oid_idx]; oid_idx++) {
+		if (strcmp(oid_strings[oid_idx], skip) == 0) {
+			continue;
+		}
+
+		for (i=0; i < num_backends; i++) {
+			if (!backends[i]->oid) {
+				continue;
+			}
+			for (j=0; backends[i]->oid[j]; j++) { 
+				if (!backends[i]->oid[j] ||
+				    !(strcmp(backends[i]->oid[j], 
+					    oid_strings[oid_idx]) == 0)) {
+					continue;
+				}
+				
+				for (k=0; backends_out[k].op; k++) {
+					if (backends_out[k].op == backends[i]) {
+						break;
+					}
+				}
+				
+				if (k < num_backends_out) {
+					/* already in there */
+					continue;
+				}
+
+				backends_out = talloc_realloc(mem_ctx, backends_out, 
+							      struct gensec_security_ops_wrapper, 
+							      num_backends_out + 2);
+				if (!backends_out) {
+					return NULL;
+				}
+				
+				backends_out[num_backends_out].op = backends[i];
+				backends_out[num_backends_out].oid = backends[i]->oid[j];
+				num_backends_out++;
+				backends_out[num_backends_out].op = NULL;
+				backends_out[num_backends_out].oid = NULL;
+			}
+		}
+	}
+	return backends_out;
+}
+
+/**
+ * Return OIDS from the security subsystems listed
+ */
+
+const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx, 
+					   const struct gensec_security_ops **ops,				   
+					   int num_backends,
+					   const char *skip) 
+{
+	int i;
+	int j = 0;
+	int k;
+	const char **oid_list;
 	if (!ops) {
 		return NULL;
 	}
-	oid_list = talloc_array(mem_ctx, const char *, num_backends + 1);
+	oid_list = talloc_array(mem_ctx, const char *, 1);
 	if (!oid_list) {
 		return NULL;
 	}
@@ -104,16 +191,36 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
 			continue;
 		}
 		
-		if (skip && strcmp(skip, ops[i]->oid)==0) {
-			continue;
+		for (k = 0; ops[i]->oid[k]; k++) {
+			if (skip && strcmp(skip, ops[i]->oid[k])==0) {
+			} else {
+				oid_list = talloc_realloc(mem_ctx, oid_list, const char *, j + 2);
+				if (!oid_list) {
+					return NULL;
+				}
+				oid_list[j] = ops[i]->oid[k];
+				j++;
+			}
 		}
-
-		oid_list[j] = ops[i]->oid;
-		j++;
 	}
 	oid_list[j] = NULL;
 	return oid_list;
 }
+
+
+/**
+ * Return all the security subsystems currently enabled in GENSEC 
+ */
+
+const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip) 
+{
+	int num_backends;
+	const struct gensec_security_ops **ops = gensec_security_all(&num_backends);
+	return gensec_security_oids_from_ops(mem_ctx, ops, 
+					     num_backends, skip);
+}
+
+
 
 /**
   Start the GENSEC system, returning a context pointer.
@@ -282,6 +389,18 @@ const char *gensec_get_name_by_oid(const char *oid_string)
 	return NULL;
 }
 	
+
+/** 
+ * Start a GENSEC sub-mechanism with a specifed mechansim structure, used in SPNEGO
+ *
+ */
+
+NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security, 
+				  const struct gensec_security_ops *ops) 
+{
+	gensec_security->ops = ops;
+	return gensec_start_mech(gensec_security);
+}
 
 /** 
  * Start a GENSEC sub-mechanism by OID, used in SPNEGO

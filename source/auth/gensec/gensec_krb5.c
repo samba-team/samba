@@ -53,9 +53,9 @@ struct gensec_krb5_state {
 
 #ifdef KRB5_DO_VERIFY_PAC
 static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
-					    struct PAC_SIGNATURE_DATA *sig,
-					    struct gensec_krb5_state *gensec_krb5_state,
-					    uint32 keyusage)
+					 struct PAC_SIGNATURE_DATA *sig,
+					 struct gensec_krb5_state *gensec_krb5_state,
+					 uint32 keyusage)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -222,7 +222,9 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 #endif
-	DEBUG(0,("account_name: %s [%s]\n",logon_info->info3.base.account_name.string, logon_info->info3.base.full_name.string));
+	DEBUG(0,("account_name: %s [%s]\n",
+		 logon_info->info3.base.account_name.string, 
+		 logon_info->info3.base.full_name.string));
 	*logon_info_out = logon_info;
 
 	return status;
@@ -233,12 +235,10 @@ static int gensec_krb5_destory(void *ptr)
 	struct gensec_krb5_state *gensec_krb5_state = ptr;
 
 	if (gensec_krb5_state->ticket.length) { 
-		kerberos_free_data_contents(gensec_krb5_state->context, &gensec_krb5_state->ticket); 
+		kerberos_free_data_contents(gensec_krb5_state->context, 
+					    &gensec_krb5_state->ticket); 
 	}
-	if (gensec_krb5_state->ccache) {
-		/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
-		krb5_cc_close(gensec_krb5_state->context, gensec_krb5_state->ccache);
-	}
+	/* ccache freed in a child destructor */
 
 	krb5_free_keyblock_contents(gensec_krb5_state->context, 
 				    &gensec_krb5_state->keyblock);
@@ -279,7 +279,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	ret = krb5_init_context(&gensec_krb5_state->context);
 	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", error_message(ret)));
+		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 
+			 smb_get_krb5_error_message(gensec_krb5_state->context, 
+						    ret, gensec_krb5_state)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -291,14 +293,18 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 		}
 		ret = krb5_set_default_realm(gensec_krb5_state->context, upper_realm);
 		if (ret) {
-			DEBUG(1,("gensec_krb5_start: krb5_set_default_realm failed (%s)\n", error_message(ret)));
+			DEBUG(1,("gensec_krb5_start: krb5_set_default_realm failed (%s)\n", 
+				 smb_get_krb5_error_message(gensec_krb5_state->context, 
+							    ret, gensec_krb5_state)));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 	}
 
 	ret = krb5_auth_con_init(gensec_krb5_state->context, &gensec_krb5_state->auth_context);
 	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_auth_con_init failed (%s)\n", error_message(ret)));
+		DEBUG(1,("gensec_krb5_start: krb5_auth_con_init failed (%s)\n", 
+			 smb_get_krb5_error_message(gensec_krb5_state->context, 
+						    ret, gensec_krb5_state)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -326,6 +332,8 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
+	const char *ccache_name;
+
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -347,7 +355,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	ret = krb5_cc_default(gensec_krb5_state->context, &gensec_krb5_state->ccache);
 	if (ret) {
 		DEBUG(1,("krb5_cc_default failed (%s)\n",
-			 error_message(ret)));
+			 smb_get_krb5_error_message(gensec_krb5_state->context, ret, gensec_krb5_state)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	
@@ -370,7 +378,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			return NT_STATUS_OK;
 		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
 			DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
-				  hostname, error_message(ret)));
+				  hostname, smb_get_krb5_error_message(gensec_krb5_state->context, ret, gensec_krb5_state)));
 			return NT_STATUS_ACCESS_DENIED;
 		case KRB5KDC_ERR_PREAUTH_FAILED:
 		case KRB5KRB_AP_ERR_TKT_EXPIRED:
@@ -380,7 +388,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case KRB5_KDCREP_SKEW:
 		{
 			DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
-				  error_message(ret)));
+				  smb_get_krb5_error_message(gensec_krb5_state->context, ret, gensec_krb5_state)));
 			/* fall down to remaining code */
 		}
 
@@ -390,59 +398,20 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		case KRB5_CC_NOTFOUND:
 		case ENOENT:
 			
-		{
-			const char *password;
-			char *ccache_string;
-			time_t kdc_time = 0;
-			password = cli_credentials_get_password(gensec_security->credentials);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return nt_status;
-			}
-			
-			/* this string should be unique */
-			ccache_string = talloc_asprintf(gensec_krb5_state, "MEMORY:%s:%s:%s", 
-							cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
-							gensec_get_target_hostname(gensec_security),
-							generate_random_str(gensec_krb5_state, 16));
-
-			ret = krb5_cc_resolve(gensec_krb5_state->context, ccache_string, &gensec_krb5_state->ccache);
-			if (ret) {
-				DEBUG(1,("failed to generate a new krb5 keytab (%s): %s\n", 
-					 ccache_string,
-					 error_message(ret)));
-				return NT_STATUS_INTERNAL_ERROR;
-			}
-
-			ret = kerberos_kinit_password_cc(gensec_krb5_state->context, gensec_krb5_state->ccache, 
-							 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
-							 password, NULL, &kdc_time);
-
-			/* cope with ticket being in the future due to clock skew */
-			if ((unsigned)kdc_time > time(NULL)) {
-				time_t t = time(NULL);
-				int time_offset =(unsigned)kdc_time-t;
-				DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
-				krb5_set_real_time(gensec_krb5_state->context, t + time_offset + 1, 0);
-				break;
-			}
-	
-			if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
-				DEBUG(1,("kinit for %s failed (%s)\n", 
-					 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
-					 error_message(ret)));
-				return NT_STATUS_TIME_DIFFERENCE_AT_DC;
-			}
-			if (ret) {
-				DEBUG(1,("kinit for %s failed (%s)\n", 
-					 cli_credentials_get_principal(gensec_security->credentials, gensec_krb5_state), 
-					 error_message(ret)));
-				return NT_STATUS_WRONG_PASSWORD;
-			}
-			break;
+		nt_status = kinit_to_ccache(gensec_krb5_state,  
+					    gensec_security->credentials,
+					    gensec_krb5_state->context, 
+					    &gensec_krb5_state->ccache, 
+					    &ccache_name);
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
 		}
+		break;
+
 		default:
 			DEBUG(0, ("kerberos: %s\n", 
-				  error_message(ret)));
+				  smb_get_krb5_error_message(gensec_krb5_state->context, ret, gensec_krb5_state)));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -474,7 +443,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 	{
 		if (ret) {
 			DEBUG(1,("ads_krb5_mk_req (request ticket) failed (%s)\n",
-				 error_message(ret)));
+				 smb_get_krb5_error_message(gensec_krb5_state->context, ret, out_mem_ctx)));
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
 			DATA_BLOB unwrapped_out;
@@ -515,7 +484,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 				  &inbuf, &repl);
 		if (ret) {
 			DEBUG(1,("krb5_rd_rep (mutual authentication) failed (%s)\n",
-				 error_message(ret)));
+				 smb_get_krb5_error_message(gensec_krb5_state->context, ret, out_mem_ctx)));
 			dump_data_pw("Mutual authentication message:\n", inbuf.data, inbuf.length);
 			nt_status = NT_STATUS_ACCESS_DENIED;
 		} else {
@@ -707,11 +676,16 @@ static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,
 	return False;
 }
 
+static const char *gensec_krb5_oids[] = { 
+	GENSEC_OID_KERBEROS5,
+	GENSEC_OID_KERBEROS5_OLD,
+	NULL 
+};
 
 static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.name		= "krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
-	.oid            = GENSEC_OID_KERBEROS5,
+	.oid            = gensec_krb5_oids,
 	.client_start   = gensec_krb5_client_start,
 	.server_start   = gensec_krb5_server_start,
 	.update 	= gensec_krb5_update,
@@ -720,33 +694,12 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.have_feature   = gensec_krb5_have_feature,
 	.enabled        = False
 };
-
-static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
-	.name		= "ms_krb5",
-	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
-	.oid            = GENSEC_OID_KERBEROS5_OLD,
-	.client_start   = gensec_krb5_client_start,
-	.server_start   = gensec_krb5_server_start,
-	.update 	= gensec_krb5_update,
-	.session_key	= gensec_krb5_session_key,
-	.session_info	= gensec_krb5_session_info,
-	.have_feature   = gensec_krb5_have_feature,
-	.enabled        = False
-};
-
 
 NTSTATUS gensec_krb5_init(void)
 {
 	NTSTATUS ret;
 
 	ret = gensec_register(&gensec_krb5_security_ops);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register '%s' gensec backend!\n",
-			gensec_krb5_security_ops.name));
-		return ret;
-	}
-
-	ret = gensec_register(&gensec_ms_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_krb5_security_ops.name));

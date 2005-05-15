@@ -54,7 +54,7 @@ struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
 	uint8_t auth_type;  /* 0 if not offered on DCE-RPC */
-	const char *oid;  /* NULL if not offered by SPNEGO */
+	const char **oid;  /* NULL if not offered by SPNEGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
@@ -92,6 +92,11 @@ struct gensec_security_ops {
 	BOOL enabled;
 };
 	
+struct gensec_security_ops_wrapper {
+	const struct gensec_security_ops *op;
+	const char *oid;
+};
+
 #define GENSEC_INTERFACE_VERSION 0
 
 struct gensec_security {

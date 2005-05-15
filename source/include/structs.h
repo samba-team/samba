@@ -72,6 +72,7 @@ struct auth_methods;
 struct schannel_state;
 struct spnego_data;
 struct gensec_security;
+struct gensec_security_ops;
 typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
 					     char **password);
 struct gensec_ntlmssp_state;
