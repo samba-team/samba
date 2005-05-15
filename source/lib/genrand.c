@@ -111,8 +111,10 @@ static void get_random_stream(unsigned char *data, size_t datasize)
 }
 
 /****************************************************************
- Get a 16 byte hash from the contents of a file.
- Note that the hash is not initialised.
+ Get a 16 byte hash from the contents of a file.  
+
+ Note that the hash is initialised, because the extra entropy is not
+ worth the valgrind pain.
 *****************************************************************/
 
 static void do_filehash(const char *fname, unsigned char *the_hash)
@@ -120,6 +122,8 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
 	unsigned char buf[1011]; /* deliberate weird size */
 	unsigned char tmp_md4[16];
 	int fd, n;
+
+	ZERO_STRUCT(tmp_md4);
 
 	fd = open(fname,O_RDONLY,0);
 	if (fd == -1)
