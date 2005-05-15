@@ -127,13 +127,6 @@ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *
 	return WERR_BADFILE;
 }
 
-WERROR reg_close (struct registry_context *ctx)
-{
-	talloc_free(ctx);
-
-	return WERR_OK;
-}
-
 WERROR reg_get_predefined_key(struct registry_context *ctx, uint32_t hkey, struct registry_key **key)
 {
 	WERROR ret = ctx->get_predefined_key(ctx, hkey, key);

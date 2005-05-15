@@ -37,7 +37,7 @@ GSSAPI layer requirements
 Welcome to the wonderful world of canonicalisation
 
 The Heimdal GSSAPI libs do not support kinit returning a different
-relam to what the client asked for, even just in case differences.
+realm to what the client asked for, even just in case differences.
 
 No idea on MIT
 

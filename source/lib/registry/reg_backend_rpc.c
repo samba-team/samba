@@ -77,7 +77,7 @@ struct rpc_key_data {
 	int max_valdatalen;
 };
 
-struct {
+static struct {
 	uint32_t hkey;
 	WERROR (*open) (struct dcerpc_pipe *p, TALLOC_CTX *, struct policy_handle *h);
 } known_hives[] = {
