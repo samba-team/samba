@@ -27,10 +27,10 @@
 
 struct policy_handle sam_handle;
 struct dcerpc_pipe *sam_pipe = NULL;
-struct policy_handle domain_handle;
+static struct policy_handle domain_handle;
 GtkWidget *mainwin;
 GtkWidget *seldomain;
-GtkWidget *mnu_disconnect;
+static GtkWidget *mnu_disconnect;
 
 void update_grouplist(void)
 {
@@ -78,16 +78,12 @@ void update_userlist(void)
 	talloc_free(mem_ctx);
 }
 
-void
-on_new1_activate                       (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_new1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 
 }
 
-void
-on_select_domain_activate                       (GtkMenuItem     *menuitem,
-												 gpointer         user_data)
+static void on_select_domain_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkSelectDomainDialog *d;
 	gint result;
@@ -192,50 +188,39 @@ static void on_account_activate(GtkMenuItem *menuitem, gpointer user_data)
 }
 
 
-void
-on_user_rights_activate                (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_user_rights_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	//FIXME
 }
 
 
-void
-on_audit_activate                      (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_audit_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	//FIXME
 }
 
 
-void
-on_trust_relations_activate            (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_trust_relations_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	//FIXME
 }
 
 
-void
-on_refresh_activate                    (GtkMenuItem     *menuitem,
-										gpointer         user_data)
+static void on_refresh_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	update_userlist();
 	update_grouplist();
 }
 
 
-void
-on_about_activate                     (GtkMenuItem     *menuitem,
-									   gpointer         user_data)
+static void on_about_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gwsam"));
 	gtk_dialog_run(aboutwin);
 	gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
-GtkWidget*
-create_mainwindow (void)
+static GtkWidget* create_mainwindow (void)
 {
 	GtkWidget *vbox1;
 	GtkWidget *mnu_connect;

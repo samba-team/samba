@@ -38,10 +38,10 @@
 #define REGISTER 0
 #endif
 
-struct smbcli_state *cli;
+static struct smbcli_state *cli;
 extern BOOL in_client;
 static int port = 0;
-pstring cur_dir = "\\";
+static pstring cur_dir = "\\";
 static pstring cd_path = "";
 static pstring service;
 static pstring desthost;

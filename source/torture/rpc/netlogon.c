@@ -74,7 +74,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	
 }
 
-BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   const char *machine_name,
 			   const char *plain_pass,
 			   struct creds_CredentialState **creds_out)
@@ -136,7 +136,7 @@ BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    uint32_t negotiate_flags,
 			    const char *machine_name,
 			    const char *plain_pass,
@@ -205,7 +205,7 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    uint32_t negotiate_flags,
 			    const char *machine_name,
 			    const char *plain_pass,

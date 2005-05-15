@@ -291,25 +291,6 @@ BOOL split_unc_name(const char *unc, char **server, char **share)
 }
 
 /*
-  split a USER%PASS pair into username and password
-*/
-BOOL split_username(const char *pair, char **user, char **pass)
-{
-	char *p = strdup(pair);
-	if (!p) return False;
-
-	(*user) = p;
-
-	p = strchr(*user, '%');
-	if (!p) return False;
-
-	*p = 0;
-	(*pass) = p+1;
-	
-	return True;
-}
-
-/*
   set a attribute on a file
 */
 BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uint16_t attrib)

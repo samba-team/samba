@@ -86,11 +86,11 @@ static const struct {
 
 extern int winbindd_fd;
 
-const char *opt_username;
-const char *opt_domain;
-const char *opt_workstation;
-const char *opt_password;
-int opt_multiplex;
+static const char *opt_username;
+static const char *opt_domain;
+static const char *opt_workstation;
+static const char *opt_password;
+static int opt_multiplex;
 
 
 static void mux_printf(unsigned int mux_id, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
