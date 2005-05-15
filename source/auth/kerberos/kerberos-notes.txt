@@ -1,0 +1,176 @@
+AllowedWorkstationNames and Krb5
+--------------------------------
+
+Microsoft uses the clientAddresses *multiple value* feild in the krb5
+protocol to communicate it's netbios name.  This is (my guess) to
+permit the userWorkstations field to work.
+
+The KDC I imagine checks the netbios address against this value, in
+the same way that the Samba server does this.
+
+
+
+Is a DAL the layer we need?
+---------------------------
+
+Looking at what we need to pass around, I start to seriously wonder if
+the DAL is even the right layer - we seem to want to create an account
+authorization abstracton layer - is this account permitted to login to
+this computer, at this time?
+
+This information in AD is much richer than the Heimdal HDB, and it
+seems to make sense to do AD-specific access control checks in an
+AD-specific layer, not in the backend agnostic server.
+
+Because the DAL only reads in the principalName as the key, it has
+trouble performing access control decisions on things other than the
+name.
+
+I'll be very intersted if the DAL really works for eDirectory too.
+Perhaps all we need to do is add in the same cludges as we have in
+Samba 3.0 for eDirectory.  Hmm...
+
+
+GSSAPI layer requirements
+-------------------------
+
+Welcome to the wonderful world of canonocalisation
+
+The Heimdal GSSAPI libs do not support kinit returning a different
+relam to what the client asked for, even just in case differences.
+
+No idea on MIT
+
+
+Principal Names, long and short names
+-------------------------------------
+
+As far as servicePrincipalNames are concerned, these are not
+canonacolised, except as regards the realm in the reply.  That is, the
+client gets back the principal it asked for, with the realm portion
+'fixed' to uppercase, long form.  
+
+The short name of the realm seems to be accepted for at least AS_REQ
+operations, but because the server performs canocalisation, this
+causes pain for current client libraries. 
+
+
+HOST/ Aliases
+-------------
+
+There is another post somehwere (ref lost for the moment) that details
+where in active directory the list of stored aliases for HOST/ is.
+This should be read, parsed and used to allow any of these requests to
+use the HOST/ key.
+
+For example, this is how HTTP/, DNS/ and CIFS/ can use HOST/ without
+any explicit entry.
+
+Returned Salt for PreAuthentication
+-----------------------------------
+
+When the server replies for pre-authentication, it returns the Salt,
+which may be in the form of a principalName that is in no way
+connected with the current names.  (ie, even if the userPrincipalName
+and samAccountName are renamed, the old salt is returned).
+
+This is probably the kerberos standard salt, kept in the 'Key'.  The
+standard generation rules are found in a Mail from Luke howard dated
+10 Nov 2004:
+
+
+From: Luke Howard <lukeh@padl.com>
+Message-Id: <200411100231.iAA2VLUW006101@au.padl.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Organization: PADL Software Pty Ltd
+To: lukeh@padl.com
+Date: Wed, 10 Nov 2004 13:31:21 +1100
+Versions: dmail (bsd44) 2.6d/makemail 2.10
+Cc: huaraz@moeller.plus.com, samba-technical@lists.samba.org
+Subject: Re: Samba-3.0.7-1.3E Active Directory Issues
+X-BeenThere: samba-technical@lists.samba.org
+X-Mailman-Version: 2.1.4
+Precedence: list
+Reply-To: lukeh@padl.com
+
+Did some more testing, it appears the behaviour has another
+explanation. It appears that the standard Kerberos password salt
+algorithm is applied in Windows 2003, just that the source principal
+name is different.
+
+Here is what I've been able to deduce from creating a bunch of
+different accounts:
+
+Type of account		Principal for Salting
+========================================================================
+Computer Account                host/<SAM-Name-Without-$>.realm@REALM
+User Account Without UPN        <SAM-Name>@REALM
+User Account With UPN           <LHS-Of-UPN>@REALM
+
+Note that if the computer account's SAM account name does not include
+the trailing '$', then the entire SAM account name is used as input to
+the salting principal. Setting a UPN for a computer account has no
+effect.
+
+It seems to me odd that the RHS of the UPN is not used in the salting
+principal. For example, a user with UPN foo@mydomain.com in the realm
+MYREALM.COM would have a salt of MYREALM.COMfoo. Perhaps this is to
+allow a user's UPN suffix to be changed without changing the salt. And
+perhaps using the UPN for salting signifies a move away SAM names and
+their associated constraints.
+
+For more information on how UPNs relate to the Kerberos protocol,
+see:
+
+http://www.ietf.org/proceedings/01dec/I-D/draft-ietf-krb-wg-kerberos-referrals-02.txt
+
+-- Luke
+
+--
+
+
+
+
+Heimdal oddities
+----------------
+
+Heimdal is built such that it should be able to serve muliple realms
+at the same time.  This isn't relevent for Samba's use, but it shows
+up in a lot of generalisations thougout the code.
+
+
+GSSAPI and Kerberos extensions
+------------------------------
+
+This is a general list of the extensions we have made to / need from the kerberos libraries
+
+ - DCE_STYLE
+
+ - gsskrb5_get_initiator_subkey()
+
+ - gsskrb5_get_authz_data()
+
+ - case insensitive keytab
+ - in-memory keytab
+ - wildcard keytab (for in-memory operations)
+
+
+KDC Extensions
+--------------
+
+We have modified Heimdal's 'hdb' interface to specify the 'type' of
+prinicpal being requested.  This allows us to correctly behave with
+the different 'classes' of prinicpal name. 
+
+We currently define 3 classes:
+ - krbtgt
+ - client (kinit)
+ - server (tgt)
+
+I also now specify the kerberos principal as an explict parameter, not
+an in/out value on the entry itself.
+
+
+
+
