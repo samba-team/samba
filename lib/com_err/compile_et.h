@@ -40,6 +40,7 @@
 #include <config.h>
 #endif
 
+#include <err.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
