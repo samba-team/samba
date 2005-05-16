@@ -33,6 +33,7 @@
 static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 				     TALLOC_CTX *mem_ctx,
 				     const char *domain,
+				     const char *domain_guid,
 				     const char *user,
 				     const char *src_address,
 				     uint32_t version,
@@ -61,13 +62,15 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	}
 
 	/* the domain has an optional trailing . */
-	if (domain[strlen(domain)-1] == '.') {
+	if (domain && domain[strlen(domain)-1] == '.') {
 		domain = talloc_strndup(mem_ctx, domain, strlen(domain)-1);
 	}
 
 	/* try and find the domain */
 	ret = gendb_search(samctx, samctx, NULL, &res, attrs, 
-			   "(&(dnsDomain=%s)(objectClass=domainDNS))", domain);
+			   "(&(objectClass=domainDNS)(|(dnsDomain=%s)(objectGUID=%s)))", 
+			   domain?domain:"", 
+			   domain_guid?domain_guid:"");
 	if (ret != 1) {
 		DEBUG(2,("Unable to find domain '%s' in sam\n", domain));
 		return NT_STATUS_NO_SUCH_DOMAIN;
@@ -210,9 +213,13 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 					      t->u.simple.value.length);
 		}
 		if (strcasecmp(t->u.simple.attr, "DomainGuid") == 0) {
-			domain_guid = talloc_strndup(tmp_ctx, 
-						     t->u.simple.value.data,
-						     t->u.simple.value.length);
+			NTSTATUS enc_status;
+			struct GUID guid;
+			enc_status = ldap_decode_ndr_GUID(tmp_ctx, 
+							  t->u.simple.value, &guid);
+			if (NT_STATUS_IS_OK(enc_status)) {
+				domain_guid = GUID_string(tmp_ctx, &guid);
+			}
 		}
 		if (strcasecmp(t->u.simple.attr, "DomainSid") == 0) {
 			domain_sid = talloc_strndup(tmp_ctx, 
@@ -234,14 +241,19 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		}
 	}
 
-	if (domain == NULL || host == NULL || version == -1) {
+	if (domain_guid == NULL && domain == NULL) {
+		domain = lp_realm();
+	}
+
+	if (version == -1) {
 		goto failed;
 	}
 
-	DEBUG(0,("cldap netlogon query domain=%s host=%s user=%s version=%d\n",
-		 domain, host, user, version));
+	DEBUG(0,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
+		 domain, host, user, version, domain_guid));
 
-	status = cldapd_netlogon_fill(cldap, tmp_ctx, domain, user, src_address, 
+	status = cldapd_netlogon_fill(cldap, tmp_ctx, domain, domain_guid, 
+				      user, src_address, 
 				      version, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
