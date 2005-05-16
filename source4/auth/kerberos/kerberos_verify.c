@@ -326,6 +326,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 	char *malloc_principal;
 	char *machine_username;
 	krb5_principal salt_princ = NULL;
+	char *salt_princ_string;
 
 	NTSTATUS creds_nt_status;
 	struct cli_credentials *machine_account;
@@ -342,8 +343,12 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 		DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
 
 		/* This just becomes a locking key, if we don't have creds, we must be using the keytab */
-		ret = krb5_make_principal(context, &salt_princ, lp_realm(), 
-					  "host", lp_netbios_name(), NULL);
+		salt_princ_string = talloc_asprintf(mem_ctx, "host/%s@%s", lp_netbios_name(), lp_realm());
+		if (!salt_princ_string) {
+			ret = ENOMEM;
+		} else {
+			ret = krb5_parse_name(context, salt_princ_string, &salt_princ);
+		}
 	} else {
 
 		machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
@@ -364,8 +369,12 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 				if (!salt_body) {
 					ret = ENOMEM;
 				} else {
-					ret = krb5_make_principal(context, &salt_princ, cli_credentials_get_realm(machine_account), 
-								  "host", salt_body, NULL);
+					salt_princ_string = talloc_asprintf(mem_ctx, "host/%s@%s", salt_body, cli_credentials_get_realm(machine_account));
+					if (!salt_princ_string) {
+						ret = ENOMEM;
+					} else {
+						ret = krb5_parse_name(context, salt_princ_string, &salt_princ);
+					}
 				}
 			}
 		}
