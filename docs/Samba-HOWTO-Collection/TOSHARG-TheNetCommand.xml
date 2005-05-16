@@ -4,6 +4,7 @@
 <chapter id="NetCommand">
 <chapterinfo>
 	&author.jht;
+	&author.vl;
 	&author.gd;
 	<pubdate>May 9, 2005</pubdate>
 </chapterinfo>
@@ -34,7 +35,7 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 </para>
 
 	<sect1>
-	<title>Self-Defense Overview</title>
+	<title>Overview</title>
 
 	<para>
 	The tasks that follow the installation of a Samba-3 server, whether Stand-Alone, Domain Member, of a
@@ -73,26 +74,53 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	</para>
 
 	</sect1>
-
 	
 	<sect1>
 	<title>Administrative Tasks And Methods</title>
 
 	<para>
-	Stuff goes here - this is a work in progress.!!!!!
+	The basic operations of the <command>net</command> command are documented here. This documentation is not
+	exhaustive, and thus it is incomplete. Since the primary focus is on migration from Windows servers to
+	a Samba server the emphasis is on the use of the DCE RPC mode of operation. When used against a server
+	that is a member of an Active Directory domain it is preferable (and often necessary) to use ADS mode
+	operations. The <command>net</command> command supports both, but not for every operation. Please refer
+	to the man page for a more comprehensive overview of the capabilities of this utility.
 	</para>
 
-	<sect2>
+	</sect1>
+
+	<sect1>
 	<title>UNIX and Windows Group Management</title>
 
 	<para>
-	More stuff.!!!!!!!!!!
+	In repetition of what has been said, the focus in most of this chapter is on use of the <command>net
+	rpc</command> family of operations that are supported by Samba. Most of them are supported by the
+	<command>net ads</command> mode when used in connection with MS Active Directory. The <command>net
+	rap</command> operating mode is also supported for some of these operations. RAP protocols are used
+	by IBM OS/2 and by several earlier SMB servers.
 	</para>
 
-	<sect3>
+	<para>
+	Sambas' <command>net</command> tool implements sufficient capability to permit all common adminstrative
+	tasks to be completed from the command line. In this section each of the essential user and group management
+	facilities are explored.
+	</para>
+
+	<para>
+	Samba-3 recognizes two types of groups: <emphasis>domain groups</emphasis> and <emphasis>local
+	groups</emphasis>. Domain groups can contain (have as members) only domain user accounts. Local groups
+	can contain local users, domain users, and domain groups as members.
+	</para>
+
+	<para>
+	The purpose of a local group is to permit file permission to be set for a group account that, like the
+	usual UNIX/Linux group, is persistent across redeployment of a Windows file server.
+	</para>
+
+	<sect2>
 	<title>Adding, Renaming, or Deletion of Group Accounts</title>
 
-	<sect4>
+	<sect3>
 	<title>Adding or Creating a New Group</title>
 
 	<para>
@@ -166,15 +194,23 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 </screen>
 	</para>
 
-	</sect4>
+	</sect3>
 
-	<sect4>
+	<sect3>
 	<title>Mapping Windows Groups to UNIX Groups</title>
 
 	<para>
 	Windows groups must be mapped to UNIX system (POSIX) groups so that file system access controls
 	can be asserted in a manner that is consistent with the methods appropriate to the operating
 	system that is hosting the Samba server.
+	</para>
+
+	<para>
+	All file system (file and directory) access controls, within the file system of a UNIX/Linux server that is
+	hosting a Samba server, is implemented using a UID/GID identity tuple. Samba does not in any way over-ride
+	or replace UNIX file system semantics. Thus it is necessary that all Windows networking operations that
+	access the file system must provide a mechanism that maps a Windows user to a particular UNIX/Linux group
+	account. The user account must also map to a locally known UID.
 	</para>
 
 	<para>
@@ -208,15 +244,18 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	</para>
 
 	<para>
-	Both the Windows group as well as the UNIX group can be deleted by executing:
+	Two types of Windows groups can be created: <constant>domain (global),</constant> and <constant>local</constant>.
+	In the above examples the Windows groups created were of type <constant>domain</constant>, or global. The
+	following command will create a Windows group of type <constant>local</constant>.
 <screen>
-&rootprompt; net groupmap delete ntgroup=
+&rootprompt; net groupmap add ntgroup=Pixies unixgroup=pixies type=l
 </screen>
+	Local groups can be used with Samba to enable multiple nested group support.
 	</para>
 
-	</sect4>
+	</sect3>
 
-	<sect4>
+	<sect3>
 	<title>Deleting a Group Account</title>
 
 	<para>
@@ -230,9 +269,10 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	Validation of the deletion is advisable. The same commands may be executed as shown above.
 	</para>
 
-	</sect4>
-	<sect4>
-	<title>How to Rename a Group Account</title>
+	</sect3>
+
+	<sect3>
+	<title>Rename Group Accounts</title>
 
 	<note><para>
 	This command is not documented in the man pages, it is implemented in the source code, but it does not
@@ -250,20 +290,124 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 </screen>
 	</para>
 
-	</sect4>
-
 	</sect3>
 
-	<sect3>
+	</sect2>
+
+	<sect2>
 	<title>Manipulating Group Memberships</title>
 
 	<para>
-	Fix me by adding stuff here!!!!!!
+	Three operations can be performed in respect of group membership. It is possible to (1) add Windows users
+	to Windows group, to (2) delete Windows users from Windows groups, and to (3) list the Windows users that are
+	members of a Windows group.
 	</para>
 
-	</sect3>
+	<para>
+	So as to avoid confusion, it makes sense to check group membership before attempting to make and changes.
+	The <command>getent group</command> will list UNIX/Linux group membership. UNIX/Linux group members are
+	seen also as members of a Windows group that has been mapped using the <command>net groupmap</command>
+	command (see <link linkend="groupmapping"/>). The following list of UNIX/Linux group membership shows
+	that the user <constant>ajt</constant> is a member of the UNIX/Linux group <constant>Engineers</constant>.
+<screen>
+&rootprompt; getent group
+...
+Domain Admins:x:512:root
+Domain Users:x:513:jht,lct,ajt,met,vlendecke
+Domain Guests:x:514:
+Print Operators:x:550:
+Backup Operators:x:551:
+Replicator:x:552:
+Domain Computers:x:553:
+Engineers:x:1000:jht,ajt
+</screen>
+	The UNIX/Linux groups have been mapped to Windows groups, as is shown here:
+<screen>
+&rootprompt; net groupmap list
+Domain Admins (S-1-5-21-72630-412605-116429-512) -> Domain Admins
+Domain Users (S-1-5-21-72630-412605-116429-513) -> Domain Users
+Domain Guests (S-1-5-21-72630-412605-116429-514) -> Domain Guests
+Print Operators (S-1-5-21-72630-412605-116429-550) -> Print Operators
+Backup Operators (S-1-5-21-72630-412605-116429-551) -> Backup Operators
+Replicator (S-1-5-21-72630-412605-116429-552) -> Replicator
+Domain Computers (S-1-5-21-72630-412605-116429-553) -> Domain Computers
+Engineers (S-1-5-21-72630-412605-116429-3001) -> Engineers
+</screen>
+	</para>
 
-	<sect3>
+	<para>
+	Given that the user <constant>ajt</constant> is already a member of the UNIX/Linux group, and via the
+	group mapping, a member of the Windows group, an attempt to add this account again should fail. This is
+	demonstrated here:
+<screen>
+merlin:~ # net rpc group addmem "MIDEARTH\Engineers" ajt -Uroot%not24get
+Could not add ajt to MIDEARTH\Engineers: NT_STATUS_MEMBER_IN_GROUP
+</screen>
+	This showns that the group mapping between UNIX/Linux groups and Windows groups is effective and
+	transparent.
+	</para>
+
+	<para>
+	To permit the user <constant>ajt</constant> to be added using the <command>net rpc group</command> utility
+	this account must first be removed. The removal, and confirmation of its effect is shown here:
+<screen>
+&rootprompt; net rpc group delmem "MIDEARTH\Engineers" ajt -Uroot%not24get
+&rootprompt; getent group Engineers
+Engineers:x:1000:jht
+&rootprompt; net rpc group members Engineers -Uroot%not24get
+MIDEARTH\jht
+</screen>
+	In this example both at the UNIX/Linux system level, the group no longer has the <constant>ajt</constant>
+	as a member. The above also shows this to be the case for Windows group membership.
+	</para>
+
+	<para>
+	The account is now added again, using the <command>net rpc group</command> utility:
+<screen>
+&rootprompt; net rpc group addmem "MIDEARTH\Engineers" ajt -Uroot%not24get
+&rootprompt; getent group Engineers
+Engineers:x:1000:jht,ajt
+&rootprompt; net rpc group members Engineers -Uroot%not24get
+MIDEARTH\jht
+MIDEARTH\ajt
+</screen>
+	</para>
+
+	<para>
+	In this example the members of the Windows <constant>Domain Users</constant> account is validated using
+	the <command>net rpc group</command> utility. Note that this contents of the UNIX/Linux group was shown
+	4 paragraphs earlier. The Windows (domain) group membership is shown here:
+<screen>
+&rootprompt; net rpc group members "Domain Users" -Uroot%not24get
+MIDEARTH\jht
+MIDEARTH\lct
+MIDEARTH\ajt
+MIDEARTH\met
+MIDEARTH\vlendecke
+</screen>
+	The example shown here is an express example that Windows group names are treated by Samba (as with
+	MS Windows) in a case insensitive manner:
+<screen>
+&rootprompt; net rpc group members "DomAiN USerS" -Uroot%not24get
+MIDEARTH\jht
+MIDEARTH\lct
+MIDEARTH\ajt
+MIDEARTH\met
+MIDEARTH\vlendecke
+</screen>
+	</para>
+
+	<note><para>
+	An attempt to specify the group name as <constant>MIDEARTH\Domain Users</constant> in place of
+	just simply <constant>Domain Users</constant> will fail. The default behavior of the net rpc group
+	is to direct the command at the local machine. The Windows group is treated as being local to the machine.
+	If it is necessary to query another machine, its name can be specified using the <constant>-S
+	servername</constant> parameter to the <command>net</command> command.
+	</para></note>
+
+	</sect2>
+
+	<sect2>
 	<title>Nested Group Support</title>
 
 	<para>
@@ -300,26 +444,69 @@ DOM\jht
 	</para>
 
 	<para>
-	Nest group members can be removed (deleted) as shown here:
+	Nested group members can be removed (deleted) as shown here:
 <screen>
 &rootprompt; net rpc group delmem demo "DOM\jht" -Uroot%not24get
 </screen>
 	</para>
 
-	</sect3>
-
 	</sect2>
 
-	<sect2>
+	</sect1>
+
+	<sect1>
 	<title>UNIX and Windows User Management</title>
 
 	<para>
-	Put somethings useful here man!!!!!!
+	Every Windows network user account must be translated to a UNIX/Linux user account. In actual fact,
+	the only account information the UNIX/Linux Samba server needs is a UID.  The UID is available either
+	from a system (POSIX) account, or from a pool (range) of UID numbers that is set aside for the purpose
+	of being allocated for use by Windows user accounts. In the case of the UID pool, the UID for a
+	particular user will be allocated by <command>windbindd</command>.
+	</para>
+
+	<para>
+	Although this is not the appropriate place to discuss the <smbconfoption name="username map"/> facility,
+	this interface is an important method of mapping a Windows user account to a UNIX account that has a
+	different name. Refer to the man page for the &smb.conf; file for more information regarding this
+	facility. User name mappings can not be managed usinf the <command>net<command> utility.
+	</para>
+
+	<sect2>
+	<title>Adding User Accounts</title>
+
+	<para>
 	</para>
 
 	</sect2>
 
 	<sect2>
+	<title>Deletion of User Accounts</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Modification of User Accounts</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>User Mapping</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+	</sect1>
+
+	<sect1>
 	<title>Administering User Rights and Privileges</title>
 
 	<para>
@@ -396,16 +583,16 @@ SeDiskOperatorPrivilege
 </screen>
 	</para>
 
-	</sect2>
+	</sect1>
 
-	<sect2>
+	<sect1>
 	<title>Managing Trust Relationships</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	<sect3>
+	<sect2>
 	<title>Machine Trust Accounts</title>
 
 	<para>
@@ -415,36 +602,36 @@ Join to 'MIDEARTH' is OK
 </screen>
 	</para>
 
-	</sect3>
+	</sect2>
 
-	<sect3>
+	<sect2>
 	<title>Inter-Domain Trusts</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect3>
-
 	</sect2>
 
-	<sect2>
+	</sect1>
+
+	<sect1>
 	<title>Managing Security Identifiers (SIDS)</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect2>
+	</sect1>
 	
-	<sect2>
+	<sect1>
 	<title>Share Management</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	<sect3>
+	<sect2>
 	<title>Creating, Editing, and Removing Shares</title>
 
 	<para>
@@ -501,17 +688,17 @@ kyocera
 </screen>
 	</para>
 
-	</sect3>
+	</sect2>
 
-	<sect3>
+	<sect2>
 	<title>Creating and Changing Share ACLs</title>
 
 	<para>
 	</para>
 
-	</sect3>
+	</sect2>
 
-	<sect3>
+	<sect2>
 	<title>Share, Directory and File Migration</title>
 
 	<para>
@@ -553,7 +740,23 @@ kyocera
 	server (or domain) as well as  the processes on which the migration is critically dependant.
 	</para>
 
-	<sect4>
+	<para>
+	There are two known limitations to the migration process:
+	</para>
+
+	<orderedlist>
+		<listitem><para>
+		The <command>net</command> command requires that the user credentials provided exist both
+		on the migration source and the migration target.
+		</para></listitem>
+
+		<listitem><para>
+		Printer settings may not be fully or incorrectly migrated. This might in particular happen
+		when migrating a Windows 2003 print server to Samba.
+		</para></listitem>
+	</orderedlist>
+
+	<sect3>
 	<title>Share Migration</title>
 
 	<para>
@@ -608,9 +811,9 @@ net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
 	are not migrated by the steps covered up to this point.
 	</para>
 
-	</sect4>
+	</sect3>
 
-	<sect4>
+	<sect3>
 	<title>File and Directory Migration</title>
 
 	<para>
@@ -691,9 +894,9 @@ net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
 	will be owned by the user account <constant>administrator</constant>.
 	</para>
 
-	</sect4>
+	</sect3>
 
-	<sect4>
+	<sect3>
 	<title>Simultaneous Share and File Migration</title>
 
 	<para>
@@ -713,111 +916,144 @@ net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
 	This will generate a complete server clone of the <parameter>w2k3server</parameter> server.
 	</para>
 
-	</sect4>
-
-	</sect3>
-
-	<sect3>
-	<title>Printer Migration</title>
-
-<para>
-<screen>
-Migrating printers
------------------------------------------------------------
-
-net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]
-        migrates printers from remote to local server
-
-
-Migrating printer-drivers
------------------------------------------------------------
-
-net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]
-        migrates printer-drivers from remote to local server
-
-
-Migrating printer-forms
------------------------------------------------------------
-
-net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]
-        migrates printer-forms from remote to local server
-
-
-Migrating printer security-settings
------------------------------------------------------------
-
-net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]
-        migrates printer-ACLs from remote to local server
-
-
-Migrating printer-settings
------------------------------------------------------------
-
-net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]
-        migrates printer-settings from remote to local server
-
-
-Migrating printers including all the above mentioned sets of information
------------------------------------------------------------
-
-net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
-        migrates drivers, forms, queues, settings and acls from
-        remote to local print-server
-
-
-
-Known Limitations
------------------------------------------------------------
-
-* net requires that the given credentials exist both on the migration source
-  and the migration target.
-
-* printer-settings may not be fully or incorrectly migrated. This might in
-  particular happen when migrating a Windows 2003 print-server to Samba.
-</screen>
-	</para>
-
 	</sect3>
 
 	</sect2>
 
 	<sect2>
+	<title>Printer Migration</title>
+
+	<para>
+	The installation of a new server, as with the migration to a new network environment, often has similarity
+	to the building of a house; progress is very rapid from the laying of foundations up to the stage at which
+	the the house can be locked-up, but the finishing off appears to take longer and longer as building
+	approaches completion.
+	</para>
+
+	<para>
+	Printing needs vary greatly depending on the network environment, and may be very simple or complex. If
+	the need is very simple the best solution to the implementation of printing support may well be to
+	re-install everything from a clean slate instead of migrating older configurations. On the other hand,
+	a complex network that is integrated with many international offices and a multiplexity of local branch
+	offices, each of which form an inter-twined maze of printing possibilities, the ability to migrate all
+	printer configurations is decidedly beneficial. To manually re-establish a complex printing network
+	will take much time and frustration. Often-times it will not be possible to find driver files that are
+	currently in use thus necessitating the installation of newer drivers. Newer drivers often implement
+	printing features that will necessitate a change in the printer usage. Additionally, with very complex
+	printer configurations it becomes almost impossible to re-create the same environment - not matter
+	how extensivly it has been documented.
+	</para>
+
+	<para>
+	The migration of an existing printing architecture involves the following:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>Establishment of print queues.</para></listitem>
+
+		<listitem><para>Installation of printer drivers (both for the print server and for Windows clients.</para></listitem>
+
+		<listitem><para>Configuration of printing forms.</para></listitem>
+
+		<listitem><para>Implementation of security settings.</para></listitem>
+
+		<listitem><para>Configuration of printer settings.</para></listitem>
+	</itemizedlist>
+
+	<para>
+	The Samba <command>net</command> utility permits printer migration from one Windows print server
+	to another. When this tool is used to migrate printers to a Samba server <command>smbd</command>,
+	the application the receives the network requests to create the necessary services, must call-out
+	to the operating system in order to create the underlying printers. The call-out is implemented
+	by way of an interface script that can be specified by the &smb.conf; file parameter
+	<smbconfoption id="add printer script"/>. This script is essential to the migration process.
+	A suitable example script may be obtained from the <filename>$SAMBA_SOURCES/examples/scripts</filename>
+	directory. Take note that this script must be customized to suit the operating system environment
+	and may use its tools to create a print queue.
+	</para>
+
+	<para>
+	Each of the components listed above can be completed separately, or they can be completed as part of an
+	automated operation. Many network administrators prefer to deal with migration issues in a manner that
+	gives them the most control, particularly when things go wrong. The syntax for each operation will now
+	be briefly described.
+	</para>
+
+	<para>
+	Printer migration from a Windows print server (NT4 or 200X) is shown. This instruction causes the
+	printer share to be created together with the underlying print queue:
+<screen>
+net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]
+</screen>
+	Printer drivers can be migrated from the Windows print server to the Samba server using this
+	command line instruction:
+<screen>
+net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]
+</screen>
+	Printer forms can be migrated with the following operation:
+<screen>
+net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]
+</screen>
+	Printer security settings (ACLs) can be migrated from the Windows server to the Samba server using this command:
+<screen>
+net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]
+</screen>
+	Printer configuration settings include factors such as paper size, default paper orientation, etc.
+	These can be migrated from the Windows print server to the Samba server with this command:
+<screen>
+net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]
+</screen>
+	</para>
+
+	<para>
+	Migration of printers including all the above mentioned sets of information may be completed
+	with a single command using this syntax:
+<screen>
+net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
+</screen>
+	</para>
+
+	</sect2>
+
+	</sect1>
+
+	<sect1>
 	<title>Controlling Open Files</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect2>
+	</sect1>
 
-	<sect2>
+	<sect1>
 	<title>Session and Connection Management</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect2>
+	</sect1>
 
-	<sect2>
+	<sect1>
 	<title>Printers and ADS</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect2>
+	</sect1>
 
-	<sect2>
+	<sect1>
 	<title>Manipulating the Samba Cache</title>
 
 	<para>
 	Document how to set up trusts here!!!!!!!!!!!
 	</para>
 
-	</sect2>
+	</sect1>
 
-	<sect2>
+	<sect1>
 	<title>Other Miscellaneous Operations</title>
 
 	<para>
@@ -831,8 +1067,6 @@ Num domain groups: 8
 Num local groups: 0
 </screen>
 	</para>
-
-	</sect2>
 
 	</sect1>
 
