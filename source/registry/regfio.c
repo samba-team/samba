@@ -641,18 +641,17 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk )
+static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
 {
 	prs_struct *ps = &hbin->ps;
 	uint16 tag;
-	REGF_SK_REC *sk = nk->sec_desc;
 	uint32 data_size, start_off, end_off;
 
 
 	prs_debug(ps, depth, desc, "hbin_prs_sk_rec");
 	depth++;
 
-	if ( !prs_set_offset( &hbin->ps, nk->sk_off + HBIN_HDR_SIZE - hbin->first_hbin_off ) )
+	if ( !prs_set_offset( &hbin->ps, sk->sk_off + HBIN_HDR_SIZE - hbin->first_hbin_off ) )
 		return False;
 
 	/* backup and get the data_size */
@@ -880,18 +879,32 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static REGF_SK_REC* find_sk_record_in_list( REGF_FILE *file, uint32 offset )
+static REGF_SK_REC* find_sk_record_by_offset( REGF_FILE *file, uint32 offset )
 {
 	REGF_SK_REC *p_sk;
 	
-	if ( !file )
-		return NULL;
-		
 	for ( p_sk=file->sec_desc_list; p_sk; p_sk=p_sk->next ) {
 		if ( p_sk->sk_off == offset ) 
 			return p_sk;
 	}
 	
+	return NULL;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static REGF_SK_REC* find_sk_record_by_sec_desc( REGF_FILE *file, SEC_DESC *sd )
+{
+	REGF_SK_REC *p;
+
+	for ( p=file->sec_desc_list; p; p=p->next ) {
+		if ( sec_desc_equal( p->sec_desc, sd ) )
+			return p;
+	}
+
+	/* failure */
+
 	return NULL;
 }
 
@@ -947,7 +960,7 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 
 	/* get the to the security descriptor.  First look if we have already parsed it */
 	
-	if ( (nk->sk_off!=REGF_OFFSET_NONE) && !( nk->sec_desc = find_sk_record_in_list( file, nk->sk_off )) ) {
+	if ( (nk->sk_off!=REGF_OFFSET_NONE) && !( nk->sec_desc = find_sk_record_by_offset( file, nk->sk_off )) ) {
 
 		sub_hbin = hbin;
 		if ( !hbin_contains_offset( hbin, nk->sk_off ) ) {
@@ -961,7 +974,8 @@ static BOOL hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 		
 		if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
 			return False;
-		if ( !hbin_prs_sk_rec( "sk_rec", sub_hbin, depth, nk ))
+		nk->sec_desc->sk_off = nk->sk_off;
+		if ( !hbin_prs_sk_rec( "sk_rec", sub_hbin, depth, nk->sec_desc ))
 			return False;
 			
 		/* add to the list of security descriptors (ref_count has been read from the files) */
@@ -1179,14 +1193,23 @@ int regfio_close( REGF_FILE *file )
 {
 	int fd;
 
-	/* flush any dirty blocks */
-
-	while ( file->block_list ) {
-		hbin_block_close( file, file->block_list );
-	} 
+	/* cleanup for a file opened for write */
 
 	if ( file->open_flags & (O_WRONLY|O_RDWR) ) {
 		prs_struct ps;
+		REGF_SK_REC *sk;
+
+		/* write of sd list */
+
+		for ( sk=file->sec_desc_list; sk; sk=sk->next ) {
+			hbin_prs_sk_rec( "sk_rec", sk->hbin, 0, sk );
+		}
+
+		/* flush any dirty blocks */
+
+		while ( file->block_list ) {
+			hbin_block_close( file, file->block_list );
+		} 
 
 		ZERO_STRUCT( ps );
 
@@ -1473,6 +1496,23 @@ done:
 /*******************************************************************
 *******************************************************************/
 
+static uint32 sk_record_data_size( SEC_DESC * sd )
+{
+	uint32 size = 0;
+
+	/* the record size is sizeof(hdr) + name + static members + data_size_field */
+
+	size = sizeof(uint32)*5 + sec_desc_size( sd );
+
+	/* multiple of 8 */
+	size = ( size & 0xfffffff8 ) + 8;
+
+	return size;
+}
+
+/*******************************************************************
+*******************************************************************/
+
 static uint32 vk_record_data_size( REGF_VK_REC *vk )
 {
 	uint32 size = 0;
@@ -1571,7 +1611,7 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 
 REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
                                REGVAL_CTR *values, REGSUBKEY_CTR *subkeys, 
-                               SEC_DESC *secdesc, REGF_NK_REC *parent )
+                               SEC_DESC *sec_desc, REGF_NK_REC *parent )
 {
 	REGF_NK_REC *nk;
 	REGF_HBIN *vlist_hbin;
@@ -1669,6 +1709,56 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 	/* write the security descriptor */
 
 	nk->sk_off = REGF_OFFSET_NONE;
+	if ( sec_desc ) {
+		uint32 sk_size = sk_record_data_size( sec_desc );
+		REGF_HBIN *sk_hbin;
+		REGF_SK_REC *tmp = NULL;
+
+		/* search for it in the existing list of sd's */
+
+		if ( (nk->sec_desc = find_sk_record_by_sec_desc( file, sec_desc )) == NULL ) {
+			/* not found so add it to the list */
+
+			sk_hbin = find_free_space( file, sk_size );
+			nk->sk_off = prs_offset( &sk_hbin->ps ) + sk_hbin->first_hbin_off - HBIN_HDR_SIZE;
+
+			if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
+				return NULL;
+	
+			/* now we have to store the security descriptor in the list and 
+			   update the offsets */
+
+			memcpy( nk->sec_desc->header, "sk", sizeof(REC_HDR_SIZE) );
+			nk->sec_desc->hbin      = sk_hbin;
+			nk->sec_desc->hbin_off  = prs_offset( &sk_hbin->ps );
+			nk->sec_desc->sk_off    = nk->sk_off;
+			nk->sec_desc->rec_size  = (sk_size-1)  ^ 0xFFFFFFFF;
+
+			nk->sec_desc->sec_desc  = sec_desc;
+			nk->sec_desc->ref_count = 0;
+			nk->sec_desc->size      = sec_desc_size(sec_desc);
+
+			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc, tmp );
+
+			/* initialize offsets */
+
+			nk->sec_desc->prev_sk_off = REGF_OFFSET_NONE;
+			nk->sec_desc->next_sk_off = REGF_OFFSET_NONE;
+
+			/* now update the offsets for us and the previous sd in the list */
+
+			if ( nk->sec_desc->prev ) {
+				REGF_SK_REC *prev = nk->sec_desc->prev;
+
+				nk->sec_desc->prev_sk_off = prev->hbin_off + prev->hbin->first_hbin_off - HBIN_HDR_SIZE;
+				prev->next_sk_off = nk->sk_off;
+			}
+		}
+
+		/* dump the reference count */
+
+		nk->sec_desc->ref_count++;
+	}
 
 
 	/* stream the records */	

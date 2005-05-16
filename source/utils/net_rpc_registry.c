@@ -330,9 +330,9 @@ static BOOL dump_registry_tree( REGF_FILE *file, REGF_NK_REC *nk, const char *pa
 /********************************************************************
 ********************************************************************/
 
-static BOOL translate_nk_to_regobj( REGF_FILE *infile, REGF_NK_REC *nk, 
-                                REGF_NK_REC *parent, REGF_FILE *outfile,
-				const char *parentpath )
+static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk, 
+                                 REGF_NK_REC *parent, REGF_FILE *outfile,
+			         const char *parentpath )
 {
 	REGF_NK_REC *key, *subkey;
 	REGVAL_CTR values;
@@ -366,7 +366,7 @@ static BOOL translate_nk_to_regobj( REGF_FILE *infile, REGF_NK_REC *nk,
 	pstr_sprintf( path, "%s%s%s", parentpath, parent ? "\\" : "", nk->keyname );
 	nk->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
-		translate_nk_to_regobj( infile, subkey, key, outfile, path );
+		write_registry_tree( infile, subkey, key, outfile, path );
 	}
 
 	regval_ctr_destroy( &values );
@@ -448,7 +448,7 @@ static int rpc_registry_copy( int argc, const char **argv )
 	nk = regfio_rootkey( infile );
 	d_printf("RootKey: [%s]\n", nk->keyname);
 
-	translate_nk_to_regobj( infile, nk, NULL, outfile, "" );
+	write_registry_tree( infile, nk, NULL, outfile, "" );
 
 	d_printf("Closing %s...", argv[1]);
 	regfio_close( outfile );
