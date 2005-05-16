@@ -884,6 +884,78 @@ static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	state->cont(state->private, True, response->data.gid);
 }
 
+/* Child part of winbindd_sid2gid. We already know for sure it's a group, as
+ * well as the user's name */
+
+enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
+		  state->request.data.dual_sid2id.sid));
+
+	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.dual_sid2id.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Find gid for this sid and return it, possibly ask the slow remote
+	 * idmap */
+
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+				  ID_QUERY_ONLY);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	/* This gets a little tricky.  If we assume that usernames are syncd
+	   between /etc/passwd and the windows domain (such as a member of a
+	   Samba domain), the we need to get the gid from the OS and not
+	   allocate one ourselves */
+	   
+	if (lp_winbind_trusted_domains_only() && 
+	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
+
+		const char *group_name = state->request.data.dual_sid2id.name;
+		struct group *grp = NULL;
+		unid_t id;
+			
+		/* ok...here's we know that we are dealing with our own domain
+		   (the one to which we are joined).  And we know that there
+		   must be a UNIX account for this user.  So we lookup the sid
+		   and the call getgrnam().*/
+
+		grp = getgrnam(group_name);
+		if (grp == NULL) {
+			DEBUG(0,("winbindd_sid_to_gid: 'winbind trusted "
+				 "domains only' is set but this group [%s] "
+				 "doesn't exist!\n", group_name));
+			return WINBINDD_ERROR;
+		}
+			
+		state->response.data.gid = grp->gr_gid;
+
+		id.gid = grp->gr_gid;
+		idmap_set_mapping( &sid, id, ID_GROUPID );
+
+		return WINBINDD_OK;
+	}
+
+	if (state->request.flags & WBFLAG_QUERY_ONLY)
+		return WINBINDD_ERROR;
+
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid), 0);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	DEBUG(4, ("Could not get gid for sid %s\n", state->request.data.sid));
+	return WINBINDD_ERROR;
+}
+
 struct sid2uid_state {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID sid;
@@ -978,6 +1050,78 @@ static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	}
 
 	state->cont(state->private, True, response->data.uid);
+}
+
+/* Child part of winbindd_sid2uid. We already know for sure it's a user, as
+ * well as the user's name */
+
+enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
+		  state->request.data.dual_sid2id.sid));
+
+	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.dual_sid2id.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Find uid for this sid and return it, possibly ask the slow remote
+	 * idmap */
+
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
+				  ID_QUERY_ONLY);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	/* This gets a little tricky.  If we assume that usernames are syncd
+	   between /etc/passwd and the windows domain (such as a member of a
+	   Samba domain), the we need to get the uid from the OS and not
+	   allocate one ourselves */
+	   
+	if (lp_winbind_trusted_domains_only() && 
+	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
+
+		const char *user_name = state->request.data.dual_sid2id.name;
+		struct passwd *pw = NULL;
+		unid_t id;
+			
+		/* ok...here's we know that we are dealing with our own domain
+		   (the one to which we are joined).  And we know that there
+		   must be a UNIX account for this user.  So we lookup the sid
+		   and the call getpwnam().*/
+
+		pw = getpwnam(user_name);
+		if (pw == NULL) {
+			DEBUG(0,("winbindd_sid_to_uid: 'winbind trusted "
+				 "domains only' is set but this user [%s] "
+				 "doesn't exist!\n", user_name));
+			return WINBINDD_ERROR;
+		}
+			
+		state->response.data.uid = pw->pw_uid;
+
+		id.uid = pw->pw_uid;
+		idmap_set_mapping( &sid, id, ID_USERID );
+
+		return WINBINDD_OK;
+	}
+
+	if (state->request.flags & WBFLAG_QUERY_ONLY)
+		return WINBINDD_ERROR;
+
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid), 0);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	DEBUG(4, ("Could not get uid for sid %s\n", state->request.data.sid));
+	return WINBINDD_ERROR;
 }
 
 static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
