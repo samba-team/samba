@@ -110,7 +110,7 @@ getstring(void)
     }
     x[i] = '\0';
     yylval.string = strdup(x);
-    if (yylval.string)
+    if (yylval.string == NULL)
         err(1, "malloc");
     return STRING;
 }
