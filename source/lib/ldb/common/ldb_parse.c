@@ -170,7 +170,7 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *ctx, const char *s)
 	
 	ret->operation = LDB_OP_SIMPLE;
 	ret->u.simple.attr = l;
-	ret->u.simple.value.data = val;
+	ret->u.simple.value.data = val?val:discard_const_p(char, "");
 	ret->u.simple.value.length = val?strlen(val):0;
 
 	return ret;
