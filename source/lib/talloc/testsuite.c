@@ -20,17 +20,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef _SAMBA_BUILD_
-#include "includes.h"
-#else
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
+
 #include <sys/time.h>
 #include <time.h>
+
 #include "talloc.h"
-#endif
 
 /* the test suite can be built standalone, or as part of Samba */
 #ifndef _SAMBA_BUILD_
