@@ -34,13 +34,7 @@
 
 #include "talloc.h"
 
-/* the test suite can be built standalone, or as part of Samba */
-#ifndef _SAMBA_BUILD_
 typedef enum {False=0,True=1} BOOL;
-#endif
-
-/* Samba3 does not define the timeval functions below */
-#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
 
 static struct timeval timeval_current(void)
 {
@@ -55,7 +49,6 @@ static double timeval_elapsed(struct timeval *tv)
 	return (tv2.tv_sec - tv->tv_sec) + 
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
-#endif /* _SAMBA_BUILD_ */
 
 #if SAMBA_VERSION_MAJOR<4
 #ifdef malloc
