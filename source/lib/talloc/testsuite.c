@@ -34,7 +34,15 @@
 
 #include "talloc.h"
 
-typedef enum {False=0,True=1} BOOL;
+#ifndef False
+#define False 0
+#endif
+#ifndef True
+#define True 1
+#endif
+#ifndef BOOL
+#define BOOL int
+#endif
 
 static struct timeval timeval_current(void)
 {
@@ -706,6 +714,7 @@ static BOOL test_steal(void)
 	talloc_free(root);
 
 	p1 = talloc_size(NULL, 3);
+	talloc_report_full(NULL, stdout);
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 
