@@ -1,4 +1,3 @@
-OPT = -O
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
@@ -7,8 +6,7 @@ mandir = @mandir@
 XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
-
-CFLAGS = $(OPT)
+CFLAGS=@CFLAGS@
 
 LIBOBJ = talloc.o
 
@@ -26,15 +24,15 @@ install: all doc
 	${INSTALLCMD} -m 644 talloc.h $(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
 	${INSTALLCMD} -d ${mandir}/man3
-	${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
+	test -z "$(XSLTPROC)" || ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
 
 doc: talloc.3
 
 %.3: %.3.xml
-	$(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
 %.html: %.xml
-	$(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
 clean:
 	rm -f *~ *.o testsuite *.gc??
