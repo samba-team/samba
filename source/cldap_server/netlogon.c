@@ -103,7 +103,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	case 0:
 	case 1:
 		netlogon->logon1.pdc_name    = pdc_name;
-		netlogon->logon1.unknown     = "";
+		netlogon->logon1.user_name   = user;
 		netlogon->logon1.domain_name = flatname;
 		netlogon->logon1.nt_version  = 1;
 		netlogon->logon1.lmnt_token  = 0xFFFF;
@@ -112,7 +112,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	case 2:
 	case 3:
 		netlogon->logon2.pdc_name     = pdc_name;
-		netlogon->logon2.unknown      = "";
+		netlogon->logon2.user_name    = user;
 		netlogon->logon2.domain_name  = flatname;
 		netlogon->logon2.domain_uuid  = domain_uuid;
 		netlogon->logon2.forest       = realm;
