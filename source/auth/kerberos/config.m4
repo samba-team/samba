@@ -491,3 +491,4 @@ if test x"$with_krb5_support" != x"no"; then
 fi
 
 SMB_EXT_LIB(KRB5,[${KRB5_LIBS}],[${KRB5_CFLAGS}],[${KRB5_CPPFLAGS}],[${KRB5_LDFLAGS}])
+
