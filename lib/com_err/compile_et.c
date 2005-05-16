@@ -221,8 +221,7 @@ main(int argc, char **argv)
 	p++;
     else
 	p = filename;
-    strncpy(Basename, p, sizeof(Basename));
-    Basename[sizeof(Basename) - 1] = '\0';
+    strlcpy(Basename, p, sizeof(Basename));
     
     Basename[strcspn(Basename, ".")] = '\0';
     
