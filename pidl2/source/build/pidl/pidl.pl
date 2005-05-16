@@ -34,11 +34,11 @@ my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_diff) = 0;
-my($opt_header) = 0;
+my($opt_header); 
 my($opt_template) = 0;
 my($opt_client) = 0;
 my($opt_server) = 0;
-my($opt_parser) = 0;
+my($opt_parser);
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
 my($opt_swig) = 0;
@@ -72,11 +72,11 @@ sub ShowHelp()
 
        Options:
          --help                this help page
-         --output OUTNAME      put output in OUTNAME.*
+         --output=OUTNAME      put output in OUTNAME.*
          --parse               parse a idl file to a .pidl file
          --dump                dump a pidl file back to idl
-         --header              create a C NDR header file
-         --parser              create a C NDR parser
+         --header[=OUTFILE]    create a C NDR header file
+         --parser[=OUTFILE]    create a C NDR parser
          --client              create a C NDR client
          --server              create server boilerplate
          --template            print a template for a pipe
@@ -97,10 +97,10 @@ GetOptions (
 	    'output=s' => \$opt_output,
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
-	    'header' => \$opt_header,
+	    'header:s' => \$opt_header,
 	    'server' => \$opt_server,
 	    'template' => \$opt_template,
-	    'parser' => \$opt_parser,
+	    'parser:s' => \$opt_parser,
         'client' => \$opt_client,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
@@ -187,13 +187,16 @@ sub process_file($)
 		$pidl = ODL::ODL2IDL($pidl);
 	}
 
-	if ($opt_header or $opt_client or $opt_server or $opt_parser) {
+	if (defined($opt_header) or $opt_client or $opt_server or defined($opt_parser)) {
 		$ndr = Ndr::Parse($pidl);
 #		print util::MyDumper($ndr);
 	}
 
-	if ($opt_header) {
-		my($header) = util::ChangeExtension($output, ".h");
+	if (defined($opt_header)) {
+		my $header = $opt_header;
+		if ($header eq "") {
+			$header = util::ChangeExtension($output, ".h");
+		}
 		util::FileSave($header, NdrHeader::Parse($ndr));
 		if ($opt_eparser) {
 		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
@@ -254,9 +257,13 @@ $dcom
 		}
 	}
 
-	if ($opt_parser) {
+	if (defined($opt_parser)) {
 		my $needed = needed::BuildNeeded($pidl);
-		my($parser) = util::ChangeExtension($output, ".c");
+		my $parser = $opt_parser;
+		if ($parser eq "") {
+			$parser = util::ChangeExtension($output, ".c");
+		}
+		
 		util::FileSave($parser, NdrParser::Parse($ndr, $parser, $needed));
 		if($opt_eparser) {
 		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
