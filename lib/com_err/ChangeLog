@@ -1,3 +1,13 @@
+2005-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: check allocation errors
+
+	* lex.l: check allocation errors correctly
+	
+	* compile_et.h: include <err.h>
+	
+	* (main): compile_et.c: use strlcpy
+	
 2005-04-29  Dave Love  <fx@gnu.org>
 
 	* Makefile.am (LDADD): Add libcom_err.la
