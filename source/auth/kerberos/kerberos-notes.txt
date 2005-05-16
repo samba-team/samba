@@ -2,8 +2,8 @@ AllowedWorkstationNames and Krb5
 --------------------------------
 
 Microsoft uses the clientAddresses *multiple value* field in the krb5
-protocol to communicate it's netbios name.  This is (my guess) to
-permit the userWorkstations field to work.
+protocol (particularly the AS_REQ) to communicate it's netbios name.
+This is (my guess) to permit the userWorkstations field to work.
 
 The KDC I imagine checks the netbios address against this value, in
 the same way that the Samba server does this.
@@ -15,19 +15,19 @@ Is a DAL the layer we need?
 
 Looking at what we need to pass around, I start to seriously wonder if
 the DAL is even the right layer - we seem to want to create an account
-authorization abstracton layer - is this account permitted to login to
+authorization abstraction layer - is this account permitted to login to
 this computer, at this time?
 
 This information in AD is much richer than the Heimdal HDB, and it
 seems to make sense to do AD-specific access control checks in an
-AD-specific layer, not in the backend agnostic server.
+AD-specific layer, not in the back-end agnostic server.
 
 Because the DAL only reads in the principalName as the key, it has
 trouble performing access control decisions on things other than the
 name.
 
-I'll be very intersted if the DAL really works for eDirectory too.
-Perhaps all we need to do is add in the same cludges as we have in
+I'll be very interested if the DAL really works for eDirectory too.
+Perhaps all we need to do is add in the same kludges as we have in
 Samba 3.0 for eDirectory.  Hmm...
 
 
@@ -36,10 +36,10 @@ GSSAPI layer requirements
 
 Welcome to the wonderful world of canonicalisation
 
-The Heimdal GSSAPI libs do not support kinit returning a different
+The MIT GSSAPI libs do not support kinit returning a different
 realm to what the client asked for, even just in case differences.
 
-No idea on MIT
+Not looked into this on Heimdal quite yet.
 
 
 Principal Names, long and short names
@@ -58,13 +58,21 @@ causes pain for current client libraries.
 HOST/ Aliases
 -------------
 
-There is another post somehwere (ref lost for the moment) that details
+There is another post somewhere (ref lost for the moment) that details
 where in active directory the list of stored aliases for HOST/ is.
 This should be read, parsed and used to allow any of these requests to
 use the HOST/ key.
 
 For example, this is how HTTP/, DNS/ and CIFS/ can use HOST/ without
 any explicit entry.
+
+
+Jean-Baptiste.Marchand@hsc.fr remainds me:
+
+> This is the SPNMappings attribute in Active Directory:
+
+> http://msdn.microsoft.com/library/en-us/adschema/adschema/a_spnmappings.asp
+
 
 Returned Salt for PreAuthentication
 -----------------------------------
@@ -75,7 +83,7 @@ connected with the current names.  (ie, even if the userPrincipalName
 and samAccountName are renamed, the old salt is returned).
 
 This is probably the kerberos standard salt, kept in the 'Key'.  The
-standard generation rules are found in a Mail from Luke howard dated
+standard generation rules are found in a Mail from Luke Howard dated
 10 Nov 2004:
 
 
@@ -135,19 +143,60 @@ http://www.ietf.org/proceedings/01dec/I-D/draft-ietf-krb-wg-kerberos-referrals-0
 Heimdal oddities
 ----------------
 
-Heimdal is built such that it should be able to serve muliple realms
-at the same time.  This isn't relevent for Samba's use, but it shows
-up in a lot of generalisations thougout the code.
+Heimdal is built such that it should be able to serve multiple realms
+at the same time.  This isn't relevant for Samba's use, but it shows
+up in a lot of generalisations throughout the code.
+
+
+State Machine safety
+--------------------
+
+Samba is a giant state machine, and as such have very different
+requirements to those traditionally expressed for kerberos and GSSAPI
+libraries. 
+
+Samba requires all of the libraries it uses to be state machine safe in
+their use of internal data.  This does not mean thread safe, and an
+application could be thread safe, but not state machine safe (if it
+instead used thread-local variables).
+
+So, what does it mean for a library to be state machine safe?  This is
+mostly a question of context, and how the library manages whatever
+internal state machines it has.  If the library uses a context
+variable, passed in by the caller, which contains all the information
+about the current state of the library, then it is safe.  A n example
+of this state is the sequence number and session keys for an ongoing
+encrypted session).
+
+The other issue affecting state machines is 'blocking' (waiting for a
+read on a network socket).  
+
+Heimdal is not state machine safe for the GSSAPI layer in particular.
+Krb5 alone is much closer, as far as I can tell (the exception being the
+error string handling).  Adding safety is so 'easy', it is very, very
+tempting to modify the APIs required and 'just do it'.  Testing is a
+different problem however.
+
+We may just use a fork()ed child to handle this, and have one process
+per context.  This is primarily to solve the non-blocking issue.  
+
+I had hoped to use the 'GSSAPI export context' function to transfer
+the GSSAPI state back into the main code for the wrap()/unwrap() part
+of the operation, but we still hit issues of static storage (one
+gss_krb5_context per process, and multiple GSSAPI encrypted sessions
+at a time).
 
 
 GSSAPI and Kerberos extensions
 ------------------------------
 
-This is a general list of the extensions we have made to / need from the kerberos libraries
+This is a general list of the other extensions we have made to / need from
+the kerberos libraries
 
  - DCE_STYLE
 
- - gsskrb5_get_initiator_subkey()
+ - gsskrb5_get_initiator_subkey() (return the opposite key to what the
+   lucid context and get_subkey() calls return).
 
  - gsskrb5_get_authz_data()
 
@@ -155,13 +204,12 @@ This is a general list of the extensions we have made to / need from the kerbero
  - in-memory keytab
  - wildcard keytab (for in-memory operations)
 
-
 KDC Extensions
 --------------
 
 We have modified Heimdal's 'hdb' interface to specify the 'type' of
-prinicpal being requested.  This allows us to correctly behave with
-the different 'classes' of prinicpal name. 
+Principal being requested.  This allows us to correctly behave with
+the different 'classes' of Principal name. 
 
 We currently define 3 classes:
  - krbtgt
