@@ -192,7 +192,7 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy st
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf realpath)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize)
 AC_CHECK_FUNCS(setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm backtrace)

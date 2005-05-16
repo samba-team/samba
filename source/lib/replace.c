@@ -32,6 +32,9 @@ ftruncate for operating systems that don't have it
 ********************************************************************/
  int ftruncate(int f,off_t l)
 {
+#ifdef HAVE_CHSIZE
+      return chsize(f,l);
+#else
       struct  flock   fl;
 
       fl.l_whence = 0;
@@ -39,6 +42,7 @@ ftruncate for operating systems that don't have it
       fl.l_start = l;
       fl.l_type = F_WRLCK;
       return fcntl(f, F_FREESP, &fl);
+#endif
 }
 #endif /* HAVE_FTRUNCATE */
 
