@@ -62,6 +62,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 
 	n1 = search.out.netlogon;
 
+	search.in.user         = "Administrator";
 	search.in.realm        = n1.logon4.dns_domain;
 	search.in.host         = "__cldap_torture__";
 
@@ -72,7 +73,8 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 		status = cldap_netlogon(cldap, mem_ctx, &search);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		if (DEBUGLVL(10)) {
-			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, i & 0xF, 
+			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 
+					      search.in.version & 0xF, 
 					      &search.out.netlogon);
 		}
 	}
@@ -84,7 +86,8 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 		status = cldap_netlogon(cldap, mem_ctx, &search);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		if (DEBUGLVL(10)) {
-			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, i & 0xF, 
+			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 
+					      search.in.version & 0xF, 
 					      &search.out.netlogon);
 		}
 	}
