@@ -6,7 +6,7 @@ mandir = @mandir@
 XSLTPROC = @XSLTPROC@
 INSTALLCMD = @INSTALL@
 CC = @CC@
-CFLAGS=@CFLAGS@
+CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H=
 
 LIBOBJ = talloc.o
 
