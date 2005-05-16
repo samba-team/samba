@@ -661,6 +661,7 @@ Successfully granted rights.
 </screen>
 	Next, the domain user <constant>jht</constant> is given the privileges needed for day to day
 	administration:
+<screen>
 &rootprompt; net rpc rights grant "MIDEARTH\jht" \
     SeMachineAccountPrivilege SePrintOperatorPrivilege \
     SeAddUsersPrivilege SeDiskOperatorPrivilege \
@@ -712,16 +713,74 @@ SeDiskOperatorPrivilege
 	<title>Managing Trust Relationships</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	There are essentially two types of trust relationships. The first between domain controllers and domain
+	member machines (network clients), the second trusts between domains (called inter-domain trusts). All
+	Samba servers that pasticipate in domain security require a domain membership trust account, as do like
+	Windows NT/2KX/XPP workstations.
 	</para>
 
 	<sect2>
 	<title>Machine Trust Accounts</title>
 
 	<para>
+	A Samba server domain trust account can be validated as shown in this example:
 <screen>
 &rootprompt; net rpc testjoin
 Join to 'MIDEARTH' is OK
+</screen>
+	Where there is no domain membership account, or when the account credentials are not valid the following
+	results will be observed:
+<screen>
+net rpc testjoin -S DOLPHIN
+Join to domain 'WORLDOCEAN' is not valid
+</screen>
+	</para>
+
+	<para>
+	The equivalent command for joining a Samba server to a Windows ADS domain is shown here:
+<screen>
+&rootprompt; net ads testjoin
+Using short domain name -- TAKEAWAY
+Joined 'LEMONADE' to realm 'TAKEAWAY.BIZ'
+</screen>
+	In the event that the ADS trust was not established, or is broken for one reason or another, the following
+	error message may be obtained:
+<screen>
+&rootprompt; net ads testjoin -UAdministrator%secret
+Join to domain is not valid
+</screen>
+	</para>
+
+	<para>
+	The following demonstrates the process of creating a machine trust account in the target domain for the
+	Samba server from which the command is executed:
+<screen>
+&rootprompt; net rpc join -S FRODO -Uroot%not24get
+Joined domain MIDEARTH.
+</screen>
+	The joining of a Samba server to a Samba domain results in the creation of a machine account. An example
+	of this is shown here:
+<screen>
+&rootprompt; pdbedit -Lw merlin\$
+merlin$:1009:9B4489D6B90461FD6A3EC3AB96147E16:\
+176D8C554E99914BDF3407DEA2231D80:[S          ]:LCT-42891919:
+</screen>
+	The equivalent command to join a Samba server to a Windows ADS domain is shown here:
+<screen>
+&rootprompt; net ads join -UAdministrator%not24get
+Using short domain name -- GDANSK
+Joined 'FRANDIMITZ' to realm 'GDANSK.ABMAS.BIZ'
+</screen>
+	</para>
+
+	<para>
+	There is no specific option to remove a machine account from a domain. When a domain member that is a
+	Windows machine is withdrawn from the domain the domain membership account is not automatically removed
+	either. Inactive domain member accounts can be removed using any convenient tool. If necessary, the
+	machine account can be removed using the following <command>net</command> command:
+<screen>
+&rootprompt; net rpc user delete HERRING\$ -Uroot%not24get
+Deleted user account.
 </screen>
 	</para>
 
@@ -731,7 +790,8 @@ Join to 'MIDEARTH' is OK
 	<title>Inter-Domain Trusts</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	Inter-domain trust relationships form the primary mechanism by which users from one domain can be granted
+	access rights and privileges in another domain.
 	</para>
 
 	</sect2>
