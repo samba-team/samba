@@ -37,7 +37,7 @@ static int write_block( REGF_FILE *file, prs_struct *ps, uint32 offset )
 	/* check for end of file */
 
 	if ( sys_fstat( file->fd, &sbuf ) ) {
-		DEBUG(0,("read_block: stat() failed! (%s)\n", strerror(errno)));
+		DEBUG(0,("write_block: stat() failed! (%s)\n", strerror(errno)));
 		return -1;
 	}
 
@@ -1216,8 +1216,18 @@ int regfio_close( REGF_FILE *file )
 		unix_to_nt_time( &file->mtime, time(NULL) );
 
 		if ( read_block( file, &ps, 0, REGF_BLOCKSIZE ) != -1 ) {
-			file->checksum = regf_block_checksum( &ps );
+			/* now use for writing */
+			prs_switch_type( &ps, MARSHALL );
+
+			/* stream the block once, generate the checksum, 
+			   and stream it again */
+			prs_set_offset( &ps, 0 );
 			prs_regf_block( "regf_blocK", &ps, 0, file );
+			file->checksum = regf_block_checksum( &ps );
+			prs_set_offset( &ps, 0 );
+			prs_regf_block( "regf_blocK", &ps, 0, file );
+
+			/* now we are ready to write it to disk */
 			if ( write_block( file, &ps, 0 ) == -1 )
 				DEBUG(0,("regfio_close: failed to update the regf header block!\n"));
 		}
