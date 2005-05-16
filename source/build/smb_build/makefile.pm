@@ -154,13 +154,8 @@ test: @DEFAULT_TEST_TARGET@
 
 test-swrap: all
 	export SOCKET_WRAPPER_DIR=.
-ifeq (@HAVE_SOCKET_WRAPPER@,yes)
 	./script/tests/selftest.sh `pwd`/prefix-test
-else
-	echo "Socket wrapper not built in, unable to run test-swrap"
-	exit 1
-endif
-	
+
 test-noswrap: all
 	./script/tests/selftest.sh `pwd`/prefix-test
 
