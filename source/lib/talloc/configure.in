@@ -6,7 +6,7 @@ if test "x$GCC" = "xyes"; then
 fi
 AC_PROG_INSTALL
 AC_PATH_PROG(XSLTPROC,xsltproc)
-AC_CHECK_HEADERS(stdint.h stdarg.h)
+AC_CHECK_HEADERS(stdint.h stdarg.h unistd.h sys/types.h)
 AC_CONFIG_HEADER(config.h)
 sinclude(config.m4)
 AC_OUTPUT(Makefile talloc.pc)
