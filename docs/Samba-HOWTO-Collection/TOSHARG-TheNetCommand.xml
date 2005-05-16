@@ -469,7 +469,7 @@ DOM\jht
 	Although this is not the appropriate place to discuss the <smbconfoption name="username map"/> facility,
 	this interface is an important method of mapping a Windows user account to a UNIX account that has a
 	different name. Refer to the man page for the &smb.conf; file for more information regarding this
-	facility. User name mappings can not be managed usinf the <command>net<command> utility.
+	facility. User name mappings can not be managed usinf the <command>net</command> utility.
 	</para>
 
 	<sect2>
