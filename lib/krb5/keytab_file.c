@@ -39,10 +39,14 @@ RCSID("$Id$");
 #define KRB5_KT_VNO_2 2
 #define KRB5_KT_VNO   KRB5_KT_VNO_2
 
+#define KRB5_KT_FL_JAVA 1
+
+
 /* file operations -------------------------------------------- */
 
 struct fkt_data {
     char *filename;
+    int flags;
 };
 
 static krb5_error_code
@@ -246,8 +250,22 @@ fkt_resolve(krb5_context context, const char *name, krb5_keytab id)
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
+    d->flags = 0;
     id->data = d;
     return 0;
+}
+
+static krb5_error_code
+fkt_resolve_java14(krb5_context context, const char *name, krb5_keytab id)
+{
+    krb5_error_code ret;
+
+    ret = fkt_resolve(context, name, id);
+    if (ret == 0) {
+	struct fkt_data *d = id->data;
+	d->flags |= KRB5_KT_FL_JAVA;
+    }
+    return ret;
 }
 
 static krb5_error_code
@@ -536,10 +554,12 @@ fkt_add_entry(krb5_context context,
 	    krb5_storage_free(emem);
 	    goto out;
 	}
-	ret = krb5_store_int32 (emem, entry->vno);
-	if (ret) {
-	    krb5_storage_free(emem);
-	    goto out;
+	if ((d->flags & KRB5_KT_FL_JAVA) == 0) {
+	    ret = krb5_store_int32 (emem, entry->vno);
+	    if (ret) {
+		krb5_storage_free(emem);
+		goto out;
+	    }
 	}
 
 	ret = krb5_storage_to_data(emem, &keytab);
@@ -631,6 +651,19 @@ const krb5_kt_ops krb5_fkt_ops = {
 const krb5_kt_ops krb5_wrfkt_ops = {
     "WRFILE",
     fkt_resolve,
+    fkt_get_name,
+    fkt_close,
+    NULL, /* get */
+    fkt_start_seq_get,
+    fkt_next_entry,
+    fkt_end_seq_get,
+    fkt_add_entry,
+    fkt_remove_entry
+};
+
+const krb5_kt_ops krb5_javakt_ops = {
+    "JAVA14",
+    fkt_resolve_java14,
     fkt_get_name,
     fkt_close,
     NULL, /* get */
