@@ -145,6 +145,17 @@ typedef struct {
 	uint32 classname_off;	
 	char *classname;
 	char *keyname;
+
+	/* max lengths */
+
+	uint32 max_bytes_subkeyname;		/* max subkey name * 2 */
+	uint32 max_bytes_subkeyclassname;	/* max subkey classname length (as if) */
+	uint32 max_bytes_valuename;		/* max valuename * 2 */
+	uint32 max_bytes_value;			/* max value data size */
+
+	/* unknowns */
+
+	uint32 unk_index;			/* nigel says run time index ? */
 	
 	/* children */
 	

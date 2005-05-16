@@ -20,6 +20,12 @@
 #include "includes.h"
 #include "regfio.h"
 
+/*******************************************************************
+ *
+ * TODO : Right now this code basically ignores classnames.
+ *
+ ******************************************************************/
+
 
 /*******************************************************************
 *******************************************************************/
@@ -249,6 +255,8 @@ static BOOL prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 
 static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HBIN *hbin )
 {
+	uint32 block_size2;
+
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
 	
@@ -264,6 +272,12 @@ static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 
 	if ( !prs_uint32( "block_size", ps, depth, &hbin->block_size ))
 		return False;
+
+	block_size2 = hbin->block_size;
+	prs_set_offset( ps, 0x1c );
+	if ( !prs_uint32( "block_size2", ps, depth, &block_size2 ))
+		return False;
+	
 
 	return True;
 }
@@ -325,8 +339,22 @@ static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	if ( !prs_uint32( "classname_off", ps, depth, &nk->classname_off ))
 		return False;
 
+	if ( !prs_uint32( "max_bytes_subkeyname", ps, depth, &nk->max_bytes_subkeyname))
+		return False;
+	if ( !prs_uint32( "max_bytes_subkeyclassname", ps, depth, &nk->max_bytes_subkeyclassname))
+		return False;
+	if ( !prs_uint32( "max_bytes_valuename", ps, depth, &nk->max_bytes_valuename))
+		return False;
+	if ( !prs_uint32( "max_bytes_value", ps, depth, &nk->max_bytes_value))
+		return False;
+	if ( !prs_uint32( "unknown index", ps, depth, &nk->unk_index))
+		return False;
+
+# if 0
 	if ( !prs_set_offset( ps, start+0x0048 ) )
 		return False;
+#endif
+
 	name_length = nk->keyname ? strlen(nk->keyname) : 0 ;
 	class_length = nk->classname ? strlen(nk->classname) : 0 ;
 	if ( !prs_uint16( "name_length", ps, depth, &name_length ))
@@ -1508,16 +1536,20 @@ done:
 
 static uint32 sk_record_data_size( SEC_DESC * sd )
 {
-	uint32 size = 0;
+	uint32 size, size_mod8;
+
+	size_mod8 = 0;
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = sizeof(uint32)*5 + sec_desc_size( sd );
+	size = sizeof(uint32)*5 + sec_desc_size( sd ) + sizeof(uint32);
 
 	/* multiple of 8 */
-	size = ( size & 0xfffffff8 ) + 8;
+	size_mod8 = size & 0xfffffff8;
+	if ( size_mod8 < size )
+		size_mod8 += 8;
 
-	return size;
+	return size_mod8;
 }
 
 /*******************************************************************
@@ -1525,19 +1557,23 @@ static uint32 sk_record_data_size( SEC_DESC * sd )
 
 static uint32 vk_record_data_size( REGF_VK_REC *vk )
 {
-	uint32 size = 0;
+	uint32 size, size_mod8;
+
+	size_mod8 = 0;
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = sizeof(REC_HDR_SIZE) + (sizeof(uint16)*2) + (sizeof(uint32)*3) + sizeof(uint32);
+	size = REC_HDR_SIZE + (sizeof(uint16)*2) + (sizeof(uint32)*3) + sizeof(uint32);
 
 	if ( vk->valuename )
 		size += strlen(vk->valuename);
 
 	/* multiple of 8 */
-	size = ( size & 0xfffffff8 ) + 8;
+	size_mod8 = size & 0xfffffff8;
+	if ( size_mod8 < size )
+		size_mod8 += 8;
 
-	return size;
+	return size_mod8;
 }
 
 /*******************************************************************
@@ -1545,16 +1581,20 @@ static uint32 vk_record_data_size( REGF_VK_REC *vk )
 
 static uint32 lf_record_data_size( uint32 num_keys )
 {
-	uint32 size = 0;
+	uint32 size, size_mod8;
+
+	size_mod8 = 0;
 
 	/* the record size is sizeof(hdr) + num_keys + sizeof of hash_array + data_size_uint32 */
 
-	size = sizeof(REC_HDR_SIZE) + sizeof(uint16) + (sizeof(REGF_HASH_REC) * num_keys) + sizeof(uint32);
+	size = REC_HDR_SIZE + sizeof(uint16) + (sizeof(REGF_HASH_REC) * num_keys) + sizeof(uint32);
 
 	/* multiple of 8 */
-	size = ( size & 0xfffffff8 ) + 8;
+	size_mod8 = size & 0xfffffff8;
+	if ( size_mod8 < size )
+		size_mod8 += 8;
 
-	return size;
+	return size_mod8;
 }
 
 /*******************************************************************
@@ -1562,7 +1602,9 @@ static uint32 lf_record_data_size( uint32 num_keys )
 
 static uint32 nk_record_data_size( REGF_NK_REC *nk )
 {
-	uint32 size = 0;
+	uint32 size, size_mod8;
+
+	size_mod8 = 0;
 
 	/* the record size is static + length_of_keyname + length_of_classname + data_size_uint32 */
 
@@ -1572,9 +1614,11 @@ static uint32 nk_record_data_size( REGF_NK_REC *nk )
 		size += strlen( nk->classname );
 
 	/* multiple of 8 */
-	size = ( size & 0xfffffff8 ) + 8;
+	size_mod8 = size & 0xfffffff8;
+	if ( size_mod8 < size )
+		size_mod8 += 8;
 
-	return size;
+	return size_mod8;
 }
 
 /*******************************************************************
@@ -1657,7 +1701,7 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 	nk->rec_size = ( size - 1 ) ^ 0XFFFFFFFF;
 	nk->hbin = find_free_space( file, size );
 	nk->hbin_off = prs_offset( &nk->hbin->ps );
-	
+
 	/* Update the hash record in the parent */
 	
 	if ( parent ) {
@@ -1685,14 +1729,26 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 		/* create the vk records */
 
 		for ( i=0; i<nk->num_values; i++ ) {
-			uint32 vk_size;
+			uint32 vk_size, namelen, datalen;
 			REGF_HBIN *vk_hbin;
+			REGISTRY_VALUE *r;
 
-			create_vk_record( file, &nk->values[i], regval_ctr_specific_value( values, i ) );
+			r = regval_ctr_specific_value( values, i );
+			create_vk_record( file, &nk->values[i], r );
 			vk_size = vk_record_data_size( &nk->values[i] );
 			vk_hbin = find_free_space( file, vk_size );
 			nk->values[i].hbin_off = prs_offset( &vk_hbin->ps ) + vk_hbin->first_hbin_off - HBIN_HDR_SIZE;
 			nk->values[i].rec_size = ( vk_size - 1 ) ^ 0xFFFFFFFF;
+
+			/* update the max bytes fields if necessary */
+
+			namelen = strlen( regval_name(r) );
+			if ( namelen*2 > nk->max_bytes_valuename )
+				nk->max_bytes_valuename = namelen * 2;
+
+			datalen = regval_size( r );
+			if ( datalen*2 > nk->max_bytes_value )
+				nk->max_bytes_value = datalen * 2;
 		}
 	}
 
@@ -1703,6 +1759,8 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 	if ( (nk->num_subkeys = regsubkey_ctr_numkeys( subkeys )) != 0 ) {
 		uint32 lf_size = lf_record_data_size( nk->num_subkeys );
 		REGF_HBIN *lf_hbin;
+		uint32 namelen;
+		int i;
 		
 		lf_hbin = find_free_space( file, lf_size );
 		nk->subkeys.rec_size = (lf_size-1) ^ 0xFFFFFFFF;
@@ -1714,6 +1772,13 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 		if ( !(nk->subkeys.hashes = TALLOC_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
 			return NULL;
 		nk->subkey_index = 0;
+
+		/* update the max_bytes_subkey{name,classname} fields */
+		for ( i=0; i<nk->num_subkeys; i++ ) {
+			namelen = strlen( regsubkey_ctr_specific_key(subkeys, i) );
+			if ( namelen*2 > nk->max_bytes_subkeyname )
+				nk->max_bytes_subkeyname = namelen * 2;
+		}
 	}
 
 	/* write the security descriptor */
@@ -1730,7 +1795,6 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 			/* not found so add it to the list */
 
 			sk_hbin = find_free_space( file, sk_size );
-			nk->sk_off = prs_offset( &sk_hbin->ps ) + sk_hbin->first_hbin_off - HBIN_HDR_SIZE;
 
 			if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
 				return NULL;
@@ -1738,10 +1802,10 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 			/* now we have to store the security descriptor in the list and 
 			   update the offsets */
 
-			memcpy( nk->sec_desc->header, "sk", sizeof(REC_HDR_SIZE) );
+			memcpy( nk->sec_desc->header, "sk", REC_HDR_SIZE );
 			nk->sec_desc->hbin      = sk_hbin;
 			nk->sec_desc->hbin_off  = prs_offset( &sk_hbin->ps );
-			nk->sec_desc->sk_off    = nk->sk_off;
+			nk->sec_desc->sk_off    = prs_offset( &sk_hbin->ps ) + sk_hbin->first_hbin_off - HBIN_HDR_SIZE;
 			nk->sec_desc->rec_size  = (sk_size-1)  ^ 0xFFFFFFFF;
 
 			nk->sec_desc->sec_desc  = sec_desc;
@@ -1767,6 +1831,7 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 
 		/* dump the reference count */
 
+		nk->sk_off = nk->sec_desc->sk_off;
 		nk->sec_desc->ref_count++;
 	}
 
