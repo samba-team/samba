@@ -78,15 +78,13 @@ id		: ID STRING
 et		: ET STRING
 		{
 		    base = name2number($2);
-		    strncpy(name, $2, sizeof(name));
-		    name[sizeof(name) - 1] = '\0';
+		    strlcpy(name, $2, sizeof(name));
 		    free($2);
 		}
 		| ET STRING STRING
 		{
 		    base = name2number($2);
-		    strncpy(name, $3, sizeof(name));
-		    name[sizeof(name) - 1] = '\0';
+		    strlcpy(name, $3, sizeof(name));
 		    free($2);
 		    free($3);
 		}
@@ -104,21 +102,30 @@ statement	: INDEX NUMBER
 		{
 		    free(prefix);
 		    asprintf (&prefix, "%s_", $2);
+		    if (prefix == NULL)
+			errx(1, "malloc");
 		    free($2);
 		}
 		| PREFIX
 		{
 		    prefix = realloc(prefix, 1);
+		    if (prefix == NULL)
+			errx(1, "malloc");
 		    *prefix = '\0';
 		}
 		| EC STRING ',' STRING
 		{
 		    struct error_code *ec = malloc(sizeof(*ec));
+		    
+		    if (ec == NULL)
+			errx(1, "malloc");
 
 		    ec->next = NULL;
 		    ec->number = number;
 		    if(prefix && *prefix != '\0') {
 			asprintf (&ec->name, "%s%s", prefix, $2);
+			if (ec->name == NULL)
+			    errx(1, "malloc");
 			free($2);
 		    } else
 			ec->name = $2;
