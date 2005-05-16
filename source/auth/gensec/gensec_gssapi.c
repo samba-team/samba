@@ -32,9 +32,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static const gss_OID_desc gensec_gss_krb5_mechanism_oid_desc =
-        {9, (void *)discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
-
 struct gensec_gssapi_state {
 	gss_ctx_id_t gssapi_context;
 	struct gss_channel_bindings_struct *input_chan_bindings;
@@ -162,7 +159,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 #endif
 	}
 
-	gensec_gssapi_state->gss_oid = &gensec_gss_krb5_mechanism_oid_desc;
+	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 	
 	ret = krb5_init_context(&gensec_gssapi_state->krb5_context);
 	if (ret) {
@@ -359,6 +356,11 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	} else if (maj_stat == GSS_S_CONTINUE_NEEDED) {
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	} else {
+		if (maj_stat == GSS_S_FAILURE
+		    && (min_stat == KRB5KRB_AP_ERR_BADVERSION || min_stat == KRB5KRB_AP_ERR_MSG_TYPE)) {
+			/* garbage input, possibly from the auto-mech detection */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		DEBUG(1, ("GSS Update failed: %s\n", 
 			  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
 		return nt_status;
@@ -641,8 +643,8 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 #ifdef HAVE_GSSKRB5_GET_INITIATOR_SUBKEY
-		if ((gensec_gssapi_state->gss_oid->length == gensec_gss_krb5_mechanism_oid_desc.length)
-		    && (memcmp(gensec_gssapi_state->gss_oid->elements, gensec_gss_krb5_mechanism_oid_desc.elements, gensec_gssapi_state->gss_oid->length) == 0)) {
+		if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
+		    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, gensec_gssapi_state->gss_oid->length) == 0)) {
 			return True;
 		}
 #endif 
@@ -662,8 +664,8 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 
 #ifdef HAVE_GSSKRB5_GET_INITIATOR_SUBKEY
 	/* Ensure we only call this for GSSAPI/krb5, otherwise things could get very ugly */
-	if ((gensec_gssapi_state->gss_oid->length == gensec_gss_krb5_mechanism_oid_desc.length)
-	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gensec_gss_krb5_mechanism_oid_desc.elements, 
+	if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
+	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
 		       gensec_gssapi_state->gss_oid->length) == 0)) {
 		OM_uint32 maj_stat, min_stat;
 		gss_buffer_desc skey;
