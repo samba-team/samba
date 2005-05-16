@@ -663,6 +663,11 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Display results */
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to delete user account - %s\n", nt_errstr(result));
+	} else {
+		d_printf("Deleted user account\n");
+	}
 
  done:
 	return result;
