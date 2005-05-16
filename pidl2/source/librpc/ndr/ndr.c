@@ -90,7 +90,7 @@ NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 /*
   set the parse offset to 'ofs'
 */
-NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
+static NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
@@ -185,7 +185,7 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 /*
   set the push offset to 'ofs'
 */
-NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
+static NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
 {
 	NDR_CHECK(ndr_push_expand(ndr, ofs));
 	ndr->offset = ofs;

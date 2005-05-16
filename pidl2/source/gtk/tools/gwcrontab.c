@@ -25,14 +25,14 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
-struct dcerpc_pipe *at_pipe = NULL;
-GtkWidget *mainwin;
-GtkListStore *store_jobs;
-GtkWidget *tasks;
-GtkWidget *entry_cmd;
-GtkWidget *entry_repeat_weekly;
-GtkWidget *entry_repeat_monthly;
-GtkWidget *delete;
+static struct dcerpc_pipe *at_pipe = NULL;
+static GtkWidget *mainwin;
+static GtkListStore *store_jobs;
+static GtkWidget *tasks;
+static GtkWidget *entry_cmd;
+static GtkWidget *entry_repeat_weekly;
+static GtkWidget *entry_repeat_monthly;
+static GtkWidget *delete;
 
 void update_joblist(void)
 {
@@ -74,16 +74,13 @@ void update_joblist(void)
 	gtk_widget_set_sensitive(tasks, TRUE);
 }
 
-static void on_job_select(GtkTreeSelection *sel,
-                                             gpointer data)
+static void on_job_select(GtkTreeSelection *sel, gpointer data)
 {
 	gtk_widget_set_sensitive(delete, gtk_tree_selection_get_selected(sel, NULL, NULL));
 }
 
 
-static void
-on_connect_activate                    (GtkMenuItem     *menuitem,
-                                        gpointer         user_data)
+static void on_connect_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkRpcBindingDialog *d;
 	NTSTATUS status;
@@ -128,9 +125,7 @@ on_connect_activate                    (GtkMenuItem     *menuitem,
 	update_joblist();
 }
 
-void
-on_quit_activate                      (GtkMenuItem     *menuitem,
-									   gpointer         user_data)
+static void on_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	talloc_free(at_pipe);
 	gtk_main_quit();
@@ -215,17 +210,14 @@ on_delete_activate                     (GtkMenuItem     *menuitem,
 }
 
 
-void
-on_about_activate                     (GtkMenuItem     *menuitem,
-									   gpointer         user_data)
+static void on_about_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gwcrontab"));
 	gtk_dialog_run(aboutwin);
 	gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
 
-GtkWidget*
-create_mainwindow (void)
+static GtkWidget* create_mainwindow (void)
 {
 	GtkWidget *mainwindow;
 	GtkWidget *vbox;

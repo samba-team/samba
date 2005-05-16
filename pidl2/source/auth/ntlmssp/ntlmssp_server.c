@@ -560,11 +560,12 @@ NTSTATUS ntlmssp_server_auth(struct gensec_security *gensec_security,
 	/* Finally, actually ask if the password is OK */
 
 	if (!NT_STATUS_IS_OK(nt_status = gensec_ntlmssp_state->check_password(gensec_ntlmssp_state, 
-								       &user_session_key, &lm_session_key))) {
+									      &user_session_key, &lm_session_key))) {
 		return nt_status;
 	}
 	
-	if (gensec_ntlmssp_state->server_use_session_keys) {
+	if (gensec_security->want_features
+	    & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SESSION_KEY)) {
 		return ntlmssp_server_postauth(gensec_security, &user_session_key, &lm_session_key);
 	} else {
 		gensec_ntlmssp_state->session_key = data_blob(NULL, 0);
@@ -715,7 +716,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth() 
 					  && lp_parm_bool(-1, "ntlmssp_server", "allow_lm_key", False));
 
-	gensec_ntlmssp_state->server_use_session_keys = True;
 	gensec_ntlmssp_state->server_multiple_authentications = False;
 	
 	gensec_ntlmssp_state->neg_flags = 

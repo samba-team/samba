@@ -458,7 +458,7 @@
 	typedef struct {
 		[value(19)] uint16   type;
 		nstring              pdc_name;
-		nstring              unknown;
+		nstring              user_name;
 		nstring              domain_name;
 		uint32               nt_version;
 		uint16               lmnt_token;
@@ -468,7 +468,7 @@
 	typedef struct {
 		[value(19)] uint16   type;
 		nstring              pdc_name;
-		nstring              unknown;
+		nstring              user_name;
 		nstring              domain_name;
 		GUID                 domain_uuid;
 		GUID                 unknown_uuid;

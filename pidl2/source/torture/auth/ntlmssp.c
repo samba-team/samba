@@ -39,9 +39,13 @@ BOOL torture_ntlmssp_self_check(void)
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
 
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
+
 	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to start GENSEC for NTLMSSP\n");
 		return False;
 	}
 
@@ -52,8 +56,7 @@ BOOL torture_ntlmssp_self_check(void)
 		     gensec_ntlmssp_state->session_key.data,  
 		     gensec_ntlmssp_state->session_key.length);
 
-	gensec_ntlmssp_state->server_use_session_keys = True;
-	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
+	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_128 | NTLMSSP_NEGOTIATE_KEY_EXCH | NTLMSSP_NEGOTIATE_NTLM2;
 
 	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
 		printf("Failed to sign_init: %s\n", nt_errstr(status));
@@ -83,10 +86,14 @@ BOOL torture_ntlmssp_self_check(void)
 	status = gensec_client_start(NULL, &gensec_security);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to start GENSEC for NTLMSSP\n");
 		return False;
 	}
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
+
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
 	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
 
@@ -101,8 +108,7 @@ BOOL torture_ntlmssp_self_check(void)
 		     gensec_ntlmssp_state->session_key.data,  
 		     gensec_ntlmssp_state->session_key.length);
 
-	gensec_ntlmssp_state->server_use_session_keys = True;
-	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
+	gensec_ntlmssp_state->neg_flags = NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_KEY_EXCH;
 
 	if (!NT_STATUS_IS_OK(status = ntlmssp_sign_init(gensec_ntlmssp_state))) {
 		printf("Failed to sign_init: %s\n", nt_errstr(status));

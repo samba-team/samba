@@ -110,7 +110,7 @@ static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
    decode a RFC2254 binary string representation of a buffer.
    Used in LDAP filters.
 */
-static struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
+struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
 {
 	int i, j;
 	struct ldap_val ret;

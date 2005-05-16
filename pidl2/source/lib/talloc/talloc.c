@@ -27,28 +27,24 @@
 */
 
 
-#ifdef _SAMBA_BUILD_
-#include "includes.h"
-#if ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
-/* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
- * we trust ourselves... */
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef realloc
-#undef realloc
-#endif
-#endif
-#else
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
-#include <stdint.h>
-#include "talloc.h"
-/* assume a modern system */
-#define HAVE_VA_COPY
+#else
+#include <varargs.h>
 #endif
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
+#include "talloc.h"
 
 /* use this to force every realloc to change the pointer, to stress test
    code that might not cope */

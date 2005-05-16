@@ -20,25 +20,29 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef _SAMBA_BUILD_
-#include "includes.h"
-#else
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
+
 #include <sys/time.h>
 #include <time.h>
+
 #include "talloc.h"
-#endif
 
-/* the test suite can be built standalone, or as part of Samba */
-#ifndef _SAMBA_BUILD_
-typedef enum {False=0,True=1} BOOL;
+#ifndef False
+#define False 0
 #endif
-
-/* Samba3 does not define the timeval functions below */
-#if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
+#ifndef True
+#define True 1
+#endif
+#ifndef BOOL
+#define BOOL int
+#endif
 
 static struct timeval timeval_current(void)
 {
@@ -53,7 +57,6 @@ static double timeval_elapsed(struct timeval *tv)
 	return (tv2.tv_sec - tv->tv_sec) + 
 	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
 }
-#endif /* _SAMBA_BUILD_ */
 
 #if SAMBA_VERSION_MAJOR<4
 #ifdef malloc
@@ -711,6 +714,7 @@ static BOOL test_steal(void)
 	talloc_free(root);
 
 	p1 = talloc_size(NULL, 3);
+	talloc_report_full(NULL, stdout);
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 

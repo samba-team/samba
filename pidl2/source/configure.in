@@ -1,0 +1,79 @@
+dnl -*- mode: m4-mode -*-
+dnl Process this file with autoconf to produce a configure script.
+
+dnl disabled 2.53 requirement - we do work with 2.52 on suse 7.3 for example
+dnl AC_PREREQ(2.53)
+
+AC_INIT(include/includes.h)
+AC_CONFIG_HEADER(include/config.h)
+
+sinclude(build/smb_build/env.m4)
+
+SMB_INCLUDE_M4(build/m4/rewrite.m4)
+
+SMB_INCLUDE_M4(lib/popt/config.m4)
+SMB_INCLUDE_M4(lib/iconv.m4)
+SMB_INCLUDE_M4(lib/socket/config.m4)
+SMB_INCLUDE_M4(lib/talloc/config.m4)
+SMB_INCLUDE_M4(lib/tdb/config.m4)
+SMB_INCLUDE_M4(lib/ldb/config.m4)
+SMB_INCLUDE_M4(lib/events/config.m4)
+SMB_INCLUDE_M4(lib/cmdline/config.m4)
+SMB_INCLUDE_M4(param/config.m4)
+SMB_INCLUDE_M4(auth/kerberos/config.m4)
+SMB_INCLUDE_M4(auth/gensec/config.m4)
+SMB_INCLUDE_M4(libcli/config.m4)
+SMB_INCLUDE_M4(smbd/process_model.m4)
+SMB_INCLUDE_M4(lib/registry/config.m4)
+SMB_INCLUDE_M4(scripting/config.m4)
+SMB_INCLUDE_M4(gtk/config.m4)
+SMB_INCLUDE_M4(ntvfs/posix/config.m4)
+SMB_INCLUDE_M4(lib/socket_wrapper/config.m4)
+
+ALLLIBS_LIBS="$LIBS"
+ALLLIBS_CFLAGS="$CFLAGS"
+ALLLIBS_CPPFLAGS="$CPPFLAGS"
+ALLLIBS_LDFLAGS="$LDFLAGS"
+
+SMB_EXT_LIB_ENABLE(ALLLIBS,YES)
+
+SMB_EXT_LIB(ALLLIBS,
+		[${ALLLIBS_LIBS}],
+		[${ALLLIBS_CFLAGS}],
+		[${ALLLIBS_CPPFLAGS}],
+		[${ALLLIBS_LDFLAGS}])
+
+AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
+
+#################################################
+# do extra things if we are running insure
+
+if test "${ac_cv_prog_CC}" = "insure"; then
+	CPPFLAGS="$CPPFLAGS -D__INSURE__"
+fi
+
+#################################################
+# add DEVELOPER_CFLAGS only for the real build
+CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
+
+#################################################
+# final configure stuff
+
+AC_MSG_CHECKING([configure summary])
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/summary.c"],
+           AC_MSG_RESULT(yes),
+	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
+	   AC_MSG_WARN([cannot run when cross-compiling]))
+
+builddir=`pwd`
+AC_SUBST(builddir)
+
+dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
+LIB_REMOVE_USR_LIB(LDFLAGS)
+LIB_REMOVE_USR_LIB(LIBS)
+
+dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
+CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
+CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
+
+SMB_AC_OUTPUT(Makefile)

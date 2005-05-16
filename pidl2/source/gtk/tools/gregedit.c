@@ -26,16 +26,16 @@
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
 
-GtkTreeStore *store_keys;
-GtkListStore *store_vals;
-GtkWidget *tree_keys;
-GtkWidget *tree_vals;
-GtkWidget *mainwin;
-GtkWidget *mnu_add_key, *mnu_set_value, *mnu_del_key, *mnu_del_value, *mnu_find;
-TALLOC_CTX *mem_ctx; /* FIXME: Split up */
+static GtkTreeStore *store_keys;
+static GtkListStore *store_vals;
+static GtkWidget *tree_keys;
+static GtkWidget *tree_vals;
+static GtkWidget *mainwin;
+static GtkWidget *mnu_add_key, *mnu_set_value, *mnu_del_key, *mnu_del_value, *mnu_find;
+static TALLOC_CTX *mem_ctx; /* FIXME: Split up */
 
-GtkWidget *save;
-GtkWidget *save_as;
+static GtkWidget *save;
+static GtkWidget *save_as;
 static GtkWidget* create_openfilewin (void);
 static GtkWidget* create_savefilewin (void);
 struct registry_context *registry = NULL;

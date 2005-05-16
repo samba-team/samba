@@ -326,6 +326,7 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
 						 const char *s);
 const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob);
+struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 
 /* The following definitions come from libcli/ldap/ldap_client.c  */
 
@@ -384,5 +385,6 @@ struct ldap_message *ldap_ldif2msg(TALLOC_CTX *mem_ctx, const char *s);
 const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value);
 const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid);
 const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid);
+NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldap_val val, struct GUID *guid);
 
 #endif
