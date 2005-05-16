@@ -1,5 +1,4 @@
-AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
-AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
+AC_PREREQ(2.50)
 AC_INIT(talloc.h)
 AC_PROG_CC
 if test "x$GCC" = "xyes"; then
