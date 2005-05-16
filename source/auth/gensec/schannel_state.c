@@ -26,9 +26,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "db_wrap.h"
 
-/* a reasonable amount of time to keep credentials live */
-#define SCHANNEL_CREDENTIALS_EXPIRY 600
-
 /*
   connect to the schannel ldb
 */
@@ -72,22 +69,13 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
 	struct ldb_val val, seed;
-	char *s;
 	char *f;
 	char *sct;
 	char *rid;
-	time_t expiry = time(NULL) + SCHANNEL_CREDENTIALS_EXPIRY;
 	int ret;
 
 	ldb = schannel_db_connect(mem_ctx);
 	if (ldb == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	s = talloc_asprintf(mem_ctx, "%u", (unsigned int)expiry);
-
-	if (s == NULL) {
-		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -133,7 +121,6 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 
 	ldb_msg_add_value(ldb, msg, "sessionKey", &val);
 	ldb_msg_add_value(ldb, msg, "seed", &seed);
-	ldb_msg_add_string(ldb, msg, "expiry", s);
 	ldb_msg_add_string(ldb, msg, "negotiateFlags", f);
 	ldb_msg_add_string(ldb, msg, "secureChannelType", sct);
 	ldb_msg_add_string(ldb, msg, "accountName", creds->account_name);
@@ -144,8 +131,6 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	ldb_delete(ldb, msg->dn);
 
 	ret = ldb_add(ldb, msg);
-
-	talloc_free(s);
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
@@ -171,7 +156,6 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    struct creds_CredentialState **creds)
 {
 	struct ldb_context *ldb;
-	time_t expiry;
 	struct ldb_message **res;
 	int ret;
 	const struct ldb_val *val;
@@ -195,13 +179,6 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 	if (ret != 1) {
-		talloc_free(ldb);
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	expiry = ldb_msg_find_uint(res[0], "expiry", 0);
-	if (expiry < time(NULL)) {
-		DEBUG(1,("schannel: attempt to use expired session key for %s\n", computer_name));
 		talloc_free(ldb);
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -195,7 +195,7 @@ if test x"$with_krb5_support" != x"no"; then
 
 	# now check for gssapi headers.  This is also done here to allow for
 	# different kerberos include paths
-	AC_CHECK_HEADERS(gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h)
+	AC_CHECK_HEADERS(gssapi.h gssapi_krb5.h gssapi/gssapi.h gssapi/gssapi_generic.h gssapi/gssapi_krb5.h com_err.h)
 
 	##################################################################
 	# we might need the k5crypto and com_err libraries on some systems
