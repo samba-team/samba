@@ -83,8 +83,10 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	exhaustive, and thus it is incomplete. Since the primary focus is on migration from Windows servers to
 	a Samba server the emphasis is on the use of the DCE RPC mode of operation. When used against a server
 	that is a member of an Active Directory domain it is preferable (and often necessary) to use ADS mode
-	operations. The <command>net</command> command supports both, but not for every operation. Please refer
-	to the man page for a more comprehensive overview of the capabilities of this utility.
+	operations. The <command>net</command> command supports both, but not for every operation. For most
+	operations, if the mode is not specified <command>net</command> will automatically fall back via
+	the <constant>ads, rpc, rap</constant> modes.  Please refer to the man page for a more comprehensive
+	overview of the capabilities of this utility.
 	</para>
 
 	</sect1>
@@ -181,7 +183,7 @@ SupportEngrs:x:1003:
 results in immediate mapping of the POSIX group that has been created to the Windows group account as whown
 here:
 <screen>
-merlin:~ # net groupmap list
+&rootprompt; net groupmap list
 Domain Admins (S-1-5-21-72630-4128915-11681869-512) -> Domain Admins
 Domain Users (S-1-5-21-72630-4128915-11681869-513) -> Domain Users
 Domain Guests (S-1-5-21-72630-4128915-11681869-514) -> Domain Guests
@@ -340,7 +342,7 @@ Engineers (S-1-5-21-72630-412605-116429-3001) -> Engineers
 	group mapping, a member of the Windows group, an attempt to add this account again should fail. This is
 	demonstrated here:
 <screen>
-merlin:~ # net rpc group addmem "MIDEARTH\Engineers" ajt -Uroot%not24get
+&rootprompt; net rpc group addmem "MIDEARTH\Engineers" ajt -Uroot%not24get
 Could not add ajt to MIDEARTH\Engineers: NT_STATUS_MEMBER_IN_GROUP
 </screen>
 	This showns that the group mapping between UNIX/Linux groups and Windows groups is effective and
@@ -450,6 +452,16 @@ DOM\jht
 </screen>
 	</para>
 
+	<para>
+	Windows network administrators often ask on the Samba mailing list how it is possible to grant everyone
+	administrative rights on their own workstation. This is of course a very bad practice, but commonly done
+	to avoid user complaints. Here is how it can be done remotely from a Samba PDC or BDC:
+<screen>
+&rootprompt; net rpc group addmem "Administrators" "Domain Users" \
+    -S WINPC032 -Uadministrator%secret
+</screen>
+	</para>
+
 	</sect2>
 
 	</sect1>
@@ -469,13 +481,37 @@ DOM\jht
 	Although this is not the appropriate place to discuss the <smbconfoption name="username map"/> facility,
 	this interface is an important method of mapping a Windows user account to a UNIX account that has a
 	different name. Refer to the man page for the &smb.conf; file for more information regarding this
-	facility. User name mappings can not be managed usinf the <command>net</command> utility.
+	facility. User name mappings can not be managed using the <command>net</command> utility.
 	</para>
 
-	<sect2>
+	<sect2 id="sbeuseraddn">
 	<title>Adding User Accounts</title>
 
 	<para>
+	The syntax for adding a user account via the <command>net</command> (according to the man page) is shown
+	here:
+<screen>
+net [&lt;method&gt;] user ADD &lt;name&gt; [-c container] [-F user flags] \
+    [misc. options] [targets]
+</screen>
+	The user account password may be set using this syntax:
+<screen>
+net rpc password &lt;username&gt; [&lt;password&gt;] -Uadmin_username%admin_pass
+</screen>
+	</para>
+
+	<para>
+	The following demonstrates the addition of an account to the server <constant>FRODO</constant>:
+<screen>
+&rootprompt; net rpc user add jacko -S FRODO -Uroot%not24get
+Added user jacko
+</screen>
+	The account password can be set with the following methods (all show the same operation):
+<screen>
+&rootprompt; net rpc password jacko f4sth0rse -S FRODO -Uroot%not24get
+&rootprompt; net rpc user password jacko f4sth0rse \
+    -S FRODO -Uroot%not24get
+</screen>
 	</para>
 
 	</sect2>
@@ -484,14 +520,40 @@ DOM\jht
 	<title>Deletion of User Accounts</title>
 
 	<para>
+	Deletion of a user account can be done using the following syntax:
+<screen>
+net [&lt;method&gt;] user DELETE &lt;name&gt; [misc. options] [targets]
+</screen>
+	The following command will delete the user account <constant>jacko</constant>:
+<screen>
+&rootprompt; net rpc user delete jacko -Uroot%not24get
+Deleted user account
+</screen>
 	</para>
 
 	</sect2>
 
 	<sect2>
-	<title>Modification of User Accounts</title>
+	<title>Managing User Accounts</title>
 
 	<para>
+	Two basic user accont operations are routinely used, change of password and querying which groups a user
+	is a member of. The change of password operation is shown in <link linkend="sbeuseraddn"/>.
+	</para>
+
+	<para>
+	The ability to query Windows group membership can be essential. Here is how a remote server may be
+	interrogated to find which groups a user is a member of:
+<screen>
+&rootprompt; net rpc user info jacko -S SAURON -Uroot%not24get
+net rpc user info jacko -S SAURON -Uroot%not24get
+Domain Users
+Domain Admins
+Engineers
+TorridGroup
+BOP Shop
+Emergency Services
+</screen>
 	</para>
 
 	</sect2>
@@ -500,6 +562,21 @@ DOM\jht
 	<title>User Mapping</title>
 
 	<para>
+	In some situations it is unavoidable that a users' Windows logon name will differ from the login ID
+	that user has on the Samba server. It is possible to create a special file on the Samba server that
+	will permit the Windows user name to be mapped to a different UNIX/Linux user name. The &smb.conf;
+	file must also be ammended so that the <constant>[global]</constant> stanza contains the parameter:
+<screen>
+username map = /etc/samba/smbusers
+</screen>
+	The content of the <filename>/etc/samba/smbusers</filename> file is shown here:
+<screen>
+parsonsw: "William Parsons"
+marygee: geeringm
+</screen>
+	In this example the Windows user account <quote>William Parsons</quote> will be mapped to the UNIX user
+	<constant>parsonsw</constant>, and the Windows user account <quote>geeringm</quote> will be mapped to the
+	UNIX user <constant>marygee</constant>.
 	</para>
 
 	</sect2>
@@ -510,6 +587,29 @@ DOM\jht
 	<title>Administering User Rights and Privileges</title>
 
 	<para>
+	With all versions of Samba earlier than 3.0.11 the only account on a Samba server that had the ability
+	to manage users, groups, shares, printers, etc. is the <constant>root</constant> account. This caused
+	immense problems for some users and was a frequent source of scorn over the necessity to hand out the
+	credentials for the most security sensitive account on a UNIX/Linux system.
+	</para>
+
+	<para>
+	New to Samba version 3.0.11 is the ability to delegate administrative privileges as necessary to either
+	a normal user, or to groups of users. The significance of the administrative privileges is documented
+	in <link linkend="rights"/>. Examples of use of the <command>net</command> for user rights and privilege
+	management is appropriate to this chapter.
+	</para>
+
+	<note><para>
+	When user rights and privileges are correctly set there is no longer a need for there to be a Windows
+	network account for the <constant>root</constant> user (nor for any synonym of it) with a UNIX UID=0.
+	Initial user rights and privileges can be assigned by any account that is a member of the <constant>
+	Domain Admins</constant> group. Rights can be assigned to user as well as group accounts.
+	</para></note>
+
+	<para>
+	By default, no privileges and rights are assigned. This is demonstrated by executing the command
+	shown here:
 <screen>
 &rootprompt; net rpc rights list accounts -U root%not24get
 BUILTIN\Print Operators
@@ -529,26 +629,49 @@ No privileges assigned
 
 Everyone
 No privileges assigned
+</screen>
+	</para>
 
+	<para>
+	The <command>net</command> command can be used to obtain the currently supported capabilities for rights
+	and privileges using this method:
+<screen>
 &rootprompt; net rpc rights list -U root%not24get
      SeMachineAccountPrivilege  Add machines to domain
       SePrintOperatorPrivilege  Manage printers
            SeAddUsersPrivilege  Add users and groups to the domain
      SeRemoteShutdownPrivilege  Force shutdown from a remote system
        SeDiskOperatorPrivilege  Manage disk shares
+</screen>
+	Machine account privilege is necessary to permit a Windows NT4 or later network client to be added to the
+	domain. The disk operator privilege is necessary to permit the user to manage share ACLs and file and
+	directory ACLs for objects not owned by the user.
+	</para>
 
+	<para>
+	In this example, all rights are assigned to the <constant>Domain Admins</constant> group. This is a good
+	idea since members of this group are generally expected to be all-powerful. This assignment makes that
+	the reality:
+<screen>
 &rootprompt; net rpc rights grant "MIDEARTH\Domain Admins" \
     SeMachineAccountPrivilege SePrintOperatorPrivilege \
     SeAddUsersPrivilege SeRemoteShutdownPrivilege \
     SeDiskOperatorPrivilege  -U root%not24get
 Successfully granted rights.
-
+</screen>
+	Next, the domain user <constant>jht</constant> is given the privileges needed for day to day
+	administration:
 &rootprompt; net rpc rights grant "MIDEARTH\jht" \
     SeMachineAccountPrivilege SePrintOperatorPrivilege \
     SeAddUsersPrivilege SeDiskOperatorPrivilege \
     -U root%not24get
 Successfully granted rights.
+</screen>
+	</para>
 
+	<para>
+	The following step permits validation of the changes just made:
+<screen>
 &rootprompt; net rpc rights list accounts -U root%not24get
 MIDEARTH\jht
 SeMachineAccountPrivilege
@@ -650,12 +773,12 @@ Join to 'MIDEARTH' is OK
 	file system is the directory <filename>/data</filename>. The command that can be executed to perform the
 	addition of this share is shown here:
 <screen>
-&rootprompt; net rpc share add Bulge=/data -S merlin -Uroot%not24get
+&rootprompt; net rpc share add Bulge=/data -S MERLIN -Uroot%not24get
 </screen>
 	Validation is an important process, and by executing the command <command>net rpc share</command>
 	with no other operators a listing of available shares is shown here:
 <screen>
-&rootprompt; net rpc share -S merlin -Uroot%not24get
+&rootprompt; net rpc share -S MERLIN -Uroot%not24get
 profdata
 archive
 Bulge   &lt;--- This one was added
@@ -672,11 +795,11 @@ ADMIN$
 	Often times it is desirable also to permit a share to be removed using a command-line tool.
 	The following step permits the share that was previously added to be removed:
 <screen>
-&rootprompt; net rpc share delete Bulge -S merlin -Uroot%not24get
+&rootprompt; net rpc share delete Bulge -S MERLIN -Uroot%not24get
 </screen>
 	A simple validation shown here demonstrates that the share has been removed:
 <screen>
-&rootprompt; net rpc share -S merlin -Uroot%not24get
+&rootprompt; net rpc share -S MERLIN -Uroot%not24get
 profdata
 archive
 print$
