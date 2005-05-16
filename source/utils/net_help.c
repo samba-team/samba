@@ -73,7 +73,7 @@ int net_help_user(int argc, const char **argv)
 		 "\n\tDelete specified user\n");
 	d_printf("\nnet [<method>] user INFO <name> [misc. options] [targets]"\
 		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet [<method>] user ADD <name> [password] [-c container] "\
+	d_printf("\nnet [<method>] user ADD <name> [-c container] "\
 		 "[-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 	d_printf("\nnet [<method>] user RENAME <oldusername> <newusername>"\
