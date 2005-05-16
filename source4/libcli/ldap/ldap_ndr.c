@@ -74,3 +74,19 @@ const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 	data_blob_free(&blob);
 	return ret;
 }
+
+/*
+  decode a NDR GUID from a ldap filter element
+*/
+NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldap_val val, struct GUID *guid)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	blob.data = val.data;
+	blob.length = val.length;
+	status = ndr_pull_struct_blob(&blob, mem_ctx, guid, 
+				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	talloc_free(val.data);
+	return status;
+}
