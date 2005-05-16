@@ -456,3 +456,58 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 
 	return msg2;
 }
+
+
+/*
+  return a ldb_message representing the differences between msg1 and msg2. If you
+  then use this in a ldb_modify() call it can be used to save edits to a message
+*/
+struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
+				 struct ldb_message *msg1,
+				 struct ldb_message *msg2)
+{
+	struct ldb_message *mod;
+	struct ldb_message_element *el;
+	unsigned int i;
+
+	mod = ldb_msg_new(ldb);
+
+	mod->dn = msg1->dn;
+	mod->num_elements = 0;
+	mod->elements = NULL;
+
+	msg2 = ldb_msg_canonicalize(ldb, msg2);
+	if (msg2 == NULL) {
+		return NULL;
+	}
+	
+	/* look in msg2 to find elements that need to be added
+	   or modified */
+	for (i=0;i<msg2->num_elements;i++) {
+		el = ldb_msg_find_element(msg1, msg2->elements[i].name);
+
+		if (el && ldb_msg_element_compare(el, &msg2->elements[i]) == 0) {
+			continue;
+		}
+
+		if (ldb_msg_add(ldb, mod, 
+				&msg2->elements[i],
+				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
+			return NULL;
+		}
+	}
+
+	/* look in msg1 to find elements that need to be deleted */
+	for (i=0;i<msg1->num_elements;i++) {
+		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
+		if (!el) {
+			if (ldb_msg_add_empty(ldb, mod, 
+					      msg1->elements[i].name,
+					      LDB_FLAG_MOD_DELETE) != 0) {
+				return NULL;
+			}
+		}
+	}
+
+	return mod;
+}

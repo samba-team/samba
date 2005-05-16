@@ -295,6 +295,10 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 					 const struct ldb_message *msg);
 
 
+struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
+				 struct ldb_message *msg1,
+				 struct ldb_message *msg2);
+
 struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
 
 /*
