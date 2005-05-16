@@ -27,19 +27,6 @@
 */
 
 
-#ifdef _SAMBA_BUILD_
-#if ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
-/* This is to circumvent SAMBA3's paranoid malloc checker. Here in this file
- * we trust ourselves... */
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef realloc
-#undef realloc
-#endif
-#endif
-#endif
-
 #include "config.h"
 
 #include <stdio.h>
