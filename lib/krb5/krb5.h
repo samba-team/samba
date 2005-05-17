@@ -337,6 +337,7 @@ typedef union {
 
 #define KRB5_GC_CACHED			(1U << 0)
 #define KRB5_GC_USER_USER		(1U << 1)
+#define KRB5_GC_EXPIRED_OK		(1U << 2)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
@@ -529,12 +530,13 @@ typedef struct krb5_replay_data {
 
 /* flags for krb5_auth_con_setflags */
 enum {
-    KRB5_AUTH_CONTEXT_DO_TIME      = 1,
-    KRB5_AUTH_CONTEXT_RET_TIME     = 2,
-    KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
-    KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8,
-    KRB5_AUTH_CONTEXT_PERMIT_ALL   = 16,
-    KRB5_AUTH_CONTEXT_USE_SUBKEY   = 32
+    KRB5_AUTH_CONTEXT_DO_TIME      		= 1,
+    KRB5_AUTH_CONTEXT_RET_TIME     		= 2,
+    KRB5_AUTH_CONTEXT_DO_SEQUENCE  		= 4,
+    KRB5_AUTH_CONTEXT_RET_SEQUENCE 		= 8,
+    KRB5_AUTH_CONTEXT_PERMIT_ALL   		= 16,
+    KRB5_AUTH_CONTEXT_USE_SUBKEY   		= 32,
+    KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED	= 64
 };
 
 /* flags for krb5_auth_con_genaddrs */
@@ -694,6 +696,7 @@ extern const krb5_cc_ops krb5_kcm_ops;
 
 extern const krb5_kt_ops krb5_fkt_ops;
 extern const krb5_kt_ops krb5_wrfkt_ops;
+extern const krb5_kt_ops krb5_javakt_ops;
 extern const krb5_kt_ops krb5_mkt_ops;
 extern const krb5_kt_ops krb5_akf_ops;
 extern const krb5_kt_ops krb4_fkt_ops;
