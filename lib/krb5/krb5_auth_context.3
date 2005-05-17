@@ -217,7 +217,22 @@ Generate and check sequence-number on each packet.
 .It Dv KRB5_AUTH_CONTEXT_DO_TIME
 Check timestamp on incoming packets.
 .It Dv KRB5_AUTH_CONTEXT_RET_SEQUENCE , Dv KRB5_AUTH_CONTEXT_RET_TIME
-Return sequence numbers and time stamps in the outdata parameter of
+Return sequence numbers and time stamps in the outdata parameters.
+.It Dv KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED
+will force
+.Fn krb5_get_forwarded_creds
+and
+.Fn krb5_fwd_tgt_creds
+to create unencrypted )
+.Dv ENCTYPE_NULL )
+credentials.
+This is for use with old MIT server and JAVA based servers as
+they can't handle encrypted
+.Dv KRB-CRED .
+Note that sending such
+.Dv KRB-CRED
+is clear exposes crypto keys and tickets and is insecure,
+make sure the packet is encrypted in the protocol.
 .Xr krb5_rd_cred 3 ,
 .Xr krb5_rd_priv 3 ,
 .Xr krb5_rd_safe 3 ,
