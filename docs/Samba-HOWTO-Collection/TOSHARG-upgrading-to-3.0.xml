@@ -8,19 +8,19 @@
 	<pubdate>June 30, 2003</pubdate>
 </chapterinfo>
 
-<title>Upgrading from Samba-2.x to Samba-3.0.0</title>
+<title>Upgrading from Samba-2.x to Samba-3.0.20</title>
 
 <para>
-This chapter deals exclusively with the differences between Samba-3.0.0 and Samba-2.2.8a.
+This chapter deals exclusively with the differences between Samba-3.0.20 and Samba-2.2.8a.
 It points out where configuration parameters have changed, and provides a simple guide for 
-the move from 2.2.x to 3.0.0.
+the move from 2.2.x to 3.0.20.
 </para>
 
 <sect1>
 <title>Quick Migration Guide</title>
 
 <para>
-Samba-3.0.0 default behavior should be approximately the same as Samba-2.2.x.
+Samba-3.0.20 default behavior should be approximately the same as Samba-2.2.x.
 The default behavior when the new parameter <smbconfoption name="passdb backend"/>
 is not defined in the &smb.conf; file provides the same default behavior as Samba-2.2.x
 with <smbconfoption name="encrypt passwords">Yes</smbconfoption>, and
@@ -29,7 +29,7 @@ will use the <filename>smbpasswd</filename> database.
 
 <para>
 So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x?</emphasis> Because
-Samba-3.0.0 can negotiate new protocols, such as support for native Unicode, that may result in
+Samba-3.0.20 can negotiate new protocols, such as support for native Unicode, that may result in
 differing protocol code paths being taken. The new behavior under such circumstances is not
 exactly the same as the old one. The good news is that the domain and machine SIDs will be
 preserved across the upgrade.
@@ -138,7 +138,7 @@ Plus lots of other improvements!
 
 <para>
 This section contains a brief listing of changes to &smb.conf; options
-in the 3.0.0 release. Please refer to the smb.conf(5) man page for
+in the 3.0.20 release. Please refer to the smb.conf(5) man page for
 complete descriptions of new or modified parameters.
 </para>
 
