@@ -229,6 +229,7 @@ krb5_init_context(krb5_context *context)
     p->kt_types     = NULL;
     krb5_kt_register (p, &krb5_fkt_ops);
     krb5_kt_register (p, &krb5_wrfkt_ops);
+    krb5_kt_register (p, &krb5_javakt_ops);
     krb5_kt_register (p, &krb5_mkt_ops);
     krb5_kt_register (p, &krb5_akf_ops);
     krb5_kt_register (p, &krb4_fkt_ops);
