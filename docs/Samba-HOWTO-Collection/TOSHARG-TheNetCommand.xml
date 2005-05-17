@@ -1075,7 +1075,7 @@ kyocera
 
 	<para>
 	At this time the net tool can not be used to manage ACLs on Samba shares. In MS Windows 
-	language this is called: Share Permissions, or Share Security.
+	language this is called: Share Permissions.
 	</para>
 
 	<para>
@@ -1409,7 +1409,9 @@ net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
 	<title>Controlling Open Files</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	The man page documents the <command>net file</command> function suite. These ability is provided to
+	close open files using either RAP or RPC function calls. Please refer to the man page for specific
+	usage information.
 	</para>
 
 	</sect1>
@@ -1418,7 +1420,24 @@ net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
 	<title>Session and Connection Management</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	The session management interface of the <command>net session</command> command uses the old RAP
+	method to obtain the list of connections to the Samba server, as shown here:
+<screen>
+&rootprompt; net rap session -S MERLIN -Uroot%not24get
+Computer             User name            Client Type        Opens Idle time
+------------------------------------------------------------------------------
+\\merlin             root                 Unknown Client         0 00:00:00
+\\marvel             jht                  Unknown Client         0 00:00:00
+\\maggot             jht                  Unknown Client         0 00:00:00
+\\marvel             jht                  Unknown Client         0 00:00:00
+</screen>
+	</para>
+
+	<para>
+	A session can be closed by executing a command as shown here:
+<screen>
+&rootprompt; net rap session close marvel -Uroot%not24get
+</screen>
 	</para>
 
 	</sect1>
@@ -1427,7 +1446,36 @@ net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
 	<title>Printers and ADS</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	When Samba-3 is used within as MS Windows ADS environment printers shared via Samba will not be browseable
+	until they have been published to the ADS domain. Information regarding published printers my be obtained
+	from the ADS server by executing the <command>net ads print info</command> command following this syntax:
+<screen>
+net ads printer info &lt;printer_name&gt; &lt;server_name&gt; -Uadministrator%secret
+</screen>
+	If the asterisk (*) is used in place of the printer_name argument, a list of all printers will be
+	returned.
+	</para>
+
+	<para>
+	To publish (make available)  a printer to ADS execute the following command:
+<screen>
+net ads printer publish &lt;printer_name&gt; -Uadministrator%secret
+</screen>
+	This publishes a printer from the local Samba server to ADS.
+	</para>
+
+	<para>
+	Removal of a Samba printer from ADS is achieved by executing this command:
+<screen>
+net ads printer remove &lt;printer_name&gt; -Uadministrator%secret
+</screen>
+	</para>
+
+	<para>
+	A generic search (query) can also be made to locate a printer across the entire ADS domain by executing:
+<screen>
+net ads printer search &lt;printer_name&gt; -Uadministrator%secret
+</screen>
 	</para>
 
 	</sect1>
@@ -1436,7 +1484,7 @@ net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
 	<title>Manipulating the Samba Cache</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	Please refer to the net command man page for information regarding cache management.
 	</para>
 
 	</sect1>
@@ -1445,14 +1493,42 @@ net rpc printer MIGRATE ALL [printer] [misc. options] [targets]
 	<title>Other Miscellaneous Operations</title>
 
 	<para>
+	The following command is useful for obtaining basic statistics regarding a Samba domain. This command does
+	not work against current Windows XP Professional clients.
 <screen>
 &rootprompt; net rpc info
-Domain Name: MIDEARTH
-Domain SID: S-1-5-21-726309263-4128913605-1168186429
-Sequence number: 1115878548
-Num users: 5
-Num domain groups: 8
-Num local groups: 0
+Domain Name: RAPIDFLY
+Domain SID: S-1-5-21-399034208-633907489-3292421255
+Sequence number: 1116312355
+Num users: 720
+Num domain groups: 27
+Num local groups: 6
+</screen>
+	</para>
+
+	<para>
+	Another useful tool is the <command>net time</command> tool set. This tool may be used to query the
+	current time on the target server as shown here:
+<screen>
+&rootprompt; net time -S SAURON
+Tue May 17 00:50:43 2005
+</screen>
+	In the event that it is the intent to pass the time information obtained to the UNIX
+	<command>/bin/time</command> it is a good idea to obtain the time from the target server in a format
+	that is ready to be passed through. This may be done by executing:
+<screen>
+&rootprompt; net time system -S FRODO
+051700532005.16
+</screen>
+	The time can be set on a target server by executing:
+<screen>
+&rootprompt; net time set -S MAGGOT -U Adminsitrator%not24get
+Tue May 17 00:55:30 MDT 2005
+</screen>
+	It is possible to obtain the timezone a server is in by executing the following command against it:
+<screen>
+&rootprompt; net time zone -S SAURON
+-0600
 </screen>
 	</para>
 
