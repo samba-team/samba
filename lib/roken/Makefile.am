@@ -18,6 +18,7 @@ check_PROGRAMS = 				\
 		base64-test			\
 		getaddrinfo-test		\
 		hex-test			\
+		test-readenv			\
 		parse_bytes-test		\
 		parse_reply-test		\
 		parse_time-test			\
@@ -35,6 +36,8 @@ libtest_la_CFLAGS = -DTEST_SNPRINTF
 
 parse_reply_test_SOURCES = parse_reply-test.c resolve.c
 parse_reply_test_CFLAGS  = -DTEST_RESOLVE
+
+test_readenv_SOURCES = test-readenv.c test-mem.c
 
 parse_time_test_SOURCES = parse_time-test.c test-mem.c
 
