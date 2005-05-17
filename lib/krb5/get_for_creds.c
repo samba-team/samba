@@ -173,7 +173,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     krb5_crypto crypto;
     struct addrinfo *ai;
     int save_errno;
-    krb5_keyblock *key;
     krb5_creds *ticket;
     char *realm;
 
@@ -216,7 +215,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	    return ret;
     }
     
-    kdc_flags.i = flags;
+    kdc_flags.b = int2KDCOptions(flags);
 
     ret = krb5_get_kdc_cred (context,
 			     ccache,
@@ -373,31 +372,40 @@ krb5_get_forwarded_creds (krb5_context	    context,
     if(buf_size != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
 
-    if (auth_context->local_subkey)
-	key = auth_context->local_subkey;
-    else if (auth_context->remote_subkey)
-	key = auth_context->remote_subkey;
-    else
-	key = auth_context->keyblock;
+    if (auth_context->flags & KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED) {
+	cred.enc_part.etype = ENCTYPE_NULL;
+	cred.enc_part.kvno = NULL;
+	cred.enc_part.cipher.data = buf;
+	cred.enc_part.cipher.length = buf_size;
+    } else {
+	krb5_keyblock *key;
 
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret) {
+	if (auth_context->local_subkey)
+	    key = auth_context->local_subkey;
+	else if (auth_context->remote_subkey)
+	    key = auth_context->remote_subkey;
+	else
+	    key = auth_context->keyblock;
+	
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret) {
+	    free(buf);
+	    free_KRB_CRED(&cred);
+	    return ret;
+	}
+	ret = krb5_encrypt_EncryptedData (context,
+					  crypto,
+					  KRB5_KU_KRB_CRED,
+					  buf,
+					  len,
+					  0,
+					  &cred.enc_part);
 	free(buf);
-	free_KRB_CRED(&cred);
-	return ret;
-    }
-    ret = krb5_encrypt_EncryptedData (context,
-				      crypto,
-				      KRB5_KU_KRB_CRED,
-				      buf,
-				      len,
-				      0,
-				      &cred.enc_part);
-    free(buf);
-    krb5_crypto_destroy(context, crypto);
-    if (ret) {
-	free_KRB_CRED(&cred);
-	return ret;
+	krb5_crypto_destroy(context, crypto);
+	if (ret) {
+	    free_KRB_CRED(&cred);
+	    return ret;
+	}
     }
 
     ASN1_MALLOC_ENCODE(KRB_CRED, buf, buf_size, &cred, &len, ret);
