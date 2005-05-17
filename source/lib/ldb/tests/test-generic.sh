@@ -25,6 +25,9 @@ time $VALGRIND bin/ldbtest -r 1000 -s 10  || exit 1
 echo "Adding index"
 $VALGRIND bin/ldbadd tests/test-index.ldif  || exit 1
 
+echo "Adding attributes"
+$VALGRIND bin/ldbadd tests/test-wrong_attributes.ldif  || exit 1
+
 echo "testing indexed search"
 $VALGRIND bin/ldbsearch '(uid=uham)'  || exit 1
 $VALGRIND bin/ldbsearch '(&(objectclass=person)(objectclass=person)(objectclass=top))' || exit 1

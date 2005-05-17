@@ -37,6 +37,21 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
+
+/* valid attribute flags */
+static const struct {
+	const char *name;
+	int value;
+} ltdb_valid_attr_flags[] = {
+	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
+	{ "INTEGER", LTDB_FLAG_INTEGER },
+	{ "WILDCARD", LTDB_FLAG_WILDCARD },
+	{ "HIDDEN", LTDB_FLAG_HIDDEN },
+	{ "NONE", LTDB_FLAG_NONE },
+	{ NULL, 0 }
+};
+
+
 /*
   initialise the baseinfo record
 */
@@ -245,18 +260,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	const char *attrs;
-	const struct {
-		const char *name;
-		int value;
-	} names[] = {
-		{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
-		{ "INTEGER", LTDB_FLAG_INTEGER },
-		{ "WILDCARD", LTDB_FLAG_WILDCARD },
-		{ "HIDDEN", LTDB_FLAG_HIDDEN },
-		{ NULL, 0}
-	};
-	size_t len;
+	const struct ldb_message_element *attr_el;
 	int i, ret=0;
 
 	if (ltdb->cache->last_attribute.name &&
@@ -269,30 +273,22 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 		ret = LTDB_FLAG_OBJECTCLASS | LTDB_FLAG_CASE_INSENSITIVE;
 	}
 
-	attrs = ldb_msg_find_string(ltdb->cache->attributes, attr_name, NULL);
+	attr_el = ldb_msg_find_element(ltdb->cache->attributes, attr_name);
 
-	if (!attrs) {
+	if (!attr_el) {
 
 		/* check if theres a wildcard attribute */
-		attrs = ldb_msg_find_string(ltdb->cache->attributes, "*", NULL);
+		attr_el = ldb_msg_find_element(ltdb->cache->attributes, "*");
 
-		if (!attrs) {
+		if (!attr_el) {
 			return ret;
 		}
 	}
 
-	/* we avoid using strtok and friends due to their nasty
-	   interface. This is a little trickier, but much nicer
-	   from a C interface point of view */
-	while ((len = strcspn(attrs, " ,")) > 0) {
-		for (i=0;names[i].name;i++) {
-			if (strncmp(names[i].name, attrs, len) == 0 &&
-			    names[i].name[len] == 0) {
-				ret |= names[i].value;
-			}
+	for (i = 0; i < attr_el->num_values; i++) {
+		if (strcmp(ltdb_valid_attr_flags[i].name, attr_el->values[i].data) == 0) {
+			ret |= ltdb_valid_attr_flags[i].value;
 		}
-		attrs += len;
-		attrs += strspn(attrs, " ,");
 	}
 
 	talloc_free(ltdb->cache->last_attribute.name);
@@ -302,3 +298,17 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 
 	return ret;
 }
+
+int ltdb_check_at_attributes_values(const struct ldb_val *value)
+{
+	int i;
+
+	for (i = 0; ltdb_valid_attr_flags[i].name != NULL; i++) {
+		if ((strcmp(ltdb_valid_attr_flags[i].name, value->data) == 0)) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+

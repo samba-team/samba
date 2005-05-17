@@ -3,7 +3,8 @@ dn: @INDEXLIST
 @IDXATTR: objectclass
 
 dn: @ATTRIBUTES
-uid: CASE_INSENSITIVE WILDCARD
+uid: CASE_INSENSITIVE
+uid: WILDCARD
 
 dn: @SUBCLASSES
 top: person
