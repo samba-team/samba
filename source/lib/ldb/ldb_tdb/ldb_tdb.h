@@ -51,6 +51,7 @@ struct ltdb_private {
 #define LTDB_FLAG_WILDCARD         (1<<2)
 #define LTDB_FLAG_OBJECTCLASS      (1<<3)
 #define LTDB_FLAG_HIDDEN           (1<<4)
+#define LTDB_FLAG_NONE             0 
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
@@ -58,6 +59,7 @@ int ltdb_cache_reload(struct ldb_module *module);
 int ltdb_cache_load(struct ldb_module *module);
 int ltdb_increase_sequence_number(struct ldb_module *module);
 int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name);
+int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_index.c  */
 
