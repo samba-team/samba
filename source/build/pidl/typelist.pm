@@ -54,10 +54,6 @@ my $scalars = {
 				C_TYPE		=> "int64_t",
 				NDR_ALIGN	=> 8
 			},
-	"uint64"	=> {
-				C_TYPE		=> "uint64_t",
-				NDR_ALIGN	=> 8
-			},
 	"hyper"		=> {
 				C_TYPE		=> "uint64_t",
 				NDR_ALIGN	=> 8
@@ -217,7 +213,7 @@ sub bitmap_type_fn($)
 	} elsif (util::has_property($bitmap, "bitmap16bit")) {
 		return "uint16";
 	} elsif (util::has_property($bitmap, "bitmap64bit")) {
-		return "uint64";
+		return "hyper";
 	}
 	return "uint32";
 }
