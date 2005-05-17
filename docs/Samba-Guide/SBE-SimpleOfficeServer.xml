@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="simple">
-  <title>No Frills Samba Servers</title>
+  <title>No-Frills Samba Servers</title>
 
 <?latex \pagenumbering{arabic} ?>
 
@@ -10,7 +10,7 @@
 	is the end of the road because their needs will have been adequately met. For others, this chapter is
 	the beginning of a journey that will take them well past the contents of this book. This book provides
 	example configurations of, for the greater part, complete networking solutions. The intent of this book
-	is to help you to get your Samba installation working with least pain and agony.
+	is to help you to get your Samba installation working with least amount of pain and aggravation.
 	</para>
 
 <sect1>
@@ -20,14 +20,14 @@
 	This chapter lays the groundwork for understanding the basics of Samba operation. 
 	Instead of a bland technical discussion, each principle is demonstrated by way of a 
 	real-world scenario for which a working solution<footnote><para>The examples given mirror those documented
-	in TOSHARG Chapter 2, Section 2.3.1. You may gain additional insight from the Stand-alone server
-	configurations covered in TOSHARG sections 2.3.1.2 through 2.3.1.4.
+	in The Official Samba-3 HOWTO and Reference Guide (TOSHARG) Chapter 2, Section 2.3.1. You may gain additional
+	insight from the standalone server configurations covered in TOSHARG, sections 2.3.1.2 through 2.3.1.4.
 	</para></footnote> is fully described.
 	</para>
 
 	<para>
 	The practical exercises take you on a journey through a drafting office, a charity administration
-	office, and an accounting office. You may choose to apply any or all of these to your own environment.
+	office, and an accounting office. You may choose to apply any or all of these exercises to your own environment.
 	</para>
 
 	<para>
@@ -45,12 +45,12 @@
 	<para>
 	Each case presented highlights different aspects of Windows networking for which a simple 
 	Samba-based solution can be provided. Each has subtly different requirements taken from real-world cases.
-	Each is briefly reviewed to cover points of highlight. In each example, instructions are based
+	The cases are briefly reviewed to cover important points. Instructions are based
 	on the assumption that the official Samba Team RPM package has been installed.
 	</para>
 
 	<para>
-	This chapter has three assignments built around ficticious companies: 
+	This chapter has three assignments built around fictitious companies: 
 	</para>
 
 	<para>
@@ -69,9 +69,9 @@
 	<title>Drafting Office</title>
 
 	<para>
-	Our fictitious company is called <emphasis>Abmas Design Inc.</emphasis> This is a three-person
+	Our fictitious company is called <emphasis>Abmas Design, Inc.</emphasis> This is a three-person
 	computer-aided design (CAD) business that often has more work than can be handled. The 
-	business owner hires contract drafts-people from wherever he can. They bring their own 
+	business owner hires contract draftspeople from wherever he can. They bring their own 
 	notebook computers into the office. There are four permanent drafting machines. Abmas has a 
 	collection of over 10 years of plans that must be available for all draftsmen to reference. 
 	Abmas hires the services of an experienced network engineer to update the 
@@ -94,7 +94,7 @@
 	    <primary>consultant</primary>
 	  </indexterm>
 	The four permanent drafting machines (Microsoft Windows workstations) have attached printers 
-	and plotters that are shared on a peer-to-peer basis by any/all network users. The intent 
+	and plotters that are shared on a peer-to-peer basis by any and all network users. The intent 
 	is to continue to share printers in this manner. The three permanent staff work together with 
 	all contractors to store all new work on one PC. A daily copy is made of the work storage 
 	area to another PC for safekeeping.  When the network consultant arrives, the weekly work 
@@ -106,10 +106,8 @@
 		<sect3>
 		<title>Dissection and Discussion</title>
 
-	  <para><indexterm>
-	      <primary>file server</primary>
-	      <secondary>read-only</secondary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>file server</primary><secondary>read-only</secondary></indexterm>
 		The requirements for this server installation demand simplicity. An anonymous read-only
 		file server adequately meets all needs. The network consultant determines how
 		to upload all files from the weekly storage area to the server. This installation should
@@ -118,18 +116,18 @@
 
 		<para>
 		It is not necessary to have specific users on the server. The site has a method for storing
-		all design files (plans). Each plan is stored in a directory that is named YYYYWW<footnote><para>
+		all design files (plans). Each plan is stored in a directory that is named YYYYWW,<footnote><para>
 		This information is given purely as an example of how data may be stored in such a way that it
 		will be easy to locate records at a later date. The example is not meant to imply any instructions
-		that may be construed as essential to the design of the solution, this is something you will almost
-		certainly want to determine for yourself.</para></footnote>, where
+		that may be construed as essential to the design of the solution; this is something you will almost
+		certainly want to determine for yourself.</para></footnote> where
 		YYYY is the year, and WW is the week of the year. This arrangement allows work to be stored
 		by week of year to preserve the filing technique the site is familiar with.
-		There is another customer directory that is alphabetically listed. At the top level are 26
-		directories (A-Z), in each is a second level of directory for the first plus second letter of the name
+		There is also a customer directory that is alphabetically listed. At the top level are 26
+		directories (A-Z), in each is a second-level of directory for the first plus second letters of the name
 		(A-Z); inside each is a directory by the customers' name. Inside each directory is a symbolic
-		link to each design drawing/plan. This way of storing customer data files permits all
-		plans to be located both by customer name, as well as by the date the work was performed, without
+		link to each design drawing or plan. This way of storing customer data files permits all
+		plans to be located both by customer name and by the date the work was performed, without
 		demanding the disk space that would be needed if a duplicate file copy were to be stored. 
 		The share containing the plans is called <emphasis>Plans</emphasis>.
 		</para>
@@ -142,9 +140,9 @@
 		<para>
 		It is assumed that the server is fully installed and ready for installation and 
 		configuration of Samba 3.0.15 and any support files needed. All TCP/IP addresses 
-		have been hard coded. In our case the IP address of the Samba server is 
+		have been hard-coded. In our case the IP address of the Samba server is 
 		<constant>192.168.1.1</constant> and the netmask is <constant>255.255.255.0</constant>. 
-		The host name of the server used was <constant>server</constant>.
+		The hostname of the server used is <constant>server</constant>.
 		</para>
 
 		<procedure>
@@ -155,14 +153,11 @@
 			<ulink url="http://www.samba.org">FTP servers.</ulink>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>RPM</primary>
-		  <secondary>install</secondary>
-		</indexterm><indexterm>
-		  <primary>package</primary>
-		</indexterm>
-			Install the RPM package as using either the Red Hat Linux preferred GUI
-			tool or using the <command>rpm</command>, as follows:
+			<step><para>
+			<indexterm><primary>RPM</primary><secondary>install</secondary></indexterm>
+			<indexterm><primary>package</primary></indexterm>
+			Install the RPM package using either the Red Hat Linux preferred GUI
+			tool or the <command>rpm</command>:
 <screen>
 &rootprompt; rpm -Uvh samba-3.0.15-1.i386.rpm
 </screen>
@@ -170,20 +165,18 @@
 
 			<step><para>
 			Create a mount point for the file system that will be used to store all data files.
-			You can create a directory called <filename>/plans</filename> as follows:
+			You can create a directory called <filename>/plans</filename>:
 <screen>
 &rootprompt; mkdir /plans
 &rootprompt; chmod 755 /plans
 </screen>
-			The 755 permissions on this directory (mount point) permit the owner to read, write
+			The 755 permissions on this directory (mount point) permit the owner to read, write,
 			and execute, and the group and everyone else to read and execute only.
 			</para>
 
-	      <para><indexterm>
-		  <primary>file system</primary>
-		  <secondary>Ext3</secondary>
-		</indexterm>
-			Use Red Hat Linux system tools (refer to Red Hat instructions for instructions)
+			<para>
+			<indexterm><primary>file system</primary><secondary>Ext3</secondary></indexterm>
+			Use Red Hat Linux system tools (refer to Red Hat instructions)
 			to format the 160GB hard drive with a suitable file system. An Ext3 file system
 			is suitable. Configure this drive to automatically mount using the <filename>/plans</filename>
 			directory as the mount point.
@@ -207,24 +200,20 @@
 </smbconfexample>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>/etc/hosts</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>/etc/hosts</primary></indexterm>
 			Verify that the <filename>/etc/hosts</filename> file contains the following entry:
 <screen>
 192.168.1.1	server
 </screen>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>samba</primary>
-		  <secondary>starting samba</secondary>
-		</indexterm><indexterm>
-		  <primary>chkconfig</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>samba</primary><secondary>starting samba</secondary></indexterm>
+			<indexterm><primary>chkconfig</primary></indexterm>
 			<indexterm><primary>starting samba</primary></indexterm>
 			Use the standard system tool to start Samba and to configure it to restart
-			automatically at every system reboot. For example:
+			automatically at every system reboot. For example,
 <screen>
 &rootprompt; chkconfig smb on
 &rootprompt; /etc/rc.d/init.d/smb restart
@@ -238,21 +227,19 @@
 
 			<step><para>
 			Make certain that all clients are set to the same network address range as
-			has been used for the Samba server. For example, one client might have an IP
+			used for the Samba server. For example, one client might have an IP
 			address 192.168.1.10.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>netmask</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>netmask</primary></indexterm>
 			Ensure that the netmask used on the Windows clients matches that used
-			for the Samba server. All clients must have the same netmask. For example,
+			for the Samba server. All clients must have the same netmask, such as
 			255.255.255.0.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>workgroup</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>workgroup</primary></indexterm>
 			Set the workgroup name on all clients to <constant>MIDEARTH</constant>.
 			</para></step>
 
@@ -270,9 +257,8 @@
 		<sect3 id="validate1">
 		<title>Validation</title>
 
-	  <para><indexterm>
-	      <primary>validation</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>validation</primary></indexterm>
 		The first priority in validating the new Samba configuration should be to check
 		that Samba answers on the loop-back interface. Then it is time to check that Samba
 		answers its own name correctly. Last, check that a client can connect to the Samba
@@ -280,13 +266,10 @@
 		</para>
 
 		<procedure>
-	    <step><para><indexterm>
-		  <primary>smbd</primary>
-		</indexterm><indexterm>
-		  <primary>daemon</primary>
-		</indexterm><indexterm>
-		  <primary>smbclient</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>smbd</primary></indexterm>
+			<indexterm><primary>daemon</primary></indexterm>
+			<indexterm><primary>smbclient</primary></indexterm>
 			To check the ability to access the <command>smbd</command> daemon
 			services, execute the following:
 <screen>
@@ -305,11 +288,8 @@
         ---------          --------
         MIDEARTH           SERVER 
 </screen>
-		<indexterm>
-		  <primary>loopback</primary>
-		</indexterm><indexterm>
-		  <primary>NULL connection</primary>
-		</indexterm>
+			<indexterm><primary>loopback</primary></indexterm>
+			<indexterm><primary>NULL connection</primary></indexterm>
 			This indicates that Samba is able to respond on the loopback interface to
 			a NULL connection. The <parameter>-U%</parameter> means send an empty
 			username and an empty password. This command should be repeated after
@@ -327,12 +307,10 @@
 			<parameter>guest account</parameter> for all connections.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>Windows Explorer</primary>
-		</indexterm><indexterm>
-		  <primary>Network Neighborhood</primary>
-		</indexterm>
-			From the Windows 9x/Me client, launch Windows Explorer, 
+			<step><para>
+			<indexterm><primary>Windows Explorer</primary></indexterm>
+			<indexterm><primary>Network Neighborhood</primary></indexterm>
+			From the Windows 9x/Me client, launch Windows Explorer: 
 			<menuchoice>
 				<guiicon>[Desktop: right-click] Network Neighborhood</guiicon>
 				<guimenu>Explore</guimenu>
@@ -352,13 +330,13 @@
 	<title>Charity Administration Office</title>
 
 	<para>
-	The fictitious charity organization is called <emphasis>Abmas Vision NL</emphasis>. This is an
-	office that has five networked computers. Staff are all volunteers with frequent staff changes.
+	The fictitious charity organization is called <emphasis>Abmas Vision NL</emphasis>. This office
+	has five networked computers. Staff are all volunteers, staff changes are frequent.
 	Ms. Amy May, the director of operations, wants a no-hassle network. Anyone should be able to
 	use any PC. Only two Windows applications are used: a custom funds tracking and management package
 	that stores all files on the central server and Microsoft Word. The office prepares mail-out
-	letters, letters of invitation, and thank-you notes. All files must be stored in perpetuity.
-	The custom funds tracking and management (FTM) software has been configured to use a server named
+	letters, invitations, and thank-you notes. All files must be stored in perpetuity.
+	The custom funds tracking and management (FTM) software is configured to use a server named
 	<constant>SERVER</constant>, a share named <constant>FTMFILES</constant>, and a printer queue
 	named <constant>PRINTQ</constant> that uses preprinted stationery, thus demanding a
 	dedicated printer. This printer does not need to be mapped to a local printer on the workstations.
@@ -366,29 +344,27 @@
 
 	<para>
 	The FTM software has been in use since the days of Windows 3.11. The software was configured
-	by the vendor who has since gone out of business. The name of the identities of the file
-	server and the printer are hard coded in a configuration file that was created using a
+	by the vendor who has since gone out of business. The identities of the file
+	server and the printer are hard-coded in a configuration file that was created using a
 	setup tool that the vendor did not provide to Abmas Vision NL or to its predecessors. The
 	company that produced the software is no longer in business. In order to avoid risk of
-	any incompatibilities the share name and the name of the target print queue is being set
-	precisely as the application expects. In actual fact, share names and print queue names
-	should be treated as case insensitive (i.e.: Case does not matter) but Abmas Vision claim
-	that if the share name is not in lower case the application claims it can not find the
+	any incompatibilities, the share name and the name of the target print queue must be set
+	precisely as the application expects. In fact, share names and print queue names
+	should be treated as case insensitive (i.e., case does not matter), but Abmas Vision advises
+	that if the share name is not in lowercase, the application claims it cannot find the
 	file share.
 	</para>
 
-	<para><indexterm>
-	    <primary>print queue</primary>
-	  </indexterm><indexterm>
-	    <primary>print spooler</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>print queue</primary></indexterm>
+	<indexterm><primary>print spooler</primary></indexterm>
 	Printer handling in Samba results in a significant level of confusion. Samba presents to the
 	MS Windows client only a print queue. The Samba <command>smbd</command> process passes a
 	print job sent to it from the Windows client to the native UNIX printing system. The native
 	UNIX printing system (spooler) places the job in a print queue from which it is
 	delivered to the printer. In this book, network diagrams refer to a printer by the name 
 	of the print queue that services that printer. It does not matter what the fully qualified 
-	name (or the host name) of a network attached printer is. The UNIX print spooler is configured 
+	name (or the hostname) of a network-attached printer is. The UNIX print spooler is configured 
 	to correctly deliver all jobs to the printer.
 	</para>
 
@@ -398,15 +374,14 @@
 	used on this network.
 	</para>
 
-	<para><indexterm>
-	    <primary>SUSE Enterprise Linux Server</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>SUSE Enterprise Linux Server</primary></indexterm>
 	The central server was donated by a local computer store. It is a dual processor Pentium-III
-	server, has 1GB RAM, a 3-Ware IDE RAID Controller that has 4 x 200GB IDE hard drives, and a
+	server, has 1GB RAM, a 3-Ware IDE RAID Controller that has four 200GB IDE hard drives, and a
 	100-base-T network card. The office has 100-base-T permanent network connections that go to
-	a central hub and all equipment is new. The five network computers all are equipped with Microsoft
+	a central hub, and all equipment is new. The five network computers all are equipped with Microsoft
 	Windows Me. Funding is limited, so the server has no operating system on it. You have approval
-	to install Samba on Linux, but just make sure it works without problems. There are two HP LaserJet
+	to install Samba on Linux, provided it works without problems. There are two HP LaserJet
 	5 PS printers that are network connected.  The second printer is to be used for general
 	office and letter printing. Your recommendation to allow only the Linux server to print directly
 	to the printers was accepted. You have supplied SUSE Enterprise Linux Server 9 and
@@ -417,22 +392,19 @@
 		<title>Dissection and Discussion</title>
 
 		<para>
-	    <indexterm><primary>force user</primary></indexterm><indexterm>
-	      <primary>nt acl support</primary>
-	    </indexterm><indexterm>
-	      <primary>UID</primary>
-	    </indexterm><indexterm>
-	      <primary>Posix</primary>
-	    </indexterm>
-		This installation demands simplicity. Frequent turn-over of volunteer staff would indicate that
+		<indexterm><primary>force user</primary></indexterm>
+		<indexterm><primary>nt acl support</primary></indexterm>
+		<indexterm><primary>UID</primary></indexterm>
+		<indexterm><primary>Posix</primary></indexterm>
+		This installation demands simplicity. Frequent turnover of volunteer staff indicates that
 		a network environment that requires users to logon might be problematic. It is suggested that the
 		best solution for this office would be one where the user can log onto any PC with any username
 		and password. Samba can accommodate an office like this by using the <parameter>force user</parameter>
-		parameter in share and printer definitions. The use of the <parameter>force user</parameter>
-		ensures that all files are owned by same user identifier (UID) and thus ensures that there
+		parameter in share and printer definitions. Using the <parameter>force user</parameter>
+		parameter ensures that all files are owned by same user identifier (UID) and thus that there
 		will never be a problem with file access due to file access permissions. Additionally, you elect
-		to use the <parameter>nt acl support = No</parameter> option to ensure that no attempts can be
-		made to write access control lists (Posix type) to any file or directory. This prevents
+		to use the <parameter>nt acl support = No</parameter> option to ensure that
+		access control lists (Posix type) cannot be written to any file or directory. This prevents
 		an inadvertent ACL from overriding actual file permissions.
 		</para>
 
@@ -441,51 +413,49 @@
 		<indexterm><primary>SGID</primary></indexterm>
 		<indexterm><primary>security</primary><secondary>share mode</secondary></indexterm>
 		This organization is a prime candidate for Share Mode security. The <parameter>force user</parameter>
-		allows all files to be owned by the same user and group. In addition to this, it would not hurt to
+		allows all files to be owned by the same user and group. In addition, it would not hurt to
 		set SUID and set SGID shared directories. This means that all new files that are created, no matter
 		who creates it, are owned by the owner or group of the directory in which they are created.
-		For further information regarding the significance of the SUID/SGID settings, see 
+		For further information regarding the significance of the SUID/SGID settings, see Appendix A, 
 		<link linkend="ch12-SUIDSGID"/>.
 		</para>
 
 		<para>
 		<indexterm><primary>CUPS</primary></indexterm>
-	    <indexterm><primary>printing</primary><secondary>raw</secondary></indexterm><indexterm>
-	      <primary>Red Hat Linux</primary>
-	    </indexterm><indexterm>
-	      <primary>SUSE Linux</primary>
-	    </indexterm>
+		<indexterm><primary>printing</primary><secondary>raw</secondary></indexterm>
+		<indexterm><primary>Red Hat Linux</primary></indexterm>
+		<indexterm><primary>SUSE Linux</primary></indexterm>
 		All client workstations print to a print queue on the server. This ensures that print jobs
-		continue to print in the event that a user may shut down the workstation immediately after
+		continue to print in the event that a user shuts down the workstation immediately after
 		sending a job to the printer. Today, both Red Hat Linux and SUSE Linux use CUPS-based printing. 
-		Older Linux systems offered a choice to use either the LPRng printing system, or CUPS. It appears, however,
-		that CUPS has now become the leading UNIX printing technology.
+		Older Linux systems offered a choice between the LPRng printing system or CUPS. It appears, however,
+		that CUPS has become the leading UNIX printing technology.
 		</para>
 
 		<para>
 		<indexterm><primary>print queue</primary></indexterm>
 		The print queues are set up as <constant>Raw</constant> devices, which means that CUPS will 
-		not do intelligent print processing, and vendor supplied drivers be installed locally on the 
+		not do intelligent print processing, and vendor-supplied drivers must be installed locally on the 
 		Windows clients.
 		</para>
 
 		<para>
-		The hypothetical software (Funds Tracking and Management) referred to is representative of 
+		The hypothetical software, FTM, is representative of 
 		custom-built software that directly uses a NetBIOS interface. Most such software originated in
-		the days of MS/PC DOS. NetBIOS names are upper-case (and functionally are case insensitive), 
-		thus some old software applications would permit only upper-case names to be entered.
-		Some such applications were later ported to MS Windows but retain the upper-case network
+		the days of MS/PC DOS. NetBIOS names are uppercase (and functionally are case insensitive), 
+		so some old software applications would permit only uppercase names to be entered.
+		Some such applications were later ported to MS Windows but retain the uppercase network
 		resource naming conventions because customers are familiar with that. We made the decision
-		to name shares and print queues for this application in upper-case also for the same reason.
-		Nothing would break if you were to use lower-case names, but that decision might create a need
-		to re-educate staff &smbmdash; something well avoided at this time.
+		to name shares and print queues for this application in uppercase for the same reason.
+		Nothing would break if we were to use lowercase names, but that decision might create a need
+		to retrain staff &smbmdash; something well avoided at this time.
 		</para>
 
 		<para>
 		NetBIOS networking does not print directly to a printer. Instead, all printing is done to a
 		print queue. The print spooling system is responsible for communicating with the physical
-		printer. In this example, therefore, the resource that is referred to as <constant>PRINTQ</constant>
-		really is just a print queue. The name of the print queue is held to be representative of
+		printer. In this example, therefore, the resource called <constant>PRINTQ</constant>
+		really is just a print queue. The name of the print queue is representative of
 		the device to which the print spooler delivers print jobs.
 		</para>
 
@@ -496,9 +466,9 @@
 
 		<para>
 		It is assumed that the server is fully installed and ready for configuration of
-		Samba 3.0.15 and for necessary support files. All TCP/IP addresses should be hard coded.
+		Samba 3.0.15 and for necessary support files. All TCP/IP addresses should be hard-coded.
 		In our case, the IP address of the Samba server is 192.168.1.1 and the netmask is
-		255.255.255.0. The host name of the server used was <constant>server</constant>.
+		255.255.255.0. The hostname of the server used is <constant>server</constant>.
 		The office network is built as shown in <link linkend="charitynet"/>.
 		</para>
 
@@ -510,21 +480,18 @@
 		<procedure>
 		<title>Samba Server Configuration</title>
 
-	    <step><para><indexterm>
-		  <primary>groupadd</primary>
-		</indexterm>
-			Create a group account for office file storage as follows:
+			<step><para>
+			<indexterm><primary>groupadd</primary></indexterm>
+			Create a group account for office file storage:
 <screen>
 &rootprompt; groupadd office
 </screen>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>useradd</primary>
-		</indexterm><indexterm>
-		  <primary>passwd</primary>
-		</indexterm>
-			Create a user account for office file storage as follows:
+			<step><para>
+			<indexterm><primary>useradd</primary></indexterm>
+			<indexterm><primary>passwd</primary></indexterm>
+			Create a user account for office file storage:
 <screen>
 &rootprompt; useradd -m abmas 
 &rootprompt; passwd abmas 
@@ -539,20 +506,19 @@ Password changed
 				<step><para>
 				Use the 3-Ware IDE RAID Controller firmware utilities to configure the four 200GB
 				drives as a single RAID level 5 drive, with one drive set aside as the hot spare.
-				(Refer to the 3-Ware RAID Controller Manual for the manufacturers' preferred procedure.)
+				(Refer to the 3-Ware RAID Controller Manual for the manufacturer's preferred procedure.)
 				The resulting drive has a capacity of approximately 500GB of usable space.
 				</para></step>
 
-	    <step><para><indexterm>
-		  <primary>permissions</primary>
-		</indexterm>
+				<step><para>
+				<indexterm><primary>permissions</primary></indexterm>
 				Create a mount point for the file system that can be used to store all data files.
-				Create a directory called <filename>/data</filename> as follows:
+				Create a directory called <filename>/data</filename>:
 <screen>
 &rootprompt; mkdir /data
 &rootprompt; chmod 755 /data
 </screen>
-				The 755 permissions on this directory (mount point) permit the owner to read, write and execute,
+				The 755 permissions on this directory (mount point) permit the owner to read, write, and execute,
 				and the group and everyone else to read and execute only.
 				</para></step>
 
@@ -564,9 +530,9 @@ Password changed
 				</para></step>
 
 				<step><para>
-				Under the directory called <filename>/data</filename> create two directories
+				Under the directory called <filename>/data</filename>, create two directories
 				named <filename>ftmfiles</filename> and <filename>officefiles</filename>, and set
-				ownership and permissions as follows:
+				ownership and permissions:
 <screen>
 &rootprompt; mkdir -p /data/{ftmfiles,officefiles/{letters,invitations,misc}}
 &rootprompt; chown -R abmas.office /data
@@ -581,18 +547,18 @@ Password changed
 /data/officefiles/invitations
 /data/officefiles/misc
 </programlisting>
+				<indexterm><primary>TOSHARG</primary></indexterm>
 				The <command>chown</command> operation sets the owner to the user <constant>abmas</constant>
-				and the group to <constant>office</constant> on all directories just created. And
-				the <command>chmod</command> operation recursively sets the permissions so that
-				the owner and group have SUID/SGID with read/write/execute permission, and everyone else has 
-				read and execute permission. This means that all files and directories are created
-				with the same owner and group as the directory in which they are created. Any new
-				directories created still have the same owner, group, and permissions as the
-				directory they are in. This should eliminate all permissions-based file access problems.
-				For more information on this subject, refer to <emphasis>TOSHARG</emphasis>,
-				Chapter on: <emphasis>File, Directory and Share Access Controls</emphasis>, or refer to
-				the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
-				
+				and the group to <constant>office</constant> on all directories just created.  It recursively
+				sets the permissions so that the owner and group have SUID/SGID with read, write, and execute
+				permission, and everyone else has read and execute permission. This means that all files and
+				directories are created with the same owner and group as the directory in which they are
+				created. Any new directories created still have the same owner, group, and permissions as the
+				directory they are in. This should eliminate all permissions-based file access problems.  For
+				more information on this subject, refer to The Official Samba-3 HOWTO and Reference Guide
+				(<emphasis>TOSHARG)</emphasis>, Chapter on: <emphasis>File, Directory and Share Access
+				Controls</emphasis>, or refer to the UNIX man page for the <command>chmod</command> and the
+				<command>chown</command> commands.
 				</para></step>
 
 				<step><para>
@@ -612,14 +578,13 @@ Password changed
 
 				<step><para>
 				Configure the printers with the IP address as shown in <link linkend="charitynet"/>.
-				Follow the instructions in the manufacturers' manual to permit printing to port 9100,
+				Follow the instructions in the manufacturer's manual to permit printing to port 9100
 				so that the CUPS spooler can print using raw mode protocols.
 				</para></step>
 
-	    <step><para><indexterm>
-		  <primary>lpadmin</primary>
-		</indexterm>
-				Configure the CUPS Print Queues as follows:
+				<step><para>
+				<indexterm><primary>lpadmin</primary></indexterm>
+				Configure the CUPS Print Queues:
 <screen>
 &rootprompt; lpadmin -p PRINTQ -v socket://192.168.1.20:9100 -E
 &rootprompt; lpadmin -p hplj5 -v socket://192.168.1.30:9100 -E
@@ -628,20 +593,17 @@ Password changed
 				</para></step>
 
 				<step><para>
-		<indexterm><primary>mime type</primary></indexterm><indexterm>
-		  <primary>/etc/cups/mime.convs</primary>
-		</indexterm><indexterm>
-		  <primary>application/octet-stream</primary>
-		</indexterm>
+				<indexterm><primary>mime type</primary></indexterm>
+				<indexterm><primary>/etc/cups/mime.convs</primary></indexterm>
+				<indexterm><primary>application/octet-stream</primary></indexterm>
 				Edit the file <filename>/etc/cups/mime.convs</filename> to uncomment the line:
 <screen>
 application/octet-stream     application/vnd.cups-raw      0     -
 </screen>
 				</para></step>
 
-	    <step><para><indexterm>
-		  <primary>/etc/cups/mime.types</primary>
-		</indexterm>
+				<step><para>
+				<indexterm><primary>/etc/cups/mime.types</primary></indexterm>
 				Edit the file <filename>/etc/cups/mime.types</filename> to uncomment the line:
 <screen>
 application/octet-stream
@@ -651,15 +613,13 @@ application/octet-stream
 				<step><para>
 				<indexterm><primary>starting samba</primary></indexterm>
 				Use the standard system tool to start Samba and CUPS to configure them to restart
-				automatically at every system reboot. For example:
+				automatically at every system reboot. For example,
 				</para>
 
 				<para>
 				<indexterm><primary>starting samba</primary></indexterm>
-		<indexterm><primary>starting
-		    CUPS</primary></indexterm><indexterm>
-		  <primary>chkconfig</primary>
-		</indexterm>
+				<indexterm><primary>starting CUPS</primary></indexterm>
+				<indexterm><primary>chkconfig</primary></indexterm>
 <screen>
 &rootprompt; chkconfig smb on
 &rootprompt; chkconfig cups on
@@ -718,7 +678,7 @@ application/octet-stream
 
 				<step><para>
 				Ensure that the netmask used on the Windows clients matches that used
-				for the Samba server. All clients must have the same netmask. For example,
+				for the Samba server. All clients must have the same netmask, such as
 				<constant>255.255.255.0</constant>.
 				</para></step>
 
@@ -732,32 +692,28 @@ application/octet-stream
 				Set the workgroup name on all clients to <constant>MIDEARTH</constant>.
 				</para></step>
 
-	    <step><para><indexterm>
-		  <secondary>logon</secondary>
-		</indexterm>
+				<step><para>
+				<indexterm><secondary>logon</secondary></indexterm>
 				Install the <quote>Client for Microsoft Networks.</quote> Ensure that the only option
 				enabled in its properties is the option <quote>Logon and restore network connections.</quote>
 				</para></step>
 
 				<step><para>
 				Click <guibutton>OK</guibutton> when you are prompted to reboot the system. Reboot the
-				system, then logon using any user name and password you choose.
+				system, then log on using any username and password you choose.
 				</para></step>
 
-	    <step><para><indexterm>
-		  <primary>My Network Places</primary>
-		</indexterm>
+				<step><para>
+				<indexterm><primary>My Network Places</primary></indexterm>
 				Verify on each client that the machine called <constant>SERVER</constant>
 				is visible in <guimenu>My Network Places</guimenu>, that it is
 				possible to connect to it and see the share <guimenuitem>office</guimenuitem>,
 				and that it is possible to open that share to reveal its contents.
 				</para></step>
 
-	    <step><para><indexterm>
-		  <primary>password caching</primary>
-		</indexterm><indexterm>
-		  <primary>regedit</primary>
-		</indexterm>
+				<step><para>
+				<indexterm><primary>password caching</primary></indexterm>
+				<indexterm><primary>regedit</primary></indexterm>
 				Disable password caching on all Windows 9x/Me machines using the registry change file
 				shown in <link linkend="MEreg"/>. Be sure to remove all files that have the
 				<filename>PWL</filename> extension that are in the <filename>C:\WINDOWS</filename>
@@ -768,11 +724,11 @@ application/octet-stream
 REGEDIT4
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\
-	Windows\CurrrentVersion\Policies\Network]
+	Windows\CurrentVersion\Policies\Network]
 	"DisablePwdCaching"=dword:00000001
 </screen>
 </example>
-				The best way to apply this is to save the patch in a file called 
+				The best way to apply this change is to save the patch in a file called 
 				<filename>ME-dpwc.reg</filename> and then execute:
 <screen>
 C:\WINDOWS: regedit ME-dpwc.reg
@@ -780,22 +736,20 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</para></step>
 
 				<step><para>
-				Instruct all users to log onto the workstation using a name of their own
-				choosing, with a password of their own choosing. The Samba server has been
+				Instruct all users to log onto the workstation using a name and password of their own
+				choosing. The Samba server has been
 				configured to ignore the username and password given.
 				</para></step>
 
 				<step><para>
 				On each Windows Me workstation, configure a network drive mapping to drive <filename>G:</filename>
 				that redirects to the uniform naming convention (UNC) resource 
-				<filename>\\server\office</filename>. Make this a permanent drive connection as follows:
+				<filename>\\server\office</filename>. Make this a permanent drive connection:
 				</para>
 					<procedure>
-					<title>Creating Permanent Drive Mappings</title>
-
 						<step><para>
 							<menuchoice>
-								<guimenu>(Right-click) My Network</guimenu>
+								Right-click <guimenu>My Network</guimenu>
 								<guimenuitem>Map Network Drive...</guimenuitem>
 							</menuchoice>
 						</para></step>
@@ -818,12 +772,10 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</step>
 
 				<step><para>
-				On each workstation, install the Funds Tracking and Management software following the
+				On each workstation, install the FTM software following the
 				manufacturer's instructions.
 				</para>
 					<procedure>
-					<title>Handling Application Needs</title>
-
 					<step><para>
 					During installation, you are prompted for the name of the Windows 98
 					server. Enter the name <constant>SERVER</constant>.
@@ -848,12 +800,10 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</para></step>
 
 				<step><para>
-				Install a printer on each using the following steps:
+				Install a printer on each workstation using the following steps:
 				</para>
 
 					<procedure>
-					<title>Printer Installation Steps</title>
-
 						<step><para>
 						Click <menuchoice>
 							<guimenu>Start</guimenu>
@@ -866,18 +816,16 @@ C:\WINDOWS: regedit ME-dpwc.reg
 						</para></step>
 
 						<step><para>
-						Click <guibutton>Next</guibutton>. In the panel labeled
-						<guimenuitem>Manufacturer:</guimenuitem>, select <constant>HP</constant>.
-						In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
+						Click <guibutton>Next</guibutton>. In the Manufacturer: panel, select
+						<constant>HP</constant>. In the Printers: panel, select the printer called
 						<constant>HP LaserJet 5/5M Postscript</constant>. Click <guibutton>Next</guibutton>.
 						</para></step>
 
 						<step><para>
-						In the panel labeled <guimenuitem>Available ports:</guimenuitem>, select
-						<constant>FILE:</constant>. Accept the default printer name by clicking
-						<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
-						test page?</quote>, click <guimenuitem>No</guimenuitem>. Click
-						<guibutton>Finish</guibutton>.
+						In the Available ports: panel, select <constant>FILE:</constant>. Accept the
+						default printer name by clicking <guibutton>Next</guibutton>. When asked,
+						<quote>Would you like to print a test page?</quote>, click
+						<guimenuitem>No</guimenuitem>. Click <guibutton>Finish</guibutton>.
 						</para></step>
 
 						<step><para>
@@ -891,7 +839,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 						</para></step>
 
 						<step><para>
-						In the panel labeled <guimenuitem>Network</guimenuitem>, enter the name of
+						In the Network panel, enter the name of
 						the print queue on the Samba server as follows: <constant>\\SERVER\hplj5</constant>.
 						Click <menuchoice> 
 							<guibutton>OK</guibutton>
@@ -928,37 +876,36 @@ C:\WINDOWS: regedit ME-dpwc.reg
 	<title>Accounting Office</title>
 
 	<para>
-	The office of Abmas Accounting Inc. is a 40-year-old family-run business. There are nine permanent
+	Abmas Accounting is a 40-year-old family-run business. There are nine permanent
 	computer users. The network clients were upgraded two years ago. All computers run Windows 2000
 	Professional. This year the server will be upgraded from an old Windows NT4 server (actually
-	running Windows NT4 Workstation, which worked fine as there were fewer than 10 users) that has
-	run in workgroup (Stand-Alone) mode, to a new Linux server running Samba.
+	running Windows NT4 Workstation, which worked fine for fewer than 10 users) that has
+	run in workgroup (standalone) mode, to a new Linux server running Samba.
 	</para>
 
 	<para>
 	The office does not want a Domain Server. Mr. Alan Meany wants to keep the Windows 2000 Professional
 	clients running as workgroup machines so that any staff member can take a machine home and keep 
-	working.  It has worked well so far and your task is to replace the old server. All users have 
+	working.  It has worked well so far, and your task is to replace the old server. All users have 
 	their own workstation logon (you configured it that way when the machines were installed). 
 	Mr. Meany wants the new system to operate the same way as the old Windows NT4 server &smbmdash; users 
 	cannot access each others' files, but he can access everyone's files. Each person's work files are 
-	in a separate share on the server. Users logon to their Windows workstation with their username 
+	in a separate share on the server. Users log on to their Windows workstation with their username 
 	and enter an assigned password; they do not need to enter a password when accessing their files 
 	on the server.
 	</para>
 
-	<para><indexterm>
-	    <primary>Red Hat Linux</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Red Hat Linux</primary></indexterm>
 	The new server will run Red Hat Fedora Core2. You should install Samba-3.0.15 and 
-	copy all files off the old system to the new one. The existing Windows NT4 server has a parallel
+	copy all files from the old system to the new one. The existing Windows NT4 server has a parallel
 	port HP LaserJet 4 printer that is shared by all. The printer driver is installed on each
 	workstation. You must not change anything on the workstations. Mr. Meany gave instructions to
-	replace the server <quote>but leave everything else alone to avoid staff unrest.</quote>
+	replace the server, <quote>but leave everything else alone to avoid staff unrest.</quote>
 	</para>
 
 	<para>
-	You have tried to educate Mr. Meany and found that he has no interest to understand networking.
+	You have tried to educate Mr. Meany and found that he has no desire to understand networking.
 	He believes that Windows for Workgroups 3.11 was <quote>the best server Microsoft ever sold
 	</quote> and that Windows NT and 2000 are <quote>too fang-dangled complex!</quote>
 	</para>
@@ -972,9 +919,9 @@ C:\WINDOWS: regedit ME-dpwc.reg
 			details of networking. Passwords are never changed. In this example solution, we demonstrate the use
 			of User Mode security in a simple context. Directories should be set SGID to ensure that members
 			of a common group can access the contents. Each user has his or her own share to which only they
-			can connect. Mr. Meany's share will be a top level directory above the share point for each employee.
-			Mr. Meany is a member of the same group as his staff and is able to access their work files.
-			The well used HP LaserJet 4 is available as a service called <constant>hplj</constant>.
+			can connect. Mr. Meany's share will be a top-level directory above the share point for each employee.
+			Mr. Meany is a member of the same group as his staff and can access their work files.
+			The well-used HP LaserJet 4 is available as a service called <constant>hplj</constant>.
 			</para>
 
 			<para>
@@ -1124,11 +1071,9 @@ C:\WINDOWS: regedit ME-dpwc.reg
 			Samba FTP site.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>group account</primary>
-		</indexterm><indexterm>
-		  <primary>groupadd</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>group account</primary></indexterm>
+			<indexterm><primary>groupadd</primary></indexterm>
 			Add a group account for the office to use. Execute the following:
 <screen>
 &rootprompt; groupadd accts
@@ -1136,20 +1081,17 @@ C:\WINDOWS: regedit ME-dpwc.reg
 			</para></step>
 
 			<step><para>
-					Install the &smb.conf; file shown<footnote><para>This example makes use of the 
-			<parameter>smbpasswd</parameter> file. It does so in an obtuse way since the use of 
+			Install the &smb.conf; file shown<footnote><para>This example uses the 
+			<parameter>smbpasswd</parameter> file in an obtuse way, since the use of 
 			the <parameter>passdb backend</parameter> has not been specified in the &smb.conf; 
 			file. This means that you are depending on correct default behavior.</para></footnote> 
 			in <link linkend="acctconf"/>.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>useradd</primary>
-		</indexterm><indexterm>
-		  <primary>passwd</primary>
-		</indexterm><indexterm>
-		  <primary>smbpasswd</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>useradd</primary></indexterm>
+			<indexterm><primary>passwd</primary></indexterm>
+			<indexterm><primary>smbpasswd</primary></indexterm>
 			For each user who uses this system (see <link linkend="acctingnet"/>),
 			execute the following:
 <screen>
@@ -1165,9 +1107,8 @@ Added user "LoginID"
 </screen>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>data storage</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>data storage</primary></indexterm>
 			Create the directory structure for the file shares by executing the following:
 <screen>
 &rootprompt; mkdir -p /data
@@ -1183,10 +1124,9 @@ Added user "LoginID"
 			The data storage structure is now prepared for use.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>lpadmin</primary>
-		</indexterm>
-			Configure the CUPS Print Queues as follows:
+			<step><para>
+			<indexterm><primary>lpadmin</primary></indexterm>
+			Configure the CUPS Print Queues:
 <screen>
 &rootprompt; lpadmin -p hplj -v parallel:/dev/lp0 -E
 </screen>
@@ -1194,38 +1134,33 @@ Added user "LoginID"
 			</para></step>
 
 			<step><para>
-		<indexterm><primary>mime types</primary></indexterm><indexterm>
-		  <primary>/etc/cups/mime.convs</primary>
-		</indexterm>
+			<indexterm><primary>mime types</primary></indexterm>
+			<indexterm><primary>/etc/cups/mime.convs</primary></indexterm>
 			Edit the file <filename>/etc/cups/mime.convs</filename> to uncomment the line:
 <screen>
 application/octet-stream     application/vnd.cups-raw      0     -
 </screen>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>/etc/cups/mime.types</primary>
-		</indexterm><indexterm>
-		  <primary>application/octet-stream</primary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>/etc/cups/mime.types</primary></indexterm>
+			<indexterm><primary>application/octet-stream</primary></indexterm>
 			Edit the file <filename>/etc/cups/mime.types</filename> to uncomment the line:
 <screen>
 application/octet-stream
 </screen>
 			</para></step>
 
-	    <step><para>
+			<step><para>
 			<indexterm><primary>starting samba</primary></indexterm>
 			Use the standard system tool to start Samba and CUPS to configure them to restart
-			automatically at every system reboot. For example:
+			automatically at every system reboot. For example,
 			</para>
 
 			<para>
 			<indexterm><primary>starting samba</primary></indexterm>
-		<indexterm><primary>starting
-		    CUPS</primary></indexterm><indexterm>
-		  <primary>chkconfig</primary>
-		</indexterm>
+			<indexterm><primary>startingCUPS</primary></indexterm>
+			<indexterm><primary>chkconfig</primary></indexterm>
 <screen>
 &rootprompt; chkconfig smb on
 &rootprompt; chkconfig cups on
@@ -1235,20 +1170,19 @@ application/octet-stream
 			</para></step>
 
 			<step><para>
-			On Alan's workstation, use Windows explorer to migrate the files from the old server
+			On Alan's workstation, use Windows Explorer to migrate the files from the old server
 			to the new server. The new server should appear in the <guimenu>Network Neighborhood</guimenu>
 			with the name of the old server (<constant>CASHPOOL</constant>).
 			</para>
 
 				<procedure>
-				<title>Data Migration Steps</title>
 
 					<step><para>
-					Logon to Alan's workstation as the user <constant>alan</constant>.
+					Log on to Alan's workstation as the user <constant>alan</constant>.
 					</para></step>
 
 					<step><para>
-					Launch a second instance of Windows explorer and navigate to the share called
+					Launch a second instance of Windows Explorer and navigate to the share called
 					<guiicon>files</guiicon> on the server called <guimenu>STABLE</guimenu>.
 					</para></step>
 
@@ -1259,7 +1193,7 @@ application/octet-stream
 					</para></step>
 
 					<step><para>
-					Launch the Windows explorer, and navigate to the share called <guiicon>files</guiicon>
+					Launch the Windows Explorer, and navigate to the share called <guiicon>files</guiicon>
 					on the server called <guimenu>CASHPOOL</guimenu>. Click in the right panel, and then press
 					<guimenu>Ctrl-V</guimenu> to commence the copying process.
 					</para></step>
@@ -1270,7 +1204,7 @@ application/octet-stream
 			<step><para>
 			Verify that the files are being copied correctly from the Windows NT4 machine to the Samba-3 server.
 			This is best done on the Samba-3 server. Check the contents of the directory tree under 
-			<filename>/data</filename>. This can be done by executing the following command:
+			<filename>/data</filename> by executing the following command:
 <screen>
 &rootprompt; ls -aR /data
 </screen>
@@ -1342,7 +1276,7 @@ application/octet-stream
 	<question>
 
 		<para>
-		What makes an anonymous Samba server more simple than an non-anonymous Samba server?
+		What makes an anonymous Samba server more simple than a non-anonymous Samba server?
 		</para>
 
 	</question>
@@ -1393,8 +1327,8 @@ application/octet-stream
 	<question>
 
 		<para>
-		When would you use both the per share parameter <parameter>force user</parameter> as well
-		as setting the share root directory SUID?
+		When would you both use the per share parameter <parameter>force user</parameter> and set
+		the share root directory SUID?
 		</para>
 
 	</question>
@@ -1421,23 +1355,23 @@ application/octet-stream
 
 		<para>
 		CUPS is a print spooling system that has integrated remote management facilities, provides completely
-		automated print processing/preprocessing, and has the potential to be configured to automatically
+		automated print processing/preprocessing, and can be configured to automatically
 		apply print preprocessing filters to ensure that a print job submitted is correctly rendered for the
 		target printer. CUPS includes an image file RIP that supports printing of image files to 
-		non-PostScript printers. CUPS has lots of bells and whistles and is more like a super-charged MS Windows
-		NT/200x print monitor and processor. Its complexity can be eliminated or turbo-charged to suit
+		non-PostScript printers. CUPS has lots of bells and whistles and is more like a supercharged MS Windows
+		NT/200x print monitor and processor. Its complexity can be eliminated or turbocharged to suit
 		any fancy.
 		</para>
 
 		<para>
 		The LPRng software is an enhanced, extended, and portable implementation of the Berkeley LPR print 
-		spooler functionality. It provides the same interface and meets RFC1179 requirements. LPRng is capable
-		of being configured to act like CUPS, but it is in principle a replacement for the old Berkeley lpr/lpd
+		spooler functionality. It provides the same interface and meets RFC1179 requirements. LPRng can be
+		configured to act like CUPS, but it is in principle a replacement for the old Berkeley lpr/lpd
 		spooler. LPRng is generally preferred by those who are familiar with Berkeley lpr/lpd.
 		</para>
 
 		<para>
-		Which is better is a matter of personal taste. It depends on what you want to do and how you want to
+		Which spooling system is better is a matter of personal taste. It depends on what you want to do and how you want to
 		do it and manage it. Most modern Linux systems ship with CUPS as the default print management system.
 		</para>
 
@@ -1448,7 +1382,7 @@ application/octet-stream
 	<question>
 
 		<para>
-		When should Windows client IP addresses be hard coded?
+		When should Windows client IP addresses be hard-coded?
 		</para>
 
 	</question>
@@ -1470,7 +1404,7 @@ application/octet-stream
 	<question>
 
 		<para>
-		Under what circumstances would it be best to use a DHCP server?
+		Under what circumstances is it best to use a DHCP server?
 		</para>
 
 	</question>
@@ -1480,18 +1414,18 @@ application/octet-stream
 		In network configurations where there are mobile users, or where Windows client PCs move around
 		(particularly between offices or between subnets), it makes complete sense to control all Windows
 		client configurations using a DHCP server. Additionally, when users do tamper with the network
-		settings, the use of DHCP can be used to normalize all client settings. 
+		settings, DHCP can be used to normalize all client settings. 
 		</para>
 
 		<para>
-		One of the least appreciated benefits of using a DHCP server to assign all network client
+		One underappreciated benefit of using a DHCP server to assign all network client
 		device TCP/IP settings is that it makes it a pain-free process to change network TCP/IP
 		settings, change network addressing, or enhance the ability of client devices to
 		benefit from new network services.
 		</para>
 
 		<para>
-		Another benefit of modern DHCP servers is the ability of the DHCP server to register dynamically
+		Another benefit of modern DHCP servers is their ability to register dynamically
 		assigned IP addresses with the DNS server. The benefits of Dynamic DNS (DDNS) are considerable in 
 		a large Windows network environment.
 		</para>
@@ -1510,7 +1444,7 @@ application/octet-stream
 	<answer>
 
 		<para>
-		If this parameter is yes for a service, then no password is required to connect to the service.
+		If this parameter is set to yes for a service, then no password is required to connect to the service.
 		Privileges are those of the guest account.
 		</para>
 
@@ -1529,8 +1463,8 @@ application/octet-stream
 
 		<para>
 		Setting this parameter to <constant>Yes</constant> disables Samba's support for the SPOOLSS set of 
-		MS-RPC's and yields behavior identical to Samba 2.0.x. Windows NT/2000 clients can downgrade to 
-		using LanMan style printing commands. Windows 9x/ME are unaffected by the parameter. However, this 
+		MS-RPCs and yields behavior identical to Samba 2.0.x. Windows NT/2000 clients can downgrade to 
+		using LanMan style printing commands. Windows 9x/Me are unaffected by the parameter. However, this 
 		disables the ability to upload printer drivers to a Samba server via the Windows NT/200x Add Printer 
 		Wizard or by using the NT printer properties dialog window. It also disables the capability of 
 		Windows NT/200x clients to download print drivers from the Samba host on demand. Be extremely careful about 
@@ -1539,7 +1473,7 @@ application/octet-stream
 
 		<para>
 		The alternate parameter <parameter>use client driver</parameter> applies only to Windows NT/200x clients. It has no 
-		effect on Windows 95/98/ME clients. When serving a printer to Windows NT/200x clients without first installing a valid 
+		effect on Windows 95/98/Me clients. When serving a printer to Windows NT/200x clients without first installing a valid 
 		printer driver on the Samba host, the client is required to install a local printer driver. From this point on, 
 		the client treats the printer as a local printer and not a network printer connection. This is much the same behavior 
 		that occurs when <parameter>disable spoolss = yes</parameter>.
@@ -1547,11 +1481,11 @@ application/octet-stream
 
 		<para>
 		Under normal circumstances, the NT/200x client attempts to open the network printer using MS-RPC. Because the client 
-		considers the printer to be local, it attempts to issue the OpenPrinterEx() call requesting access rights associated 
+		considers the printer to be local, it attempts to issue the <parameter>OpenPrinterEx()</parameter> call requesting access rights associated 
 		with the logged on user. If the user possesses local administrator rights but not root privilege on the Samba host (often 
-		the case), the OpenPrinterEx() call fails. The result is that the client now displays an "Access Denied; Unable 
-		to connect" message in the printer queue window (even though jobs may be printed successfully). This parameter MUST
-		not be enabled on a print share that has valid print driver installed on the Samba server.
+		the case), the <parameter>OpenPrinterEx()</parameter> call fails. The result is that the client now displays an <quote>Access Denied; Unable 
+		to connect</quote> message in the printer queue window (even though jobs may be printed successfully). This parameter MUST
+		not be enabled on a print share that has a valid print driver installed on the Samba server.
 		</para>
 
 	</answer>
@@ -1581,7 +1515,7 @@ application/octet-stream
 	<question>
 
 		<para>
-		The example of Abmas Accounting Inc. uses User Mode security. How does this provide anonymous access?
+		The example of Abmas Accounting uses User Mode security. How does this provide anonymous access?
 		</para>
 
 	</question>
@@ -1591,7 +1525,7 @@ application/octet-stream
 		The example used does not provide anonymous access. Since the clients are all Windows 2000 Professional,
 		and given that users are logging onto their machines, by default the client attempts to connect to
 		a remote server using currently logged in user credentials. By ensuring that the user's login ID and
-		password is the same as those set on the Samba server, access is transparent and does not require
+		password are the same as those set on the Samba server, access is transparent and does not require
 		separate user authentication.
 		</para>
 
