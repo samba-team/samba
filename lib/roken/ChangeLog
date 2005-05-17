@@ -1,3 +1,13 @@
+2005-05-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: only link with dblib if we need it
+	
+	* Makefile.am: add test_readenv
+	
+	* test-readenv.c: test for read_environment()
+	
+	* environment.c: eliminate duplicates
+	
 2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* issuid.c (issuid): change the #ifdef order to avoid unreachable
