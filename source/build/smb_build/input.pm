@@ -54,7 +54,9 @@ sub check_subsystem($$)
 		return;
 	}
 	
-	$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
+	unless(defined($subsys->{OUTPUT_TYPE})) {
+		$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
+	}
 }
 
 sub check_module($$)
@@ -173,7 +175,12 @@ sub check($)
 		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
 	}
 
-	foreach my $part (values %{$CTX->{INPUT}}) {
+	foreach my $k (keys %{$CTX->{INPUT}}) {
+		my $part = $CTX->{INPUT}->{$k};
+		if (not defined($part->{TYPE})) {
+			print STDERR "$k does not have a type set.. Perhaps it's only mentioned in a .m4 but not in a .mk file?\n";
+			next;
+		}
 		check_subsystem($CTX, $part) if ($part->{TYPE} eq "SUBSYSTEM");
 		check_module($CTX, $part) if ($part->{TYPE} eq "MODULE");
 		check_library($CTX, $part) if ($part->{TYPE} eq "LIBRARY");
