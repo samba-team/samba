@@ -281,6 +281,33 @@ int ltdb_unlock_read(struct ldb_module *module)
 	return 0;
 }
 
+/*
+  check special dn's have valid attributes
+  currently only @ATTRIBUTES is checked
+*/
+int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *msg)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	int i, j;
+
+	if (strcmp(msg->dn, LTDB_ATTRIBUTES) != 0) {
+		return 0;
+	}
+
+	/* we have @ATTRIBUTES, let's check attributes are fine */
+	/* should we check that we deny multivalued attributes ? */
+	for (i = 0; i < msg->num_elements; i++) {
+		for (j = 0; j < msg->elements[i].num_values; j++) {
+			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
+				ltdb->last_err_string = "Invalid attribute value in an @ATTRIBUTES entry";
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 
 /*
   we've made a modification to a dn - possibly reindex and 
@@ -351,6 +378,11 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	ltdb->last_err_string = NULL;
 
+	ret = ltdb_check_special_dn(module, msg);
+	if (ret != 0) {
+		return ret;
+	}
+	
 	if (ltdb_lock(module, LDBLOCK) != 0) {
 		return -1;
 	}
@@ -359,7 +391,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 		ltdb_unlock(module, LDBLOCK);
 		return -1;
 	}
-	
+
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == 0) {
@@ -736,6 +768,11 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	ltdb->last_err_string = NULL;
 
+	ret = ltdb_check_special_dn(module, msg);
+	if (ret != 0) {
+		return ret;
+	}
+	
 	if (ltdb_lock(module, LDBLOCK) != 0) {
 		return -1;
 	}
