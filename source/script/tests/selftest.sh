@@ -41,11 +41,14 @@ EOF
 
 ADDARG="-s $CONFFILE"
 
-$SRCDIR/bin/smbd -s $CONFFILE -M single || exit 1
+rm -f smbd_test.fifo
+mkfifo smbd_test.fifo
+$SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < smbd_test.fifo || exit 1 &
 sleep 2
-$SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
-$SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
-$SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
-$SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD $ADDARG || exit 1
-$SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || exit 1
-kill `cat $PIDDIR/smbd.pid`
+(
+ $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
+ $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
+ $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
+ $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD $ADDARG || exit 1
+ $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || exit 1
+) 9>smbd_test.fifo
