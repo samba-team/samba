@@ -277,6 +277,9 @@ static BOOL prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 	prs_set_offset( ps, 0x1c );
 	if ( !prs_uint32( "block_size2", ps, depth, &block_size2 ))
 		return False;
+
+	if ( MARSHALLING(ps) )
+		hbin->dirty = True;
 	
 
 	return True;
@@ -666,7 +669,7 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
 {
 	prs_struct *ps = &hbin->ps;
-	uint16 tag;
+	uint16 tag = 0xFFFF;
 	uint32 data_size, start_off, end_off;
 
 
@@ -689,8 +692,6 @@ static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	if ( !prs_uint16( "tag", ps, depth, &tag))
 		return False;
 
-	/* if tag == 0xffff it means the sk record is not in use */
-
 	if ( !prs_uint32( "prev_sk_off", ps, depth, &sk->prev_sk_off))
 		return False;
 	if ( !prs_uint32( "next_sk_off", ps, depth, &sk->next_sk_off))
@@ -710,6 +711,9 @@ static BOOL hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	data_size = ((start_off - end_off) & 0xfffffff8 );
 	if ( data_size > sk->rec_size )
 		DEBUG(10,("Encountered reused record (0x%x < 0x%x)\n", data_size, sk->rec_size));
+
+	if ( MARSHALLING(&hbin->ps) )
+		hbin->dirty = True;
 
 	return True;
 }
@@ -866,7 +870,7 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 		return False;
 		
 	for ( i=0; i<nk->num_values; i++ ) {
-		if ( !prs_uint32( "vk_off", &hbin->ps, depth, &nk->values[i].hbin_off ) )
+		if ( !prs_uint32( "vk_off", &hbin->ps, depth, &nk->values[i].rec_off ) )
 			return False;
 	}
 
@@ -874,8 +878,8 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 		REGF_HBIN *sub_hbin = hbin;
 		uint32 new_offset;
 	
-		if ( !hbin_contains_offset( hbin, nk->values[i].hbin_off ) ) {
-			sub_hbin = lookup_hbin_block( file, nk->values[i].hbin_off );
+		if ( !hbin_contains_offset( hbin, nk->values[i].rec_off ) ) {
+			sub_hbin = lookup_hbin_block( file, nk->values[i].rec_off );
 			if ( !sub_hbin ) {
 				DEBUG(0,("hbin_prs_vk_records: Failed to find HBIN block containing offset [0x%x]\n", 
 					nk->values[i].hbin_off));
@@ -883,7 +887,7 @@ static BOOL hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 			}
 		}
 		
-		new_offset = nk->values[i].hbin_off + HBIN_HDR_SIZE - sub_hbin->first_hbin_off;
+		new_offset = nk->values[i].rec_off + HBIN_HDR_SIZE - sub_hbin->first_hbin_off;
 		if ( !prs_set_offset( &sub_hbin->ps, new_offset ) )
 			return False;
 		if ( !hbin_prs_vk_rec( "vk_rec", sub_hbin, depth, &nk->values[i], file ) )
@@ -1464,6 +1468,7 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 	block_off = REGF_BLOCKSIZE;
 	do {
 		/* cleanup before the next round */
+		cached = False;
 		if ( hbin )
 			prs_mem_free( &hbin->ps );
 
@@ -1473,7 +1478,6 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 
 			/* make sure that we don't already have this block in memory */
 
-			cached = False;
 			for ( p_hbin=file->block_list; p_hbin!=NULL; p_hbin=p_hbin->next ) {
 				if ( p_hbin->file_off == hbin->file_off ) {
 					cached = True;	
@@ -1489,9 +1493,8 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 				continue;
 			}
 		}
-
-
-	} while ( hbin && (hbin->free_size < size) );
+	/* if (cached block or (new block and not enough free space)) then continue looping */
+	} while ( cached || (hbin && (hbin->free_size < size)) );
 	
 	/* no free space; allocate a new one */
 
@@ -1758,8 +1761,8 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 
 			/* initialize offsets */
 
-			nk->sec_desc->prev_sk_off = REGF_OFFSET_NONE;
-			nk->sec_desc->next_sk_off = REGF_OFFSET_NONE;
+			nk->sec_desc->prev_sk_off = nk->sec_desc->sk_off;
+			nk->sec_desc->next_sk_off = nk->sec_desc->sk_off;
 
 			/* now update the offsets for us and the previous sd in the list */
 
@@ -1782,15 +1785,13 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 	nk->subkeys_off = REGF_OFFSET_NONE;
 	if ( (nk->num_subkeys = regsubkey_ctr_numkeys( subkeys )) != 0 ) {
 		uint32 lf_size = lf_record_data_size( nk->num_subkeys );
-		REGF_HBIN *lf_hbin;
 		uint32 namelen;
 		int i;
 		
-		lf_hbin = find_free_space( file, lf_size );
-
-		nk->subkeys.hbin = lf_hbin;
+		nk->subkeys.hbin = find_free_space( file, lf_size );
+		nk->subkeys.hbin_off = prs_offset( &nk->subkeys.hbin->ps );
 		nk->subkeys.rec_size = (lf_size-1) ^ 0xFFFFFFFF;
-		nk->subkeys_off = prs_offset( &lf_hbin->ps ) + lf_hbin->first_hbin_off - HBIN_HDR_SIZE;
+		nk->subkeys_off = prs_offset( &nk->subkeys.hbin->ps ) + nk->subkeys.hbin->first_hbin_off - HBIN_HDR_SIZE;
 
 		memcpy( nk->subkeys.header, "lf", REC_HDR_SIZE );
 		
@@ -1824,15 +1825,17 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 
 		for ( i=0; i<nk->num_values; i++ ) {
 			uint32 vk_size, namelen, datalen;
-			REGF_HBIN *vk_hbin;
 			REGISTRY_VALUE *r;
 
 			r = regval_ctr_specific_value( values, i );
 			create_vk_record( file, &nk->values[i], r );
 			vk_size = vk_record_data_size( &nk->values[i] );
-			vk_hbin = find_free_space( file, vk_size );
-			nk->values[i].hbin_off = prs_offset( &vk_hbin->ps ) + vk_hbin->first_hbin_off - HBIN_HDR_SIZE;
+			nk->values[i].hbin = find_free_space( file, vk_size );
+			nk->values[i].hbin_off = prs_offset( &nk->values[i].hbin->ps );
 			nk->values[i].rec_size = ( vk_size - 1 ) ^ 0xFFFFFFFF;
+			nk->values[i].rec_off = prs_offset( &nk->values[i].hbin->ps ) 
+				+ nk->values[i].hbin->first_hbin_off 
+				- HBIN_HDR_SIZE;
 
 			/* update the max bytes fields if necessary */
 

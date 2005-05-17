@@ -97,6 +97,7 @@ typedef struct {
 	REGF_HBIN *hbin;	/* pointer to HBIN record (in memory) containing this nk record */
 	uint32 hbin_off;	/* offset from beginning of this hbin block */
 	uint32 rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
+	uint32 rec_off;		/* offset stored in the value list */
 	
 	char header[REC_HDR_SIZE];
 	char *valuename;
