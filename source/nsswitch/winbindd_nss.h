@@ -124,14 +124,17 @@ enum winbindd_cmd {
 	 * between parent and children */
 	WINBINDD_DUAL_SID2UID,
 	WINBINDD_DUAL_SID2GID,
-	WINBINDD_DUAL_UID2NAME,
-	WINBINDD_DUAL_GID2NAME,
 	WINBINDD_DUAL_IDMAPSET,
+
+	/* Wrapper around possibly blocking unix nss calls */
+	WINBINDD_DUAL_UID2NAME,
+	WINBINDD_DUAL_NAME2UID,
+	WINBINDD_DUAL_GID2NAME,
+	WINBINDD_DUAL_NAME2GID,
+
 	WINBINDD_DUAL_USERINFO,
-	/* Return the list of aliases for a list of SIDs */
 	WINBINDD_DUAL_GETSIDALIASES,
 
-	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
 };
 
@@ -227,6 +230,7 @@ struct winbindd_request {
 		struct {
 			fstring sid;
 			fstring name;
+			BOOL alloc;
 		} dual_sid2id;
 		struct {
 			int type;

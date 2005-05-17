@@ -173,27 +173,72 @@ enum winbindd_result winbindd_dual_idmapset(struct winbindd_domain *domain,
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
+static void idmap_sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			       struct winbindd_response *response,
+			       void *c, void *private);
 
-static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			  struct winbindd_response *response,
-			  void *c, void *private)
+void idmap_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid, BOOL alloc,
+			 void (*cont)(void *private, BOOL success, uid_t uid),
+			 void *private)
 {
-	void (*cont)(void *priv, BOOL succ, const char *name) = c;
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_SID2UID;
+	sid_to_string(request.data.dual_sid2id.sid, sid);
+	request.data.dual_sid2id.alloc = alloc;
+	do_async(mem_ctx, idmap_child(), &request, idmap_sid2uid_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
+		  state->request.data.dual_sid2id.sid));
+
+	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.dual_sid2id.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Find uid for this sid and return it, possibly ask the slow remote
+	 * idmap */
+
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
+				  state->request.data.dual_sid2id.alloc ?
+				  0 : ID_QUERY_ONLY);
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
+static void idmap_sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			       struct winbindd_response *response,
+			       void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, uid_t uid) = c;
 
 	if (!success) {
-		DEBUG(5, ("Could not trigger uid2name\n"));
-		cont(private, False, NULL);
+		DEBUG(5, ("Could not trigger sid2uid\n"));
+		cont(private, False, 0);
 		return;
 	}
 
 	if (response->result != WINBINDD_OK) {
-		DEBUG(5, ("uid2name returned an error\n"));
-		cont(private, False, NULL);
+		DEBUG(5, ("sid2uid returned an error\n"));
+		cont(private, False, 0);
 		return;
 	}
 
-	cont(private, True, response->data.name.name);
+	cont(private, True, response->data.uid);
 }
+			 
+static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private);
 
 void winbindd_uid2name_async(TALLOC_CTX *mem_ctx, uid_t uid,
 			     void (*cont)(void *private, BOOL success,
@@ -227,6 +272,85 @@ enum winbindd_result winbindd_dual_uid2name(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
+static void uid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, const char *name) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger uid2name\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("uid2name returned an error\n"));
+		cont(private, False, NULL);
+		return;
+	}
+
+	cont(private, True, response->data.name.name);
+}
+
+static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private);
+
+static void winbindd_name2uid_async(TALLOC_CTX *mem_ctx, const char *name,
+				    void (*cont)(void *private, BOOL success,
+						 uid_t uid),
+				    void *private)
+{
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_NAME2UID;
+	fstrcpy(request.data.username, name);
+	do_async(mem_ctx, idmap_child(), &request, name2uid_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_name2uid(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
+{
+	struct passwd *pw;
+
+	/* Ensure null termination */
+	state->request.data.username
+		[sizeof(state->request.data.username)-1] = '\0';
+
+	DEBUG(3, ("[%5lu]: name2uid %s\n", (unsigned long)state->pid, 
+		  state->request.data.username));
+
+	pw = getpwnam(state->request.data.username);
+	if (pw == NULL) {
+		return WINBINDD_ERROR;
+	}
+
+	state->response.data.uid = pw->pw_uid;
+	return WINBINDD_OK;
+}
+
+static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, uid_t uid) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger name2uid\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("name2uid returned an error\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	cont(private, True, response->data.uid);
+}
 
 static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
@@ -276,6 +400,65 @@ enum winbindd_result winbindd_dual_gid2name(struct winbindd_domain *domain,
 
 	fstrcpy(state->response.data.name.name, gr->gr_name);
 	return WINBINDD_OK;
+}
+
+static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private);
+
+static void winbindd_name2gid_async(TALLOC_CTX *mem_ctx, const char *name,
+				    void (*cont)(void *private, BOOL success,
+						 gid_t gid),
+				    void *private)
+{
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_NAME2GID;
+	fstrcpy(request.data.groupname, name);
+	do_async(mem_ctx, idmap_child(), &request, name2gid_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_name2gid(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
+{
+	struct group *gr;
+
+	/* Ensure null termination */
+	state->request.data.groupname
+		[sizeof(state->request.data.groupname)-1] = '\0';
+
+	DEBUG(3, ("[%5lu]: name2gid %s\n", (unsigned long)state->pid, 
+		  state->request.data.groupname));
+
+	gr = getgrnam(state->request.data.groupname);
+	if (gr == NULL) {
+		return WINBINDD_ERROR;
+	}
+
+	state->response.data.gid = gr->gr_gid;
+	return WINBINDD_OK;
+}
+
+static void name2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			  struct winbindd_response *response,
+			  void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, gid_t gid) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger name2gid\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("name2gid returned an error\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	cont(private, True, response->data.gid);
 }
 
 
@@ -959,6 +1142,8 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 struct sid2uid_state {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID sid;
+	char *username;
+	uid_t uid;
 	void (*cont)(void *private, BOOL success, uid_t uid);
 	void *private;
 };
@@ -966,9 +1151,10 @@ struct sid2uid_state {
 static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 				    const char *dom_name, const char *name,
 				    enum SID_NAME_USE type);
-static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			 struct winbindd_response *response,
-			 void *c, void *private);
+static void sid2uid_noalloc_recv(void *private, BOOL success, uid_t uid);
+static void sid2uid_alloc_recv(void *private, BOOL success, uid_t uid);
+static void sid2uid_name2uid_recv(void *private, BOOL success, uid_t uid);
+static void sid2uid_set_mapping_recv(void *private, BOOL success);
 
 void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			    void (*cont)(void *private, BOOL success,
@@ -1006,6 +1192,8 @@ void winbindd_sid2uid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	state->cont = cont;
 	state->private = private;
 
+	/* Let's see if it's really a user before allocating a uid */
+
 	winbindd_lookupsid_async(mem_ctx, sid, sid2uid_lookup_sid_recv, state);
 }
 
@@ -1013,8 +1201,8 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 				    const char *dom_name, const char *name,
 				    enum SID_NAME_USE type)
 {
-	struct sid2uid_state *state = private;
-	struct winbindd_request request;
+	struct sid2uid_state *state =
+		talloc_get_type_abort(private, struct sid2uid_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookup_sid\n"));
@@ -1028,101 +1216,91 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 		return;
 	}
 
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SID2UID;
-	fstrcpy(request.data.dual_sid2id.sid, sid_string_static(&state->sid));
-	fstrcpy(request.data.dual_sid2id.name, name);
+	state->username = talloc_strdup(state->mem_ctx, name);
 
-	do_async(state->mem_ctx, idmap_child(), &request,
-		 sid2uid_recv, NULL, state);
+	/* Ask the possibly blocking remote IDMAP and allocate  */
+
+	idmap_sid2uid_async(state->mem_ctx, &state->sid, False,
+			    sid2uid_noalloc_recv, state);
 }
 
-static void sid2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			 struct winbindd_response *response,
-			 void *c, void *private)
+static void sid2uid_noalloc_recv(void *private, BOOL success, uid_t uid)
 {
-	struct sid2uid_state *state = private;
+	struct sid2uid_state *state =
+		talloc_get_type_abort(private, struct sid2uid_state);
+
+	if (success) {
+		DEBUG(10, ("found uid for sid %s in remote backend\n",
+			   sid_string_static(&state->sid)));
+		state->cont(state->private, True, uid);
+		return;
+	}
+
+	if (lp_winbind_trusted_domains_only() && 
+	    (sid_compare_domain(&state->sid, &find_our_domain()->sid) == 0)) {
+		DEBUG(10, ("Trying to go via nss\n"));
+		winbindd_name2uid_async(state->mem_ctx, state->username,
+					sid2uid_name2uid_recv, state);
+		return;
+	}
+
+	/* To be done: Here we're going to try the unixinfo pipe */
+
+	/* Now allocate a uid */
+
+	idmap_sid2uid_async(state->mem_ctx, &state->sid, True,
+			    sid2uid_alloc_recv, state);
+}
+
+static void sid2uid_alloc_recv(void *private, BOOL success, uid_t uid)
+{
+	struct sid2uid_state *state =
+		talloc_get_type_abort(private, struct sid2uid_state);
 
 	if (!success) {
-		DEBUG(5, ("Could not trigger sid2uid\n"));
+		DEBUG(5, ("Could not allocate uid\n"));
 		state->cont(state->private, False, 0);
 		return;
 	}
 
-	state->cont(state->private, True, response->data.uid);
+	state->cont(state->private, True, uid);
 }
 
-/* Child part of winbindd_sid2uid. We already know for sure it's a user, as
- * well as the user's name */
-
-enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state)
+static void sid2uid_name2uid_recv(void *private, BOOL success, uid_t uid)
 {
-	DOM_SID sid;
-	NTSTATUS result;
+	struct sid2uid_state *state =
+		talloc_get_type_abort(private, struct sid2uid_state);
+	unid_t id;
 
-	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
-		  state->request.data.dual_sid2id.sid));
-
-	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.dual_sid2id.sid));
-		return WINBINDD_ERROR;
+	if (!success) {
+		DEBUG(5, ("Could not find uid for name %s\n",
+			  state->username));
+		state->cont(state->private, False, 0);
+		return;
 	}
 
-	/* Find uid for this sid and return it, possibly ask the slow remote
-	 * idmap */
+	state->uid = uid;
 
-	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
-				  ID_QUERY_ONLY);
-
-	if (NT_STATUS_IS_OK(result))
-		return WINBINDD_OK;
-
-	/* This gets a little tricky.  If we assume that usernames are syncd
-	   between /etc/passwd and the windows domain (such as a member of a
-	   Samba domain), the we need to get the uid from the OS and not
-	   allocate one ourselves */
-	   
-	if (lp_winbind_trusted_domains_only() && 
-	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
-
-		const char *user_name = state->request.data.dual_sid2id.name;
-		struct passwd *pw = NULL;
-		unid_t id;
-			
-		/* ok...here's we know that we are dealing with our own domain
-		   (the one to which we are joined).  And we know that there
-		   must be a UNIX account for this user.  So we lookup the sid
-		   and the call getpwnam().*/
-
-		pw = getpwnam(user_name);
-		if (pw == NULL) {
-			DEBUG(0,("winbindd_sid_to_uid: 'winbind trusted "
-				 "domains only' is set but this user [%s] "
-				 "doesn't exist!\n", user_name));
-			return WINBINDD_ERROR;
-		}
-			
-		state->response.data.uid = pw->pw_uid;
-
-		id.uid = pw->pw_uid;
-		idmap_set_mapping( &sid, id, ID_USERID );
-
-		return WINBINDD_OK;
-	}
-
-	if (state->request.flags & WBFLAG_QUERY_ONLY)
-		return WINBINDD_ERROR;
-
-	result = idmap_sid_to_uid(&sid, &(state->response.data.uid), 0);
-
-	if (NT_STATUS_IS_OK(result))
-		return WINBINDD_OK;
-
-	DEBUG(4, ("Could not get uid for sid %s\n", state->request.data.sid));
-	return WINBINDD_ERROR;
+	id.uid = uid;
+	idmap_set_mapping_async(state->mem_ctx, &state->sid, id, ID_USERID,
+				sid2uid_set_mapping_recv, state);
 }
+
+static void sid2uid_set_mapping_recv(void *private, BOOL success)
+{
+	struct sid2uid_state *state =
+		talloc_get_type_abort(private, struct sid2uid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not set ID mapping for sid %s\n",
+			  sid_string_static(&state->sid)));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->cont(state->private, True, state->uid);
+}
+
 
 static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
