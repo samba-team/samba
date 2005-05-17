@@ -589,6 +589,72 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 }
 
 /****************************************************************************
+ A vfs fill sparse call.
+ Writes zeros from the end of file to len, if len is greater than EOF.
+ Used only by strict_sync.
+ Returns 0 on success, -1 on failure.
+****************************************************************************/
+
+static char *sparse_buf;
+#define SPARSE_BUF_WRITE_SIZE (32*1024)
+
+int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
+{
+	int ret;
+	SMB_STRUCT_STAT st;
+	SMB_OFF_T offset;
+	size_t total;
+	size_t num_to_write;
+	ssize_t pwrite_ret;
+
+	release_level_2_oplocks_on_change(fsp);
+	ret = SMB_VFS_FSTAT(fsp,fsp->fd,&st);
+	if (ret == -1) {
+		return ret;
+	}
+
+	if (len <= st.st_size) {
+		return 0;
+	}
+
+	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to len %.0f (%.0f bytes)\n",
+		fsp->fsp_name, (double)st.st_size, (double)len, (double)(len - st.st_size)));
+
+	flush_write_cache(fsp, SIZECHANGE_FLUSH);
+
+	if (!sparse_buf) {
+		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
+		if (!sparse_buf) {
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	offset = st.st_size;
+	num_to_write = len - st.st_size;
+	total = 0;
+
+	while (total < num_to_write) {
+		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
+
+		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fd, sparse_buf, curr_write_size, offset + total);
+		if (pwrite_ret == -1) {
+			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
+				fsp->fsp_name, strerror(errno) ));
+			return -1;
+		}
+		if (pwrite_ret == 0) {
+			return 0;
+		}
+
+		total += pwrite_ret;
+	}
+
+	set_filelen_write_cache(fsp, len);
+	return 0;
+}
+
+/****************************************************************************
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
