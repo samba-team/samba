@@ -6,8 +6,8 @@ package Test;
 
 use strict;
 use util;
+use Getopt::Long;
 
-my $idl_path = "./build/pidl/pidl.pl";
 my $cc = $ENV{CC};
 my @cflags = split / /, $ENV{CFLAGS};
 my @ldflags = split / /, $ENV{LDFLAGS};
@@ -63,9 +63,9 @@ sub generate_idlfile($$)
 	return 0;
 }
 
-sub compile_idl($$)
+sub compile_idl($$$)
 {
-	my ($filename,$idlargs) = @_;
+	my ($filename,$idl_path, $idlargs) = @_;
 
 	my @args = @$idlargs;
 	push (@args, $filename);
@@ -87,7 +87,7 @@ sub link_files($$)
 {
 	my ($exe_name,$objs) = @_;
 
-	return system($cc, @ldflags, '-I.', '-Iinclude', '-Lbin', '-lrpc', '-o', $exe_name, @$objs);
+	return system($cc, @ldflags, '-Lbin', '-lrpc', '-o', $exe_name, @$objs);
 }
 
 sub test_idl($$$$)
@@ -96,17 +96,19 @@ sub test_idl($$$$)
 
 	$| = 1;
 
-	print "Running test $name... ";
+	print "Running $name... ";
 
-	my $c_filename = $name."_test.c";
-	my $idl_filename = $name."_idl.idl";
-	my $exe_filename = $name."_exe";
+	my $outputdir = $settings->{OutputDir};
+
+	my $c_filename = $outputdir."/".$name."_test.c";
+	my $idl_filename = $outputdir."/".$name."_idl.idl";
+	my $exe_filename = $outputdir."/".$name."_exe";
 
 	return -1 if (generate_cfile($c_filename, $c, $settings->{IncludeFiles}) == -1);
 
 	return -1 if (generate_idlfile($idl_filename, $idl) == -1);
 
-	return -1 if (compile_idl($idl_filename, $settings->{'IDL-Arguments'}) == -1);
+	return -1 if (compile_idl($idl_filename, $settings->{'IDL-Compiler'}, $settings->{'IDL-Arguments'}) == -1);
 
 	my @srcs = ($c_filename);
 	push (@srcs, @{$settings->{'ExtraFiles'}});
@@ -116,17 +118,52 @@ sub test_idl($$$$)
 		return -1 if (compile_cfile($_) == -1);
 	}
 
-	return -1 if (link_files($exe_filename, \@srcs) == -1);
+	my @objs;
+	foreach (@srcs) {
+		if (/\.c$/) { s/\.c$/\.o/g; }
+		push(@objs, $_);
+	}
+
+	return -1 if (link_files($exe_filename, \@objs) == -1);
 
 	my $ret = system("./$exe_filename");
 	if ($ret != 0) {
+		$ret = $? >> 8;
 		print "failed with return value $ret\n";
 		return $ret;
+	}
+
+	unless ($settings->{Keep}) {
+		unlink(@srcs, @objs, $exe_filename, $idl_filename);
 	}
 
 	print "Ok\n";
 
 	return $ret;
+}
+
+sub GetSettings($)
+{
+	my $settings = { 
+		OutputDir => ".",
+		'IDL-Compiler' => "./build/pidl/pidl.pl"
+	};
+
+	my %opts = ();
+	GetOptions('idl-compiler=s' => \$settings->{'IDL-Compiler'},
+		'outputdir=s' => \$settings->{OutputDir},
+		'keep' => \$settings->{Keep},
+		'help' => sub { ShowHelp(); exit 1; } );
+
+	return %$settings;
+}
+
+sub ShowHelp()
+{
+	print " --idl-compiler=PATH-TO-PIDL  Override path to IDL compiler\n";
+	print " --outputdir=OUTPUTDIR        Write temporary files to OUTPUTDIR rather then .\n";
+	print " --keep                       Keep intermediate files after running test";
+	print " --help                       Show this help message\n";
 }
 
 1;
