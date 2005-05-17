@@ -45,6 +45,7 @@ my($opt_swig) = 0;
 my($opt_dcom_proxy) = 0;
 my($opt_com_header) = 0;
 my($opt_odl) = 0;
+my($opt_quiet) = 0;
 my($opt_output);
 
 my $idl_parser = new idl;
@@ -86,6 +87,7 @@ sub ShowHelp()
          --odl                 accept ODL input
          --dcom-proxy          create DCOM proxy (implies --odl)
          --com-header          create header for COM interfaces (implies --odl)
+		 --quiet               be quiet
          \n";
     exit(0);
 }
@@ -107,7 +109,8 @@ GetOptions (
 	    'keep' => \$opt_keep,
 	    'swig' => \$opt_swig,
 		'dcom-proxy' => \$opt_dcom_proxy,
-		'com-header' => \$opt_com_header
+		'com-header' => \$opt_com_header,
+		'quiet' => \$opt_quiet
 	    );
 
 if ($opt_help) {
@@ -131,7 +134,7 @@ sub process_file($)
 
 	my($pidl_file) = util::ChangeExtension($output, ".pidl");
 
-	print "Compiling $idl_file\n";
+	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
 	if ($opt_parse) {
 		$pidl = IdlParse($idl_file);
