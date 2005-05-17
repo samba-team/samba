@@ -80,7 +80,7 @@ sub bitmap_type_fn($)
 	} elsif (util::has_property($bitmap, "bitmap16bit")) {
 		return "uint16";
 	} elsif (util::has_property($bitmap, "bitmap64bit")) {
-		return "uint64";
+		return "hyper";
 	}
 	return "uint32";
 }
@@ -97,7 +97,6 @@ my %scalar_type_mappings =
      "int32"        => "int32_t",
      "uint32"       => "uint32_t",
      "int64"        => "int64_t",
-     "uint64"       => "uint64_t",
      "dlong"        => "int64_t",
      "udlong"       => "uint64_t",
      "udlongr"      => "uint64_t",
