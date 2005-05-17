@@ -566,11 +566,17 @@ fcc_get_first (krb5_context context,
     krb5_principal principal;
 
     *cursor = malloc(sizeof(struct fcc_cursor));
+    if (*cursor == NULL) {
+        krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    memset(*cursor, 0, sizeof(struct fcc_cursor));
 
     ret = init_fcc (context, id, &FCC_CURSOR(*cursor)->sp, 
 		    &FCC_CURSOR(*cursor)->fd);
     if (ret) {
 	free(*cursor);
+	*cursor = NULL;
 	return ret;
     }
     ret = krb5_ret_principal (FCC_CURSOR(*cursor)->sp, &principal);
