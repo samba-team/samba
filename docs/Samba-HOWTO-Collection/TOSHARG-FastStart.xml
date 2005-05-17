@@ -17,6 +17,25 @@ context of the chapter that covers it. We hope that this chapter is the medicine
 that has been requested.
 </para>
 
+<para>
+The information in this chapter is very sparse compared with the book <quote>Samba-3 by Example</quote>
+that was written after the original version of this book was nearly complete. Samba-3 by Example
+was the result of feedback from reviewers during the final copy editing of the first edition. It
+was interesting to see that reader feedback mirrored that given be the original reviewers.
+In any case, a month and a half was spent in doing basic research to better understand what
+new as well as experienced network administrators would best benefit from. The book Samba-3 by Example
+is the result of that research. What is presented in the few pages of this book is covered
+far more comprehensively in the second edition of Samba-3 by Example. The second edition
+of both books will be released at the same time.
+</para>
+
+<para>
+So in summary, the book <quote>The Official Samba-3 HOWTO &amp; Reference Guide</quote> is intended
+as the equivalent of a auto mechanics' repair guide. The book <quote>Samba-3 by Example</quote> is the
+equivalent of the drivers guide that explains how to drive the car. If you want complete network
+configuration examples go to <quote>Samba-3 by Example</quote>.
+</para>
+
 <sect1>
 <title>Features and Benefits</title>
 
@@ -25,7 +44,7 @@ Samba needs very little configuration to create a basic working system.
 In this chapter we progress from the simple to the complex, for each providing
 all steps and configuration file changes needed to make each work. Please note
 that a comprehensively configured system will likely employ additional smart
-features. The additional features are covered in the remainder of this document.
+features. These additional features are covered in the remainder of this document.
 </para>
 
 <para>
@@ -62,8 +81,8 @@ mirror of the system described in <link linkend="StandAloneServer"></link>, <lin
 The next example is of a secure office file and print server that will be accessible only
 to users who have an account on the system. This server is meant to closely resemble a
 Workgroup file and print server, but has to be more secure than an anonymous access machine.
-This type of system will typically suit the needs of a small office. The server does not
-provide network logon facilities, offers no Domain Control, instead it is just a network
+This type of system will typically suit the needs of a small office. The server provides no
+network logon facilities, offers no Domain Control; instead it is just a network
 attached storage (NAS) device and a print server.
 </para>
 
@@ -183,9 +202,8 @@ of the packages that are provided by the operating system vendor, or through oth
 <screen>
 &rootprompt;<userinput>testparm</userinput>
 </screen>
-			Note any error messages that might be produced. Do not proceed until you
-			obtain error-free output. An example of the output with the following file
-			will list the file.
+			Note any error messages that might be produced. Proceed only if error-free output has been
+			obtained. An example of the output with the following file will list the file.
 <screen>
 Load smb config files from /etc/samba/smb.conf
 Processing section "[data]"
@@ -359,8 +377,10 @@ Added user jackb.
 			Directory permissions should be set for public read-write with the
 			sticky-bit set as shown:
 <screen>
-&rootprompt;<userinput>chmod a+rw TX /var/spool/samba</userinput>
+&rootprompt;<userinput>chmod a+trw TX /var/spool/samba</userinput>
 </screen>
+		The purpose of setting the sticky bit is to prevent who does not own the temporary print file
+		from being able to take control of it with the potential for devious mis-use.
 			</para></listitem>
 		</itemizedlist>
 
@@ -499,7 +519,7 @@ Added user ameds.
 
 			<step><para>
 			Start Samba using the operating system administrative interface.
-			Alternately, this can be done manually by running:
+			Alternately, this can be done manually by executing:
 			<indexterm><primary>smbd</primary></indexterm>
 			<indexterm><primary>nmbd</primary></indexterm>
 			<indexterm><primary>starting samba</primary><secondary>smbd</secondary></indexterm>
@@ -507,6 +527,9 @@ Added user ameds.
 <screen>
 &rootprompt;<userinput> nmbd; smbd;</userinput>
 </screen>
+			Both applications automatically will execute as daemons. Those who are paranoid about
+			maintaining control can add the <constant>-D</constant> flag to coerce them to start
+			up in daemon mode.
 			</para></step>
 
 			<step><para>
@@ -522,18 +545,18 @@ Added user ameds.
 			Check that Samba is running correctly:
 <screen>
 &rootprompt;<userinput>smbclient -L localhost -U%</userinput>
-Domain=[MIDEARTH] OS=[UNIX] Server=[Samba-3.0.0]
+Domain=[MIDEARTH] OS=[UNIX] Server=[Samba-3.0.20]
 
 Sharename      Type      Comment
 ---------      ----      -------
 public         Disk      Data
-IPC$           IPC       IPC Service (Samba-3.0.0)
-ADMIN$         IPC       IPC Service (Samba-3.0.0)
+IPC$           IPC       IPC Service (Samba-3.0.20)
+ADMIN$         IPC       IPC Service (Samba-3.0.20)
 hplj4          Printer   hplj4
 
 Server               Comment
 ---------            -------
-OLORIN               Samba-3.0.0
+OLORIN               Samba-3.0.20
 
 Workgroup            Master
 ---------            -------
@@ -545,10 +568,10 @@ MIDEARTH             OLORIN
 			Connect to OLORIN as maryo:
 <screen>
 &rootprompt;<userinput>smbclient //olorin/maryo -Umaryo%secret</userinput>
-OS=[UNIX] Server=[Samba-3.0.0]
+OS=[UNIX] Server=[Samba-3.0.20]
 smb: \> <userinput>dir</userinput>
-.                             D        0  Sat Jun 21 10:58:16 2003
-..                            D        0  Sat Jun 21 10:54:32 2003
+.                              D        0  Sat Jun 21 10:58:16 2003
+..                             D        0  Sat Jun 21 10:54:32 2003
 Documents                      D        0  Fri Apr 25 13:23:58 2003
 DOCWORK                        D        0  Sat Jun 14 15:40:34 2003
 OpenOffice.org                 D        0  Fri Apr 25 13:55:16 2003
@@ -654,7 +677,6 @@ smb: \> <userinput>q</userinput>
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
-<smbconfoption name="use sendfile">Yes</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 			</smbconfexample></para>
 

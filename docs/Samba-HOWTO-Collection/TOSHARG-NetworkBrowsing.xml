@@ -229,7 +229,7 @@ the use of the <smbconfoption name="remote announce"/> and the
 <indexterm><primary>replication</primary><secondary>WINS</secondary></indexterm>
 As of Samba-3 WINS replication is being worked on. The bulk of the code has
 been committed, but it still needs maturation. This is not a supported feature
-of the Samba-3.0.0 release. Hopefully, this will become a supported feature
+of the Samba-3.0.20 release. Hopefully, this will become a supported feature
 of one of the Samba-3 release series.
 </para>
 

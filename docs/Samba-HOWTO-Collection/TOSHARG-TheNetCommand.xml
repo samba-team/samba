@@ -19,7 +19,7 @@ control application.
 </para>
 
 <para>
-Originally introduced with the intent to mimick the Microsoft Windows command that has the same name, the
+Originally introduced with the intent to mimic the Microsoft Windows command that has the same name, the
 <command>net</command> command has morphed into a very powerful instrument that has become an essential part
 of the Samba network administrator's toolbox. The Samba Team have introduced tools, such as
 <command>smbgroupedit, rpcclient</command> from which really useful have been integrated into the
@@ -61,7 +61,7 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	</para>
 
 	<para>
-	The establishment of interdomain trusts is achieved using the <command>net</command> command also, as
+	The establishment of inter-domain trusts is achieved using the <command>net</command> command also, as
 	may a plethora of typical administrative duties such as: user management, group management, share and
 	printer management, file and printer migration, security identifier management, and so on.
 	</para>
@@ -103,7 +103,7 @@ the infliction of self induced pain, agony and desperation. Be warned, this is a
 	</para>
 
 	<para>
-	Sambas' <command>net</command> tool implements sufficient capability to permit all common adminstrative
+	Sambas' <command>net</command> tool implements sufficient capability to permit all common administrative
 	tasks to be completed from the command line. In this section each of the essential user and group management
 	facilities are explored.
 	</para>
@@ -180,7 +180,7 @@ Engineers:x:1002:jht
 SupportEngrs:x:1003:
 </screen>
 	The following demonstrates that the use of the <command>net</command> command to add a group account
-results in immediate mapping of the POSIX group that has been created to the Windows group account as whown
+results in immediate mapping of the POSIX group that has been created to the Windows group account as shown
 here:
 <screen>
 &rootprompt; net groupmap list
@@ -345,7 +345,7 @@ Engineers (S-1-5-21-72630-412605-116429-3001) -> Engineers
 &rootprompt; net rpc group addmem "MIDEARTH\Engineers" ajt -Uroot%not24get
 Could not add ajt to MIDEARTH\Engineers: NT_STATUS_MEMBER_IN_GROUP
 </screen>
-	This showns that the group mapping between UNIX/Linux groups and Windows groups is effective and
+	This shows that the group mapping between UNIX/Linux groups and Windows groups is effective and
 	transparent.
 	</para>
 
@@ -474,7 +474,7 @@ DOM\jht
 	the only account information the UNIX/Linux Samba server needs is a UID.  The UID is available either
 	from a system (POSIX) account, or from a pool (range) of UID numbers that is set aside for the purpose
 	of being allocated for use by Windows user accounts. In the case of the UID pool, the UID for a
-	particular user will be allocated by <command>windbindd</command>.
+	particular user will be allocated by <command>winbindd</command>.
 	</para>
 
 	<para>
@@ -537,7 +537,7 @@ Deleted user account
 	<title>Managing User Accounts</title>
 
 	<para>
-	Two basic user accont operations are routinely used, change of password and querying which groups a user
+	Two basic user account operations are routinely used, change of password and querying which groups a user
 	is a member of. The change of password operation is shown in <link linkend="sbeuseraddn"/>.
 	</para>
 
@@ -565,7 +565,7 @@ Emergency Services
 	In some situations it is unavoidable that a users' Windows logon name will differ from the login ID
 	that user has on the Samba server. It is possible to create a special file on the Samba server that
 	will permit the Windows user name to be mapped to a different UNIX/Linux user name. The &smb.conf;
-	file must also be ammended so that the <constant>[global]</constant> stanza contains the parameter:
+	file must also be amended so that the <constant>[global]</constant> stanza contains the parameter:
 <screen>
 username map = /etc/samba/smbusers
 </screen>
@@ -715,7 +715,7 @@ SeDiskOperatorPrivilege
 	<para>
 	There are essentially two types of trust relationships. The first between domain controllers and domain
 	member machines (network clients), the second trusts between domains (called inter-domain trusts). All
-	Samba servers that pasticipate in domain security require a domain membership trust account, as do like
+	Samba servers that participate in domain security require a domain membership trust account, as do like
 	Windows NT/2KX/XPP workstations.
 	</para>
 
@@ -865,7 +865,7 @@ damnation$:1016:9AC1F121DF897688AAD3B435B51404EE: \
 	</para>
 
 	<para>
-	If the trusting domain is not capable of being reached the following command will failL
+	If the trusting domain is not capable of being reached the following command will fail
 <screen>
 &rootprompt; net rpc trustdom list -Uroot%not24get
 Trusted domains list:
@@ -876,7 +876,7 @@ Trusting domains list:
 
 DAMNATION           S-1-5-21-1385457007-882775198-1210191635
 </screen>
-	The above command executed successfuly; a failure is indicated when the following response is obtained:
+	The above command executed successfully; a failure is indicated when the following response is obtained:
 <screen>
 net rpc trustdom list -Uroot%not24get
 Trusted domains list:
@@ -987,7 +987,7 @@ Storing SID S-1-5-21-726309263-4128913605-1168186429 \
     for Domain MIDEARTH in secrets.tdb
 </screen>
 	Usually it is not necessary to specify the target server (-S FRODO) or the administrator account
-	redentials (-Uroot%not24get).
+	credentials (-Uroot%not24get).
 	</para>
 
 	</sect1>
@@ -1018,7 +1018,7 @@ Storing SID S-1-5-21-726309263-4128913605-1168186429 \
 	A share can be added using the <command>net rpc share</command> command capabilities.
 	The target machine may be local or remote and is specified by the -S option. It must be noted
 	that the addition and deletion of shares using this tool depends on the availability of a suitable
-	interface script. The interface scripts Samba's <command>smbd</command> uses are called:
+	interface script. The interface scripts Sambas <command>smbd</command> uses are called:
 	<smbconfoption name="add share script"/> and <smbconfoption name="delete share script"/>.
 	A set of example scripts are provided in the Samba source code tarball in the directory
 	<filename>~samba/examples/scripts</filename>.
@@ -1106,7 +1106,7 @@ kyocera
 	<para>
 	A set of command-line switches permit the creation of almost direct clones of Windows file
 	servers. For example, when migrating a file-server, file ACLs and DOS file attributes from
-	the Windows server can be included in the migration process and will reappear, almost identicaly
+	the Windows server can be included in the migration process and will reappear, almost identically
 	on the Samba server when the migration has been completed.
 	</para>
 
@@ -1118,13 +1118,13 @@ kyocera
 	been implemented, the possibility now exists to use a Samba server as a man-in-middle migration
 	service that affects a transfer of data from one server to another. For example, if the Samba
 	server is called MESSER, the source Windows NT4 server is called PEPPY, and the target Samba
-	server is called GONZALES, the machien MESSER can be used to affect the migration of all data
+	server is called GONZALES, the machine MESSER can be used to affect the migration of all data
 	(files and shares) from PEPPY to GONZALES. If the target machine is not specified, the local
 	server is assumed by default.
 	</para>
 
 	<para>
-	The success of server migration requires a firm understanding of the structure of ther source
+	The success of server migration requires a firm understanding of the structure of the source
 	server (or domain) as well as  the processes on which the migration is critically dependant.
 	</para>
 
@@ -1174,10 +1174,10 @@ kyocera
 	<para>
 	The syntax of the share migration command is shown here:
 <screen>
-net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
+net rpc share MIGRATE SHARES &lt;share-name&gt; -S &lt;source&gt;
         [--destination=localhost] [--exclude=share1,share2] [-v]
 </screen>
-	When the parameter &lt;sharename&gt; is ommited, all shares will be migrated. The potentially
+	When the parameter &lt;share-name&gt; is omitted, all shares will be migrated. The potentially
 	large list of available shares on the system that is being migrated can be limited using the
 	<parameter>--exclude</parameter> switch. For example:
 <screen>
@@ -1236,11 +1236,11 @@ net rpc share MIGRATE SHARES &lt;sharename&gt; -S &lt;source&gt;
 	<para>
 	The syntax for the migration commands is shown here:
 <screen>
-net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
+net rpc share MIGRATE FILES &lt;share-name&gt; -S &lt;source&gt;
     [--destination=localhost] [--exclude=share1,share2]
     [--acls] [--attrs] [--timestamps] [-v]
 </screen>
-	If the &lt;sharename&gt; parameter is ommited, all shares will be migrated. The potentially large
+	If the &lt;share-name&gt; parameter is omitted, all shares will be migrated. The potentially large
 	list of shares on the source system can be restricted using the <parameter>--exclude</parameter> command
 	switch.
 	</para>
@@ -1248,7 +1248,7 @@ net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
 	<para>
 	Where it is necessary to preserve all file ACLs, the <parameter>--acls</parameter> switch should be added
 	to the above command line. Original file time stamps can be preserved by specifying the
-	<parameter>--timestamps</parameter> switch, and the DOS file attributs (i.e.: hidden, archive, etc.) cab
+	<parameter>--timestamps</parameter> switch, and the DOS file attributes (i.e.: hidden, archive, etc.) cab
 	be preserved by specifying the <parameter>--attrs</parameter> switch.
 	</para>
 
@@ -1291,7 +1291,7 @@ net rpc share MIGRATE FILES &lt;sharename&gt; -S &lt;source&gt;
 	This operating mode shown here is just a combination of the two above. It first migrates
 	share-definitions and then all shared files and directories afterwards:
 <screen>
-net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
+net rpc share MIGRATE ALL &lt;share-name&gt; -S &lt;source&gt;
     [--exclude=share1, share2] [--acls] [--attrs] [--timestamps] [-v]
 </screen>
 	</para>
@@ -1329,7 +1329,7 @@ net rpc share MIGRATE ALL &lt;sharename&gt; -S &lt;source&gt;
 	currently in use thus necessitating the installation of newer drivers. Newer drivers often implement
 	printing features that will necessitate a change in the printer usage. Additionally, with very complex
 	printer configurations it becomes almost impossible to re-create the same environment - not matter
-	how extensivly it has been documented.
+	how extensively it has been documented.
 	</para>
 
 	<para>
@@ -1522,10 +1522,10 @@ Tue May 17 00:50:43 2005
 </screen>
 	The time can be set on a target server by executing:
 <screen>
-&rootprompt; net time set -S MAGGOT -U Adminsitrator%not24get
+&rootprompt; net time set -S MAGGOT -U Administrator%not24get
 Tue May 17 00:55:30 MDT 2005
 </screen>
-	It is possible to obtain the timezone a server is in by executing the following command against it:
+	It is possible to obtain the time-zone a server is in by executing the following command against it:
 <screen>
 &rootprompt; net time zone -S SAURON
 -0600
