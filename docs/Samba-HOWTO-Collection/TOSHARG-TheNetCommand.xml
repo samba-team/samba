@@ -417,7 +417,7 @@ MIDEARTH\vlendecke
 	domain users and domain global groups.  Creation of the local group <constant>demo</constant> is
 	achieved by executing:
 <screen>
-&rootprompt; net rpc group add demo -L -Uroot%not24get
+&rootprompt; net rpc group add demo -L -S MORDON -Uroot%not24get
 </screen>
 	The -L switch means create a local group. Use the -S argument to direct the operation to a particular
 	server. The parameters to the -U argument should be for a user who has appropriate administrative right
@@ -765,7 +765,25 @@ Joined domain MIDEARTH.
 merlin$:1009:9B4489D6B90461FD6A3EC3AB96147E16:\
 176D8C554E99914BDF3407DEA2231D80:[S          ]:LCT-42891919:
 </screen>
-	The equivalent command to join a Samba server to a Windows ADS domain is shown here:
+	The S in the square brackets means this is a server (PDC/BDC) account. The domain join can be cast to join
+	purely as a workstation, in which case the S is replaced with a W (indicating a workstation account). The
+	following command can be used to affect this:
+<screen>
+&rootprompt; net rpc join member -S FRODO -Uroot%not24get
+Joined domain MIDEARTH.
+</screen>
+	Note that the command-line parameter <constant>member</constant> makes this join specific. By default
+	the type is deduced from the &smb.conf; file configuration. To specifically join as a PDC or BDC the
+	command-line parameter will be <constant>[PDC | BDC]</constant>. For example:
+<screen>
+&rootprompt; net rpc join bdc -S FRODO -Uroot%not24get
+Joined domain MIDEARTH.
+</screen>
+	It is best to let Samba figure out the domain join type from the settings in the &smb.conf; file.
+	</para>
+
+	<para>
+	The command to join a Samba server to a Windows ADS domain is shown here:
 <screen>
 &rootprompt; net ads join -UAdministrator%not24get
 Using short domain name -- GDANSK
@@ -774,7 +792,7 @@ Joined 'FRANDIMITZ' to realm 'GDANSK.ABMAS.BIZ'
 	</para>
 
 	<para>
-	There is no specific option to remove a machine account from a domain. When a domain member that is a
+	There is no specific option to remove a machine account from ain NT4 domain. When a domain member that is a
 	Windows machine is withdrawn from the domain the domain membership account is not automatically removed
 	either. Inactive domain member accounts can be removed using any convenient tool. If necessary, the
 	machine account can be removed using the following <command>net</command> command:
@@ -782,6 +800,27 @@ Joined 'FRANDIMITZ' to realm 'GDANSK.ABMAS.BIZ'
 &rootprompt; net rpc user delete HERRING\$ -Uroot%not24get
 Deleted user account.
 </screen>
+	The removal is made possible because machine account are just like user accounts with a trailing $
+	character. The account management operations treat user and machine accounts in like manner.
+	</para>
+
+	<para>
+	A Samba-3 server that is a Windows ADS domain member can execute the following command to detach from the
+	domain:
+<screen>
+&rootprompt; net ads leave
+</screen>
+	</para>
+
+	<para>
+	Detailed information regarding an ADS domain can be obtained by a Samba DMS machine by executing the
+	following:
+<screen>
+&rootprompt; net ads status
+</screen>
+	The volume of information is extensive. Please refer to the book <quote>Samba-3 by Example</quote>,
+Chapter 7 for more information regarding its use. This book may be obtained either in print, or on line from
+the <ulink url="http://www.samba.org/samba/docs/Samba-Guide.pdf">Samba-Guide</ulink>.
 	</para>
 
 	</sect2>
@@ -791,7 +830,100 @@ Deleted user account.
 
 	<para>
 	Inter-domain trust relationships form the primary mechanism by which users from one domain can be granted
-	access rights and privileges in another domain.
+	access rights and privileges in another domain. 
+	</para>
+
+	<para>
+	To discover what trust relationships are in effect execute this command:
+<screen>
+&rootprompt; net rpc trustdom list -Uroot%not24get
+Trusted domains list:
+
+none
+
+Trusting domains list:
+
+none
+</screen>
+	There are no inter-domain trusts at this time, the following steps will create them.
+	</para>
+
+	<para>
+	It is necessary to create a trust account in the local domain. A domain controller in a second domain can
+	create a trusted connection with this account. That means that the foreign domain is being trusted
+	to access resources in the local domain. This command creates the local trust account:
+<screen>
+&rootprompt; net rpc trustdom add damnation f00db4r -Uroot%not24get
+</screen>
+	The account can be revealed by using the <command>pdbedit</command> as shown here:
+<screen>
+&rootprompt; pdbedit -Lw damnation\$
+damnation$:1016:9AC1F121DF897688AAD3B435B51404EE: \
+7F845808B91BB9F7FEF44B247D9DC9A6:[I         ]:LCT-428934B1:
+</screen>
+	A trust account will always have an I in the field within the square brackets.
+	</para>
+
+	<para>
+	If the trusting domain is not capable of being reached the following command will failL
+<screen>
+&rootprompt; net rpc trustdom list -Uroot%not24get
+Trusted domains list:
+
+none
+
+Trusting domains list:
+
+DAMNATION           S-1-5-21-1385457007-882775198-1210191635
+</screen>
+	The above command executed successfuly; a failure is indicated when the following response is obtained:
+<screen>
+net rpc trustdom list -Uroot%not24get
+Trusted domains list:
+
+DAMNATION           S-1-5-21-1385457007-882775198-1210191635
+
+Trusting domains list:
+
+DAMNATION           domain controller is not responding
+</screen>
+	</para>
+
+	<para>
+	Where a trust account has been created on a foreign domain, Samba is able to establish the trust (connect with)
+	the foreign account. In the process it creates a one-way trust to the resources on the remote domain. This
+	command achieves the objective of enjoining the trust relationship:
+<screen>
+&rootprompt; net rpc trustdom establish damnation
+Password: xxxxxxx	== f00db4r
+Could not connect to server TRANSGRESSION
+Trust to domain DAMNATION established
+</screen>
+	Validation of the two-way trust now established is possible as shown here:
+<screen>
+&rootprompt; net rpc trustdom list -Uroot%not24get
+Trusted domains list:
+
+DAMNATION           S-1-5-21-1385457007-882775198-1210191635
+
+Trusting domains list:
+
+DAMNATION           S-1-5-21-1385457007-882775198-1210191635
+</screen>
+	</para>
+
+	<para>
+	Sometimes it is necessary to remove the ability for local uses to access a foreign domain. The trusting
+	connection can be revoked as shown here:
+<screen>
+&rootprompt; net rpc trustdom revoke damnation -Uroot%not24get
+</screen>
+	At other times it becomes necessary to remove the ability for users from a foreign domain to be able to
+	access resources in the local domain. The command shown here will do that:
+<screen>
+&rootprompt; net rpc trustdom del damnation -Uroot%not24get
+</screen>
+
 	</para>
 
 	</sect2>
@@ -802,7 +934,60 @@ Deleted user account.
 	<title>Managing Security Identifiers (SIDS)</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	The basic security identifier that is used b y all Windows networking operations is the Windows security
+	identifier (SID). All Windows network machines (servers and workstations), users, and groups are
+	identified by their respective SID. All desktop profiles are also encoded with user and group SIDs that
+	are specific to the SID of the domain to which the user belongs.
+	</para>
+
+	<para>
+	It is truly prudent to store the machine and/or domain SID in a file for safe-keeping. Why? Because 
+	a change in hostname or in the domain (workgroup) name may result in a change in the SID. When you
+	have the SID on hand it is a simple matter to restore it. The alternative is to suffer the pain of
+	having to recover user desktop profiles and perhaps re-join all member machines to the domain.
+	</para>
+
+	<para>
+	First, do not forget to store the local sid in a file. It is a good idea to put this in the directory
+	in which the &smb.conf; file is also stored. Here is a simple action to achieve this:
+<screen>
+&rootprompt; net getlocalsid > /etc/samba/my-sid
+</screen>
+	Good, there is now a safe copy of the local machine SID. On a PDC/BDC this is the domain SID also.
+	</para>
+
+	<para>
+	The following command reveals what the former one should have placed into the file called
+	<filename>my-sid</filename>:
+<screen>
+&rootprompt; net getlocalsid
+SID for domain MERLIN is: S-1-5-21-726309263-4128913605-1168186429
+</screen>
+	</para>
+
+	<para>
+	If ever it becomes necessary to restore the SID that has been stored in the <filename>my-sid</filename>
+	file, simply copy the SID (the string of characters that begins with <constant>S-1-5-21</constant>) to
+	the command-line shown here:
+<screen>
+&rootprompt; net setlocalsid S-1-5-21-1385457007-882775198-1210191635
+</screen>
+	Restoration of a machine SID is a simple operation, but the absence of a back-up copy can be very
+	problematic.
+	</para>
+
+	<para>
+	The following operation is useful only for machines that are being configured as a PDC or a BDC.
+	Domain member servers (DMS) and workstation clients should have their own machine SID to avoid
+	any potential name-space collision. Here is the way that the BDC SID can be synchronized to that
+	of the PDC (this is the default NT4 domain practice also):
+<screen>
+&rootprompt; net rpc getsid -S FRODO -Uroot%not24get
+Storing SID S-1-5-21-726309263-4128913605-1168186429 \
+    for Domain MIDEARTH in secrets.tdb
+</screen>
+	Usually it is not necessary to specify the target server (-S FRODO) or the administrator account
+	redentials (-Uroot%not24get).
 	</para>
 
 	</sect1>
@@ -811,7 +996,19 @@ Deleted user account.
 	<title>Share Management</title>
 
 	<para>
-	Document how to set up trusts here!!!!!!!!!!!
+	Share management is central to all file serving operations. Typical share operations include:
+	</para>
+
+	<itemizedlist>
+		<listitem><para>Creation/change/deletion of shares</para></listitem>
+		<listitem><para>Setting/changing ACLs on shares</para></listitem>
+		<listitem><para>Moving shares from one server to another</para></listitem>
+		<listitem><para>Change of permissions of share contents</para></listitem>
+	</itemizedlist>
+
+	<para>
+	Each of these are dealt with here in so far as they involve the use of the <command>net</command>
+	command. Operations outside of this command are covered elsewhere in this document.
 	</para>
 
 	<sect2>
@@ -852,7 +1049,7 @@ ADMIN$
 	</para>
 
 	<para>
-	Often times it is desirable also to permit a share to be removed using a command-line tool.
+	Often it is desirable also to permit a share to be removed using a command-line tool.
 	The following step permits the share that was previously added to be removed:
 <screen>
 &rootprompt; net rpc share delete Bulge -S MERLIN -Uroot%not24get
@@ -877,6 +1074,14 @@ kyocera
 	<title>Creating and Changing Share ACLs</title>
 
 	<para>
+	At this time the net tool can not be used to manage ACLs on Samba shares. In MS Windows 
+	language this is called: Share Permissions, or Share Security.
+	</para>
+
+	<para>
+	It is possible to set ACLs on Samba shares using either the SRVTOOLS NT4 Domain Server Manager,
+	of using the Computer Management MMC snap-in. Neither will be covered here as this subject is
+	covered in <link linkend="AccessControls"/>.
 	</para>
 
 	</sect2>
