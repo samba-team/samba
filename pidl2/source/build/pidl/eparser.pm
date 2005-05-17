@@ -171,7 +171,7 @@ sub NeededFunction($)
 		$e->{PARENT} = $fn;
 		$needed{"pull_$e->{TYPE}"} = 1;
 
-		if (NdrParser::is_scalar_type($e->{TYPE})) {
+		if (Ndr::is_scalar_type($e->{TYPE})) {
 
 		    if (defined($e->{ARRAY_LEN}) or 
 			util::has_property($e, "size_is")) {
@@ -241,7 +241,7 @@ sub NeededTypedef($)
 				$needed{"pull_$e->{TYPE}"} = 1;
 			}
 
-			if (NdrParser::is_scalar_type($e->{TYPE})) {
+			if (Ndr::is_scalar_type($e->{TYPE})) {
 
 				if (defined($e->{ARRAY_LEN}) or 
 				util::has_property($e, "size_is")) {
@@ -413,8 +413,6 @@ sub RewriteHeader($$$)
     my($input) = shift;
     my($output) = shift;
 
-	NdrParser::Load($idl);
-
     %needed = ();
 
     # Open files
@@ -443,16 +441,19 @@ sub RewriteHeader($$$)
 	    /\#include \"packet-dcerpc-$1.h\"/smgx;
 
 	# Rename struct ndr_pull to struct pidl_pull
-
-	s/struct ndr_pull \*ndr/struct pidl_pull \*ndr/smg;
+	# this should only happen once, in a define...
+	s/^\#define STRUCT_NDR_PULL struct ndr_pull/\#define STRUCT_NDR_PULL struct pidl_pull/smg;
 
 	# Change prototypes for public functions
-
-	s/(struct pidl_pull \*ndr, int ndr_flags)/$1, pidl_tree *tree/smg;
+	s/^\#define NDR_PULL_FLAGS int ndr_flags/\#define NDR_PULL_FLAGS int ndr_flags, pidl_tree *tree/smg;
 
 	# Bitmaps
 
-	s/int ndr_flags, (pidl_tree \*tree), (uint32_t \*r\);)/$1, int hf, $2/smg;
+	s/^\#define NDR_PULL_FLAGS2 int ndr_flags/\#define NDR_PULL_FLAGS2 pidl_tree *tree, int hf/smg;
+
+	# enums
+
+	s/^\#define NDR_PULL_FLAGS3 int ndr_flags/\#define NDR_PULL_FLAGS3 pidl_tree *tree, int hf/smg;
 
 	pidl $_;
     }
@@ -467,8 +468,6 @@ sub RewriteC($$$)
     my($idl) = shift;
     my($input) = shift;
     my($output) = shift;
-
-	NdrParser::Load($idl);
 
     # Open files
 
@@ -570,7 +569,7 @@ sub RewriteC($$$)
         # Remember which structure or function we are processing.
         #
 
-        $cur_fn = $1, if /NTSTATUS ndr_pull_(.*?)\(struct/;
+        $cur_fn = $1, if /NTSTATUS ndr_pull_(.*?)\(struct/i;
 
         # Skip functions we have marked as nopull
 
@@ -581,6 +580,7 @@ sub RewriteC($$$)
 	}
 
         $cur_fn = "", if /^}/;
+
 
         next, if $skip_fn;
 
@@ -639,7 +639,6 @@ sub RewriteC($$$)
 	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint$4_t *r)/smgx;
 
         if (/ndr_pull_([^\)]*?)\(ndr,\ NDR_[^,]*,\ &v\);/) {
-
 	    s/(ndr_pull_([^\)]*?)\(ndr,\ (NDR_[^,]*?),\ &v\);)
 		/ndr_pull_$2(ndr, tree, hf, &v);/smgx;
 
@@ -664,7 +663,7 @@ sub RewriteC($$$)
 	# ndr_pull_uint32(ndr, &r->in.access_mask);
 	# ndr_pull_uint32(ndr, &r->idx);
 
-        if (/(ndr_pull_([^\)]*?)\(ndr, NDR_[^,]*?, (&?r->((in|out)\.)?([^\)]*?))\);)/ and NdrParser::is_scalar_type($2)) {
+        if (/(ndr_pull_([^\)]*?)\(ndr, NDR_[^,]*?, (&?r->((in|out)\.)?([^\)]*?))\);)/ and Ndr::is_scalar_type($2)) {
 
 	    my $pull_type = "${cur_fn}_$6";
 
@@ -699,7 +698,7 @@ sub RewriteC($$$)
 	# Three argument version is for structures
 
     if (/ndr_pull_([^\)]*?)\(ndr, (NDR_[^,]*?), ([^,]*?)\);/ and 
-			not NdrParser::is_scalar_type($1)) {
+			not Ndr::is_scalar_type($1)) {
 	   	s/(ndr_pull_([^\)]*?)\(
 	       ndr,\ 
 	       (NDR_[^,]*?),\ 
@@ -710,7 +709,7 @@ sub RewriteC($$$)
 
     # Four argument version if for unions
     if (/ndr_pull_([^\)]*?)\(ndr, (NDR_[SB][^,]*?), ([^,]*?), ([^,]*?)\);/ and
-			not NdrParser::is_scalar_type($1)) {
+			not Ndr::is_scalar_type($1)) {
 	    s/(ndr_pull_([^\)]*?)\(
 	       ndr,\ 
 	       (NDR_[^,]*?),\ 
