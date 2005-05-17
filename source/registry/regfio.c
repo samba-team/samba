@@ -350,11 +350,6 @@ static BOOL prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	if ( !prs_uint32( "unknown index", ps, depth, &nk->unk_index))
 		return False;
 
-# if 0
-	if ( !prs_set_offset( ps, start+0x0048 ) )
-		return False;
-#endif
-
 	name_length = nk->keyname ? strlen(nk->keyname) : 0 ;
 	class_length = nk->classname ? strlen(nk->classname) : 0 ;
 	if ( !prs_uint16( "name_length", ps, depth, &name_length ))
@@ -627,7 +622,6 @@ static BOOL hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 	if ( !prs_set_offset( &hbin->ps, nk->subkeys_off + HBIN_HDR_SIZE - hbin->first_hbin_off ) )
 		return False;
 
-	
 	/* backup and get the data_size */
 	
 	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32)) )
@@ -1403,8 +1397,10 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	}
 
 	hbin->file_off       = sbuf.st_size;
+
 	hbin->free_off       = HBIN_HEADER_REC_SIZE;
-	hbin->free_size      = block_size - hbin->free_off;
+	hbin->free_size      = block_size - hbin->free_off + sizeof(uint32);;
+
 	hbin->block_size     = block_size;
 	hbin->first_hbin_off = hbin->file_off - REGF_BLOCKSIZE;
 
@@ -1427,8 +1423,8 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 
 static void update_free_space( REGF_HBIN *hbin, uint32 size_used )
 {
-	hbin->free_size -= size_used;
 	hbin->free_off  += size_used;
+	hbin->free_size -= size_used;
 
 	if ( hbin->free_off >= hbin->block_size ) {
 		hbin->free_off = REGF_OFFSET_NONE;
@@ -1563,7 +1559,7 @@ static uint32 vk_record_data_size( REGF_VK_REC *vk )
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = REC_HDR_SIZE + (sizeof(uint16)*2) + (sizeof(uint32)*3) + sizeof(uint32);
+	size = REC_HDR_SIZE + (sizeof(uint16)*3) + (sizeof(uint32)*3) + sizeof(uint32);
 
 	if ( vk->valuename )
 		size += strlen(vk->valuename);
@@ -1663,6 +1659,14 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 /*******************************************************************
 *******************************************************************/
 
+static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
+{
+	return StrnCaseCmp( h1->keycheck, h2->keycheck, sizeof(uint32) );
+}
+
+/*******************************************************************
+*******************************************************************/
+
 REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
                                REGVAL_CTR *values, REGSUBKEY_CTR *subkeys, 
                                SEC_DESC *sec_desc, REGF_NK_REC *parent )
@@ -1705,80 +1709,18 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 	/* Update the hash record in the parent */
 	
 	if ( parent ) {
-		parent->subkeys.hashes[parent->subkey_index].nk_off = prs_offset( &nk->hbin->ps ) + nk->hbin->first_hbin_off - HBIN_HDR_SIZE;
-		memcpy( parent->subkeys.hashes[parent->subkey_index].keycheck, name, sizeof(uint32) );
+		REGF_HASH_REC *hash = &parent->subkeys.hashes[parent->subkey_index];
+
+		hash->nk_off = prs_offset( &nk->hbin->ps ) + nk->hbin->first_hbin_off - HBIN_HDR_SIZE;
+		memcpy( hash->keycheck, name, sizeof(uint32) );
 		parent->subkey_index++;
 
-		if ( !hbin_prs_lf_records( "lf_rec", parent->hbin, 0, parent ) )
+		/* sort the list by keyname */
+
+		qsort( parent->subkeys.hashes, parent->subkey_index, sizeof(REGF_HASH_REC), QSORT_CAST hashrec_cmp );
+
+		if ( !hbin_prs_lf_records( "lf_rec", parent->subkeys.hbin, 0, parent ) )
 			return False;
-	}
-
-	/* write the values */
-
-	nk->values_off = REGF_OFFSET_NONE;
-	if ( (nk->num_values = regval_ctr_numvals( values )) != 0 ) {
-		uint32 vlist_size = ( ( nk->num_values * sizeof(uint32) ) & 0xfffffff8 ) + 8;
-		int i;
-		
-		vlist_hbin = find_free_space( file, vlist_size );
-		nk->values_off = prs_offset( &vlist_hbin->ps ) + vlist_hbin->first_hbin_off - HBIN_HDR_SIZE;
-	
-		if ( !(nk->values = TALLOC_ARRAY( file->mem_ctx, REGF_VK_REC, nk->num_values )) )
-			return NULL;
-
-		/* create the vk records */
-
-		for ( i=0; i<nk->num_values; i++ ) {
-			uint32 vk_size, namelen, datalen;
-			REGF_HBIN *vk_hbin;
-			REGISTRY_VALUE *r;
-
-			r = regval_ctr_specific_value( values, i );
-			create_vk_record( file, &nk->values[i], r );
-			vk_size = vk_record_data_size( &nk->values[i] );
-			vk_hbin = find_free_space( file, vk_size );
-			nk->values[i].hbin_off = prs_offset( &vk_hbin->ps ) + vk_hbin->first_hbin_off - HBIN_HDR_SIZE;
-			nk->values[i].rec_size = ( vk_size - 1 ) ^ 0xFFFFFFFF;
-
-			/* update the max bytes fields if necessary */
-
-			namelen = strlen( regval_name(r) );
-			if ( namelen*2 > nk->max_bytes_valuename )
-				nk->max_bytes_valuename = namelen * 2;
-
-			datalen = regval_size( r );
-			if ( datalen*2 > nk->max_bytes_value )
-				nk->max_bytes_value = datalen * 2;
-		}
-	}
-
-
-	/* write the subkeys */
-
-	nk->subkeys_off = REGF_OFFSET_NONE;
-	if ( (nk->num_subkeys = regsubkey_ctr_numkeys( subkeys )) != 0 ) {
-		uint32 lf_size = lf_record_data_size( nk->num_subkeys );
-		REGF_HBIN *lf_hbin;
-		uint32 namelen;
-		int i;
-		
-		lf_hbin = find_free_space( file, lf_size );
-		nk->subkeys.rec_size = (lf_size-1) ^ 0xFFFFFFFF;
-		nk->subkeys_off = prs_offset( &lf_hbin->ps ) + lf_hbin->first_hbin_off - HBIN_HDR_SIZE;
-
-		memcpy( nk->subkeys.header, "lf", REC_HDR_SIZE );
-		
-		nk->subkeys.num_keys = nk->num_subkeys;
-		if ( !(nk->subkeys.hashes = TALLOC_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
-			return NULL;
-		nk->subkey_index = 0;
-
-		/* update the max_bytes_subkey{name,classname} fields */
-		for ( i=0; i<nk->num_subkeys; i++ ) {
-			namelen = strlen( regsubkey_ctr_specific_key(subkeys, i) );
-			if ( namelen*2 > nk->max_bytes_subkeyname )
-				nk->max_bytes_subkeyname = namelen * 2;
-		}
 	}
 
 	/* write the security descriptor */
@@ -1835,6 +1777,74 @@ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name,
 		nk->sec_desc->ref_count++;
 	}
 
+	/* write the subkeys */
+
+	nk->subkeys_off = REGF_OFFSET_NONE;
+	if ( (nk->num_subkeys = regsubkey_ctr_numkeys( subkeys )) != 0 ) {
+		uint32 lf_size = lf_record_data_size( nk->num_subkeys );
+		REGF_HBIN *lf_hbin;
+		uint32 namelen;
+		int i;
+		
+		lf_hbin = find_free_space( file, lf_size );
+
+		nk->subkeys.hbin = lf_hbin;
+		nk->subkeys.rec_size = (lf_size-1) ^ 0xFFFFFFFF;
+		nk->subkeys_off = prs_offset( &lf_hbin->ps ) + lf_hbin->first_hbin_off - HBIN_HDR_SIZE;
+
+		memcpy( nk->subkeys.header, "lf", REC_HDR_SIZE );
+		
+		nk->subkeys.num_keys = nk->num_subkeys;
+		if ( !(nk->subkeys.hashes = TALLOC_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
+			return NULL;
+		nk->subkey_index = 0;
+
+		/* update the max_bytes_subkey{name,classname} fields */
+		for ( i=0; i<nk->num_subkeys; i++ ) {
+			namelen = strlen( regsubkey_ctr_specific_key(subkeys, i) );
+			if ( namelen*2 > nk->max_bytes_subkeyname )
+				nk->max_bytes_subkeyname = namelen * 2;
+		}
+	}
+
+	/* write the values */
+
+	nk->values_off = REGF_OFFSET_NONE;
+	if ( (nk->num_values = regval_ctr_numvals( values )) != 0 ) {
+		uint32 vlist_size = ( ( nk->num_values * sizeof(uint32) ) & 0xfffffff8 ) + 8;
+		int i;
+		
+		vlist_hbin = find_free_space( file, vlist_size );
+		nk->values_off = prs_offset( &vlist_hbin->ps ) + vlist_hbin->first_hbin_off - HBIN_HDR_SIZE;
+	
+		if ( !(nk->values = TALLOC_ARRAY( file->mem_ctx, REGF_VK_REC, nk->num_values )) )
+			return NULL;
+
+		/* create the vk records */
+
+		for ( i=0; i<nk->num_values; i++ ) {
+			uint32 vk_size, namelen, datalen;
+			REGF_HBIN *vk_hbin;
+			REGISTRY_VALUE *r;
+
+			r = regval_ctr_specific_value( values, i );
+			create_vk_record( file, &nk->values[i], r );
+			vk_size = vk_record_data_size( &nk->values[i] );
+			vk_hbin = find_free_space( file, vk_size );
+			nk->values[i].hbin_off = prs_offset( &vk_hbin->ps ) + vk_hbin->first_hbin_off - HBIN_HDR_SIZE;
+			nk->values[i].rec_size = ( vk_size - 1 ) ^ 0xFFFFFFFF;
+
+			/* update the max bytes fields if necessary */
+
+			namelen = strlen( regval_name(r) );
+			if ( namelen*2 > nk->max_bytes_valuename )
+				nk->max_bytes_valuename = namelen * 2;
+
+			datalen = regval_size( r );
+			if ( datalen*2 > nk->max_bytes_value )
+				nk->max_bytes_value = datalen * 2;
+		}
+	}
 
 	/* stream the records */	
 	
