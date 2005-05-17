@@ -1,3 +1,26 @@
+2005-05-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): honor
+	KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED and create unencrypted
+	(ENCTYPE_NULL) credentials. for use with old mit server and java based
+	ones as they can't handle encrypted KRB-CRED. Note that the option
+	needs to turned on because if the consumer sends the KRB-CRED in
+	clear bad things will happen.
+
+	* lib/krb5/context.c (krb5_init_context): register krb5_javakt_ops
+
+	* lib/krb5/krb5.h: KRB5_GC_EXPIRED_OK: expired credentials is ok
+	to return from krb5_get_credentials.
+	KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED: make forward credentials
+	be unencrypted, for compatibility with mit kerberos and java
+	kerberos. krb5_javakt_ops: export
+
+2005-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/keytab_file.c: Add new keytab file format JAVA14 that
+	doesn't the use extended kvnos, as hinted, this is needed for
+	Java's Kerberos implementation.
+
 2005-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: handle pkinit-9, pkinit-19, and pkinit-25
