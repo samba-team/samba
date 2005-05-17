@@ -63,7 +63,7 @@ REQUIRED_SUBSYSTEMS = \
 ADD_OBJ_FILES = \
 		torture/com/simple.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCOM LIBDCOM
+		COM DCOM
 # End SUBSYSTEM TORTURE_COM
 #################################
 
