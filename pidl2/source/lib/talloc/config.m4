@@ -7,3 +7,4 @@ if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
 fi
 
 AC_CHECK_TYPES(intptr_t)
+AC_CHECK_HEADERS(stdint.h stdarg.h unistd.h sys/types.h)

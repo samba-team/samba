@@ -40,6 +40,7 @@ sub smb_build_main($)
 		"lib/popt/config.mk",
 		"lib/cmdline/config.mk",
 		"lib/socket_wrapper/config.mk",
+		"param/config.mk",
 		"smb_server/config.mk",
 		"rpc_server/config.mk",
 		"ldap_server/config.mk",

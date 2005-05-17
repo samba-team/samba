@@ -65,50 +65,11 @@ static int modify_record(struct ldb_context *ldb,
 			 struct ldb_message *msg2)
 {
 	struct ldb_message *mod;
-	struct ldb_message_element *el;
-	unsigned int i;
-	int count = 0;
 
-	mod = ldb_msg_new(ldb);
-
-	mod->dn = msg1->dn;
-	mod->num_elements = 0;
-	mod->elements = NULL;
-
-	msg2 = ldb_msg_canonicalize(ldb, msg2);
-	if (msg2 == NULL) {
-		fprintf(stderr, "Failed to canonicalise msg2\n");
+	mod = ldb_msg_diff(ldb, msg1, msg2);
+	if (mod == NULL) {
+		fprintf(stderr, "Failed to calculate message differences\n");
 		return -1;
-	}
-	
-	/* look in msg2 to find elements that need to be added
-	   or modified */
-	for (i=0;i<msg2->num_elements;i++) {
-		el = ldb_msg_find_element(msg1, msg2->elements[i].name);
-
-		if (el && ldb_msg_element_compare(el, &msg2->elements[i]) == 0) {
-			continue;
-		}
-
-		if (ldb_msg_add(ldb, mod, 
-				&msg2->elements[i],
-				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
-			return -1;
-		}
-		count++;
-	}
-
-	/* look in msg1 to find elements that need to be deleted */
-	for (i=0;i<msg1->num_elements;i++) {
-		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
-		if (!el) {
-			if (ldb_msg_add_empty(ldb, mod, 
-					      msg1->elements[i].name,
-					      LDB_FLAG_MOD_DELETE) != 0) {
-				return -1;
-			}
-			count++;
-		}
 	}
 
 	if (mod->num_elements == 0) {
@@ -125,7 +86,7 @@ static int modify_record(struct ldb_context *ldb,
 		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
 	}
 
-	return count;
+	return mod->num_elements;
 }
 
 /*

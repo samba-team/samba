@@ -34,7 +34,7 @@ my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_diff) = 0;
-my($opt_header); 
+my($opt_header);
 my($opt_template) = 0;
 my($opt_client) = 0;
 my($opt_server) = 0;
@@ -59,7 +59,6 @@ sub IdlParse($)
     util::CleanData($idl);
     return $idl;
 }
-
 
 #########################################
 # display help text
@@ -111,7 +110,7 @@ GetOptions (
 	    'swig' => \$opt_swig,
 		'dcom-proxy' => \$opt_dcom_proxy,
 		'com-header' => \$opt_com_header,
-		'quiet' => \$opt_quiet,
+		'quiet' => \$opt_quiet
 	    );
 
 if ($opt_help) {

@@ -10,7 +10,7 @@
 use strict;
 package input;
 
-my $subsystem_output_type = "OBJLIST";
+my $subsystem_default_output_type = "OBJLIST";
 my $srcdir = ".";
 
 sub strtrim($)
@@ -54,7 +54,11 @@ sub check_subsystem($$)
 		return;
 	}
 	
-	$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
+	unless(defined($subsys->{OUTPUT_TYPE})) {
+		$subsys->{OUTPUT_TYPE} = $subsystem_default_output_type;
+	} else {
+		$subsys->{OUTPUT_TYPE} = join('', @{$subsys->{OUTPUT_TYPE}});
+	}
 }
 
 sub check_module($$)
@@ -95,7 +99,7 @@ sub check_module($$)
 		$mod->{ENABLE} = "YES";
 		push (@{$CTX->{INPUT}{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		printf("Module: %s...static\n",$mod->{NAME});
-		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
+		$mod->{OUTPUT_TYPE} = $subsystem_default_output_type;
 	} else {
 		$mod->{ENABLE} = "NO";
 		printf("Module: %s...not\n",$mod->{NAME});
@@ -167,13 +171,18 @@ sub check($)
 {
 	my $CTX = shift;
 
-	($subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
+	($subsystem_default_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
 	foreach my $part (values %{$CTX->{INPUT}}) {
 		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
 	}
 
-	foreach my $part (values %{$CTX->{INPUT}}) {
+	foreach my $k (keys %{$CTX->{INPUT}}) {
+		my $part = $CTX->{INPUT}->{$k};
+		if (not defined($part->{TYPE})) {
+			print STDERR "$k does not have a type set.. Perhaps it's only mentioned in a .m4 but not in a .mk file?\n";
+			next;
+		}
 		check_subsystem($CTX, $part) if ($part->{TYPE} eq "SUBSYSTEM");
 		check_module($CTX, $part) if ($part->{TYPE} eq "MODULE");
 		check_library($CTX, $part) if ($part->{TYPE} eq "LIBRARY");

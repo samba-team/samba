@@ -32,7 +32,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
@@ -90,17 +97,20 @@ struct talloc_chunk {
 	struct talloc_chunk *parent, *child;
 	struct talloc_reference_handle *refs;
 	size_t size;
-	unsigned magic;
 	talloc_destructor_t destructor;
 	const char *name;
+	union {
+		unsigned magic;
+		double align_dummy;
+	} u;
 };
 
 /* panic if we get a bad magic value */
 static struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, ptr)-1;
-	if (tc->magic != TALLOC_MAGIC) { 
-		if (tc->magic == TALLOC_MAGIC_FREE) {
+	if (tc->u.magic != TALLOC_MAGIC) { 
+		if (tc->u.magic == TALLOC_MAGIC_FREE) {
 			TALLOC_ABORT("Bad talloc magic value - double free"); 
 		} else {
 			TALLOC_ABORT("Bad talloc magic value - unknown value"); 
@@ -173,7 +183,7 @@ void *_talloc(const void *context, size_t size)
 	if (tc == NULL) return NULL;
 
 	tc->size = size;
-	tc->magic = TALLOC_MAGIC;
+	tc->u.magic = TALLOC_MAGIC;
 	tc->destructor = NULL;
 	tc->child = NULL;
 	tc->name = NULL;
@@ -552,7 +562,7 @@ int talloc_free(void *ptr)
 		if (tc->next) tc->next->prev = tc->prev;
 	}
 
-	tc->magic = TALLOC_MAGIC_FREE;
+	tc->u.magic = TALLOC_MAGIC_FREE;
 
 	free(tc);
 	return 0;
@@ -592,7 +602,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	}
 
 	/* by resetting magic we catch users of the old memory */
-	tc->magic = TALLOC_MAGIC_FREE;
+	tc->u.magic = TALLOC_MAGIC_FREE;
 
 #if ALWAYS_REALLOC
 	new_ptr = malloc(size + sizeof(*tc));
@@ -604,12 +614,12 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	new_ptr = realloc(tc, size + sizeof(*tc));
 #endif
 	if (!new_ptr) {	
-		tc->magic = TALLOC_MAGIC; 
+		tc->u.magic = TALLOC_MAGIC; 
 		return NULL; 
 	}
 
 	tc = new_ptr;
-	tc->magic = TALLOC_MAGIC;
+	tc->u.magic = TALLOC_MAGIC;
 	if (tc->parent) {
 		tc->parent->child = new_ptr;
 	}
