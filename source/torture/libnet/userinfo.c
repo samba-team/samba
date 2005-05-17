@@ -260,7 +260,6 @@ BOOL torture_userinfo(void)
 	NTSTATUS status;
 	const char *binding;
 	struct dcerpc_pipe *p;
-	struct dcerpc_binding *b;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;

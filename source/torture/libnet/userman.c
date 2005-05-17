@@ -115,7 +115,6 @@ static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle, const char* username)
 {
 	NTSTATUS status;
-	BOOL ret = True;
 	struct composite_context *c;
 	struct rpc_composite_useradd user;
 
