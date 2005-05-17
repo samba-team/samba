@@ -841,16 +841,44 @@ krb5_get_credentials_with_flags(krb5_context context,
 				ccache,
 				options,
 				in_creds, res_creds);
-    if(ret == 0) {
-	*out_creds = res_creds;
-	return 0;
+    /* 
+     * If we got a credential, check if credential is expired before
+     * returning it.
+     */
+    ret = krb5_cc_retrieve_cred(context,
+                                ccache,
+                                in_creds->session.keytype ?
+                                KRB5_TC_MATCH_KEYTYPE : 0,
+                                in_creds, res_creds);
+    /* 
+     * If we got a credential, check if credential is expired before
+     * returning it, but only if KRB5_GC_EXPIRED_OK is not set.
+     */
+    if (ret == 0) {
+	krb5_timestamp timeret;
+
+	/* If expired ok, don't bother checking */
+        if(options & KRB5_GC_EXPIRED_OK) {
+            *out_creds = res_creds;
+            return 0;
+        }
+	    
+	krb5_timeofday(context, &timeret);
+	if(res_creds->times.endtime > timeret) {
+	    *out_creds = res_creds;
+	    return 0;
+	}
+	if(options & KRB5_GC_CACHED)
+	    krb5_cc_remove_cred(context, ccache, 0, res_creds);
+
+    } else if(ret != KRB5_CC_END) {
+        free(res_creds);
+        return ret;
     }
     free(res_creds);
-    if(ret != KRB5_CC_END)
-	return ret;
     if(options & KRB5_GC_CACHED) {
-	krb5_clear_error_string (context);
-	return KRB5_CC_NOTFOUND;
+        krb5_clear_error_string (context);        
+        return KRB5_CC_NOTFOUND;
     }
     if(options & KRB5_GC_USER_USER)
 	flags.b.enc_tkt_in_skey = 1;
