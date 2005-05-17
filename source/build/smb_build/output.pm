@@ -14,7 +14,7 @@ sub generate_objlist($)
 {
 	my $subsys = shift;
 
-	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
+	$subsys->{TARGET} = $subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
 }
 
 sub generate_shared_library($)
@@ -23,14 +23,15 @@ sub generate_shared_library($)
 
 	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
-	$lib->{LIBRARY_NAME} = $lib->{NAME}.".so";
-	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_NAME}";
+	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".so";
+	$lib->{TARGET} = "bin/lib$lib->{LIBRARY_NAME}";
 	if (defined($lib->{MAJOR_VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
-		$lib->{OUTPUT} = "bin/$lib->{LIBRARY_REALNAME}";
+		$lib->{TARGET} = "bin/lib$lib->{LIBRARY_REALNAME}";
 		@{$lib->{LINK_FLAGS}} = ("\@SONAMEFLAG\@$lib->{LIBRARY_SONAME}");
 	}
+	$lib->{OUTPUT} = "-l".lc($lib->{NAME});
 }
 
 sub generate_static_library($)
@@ -39,11 +40,12 @@ sub generate_static_library($)
 
 	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 
-	$lib->{LIBRARY_NAME} = $lib->{NAME}.".a";
+	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".a";
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	@{$lib->{LINK_FLAGS}} = ();
 
-	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_NAME}";
+	$lib->{TARGET} = "bin/lib$lib->{LIBRARY_NAME}";
+	$lib->{OUTPUT} = "-l".lc($lib->{NAME});
 }
 
 sub generate_binary($)
@@ -54,7 +56,7 @@ sub generate_binary($)
 	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
 	@{$bin->{LINK_FLAGS}} = ();
 
-	$bin->{OUTPUT} = "bin/$bin->{NAME}";
+	$bin->{TARGET} = $bin->{OUTPUT} = "bin/$bin->{NAME}";
 	$bin->{BINARY} = $bin->{NAME};
 }
 
@@ -93,7 +95,7 @@ sub create_output($)
 
 			push(@{$part->{CPPFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
 			push(@{$part->{CFLAGS}}, @{$elem->{CFLAGS}}) if defined(@{$elem->{CFLAGS}});
-			push(@{$part->{DEPEND_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
