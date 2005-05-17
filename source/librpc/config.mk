@@ -9,7 +9,7 @@ ADD_OBJ_FILES = \
 		librpc/ndr/ndr_compression.o \
 		librpc/ndr/ndr_obfuscate.o \
 		librpc/ndr/ndr_misc.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBCOMPRESSION
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBCOMPRESSION LIBTALLOC LIBBASIC
 # End SUBSYSTEM NDR_RAW
 ################################################
 

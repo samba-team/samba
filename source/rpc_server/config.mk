@@ -24,9 +24,7 @@ INIT_OBJ_FILES = \
 		librpc/gen_ndr/ndr_dcom_d.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
-		NDR_OXIDRESOLVER \
-		NDR_REMACT \
-		LIBCOM
+		DCOM \
 # End MODULE dcerpc_dcom
 ################################################
 
