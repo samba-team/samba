@@ -7,11 +7,10 @@ use FindBin qw($RealBin);
 use lib "$RealBin/..";
 use test;
 
-my %settings = (
-	'IDL-Arguments' => ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'],
-	'IncludeFiles' => ['ndr_test.h'],
-	'ExtraFiles' => ['ndr_test.c'],
-);
+my %settings = Test::GetSettings(@ARGV);
+$settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
+$settings{'IncludeFiles'} = ['ndr_test.h'];
+$settings{'ExtraFiles'} = ['ndr_test.c'];
 
 # Check that an outgoing scalar pointer is allocated correctly
 
