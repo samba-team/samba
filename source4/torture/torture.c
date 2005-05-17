@@ -330,104 +330,6 @@ static BOOL run_torture(struct smbcli_state *cli, int dummy)
 	return ret;
 }
 
-static BOOL rw_torture3(struct smbcli_state *c, const char *lockfname)
-{
-	int fnum = -1;
-	uint_t i = 0;
-	uint8_t buf[131072];
-	uint8_t buf_rd[131072];
-	uint_t count;
-	uint_t countprev = 0;
-	ssize_t sent = 0;
-	BOOL correct = True;
-
-	for (i = 0; i < sizeof(buf); i += sizeof(uint32_t))
-	{
-		SIVAL(buf, i, random());
-	}
-
-	if (procnum == 0)
-	{
-		fnum = smbcli_open(c->tree, lockfname, O_RDWR | O_CREAT | O_EXCL, 
-				DENY_NONE);
-		if (fnum == -1) {
-			printf("first open read/write of %s failed (%s)\n",
-					lockfname, smbcli_errstr(c->tree));
-			return False;
-		}
-	}
-	else
-	{
-		for (i = 0; i < 500 && fnum == -1; i++)
-		{
-			fnum = smbcli_open(c->tree, lockfname, O_RDONLY, 
-					DENY_NONE);
-			msleep(10);
-		}
-		if (fnum == -1) {
-			printf("second open read-only of %s failed (%s)\n",
-					lockfname, smbcli_errstr(c->tree));
-			return False;
-		}
-	}
-
-	i = 0;
-	for (count = 0; count < sizeof(buf); count += sent)
-	{
-		if (count >= countprev) {
-			printf("%d %8d\r", i, count);
-			fflush(stdout);
-			i++;
-			countprev += (sizeof(buf) / 20);
-		}
-
-		if (procnum == 0)
-		{
-			sent = ((uint_t)random()%(20))+ 1;
-			if (sent > sizeof(buf) - count)
-			{
-				sent = sizeof(buf) - count;
-			}
-
-			if (smbcli_write(c->tree, fnum, 0, buf+count, count, (size_t)sent) != sent) {
-				printf("write failed (%s)\n", smbcli_errstr(c->tree));
-				correct = False;
-			}
-		}
-		else
-		{
-			sent = smbcli_read(c->tree, fnum, buf_rd+count, count,
-					sizeof(buf)-count);
-			if (sent < 0)
-			{
-				printf("read failed offset:%d size:%d (%s)\n",
-						count, sizeof(buf)-count,
-						smbcli_errstr(c->tree));
-				correct = False;
-				sent = 0;
-			}
-			if (sent > 0)
-			{
-				if (memcmp(buf_rd+count, buf+count, sent) != 0)
-				{
-					printf("read/write compare failed\n");
-					printf("offset: %d req %d recvd %d\n",
-						count, sizeof(buf)-count, sent);
-					correct = False;
-					break;
-				}
-			}
-		}
-
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(c->tree, fnum))) {
-		printf("close failed (%s)\n", smbcli_errstr(c->tree));
-		correct = False;
-	}
-
-	return correct;
-}
 
 static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 {
@@ -541,20 +443,6 @@ static BOOL run_readwritetest(void)
 
 	return (test1 && test2);
 }
-
-static BOOL run_readwritemulti(struct smbcli_state *cli, int dummy)
-{
-	BOOL test;
-
-	test = rw_torture3(cli, "\\multitest.txt");
-
-	if (!torture_close_connection(cli)) {
-		test = False;
-	}
-	
-	return test;
-}
-
 
 /*
   this checks to see if a secondary tconx can use open files from an
@@ -2304,7 +2192,6 @@ static struct {
 	{"BASE-TCONDEV",  run_tcon_devtype_test, 0},
 	{"BASE-VUID", run_vuidtest, 0},
 	{"BASE-RW1",  run_readwritetest, 0},
-	{"BASE-RW2",  NULL, run_readwritemulti},
 	{"BASE-OPEN", run_opentest, 0},
 	{"BASE-DEFER_OPEN", NULL, run_deferopen},
 	{"BASE-XCOPY", run_xcopy, 0},
