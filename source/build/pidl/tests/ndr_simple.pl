@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+# Some simple tests for pidl
+# (C) 2005 Jelmer Vernooij <jelmer@samba.org>
+# Published under the GNU General Public License
 use strict;
 
 use FindBin qw($RealBin);
