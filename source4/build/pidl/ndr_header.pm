@@ -337,6 +337,11 @@ sub HeaderFnProto($$)
     pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
    	pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 
+    return unless util::has_property($fn, "public");
+
+	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, struct $name *r);\n";
+	pidl "NTSTATUS ndr_pull_$name(struct ndr_pull *ndr, int flags, struct $name *r);\n";
+
     pidl "\n";
 }
 

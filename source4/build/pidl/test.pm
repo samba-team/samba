@@ -117,7 +117,7 @@ sub test_idl($$$$)
 
 	my $ret = system("./$exe_filename");
 	if ($ret != 0) {
-		print STDERR "$name failed with return value $ret\n";
+		print "failed with return value $ret\n";
 		return $ret;
 	}
 
