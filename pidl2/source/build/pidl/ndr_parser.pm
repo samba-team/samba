@@ -1036,6 +1036,8 @@ sub ParsePtrPull($$$$)
 	# of the array
 	unless ($next_is_array) { 
 		pidl "NDR_ALLOC($ndr, $var_name);"; 
+	} else {
+		pidl "NDR_ALLOC_SIZE($ndr, $var_name, 1);"; # FIXME: Yes, this is nasty. We allocate an array twice - once just to indicate that  it's there, then the real allocation...
 	}
 
 	#pidl "memset($var_name, 0, sizeof($var_name));";
