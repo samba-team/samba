@@ -125,6 +125,11 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
                 ret = vfs_write_data(fsp, data, n);
         } else {
 		fsp->pos = pos;
+		if (pos && lp_strict_allocate(SNUM(fsp->conn))) {
+			if (vfs_fill_sparse(fsp, pos) == -1) {
+				return -1;
+			}
+		}
                 ret = vfs_pwrite_data(fsp, data, n, pos);
 	}
 
