@@ -1,5 +1,5 @@
 #################################
-# Start SUBSYSTEM GENSEC
+# Start SUBSYSTEM LIBCLI_AUTH
 [SUBSYSTEM::LIBCLI_AUTH]
 ADD_OBJ_FILES = libcli/auth/credentials.o \
 		libcli/auth/session.o \
