@@ -246,9 +246,6 @@ static NTSTATUS userdel_lookup(struct composite_context *c,
 	s->stage = USERDEL_OPEN;
 	
 	return NT_STATUS_OK;
-failure:
-	talloc_free(c);
-	return status;
 }
 
 
