@@ -10,7 +10,7 @@
 use strict;
 package input;
 
-my $subsystem_output_type = "OBJLIST";
+my $subsystem_default_output_type = "OBJLIST";
 my $srcdir = ".";
 
 sub strtrim($)
@@ -55,7 +55,9 @@ sub check_subsystem($$)
 	}
 	
 	unless(defined($subsys->{OUTPUT_TYPE})) {
-		$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
+		$subsys->{OUTPUT_TYPE} = $subsystem_default_output_type;
+	} else {
+		$subsys->{OUTPUT_TYPE} = join('', @{$subsys->{OUTPUT_TYPE}});
 	}
 }
 
@@ -97,7 +99,7 @@ sub check_module($$)
 		$mod->{ENABLE} = "YES";
 		push (@{$CTX->{INPUT}{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		printf("Module: %s...static\n",$mod->{NAME});
-		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
+		$mod->{OUTPUT_TYPE} = $subsystem_default_output_type;
 	} else {
 		$mod->{ENABLE} = "NO";
 		printf("Module: %s...not\n",$mod->{NAME});
@@ -169,7 +171,7 @@ sub check($)
 {
 	my $CTX = shift;
 
-	($subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
+	($subsystem_default_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
 	foreach my $part (values %{$CTX->{INPUT}}) {
 		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});

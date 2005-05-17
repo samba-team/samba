@@ -88,13 +88,13 @@ CC=@CC@
 CC_FLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
 
 LD=@CC@
-LD_FLAGS=@LDFLAGS@ @CFLAGS@
+LD_FLAGS=@LDFLAGS@ @CFLAGS@ -Lbin
 
 STLD=ar
 STLD_FLAGS=-rc
 
 SHLD=@CC@
-SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@
+SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
 
 __EOD__
 
@@ -358,7 +358,6 @@ sub _prepare_shared_library_rule($)
 	my $tmpshflag;
 	my $tmprules;
 	my $output;
-	my $outname = $ctx->{OUTPUT};
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
@@ -376,7 +375,7 @@ LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 
 # Shared $ctx->{LIBRARY_NAME}
-$ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
@@ -396,11 +395,10 @@ bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
 
 __EOD__
-		$outname = $ctx->{LIBRARY_NAME};
 	}
 
 $output .= << "__EOD__";
-library_$ctx->{NAME}: basics bin/$outname
+library_$ctx->{NAME}: basics bin/lib$ctx->{LIBRARY_NAME}
 # End Library $ctx->{NAME}
 ###################################
 
@@ -453,7 +451,7 @@ LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 #
 # Static $ctx->{LIBRARY_NAME}
-$ctx->{OUTPUT}: $(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{TARGET}: $(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	@echo Linking $@
 	@$(STLD) $(STLD_FLAGS) $@ \\
 		$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
@@ -807,7 +805,7 @@ sub _prepare_makefile_in($)
 	my @all = ();
 	
 	foreach my $part (values %{$CTX}) {
-		push (@all, $part->{OUTPUT}) if defined ($part->{OUTPUT_TYPE}) and $part->{OUTPUT_TYPE} eq "BINARY";	
+		push (@all, $part->{TARGET}) if defined ($part->{OUTPUT_TYPE}) and $part->{OUTPUT_TYPE} eq "BINARY";	
 	}
 	
 	$output .= _prepare_make_target({ TARGET => "all", DEPEND_LIST => \@all });
