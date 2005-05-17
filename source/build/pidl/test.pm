@@ -8,6 +8,11 @@ use strict;
 use util;
 
 my $idl_path = "./build/pidl/pidl.pl";
+my $cc = $ENV{CC};
+my @cflags = split / /, $ENV{CFLAGS};
+my @ldflags = split / /, $ENV{LDFLAGS};
+
+$cc = "cc" if ($cc eq "");
 
 sub generate_cfile($$$)
 {
@@ -30,7 +35,6 @@ sub generate_cfile($$$)
 int main(int argc, char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_init(NULL);
-	int ndr_flags = 0;
 	';
 	print OUT $fragment;
 	print OUT "\treturn 0;\n}\n";
@@ -76,16 +80,14 @@ sub compile_cfile($)
 {
 	my ($filename) = @_;
 
-	print "Compiling C file $filename\n";
-
-	return system("cc", '-I.', '-Iinclude', '-c', $filename);
+	return system($cc, @cflags, '-I.', '-Iinclude', '-c', $filename);
 }
 
 sub link_files($$)
 {
 	my ($exe_name,$objs) = @_;
 
-	return system("cc", '-I.', '-Iinclude', '-Lbin', '-lrpc', '-o', $exe_name, @$objs);
+	return system($cc, @ldflags, '-I.', '-Iinclude', '-Lbin', '-lrpc', '-o', $exe_name, @$objs);
 }
 
 sub test_idl($$$$)
@@ -109,9 +111,10 @@ sub test_idl($$$$)
 	my @srcs = ($c_filename);
 	push (@srcs, @{$settings->{'ExtraFiles'}});
 
-#	foreach (@srcs) {
-#		return -1 if (compile_cfile($_) == -1);
-#	}
+	foreach (@srcs) {
+		next unless /\.c$/;
+		return -1 if (compile_cfile($_) == -1);
+	}
 
 	return -1 if (link_files($exe_filename, \@srcs) == -1);
 
