@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+use strict;
+
+use FindBin qw($RealBin);
+use lib "$RealBin/..";
+use test;
+
+my %settings = (
+	'IDL-Arguments' => ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'],
+	'IncludeFiles' => ['ndr_test.h'],
+	'ExtraFiles' => ['ndr_test.c'],
+);
+
+Test::test_idl(
+	# Name
+	'UInt8',
+	
+	# Settings
+	\%settings,
+	
+	# IDL 
+	'void Test();',
+	
+	# C Test
+	'
+	uint8_t data[] = { 0x02 };
+	uint8_t result;
+	DATA_BLOB b;
+	struct ndr_pull *ndr;
+
+	b.data = data;
+	b.length = 1;
+	ndr = ndr_pull_init_blob(&b, mem_ctx);
+
+	if (NT_STATUS_IS_ERR(ndr_pull_uint8(ndr, ndr_flags, &result)))
+		return 1;
+
+	if (result != 0x02) 
+		return 2;
+');
