@@ -231,18 +231,12 @@ init_auth
 	ret = GSS_S_BAD_BINDINGS;
 	goto failure;
     }
-       
-    {
-	int32_t tmp;
 
-	krb5_auth_con_getflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       &tmp);
-	tmp |= KRB5_AUTH_CONTEXT_DO_SEQUENCE;
-	krb5_auth_con_setflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       tmp);
-    }
+    krb5_auth_con_addflags(gssapi_krb5_context,
+			   (*context_handle)->auth_context,
+			   KRB5_AUTH_CONTEXT_DO_SEQUENCE |
+			   KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED,
+			   NULL);
 
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
