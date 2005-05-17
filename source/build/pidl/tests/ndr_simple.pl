@@ -32,7 +32,7 @@ Test::test_idl(
 	b.length = 1;
 	ndr = ndr_pull_init_blob(&b, mem_ctx);
 
-	if (NT_STATUS_IS_ERR(ndr_pull_uint8(ndr, ndr_flags, &result)))
+	if (NT_STATUS_IS_ERR(ndr_pull_uint8(ndr, NDR_SCALARS, &result)))
 		return 1;
 
 	if (result != 0x02) 
