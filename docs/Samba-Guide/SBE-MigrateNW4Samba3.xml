@@ -321,9 +321,9 @@ done
 		<member><para>openldap2-devel (only for Samba compilation)</para></member>
 		<member><para>openldap2</para></member>
 		<member><para>pam_ldap</para></member>
-		<member><para>samba-3.0.15 or later</para></member>
-		<member><para>samba-client-3.0.15 or later</para></member>
-		<member><para>samba-winbind-3.0.15 or later</para></member>
+		<member><para>samba-3.0.20 or later</para></member>
+		<member><para>samba-client-3.0.20 or later</para></member>
+		<member><para>samba-winbind-3.0.20 or later</para></member>
 		<member><para>smbldap-tools Version 0.8.8</para></member>
 	</simplelist>
 
