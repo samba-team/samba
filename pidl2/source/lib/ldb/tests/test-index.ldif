@@ -1,0 +1,12 @@
+dn: @INDEXLIST
+@IDXATTR: uid
+@IDXATTR: objectclass
+
+dn: @ATTRIBUTES
+uid: CASE_INSENSITIVE
+uid: WILDCARD
+
+dn: @SUBCLASSES
+top: person
+person: organizationalPerson
+organizationalPerson: OpenLDAPperson
