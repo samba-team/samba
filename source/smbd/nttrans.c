@@ -802,7 +802,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	if (desired_access & DELETE_ACCESS) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if ((share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
 #endif
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
@@ -1422,7 +1422,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	if (desired_access & DELETE_ACCESS) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if ((share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
 #endif
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
