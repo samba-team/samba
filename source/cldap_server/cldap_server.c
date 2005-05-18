@@ -130,6 +130,7 @@ static void cldapd_task_init(struct task_server *task)
 	}
 
 	cldapd->task = task;
+	cldapd->samctx = NULL;
 
 	/* start listening on the configured network interfaces */
 	status = cldapd_startup_interfaces(cldapd);

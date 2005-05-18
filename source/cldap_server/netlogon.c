@@ -30,7 +30,7 @@
 /*
   fill in the cldap netlogon union for a given version
 */
-static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
+static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				     TALLOC_CTX *mem_ctx,
 				     const char *domain,
 				     const char *domain_guid,
@@ -39,7 +39,6 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 				     uint32_t version,
 				     union nbt_cldap_netlogon *netlogon)
 {
-	struct ldb_context *samctx;
 	const char *attrs[] = {"realm", "dnsDomain", "objectGUID", "name", NULL};
 	struct ldb_message **res;
 	int ret;
@@ -55,10 +54,12 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	const char *site_name2;
 	const char *pdc_ip;
 
-	samctx = samdb_connect(mem_ctx);
-	if (samctx == NULL) {
-		DEBUG(2,("Unable to open sam in cldap netlogon reply\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (cldapd->samctx == NULL) {
+		cldapd->samctx = samdb_connect(mem_ctx);
+		if (cldapd->samctx == NULL) {
+			DEBUG(2,("Unable to open sam in cldap netlogon reply\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 	}
 
 	/* the domain has an optional trailing . */
@@ -67,7 +68,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldap_socket *cldap,
 	}
 
 	/* try and find the domain */
-	ret = gendb_search(samctx, samctx, NULL, &res, attrs, 
+	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectClass=domainDNS)(|(dnsDomain=%s)(objectGUID=%s)))", 
 			   domain?domain:"", 
 			   domain_guid?domain_guid:"");
@@ -177,6 +178,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			     const char *filter,
 			     const char *src_address, int src_port)
 {
+	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private, struct cldapd_server);
 	struct ldap_parse_tree *tree;
 	int i;
 	const char *domain = NULL;
@@ -191,7 +193,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 
-	DEBUG(0,("cldap filter='%s'\n", filter));
+	DEBUG(5,("cldap filter='%s'\n", filter));
 
 	tree = ldap_parse_filter_string(tmp_ctx, filter);
 	if (tree == NULL) goto failed;
@@ -249,10 +251,10 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	DEBUG(0,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
+	DEBUG(5,("cldap netlogon query domain=%s host=%s user=%s version=%d guid=%s\n",
 		 domain, host, user, version, domain_guid));
 
-	status = cldapd_netlogon_fill(cldap, tmp_ctx, domain, domain_guid, 
+	status = cldapd_netlogon_fill(cldapd, tmp_ctx, domain, domain_guid, 
 				      user, src_address, 
 				      version, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {

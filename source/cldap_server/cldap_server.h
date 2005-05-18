@@ -27,5 +27,5 @@
 */
 struct cldapd_server {
 	struct task_server *task;
-	const char *dns_domain;
+	struct ldb_context *samctx;
 };
