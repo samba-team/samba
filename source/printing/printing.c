@@ -2031,7 +2031,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Write to a print file.
 ****************************************************************************/
 
-int print_job_write(int snum, uint32 jobid, const char *buf, int size)
+ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size)
 {
 	const char* sharename = lp_const_servicename(snum);
 	int return_code;
@@ -2045,7 +2045,8 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 	if (pjob->pid != sys_getpid())
 		return -1;
 
-	return_code = write(pjob->fd, buf, size);
+	return_code = write_data_at_offset(pjob->fd, buf, size, pos);
+
 	if (return_code>0) {
 		pjob->size += size;
 		pjob_store(sharename, jobid, pjob);
