@@ -117,7 +117,7 @@ static unsigned int allocated_write_caches;
  *Really* write to a file.
 ****************************************************************************/
 
-static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_t n)
+static ssize_t real_write_file(files_struct *fsp,const char *data, SMB_OFF_T pos, size_t n)
 {
 	ssize_t ret;
 
@@ -192,7 +192,7 @@ static int wcp_file_size_change(files_struct *fsp)
  Write to a file.
 ****************************************************************************/
 
-ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
+ssize_t write_file(files_struct *fsp, const char *data, SMB_OFF_T pos, size_t n)
 {
 	write_cache *wcp = fsp->wcp;
 	ssize_t total_written = 0;
@@ -209,7 +209,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 			return -1;
 		}
 
-		return print_job_write(SNUM(fsp->conn), jobid, data, n);
+		return print_job_write(SNUM(fsp->conn), jobid, data, pos, n);
 	}
 
 	if (!fsp->can_write) {
