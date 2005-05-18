@@ -1149,7 +1149,7 @@ out:
  first hbin offset.
 *******************************************************************/
 
-REGF_FILE* regfio_open( const char *filename, int flags, int mode )
+ REGF_FILE* regfio_open( const char *filename, int flags, int mode )
 {
 	REGF_FILE *rb;
 	
@@ -1215,7 +1215,7 @@ static void regfio_mem_free( REGF_FILE *file )
 /*******************************************************************
 *******************************************************************/
 
-int regfio_close( REGF_FILE *file )
+ int regfio_close( REGF_FILE *file )
 {
 	int fd;
 
@@ -1278,7 +1278,7 @@ int regfio_close( REGF_FILE *file )
 /*******************************************************************
 *******************************************************************/
 
-void regfio_flush( REGF_FILE *file )
+static void regfio_flush( REGF_FILE *file )
 {
 	REGF_HBIN *hbin;
 
@@ -1347,7 +1347,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
  NK record.  Remember that offsets are from the *first* HBIN block.
 *******************************************************************/
 
-REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
+ REGF_NK_REC* regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk )
 {
 	REGF_NK_REC *subkey;
 	REGF_HBIN   *hbin;
@@ -1670,7 +1670,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 /*******************************************************************
 *******************************************************************/
 
-REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
+ REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
                                REGVAL_CTR *values, REGSUBKEY_CTR *subkeys, 
                                SEC_DESC *sec_desc, REGF_NK_REC *parent )
 {

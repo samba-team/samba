@@ -260,4 +260,34 @@ BOOL reg_split_path( char *path, char **base, char **new_path )
 }
 
 
+/***********************************************************************
+ Utility function for splitting the base path of a registry path off
+ by setting base and new_path to the appropriate offsets withing the
+ path.
+ 
+ WARNING!!  Does modify the original string!
+ ***********************************************************************/
+
+BOOL reg_split_key( char *path, char **base, char **key )
+{
+	char *p;
+	
+	*key = *base = NULL;
+	
+	if ( !path)
+		return False;
+	
+	*base = path;
+	
+	p = strrchr( path, '\\' );
+	
+	if ( p ) {
+		*p = '\0';
+		*key = p+1;
+	}
+	
+	return True;
+}
+
+
 
