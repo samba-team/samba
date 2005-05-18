@@ -1946,14 +1946,27 @@ sub ParseFunctionPull($)
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and 
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
-		next unless ($e->{LEVELS}[1]->{TYPE} eq "DATA");
 
-		pidl "NDR_ALLOC(ndr, r->out.$e->{NAME});";
-		
-		if (grep(/in/, @{$e->{DIRECTION}})) {
-			pidl "*r->out.$e->{NAME} = *r->in.$e->{NAME};";
+
+		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
+			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);
+			check_null_pointer($size);
+			
+			pidl "NDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";
+
+			if (grep(/in/, @{$e->{DIRECTION}})) {
+				pidl "memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, $size * sizeof(*r->in.$e->{NAME}));";
+			} else {
+				pidl "memset(r->out.$e->{NAME}, 0, $size * sizeof(*r->out.$e->{NAME}));";
+			}
 		} else {
-			pidl "ZERO_STRUCTP(r->out.$e->{NAME});";
+			pidl "NDR_ALLOC(ndr, r->out.$e->{NAME});";
+		
+			if (grep(/in/, @{$e->{DIRECTION}})) {
+				pidl "*r->out.$e->{NAME} = *r->in.$e->{NAME};";
+			} else {
+				pidl "ZERO_STRUCTP(r->out.$e->{NAME});";
+			}
 		}
 	}
 
