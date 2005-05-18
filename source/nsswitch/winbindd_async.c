@@ -352,6 +352,69 @@ static void name2uid_recv(TALLOC_CTX *mem_ctx, BOOL success,
 	cont(private, True, response->data.uid);
 }
 
+static void idmap_sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			       struct winbindd_response *response,
+			       void *c, void *private);
+
+void idmap_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid, BOOL alloc,
+			 void (*cont)(void *private, BOOL success, gid_t gid),
+			 void *private)
+{
+	struct winbindd_request request;
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_DUAL_SID2GID;
+	sid_to_string(request.data.dual_sid2id.sid, sid);
+	request.data.dual_sid2id.alloc = alloc;
+	do_async(mem_ctx, idmap_child(), &request, idmap_sid2gid_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
+					   struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
+		  state->request.data.dual_sid2id.sid));
+
+	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.dual_sid2id.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Find gid for this sid and return it, possibly ask the slow remote
+	 * idmap */
+
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+				  state->request.data.dual_sid2id.alloc ?
+				  0 : ID_QUERY_ONLY);
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
+static void idmap_sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			       struct winbindd_response *response,
+			       void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, gid_t gid) = c;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger sid2gid\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("sid2gid returned an error\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	cont(private, True, response->data.gid);
+}
+			 
 static void gid2name_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			  struct winbindd_response *response,
 			  void *c, void *private)
@@ -970,175 +1033,6 @@ static void gettoken_recvaliases(void *private, BOOL success,
 	state->cont(state->private, True, state->sids, state->num_sids);
 }
 
-struct sid2gid_state {
-	TALLOC_CTX *mem_ctx;
-	DOM_SID sid;
-	void (*cont)(void *private, BOOL success, gid_t gid);
-	void *private;
-};
-
-static void sid2gid_lookup_sid_recv(void *private, BOOL success,
-				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type);
-static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			 struct winbindd_response *response,
-			 void *c, void *private);
-
-void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			    void (*cont)(void *private, BOOL success,
-					 gid_t gid),
-			    void *private)
-{
-	struct sid2gid_state *state;
-	NTSTATUS result;
-	gid_t gid;
-
-	if (idmap_proxyonly()) {
-		DEBUG(10, ("idmap proxy only\n"));
-		cont(private, False, 0);
-		return;
-	}
-
-	/* Query only the local tdb, everything else might possibly block */
-
-	result = idmap_sid_to_gid(sid, &gid, ID_QUERY_ONLY|ID_CACHE_ONLY);
-
-	if (NT_STATUS_IS_OK(result)) {
-		cont(private, True, gid);
-		return;
-	}
-
-	state = TALLOC_P(mem_ctx, struct sid2gid_state);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		cont(private, False, 0);
-		return;
-	}
-
-	state->mem_ctx = mem_ctx;
-	state->sid = *sid;
-	state->cont = cont;
-	state->private = private;
-
-	winbindd_lookupsid_async(mem_ctx, sid, sid2gid_lookup_sid_recv, state);
-}
-
-static void sid2gid_lookup_sid_recv(void *private, BOOL success,
-				    const char *dom_name, const char *name,
-				    enum SID_NAME_USE type)
-{
-	struct sid2gid_state *state = private;
-	struct winbindd_request request;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger lookup_sid\n"));
-		state->cont(state->private, False, 0);
-		return;
-	}
-
-	if (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
-	     (type != SID_NAME_WKN_GRP))) {
-		DEBUG(5, ("SID is not a group\n"));
-		state->cont(state->private, False, 0);
-		return;
-	}
-
-	ZERO_STRUCT(request);
-	request.cmd = WINBINDD_DUAL_SID2GID;
-	fstrcpy(request.data.dual_sid2id.sid, sid_string_static(&state->sid));
-	fstrcpy(request.data.dual_sid2id.name, name);
-
-	do_async(state->mem_ctx, idmap_child(), &request,
-		 sid2gid_recv, NULL, state);
-}
-
-static void sid2gid_recv(TALLOC_CTX *mem_ctx, BOOL success,
-			 struct winbindd_response *response,
-			 void *c, void *private)
-{
-	struct sid2gid_state *state = private;
-
-	if (!success) {
-		DEBUG(5, ("Could not trigger sid2gid\n"));
-		state->cont(state->private, False, 0);
-		return;
-	}
-
-	state->cont(state->private, True, response->data.gid);
-}
-
-/* Child part of winbindd_sid2gid. We already know for sure it's a group, as
- * well as the user's name */
-
-enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
-					   struct winbindd_cli_state *state)
-{
-	DOM_SID sid;
-	NTSTATUS result;
-
-	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
-		  state->request.data.dual_sid2id.sid));
-
-	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.dual_sid2id.sid));
-		return WINBINDD_ERROR;
-	}
-
-	/* Find gid for this sid and return it, possibly ask the slow remote
-	 * idmap */
-
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
-				  ID_QUERY_ONLY);
-
-	if (NT_STATUS_IS_OK(result))
-		return WINBINDD_OK;
-
-	/* This gets a little tricky.  If we assume that usernames are syncd
-	   between /etc/passwd and the windows domain (such as a member of a
-	   Samba domain), the we need to get the gid from the OS and not
-	   allocate one ourselves */
-	   
-	if (lp_winbind_trusted_domains_only() && 
-	    (sid_compare_domain(&sid, &find_our_domain()->sid) == 0)) {
-
-		const char *group_name = state->request.data.dual_sid2id.name;
-		struct group *grp = NULL;
-		unid_t id;
-			
-		/* ok...here's we know that we are dealing with our own domain
-		   (the one to which we are joined).  And we know that there
-		   must be a UNIX account for this user.  So we lookup the sid
-		   and the call getgrnam().*/
-
-		grp = getgrnam(group_name);
-		if (grp == NULL) {
-			DEBUG(0,("winbindd_sid_to_gid: 'winbind trusted "
-				 "domains only' is set but this group [%s] "
-				 "doesn't exist!\n", group_name));
-			return WINBINDD_ERROR;
-		}
-			
-		state->response.data.gid = grp->gr_gid;
-
-		id.gid = grp->gr_gid;
-		idmap_set_mapping( &sid, id, ID_GROUPID );
-
-		return WINBINDD_OK;
-	}
-
-	if (state->request.flags & WBFLAG_QUERY_ONLY)
-		return WINBINDD_ERROR;
-
-	result = idmap_sid_to_gid(&sid, &(state->response.data.gid), 0);
-
-	if (NT_STATUS_IS_OK(result))
-		return WINBINDD_OK;
-
-	DEBUG(4, ("Could not get gid for sid %s\n", state->request.data.sid));
-	return WINBINDD_ERROR;
-}
-
 struct sid2uid_state {
 	TALLOC_CTX *mem_ctx;
 	DOM_SID sid;
@@ -1218,7 +1112,7 @@ static void sid2uid_lookup_sid_recv(void *private, BOOL success,
 
 	state->username = talloc_strdup(state->mem_ctx, name);
 
-	/* Ask the possibly blocking remote IDMAP and allocate  */
+	/* Ask the possibly blocking remote IDMAP */
 
 	idmap_sid2uid_async(state->mem_ctx, &state->sid, False,
 			    sid2uid_noalloc_recv, state);
@@ -1301,6 +1195,168 @@ static void sid2uid_set_mapping_recv(void *private, BOOL success)
 	state->cont(state->private, True, state->uid);
 }
 
+struct sid2gid_state {
+	TALLOC_CTX *mem_ctx;
+	DOM_SID sid;
+	char *groupname;
+	gid_t gid;
+	void (*cont)(void *private, BOOL success, gid_t gid);
+	void *private;
+};
+
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type);
+static void sid2gid_noalloc_recv(void *private, BOOL success, gid_t gid);
+static void sid2gid_alloc_recv(void *private, BOOL success, gid_t gid);
+static void sid2gid_name2gid_recv(void *private, BOOL success, gid_t gid);
+static void sid2gid_set_mapping_recv(void *private, BOOL success);
+
+void winbindd_sid2gid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			    void (*cont)(void *private, BOOL success,
+					 gid_t gid),
+			    void *private)
+{
+	struct sid2gid_state *state;
+	NTSTATUS result;
+	gid_t gid;
+
+	if (idmap_proxyonly()) {
+		DEBUG(10, ("idmap proxy only\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	/* Query only the local tdb, everything else might possibly block */
+
+	result = idmap_sid_to_gid(sid, &gid, ID_QUERY_ONLY|ID_CACHE_ONLY);
+
+	if (NT_STATUS_IS_OK(result)) {
+		cont(private, True, gid);
+		return;
+	}
+
+	state = TALLOC_P(mem_ctx, struct sid2gid_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		cont(private, False, 0);
+		return;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->sid = *sid;
+	state->cont = cont;
+	state->private = private;
+
+	/* Let's see if it's really a user before allocating a gid */
+
+	winbindd_lookupsid_async(mem_ctx, sid, sid2gid_lookup_sid_recv, state);
+}
+
+static void sid2gid_lookup_sid_recv(void *private, BOOL success,
+				    const char *dom_name, const char *name,
+				    enum SID_NAME_USE type)
+{
+	struct sid2gid_state *state =
+		talloc_get_type_abort(private, struct sid2gid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger lookup_sid\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	if (((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+	     (type != SID_NAME_WKN_GRP))) {
+		DEBUG(5, ("SID is not a group\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->groupname = talloc_strdup(state->mem_ctx, name);
+
+	/* Ask the possibly blocking remote IDMAP and allocate  */
+
+	idmap_sid2gid_async(state->mem_ctx, &state->sid, False,
+			    sid2gid_noalloc_recv, state);
+}
+
+static void sid2gid_noalloc_recv(void *private, BOOL success, gid_t gid)
+{
+	struct sid2gid_state *state =
+		talloc_get_type_abort(private, struct sid2gid_state);
+
+	if (success) {
+		DEBUG(10, ("found gid for sid %s in remote backend\n",
+			   sid_string_static(&state->sid)));
+		state->cont(state->private, True, gid);
+		return;
+	}
+
+	if (lp_winbind_trusted_domains_only() && 
+	    (sid_compare_domain(&state->sid, &find_our_domain()->sid) == 0)) {
+		DEBUG(10, ("Trying to go via nss\n"));
+		winbindd_name2gid_async(state->mem_ctx, state->groupname,
+					sid2gid_name2gid_recv, state);
+		return;
+	}
+
+	/* To be done: Here we're going to try the unixinfo pipe */
+
+	/* Now allocate a gid */
+
+	idmap_sid2gid_async(state->mem_ctx, &state->sid, True,
+			    sid2gid_alloc_recv, state);
+}
+
+static void sid2gid_alloc_recv(void *private, BOOL success, gid_t gid)
+{
+	struct sid2gid_state *state =
+		talloc_get_type_abort(private, struct sid2gid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not allocate gid\n"));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->cont(state->private, True, gid);
+}
+
+static void sid2gid_name2gid_recv(void *private, BOOL success, gid_t gid)
+{
+	struct sid2gid_state *state =
+		talloc_get_type_abort(private, struct sid2gid_state);
+	unid_t id;
+
+	if (!success) {
+		DEBUG(5, ("Could not find gid for name %s\n",
+			  state->groupname));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->gid = gid;
+
+	id.gid = gid;
+	idmap_set_mapping_async(state->mem_ctx, &state->sid, id, ID_GROUPID,
+				sid2gid_set_mapping_recv, state);
+}
+
+static void sid2gid_set_mapping_recv(void *private, BOOL success)
+{
+	struct sid2gid_state *state =
+		talloc_get_type_abort(private, struct sid2gid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not set ID mapping for sid %s\n",
+			  sid_string_static(&state->sid)));
+		state->cont(state->private, False, 0);
+		return;
+	}
+
+	state->cont(state->private, True, state->gid);
+}
 
 static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
