@@ -85,7 +85,7 @@
 	Mr. Bob Jordan has asked you to install the new server as economically as possible. The central
 	server has a Pentium-IV 1.6GHz CPU, 768MB RAM, a 20GB IDE boot drive, a 160GB IDE second disk
 	to store plans, and a 100-base-T Ethernet card. You have already installed Red Hat Fedora CoreX and
-	have upgraded Samba to version 3.0.15 using the RPM package that is provided from the Samba
+	have upgraded Samba to version 3.0.20 using the RPM package that is provided from the Samba
 	<ulink url="http://www.samba.org">FTP</ulink> sites. (Note: Fedora CoreX indicates your favorite
 	version.)
 	</para>
@@ -139,7 +139,7 @@
 
 		<para>
 		It is assumed that the server is fully installed and ready for installation and 
-		configuration of Samba 3.0.15 and any support files needed. All TCP/IP addresses 
+		configuration of Samba 3.0.20 and any support files needed. All TCP/IP addresses 
 		have been hard-coded. In our case the IP address of the Samba server is 
 		<constant>192.168.1.1</constant> and the netmask is <constant>255.255.255.0</constant>. 
 		The hostname of the server used is <constant>server</constant>.
@@ -159,7 +159,7 @@
 			Install the RPM package using either the Red Hat Linux preferred GUI
 			tool or the <command>rpm</command>:
 <screen>
-&rootprompt; rpm -Uvh samba-3.0.15-1.i386.rpm
+&rootprompt; rpm -Uvh samba-3.0.20-1.i386.rpm
 </screen>
 			</para></step>
 
@@ -206,6 +206,9 @@
 <screen>
 192.168.1.1	server
 </screen>
+
+<?latex \newpage ?>
+
 			</para></step>
 
 			<step><para>
@@ -277,12 +280,12 @@
         Sharename     Type     Comment
         ---------     ----     -------
         Plans         Disk
-        IPC$          IPC      IPC Service (Samba 3.0.15)
-        ADMIN$        IPC      IPC Service (Samba 3.0.15)
+        IPC$          IPC      IPC Service (Samba 3.0.20)
+        ADMIN$        IPC      IPC Service (Samba 3.0.20)
 
         Server             Comment
         ---------          -------
-        SERVER             Samba 3.0.15
+        SERVER             Samba 3.0.20
 
         Workgroup          Master
         ---------          --------
@@ -385,7 +388,7 @@
 	5 PS printers that are network connected.  The second printer is to be used for general
 	office and letter printing. Your recommendation to allow only the Linux server to print directly
 	to the printers was accepted. You have supplied SUSE Enterprise Linux Server 9 and
-	have upgraded Samba to version 3.0.15.
+	have upgraded Samba to version 3.0.20.
 	</para>
 
 		<sect3>
@@ -466,7 +469,7 @@
 
 		<para>
 		It is assumed that the server is fully installed and ready for configuration of
-		Samba 3.0.15 and for necessary support files. All TCP/IP addresses should be hard-coded.
+		Samba 3.0.20 and for necessary support files. All TCP/IP addresses should be hard-coded.
 		In our case, the IP address of the Samba server is 192.168.1.1 and the netmask is
 		255.255.255.0. The hostname of the server used is <constant>server</constant>.
 		The office network is built as shown in <link linkend="charitynet"/>.
@@ -476,6 +479,8 @@
 			<imagedescription>Charity Administration Office Network</imagedescription>
 			<imagefile scale="80">Charity-Network</imagefile>
 		</image>
+
+<?latex \newpage ?>
 
 		<procedure>
 		<title>Samba Server Configuration</title>
@@ -555,10 +560,9 @@ Password changed
 				directories are created with the same owner and group as the directory in which they are
 				created. Any new directories created still have the same owner, group, and permissions as the
 				directory they are in. This should eliminate all permissions-based file access problems.  For
-				more information on this subject, refer to The Official Samba-3 HOWTO and Reference Guide
-				(<emphasis>TOSHARG)</emphasis>, Chapter on: <emphasis>File, Directory and Share Access
-				Controls</emphasis>, or refer to the UNIX man page for the <command>chmod</command> and the
-				<command>chown</command> commands.
+				more information on this subject, refer to TOSHARG<footnote>The Official Samba-3 HOWTO and
+				Reference Guide, Chapter 15, File, Directory and Share Access Controls.</footnote> or refer
+				to the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
 				</para></step>
 
 				<step><para>
@@ -897,7 +901,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 
 	<para>
 	<indexterm><primary>Red Hat Linux</primary></indexterm>
-	The new server will run Red Hat Fedora Core2. You should install Samba-3.0.15 and 
+	The new server will run Red Hat Fedora Core2. You should install Samba-3.0.20 and 
 	copy all files from the old system to the new one. The existing Windows NT4 server has a parallel
 	port HP LaserJet 4 printer that is shared by all. The printer driver is installed on each
 	workstation. You must not change anything on the workstations. Mr. Meany gave instructions to
@@ -1481,11 +1485,12 @@ application/octet-stream
 
 		<para>
 		Under normal circumstances, the NT/200x client attempts to open the network printer using MS-RPC. Because the client 
-		considers the printer to be local, it attempts to issue the <parameter>OpenPrinterEx()</parameter> call requesting access rights associated 
-		with the logged on user. If the user possesses local administrator rights but not root privilege on the Samba host (often 
-		the case), the <parameter>OpenPrinterEx()</parameter> call fails. The result is that the client now displays an <quote>Access Denied; Unable 
-		to connect</quote> message in the printer queue window (even though jobs may be printed successfully). This parameter MUST
-		not be enabled on a print share that has a valid print driver installed on the Samba server.
+		considers the printer to be local, it attempts to issue the <parameter>OpenPrinterEx()</parameter> call requesting
+		access rights associated with the logged on user. If the user possesses local administrator rights but not root
+		privilege on the Samba host (often the case), the <parameter>OpenPrinterEx()</parameter> call fails. The result is
+		that the client now displays an <quote>Access Denied; Unable to connect</quote> message in the printer queue window
+		(even though jobs may be printed successfully). This parameter MUST not be enabled on a print share that has a valid
+		print driver installed on the Samba server.
 		</para>
 
 	</answer>

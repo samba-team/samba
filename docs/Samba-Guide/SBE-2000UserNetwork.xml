@@ -381,7 +381,7 @@
 	    the logon protocols and principles of operation are
 	    concerned. The following information pertains exclusively to the
 	    interaction between a Windows XP Professional workstation and a
-	    Samba-3.0.15 server. In the discussion that follows, use is made of
+	    Samba-3.0.20 server. In the discussion that follows, use is made of
 	    DHCP and WINS.</para>
 
 	  <para>As soon as the Windows workstation starts up, it obtains an

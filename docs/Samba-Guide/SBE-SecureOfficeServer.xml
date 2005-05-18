@@ -846,10 +846,10 @@ echo -e "\nNAT firewall done.\n"
 	<procedure>
 		<step><para>
 		Install the Samba-3 binary RPM from the Samba-Team FTP site. Assuming that the binary
-		RPM file is called <filename>samba-3.0.15-1.i386.rpm</filename>, one way to install this
+		RPM file is called <filename>samba-3.0.20-1.i386.rpm</filename>, one way to install this
 		file is as follows:
 <screen>
-&rootprompt; rpm -Uvh samba-3.0.15-1.i386.rpm
+&rootprompt; rpm -Uvh samba-3.0.20-1.i386.rpm
 </screen>
 		This operation must be performed while logged in as the <command>root</command> user.
 		Successful operation is clearly indicated. If this installation should fail for any reason,
@@ -1979,13 +1979,13 @@ $rootprompt; ps ax | grep winbind
 
         Sharename      Type      Comment
         ---------      ----      -------
-        IPC$           IPC       IPC Service (Samba 3.0.15)
+        IPC$           IPC       IPC Service (Samba 3.0.20)
         netlogon       Disk      Network Logon Service
         profiles       Disk      Profile Share
         accounts       Disk      Accounting Files
         service        Disk      Financial Services Files
         apps           Disk      Application Files
-        ADMIN$         IPC       IPC Service (Samba 3.0.15)
+        ADMIN$         IPC       IPC Service (Samba 3.0.20)
         hplj6a         Printer   hplj6a
         hplj6f         Printer   hplj6f
         qmsa           Printer   qmsa
@@ -1993,7 +1993,7 @@ $rootprompt; ps ax | grep winbind
 
         Server               Comment
         ---------            -------
-        DIAMOND              Samba CVS 3.0.15
+        DIAMOND              Samba CVS 3.0.20
 
         Workgroup            Master
         ---------            -------

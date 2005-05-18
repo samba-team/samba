@@ -441,8 +441,8 @@ Build environment:
    Built on:    Mon Apr 11 20:23:27 MDT 2005
    Built using: gcc
    Build host:  Linux frodo 2.6...
-   SRCDIR:      /usr/src/packages/BUILD/samba-3.0.15/source
-   BUILDDIR:    /usr/src/packages/BUILD/samba-3.0.15/source
+   SRCDIR:      /usr/src/packages/BUILD/samba-3.0.20/source
+   BUILDDIR:    /usr/src/packages/BUILD/samba-3.0.20/source
 
 Paths:
    SBINDIR: /usr/sbin

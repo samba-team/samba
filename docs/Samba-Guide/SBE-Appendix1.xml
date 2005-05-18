@@ -254,7 +254,7 @@ Paths:
 	If you wish to locate the Samba version, just run:
 <screen>
 &rootprompt; /path-to-binary-file/smbd -V
-Version 3.0.15-SUSE
+Version 3.0.20-SUSE
 </screen>
 	</para>
 
@@ -266,15 +266,15 @@ Version 3.0.15-SUSE
 	</indexterm>
 <screen>
 &rootprompt; rpm -qa | grep samba
-samba3-pdb-3.0.15-1
-samba3-vscan-0.3.5-0
-samba3-winbind-3.0.15-1
-samba3-3.0.15-1
-samba3-python-3.0.15-1
-samba3-utils-3.0.15-1
-samba3-doc-3.0.15-1
-samba3-client-3.0.15-1
-samba3-cifsmount-3.0.15-1
+samba3-pdb-3.0.20-1
+samba3-vscan-0.3.6-0
+samba3-winbind-3.0.20-1
+samba3-3.0.20-1
+samba3-python-3.0.20-1
+samba3-utils-3.0.20-1
+samba3-doc-3.0.20-1
+samba3-client-3.0.20-1
+samba3-cifsmount-3.0.20-1
 	</screen><indexterm>
 	  <primary>package names</primary>
 	</indexterm>
