@@ -1939,8 +1939,27 @@ sub ParseFunctionPull($)
 		ParseElementPull($e, "ndr", "r->in.", $env, 1, 1);
 	}
 
+	# allocate the "simple" out ref variables. FIXME: Shouldn't this have it's
+	# own flag rather then be in NDR_IN ?
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/out/, @{$e->{DIRECTION}}));
+		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and 
+		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
+		next unless ($e->{LEVELS}[1]->{TYPE} eq "DATA");
+
+		pidl "NDR_ALLOC(ndr, r->out.$e->{NAME});";
+		
+		if (grep(/in/, @{$e->{DIRECTION}})) {
+			pidl "*r->out.$e->{NAME} = *r->in.$e->{NAME};";
+		} else {
+			pidl "ZERO_STRUCTP(r->out.$e->{NAME});";
+		}
+	}
+
 	deindent;
 	pidl "}";
+	
 	pidl "if (flags & NDR_OUT) {";
 	indent;
 
