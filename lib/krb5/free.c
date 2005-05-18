@@ -41,7 +41,7 @@ krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
     free_KDC_REP(&rep->kdc_rep);
     free_EncTGSRepPart(&rep->enc_part);
     free_KRB_ERROR(&rep->error);
-    memset(rep, 0, sizeo(*rep));
+    memset(rep, 0, sizeof(*rep));
     return 0;
 }
 
