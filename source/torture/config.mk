@@ -164,7 +164,8 @@ ADD_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		torture/ldap/common.o \
 		torture/ldap/basic.o \
-		torture/ldap/cldap.o
+		torture/ldap/cldap.o \
+		torture/ldap/cldapbench.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_LDAP LIBCLI_CLDAP
 # End SUBSYSTEM TORTURE_LDAP
