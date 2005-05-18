@@ -756,6 +756,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
 	NT_STATUS_HAVE_NO_MEMORY(pull);
 
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+
 	call->context	= context;
 	call->event_ctx	= context->conn->srv_conn->event.ctx;
 	call->ndr_pull	= pull;

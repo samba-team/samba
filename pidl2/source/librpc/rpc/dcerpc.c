@@ -1025,6 +1025,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	status = ndr_pull(pull, NDR_IN, st);
 	if (!NT_STATUS_IS_OK(status)) {
