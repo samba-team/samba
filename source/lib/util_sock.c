@@ -490,7 +490,7 @@ ssize_t write_data(int fd,const char *buffer,size_t N)
  Write data to a socket - use send rather than write.
 ****************************************************************************/
 
-static ssize_t write_socket_data(int fd,char *buffer,size_t N)
+static ssize_t write_socket_data(int fd, const char *buffer, size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -514,7 +514,7 @@ static ssize_t write_socket_data(int fd,char *buffer,size_t N)
  Write to a socket.
 ****************************************************************************/
 
-ssize_t write_socket(int fd,char *buf,size_t len)
+ssize_t write_socket(int fd, const char *buf, size_t len)
 {
 	ssize_t ret=0;
 
@@ -552,7 +552,7 @@ BOOL send_keepalive(int client)
  Timeout is in milliseconds.
 ****************************************************************************/
 
-static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
+static ssize_t read_smb_length_return_keepalive(int fd, char *inbuf, unsigned int timeout)
 {
 	ssize_t len=0;
 	int msg_type;
@@ -586,7 +586,7 @@ static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int 
  Timeout is in milliseconds.
 ****************************************************************************/
 
-ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
+ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
 {
 	ssize_t len;
 
@@ -615,7 +615,7 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
+BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 {
 	ssize_t len,ret;
 
@@ -680,7 +680,7 @@ BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
  Checks the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
+BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 {
 	if (!receive_smb_raw(fd, buffer, timeout)) {
 		return False;
@@ -701,7 +701,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
  Send an smb to a fd.
 ****************************************************************************/
 
-BOOL send_smb(int fd,char *buffer)
+BOOL send_smb(int fd, char *buffer)
 {
 	size_t len;
 	size_t nwritten=0;

@@ -640,6 +640,46 @@ void close_low_fds(BOOL stderr_too)
 #endif
 }
 
+/*******************************************************************
+ Write data into an fd at a given offset. Ignore seek errors.
+********************************************************************/
+
+ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	if (pos == (SMB_OFF_T)-1) {
+		return write_data(fd, buffer, N);
+	}
+#if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
+	while (total < N) {
+		ret = sys_pwrite(fd,buffer + total,N - total, pos);
+		if (ret == -1 && errno == ESPIPE) {
+			return write_data(fd, buffer + total,N - total);
+		}
+		if (ret == -1) {
+			DEBUG(0,("write_data_at_offset: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0) {
+			return total;
+		}
+		total += ret;
+		pos += ret;
+	}
+	return (ssize_t)total;
+#else
+	/* Use lseek and write_data. */
+	if (sys_lseek(fd, pos, SEEK_SET) == -1) {
+		if (errno != ESPIPE) {
+			return -1;
+		}
+	}
+	return write_data(fd, buffer, N);
+#endif
+}
+
 /****************************************************************************
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
  else
