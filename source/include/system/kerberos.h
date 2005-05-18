@@ -28,17 +28,20 @@
 #endif
 
 #if defined(HAVE_GSSAPI_H)
-#include <gssapi.h>
+# include <gssapi.h>
+# ifdef HAVE_GSSAPI_KRB5_H
+#  include <gssapi_krb5.h>
+# endif
 #elif defined(HAVE_GSSAPI_GSSAPI_H)
-#include <gssapi/gssapi.h>
+# include <gssapi/gssapi.h>
+# if defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
+#  include <gssapi/gssapi_krb5.h>
+# endif
 #elif defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
-#include <gssapi/gssapi_generic.h>
-#endif
-
-#ifdef HAVE_GSSAPI_KRB5_H
-#include <gssapi_krb5.h>
-#elif defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
-#include <gssapi/gssapi_krb5.h>
+# include <gssapi/gssapi_generic.h>
+# if defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
+#  include <gssapi/gssapi_krb5.h>
+# endif
 #endif
 
 #ifdef HAVE_COM_ERR_H
