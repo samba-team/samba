@@ -1237,7 +1237,7 @@ showInAdvancedViewOnly: TRUE
 name: Services
 systemFlags: 0x80000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
-objectGUID: ${INVOCATIONID}
+objectGUID: ${NEWGUID}
 
 dn: CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
 objectClass: top
@@ -1251,7 +1251,7 @@ uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 name: Windows NT
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
-objectGUID: ${INVOCATIONID}
+objectGUID: ${NEWGUID}
 
 dn: CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
 objectClass: top
@@ -1265,7 +1265,7 @@ uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 name: Directory Service
 objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
-objectGUID: ${INVOCATIONID}
+objectGUID: ${NEWGUID}
 sPNMappings: host=ldap,dns,cifs
 
 
