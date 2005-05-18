@@ -1080,7 +1080,8 @@ sub ParseStructPush($$)
 		}
 	}
 
-	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+	pidl "if (ndr_flags & NDR_SCALARS) {";
+	indent;
 
 	pidl "NDR_CHECK(ndr_push_struct_start(ndr));";
 
@@ -1090,15 +1091,19 @@ sub ParseStructPush($$)
 		ParseElementPush($e, "ndr", "r->", $env, 1, 0);
 	}	
 
-	pidl "buffers:";
-	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
+	deindent;
+	pidl "}";
+
+	pidl "if (ndr_flags & NDR_BUFFERS) {";
+	indent;
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPush($e, "ndr", "r->", $env, 0, 1);
 	}
 
 	pidl "ndr_push_struct_end(ndr);";
 
-	pidl "done:";
+	deindent;
+	pidl "}";
 
 	end_flags($struct);
 }
@@ -1351,7 +1356,8 @@ sub ParseStructPull($$)
 
 	start_flags($struct);
 
-	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+	pidl "if (ndr_flags & NDR_SCALARS) {";
+	indent;
 
 	pidl "NDR_CHECK(ndr_pull_struct_start(ndr));";
 
@@ -1365,15 +1371,18 @@ sub ParseStructPull($$)
 		ParseElementPull($e, "ndr", "r->", $env, 1, 0);
 	}	
 
-	pidl "buffers:\n";
-	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
+	deindent;
+	pidl "}";
+	pidl "if (ndr_flags & NDR_BUFFERS) {";
+	indent;
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
 	}
 
 	pidl "ndr_pull_struct_end(ndr);";
 
-	pidl "done:";
+	deindent;
+	pidl "}";
 
 	end_flags($struct);
 }
@@ -1454,7 +1463,8 @@ sub ParseUnionPush($$)
 
 	pidl "level = ndr_push_get_switch_value(ndr, r);";
 
-	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+	pidl "if (ndr_flags & NDR_SCALARS) {";
+	indent;
 
 	if (defined($e->{SWITCH_TYPE})) {
 		pidl "NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}(ndr, NDR_SCALARS, level));";
@@ -1487,8 +1497,10 @@ sub ParseUnionPush($$)
 	}
 	deindent;
 	pidl "}";
-	pidl "buffers:";
-	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
+	deindent;
+	pidl "}";
+	pidl "if (ndr_flags & NDR_BUFFERS) {";
+	indent;
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1508,7 +1520,8 @@ sub ParseUnionPush($$)
 	deindent;
 	pidl "}";
 	pidl "ndr_push_struct_end(ndr);";
-	pidl "done:";
+	deindent;
+	pidl "}";
 	end_flags($e);
 }
 
@@ -1571,7 +1584,8 @@ sub ParseUnionPull($$)
 
 	pidl "level = ndr_pull_get_switch_value(ndr, r);";
 
-	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+	pidl "if (ndr_flags & NDR_SCALARS) {";
+	indent;
 
 	if (defined($switch_type)) {
 		pidl "NDR_CHECK(ndr_pull_$switch_type(ndr, NDR_SCALARS, &_level));";
@@ -1613,8 +1627,10 @@ sub ParseUnionPull($$)
 	}
 	deindent;
 	pidl "}";
-	pidl "buffers:";
-	pidl "if (!(ndr_flags & NDR_BUFFERS)) goto done;";
+	deindent;
+	pidl "}";
+	pidl "if (ndr_flags & NDR_BUFFERS) {";
+	indent;
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1634,7 +1650,8 @@ sub ParseUnionPull($$)
 	deindent;
 	pidl "}";
 	pidl "ndr_pull_struct_end(ndr);";
-	pidl "done:";
+	deindent;
+	pidl "}";
 	end_flags($e);
 }
 
@@ -1815,8 +1832,8 @@ sub ParseFunctionPush($)
 	pidl "{";
 	indent;
 
-	pidl "if (!(flags & NDR_IN)) goto ndr_out;";
-	pidl "";
+	pidl "if (flags & NDR_IN) {";
+	indent;
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
@@ -1824,9 +1841,11 @@ sub ParseFunctionPush($)
 		}
 	}
 
-	pidl "ndr_out:";
-	pidl "if (!(flags & NDR_OUT)) goto done;";
-	pidl "";
+	deindent;
+	pidl "}";
+
+	pidl "if (flags & NDR_OUT) {";
+	indent;
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
@@ -1838,7 +1857,8 @@ sub ParseFunctionPush($)
 		pidl "NDR_CHECK(ndr_push_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, r->out.result));";
 	}
     
-	pidl "done:";
+	deindent;
+	pidl "}";
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
@@ -1900,8 +1920,8 @@ sub ParseFunctionPull($)
 		}
 	}
 
-	pidl "if (!(flags & NDR_IN)) goto ndr_out;";
-	pidl "";
+	pidl "if (flags & NDR_IN) {";
+	indent;
 
 	# auto-init the out section of a structure. I originally argued that
 	# this was a bad idea as it hides bugs, but coping correctly
@@ -1919,9 +1939,10 @@ sub ParseFunctionPull($)
 		ParseElementPull($e, "ndr", "r->in.", $env, 1, 1);
 	}
 
-	pidl "ndr_out:";
-	pidl "if (!(flags & NDR_OUT)) goto done;";
-	pidl "";
+	deindent;
+	pidl "}";
+	pidl "if (flags & NDR_OUT) {";
+	indent;
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
@@ -1932,8 +1953,8 @@ sub ParseFunctionPull($)
 		pidl "NDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, &r->out.result));";
 	}
 
-	pidl "done:";
-	pidl "";
+	deindent;
+	pidl "}";
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
