@@ -439,9 +439,7 @@ sub _prepare_static_library_rule($)
 	$tmpstlink = array2oneperline($ctx->{LINK_LIST});
 	$tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
 
-	$tmprules = "bin/$ctx->{LIBRARY_NAME}";
-
-	$output = << '__EOD__';
+	$output = << "__EOD__";
 ###################################
 # Start Library $ctx->{NAME}
 #
@@ -450,12 +448,12 @@ LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 #
 # Static $ctx->{LIBRARY_NAME}
-$ctx->{TARGET}: $(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
-	@echo Linking $@
-	@$(STLD) $(STLD_FLAGS) $@ \\
-		$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
+$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+	\@echo Linking \$@
+	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
+		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
 
-library_$ctx->{NAME}: basics $tmprules
+library_$ctx->{NAME}: basics $ctx->{TARGET}
 # End Library $ctx->{NAME}
 ###################################
 
