@@ -127,6 +127,7 @@ void KRB5_LIB_FUNCTION
 krb5_free_checksum_contents(krb5_context context, krb5_checksum *cksum)
 {
     krb5_checksum_free(context, cksum);
+    memset(cksum, 0, sizeof(*cksum));
 }
 
 void KRB5_LIB_FUNCTION

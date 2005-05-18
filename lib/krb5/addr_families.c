@@ -1033,6 +1033,7 @@ krb5_free_address(krb5_context context,
     if(a != NULL && a->free_addr != NULL)
 	return (*a->free_addr)(context, address);
     krb5_data_free (&address->address);
+    memset(address, 0, sizeof(*address));
     return 0;
 }
 

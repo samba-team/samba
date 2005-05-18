@@ -56,6 +56,7 @@ krb5_free_error_contents (krb5_context context,
 			  krb5_error *error)
 {
     free_KRB_ERROR(error);
+    memset(error, 0, sizeof(*error));
 }
 
 void KRB5_LIB_FUNCTION

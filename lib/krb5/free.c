@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999, 2004 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,6 +41,7 @@ krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
     free_KDC_REP(&rep->kdc_rep);
     free_EncTGSRepPart(&rep->enc_part);
     free_KRB_ERROR(&rep->error);
+    memset(rep, 0, sizeo(*rep));
     return 0;
 }
 
