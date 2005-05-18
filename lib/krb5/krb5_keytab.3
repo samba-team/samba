@@ -364,7 +364,7 @@ from the keytab
 When comparing an entry in the keytab to determine a match, the
 function
 .Fn krb5_kt_compare
-is used, so the wildcard rules applies to arguments of
+is used, so the wildcard rules applies to the argument of
 .F krb5_kt_get_entry
 too.
 On success the returne entry must be freed with
@@ -401,7 +401,14 @@ removes the entry
 .Fa entry
 from the keytab
 .Fa id .
-Returns 0 or an error.
+When comparing an entry in the keytab to determine a match, the
+function
+.Fn krb5_kt_compare
+is use, so the wildcard rules applies to the argument of
+.Fn krb5_kt_remove_entry .
+Returns 0, 
+.Dv KRB5_KT_NOTFOUND
+if not entry matched or another error.
 .Pp
 .Fn krb5_kt_register
 registers a new keytab type
