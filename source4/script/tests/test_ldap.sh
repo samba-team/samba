@@ -13,8 +13,11 @@ echo "BASEDN is $BASEDN"
 
 
 echo "Listing Users"
-ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=user)' sAMAccountName
+ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=user)' sAMAccountName || exit 1
 
 echo "Listing Groups"
-ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName
+ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || exit 1
+
+echo "CLDAP test"
+bin/smbtorture //$SERVER/_none_ LDAP-CLDAP || exit 1
 
