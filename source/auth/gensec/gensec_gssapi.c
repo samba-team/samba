@@ -256,6 +256,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
+#ifdef HAVE_GSS_KRB5_CCACHE_NAME /* FIXME, we need an alternate function */
 	maj_stat = gss_krb5_ccache_name(&min_stat, 
 					gensec_gssapi_state->ccache_name, 
 					NULL);
@@ -265,6 +266,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+#endif
 
 	maj_stat = gss_acquire_cred(&min_stat, 
 				    gensec_gssapi_state->client_name,
