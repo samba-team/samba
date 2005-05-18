@@ -454,7 +454,8 @@ if test x"$with_krb5_support" != x"no"; then
 
 	AC_CHECK_FUNC_EXT(gsskrb5_get_initiator_subkey, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(gsskrb5_extract_authz_data_from_sec_context, $KRB5_LIBS)
-
+	AC_CHECK_FUNC_EXT(gsskrb5_register_acceptor_identity, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(gss_krb5_ccache_name, $KRB5_LIBS)
 	if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
 		AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
 		AC_MSG_CHECKING(whether KRB5 support is used)
