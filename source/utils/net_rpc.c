@@ -3491,6 +3491,13 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	int i;
 	struct user_token *result;
 
+	if (lp_winbind_use_default_domain() &&
+	    (opt_target_workgroup == NULL)) {
+		d_printf("winbind use default domain = yes set, please "
+			 "specify a workgroup\n");
+		return False;
+	}
+
 	/* Send request to winbind daemon */
 
 	ZERO_STRUCT(request);
@@ -3533,14 +3540,15 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 		DEBUG(3, ("%s\n", name));
 
-		if (p == NULL)
-			continue;
-
-		*p++ = '\0';
-
-		fstrcpy(domain, name);
-		strupper_m(domain);
-		fstrcpy(user, p);
+		if (p == NULL) {
+			fstrcpy(domain, opt_target_workgroup);
+			fstrcpy(user, name);
+		} else {
+			*p++ = '\0';
+			fstrcpy(domain, name);
+			strupper_m(domain);
+			fstrcpy(user, p);
+		}
 
 		get_user_sids(domain, user, &(result[i].token));
 		i+=1;
