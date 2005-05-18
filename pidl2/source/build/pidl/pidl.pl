@@ -29,6 +29,7 @@ use typelist;
 use util;
 use template;
 use swig;
+use compat;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -47,6 +48,7 @@ my($opt_com_header) = 0;
 my($opt_odl) = 0;
 my($opt_quiet) = 0;
 my($opt_output);
+my($opt_warn_compat) = 0;
 
 my $idl_parser = new idl;
 
@@ -87,6 +89,7 @@ sub ShowHelp()
          --odl                 accept ODL input
          --dcom-proxy          create DCOM proxy (implies --odl)
          --com-header          create header for COM interfaces (implies --odl)
+		 --warn-compat         warn about incompatibility with other compilers
 		 --quiet               be quiet
          \n";
     exit(0);
@@ -110,7 +113,8 @@ GetOptions (
 	    'swig' => \$opt_swig,
 		'dcom-proxy' => \$opt_dcom_proxy,
 		'com-header' => \$opt_com_header,
-		'quiet' => \$opt_quiet
+		'quiet' => \$opt_quiet,
+		'warn-compat' => \$opt_warn_compat
 	    );
 
 if ($opt_help) {
@@ -183,6 +187,10 @@ sub process_file($)
 			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
 		}
 		$opt_odl = 1;
+	}
+
+	if ($opt_warn_compat) {
+		IDLCompat::Check($pidl);
 	}
 
 	if ($opt_odl) {
