@@ -16,17 +16,18 @@ noinst_PROGRAMS =				\
 
 TESTS =						\
 	aes-test				\
-	n-fold-test				\
-	string-to-key-test			\
 	derived-key-test			\
-	store-test				\
+	n-fold-test				\
+	name-45-test				\
 	parse-name-test				\
+	store-test				\
+	string-to-key-test			\
 	test_acl				\
 	test_addr				\
 	test_cc					\
 	test_config				\
-	test_time				\
-	name-45-test
+	test_keytab				\
+	test_time
 
 check_PROGRAMS = $(TESTS)
 
