@@ -327,7 +327,15 @@ krb4_kt_remove_entry(krb5_context context,
     int remove_flag = 0;
     
     sp = krb5_storage_emem();
+    if (sp == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
     ret = krb5_kt_start_seq_get(context, id, &cursor);
+    if (ret) {
+	krb5_storage_free(sp);
+	return ret;
+    }	
     while(krb5_kt_next_entry(context, id, &e, &cursor) == 0) {
 	if(!krb5_kt_compare(context, &e, entry->principal, 
 			    entry->vno, entry->keyblock.keytype)) {
@@ -361,12 +369,14 @@ krb4_kt_remove_entry(krb5_context context,
 
 	if(write(fd, data.data, data.length) != data.length) {
 	    memset(data.data, 0, data.length);
+	    krb5_data_free(&data);
 	    close(fd);
 	    krb5_set_error_string(context, "failed writing to \"%s\"", d->filename);
 	    return errno;
 	}
 	memset(data.data, 0, data.length);
 	if(fstat(fd, &st) < 0) {
+	    krb5_data_free(&data);
 	    close(fd);
 	    krb5_set_error_string(context, "failed getting size of \"%s\"", d->filename);
 	    return errno;
@@ -377,6 +387,7 @@ krb4_kt_remove_entry(krb5_context context,
 	    n = min(st.st_size, sizeof(buf));
 	    n = write(fd, buf, n);
 	    if(n <= 0) {
+		krb5_data_free(&data);
 		close(fd);
 		krb5_set_error_string(context, "failed writing to \"%s\"", d->filename);
 		return errno;
@@ -385,6 +396,7 @@ krb4_kt_remove_entry(krb5_context context,
 	    st.st_size -= n;
 	}
 	if(ftruncate(fd, data.length) < 0) {
+	    krb5_data_free(&data);
 	    close(fd);
 	    krb5_set_error_string(context, "failed truncating \"%s\"", d->filename);
 	    return errno;
@@ -395,8 +407,10 @@ krb4_kt_remove_entry(krb5_context context,
 	    return errno;
 	}
 	return 0;
-    } else
+    } else {
+	krb5_storage_free(sp);
 	return KRB5_KT_NOTFOUND;
+    }
 }
 
 
