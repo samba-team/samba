@@ -4006,9 +4006,8 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
  this to successfully check for ability to write for dos filetimes.
 ****************************************************************************/
 
-BOOL can_write_to_file(connection_struct *conn, const char *fname)
+BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	SMB_STRUCT_STAT sbuf;  
 	int ret;
 
 	if (!CAN_WRITE(conn)) {
@@ -4020,22 +4019,24 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname)
 		return True;
 	}
 
-	/* Get the file permission mask and owners. */
-	if(SMB_VFS_STAT(conn, fname, &sbuf) != 0) {
-		return False;
+	if (!VALID_STAT(*psbuf)) {
+		/* Get the file permission mask and owners. */
+		if(SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+			return False;
+		}
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == sbuf.st_uid) {
-		return (sbuf.st_mode & S_IWUSR) ? True : False;
+	if (current_user.uid == psbuf->st_uid) {
+		return (psbuf->st_mode & S_IWUSR) ? True : False;
 	}
 
 	/* Check group or explicit user acl entry write access. */
-	ret = check_posix_acl_group_write(conn, fname, &sbuf);
+	ret = check_posix_acl_group_write(conn, fname, psbuf);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
 
 	/* Finally check other write access. */
-	return (sbuf.st_mode & S_IWOTH) ? True : False;
+	return (psbuf->st_mode & S_IWOTH) ? True : False;
 }

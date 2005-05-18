@@ -436,6 +436,7 @@ typedef struct
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
 	BOOL bEASupport;
+	BOOL bAclCheckPermissions;
 	int iallocation_roundup_size;
 	param_opt_struct *param_opt;
 
@@ -563,6 +564,7 @@ static service sDefault = {
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
 	False,			/* bEASupport */
+	True,			/* bAclCheckPermissions */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	
 	NULL,			/* Parametric options */
@@ -865,6 +867,7 @@ static struct parm_struct parm_table[] = {
 	{"writeable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 	{"writable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 
+	{"acl check permissions", P_BOOL, P_LOCAL, &sDefault.bAclCheckPermissions, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"create mask", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_HIDE}, 
 	{"force create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
@@ -1968,6 +1971,7 @@ FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
+FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
