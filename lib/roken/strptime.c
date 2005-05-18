@@ -79,7 +79,7 @@ static const char *abb_month[] = {
 static const char *full_month[] = {
     "January",
     "February",
-    "Mars",
+    "March",
     "April",
     "May",
     "June",
