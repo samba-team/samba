@@ -9,10 +9,10 @@ dn: @INDEXLIST
 @IDXATTR: privilege
 
 dn: @ATTRIBUTES
-realm: CASE_INSENSITIVE
 userPrincipalName: CASE_INSENSITIVE
 servicePrincipalName: CASE_INSENSITIVE
 dnsDomain: CASE_INSENSITIVE
+dnsRoot: CASE_INSENSITIVE
 cn: CASE_INSENSITIVE
 dc: CASE_INSENSITIVE
 name: CASE_INSENSITIVE
@@ -56,7 +56,6 @@ objectClass: domain
 objectClass: domainDNS
 name: ${DOMAIN}
 flatname: ${DOMAIN}
-realm: ${REALM}
 dnsDomain: ${DNSDOMAIN}
 dc: ${DOMAIN}
 objectGUID: ${DOMAINGUID}
@@ -614,10 +613,6 @@ isCriticalSystemObject: TRUE
 unicodePwd: ${JOINPASS}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
-servicePrincipalName: CIFS/${DNSNAME}
-servicePrincipalName: CIFS/${NETBIOSNAME}
-servicePrincipalName: LDAP/${DNSNAME}
-servicePrincipalName: LDAP/${NETBIOSNAME}
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
 objectClass: top
@@ -1228,6 +1223,51 @@ dMDLocation: CN=Schema,CN=Configuration,${BASEDN}
 objectGUID: ${INVOCATIONID}
 invocationId: ${INVOCATIONID}
 msDS-Behavior-Version: 2
+
+dn: CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Services
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+name: Services
+systemFlags: 0x80000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectGUID: ${INVOCATIONID}
+
+dn: CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Windows NT
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+name: Windows NT
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+objectGUID: ${INVOCATIONID}
+
+dn: CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: nTDSService
+cn: Directory Service
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+name: Directory Service
+objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
+objectGUID: ${INVOCATIONID}
+sPNMappings: host=ldap,dns,cifs
+
 
 ###############################
 # Schema Naming Context
