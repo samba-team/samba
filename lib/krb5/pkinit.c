@@ -1046,6 +1046,9 @@ pk_verify_chain_standard(krb5_context context,
 	break;
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
 	ret = KRB5_KDC_ERROR_CANT_VERIFY_CERTIFICATE;
+	krb5_set_error_string(context, "PKINIT: failed to verify "
+			      "certificate: %s ",
+			      ERR_error_string(ERR_get_error(), NULL));
 	break;
     case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
     case X509_V_ERR_CERT_SIGNATURE_FAILURE:
@@ -1054,6 +1057,8 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
     case X509_V_ERR_CERT_HAS_EXPIRED:
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
+	krb5_set_error_string(context, "PKINIT: invalid certificate: %s ",
+			      ERR_error_string(ERR_get_error(), NULL));
 	break;
     case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
     case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
@@ -1063,15 +1068,19 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_INVALID_CA:
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
-			      "verify certificate");
+			      "verify certificate: %s",
+			      ERR_error_string(ERR_get_error(), NULL));
 	break;
     default:
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
+	krb5_set_error_string(context, "PKINIT: failed to verify "
+			      "certificate: %s (%ld) ",
+			      ERR_error_string(ERR_get_error(), NULL),
+			      (long)store_ctx->error);
 	break;
     }
-    if (ret) {
+    if (ret)
 	goto end;
-    }
 
     /* 
      * Since X509_verify_cert() doesn't do CRL checking at all, we have to
