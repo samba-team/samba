@@ -360,11 +360,13 @@ static int ads_user_info(int argc, const char **argv)
 	const char *attrs[] = {"memberOf", NULL};
 	char *searchstring=NULL;
 	char **grouplist;
-	char *escaped_user = escape_ldap_string_alloc(argv[0]);
+	char *escaped_user;
 
 	if (argc < 1) {
 		return net_ads_user_usage(argc, argv);
 	}
+
+	escaped_user = escape_ldap_string_alloc(argv[0]);
 	
 	if (!(ads = ads_startup())) {
 		return -1;
