@@ -43,6 +43,7 @@ static const char *known_nt_pipes[] = {
 	"\\rpcecho",
         "\\svcctl",
 	"\\eventlog",
+	"\\unixinfo",
 	NULL
 };
 

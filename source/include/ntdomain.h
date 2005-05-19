@@ -405,5 +405,6 @@ typedef struct {
 #include "rpc_ds.h"
 #include "rpc_echo.h"
 #include "rpc_shutdown.h"
+#include "rpc_unixinfo.h"
 
 #endif /* _NT_DOMAIN_H */
