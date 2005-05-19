@@ -1,3 +1,8 @@
+2005-05-19  David Love  <fx@gnu.org>
+
+	* check-getpwnam_r-posix.m4: define _POSIX_PTHREAD_SEMANTICS to
+	make solaris provide the right getpwname_r
+
 2005-05-17  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: am_conditional have_cgetent

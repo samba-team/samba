@@ -1,3 +1,7 @@
+2005-05-19  Dave Love  <fx@gnu.org>
+
+	* telnet/telnet.c,telnet_locl.h: Make solaris find tgetent
+
 2005-05-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* telnetd/sys_term.c (start_login): set encryption pointers to
