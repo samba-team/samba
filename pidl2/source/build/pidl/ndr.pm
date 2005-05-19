@@ -76,6 +76,8 @@ sub GetElementLevelTable($)
 			NO_METADATA => (is_inline_array($e) or is_fixed_array($e)),
 			IS_INLINE => is_inline_array($e)
 		});
+
+		$is_deferred = 0;
 	}
 
 	if (my $hdr_size = util::has_property($e, "subcontext")) {

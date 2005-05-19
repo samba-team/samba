@@ -656,18 +656,31 @@ sub ParseElementPushLevel
 	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
-		pidl "for ($counter = 0; $counter < $length; $counter++) {";
-		indent;
+
 		$var_name = $var_name . "[$counter]";
 
 		unless ($l->{NO_METADATA}) {
 			$var_name = get_pointer_to($var_name);
 		}
+		
+		# primitives if $primitives or IS_DEFERRED 
+		if ($primitives or $l->{IS_DEFERRED}) {
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
+	
+			deindent;
+			pidl "}";
+		}
 
-		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
-
-		deindent;
-		pidl "}";
+		if ($deferred and ($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED})) {
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
+	
+			deindent;
+			pidl "}";
+		}	
 	}
 }
 
@@ -1018,15 +1031,28 @@ sub ParseElementPullLevel
 	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
-		pidl "for ($counter = 0; $counter < $length; $counter++) {";
-		indent;
+
 		$var_name = $var_name . "[$counter]";
 		unless ($l->{NO_METADATA}) {
 			$var_name = get_pointer_to($var_name);
 		}
-		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
-		deindent;
-		pidl "}";
+
+		if ($primitives or $l->{IS_DEFERRED}) {
+
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
+			deindent;
+			pidl "}";
+		}
+
+		if ($deferred and ($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED})) {
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
+			deindent;
+			pidl "}";
+		}
 	}
 }
 
