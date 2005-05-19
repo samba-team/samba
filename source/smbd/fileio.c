@@ -509,6 +509,30 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 
 			write_path = 3;
 
+                } else if ( (pos >= wcp->file_size) && 
+			    (pos < wcp->offset + 2*wcp->alloc_size) &&
+			    (wcp->file_size == wcp->offset + wcp->data_size) &&
+			    (n == 1) ) {
+
+                        /*
+                        +---------------+
+                        | Cached data   |
+                        +---------------+
+
+                                                         +--------+
+                                                         | 1 Byte |
+                                                         +--------+
+                        */
+
+			SMB_BIG_UINT new_start = wcp->offset + wcp->data_size;
+
+                        flush_write_cache(fsp, WRITE_FLUSH);
+			wcp->offset = new_start;
+			wcp->data_size = pos - new_start + 1;
+			memset(wcp->data, '\0', wcp->data_size);
+			memcpy(wcp->data + wcp->data_size-1, data, 1);
+			return n;
+
 		} else {
 
 			/* ASCII art..... JRA.
