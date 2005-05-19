@@ -28,6 +28,9 @@
 static TDB_CONTEXT *tdb_reg;
 
 
+static BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr );
+
+
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
@@ -135,6 +138,7 @@ static BOOL init_registry_data( void )
 	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
 	regsubkey_ctr_addkey( &subkeys, "Tcpip" );
 	regsubkey_ctr_addkey( &subkeys, "Eventlog" ); 
+	regsubkey_ctr_addkey( &subkeys, "LanmanServer" ); 
 
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
@@ -152,6 +156,14 @@ static BOOL init_registry_data( void )
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon/Parameters" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM );
+	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/LanmanServer" );
+	regsubkey_ctr_addkey( &subkeys, "Shares" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
+		return False;
+	regsubkey_ctr_destroy( &subkeys );
 
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM ); 
@@ -236,7 +248,7 @@ BOOL init_registry_db( void )
  case.
  ***********************************************************************/
  
-BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
+static BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
 	char *buffer, *tmpbuf;
@@ -301,7 +313,7 @@ done:
  of null terminated character strings
  ***********************************************************************/
 
-int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
+static int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 {
 	pstring path;
 	uint32 num_items;
@@ -350,7 +362,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
  of null terminated character strings
  ***********************************************************************/
 
-int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
+static int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
 {
 	UNISTR2 data;
 	int    num_vals;
@@ -392,7 +404,7 @@ int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
  values in the registry.tdb
  ***********************************************************************/
 
-BOOL regdb_store_reg_values( char *key, REGVAL_CTR *val )
+static BOOL regdb_store_reg_values( char *key, REGVAL_CTR *val )
 {
 	return False;
 }

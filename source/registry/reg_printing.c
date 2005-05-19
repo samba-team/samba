@@ -751,7 +751,7 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
  
-int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -790,7 +790,7 @@ int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-int printing_value_info( char *key, REGVAL_CTR *val )
+static int printing_value_info( char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -821,7 +821,7 @@ int printing_value_info( char *key, REGVAL_CTR *val )
  (for now at least)
  *********************************************************************/
 
-BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -832,7 +832,7 @@ BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  (for now at least)
  *********************************************************************/
 
-BOOL printing_store_value( char *key, REGVAL_CTR *val )
+static BOOL printing_store_value( char *key, REGVAL_CTR *val )
 {
 	return False;
 }

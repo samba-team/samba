@@ -66,7 +66,7 @@
 #define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 #define KEY_PRINTING_2K	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define KEY_EVENTLOG 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
-#define KEY_SHARES	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Lanman\\Shares"
+#define KEY_SHARES	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
 #define KEY_TREE_ROOT	""
 
 /* Registry data types */

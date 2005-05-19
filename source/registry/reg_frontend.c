@@ -27,6 +27,7 @@
 
 extern REGISTRY_OPS printing_ops;
 extern REGISTRY_OPS eventlog_ops;
+extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
@@ -35,6 +36,7 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,    &printing_ops },
   { KEY_PRINTING_2K, &printing_ops },
   { KEY_EVENTLOG,    &eventlog_ops }, 
+  { KEY_SHARES,      &shares_reg_ops },
   { NULL, NULL }
 };
 

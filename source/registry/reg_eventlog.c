@@ -186,7 +186,7 @@ static char* trim_eventlog_reg_path( char *path )
  Enumerate registry subkey names given a registry path.  
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
-int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 {
     char 	*path;
     BOOL       	top_level = False;
@@ -247,7 +247,7 @@ int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-int eventlog_value_info( char *key, REGVAL_CTR *val )
+static int eventlog_value_info( char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -276,7 +276,7 @@ int eventlog_value_info( char *key, REGVAL_CTR *val )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -286,7 +286,7 @@ BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-BOOL eventlog_store_value( char *key, REGVAL_CTR *val )
+static BOOL eventlog_store_value( char *key, REGVAL_CTR *val )
 {
 	return False;
 }

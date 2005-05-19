@@ -262,7 +262,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o registry/reg_eventlog.o
+               registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
 
