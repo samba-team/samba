@@ -109,6 +109,9 @@ sub GetElementLevelTable($)
 		IS_SURROUNDING => is_surrounding_string($e)
 	});
 
+	my $i = 0;
+	foreach (@$order) { $_->{LEVEL_INDEX} = $i; $i+=1; }
+
 	return $order;
 }
 

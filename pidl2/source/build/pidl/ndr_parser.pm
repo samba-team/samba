@@ -55,6 +55,18 @@ sub need_alloc($)
 	return 0;
 }
 
+sub is_scalar_array($$)
+{
+	my $e = shift;
+	my $l = shift;
+
+	return 0 if ($l->{TYPE} ne "ARRAY");
+
+	my $nl = GetNextLevel($e,$l);
+	return (($nl->{TYPE} eq "DATA") and 
+	        (Ndr::is_scalar_type($nl->{DATA_TYPE})));
+}
+
 sub get_pointer_to($)
 {
 	my $var_name = shift;
@@ -174,7 +186,9 @@ sub start_flags($)
 	my $e = shift;
 	my $flags = util::has_property($e, "flag");
 	if (defined $flags) {
-		pidl "{ uint32_t _flags_save_$e->{TYPE} = ndr->flags;";
+		pidl "{";
+		indent;
+		pidl "uint32_t _flags_save_$e->{TYPE} = ndr->flags;";
 		pidl "ndr_set_flags(&ndr->flags, $flags);";
 	}
 }
@@ -186,7 +200,9 @@ sub end_flags($)
 	my $e = shift;
 	my $flags = util::has_property($e, "flag");
 	if (defined $flags) {
-		pidl "ndr->flags = _flags_save_$e->{TYPE};\n\t}";
+		pidl "ndr->flags = _flags_save_$e->{TYPE};";
+		deindent;
+		pidl "}";
 	}
 }
 
@@ -223,12 +239,11 @@ sub GenerateFunctionEnv($)
 
 #####################################################################
 # parse array preceding data - push side
-sub ParseArrayPushPreceding($$$$$)
+sub ParseArrayPushPreceding($$$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $var_name = shift;
-	my $ndr_flags = shift;
 	my $env = shift;
 
 	return if ($l->{NO_METADATA});
@@ -241,13 +256,12 @@ sub ParseArrayPushPreceding($$$$$)
 
 #####################################################################
 # parse the data of an array - push side
-sub ParseArrayPush($$$$$$)
+sub ParseArrayPushHeader($$$$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $ndr = shift;
 	my $var_name = shift;
-	my $ndr_flags = shift;
 	my $env = shift;
 
 	if (!$l->{NO_METADATA}) {
@@ -259,7 +273,7 @@ sub ParseArrayPush($$$$$$)
 
 	# See whether the array size has been pushed yet
 	if (!$l->{IS_SURROUNDING}) {
-		ParseArrayPushPreceding($e, $l, $var_name, $ndr_flags, $env);
+		ParseArrayPushPreceding($e, $l, $var_name, $env);
 	}
 	
 	if ($l->{IS_VARYING}) {
@@ -267,44 +281,14 @@ sub ParseArrayPush($$$$$$)
 		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $length));";
 	} 
 
-	if (Ndr::is_scalar_type($e->{TYPE})) {
-		pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
-	} else {
-		pidl "NDR_CHECK(ndr_push_array($ndr, $ndr_flags, $var_name, sizeof($var_name\[0]), $length, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));";
-	}
+	return $length;
 }
 
-#####################################################################
-# print an array
-sub ParseArrayPrint($$$$)
+sub ParseArrayPullPreceding($$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $var_name = shift;
-	my $env = shift;
-	my $size = ParseExpr($l->{SIZE_IS}, $env);
-
-	if (!$l->{NO_METADATA}) {
-		$var_name = get_pointer_to($var_name);
-	}
-
-	if ($l->{IS_VARYING}) {
-		$size = ParseExpr($l->{LENGTH_IS}, $env);
-	}
-
-	if (Ndr::is_scalar_type($e->{TYPE})) {
-		pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_name, $size);";
-	} else {
-		pidl "ndr_print_array(ndr, \"$e->{NAME}\", $var_name, sizeof($var_name\[0]), $size, (ndr_print_fn_t)ndr_print_$e->{TYPE});";
-	}
-}
-
-sub ParseArrayPullPreceding($$$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;
 
 	return if ($l->{NO_METADATA});
 	
@@ -314,13 +298,12 @@ sub ParseArrayPullPreceding($$$$)
 
 #####################################################################
 # parse an array - pull side
-sub ParseArrayPull($$$$$$)
+sub ParseArrayPullHeader($$$$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $ndr = shift;
 	my $var_name = shift;
-	my $ndr_flags = shift;
 	my $env = shift;
 
 	unless ($l->{NO_METADATA}) {
@@ -339,7 +322,7 @@ sub ParseArrayPull($$$$$$)
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
 	if (!$l->{IS_SURROUNDING}) {
-		ParseArrayPullPreceding($e, $l, $var_name, $ndr_flags);
+		ParseArrayPullPreceding($e, $l, $var_name);
 	}
 
 
@@ -374,11 +357,7 @@ sub ParseArrayPull($$$$$$)
 		AllocateArrayLevel($e,$l,$ndr,$env,$size);
 	}
 
-	if (Ndr::is_scalar_type($e->{TYPE})) {
-		pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
-	} else {
-		pidl "NDR_CHECK(ndr_pull_array($ndr, $ndr_flags, (void **)$var_name, sizeof($var_name\[0]), $length, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));";
-	}
+	return $length;
 }
 
 sub compression_alg($$)
@@ -654,10 +633,16 @@ sub ParseElementPush($$$$$$)
 			} elsif ($l->{TYPE} eq "POINTER") {
 				ParsePtrPush($e, $l, $var_name);
 			} elsif ($l->{TYPE} eq "ARRAY") {
+				my $length = ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
+				# Allow speedups for arrays of scalar types
+				if (is_scalar_array($e,$l)) {
+					unless ($l->{NO_METADATA}) {
+						$var_name = get_pointer_to($var_name);
+					}
 
-				ParseArrayPush($e, $l, $ndr, $var_name, "NDR_SCALARS|NDR_BUFFERS", $env); #FIXME
-				last; #FIXME
-				ParseArrayPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
+					pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+					last;
+				} 
 			} elsif ($l->{TYPE} eq "SWITCH") {
 				ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "DATA") {
@@ -674,6 +659,16 @@ sub ParseElementPush($$$$$$)
 				}
 			}
 			$var_name = get_value_of($var_name);
+		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+			my $length = ParseExpr($l->{LENGTH_IS}, $env);
+			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			$var_name = $var_name . "[$counter]";
+
+			unless ($l->{NO_METADATA}) {
+				$var_name = get_pointer_to($var_name);
+			}
 		}
 	}
 
@@ -688,6 +683,9 @@ sub ParseElementPush($$$$$$)
 
 		if ($l->{TYPE} eq "POINTER" and $deferred and
 	        ($l->{POINTER_TYPE} ne "ref")) {
+			deindent;
+			pidl "}";
+		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
 			deindent;
 			pidl "}";
 		}
@@ -746,8 +744,31 @@ sub ParseElementPrint($$$)
 			}
 			$var_name = get_value_of($var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			ParseArrayPrint($e, $l, $var_name, $env);
-			last; #FIXME
+			my $length = ParseExpr($l->{LENGTH_IS}, $env);
+
+			if (is_scalar_array($e, $l)) {
+				unless ($l->{NO_METADATA}){ 
+					$var_name = get_pointer_to($var_name); 
+				}
+				pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
+				last;
+			}
+
+			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+
+			pidl "ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", $length);";
+			pidl 'ndr->depth++;';
+			pidl "for ($counter=0;$counter<$length;$counter++) {";
+			indent;
+			pidl "char *idx_$l->{LEVEL_INDEX}=NULL;";
+			pidl "asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter);";
+			pidl "if (idx_$l->{LEVEL_INDEX}) {";
+			indent;
+
+			$var_name = $var_name . "[$counter]";
+
+			unless ($l->{NO_METADATA}){ $var_name = get_pointer_to($var_name); }
+
 		} elsif ($l->{TYPE} eq "DATA") {
 			if (not Ndr::is_scalar_type($l->{DATA_TYPE})) {
 				$var_name = get_pointer_to($var_name);
@@ -766,6 +787,13 @@ sub ParseElementPrint($$$)
 				deindent;
 				pidl "}";
 			}
+			pidl "ndr->depth--;";
+		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e, $l)) {
+			pidl "free(idx_$l->{LEVEL_INDEX});";
+			deindent;
+			pidl "}";
+			deindent;
+			pidl "}";
 			pidl "ndr->depth--;";
 		}
 	}
@@ -946,9 +974,18 @@ sub ParseElementPull($$$$$$)
 			if ($l->{TYPE} eq "SUBCONTEXT") {
 				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			} elsif ($l->{TYPE} eq "ARRAY") {
-				ParseArrayPull($e, $l, $ndr, $var_name, "NDR_SCALARS|NDR_BUFFERS", $env); #FIXME
-				last; #FIXME
-				ParseArrayPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
+				my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
+
+				# Speed things up a little - special array pull functions
+				# for scalars
+				if (is_scalar_array($e, $l)) {
+					unless ($l->{NO_METADATA}) {
+						$var_name = get_pointer_to($var_name);
+					}
+
+					pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+					last;
+				}
 			} elsif ($l->{TYPE} eq "POINTER") {
 				ParsePtrPull($e, $l, $ndr, $var_name);
 			} elsif ($l->{TYPE} eq "SWITCH") {
@@ -976,8 +1013,16 @@ sub ParseElementPull($$$$$$)
 			}
 
 			$var_name = get_value_of($var_name);
+		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+			my $length = ParseExpr($l->{LENGTH_IS}, $env);
+			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			$var_name = $var_name . "[$counter]";
+			unless ($l->{NO_METADATA}) {
+				$var_name = get_pointer_to($var_name);
+			}
 		}
-
 	}
 
 	foreach my $l (reverse @{$e->{LEVELS}}) {
@@ -994,6 +1039,10 @@ sub ParseElementPull($$$$$$)
 		    	if ($l->{POINTER_TYPE} eq "relative") {
 				pidl "ndr_pull_restore(ndr, &_relative_save);";
 			}
+			deindent;
+			pidl "}";
+		} elsif (($l->{TYPE} eq "ARRAY") 
+			and not is_scalar_array($e,$l)) {
 			deindent;
 			pidl "}";
 		}
@@ -1061,6 +1110,10 @@ sub ParseStructPush($$)
 
 	my $env = GenerateStructEnv($struct);
 
+	foreach my $e (@{$struct->{ELEMENTS}}) { 
+		DeclareArrayVariables($e);
+	}
+
 	start_flags($struct);
 
 	# see if the structure contains a conformant array. If it
@@ -1074,7 +1127,7 @@ sub ParseStructPush($$)
 
 		if (defined($e->{LEVELS}[0]) and 
 			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
-			ParseArrayPushPreceding($e, $e->{LEVELS}[0], "r->$e->{NAME}", "NDR_SCALARS", $env);
+			ParseArrayPushPreceding($e, $e->{LEVELS}[0], "r->$e->{NAME}", $env);
 		} else {
 			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, r->$e->{NAME})));";
 		}
@@ -1312,6 +1365,10 @@ sub ParseStructPrint($$)
 
 	my $env = GenerateStructEnv($struct);
 
+	foreach my $e (@{$struct->{ELEMENTS}}) {
+		DeclareArrayVariables($e);
+	}
+
 	pidl "ndr_print_struct(ndr, name, \"$name\");";
 
 	start_flags($struct);
@@ -1323,6 +1380,30 @@ sub ParseStructPrint($$)
 	pidl "ndr->depth--;";
 
 	end_flags($struct);
+}
+
+sub DeclarePtrVariables($)
+{
+	my $e = shift;
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "POINTER" and 
+			not ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP")) {
+			pidl "uint32_t _ptr_$e->{NAME};";
+			last;
+		}
+	}
+}
+
+sub DeclareArrayVariables($)
+{
+	my $e = shift;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		next if (is_scalar_array($e,$l));
+		if ($l->{TYPE} eq "ARRAY") {
+			pidl "uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};";
+		}
+	}
 }
 
 #####################################################################
@@ -1346,12 +1427,8 @@ sub ParseStructPull($$)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		foreach my $l (@{$e->{LEVELS}}) {
-			if ($l->{TYPE} eq "POINTER" and not ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP")) {
-				pidl "uint32_t _ptr_$e->{NAME};";
-				last;
-			}
-		}
+		DeclarePtrVariables($e);
+		DeclareArrayVariables($e);
 	}
 
 	start_flags($struct);
@@ -1362,7 +1439,7 @@ sub ParseStructPull($$)
 	pidl "NDR_CHECK(ndr_pull_struct_start(ndr));";
 
 	if (defined $conform_e) {
-		ParseArrayPullPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}", "NDR_SCALARS");
+		ParseArrayPullPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}");
 	}
 
 	pidl "NDR_CHECK(ndr_pull_align(ndr, $struct->{ALIGN}));";
@@ -1459,6 +1536,7 @@ sub ParseUnionPush($$)
 
 	pidl "int level;";
 
+
 	start_flags($e);
 
 	pidl "level = ndr_push_get_switch_value(ndr, r);";
@@ -1485,6 +1563,7 @@ sub ParseUnionPush($$)
 
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
+			DeclareArrayVariables($el);
 			ParseElementPush($el, "ndr", "r->", {}, 1, 0);
 			deindent;
 		}
@@ -1534,6 +1613,10 @@ sub ParseUnionPrint($$)
 	my $name = shift;
 
 	pidl "int level = ndr_print_get_switch_value(ndr, r);";
+
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		DeclareArrayVariables($el);
+	}
 
 	pidl "ndr_print_union(ndr, name, level, \"$name\");";
 	start_flags($e);
@@ -1609,12 +1692,8 @@ sub ParseUnionPull($$)
 
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			foreach my $l (@{$el->{LEVELS}}) {
-				if ($l->{TYPE} eq "POINTER" and not ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP")) {
-					pidl "uint32_t _ptr_$el->{NAME};";
-					last;
-				}
-			}
+			DeclarePtrVariables($el);
+			DeclareArrayVariables($el);
 			ParseElementPull($el, "ndr", "r->", {}, 1, 0);
 			deindent;
 		}
@@ -1775,6 +1854,11 @@ sub ParseFunctionPrint($)
 	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		DeclareArrayVariables($e);
+	}
+
 	pidl "ndr_print_struct(ndr, name, \"$fn->{NAME}\");";
 	pidl "ndr->depth++;";
 
@@ -1831,6 +1915,10 @@ sub ParseFunctionPush($)
 	pidl fn_prefix($fn) . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
+
+	foreach my $e (@{$fn->{ELEMENTS}}) { 
+		DeclareArrayVariables($e);
+	}
 
 	pidl "if (flags & NDR_IN) {";
 	indent;
@@ -1909,15 +1997,9 @@ sub ParseFunctionPull($)
 	indent;
 
 	# declare any internal pointers we need
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		foreach my $l (@{$e->{LEVELS}}) {
-			if ($l->{TYPE} eq "POINTER" and 
-				not ($l->{POINTER_TYPE} eq "ref" and 
-				$l->{LEVEL} eq "TOP")) {
-				pidl "uint32_t _ptr_$e->{NAME};"; 
-				last;
-			}
-		}
+	foreach my $e (@{$fn->{ELEMENTS}}) { 
+		DeclarePtrVariables($e); 
+		DeclareArrayVariables($e);
 	}
 
 	pidl "if (flags & NDR_IN) {";
