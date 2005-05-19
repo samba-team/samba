@@ -1048,7 +1048,7 @@ pk_verify_chain_standard(krb5_context context,
 	ret = KRB5_KDC_ERROR_CANT_VERIFY_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s ",
-			      ERR_error_string(ERR_get_error(), NULL));
+			      X509_verify_cert_error_string(store_ctx->error));
 	break;
     case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
     case X509_V_ERR_CERT_SIGNATURE_FAILURE:
@@ -1058,7 +1058,7 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_HAS_EXPIRED:
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: invalid certificate: %s ",
-			      ERR_error_string(ERR_get_error(), NULL));
+			      X509_verify_cert_error_string(store_ctx->error));
 	break;
     case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
     case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
@@ -1069,13 +1069,13 @@ pk_verify_chain_standard(krb5_context context,
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
 			      "verify certificate: %s",
-			      ERR_error_string(ERR_get_error(), NULL));
+			      X509_verify_cert_error_string(store_ctx->error));
 	break;
     default:
 	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s (%ld) ",
-			      ERR_error_string(ERR_get_error(), NULL),
+			      X509_verify_cert_error_string(store_ctx->error),
 			      (long)store_ctx->error);
 	break;
     }
@@ -1748,7 +1748,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     size_t size;
 
     /* Check for PK-INIT -25 */
-    {
+    if (pa->padata_type == KRB5_PADATA_PK_AS_REP) {
 	PA_PK_AS_REP rep;
 
 	memset(&rep, 0, sizeof(rep));
@@ -1757,34 +1757,32 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  pa->padata_value.length,
 				  &rep,
 				  &size);
-	if (ret == 0) {
-	    
-	    switch (rep.element) {
-	    case choice_PA_PK_AS_REP_encKeyPack:
-		ret = decode_ContentInfo(rep.u.encKeyPack.data,
-					 rep.u.encKeyPack.length,
-					 &ci,
-					 &size);
-		if (ret) {
-		    krb5_set_error_string(context,
-					  "PKINIT: -25 decoding failed "
-					  "ContentInfo: %d", ret);
-		    return ret;
-		}
-		ret = pk_rd_pa_reply_enckey(context, 0, &ci, ctx,
-					    etype, nonce, pa, key);
-		free_ContentInfo(&ci);
-		break;
-	    default:
-		krb5_set_error_string(context, "PKINIT: -25 reply "
-				      "invalid content type");
-		ret = EINVAL;
+	if (ret)
+	    return ret;
+
+	switch (rep.element) {
+	case choice_PA_PK_AS_REP_encKeyPack:
+	    ret = decode_ContentInfo(rep.u.encKeyPack.data,
+				     rep.u.encKeyPack.length,
+				     &ci,
+				     &size);
+	    free_PA_PK_AS_REP(&rep);
+	    if (ret) {
+		krb5_set_error_string(context,
+				      "PKINIT: -25 decoding failed "
+				      "ContentInfo: %d", ret);
 		break;
 	    }
-	}    
-	free_PA_PK_AS_REP(&rep);
-	if (ret == 0)
-	    return 0;
+	    ret = pk_rd_pa_reply_enckey(context, 0, &ci, ctx,
+					etype, nonce, pa, key);
+	    free_ContentInfo(&ci);
+	    return ret;
+	default:
+	    free_PA_PK_AS_REP(&rep);
+	    krb5_set_error_string(context, "PKINIT: -25 reply "
+				  "invalid content type");
+	    break;
+	}
     }
 
     /* Check for PK-INIT -19 */
@@ -1815,7 +1813,6 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		break;
 	    }
 	    free_PA_PK_AS_REP_19(&rep19);
-
 	    if (ret == 0)
 		return 0;
 	}
@@ -1843,6 +1840,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				     w2krep.u.encKeyPack.length,
 				     &ci,
 				     &size);
+	    free_PA_PK_AS_REP_Win2k(&w2krep);
 	    if (ret) {
 		krb5_set_error_string(context,
 				      "PKINIT: decoding failed "
@@ -1855,13 +1853,13 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    free_ContentInfo(&ci);
 	    break;
 	default:
+	    free_PA_PK_AS_REP_Win2k(&w2krep);
 	    krb5_set_error_string(context, "PKINIT: win2k reply invalid "
 				  "content type");
 	    ret = EINVAL;
 	    break;
 	}
     
-	free_PA_PK_AS_REP_Win2k(&w2krep);
     }
 
     return ret;
