@@ -1,3 +1,8 @@
+2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* change.c (kt_change): plug memory leak from
+	krb5_kt_remove_entry, print principal on error.
+
 2005-05-02  Dave Love  <d.love@dl.ac.uk>
 
 	* ktutil.c (help): Don't use non-constant initializer for `fake'.
