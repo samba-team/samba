@@ -468,6 +468,8 @@ struct entry kdc_database_entries[] = {
     { "realm", krb5_config_string, NULL },
     { "dbname", krb5_config_string, NULL },
     { "mkey_file", krb5_config_string, NULL },
+    { "acl_file", krb5_config_string, NULL },
+    { "log_file", krb5_config_string, NULL },
     { NULL }
 };
 
@@ -493,6 +495,7 @@ struct entry kdc_entries[] = {
     { "enable-pkinit", krb5_config_string, check_boolean },
     { "pki-identity", krb5_config_string, NULL },
     { "pki-anchors", krb5_config_string, NULL },
+    { "hdb-ldap-create-base", krb5_config_string, NULL },
     { NULL }
 };
 
@@ -500,6 +503,7 @@ struct entry kadmin_entries[] = {
     { "password_lifetime", krb5_config_string, check_time },
     { "default_keys", krb5_config_string, NULL },
     { "use_v4_salt", krb5_config_string, NULL },
+    { "require-preauth", krb5_config_string, check_boolean },
     { NULL }
 };
 struct entry log_strings[] = {
