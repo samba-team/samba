@@ -341,11 +341,13 @@ krb4_kt_remove_entry(krb5_context context,
 			    entry->vno, entry->keyblock.keytype)) {
 	    ret = krb4_store_keytab_entry(context, &e, sp);
 	    if(ret) {
+		krb5_kt_free_entry(context, &e);
 		krb5_storage_free(sp);
 		return ret;
 	    }
 	} else
 	    remove_flag = 1;
+	krb5_kt_free_entry(context, &e);
     }
     krb5_kt_end_seq_get(context, id, &cursor);
     if(remove_flag) {
