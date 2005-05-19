@@ -625,6 +625,7 @@ fkt_remove_entry(krb5_context context,
 		len -= min(len, sizeof(buf));
 	    }
 	}
+	krb5_kt_free_entry(context, &e);
     }
     krb5_kt_end_seq_get(context, id, &cursor);
   out:
