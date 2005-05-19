@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,17 +78,20 @@ change_entry (krb5_context context, krb5_keytab keytab,
 				    KADM5_ADMIN_SERVICE,
 				    &conf, 0, 0,
 				    &kadm_handle);
-    free (client_name);
     if (ret) {
-	krb5_warn (context, ret, "kadm5_c_init_with_skey_ctx");
+	krb5_warn (context, ret,
+		   "kadm5_c_init_with_skey_ctx: %s:", client_name);
+	free (client_name);
 	return ret;
     }
     ret = kadm5_randkey_principal (kadm_handle, principal, &keys, &num_keys);
     kadm5_destroy (kadm_handle);
     if (ret) {
-	krb5_warn(context, ret, "kadm5_randkey_principal");
+	krb5_warn(context, ret, "kadm5_randkey_principal: %s:", client_name);
+	free (client_name);
 	return ret;
     }
+    free (client_name);
     for (i = 0; i < num_keys; ++i) {
 	krb5_keytab_entry new_entry;
 
@@ -124,6 +127,7 @@ kt_change (struct change_options *opt, int argc, char **argv)
     krb5_keytab_entry entry;
     int i, j, max;
     struct change_set *changeset;
+    int errors = 0;
     
     if((keytab = ktutil_open_keytab()) == NULL)
 	return 1;
@@ -149,8 +153,10 @@ kt_change (struct change_options *opt, int argc, char **argv)
 		break;
 	    }
 	}
-	if (i < j)
+	if (i < j) {
+	    krb5_kt_free_entry (context, &entry);
 	    continue;
+	}
 
 	if (argc == 0) {
 	    add = 1;
@@ -196,8 +202,10 @@ kt_change (struct change_options *opt, int argc, char **argv)
 	}
 	krb5_kt_free_entry (context, &entry);
     }
+    krb5_kt_end_seq_get(context, keytab, &cursor);
 
     if (ret == KRB5_KT_END) {
+	ret = 0;
 	for (i = 0; i < j; i++) {
 	    if (verbose_flag) {
 		char *client_name;
@@ -212,19 +220,21 @@ kt_change (struct change_options *opt, int argc, char **argv)
 		    free(client_name);
 		}
 	    }
-	    change_entry (context, keytab, 
-			  changeset[i].principal, changeset[i].kvno,
-			  opt->realm_string, 
-			  opt->admin_server_string, 
-			  opt->server_port_integer);
+	    ret = change_entry (context, keytab, 
+				changeset[i].principal, changeset[i].kvno,
+				opt->realm_string, 
+				opt->admin_server_string, 
+				opt->server_port_integer);
+	    if (ret != 0)
+		errors = 1;
 	}
-    }
+    } else
+	errors = 1;
     for (i = 0; i < j; i++)
 	krb5_free_principal (context, changeset[i].principal);
     free (changeset);
 
-    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
  out:
     krb5_kt_close(context, keytab);
-    return ret != 0;
+    return errors;
 }
