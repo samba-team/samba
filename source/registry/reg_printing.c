@@ -254,7 +254,7 @@ static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 
 	
 	if ( !subkeypath ) {
-		num_drivers = get_ntdrivers( &drivers, environments[env_index], atoi(base) );
+		num_drivers = get_ntdrivers( &drivers, environments[env_index], version );
 		for ( i=0; i<num_drivers; i++ )
 			regsubkey_ctr_addkey( subkeys, drivers[i] );
 			
@@ -351,7 +351,7 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 	keystr = subkeypath;
 	reg_split_path( keystr, &base, &subkeypath );
 		
-	version = atoi( base );
+	version = atoi(&base[strlen(base)-1]);
 
 	/* printer driver name */
 	
