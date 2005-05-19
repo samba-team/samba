@@ -32,9 +32,6 @@
  */
 
 #include "telnet_locl.h"
-#ifdef HAVE_TERMCAP_H
-#include <termcap.h>
-#endif
 
 RCSID("$Id$");
 
