@@ -202,10 +202,14 @@ static int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
     if ( !path )
 	top_level = True;
     
-    evtlog_list = lp_eventlog_list();
     num_subkeys = 0;
+    if ( !(evtlog_list = lp_eventlog_list()) ) {
+	SAFE_FREE(path);
+	return num_subkeys;
+    }
+
     
-    if ( top_level ) 
+    if ( top_level )
     { 
         /* todo - get the eventlog subkey values from the smb.conf file
 	   for ( num_subkeys=0; num_subkeys<MAX_TOP_LEVEL_KEYS; num_subkeys++ )
