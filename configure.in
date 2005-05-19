@@ -10,7 +10,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
 
-AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
+AM_INIT_AUTOMAKE([foreign no-dependencies 1.8])
 AM_MAINTAINER_MODE
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
