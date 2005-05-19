@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                     2002.
+ *  Virtual Windows Registry Layer
+ *  Copyright (C) Gerald Carter                     2002-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,172 +29,94 @@ static TDB_CONTEXT *tdb_reg;
 
 
 static BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr );
+static int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr );
 
 
+
+/* List the deepest path into the registry.  All part components will be created.*/
+
+/* If you want to have a part of the path controlled by the tdb abd part by
+   a virtual registry db (e.g. printing), then you have to list the deepest path.
+   For example,"HKLM/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" 
+   allows the reg_db backend to handle everything up to 
+   "HKLM/SOFTWARE/Microsoft/Windows NT/CurrentVersion" and then we'll hook 
+   the reg_printing backend onto the last component of the path (see 
+   KEY_PRINTING_2K in include/rpc_reg.h)   --jerry */
+
+static const char *builtin_registry_paths[] = {
+	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
+	"HKU",
+	"HKCR",
+	 NULL };
+	
 /***********************************************************************
  Open the registry data in the tdb
  ***********************************************************************/
  
 static BOOL init_registry_data( void )
 {
-	pstring 	keyname;
+	pstring path, base, remaining;
+	fstring keyname, subkeyname;
 	REGSUBKEY_CTR	subkeys;
-
+	int i;
+	const char *p, *p2;
+	
 	ZERO_STRUCTP( &subkeys );
-
-	/* HKEY_LOCAL_MACHINE */
 	
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	regsubkey_ctr_addkey( &subkeys, "SYSTEM" );
-	regsubkey_ctr_addkey( &subkeys, "SOFTWARE" ); 
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE" );
-	regsubkey_ctr_addkey( &subkeys, "Microsoft" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft" );
-	regsubkey_ctr_addkey( &subkeys, "Windows NT" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT" );
-	regsubkey_ctr_addkey( &subkeys, "CurrentVersion" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion" );
-	regsubkey_ctr_addkey( &subkeys, "Print" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM" );
-	regsubkey_ctr_addkey( &subkeys, "CurrentControlSet" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-		
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
-	regsubkey_ctr_addkey( &subkeys, "Control" );
-	regsubkey_ctr_addkey( &subkeys, "Services" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
-	regsubkey_ctr_addkey( &subkeys, "Print" );
-	regsubkey_ctr_addkey( &subkeys, "ProductOptions" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	regsubkey_ctr_init( &subkeys ); 
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/ProductOptions" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys ); /* added */
-
-	/* ProductType is a VALUE under ProductOptions */
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services" );
-	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
-	regsubkey_ctr_addkey( &subkeys, "Tcpip" );
-	regsubkey_ctr_addkey( &subkeys, "Eventlog" ); 
-	regsubkey_ctr_addkey( &subkeys, "LanmanServer" ); 
-
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-		
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon" );
-	regsubkey_ctr_addkey( &subkeys, "Parameters" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Netlogon/Parameters" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/LanmanServer" );
-	regsubkey_ctr_addkey( &subkeys, "Shares" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ))
-		return False;
-	regsubkey_ctr_destroy( &subkeys );
-
-	regsubkey_ctr_init( &subkeys );
-	pstrcpy( keyname, KEY_HKLM ); 
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Tcpip" ); 
-	regsubkey_ctr_addkey( &subkeys, "Parameters" );  
-	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
-		return False; 
-	regsubkey_ctr_destroy( &subkeys ); 
-		
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Tcpip/Parameters" );
-	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
-		return False;
-
-	pstrcpy( keyname, KEY_HKLM ); 
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Eventlog" ); 
-	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
-		return False; 
+	/* loop over all of the predefined paths and add each component */
 	
-	/* HKEY_USER */
+	for ( i=0; builtin_registry_paths[i] != NULL; i++ ) {
+
+		DEBUG(6,("init_registry_data: Adding [%s]\n", builtin_registry_paths[i]));
+
+		pstrcpy( path, builtin_registry_paths[i] );
+		pstrcpy( base, "" );
+		p = path;
 		
-	pstrcpy( keyname, KEY_HKU );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ) )
-		return False;
+		while ( next_token(&p, keyname, "\\", sizeof(keyname)) ) {
 		
-	/* HKEY_CLASSES_ROOT*/
-		
-	pstrcpy( keyname, KEY_HKCR );
-	if ( !regdb_store_reg_keys( keyname, &subkeys ) )
-		return False;
-		
+			/* build up the registry path from the components */
+			
+			if ( *base )
+				pstrcat( base, "\\" );
+			pstrcat( base, keyname );
+			
+			/* get the immediate subkeyname (if we have one ) */
+			
+			*subkeyname = '\0';
+			if ( *p ) {
+				pstrcpy( remaining, p );
+				p2 = remaining;
+				
+				if ( !next_token(&p2, subkeyname, "\\", sizeof(subkeyname)) )
+					fstrcpy( subkeyname, p2 );
+			}
+
+			DEBUG(10,("init_registry_data: Storing key [%s] with subkey [%s]\n",
+				base, *subkeyname ? subkeyname : "NULL"));
+			
+			/* we don't really care if the lookup succeeds or not since
+			   we are about to update the record.  We just want any 
+			   subkeys already present */
+			
+			regsubkey_ctr_init( &subkeys );
+						   
+			regdb_fetch_reg_keys( base, &subkeys );
+			if ( *subkeyname ) 
+				regsubkey_ctr_addkey( &subkeys, subkeyname );
+			if ( !regdb_store_reg_keys( base, &subkeys ))
+				return False;
+			
+			regsubkey_ctr_destroy( &subkeys );
+		}
+	}
+
 	return True;
 }
 
@@ -248,7 +170,7 @@ BOOL init_registry_db( void )
  case.
  ***********************************************************************/
  
-static BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
+static BOOL regdb_store_reg_keys( char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
 	char *buffer, *tmpbuf;
@@ -256,10 +178,16 @@ static BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 	uint32 len, buflen;
 	BOOL ret = True;
 	uint32 num_subkeys = regsubkey_ctr_numkeys( ctr );
+	pstring keyname;
 	
-	if ( !keyname )
+	if ( !key )
 		return False;
+
+	pstrcpy( keyname, key );
 	
+	/* convert to key format */
+	
+	pstring_sub( keyname, "\\", "/" ); 
 	strupper_m( keyname  );
 	
 	/* allocate some initial memory */
