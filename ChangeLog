@@ -1,4 +1,54 @@
+2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: depend on automake 1.8, we don't test anything
+	older
+
+	* lib/krb5/init_creds_pw.c (process_pa_data_to_md): add comment
+	that the caller always free out_md; remove comment about memory,
+	it doesn't happen.
+	(init_cred_loop): free ctx->as_req.padata when its reset (From Wynn
+	Wilkes <wwilkes@vintela.com>), move a comment close the the code
+
+	* lib/krb5/keytab_krb4.c (fkt_remove_entry): need to call
+	krb5_kt_free_entry after each krb5_kt_next_entry.
+
+	* lib/krb5/keytab_file.c (fkt_remove_entry): need to call
+	krb5_kt_free_entry after each fkt_next_entry_int. From: Wynn
+	Wilkes <wwilkes@vintela.com>
+
+2005-05-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: TESTS += test_keytab
+
+	* lib/krb5/keytab_krb4.c (krb4_kt_remove_entry): plug memory leaks,
+	avoid crashing on empty keytab
+
+	* lib/krb5/krb5_keytab.3: document behavior of
+	krb5_kt_remove_entry
+
+	* lib/krb5/keytab_memory.c (mkt_remove_entry): check if there
+	isn't any entries in the keytab before removing any since that
+	leads to bad pointer arithmetic and crashing. From: Wynn Wilkes
+	<wwilkes@vintela.com>.  Make the function return KRB5_KT_NOTFOUND
+	if the entry wasn't in the keytab (just like the filebased
+	keytab).
+
+	* lib/krb5/test_keytab.c: test memory corruption in MEMORY keytab
+
+	* lib/krb5{addr_families,context,creds,free,keyblock,
+	mit_glue,rd_error}.c:zero out content of all krb5_free_x_content
+	like functions to make sure data doesnt get reused, idea from
+	Wynn Wilkes <wwilkes@vintela.com>
+
+	* lib/krb5/krb5_get_credentials.3: document KRB5_GC_EXPIRED_OK
+	
+	* lib/krb5/krb5.3: add krb5_cc_new_unique
+
 2005-05-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/fcache.c (fcc_get_first): check return value from
+	malloc, memset the structure, make sure cursor doesn't point to
+	freed memory on failure.  From: Wynn Wilkes <wwilkes@vintela.com>
 
 	* lib/krb5/krb5_auth_context.3: document
 	KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED
