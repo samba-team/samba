@@ -126,8 +126,13 @@ static int fill_ports_values( REGVAL_CTR *values )
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Environments
+ Environments\$ARCH\Print Processors
+ Environments\$ARCH\Drivers\{0,2,3}
  *********************************************************************/
  
+#define ENVIRONMENT_DRIVERS	1
+#define ENVIRONMENT_PRINTPROC	2
+
 static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 {
 	const char *environments[] = {
@@ -141,113 +146,127 @@ static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 		NULL };
 	fstring *drivers = NULL;
 	int i, env_index, num_drivers;
-	BOOL valid_env = False;
-	char *base, *new_path;
-	char *keystr;
-	char *key2 = NULL;
+	char *keystr, *base, *subkeypath;
+	pstring key2;
 	int num_subkeys = -1;
+	int env_subkey_type = 0;
+	int version;
 
 	DEBUG(10,("print_subpath_environments: key=>[%s]\n", key ? key : "NULL" ));
 	
-	/* listed architectures of installed drivers */
+	/* list all possible architectures */
 	
-	if ( !key ) 
-	{
-		/* Windows 9x drivers */
-		
-		if ( get_ntdrivers( &drivers, environments[0], 0 ) )
-			regsubkey_ctr_addkey( subkeys, 	environments[0] );
-		SAFE_FREE( drivers );
-					
-		/* Windows NT/2k intel drivers */
-		
-		if ( get_ntdrivers( &drivers, environments[1], 2 ) 
-			|| get_ntdrivers( &drivers, environments[1], 3 ) )
-		{
-			regsubkey_ctr_addkey( subkeys, 	environments[1] );
-		}
-		SAFE_FREE( drivers );
-		
-		/* Windows NT 4.0; non-intel drivers */
-		for ( i=2; environments[i]; i++ ) {
-			if ( get_ntdrivers( &drivers, environments[i], 2 ) )
-				regsubkey_ctr_addkey( subkeys, 	environments[i] );
-		
-		}
-		SAFE_FREE( drivers );
+	if ( !key ) {
+		for ( num_subkeys=0; environments[num_subkeys]; num_subkeys++ ) 
+			regsubkey_ctr_addkey( subkeys, 	environments[num_subkeys] );
 
-		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
-		goto done;
+		return num_subkeys;
 	}
 	
 	/* we are dealing with a subkey of "Environments */
 	
-	key2 = SMB_STRDUP( key );
+	pstrcpy( key2, key );
 	keystr = key2;
-	reg_split_path( keystr, &base, &new_path );
+	reg_split_path( keystr, &base, &subkeypath );
 	
 	/* sanity check */
 	
 	for ( env_index=0; environments[env_index]; env_index++ ) {
-		if ( StrCaseCmp( environments[env_index], base ) == 0 ) {
-			valid_env = True;
+		if ( strequal( environments[env_index], base ) )
 			break;
-		}
 	}
-		
-	if ( !valid_env )
+	if ( !environments[env_index] )
 		return -1;
-
-	/* enumerate driver versions; environment is environments[env_index] */
 	
-	if ( !new_path ) {
-		switch ( env_index ) {
-			case 0:	/* Win9x */
-				if ( get_ntdrivers( &drivers, environments[0], 0 ) ) {
-					regsubkey_ctr_addkey( subkeys, "0" );
-					SAFE_FREE( drivers );
-				}
-				break;
-			case 1: /* Windows NT/2k - intel */
-				if ( get_ntdrivers( &drivers, environments[1], 2 ) ) {
-					regsubkey_ctr_addkey( subkeys, "2" );
-					SAFE_FREE( drivers );
-				}
-				if ( get_ntdrivers( &drivers, environments[1], 3 ) ) {
-					regsubkey_ctr_addkey( subkeys, "3" );
-					SAFE_FREE( drivers );
-				}
-				break;
-			default: /* Windows NT - nonintel */
-				if ( get_ntdrivers( &drivers, environments[env_index], 2 ) ) {
-					regsubkey_ctr_addkey( subkeys, "2" );
-					SAFE_FREE( drivers );
-				}
-			
-		}
+	/* ...\Print\Environements\...\ */
+	
+	if ( !subkeypath ) {
+		regsubkey_ctr_addkey( subkeys, "Drivers" );
+		regsubkey_ctr_addkey( subkeys, "Print Processors" );
+				
+		return 2;
+	}
+	
+	/* more of the key path to process */
+	
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );	
 		
-		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
-		goto done;
+	/* ...\Print\Environements\...\Drivers\ */
+	
+	if ( strequal(base, "Drivers") )
+		env_subkey_type = ENVIRONMENT_DRIVERS;
+	else if ( strequal(base, "Print Processors") )
+		env_subkey_type = ENVIRONMENT_PRINTPROC;
+	else
+		/* invalid path */
+		return -1;
+	
+	if ( !subkeypath ) {
+		switch ( env_subkey_type ) {
+		case ENVIRONMENT_DRIVERS:
+			switch ( env_index ) {
+				case 0:	/* Win9x */
+					regsubkey_ctr_addkey( subkeys, "Version-0" );
+					break;
+				default: /* Windows NT based systems */
+					regsubkey_ctr_addkey( subkeys, "Version-2" );
+					regsubkey_ctr_addkey( subkeys, "Version-3" );
+					break;			
+			}
+		
+			return regsubkey_ctr_numkeys( subkeys );
+		
+		case ENVIRONMENT_PRINTPROC:
+			if ( env_index == 1 || env_index == 5 || env_index == 6 )
+				regsubkey_ctr_addkey( subkeys, "winprint" );
+				
+			return regsubkey_ctr_numkeys( subkeys );
+		}
 	}
 	
 	/* we finally get to enumerate the drivers */
 	
-	keystr = new_path;
-	reg_split_path( keystr, &base, &new_path );
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+
+	/* get thr print processors key out of the way */
+	if ( env_subkey_type == ENVIRONMENT_PRINTPROC ) {
+		if ( !strequal( base, "winprint" ) )
+			return -1;
+		return !subkeypath ? 0 : -1;
+	}
 	
-	if ( !new_path ) {
+	/* only dealing with drivers from here on out */
+	
+	version = atoi(&base[strlen(base)-1]);
+			
+	switch (env_index) {
+	case 0:
+		if ( version != 0 )
+			return -1;
+		break;
+	default:
+		if ( version != 2 && version != 3 )
+			return -1;
+		break;
+	}
+
+	
+	if ( !subkeypath ) {
 		num_drivers = get_ntdrivers( &drivers, environments[env_index], atoi(base) );
 		for ( i=0; i<num_drivers; i++ )
 			regsubkey_ctr_addkey( subkeys, drivers[i] );
 			
-		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
-		goto done;
-	}
+		return regsubkey_ctr_numkeys( subkeys );	
+	}	
 	
-done:
-	SAFE_FREE( key2 );
-		
-	return num_subkeys;
+	/* if anything else left, just say if has no subkeys */
+	
+	DEBUG(1,("print_subpath_environments: unhandled key [%s] (subkey == %s\n", 
+		key, subkeypath ));
+	
+	return 0;
 }
 
 /***********************************************************************
@@ -274,10 +293,9 @@ static char* dos_basename ( char *path )
  
 static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 {
-	char 		*keystr;
-	char		*key2 = NULL;
-	char 		*base, *new_path;
-	fstring		env;
+	char 		*keystr, *base, *subkeypath;
+	pstring 	key2;
+	fstring		arch_environment;
 	fstring		driver;
 	int		version;
 	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
@@ -288,46 +306,63 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 	int		buffer_size = 0;
 	int 		i, length;
 	char 		*filename;
-	UNISTR2		data;;
+	UNISTR2		data;
+	int		env_subkey_type = 0;
+	
 	
 	DEBUG(8,("print_subpath_values_environments: Enter key => [%s]\n", key ? key : "NULL"));
 	
 	if ( !key )
 		return 0;
 		
-	/* 
-	 * The only key below KEY_PRINTING\Environments that 
-	 * posseses values is each specific printer driver 
-	 * First get the arch, version, & driver name
-	 */
+	/* The only keys below KEY_PRINTING\Environments is the 
+	   specific printer driver info */
 	
-	/* env */
+	/* environment */
 	
-	key2 = SMB_STRDUP( key );
+	pstrcpy( key2, key );
 	keystr = key2;
-	reg_split_path( keystr, &base, &new_path );
-	if ( !base || !new_path )
+	reg_split_path( keystr, &base, &subkeypath );
+	if ( !subkeypath ) 
 		return 0;
-	fstrcpy( env, base );
+	fstrcpy( arch_environment, base );
 	
-	/* version */
+	/* Driver */
 	
-	keystr = new_path;
-	reg_split_path( keystr, &base, &new_path );
-	if ( !base || !new_path )
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+
+	if ( strequal(base, "Drivers") )
+		env_subkey_type = ENVIRONMENT_DRIVERS;
+	else if ( strequal(base, "Print Processors") )
+		env_subkey_type = ENVIRONMENT_PRINTPROC;
+	else
+		/* invalid path */
+		return -1;
+	
+	if ( !subkeypath )
 		return 0;
+
+	/* for now bail out if we are seeing anything other than the drivers key */
+	
+	if ( env_subkey_type == ENVIRONMENT_PRINTPROC )
+		return 0;
+		
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+		
 	version = atoi( base );
 
 	/* printer driver name */
 	
-	keystr = new_path;
-	reg_split_path( keystr, &base, &new_path );
-	/* new_path should be NULL here since this must be the last key */
-	if ( !base || new_path )
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+	/* don't go any deeper for now */
+	if ( subkeypath )
 		return 0;
 	fstrcpy( driver, base );
 
-	w_result = get_a_printer_driver( &driver_ctr, 3, driver, env, version );
+	w_result = get_a_printer_driver( &driver_ctr, 3, driver, arch_environment, version );
 
 	if ( !W_ERROR_IS_OK(w_result) )
 		return -1;
@@ -396,7 +431,6 @@ static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
 	
 	free_a_printer_driver( driver_ctr, 3 );
 	
-	SAFE_FREE( key2 );
 	SAFE_FREE( buffer );
 		
 	DEBUG(8,("print_subpath_values_environments: Exit\n"));
