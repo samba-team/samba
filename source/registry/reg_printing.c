@@ -632,8 +632,9 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	
 	fstrcpy( printername, base );
 	
-	if ( !new_path ) 
-	{
+	if ( !new_path ) {
+		char *p;
+
 		/* we are dealing with the printer itself */
 
 		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
@@ -649,33 +650,45 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 		regval_ctr_addvalue( val, "Status",           REG_DWORD, (char*)&info2->status,           sizeof(info2->status) );
 		regval_ctr_addvalue( val, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
 		regval_ctr_addvalue( val, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
-		regval_ctr_addvalue( val, "cjobs",            REG_DWORD, (char*)&info2->cjobs,            sizeof(info2->cjobs) );
-		regval_ctr_addvalue( val, "AveragePPM",       REG_DWORD, (char*)&info2->averageppm,       sizeof(info2->averageppm) );
 
-		init_unistr2( &data, info2->printername, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Name",             REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		/* strip the \\server\ from this string */
+		if ( !(p = strrchr( info2->printername, '\\' ) ) )
+			p = info2->printername;
+		else
+			p++;
+		init_unistr2( &data, p, UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->location, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Location",         REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Location", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->comment, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Comment",          REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Description", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->parameters, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Parameters",       REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Parameters", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->portname, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Port",             REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		init_unistr2( &data, info2->servername, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Server",           REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Port", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->sharename, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Share",            REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Share Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->drivername, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Driver",           REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+		regval_ctr_addvalue( val, "Printer Driver", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		init_unistr2( &data, info2->sepfile, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Separator File",   REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		init_unistr2( &data, "winprint", UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "Separator File", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+		init_unistr2( &data, "WinPrint", UNI_STR_TERMINATE);
 		regval_ctr_addvalue( val, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		
+
+		init_unistr2( &data, "RAW", UNI_STR_TERMINATE);
+		regval_ctr_addvalue( val, "Datatype", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
 		
 		/* use a prs_struct for converting the devmode and security 
-		   descriptor to REG_BIARY */
+		   descriptor to REG_BINARY */
 		
 		prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(val), MARSHALL);
 
