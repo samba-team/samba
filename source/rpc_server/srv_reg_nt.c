@@ -41,7 +41,7 @@
 
 /* no idea if this is correct, just use the file access bits for now */
 
-struct generic_mapping reg_map = { GENERIC_RIGHTS_FILE_READ, GENERIC_RIGHTS_FILE_WRITE, GENERIC_RIGHTS_FILE_EXECUTE, GENERIC_RIGHTS_FILE_ALL_ACCESS };
+struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 static REGISTRY_KEY *regkeys_list;
 
@@ -875,11 +875,17 @@ done:
 
 static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
 {
-	DOM_SID adm_sid;
+	DOM_SID adm_sid, owner_sid;
 	SEC_ACE ace[2];         /* at most 2 entries */
 	SEC_ACCESS mask;
 	SEC_ACL *psa = NULL;
 	uint32 sd_size;
+
+	/* set the owner to BUILTIN\Administrator */
+
+	sid_copy(&owner_sid, &global_sid_Builtin);
+	sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN );
+	
 
 	/* basic access for Everyone */
 
@@ -898,7 +904,7 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
         if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
                 return WERR_NOMEM;
 
-        if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, &sd_size)) == NULL)
+        if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &owner_sid, NULL, NULL, psa, &sd_size)) == NULL)
                 return WERR_NOMEM;
 
 	return WERR_OK;
