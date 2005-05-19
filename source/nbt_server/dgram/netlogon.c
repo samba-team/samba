@@ -118,7 +118,7 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		NBT_SERVER_GOOD_TIMESERV;
 
 	/* hmm, probably a better way to do this */
-	if (lp_parm_bool(-1, "gensec", "krb5", True)) {
+	if (lp_parm_bool(-1, "krb5", "kdc", True)) {
 		pdc->server_type |= NBT_SERVER_KDC;
 	}
 	if (str_list_check(services, "ldap")) {
