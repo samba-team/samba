@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -388,9 +388,10 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_free_entry(krb5_context context,
 		   krb5_keytab_entry *entry)
 {
-  krb5_free_principal (context, entry->principal);
-  krb5_free_keyblock_contents (context, &entry->keyblock);
-  return 0;
+    krb5_free_principal (context, entry->principal);
+    krb5_free_keyblock_contents (context, &entry->keyblock);
+    memset(entry, 0, sizeof(*entry));
+    return 0;
 }
 
 /*
