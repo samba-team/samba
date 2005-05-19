@@ -77,6 +77,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/dfs.o \
 		torture/rpc/drsuapi.o \
 		torture/rpc/spoolss.o \
+		torture/rpc/unixinfo.o \
 		torture/rpc/samr.o \
 		torture/rpc/wkssvc.o \
 		torture/rpc/srvsvc.o \
@@ -104,7 +105,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/alter_context.o \
 		torture/rpc/bench.o
 REQUIRED_SUBSYSTEMS = \
-		NDR_ALL RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
+		NDR_ALL RPC_NDR_UNIXINFO RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
 		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
 		RPC_NDR_MGMT RPC_NDR_NETLOGON RPC_NDR_ATSVC RPC_NDR_DRSUAPI \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \

@@ -87,6 +87,19 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start MODULE dcerpc_unixinfo
+[MODULE::dcerpc_unixinfo]
+INIT_FUNCTION = dcerpc_server_unixinfo_init
+SUBSYSTEM = DCERPC
+INIT_OBJ_FILES = \
+		rpc_server/unixinfo/dcesrv_unixinfo.o
+REQUIRED_SUBSYSTEMS = \
+		DCERPC_COMMON \
+		NDR_UNIXINFO
+# End MODULE dcerpc_unixinfo
+################################################
+
+################################################
 # Start MODULE dcerpc_samr
 [MODULE::dcerpc_samr]
 INIT_FUNCTION = dcerpc_server_samr_init
