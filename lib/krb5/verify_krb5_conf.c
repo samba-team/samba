@@ -400,6 +400,7 @@ struct entry libdefaults_entries[] = {
     { "v4_instance_resolve", krb5_config_string, check_boolean },
     { "v4_name_convert", krb5_config_list, v4_name_convert_entries },
     { "verify_ap_req_nofail", krb5_config_string, check_boolean },
+    { "pkinit-openssl-engine", krb5_config_string, NULL },
     /* MIT stuff */
     { "permitted_enctypes", krb5_config_string, mit_entry },
     { "default_tgs_enctypes", krb5_config_string, mit_entry },
@@ -438,6 +439,7 @@ struct entry realms_entries[] = {
     { "v4_instance_convert", krb5_config_list, all_strings },
     { "v4_domains", krb5_config_string, NULL },
     { "default_domain", krb5_config_string, NULL },
+    { "win2k_pkinit", krb5_config_string, NULL },
     /* MIT stuff */
     { "admin_keytab", krb5_config_string, mit_entry },
     { "acl_file", krb5_config_string, mit_entry },
@@ -487,7 +489,10 @@ struct entry kdc_entries[] = {
     { "enable-kaserver", krb5_config_string, check_boolean },
     { "encode_as_rep_as_tgs_rep", krb5_config_string, check_boolean },
     { "kdc_warn_pwexpire", krb5_config_string, check_time },
-    { "use_2b", krb5_config_list, all_boolean },
+    { "use_2b", krb5_config_string, check_boolean },
+    { "enable-pkinit", krb5_config_string, check_boolean },
+    { "pki-identity", krb5_config_string, NULL },
+    { "pki-anchors", krb5_config_string, NULL },
     { NULL }
 };
 
@@ -517,6 +522,7 @@ struct entry capaths_entries[] = {
 
 struct entry password_quality_entries[] = {
     { "policies", krb5_config_string, NULL },
+    { "external_program", krb5_config_string, NULL },
     { "", krb5_config_list, all_strings },
     { NULL }
 };
