@@ -1,5 +1,8 @@
 2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c (pk_verify_chain_standard): store better error
+	message in the context for certificate errors.
+	
 	* lib/krb5/keytab.c (krb5_kt_free_entry): zero out content of all
 	krb5_free_x_content like functions to make sure data doesnt get
 	reused, idea from Wynn Wilkes <wwilkes@vintela.com>
