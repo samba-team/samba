@@ -1057,6 +1057,10 @@ pa_data_add_pac_request(krb5_context context,
     return 0;
 }
 
+/*
+ * Assumes caller always will free `out_md', even on error.
+ */
+
 static krb5_error_code
 process_pa_data_to_md(krb5_context context,
 		      const krb5_creds *creds,
@@ -1093,7 +1097,7 @@ process_pa_data_to_md(krb5_context context,
     pa_data_add_pac_request(context, ctx, *out_md);
     ret = pa_data_to_md_pkinit(context, a, creds->client, ctx, *out_md);
     if (ret)
-	return ret; /* XXX memory leak */
+	return ret;
 
     if ((*out_md)->len == 0) {
 	free(*out_md);
@@ -1201,17 +1205,16 @@ init_cred_loop(krb5_context context,
     if (ret)
 	return ret;
 
-    /*
-     * Increase counter when we want other pre-auth types then
-     * KRB5_PA_ENC_TIMESTAMP.
-     */
-
     /* Set a new nonce. */
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
     ctx->nonce &= 0xffffffff;
     /* XXX these just needs to be the same when using Windows PK-INIT */
     ctx->pk_nonce = ctx->nonce;
 
+    /*
+     * Increase counter when we want other pre-auth types then
+     * KRB5_PA_ENC_TIMESTAMP.
+     */
 #define MAX_PA_COUNTER 3 
 
     ctx->pa_counter = 0;
@@ -1222,6 +1225,7 @@ init_cred_loop(krb5_context context,
 
 	if (ctx->as_req.padata) {
 	    free_METHOD_DATA(ctx->as_req.padata);
+	    free(ctx->as_req.padata);
 	    ctx->as_req.padata = NULL;
 	}
 
