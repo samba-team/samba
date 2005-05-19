@@ -9,6 +9,7 @@ if test "$ac_cv_func_getpwnam_r" = yes; then
 	ac_libs="$LIBS"
 	LIBS="$LIBS $LIB_getpwnam_r"
 	AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#define _POSIX_PTHREAD_SEMANTICS
 #include <pwd.h>
 int main()
 {
