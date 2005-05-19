@@ -60,14 +60,15 @@
 #define HKEY_USERS         	0x80000003
 #define HKEY_PERFORMANCE_DATA	0x80000004
 
-#define KEY_HKLM	"HKLM"
-#define KEY_HKU		"HKU"
-#define KEY_HKCR	"HKCR"
-#define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
-#define KEY_PRINTING_2K	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
-#define KEY_EVENTLOG 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
-#define KEY_SHARES	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
-#define KEY_TREE_ROOT	""
+#define KEY_HKLM		"HKLM"
+#define KEY_HKU			"HKU"
+#define KEY_HKCR		"HKCR"
+#define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
+#define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
+#define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
+#define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
+#define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_TREE_ROOT		""
 
 /* Registry data types */
 

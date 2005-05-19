@@ -57,6 +57,7 @@ static char* trim_reg_path( char *path )
 
 	static int key_printing_len = strlen( KEY_PRINTING );
 	static int key_printing2k_len = strlen( KEY_PRINTING_2K );
+	static int key_printing_ports_len = strlen( KEY_PRINTING_PORTS );
 
 
 	
@@ -66,7 +67,10 @@ static char* trim_reg_path( char *path )
 	 * the path buffer in the extreme case.
 	 */
 	
-	if ( (key_len < key_printing_len) && (key_len < key_printing2k_len) ) {
+	if ( (key_len < key_printing_len) 
+		&& (key_len < key_printing2k_len) 
+		&& (key_len < key_printing_ports_len) )
+	{
 		DEBUG(0,("trim_reg_path: Registry path too short! [%s]\n", path));
 		return NULL;
 	}
@@ -77,6 +81,9 @@ static char* trim_reg_path( char *path )
 	}
 	else if ( StrnCaseCmp( KEY_PRINTING_2K, path, key_printing2k_len ) == 0 ) {
 		base_key_len = key_printing2k_len;
+	}
+	else if ( StrnCaseCmp( KEY_PRINTING_PORTS, path, key_printing2k_len ) == 0 ) {
+		base_key_len = key_printing_ports_len;
 	}
 	else {
 		DEBUG(0,("trim_reg_path: invalid path [%s]\n", path ));
@@ -93,6 +100,29 @@ static char* trim_reg_path( char *path )
 	else
 		return NULL;
 }
+
+/**********************************************************************
+ *********************************************************************/
+ 
+static int fill_ports_values( REGVAL_CTR *values )
+{
+	int numlines, i;
+	char **lines;
+	UNISTR2	data;
+	WERROR result;
+
+	result = enumports_hook( &numlines, &lines );
+
+	if ( !W_ERROR_IS_OK(result) )
+		return -1;
+
+	init_unistr2( &data, "", UNI_STR_TERMINATE);
+	for ( i=0; i<numlines; i++ )
+		regval_ctr_addvalue( values, lines[i], REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	return numlines;
+}
+ 
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Environments
@@ -806,9 +836,10 @@ static int printing_value_info( char *key, REGVAL_CTR *val )
 		top_level = True;
 	
 	/* fill in values from the getprinterdata_printer_server() */
-	if ( top_level )
-		num_values = 0;
-	else
+	if ( top_level ) {
+		if ( strequal( key, KEY_PRINTING_PORTS ) ) 
+			num_values = fill_ports_values( val );
+	} else
 		num_values = handle_printing_subpath( path, NULL, val );
 		
 	

@@ -45,6 +45,7 @@ static int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr );
 
 static const char *builtin_registry_paths[] = {
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print",
+	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares",
