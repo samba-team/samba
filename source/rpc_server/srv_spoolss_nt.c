@@ -2351,10 +2351,9 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = REG_BINARY;
 		*needed = 0x114;
 
-		if((*data = (uint8 *)TALLOC(ctx, *needed)) == NULL)
+		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, *needed)) )
 			return WERR_NOMEM;
-		ZERO_STRUCTP( *data );
-		
+
 		SIVAL(*data, 0, *needed);	/* size */
 		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
 		SIVAL(*data, 8, 0);

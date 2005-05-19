@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Gerald Carter                     2002-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,8 +32,9 @@ extern REGISTRY_OPS regdb_ops;		/* these are the default */
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
 
 REGISTRY_HOOK reg_hooks[] = {
-  { KEY_PRINTING,   &printing_ops },
-  { KEY_EVENTLOG,   &eventlog_ops }, 
+  { KEY_PRINTING,    &printing_ops },
+  { KEY_PRINTING_2K, &printing_ops },
+  { KEY_EVENTLOG,    &eventlog_ops }, 
   { NULL, NULL }
 };
 

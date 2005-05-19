@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Gerald Carter                     2002-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 	"Forms",
 	"Printers" 
 };
-
+	
 
 /**********************************************************************
  It is safe to assume that every registry path passed into on of 
@@ -52,7 +52,13 @@ static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 static char* trim_reg_path( char *path )
 {
 	char *p;
-	uint16 key_len = strlen(KEY_PRINTING);
+	uint16 key_len = strlen(path);
+	uint16 base_key_len;
+
+	static int key_printing_len = strlen( KEY_PRINTING );
+	static int key_printing2k_len = strlen( KEY_PRINTING_2K );
+
+
 	
 	/* 
 	 * sanity check...this really should never be True.
@@ -60,14 +66,24 @@ static char* trim_reg_path( char *path )
 	 * the path buffer in the extreme case.
 	 */
 	
-	if ( strlen(path) < key_len ) {
+	if ( (key_len < key_printing_len) && (key_len < key_printing2k_len) ) {
 		DEBUG(0,("trim_reg_path: Registry path too short! [%s]\n", path));
-		DEBUG(0,("trim_reg_path: KEY_PRINTING => [%s]!\n", KEY_PRINTING));
+		return NULL;
+	}
+
+	base_key_len = 0;
+	if ( StrnCaseCmp( KEY_PRINTING, path, key_printing_len ) == 0 ) {
+		base_key_len = key_printing_len;
+	}
+	else if ( StrnCaseCmp( KEY_PRINTING_2K, path, key_printing2k_len ) == 0 ) {
+		base_key_len = key_printing2k_len;
+	}
+	else {
+		DEBUG(0,("trim_reg_path: invalid path [%s]\n", path ));
 		return NULL;
 	}
 	
-	
-	p = path + strlen( KEY_PRINTING );
+	p = path + base_key_len;
 	
 	if ( *p == '\\' )
 		p++;
@@ -751,8 +767,15 @@ int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 		top_level = True;
 		
 	if ( top_level ) {
-		for ( num_subkeys=0; num_subkeys<MAX_TOP_LEVEL_KEYS; num_subkeys++ )
-			regsubkey_ctr_addkey( subkey_ctr, top_level_keys[num_subkeys] );
+		/* check between the two top level keys here */
+		
+		if ( strequal( KEY_PRINTING, key ) ) {
+			regsubkey_ctr_addkey( subkey_ctr, "Environments" );
+			regsubkey_ctr_addkey( subkey_ctr, "Forms" );
+		}
+		else if ( strequal( KEY_PRINTING_2K, key ) ) {
+			regsubkey_ctr_addkey( subkey_ctr, "Printers" );
+		}
 	}
 	else
 		num_subkeys = handle_printing_subpath( path, subkey_ctr, NULL );

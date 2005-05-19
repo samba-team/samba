@@ -83,13 +83,13 @@ static BOOL init_registry_data( void )
 	regsubkey_ctr_init( &subkeys );
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion" );
-	regsubkey_ctr_addkey( &subkeys, "SystemRoot" );
+	regsubkey_ctr_addkey( &subkeys, "Print" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 	regsubkey_ctr_destroy( &subkeys );
 
 	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/SystemRoot" );
+	pstrcat( keyname, "/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" );
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 
@@ -153,8 +153,8 @@ static BOOL init_registry_data( void )
 	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 
-	regsubkey_ctr_init( &subkeys ); /*added */
-	pstrcpy( keyname, KEY_HKLM );  /*added */
+	regsubkey_ctr_init( &subkeys );
+	pstrcpy( keyname, KEY_HKLM ); 
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Services/Tcpip" ); 
 	regsubkey_ctr_addkey( &subkeys, "Parameters" );  
 	if ( !regdb_store_reg_keys( keyname, &subkeys )) 
@@ -197,12 +197,9 @@ BOOL init_registry_db( void )
 	if (tdb_reg && local_pid == sys_getpid())
 		return True;
 
-	/* 
-	 * try to open first without creating so we can determine
-	 * if we need to init the data in the registry
-	 */
+	/* placeholder tdb; reinit upon startup */
 	
-	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR, 0600);
 	if ( !tdb_reg ) 
 	{
 		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
@@ -213,12 +210,13 @@ BOOL init_registry_db( void )
 		}
 		
 		DEBUG(10,("init_registry: Successfully created registry tdb\n"));
+	}
 		
-		/* create the registry here */
-		if ( !init_registry_data() ) {
-			DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
-			return False;
-		}
+	/* create the registry here */
+
+	if ( !init_registry_data() ) {
+		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+		return False;
 	}
 
 	local_pid = sys_getpid();
