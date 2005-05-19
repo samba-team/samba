@@ -83,7 +83,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
 		NBT_SERVER_GOOD_TIMESERV;
 
-	if (lp_parm_bool(-1, "gensec", "krb5", True)) {
+	if (lp_parm_bool(-1, "krb5", "kdc", True)) {
 		server_type |= NBT_SERVER_KDC;
 	}
 	if (str_list_check(services, "ldap")) {
