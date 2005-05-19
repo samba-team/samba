@@ -667,7 +667,7 @@ sub ParseElementPushLevel
 		if ($primitives or $l->{IS_DEFERRED}) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, !($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED}));
 	
 			deindent;
 			pidl "}";
@@ -1038,10 +1038,9 @@ sub ParseElementPullLevel
 		}
 
 		if ($primitives or $l->{IS_DEFERRED}) {
-
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, !($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED}));
 			deindent;
 			pidl "}";
 		}
