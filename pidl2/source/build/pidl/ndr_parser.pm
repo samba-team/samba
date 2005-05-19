@@ -600,6 +600,77 @@ sub ParseSubcontextPullEnd($$)
 	pidl "}";
 }
 
+sub ParseElementPushLevel
+{
+	my $e = shift;
+	my $l = shift;
+	my $ndr = shift;
+	my $var_name = shift;
+	my $env = shift;
+	my $primitives = shift;
+	my $deferred = shift;
+
+	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+
+	if (defined($ndr_flags)) {
+	    if ($l->{TYPE} eq "SUBCONTEXT") {
+			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+			ParseSubcontextPushEnd($e, $l, $ndr_flags);
+		} elsif ($l->{TYPE} eq "POINTER") {
+			ParsePtrPush($e, $l, $var_name);
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			my $length = ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
+			# Allow speedups for arrays of scalar types
+			if (is_scalar_array($e,$l)) {
+				unless ($l->{NO_METADATA}) {
+					$var_name = get_pointer_to($var_name);
+				}
+
+				pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				return;
+			} 
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+		} elsif ($l->{TYPE} eq "DATA") {
+			ParseDataPush($e, $l, $ndr, $var_name, $ndr_flags);
+		}
+	}
+
+	if ($l->{TYPE} eq "POINTER" and $deferred) {
+		if ($l->{POINTER_TYPE} ne "ref") {
+			pidl "if ($var_name) {";
+			indent;
+			if ($l->{POINTER_TYPE} eq "relative") {
+				pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_name));";
+			}
+		}
+		$var_name = get_value_of($var_name);
+		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+
+		if ($l->{POINTER_TYPE} ne "ref") {
+			deindent;
+			pidl "}";
+		}
+	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+		pidl "for ($counter = 0; $counter < $length; $counter++) {";
+		indent;
+		$var_name = $var_name . "[$counter]";
+
+		unless ($l->{NO_METADATA}) {
+			$var_name = get_pointer_to($var_name);
+		}
+
+		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+
+		deindent;
+		pidl "}";
+	}
+}
+
 #####################################################################
 # parse scalars in a structure element
 sub ParseElementPush($$$$$$)
@@ -624,72 +695,7 @@ sub ParseElementPush($$$$$$)
 		pidl "$var_name = $value;";
 	}
 
-	foreach my $l (@{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-
-		if (defined($ndr_flags)) {
-		    if ($l->{TYPE} eq "SUBCONTEXT") {
-				$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
-			} elsif ($l->{TYPE} eq "POINTER") {
-				ParsePtrPush($e, $l, $var_name);
-			} elsif ($l->{TYPE} eq "ARRAY") {
-				my $length = ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
-				# Allow speedups for arrays of scalar types
-				if (is_scalar_array($e,$l)) {
-					unless ($l->{NO_METADATA}) {
-						$var_name = get_pointer_to($var_name);
-					}
-
-					pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
-					last;
-				} 
-			} elsif ($l->{TYPE} eq "SWITCH") {
-				ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			} elsif ($l->{TYPE} eq "DATA") {
-				ParseDataPush($e, $l, $ndr, $var_name, $ndr_flags);
-			}
-		}
-
-		if ($l->{TYPE} eq "POINTER" and $deferred) {
-			if ($l->{POINTER_TYPE} ne "ref") {
-				pidl "if ($var_name) {";
-				indent;
-				if ($l->{POINTER_TYPE} eq "relative") {
-					pidl "NDR_CHECK(ndr_push_relative_ptr2(ndr, $var_name));";
-				}
-			}
-			$var_name = get_value_of($var_name);
-		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
-			my $length = ParseExpr($l->{LENGTH_IS}, $env);
-			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
-			pidl "for ($counter = 0; $counter < $length; $counter++) {";
-			indent;
-			$var_name = $var_name . "[$counter]";
-
-			unless ($l->{NO_METADATA}) {
-				$var_name = get_pointer_to($var_name);
-			}
-		}
-	}
-
-	foreach my $l (reverse @{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-
-		if (defined($ndr_flags)) {
-			if ($l->{TYPE} eq "SUBCONTEXT") {
-				ParseSubcontextPushEnd($e, $l, $ndr_flags);
-			}
-		}
-
-		if ($l->{TYPE} eq "POINTER" and $deferred and
-	        ($l->{POINTER_TYPE} ne "ref")) {
-			deindent;
-			pidl "}";
-		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
-			deindent;
-			pidl "}";
-		}
-	}
+	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
 
 	end_flags($e);
 }
@@ -945,6 +951,85 @@ sub ContainsDeferred($)
 	return 0;
 }
 
+sub ParseElementPullLevel
+{
+	my($e) = shift;
+	my $l = shift;
+	my $ndr = shift;
+	my($var_name) = shift;
+	my $env = shift;
+	my $primitives = shift;
+	my $deferred = shift;
+
+	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+
+	# Only pull something if there's actually something to be pulled
+	if (defined($ndr_flags)) {
+		if ($l->{TYPE} eq "SUBCONTEXT") {
+				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
+				ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+				ParseSubcontextPullEnd($e, $l);
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
+
+			# Speed things up a little - special array pull functions
+			# for scalars
+			if (is_scalar_array($e, $l)) {
+				unless ($l->{NO_METADATA}) {
+					$var_name = get_pointer_to($var_name);
+				}
+
+				pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				return;
+			}
+		} elsif ($l->{TYPE} eq "POINTER") {
+			ParsePtrPull($e, $l, $ndr, $var_name);
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			ParseSwitchPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		} elsif ($l->{TYPE} eq "DATA") {
+			ParseDataPull($e, $l, $ndr, $var_name, $ndr_flags);
+		}
+	}
+
+	# add additional constructions
+	if ($l->{TYPE} eq "POINTER" and $deferred) {
+		if ($l->{POINTER_TYPE} ne "ref") {
+			pidl "if ($var_name) {";
+			indent;
+
+			if ($l->{POINTER_TYPE} eq "relative") {
+				pidl "struct ndr_pull_save _relative_save;";
+				pidl "ndr_pull_save(ndr, &_relative_save);";
+				pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_name));";
+			}
+		}
+
+		$var_name = get_value_of($var_name);
+		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+
+		if ($l->{POINTER_TYPE} ne "ref") {
+    		if ($l->{POINTER_TYPE} eq "relative") {
+				pidl "ndr_pull_restore(ndr, &_relative_save);";
+			}
+			deindent;
+			pidl "}";
+		}
+	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+		pidl "for ($counter = 0; $counter < $length; $counter++) {";
+		indent;
+		$var_name = $var_name . "[$counter]";
+		unless ($l->{NO_METADATA}) {
+			$var_name = get_pointer_to($var_name);
+		}
+		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		deindent;
+		pidl "}";
+	}
+}
+
 #####################################################################
 # parse scalars in a structure element - pull size
 sub ParseElementPull($$$$$$)
@@ -960,93 +1045,11 @@ sub ParseElementPull($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	my $previous = undef;
-
 	return unless $primitives or ($deferred and ContainsDeferred($e));
 
 	start_flags($e);
 
-	foreach my $l (@{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-
-		# Only pull something if there's actually something to be pulled
-		if (defined($ndr_flags)) {
-			if ($l->{TYPE} eq "SUBCONTEXT") {
-				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			} elsif ($l->{TYPE} eq "ARRAY") {
-				my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
-
-				# Speed things up a little - special array pull functions
-				# for scalars
-				if (is_scalar_array($e, $l)) {
-					unless ($l->{NO_METADATA}) {
-						$var_name = get_pointer_to($var_name);
-					}
-
-					pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
-					last;
-				}
-			} elsif ($l->{TYPE} eq "POINTER") {
-				ParsePtrPull($e, $l, $ndr, $var_name);
-			} elsif ($l->{TYPE} eq "SWITCH") {
-				ParseSwitchPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			} elsif ($l->{TYPE} eq "DATA") {
-				ParseDataPull($e, $l, $ndr, $var_name, $ndr_flags);
-			}
-
-			$previous = $l;
-		} else {
-			$previous = undef;
-		}
-
-		# add additional constructions
-		if ($l->{TYPE} eq "POINTER" and $deferred) {
-			if ($l->{POINTER_TYPE} ne "ref") {
-				pidl "if ($var_name) {";
-				indent;
-
-				if ($l->{POINTER_TYPE} eq "relative") {
-					pidl "struct ndr_pull_save _relative_save;";
-					pidl "ndr_pull_save(ndr, &_relative_save);";
-					pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_name));";
-				}
-			}
-
-			$var_name = get_value_of($var_name);
-		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
-			my $length = ParseExpr($l->{LENGTH_IS}, $env);
-			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
-			pidl "for ($counter = 0; $counter < $length; $counter++) {";
-			indent;
-			$var_name = $var_name . "[$counter]";
-			unless ($l->{NO_METADATA}) {
-				$var_name = get_pointer_to($var_name);
-			}
-		}
-	}
-
-	foreach my $l (reverse @{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-
-		if (defined ($ndr_flags)) {
-			if ($l->{TYPE} eq "SUBCONTEXT") {
-				ParseSubcontextPullEnd($e, $l);
-			}
-		}
-
-		if ($l->{TYPE} eq "POINTER" and $deferred 
-			and $l->{POINTER_TYPE} ne "ref") {
-		    	if ($l->{POINTER_TYPE} eq "relative") {
-				pidl "ndr_pull_restore(ndr, &_relative_save);";
-			}
-			deindent;
-			pidl "}";
-		} elsif (($l->{TYPE} eq "ARRAY") 
-			and not is_scalar_array($e,$l)) {
-			deindent;
-			pidl "}";
-		}
-	}
+	ParseElementPullLevel($e,$e->{LEVELS}[0],$ndr,$var_name,$env,$primitives,$deferred);
 
 	end_flags($e);
 }
