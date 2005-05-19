@@ -4,6 +4,12 @@
 <!--<xsl:import href="docbook.xsl"/>-->
 <xsl:import href="http://db2latex.sourceforge.net/xsl/docbook.xsl"/>
 
+<xsl:template name="link">
+	<xsl:element name="link">
+		<xsl:copy-of select="@*"/>
+	</xsl:element>
+</xsl:template>
+
 <xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
 <xsl:param name="l10n.gentext.default.language" select="'en'"/>
 <xsl:param name="latex.example.caption.style"></xsl:param>
