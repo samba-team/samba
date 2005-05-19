@@ -2260,6 +2260,7 @@ static struct {
         {"RPC-DFS", torture_rpc_dfs, 0},
         {"RPC-SPOOLSS", torture_rpc_spoolss, 0},
         {"RPC-SAMR", torture_rpc_samr, 0},
+        {"RPC-UNIXINFO", torture_rpc_unixinfo, 0},
         {"RPC-NETLOGON", torture_rpc_netlogon, 0},
         {"RPC-SAMLOGON", torture_rpc_samlogon, 0},
         {"RPC-SAMSYNC", torture_rpc_samsync, 0},
