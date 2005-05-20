@@ -1295,28 +1295,30 @@ start_login(const char *host, int autologin, char *name)
 #endif
     
 #ifdef HAVE_UTMPX_H
-    int pid = getpid();
-    struct utmpx utmpx;
-    char *clean_tty;
-
-    /*
-     * Create utmp entry for child
-     */
-
-    clean_tty = clean_ttyname(line);
-    memset(&utmpx, 0, sizeof(utmpx));
-    strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
-    strncpy(utmpx.ut_line,  clean_tty, sizeof(utmpx.ut_line));
-#ifdef HAVE_STRUCT_UTMP_UT_ID
-    strncpy(utmpx.ut_id, make_id(clean_tty), sizeof(utmpx.ut_id));
-#endif
-    utmpx.ut_pid = pid;
+    {
+	int pid = getpid();
+	struct utmpx utmpx;
+	char *clean_tty;
 	
-    utmpx.ut_type = LOGIN_PROCESS;
-
-    gettimeofday (&utmpx.ut_tv, NULL);
-    if (pututxline(&utmpx) == NULL)
-	fatal(net, "pututxline failed");
+	/*
+	 * Create utmp entry for child
+	 */
+	
+	clean_tty = clean_ttyname(line);
+	memset(&utmpx, 0, sizeof(utmpx));
+	strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
+	strncpy(utmpx.ut_line,  clean_tty, sizeof(utmpx.ut_line));
+#ifdef HAVE_STRUCT_UTMP_UT_ID
+	strncpy(utmpx.ut_id, make_id(clean_tty), sizeof(utmpx.ut_id));
+#endif
+	utmpx.ut_pid = pid;
+	
+	utmpx.ut_type = LOGIN_PROCESS;
+	
+	gettimeofday (&utmpx.ut_tv, NULL);
+	if (pututxline(&utmpx) == NULL)
+	    fatal(net, "pututxline failed");
+    }
 #endif
 
     scrub_env();
