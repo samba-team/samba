@@ -36,18 +36,18 @@
 RCSID("$Id$");
 
 /*
- * Test that removal entry from of empty memory keytab doesn't
- * corrupts memory.
+ * Test that removal entry from of empty keytab doesn't corrupts
+ * memory.
  */
 
 static void
-test_memory_keytab(krb5_context context)
+test_empty_keytab(krb5_context context, const char *keytab)
 {
     krb5_error_code ret;
     krb5_keytab id;
     krb5_keytab_entry entry;
 
-    ret = krb5_kt_resolve(context, "MEMORY:foo", &id);
+    ret = krb5_kt_resolve(context, keytab, &id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_resolve");
 
@@ -55,7 +55,7 @@ test_memory_keytab(krb5_context context)
 
     krb5_kt_remove_entry(context, id, &entry);
 
-    ret = krb5_kt_close(close, id);
+    ret = krb5_kt_close(context, id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_close");
 }
@@ -72,7 +72,9 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    test_memory_keytab(context);
+    test_empty_keytab(context, "MEMORY:foo");
+    test_empty_keytab(context, "FILE:foo");
+    test_empty_keytab(context, "KRB4:foo");
 
     krb5_free_context(context);
 
