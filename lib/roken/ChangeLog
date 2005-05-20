@@ -1,3 +1,8 @@
+2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* environment.c (rk_read_env_file): move assignment to later to
+	make pre c99 compiler happy
+
 2005-05-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* strptime.c: use english spelling of March
