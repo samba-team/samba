@@ -47,7 +47,7 @@ sub str2array($)
 
 sub check_subsystem($$)
 {
-	my $CTX = shift;
+	my $INPUT = shift;
 	my $subsys = shift;
 	if ($subsys->{ENABLE} ne "YES") {
 		printf("Subsystem: %s disabled!\n",$subsys->{NAME});
@@ -56,14 +56,12 @@ sub check_subsystem($$)
 	
 	unless(defined($subsys->{OUTPUT_TYPE})) {
 		$subsys->{OUTPUT_TYPE} = $subsystem_default_output_type;
-	} else {
-		$subsys->{OUTPUT_TYPE} = join('', @{$subsys->{OUTPUT_TYPE}});
 	}
 }
 
 sub check_module($$)
 {
-	my $CTX = shift;
+	my $INPUT = shift;
 	my $mod = shift;
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
@@ -72,9 +70,7 @@ sub check_module($$)
 	
 	my $use_default = 0;
 
-	$mod->{SUBSYSTEM} = join(' ', @{$mod->{SUBSYSTEM}});
-
-	if (!(defined($CTX->{INPUT}{$mod->{SUBSYSTEM}}))) {
+	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
 		$mod->{BUILD} = "NOT";
 		$mod->{ENABLE} = "NO";
 		printf("Module: %s...PARENT SUBSYSTEM ($mod->{SUBSYSTEM}) DISABLED\n",$mod->{NAME});
@@ -97,7 +93,7 @@ sub check_module($$)
 		printf("Module: %s...shared\n",$mod->{NAME});
 	} elsif ($mod->{CHOSEN_BUILD} eq "STATIC") {
 		$mod->{ENABLE} = "YES";
-		push (@{$CTX->{INPUT}{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
+		push (@{$INPUT->{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		printf("Module: %s...static\n",$mod->{NAME});
 		$mod->{OUTPUT_TYPE} = $subsystem_default_output_type;
 	} else {
@@ -109,7 +105,7 @@ sub check_module($$)
 
 sub check_library($$)
 {
-	my $CTX = shift;
+	my $INPUT = shift;
 	my $lib = shift;
 
 	if ($lib->{ENABLE} ne "YES") {
@@ -118,21 +114,11 @@ sub check_library($$)
 	}
 
 	$lib->{OUTPUT_TYPE} = "SHARED_LIBRARY";
-
-	if (defined($lib->{MAJOR_VERSION})) {
-	    $lib->{MAJOR_VERSION} = join('', @{$lib->{MAJOR_VERSION}});
-	}
-	if (defined($lib->{MINOR_VERSION})) {
-	    $lib->{MINOR_VERSION} = join('', @{$lib->{MINOR_VERSION}});
-	}
-	if (defined($lib->{RELEASE_VERSION})) {
-	    $lib->{RELEASE_VERSION} = join('', @{$lib->{RELEASE_VERSION}});
-	}
 }
 
 sub check_binary($$)
 {
-	my $CTX = shift;
+	my $INPUT = shift;
 	my $bin = shift;
 
 	if ($bin->{ENABLE} ne "YES") {
@@ -164,29 +150,29 @@ sub calc_unique_deps
 ###########################################################
 # This function checks the input from the configure script 
 #
-# check_input($SMB_BUILD_CTX)
+# check_input($INPUT)
 #
-# $SMB_BUILD_CTX -	the global SMB_BUILD context
+# $INPUT -	the global INPUT context
 sub check($)
 {
-	my $CTX = shift;
+	my $INPUT = shift;
 
 	($subsystem_default_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
-	foreach my $part (values %{$CTX->{INPUT}}) {
+	foreach my $part (values %$INPUT) {
 		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
 	}
 
-	foreach my $k (keys %{$CTX->{INPUT}}) {
-		my $part = $CTX->{INPUT}->{$k};
+	foreach my $k (keys %$INPUT) {
+		my $part = $INPUT->{$k};
 		if (not defined($part->{TYPE})) {
 			print STDERR "$k does not have a type set.. Perhaps it's only mentioned in a .m4 but not in a .mk file?\n";
 			next;
 		}
-		check_subsystem($CTX, $part) if ($part->{TYPE} eq "SUBSYSTEM");
-		check_module($CTX, $part) if ($part->{TYPE} eq "MODULE");
-		check_library($CTX, $part) if ($part->{TYPE} eq "LIBRARY");
-		check_binary($CTX, $part) if ($part->{TYPE} eq "BINARY");
+		check_subsystem($INPUT, $part) if ($part->{TYPE} eq "SUBSYSTEM");
+		check_module($INPUT, $part) if ($part->{TYPE} eq "MODULE");
+		check_library($INPUT, $part) if ($part->{TYPE} eq "LIBRARY");
+		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
 
 		#FIXME: REQUIRED_LIBRARIES needs to go
 		if (defined($part->{REQUIRED_LIBRARIES})) {
@@ -195,7 +181,7 @@ sub check($)
 		}
 	}
 
-	my %depend = %{$CTX->{INPUT}};
+	my %depend = %$INPUT;
 
 	foreach my $part (values %depend) {
 		
@@ -215,7 +201,7 @@ sub check($)
 		calc_unique_deps($part->{DEPENDENCIES}, $part->{UNIQUE_DEPENDENCIES});
 	}
 
-	return %depend;
+	return \%depend;
 }
 
 1;

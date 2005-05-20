@@ -4,6 +4,7 @@
 # package to parse IDL files and generate code for
 # rpc functions in Samba
 # Copyright tridge@samba.org 2000-2003
+# Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
 use strict;
@@ -13,9 +14,9 @@ use lib "$RealBin";
 use lib "$RealBin/lib";
 use Getopt::Long;
 use File::Basename;
-use idl;
 use dump;
 use ndr_client;
+use idl;
 use ndr_header;
 use ndr_parser;
 use server;
@@ -49,16 +50,6 @@ my($opt_quiet) = 0;
 my($opt_output);
 
 my $idl_parser = new idl;
-
-#####################################################################
-# parse an IDL file returning a structure containing all the data
-sub IdlParse($)
-{
-    my $filename = shift;
-    my $idl = $idl_parser->parse_idl($filename);
-    util::CleanData($idl);
-    return $idl;
-}
 
 #########################################
 # display help text
@@ -137,7 +128,7 @@ sub process_file($)
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
 	if ($opt_parse) {
-		$pidl = IdlParse($idl_file);
+		$pidl = $idl_parser->parse_idl($idl_file);
 		defined @$pidl || die "Failed to parse $idl_file";
 		typelist::LoadIdl($pidl);
 		IdlValidator::Validate($pidl);
@@ -270,7 +261,6 @@ $dcom
 		print IdlTemplate::Parse($pidl);
 	}
 }
-
 
 foreach my $filename (@ARGV) {
 	process_file($filename);

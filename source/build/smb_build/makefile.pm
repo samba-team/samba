@@ -597,7 +597,7 @@ sub _prepare_obj_lists($)
 	my $CTX = shift;
 	my $output = "";
 
-	foreach my $key (values %{$CTX}) {
+	foreach my $key (values %$CTX) {
 		next if not defined($key->{OBJ_LIST});
 		$output .= _prepare_obj_list($key->{TYPE}, $key);
 	}
@@ -760,9 +760,9 @@ sub _prepare_rule_lists($)
 ###########################################################
 # This function prepares the output for Makefile
 #
-# $output = _prepare_makefile_in($SMB_BUILD_CTX)
+# $output = _prepare_makefile_in($OUTPUT)
 #
-# $SMB_BUILD_CTX -	the global SMB_BUILD context
+# $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
 sub _prepare_makefile_in($)
@@ -811,23 +811,24 @@ sub _prepare_makefile_in($)
 }
 
 ###########################################################
-# This function creates Makefile.in from the SMB_BUILD 
+# This function creates Makefile.in from the OUTPUT 
 # context
 #
-# create_makefile_in($SMB_BUILD_CTX)
+# create_makefile_in($OUTPUT)
 #
-# $SMB_BUILD_CTX -	the global SMB_BUILD context
+# $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($)
+sub create_makefile_in($$)
 {
 	my $CTX = shift;
+	my $file = shift;
 
-	open(MAKEFILE_IN,"> Makefile.in") || die ("Can't open Makefile.in\n");
+	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
 	print MAKEFILE_IN _prepare_makefile_in($CTX);
 	close(MAKEFILE_IN);
 
-	print "config.smb_build.pl: creating Makefile.in\n";
+	print "config.smb_build.pl: creating $file\n";
 	return;	
 }
 

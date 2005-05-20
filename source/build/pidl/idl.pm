@@ -2400,7 +2400,7 @@ sub parse_idl($$)
 		}
 	}
 
-	return $idl;
+	return util::CleanData($idl);
 }
 
 1;
