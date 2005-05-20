@@ -33,7 +33,11 @@
 
 	<para>
 	<command>libsmbclient</command> is a library toolset that permits applications
-	to browse CIFS/SMB network resources.
+	to manipulate CIFS/SMB network resources using many of the standards POSIX functions
+	available for manipulating local UNIX/Linux files. It permits much more than just browsing,
+	files can be opened and read or written, permissions changed, file times modified, attributes
+	and ACL's can be manipulated, and so on. Of course, its functionality includes all the
+	capabilities commonly called browsing.
 	</para>
 
 	<para>
@@ -97,6 +101,15 @@
 	<command>libsmbclient</command> will check the users shell environment for the <literal>USER</literal>
 	parameter and will use its value when if the <literal>user</literal> parameter was not included
 	in the URL.
+	</para>
+
+</refsect1>
+
+<refsect1>
+	<title>PROGRAMMERS GUIDE</title>
+
+	<para>
+	Watch this space for future updates.
 	</para>
 
 </refsect1>
