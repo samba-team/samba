@@ -223,7 +223,6 @@ test_fcache_remove(krb5_context context)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_destroy");
 
-    //krb5_cc_destroy(context, id);
     krb5_free_principal(context, p);
     krb5_free_principal(context, cred.server);
     krb5_free_principal(context, cred.client);
