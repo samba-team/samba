@@ -4,12 +4,9 @@
 <appendix id="appendix">
   <title>Appendix: A Collection of Useful Tid-bits</title>
 
-    <para><indexterm>
-	<primary>material</primary>
-      </indexterm><indexterm>
-	<primary>domain</primary>
-	<secondary>joining</secondary>
-      </indexterm>
+	<para>
+	<indexterm><primary>material</primary></indexterm>
+	<indexterm><primary>domain</primary><secondary>joining</secondary></indexterm>
 	Information presented here is considered to be either basic or well-known material that is informative
 	yet helpful. Over the years, I have observed an interesting behavior. There is an expectation that
 	the process for joining a Windows client to a Samba-controlled Windows Domain may somehow involve steps
@@ -20,9 +17,8 @@
 <sect1 id="domjoin">
 <title>Joining a Domain: Windows 200x/XP Professional</title>
 
-      <para><indexterm>
-	  <primary>joining a domain</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>joining a domain</primary></indexterm>
 	Microsoft Windows NT/200x/XP Professional platforms can participate in Domain Security.
 	This section steps through the process for making a Windows 200x/XP Professional machine a
 	member of a Domain Security environment. It should be noted that this process is identical
@@ -70,18 +66,21 @@
 		</para>
 
 		<para>
-		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="swxpp007"></link>.
-		<image id="swxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
+		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See
+		<link linkend="swxpp007"/>.  <image id="swxpp007"><imagefile>wxpp007</imagefile>
+		<imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
 		</para></step>
 
 		<step><para>
-		Now click the <guimenu>OK</guimenu> button. A dialog box should appear to allow you to provide the credentials (username and password)
-		of a Domain administrative account that has the rights to add machines to the Domain.
+		Now click the <guimenu>OK</guimenu> button. A dialog box should appear to allow you to provide the
+		credentials (username and password) of a Domain administrative account that has the rights to add machines to
+		the Domain.
 		</para>
 
 		<para>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="swxpp008"></link>.
-		<image id="swxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
+		<image id="swxpp008"><imagefile>wxpp008</imagefile>
+		<imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
 		</para></step>
 
 		<step><para>
@@ -95,30 +94,24 @@
 
 	</procedure>
 
-      <para><indexterm>
-	  <primary>Active Directory</primary>
-	</indexterm><indexterm>
-	  <primary>DNS</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Active Directory</primary></indexterm>
+	<indexterm><primary>DNS</primary></indexterm>
 	The screen capture shown in <link linkend="swxpp007"/> has a button labeled <guimenu>More...</guimenu>. This button opens a
 	panel in which you can set (or change) the Primary DNS suffix of the computer. This is a parameter that mainly affects members
 	of Microsoft Active Directory. Active Directory is heavily oriented around the DNS name space.
 	</para>
 
-      <para><indexterm>
-	  <primary>Netlogon</primary>
-	</indexterm><indexterm>
-	  <primary>DNS</primary><secondary>dynamic</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Netlogon</primary></indexterm>
+	<indexterm><primary>DNS</primary><secondary>dynamic</secondary></indexterm>
 	Where NetBIOS technology uses WINS as well as UDP broadcast as key mechanisms for name resolution, Active Directory servers
 	register their services with the Microsoft Dynamic DNS server. Windows clients must be able to query the correct DNS server
 	to find the services (like which machines are Domain Controllers or which machines have the Netlogon service running).
 	</para>
 
-      <para><indexterm>
-	  <primary>DNS</primary>
-	  <secondary>suffix</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>DNS</primary><secondary>suffix</secondary></indexterm>
 	The default setting of the Primary DNS suffix is the Active Directory domain name. When you change the Primary DNS suffix,
 	this does not affect Domain Membership, but it can break network browsing and the ability to resolve your computer name to
 	a valid IP address.
@@ -129,9 +122,8 @@
 	Where the client is a member of a Samba Domain, it is preferable to leave this field blank.
 	</para>
 
-      <para><indexterm>
-	  <primary>Group Policy</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Group Policy</primary></indexterm>
 	According to Microsoft documentation, <quote>If this computer belongs to a group with <constant>Group Policy</constant>
 	enabled on <command>Primary DNS suffice of this computer</command>, the string specified in the Group Policy is used
 	as the primary DNS suffix and you might need to restart your computer to view the correct setting. The local setting is
@@ -143,13 +135,10 @@
 <sect1>
 	<title>Samba System File Location</title>
 
-      <para><indexterm>
-	  <primary>default installation</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/local/samba</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/local</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>default installation</primary></indexterm>
+	<indexterm><primary>/usr/local/samba</primary></indexterm>
+	<indexterm><primary>/usr/local</primary></indexterm>
 	One of the frustrations expressed by subscribers to the Samba mailing lists revolves around the choice of where the default Samba Team
 	build and installation process locates its Samba files. The location, chosen in the early 1990s, for the default installation is
 	in the <filename>/usr/local/samba</filename> directory. This is a perfectly reasonable location, particularly given all the other
@@ -161,42 +150,23 @@
 	default. 
 	</para>
 
-      <para><indexterm>
-	  <primary>Free Standards Group</primary>
-	  <see>FSG</see>
-	</indexterm><indexterm>
-	  <primary>FSG</primary>
-	</indexterm><indexterm>
-	  <primary>Linux Standards Base</primary>
-	  <see>LSB</see>
-	</indexterm><indexterm>
-	  <primary>LSB</primary>
-	</indexterm><indexterm>
-	  <primary>File Hierarchy System</primary>
-	  <see>FHS</see>
-	</indexterm><indexterm>
-	  <primary>FHS</primary>
-	</indexterm><indexterm>
-	  <primary>file locations</primary>
-	</indexterm><indexterm>
-	  <primary>/etc/samba</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/sbin</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/bin</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/share</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/share/swat</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/lib/samba</primary>
-	</indexterm><indexterm>
-	  <primary>/usr/share/samba/swat</primary>
-	</indexterm><indexterm>
-	  <primary>SWAT</primary>
-	</indexterm><indexterm>
-	  <primary>VFS modules</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Free Standards Group</primary><see>FSG</see></indexterm>
+	<indexterm><primary>FSG</primary></indexterm>
+	<indexterm><primary>Linux Standards Base</primary><see>LSB</see></indexterm>
+	<indexterm><primary>LSB</primary></indexterm>
+	<indexterm><primary>File Hierarchy System</primary><see>FHS</see></indexterm>
+	<indexterm><primary>FHS</primary></indexterm>
+	<indexterm><primary>file locations</primary></indexterm>
+	<indexterm><primary>/etc/samba</primary></indexterm>
+	<indexterm> <primary>/usr/sbin</primary></indexterm>
+	<indexterm><primary>/usr/bin</primary></indexterm>
+	<indexterm><primary>/usr/share</primary></indexterm>
+	<indexterm><primary>/usr/share/swat</primary></indexterm>
+	<indexterm><primary>/usr/lib/samba</primary></indexterm>
+	<indexterm><primary>/usr/share/samba/swat</primary></indexterm>
+	<indexterm><primary>SWAT</primary></indexterm>
+	<indexterm><primary>VFS modules</primary></indexterm>
 	Linux vendors, working in conjunction with the Free Standards Group (FSG), Linux Standards Base (LSB), and File Hierarchy	
 	System (FHS), have elected to locate the configuration files under the <filename>/etc/samba</filename> directory, common binary
 	files (those used by users) in the <filename>/usr/bin</filename> directory, and the administrative files (daemons) in the
@@ -207,13 +177,10 @@
 	passdb backend as well as for the VFS modules.
 	</para>
 
-      <para><indexterm>
-	  <primary>/var/lib/samba</primary>
-	</indexterm><indexterm>
-	  <primary>/var/log/samba</primary>
-	</indexterm><indexterm>
-	  <primary>run-time control files</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>/var/lib/samba</primary></indexterm>
+	<indexterm><primary>/var/log/samba</primary></indexterm>
+	<indexterm><primary>run-time control files</primary></indexterm>
 	Samba creates run-time control files and generates log files. The run-time control files (tdb and dat files) are stored in
 	the <filename>/var/lib/samba</filename> directory. Log files are created in <filename>/var/log/samba.</filename>
 	</para>
@@ -223,10 +190,8 @@
 	<filename>/usr/local/samba</filename> directory tree. This makes it simple to find the files that Samba owns.
 	</para>
 
-      <para><indexterm>
-	  <primary>smbd</primary>
-	  <secondary>location of files</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>smbd</primary><secondary>location of files</secondary></indexterm>
 	One way to find the Samba files that are installed on your UNIX/Linux system is to search for the location
 	of all files called <command>smbd</command>. Here is an example:
 <screen>
@@ -261,9 +226,8 @@ Version 3.0.20-SUSE
 	<para>
 	Many people have been caught by installation of Samba using the default Samba Team process when it was already installed
 	by the platform vendor's method. If your platform uses RPM format packages, you can check to see if Samba is installed by
-	executing:<indexterm>
-	  <primary>rpm</primary>
-	</indexterm>
+	executing:
+	<indexterm><primary>rpm</primary></indexterm>
 <screen>
 &rootprompt; rpm -qa | grep samba
 samba3-pdb-3.0.20-1
@@ -275,9 +239,8 @@ samba3-utils-3.0.20-1
 samba3-doc-3.0.20-1
 samba3-client-3.0.20-1
 samba3-cifsmount-3.0.20-1
-	</screen><indexterm>
-	  <primary>package names</primary>
-	</indexterm>
+	</screen>
+	<indexterm><primary>package names</primary></indexterm>
 	The package names, of course, vary according to how the vendor, or the binary package builder, prepared them.
 	</para>
 
@@ -286,9 +249,8 @@ samba3-cifsmount-3.0.20-1
 <sect1>
 	<title>Starting Samba</title>
 
-      <para><indexterm>
-	  <primary>daemon</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>daemon</primary></indexterm>
 	Samba essentially consists of two or three daemons. A daemon is a UNIX application that runs in the background and provides services.
 	An example of a service is the Apache Web server for which the daemon is called <command>httpd</command>. In the case of Samba, there
 	are three daemons, two of which are needed as a minimum.
@@ -425,18 +387,16 @@ esac
 </screen>
 </example>
 
-      <para><indexterm>
-	  <primary>samba control script</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>samba control script</primary></indexterm>
 	SUSE Linux implements individual control over each Samba daemon. A samba control script that can be conveniently
 	executed from the command line is shown in <link linkend="ch12SL"/>. This can be located in the directory
 	<filename>/sbin</filename> in a file called <filename>samba</filename>. This type of control script should be
 	owned by user root and group root, and set so that only root can execute it.
 	</para>
 
-      <para><indexterm>
-	  <primary>startup script</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>startup script</primary></indexterm>
 	A sample startup script for a Red Hat Linux system is shown in <link linkend="ch12RHscript"/>.
 	This file could be located in the directory <filename>/etc/rc.d</filename> and can be called
 	<filename>samba</filename>. A similar startup script is required to control <command>winbind</command>.
@@ -576,13 +536,9 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 <sect1 id="altldapcfg">
 	<title>Alternative LDAP Database Initialization</title>
 
-      <para><indexterm>
-	  <primary>LDAP</primary>
-	  <secondary>database</secondary>
-	</indexterm><indexterm>
-	  <primary>LDAP</primary>
-	  <secondary>initial configuration</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LDAP</primary><secondary>database</secondary></indexterm>
+	<indexterm><primary>LDAP</primary><secondary>initial configuration</secondary></indexterm>
 	The following procedure may be used as an alternative means of configuring
 	the initial LDAP database. Many administrators prefer to have greater control
 	over how system files get configured.
@@ -591,14 +547,10 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	<sect2>
 	<title>Initialization of the LDAP Database</title>
 
-	<para><indexterm>
-	    <primary>LDIF</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain Groups</primary>
-	    <secondary>well-known</secondary>
-	  </indexterm><indexterm>
-	    <primary>SID</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>LDIF</primary></indexterm>
+	<indexterm><primary>Domain Groups</primary><secondary>well-known</secondary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
 	The first step to get the LDAP server ready for action is to create the LDIF file from
 	which the LDAP database will be pre-loaded. This is necessary to create the containers
 	into which the user, group, and so on, accounts is written. It is also necessary to
@@ -998,119 +950,98 @@ description: Domain Users
 <sect1>
 <title>The LDAP Account Manager</title>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	</indexterm><indexterm>
-	  <primary>LDAP Account Manager</primary>
-	  <see>LAM</see>
-	</indexterm><indexterm>
-	  <primary>PHP</primary>
-	</indexterm><indexterm>
-	  <primary>unencrypted</primary>
-	</indexterm><indexterm>
-	  <primary>SSL</primary>
-	</indexterm><indexterm>
-	  <primary>Posix</primary>
-	</indexterm><indexterm>
-	  <primary>accounts</primary><secondary>manage</secondary>
-	</indexterm>
-The LDAP Account Manager (LAM) is an application suite that has been written in PHP.
-LAM can be used with any Web server that has PHP4 support. It connects to the LDAP
-server either using unencrypted connections or via SSL. LAM can be used to manage
-Posix accounts as well as SambaSAMAccounts for users, groups, and Windows machines
-(hosts).
-</para>
+	<para>
+	<indexterm><primary>LAM</primary></indexterm>
+	<indexterm><primary>LDAP Account Manager</primary><see>LAM</see></indexterm>
+	<indexterm><primary>PHP</primary></indexterm>
+	<indexterm><primary>unencrypted</primary></indexterm>
+	<indexterm><primary>SSL</primary></indexterm>
+	<indexterm><primary>Posix</primary></indexterm>
+	<indexterm><primary>accounts</primary><secondary>manage</secondary></indexterm>
+	The LDAP Account Manager (LAM) is an application suite that has been written in PHP.
+	LAM can be used with any Web server that has PHP4 support. It connects to the LDAP
+	server either using unencrypted connections or via SSL/TLS. LAM can be used to manage
+	Posix accounts as well as SambaSAMAccounts for users, groups, and Windows machines
+	(hosts).
+	</para>
 
-<para>
-LAM is available from the <ulink url="http://sourceforge.net/projects/lam/">LAM</ulink>
-home page and from its mirror sites. LAM has been released under the GNU GPL version 2.
-The current version of LAM is 0.4.3. Release of version 0.5 is expected some time early
-in 2004.
-</para>
+	<para>
+	LAM is available from the <ulink url="http://sourceforge.net/projects/lam/">LAM</ulink>
+	home page and from its mirror sites. LAM has been released under the GNU GPL version 2.
+	The current version of LAM is 0.4.9. Release of version 0.5 is expected in the third quarter
+	of 2005.
+	</para>
 
-      <para><indexterm>
-	  <primary>PHP4</primary>
-	</indexterm><indexterm>
-	  <primary>OpenLDAP</primary>
-	</indexterm><indexterm>
-	  <primary>Perl</primary>
-	</indexterm>
-Requirements:
-</para>
+	<para>
+	<indexterm><primary>PHP4</primary></indexterm>
+	<indexterm><primary>OpenLDAP</primary></indexterm>
+	<indexterm><primary>Perl</primary></indexterm>
+	Requirements:
+	</para>
 
-<itemizedlist>
-	<listitem><para>A web server that will work with PHP4.</para></listitem>
-	<listitem><para>PHP4 (available from the <ulink url="http://www.php.net/">
-	PHP</ulink> home page.)</para></listitem>
-	<listitem><para>OpenLDAP 2.0 or later.</para></listitem>
-	<listitem><para>A Web browser that supports CSS.</para></listitem>
-	<listitem><para>Perl.</para></listitem>
-	<listitem><para>The gettext package.</para></listitem>
-	<listitem><para>mcrypt + mhash (optional since version 0.4.3).</para></listitem>
-	<listitem><para>It is also a good idea to install SSL support.</para></listitem>
-</itemizedlist>
+	<itemizedlist>
+		<listitem><para>A web server that will work with PHP4.</para></listitem>
+		<listitem><para>PHP4 (available from the <ulink url="http://www.php.net/">
+		PHP</ulink> home page.)</para></listitem>
+		<listitem><para>OpenLDAP 2.0 or later.</para></listitem>
+		<listitem><para>A Web browser that supports CSS.</para></listitem>
+		<listitem><para>Perl.</para></listitem>
+		<listitem><para>The gettext package.</para></listitem>
+		<listitem><para>mcrypt + mhash (optional).</para></listitem>
+		<listitem><para>It is also a good idea to install SSL support.</para></listitem>
+	</itemizedlist>
 
-<para>
-LAM is a useful tool that provides a simple Web-based device that can be used to
-	manage the contents of the LDAP directory to:<indexterm>
-	  <primary>organizational units</primary>
-	</indexterm><indexterm>
-	  <primary>operating profiles</primary>
-	</indexterm><indexterm>
-	  <primary>account policies</primary>
-	</indexterm>
-</para>
+	<para>
+	LAM is a useful tool that provides a simple Web-based device that can be used to
+	manage the contents of the LDAP directory to:
+	<indexterm><primary>organizational units</primary></indexterm>
+	<indexterm><primary>operating profiles</primary></indexterm>
+	<indexterm><primary>account policies</primary></indexterm>
+	</para>
 
-<itemizedlist>
-	<listitem><para>Display user/group/host and Domain entries.</para></listitem>
-	<listitem><para>Manages entries (Add/Delete/Edit).</para></listitem>
-	<listitem><para>Filter and sort entries.</para></listitem>
-	<listitem><para>Set LAM administrator accounts.</para></listitem>
-	<listitem><para>Store and use multiple operating profiles.</para></listitem>
-	<listitem><para>Edit organizational units (OUs).</para></listitem>
-	<listitem><para>Upload accounts from a file.</para></listitem>
-	<listitem><para></para>Is compatible with Samba-2.2.x and Samba-3.</listitem>
-</itemizedlist>
+	<itemizedlist>
+		<listitem><para>Display user/group/host and Domain entries.</para></listitem>
+		<listitem><para>Manage entries (Add/Delete/Edit).</para></listitem>
+		<listitem><para>Filter and sort entries.</para></listitem>
+		<listitem><para>Store and use multiple operating profiles.</para></listitem>
+		<listitem><para>Edit organizational units (OUs).</para></listitem>
+		<listitem><para>Upload accounts from a file.</para></listitem>
+		<listitem><para>Is compatible with Samba-2.2.x and Samba-3.</para></listitem>
+	</itemizedlist>
 
-<para>
-When correctly configured, LAM allows convenient management of UNIX (Posix) and Samba
-user, group, and windows domain member machine accounts.
-</para>
+	<para>
+	When correctly configured, LAM allows convenient management of UNIX (Posix) and Samba
+	user, group, and windows domain member machine accounts.
+	</para>
 
-      <para><indexterm>
-	  <primary>default password</primary>
-	</indexterm><indexterm>
-	  <primary>secure connections</primary>
-	</indexterm><indexterm>
-	  <primary>LAM</primary>
-	</indexterm><indexterm>
-	  <primary>SSL</primary>
-	</indexterm>
-The default password is <quote>lam.</quote> It is highly recommended that you use only 
-an SSL connection to your Web server for all remote operations involving LAM. If you 
-want secure connections, you must configure your Apache Web server to permit connections 
-to LAM using only SSL.
-</para>
+	<para>
+	<indexterm><primary>default password</primary></indexterm>
+	<indexterm><primary>secure connections</primary></indexterm>
+	<indexterm><primary>LAM</primary></indexterm><indexterm><primary>SSL</primary></indexterm>
+	The default password is <quote>lam.</quote> It is highly recommended that you use only 
+	an SSL connection to your Web server for all remote operations involving LAM. If you 
+	want secure connections, you are advised to configure your Apache Web server to permit connections 
+	to LAM using only SSL.
+	</para>
 
-<procedure id="sbehap-laminst">
-<title>Apache Condiguration Steps for LAM</title>
+	<procedure id="sbehap-laminst">
+	<title>Apache Configuration Steps for LAM</title>
 
 	<step><para>
 	Extract the LAM package with:
 <screen>
-&rootprompt; tar xzf ldap-account-manager_0.4.3.tar.gz
+&rootprompt; tar xzf ldap-account-manager_0.4.9.tar.gz
 </screen>
-Alternately, install the LAM RPM for your system using the following example for
-example:
+	Alternatively, install the LAM DEB for your system using the following command:
 <screen>
-&rootprompt; rpm -Uvh ldap-account-manager-0.4.3-1.noarch.rpm
+&rootprompt; dpkg -i ldap-account-manager_0.4.9.all.deb
 </screen>
 	</para></step>
 	
 	<step><para>
 	Copy the extracted files to the document root directory of your Web server.
-	For example, on SUSE Linux Enterprise Server 8, copy to the 
-	<filename>/srv/web/htdocs</filename> directory.
+	For example, on SUSE Linux Enterprise Server 9, copy to the 
+	<filename>/srv/www/htdocs</filename> directory.
 	</para></step>
 
 	<step><para><indexterm>
@@ -1126,23 +1057,17 @@ example:
 </screen>
 	</para></step>
 
-	<step><para><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>configuration file</secondary>
-	    </indexterm>
-       Using your favorite editor create the following <filename>config.cfg</filename>
-       LAM configuration file:
+	<step><para>
+	<indexterm><primary>LAM</primary><secondary>configuration file</secondary></indexterm>
+	Using your favorite editor create the following <filename>config.cfg</filename>
+	LAM configuration file:
 <screen>
 &rootprompt; cd /srv/www/htdocs/lam/config
 &rootprompt; cp config.cfg_sample config.cfg
 &rootprompt; vi config.cfg
-	    </screen><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>profile</secondary>
-	    </indexterm><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>wizard</secondary>
-	    </indexterm>
+</screen>	
+	<indexterm><primary>LAM</primary><secondary>profile</secondary></indexterm>
+	<indexterm><primary>LAM</primary><secondary>wizard</secondary></indexterm>
 	An example file is shown in <link linkend="lamcfg"/>.
 	This is the minimum configuration that must be completed. The LAM profile
 	file can be created using a convenient wizard that is part of the LAM
@@ -1161,9 +1086,8 @@ example:
 	</para></step>
 </procedure>
 
-      <para><indexterm>
-	  <primary>pitfalls</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>pitfalls</primary></indexterm>
 	An example of a working file is shown here in <link linkend="lamconf"/>.
 	This file has been stripped of comments to keep the size small. The comments
 	and help information provided in the profile file that the wizard creates
@@ -1172,10 +1096,8 @@ example:
 	are preferred at your site.
 	</para>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	  <secondary>login screen</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LAM</primary><secondary>login screen</secondary></indexterm>
 	It is important that your LDAP server is running at the time that LAM is 
 	being configured. This permits you to validate correct operation.
 	An example of the LAM login screen is provided in <link linkend="lam-login"/>.
@@ -1205,19 +1127,16 @@ example:
 		<imagefile scale="50">lam-config</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>PDF</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>PDF</primary></indexterm>
 	LAM has some nice, but unusual features. For example, one unexpected feature in most application
 	screens permits the generation of a PDF file that lists configuration information. This is a well
 	thought out facility. This option has been edited out of the following screen shots to conserve
 	space.
 	</para>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	  <secondary>opening screen</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LAM</primary><secondary>opening screen</secondary></indexterm>
 	When you log onto LAM the opening screen drops you right into the user manager as shown in
 	<link linkend="lam-user"/>. This is a logical action as it permits the most-needed facility
 	to be used immediately. The editing of an existing user, as with the addition of a new user,
@@ -1235,7 +1154,7 @@ example:
 	<para>
 	The edit screen for groups is shown in <link linkend="lam-group"/>. As with the edit screen
 	for user accounts, group accounts may be rapidly dealt with. <link linkend="lam-group-mem"/>
-	shown a sub-screen from the group editor that permits users to be assigned secondary group
+	shows a sub-screen from the group editor that permits users to be assigned secondary group
 	memberships. 
 	</para>
 
@@ -1249,11 +1168,8 @@ example:
 		<imagefile scale="50">lam-group-members</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>smbldap-tools</primary>
-	</indexterm><indexterm>
-	  <primary>scripts</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>smbldap-tools</primary></indexterm><indexterm><primary>scripts</primary></indexterm>
 	The final screen presented here is one that you should not normally need to use. Host accounts will
 	be automatically managed using the smbldap-tools scripts. This means that the screen <link linkend="lam-host"/>
 	will, in most cases, not be used.
@@ -1267,10 +1183,17 @@ example:
 	<para>
 	One aspect of LAM that may annoy some users is the way it forces certain conventions on
 	the administrator. For example, LAM does not permit the creation of Windows user and group
-	accounts that contain upper-case characters or spaces even though the underlying UNIX/Linux
+	accounts that contain spaces even though the underlying UNIX/Linux
 	operating system may exhibit no problems with them. Given the propensity for using upper-case
 	characters and spaces (particularly in the default Windows account names) this may cause
 	some annoyance. For the rest, LAM is a very useful administrative tool.
+	</para>
+	
+	<para>
+	The next major release, LAM 0.5, will have fewer restrictions and support the latest Samba features
+	(e.g. logon hours). The new plugin based architecture also allows to manage much more different
+	account types like plain Unix accounts. The upload can now handle groups and hosts, too. Another
+	important point is the tree view which allows to browse and edit LDAP objects directly.
 	</para>
 
 <example id="lamcfg">
@@ -1304,7 +1227,7 @@ userlistAttributes: #uid;#givenName;#sn;#uidNumber;#gidNumber
 grouplistAttributes: #cn;#gidNumber;#memberUID;#description
 hostlistAttributes: #cn;#description;#uidNumber;#gidNumber
 maxlistentries: 30
-defaultLanguage: en_GB:ISO-8859-1:English (Britain)
+defaultLanguage: en_GB:ISO-8859-1:English (Great Britain)
 scriptPath: 
 scriptServer: 
 samba3: yes
@@ -1318,8 +1241,6 @@ pwdhash: SSHA
 <sect1 id="ch12-SUIDSGID">
 	<title>Effect of Setting File and Directory SUID/SGID Permissions Explained</title>
 
-	<indexterm><primary>SUID</primary></indexterm>
-	<indexterm><primary>SGID</primary></indexterm>
 	<para>
 	The setting of the SUID/SGID bits on the file or directory permissions flag has particular
 	consequences. If the file is executable and the SUID bit is set, it executes with the privilege
