@@ -1,3 +1,8 @@
+2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/sys_term.c (start_login): put utmpx code into a new
+	scope to avoid pre c99 problems.
+
 2005-05-19  Dave Love  <fx@gnu.org>
 
 	* telnet/telnet.c,telnet_locl.h: Make solaris find tgetent
