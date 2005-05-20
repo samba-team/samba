@@ -49,7 +49,7 @@ as the print subsystem underneath the Samba hood.
 
 <para>
 This chapter deals with the foundations of Samba printing as they
-are implemented by the more traditional UNIX (BSD- and System V-style)
+are implemented by the more traditional UNIX (BSD and System V-style)
 printing systems. Many things covered in this chapter apply also to CUPS.
 If you use CUPS, you may be tempted
 to jump to the next chapter but you will certainly miss a few things if
