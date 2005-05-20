@@ -66,6 +66,9 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     int proto_num;
     int def_port;
 
+    *res = NULL;
+    *count = 0;
+
     proto_num = string_to_proto(proto);
     if(proto_num < 0) {
 	krb5_set_error_string(context, "unknown protocol `%s'", proto);
@@ -82,11 +85,8 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     snprintf(domain, sizeof(domain), "_%s._%s.%s.", service, proto, realm);
 
     r = dns_lookup(domain, dns_type);
-    if(r == NULL) {
-	*res = NULL;
-	*count = 0;
+    if(r == NULL)
 	return KRB5_KDC_UNREACH;
-    }
 
     for(num_srv = 0, rr = r->head; rr; rr = rr->next) 
 	if(rr->type == T_SRV)
@@ -112,6 +112,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 		while(--num_srv >= 0)
 		    free((*res)[num_srv]);
 		free(*res);
+		*res = NULL;
 		return ENOMEM;
 	    }
 	    (*res)[num_srv++] = hi;
