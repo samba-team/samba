@@ -11,6 +11,21 @@ use input;
 
 use strict;
 
+my %attribute_types = (
+	"NOPROTO" => "string",
+   	"REQUIRED_SUBSYSTEMS" => "list",
+	"OUTPUT_TYPE" => "string",
+	"INIT_OBJ_FILES" => "list",
+	"ADD_OBJ_FILES" => "list",
+	"OBJ_FILES" => "list",
+	"SUBSYSTEM" => "string",
+	"INIT_FUNCTION" => "string",
+	"MAJOR_VERSION" => "string",
+	"MINOR_VERSION" => "string",
+	"RELEASE_VERSION" => "string",
+	"ENABLE" => "bool"
+);
+
 ###########################################################
 # The parsing function which parses the file
 #
@@ -135,109 +150,6 @@ sub _parse_config_mk($)
 	return $result;
 }
 
-###########################################################
-# A caching function to avoid to parse
-# a file twice or more
-#
-# $result = _get_parse_results($filename)
-#
-# $filename -	the path of the config.mk file
-#		which should be parsed
-#
-# $result -	the resulting structure
-#
-# $result->{ERROR_CODE} -	the error_code, '0' means success
-# $result->{ERROR_STR} -	the error string
-#
-# $result->{$key}{KEY} -	the key == the variable which was parsed
-# $result->{$key}{VAL} -	the value of the variable
-my $_get_parse_results_cache;
-sub _get_parse_results($)
-{
-	my $filename = shift;
-
-	if ((!defined($_get_parse_results_cache->{$filename}{ERROR_CODE}))
-		||($_get_parse_results_cache->{$filename}{ERROR_CODE} != 0)) {
-		$_get_parse_results_cache->{$filename} = _parse_config_mk($filename);
-	}
-
-	return $_get_parse_results_cache->{$filename};
-}
-
-###########################################################
-# The fetching function to fetch the value of a variable 
-# out of the file
-#
-# $value = _fetch_var_from_config_mk($filename,$section,$variable)
-#
-# $filename -	the path of the config.mk file
-#		which should be parsed
-#
-# $section  -	the section name of the variable
-#
-# $variable -	the variable name of which we want the value
-#
-# $value -	the value of the variable
-sub _fetch_var_from_config_mk($$$)
-{
-	my $filename = shift;
-	my $section = shift;
-	my $key = shift;
-	my $val = "";
-	my $result;
-
-	$result = _get_parse_results($filename);
-
-	if ($result->{ERROR_CODE} != 0) {
-		die ($result->{ERROR_STR});
-	}
-
-	if (defined($result->{$section}{$key})) {
-		$val = input::strtrim($result->{$section}{$key}{VAL});
-	} elsif (defined($result->{DEFAULT}{$key})) {
-		$val = input::strtrim($result->{DEFAULT}{$key}{VAL});
-	}
-
-	return $val;
-}
-
-###########################################################
-# The fetching function to fetch the array of values of a variable 
-# out of the file
-#
-# $array = _fetch_array_from_config_mk($filename,$section,$variable)
-#
-# $filename -	the path of the config.mk file
-#		which should be parsed
-#
-# $section  -	the section name of the variable
-#
-# $variable -	the variable name of which we want the value
-#
-# $array -	the array of values of the variable
-sub _fetch_array_from_config_mk($$$)
-{
-	my $filename = shift;
-	my $section = shift;
-	my $key = shift;
-	my $result;
-	my $val = "";
-
-	$result = _get_parse_results($filename);
-
-	if ($result->{ERROR_CODE} != 0) {
-		die ($result->{ERROR_STR});
-	}
-
-	if (defined($result->{$section}{$key})) {
-		$val = $result->{$section}{$key}{VAL};
-	} elsif (defined($result->{DEFAULT}{$key})) {
-		$val = $result->{DEFAULT}{$key}{VAL};
-	} 
-
-	return input::str2array($val);
-}
-
 sub import_file($$)
 {
 	my $input = shift;
@@ -255,7 +167,21 @@ sub import_file($$)
 		$input->{$name}{TYPE} = $type;
 
 		foreach my $key (values %{$result->{$section}}) {
-			$input->{$name}{$key->{KEY}} = [input::str2array($key->{VAL})];
+			$key->{VAL} = input::strtrim($key->{VAL});
+			my $vartype = $attribute_types{$key->{KEY}};
+			if (not defined($vartype)) {
+				die("Unknown attribute $key->{KEY}");
+			}
+			if ($vartype eq "string") {
+				$input->{$name}{$key->{KEY}} = $key->{VAL};
+			} elsif ($vartype eq "list") {
+				$input->{$name}{$key->{KEY}} = [input::str2array($key->{VAL})];
+			} elsif ($vartype eq "bool") {
+				if (($key->{VAL} ne "YES") and ($key->{VAL} ne "NO")) {
+					die("Invalid value for bool attribute $key->{KEY}: $key->{VAL}");
+				}
+				$input->{$name}{$key->{KEY}} = $key->{VAL};
+			}
 		}
 	}
 }

@@ -17,9 +17,6 @@ use strict;
 sub smb_build_main($)
 {
 	my $INPUT = shift;
-	my %SMB_BUILD_CTX = (
-		INPUT => $INPUT
-	);
 
 	my @mkfiles = (
 		"dsdb/config.mk",
@@ -71,19 +68,20 @@ sub smb_build_main($)
 	$| = 1;
 
 	for my $mkfile (@mkfiles) {
-		config_mk::import_file($SMB_BUILD_CTX{INPUT}, $mkfile);
+		config_mk::import_file($INPUT, $mkfile);
 	}
 
-	%{$SMB_BUILD_CTX{DEPEND}} = input::check(\%SMB_BUILD_CTX);
+	my $DEPEND = input::check($INPUT);
 	
-	%{$SMB_BUILD_CTX{OUTPUT}} = output::create_output($SMB_BUILD_CTX{DEPEND});
+	my $OUTPUT = output::create_output($DEPEND);
 
-	makefile::create_makefile_in($SMB_BUILD_CTX{OUTPUT});
+	makefile::create_makefile_in($OUTPUT, "Makefile.in");
 
-	smb_build_h::create_smb_build_h($SMB_BUILD_CTX{OUTPUT});
+	smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 
 	open DOTTY, ">samba4-deps.dot";
-	print DOTTY dot::generate($SMB_BUILD_CTX{DEPEND});
+	print DOTTY dot::generate($DEPEND);
 	close DOTTY;
 }
+
 1;
