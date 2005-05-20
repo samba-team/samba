@@ -344,13 +344,14 @@ get_next(struct krb5_krbhst_data *kd, krb5_krbhst_info **host)
 
 static void
 srv_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
-	const char *proto, const char *service)
+	      const char *proto, const char *service)
 {
     krb5_krbhst_info **res;
     int count, i;
 
-    srv_find_realm(context, &res, &count, kd->realm, "SRV", proto, service,
-		   kd->port);
+    if (srv_find_realm(context, &res, &count, kd->realm, "SRV", proto, service,
+		       kd->port))
+	return;
     for(i = 0; i < count; i++)
 	append_host_hostinfo(kd, res[i]);
     free(res);
