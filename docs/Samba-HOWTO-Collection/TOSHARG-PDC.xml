@@ -819,8 +819,8 @@ This is the only officially supported mode of operation.
 	<title><quote>$</quote> Cannot Be Included in Machine Name</title>
 <para>
 A machine account, typically stored in <filename>/etc/passwd</filename>, takes the form of the machine
-name with a <quote>$</quote> appended. FreeBSD (and other BSD systems) will not create a user with a
-<quote>$</quote> in the name.
+name with a <quote>$</quote> appended. Some BSD systems will not create a user with a <quote>$</quote> in the name.
+Recent versions of FreeBSD have removed this limitation, but older releases are still in common use.
 </para>
 
 <para>
