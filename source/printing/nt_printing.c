@@ -3930,7 +3930,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
-	DOM_SID owner_sid;
+	DOM_SID owner_sid, group_sid;
 	size_t sd_size;
 
 	/* Create an ACE where Everyone is allowed to print */
@@ -3942,17 +3942,20 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+	if (secrets_fetch_domain_sid(lp_workgroup(), &group_sid)) {
+		sid_append_rid(&group_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
 		/* Backup plan - make printer owned by admins.
  		   This should emulate a lanman printer as security
  		   settings can't be changed. */
 
-		sid_copy(&owner_sid, get_global_sam_sid());
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+		sid_copy(&group_sid, get_global_sam_sid());
+		sid_append_rid(&group_sid, DOMAIN_USER_RID_ADMIN);
 	}
+
+	sid_copy( &owner_sid, &global_sid_Builtin_Administrators );
+
 
 	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
 	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -3988,7 +3991,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
 		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-				    &owner_sid, NULL,
+				    &owner_sid, &group_sid,
 				    NULL, psa, &sd_size);
 	}
 

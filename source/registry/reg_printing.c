@@ -560,6 +560,11 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 		for (snum=0; snum<n_services; snum++) {
 			if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 				continue;
+
+			/* don't report the [printers] share */
+
+			if ( strequal( lp_servicename(snum), PRINTERS_NAME ) )
+				continue;
 				
 			fstrcpy( sname, lp_servicename(snum) );
 				
