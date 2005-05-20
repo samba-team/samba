@@ -90,7 +90,7 @@
 
 	<para>
 	Samba .tdb files are stored in various locations, be sure to run backup all
-	.tdb file on the system. Imporatant files includes:
+	.tdb file on the system. Important files includes:
 	</para>
 
 	<itemizedlist>
