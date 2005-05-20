@@ -1,5 +1,11 @@
 2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krbhst.c (srv_get_hosts): if srv_get_hosts failes,
+	return and ignore the error
+
+	* lib/krb5/krbhst.c (srv_find_realm): make sure `res' and `count'
+	have good values
+	
 	* lib/krb5/test_keytab.c: tests all keytab format
 	
 2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
