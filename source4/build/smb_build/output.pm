@@ -100,7 +100,7 @@ sub create_output($)
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 
-			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
+			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
 				$part->{OUTPUT_TYPE} eq "BINARY" and 
 				defined($elem->{INIT_FUNCTION}) and 
 				$elem->{INIT_FUNCTION} ne "" and
@@ -108,7 +108,7 @@ sub create_output($)
 		}
 	}
 
-	return %{$depend};
+	return $depend;
 }
 
 1;

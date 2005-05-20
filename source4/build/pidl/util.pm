@@ -83,6 +83,7 @@ sub CleanData($)
 	    if (ref($v->{$x}) eq "ARRAY" && $#{$v->{$x}}==-1) { delete($v->{$x}); next; }
 	}
     }
+	return $v;
 }
 
 
