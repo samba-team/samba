@@ -66,12 +66,13 @@ static int
 rk_read_env_file(FILE *F, char ***env, int *assigned)
 {
     int index = 0;
-    *assigned = 0;
     int i;
     char **l;
     char buf[BUFSIZ], *p, *r;
     char **tmp;
     int ret = 0;
+
+    *assigned = 0;
 
     for(index = 0; *env != NULL && (*env)[index] != NULL; index++);
     l = *env;
