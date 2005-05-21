@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    
+   Extract the user/system database from a remote SamSync server
+
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
@@ -23,58 +25,26 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "dlinklist.h"
 
-static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
-					    struct creds_CredentialState *creds,
-					    struct netr_DELTA_ENUM *delta) 
-{
-	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_USER *user = delta->delta_union.user;
-	const char *username = user->account_name.string;
-	char *hex_lm_password;
-	char *hex_nt_password;
+struct samsync_secret {
+	struct samsync_secret *prev, *next;
+	DATA_BLOB secret;
+	char *name;
+	NTTIME mtime;
+};
 
-	hex_lm_password = smbpasswd_sethexpwd(mem_ctx, 
-					      user->lm_password_present ? &user->lmpassword : NULL, 
-					      user->acct_flags);
-	hex_nt_password = smbpasswd_sethexpwd(mem_ctx, 
-					      user->nt_password_present ? &user->ntpassword : NULL, 
-					      user->acct_flags);
+struct samsync_trusted_domain {
+	struct samsync_trusted_domain *prev, *next;
+        struct dom_sid *sid;
+	char *name;
+};
 
-	printf("%s:%d:%s:%s:%s:LCT-%08X\n", username,
-	       rid, hex_lm_password, hex_nt_password,
-	       smbpasswd_encode_acb_info(mem_ctx, user->acct_flags),
-	       (unsigned int)nt_time_to_unix(user->last_password_change));
+struct samdump_state {
+	struct samsync_secret *secrets;
+	struct samsync_trusted_domain *trusted_domains;
+};
 
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx, 		
-				  void *private, 			
-				  struct creds_CredentialState *creds,
-				  enum netr_SamDatabaseID database,
-				  struct netr_DELTA_ENUM *delta,
-				  char **error_string)
-{
-	NTSTATUS nt_status = NT_STATUS_OK;
-	*error_string = NULL;
-	switch (database) {
-	case SAM_DATABASE_DOMAIN: 
-	{
-		switch (delta->delta_type) {
-		case NETR_DELTA_USER:
-		{
-			nt_status = vampire_samdump_handle_user(mem_ctx, 
-								creds,
-								delta);
-			break;
-		}
-		}
-		break;
-	}
-	}
-	return nt_status;
-}
 
 /**
  * Decrypt and extract the user's passwords.  
@@ -136,6 +106,27 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * Decrypt and extract the secrets
+ * 
+ * The writes decrypted secrets back into the structure
+ */
+static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
+			   struct creds_CredentialState *creds,
+			   enum netr_SamDatabaseID database,
+			   struct netr_DELTA_ENUM *delta,
+			   char **error_string) 
+{
+	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
+	creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
+			    secret->current_cipher.maxlen); 
+
+	creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
+			    secret->old_cipher.maxlen); 
+
+	return NT_STATUS_OK;
+}
+
+/**
  * Fix up the delta, dealing with encryption issues so that the final
  * callback need only do the printing or application logic
  */
@@ -156,6 +147,15 @@ static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx,
 				     database,
 				     delta,
 				     error_string);
+		break;
+	}
+	case NETR_DELTA_SECRET:
+	{
+		nt_status = fix_secret(mem_ctx, 
+				       creds,
+				       database,
+				       delta,
+				       error_string);
 		break;
 	}
 	}
@@ -215,7 +215,7 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 
 	/* We like schannel */
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SEAL /* | DCERPC_SCHANNEL_128 */;
 
 	/* Setup schannel */
 	nt_status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
@@ -296,19 +296,156 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 	return nt_status;
 }
 
+static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
+					    struct creds_CredentialState *creds,
+					    struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct netr_DELTA_USER *user = delta->delta_union.user;
+	const char *username = user->account_name.string;
+	char *hex_lm_password;
+	char *hex_nt_password;
+
+	hex_lm_password = smbpasswd_sethexpwd(mem_ctx, 
+					      user->lm_password_present ? &user->lmpassword : NULL, 
+					      user->acct_flags);
+	hex_nt_password = smbpasswd_sethexpwd(mem_ctx, 
+					      user->nt_password_present ? &user->ntpassword : NULL, 
+					      user->acct_flags);
+
+	printf("%s:%d:%s:%s:%s:LCT-%08X\n", username,
+	       rid, hex_lm_password, hex_nt_password,
+	       smbpasswd_encode_acb_info(mem_ctx, user->acct_flags),
+	       (unsigned int)nt_time_to_unix(user->last_password_change));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
+					      struct samdump_state *samdump_state,
+					      struct creds_CredentialState *creds,
+					      struct netr_DELTA_ENUM *delta) 
+{
+	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
+	const char *name = delta->delta_id_union.name;
+	struct samsync_secret *new = talloc(samdump_state, struct samsync_secret);
+
+	new->name = talloc_reference(new, name);
+	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
+	new->mtime = secret->current_cipher_set_time;
+
+	DLIST_ADD(samdump_state->secrets, new);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
+					      struct samdump_state *samdump_state,
+					      struct creds_CredentialState *creds,
+					      struct netr_DELTA_ENUM *delta) 
+{
+	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
+	struct dom_sid *dom_sid = delta->delta_id_union.sid;
+
+	struct samsync_trusted_domain *new = talloc(samdump_state, struct samsync_trusted_domain);
+
+	new->name = talloc_reference(new, trusted_domain->domain_name.string);
+	new->sid = talloc_reference(new, dom_sid);
+
+	DLIST_ADD(samdump_state->trusted_domains, new);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx, 		
+				  void *private, 			
+				  struct creds_CredentialState *creds,
+				  enum netr_SamDatabaseID database,
+				  struct netr_DELTA_ENUM *delta,
+				  char **error_string)
+{
+	NTSTATUS nt_status = NT_STATUS_OK;
+	struct samdump_state *samdump_state = private;
+
+	*error_string = NULL;
+	switch (delta->delta_type) {
+	case NETR_DELTA_USER:
+	{
+		/* not interested in builtin users */
+		if (database == SAM_DATABASE_DOMAIN) {
+			nt_status = vampire_samdump_handle_user(mem_ctx, 
+								creds,
+								delta);
+			break;
+		}
+	}
+	case NETR_DELTA_SECRET:
+	{
+		nt_status = vampire_samdump_handle_secret(mem_ctx,
+							  samdump_state,
+							  creds,
+							  delta);
+		break;
+	}
+	case NETR_DELTA_TRUSTED_DOMAIN:
+	{
+		nt_status = vampire_samdump_handle_trusted_domain(mem_ctx,
+								  samdump_state,
+								  creds,
+								  delta);
+		break;
+	}
+	}
+	return nt_status;
+}
+
 NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SamDump *r)
 {
 	NTSTATUS nt_status;
 	union libnet_SamSync r2;
+	struct samdump_state *samdump_state = talloc(mem_ctx, struct samdump_state);
+
+	struct samsync_trusted_domain *t;
+	struct samsync_secret *s;
+
+	if (!samdump_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	samdump_state->secrets = NULL;
+	samdump_state->trusted_domains = NULL;
 
 	r2.netlogon.level = LIBNET_SAMDUMP_NETLOGON;
 	r2.netlogon.error_string = NULL;
 	r2.netlogon.delta_fn = libnet_samdump_fn;
-	r2.netlogon.fn_ctx = NULL;
+	r2.netlogon.fn_ctx = samdump_state;
 	nt_status = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
 	r->generic.error_string = r2.netlogon.error_string;
 
-	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	printf("Trusted domains, sids and secrets:\n");
+	for (t=samdump_state->trusted_domains; t; t=t->next) {
+		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
+		for (s=samdump_state->secrets; s; s=s->next) {
+			if (StrCaseCmp(s->name, secret_name) == 0) {
+				char *secret_string;
+				if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
+							  s->secret.data, s->secret.length, 
+							  (void **)&secret_string) == -1) {
+					r->generic.error_string = talloc_asprintf(mem_ctx, 
+										  "Could not convert secret for domain %s to a string\n",
+										  t->name);
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				printf("%s\t%s\t%s\n", 
+				       t->name, dom_sid_string(mem_ctx, t->sid), 
+				       secret_string);
+			}
+		}
+	}
 	return nt_status;
 }
 
@@ -318,7 +455,6 @@ NTSTATUS libnet_SamDump_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS nt_status;
 	union libnet_SamDump r2;
-
 	r2.generic.level = LIBNET_SAMDUMP_NETLOGON;
 	r2.generic.error_string = NULL;
 	nt_status = libnet_SamDump(ctx, mem_ctx, &r2);
