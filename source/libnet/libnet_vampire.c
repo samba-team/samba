@@ -30,51 +30,16 @@ static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_USER *user = delta->delta_union.user;
-	struct samr_Password lm_hash;
-	struct samr_Password nt_hash;
-	struct samr_Password *lm_hash_p = NULL;
-	struct samr_Password *nt_hash_p = NULL;
 	const char *username = user->account_name.string;
 	char *hex_lm_password;
 	char *hex_nt_password;
 
-	NTSTATUS nt_status;
-
-	if (user->lm_password_present) {
-		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
-		lm_hash_p = &lm_hash;
-	}
-
-	if (user->nt_password_present) {
-		sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
-		nt_hash_p = &nt_hash;
-	}
-
-	if (user->user_private_info.SensitiveData) {
-		DATA_BLOB data;
-		struct netr_USER_KEYS keys;
-		data.data = user->user_private_info.SensitiveData;
-		data.length = user->user_private_info.DataLength;
-		creds_arcfour_crypt(creds, data.data, data.length);
-		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			if (keys.keys.keys2.lmpassword.length == 16) {
-				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
-				lm_hash_p = &lm_hash;
-			}
-			if (keys.keys.keys2.ntpassword.length == 16) {
-				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
-				nt_hash_p = &nt_hash;
-			}
-		} else {
-			DEBUG(1, ("Failed to parse Sensitive Data for %s:\n", username));
-			dump_data(10, data.data, data.length);
-			return nt_status;
-		}
-	}
-
-	hex_lm_password = smbpasswd_sethexpwd(mem_ctx, lm_hash_p, user->acct_flags);
-	hex_nt_password = smbpasswd_sethexpwd(mem_ctx, nt_hash_p, user->acct_flags);
+	hex_lm_password = smbpasswd_sethexpwd(mem_ctx, 
+					      user->lm_password_present ? &user->lmpassword : NULL, 
+					      user->acct_flags);
+	hex_nt_password = smbpasswd_sethexpwd(mem_ctx, 
+					      user->nt_password_present ? &user->ntpassword : NULL, 
+					      user->acct_flags);
 
 	printf("%s:%d:%s:%s:%s:LCT-%08X\n", username,
 	       rid, hex_lm_password, hex_nt_password,
@@ -105,6 +70,92 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 			break;
 		}
 		}
+		break;
+	}
+	}
+	return nt_status;
+}
+
+/**
+ * Decrypt and extract the user's passwords.  
+ * 
+ * The writes decrypted (no longer 'RID encrypted' or arcfour encrypted) passwords back into the structure
+ */
+static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
+			 struct creds_CredentialState *creds,
+			 enum netr_SamDatabaseID database,
+			 struct netr_DELTA_ENUM *delta,
+			 char **error_string) 
+{
+
+	uint32_t rid = delta->delta_id_union.rid;
+	struct netr_DELTA_USER *user = delta->delta_union.user;
+	struct samr_Password lm_hash;
+	struct samr_Password nt_hash;
+	const char *username = user->account_name.string;
+	NTSTATUS nt_status;
+
+	if (user->lm_password_present) {
+		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
+		user->lmpassword = lm_hash;
+	}
+
+	if (user->nt_password_present) {
+		sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
+		user->ntpassword = nt_hash;
+	}
+
+	if (user->user_private_info.SensitiveData) {
+		DATA_BLOB data;
+		struct netr_USER_KEYS keys;
+		data.data = user->user_private_info.SensitiveData;
+		data.length = user->user_private_info.DataLength;
+		creds_arcfour_crypt(creds, data.data, data.length);
+		user->user_private_info.SensitiveData = data.data;
+		user->user_private_info.DataLength = data.length;
+
+		nt_status = ndr_pull_struct_blob(&data, mem_ctx, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			if (keys.keys.keys2.lmpassword.length == 16) {
+				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
+				user->lmpassword = lm_hash;
+				user->lm_password_present = True;
+			}
+			if (keys.keys.keys2.ntpassword.length == 16) {
+				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
+				user->ntpassword = nt_hash;
+				user->nt_password_present = True;
+			}
+		} else {
+			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:\n", username);
+			dump_data(10, data.data, data.length);
+			return nt_status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/**
+ * Fix up the delta, dealing with encryption issues so that the final
+ * callback need only do the printing or application logic
+ */
+
+static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx, 		
+			  struct creds_CredentialState *creds,
+			  enum netr_SamDatabaseID database,
+			  struct netr_DELTA_ENUM *delta,
+			  char **error_string)
+{
+	NTSTATUS nt_status = NT_STATUS_OK;
+	*error_string = NULL;
+	switch (delta->delta_type) {
+	case NETR_DELTA_USER:
+	{
+		nt_status = fix_user(mem_ctx, 
+				     creds,
+				     database,
+				     delta,
+				     error_string);
 		break;
 	}
 	}
@@ -215,6 +266,16 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 			for (d=0; d < dbsync.out.delta_enum_array->num_deltas; d++) {
 				char *error_string = NULL;
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
+				nt_status = fix_delta(delta_ctx, 
+						      creds, 
+						      dbsync.in.database_id,
+						      &dbsync.out.delta_enum_array->delta_enum[d], 
+						      &error_string);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					r->netlogon.error_string = talloc_steal(mem_ctx, error_string);
+					talloc_free(delta_ctx);
+					return nt_status;
+				}
 				nt_status = r->netlogon.delta_fn(delta_ctx, 
 								 r->netlogon.fn_ctx,
 								 creds,
