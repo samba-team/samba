@@ -79,9 +79,7 @@ NTSTATUS dgram_mailslot_ntlogon_reply(struct nbt_dgram_socket *dgmsock,
 		return status;
 	}
 
-	myname.name = lp_netbios_name();
-	myname.type = NBT_NAME_CLIENT;
-	myname.scope = NULL;
+	make_nbt_name_client(&myname, lp_netbios_name());
 
 	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
 				     mailslot_name,

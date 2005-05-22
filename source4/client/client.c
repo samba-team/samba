@@ -3274,9 +3274,7 @@ static int do_message_op(void)
 	struct nbt_name called, calling;
 	const char *server_name;
 
-	calling.name = lp_netbios_name();
-	calling.type = NBT_NAME_CLIENT;
-	calling.scope = NULL;
+	make_nbt_name_client(&calling, lp_netbios_name());
 
 	nbt_choose_called_name(NULL, &called, desthost, name_type);
 
