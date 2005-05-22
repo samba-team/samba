@@ -36,6 +36,10 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
+static struct private_data {
+	const char *error_string;
+};
+
 /* search */
 static int skel_search(struct ldb_module *module, const char *base,
 		       enum ldb_scope scope, const char *expression,
@@ -69,13 +73,13 @@ static int skel_rename_record(struct ldb_module *module, const char *olddn, cons
 }
 
 /* named_lock */
-static const char *skel_named_lock(struct ldb_module *module, const char *lockname)
+static int skel_named_lock(struct ldb_module *module, const char *lockname)
 {
 	return ldb_next_named_lock(module, lockname);
 }
 
 /* named_unlock */
-static const char *skel_named_unlock(struct ldb_module *module, const char *lockname)
+static int skel_named_unlock(struct ldb_module *module, const char *lockname)
 {
 	return ldb_next_named_unlock(module, lockname);
 }
@@ -105,17 +109,27 @@ static const struct ldb_module_ops skel_ops = {
 	skel_errstring
 };
 
-#ifdef HAVE_DLOPEN
- struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+#ifdef HAVE_DLOPEN_DISABLED
+struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
-struct ldb_module *skel_plugin_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
 	struct ldb_module *ctx;
+	struct private_data *data;
 
-	ctx = (struct ldb_module *)malloc(sizeof(struct ldb_module));
+	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
+
+	data = talloc(ctx, struct private_data);
+	if (data == NULL) {
+		talloc_free(ctx);
+		return NULL;
+	}
+
+	data->error_string = NULL;
+	ctx->private_data = data;
 
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
