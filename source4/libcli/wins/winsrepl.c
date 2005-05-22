@@ -603,7 +603,7 @@ static NTSTATUS wrepl_extract_name(struct nbt_name *name,
 
 	if (len < 17) {
 		name->name = talloc_strndup(mem_ctx, namebuf, len);
-		name->type = 0;
+		name->type = NBT_NAME_CLIENT;
 		name->scope = NULL;
 		return NT_STATUS_OK;
 	}
