@@ -182,6 +182,10 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 	return NT_STATUS_OK;
 }
 
+/* This function does not appear to be used */
+
+#if 0
+
 /*
   set the push offset to 'ofs'
 */
@@ -191,6 +195,8 @@ static NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
 	ndr->offset = ofs;
 	return NT_STATUS_OK;
 }
+
+#endif
 
 /*
   push a generic array
