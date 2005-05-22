@@ -1,3 +1,7 @@
+2005-05-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: ignore weak symbols too
+
 2005-05-19  David Love  <fx@gnu.org>
 
 	* check-getpwnam_r-posix.m4: define _POSIX_PTHREAD_SEMANTICS to
