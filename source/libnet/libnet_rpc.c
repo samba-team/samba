@@ -43,9 +43,7 @@ static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *
 		return NT_STATUS_OK;
 	}
 
-	name.name = r->generic.in.domain_name;
-	name.type = NBT_NAME_PDC;
-	name.scope = NULL;
+	make_nbt_name(&name, r->generic.in.domain_name, NBT_NAME_PDC);
 
 	status = resolve_name(&name, mem_ctx, &address);
 	if (!NT_STATUS_IS_OK(status)) {

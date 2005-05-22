@@ -181,3 +181,26 @@ NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **r
 	struct composite_context *c = resolve_name_send(name, NULL);
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
+
+/* Initialise a struct nbt_name with a NULL scope */
+
+void make_nbt_name(struct nbt_name *nbt, const char *name, int type)
+{
+	nbt->name = name;
+	nbt->scope = NULL;
+	nbt->type = type;
+}
+
+/* Initialise a struct nbt_name with a NBT_NAME_CLIENT (0x00) name */
+
+void make_nbt_name_client(struct nbt_name *nbt, const char *name)
+{
+	make_nbt_name(nbt, name, NBT_NAME_CLIENT);
+}
+
+/* Initialise a struct nbt_name with a NBT_NAME_SERVER (0x20) name */
+
+void make_nbt_name_server(struct nbt_name *nbt, const char *name)
+{
+	make_nbt_name(nbt, name, NBT_NAME_SERVER);
+}

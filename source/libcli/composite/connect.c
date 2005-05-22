@@ -213,9 +213,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	state->transport = smbcli_transport_init(state->sock, state, True);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
-	calling.name = cli_credentials_get_workstation(io->in.credentials);
-	calling.type = NBT_NAME_CLIENT;
-	calling.scope = NULL;
+	make_nbt_name_client(&calling, cli_credentials_get_workstation(io->in.credentials));
 
 	nbt_choose_called_name(state, &called, io->in.called_name, NBT_NAME_SERVER);
 
@@ -349,9 +347,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c->event_ctx = talloc_reference(c, state->sock->event.ctx);
 	c->private = state;
 
-	name.name = io->in.dest_host;
-	name.type = NBT_NAME_SERVER;
-	name.scope = NULL;
+	make_nbt_name_server(&name, io->in.dest_host);
 
 	state->creq = resolve_name_send(&name, c->event_ctx);
 	if (state->creq == NULL) goto failed;

@@ -49,9 +49,7 @@ static struct smbcli_state *open_nbt_connection(void)
 	struct smbcli_state *cli;
 	const char *host = lp_parm_string(-1, "torture", "host");
 
-	calling.name = lp_netbios_name();
-	calling.type = NBT_NAME_CLIENT;
-	calling.scope = NULL;
+	make_nbt_name_client(&calling, lp_netbios_name());
 
 	nbt_choose_called_name(NULL, &called, host, NBT_NAME_SERVER);
 
