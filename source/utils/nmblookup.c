@@ -108,7 +108,7 @@ static void do_node_status(struct nbt_name_socket *nbtsock,
 	NTSTATUS status;
 
 	io.in.name.name = "*";
-	io.in.name.type = 0;
+	io.in.name.type = NBT_NAME_CLIENT;
 	io.in.name.scope = NULL;
 	io.in.dest_addr = addr;
 	io.in.timeout = 1;
