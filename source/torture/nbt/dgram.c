@@ -92,9 +92,7 @@ static BOOL nbt_test_netlogon(TALLOC_CTX *mem_ctx,
 	logon.req.pdc.lmnt_token    = 0xFFFF;
 	logon.req.pdc.lm20_token    = 0xFFFF;
 
-	myname.name = TEST_NAME;
-	myname.type = NBT_NAME_CLIENT;
-	myname.scope = NULL;
+	make_nbt_name_client(&myname, TEST_NAME);
 
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
 					      0, &myname, &logon);
@@ -154,9 +152,7 @@ static BOOL nbt_test_netlogon2(TALLOC_CTX *mem_ctx,
 	logon.req.pdc2.lmnt_token    = 0xFFFF;
 	logon.req.pdc2.lm20_token    = 0xFFFF;
 
-	myname.name = TEST_NAME;
-	myname.type = NBT_NAME_CLIENT;
-	myname.scope = NULL;
+	make_nbt_name_client(&myname, TEST_NAME);
 
 	status = dgram_mailslot_netlogon_send(dgmsock, &name, address, 
 					      0, &myname, &logon);
@@ -257,10 +253,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	logon.req.logon.lmnt_token    = 0xFFFF;
 	logon.req.logon.lm20_token    = 0xFFFF;
 
-
-	myname.name = TEST_NAME;
-	myname.type = NBT_NAME_CLIENT;
-	myname.scope = NULL;
+	make_nbt_name_client(&myname, TEST_NAME);
 
 	status = dgram_mailslot_ntlogon_send(dgmsock, &name, address, 
 					      0, &myname, &logon);

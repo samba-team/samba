@@ -110,9 +110,7 @@ BOOL torture_bench_nbt(void)
 	NTSTATUS status;
 	BOOL ret = True;
 	
-	name.name = lp_parm_string(-1, "torture", "host");
-	name.type = NBT_NAME_SERVER;
-	name.scope = NULL;
+	make_nbt_name_server(&name, lp_parm_string(-1, "torture", "host"));
 
 	/* do an initial name resolution to find its IP */
 	status = resolve_name(&name, mem_ctx, &address);

@@ -56,9 +56,7 @@ static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 		struct nbt_name called;
 
 		/* send a NBT session request, if applicable */
-		calling.name = my_name;
-		calling.type = NBT_NAME_CLIENT;
-		calling.scope = NULL;
+		make_nbt_name_client(&calling, my_name);
 
 		nbt_choose_called_name(transport, &called, dest_host, NBT_NAME_SERVER);
 
