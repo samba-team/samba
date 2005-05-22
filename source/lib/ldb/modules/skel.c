@@ -36,7 +36,8 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
-static struct private_data {
+const struct private_data {
+
 	const char *error_string;
 };
 
@@ -133,7 +134,6 @@ struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options
 
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
-	ctx->private_data = NULL;
 	ctx->ops = &skel_ops;
 
 	talloc_set_destructor (ctx, skel_destructor);
