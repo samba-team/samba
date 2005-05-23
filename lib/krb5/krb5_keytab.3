@@ -198,8 +198,20 @@ are:
 .Bl -tag -width Ds
 .It Nm file
 store the keytab in a file, the type's name is
-.Li KEYFILE .
+.Li FILE .
 The residual part is a filename.
+For compatibility with other Kerberos implemtation
+.Li WRFILE
+and
+.LI JAVA14
+is also accepted.
+.Li WRFILE
+has the same format as
+.Li FILE .
+.Li JAVA14
+have a format that is compatible with older versions of MIT kerberos
+and SUN's Java based installation.  They store a truncted kvno, so
+when the knvo excess 255, they are truncted in this format.
 .It Nm keyfile
 store the keytab in a
 .Li AFS
