@@ -1,6 +1,6 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
+ *  Virtual Windows Registry Layer
  *  Copyright (C) Marcin Krzysztof Porwit    2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -186,7 +186,7 @@ static char* trim_eventlog_reg_path( char *path )
  Enumerate registry subkey names given a registry path.  
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
-int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
 {
     char 	*path;
     BOOL       	top_level = False;
@@ -202,10 +202,14 @@ int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
     if ( !path )
 	top_level = True;
     
-    evtlog_list = lp_eventlog_list();
     num_subkeys = 0;
+    if ( !(evtlog_list = lp_eventlog_list()) ) {
+	SAFE_FREE(path);
+	return num_subkeys;
+    }
+
     
-    if ( top_level ) 
+    if ( top_level )
     { 
         /* todo - get the eventlog subkey values from the smb.conf file
 	   for ( num_subkeys=0; num_subkeys<MAX_TOP_LEVEL_KEYS; num_subkeys++ )
@@ -247,7 +251,7 @@ int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-int eventlog_value_info( char *key, REGVAL_CTR *val )
+static int eventlog_value_info( char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -276,7 +280,7 @@ int eventlog_value_info( char *key, REGVAL_CTR *val )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -286,7 +290,7 @@ BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-BOOL eventlog_store_value( char *key, REGVAL_CTR *val )
+static BOOL eventlog_store_value( char *key, REGVAL_CTR *val )
 {
 	return False;
 }

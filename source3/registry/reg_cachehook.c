@@ -1,6 +1,6 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
+ *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify

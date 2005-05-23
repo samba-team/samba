@@ -2214,44 +2214,6 @@ int set_maxfiles(int requested_max)
 }
 
 /*****************************************************************
- Splits out the start of the key (HKLM or HKU) and the rest of the key.
-*****************************************************************/  
-
-BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
-{
-	pstring tmp;
-
-	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
-		return False;
-
-	(*reg_type) = 0;
-
-	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
-
-	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
-		(*reg_type) = HKEY_LOCAL_MACHINE;
-	else if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
-		(*reg_type) = HKEY_CLASSES_ROOT;
-	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
-		(*reg_type) = HKEY_USERS;
-	else if (strequal(tmp, "HKPD")||strequal(tmp, "HKEY_PERFORMANCE_DATA"))
-		(*reg_type) = HKEY_PERFORMANCE_DATA;
-	else {
-		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
-		return False;
-	}
-	
-	if (next_token(&full_keyname, tmp, "\n\r", sizeof(tmp)))
-		fstrcpy(key_name, tmp);
-	else
-		key_name[0] = 0;
-
-	DEBUG(10, ("reg_split_key: name %s\n", key_name));
-
-	return True;
-}
-
-/*****************************************************************
  Possibly replace mkstemp if it is broken.
 *****************************************************************/  
 

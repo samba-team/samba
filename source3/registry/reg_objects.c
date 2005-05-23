@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                     2002.
+ *  Virtual Windows Registry Layer
+ *  Copyright (C) Gerald Carter                     2002-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -44,27 +44,35 @@ int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 {
 	uint32 len;
 	char **pp;
+	int i;
 	
-	if ( keyname )
-	{
-		len = strlen( keyname );
+	if ( !keyname )
+		return ctr->num_subkeys;
 
-		/* allocate a space for the char* in the array */
-		
-		if (  ctr->subkeys == 0 )
-			ctr->subkeys = TALLOC_P( ctr->ctx, char *);
-		else {
-			pp = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->subkeys, char *, ctr->num_subkeys+1);
-			if ( pp )
-				ctr->subkeys = pp;
-		}
+	len = strlen( keyname );
 
-		/* allocate the string and save it in the array */
-		
-		ctr->subkeys[ctr->num_subkeys] = TALLOC( ctr->ctx, len+1 );
-		strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
-		ctr->num_subkeys++;
+	/* make sure the keyname is not already there */
+
+	for ( i=0; i<ctr->num_subkeys; i++ ) {
+		if ( strequal( ctr->subkeys[i], keyname ) )
+			return ctr->num_subkeys;
 	}
+
+	/* allocate a space for the char* in the array */
+		
+	if (  ctr->subkeys == 0 )
+		ctr->subkeys = TALLOC_P( ctr->ctx, char *);
+	else {
+		pp = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->subkeys, char *, ctr->num_subkeys+1);
+		if ( pp )
+			ctr->subkeys = pp;
+	}
+
+	/* allocate the string and save it in the array */
+	
+	ctr->subkeys[ctr->num_subkeys] = TALLOC( ctr->ctx, len+1 );
+	strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
+	ctr->num_subkeys++;
 	
 	return ctr->num_subkeys;
 }
@@ -239,30 +247,30 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 {
 	REGISTRY_VALUE **ppreg;
 	
-	if ( name )
-	{
-		/* allocate a slot in the array of pointers */
-		
-		if (  ctr->num_values == 0 )
-			ctr->values = TALLOC_P( ctr->ctx, REGISTRY_VALUE *);
-		else {
-			ppreg = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
-			if ( ppreg )
-				ctr->values = ppreg;
-		}
+	if ( !name )
+		return ctr->num_values;
 
-		/* allocate a new value and store the pointer in the arrya */
+	/* allocate a slot in the array of pointers */
 		
-		ctr->values[ctr->num_values] = TALLOC_P( ctr->ctx, REGISTRY_VALUE);
-
-		/* init the value */
-	
-		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
-		ctr->values[ctr->num_values]->type = type;
-		ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr->ctx, data_p, size );
-		ctr->values[ctr->num_values]->size = size;
-		ctr->num_values++;
+	if (  ctr->num_values == 0 )
+		ctr->values = TALLOC_P( ctr->ctx, REGISTRY_VALUE *);
+	else {
+		ppreg = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->values, REGISTRY_VALUE *, ctr->num_values+1 );
+		if ( ppreg )
+			ctr->values = ppreg;
 	}
+
+	/* allocate a new value and store the pointer in the arrya */
+		
+	ctr->values[ctr->num_values] = TALLOC_P( ctr->ctx, REGISTRY_VALUE);
+
+	/* init the value */
+	
+	fstrcpy( ctr->values[ctr->num_values]->valuename, name );
+	ctr->values[ctr->num_values]->type = type;
+	ctr->values[ctr->num_values]->data_p = TALLOC_MEMDUP( ctr->ctx, data_p, size );
+	ctr->values[ctr->num_values]->size = size;
+	ctr->num_values++;
 
 	return ctr->num_values;
 }

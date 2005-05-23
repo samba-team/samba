@@ -2353,9 +2353,8 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = REG_BINARY;
 		*needed = 0x114;
 
-		if((*data = (uint8 *)TALLOC(ctx, *needed)) == NULL)
+		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, *needed)) )
 			return WERR_NOMEM;
-		ZERO_STRUCTP( *data );
 		
 		SIVAL(*data, 0, *needed);	/* size */
 		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
@@ -7249,16 +7248,11 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
 }
 
 /****************************************************************************
- enumports level 1.
+ wrapper around the enumer ports command
 ****************************************************************************/
 
-static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+WERROR enumports_hook( int *count, char ***lines )
 {
-	PORT_INFO_1 *ports=NULL;
-	int i=0;
-	WERROR result = WERR_OK;
-
-	if (*lp_enumports_cmd()) {
 		char *cmd = lp_enumports_cmd();
 		char **qlines;
 		pstring command;
@@ -7266,6 +7260,18 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		int ret;
 		int fd;
 
+
+	/* if no hook then just fill in the default port */
+	
+	if ( !*cmd ) {
+		qlines = SMB_MALLOC_ARRAY( char*, 2 );
+		qlines[0] = SMB_STRDUP( SAMBA_PRINTER_PORT_NAME );
+		qlines[1] = NULL;
+		numlines = 1;
+	}
+	else {
+		/* we have a valid enumport command */
+		
 		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 1);
 
 		DEBUG(10,("Running [%s]\n", command));
@@ -7274,7 +7280,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		if (ret != 0) {
 			if (fd != -1)
 				close(fd);
-			/* Is this the best error to return here? */
+			
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -7282,6 +7288,28 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		qlines = fd_lines_load(fd, &numlines);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
+	}
+	
+	*count = numlines;
+	*lines = qlines;
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ enumports level 1.
+****************************************************************************/
+
+static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+{
+	PORT_INFO_1 *ports=NULL;
+	int i=0;
+	WERROR result = WERR_OK;
+	char **qlines;
+	int numlines;
+
+	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
+		return result;
 
 		if(numlines) {
 			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
@@ -7300,17 +7328,6 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		*returned = numlines;
-
-	} else {
-		*returned = 1; /* Sole Samba port returned. */
-
-		if((ports=SMB_MALLOC_P(PORT_INFO_1)) == NULL)
-			return WERR_NOMEM;
-	
-		DEBUG(10,("enumports_level_1: port name %s\n", SAMBA_PRINTER_PORT_NAME));
-
-		fill_port_1(&ports[0], SAMBA_PRINTER_PORT_NAME);
-	}
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
@@ -7352,40 +7369,12 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	PORT_INFO_2 *ports=NULL;
 	int i=0;
 	WERROR result = WERR_OK;
-
-	if (*lp_enumports_cmd()) {
-		char *cmd = lp_enumports_cmd();
-		char *path;
 		char **qlines;
-		pstring tmp_file;
-		pstring command;
 		int numlines;
-		int ret;
-		int fd;
 
-		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-		else
-			path = lp_lockdir();
+	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
+		return result;
 
-		slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smbcmd.%u.", path, (unsigned int)sys_getpid());
-		slprintf(command, sizeof(command)-1, "%s \"%d\"", cmd, 2);
-
-		unlink(tmp_file);
-		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, &fd);
-		DEBUGADD(10,("returned [%d]\n", ret));
-		if (ret != 0) {
-			if (fd != -1)
-				close(fd);
-			/* Is this the best error to return here? */
-			return WERR_ACCESS_DENIED;
-		}
-
-		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines);
-		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-		close(fd);
 
 		if(numlines) {
 			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
@@ -7402,18 +7391,6 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		*returned = numlines;
-
-	} else {
-
-		*returned = 1;
-
-		if((ports=SMB_MALLOC_P(PORT_INFO_2)) == NULL)
-			return WERR_NOMEM;
-	
-		DEBUG(10,("enumports_level_2: port name %s\n", SAMBA_PRINTER_PORT_NAME));
-
-		fill_port_2(&ports[0], SAMBA_PRINTER_PORT_NAME);
-	}
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {

@@ -304,6 +304,7 @@ typedef struct
 	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
 	BOOL bEnablePrivileges;
+	BOOL bASUSupport;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -950,6 +951,7 @@ static struct parm_struct parm_table[] = {
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 
+	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
 	{"enable svcctl", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
@@ -1593,6 +1595,8 @@ static void init_globals(void)
 
 	Globals.bEnablePrivileges = False;
 	
+	Globals.bASUSupport       = True;
+	
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 }
 
@@ -1844,6 +1848,7 @@ FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
+FN_GLOBAL_BOOL(lp_enable_asu_support, &Globals.bASUSupport)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -4007,6 +4012,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		/* When 'restrict anonymous = 2' guest connections to ipc$
 		   are denied */
 		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
+		if ( lp_enable_asu_support() )
 		lp_add_ipc("ADMIN$", False);
 	}
 
