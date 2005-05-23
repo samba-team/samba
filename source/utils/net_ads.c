@@ -753,7 +753,7 @@ int net_ads_join(int argc, const char **argv)
 	ads_msgfree(ads, res);
 
 	if (rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_NO_SUCH_OBJECT) {
-		d_printf("ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
+		d_printf("ads_join: organizational unit %s does not exist (dn:%s)\n", 
 			 org_unit, dn);
 		ads_destroy(&ads);
 		return -1;
@@ -761,14 +761,14 @@ int net_ads_join(int argc, const char **argv)
 	free(dn);
 
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		d_printf("ads_join: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}	
 
 	rc = ads_join_realm(ads, global_myname(), account_type, org_unit);
 	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		d_printf("ads_join: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
 		return -1;
 	}
