@@ -801,7 +801,7 @@ static BOOL nt4_compatible_acls(void)
  not get. Deny entries are implicit on get with ace->perms = 0.
 ****************************************************************************/
 
-static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace)
+static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace, BOOL directory_ace)
 {
 	SEC_ACCESS sa;
 	uint32 nt_mask = 0;
@@ -809,7 +809,11 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
 	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
+		if (directory_ace) {
+			nt_mask = UNIX_DIRECTORY_ACCESS_RWX;
+		} else {
 			nt_mask = UNIX_ACCESS_RWX;
+		}
 	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
 		/*
 		 * Windows NT refuses to display ACEs with no permissions in them (but
@@ -825,9 +829,15 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 		else
 			nt_mask = 0;
 	} else {
-		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
-		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
-		nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
+		if (directory_ace) {
+			nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_DIRECTORY_ACCESS_R : 0 );
+			nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_DIRECTORY_ACCESS_W : 0 );
+			nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_DIRECTORY_ACCESS_X : 0 );
+		} else {
+			nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
+			nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
+			nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
+		}
 	}
 
 	DEBUG(10,("map_canon_ace_perms: Mapped (UNIX) %x to (NT) %x\n",
@@ -2815,7 +2825,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			for (i = 0; i < num_acls; i++, ace = ace->next) {
 				SEC_ACCESS acc;
 
-				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace, fsp->is_directory);
 				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, ace->inherited ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 			}
 
@@ -2833,7 +2843,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			for (i = 0; i < num_def_acls; i++, ace = ace->next) {
 				SEC_ACCESS acc;
 	
-				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace, fsp->is_directory);
 				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
 						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 						SEC_ACE_FLAG_INHERIT_ONLY|
