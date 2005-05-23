@@ -1110,6 +1110,12 @@ struct bitmap {
 #define UNIX_ACCESS_W		FILE_GENERIC_WRITE
 #define UNIX_ACCESS_X		FILE_GENERIC_EXECUTE
 
+/* Mapping of access rights to UNIX perms. for a UNIX directory. */
+#define UNIX_DIRECTORY_ACCESS_RWX		FILE_GENERIC_ALL
+#define UNIX_DIRECTORY_ACCESS_R 		FILE_GENERIC_READ
+#define UNIX_DIRECTORY_ACCESS_W			FILE_GENERIC_WRITE
+#define UNIX_DIRECTORY_ACCESS_X			FILE_GENERIC_EXECUTE
+
 #if 0
 /*
  * This is the old mapping we used to use. To get W2KSP2 profiles
