@@ -293,6 +293,11 @@ const char *kcm_op2string(kcm_operation operation);
 /* passed in OPERATION | ... ; returns STATUS | ... */
 typedef krb5_error_code (*kcm_method)(krb5_context, kcm_client *, kcm_operation, krb5_storage *, krb5_storage *);
 
+struct kcm_op {
+    const char *name;
+    kcm_method method;
+};
+
 krb5_error_code kcm_dispatch(krb5_context context,
 			     kcm_client *sd,
 			     krb5_data *request,
