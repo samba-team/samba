@@ -1,3 +1,7 @@
+2005-05-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_keytab.3: document WRFILE and JAVA14
+
 2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krbhst.c (srv_get_hosts): if srv_get_hosts failes,
