@@ -1480,7 +1480,7 @@ WERROR _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
  Check a given DOS pathname is valid for a share.
 ********************************************************************/
 
-static char *valid_share_pathname(char *dos_pathname)
+char *valid_share_pathname(char *dos_pathname)
 {
 	char *ptr;
 
@@ -1493,7 +1493,7 @@ static char *valid_share_pathname(char *dos_pathname)
 	if (strlen(dos_pathname) > 2 && ptr[1] == ':' && ptr[0] != '/')
 		ptr += 2;
 
-	/* Only abolute paths allowed. */
+	/* Only absolute paths allowed. */
 	if (*ptr != '/')
 		return NULL;
 
@@ -1525,8 +1525,12 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	r_u->parm_error = 0;
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
+	if ( strequal(share_name,"IPC$") 
+		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
+		|| strequal(share_name,"global") )
+	{
 		return WERR_ACCESS_DENIED;
+	}
 
 	snum = find_service(share_name);
 
@@ -1756,8 +1760,12 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
+	if ( strequal(share_name,"IPC$") 
+		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
+		|| strequal(share_name,"global") )
+	{
 		return WERR_ACCESS_DENIED;
+	}
 
 	snum = find_service(share_name);
 
@@ -1839,8 +1847,12 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
+	if ( strequal(share_name,"IPC$") 
+		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
+		|| strequal(share_name,"global") )
+	{
 		return WERR_ACCESS_DENIED;
+	}
 
 	snum = find_service(share_name);
 

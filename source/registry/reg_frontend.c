@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
- *  Copyright (C) Gerald Carter                     2002.
+ *  Virtual Windows Registry Layer
+ *  Copyright (C) Gerald Carter                     2002-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,13 +27,17 @@
 
 extern REGISTRY_OPS printing_ops;
 extern REGISTRY_OPS eventlog_ops;
+extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
 
 REGISTRY_HOOK reg_hooks[] = {
-  { KEY_PRINTING,   &printing_ops },
-  { KEY_EVENTLOG,   &eventlog_ops }, 
+  { KEY_PRINTING,    		&printing_ops },
+  { KEY_PRINTING_2K, 		&printing_ops },
+  { KEY_PRINTING_PORTS, 	&printing_ops },
+  { KEY_EVENTLOG,        	&eventlog_ops }, 
+  { KEY_SHARES,      		&shares_reg_ops },
   { NULL, NULL }
 };
 
@@ -229,35 +233,5 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 
 	return True;
 }
-
-/***********************************************************************
- Utility function for splitting the base path of a registry path off
- by setting base and new_path to the apprapriate offsets withing the
- path.
- 
- WARNING!!  Does modify the original string!
- ***********************************************************************/
-
-BOOL reg_split_path( char *path, char **base, char **new_path )
-{
-	char *p;
-	
-	*new_path = *base = NULL;
-	
-	if ( !path)
-		return False;
-	
-	*base = path;
-	
-	p = strchr( path, '\\' );
-	
-	if ( p ) {
-		*p = '\0';
-		*new_path = p+1;
-	}
-	
-	return True;
-}
-
 
 
