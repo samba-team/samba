@@ -944,55 +944,35 @@ kcm_op_get_ticket(krb5_context context,
     return ret;
 }
 
-static const char *operations[KCM_OP_MAX] = {
-    "NOOP",
-    "GET_NAME",
-    "RESOLVE",
-    "GEN_NEW",
-    "INITIALIZE",
-    "DESTROY",
-    "STORE",
-    "RETRIEVE",
-    "GET_PRINCIPAL",
-    "GET_FIRST",
-    "GET_NEXT",
-    "END_GET",
-    "REMOVE_CRED",
-    "SET_FLAGS",
-    "CHOWN",
-    "CHMOD",
-    "GET_INITIAL_TICKET",
-    "GET_TICKET"
+static struct kcm_op kcm_ops[] = {
+    { "NOOP", 			kcm_op_noop },
+    { "GET_NAME",		kcm_op_get_name },
+    { "RESOLVE",		kcm_op_noop },
+    { "GEN_NEW", 		kcm_op_gen_new },
+    { "INITIALIZE",		kcm_op_initialize },
+    { "DESTROY",		kcm_op_destroy },
+    { "STORE",			kcm_op_store },
+    { "RETRIEVE",		kcm_op_retrieve },
+    { "GET_PRINCIPAL",		kcm_op_get_principal },
+    { "GET_FIRST",		kcm_op_get_first },
+    { "GET_NEXT",		kcm_op_get_name },
+    { "END_GET",		kcm_op_end_get },
+    { "REMOVE_CRED",		kcm_op_remove_cred },
+    { "SET_FLAGS",		kcm_op_set_flags },
+    { "CHOWN",			kcm_op_chown },
+    { "CHMOD",			kcm_op_chmod },
+    { "GET_INITIAL_TICKET",	kcm_op_get_initial_ticket },
+    { "GET_TICKET",		kcm_op_get_ticket }
 };
 
-const char *kcm_op2string(kcm_operation operation)
+
+const char *kcm_op2string(kcm_operation opcode)
 {
-    if (operation >= KCM_OP_MAX)
+    if (opcode >= sizeof(kcm_ops)/sizeof(kcm_ops[0]))
 	return "Unknown operation";
 
-    return operations[operation];
+    return kcm_ops[opcode].name;
 }
-
-static kcm_method methods[KCM_OP_MAX] = {
-    kcm_op_noop,
-    kcm_op_get_name,
-    kcm_op_noop, /* kcm_op_resolve */
-    kcm_op_gen_new,
-    kcm_op_initialize,
-    kcm_op_destroy,
-    kcm_op_store,
-    kcm_op_retrieve,
-    kcm_op_get_principal,
-    kcm_op_get_first,
-    kcm_op_get_next,
-    kcm_op_end_get,
-    kcm_op_remove_cred,
-    kcm_op_set_flags,
-    kcm_op_chown,
-    kcm_op_chmod,
-    kcm_op_get_initial_ticket,
-    kcm_op_get_ticket,
-};
 
 krb5_error_code
 kcm_dispatch(krb5_context context,
@@ -1027,13 +1007,13 @@ kcm_dispatch(krb5_context context,
 
     krb5_ret_int16(req_sp, &opcode);
 
-    if (opcode >= KCM_OP_MAX) {
+    if (opcode >= sizeof(kcm_ops)/sizeof(kcm_ops[0])) {
 	kcm_log(0, "Process %d: invalid operation code %d",
 		client->pid, opcode);
 	ret = KRB5_FCC_INTERNAL;
 	goto out;
     }
-    method = methods[opcode];
+    method = kcm_ops[opcode].method;
 
     /* seek past place for status code */
     krb5_storage_seek(resp_sp, 4, SEEK_SET);
