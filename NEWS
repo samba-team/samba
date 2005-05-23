@@ -8,6 +8,8 @@ Changes in release 0.7
 
  * AES (and the gssapi conterpart, CFX) support
 
+ * Adding new and improve old documentation
+
  * Bug fixes
 
 Changes in release 0.6.4
