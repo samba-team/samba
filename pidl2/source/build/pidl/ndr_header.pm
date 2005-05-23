@@ -1,6 +1,7 @@
 ###################################################
 # create C header files for an IDL structure
 # Copyright tridge@samba.org 2000
+# Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
 package NdrHeader;

@@ -4,6 +4,7 @@
 # package to parse IDL files and generate code for
 # rpc functions in Samba
 # Copyright tridge@samba.org 2000-2003
+# Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
 use strict;
@@ -268,13 +269,12 @@ $dcom
 	}
 
 	if (defined($opt_parser)) {
-		my $needed = needed::BuildNeeded($pidl);
 		my $parser = $opt_parser;
 		if ($parser eq "") {
 			$parser = util::ChangeExtension($output, ".c");
 		}
 		
-		util::FileSave($parser, NdrParser::Parse($ndr, $parser, $needed));
+		util::FileSave($parser, NdrParser::Parse($ndr, $parser));
 		if($opt_eparser) {
 		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
 		  IdlEParser::RewriteC($pidl, $parser, $eparser);

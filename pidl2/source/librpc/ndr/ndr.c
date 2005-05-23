@@ -182,16 +182,6 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 	return NT_STATUS_OK;
 }
 
-/*
-  set the push offset to 'ofs'
-*/
-static NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
-{
-	NDR_CHECK(ndr_push_expand(ndr, ofs));
-	ndr->offset = ofs;
-	return NT_STATUS_OK;
-}
-
 void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;

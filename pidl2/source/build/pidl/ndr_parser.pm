@@ -8,7 +8,6 @@
 package NdrParser;
 
 use strict;
-use needed;
 use typelist;
 use ndr;
 
@@ -2247,17 +2246,14 @@ sub RegistrationFunction($$)
 	pidl "";
 }
 
-my $needed;
-
 #####################################################################
 # parse a parsed IDL structure back into an IDL file
-sub Parse($$$)
+sub Parse($$)
 {
 	my($ndr) = shift;
 	my($filename) = shift;
 
 	$tabs = "";
-	$needed = shift;
 	my $h_filename = $filename;
 	$res = "";
 
@@ -2271,15 +2267,87 @@ sub Parse($$$)
 	pidl "#include \"$h_filename\"";
 	pidl "";
 
+	my %needed = ();
+
 	foreach my $x (@{$ndr}) {
-		if ($x->{TYPE} eq "INTERFACE") { 
-			ParseInterface($x, $needed);
-		}
+		($x->{TYPE} eq "INTERFACE") && NeededInterface($x, \%needed);
+	}
+
+	foreach my $x (@{$ndr}) {
+		($x->{TYPE} eq "INTERFACE") && ParseInterface($x, \%needed);
 	}
 
 	RegistrationFunction($ndr, $filename);
 
 	return $res;
+}
+
+sub NeededFunction($$)
+{
+	my $fn = shift;
+	my $needed = shift;
+	$needed->{"pull_$fn->{NAME}"} = 1;
+	$needed->{"push_$fn->{NAME}"} = 1;
+	$needed->{"print_$fn->{NAME}"} = 1;
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		$e->{PARENT} = $fn;
+		unless(defined($needed->{"pull_$e->{TYPE}"})) {
+			$needed->{"pull_$e->{TYPE}"} = 1;
+		}
+		unless(defined($needed->{"push_$e->{TYPE}"})) {
+			$needed->{"push_$e->{TYPE}"} = 1;
+		}
+		unless(defined($needed->{"print_$e->{TYPE}"})) {
+			$needed->{"print_$e->{TYPE}"} = 1;
+		}
+	}
+}
+
+sub NeededTypedef($$)
+{
+	my $t = shift;
+	my $needed = shift;
+	if (util::has_property($t, "public")) {
+		$needed->{"pull_$t->{NAME}"} = not util::has_property($t, "nopull");
+		$needed->{"push_$t->{NAME}"} = not util::has_property($t, "nopush");
+		$needed->{"print_$t->{NAME}"} = not util::has_property($t, "noprint");
+	}
+
+	if ($t->{DATA}->{TYPE} eq "STRUCT" or $t->{DATA}->{TYPE} eq "UNION") {
+		if (util::has_property($t, "gensize")) {
+			$needed->{"ndr_size_$t->{NAME}"} = 1;
+		}
+
+		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+			$e->{PARENT} = $t->{DATA};
+			if ($needed->{"pull_$t->{NAME}"} and
+				not defined($needed->{"pull_$e->{TYPE}"})) {
+				$needed->{"pull_$e->{TYPE}"} = 1;
+			}
+			if ($needed->{"push_$t->{NAME}"} and
+				not defined($needed->{"push_$e->{TYPE}"})) {
+				$needed->{"push_$e->{TYPE}"} = 1;
+			}
+			if ($needed->{"print_$t->{NAME}"} and 
+				not defined($needed->{"print_$e->{TYPE}"})) {
+				$needed->{"print_$e->{TYPE}"} = 1;
+			}
+		}
+	}
+}
+
+#####################################################################
+# work out what parse functions are needed
+sub NeededInterface($$)
+{
+	my ($interface) = shift;
+	my $needed = shift;
+	foreach my $d (@{$interface->{FUNCTIONS}}) {
+	    NeededFunction($d, $needed);
+	}
+	foreach my $d (reverse @{$interface->{TYPEDEFS}}) {
+	    NeededTypedef($d, $needed);
+	}
 }
 
 1;
