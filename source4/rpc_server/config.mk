@@ -210,7 +210,7 @@ ADD_OBJ_FILES = \
 		rpc_server/handles.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_AUTH \
-		NDR
+		NDR_RAW
 #
 # End SUBSYSTEM DCERPC
 ################################################
