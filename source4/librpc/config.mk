@@ -12,6 +12,15 @@ REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBTALLOC LIBBASIC
 # End SUBSYSTEM NDR_RAW
 ################################################
 
+################################################
+# Start SUBSYSTEM NDR_COMPRESSION
+[SUBSYSTEM::NDR_COMPRESSION]
+ADD_OBJ_FILES = \
+		librpc/ndr/ndr_compression.o
+REQUIRED_SUBSYSTEMS = LIBCOMPRESSION
+# End SUBSYSTEM NDR_COMPRESSION
+################################################
+
 [SUBSYSTEM::NDR]
 REQUIRED_SUBSYSTEMS = NDR_RAW
 
@@ -29,15 +38,6 @@ ADD_OBJ_FILES = \
 		librpc/rpc/dcerpc_sock.o
 REQUIRED_SUBSYSTEMS = SOCKET
 # End SUBSYSTEM RPC_RAW
-################################################
-
-################################################
-# Start SUBSYSTEM RPC_COMPRESSION
-[SUBSYSTEM::RPC_COMPRESSION]
-ADD_OBJ_FILES = \
-		librpc/ndr/ndr_compression.o
-REQUIRED_SUBSYSTEMS = LIBCOMPRESSION
-# End SUBSYSTEM RPC_COMPRESSION
 ################################################
 
 [SUBSYSTEM::NDR_AUDIOSRV]
@@ -104,7 +104,7 @@ REQUIRED_SUBSYSTEMS = NDR
 INIT_FUNCTION = dcerpc_drsuapi_init
 INIT_OBJ_FILES = librpc/gen_ndr/ndr_drsuapi.o
 NOPROTO = YES
-REQUIRED_SUBSYSTEMS = NDR NDR_DRSUAPI_PRINT RPC_COMPRESSION
+REQUIRED_SUBSYSTEMS = NDR NDR_DRSUAPI_PRINT NDR_COMPRESSION
 
 [SUBSYSTEM::NDR_DRSUAPI_PRINT]
 INIT_OBJ_FILES = librpc/ndr/ndr_drsuapi.o
