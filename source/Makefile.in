@@ -120,7 +120,7 @@ PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
-	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
+	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ 
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@ \
 	bin/tdbtool@EXEEXT@
@@ -260,7 +260,8 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o registry/reg_eventlog.o
+               registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
+               registry/reg_util.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
 
@@ -270,6 +271,7 @@ RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
 
 RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o
+RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o $(REGFIO_OBJ)
 
 RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
 
@@ -369,6 +371,8 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 
+REGFIO_OBJ = registry/regfio.o
+
 SMBD_OBJ_MAIN = smbd/server.o
 
 BUILDOPT_OBJ = smbd/build_options.o
@@ -463,9 +467,6 @@ TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) \
-               $(LIB_NONSMBD_OBJ) libsmb/nterr.o
-
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
                 $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
@@ -537,7 +538,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
 	   utils/net_status.o utils/net_rpc_printer.o utils/net_rpc_rights.o \
-	   utils/net_rpc_service.o
+	   utils/net_rpc_service.o utils/net_rpc_registry.o 
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -545,7 +546,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
-	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(PRINTERDB_OBJ) 
+	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(PRINTERDB_OBJ) $(REGFIO_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -880,10 +881,6 @@ bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
 bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
-
-bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) $(LIBS)
 
 bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@

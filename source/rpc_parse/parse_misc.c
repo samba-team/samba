@@ -133,6 +133,15 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Reads or writes an NTTIME structure.
+********************************************************************/
+
+BOOL smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
+{
+	return smb_io_time( desc, nttime, ps, depth );
+}
+
+/*******************************************************************
  Gets an enumeration handle from an ENUM_HND structure.
 ********************************************************************/
 
@@ -680,7 +689,7 @@ BOOL smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BU
 	if(!prs_align(ps))
 		return False;
 		
-	if(!prs_uint32("uni_max_len", ps, depth, &buf2->buf_max_len))
+	if(!prs_uint32("buf_max_len", ps, depth, &buf2->buf_max_len))
 		return False;
 	if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
 		return False;
@@ -1081,6 +1090,9 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 
 BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
+	prs_debug(ps, depth, desc, "prs_unistr4");
+	depth++;
+
 	if ( !prs_uint16("length", ps, depth, &uni4->length ))
 		return False;
 	if ( !prs_uint16("size", ps, depth, &uni4->size ))
@@ -1728,6 +1740,11 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 	
 	if(!prs_uint32("uni_str_len", ps, depth, &name->uni_str_len))
 		return False;
+		
+	/* we're done if there is no string */
+	
+	if ( name->uni_str_len == 0 )
+		return True;
 
 	/* don't know if len is specified by uni_str_len member... */
 	/* assume unicode string is unicode-null-terminated, instead */
@@ -1737,7 +1754,6 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 
 	return True;
 }
-
 
 /*******************************************************************
  Stream a uint64_struct
