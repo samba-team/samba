@@ -31,7 +31,7 @@ INIT_OBJ_FILES = \
 		auth/auth_winbind.o
 REQUIRED_SUBSYSTEMS = \
 		LIB_WINBIND_CLIENT \
-		NDR_NETLOGON NDR
+		NDR_NETLOGON NDR_RAW
 # End MODULE auth_winbind
 #######################
 
@@ -43,7 +43,7 @@ SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth/auth_domain.o
 REQUIRED_SUBSYSTEMS = \
-		NDR_NETLOGON NDR
+		NDR_NETLOGON NDR_RAW
 # End MODULE auth_winbind
 #######################
 
