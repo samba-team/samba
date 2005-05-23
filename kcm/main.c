@@ -37,10 +37,6 @@ RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
 
-#ifdef HAVE_DAEMON
-extern int detach_from_console;
-#endif
-
 krb5_context kcm_context = NULL;
 
 static RETSIGTYPE
@@ -98,10 +94,8 @@ main(int argc, char **argv)
     signal(SIGUSR1, sigusr1);
     signal(SIGUSR2, sigusr2);
 #endif
-#ifdef HAVE_DAEMON
     if (detach_from_console)
 	daemon(0, 0);
-#endif
     pidfile(NULL);
     kcm_loop();
     krb5_free_context(kcm_context);
