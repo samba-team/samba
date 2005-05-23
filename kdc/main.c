@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002, 2004-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,9 +41,7 @@ RCSID("$Id$");
 sig_atomic_t exit_flag = 0;
 krb5_context context;
 
-#ifdef HAVE_DAEMON
 extern int detach_from_console;
-#endif
 
 static RETSIGTYPE
 sigterm(int sig)
@@ -107,10 +105,8 @@ main(int argc, char **argv)
     signal(SIGTERM, sigterm);
     signal(SIGPIPE, SIG_IGN);
 #endif
-#ifdef HAVE_DAEMON
     if (detach_from_console)
 	daemon(0, 0);
-#endif
     pidfile(NULL);
     loop();
     krb5_free_context(context);

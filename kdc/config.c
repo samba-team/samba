@@ -53,10 +53,8 @@ int num_db;
 
 const char *port_str;
 
-#ifdef HAVE_DAEMON
 int detach_from_console = -1;
 #define DETACH_IS_DEFAULT FALSE
-#endif
 
 int enable_http = -1;
 krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
@@ -124,7 +122,6 @@ static struct getargs args[] = {
     {	"ports",	'P', 	arg_string, &port_str,
 	"ports to listen to", "portspec"
     },
-#ifdef HAVE_DAEMON
 #if DETACH_IS_DEFAULT
     {
 	"detach",       'D',      arg_negative_flag, &detach_from_console, 
@@ -135,7 +132,6 @@ static struct getargs args[] = {
 	"detach",       0 ,      arg_flag, &detach_from_console, 
 	"detach from console"
     },
-#endif
 #endif
     {	"addresses",	0,	arg_strings, &addresses_str,
 	"addresses to listen on", "list of addresses" },
@@ -417,13 +413,11 @@ configure(int argc, char **argv)
 					      "kdc_warn_pwexpire",
 					      NULL);
 
-#ifdef HAVE_DAEMON
     if(detach_from_console == -1) 
 	detach_from_console = krb5_config_get_bool_default(context, NULL, 
 							   DETACH_IS_DEFAULT,
 							   "kdc",
 							   "detach", NULL);
-#endif
     kdc_openlog();
     if(max_request == 0)
 	max_request = 64 * 1024;

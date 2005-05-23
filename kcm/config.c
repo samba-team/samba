@@ -43,10 +43,8 @@ char *socket_path = NULL;
 
 static char *max_request_str;	/* `max_request' as a string */
 
-#ifdef HAVE_DAEMON
 int detach_from_console = -1;
 #define DETACH_IS_DEFAULT FALSE
-#endif
 
 static const char *system_cache_name = NULL;
 static const char *system_keytab = NULL;
@@ -81,7 +79,6 @@ static struct getargs args[] = {
 	"max-request",	0,	arg_string, &max_request, 
 	"max size for a kcm-request", "size"
     },
-#ifdef HAVE_DAEMON
 #if DETACH_IS_DEFAULT
     {
 	"detach",       'D',      arg_negative_flag, &detach_from_console, 
@@ -92,7 +89,6 @@ static struct getargs args[] = {
 	"detach",       0 ,      arg_flag, &detach_from_console, 
 	"detach from console"
     },
-#endif
 #endif
     {	"help",		'h',	arg_flag,   &help_flag },
     { 
@@ -364,13 +360,11 @@ kcm_configure(int argc, char **argv)
 	    krb5_err(kcm_context, 1, ret, "initializing system ccache");
     }
 
-#ifdef HAVE_DAEMON
     if(detach_from_console == -1) 
 	detach_from_console = krb5_config_get_bool_default(kcm_context, NULL,
 							   DETACH_IS_DEFAULT,
 							   "kcm",
 							   "detach", NULL);
-#endif
     kcm_openlog();
     if(max_request == 0)
 	max_request = 64 * 1024;
