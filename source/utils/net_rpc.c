@@ -5485,7 +5485,7 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
-	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n\n\n");
+	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n");
 	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc password <username> [<password>] -Uadmin_username%%admin_pass\n");
@@ -5501,6 +5501,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
 	d_printf("  net rpc shutdown \t\tto shutdown a remote server\n");
 	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
+	d_printf("  net rpc registry\t\tto manage registry hives\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
@@ -5571,6 +5572,7 @@ int net_rpc(int argc, const char **argv)
 		{"getsid", net_rpc_getsid},
 		{"rights", net_rpc_rights},
 		{"service", net_rpc_service},
+		{"registry", net_rpc_registry},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
