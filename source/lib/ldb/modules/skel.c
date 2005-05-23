@@ -36,9 +36,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
-const struct private_data {
+struct private_data {
 
-	const char *error_string;
+	char *errstring;
 };
 
 /* search */
@@ -93,21 +93,23 @@ static const char *skel_errstring(struct ldb_module *module)
 
 static int skel_destructor(void *module_ctx)
 {
-	struct ldb_module *ctx = module_ctx;
+	struct ldb_module *ctx = talloc_get_type(module_ctx, struct ldb_module);
+	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
 	/* put your clean-up functions here */
+	if (data->errstring) talloc_free(data->errstring);
 	return 0;
 }
 
 static const struct ldb_module_ops skel_ops = {
-	"skel",
-	skel_search,
-	skel_add_record,
-	skel_modify_record,
-	skel_delete_record,
-	skel_rename_record,
-	skel_named_lock,
-	skel_named_unlock,
-	skel_errstring
+	.name		= "skel",
+	.search		= skel_search,
+	.add_record	= skel_add_record,
+	.modify_record	= skel_modify_record,
+	.delete_record	= skel_delete_record,
+	.rename_record	= skel_rename_record,
+	.named_lock	= skel_named_lock,
+	.named_unlock	= skel_named_unlock,
+	.errstring	= skel_errstring
 };
 
 #ifdef HAVE_DLOPEN_DISABLED
@@ -129,7 +131,7 @@ struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options
 		return NULL;
 	}
 
-	data->error_string = NULL;
+	data->errstring = NULL;
 	ctx->private_data = data;
 
 	ctx->ldb = ldb;
