@@ -106,110 +106,6 @@ typedef struct kcm_ccache_data {
 
 typedef kcm_ccache_data *kcm_ccache;
 
-char *kcm_ccache_nextid(pid_t pid, uid_t uid, gid_t gid);
-
-/* foo_internal routines assume caller has acquired lock */
-/* locking is there in case we eventually multithread */
-
-krb5_error_code kcm_debug_ccache(krb5_context context);
-
-krb5_error_code kcm_zero_ccache_data(krb5_context context,
-				     kcm_ccache cache);
-
-krb5_error_code kcm_zero_ccache_data_internal(krb5_context context,
-					      kcm_ccache_data *cache);
-
-krb5_error_code kcm_retain_ccache(krb5_context context,
-				  kcm_ccache ccache);
-
-krb5_error_code kcm_release_ccache(krb5_context context,
-				   kcm_ccache *ccache);
-
-krb5_error_code kcm_ccache_new(krb5_context context,
-			       const char *name,
-			       kcm_ccache *ccache);
-
-krb5_error_code kcm_ccache_destroy_if_empty(krb5_context context,
-					    kcm_ccache ccache);
-
-krb5_error_code kcm_ccache_acquire(krb5_context context,
-				   kcm_ccache ccache,
-				   krb5_creds **credp);
-
-krb5_error_code kcm_ccache_refresh(krb5_context context,
-				   kcm_ccache ccache,
-				   krb5_creds **credp);
-
-krb5_error_code kcm_ccache_gen_new(krb5_context context,
-				   pid_t pid,
-				   uid_t uid,
-				   gid_t gid,
-				   kcm_ccache *ccache);
-
-krb5_error_code kcm_ccache_resolve(krb5_context context,
-				   const char *name,
-				   kcm_ccache *ccache);
-
-krb5_error_code kcm_ccache_destroy(krb5_context context,
-				   const char *name);
-
-krb5_error_code kcm_ccache_store_cred_internal(krb5_context context,
-					       kcm_ccache ccache,
-					       krb5_creds *creds,
-					       int copy,
-					       krb5_creds **out);
-
-krb5_error_code kcm_ccache_store_cred(krb5_context context,
-				      kcm_ccache ccache,
-				      krb5_creds *creds,
-				      int copy);
-
-krb5_error_code kcm_ccache_remove_cred_internal(krb5_context context,
-						kcm_ccache ccache,
-						krb5_flags whichfields,
-						const krb5_creds *mcreds);
-
-krb5_error_code kcm_ccache_remove_cred(krb5_context context,
-				       kcm_ccache ccache,
-				       krb5_flags whichfields,
-				       const krb5_creds *mcreds);
-
-krb5_error_code kcm_ccache_retrieve_cred_internal(krb5_context context,
-					 	  kcm_ccache ccache,
-					 	  krb5_flags whichfields,
-					 	  const krb5_creds *mcreds,
-					 	  krb5_creds **creds);
-
-krb5_error_code kcm_ccache_retrieve_cred(krb5_context context,
-					 kcm_ccache ccache,
-					 krb5_flags whichfields,
-					 const krb5_creds *mcreds,
-					 krb5_creds **credp);
-
-krb5_error_code kcm_ccache_remove_creds_internal(krb5_context context,
-						 kcm_ccache ccache);
-
-krb5_error_code kcm_ccache_remove_creds(krb5_context context,
-					kcm_ccache ccache);
-
-/* Credentials enumeration */
-
-krb5_error_code kcm_cursor_new(krb5_context context,
-			       pid_t pid,
-			       kcm_ccache ccache,
-			       u_int32_t *cursor);
-
-krb5_error_code kcm_cursor_find(krb5_context context,
-				pid_t pid,
-				kcm_ccache ccache,
-				u_int32_t key,
-				kcm_cursor **cursor);
-
-krb5_error_code kcm_cursor_delete(krb5_context context,
-			     	  pid_t pid,
-				  kcm_ccache ccache,
-				  u_int32_t key);
-
 /* Event management */
 
 typedef struct kcm_event {
@@ -234,33 +130,6 @@ typedef struct kcm_event {
 #define KCM_EVENT_DEFAULT_BACKOFF_TIME		5
 #define KCM_EVENT_MAX_BACKOFF_TIME		(12 * 60 * 60)
 
-krb5_error_code kcm_ccache_enqueue_default(krb5_context context,
-					   kcm_ccache ccache,
-					   krb5_creds *newcred);
-
-krb5_error_code kcm_enqueue_event(krb5_context context,
-				  kcm_event *event);
-
-/* don't grab lock */
-krb5_error_code kcm_enqueue_event_internal(krb5_context context,
-					   kcm_event *event);
-
-/* fire time is relative to now */
-krb5_error_code kcm_enqueue_event_relative(krb5_context context,
-					   kcm_event *event);
-
-krb5_error_code kcm_remove_event(krb5_context context,
-				 kcm_event *event);
-
-krb5_error_code kcm_cleanup_events(krb5_context context,
-				   kcm_ccache ccache);
-
-krb5_error_code kcm_run_events(krb5_context context,
-			       time_t now);
-
-krb5_error_code kcm_debug_events(krb5_context context);
-
-/* Operation dispatch */
 
 /* Request format is  LENGTH | MAJOR | MINOR | OPERATION | request */
 /* Response format is LENGTH | STATUS | response */
@@ -271,24 +140,6 @@ typedef struct kcm_client {
     gid_t gid;
 } kcm_client;
 
-/* Access-checked cache management */
-krb5_error_code kcm_ccache_resolve_client(krb5_context context,
-					  kcm_client *client,
-					  kcm_operation opcode,
-					  const char *name,
-					  kcm_ccache *ccache);
-
-krb5_error_code kcm_ccache_destroy_client(krb5_context context,
-					  kcm_client *client,
-					  const char *name);
-
-krb5_error_code kcm_ccache_new_client(krb5_context context,
-				      kcm_client *client,
-				      const char *name,
-				      kcm_ccache *ccache);
-
-const char *kcm_op2string(kcm_operation operation);
-
 /* Dispatch table */
 /* passed in OPERATION | ... ; returns STATUS | ... */
 typedef krb5_error_code (*kcm_method)(krb5_context, kcm_client *, kcm_operation, krb5_storage *, krb5_storage *);
@@ -298,43 +149,8 @@ struct kcm_op {
     kcm_method method;
 };
 
-krb5_error_code kcm_dispatch(krb5_context context,
-			     kcm_client *sd,
-			     krb5_data *request,
-			     krb5_data *response);
-
-/* Access checking */
-krb5_error_code kcm_access(krb5_context context,
-			   kcm_client *client,
-			   kcm_operation opcode,
-			   kcm_ccache ccache);
-
-krb5_error_code kcm_chown(krb5_context context,
-			  kcm_client *client,
-			  kcm_ccache ccache,
-			  uid_t uid,
-			  gid_t gid);
-
-krb5_error_code kcm_chmod(krb5_context context,
-			  kcm_client *client,
-			  kcm_ccache ccache,
-			  u_int16_t mode);
-
-krb5_error_code
-kcm_internal_ccache(krb5_context context,
-		    kcm_ccache c,
-		    krb5_ccache id);
-
-void kcm_openlog(void);
-void kcm_log(int level, const char *fmt, ...);
-char *kcm_log_msg(int level, const char *fmt, ...);
-char *kcm_log_msg_va(int level, const char *fmt, va_list ap);
-
 #define DEFAULT_LOG_DEST    "0/FILE:" LOCALSTATEDIR "/log/kcmd.log"
 #define _PATH_KCM_CONF	    SYSCONFDIR "/kcm.conf"
-
-void kcm_configure(int argc, char **argv);
-void kcm_loop(void);
 
 extern krb5_context kcm_context;
 extern char *socket_path;
@@ -346,6 +162,8 @@ extern int detach_from_console;
 #if 0
 extern const krb5_cc_ops krb5_kcmss_ops;
 #endif
+
+#include <kcm_protos.h>
 
 #endif /* __KCM_LOCL_H__ */
 
