@@ -1,3 +1,22 @@
+2005-05-24  David Love  <fx@gnu.org>
+
+	* kcm/kcm.8: KRB5CCNAME needs an literal uid, not ${uid}, spelling
+
+2005-05-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/protocol.c: Merge the description and function jumptables
+	into one structure.  Use the length of the array when checking if
+	opcode is value, not a constant.
+
+	* kcm/kcm_locl.h: struct kcm_op: jumptable structure
+
+	* kcm/main.c: move declaration of detach_from_console away from
+	here to kcm_locl.h, Don't test HAVE_DAEMON since roken supplies it.
+	
+	* kcm/kcm_locl.h: move declaration of detach_from_console here
+	
+	* kdc/config.c: Don't test HAVE_DAEMON since roken supplies it.
+	
 2005-05-23  Dave Love  <fx@gnu.org>
 
 	* kcm/config.c: Don't test HAVE_DAEMON since roken supplies it.
