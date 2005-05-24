@@ -16,10 +16,16 @@ kcm_SOURCES =		\
 	cursor.c	\
 	events.c	\
 	glue.c		\
+	headers.h	\
+	kcm_locl.h	\
+	kcm_protos.h	\
 	log.c		\
 	main.c		\
 	protocol.c	\
 	renew.c
+
+$(srcdir)/kcm_protos.h:
+	cd $(srcdir); perl ../cf/make-proto.pl -o kcm_protos.h -q -P comment $(kcm_SOURCES) || rm -f kcm_protos.h
 
 man_MANS = kcm.8
 
