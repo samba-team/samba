@@ -81,7 +81,39 @@ reinit_descrs (struct descr *d, int n)
 static int
 update_client_creds(int s, kcm_client *peer)
 {
+#ifdef GETPEERUCRED
+    /* Solaris 10 */
+    {
+	ucred_t *peercred;
+	if (getpeerucred(fd, &peercred) != 0) {
+	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
+	    return 1;
+	}
+	peer->uid = ucred_geteuid(peercred);
+	peer->gid = ucred_getegid(peercred);
+	peer->pid = 0;
+	ucred_free(peercred);
+	return 0;
+    } 
+#endif
+#ifdef GETPEEREID
+    /* FreeBSD, OpenBSD */
+    {
+	uid_t uid;
+	gid_t gid;
+
+	if (getpeereid(s, &uid, &gid) != 0) {
+	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
+	    return 1;
+	}
+	peer->uid = uid;
+	peer->gid = gid;
+	peer->pid = 0;
+	return 0;
+    }
+#endif
 #ifdef SO_PEERCRED
+    /* Linux */
     {
 	struct ucred pc;
 	socklen_t pclen = sizeof(pc);
@@ -98,6 +130,7 @@ update_client_creds(int s, kcm_client *peer)
     }
 #endif
 #if defined(SOCKCREDSIZE) && defined(SCM_CREDS)
+    /* NetBSD */
     if (peer->uid == -1) {
 	struct msghdr msg;
 	socklen_t crmsgsize;
