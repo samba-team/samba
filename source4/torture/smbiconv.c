@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("smbiconv", True);
+	setup_logging("smbiconv", DEBUG_STDOUT);
 
 	if (preload_modules[0]) smb_load_modules(preload_modules);
 

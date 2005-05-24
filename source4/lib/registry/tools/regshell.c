@@ -392,7 +392,7 @@ static char **reg_completion(const char *text, int start, int end)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-    setup_logging("regtree", True);
+	setup_logging("regtree", DEBUG_STDOUT);
 
 	if (remote) {
 		error = reg_open_remote (&h, cmdline_credentials, remote); 

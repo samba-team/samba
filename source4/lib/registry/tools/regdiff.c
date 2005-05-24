@@ -157,7 +157,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 			return 1;
 		}
 	}
-	setup_logging(argv[0], True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	poptFreeContext(pc);
 

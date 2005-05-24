@@ -766,7 +766,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	setup_logging(argv[0], True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	if (remote) {
 		error = reg_open_remote (&h, cmdline_credentials, remote);
