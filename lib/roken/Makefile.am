@@ -43,7 +43,7 @@ parse_time_test_SOURCES = parse_time-test.c test-mem.c
 
 strpftime_test_SOURCES	= strpftime-test.c
 strpftime_test_LDADD = libtest.la $(LDADD)
-snprintf_test_SOURCES	= snprintf-test.c
+snprintf_test_SOURCES	= snprintf-test.c snprintf-test.h
 snprintf_test_LDADD = libtest.la $(LDADD)
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
 
