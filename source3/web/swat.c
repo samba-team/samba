@@ -77,6 +77,26 @@ static char *fix_backslash(const char *str)
 	return newstring;
 }
 
+static char *fix_quotes(const char *str)
+{
+	static pstring newstring;
+	char *p = newstring;
+	size_t newstring_len = sizeof(newstring);
+	int quote_len = strlen("&quot;");
+
+	while (*str) {
+		if ( *str == '\"' && (newstring_len - PTR_DIFF(p, newstring) - 1) > quote_len ) {
+			strncpy( p, "&quot;", quote_len); 
+			p += 6;
+		} else {
+			*p++ = *str;
+		}
+		++str;
+	}
+	*p = '\0';
+	return newstring;
+}
+
 static char *stripspaceupper(const char *str)
 {
 	static char newstring[1024];
@@ -249,7 +269,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_USTRING:
 		push_utf8_allocate(&utf8_s1, *(char **)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), utf8_s1);
+		       make_parm_name(parm->label), fix_quotes(utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
@@ -259,7 +279,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_UGSTRING:
 		push_utf8_allocate(&utf8_s1, (char *)ptr);
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), utf8_s1);
+		       make_parm_name(parm->label), fix_quotes(utf8_s1));
 		SAFE_FREE(utf8_s1);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			_("Set Default"), make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
