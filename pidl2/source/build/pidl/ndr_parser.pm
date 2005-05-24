@@ -662,21 +662,18 @@ sub ParseElementPushLevel
 			$var_name = get_pointer_to($var_name);
 		}
 		
-		# primitives if $primitives or IS_DEFERRED 
-		if ($primitives or $l->{IS_DEFERRED}) {
+		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, !($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED}));
-	
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 		}
 
-		if ($deferred and ($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED})) {
+		if ($deferred and ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
 			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
-	
 			deindent;
 			pidl "}";
 		}	
@@ -699,7 +696,7 @@ sub ParseElementPush($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and ContainsDeferred($e));
+	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
@@ -951,14 +948,15 @@ sub GetNextLevel($$)
 	return undef;
 }
 
-sub ContainsDeferred($)
+sub ContainsDeferred($$)
 {
 	my $e = shift;
+	my $l = shift;
 
-	foreach my $l (@{$e->{LEVELS}}) { 
+	do {
 		return 1 if ($l->{IS_DEFERRED}); 
 		return 1 if ($l->{CONTAINS_DEFERRED});
-	}
+	} while ($l = GetNextLevel($e,$l));
 	
 	return 0;
 }
@@ -1036,15 +1034,15 @@ sub ParseElementPullLevel
 			$var_name = get_pointer_to($var_name);
 		}
 
-		if ($primitives or $l->{IS_DEFERRED}) {
+		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, !($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED}));
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 		}
 
-		if ($deferred and ($l->{CONTAINS_DEFERRED} or $l->{IS_DEFERRED})) {
+		if ($deferred and ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
 			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
@@ -1069,7 +1067,7 @@ sub ParseElementPull($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and ContainsDeferred($e));
+	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
