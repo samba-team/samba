@@ -1,3 +1,7 @@
+2005-05-24  Dave Love  <fx@gnu.org>
+
+	* Makefile.am (snprintf_test_SOURCES): Add snprintf-test.h.
+
 2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* environment.c (rk_read_env_file): move assignment to later to
