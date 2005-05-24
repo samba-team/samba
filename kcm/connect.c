@@ -324,22 +324,36 @@ do_request(void *buf, size_t len, struct descr *d)
     ret = process_request(buf, len, &reply, &d->peercred);
     if (reply.length != 0) {
 	unsigned char len[4];
+	struct msghdr msghdr;
+	struct iovec iov[2];
 
-	kcm_log(5, "sending %lu bytes to process %d", (unsigned long)reply.length,
-		d->peercred.pid);
+	kcm_log(5, "sending %lu bytes to process %d", 
+		(unsigned long)reply.length,
+		(int)d->peercred.pid);
+
+	memset (&msghdr, 0, sizeof(msghdr));
+	msghdr.msg_name       = d->sa;
+	msghdr.msg_namelen    = d->sock_len;
+	msghdr.msg_iov        = iov;
+	msghdr.msg_iovlen     = sizeof(iov)/sizeof(*iov);
+#if 0
+	msghdr.msg_control    = NULL;
+	msghdr.msg_controllen = 0;
+#endif
 
 	len[0] = (reply.length >> 24) & 0xff;
 	len[1] = (reply.length >> 16) & 0xff;
 	len[2] = (reply.length >> 8) & 0xff;
 	len[3] = reply.length & 0xff;
 
-	if (sendto(d->s, len, sizeof(len), 0, NULL, 0) < 0) {
-	    kcm_log (0, "sendto(%d): %d %s", d->peercred.pid, strerror(errno));
-	    krb5_data_free(&reply);
-	    return;
-	}
-	if (sendto(d->s, reply.data, reply.length, 0, NULL, 0) < 0) {
-	    kcm_log (0, "sendto(%d): %s", d->peercred.pid, strerror(errno));
+	iov[0].iov_base       = len;
+	iov[0].iov_len        = 4;
+	iov[1].iov_base       = reply.data;
+	iov[1].iov_len        = reply.length;
+
+	if (sendmsg (d->s, &msghdr, 0) < 0) {
+	    kcm_log (0, "sendmsg(%d): %d %s", (int)d->peercred.pid,
+		     strerror(errno));
 	    krb5_data_free(&reply);
 	    return;
 	}
