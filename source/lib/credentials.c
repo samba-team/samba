@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "lib/cmdline/popt_common.h"
 #include "include/secrets.h"
 #include "lib/ldb/include/ldb.h"
 
