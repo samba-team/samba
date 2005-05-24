@@ -261,7 +261,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 2581 (partial): Ensure if realloc fails on an internal 
       tdb we fail gracefully.
     * Ensure that 'dos filetimes' works with ACLs.
-    * Set 'dos filefimes = yes' as the default for smb.conf.
+    * Set 'dos filetimes = yes' as the default for smb.conf.
 
       
 o   Gerald (Jerry) Carter <jerry@samba.org>
