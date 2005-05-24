@@ -143,6 +143,7 @@ static krb5_error_code
 kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 {
     krb5_kcmcache *k;
+    const char *path;
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
@@ -160,8 +161,14 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
     } else
 	k->name = NULL;
 
+    path = krb5_config_get_string_default(context, NULL,
+					  _PATH_KCM_SOCKET,
+					  "libdefaults", 
+					  "kcm_socket",
+					  NULL);
+    
     k->path.sun_family = AF_UNIX;
-    strlcpy(k->path.sun_path, _PATH_KCM_SOCKET, sizeof(k->path.sun_path));
+    strlcpy(k->path.sun_path, path, sizeof(k->path.sun_path));
 
     (*id)->data.data = k;
     (*id)->data.length = sizeof(*k);
