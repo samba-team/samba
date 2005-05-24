@@ -127,6 +127,9 @@ union libnet_rpc_connect;
 union libnet_RemoteTOD;
 union libnet_JoinDomain;
 union libnet_CreateUser;
+struct libnet_ListShares;
+struct libnet_AddShare;
+struct libnet_DelShare;
 struct net_functable;
 struct net_context;
 
@@ -208,4 +211,3 @@ struct wrepl_pull_names;
 struct arcfour_state;
 
 union libnet_SamDump;
-
