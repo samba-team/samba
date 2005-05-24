@@ -955,7 +955,7 @@ static struct kcm_op kcm_ops[] = {
     { "RETRIEVE",		kcm_op_retrieve },
     { "GET_PRINCIPAL",		kcm_op_get_principal },
     { "GET_FIRST",		kcm_op_get_first },
-    { "GET_NEXT",		kcm_op_get_name },
+    { "GET_NEXT",		kcm_op_get_next },
     { "END_GET",		kcm_op_end_get },
     { "REMOVE_CRED",		kcm_op_remove_cred },
     { "SET_FLAGS",		kcm_op_set_flags },
