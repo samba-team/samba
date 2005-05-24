@@ -87,7 +87,7 @@ static char *fix_quotes(const char *str)
 	while (*str) {
 		if ( *str == '\"' && (newstring_len - PTR_DIFF(p, newstring) - 1) > quote_len ) {
 			strncpy( p, "&quot;", quote_len); 
-			p += 6;
+			p += quote_len;
 		} else {
 			*p++ = *str;
 		}
