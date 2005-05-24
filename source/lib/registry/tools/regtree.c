@@ -102,7 +102,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	setup_logging("regtree", True);
+	setup_logging("regtree", DEBUG_STDOUT);
 
 	if (remote) {
 		error = reg_open_remote(&h, cmdline_credentials, remote);
