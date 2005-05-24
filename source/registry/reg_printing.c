@@ -55,9 +55,9 @@ static char* trim_reg_path( char *path )
 	uint16 key_len = strlen(path);
 	uint16 base_key_len;
 
-	static int key_printing_len = strlen( KEY_PRINTING );
-	static int key_printing2k_len = strlen( KEY_PRINTING_2K );
-	static int key_printing_ports_len = strlen( KEY_PRINTING_PORTS );
+	int key_printing_len = strlen( KEY_PRINTING );
+	int key_printing2k_len = strlen( KEY_PRINTING_2K );
+	int key_printing_ports_len = strlen( KEY_PRINTING_PORTS );
 
 
 	
