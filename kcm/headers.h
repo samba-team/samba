@@ -64,6 +64,9 @@
 #ifdef HAVE_LIBUTIL_H
 #include <libutil.h>
 #endif
+#ifdef HAS_GETPEERUCRED
+#include <ucred.h>
+#endif
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
