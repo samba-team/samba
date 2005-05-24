@@ -631,7 +631,6 @@ sub ParseElementPushLevel
 			} 
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			ParseSwitchPush($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 		} elsif ($l->{TYPE} eq "DATA") {
 			ParseDataPush($e, $l, $ndr, $var_name, $ndr_flags);
 		}
@@ -677,6 +676,8 @@ sub ParseElementPushLevel
 			deindent;
 			pidl "}";
 		}	
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -996,7 +997,6 @@ sub ParseElementPullLevel
 			ParsePtrPull($e, $l, $ndr, $var_name);
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			ParseSwitchPull($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 		} elsif ($l->{TYPE} eq "DATA") {
 			ParseDataPull($e, $l, $ndr, $var_name, $ndr_flags);
 		}
@@ -1049,6 +1049,8 @@ sub ParseElementPullLevel
 			deindent;
 			pidl "}";
 		}
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
