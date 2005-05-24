@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May  3, 2005
+.Dd May 24, 2005
 .Dt KCM 8
 .Os Heimdal
 .Sh NAME
@@ -92,27 +92,30 @@ is a process based credential cache.
 To use it, set the
 .Ev KRB5CCNAME
 enviroment variable to
-.Q1 KCM:${uid}
-or add the configuration file
+.Ql KCM: Ns Ar uid
+or add the stanza
+.br
+[libdefaults]default_cc_name KCM:${uid}
+.br
+to the
 .Pa /etc/krb5.conf
-stanza [libdefaults]default_cc_name to KCM:${uid} and make sure
+configuration file and make sure
 .Nm kcm
 is started in the system startup files.
 .Pp
 The
 .Nm
 daemon can hold the credentials for all users in the system.  Access
-control is done with Unix like permissions.  The daemon check the
+control is done with Unix-like permissions.  The daemon checks the
 access on all operations based on the uid and gid of the user.  The
-ticket are are are renewed as long as it permitted by the KDC's
-policy.
+tickets are renewed as long as is permitted by the KDC's policy.
 .Pp
 The
 .Nm
-daemon can also keep an SYSTEM credential that server processes can
+daemon can also keep a SYSTEM credential that server processes can
 use to access services.  One example of usage might be an nss_ldap
-module that quickly needs to get credential and doesn't want to renew
-the ticket themself. 
+module that quickly needs to get credentials and doesn't want to renew
+the ticket itself. 
 .Pp
 Supported options:
 .Bl -tag -width Ds
