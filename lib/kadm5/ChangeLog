@@ -1,3 +1,7 @@
+2005-05-24  Dave Love  <fx@gnu.org>
+
+	* iprop.8: Added some info about defaults, fixed some markup.
+	
 2005-05-23  Dave Love  <fx@gnu.org>
 
 	* ipropd_slave.c: Don't test HAVE_DAEMON since roken supplies it.
