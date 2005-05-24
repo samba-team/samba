@@ -356,6 +356,8 @@ AC_CHECK_FUNCS([				\
 	_getpty					\
 	_scrsize				\
 	fcntl					\
+	getpeereid				\
+	getpeerucred				\
 	grantpt					\
 	mktime					\
 	ptsname					\
