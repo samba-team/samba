@@ -1,0 +1,240 @@
+                -- ------------------------------------------------------
+
+                PRAGMA auto_vacuum=1;
+
+                -- ------------------------------------------------------
+
+                BEGIN EXCLUSIVE;
+
+                -- ------------------------------------------------------
+
+                CREATE TABLE ldb_info AS 
+                  SELECT 'LDB' AS database_type, 
+                         '1.0' AS version;
+
+                CREATE TABLE ldb_distinguished_names 
+                (
+                  dn_id         INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  dn            TEXT UNIQUE
+                );
+
+                CREATE TABLE ldb_object_classes 
+                (
+                  class_name    TEXT PRIMARY KEY,
+                  tree_key      TEXT,
+                  max_child_num INTEGER
+                );
+
+                CREATE TABLE ldb_dn_object_classes 
+                (
+                  dn_id         INTEGER REFERENCES ldb_distinguished_names, 
+                  class_name    TEXT REFERENCES ldb_object_classes 
+                );
+
+                CREATE TABLE ldb_attributes
+                (
+                  attr_name             TEXT PRIMARY KEY,
+                  case_insensitive_p    BOOLEAN DEFAULT FALSE,
+                  wildcard_p            BOOLEAN DEFAULT FALSE,
+                  hidden_p              BOOLEAN DEFAULT FALSE,
+                  integer_p             BOOLEAN DEFAULT FALSE
+                );
+
+                CREATE TABLE ldb_attr_value_pairs 
+                (
+                  dn_id         INTEGER REFERENCES ldb_distinguished_names, 
+                  attr_name     TEXT REFERENCES ldb_attributes,
+                  attr_value    TEXT 
+                );
+
+                -- ------------------------------------------------------
+
+                CREATE TRIGGER ldb_distinguished_names_delete_tr
+                  AFTER DELETE
+                  ON ldb_distinguished_names
+                  FOR EACH ROW
+                    BEGIN
+                      DELETE FROM ldb_attr_value_pairs
+                        WHERE dn_id = old.dn_id;
+                      DELETE FROM ldb_dn_object_classes
+                        WHERE dn_id = old.dn_id;
+                    END;
+
+                CREATE TRIGGER ldb_attr_value_pairs_insert_tr
+                  BEFORE INSERT
+                  ON ldb_attr_value_pairs
+                  FOR EACH ROW
+                    BEGIN
+                      INSERT OR IGNORE INTO ldb_attributes
+                          (attr_name)
+                        VALUES
+                          (new.attr_name);
+                    END;
+
+                CREATE TRIGGER ldb_attr_value_pairs_delete_tr
+                  AFTER DELETE
+                  ON ldb_attr_value_pairs
+                  FOR EACH ROW
+                    BEGIN
+                      DELETE FROM ldb_attributes
+                        WHERE (SELECT COUNT(*)
+                                 FROM ldb_attr_value_pairs
+                                 WHERE attr_name = old.attr_name) = 0
+                          AND attr_name = old.attr_name;
+                    END;
+
+                -- ------------------------------------------------------
+
+                CREATE INDEX ldb_distinguished_names_dn_idx
+                  ON ldb_distinguished_names (dn);
+
+                CREATE INDEX ldb_object_classes_tree_key_idx
+                  ON ldb_object_classes (tree_key);
+
+
+                CREATE INDEX ldb_dn_object_classes_dn_id_idx
+                  ON ldb_dn_object_classes (dn_id);
+
+                CREATE INDEX ldb_dn_object_classes_class_name_idx
+                  ON ldb_dn_object_classes (class_name);
+
+
+                CREATE INDEX ldb_attr_value_pairs_dn_id_name_case_idx
+                  ON ldb_attr_value_pairs (dn_id, attr_name);
+
+                CREATE INDEX ldb_attr_value_pairs_dn_id_name_nocase_idx
+                  ON ldb_attr_value_pairs (dn_id, attr_name COLLATE NOCASE);
+
+                -- ------------------------------------------------------
+
+                /* all defaults for dn, initially */
+                INSERT INTO ldb_attributes (attr_name)
+                  VALUES ('dn');
+
+                /* We need an implicit "top" level object class */
+                INSERT INTO ldb_object_classes (class_name, tree_key)
+                  SELECT 'top', /* next_tree_key(NULL) */ '0001';
+
+                -- ------------------------------------------------------
+
+                COMMIT;
+
+                -- ------------------------------------------------------
+
+/*
+ * dn: o=University of Michigan,c=US
+ * objectclass: organization
+ * objectclass: domainRelatedObject
+ */
+-- newDN
+INSERT INTO ldb_distinguished_names (dn_id, dn)
+  VALUES (1, 'o=University of Michigan,c=US');
+
+-- newObjectClass
+INSERT OR IGNORE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'organization', /* next_tree_key(NULL) */ '0002';
+
+INSERT OR IGNORE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'domainRelatedObject', /* next_tree_key(NULL) */ '0003';
+
+-- assignObjectClass
+INSERT OR IGNORE INTO ldb_dn_object_classes (dn_id, class_name)
+  VALUES (1, 'organization');
+
+INSERT OR IGNORE INTO ldb_dn_object_classes (dn_id, class_name)
+  VALUES (1, 'domainRelatedObject');
+
+/*
+ * l: Ann Arbor, Michigan
+ * st: Michigan
+ * o: University of Michigan
+ * o: UMICH
+ * o: UM
+ * o: U-M
+ * o: U of M
+ * description: The University of Michigan at Ann Arbor
+ * seeAlso:
+ * postaladdress: University of Michigan $ 535 W. William St. $ Ann Arbor, MI 481
+ *  09 $ US
+ * telephonenumber: +1 313 764-1817
+ * associateddomain: example.com
+ */
+-- addAttrValuePair
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'l', 'Ann Arbor, Michigan');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'st', 'Michigan');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'o', 'University of Michigan');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'o', 'UMICH');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'o', 'UM');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'o', 'U-M');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'o', 'U of M');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'description', 'The University of Michigan at Ann Arbor');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'seeAlso', '');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'postaladdress', 'University of Michigan $ 535 W. William St. $ Ann Arbor, MI 48109 $ US');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'telephonenumber', '+1 313 764-1817');
+INSERT INTO ldb_attr_value_pairs (dn_id, attr_name, attr_value)
+  VALUES (1, 'associateddomain', 'example.com');
+
+-- ----------------------------------------------------------------------
+
+/*
+ * dn: @ATTRIBUTES
+ * uid: CASE_INSENSITIVE WILDCARD
+ * cn: CASE_INSENSITIVE
+ * ou: CASE_INSENSITIVE
+ * dn: CASE_INSENSITIVE
+ */
+-- newAttribute
+INSERT OR REPLACE INTO ldb_attributes
+    (attr_name, case_insensitive_p, wildcard_p, hidden_p, integer_p)
+  VALUES ('uid', 1, 1, 0, 0);
+INSERT OR REPLACE INTO ldb_attributes
+    (attr_name, case_insensitive_p, wildcard_p, hidden_p, integer_p)
+  VALUES ('cn', 1, 0, 0, 0);
+INSERT OR REPLACE INTO ldb_attributes
+    (attr_name, case_insensitive_p, wildcard_p, hidden_p, integer_p)
+  VALUES ('ou', 1, 0, 0, 0);
+INSERT OR REPLACE INTO ldb_attributes
+    (attr_name, case_insensitive_p, wildcard_p, hidden_p, integer_p)
+  VALUES ('dn', 1, 0, 0, 0);
+
+-- ----------------------------------------------------------------------
+
+/*
+ * dn: @SUBCLASSES
+ * top: domain
+ * top: person
+ * domain: domainDNS
+ * person: organizationalPerson
+ * person: fooPerson
+ * organizationalPerson: user
+ * organizationalPerson: OpenLDAPperson
+ * user: computer
+ */
+-- insertSubclass
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'domain', /* next_tree_key('top') */ '00010001';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'person', /* next_tree_key('top') */ '00010002';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'domainDNS', /* next_tree_key('domain') */ '000100010001';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'organizationalPerson', /* next_tree_key('person') */ '000100020001';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'fooPerson', /* next_tree_key('person') */ '000100020002';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'user', /* next_tree_key('organizationalPerson') */ '0001000200010001';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'OpenLDAPperson', /* next_tree_key('organizationPerson') */ '0001000200010002';
+INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
+  SELECT 'computer', /* next_tree_key('user') */ '0001000200010001';
