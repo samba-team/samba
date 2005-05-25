@@ -255,22 +255,6 @@ int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
 }
 
 /*******************************************************************
- Return a DOS codepage version of a little-endian unicode string.
- len is the filename length (ignoring any terminating zero) in uin16
- units. Always null terminates.
- Hack alert: uses fixed buffer(s).
-********************************************************************/
-char *dos_unistrn2(const uint16 *src, int len)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	nexti = (nexti+1)%8;
-	pull_ucs2(NULL, lbuf, src, MAXUNI-3, len*2, STR_NOALIGN);
-	return lbuf;
-}
-
-/*******************************************************************
  Convert a (little-endian) UNISTR2 structure to an ASCII string
 ********************************************************************/
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
