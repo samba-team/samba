@@ -61,4 +61,4 @@ void event_set_fd_flags(struct fd_event *fde, uint16_t flags);
 #define EVENT_FD_NOT_WRITEABLE(fde) \
 	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
 #define EVENT_FD_NOT_READABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
+	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_READ)
