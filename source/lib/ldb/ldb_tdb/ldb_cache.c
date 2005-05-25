@@ -261,7 +261,7 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	const struct ldb_message_element *attr_el;
-	int i, ret=0;
+	int i, j, ret=0;
 
 	if (ltdb->cache->last_attribute.name &&
 	    ldb_attr_cmp(ltdb->cache->last_attribute.name, attr_name) == 0) {
@@ -276,7 +276,6 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 	attr_el = ldb_msg_find_element(ltdb->cache->attributes, attr_name);
 
 	if (!attr_el) {
-
 		/* check if theres a wildcard attribute */
 		attr_el = ldb_msg_find_element(ltdb->cache->attributes, "*");
 
@@ -286,8 +285,11 @@ int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name)
 	}
 
 	for (i = 0; i < attr_el->num_values; i++) {
-		if (strcmp(ltdb_valid_attr_flags[i].name, attr_el->values[i].data) == 0) {
-			ret |= ltdb_valid_attr_flags[i].value;
+		for (j=0; ltdb_valid_attr_flags[j].name; j++) {
+			if (strcmp(ltdb_valid_attr_flags[j].name, 
+				   attr_el->values[i].data) == 0) {
+				ret |= ltdb_valid_attr_flags[j].value;
+			}
 		}
 	}
 
