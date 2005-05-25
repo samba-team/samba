@@ -10,11 +10,11 @@ use strict;
 
 #####################################################################
 # signal a fatal validation error
-sub fatal($)
+sub fatal($$)
 {
+	my $pos = shift;
 	my $s = shift;
-	print "$s\n";
-	die "IDL is not valid\n";
+	die("$pos->{FILE}:$pos->{LINE}:$s\n");
 }
 
 sub el_name($)
@@ -42,6 +42,7 @@ my %property_list = (
 	"uuid"			=> {},
 	"endpoint"		=> {},
 	"pointer_default"	=> {},
+	"pointer_default_top"	=> {},
 	"depends"		=> {},
 	"authservice"		=> {},
 
@@ -103,7 +104,6 @@ my %property_list = (
 	"range"			=> {},
 	"size_is"		=> {},
 	"length_is"		=> {},
-	"length_of"		=> {}, # what is that? --metze
 );
 
 #####################################################################
@@ -116,7 +116,7 @@ sub ValidProperties($)
 
 	foreach my $key (keys %{$e->{PROPERTIES}}) {
 		if (not defined $property_list{$key}) {
-			fatal(el_name($e) . ": unknown property '$key'\n");
+			fatal($e, el_name($e) . ": unknown property '$key'\n");
 		}
 	}
 }
@@ -130,7 +130,7 @@ sub ValidElement($)
 	ValidProperties($e);
 
 	if (util::has_property($e, "ptr")) {
-		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
+		fatal($e, el_name($e) . " : pidl does not support full NDR pointers yet\n");
 	}
 
 	# Check whether switches are used correctly.
@@ -139,7 +139,7 @@ sub ValidElement($)
 		my $type = typelist::getType($e->{TYPE});
 
 		if (defined($type) and $type->{DATA}->{TYPE} ne "UNION") {
-			fatal(el_name($e) . ": switch_is() used on non-union type $e->{TYPE} which is a $type->{DATA}->{TYPE}");
+			fatal($e, el_name($e) . ": switch_is() used on non-union type $e->{TYPE} which is a $type->{DATA}->{TYPE}");
 		}
 
 		if (!util::has_property($type, "nodiscriminant") and defined($e2)) {
@@ -152,24 +152,16 @@ sub ValidElement($)
 		}
 	}
 
-	if (util::has_property($e, "size_is") and not defined ($e->{ARRAY_LEN})) {
-		fatal(el_name($e) . " : size_is() on non-array element");
-	}
-
-	if (util::has_property($e, "length_is") and not defined ($e->{ARRAY_LEN})) {
-		fatal(el_name($e) . " : length_is() on non-array element");
-	}
-
 	if (defined (util::has_property($e, "subcontext_size")) and not defined(util::has_property($e, "subcontext"))) {
-		fatal(el_name($e) . " : subcontext_size() on non-subcontext element");
+		fatal($e, el_name($e) . " : subcontext_size() on non-subcontext element");
 	}
 
 	if (defined (util::has_property($e, "compression")) and not defined(util::has_property($e, "subcontext"))) {
-		fatal(el_name($e) . " : compression() on non-subcontext element");
+		fatal($e, el_name($e) . " : compression() on non-subcontext element");
 	}
 
 	if (defined (util::has_property($e, "obfuscation")) and not defined(util::has_property($e, "subcontext"))) {
-		fatal(el_name($e) . " : obfuscation() on non-subcontext element");
+		fatal($e, el_name($e) . " : obfuscation() on non-subcontext element");
 	}
 
 	if (!$e->{POINTERS} && (
@@ -177,7 +169,7 @@ sub ValidElement($)
 		util::has_property($e, "unique") or
 		util::has_property($e, "relative") or
 		util::has_property($e, "ref"))) {
-		fatal(el_name($e) . " : pointer properties on non-pointer element\n");	
+		fatal($e, el_name($e) . " : pointer properties on non-pointer element\n");	
 	}
 }
 
@@ -204,7 +196,7 @@ sub ValidUnion($)
 	ValidProperties($union);
 
 	if (util::has_property($union->{PARENT}, "nodiscriminant") and util::has_property($union->{PARENT}, "switch_type")) {
-		fatal($union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
+		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
 	}
 	
 	foreach my $e (@{$union->{ELEMENTS}}) {
@@ -212,16 +204,16 @@ sub ValidUnion($)
 
 		if (defined($e->{PROPERTIES}->{default}) and 
 			defined($e->{PROPERTIES}->{case})) {
-			fatal "Union member $e->{NAME} can not have both default and case properties!\n";
+			fatal $e, "Union member $e->{NAME} can not have both default and case properties!\n";
 		}
 		
 		unless (defined ($e->{PROPERTIES}->{default}) or 
 				defined ($e->{PROPERTIES}->{case})) {
-			fatal "Union member $e->{NAME} must have default or case property\n";
+			fatal $e, "Union member $e->{NAME} must have default or case property\n";
 		}
 
 		if (util::has_property($e, "ref")) {
-			fatal(el_name($e) . " : embedded ref pointers are not supported yet\n");
+			fatal($e, el_name($e) . " : embedded ref pointers are not supported yet\n");
 		}
 
 
@@ -262,7 +254,7 @@ sub ValidFunction($)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
 		if (util::has_property($e, "ref") && !$e->{POINTERS}) {
-			fatal "[ref] variables must be pointers ($fn->{NAME}/$e->{NAME})\n";
+			fatal $e, "[ref] variables must be pointers ($fn->{NAME}/$e->{NAME})\n";
 		}
 		ValidElement($e);
 	}
@@ -279,18 +271,18 @@ sub ValidInterface($)
 
 	if (util::has_property($interface, "pointer_default") && 
 		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
-		fatal "Full pointers are not supported yet\n";
+		fatal $interface, "Full pointers are not supported yet\n";
 	}
 
 	if (util::has_property($interface, "object")) {
      		if (util::has_property($interface, "version") && 
 			$interface->{PROPERTIES}->{version} != 0) {
-			fatal "Object interfaces must have version 0.0 ($interface->{NAME})\n";
+			fatal $interface, "Object interfaces must have version 0.0 ($interface->{NAME})\n";
 		}
 
 		if (!defined($interface->{BASE}) && 
 			not ($interface->{NAME} eq "IUnknown")) {
-			fatal "Object interfaces must all derive from IUnknown ($interface->{NAME})\n";
+			fatal $interface, "Object interfaces must all derive from IUnknown ($interface->{NAME})\n";
 		}
 	}
 		

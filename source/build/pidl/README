@@ -19,8 +19,8 @@ validator.pm  - Validates the parse tree
 
 -- DCE/RPC+NDR --
 ndr_client.pm - Generates client call functions in C using the NDR parser
-eparser.pm - Generates a parser for the ethereal network sniffer by 
-				applying regexes to the output of parser.pm
+eth_parser.pm - Generates a parser for the ethereal network sniffer
+eth_header.pm - Generates a header for ethereal
 swig.pm	- Generates SWIG interface files (.i)
 ndr_header.pm - Generates a header file with structures
 ndr.pm - Generates pull/push functions for parsing NDR

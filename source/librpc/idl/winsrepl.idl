@@ -12,7 +12,8 @@
 [
   uuid("0-1-2-3-4"),
   version(0.0),
-  pointer_default(unique)
+  pointer_default(unique),
+  pointer_default_top(unique)
 ]
 interface wrepl
 {

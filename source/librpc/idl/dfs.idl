@@ -7,6 +7,7 @@
 [ uuid("4fc742e0-4a10-11cf-8273-00aa004ae673"),
   version(3.0),
   pointer_default(unique),
+  pointer_default_top(unique),
   helpstring("Settings for Microsoft Distributed File System")
 ] interface netdfs
 {
