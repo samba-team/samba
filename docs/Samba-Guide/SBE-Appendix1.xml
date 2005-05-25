@@ -2,27 +2,23 @@
 <!DOCTYPE appendix PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
 <appendix id="appendix">
-  <title>Appendix: A Collection of Useful Tid-bits</title>
+  <title>A Collection of Useful Tidbits</title>
 
-    <para><indexterm>
-	<primary>material</primary>
-      </indexterm><indexterm>
-	<primary>domain</primary>
-	<secondary>joining</secondary>
-      </indexterm>
+	<para>
+	<indexterm><primary>material</primary></indexterm>
+	<indexterm><primary>domain</primary><secondary>joining</secondary></indexterm>
 	Information presented here is considered to be either basic or well-known material that is informative
 	yet helpful. Over the years, I have observed an interesting behavior. There is an expectation that
-	the process for joining a Windows client to a Samba-controlled Windows Domain may somehow involve steps
-	different from doing so with Windows NT4 or a Windows ADS Domain. Be assured that the steps are identical,
+	the process for joining a Windows client to a Samba-controlled Windows domain may somehow involve steps
+	different from doing so with Windows NT4 or a Windows ADS domain. Be assured that the steps are identical,
 	as shown in the example given below.
 	</para>
 
 <sect1 id="domjoin">
 <title>Joining a Domain: Windows 200x/XP Professional</title>
 
-      <para><indexterm>
-	  <primary>joining a domain</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>joining a domain</primary></indexterm>
 	Microsoft Windows NT/200x/XP Professional platforms can participate in Domain Security.
 	This section steps through the process for making a Windows 200x/XP Professional machine a
 	member of a Domain Security environment. It should be noted that this process is identical
@@ -76,7 +72,7 @@
 
 		<step><para>
 		Now click the <guimenu>OK</guimenu> button. A dialog box should appear to allow you to provide the credentials (username and password)
-		of a Domain administrative account that has the rights to add machines to the Domain.
+		of a domain administrative account that has the rights to add machines to the domain.
 		</para>
 
 		<para>
@@ -95,43 +91,36 @@
 
 	</procedure>
 
-      <para><indexterm>
-	  <primary>Active Directory</primary>
-	</indexterm><indexterm>
-	  <primary>DNS</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Active Directory</primary></indexterm>
+	<indexterm><primary>DNS</primary></indexterm>
 	The screen capture shown in <link linkend="swxpp007"/> has a button labeled <guimenu>More...</guimenu>. This button opens a
 	panel in which you can set (or change) the Primary DNS suffix of the computer. This is a parameter that mainly affects members
-	of Microsoft Active Directory. Active Directory is heavily oriented around the DNS name space.
+	of Microsoft Active Directory. Active Directory is heavily oriented around the DNS namespace.
 	</para>
 
-      <para><indexterm>
-	  <primary>Netlogon</primary>
-	</indexterm><indexterm>
-	  <primary>DNS</primary><secondary>dynamic</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Netlogon</primary></indexterm>
+	<indexterm><primary>DNS</primary><secondary>dynamic</secondary></indexterm>
 	Where NetBIOS technology uses WINS as well as UDP broadcast as key mechanisms for name resolution, Active Directory servers
 	register their services with the Microsoft Dynamic DNS server. Windows clients must be able to query the correct DNS server
-	to find the services (like which machines are Domain Controllers or which machines have the Netlogon service running).
+	to find the services (like which machines are domain controllers or which machines have the Netlogon service running).
 	</para>
 
-      <para><indexterm>
-	  <primary>DNS</primary>
-	  <secondary>suffix</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>DNS</primary><secondary>suffix</secondary></indexterm>
 	The default setting of the Primary DNS suffix is the Active Directory domain name. When you change the Primary DNS suffix,
-	this does not affect Domain Membership, but it can break network browsing and the ability to resolve your computer name to
+	this does not affect domain membership, but it can break network browsing and the ability to resolve your computer name to
 	a valid IP address.
 	</para>
 
 	<para>
 	The Primary DNS suffix parameter principally affects MS Windows clients that are members of an Active Directory domain.
-	Where the client is a member of a Samba Domain, it is preferable to leave this field blank.
+	Where the client is a member of a Samba domain, it is preferable to leave this field blank.
 	</para>
 
-      <para><indexterm>
-	  <primary>Group Policy</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Group Policy</primary></indexterm>
 	According to Microsoft documentation, <quote>If this computer belongs to a group with <constant>Group Policy</constant>
 	enabled on <command>Primary DNS suffice of this computer</command>, the string specified in the Group Policy is used
 	as the primary DNS suffix and you might need to restart your computer to view the correct setting. The local setting is
@@ -214,7 +203,7 @@
 	</indexterm><indexterm>
 	  <primary>run-time control files</primary>
 	</indexterm>
-	Samba creates run-time control files and generates log files. The run-time control files (tdb and dat files) are stored in
+	Samba creates runtime control files and generates log files. The runtime control files (tdb and dat files) are stored in
 	the <filename>/var/lib/samba</filename> directory. Log files are created in <filename>/var/log/samba.</filename>
 	</para>
 
@@ -361,8 +350,8 @@ exit 0
 			<listitem><para>
 			<indexterm><primary>winbindd</primary></indexterm>
 			<indexterm><primary>starting samba</primary><secondary>winbindd</secondary></indexterm>
-			This daemon should be started when Samba is a member of a Windows NT4 or ADS Domain. IT is also needed when
-			Samba has trust relationships with another Domain. The <command>winbindd</command> daemon will check the
+			This daemon should be started when Samba is a member of a Windows NT4 or ADS domain. It is also needed when
+			Samba has trust relationships with another domain. The <command>winbindd</command> daemon will check the
 			&smb.conf; file for the presence of the <parameter>idmap uid</parameter> and <parameter>idmap gid</parameter>
 			parameters. If they are not found, <command>winbindd</command> bails out and refuses to start.
 			</para></listitem>
@@ -428,7 +417,7 @@ esac
       <para><indexterm>
 	  <primary>samba control script</primary>
 	</indexterm>
-	SUSE Linux implements individual control over each Samba daemon. A samba control script that can be conveniently
+	SUSE Linux implements individual control over each Samba daemon. A Samba control script that can be conveniently
 	executed from the command line is shown in <link linkend="ch12SL"/>. This can be located in the directory
 	<filename>/sbin</filename> in a file called <filename>samba</filename>. This type of control script should be
 	owned by user root and group root, and set so that only root can execute it.
@@ -566,7 +555,7 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	<para>
 	The content of the root hints file as shown in <link linkend="roothint"/>  changes slowly over time. 
 	Periodically this file should be updated from the source shown. Because
-	  of its size this file is located at the end of this appendix.
+	  of its size, this file is located at the end of this appendix.
 	</para>
 
 	</sect2>
@@ -600,9 +589,9 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	    <primary>SID</primary>
 	  </indexterm>
 	The first step to get the LDAP server ready for action is to create the LDIF file from
-	which the LDAP database will be pre-loaded. This is necessary to create the containers
-	into which the user, group, and so on, accounts is written. It is also necessary to
-	pre-load the well-known Windows NT Domain Groups, as they must have the correct SID so
+	which the LDAP database will be preloaded. This is necessary to create the containers
+	into which the user, group, and other accounts are written. It is also necessary to
+	preload the well-known Windows NT Domain Groups, as they must have the correct SID so
 	that they can be recognized as special NT Groups by the MS Windows clients.
 	</para>
 
@@ -623,13 +612,13 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 		Install the files shown in <link linkend="sbehap-ldapreconfa"/>, <link linkend="sbehap-ldapreconfb"/>,
 		and <link linkend="sbehap-ldapreconfc"/> into the directory 
 		<filename>/etc/openldap/SambaInit/SMBLDAP-ldif-preconfig.sh.</filename> These three files are,
-		respectively, Part A, B, and C of the <filename>SMBLDAP-ldif-preconfig.sh</filename> file.
+		respectively, parts A, B, and C of the <filename>SMBLDAP-ldif-preconfig.sh</filename> file.
 		</para></step>
 
 		<step><para>
 		Install the files shown in <link linkend="sbehap-ldifpata"/> and <link linkend="sbehap-ldifpatb"/> into the directory
 		<filename>/etc/openldap/SambaInit/nit-ldif.pat.</filename> These two files are
-                Part A and B, respectively, of the <filename>init-ldif.pat</filename> file.
+                parts A and B, respectively, of the <filename>init-ldif.pat</filename> file.
 		</para></step>
 
 		<step><para>
@@ -675,7 +664,7 @@ Enter the top level org name or press Enter to continue:
 		</para></step>
 
 		<step><para>
-		It is now time to pre-load the LDAP database with the following
+		It is now time to preload the LDAP database with the following
 		command:
 <screen>
 &rootprompt; slapadd -v -l MEGANET2.ldif
@@ -998,25 +987,17 @@ description: Domain Users
 <sect1>
 <title>The LDAP Account Manager</title>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	</indexterm><indexterm>
-	  <primary>LDAP Account Manager</primary>
-	  <see>LAM</see>
-	</indexterm><indexterm>
-	  <primary>PHP</primary>
-	</indexterm><indexterm>
-	  <primary>unencrypted</primary>
-	</indexterm><indexterm>
-	  <primary>SSL</primary>
-	</indexterm><indexterm>
-	  <primary>Posix</primary>
-	</indexterm><indexterm>
-	  <primary>accounts</primary><secondary>manage</secondary>
-	</indexterm>
+<para>
+<indexterm><primary>LAM</primary></indexterm>
+<indexterm><primary>LDAP Account Manager</primary><see>LAM</see></indexterm>
+<indexterm><primary>PHP</primary></indexterm>
+<indexterm><primary>unencrypted</primary></indexterm>
+<indexterm><primary>SSL</primary></indexterm>
+<indexterm><primary>Posix</primary></indexterm>
+<indexterm><primary>accounts</primary><secondary>manage</secondary></indexterm>
 The LDAP Account Manager (LAM) is an application suite that has been written in PHP.
 LAM can be used with any Web server that has PHP4 support. It connects to the LDAP
-server either using unencrypted connections or via SSL. LAM can be used to manage
+server either using unencrypted connections or via SSL/TLS. LAM can be used to manage
 Posix accounts as well as SambaSAMAccounts for users, groups, and Windows machines
 (hosts).
 </para>
@@ -1024,52 +1005,44 @@ Posix accounts as well as SambaSAMAccounts for users, groups, and Windows machin
 <para>
 LAM is available from the <ulink url="http://sourceforge.net/projects/lam/">LAM</ulink>
 home page and from its mirror sites. LAM has been released under the GNU GPL version 2.
-The current version of LAM is 0.4.3. Release of version 0.5 is expected some time early
-in 2004.
+The current version of LAM is 0.4.9. Release of version 0.5 is expected in the third quarter
+of 2005.
 </para>
 
-      <para><indexterm>
-	  <primary>PHP4</primary>
-	</indexterm><indexterm>
-	  <primary>OpenLDAP</primary>
-	</indexterm><indexterm>
-	  <primary>Perl</primary>
-	</indexterm>
+<para>
+<indexterm><primary>PHP4</primary></indexterm>
+<indexterm><primary>OpenLDAP</primary></indexterm>
+<indexterm><primary>Perl</primary></indexterm>
 Requirements:
 </para>
 
 <itemizedlist>
 	<listitem><para>A web server that will work with PHP4.</para></listitem>
-	<listitem><para>PHP4 (available from the <ulink url="http://www.php.net/">
-	PHP</ulink> home page.)</para></listitem>
+	<listitem><para>PHP4 (available from the <ulink url="http://www.php.net/">PHP</ulink> home page.)</para></listitem>
 	<listitem><para>OpenLDAP 2.0 or later.</para></listitem>
 	<listitem><para>A Web browser that supports CSS.</para></listitem>
 	<listitem><para>Perl.</para></listitem>
 	<listitem><para>The gettext package.</para></listitem>
-	<listitem><para>mcrypt + mhash (optional since version 0.4.3).</para></listitem>
+	<listitem><para>mcrypt + mhash (optional).</para></listitem>
 	<listitem><para>It is also a good idea to install SSL support.</para></listitem>
 </itemizedlist>
 
 <para>
 LAM is a useful tool that provides a simple Web-based device that can be used to
-	manage the contents of the LDAP directory to:<indexterm>
-	  <primary>organizational units</primary>
-	</indexterm><indexterm>
-	  <primary>operating profiles</primary>
-	</indexterm><indexterm>
-	  <primary>account policies</primary>
-	</indexterm>
+manage the contents of the LDAP directory to:
+<indexterm><primary>organizational units</primary></indexterm>
+<indexterm><primary>operating profiles</primary></indexterm>
+<indexterm><primary>account policies</primary></indexterm>
 </para>
 
 <itemizedlist>
 	<listitem><para>Display user/group/host and Domain entries.</para></listitem>
-	<listitem><para>Manages entries (Add/Delete/Edit).</para></listitem>
+	<listitem><para>Manage entries (Add/Delete/Edit).</para></listitem>
 	<listitem><para>Filter and sort entries.</para></listitem>
-	<listitem><para>Set LAM administrator accounts.</para></listitem>
 	<listitem><para>Store and use multiple operating profiles.</para></listitem>
 	<listitem><para>Edit organizational units (OUs).</para></listitem>
 	<listitem><para>Upload accounts from a file.</para></listitem>
-	<listitem><para></para>Is compatible with Samba-2.2.x and Samba-3.</listitem>
+	<listitem><para>Is compatible with Samba-2.2.x and Samba-3.</para></listitem>
 </itemizedlist>
 
 <para>
@@ -1077,15 +1050,11 @@ When correctly configured, LAM allows convenient management of UNIX (Posix) and 
 user, group, and windows domain member machine accounts.
 </para>
 
-      <para><indexterm>
-	  <primary>default password</primary>
-	</indexterm><indexterm>
-	  <primary>secure connections</primary>
-	</indexterm><indexterm>
-	  <primary>LAM</primary>
-	</indexterm><indexterm>
-	  <primary>SSL</primary>
-	</indexterm>
+<para>
+<indexterm><primary>default password</primary></indexterm>
+<indexterm><primary>secure connections</primary></indexterm>
+<indexterm><primary>LAM</primary></indexterm>
+<indexterm><primary>SSL</primary></indexterm>
 The default password is <quote>lam.</quote> It is highly recommended that you use only 
 an SSL connection to your Web server for all remote operations involving LAM. If you 
 want secure connections, you must configure your Apache Web server to permit connections 
@@ -1093,29 +1062,27 @@ to LAM using only SSL.
 </para>
 
 <procedure id="sbehap-laminst">
-<title>Apache Condiguration Steps for LAM</title>
+<title>Apache Configuration Steps for LAM</title>
 
 	<step><para>
-	Extract the LAM package with:
+	Extract the LAM package by untarring it as shown here:
 <screen>
-&rootprompt; tar xzf ldap-account-manager_0.4.3.tar.gz
+&rootprompt; tar xzf ldap-account-manager_0.4.9.tar.gz
 </screen>
-Alternately, install the LAM RPM for your system using the following example for
-example:
+	Alternatively, install the LAM DEB for your system using the following command:
 <screen>
-&rootprompt; rpm -Uvh ldap-account-manager-0.4.3-1.noarch.rpm
+&rootprompt; dpkg -i ldap-account-manager_0.4.9.all.deb
 </screen>
 	</para></step>
 	
 	<step><para>
 	Copy the extracted files to the document root directory of your Web server.
-	For example, on SUSE Linux Enterprise Server 8, copy to the 
-	<filename>/srv/web/htdocs</filename> directory.
+	For example, on SUSE Linux Enterprise Server 9, copy to the 
+	<filename>/srv/www/htdocs</filename> directory.
 	</para></step>
 
-	<step><para><indexterm>
-	      <primary>file permissions</primary>
-	    </indexterm>
+	<step><para>
+	<indexterm><primary>file permissions</primary></indexterm>
 	Set file permissions using the following commands:
 <screen>
 &rootprompt; chown -R wwwrun.www /srv/www/htdocs/lam
@@ -1126,23 +1093,17 @@ example:
 </screen>
 	</para></step>
 
-	<step><para><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>configuration file</secondary>
-	    </indexterm>
+	<step><para>
+	<indexterm><primary>LAM</primary><secondary>configuration file</secondary></indexterm>
        Using your favorite editor create the following <filename>config.cfg</filename>
        LAM configuration file:
 <screen>
 &rootprompt; cd /srv/www/htdocs/lam/config
 &rootprompt; cp config.cfg_sample config.cfg
 &rootprompt; vi config.cfg
-	    </screen><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>profile</secondary>
-	    </indexterm><indexterm>
-	      <primary>LAM</primary>
-	      <secondary>wizard</secondary>
-	    </indexterm>
+</screen>
+	<indexterm><primary>LAM</primary><secondary>profile</secondary></indexterm>
+	<indexterm><primary>LAM</primary><secondary>wizard</secondary></indexterm>
 	An example file is shown in <link linkend="lamcfg"/>.
 	This is the minimum configuration that must be completed. The LAM profile
 	file can be created using a convenient wizard that is part of the LAM
@@ -1161,9 +1122,8 @@ example:
 	</para></step>
 </procedure>
 
-      <para><indexterm>
-	  <primary>pitfalls</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>pitfalls</primary></indexterm>
 	An example of a working file is shown here in <link linkend="lamconf"/>.
 	This file has been stripped of comments to keep the size small. The comments
 	and help information provided in the profile file that the wizard creates
@@ -1172,10 +1132,8 @@ example:
 	are preferred at your site.
 	</para>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	  <secondary>login screen</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LAM</primary><secondary>login screen</secondary></indexterm>
 	It is important that your LDAP server is running at the time that LAM is 
 	being configured. This permits you to validate correct operation.
 	An example of the LAM login screen is provided in <link linkend="lam-login"/>.
@@ -1186,10 +1144,8 @@ example:
 		<imagefile scale="50">lam-login</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	  <secondary>configuration editor</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LAM</primary><secondary>configuration editor</secondary></indexterm>
 	The LAM configuration editor has a number of options that must be managed correctly.
 	An example of use of the LAM configuration editor is shown in <link linkend="lam-config"/>.
 	It is important that you correctly set the minimum and maximum UID/GID values that are
@@ -1205,19 +1161,16 @@ example:
 		<imagefile scale="50">lam-config</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>PDF</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>PDF</primary></indexterm>
 	LAM has some nice, but unusual features. For example, one unexpected feature in most application
 	screens permits the generation of a PDF file that lists configuration information. This is a well
 	thought out facility. This option has been edited out of the following screen shots to conserve
 	space.
 	</para>
 
-      <para><indexterm>
-	  <primary>LAM</primary>
-	  <secondary>opening screen</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>LAM</primary><secondary>opening screen</secondary></indexterm>
 	When you log onto LAM the opening screen drops you right into the user manager as shown in
 	<link linkend="lam-user"/>. This is a logical action as it permits the most-needed facility
 	to be used immediately. The editing of an existing user, as with the addition of a new user,
@@ -1235,7 +1188,7 @@ example:
 	<para>
 	The edit screen for groups is shown in <link linkend="lam-group"/>. As with the edit screen
 	for user accounts, group accounts may be rapidly dealt with. <link linkend="lam-group-mem"/>
-	shown a sub-screen from the group editor that permits users to be assigned secondary group
+	shows a sub-screen from the group editor that permits users to be assigned secondary group
 	memberships. 
 	</para>
 
@@ -1249,11 +1202,8 @@ example:
 		<imagefile scale="50">lam-group-members</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>smbldap-tools</primary>
-	</indexterm><indexterm>
-	  <primary>scripts</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>smbldap-tools</primary></indexterm><indexterm><primary>scripts</primary></indexterm>
 	The final screen presented here is one that you should not normally need to use. Host accounts will
 	be automatically managed using the smbldap-tools scripts. This means that the screen <link linkend="lam-host"/>
 	will, in most cases, not be used.
@@ -1267,10 +1217,17 @@ example:
 	<para>
 	One aspect of LAM that may annoy some users is the way it forces certain conventions on
 	the administrator. For example, LAM does not permit the creation of Windows user and group
-	accounts that contain upper-case characters or spaces even though the underlying UNIX/Linux
+	accounts that contain spaces even though the underlying UNIX/Linux
 	operating system may exhibit no problems with them. Given the propensity for using upper-case
 	characters and spaces (particularly in the default Windows account names) this may cause
 	some annoyance. For the rest, LAM is a very useful administrative tool.
+	</para>
+	
+	<para>
+	The next major release, LAM 0.5, will have less restrictions and support the latest Samba features
+	(e.g. logon hours). The new plugin based architecture also allows to manage much more different
+	account types like plain Unix accounts. The upload can now handle groups and hosts, too. Another
+	important point is the tree view which allows to browse and edit LDAP objects directly.
 	</para>
 
 <example id="lamcfg">
@@ -1304,7 +1261,7 @@ userlistAttributes: #uid;#givenName;#sn;#uidNumber;#gidNumber
 grouplistAttributes: #cn;#gidNumber;#memberUID;#description
 hostlistAttributes: #cn;#description;#uidNumber;#gidNumber
 maxlistentries: 30
-defaultLanguage: en_GB:ISO-8859-1:English (Britain)
+defaultLanguage: en_GB:ISO-8859-1:English (Great Britain)
 scriptPath: 
 scriptServer: 
 samba3: yes
@@ -1339,7 +1296,7 @@ pwdhash: SSHA
 
 	<para>
 	When the SUID/SGID permissions are set on a directory, all files that are created within that directory
-	is automatically given the ownership of the SUID user and the SGID group, as per the ownership
+	are automatically given the ownership of the SUID user and the SGID group, as per the ownership
 	of the directory in which the file is created. This means that the system level <command>create()</command>
 	function executes with the SUID user and/or SGID group of the directory in which the file is
 	created.
@@ -1371,9 +1328,9 @@ drwxr-xr-x   21 root     root          600 Dec 17 23:15 ..
 drwxrwxrwx    2 bobj     Domain Users  48 Dec 18 17:08 accounts/
 drwx------    2 root     root           48 Jan 26  2002 lost+found
 </screen>
-	In this example, if the user <constant>maryv</constant> creates a file, it would be owned by her.
+	In this example, if the user <constant>maryv</constant> creates a file, it is owned by her.
 	If <constant>maryv</constant> has the primary group of <constant>Accounts</constant>, the file is
-	owned by the group <constant>Accounts</constant> as shown in this listing:
+	owned by the group <constant>Accounts</constant>, as shown in this listing:
 <screen>
 &rootprompt; ls -al /data/accounts/maryvfile.txt
 drw-rw-r--    2 maryv    Accounts     12346 Dec 18 17:53
@@ -1393,7 +1350,7 @@ drwx------    2 root     root           48 Jan 26  2002 lost+found
 </screen>
 	If <constant>maryv</constant> creates a file in this directory after this change has been made, the
 	file is owned by the user <constant>bobj</constant>, and the group is set to the group
-	<constant>Domain Users</constant> as shown here:
+	<constant>Domain Users</constant>, as shown here:
 <screen>
 &rootprompt; chmod ug+s /data/accounts
 &rootprompt; ls -al /data/accounts/maryvfile.txt
@@ -1414,12 +1371,12 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  <secondary>data access</secondary>
 	</indexterm>
 	The integrity of shared data is often viewed as a particularly emotional issue, especially where
-	there are concurrent problems with multi-user data access. Contrary to the assertions of some who have
+	there are concurrent problems with multiuser data access. Contrary to the assertions of some who have
 	experienced problems in either area, the cause has nothing to do with the phases of the moons of Jupiter.
 	</para>
 
 	<para>
-	The solution to concurrent multi-user data access problems must consider three separate areas
+	The solution to concurrent multiuser data access problems must consider three separate areas
 	from which the problem may stem:<indexterm>
 	  <primary>locking</primary>
 	  <secondary>Application level</secondary>
@@ -1433,9 +1390,9 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	</para>
 
 	<itemizedlist>
-		<listitem><para>application level locking controls.</para></listitem>
-		<listitem><para>client side locking controls.</para></listitem>
-		<listitem><para>server side locking controls.</para></listitem>
+		<listitem><para>application-level locking controls</para></listitem>
+		<listitem><para>client-side locking controls</para></listitem>
+		<listitem><para>server-side locking controls</para></listitem>
 	</itemizedlist>
 
       <para><indexterm>
@@ -1445,7 +1402,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	</indexterm>
 	Many database applications use some form of application-level access control. An example of one
 	well-known application that uses application-level locking is Microsoft Access. Detailed guidance
-	is provided given that this is the most common application for which problems have been reported.
+	is provided here because this is the most common application for which problems have been reported.
 	</para>
 
       <para><indexterm>
@@ -1463,7 +1420,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 
 	<para>
 	The best advice that can be given is to carefully read the Microsoft knowledge base articles that
-	cover this area. Examples of relevant documents includes:
+	cover this area. Examples of relevant documents include:
 	</para>
 
 	<itemizedlist>
@@ -1478,8 +1435,8 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  </indexterm><indexterm>
 	    <primary>exclusive open</primary>
 	  </indexterm>
-	Make sure that your MS Access database file is configured for multi-user access (not set for 
-	exclusive open). Open MS Access on each client workstation then set the following: <menuchoice>
+	Make sure that your MS Access database file is configured for multiuser access (not set for 
+	exclusive open). Open MS Access on each client workstation, then set the following: <menuchoice>
 	<guimenu>(Menu bar) Tools</guimenu><guimenu>Options</guimenu><guimenu>[tab] General</guimenu>
 	</menuchoice>.  Set network path to Default database folder: <filename>\\server\share\folder</filename>.
 	</para>
@@ -1503,7 +1460,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  </indexterm>
         You must now commit the changes so that they will take effect. To do so, click 
 	<guimenu>Apply</guimenu><guimenu>Ok</guimenu>. At this point, you should exit MS Access, restart 
-	it and then validate that these settings have not changed.
+	it, and then validate that these settings have not changed.
 	</para>
 
 	</sect2>
@@ -1516,10 +1473,10 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  </indexterm><indexterm>
 	    <primary>data corruption</primary>
 	  </indexterm>
-	Where the server sharing the ACT! database(s) is running Samba, Windows NT, 200x or XP, you 
+	Where the server sharing the ACT! database(s) is running Samba,or Windows NT, 200x, or XP, you 
 	must disable opportunistic locking on the server and all workstations. Failure to do so
 	results in data corruption. This information is available from the Act! Web site
-	knowledge-base articles 
+	knowledgebase articles 
 	<ulink url="http://itdomino.saleslogix.com/act.nsf/docid/1998223162925">1998223162925</ulink>
 	as well as from article
 	<ulink url="http://itdomino.saleslogix.com/act.nsf/docid/200110485036">200110485036</ulink>.
@@ -1549,7 +1506,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  </indexterm>
 	Third-party Windows applications may not be compatible with the use of opportunistic file
 	and record locking. For applications that are known not to be compatible,<footnote>Refer to
-	the application manufacturers' installation guidelines and knowledge base for specific
+	the application manufacturer's installation guidelines and knowledge base for specific
 	information regarding compatibility. It is often safe to assume that if the software
 	manufacturer does not specifically mention incompatibilities with opportunistic file
 	and record locking, or with Windows client file caching, the application is probably
@@ -1568,7 +1525,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	Oplocks enable a Windows client to cache parts of a file that are being
 	edited. Another windows client may then request to open the file with the
 	ability to write to it. The server will then ask the original workstation
-	that had the file open with a write lock to release it's lock. Before
+	that had the file open with a write lock to release its lock. Before
 	doing so, that workstation must flush the file from cache memory to the
 	disk or network drive.
 	</para>
@@ -1579,7 +1536,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	  </indexterm>
 	Disabling of Oplocks usage may require server and client changes.
 	Oplocks may be disabled by file, by file pattern, on the share, or on the
-	samba server.
+	Samba server.
 	</para>
 
 	<para>
@@ -1600,7 +1557,7 @@ On the server:
 	</para>
 
 	<para>
-	The following registry entries on Microsoft Windows XP Professional, 2000 Professional and Windows NT4
+	The following registry entries on Microsoft Windows XP Professional, 2000 Professional, and Windows NT4
 	workstation clients must be configured as shown here:
 <screen>
 REGEDIT4
@@ -1616,8 +1573,8 @@ REGEDIT4
 	</para>
 
 	<para>
-	Comprehensive coverage of file and record locking controls is provided in TOSHARG Chapter 13.
-	The information provided in that chapter was obtained from a wide variety of sources.
+	Comprehensive coverage of file and record-locking controls is provided in TOSHARG, Chapter 13.
+	The information in that chapter was obtained from a wide variety of sources.
 	</para>
 
 	</sect2>

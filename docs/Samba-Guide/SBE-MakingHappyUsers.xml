@@ -2875,7 +2875,7 @@ smb: \> q
                 Create an entry in the DNS database on the server <constant>MASSIVE</constant>
                 in both the forward lookup database for the zone <constant>abmas.biz.hosts</constant>
                 and in the reverse lookup database for the network segment that the printer is to
-                be located in. Example configuration files for similar zones were presented in Chapter 3,
+                be located in. Example configuration files for similar zones were presented in <link linkend="secure"/>,
                 <link linkend="abmasbiz"/> and in <link linkend="eth2zone"/>.
                 </para></step>
 
@@ -3490,8 +3490,8 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<para>
-	You should research the options for logon script implementation by referring to <emphasis>TOSHARG</emphasis>, Chapter 21,
-	Section 21.4. A quick Web search will bring up a host of options. One of the most popular logon
+	You should research the options for logon script implementation by referring to <emphasis>TOSHARG</emphasis>, Chapter 24,
+	Section 24.4. A quick Web search will bring up a host of options. One of the most popular logon
 	facilities in use today is called <ulink url="http://www.kixtart.org">KiXtart</ulink>.
 	</para>
 

@@ -41,7 +41,7 @@
 		<acronym>CUPS</acronym>
 		<glossdef><para>
 		A recent implementation of a high-capability printing system for UNIX developed by
-		<ulink url="http://www.easysw.com/">Easy Software Inc.</ulink> The design objective
+		<ulink url="http://www.easysw.com/">Easy Software Inc.</ulink>. The design objective
 		of CUPS was to provide a rich print processing system that has built-in intelligence
 		that is capable of correctly rendering (processing) a file that is submitted for
 		printing even if it was formatted for an entirely different printer.
@@ -65,7 +65,7 @@
 		A protocol by which computer hostnames may be resolved to the matching IP address/es.
 		DNS is implemented by the Berkeley Internet Name Daemon. There exists a recent version
 		of DNS that allows dynamic name registration by network clients or by a DHCP server.
-		This recent protocol is known as Dynamic DNS (DDNS).
+		This recent protocol is known as dynamic DNS (DDNS).
 		</para></glossdef>
         </glossentry>
 
@@ -76,7 +76,7 @@
 		A protocol that was based on the BOOTP protocol that may be used to dynamically assign
 		an IP address, from a reserved pool of addresses, to a network client or device.
 		Additionally, DHCP may assign all network configuration settings and may be used to
-		register a computer name and its address with a Dynamic DNS server.
+		register a computer name and its address with a dynamic DNS server.
 		</para></glossdef>
         </glossentry>
 
@@ -84,9 +84,9 @@
 		<glossterm>Ethereal</glossterm>
 		<acronym>ethereal</acronym>
 		<glossdef><para>
-		A network analyzer, also known as: a network sniffer or a protocol analyzer. Ethereal is
+		A network analyzer, also known as a network sniffer or a protocol analyzer. Ethereal is
 		freely available for UNIX/Linux and Microsoft Windows systems from
-		<ulink url="http://www.ethereal.com">the Ethereal Web site.</ulink>
+		<ulink url="http://www.ethereal.com">the Ethereal Web site</ulink>.
 		</para></glossdef>
 	</glossentry>
 
@@ -94,9 +94,9 @@
 		<glossterm>Group IDentifier</glossterm>
 		<acronym>GID</acronym>
 		<glossdef><para>
-		The UNIX system Group Identifier; on older systems, a 32-bit unsigned integer, and on
+		The UNIX system group identifier; on older systems, a 32-bit unsigned integer, and on
 		newer systems, an unsigned 64-bit integer. The GID is used in UNIX-like operating systems
-		for all group level access control.
+		for all group-level access control.
 		</para></glossdef>
 	</glossentry>
 
@@ -111,24 +111,24 @@
 	</glossentry>
 
     <glossentry>
-      <glossterm>Light Weight Directory Access Protocol</glossterm>
+      <glossterm>Lightweight Directory Access Protocol</glossterm>
       <acronym>LDAP</acronym>
       <glossdef>
 	<para>
-	The Light Weight Directory Access Protocol is a technology that
+	The Lightweight Directory Access Protocol is a technology that
 	  originated from the development of X.500 protocol specifications and
 	  implementations. LDAP was designed as a means of rapidly searching
 	  through X.500 information. Later LDAP was adapted as an engine that
 	  could drive its own directory database. LDAP is not a database per
-	  se; rather it is a technology that enables high volume search and
+	  se; rather it is a technology that enables high-volume search and
 	  locate activity from clients that wish to obtain simply defined
-	  information about a sub-set of records that are stored in a
+	  information about a subset of records that are stored in a
 	  database. LDAP does not have a particularly efficient mechanism for
 	  storing records in the database, and it has no concept of transaction
 	  processing nor of mechanisms for preserving data consistency. LDAP is
 	  premised around the notion that the search and read activity far
 	  outweigh any need to add, delete, or modify records. LDAP does
-	  provide a means for replication of the database so as to keep slave
+	  provide a means for replication of the database to keep slave
 	  servers up to date with a master. It also has built-in capability to
 	  handle external references and deferral. 
 	</para></glossdef>
@@ -147,7 +147,7 @@
                 <glossterm>Media Access Control</glossterm>
 		<acronym>MAC</acronym>
                 <glossdef><para>
-		The hard-coded address of the physical layer device that is attached to the network.
+		The hard-coded address of the physical-layer device that is attached to the network.
 		All network interface controllers must have a hard-coded and unique MAC address. The
 		MAC address is 48 bits long.
                 </para></glossdef>
@@ -158,7 +158,7 @@
 		<acronym>NetBEUI</acronym>
 		<glossdef><para>
 		Very simple network protocol invented by IBM and Microsoft. It is used to do NetBIOS
-		over ethernet with low overhead. NetBEUI is a non-routable protocol.
+		over Ethernet with low overhead. NetBEUI is a non-routable protocol.
 		</para></glossdef>
 	</glossentry>
 
@@ -180,7 +180,7 @@
 		NetBIOS is a simple application programming interface (API) invented in the 1980s 
 		that allows programs to send data to certain network names. NetBIOS is always run over
 		another network protocol such as IPX/SPX, TCP/IP, or Logical Link Control (LLC).
-		NetBIOS run over LLC is best known as NetBEUI (The NetBIOS Extended User Interface
+		NetBIOS run over LLC is best known as NetBEUI (the NetBIOS Extended User Interface
 		&smbmdash; a complete misnomer!).
 		</para></glossdef>
 	</glossentry>
@@ -231,7 +231,7 @@
 		<acronym>TOSHARG</acronym>
 		<glossdef><para>
 		This book makes repeated reference to <quote>The Official Samba-3 HOWTO and Reference Guide</quote>
-		by John H. Terpstra (Author) and Jelmer R. Vernooij (Author). This publication is available from
+		by John H. Terpstra and Jelmer R. Vernooij. This publication is available from
 		Amazon.com. Publisher: Prentice Hall PTR (October 2003),
 		ISBN: 0131453556.
 		</para></glossdef>
@@ -241,8 +241,8 @@
 		<glossterm>User IDentifier</glossterm>
 		<acronym>UID</acronym>
 		<glossdef><para>
-		The UNIX system User Identifier; on older systems, a 32-bit unsigned integer, and on newer systems,
-		an unsigned 64-bit integer. The UID is used in UNIX-like operating systems for all user level access
+		The UNIX system user identifier; on older systems, a 32-bit unsigned integer, and on newer systems,
+		an unsigned 64-bit integer. The UID is used in UNIX-like operating systems for all user-level access
 		control.
 		</para></glossdef>
 	</glossentry>
