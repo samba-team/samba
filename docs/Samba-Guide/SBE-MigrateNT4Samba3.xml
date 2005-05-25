@@ -399,108 +399,103 @@
 		no account information can be deleted.
 		</para></step>
 
-<example id="sbent4smb">
+<smbconfexample id="sbent4smb">
 <title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: A</title>
-<screen>
-# Global parameters
-[global]
-        workgroup = DAMNATION
-        netbios name = MERLIN
-        passdb backend = ldapsam:ldap://localhost
-        username map = /etc/samba/smbusers
-        log level = 1
-        syslog = 0
-        log file = /var/log/samba/%m
-        max log size = 0
-        smb ports = 139 445
-        name resolve order = wins bcast hosts
-        show add printer wizard = Yes
-        add user script = /opt/IDEALX/sbin/smbldap-useradd -m '%u'
-#       delete user script = /opt/IDEALX/sbin/smbldap-userdel '%u'
-        add group script = /opt/IDEALX/sbin/smbldap-groupadd -p '%g' -t domain
-#       delete group script = /opt/IDEALX/sbin/smbldap-groupdel '%g'
-        add user to group script = /opt/IDEALX/sbin/smbldap-groupmod -m '%u' '%g' -t domain
-#       delete user from group script = /opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g' -t domain
-        set primary group script = /opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'
-        add machine script = /opt/IDEALX/sbin/smbldap-useradd -w '%u'
-        logon script = scripts\logon.cmd
-        logon path = \\%L\profiles\%U
-        logon home = \\%L\%U
-        logon drive = X:
-        domain logons = Yes
-        domain master = No
-#       wins support = Yes
-        wins server = 192.168.123.124
-        ldap admin dn = cn=Manager,dc=terpstra-world,dc=org
-        ldap group suffix = ou=Groups
-        ldap idmap suffix = ou=Idmap
-        ldap machine suffix = ou=People
-        ldap passwd sync = Yes
-        ldap suffix = dc=terpstra-world,dc=org
-        ldap ssl = no
-        ldap timeout = 20
-        ldap user suffix = ou=People
-        idmap backend = ldap:ldap://localhost
-        idmap uid = 15000-20000
-        idmap gid = 15000-20000
-        winbind nested groups = Yes
-        ea support = Yes
-        map acl inherit = Yes
-</screen>
-</example>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+        <smbconfoption name="workgroup">DAMNATION</smbconfoption>
+        <smbconfoption name="netbios name">MERLIN</smbconfoption>
+        <smbconfoption name="passdb backend">ldapsam:ldap://localhost</smbconfoption>
+        <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+        <smbconfoption name="log level">1</smbconfoption>
+        <smbconfoption name="syslog">0</smbconfoption>
+        <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
+        <smbconfoption name="max log size">0</smbconfoption>
+        <smbconfoption name="smb ports">139 445</smbconfoption>
+        <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
+        <smbconfoption name="show add printer wizard">Yes</smbconfoption>
+        <smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m '%u'</smbconfoption>
+        <smbconfoption name="#delete user script">/opt/IDEALX/sbin/smbldap-userdel '%u'</smbconfoption>
+        <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd '%g'</smbconfoption>
+        <smbconfoption name="#delete group script">/opt/IDEALX/sbin/smbldap-groupdel '%g'</smbconfoption>
+        <smbconfoption name="add user to group script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-groupmod -m '%u' '%g'</parameter></member>
+        <smbconfoption name="#delete user from group script">/opt/IDEALX/</smbconfoption>
+<member><parameter>sbin/smbldap-groupmod -x '%u' '%g'</parameter></member>
+        <smbconfoption name="set primary group script">/opt/IDEALX/</smbconfoption>
+<member><parameter>sbin/smbldap-usermod -g '%g' '%u'</parameter></member>
+        <smbconfoption name="add machine script">/opt/IDEALX/sbin/</smbconfoption>
+<member><parameter>smbldap-useradd -w '%u'</parameter></member>
+        <smbconfoption name="logon script">scripts\logon.cmd</smbconfoption>
+        <smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
+        <smbconfoption name="logon home">\\%L\%U</smbconfoption>
+        <smbconfoption name="logon drive">X:</smbconfoption>
+        <smbconfoption name="domain logons">Yes</smbconfoption>
+        <smbconfoption name="domain master">No</smbconfoption>
+        <smbconfoption name="#wins support">Yes</smbconfoption>
+        <smbconfoption name="wins server">192.168.123.124</smbconfoption>
+        <smbconfoption name="ldap admin dn">cn=Manager,dc=terpstra-world,dc=org</smbconfoption>
+        <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+        <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+        <smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+        <smbconfoption name="ldap passwd sync">Yes</smbconfoption>
+        <smbconfoption name="ldap suffix">dc=terpstra-world,dc=org</smbconfoption>
+        <smbconfoption name="ldap ssl">no</smbconfoption>
+        <smbconfoption name="ldap timeout">20</smbconfoption>
+        <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+        <smbconfoption name="idmap backend">ldap:ldap://localhost</smbconfoption>
+        <smbconfoption name="idmap uid">15000-20000</smbconfoption>
+        <smbconfoption name="idmap gid">15000-20000</smbconfoption>
+        <smbconfoption name="winbind nested groups">Yes</smbconfoption>
+        <smbconfoption name="ea support">Yes</smbconfoption>
+        <smbconfoption name="map acl inherit">Yes</smbconfoption>
+</smbconfexample>
 
-<example id="sbent4smb2">
+<smbconfexample id="sbent4smb2">
 <title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: B</title>
-<screen>
-[apps]
-        comment = Application Data
-        path = /data/home/apps
-        read only = No
+<smbconfsection name="[apps]"/>
+        <smbconfoption name="comment">Application Data</smbconfoption>
+        <smbconfoption name="path">/data/home/apps</smbconfoption>
+		<smbconfoption name="read only">No</smbconfoption>
 
-[media]
-        comment = Media Files
-        path = /data/home2
-        read only = No
+<smbconfsection name="[homes]"/>
+        <smbconfoption name="comment">Home Directories</smbconfoption>
+        <smbconfoption name="path">/home/users/%U/Documents</smbconfoption>
+        <smbconfoption name="valid users">%S</smbconfoption>
+        <smbconfoption name="read only">No</smbconfoption>
+        <smbconfoption name="browseable">No</smbconfoption>
 
-[homes]
-        comment = Home Directories
-        path = /home/users/%U/Documents
-        valid users = %S
-        read only = No
-        browseable = No
+<smbconfsection name="[printers]"/>
+        <smbconfoption name="comment">SMB Print Spool</smbconfoption>
+        <smbconfoption name="path">/var/spool/samba</smbconfoption>
+        <smbconfoption name="guest ok">Yes</smbconfoption>
+        <smbconfoption name="printable">Yes</smbconfoption>
+        <smbconfoption name="use client driver">No</smbconfoption>
+        <smbconfoption name="browseable">No</smbconfoption>
 
-[printers]
-        comment = SMB Print Spool
-        path = /var/spool/samba
-        guest ok = Yes
-        printable = Yes
-        use client driver = No
-        browseable = No
+<smbconfsection name="[netlogon]"/>
+        <smbconfoption name="comment">Network Logon Service</smbconfoption>
+        <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+        <smbconfoption name="guest ok">Yes</smbconfoption>
+        <smbconfoption name="locking">No</smbconfoption>
 
-[netlogon]
-        comment = Network Logon Service
-        path = /var/lib/samba/netlogon
-        guest ok = Yes
-        locking = No
+<smbconfsection name="[profiles]"/>
+        <smbconfoption name="comment">Profile Share</smbconfoption>
+        <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
+        <smbconfoption name="read only">No</smbconfoption>
+        <smbconfoption name="profile acls">Yes</smbconfoption>
 
-[profiles]
-        comment = Profile Share
-        path = /var/lib/samba/profiles
-        read only = No
-        profile acls = Yes
+<smbconfsection name="[profdata]"/>
+        <smbconfoption name="comment">Profile Data Share</smbconfoption>
+        <smbconfoption name="path">/var/lib/samba/profdata</smbconfoption>
+        <smbconfoption name="read only">No</smbconfoption>
+        <smbconfoption name="profile acls">Yes</smbconfoption>
 
-[profdata]
-        comment = Profile Data Share
-        path = /var/lib/samba/profdata
-        read only = No
-        profile acls = Yes
+<smbconfsection name="[print$]"/>
+        <smbconfoption name="comment">Printer Drivers</smbconfoption>
+        <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+</smbconfexample>
 
-[print$]
-        comment = Printer Drivers
-        path = /var/lib/samba/drivers
-        write list = root
-</screen>
-</example>
 		<step><para>
 		<indexterm><primary>slapd.conf</primary></indexterm>
 		Configure OpenLDAP in preparation for the migration. An example
