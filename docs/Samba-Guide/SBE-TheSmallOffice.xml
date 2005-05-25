@@ -4,7 +4,7 @@
   <title>Small Office Networking</title>
 
 	<para>
-	Chapter 1 focused on the basics of simple yet effective
+	<link linkend="simple"/> focused on the basics of simple yet effective
 	network solutions. Network administrators who take pride in their work 
 	(that's most of us, right?) take care to deliver what our users want, 
 	but not too much more. If we make things too complex, we confound our users
@@ -264,7 +264,7 @@
 	The alternate approach could be to demonstrate the migration of the system that is documented
 	in <link linkend="AcctgNet"/> to meet the new requirements. The decision to treat this case, as with
 	future examples, as a new installation is based on the premise that you can determine
-	the migration steps from the information provided in Chapter ?????????.
+	the migration steps from the information provided in <link linkend="ntmigration"/>.
 	Additionally, a fresh installation makes the example easier to follow.
 	</para>
 
@@ -769,7 +769,7 @@ $rootprompt; ps ax | grep winbind
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
 			two instances of it. For more information regarding <command>winbindd</command>, see <emphasis>TOSHARG</emphasis>,
-			Chapter 22, Section 22.3. The single instance of <command>smbd</command> is normal.
+			Chapter 23, Section 23.3. The single instance of <command>smbd</command> is normal.
 			</para></step>
 	
 			<step><para>

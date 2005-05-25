@@ -5,10 +5,10 @@
 
 	<para>
 	Congratulations, your Samba networking skills are developing nicely. You started out
-	with three simple networks in Chapter 1, and then in Chapter 2 you designed and built a
-	network that provides a high degree of flexibility, integrity, and dependability. It
-	was enough for the basic needs each was designed to fulfill. In this chapter you
-	address a more complex set of needs. The solution you explore 
+	with three simple networks in <link linkend="simple"/>, and then in <link linkend="small"/>
+	you designed and built a network that provides a high degree of flexibility, integrity,
+	and dependability. It was enough for the basic needs each was designed to fulfill. In
+	this chapter you address a more complex set of needs. The solution you explore 
 	introduces you to basic features that are specific to Samba-3.
 	</para>
 
@@ -280,7 +280,7 @@
 		<indexterm><primary>dynamic DNS</primary></indexterm>
 		<indexterm><primary>DDNS</primary><see>dynamic DNS</see></indexterm>
 		<indexterm><primary>DHCP server</primary></indexterm>
-		Compared with the DHCP server configuration in Chapter 2, <link linkend="dhcp01"/>, the 
+		Compared with the DHCP server configuration in <link linkend="small"/>, <link linkend="dhcp01"/>, the 
 		configuration used in this example has to deal with the presence of an Internet connection.
 		The scope set for it ensures that no DHCP services will be offered on the external
 		connection. All printers are configured as DHCP clients so that the DHCP server assigns
@@ -962,7 +962,7 @@ root = Administrator
 		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>add</tertiary></indexterm>
 		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>modify</tertiary></indexterm>
 		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>list</tertiary></indexterm>
-                Create and map Windows Domain Groups to UNIX groups. A sample script is provided in Chapter 2,
+                Create and map Windows Domain Groups to UNIX groups. A sample script is provided in <link linkend="small"/>,
                 <link linkend="initGrps"/>. Create a file containing this script. We called ours
                 <filename>/etc/samba/initGrps.sh</filename>. Set this file so it can be executed,
                 and then execute the script. Sample output should be as follows:
@@ -1157,7 +1157,7 @@ net use p: \\diamond\apps
 <example id="prom-dhcp">
 <title>DHCP Server Configuration File &smbmdash; <filename>/etc/dhcpd.conf</filename></title>
 <screen>
-# Abmas Accounting Inc. - Chapter 4
+# Abmas Accounting Inc.
 default-lease-time 86400;
 max-lease-time 172800;
 default-lease-time 86400;
@@ -1890,7 +1890,7 @@ $rootprompt; ps ax | grep winbind
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
 			two instances<footnote><para>For more information regarding winbindd, see <emphasis>TOSHARG</emphasis>, 
-			Chapter 22, Section 22.3. The single instance of <command>smbd</command> is normal. One additional
+			Chapter 23, Section 23.3. The single instance of <command>smbd</command> is normal. One additional
 			<command>smbd</command> slave process is spawned for each SMB/CIFS client 
 			connection.</para></footnote> of it.
 			</para></step>
@@ -2608,7 +2608,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		expression that may be up to 1024 characters in length and that represents an IP address. 
 		A NetBIOS name is always 16 characters long. The 16<superscript>th</superscript> character
 		is a name type indicator. A specific name type is registered<footnote><para>
-				See <emphasis>TOSHARG</emphasis>, Chapter 9, for more information.</para></footnote> for each 
+		See <emphasis>TOSHARG</emphasis>, Chapter 9, for more information.</para></footnote> for each 
 		type of service that is provided by the Windows server or client and that may be registered
 		where a WINS server is in use.
 		</para>

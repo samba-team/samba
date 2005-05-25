@@ -2,18 +2,15 @@
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
 <chapter id="HA">
-  <title>Performance, Reliability, and Availability</title>
+<title>Performance, Reliability, and Availability</title>
 
-    <para><indexterm>
-	<primary>performance</primary>
-      </indexterm><indexterm>
-	<primary>reliability</primary>
-      </indexterm><indexterm>
-	<primary>availability</primary>
-      </indexterm>
-	Well, you have reached the chapter before the Appendix. It is customary to attempt
+	<para>
+	<indexterm><primary>performance</primary></indexterm>
+	<indexterm><primary>reliability</primary></indexterm>
+	<indexterm><primary>availability</primary></indexterm>
+	Well, you have reached the chapter before the appendix. It is customary to attempt
 	to wrap up the theme and contents of a book in what is generally regarded as the
-	chapter that should draw conclusions. This book is a suspense thriller and since
+	chapter that should draw conclusions. This book is a suspense thriller, and since
 	the plot of the stories told mostly lead you to bigger, better Samba-3 networking
 	solutions, it is perhaps appropriate to close this book with a few pertinent comments
 	regarding some of the things everyone can do to deliver a reliable Samba-3 network.
@@ -26,9 +23,8 @@
 <sect1>
 	<title>Introduction</title>
 
-      <para><indexterm>
-	  <primary>clustering</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>clustering</primary></indexterm>
 	The sparrow is a small bird whose sounds are drowned out by the noise of the busy
 	world it lives in. Likewise, the simple steps that can be taken to improve the
 	reliability and availability of a Samba network are often drowned out by the volume
@@ -38,13 +34,10 @@
 	custom tools and methods. Only passing comments are offered concerning these methods.
 	</para>
 
-      <para><indexterm>
-	  <primary>cluster</primary>
-	</indexterm><indexterm>
-	  <primary>samba cluster</primary>
-	</indexterm><indexterm>
-	  <primary>scalability</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>cluster</primary></indexterm>
+	<indexterm><primary>samba cluster</primary></indexterm>
+	<indexterm><primary>scalability</primary></indexterm>
 <ulink url="http://www.google.com/search?hl=en&amp;lr=&amp;ie=ISO-8859-1&amp;q=samba+cluster&amp;btnG=Google+Search">A search</ulink> 
 	for <quote>samba cluster</quote> produced 71,600 hits. And a search for <quote>highly available samba</quote>
 	and <quote>highly available windows</quote> produced an amazing number of references.
@@ -52,9 +45,8 @@
 	availability, reliability, and scalability are of vital interest to corporate network users.
 	</para>
 
-      <para><indexterm>
-	  <primary>performance</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>performance</primary></indexterm>
 	So without further background, you can review a checklist of simple steps that
 	can be taken to ensure acceptable network performance while keeping costs of ownership
 	well under control.
@@ -65,11 +57,9 @@
 <sect1>
 	<title>Dissection and Discussion</title>
 
-      <para><indexterm>
-	  <primary>simple</primary>
-	</indexterm><indexterm>
-	  <primary>complexities</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>simple</primary></indexterm>
+	<indexterm><primary>complexities</primary></indexterm>
 	If it is your purpose to get the best mileage out of your Samba servers, there is one rule that
 	must be obeyed. If you want the best, keep your implementation as simple as possible. You may
 	well be forced to introduce some complexities, but you should do so only as a last resort.
@@ -81,11 +71,9 @@
 	complex ones. 
 	</para>
 
-      <para><indexterm>
-	  <primary>broken behavior</primary>
-	</indexterm><indexterm>
-	  <primary>poor performance</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>broken behavior</primary></indexterm>
+	<indexterm><primary>poor performance</primary></indexterm>
 	Problems reported by users fall into three categories: configurations that do not work, those 
 	that have broken behavior, and poor performance. The term <emphasis>broken behavior</emphasis>
 	means that the function of a particular Samba component appears to work sometimes, but not at
@@ -95,39 +83,33 @@
 	and at other times not listing them even though the machines are in use on the network.
 	</para>
 
-      <para><indexterm>
-	  <primary>smbfs</primary>
-	</indexterm><indexterm>
-	  <primary>smbmnt</primary>
-	</indexterm><indexterm>
-	  <primary>smbmount</primary>
-	</indexterm><indexterm>
-	  <primary>smbumnt</primary>
-	</indexterm><indexterm>
-	  <primary>smbumount</primary>
-	</indexterm><indexterm>
-	  <primary>front-end</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>smbfs</primary></indexterm>
+	<indexterm><primary>smbmnt</primary></indexterm>
+	<indexterm><primary>smbmount</primary></indexterm>
+	<indexterm><primary>smbumnt</primary></indexterm>
+	<indexterm><primary>smbumount</primary></indexterm>
+	<indexterm><primary>front-end</primary></indexterm>
 	A significant number of reports concern problems with the <command>smbfs</command> file system
 	driver that is part of the Linux kernel, not part of Samba. Users continue to interpret that
 	<command>smbfs</command> is part of Samba, simply because Samba includes the front-end tools
 	that are used to manage <command>smbfs</command>-based file service connections. So, just
-	for the record, the tools <command>smbmnt, smbmount, smbumount,</command> and <command>smbumnt</command> are front-end
+	for the record, the tools <command>smbmnt</command>, <command>smbmount</command>,
+	<command>smbumount</command>, and <command>smbumnt</command> are front-end
 	facilities to core drivers that are supplied as part of the Linux kernel. These tools share a
 	common infrastructure with some Samba components, but they are not maintained as part of
 	Samba and are really foreign to it.
 	</para>
 
-      <para><indexterm>
-	  <primary>cifsfs</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>cifsfs</primary></indexterm>
 	The new project, <command>cifsfs</command>, is destined to replace <command>smbfs</command>.
 	It, too, is not part of Samba, even though one of the Samba Team members is a prime mover in
 	this project.
 	</para>
 
 	<para>
-	The following table lists typical causes of:
+	Table 13.1 lists typical causes of:
 	</para>
 
 	<itemizedlist>
@@ -154,55 +136,55 @@
 			</thead>
 			<tbody>
 				<row>
-					<entry><para>File Locking</para></entry>
+					<entry><para>File locking</para></entry>
 					<entry><para>-</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>-</para></entry>
 				</row>
 				<row>
-					<entry><para>Hardware Problems</para></entry>
+					<entry><para>Hardware problems</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 				</row>
 				<row>
-					<entry><para>Incorrect Authentication</para></entry>
+					<entry><para>Incorrect authentication</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>-</para></entry>
 				</row>
 				<row>
-					<entry><para>Incorrect Configuration</para></entry>
+					<entry><para>Incorrect configuration</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 				</row>
 				<row>
-					<entry><para>LDAP Problems</para></entry>
+					<entry><para>LDAP problems</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>-</para></entry>
 				</row>
 				<row>
-					<entry><para>Name Resolution</para></entry>
+					<entry><para>Name resolution</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 				</row>
 				<row>
-					<entry><para>Printing Problems</para></entry>
+					<entry><para>Printing problems</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>-</para></entry>
 				</row>
 				<row>
-					<entry><para>Slow File Transfer</para></entry>
+					<entry><para>Slow file transfer</para></entry>
 					<entry><para>-</para></entry>
 					<entry><para>-</para></entry>
 					<entry><para>X</para></entry>
 				</row>
 				<row>
-					<entry><para>Winbind Problems</para></entry>
+					<entry><para>Winbind problems</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>X</para></entry>
 					<entry><para>-</para></entry>
@@ -211,9 +193,8 @@
 		</tgroup>
 	</table>
 
-      <para><indexterm>
-	  <primary>network hygiene</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>network hygiene</primary></indexterm>
 	It is obvious to all that the first requirement (as a matter of network hygiene) is to eliminate
 	problems that affect basic network operation. This book has provided sufficient working examples
 	to help you to avoid all these problems.
@@ -224,11 +205,9 @@
 <sect1>
 	<title>Guidelines for Reliable Samba Operation</title>
 
-      <para><indexterm>
-	  <primary>resilient</primary>
-	</indexterm><indexterm>
-	  <primary>extreme demand</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>resilient</primary></indexterm>
+	<indexterm><primary>extreme demand</primary></indexterm>
 	Your objective is to provide a network that works correctly, can grow at all times, is resilient
 	at times of extreme demand, and can scale to meet future needs. The following subject areas provide
 	pointers that can help you today.
@@ -239,24 +218,18 @@
 
 	<para>
 	There are three basic current problem areas: bad hostnames, routed networks, and network collisions.
-	These are covered in the discussion below.
+	These are covered in the following discussion.
 	</para>
 
 		<sect3>
 		<title>Bad Hostnames</title>
 
-	  <para><indexterm>
-	      <primary>DHCP</primary>
-	      <secondary>client</secondary>
-	    </indexterm><indexterm>
-	      <primary>netbios name</primary>
-	    </indexterm><indexterm>
-	      <primary>localhost</primary>
-	    </indexterm><indexterm>
-	      <primary>/etc/hosts</primary>
-	    </indexterm><indexterm>
-	      <primary>NetBIOS</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>DHCP</primary><secondary>client</secondary></indexterm>
+		<indexterm><primary>netbios name</primary></indexterm>
+		<indexterm><primary>localhost</primary></indexterm>
+		<indexterm><primary>/etc/hosts</primary></indexterm>
+		<indexterm><primary>NetBIOS</primary></indexterm>
 		When configured as a DHCP client, a number of Linux distributions set the system hostname
 		to <constant>localhost</constant>. If the parameter <parameter>netbios name</parameter> is not
 		specified to something other than <constant>localhost</constant>, the Samba server appears
@@ -269,37 +242,29 @@
 		correctly.
 		</para>
 
-	  <para><indexterm>
-	      <primary>digits</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>digits</primary></indexterm>
 		A few sites have tried to name Windows clients and Samba servers with a name that begins
 		with the digits 1-9. This does not work either because it may result in the client or
 		server attempting to use that name as an IP address.
 		</para>
 
-	  <para><indexterm>
-	      <primary>DNS</primary>
-	      <secondary>name lookup</secondary>
-	    </indexterm><indexterm>
-	      <primary>resolve</primary>
-	    </indexterm>
-		A Samba server called <constant>FRED</constant>, in a NetBIOS Domain called <constant>COLLISION</constant>
-		in a network environment that is part of the fully qualified Internet domain name space known
-		as <constant>parrots.com</constant>, results in DNS name lookups for: <constant>fred.parrots.com</constant>
-		and <constant>collision.parrots.com</constant>. It is, therefore, a mistake to name the Domain
-		(workgroup) <constant>collision.parrots.com</constant> since this results in DNS lookup
-		attempts to resolve: <constant>fred.parrots.com.parrots.com</constant>, which most likely
-		fails given that you probably do not have this in your DNS name space.
+		<para>
+		<indexterm><primary>DNS</primary><secondary>name lookup</secondary></indexterm>
+		<indexterm><primary>resolve</primary></indexterm>
+		A Samba server called <constant>FRED</constant> in a NetBIOS domain called <constant>COLLISION</constant>
+		in a network environment that is part of the fully qualified Internet domain namespace known
+		as <constant>parrots.com</constant> results in DNS name lookups for <constant>fred.parrots.com</constant>
+		and <constant>collision.parrots.com</constant>. It is therefore a mistake to name the domain
+		(workgroup) <constant>collision.parrots.com,</constant> since this results in DNS lookup
+		attempts to resolve <constant>fred.parrots.com.parrots.com</constant>, which most likely
+		fails given that you probably do not have this in your DNS namespace.
 		</para>
 
-	  <note><para><indexterm>
-		<primary>Active Directory</primary>
-		<secondary>realm</secondary>
-	      </indexterm><indexterm>
-		<primary>ADS</primary>
-	      </indexterm><indexterm>
-		<primary>DNS</primary>
-	      </indexterm>
+		<note><para>
+		<indexterm><primary>Active Directory</primary><secondary>realm</secondary></indexterm>
+		<indexterm><primary>ADS</primary></indexterm>
+		<indexterm><primary>DNS</primary></indexterm>
 		An Active Directory realm called <constant>collision.parrots.com</constant> is perfectly okay,
 		although it too must be capable of being resolved via DNS, something that functions correctly
 		if Windows 200x ADS has been properly installed and configured.
@@ -310,63 +275,48 @@
 		<sect3>
 		<title>Routed Networks</title>
 
-	  <para><indexterm>
-	      <primary>NetBIOS</primary>
-	    </indexterm><indexterm>
-	      <primary>UDP</primary>
-	      <secondary>broadcast</secondary>
-	    </indexterm><indexterm>
-	      <primary>broadcast</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>NetBIOS</primary></indexterm>
+		<indexterm><primary>UDP</primary><secondary>broadcast</secondary></indexterm>
+		<indexterm><primary>broadcast</primary></indexterm>
 		NetBIOS networks (Windows networking with NetBIOS over TCP/IP enabled) makes extensive use
-		of UDP-based broadcast traffic. You saw that during the exercises in Chapter 1.
+		of UDP-based broadcast traffic, as you saw during the exercises in <link linkend="primer"/>.
 		</para>
 
-	  <para><indexterm>
-	      <primary>routers</primary>
-	    </indexterm><indexterm>
-	      <primary>forwarded</primary>
-	    </indexterm><indexterm>
-	      <primary>multi-subnet</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>routers</primary></indexterm>
+		<indexterm><primary>forwarded</primary></indexterm>
+		<indexterm><primary>multi-subnet</primary></indexterm>
 		UDP broadcast traffic is not forwarded by routers. This means that NetBIOS broadcast-based
 		networking cannot function across routed networks (i.e., multi-subnet networks) unless
 		special provisions are made:
 		</para>
 
 		<itemizedlist>
-	    <listitem><para><indexterm>
-		  <primary>LMHOSTS</primary>
-		</indexterm><indexterm>
-		  <primary>remote announce</primary>
-		</indexterm><indexterm>
-		  <primary>remote browse sync</primary>
-		</indexterm>
+			<listitem><para>
+			<indexterm><primary>LMHOSTS</primary></indexterm>
+			<indexterm><primary>remote announce</primary></indexterm>
+			<indexterm><primary>remote browse sync</primary></indexterm>
 			Either install on every Windows client an LMHOSTS file (located in the directory
 			<filename>C:\windows\system32\drivers\etc</filename>). It is also necessary to
-			add to the Samba server &smb.conf; file the parameters: <parameter>remote announce</parameter>
-			and <parameter>remote browse sync</parameter>. For more information, refer to the on-line
+			add to the Samba server &smb.conf; file the parameters <parameter>remote announce</parameter>
+			and <parameter>remote browse sync</parameter>. For more information, refer to the online
 			manual page for the &smb.conf; file.
 			</para></listitem>
 
-	    <listitem><para><indexterm>
-		  <primary>WINS</primary>
-		  <secondary>server</secondary>
-		</indexterm>
+			<listitem><para>
+			<indexterm><primary>WINS</primary><secondary>server</secondary></indexterm>
 			Or configure Samba as a WINS server, and configure all network clients to use that
 			WINS server in their TCP/IP configuration.
 			</para></listitem>
 		</itemizedlist>
 
-	  <note><para><indexterm>
-		<primary>WINS</primary>
-		<secondary>name resolution</secondary>
-	      </indexterm><indexterm>
-		<primary>DNS</primary>
-	      </indexterm>
+		<note><para>
+		<indexterm><primary>WINS</primary><secondary>name resolution</secondary></indexterm>
+		<indexterm><primary>DNS</primary></indexterm>
 		The use of DNS is not an acceptable substitute for WINS. DNS does not store specific
-		information regarding NetBIOS networking particulars that does get stored in the WINS
-		name resolution database, and that Windows clients require and depend on.
+		information regarding NetBIOS networking particulars that get stored in the WINS
+		name resolution database and that Windows clients require and depend on.
 		</para></note>
 
 		</sect3>
@@ -374,19 +324,12 @@
 		<sect3>
 		<title>Network Collisions</title>
 
-	  <para><indexterm>
-	      <primary>network</primary>
-	      <secondary>collisions</secondary>
-	    </indexterm><indexterm>
-	      <primary>network</primary>
-	      <secondary>timeouts</secondary>
-	    </indexterm><indexterm>
-	      <primary>collision rates</primary>
-	    </indexterm><indexterm>
-	      <primary>network</primary>
-	      <secondary>load</secondary>
-	    </indexterm>
-		Excessive network activity causes NetBIOS network time-outs. Time-outs may result in
+		<para>
+		<indexterm><primary>network</primary><secondary>collisions</secondary></indexterm>
+		<indexterm><primary>network</primary><secondary>timeouts</secondary></indexterm>
+		<indexterm><primary>collision rates</primary></indexterm>
+		<indexterm><primary>network</primary><secondary>load</secondary></indexterm>
+		Excessive network activity causes NetBIOS network timeouts. Timeouts may result in
 		blue screen of death (BSOD) experiences. High collision rates may be caused by excessive
 		UDP broadcast activity, by defective networking hardware, or through excessive network
 		loads (another way of saying that the network is poorly designed).
@@ -394,23 +337,20 @@
 
 		<para>
 		The use of WINS is highly recommended to reduce network broadcast traffic, as outlined
-		in Chapter 1.
+		in <link linkend="primer"/>.
 		</para>
 
-	  <para><indexterm>
-	      <primary>netbios forwarding</primary>
-	    </indexterm><indexterm>
-	      <primary>broadcast storms</primary>
-	    </indexterm><indexterm>
-	      <primary>performance</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>netbios forwarding</primary></indexterm>
+		<indexterm><primary>broadcast storms</primary></indexterm>
+		<indexterm><primary>performance</primary></indexterm>
 		Under no circumstances should the facility be supported by many routers, known as <constant>NetBIOS
 		forwarding</constant>, unless you know exactly what you are doing. Inappropriate use of this
 		facility can result in UDP broadcast storms. In one case in 1999, a university network became
-		unusable due to this being enabled on all routers. The problem was discovered during performance
-		testing of a Samba server. The maximum throughput on a 100-Base-T (100 MBit/sec) network was
-		less than 15 KBytes/sec. After the NetBIOS forwarding was turned off, file transfer performance
-		immediately returned to 11 MBytes/sec.
+		unusable due to NetBIOS forwarding being enabled on all routers. The problem was discovered during performance
+		testing of a Samba server. The maximum throughput on a 100-Base-T (100 MB/sec) network was
+		less than 15 KB/sec. After the NetBIOS forwarding was turned off, file transfer performance
+		immediately returned to 11 MB/sec.
 		</para>
 
 		</sect3>
@@ -425,20 +365,17 @@
 	No parameter should be specified unless you know it is essential to operation.
 	</para>
 
-	<para><indexterm>
-	    <primary>document the settings</primary>
-	  </indexterm><indexterm>
-	    <primary>documented</primary>
-	  </indexterm><indexterm>
-	    <primary>optimized</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>document the settings</primary></indexterm>
+	<indexterm><primary>documented</primary></indexterm>
+	<indexterm><primary>optimized</primary></indexterm>
 	Many UNIX administrators like to fully document the settings in the &smb.conf; file. This is a
 	bad idea because it adds content to the file. The &smb.conf; file is re-read by every <command>smbd</command>
-	process every time the file time stamp changes (or, on systems where this does not work, every 20 seconds or so).
+	process every time the file timestamp changes (or, on systems where this does not work, every 20 seconds or so).
 	</para>
 
 	<para>
-	As the size of the &smb.conf; file grows the risk of introduction of parsing errors increases also.
+	As the size of the &smb.conf; file grows, the risk of introduction of parsing errors increases also.
 	It is recommended to keep a fully documented &smb.conf; file on hand, and then to operate Samba only
 	with an optimized file.
 	</para>
@@ -471,9 +408,7 @@ Loaded services file OK.
 Server role: ROLE_DOMAIN_PDC
 Press enter to see a dump of your service definitions
 </screen>
-	  <indexterm>
-	    <primary>fatal problem</primary>
-	  </indexterm>
+	<indexterm><primary>fatal problem</primary></indexterm>
 	You now, of course, press the enter key to complete the command, or else abort it by pressing Ctrl-C.
 	The important thing to note is the noted Server role, as well as warning messages. Noted configuration
 	conflicts must be remedied before proceeding. For example, the following error message represents a
@@ -484,50 +419,38 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 </screen>
 	</para>
 
-	<para><indexterm>
-	    <primary>performance degradation</primary>
-	  </indexterm><indexterm>
-	    <primary>socket options</primary>
-	  </indexterm><indexterm>
-	    <primary>socket address</primary>
-	  </indexterm>
-	There are two parameters that can cause severe network performance degradation, <parameter>socket options</parameter>
+	<para>
+	<indexterm><primary>performance degradation</primary></indexterm>
+	<indexterm><primary>socket options</primary></indexterm>
+	<indexterm><primary>socket address</primary></indexterm>
+	There are two parameters that can cause severe network performance degradation: <parameter>socket options</parameter>
 	and <parameter>socket address</parameter>. The <parameter>socket options</parameter> parameter was often necessary
 	when Samba was used with the Linux 2.2.x kernels. Later kernels are largely self-tuning and seldom benefit from
 	this parameter being set. Do not use either parameter unless it has been proven necessary to use them.
 	</para>
 
-	<para><indexterm>
-	    <primary>strict sync</primary>
-	  </indexterm><indexterm>
-	    <primary>sync always</primary>
-	  </indexterm><indexterm>
-	    <primary>severely degrade</primary>
-	  </indexterm><indexterm>
-	    <primary>network</primary>
-	    <secondary>performance</secondary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>strict sync</primary></indexterm>
+	<indexterm><primary>sync always</primary></indexterm>
+	<indexterm><primary>severely degrade</primary></indexterm>
+	<indexterm><primary>network</primary><secondary>performance</secondary></indexterm>
 	Another &smb.conf; parameter that may cause severe network performance degradation is the 
 	<parameter>strict sync</parameter> parameter. Do not use this at all. There is no good reason
 	to use this with any modern Windows client. The <parameter>strict sync</parameter> is often
-	used together with the <parameter>sync always</parameter> parameter. This, too, can severely	
-	degrade network performance, so do not set it or if you must, do so with caution.
+	used with the <parameter>sync always</parameter> parameter. This, too, can severely	
+	degrade network performance, so do not set it; if you must, do so with caution.
 	</para>
 
-	<para><indexterm>
-	    <primary>opportunistic locking</primary>
-	  </indexterm><indexterm>
-	    <primary>file caching</primary>
-	  </indexterm><indexterm>
-	    <primary>caching</primary>
-	  </indexterm><indexterm>
-	    <primary>oplocks</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>opportunistic locking</primary></indexterm>
+	<indexterm><primary>file caching</primary></indexterm>
+	<indexterm><primary>caching</primary></indexterm>
+	<indexterm><primary>oplocks</primary></indexterm>
 	Finally, many network administrators deliberately disable opportunistic locking support. While this
 	does not degrade Samba performance, it significantly degrades Windows client performance because
 	this disables local file caching on Windows clients and forces every file read and written to
 	invoke a network read or write call. If for any reason you must disable oplocks (opportunistic locking)
-	support, do so on the share on which it is required only. That way, all other shares can provide
+	support, do so only on the share on which it is required. That way, all other shares can provide
 	oplock support for operations that are tolerant of it. See <link linkend="ch12dblck"/> for more
 	information.
 	</para>
@@ -537,33 +460,26 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<sect2>
 	<title>Use and Location of BDCs</title>
 
-	<para><indexterm>
-	    <primary>BDC</primary>
-	  </indexterm><indexterm>
-	    <primary>PDC</primary>
-	  </indexterm><indexterm>
-	    <primary>routed network</primary>
-	  </indexterm><indexterm>
-	    <primary>wide-area network</primary>
-	  </indexterm><indexterm>
-	    <primary>network segment</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>BDC</primary></indexterm>
+	<indexterm><primary>PDC</primary></indexterm>
+	<indexterm><primary>routed network</primary></indexterm>
+	<indexterm><primary>wide-area network</primary></indexterm>
+	<indexterm><primary>network segment</primary></indexterm>
 	On a network segment where there is a PDC and a BDC, the BDC carries the bulk of the network logon
 	processing. If the BDC is a heavily loaded server, the PDC carries a greater proportion of
 	authentication and logon processing. When a sole BDC on a routed network segment gets heavily
 	loaded, it is possible that network logon requests and authentication requests may be directed
-	to a BDC on a distant network segment. This significantly hinders wide-area network operations
+	to a BDC on a distant network segment. This significantly hinders WAN operations
 	and is undesirable.
 	</para>
 
-	<para><indexterm>
-	    <primary>Domain Member</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain Controller</primary>
-	  </indexterm>
-	As a general guide, instead of adding Domain Member servers to a network, you would be better advised
+	<para>
+	<indexterm><primary>Domain Member</primary></indexterm>
+	<indexterm><primary>Domain Controller</primary></indexterm>
+	As a general guide, instead of adding domain member servers to a network, you would be better advised
 	to add BDCs until there are fewer than 30 Windows clients per BDC. Beyond that ratio, you should add
-	Domain Member servers. This practice ensures that there is always sufficient Domain Controllers
+	domain member servers. This practice ensures that there is always sufficient domain controllers
 	to handle logon requests and authentication traffic.
 	</para>
 
@@ -574,7 +490,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 
 	<para>
 	Every network client has its own peculiarities. From a management perspective, it is easier to deal
-	with one version of MS Windows that is maintained to a consistent update level, than it is to deal
+	with one version of MS Windows that is maintained to a consistent update level than it is to deal
 	with a mixture of clients.
 	</para>
 
@@ -587,23 +503,19 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	</sect2>
 
 	<sect2>
-	<title>For Scalability, Use SAN Based Storage on Samba Servers</title>
+	<title>For Scalability, Use SAN-Based Storage on Samba Servers</title>
 
-	<para><indexterm>
-	    <primary>SAN</primary>
-	  </indexterm><indexterm>
-	    <primary>synchronization</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>SAN</primary></indexterm>
+	<indexterm><primary>synchronization</primary></indexterm>
 	Many SAN-based storage systems permit more than one server to share a common data store.
 	Use of a shared SAN data store means that you do not need to use time- and resource-hungry data 
 	synchronization techniques.
 	</para>
 
-	<para><indexterm>
-	    <primary>load distribution</primary>
-	  </indexterm><indexterm>
-	    <primary>clustering</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>load distribution</primary></indexterm>
+	<indexterm><primary>clustering</primary></indexterm>
 	The use of a collection of relatively low-cost front-end Samba servers that are coupled to
 	a shared backend SAN data store permits load distribution while containing costs below that
 	of installing and managing a complex clustering facility.
@@ -614,23 +526,19 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<sect2>
 	<title>Distribute Network Load with MSDFS</title>
 
-	<para><indexterm>
-	    <primary>MSDFS</primary>
-	  </indexterm><indexterm>
-	    <primary>distributed</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>MSDFS</primary></indexterm>
+	<indexterm><primary>distributed</primary></indexterm>
 	Microsoft DFS (distributed file system) technology has been implemented in Samba. MSDFS permits
 	data to be accessed from a single share and yet to actually be distributed across multiple actual
-	servers. Refer to <emphasis>TOSHARG</emphasis>, Chapter 16, for information regarding implementation of an MSDFS installation.
+	servers. Refer to <emphasis>TOSHARG</emphasis>, Chapter 19, for information regarding
+	implementation of an MSDFS installation.
 	</para>
 
-	<para><indexterm>
-	    <primary>front-end</primary>
-	    <secondary>server</secondary>
-	  </indexterm><indexterm>
-	    <primary>MSDFS</primary>
-	  </indexterm>
-	The combination of multiple back end servers together with a front-end server and use of MSDFS
+	<para>
+	<indexterm><primary>front-end</primary><secondary>server</secondary></indexterm>
+	<indexterm><primary>MSDFS</primary></indexterm>
+	The combination of multiple backend servers together with a front-end server and use of MSDFS
 	can achieve almost the same as you would obtain with a clustered Samba server.
 	</para>
 
@@ -639,16 +547,13 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<sect2>
 	<title>Replicate Data to Conserve Peak-Demand Wide-Area Bandwidth</title>
 
-	<para><indexterm>
-	    <primary>replicate</primary>
-	  </indexterm><indexterm>
-	    <primary>rsync</primary>
-	  </indexterm><indexterm>
-	    <primary>wide-area network</primary>
-	  </indexterm>
-	Consider using <command>rsync</command> to replicate data across the wide-area network during times
+	<para>
+	<indexterm><primary>replicate</primary></indexterm>
+	<indexterm><primary>rsync</primary></indexterm>
+	<indexterm><primary>wide-area network</primary></indexterm>
+	Consider using <command>rsync</command> to replicate data across the WAN during times
 	of low utilization. Users can then access the replicated data store rather than needing to do so
-	across the wide-area network. This works best for read-only data, but with careful planning can be
+	across the WAN. This works best for read-only data, but with careful planning can be
 	implemented so that modified files get replicated back to the point of origin. Be careful with your
 	implementation if you choose to permit modification and return replication of the modified file;
 	otherwise, you may inadvertently overwrite important data.
@@ -659,48 +564,33 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<sect2>
 	<title>Hardware Problems</title>
 
-	<para><indexterm>
-	    <primary>hardware prices</primary>
-	  </indexterm><indexterm>
-	    <primary>hardware problems</primary>
-	  </indexterm><indexterm>
-	    <primary>NICs</primary>
-	  </indexterm><indexterm>
-	    <primary>defective</primary>
-	    <secondary>HUBs</secondary>
-	  </indexterm><indexterm>
-	    <primary>defective</primary>
-	    <secondary>switches</secondary>
-	  </indexterm><indexterm>
-	    <primary>defective</primary>
-	    <secondary>cables</secondary>
-	  </indexterm>
-	Networking hardware prices have fallen sharply over the past five years. A surprising number
+	<para>
+	<indexterm><primary>hardware prices</primary></indexterm>
+	<indexterm><primary>hardware problems</primary></indexterm>
+	<indexterm><primary>NICs</primary></indexterm>
+	<indexterm><primary>defective</primary><secondary>HUBs</secondary></indexterm>
+	<indexterm><primary>defective</primary><secondary>switches</secondary></indexterm>
+	<indexterm><primary>defective</primary><secondary>cables</secondary></indexterm>
+	Networking hardware prices have fallen sharply over the past 5 years. A surprising number
 	of Samba networking problems over this time have been traced to defective network interface
 	cards (NICs) or defective HUBs, switches, and cables.
 	</para>
 
-	<para><indexterm>
-	    <primary>corrective action</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>corrective action</primary></indexterm>
 	Not surprising is the fact that network administrators do not like to be shown to have made
 	a bad decision. Money saved in buying low-cost hardware may result in high costs incurred
 	in corrective action.
 	</para>
 
-	<para><indexterm>
-	    <primary>intermittent</primary>
-	  </indexterm><indexterm>
-	    <primary>data corruption</primary>
-	  </indexterm><indexterm>
-	    <primary>slow network</primary>
-	  </indexterm><indexterm>
-	    <primary>low performance</primary>
-	  </indexterm><indexterm>
-	    <primary>data integrity</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>intermittent</primary></indexterm>
+	<indexterm><primary>data corruption</primary></indexterm>
+	<indexterm><primary>slow network</primary></indexterm>
+	<indexterm><primary>low performance</primary></indexterm>
+	<indexterm><primary>data integrity</primary></indexterm>
 	Defective NICs, HUBs, and switches may appear as intermittent network access problems, intermittent
-	or persistent data corruption, slow network throughput, low performance, or even as blue-screen-of-death (BSOD)
+	or persistent data corruption, slow network throughput, low performance, or even as BSOD
 	problems with MS Windows clients. In one case, a company updated several workstations with newer, faster
 	Windows client machines that triggered problems during logon as well as data integrity problems on
 	an older PC that was unaffected so long as the new machines were kept shut down.
@@ -710,9 +600,8 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	Defective hardware problems may take patience and persistence before the real cause can be discovered.
 	</para>
 
-	<para><indexterm>
-	    <primary>RAID controllers</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>RAID controllers</primary></indexterm>
 	Networking hardware defects can significantly impact perceived Samba performance, but defective
 	RAID controllers as well as SCSI and IDE hard disk controllers have also been known to impair Samba server
 	operations. One business came to this realization only after replacing a Samba installation with MS 
@@ -738,11 +627,10 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 		her an even break.
 		</para>
 
-	<para><indexterm>
-	    <primary>assumptions</primary>
-	  </indexterm>
-		Last, but not least, you should not only keep the network design simple, but it should
-		be well documented. This book may serve as your pattern for documenting every
+		<para>
+		<indexterm><primary>assumptions</primary></indexterm>
+		Last, but not least, you should not only keep the network design simple, but also be sure it is
+		well documented. This book may serve as your pattern for documenting every
 		aspect of your design, its implementation, and particularly the objects and assumptions
 		that underlie it.
 		</para>

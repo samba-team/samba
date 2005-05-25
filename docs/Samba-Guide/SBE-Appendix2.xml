@@ -6,7 +6,7 @@
 	<para>
 	You are about to use the equivalent of a microscope to look at the information
 	that runs through the veins of a Windows network. We do more to observe the information than
-	to interrogate it. When you are done with this chapter, you should have a good understanding
+	to interrogate it. When you are done with this primer, you should have a good understanding
 	of the types of information that flow over the network. Do not worry, this is not
 	a biology lesson. We won't lose you in unnecessary detail. Think to yourself, <quote>This
 	is easy,</quote> then tackle each exercise without fear.
@@ -14,13 +14,13 @@
 
 	<para>
 	Samba can be configured with a minimum of complexity. Simplicity should be mastered
-	before you get too deeply into complexities. Let's get moving, we have work to do.
+	before you get too deeply into complexities. Let's get moving: we have work to do.
 	</para>
 
 <sect1>
 	<title>Requirements and Notes</title>
 	<para>
-	Successful completion of this chapter requires two Microsoft Windows 9x/Me Workstations,
+	Successful completion of this primer requires two Microsoft Windows 9x/Me Workstations
 	as well as two Microsoft Windows XP Professional Workstations, each equipped with an Ethernet
 	card connected using a hub. Also required is one additional server (either Windows
 	NT4 Server, Windows 2000 Server, or a Samba-3 on UNIX/Linux server) running a network
@@ -36,7 +36,7 @@
 	You may find more information regarding this tool from the 
 	<ulink url="http://www.ethereal.com">Ethereal</ulink> Web site. Ethereal installation 
 	files for Windows may be obtained from the Ethereal Web site. Ethereal is provided with 
-	SUSE and Red Hat Linux distributions, as well as many other Linux distributions. It may 
+	SUSE and Red Hat Linux distributions, as well as with many other Linux distributions. It may 
 	not be installed on your system by default. If it is not installed, you may also need 
 	to install the <command>libpcap </command> software before you can install or use Ethereal. 
 	Please refer to the instructions for your operating system or to the Ethereal Web site 
@@ -45,12 +45,12 @@
 
 	<para>
 	To obtain <command>ethereal</command> for your system, please visit the Ethereal
-	<ulink url="http://www.ethereal.com/download.html#binaries">download site.</ulink>
+	<ulink url="http://www.ethereal.com/download.html#binaries">download site</ulink>.
 	</para>
 
 	<note><para>
-	The successful completion of this chapter requires that you capture network traffic
-	using <command>ethereal</command>. It is recommended that you use a hub, not an
+	The successful completion of this appendix requires that you capture network traffic
+	using <command>Ethereal</command>. It is recommended that you use a hub, not an
 	Ethernet switch. It is necessary for the device used to act as a repeater, not as a
 	filter. Ethernet switches may filter out traffic that is not directed at the machine
 	that is used to monitor traffic; this would not allow you to complete the projects.
@@ -69,9 +69,9 @@
 	</indexterm><indexterm>
 	  <primary>protocol analysis</primary>
 	</indexterm>
-	Please do not be alarmed at the use of a high-powered analysis tool (ethereal) in this
-	first chapter.  We expose you only to a minimum of detail necessary to complete 
-	the exercises in this chapter. If you choose to use any other network sniffer and protocol
+	Please do not be alarmed at the use of a high-powered analysis tool (Ethereal) in this
+	primer.  We expose you only to a minimum of detail necessary to complete 
+	the exercises. If you choose to use any other network sniffer and protocol
 	analysis tool, be advised that it may not allow you to examine the contents of
 	recently added security protocols used by Windows 200x/XP.
 	</para>
@@ -93,7 +93,7 @@
 	<title>Introduction</title>
 
 	<para>
-	The purpose of this chapter is to create familiarity with key aspects of Microsoft Windows
+	The purpose of this appendix is to create familiarity with key aspects of Microsoft Windows
 	network computing. If you want a solid technical grounding, do not gloss over these exercises. 
 	The points covered are recurrent issues on the Samba mailing lists. 
 	</para>
@@ -132,7 +132,7 @@
 		You are about to witness how Microsoft Windows computer networking functions. The
 		exercises step through identification of how a client machine establishes a
 		connection to a remote Windows server. You observe how Windows machines find
-		each other (i.e., how browsing works), and how the two key types of user identification
+		each other (i.e., how browsing works) and how the two key types of user identification
 		(share mode security and user mode security) are affected.
 		</para>
 
@@ -142,7 +142,7 @@
 	  </indexterm>
 		The networking protocols used by MS Windows networking when working with Samba
 		use TCP/IP as the transport protocol. The protocols that are specific to Windows
-		networking are encapsulated in TCP/IP. The network analyzer we use (ethereal)
+		networking are encapsulated in TCP/IP. The network analyzer we use (Ethereal)
 		is able to show you the contents of the TCP/IP packets (or messages).
 		</para>
 
@@ -171,7 +171,7 @@
 
 			<step><para>
 			Review traces of network logons for a Windows 9x/Me client as well as
-			a Domain logon for a Windows XP Professional client.
+			a domain logon for a Windows XP Professional client.
 			</para></step>
 		</procedure>
 
@@ -187,7 +187,7 @@
 	two MS Windows 9x/Me systems. We called one machine <constant>WINEPRESSME</constant> and the
 	other <constant>MILGATE98</constant>. Each needs an IP address; we used <literal>10.1.1.10</literal>
 	and <literal>10.1.1.11</literal>. The test machines need to be networked via a <emphasis>hub</emphasis>. A UNIX/Linux
-	machine is required to run <command>ethereal</command> to enable the network activity to be captured.
+	machine is required to run <command>Ethereal</command> to enable the network activity to be captured.
 	It is important that the machine from which network activity is captured must not interfere with
 	the operation of the Windows workstations. It is helpful for this machine to be passive (does not
 	send broadcast information) to the network.
@@ -199,10 +199,10 @@
 	</para>
 
 	<itemizedlist>
-		<listitem><para>Windows 98 &smbmdash; name: MILGATE98.</para></listitem>
-		<listitem><para>Windows Me &smbmdash; name: WINEPRESSME.</para></listitem>
-		<listitem><para>Windows XP Professional &smbmdash; name: LightrayXP.</para></listitem>
-		<listitem><para>Samba-3.0.20 running on a SUSE Enterprise Linux 9.</para></listitem>
+		<listitem><para>Windows 98 &smbmdash; name: MILGATE98</para></listitem>
+		<listitem><para>Windows Me &smbmdash; name: WINEPRESSME</para></listitem>
+		<listitem><para>Windows XP Professional &smbmdash; name: LightrayXP</para></listitem>
+		<listitem><para>Samba-3.0.20 running on a SUSE Enterprise Linux 9</para></listitem>
 	</itemizedlist>
 
 	<para>
@@ -211,17 +211,17 @@
 
 	<para>
 	<indexterm><primary>ethereal</primary></indexterm>
-	The network captures provided on the CD-ROM at the back of this book were captured using <constant>ethereal</constant>
+	The network captures provided on the CD-ROM included with this book were captured using <constant>Ethereal</constant>
 	version <literal>0.10.6</literal>. A later version suffices without problems, but an earlier version may not
 	expose all the information needed. Each capture file has been decoded and listed as a trace file. A summary of all
 	packets has also been included. This makes it possible for you to do all the studying you like without the need to
-	perform the time-consuming equipment configuration and test work. This is a good time to point out the value
+	perform the time-consuming equipment configuration and test work. This is a good time to point out that the value
 	that can be derived from this book really does warrant your taking sufficient time to practice each exercise with
 	care and attention to detail.
 	</para>
 
 	<sect2>
-	<title>Single Machine Broadcast Activity</title>
+	<title>Single-Machine Broadcast Activity</title>
 
 	<para>
 	In this section, we start a single Windows 9x/Me machine, then monitor network activity for 30 minutes.
@@ -253,7 +253,7 @@
 
 		<step><para>
 		Start the Windows 9x/Me machine to be monitored. Let it run for a full 30 minutes. While monitoring,
-		do not press any keyboard keys, do not click any on-screen icons or menus; and do not answer any dialog boxes.
+		do not press any keyboard keys, do not click any on-screen icons or menus, and do not answer any dialog boxes.
 		</para></step>
 
 		<step><para>
@@ -273,7 +273,7 @@
 
 		<para>
 		The summary of the first 10 minutes of the packet capture should look like <link linkend="pktcap01"/>.
-		A screen-shot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
+		A screenshot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
 		</para>
 
 		<image id="pktcap01">
@@ -294,7 +294,7 @@
 	    </indexterm>
 		Broadcast messages observed are shown in <link linkend="capsstats01"/>.
 		Actual observations vary a little, but not by much.
-		Early in the startup process, the Windows Me machine broadcasts its name for two reasons;
+		Early in the startup process, the Windows Me machine broadcasts its name for two reasons:
 		first to ensure that its name would not result in a name clash, and second to establish its
 		presence with the Local Master Browser (LMB).
 		</para>
@@ -319,91 +319,91 @@
 						<entry>WINEPRESSME&lt;00&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.6 sec apart.</entry>
+						<entry>4 lots of 2, 0.6 sec apart</entry>
 					</row>
 					<row>
 						<entry>WINEPRESSME&lt;03&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.6 sec apart.</entry>
+						<entry>4 lots of 2, 0.6 sec apart</entry>
 					</row>
 					<row>
 						<entry>WINEPRESSME&lt;20&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.75 sec apart.</entry>
+						<entry>4 lots of 2, 0.75 sec apart</entry>
 					</row>
 					<row>
 						<entry>MIDEARTH&lt;00&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.75 sec apart.</entry>
+						<entry>4 lots of 2, 0.75 sec apart</entry>
 					</row>
 					<row>
 						<entry>MIDEARTH&lt;1d&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.75 sec apart.</entry>
+						<entry>4 lots of 2, 0.75 sec apart</entry>
 					</row>
 					<row>
 						<entry>MIDEARTH&lt;1e&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 lots of 2, 0.75 sec apart.</entry>
+						<entry>4 lots of 2, 0.75 sec apart</entry>
 					</row>
 					<row>
 						<entry>MIDEARTH&lt;1b&gt;</entry>
 						<entry>Qry</entry>
 						<entry>84</entry>
-						<entry>300 sec apart at stable operation.</entry>
+						<entry>300 sec apart at stable operation</entry>
 					</row>
 					<row>
 						<entry>__MSBROWSE__</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>Registered after winning election to Browse Master.</entry>
+						<entry>Registered after winning election to Browse Master</entry>
 					</row>
 					<row>
 						<entry>JHT&lt;03&gt;</entry>
 						<entry>Reg</entry>
 						<entry>8</entry>
-						<entry>4 x 2. This is the name of the user that logged onto Windows.</entry>
+						<entry>4 x 2. This is the name of the user that logged onto Windows</entry>
 					</row>
 					<row>
 						<entry>Host Announcement WINEPRESSME</entry>
 						<entry>Ann</entry>
 						<entry>2</entry>
-						<entry>Observed at 10 sec.</entry>
+						<entry>Observed at 10 sec</entry>
 					</row>
 					<row>
 						<entry>Domain/Workgroup Announcement MIDEARTH</entry>
 						<entry>Ann</entry>
 						<entry>18</entry>
-						<entry>300 sec apart at stable operation.</entry>
+						<entry>300 sec apart at stable operation</entry>
 					</row>
 					<row>
 						<entry>Local Master Announcement WINEPRESSME</entry>
 						<entry>Ann</entry>
 						<entry>18</entry>
-						<entry>300 sec apart at stable operation.</entry>
+						<entry>300 sec apart at stable operation</entry>
 					</row>
 					<row>
 						<entry>Get Backup List Request</entry>
 						<entry>Qry</entry>
 						<entry>12</entry>
-						<entry>6 x 2 early in startup, 0.5 sec apart.</entry>
+						<entry>6 x 2 early in startup, 0.5 sec apart</entry>
 					</row>
 					<row>
 						<entry>Browser Election Request</entry>
 						<entry>Ann</entry>
 						<entry>10</entry>
-						<entry>5 x 2 early in startup.</entry>
+						<entry>5 x 2 early in startup</entry>
 					</row>
 					<row>
 						<entry>Request Announcement WINEPRESSME</entry>
 						<entry>Ann</entry>
 						<entry>4</entry>
-						<entry>Early in startup.</entry>
+						<entry>Early in startup</entry>
 					</row>
 				</tbody>
 			</tgroup>
@@ -415,7 +415,7 @@
 	      <primary>browse master</primary>
 	    </indexterm>
 		From the packet trace, it should be noted that no messages were propagated over TCP/IP;
-		all employed UDP/IP.  When steady state operation has been achieved, there is a cycle
+		all messages employed UDP/IP.  When steady-state operation has been achieved, there is a cycle
 		of various announcements, re-election of a browse master, and name queries. These create
 		the symphony of announcements by which network browsing is made possible.
 		</para>
@@ -423,9 +423,9 @@
 	  <para><indexterm>
 	      <primary>CIFS</primary>
 	    </indexterm>
-		For detailed information regarding the precise behavior of the CIFS/SMB protocols, the
-		reader is referred to the book <quote>Implementing CIFS: The Common Internet File System,</quote>
-		by Christopher Hertel, Publisher: Prentice Hall PTR, ISBN: 013047116X.
+		For detailed information regarding the precise behavior of the CIFS/SMB protocols,
+		refer to the book <quote>Implementing CIFS: The Common Internet File System,</quote>
+		by Christopher Hertel, (Prentice Hall PTR, ISBN: 013047116X).
 		</para>
 
 		</sect3>
@@ -436,7 +436,7 @@
 	<title>Second Machine Startup Broadcast Interaction</title>
 
 	<para>
-	At this time, the machine you used to capture the single system startup trace should still be running.
+	At this time, the machine you used to capture the single-system startup trace should still be running.
 	The objective of this task is to identify the interaction of two machines in respect to broadcast activity.
 	</para>
 
@@ -465,7 +465,7 @@
 		</para></step>
 
 		<step><para>
-		Start the second Windows 9x/Me machine. Let it run for 15-20 minutes. While monitoring, do not press
+		Start the second Windows 9x/Me machine. Let it run for 15 to 20 minutes. While monitoring, do not press
 		any keyboard keys, do not click any on-screen icons or menus, and do not answer any dialog boxes.
 		</para></step>
 
@@ -489,7 +489,7 @@
 		Windows 9x/Me machine broadcasts its name on startup to ensure that there exists no name clash
 		(i.e., the name is already registered by another machine) on the network segment. Those wishing
 		to explore the inner details of the precise mechanism of how this functions should refer to
-		the book <quote>Implementing CIFS: The Common Internet File System,</quote> referred to previously.
+		<quote>Implementing CIFS: The Common Internet File System.</quote>
 		</para>
 
 		<table id="capsstats02">
@@ -512,67 +512,67 @@
                                                 <entry>MILGATE98&lt;00&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.6 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.6 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MILGATE98&lt;03&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.6 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.6 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MILGATE98&lt;20&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.75 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.75 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MIDEARTH&lt;00&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.75 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.75 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MIDEARTH&lt;1d&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.75 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.75 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MIDEARTH&lt;1e&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>8</entry>
-                                                <entry>4 lots of 2, 0.75 sec apart.</entry>
+                                                <entry>4 lots of 2, 0.75 sec apart</entry>
                                         </row>
                                         <row>
                                                 <entry>MIDEARTH&lt;1b&gt;</entry>
                                                 <entry>Qry</entry>
                                                 <entry>18</entry>
-                                                <entry>900 sec apart at stable operation.</entry>
+                                                <entry>900 sec apart at stable operation</entry>
                                         </row>
                                         <row>
                                                 <entry>JHT&lt;03&gt;</entry>
                                                 <entry>Reg</entry>
                                                 <entry>2</entry>
-                                                <entry>This is the name of the user that logged onto Windows.</entry>
+                                                <entry>This is the name of the user that logged onto Windows</entry>
                                         </row>
                                         <row>
                                                 <entry>Host Announcement MILGATE98</entry>
                                                 <entry>Ann</entry>
                                                 <entry>14</entry>
-                                                <entry>Every 120 sec.</entry>
+                                                <entry>Every 120 sec</entry>
                                         </row>
                                         <row>
                                                 <entry>Domain/Workgroup Announcement MIDEARTH</entry>
                                                 <entry>Ann</entry>
                                                 <entry>6</entry>
-                                                <entry>900 sec apart at stable operation.</entry>
+                                                <entry>900 sec apart at stable operation</entry>
                                         </row>
                                         <row>
                                                 <entry>Local Master Announcement WINEPRESSME</entry>
                                                 <entry>Ann</entry>
                                                 <entry>6</entry>
-                                                <entry>Insufficient detail to determine frequency.</entry>
+                                                <entry>Insufficient detail to determine frequency</entry>
                                         </row>
 				</tbody>
 			</tgroup>
@@ -621,7 +621,7 @@
 
 		<step><para>
 		Start both Windows 9x/Me machines and allow them to stabilize for 10 minutes. Log on to both
-		machines using a user name (JHT) of your choice. Wait approximately two minutes before proceeding.
+		machines using a user name (JHT) of your choice. Wait approximately 2 minutes before proceeding.
 		</para></step>
 
 		<step><para>
@@ -674,7 +674,7 @@
 		<step><para>
 		<indexterm><primary>password length</primary></indexterm>
 		<indexterm><primary>User Mode</primary></indexterm>
-		Dissect this packet as per the one above. This packet should have a password length
+		Dissect this packet as per the previous one. This packet should have a password length
 		of 24 (characters) and should have a password field, the contents of which is a
 		long hexadecimal number. Observe the name in the Account field. This is a User Mode
 		session setup packet.
@@ -687,7 +687,7 @@
 	  	<para>
 		<indexterm><primary>IPC$</primary></indexterm>
 		The <constant>IPC$</constant> share serves a vital purpose<footnote><para>TOSHARG, Sect 4.5.1</para></footnote> 
-		in SMB/CIFS based networking.  A Windows client connects to this resource to obtain the list of 
+		in SMB/CIFS-based networking.  A Windows client connects to this resource to obtain the list of 
 		resources that are available on the server. The server responds with the shares and print queues that
 		are available. In most but not all cases, the connection is made with a <constant>NULL</constant>
 		username and a <constant>NULL</constant> password.
@@ -695,7 +695,7 @@
 
 	  	<para>
 		<indexterm><primary>account credentials</primary></indexterm>
-		The two packets examined are material evidence with respect to how Windows clients may
+		The two packets examined are material evidence of how Windows clients may
 		interoperate with Samba. Samba requires every connection setup to be authenticated using
 		valid UNIX account credentials (UID/GID). This means that even a <constant>NULL</constant>
 		session setup can be established only by automatically mapping it to a valid UNIX
@@ -707,8 +707,8 @@
 	      <primary>guest account</primary>
 	    </indexterm>
 	    <indexterm><primary>nobody</primary></indexterm>
-		Samba has a special name for the <constant>NULL</constant>, or empty, user account.
-		It calls that the <smbconfoption name="guest account"/>. The
+		Samba has a special name for the <constant>NULL</constant>, or empty, user account:
+		it calls it the <smbconfoption name="guest account"/>. The
 		default value of this parameter is <constant>nobody</constant>; however, this can be
 		changed to map the function of the guest account to any other UNIX identity. Some
 		UNIX administrators prefer to map this account to the system default anonymous
@@ -730,7 +730,7 @@
 		(<filename>/etc/passwd</filename>), the operation of the <constant>NULL</constant>
 		account cannot validate and thus connections that utilize the guest account
 		fail. This breaks all ability to browse the Samba server and is a common
-		problem reported on the Samba mailing list. A sample User Mode Session Setup AndX
+		problem reported on the Samba mailing list. A sample User Mode session setup AndX
 		is shown in <link linkend="userconnect"/>.
 		</para>
 
@@ -772,20 +772,20 @@
 
 	<para>
 	To complete this exercise, you need a Windows XP Professional client that has been configured as
-	a Domain Member of either a Samba controlled domain or a Windows NT4 or 200x Active Directory domain.
-	Here we do not provide details for how to configure this, as full coverage is provided later in this book.
+	a domain member of either a Samba-controlled domain or a Windows NT4 or 200x Active Directory domain.
+	Here we do not provide details for how to configure this, as full coverage is provided earlier in this book.
 	</para>
 
 	<procedure>
 	<title>Steps to Explore Windows XP Pro Connection Set-up</title>
 
 		<step><para>
-		Start your Domain Controller. Also, start the ethereal monitoring machine, launch ethereal,
+		Start your domain controller. Also, start the ethereal monitoring machine, launch ethereal,
 		and then wait for the next step to complete.
 		</para></step>
 
 		<step><para>
-		Start the Windows XP Client and wait five minutes before proceeding.
+		Start the Windows XP Client and wait 5 minutes before proceeding.
 		</para></step>
 
 		<step><para>
@@ -810,12 +810,12 @@
 		</para></step>
 
 		<step><para>
-		On the Windows XP Professional client: Press <guimenu>Ctrl-Alt-Delete</guimenu> to bring 
+		On the Windows XP Professional client, press <guimenu>Ctrl-Alt-Delete</guimenu> to bring 
 		up the domain logon screen. Log in using valid credentials for a domain user account.
 		</para></step>
 
 		<step><para>
-		Now proceed to connect to the Domain Controller as follows:
+		Now proceed to connect to the domain controller as follows:
 		<menuchoice>
 			<guimenu>Start</guimenu>
 			<guimenuitem>(right-click) My Network Places</guimenuitem>
@@ -839,8 +839,8 @@
 		</para></step>
 
 		<step><para>
-		If desired, the Windows XP Professional client and the Domain Controller are no longer needed for exercises
-		in this chapter.
+		If desired, the Windows XP Professional client and the domain controller are no longer needed for exercises
+		in this appendix.
 		</para></step>
 
 		 <step><para>
@@ -858,7 +858,7 @@
 		Expand the packet decode information, beginning at the <constant>Security Blob:</constant>
 		entry. Expand the <constant>GSS-API -> SPNEGO -> netTokenTarg -> responseToken -> NTLMSSP</constant>
 		keys.  This should reveal that this is a <constant>NULL</constant> session setup packet.
-		The <constant>User name: NULL</constant> indicates this. An example decode is shown in
+		The <constant>User name: NULL</constant> so indicates. An example decode is shown in
 		<link linkend="XPCap01"/>.
                 </para></step>
 
@@ -874,17 +874,17 @@
                 Expand the packet decode information, beginning at the <constant>Security Blob:</constant>
                 entry. Expand the <constant>GSS-API -> SPNEGO -> netTokenTarg -> responseToken -> NTLMSSP</constant>
                 keys.  This should reveal that this is a <constant>User Mode</constant> session setup packet.
-                The <constant>User name: jht</constant> indicates this. An example decode is shown in
+                The <constant>User name: jht</constant> so indicates. An example decode is shown in
                 <link linkend="XPCap02"/>. In this case the user name was <constant>jht</constant>. This packet
 		decode includes the <constant>Lan Manager Response:</constant> and the <constant>NTLM Response:</constant>.
-		The value of these two parameters is the Microsoft encrypted password hashes, respectively, the LanMan
+		The values of these two parameters are the Microsoft encrypted password hashes: respectively, the LanMan
 		password and then the NT (case-preserving) password hash.
                 </para></step>
 
                 <step><para>
                 <indexterm><primary>password length</primary></indexterm>
                 <indexterm><primary>User Mode</primary></indexterm>
-                The passwords are 24 characters long hexadecimal numbers. This packet confirms that this is a User Mode
+                The passwords are 24-character hexadecimal numbers. This packet confirms that this is a User Mode
 		session setup packet.
                 </para></step>
 
@@ -922,24 +922,23 @@
 	<title>Conclusions to Exercises</title>
 
 	<para>
-	In summary, the following points have been established in this chapter:
+	In summary, the following points have been established in this appendix:
 	</para>
 
 	<itemizedlist>
 		<listitem><para>
-		When NetBIOS over TCP/IP protocols are enabled, MS Windows networking employs broadcast
-		oriented messaging protocols to provide knowledge of network services.
+		When NetBIOS over TCP/IP protocols are enabled, MS Windows networking employs broadcast-oriented messaging protocols to provide knowledge of network services.
 		</para></listitem>
 
 		<listitem><para>
-		Network browsing protocols query information stored on Browse Masters that manage
-		information provided by NetBIOS Name Registrations and by way of on-going Host 
-		Announcements and Workgroup Announcements.
+		Network browsing protocols query information stored on browse masters that manage
+		information provided by NetBIOS Name Registrations and by way of ongoing host 
+		announcements and workgroup announcements.
 		</para></listitem>
 
 		<listitem><para>
 		All Samba servers must be configured with a mechanism for mapping the <constant>NULL-Session</constant>
-		to a valid but non-privileged UNIX system account.
+		to a valid but nonprivileged UNIX system account.
 		</para></listitem>
 
 		<listitem><para>
@@ -947,8 +946,8 @@
 		networking operations. Such passwords cannot be provided from the UNIX <filename>/etc/passwd</filename>
 		database and thus must be stored elsewhere on the UNIX system in a manner that Samba can
 		use. Samba-2.x permitted such encrypted passwords to be stored in the <constant>smbpasswd</constant>
-		file or in an LDAP database. Samba-3 permits that use of multiple different <parameter>passdb backend</parameter>
-		databases, in concurrent deploy. Refer to <emphasis>TOSHARG</emphasis>, Chapter 10, <quote>Account Information Databases.</quote>
+		file or in an LDAP database. Samba-3 permits use of multiple <parameter>passdb backend</parameter>
+		databases in concurrent deployment. Refer to <emphasis>TOSHARG</emphasis>, Chapter 10, <quote>Account Information Databases.</quote>
 		</para></listitem>
 	</itemizedlist>
 
@@ -968,7 +967,7 @@
 
 	<para>
 	Those wishing background information regarding NetBIOS name types should refer to
-	the Microsoft Knowledge Base Article
+	the Microsoft knowledgebase article
 	<ulink url="http://support.microsoft.com/support/kb/articles/Q102/78/8.asp">Q102878.</ulink>
 	</para>
 
@@ -1011,7 +1010,7 @@
 		<indexterm><primary>DMB</primary></indexterm>
 		This is a broadcast announcement by which the Windows machine is attempting to
 		locate a Domain Master Browser (DMB) in the event that it might exist on the network.
-		Refer to <emphasis>TOSHARG</emphasis> Chapter 9, Section 9.7, <quote>Technical Overview of Browsing</quote>
+		Refer to <emphasis>TOSHARG,</emphasis> Chapter 9, Section 9.7, <quote>Technical Overview of Browsing,</quote>
 		for details regarding the function of the DMB and its role in network browsing.
 		</para>
 
@@ -1031,9 +1030,9 @@
 		<para>
 		<indexterm><primary>Local Master Browser</primary><see>LMB</see></indexterm>
 		<indexterm><primary>LMB</primary></indexterm>
-		This name registration records the machine IP addresses of the Local Master Browsers (LMBs).
+		This name registration records the machine IP addresses of the LMBs.
 		Network clients can query this name type to obtain a list of browser servers from the
-		Master Browser.
+		master browser.
 		</para>
 
 		<para>
@@ -1048,7 +1047,7 @@
 			</para></listitem>
 
 			<listitem><para>
-			The IP addresses of all Domain Controllers known for the Domain
+			The IP addresses of all domain controllers known for the domain
 			</para></listitem>
 
 			<listitem><para>
@@ -1080,9 +1079,9 @@
 
                 <para>
 		<indexterm><primary>Browse Master</primary></indexterm>
-		This name is registered by the Browse Master to broadcast and receive domain announcements.
+		This name is registered by the browse master to broadcast and receive domain announcements.
 		Its scope is limited to the local network segment, or subnet. By querying this name type,
-		Master Browsers on networks that have multiple domains can find  the names of Master Browsers
+		master browsers on networks that have multiple domains can find the names of master browsers
 		for each domain.
 		</para>
 
@@ -1101,9 +1100,9 @@
 
 		<para>
 		<indexterm><primary>Browser Election Service</primary></indexterm>
-		This name is registered by all Browse Masters in a domain or workgroup. The registration
-		name type is known as the Browser Election Service. Master Browsers register themselves
-		with this name type so that Domain Master Browsers can locate them to perform cross-subnet
+		This name is registered by all browse masters in a domain or workgroup. The registration
+		name type is known as the Browser Election Service. Master browsers register themselves
+		with this name type so that DMBs can locate them to perform cross-subnet
 		browse list updates. This name type is also used to initiate elections for Master Browsers.
 		</para>
 
@@ -1132,7 +1131,7 @@
 		<para>
 		It should be noted that the <parameter>guest account</parameter> is essential to
 		Samba operation. Either the operating system must have an account called <constant>nobody</constant>
-		or there must be an entry in the &smb.conf; file with a valid UNIX account. For example,
+		or there must be an entry in the &smb.conf; file with a valid UNIX account, such as
 		<smbconfoption name="guest account">ftp</smbconfoption>.
 		</para>
 
@@ -1153,7 +1152,7 @@
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>NetBIOS</primary></indexterm>
 		Yes, there are two ways to do this. The first involves use of WINS (See <emphasis>TOSHARG</emphasis>, Chapter 9, 
-		Section 9.5, <quote>WINS &smbmdash; The Windows Inter-networking Name Server</quote>), the
+		Section 9.5, <quote>WINS &smbmdash; The Windows Inter-networking Name Server</quote>); the
 		alternate method involves disabling the use of NetBIOS over TCP/IP. This second method requires
 		a correctly configured DNS server (see <emphasis>TOSHARG</emphasis>, Chapter 9, Section 9.3, <quote>Discussion</quote>).
 		</para>
@@ -1191,7 +1190,7 @@
 		</para>
 
 		<para>
-		First, the use of <filename>/etc/passwd</filename> based plain-text passwords requires that registry
+		First, the use of <filename>/etc/passwd</filename>-based plain-text passwords requires that registry
 		modifications be made on all MS Windows client machines to enable plain-text passwords support. This
 		significantly diminishes the security of MS Windows client operation. Many network administrators
 		are bitterly opposed to doing this.
@@ -1199,7 +1198,7 @@
 
 		<para>
 		Second, Microsoft has not maintained plain-text password support since the default setting was made
-		disabling this. When network connections are dropped by the client it is not be possible to re-establish
+		disabling this. When network connections are dropped by the client, it is not possible to re-establish
 		the connection automatically. Users need to log off and then log on again. Plain-text password support
 		may interfere with recent enhancements that are part of the Microsoft move toward a more secure computing
 		environment. 
@@ -1207,7 +1206,7 @@
 
 		<para>
 		Samba-3 supports Microsoft encrypted passwords. Be advised not to reintroduce plain-text password handling. 
-		Just create user accounts by running: <command>smbpasswd -a 'username'</command>
+		Just create user accounts by running <command>smbpasswd -a 'username'</command>
 		</para>
 
 		<para>
@@ -1243,7 +1242,7 @@
 
 		<para>
 		Is it necessary to specify <smbconfoption name="encrypt passwords">Yes</smbconfoption>
-		when Samba-3 is configured as a Domain Member?
+		when Samba-3 is configured as a domain member?
 		</para>
 
 	</question>
@@ -1261,7 +1260,7 @@
 
 		<para>
 		Is it necessary to specify a <parameter>guest account</parameter> when Samba-3 is configured
-		as a Domain Member server?
+		as a domain member server?
 		</para>
 
 	</question>

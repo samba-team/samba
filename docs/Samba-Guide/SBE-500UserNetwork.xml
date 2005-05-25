@@ -293,7 +293,7 @@
 		domain control. Politically, we have to navigate a minefield. In this case, the need is to
 		get the PDC rolled out in compliance with expectations and also to be ready to save the day
 		by having the real solution ready before it is needed. That real solution is presented in
-		Chapter 5.
+		<link linkend="happy"/>.
 		</para>
 
 	</sect2>
@@ -594,7 +594,7 @@ root = Administrator
 			Create an entry in the DNS database on the server <constant>MASSIVE</constant>
 			in both the forward lookup database for the zone <constant>abmas.biz.hosts</constant>
 			and in the reverse lookup database for the network segment that the printer is
-			located in. Example configuration files for similar zones were presented in Chapter 3,
+			located in. Example configuration files for similar zones were presented in <link linkend="secure"/>,
 			<link linkend="abmasbiz"/> and <link linkend="eth2zone"/>.
 			</para></step>
 
@@ -867,7 +867,7 @@ Added user <parameter>username</parameter>.
 			<step><para>
 			Your server is ready for validation testing. Do not proceed with the steps in
 			<link linkend="ch5-domsvrspec"/> until after the operation of the server has been
-			validated following the same methods as outlined in Chapter 3, <link linkend="ch4valid"/>.
+			validated following the same methods as outlined in <link linkend="secure"/>, <link linkend="ch4valid"/>.
 			</para></step>
 
 		</procedure>
@@ -1084,7 +1084,7 @@ hosts:      files dns wins
 <example id="massive-dhcp">
 <title>Server: MASSIVE, File: dhcpd.conf</title>
 <screen>
-# Abmas Accounting Inc. - Chapter 5/MASSIVE
+# Abmas Accounting Inc.
 
 default-lease-time 86400;
 max-lease-time 172800;
@@ -1127,7 +1127,7 @@ subnet 123.45.67.64 netmask 255.255.255.252 {
 <example id="bldg1dhcp">
 <title>Server: BLDG1, File: dhcpd.conf</title>
 <screen>
-# Abmas Accounting Inc. - Chapter 5/BLDG1
+# Abmas Accounting Inc.
 
 default-lease-time 86400;
 max-lease-time 172800;
@@ -1162,7 +1162,7 @@ subnet 127.0.0.0 netmask 255.0.0.0 {
 <example id="bldg2dhcp">
 <title>Server: BLDG2, File: dhcpd.conf</title>
 <screen>
-# Abmas Accounting Inc. - Chapter 5/BLDG1
+# Abmas Accounting Inc.
 
 default-lease-time 86400;
 max-lease-time 172800;
@@ -1720,8 +1720,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		<para>
 		The network you have just deployed has been a valuable exercise in forced constraint.
 		You have deployed a network that works well, although you may soon start to see
-		performance problems, at which time the modifications demonstrated in
-		Chapter 5 bring the network to life. The following key learning points were experienced:
+		performance problems, at which time the modifications demonstrated in <link linkend="happy"/>
+		bring the network to life. The following key learning points were experienced:
 		</para>
 
 		<itemizedlist>

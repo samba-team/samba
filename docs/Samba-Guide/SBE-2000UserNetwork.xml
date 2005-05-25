@@ -69,7 +69,7 @@ without impediment.
 
 	<para>
 	Starting with the configuration files for the server called
-	<constant>MASSIVE</constant> in Chapter 5, you now deal with the
+	<constant>MASSIVE</constant> in <link linkend="happy"/>, you now deal with the
 	issues that are particular to large distributed networks. Your task
 	is simple &smbmdash; identify the challenges, consider the 
 	alternatives, and then design and implement a solution.
@@ -293,7 +293,7 @@ productivity.</para>
 	<indexterm><primary>logon traffic</primary></indexterm>
 	<indexterm><primary>redirected folders</primary></indexterm>
 	One way to reduce the network bandwidth impact of user logon
-	traffic is through folder redirection. In Chapter 5, you
+	traffic is through folder redirection. In <link linkend="happy"/>, you
 	implemented this in the new Windows XP Professional standard
 	desktop configuration. When desktop folders such as <guimenu>My
 	Documents</guimenu> are redirected to a network drive, they should
@@ -500,46 +500,39 @@ productivity.</para>
 	and a number of LDAP implementations.
 	</para>
 
-	  <para><indexterm>
-	      <primary>multiple directories</primary>
-	    </indexterm>
-	    The problem of managing multiple directories has become a focal
-	    point over the past decade, creating a large market for
-	    metadirectory products and services that allow organizations that
-	    have multiple directories and multiple management and control
-	    centers to provision information from one directory into
-	    another. The attendant benefit to end users is the promise of
-	    having to remember and deal with fewer login identities and
-	    passwords.</para>
+	<para>
+	<indexterm><primary>multiple directories</primary></indexterm>
+	The problem of managing multiple directories has become a focal
+	point over the past decade, creating a large market for
+	metadirectory products and services that allow organizations that
+	have multiple directories and multiple management and control
+	centers to provision information from one directory into
+	another. The attendant benefit to end users is the promise of
+	having to remember and deal with fewer login identities and
+	passwords.</para>
 
-	  <para><indexterm>
-	      <primary>network</primary>
-	      <secondary>bandwidth</secondary>
-	    </indexterm>
-	    The challenge of every large network is to find the optimum
-	    balance of internal systems and facilities for Identity
-	    Management resources. How well the solution is chosen and
-	    implemented has potentially significant impact on network bandwidth
-	    and systems response needs.</para>
+	<para>
+	<indexterm><primary>network</primary><secondary>bandwidth</secondary></indexterm>
+	The challenge of every large network is to find the optimum
+	balance of internal systems and facilities for Identity
+	Management resources. How well the solution is chosen and
+	implemented has potentially significant impact on network bandwidth
+	and systems response needs.</para>
 
-	  <para><indexterm>
-	      <primary>LDAP server</primary>
-	    </indexterm><indexterm>
-	      <primary>LDAP</primary>
-	      <secondary>master</secondary>
-	    </indexterm><indexterm>
-	      <primary>LDAP</primary>
-	      <secondary>slave</secondary>
-	    </indexterm>
-	    In Chapter 5, you implemented a single LDAP server for the
-	    entire network. This may work for smaller networks, but almost
-	    certainly fails to meet the needs of large and complex networks. The
-	    following section documents how you may implement a single
-	    master LDAP server with multiple slave servers.</para>
+	<para>
+	<indexterm><primary>LDAP server</primary></indexterm>
+	<indexterm><primary>LDAP</primary><secondary>master</secondary></indexterm>
+	<indexterm><primary>LDAP</primary><secondary>slave</secondary></indexterm>
+	In <link linkend="happy"/>, you implemented a single LDAP server for the
+	entire network. This may work for smaller networks, but almost
+	certainly fails to meet the needs of large and complex networks. The
+	following section documents how you may implement a single
+	master LDAP server with multiple slave servers.</para>
 
-	  <para>What is the best method for implementing master/slave LDAP
-	    servers within the context of a distributed 2,000-user network is a
-	    question that remains to be answered.</para>
+	<para>
+	What is the best method for implementing master/slave LDAP
+	servers within the context of a distributed 2,000-user network is a
+	question that remains to be answered.</para>
 
 	<para>
 	<indexterm><primary>distributed domain</primary></indexterm>
@@ -783,7 +776,7 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 
     <para>
 	It is assumed that the network you are working with follows in a
-	pattern similar to what was covered in Chapter 5. The following steps
+	pattern similar to what was covered in <link linkend="happy"/>. The following steps
     permit the operation of a master/slave OpenLDAP arrangement.
 	</para>
 
@@ -924,7 +917,7 @@ added: "cn=PIOps,ou=Groups,dc=abmas,dc=biz" (00000013)
 		<step><para>
 		<indexterm><primary>smbldap-useradd</primary></indexterm>
 		On the master LDAP server you may now add an account to validate that replication
-		is working. Assuming the configuration shown in Chapter 5, execute:
+		is working. Assuming the configuration shown in <link linkend="happy"/>, execute:
 <screen>
 &rootprompt; /var/lib/samba/sbin/smbldap-useradd -a fruitloop
 </screen>
@@ -1454,13 +1447,14 @@ DHCP traffic:          300 (clients) x 6 (packets)
 
 		<itemizedlist>
 			<listitem><para>
-			Desktop folders such as <constant>Desktop</constant>, <constant>My Documents</constant>, <constant>My Pictures</constant>, <constant>My Music</constant>, <constant>Internet Files</constant>,
-			<constant>Cookies</constant>, <constant>Application Data</constant>, <constant>Local Settings,</constant> and more. See Chapter 5, <link linkend="XP-screen001"/>.
+			Desktop folders such as <constant>Desktop</constant>, <constant>My Documents</constant>,
+			<constant>My Pictures</constant>, <constant>My Music</constant>, <constant>Internet Files</constant>,
+			<constant>Cookies</constant>, <constant>Application Data</constant>,
+			<constant>Local Settings,</constant> and more. See <link linkend="happy"/>, <link linkend="XP-screen001"/>.
 			</para>
 
-		<para><indexterm>
-		    <primary>folder redirection</primary>
-		  </indexterm>
+			<para>
+			<indexterm><primary>folder redirection</primary></indexterm>
 			Each of these can be anywhere from a few bytes to gigabytes in capacity. Fortunately, all
 			such folders can be redirected to network drive resources. See <link linkend="redirfold"/>
 			for more information regarding folder redirection.
