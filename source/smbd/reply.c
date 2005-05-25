@@ -118,6 +118,9 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 		}
 
 		if (!(*s & 0x80)) {
+			if (*s <= 0x1f) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
 			switch (*s) {
 				case '*':
 				case '?':
@@ -244,6 +247,9 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname)
 		}
 
 		if (!(*s & 0x80)) {
+			if (*s <= 0x1f) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
 			*d++ = *s++;
 		} else {
 			switch(next_mb_char_size(s)) {

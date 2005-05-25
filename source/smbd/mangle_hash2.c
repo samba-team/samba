@@ -633,6 +633,11 @@ static void init_tables(void)
 	memset(char_flags, 0, sizeof(char_flags));
 
 	for (i=1;i<128;i++) {
+		if (i <= 0x1f) {
+			/* Control characters. */
+			char_flags[i] |= FLAG_ILLEGAL;
+		}
+
 		if ((i >= '0' && i <= '9') || 
 		    (i >= 'a' && i <= 'z') || 
 		    (i >= 'A' && i <= 'Z')) {
