@@ -5,19 +5,19 @@
 
 	<para>
 	Congratulations, your Samba networking skills are developing nicely. You started out
-	with three simple networks in Chapter 2, and then in Chapter 3 you designed and built a
+	with three simple networks in Chapter 1, and then in Chapter 2 you designed and built a
 	network that provides a high degree of flexibility, integrity, and dependability. It
 	was enough for the basic needs each was designed to fulfill. In this chapter you
-	address a more complex set of needs. The solution you explore is designed 
-	to introduce you to basic features that are specific to Samba-3.
+	address a more complex set of needs. The solution you explore 
+	introduces you to basic features that are specific to Samba-3.
 	</para>
 
 	<para>
 	You should note that a working and secure solution could be implemented using Samba-2.2.x. 
-	In the exercises presented here, you are gradually using more Samba-3 specific features
+	In the exercises presented here, you are gradually using more Samba-3-specific features,
 	so caution is advised for anyone who tries to use Samba-2.2.x with the guidance here given. 
 	To avoid confusion, this book is all about Samba-3. Let's get the exercises in this 
-	chapter under way.
+	chapter underway.
 	</para>
 
 <sect1>
@@ -26,23 +26,23 @@
 	<para>
 	You have made Mr. Meany a very happy man. Recently he paid you a fat bonus for work 
 	well done. It is one year since the last network upgrade. You have been quite busy. 
-	Two months ago Mr. Meany gave approval to hire Christine Roberson who has taken over 
-	general network management. Soon she will provide primary user support. You have demonstrated
-	you can delegate responsibility, and plan and execute
+	Two months ago Mr. Meany gave approval to hire Christine Roberson, who has taken over 
+	general network management. Soon she will provide primary user support. You have
+	demonstrated that you can delegate responsibility and can plan and execute according
 	to that plan. Above all, you have shown Mr. Meany that you are a responsible person.
 	Today is a big day. Mr. Meany called you to his office at 9 a.m. for news you never 
-	expected. You are Mr. Bob Jordan and will take charge of business operations. Mr. Meany 
+	expected: You are going to take charge of business operations. Mr. Meany 
 	is retiring and has entrusted the business to your capable hands. 
 	</para>
 
 	<para>
-	Mr. Meany may be retiring from this company, but not from work. He is taking the opportunity to develop
-	Abmas Inc. into a larger and more substantial company. He says that it took him many
-	years to wake up to the fact that there is no future in just running a business. He
-	now realizes there is great personal reward and satisfaction in creation of career
-	opportunities for people in the local community. He wants to do more for others as he is
-	doing for you, Bob Jordan. Today he spent a lot of time talking about the grand plan.
-	He has plans for growth that you will deal with in the chapters ahead.
+	Mr. Meany may be retiring from this company, but not from work. He is taking the
+	opportunity to develop Abmas Accounting into a larger and more substantial company.
+	He says that it took him many years to learn that there is no future in just running
+	a business. He now realizes there is great personal satisfaction in the creation of
+	career opportunities for people in the local community. He wants to do more for others,
+	as he is doing for you. Today he spent a lot of time talking about his grand plan
+	for growth, which you will deal with in the chapters ahead.
 	</para>
 
 	<para>
@@ -55,41 +55,35 @@
 	(although she manages well). She gains job satisfaction when left to sort things out.
 	Occasionally she wants to work with you on a challenging problem. When you told her
 	about your move, she almost resigned, although she was reassured that a new manager would
-	be hired to run Information Technology and she would be responsible only for operations.
+	be hired to run Information Technology, and she would be responsible only for operations.
 	</para>
 
 	<sect2>
 		<title>Assignment Tasks</title>
 
 		<para>
-		You promised the staff Internet services including web browsing, electronic mail, virus
-		protection, and a company Web site.  Christine is keen to help turn the vision into 
+		You promised the staff Internet services including Web browsing, electronic mail, virus
+		protection, and a company Web site.  Christine is eager to help turn the vision into 
 		reality. Let's see how close you can get to the promises made.
 		</para>
 
 		<para>
-		The network you are about to deliver will service 130 users today. Within 12 months,
-		Abmas will aquire another company. Mr. Meany claims that within two years there will be
+		The network you are about to deliver will service 130 users today. Within a year,
+		Abmas will aquire another company. Mr. Meany claims that within 2 years there will be
 		well over 500 users on the network. You have bought into the big picture, so prepare 
-		for growth.
-		</para>
-
-		<para>
-		You have purchased a new server, will implement a new network infrastructure, and 
-		reward all staff with a new computer. Notebook computers will not be replaced at this time.
+		for growth.  You have purchased a new server and will implement a new network infrastructure. 
 		</para>
 
 		<para>
 		You have decided to not recycle old network components. The only items that will be
 		carried forward are notebook computers. You offered staff new notebooks, but not 
 		one person wanted the disruption for what was perceived as a marginal update. 
-		You have made the decision to give everyone a new desktop computer, even to those 
-		who have a notebook computer.
+		You decided to give everyone, even the notebook user, a new desktop computer.
 		</para>
 
 		<para>
-		You have procured a DSL Internet connection that provides 1.5 Megabit/sec (bidirectional)
-		and a 10 MBit/sec ethernet port. You have registered the domain
+		You procured a DSL Internet connection that provides 1.5 Mb/sec (bidirectional)
+		and a 10 Mb/sec ethernet port. You registered the domain
 		<constant>abmas.us</constant>, and the Internet Service Provider (ISP) is supplying
 		secondary DNS. Information furnished by your ISP is shown in <link linkend="chap4netid"/>.
 		</para>
@@ -97,12 +91,12 @@
 		<para>
 		It is of paramount priority that under no circumstances will Samba offer
 		service access from an Internet connection. You are paying an ISP to
-		give, as part of their value-added services, full firewall protection for your
+		give, as part of its value-added services, full firewall protection for your
 		connection to the outside world. The only services allowed in from
 		the Internet side are the following destination ports: <constant>http/https (ports 
 		80 and 443), email (port 25), DNS (port 53)</constant>. All Internet traffic
 		will be allowed out after network address translation (NAT). No internal IP addresses
-		are permitted through the NAT filter as complete privacy of internal network
+		are permitted through the NAT filter because complete privacy of internal network
 		operations must be assured.
 		</para>
 
@@ -156,13 +150,13 @@
 		</image>
 
 		<para>
-		Christine has recommended that desktop systems should be installed from a single cloned
+		Christine recommended that desktop systems should be installed from a single cloned
 		master system that has a minimum of locally installed software and loads all software
 		off a central application server. The benefit of having the central application server
-		is that it allows single point maintenance of all business applications, something
-		Christine is keen to pursue. She further recommended installation of anti-virus 
-		software on workstations as well as on the Samba server. Christine is paranoid of
-		potential virus infection and insists on a comprehensive approach to detective
+		is that it allows single-point maintenance of all business applications, a more
+		efficient way to manage software.  She further recommended installation of antivirus 
+		software on workstations as well as on the Samba server. Christine knows the dangers
+		of potential virus infection and insists on a comprehensive approach to detective
 		as well as corrective action to protect network operations.
 		</para>
 
@@ -170,7 +164,7 @@
 		A significant concern is the problem of managing company growth. Recently, a number 
 		of users had to share a PC while waiting for new machines to arrive. This presented 
 		some problems with desktop computers and software installation into the new users' 
-		desktop profile.
+		desktop profiles.
 		</para>
 		
 	</sect2>
@@ -183,7 +177,7 @@
 	Many of the conclusions you draw here are obvious. Some requirements are not very clear
 	or may simply be your means of drawing the most out of Samba-3. Much can be done more simply
 	than you will demonstrate here, but keep in mind that the network must scale to at least 500
-	users. This means that some functionality will be over-designed for the current 130 user
+	users. This means that some functionality will be overdesigned for the current 130-user
 	environment.
 	</para>
 
@@ -191,12 +185,12 @@
 		<title>Technical Issues</title>
 
 		<para>
-		In this exercise we are using a 24-bit subnet mask for the two local networks. This,
+		In this exercise we use a 24-bit subnet mask for the two local networks. This,
 		of course, limits our network to a maximum of 253 usable IP addresses. The network
-		address range chosen is one of the ranges assigned by RFC1918 for private networks.
+		address range chosen is one assigned by RFC1918 for private networks.
 		When the number of users on the network begins to approach the limit of usable
-		addresses, it would be a good idea to switch to a network address specified in RFC1918
-		in the 172.16.0.0/16 range. This is done in the following chapters.
+		addresses, it is a good idea to switch to a network address specified in RFC1918
+		in the 172.16.0.0/16 range. This is done in subsequent chapters.
 		</para>
 
 		<para>
@@ -205,13 +199,13 @@
 		The high growth rates projected are a good reason to use the <constant>tdbsam</constant>
 		passdb backend. The use of <constant>smbpasswd</constant> for the backend may result in
 		performance problems. The <constant>tdbsam</constant> passdb backend offers features that
-		are not available with the older flat ASCII-based <constant>smbpasswd</constant> database.
+		are not available with the older, flat ASCII-based <constant>smbpasswd</constant> database.
 		</para>
 
 		<para>
 		<indexterm><primary>risk</primary></indexterm>
 		The proposed network design uses a single server to act as an Internet services host for
-		electronic mail, Web serving, remote administrative access vis SSH, as well as for 
+		electronic mail, Web serving, remote administrative access via SSH, 
 		Samba-based file and print services. This design is often chosen by sites that feel 	
 		they cannot afford or justify the cost or overhead of having separate servers. It must 
 		be realized that if security of this type of server should ever be violated (compromised), 
@@ -221,7 +215,7 @@
 		</para>
 
 		<para>
-		Samba will be configured to specifically not operate on the ethernet interface that is
+		Samba will be configured to specifically not operate on the Ethernet interface that is
 		directly connected to the Internet.
 		</para>
 
@@ -234,27 +228,27 @@
 	  </indexterm>
 		You know that your ISP is providing full firewall services, but you cannot rely on that.
 		Always assume that human error will occur, so be prepared by using Linux firewall facilities
-		based on <command>iptables</command> to effect Network Address Translation (NAT). Block all
+		based on <command>iptables</command> to effect NAT. Block all
 		incoming traffic except to permitted well-known ports. You must also allow incoming packets
-		to established outgoing connections. You will permit all internal outgoing requests.
+		to establish outgoing connections. You will permit all internal outgoing requests.
 		</para>
 
 		<para>
 		The configuration of Web serving, Web proxy services, electronic mail, and the details of
-		generic anti-virus handling are beyond the scope of this book and therefore are not
-		covered, except insofar as this affects Samba-3.
+		generic antivirus handling are beyond the scope of this book and therefore are not
+		covered except insofar as this affects Samba-3.
 		</para>
 
 	<para><indexterm>
 	    <primary>login</primary>
 	  </indexterm>
 		Notebook computers are configured to use a network login when in the office and a
-		local account to login while away from the office. Users store all work done in
+		local account to log in while away from the office. Users store all work done in
 		transit (away from the office) by using a local share for work files. Standard procedures
-		will dictate that on completion of the work that necessitates mobile file access, all
+		dictate that on completion of the work that necessitates mobile file access, all
 		work files are moved back to secure storage on the office server. Staff is instructed
 		to not carry on any company notebook computer any files that are not absolutely required.
-		This is a preventative measure to protect client information as well as business private
+		This is a preventative measure to protect client information as well as private business
 		records.
 		</para>
 
@@ -277,29 +271,28 @@
 
 		<para>
 		<indexterm><primary>DNS</primary></indexterm>
-		The DNS server implementation must now address both internal needs as well as external
-		needs. You forward DNS lookups to your ISP provided server as well as the 
+		The DNS server implementation must now address both internal and external
+		needs. You forward DNS lookups to your ISP-provided server as well as the 
 		<constant>abmas.us</constant> external secondary DNS server.
 		</para>
 
 		<para>
 		<indexterm><primary>dynamic DNS</primary></indexterm>
-	  <indexterm><primary>DDNS</primary><see>dynamic
-	      DNS</see></indexterm><indexterm>
-	    <primary>DHCP server</primary>
-	  </indexterm>
-		Compared with the DHCP server configuration in <link linkend="dhcp01"/>, the configuration used
-		in this example has to deal with the presence of an Internet connection. The scope set for it
-		ensures that no DHCP services will be offered on the external connection. All printers are
-		configured as DHCP clients, so that the DHCP server assigns the printer a fixed IP
-		address by way of the ethernet interface (MAC) address. One additional feature of this DHCP
-		server configuration file is the inclusion of parameters to allow dynamic DNS (DDNS) operation.
+		<indexterm><primary>DDNS</primary><see>dynamic DNS</see></indexterm>
+		<indexterm><primary>DHCP server</primary></indexterm>
+		Compared with the DHCP server configuration in Chapter 2, <link linkend="dhcp01"/>, the 
+		configuration used in this example has to deal with the presence of an Internet connection.
+		The scope set for it ensures that no DHCP services will be offered on the external
+		connection. All printers are configured as DHCP clients so that the DHCP server assigns
+		the printer a fixed IP address by way of the Ethernet interface (MAC) address. One additional
+		feature of this DHCP server configuration file is the inclusion of parameters to allow dynamic
+		DNS (DDNS) operation.
 		</para>
 
 		<para>
 		This is the first implementation that depends on a correctly functioning DNS server.
 		Comprehensive steps are included to provide for a fully functioning DNS server that also
-		is enabled for dynamic DNS operation. This means that DHCP clients can be auto-registered
+		is enabled for DDNS operation. This means that DHCP clients can be autoregistered
 		with the DNS server.
 		</para>
 
@@ -311,9 +304,9 @@
 
 		<para>
 		As in the previous network configuration, printing in this network configuration uses
-		direct raw printing (i.e., no smart printing and no print driver auto-download to Windows
+		direct raw printing (i.e., no smart printing and no print driver autodownload to Windows
 		clients). Printer drivers are installed on the Windows client manually. This is not
-		a problem given that Christine is to install and configure one single workstation and
+		a problem because Christine is to install and configure one single workstation and
 		then clone that configuration, using Norton Ghost, to all workstations. Each machine is
 		identical, so this should pose no problem.
 		</para>
@@ -321,11 +314,10 @@
 		<sect3>
 		<title>Hardware Requirements</title>
 
-	  <para><indexterm>
-	      <primary>memory requirements</primary>
-	    </indexterm>
+		<para>
+		<indexterm><primary>memory requirements</primary></indexterm>
 		This server runs a considerable number of services. From similarly configured Linux
-		installations the approximate calculated memory requirements will be as that shown in
+		installations, the approximate calculated memory requirements are as shown in
 		<link linkend="ch4memoryest"/>.
 
 <example id="ch4memoryest">
@@ -347,43 +339,40 @@ Basic OS        256.0             256            256
                               -------------- --------------
 </screen>
 </example>
-		You would choose to add a safety margin of at least 50% to these estimates. The minimum 
-		system memory recommended for initial startup would be 1 GByte, but to permit the system
-		to scale to 500 users, it would make sense to provision the machine with 4 GBytes memory.
-		An initial configuration with only 1 GByte memory would lead to early performance complaints
-		as the system load builds up. Given the low cost of memory, it would not make sense to
+		You should add a safety margin of at least 50% to these estimates. The minimum 
+		system memory recommended for initial startup 1 GB, but to permit the system
+		to scale to 500 users, it makes sense to provision the machine with 4 GB memory.
+		An initial configuration with only 1 GB memory would lead to early performance complaints
+		as the system load builds up. Given the low cost of memory, it does not make sense to
 		compromise in this area.
 		</para>
 
-	  <para><indexterm>
-	      <primary>bandwidth calculations</primary>
-	    </indexterm>
-		Aggregate Input/Output loads should be considered for sizing network configuration as 
+		<para>
+		<indexterm><primary>bandwidth calculations</primary></indexterm>
+		Aggregate input/output loads should be considered for sizing network configuration as 
 		well as disk subsystems. For network bandwidth calculations, one would typically use an
-		estimate of 0.1 MBytes/sec per user.  This would suggest that 100-Base-T (approx. 10 MBytes/sec)
-		would deliver below acceptable capacity for the initial user load. It is, therefore, a good
-		idea to begin with 1 Gigabit ethernet cards for the two internal networks, each attached
-		to a 1 Gigabit Ethernet switch that provides connectivity to an expandable array of 100-Base-T
+		estimate of 0.1 MB/sec per user. This suggests that 100-Base-T (approx. 10 MB/sec)
+		would deliver below acceptable capacity for the initial user load. It is therefore a good
+		idea to begin with 1 Gb Ethernet cards for the two internal networks, each attached
+		to a 1 Gb Ethernet switch that provides connectivity to an expandable array of 100-Base-T
 		switched ports.
 		</para>
 
-	  <para><indexterm>
-	      <primary>network segments</primary>
-	    </indexterm><indexterm>
-	      <primary>RAID</primary>
-	    </indexterm>
-		Considering the choice of 1 Gigabit ethernet interfaces for the two local network segments,
-		the aggregate network I/O capacity will be 2100 MBit/sec (about 230 MBytes/sec), an I/O
+		<para>
+		<indexterm><primary>network segments</primary></indexterm>
+		<indexterm><primary>RAID</primary></indexterm>
+		Considering the choice of 1 Gb Ethernet interfaces for the two local network segments,
+		the aggregate network I/O capacity will be 2100 Mb/sec (about 230 MB/sec), an I/O
 		demand that would require a fast disk storage I/O capability. Peak disk throughput is 
-		limited by the disk sub-system chosen. It would be desirable to provide the maximum 
-		I/O bandwidth that can be afforded. If a low-cost solution must be chosen, the use of 
-		3Ware IDE RAID Controllers makes a good choice. These controllers can be fitted into a 
-		64 bit, 66 MHz PCI-X slot. They appear to the operating system as a high speed SCSI 
-		controller that can operate at the peak of the PCI-X bandwidth (approximately 450 MByte/sec).
+		limited by the disk subsystem chosen. It is desirable to provide the maximum 
+		I/O bandwidth affordable. If a low-cost solution must be chosen, 
+		3Ware IDE RAID Controllers are a good choice. These controllers can be fitted into a 
+		64-bit, 66 MHz PCI-X slot. They appear to the operating system as a high-speed SCSI 
+		controller that can operate at the peak of the PCI-X bandwidth (approximately 450 MB/sec).
 		Alternative SCSI-based hardware RAID controllers should also be considered. Alternately,
-		it would make sense to purchase well-known branded hardware that has appropriate performance
-		specifications. As a minimum, one should attempt to provide a disk sub-system that can
-		deliver I/O rates of at least 100 MBytes/sec. 
+		it makes sense to purchase well-known, branded hardware that has appropriate performance
+		specifications. As a minimum, one should attempt to provide a disk subsystem that can
+		deliver I/O rates of at least 100 MB/sec. 
 		</para>
 
 		<para>
@@ -408,11 +397,9 @@ Given 500 Users and 2 years:
                        Recommended Storage:              908 GBytes
 </screen>
 </example>
-	    <indexterm>
-	      <primary>storage capacity</primary>
-	    </indexterm>
+		<indexterm><primary>storage capacity</primary></indexterm>
 		The preferred storage capacity should be approximately 1 Terabyte. Use of RAID level 5
-		with two hot spare drives would require an 8 drive by 200 GByte capacity per drive array.
+		with two hot spare drives would require an 8-drive by 200 GB capacity per drive array.
 		</para>
 
 		</sect3>
@@ -435,13 +422,12 @@ Given 500 Users and 2 years:
 		gives you greater control over software licensing.
 		</para>
 
-	<para><indexterm>
-	    <primary>Outlook Express</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>Outlook Express</primary></indexterm>
 		You are well aware that the current configuration results in some performance issues
 		as the size of the desktop profile grows. Given that users use Microsoft Outlook
 		Express, you know that the storage implications of the <constant>.PST</constant> file
-		is something that needs to be addressed later on.
+		is something that needs to be addressed later.
 		</para>
 
 	</sect2>
@@ -477,106 +463,84 @@ Given 500 Users and 2 years:
 		The Domain name is set to <constant>PROMISES</constant>.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>broadcast messages</primary>
-	    </indexterm><indexterm>
-	      <primary>interfaces</primary>
-	    </indexterm><indexterm>
-	      <primary>bind interfaces only</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>broadcast messages</primary></indexterm>
+		<indexterm><primary>interfaces</primary></indexterm>
+		<indexterm><primary>bind interfaces only</primary></indexterm>
 		Ethernet interface <constant>eth0</constant> is attached to the Internet connection
 		and is externally exposed. This interface is explicitly not available for Samba to use.
-		Samba listens on this interface for broadcast messages, but does not broadcast any
+		Samba listens on this interface for broadcast messages but does not broadcast any
 		information on <constant>eth0</constant>, nor does it accept any connections from it.
 		This is achieved by way of the <parameter>interfaces</parameter> parameter and the
 		<parameter>bind interfaces only</parameter> entry.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>passdb backend</primary>
-	    </indexterm><indexterm>
-	      <primary>tdbsam</primary>
-	    </indexterm><indexterm>
-	      <primary>binary database</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>passdb backend</primary></indexterm>
+		<indexterm><primary>tdbsam</primary></indexterm>
+		<indexterm><primary>binary database</primary></indexterm>
 		The <parameter>passdb backend</parameter> parameter specifies the creation and use
 		of the <constant>tdbsam</constant> password backend. This is a binary database that
 		has excellent scalability for a large number of user account entries.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>WINS serving</primary>
-	    </indexterm><indexterm>
-	      <primary>wins support</primary>
-	    </indexterm><indexterm>
-	      <primary>name resolve order</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>WINS serving</primary></indexterm>
+		<indexterm><primary>wins support</primary></indexterm>
+		<indexterm><primary>name resolve order</primary></indexterm>
 		WINS serving is enabled by the <smbconfoption name="wins support">Yes</smbconfoption>,
 		and name resolution is set to use it by means of the
 		<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption> entry.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>time server</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>time server</primary></indexterm>
 		The Samba server is configured for use by Windows clients as a time server.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>CUPS</primary>
-	    </indexterm><indexterm>
-	      <primary>printing</primary>
-	    </indexterm><indexterm>
-	      <primary>printcap name</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>CUPS</primary></indexterm>
+		<indexterm><primary>printing</primary></indexterm>
+		<indexterm><primary>printcap name</primary></indexterm>
 		Samba is configured to directly interface with CUPS via the direct internal interface
 		that is provided by CUPS libraries. This is achieved with the 
 		<smbconfoption name="printing">CUPS</smbconfoption> as well as the
 		<smbconfoption name="printcap name">CUPS</smbconfoption> entries.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>user management</primary>
-	    </indexterm><indexterm>
-	      <primary>group management</primary>
-	    </indexterm><indexterm>
-	      <primary>SRVTOOLS.EXE</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>user management</primary></indexterm>
+		<indexterm><primary>group management</primary></indexterm>
+		<indexterm><primary>SRVTOOLS.EXE</primary></indexterm>
 		External interface scripts are provided to enable Samba to interface smoothly to
 		essential operating system functions for user and group management. This is important
-		to enable workstations to join the Domain, and is also important so that you can use
-		the Windows NT4 Domain User Manager, as well as the Domain Server Manager. These tools
+		to enable workstations to join the Domain and is also important so that you can use
+		the Windows NT4 Domain User Manager as well as the Domain Server Manager. These tools
 		are provided as part of the <filename>SRVTOOLS.EXE</filename> toolkit that can be 
 		downloaded from the Microsoft FTP
-		<ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">site.</ulink>
+		<ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">site</ulink>.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>User Mode</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>User Mode</primary></indexterm>
 		The &smb.conf; file specifies that the Samba server will operate in (default) <parameter>
 		security = user</parameter> mode<footnote><para>See <emphasis>TOSHARG</emphasis>, Chapter 3.
 		This is necessary so that Samba can act as a Domain Controller (PDC); see
-		<emphasis>TOSHARG</emphasis>, Chapter 4 for additional information.</para></footnote>
+		<emphasis>TOSHARG</emphasis>, Chapter 4, for additional information.</para></footnote>
 		(User Mode).
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>logon services</primary>
-	    </indexterm><indexterm>
-	      <primary>logon script</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>logon services</primary></indexterm>
+		<indexterm><primary>logon script</primary></indexterm>
 		Domain logon services as well as a Domain logon script are specified. The logon script
 		will be used to add robustness to the overall network configuration.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>roaming profiles</primary>
-	    </indexterm><indexterm>
-	      <primary>logon path</primary>
-	    </indexterm><indexterm>
-	      <primary>profile share</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>roaming profiles</primary></indexterm>
+		<indexterm><primary>logon path</primary></indexterm>
+		<indexterm><primary>profile share</primary></indexterm>
 		Roaming profiles are enabled through the specification of the parameter,
 		<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>. The value of this parameter translates the
 		<constant>%L</constant> to the name by which the Samba server is called by the client (for this
@@ -587,19 +551,16 @@ Given 500 Users and 2 years:
 		requirement is when a profile is created for group use.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>virus</primary>
-	    </indexterm><indexterm>
-	      <primary>opportunistic locking</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>virus</primary></indexterm>
+		<indexterm><primary>opportunistic locking</primary></indexterm>
 		Precautionary veto is effected for particular Windows file names that have been targeted by 
 		virus-related activity. Additionally, Microsoft Office files are vetoed from opportunistic locking
-		controls. This should help to prevent lock contention related file access problems.
+		controls. This should help to prevent lock contention-related file access problems.
 		</para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>IPC$</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>IPC$</primary></indexterm>
 		Explicit controls are effected to restrict access to the <constant>IPC$</constant> share to
 		local networks only. The <constant>IPC$</constant> share plays an important role in network
 		browsing and in establishment of network connections.
@@ -657,18 +618,16 @@ Given 500 Users and 2 years:
 	<sect2 id="ch4bsc">
 	<title>Basic System Configuration</title>
 
-	<para><indexterm>
-	    <primary>SUSE Enterprise Linux Server</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>SUSE Enterprise Linux Server</primary></indexterm>
 	The preparation in this section assumes that your SUSE Enterprise Linux Server 8.0 system has been
 	freshly installed. It prepares basic files so that the system is ready for comprehensive
 	operation in line with the network diagram shown in <link linkend="ch04net"/>.
 	</para>
 
 	<procedure>
-	  <step><para><indexterm>
-		<primary>hostname</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>hostname</primary></indexterm>
 		Using the UNIX/Linux system tools, name the server <constant>server.abmas.us</constant>.
 		Verify that your hostname is correctly set by running:
 <screen>
@@ -683,9 +642,8 @@ server.abmas.us
 		</para></step>
 
 		<step><para>
-	      <indexterm><primary>/etc/hosts</primary></indexterm><indexterm>
-		<primary>localhost</primary>
-	      </indexterm>
+		<indexterm><primary>/etc/hosts</primary></indexterm>
+		<indexterm><primary>localhost</primary></indexterm>
 		Edit your <filename>/etc/hosts</filename> file to include the primary names and addresses
 		of all network interfaces that are on the host server. This is necessary so that during
 		startup the system can resolve all its own names to the IP address prior to
@@ -706,40 +664,33 @@ server.abmas.us
 192.168.2.20    qmsf.abmas.biz qmsf
 192.168.2.30    hplj6f.abmas.biz hplj6f
 </screen>
-	      <indexterm>
-		<primary>named</primary>
-	      </indexterm><indexterm>
-		<primary>cupsd</primary>
-	      </indexterm><indexterm>
-		<primary>daemon</primary>
-	      </indexterm>
+		<indexterm><primary>named</primary></indexterm>
+		<indexterm><primary>cupsd</primary></indexterm>
+		<indexterm><primary>daemon</primary></indexterm>
 		The printer entries are not necessary if <command>named</command> is started prior to
-	      startup of <command>cupsd</command>, the CUPS daemon.
+		startup of <command>cupsd</command>, the CUPS daemon.
 		</para></step>
 
 		<step><para>
 		<indexterm><primary>/etc/rc.d/boot.local</primary></indexterm>
-	      <indexterm><primary>IP forwarding</primary></indexterm><indexterm>
-		<primary>/proc/sys/net/ipv4/ip_forward</primary>
-	      </indexterm>
+		<indexterm><primary>IP forwarding</primary></indexterm>
+		<indexterm><primary>/proc/sys/net/ipv4/ip_forward</primary></indexterm>
 		The host server is acting as a router between the two internal network segments as well
-		as for all Internet access. This necessitates that IP forwarding must be enabled. This can be
+		as for all Internet access. This necessitates that IP forwarding be enabled. This can be
 		achieved by adding to the <filename>/etc/rc.d/boot.local</filename> an entry as follows:
 <screen>
 echo 1 > /proc/sys/net/ipv4/ip_forward
 </screen>
 		To ensure that your kernel is capable of IP forwarding during configuration, you may 
 		wish to execute that command manually also. This setting permits the Linux system to 
-		act as a router.<footnote><para>ED NOTE: You may want to do the echo command last and include 
-				"0" in the init scripts since it opens up your network for a short time.</para></footnote>
+		act as a router.<footnote><para>You may want to do the echo command last and include 
+				"0" in the init scripts, since it opens up your network for a short time.</para></footnote>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>firewall</primary>
-	      </indexterm><indexterm>
-		<primary>abmas-netfw.sh</primary>
-	      </indexterm>
-		Installation of a basic firewall and network address translation facility is necessary.
+		<step><para>
+		<indexterm><primary>firewall</primary></indexterm>
+		<indexterm><primary>abmas-netfw.sh</primary></indexterm>
+		Installation of a basic firewall and NAT facility is necessary.
 		The following script can be installed in the <filename>/usr/local/sbin</filename>
 		directory. It is executed from the <filename>/etc/rc.d/boot.local</filename> startup
 		script. In your case, this script is called <filename>abmas-netfw.sh</filename>. The
@@ -824,9 +775,8 @@ echo -e "\nNAT firewall done.\n"
 		</para></step>
 	</procedure>
 
-	<para><indexterm>
-	    <primary>/etc/hosts</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>/etc/hosts</primary></indexterm>
 	The server is now ready for Samba configuration. During the validation step, you remove
 	the entry for the Samba server <constant>diamond</constant> from the <filename>/etc/hosts</filename>
 	file. This is done after you are satisfied that DNS-based name resolution is functioning correctly.
@@ -839,7 +789,7 @@ echo -e "\nNAT firewall done.\n"
 
 	<para>
 	When you have completed this section, the Samba server is ready for testing and validation;
-	however, testing and validation have to wait until DHCP, DNS, and Printing (CUPS) services have 
+	however, testing and validation have to wait until DHCP, DNS, and printing (CUPS) services have 
 	been configured.
 	</para>
 
@@ -862,7 +812,7 @@ echo -e "\nNAT firewall done.\n"
 		file. The final, fully qualified path for this file should be <filename>/etc/samba/smb.conf</filename>.
 
 <smbconfexample id="promisnet">
-<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [global] Section</title>
+<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [globals] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">PROMISES</smbconfoption>
@@ -1008,20 +958,11 @@ root = Administrator
 		</para></step>
 
 		<step><para>
-	      <indexterm><primary>initGrps.sh</primary></indexterm><indexterm>
-		<primary>net</primary>
-		<secondary>groupmap</secondary>
-		<tertiary>add</tertiary>
-	      </indexterm><indexterm>
-		<primary>net</primary>
-		<secondary>groupmap</secondary>
-		<tertiary>modify</tertiary>
-	      </indexterm><indexterm>
-		<primary>net</primary>
-		<secondary>groupmap</secondary>
-		<tertiary>list</tertiary>
-	      </indexterm>
-                Create and map Windows Domain Groups to UNIX groups. A sample script is provided in
+		<indexterm><primary>initGrps.sh</primary></indexterm>
+		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>add</tertiary></indexterm>
+		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>modify</tertiary></indexterm>
+		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>list</tertiary></indexterm>
+                Create and map Windows Domain Groups to UNIX groups. A sample script is provided in Chapter 2,
                 <link linkend="initGrps"/>. Create a file containing this script. We called ours
                 <filename>/etc/samba/initGrps.sh</filename>. Set this file so it can be executed,
                 and then execute the script. Sample output should be as follows:
@@ -1083,22 +1024,22 @@ Users (S-1-5-32-545) -> -1
 </screen>
 		</para></step>
 
-	  <step><para>
-	  <indexterm><primary>useradd</primary></indexterm>
-          <indexterm><primary>adduser</primary></indexterm>
-	  <indexterm><primary>passwd</primary></indexterm>
-	  <indexterm><primary>smbpasswd</primary></indexterm>
-          <indexterm><primary>/etc/passwd</primary></indexterm>
-          <indexterm><primary>password</primary><secondary>backend</secondary></indexterm>
-          <indexterm><primary>user</primary><secondary>management</secondary></indexterm>
+		<step><para>
+		<indexterm><primary>useradd</primary></indexterm>
+		<indexterm><primary>adduser</primary></indexterm>
+		<indexterm><primary>passwd</primary></indexterm>
+		<indexterm><primary>smbpasswd</primary></indexterm>
+		<indexterm><primary>/etc/passwd</primary></indexterm>
+		<indexterm><primary>password</primary><secondary>backend</secondary></indexterm>
+		<indexterm><primary>user</primary><secondary>management</secondary></indexterm>
 		There is one preparatory step without which you will not have a working Samba 
 		network environment. You must add an account for each network user. 
                 For each user who needs to be given a Windows Domain account, make an entry in the
-                <filename>/etc/passwd</filename> file, as well as in the Samba password backend.
+                <filename>/etc/passwd</filename> file as well as in the Samba password backend.
                 Use the system tool of your choice to create the UNIX system account, and use the Samba
                 <command>smbpasswd</command> to create a Domain user account.
-                There are a number of tools for user management under UNIX. Commonly known ones include:
-                <command>useradd, adduser</command>. In addition to these, there are a plethora of custom
+                There are a number of tools for user management under UNIX, such as
+                <command>useradd</command>, and <command>adduser</command>, as well as a plethora of custom
                 tools. You also want to create a home directory for each user.
 		You can do this by executing the following steps for each user:
 <screen>
@@ -1116,22 +1057,17 @@ Added user <parameter>username</parameter>.
 		You do of course use a valid user login ID in place of <parameter>username</parameter>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>file system</primary>
-		<secondary>access control</secondary>
-	      </indexterm><indexterm>
-		<primary>file system</primary>
-		<secondary>permissions</secondary>
-	      </indexterm><indexterm>
-		<primary>group membership</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>file system</primary><secondary>access control</secondary></indexterm>
+		<indexterm><primary>file system</primary><secondary>permissions</secondary></indexterm>
+		<indexterm><primary>group membership</primary></indexterm>
                 Using the preferred tool for your UNIX system, add each user to the UNIX groups created
                 previously as necessary. File system access control will be based on UNIX group membership.
                 </para></step>
 
                 <step><para>
-                Create the directory mount point for the disk sub-system that can be mounted to provide
-                data storage for company files. In this case the mount point indicated in the &smb.conf;
+                Create the directory mount point for the disk subsystem that can be mounted to provide
+                data storage for company files. In this case the mount point is indicated in the &smb.conf;
                 file is <filename>/data</filename>. Format the file system as required, and mount the formatted
                 file system partition using appropriate system tools.
                 </para></step>
@@ -1159,9 +1095,9 @@ Added user <parameter>username</parameter>.
 		<step><para>
 		The &smb.conf; file specifies an infrastructure to support roaming profiles and network
 		logon services. You can now create the file system infrastructure to provide the
-		locations on disk that these services require. Adequate planning is essential
+		locations on disk that these services require. Adequate planning is essential,
 		since desktop profiles can grow to be quite large. For planning purposes, a minimum of
-		200 Megabytes of storage should be allowed per user for profile storage. The following
+		200 MB of storage should be allowed per user for profile storage. The following
 		commands create the directory infrastructure needed:
 <screen>
 &rootprompt; mkdir -p /var/spool/samba 
@@ -1179,13 +1115,10 @@ Added user <parameter>username</parameter>.
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>logon scrip</primary>
-	      </indexterm><indexterm>
-		<primary>unix2dos</primary>
-	      </indexterm><indexterm>
-		<primary>dos2unix</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>logon scrip</primary></indexterm>
+		<indexterm><primary>unix2dos</primary></indexterm>
+		<indexterm><primary>dos2unix</primary></indexterm>
 		Create a logon script. It is important that each line is correctly terminated with
 		a carriage return and line-feed combination (i.e., DOS encoding). The following procedure
 		works if the right tools (<constant>unix2dos</constant> and <constant>dos2unix</constant>) are installed.
@@ -1281,7 +1214,7 @@ subnet 123.45.67.64 netmask 255.255.255.252 {
 		</para></step>
 
 		<step><para>
-		Create the files shown in their directories as follows:
+		Create the files shown in their directories as follows: (John, on this page, the numbered entry comes after the table it's referencing!!!!!)
 
 			<table id="namedrscfiles">
 				<title>DNS (named) Resource Files</title>
@@ -1584,12 +1517,12 @@ hosts:      files dns wins
 
 	<procedure>
 		<step><para>
-		Configure each printer to be a DHCP client carefully following the manufacturer's guidelines.
+		Configure each printer to be a DHCP client, carefully following the manufacturer's guidelines.
 		</para></step>
 
                 <step><para>
-                Follow the instructions in the printer manufacturers' manuals to permit printing to port 9100.
-		Use any other port the manufacturer specifies for direct mode, raw printing and adjust the
+                Follow the instructions in the printer manufacturer's manuals to permit printing to port 9100.
+		Use any other port the manufacturer specifies for direct-mode raw printing, and adjust the
 		port as necessary in the following example commands.
                 This allows the CUPS spooler to print using raw mode protocols.
                 <indexterm><primary>CUPS</primary></indexterm>
@@ -1608,14 +1541,14 @@ hosts:      files dns wins
 &rootprompt; lpadmin -p hplj6f -v socket://hplj6f.abmas.biz:9100 -E
 </screen>
                 <indexterm><primary>print filter</primary></indexterm>
-                This has created the necessary print queues with no assigned print filter.
+                This creates the necessary print queues with no assigned print filter.
                 </para></step>
 
 	  <step><para><indexterm>
 		<primary>enable</primary>
 	      </indexterm>
 		Print queues may not be enabled at creation. Use <command>lpc stat</command> to check
-		the status of the print queues and if necessary make certain that the queues you have 
+		the status of the print queues and, if necessary, make certain that the queues you have 
 		just created are enabled by executing the following:
 <screen>
 &rootprompt; /usr/bin/enable qmsa
@@ -1679,21 +1612,17 @@ application/octet-stream
 	is rebooted. This step involves use of the <command>chkconfig</command> tool that
 	creates the appropriate symbolic links from the master daemon control file that is
 	located in the <filename>/etc/rc.d</filename> directory, to the <filename>/etc/rc'x'.d</filename>
-	directories. Links are created so that when the system run-level is changed, the
+	directories. Links are created so that when the system run level is changed, the
 	necessary start or kill script is run.
 	</para>
 
 	<para>
-	  <indexterm><primary>/etc/xinetd.d</primary></indexterm><indexterm>
-	    <primary>inetd</primary>
-	  </indexterm><indexterm>
-	    <primary>xinetd</primary>
-	  </indexterm><indexterm>
-	    <primary>chkconfig</primary>
-	  </indexterm><indexterm>
-	    <primary>super daemon</primary>
-	  </indexterm>
-	In the event that a service is not run as a daemon, but via the inter-networking
+	<indexterm><primary>/etc/xinetd.d</primary></indexterm>
+	<indexterm><primary>inetd</primary></indexterm>
+	<indexterm><primary>xinetd</primary></indexterm>
+	<indexterm><primary>chkconfig</primary></indexterm>
+	<indexterm><primary>super daemon</primary></indexterm>
+	In the event that a service is not run as a daemon, but via the internetworking
 	super daemon (<command>inetd</command> or <command>xinetd</command>), then the <command>chkconfig</command>
 	tool makes the necessary entries in the <filename>/etc/xinetd.d</filename> directory
 	and sends a hang-up (HUP) signal to the the super daemon, thus forcing it to
@@ -1707,7 +1636,7 @@ application/octet-stream
 	<procedure>
                 <step><para>
                 Use the standard system tool to configure each service to restart
-                automatically at every system reboot. For example:
+                automatically at every system reboot. For example,
                 <indexterm><primary>chkconfig</primary></indexterm>
 <screen>
 &rootprompt; chkconfig dhpc on
@@ -1738,9 +1667,8 @@ application/octet-stream
 	<sect2 id="ch4valid">
 	<title>Validation</title>
 
-	<para><indexterm>
-	    <primary>validation</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>validation</primary></indexterm>
 	Complex networking problems are most often caused by simple things that are poorly or incorrectly
 	configured. The validation process adopted here should be followed carefully; it is the result of the
 	experience gained from years of making and correcting the most common mistakes. Shortcuts often lead to basic errors. You should
@@ -1757,7 +1685,7 @@ application/octet-stream
 			<step><para>
 			<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 			One of the most important facets of Samba configuration is to ensure that
-			name resolution functions correctly. You can test name resolution
+			name resolution functions correctly. You can check name resolution
 			with a few simple tests. The most basic name resolution is provided from the
 			<filename>/etc/hosts</filename> file. To test its operation, make a
 			temporary edit to the <filename>/etc/nsswitch.conf</filename> file. Using
@@ -1833,7 +1761,7 @@ sleeth1.abmas.biz has address 192.168.1.1
 			<step><para>
 			<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 			WINS is a great way to resolve NetBIOS names to their IP address. You can test
-			the operation of WINS by starting <command>nmbd</command> (manually, or by way
+			the operation of WINS by starting <command>nmbd</command> (manually or by way
 			of the Samba startup method shown in <link linkend="procstart"/>). You must edit
 			the <filename>/etc/nsswitch.conf</filename> file so that the <constant>hosts</constant>
 			entry is as follows:
@@ -1859,7 +1787,7 @@ hosts:       files dns wins
 			</para></step>
 
 			<step><para>
-			It would give peace of mind to know that the DHCP server is running
+			It would give you peace of mind to know that the DHCP server is running
 			and available for service. You can validate DHCP services by running:
 
 <screen>
@@ -2001,8 +1929,8 @@ $rootprompt; ps ax | grep winbind
 </screen>
 			This demonstrates that an anonymous listing of shares can be obtained. This is the equivalent
 			of browsing the server from a Windows client to obtain a list of shares on the server.
-			The <constant>-U%</constant> argument means "send a <constant>NULL</constant> username and
-			a <constant>NULL</constant> password."
+			The <constant>-U%</constant> argument means to send a <constant>NULL</constant> username and
+			a <constant>NULL</constant> password.
 			</para></step>
 
 			<step><para>
@@ -2014,7 +1942,7 @@ $rootprompt; ps ax | grep winbind
 			has been received, execute <command>arp -a</command> to find the MAC address of the printer
 			that has responded. Now you can compare the IP address and the MAC address of the printer
 			with the configuration information in the <filename>/etc/dhcpd.conf</filename> file. They
-			should, of course, match. For example:
+			should, of course, match. For example,
 <screen>
 &rootprompt; ping hplj6
 PING hplj6a (192.168.1.30) 56(84) bytes of data.
@@ -2054,13 +1982,13 @@ smb: \> q
 
 			<step><para>
 			<indexterm><primary>nmap</primary></indexterm>
-			Your new server is connected to an Internet accessible connection. Before you start
+			Your new server is connected to an Internet-accessible connection. Before you start
 			your firewall, you should run a port scanner against your system. You should repeat that
-			after the firewall has been started. This helps you understand what extent the
+			after the firewall has been started. This helps you understand to what extent the
 			server may be vulnerable to external attack. One way you can do this is by using an
-			external service provided such as the <ulink url="http://www.dslreports.com/scan">DSL Reports</ulink> 
+			external service, such as the <ulink url="http://www.dslreports.com/scan">DSL Reports</ulink> 
 			tools. Alternately, if you can gain root-level access to a remote
-			UNIX/Linux system that has the <command>nmap</command> tool, you can run this as follows:
+			UNIX/Linux system that has the <command>nmap</command> tool, you can run the following:
 <screen>
 &rootprompt; nmap -v -sT server.abmas.us
 
@@ -2136,11 +2064,9 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<sect2 id="ch4appscfg">
 	<title>Application Share Configuration</title>
 
-	<para><indexterm>
-	    <primary>application server</primary>
-	  </indexterm><indexterm>
-	    <primary>administrative installation</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>application server</primary></indexterm>
+	<indexterm><primary>administrative installation</primary></indexterm>
 	The use of an application server is a key mechanism by which desktop administration overheads
 	can be reduced. Check the application manual for your software to identify how best to
 	create an administrative installation.
@@ -2174,12 +2100,11 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		</para></listitem>
 	</itemizedlist>
 
-	<para><indexterm>
-	    <primary></primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary></primary></indexterm>
 	A common application deployed in this environment is an office suite.
 	Enterprise editions of Microsoft Office XP Professional can be administratively installed
-	by launching the installation from a command shell. The command that achieves this is:
+	by launching the installation from a command shell. The command that achieves this is
 	<command>setup /a</command>. It results in a set of prompts through which various
 	installation choices can be made. Refer to the Microsoft Office Resource SDK and Resource
 	Kit for more information regarding this mode of installation of MS Office XP Professional.
@@ -2192,15 +2117,13 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	share, the product can be installed onto a workstation by executing the normal setup program.
 	The installation process now provides a choice to either perform a minimum installation
 	or a full local installation. A full local installation takes over 100 MB of disk space.
-	A network workstation (minimum) installation requires typically 10-15 MB of
-	local disk space. In the later case, when the applications are used, they load over the network.
+	A network workstation (minimum) installation requires typically 10 MB to 15 MB of
+	local disk space. In the latter case, when the applications are used, they load over the network.
 	</para>
 
-	<para><indexterm>
-	    <primary>Service Packs</primary>
-	  </indexterm><indexterm>
-	    <primary>Microsoft Office</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Service Packs</primary></indexterm>
+	<indexterm><primary>Microsoft Office</primary></indexterm>
 	Microsoft Office Service Packs can be unpacked to update an administrative share. This makes
 	it possible to update MS Office XP Professional for all users from a single installation
 	of the service pack and generally circumvents the need to run updates on each network
@@ -2212,10 +2135,9 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	editing or by way of configuration options inside each Office XP Professional application.
 	</para>
 
-	<para><indexterm>
-	    <primary>OpenOffice</primary>
-	  </indexterm>
-	OpenOffice.Org OpenOffice Version 1.1.0 is capable of being installed locally. It can also
+	<para>
+	<indexterm><primary>OpenOffice</primary></indexterm>
+	OpenOffice.Org OpenOffice Version 1.1.0 can be installed locally. It can also
 	be installed to run off a network share. The latter is a most desirable solution for office-bound 
 	network users and for administrative staff alike. It permits quick and easy updates
 	to be rolled out to all users with a minimum of disruption and with maximum flexibility.
@@ -2224,7 +2146,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<para>
 	The process for installation of administrative shared OpenOffice involves download of the
 	distribution ZIP file, followed by extraction of the ZIP file into a temporary disk area.
-	When fully extracted using the un-zipping tool of your choosing, change into the Windows
+	When fully extracted using the unzipping tool of your choosing, change into the Windows
 	installation files directory then execute <command>setup -net</command>. You are
 	prompted on screen for the target installation location. This is the administrative
 	share point. The full administrative OpenOffice share takes approximately 150 MB of disk
@@ -2237,14 +2159,14 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 			Many single-user products can be installed into an administrative share, but
 			personal versions of products such as Microsoft Office XP Professional do not permit this. 
 			Many people do not like terms of use typical with commercial products, so a few comments
-			regarding software licensing seem important and thus are included below.
+			regarding software licensing seem important.
 			</para>
 
 			<para>
 			Please do not use an administrative installation of proprietary and commercially licensed 
 			software products to violate the copyright holders' property. All software is licensed,
 			particularly software that is licensed for use free of charge. All software is the property
-			of the copyright holder, unless the author and/or copyright holder has explicitly disavowed
+			of the copyright holder unless the author and/or copyright holder has explicitly disavowed
 			ownership and has placed the software into the public domain.
 			</para>
 
@@ -2252,7 +2174,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 			Software that is under the GNU General Public License, like proprietary software, is 
 			licensed in a way that restricts use. For example, if you modify GPL software and then
 			distribute the binary version of your modifications, you must offer to provide the source
-			code as well. This is a form of restriction that is designed to maintain the momentum
+			code as well. This restriction is designed to maintain the momentum
 			of the diffusion of technology and to protect against the withholding of innovations.
 			</para>
 
@@ -2264,9 +2186,8 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 			please do not use the software.
 			</para>
 
-	  <para><indexterm>
-	      <primary>GPL</primary>
-	    </indexterm>
+			<para>
+			<indexterm><primary>GPL</primary></indexterm>
 			Samba is provided under the terms of the GNU GPL Version 2, a copy of which is provided
 			with the source code.
 			</para>
@@ -2298,11 +2219,11 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<step><para>
 		Join the Windows Domain <constant>PROMISES</constant>. Use the Domain Administrator
-		user name <constant>root</constant> and the SMB password you assigned to this account.
+		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in <link linkend="domjoin"/>. 
-		Reboot the machine as prompted and then logon using the Domain Administrator account
-		(<constant>root</constant>.
+		a Windows Domain is given in Appendix A, <link linkend="domjoin"/>. 
+		Reboot the machine as prompted and then log on using the Domain Administrator account
+		(<constant>root</constant>).
 		</para></step>
 
 		<step><para>
@@ -2322,20 +2243,20 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		</para></step>
 
 		<step><para>
-		Now install all applications to be installed locally. Typical tools includes: Adobe Acrobat,
-		NTP-based time synchronization software, drivers for specific local devices such as finger-print
+		Now install all applications to be installed locally. Typical tools include Adobe Acrobat,
+		NTP-based time synchronization software, drivers for specific local devices such as fingerprint
 		scanners, and the like. Probably the most significant application for local installation
-		is anti-virus software.
+		is antivirus software.
 		</para></step>
 
 		<step><para>
 		Now install all four printers onto the staging system. The printers you install
-		include the Accounting department HP LaserJet 6 and Minolta QMS Magicolor printers. You will
+		include the accounting department HP LaserJet 6 and Minolta QMS Magicolor printers. You will
 		also configure identical printers that are located in the financial services department.
 		Install printers on each machine using the following steps:
 		</para>
 
-			<procedure>
+		<procedure>
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
@@ -2348,14 +2269,14 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 				</para></step>
 
 				<step><para>
-				Click <guibutton>Next</guibutton>. In the panel labeled
-				<guimenuitem>Manufacturer:</guimenuitem>, select <constant>HP</constant>.
+				Click <guibutton>Next</guibutton>. In the
+				<guimenuitem>Manufacturer:</guimenuitem> panel, select <constant>HP</constant>.
 				In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
 				<constant>HP LaserJet 6</constant>. Click <guibutton>Next</guibutton>.
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Available ports:</guimenuitem>, select
+				In the <guimenuitem>Available ports:</guimenuitem> panel, select
 				<constant>FILE:</constant>. Accept the default printer name by clicking
 				<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
 				test page?,</quote> click <guimenuitem>No</guimenuitem>. Click
@@ -2373,7 +2294,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Network</guimenuitem>, enter the name of
+				In the <guimenuitem>Network</guimenuitem> panel, enter the name of
 				the print queue on the Samba server as follows: <constant>\\DIAMOND\hplj6a</constant>.
 				Click <menuchoice> 
 					<guibutton>OK</guibutton>
@@ -2386,44 +2307,40 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 				as well as for both QMS Magicolor laser printers.
 				</para></step>
 			</procedure>
-		</step>
+			</step>
 
-	  <step><para><indexterm>
-		<primary>defragmentation</primary>
-	      </indexterm>
-		When you are satisfied that the staging systems are complete, use the appropriate procedure to
-		remove the client from the domain. Reboot the system and then log on as the local administrator
-		and clean out all temporary files stored on the system. Before shutting down, use the disk
-		defragmentation tool so that the file system is in an optimal condition before replication.
-		</para></step>
+			<step><para>
+			<indexterm><primary>defragmentation</primary></indexterm>
+			When you are satisfied that the staging systems are complete, use the appropriate procedure to
+			remove the client from the domain. Reboot the system and then log on as the local administrator
+			and clean out all temporary files stored on the system. Before shutting down, use the disk
+			defragmentation tool so that the file system is in optimal condition before replication.
+			</para></step>
 
-	  <step><para>
-		Boot the workstation using the Norton (Symantec) Ghosting diskette (or CD-ROM) and image the
-		machine to a network share on the server.
-		</para></step>
+			<step><para>
+			Boot the workstation using the Norton (Symantec) Ghosting diskette (or CD-ROM) and image the
+			machine to a network share on the server.
+			</para></step>
 
-		<step><para><indexterm>
-		<primary>Windows security identifier</primary>
-		<see>SID</see>
-	      </indexterm><indexterm>
-		<primary>SID</primary>
-	      </indexterm>
-		You may now replicate the image to the target machines using the appropriate Norton Ghost 
-		procedure. Make sure to use the procedure that ensures each machine has a unique
-		Windows security identifier (SID). When the installation of the disk image has completed, boot the PC. 
-		</para></step>
+			<step><para>
+			<indexterm><primary>Windows security identifier</primary><see>SID</see></indexterm>
+			<indexterm><primary>SID</primary></indexterm>
+			You may now replicate the image to the target machines using the appropriate Norton Ghost 
+			procedure. Make sure to use the procedure that ensures each machine has a unique
+			Windows security identifier (SID). When the installation of the disk image has completed, boot the PC. 
+			</para></step>
 
-		<step><para>
-		Log onto the machine as the local Administrator (the only option), and join the machine to
-		the Domain following the procedure set out in <link linkend="domjoin"/>. The system is now 
-		ready for the user to logon, providing you have created a network logon account for that 
-		user, of course.
-		</para></step>
+			<step><para>
+			Log onto the machine as the local Administrator (the only option), and join the machine to
+			the Domain, following the procedure set out in Appendix A, <link linkend="domjoin"/>. The system is now 
+			ready for the user to log on, provided you have created a network logon account for that 
+			user, of course.
+			</para></step>
 
-		<step><para>
-		Instruct all users to log onto the workstation using their assigned user name and password.
-		</para></step>
-	</procedure>
+			<step><para>
+			Instruct all users to log onto the workstation using their assigned username and password.
+			</para></step>
+		</procedure>
 
 	</sect2>
 
@@ -2431,8 +2348,8 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<title>Key Points Learned</title>
 
 		<para>
-		How do you feel, Bob? You have built a capable network, a truly ambitious project.
-		Just as well, you have Christine to help you. Future network updates can be handled by
+		How do you feel? You have built a capable network, a truly ambitious project.
+		Future network updates can be handled by
 		your staff. You must be a satisfied manager. Let's review the achievements.
 		</para>
 
@@ -2463,7 +2380,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 			</para></listitem>
 
 			<listitem><para>
-			You introduced an application server, as well as the concept of cloning a Windows
+			You introduced an application server as well as the concept of cloning a Windows
 			client in order to effect improved standardization of desktops and to reduce
 			the costs of network management.
 			</para></listitem>
@@ -2484,37 +2401,43 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<question>
 
 		<para>
-		What is the maximum number of account entries that the <parameter>tdbsam</parameter> passdb backend can handle?
+		What is the maximum number of account entries that the <parameter>tdbsam</parameter>
+		passdb backend can handle?
 		</para>
 
 	</question>
 	<answer>
 
 		<para>
-		The tdb data structure and support system can handle more entries than the number of accounts
-		that are possible on most UNIX systems. There is a practical limit that would come into play
-		long before a performance boundary would be anticipated. That practical limit is controlled
-		by the nature of Windows networking. There are few Windows file and print servers
-		that can handle more than a few hundred concurrent client connections. The key limiting factors
-		that predicate off-loading of services to additional servers are memory capacity, the number
-		of CPUs, network bandwidth, and disk I/O limitations. All of these are readily exhausted by
-		just a few hundred concurrent active users. Such bottlenecks can best be removed by segmentation
-		of the network (distributing network load across multiple networks).
-		</para>
-		<para>
-		As the network grows, it becomes necessary to provide additional authentication servers (domain 
-		controllers).  The tdbsam is limited to a single machine and cannot be reliably replicated. 
-		This means that practical limits on network design dictate the point at which a distributed 
-		passdb backend is required; at this time, there is no real alternative other than ldapsam (LDAP).
+		The tdb data structure and support system can handle more entries than the number of
+		accounts that are possible on most UNIX systems. A practical limit would come into
+		play long before a performance boundary would be anticipated. That practical limit
+		is controlled by the nature of Windows networking. There are few Windows file and
+		print servers that can handle more than a few hundred concurrent client connections.
+		The key limiting factors that predicate offloading of services to additional servers
+		are memory capacity, the number of CPUs, network bandwidth, and disk I/O limitations.
+		All of these are readily exhausted by just a few hundred concurrent active users.
+		Such bottlenecks can best be removed by segmentation of the network (distributing
+		network load across multiple networks).
 		</para>
 
 		<para>
-		The guideline provided in <emphasis>TOSHARG</emphasis>, Chapter 10, Section 10.1.2, is to limit the number of accounts
-		in the tdbsam backend to 250. This is the point at which most networks tend to want backup domain
-		controllers (BDCs). Samba-3 does not provide a mechanism for replicating tdbsam data so it can be used
-		by a BDC. The limitation of 250 users per tdbsam is predicated only on the need for replication
-		not on the limits<footnote><para>Bench tests have shown that tdbsam is a very effective database technology.
-				There is surprisingly little performance loss even with over 4000 users.</para></footnote> of the tdbsam backend itself. 
+		As the network grows, it becomes necessary to provide additional authentication
+		servers (domain controllers).  The tdbsam is limited to a single machine and cannot
+		be reliably replicated.  This means that practical limits on network design dictate
+		the point at which a distributed passdb backend is required; at this time, there is
+		no real alternative other than ldapsam (LDAP).
+		</para>
+
+		<para>
+		The guideline provided in <emphasis>TOSHARG</emphasis>, Chapter 10, Section 10.1.2,
+		is to limit the number of accounts in the tdbsam backend to 250. This is the point
+		at which most networks tend to want backup domain controllers (BDCs). Samba-3 does
+		not provide a mechanism for replicating tdbsam data so it can be used by a BDC. The
+		limitation of 250 users per tdbsam is predicated only on the need for replication,
+		not on the limits<footnote><para>Bench tests have shown that tdbsam is a very
+		effective database technology.  There is surprisingly little performance loss even
+		with over 4000 users.</para></footnote> of the tdbsam backend itself. 
 		</para>
 
 	</answer>
@@ -2524,7 +2447,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<question>
 
 		<para>
-		Would Samba operate any better if the OS Level is set to a value higher than 35?
+		Would Samba operate any better if the OS level is set to a value higher than 35?
 		</para>
 
 	</question>
@@ -2612,7 +2535,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		<para>
 		A printer is a physical device that is connected either directly to the network or to a computer 
 		via a serial, parallel, or USB connection so that print jobs can be submitted to it to create a 
-		hard copy printout. Network attached printers that use TCP/IP-based printing generally accept a 
+		hard copy printout. Network-attached printers that use TCP/IP-based printing generally accept a 
 		single print data stream and block all secondary attempts to dispatch jobs concurrently to the 
 		same device. If many clients were to concurrently print directly via TCP/IP to the same printer, 
 		it would result in a huge amount of network traffic through continually failing connection attempts.
@@ -2620,8 +2543,8 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<para>
 		A print server (like CUPS or LPR/LPD) accepts multiple concurrent input streams or
-		print requests. When the data stream has been fully received the input stream is closed,
-		the job is then submitted to a sequential print queue where the job is stored until
+		print requests. When the data stream has been fully received, the input stream is closed,
+		and the job is then submitted to a sequential print queue where the job is stored until
 		the printer is ready to receive the job.
 		</para>
 
@@ -2639,7 +2562,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	<answer>
 
 		<para>
-		Much older Windows software is not compatible with installation to and execution off
+		Much older Windows software is not compatible with installation to and execution from
 		an application server. Enterprise versions of Microsoft Office XP Professional can
 		be installed to an application server. Retail consumer versions of Microsoft Office XP
 		Professional do not permit installation to an application server share and can be installed
@@ -2661,7 +2584,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<para>
 		When DDNS records are updated directly from the DHCP server, it is possible for
-		network clients that are not NetBIOS enabled, and thus cannot use WINS, to locate
+		network clients that are not NetBIOS-enabled, and thus cannot use WINS, to locate
 		Windows clients via DNS.
 		</para>
 
@@ -2680,12 +2603,12 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<para>
 		WINS is to NetBIOS names as DNS is to fully qualified domain names (FQDN). The FQDN is
-		a name like <quote>myhost.mydomain.tld,</quote> where <parameter>tld</parameter>
-		means <constant>top level domain</constant>. A FQDN is a long hand but easy to remember
+		a name like <quote>myhost.mydomain.tld</quote> where <parameter>tld</parameter>
+		means <constant>top-level domain</constant>. A FQDN is a longhand but easy-to-remember
 		expression that may be up to 1024 characters in length and that represents an IP address. 
 		A NetBIOS name is always 16 characters long. The 16<superscript>th</superscript> character
 		is a name type indicator. A specific name type is registered<footnote><para>
-				See <emphasis>TOSHARG</emphasis>, Chapter 9 for more information.</para></footnote> for each 
+				See <emphasis>TOSHARG</emphasis>, Chapter 9, for more information.</para></footnote> for each 
 		type of service that is provided by the Windows server or client and that may be registered
 		where a WINS server is in use.
 		</para>
@@ -2706,7 +2629,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<para>
 		Windows 200x Active Directory requires the registration in the DNS zone for the domain it 
-		controls of service locator<footnote><para>See TOSHARG, Chapter 9, Section 9.3.3</para></footnote> records 
+		controls of service locator<footnote><para>See TOSHARG, Chapter 9, Section 9.3.3.</para></footnote> records 
 		that Windows clients and servers will use to locate Kerberos and LDAP services. ADS also 
 		requires the registration of special records that are called global catalog (GC) entries 
 		and site entries by which domain controllers and other essential ADS servers may be located. 

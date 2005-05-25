@@ -4,14 +4,14 @@
   <title>Making Happy Users</title>
 
 	<para>
-	It has been said, <quote>A day that is without troubles is not fulfilling.  Rather, give 
+	It is said that <quote>a day that is without troubles is not fulfilling.  Rather, give 
 	me a day of troubles well handled so that I can be content with my achievements.</quote>
 	</para>
 
 	<para>
 	In the world of computer networks, problems are as varied as the people who create them
-	or experience them. The design of the network implemented in the last chapter may 
-	create problems for some network users. The following lists some of the problems that
+	or experience them. The design of the network implemented in <link linkend="Big500users"/>
+	may create problems for some network users. The following lists some of the problems that
 	may occur:
 	</para>
 
@@ -21,17 +21,17 @@
 	<indexterm><primary>user account</primary></indexterm>
 	<indexterm><primary>PDC/BDC ratio</primary></indexterm>
 <caution><para>
-Notice: A significant number of network administrators have responded to the guidance given
-below. It should be noted that there are sites that have a single PDC for many hundreds of
+A significant number of network administrators have responded to the guidance given
+here. It should be noted that there are sites that have a single PDC for many hundreds of
 concurrent network clients. Network bandwidth, network bandwidth utilization, and server load
-are among the factors that will determine the maximum number of Windows clients that
+are among the factors that determine the maximum number of Windows clients that
 can be served by a single domain controller (PDC or BDC) on a network segment. It is possible
 to operate with only a single PDC over a routed network. What is possible is not necessarily
 <emphasis>best practice</emphasis>. When Windows client network logons begin to fail with
-the message that the domain controller can not be found, or that the user account can not
-be found (when you know it exists), that may be an indication that the DC is overloaded or
-network bandwidth is overloaded. The guidance given in respect of PDC/BDC ratio to Windows
-clients is conservative and if followed will minimize problems - but it is not absolute.
+the message that the domain controller cannot be found or that the user account cannot
+be found (when you know it exists), that may be an indication that the domain controller is
+overloaded or network bandwidth is overloaded. The guidance given for PDC/BDC ratio to Windows
+clients is conservative and if followed will minimize problems &smbmdash; but it is not absolute.
 </para></caution>
 
 	<variablelist>
@@ -52,14 +52,14 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<para>
 		If the domain controller provides only network logon services
-		and all file and print activity is handled by Domain Member servers, one Domain	
-		Controller per 150 clients on a single network segment may suffice. In any
-		case, it is highly recommended to have a minimum of one Domain Controller (PDC or BDC)
+		and all file and print activity is handled by domain member servers, one domain	
+		controller per 150 clients on a single network segment may suffice. In any
+		case, it is highly recommended to have a minimum of one domain controller (PDC or BDC)
 		per network segment. It is better to have at least one BDC on the network
-		segment that has a PDC. If the Domain Controller is also used as a file and
-		print server, the number of clients it can service reliably is reduced
+		segment that has a PDC. If the domain controller is also used as a file and
+		print server, the number of clients it can service reliably is reduced,
 		and a common rule is not to exceed 30 machines (Windows workstations plus
-		Domain Member servers) per Domain Controller.
+		domain member servers) per domain controller.
 		</para></listitem>
 		</varlistentry>
 
@@ -85,8 +85,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 				<indexterm><primary>HUB</primary></indexterm>
 				<indexterm><primary>ethernet switch</primary></indexterm>
 				Network traffic collisions due to overloading of the network
-				segment &smbmdash; one short-term workaround to this may be to replace
-				network HUBs with ethernet switches.
+				segment. One short-term workaround to this may be to replace
+				network HUBs with Ethernet switches.
 				</para></listitem>
 
 				<listitem><para>
@@ -106,9 +106,9 @@ clients is conservative and if followed will minimize problems - but it is not a
 				<indexterm><primary>MS Outlook</primary>
 					<secondary>PST file</secondary></indexterm>
 				Excessively large roaming profiles. This type of problem is typically
-				the result of poor user eduction, as well as poor network management.
+				the result of poor user education as well as poor network management.
 				It can be avoided by users not storing huge quantities of email in
-				MS Outlook PST files, as well as by not storing files on the desktop.
+				MS Outlook PST files as well as by not storing files on the desktop.
 				These are old bad habits that require much discipline and vigilance
 				on the part of network management.
 				</para></listitem>
@@ -117,7 +117,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 				<indexterm><primary>WebClient</primary></indexterm>
 				You should verify that the Windows XP WebClient service is not running.
 				The use of the WebClient service has been implicated in many Windows
-				networking related problems.
+				networking-related problems.
 				</para></listitem>
 			</itemizedlist>
 			</para></listitem>
@@ -127,7 +127,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<term>Loss of access to network drives and printer resources</term>
 		<listitem><para>
 		Loss of access to network resources during client operation may be caused by a number
-		of factors including:
+		of factors, including:
 		</para>
 
 			<itemizedlist>
@@ -142,7 +142,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 				<listitem><para>
 				<indexterm><primary>network</primary><secondary>timeout</secondary></indexterm>
-				Timeout causing the client to close a connection that is in use, but has
+				Timeout causing the client to close a connection that is in use but has
 				been latent (no traffic) for some time (5 minutes or more)
 				</para></listitem>
 
@@ -156,8 +156,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<indexterm><primary>data</primary><secondary>corruption</secondary></indexterm>
 		No matter what the cause, a sudden loss of access to network resources can
 		result in BSOD (blue screen of death) situations that necessitate rebooting of the client
-		workstation. In the case of a mild problem, retrying to access the network drive of printer
-		may restore operations, but in any case this is a serious problem as it may lead to the next
+		workstation. In the case of a mild problem, retrying to access the network drive of the printer
+		may restore operations, but in any case this is a serious problem that may lead to the next
 		problem, data corruption.
 		</para></listitem>
 		</varlistentry>
@@ -180,7 +180,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 	<para>
 	In this chapter, you can work through a number of measures that significantly arm you to
-	anticipate and to combat network performance issues. You can work through complex and thorny
+	anticipate and combat network performance issues. You can work through complex and thorny
 	methods to improve the reliability of your network environment, but be warned that all such steps
 	demand the price of complexity.
 	</para>
@@ -190,7 +190,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 	<para>
 	<indexterm><primary>LDAP</primary><secondary>directory</secondary></indexterm>
-	Computer (machine) accounts can be placed where ever you like in an LDAP directory subject to some 
+	Computer (machine) accounts can be placed wherever you like in an LDAP directory subject to some 
 	constraints that are described in this section.
 	</para>
 
@@ -200,17 +200,17 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>machine account</primary></indexterm>
 	<indexterm><primary>trust account</primary></indexterm>
 	The POSIX and SambaSAMAccount components of computer (machine) accounts are both used by Samba. 
-	i.e.: Machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats 
+	That is, machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats 
 	them. A user account and a machine account are indistinguishable from each other, except that
-	the machine account ends in a '$' character, as do trust accounts.
+	the machine account ends in a $ character, as do trust accounts.
 	</para>
 
 	<para>
 	<indexterm><primary>account</primary></indexterm>
 	<indexterm><primary>UID</primary></indexterm>
-	The need for Windows user, group, machine, trust, etc. accounts to be tied to a valid UNIX UID
+	The need for Windows user, group, machine, trust, and other such accounts to be tied to a valid UNIX UID
 	is a design decision that was made a long way back in the history of Samba development. It is 
-	unlikely that this decision will be reversed of changed during the remaining life of the 
+	unlikely that this decision will be reversed or changed during the remaining life of the 
 	Samba-3.x series. 
 	</para>
 
@@ -228,7 +228,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	and <quote>group</quote> facilities in the NSS control (configuration) file. The best tool
 	for achieving this is left up to the UNIX administrator to determine. It is not imposed by
 	Samba. Samba provides winbindd together with its support libraries as one method. It is
-	possible to do this via LDAP - and for that Samba provides the appropriate hooks so that
+	possible to do this via LDAP, and for that Samba provides the appropriate hooks so that
 	all account entities can be located in an LDAP directory.
 	</para>
 
@@ -248,11 +248,11 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<title>Introduction</title>
 
 	<para>
-	Mr. Bob Jordan just opened an email from Christine that reads:
+	You just opened an email from Christine that reads:
 	</para>
 
 	<para>
-	Bob,
+	Good morning,
 	<blockquote><attribution>Christine</attribution><para>
 	A few months ago we sat down to design the network. We discussed the challenges ahead and we all
 	agreed to compromise our design to keep it simple. We knew there would be problems, but anticipated
@@ -260,11 +260,11 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para>
-	As you now know we started off on the wrong foot. We have a lot of unhappy users. One of them
+	As you now know, we started off on the wrong foot. We have a lot of unhappy users. One of them
 	resigned yesterday afternoon because she was under duress to complete some critical projects. She
 	suffered a blue screen of death situation just as she was finishing four hours of intensive work, all
 	of which was lost. She has a unique requirement that involves storing large files on her desktop.
-	Mary's desktop profile is nearly 1 Gigabyte in size. As a result of her desktop configuration, it
+	Mary's desktop profile is nearly 1 GB in size. As a result of her desktop configuration, it
 	takes her nearly 15 minutes just to log onto her workstation. But that is not enough. Because all
 	network logon traffic passes over the network links between our buildings, logging on may take
 	three or four attempts due to blue screen problems associated with network timeouts.
@@ -273,8 +273,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<para>
 	A few of us worked to help her out of trouble. We convinced her to stay and promised to fully 
 	resolve the difficulties she is facing. We have no choice. We must implement LDAP and set hard 
-	limits on what our users can do with their desktops. If we do not do this, we face staff losses 
-	that can surely do harm to our growth, as well as to staff morale. I am sure we can better deal 
+	limits on what our users can do with their desktops. Otherwise, we face staff losses 
+	that can surely do harm to our growth as well as to staff morale. I am sure we can better deal 
 	with the consequences of what we know we must do than we can with the unrest we have now.
 	</para>
 
@@ -286,11 +286,13 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<para>
-	<indexterm><primary>compromise</primary></indexterm>
+	<indexterm><primary>compromise</primary></indexterm>	
 	<indexterm><primary>network</primary><secondary>multi-segment</secondary></indexterm>
-	Every compromise has consequences. Having a large routed (i.e., multi-segment) network with only a
+	Every compromise has consequences. Having a large routed (i.e., multisegment) network with only a
 	single domain controller is a poor design that has obvious operational effects that may
-	frustrate users. Here is Bob's reply:
+	frustrate users. Here is your reply:
+	</para>
+
 	<blockquote><attribution>Bob</attribution><para>
 	Christine, Your diligence and attention to detail are much valued. Stan and I fully support your
 	proposals to resolve the issues. I am confident that your plans fully realized will significantly
@@ -298,7 +300,6 @@ clients is conservative and if followed will minimize problems - but it is not a
 	Please let Stan know what the estimated cost will be so I can approve the expense. Do not wait
 	for approval; I appreciate the urgency.
 	</para></blockquote>
-	</para>
 
 	<sect2>
 		<title>Assignment Tasks</title>
@@ -308,15 +309,14 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</para>
 
 		<orderedlist>
-
 			<listitem><para>
 			<indexterm><primary>Backup Domain Controller</primary><see>BDC</see></indexterm>
 			<indexterm><primary>BDC</primary></indexterm>
 			<indexterm><primary>tdbsam</primary></indexterm>
 			<indexterm><primary>LDAP</primary></indexterm><indexterm><primary>migration</primary></indexterm>
 			Implement Backup Domain Controllers (BDCs) in each building. This involves
-			a change from use of a <emphasis>tdbsam</emphasis> backend that was used in the previous
-			chapter, to use an LDAP-based backend.
+			a change from a <emphasis>tdbsam</emphasis> backend that was used in the previous
+			chapter to an LDAP-based backend.
 			</para>
 
 			<para>
@@ -333,15 +333,13 @@ clients is conservative and if followed will minimize problems - but it is not a
 			exclude the redirected folders from being loaded at login time. You can also
 			create a new default profile that can be used for all new users.
 			</para></listitem>
-
 		</orderedlist>
 
 		<para>
 		<indexterm><primary>disk image</primary></indexterm>
-		You configure a new MS Windows XP Professional Workstation disk image that you
-		roll out to all desktop users. The instructions you have created are followed on a
-		staging machine from which all changes can be carefully tested before inflicting them on
-		your network users.
+		You configure a new MS Windows XP Professional workstation disk image that you roll out
+		to all desktop users. The instructions you have created are followed on a staging machine
+		from which all changes can be carefully tested before inflicting them on your network users.
 		</para>
 
 		<para>
@@ -367,39 +365,41 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 	<itemizedlist>
-	<indexterm><primary>eDirectory</primary></indexterm>
-		<listitem><para>Novell <ulink url="http://www.novell.com/products/edirectory/">eDirectory.</ulink>
-		eDirectory is being successfully used by some sites. Information on how to use eDirectory can be
+		<listitem><para>
+		<indexterm><primary>eDirectory</primary></indexterm>
+		Novell <ulink url="http://www.novell.com/products/edirectory/">eDirectory</ulink>
+		is being successfully used by some sites. Information on how to use eDirectory can be
 		obtained from the Samba mailing lists or from Novell.
-	</para></listitem>
+		</para></listitem>
 
-	<listitem><para>
-	<indexterm><primary>Tivoli Directory Server</primary></indexterm>
-		IBM <ulink url="http://www-306.ibm.com/software/tivoli/products/directory-server/">Tivoli Directory Server,</ulink>
-		can be used to provide the Samba LDAP backend. Example schema files are provided in the Samba 
-		source code tarball under the directory <filename>~samba/example/LDAP.</filename>
-	</para></listitem>
+		<listitem><para>
+		<indexterm><primary>Tivoli Directory Server</primary></indexterm>
+		IBM <ulink url="http://www-306.ibm.com/software/tivoli/products/directory-server/">Tivoli 
+		Directory Server</ulink> can be used to provide the Samba LDAP backend. Example schema 
+		files are provided in the Samba source code tarball under the directory 
+		<filename>~samba/example/LDAP.</filename>
+		</para></listitem> 
 
-	<listitem><para>
-	<indexterm><primary>Sun ONE Identity Server</primary></indexterm>
-		Sun <ulink url="http://www.sun.com/software/sunone/identity/index.html">ONE Identity Server.</ulink>
-		This product suite provides an LDAP server that can be used for Samba. Example schema files are 
-		provided in the Samba source code tarball under the directory <filename>~samba/example/LDAP.</filename>
-	</para></listitem>
+		<listitem><para>
+		<indexterm><primary>Sun ONE Identity Server</primary></indexterm>
+		Sun <ulink url="http://www.sun.com/software/sunone/identity/index.html">ONE Identity 
+		Server product suite</ulink> provides an LDAP server that can be used for Samba.
+		Example schema files are provided in the Samba source code tarball under the directory
+		<filename>~samba/example/LDAP.</filename>
+		</para></listitem>
 	</itemizedlist>
 
 	<para>
-	A word of caution is fully in order. OpenLDAP is purely an LDAP server and unlike commercial
+	A word of caution is fully in order. OpenLDAP is purely an LDAP server, and unlike commercial
 	offerings, it requires that you manually edit the server configuration files and manually
-	initialize the LDAP directory database. OpenLDAP itself has only command line tools to
+	initialize the LDAP directory database. OpenLDAP itself has only command-line tools to
 	help you to get OpenLDAP and Samba-3 running as required, albeit with some learning curve challenges.
 	</para>
 
 	<para>
 	<indexterm><primary>Active Directory</primary></indexterm>
 	For most sites, the deployment of Microsoft Active Directory from the shrink-wrapped installation is quite
-	adequate. If you are migrating from Microsoft Active Directory, be
-	warned that OpenLDAP does not include
+	adequate. If you are migrating from Microsoft Active Directory, be warned that OpenLDAP does not include
 	GUI-based directory management tools. Even a simple task such as adding users to the OpenLDAP database 
 	requires an understanding of what you are doing, why you are doing it, and the tools that you must use.
 	</para>
@@ -417,7 +417,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	master/slave server configurations. OpenLDAP is a mature platform to host the organizational 
 	directory infrastructure that can include all UNIX accounts, directories for electronic mail, and much more. 
 	The price paid through learning how to design an LDAP directory schema in implementation and configuration 
-	of management tools is well rewarded by performance and flexibility, and the freedom to manage directory
+	of management tools is well rewarded by performance and flexibility and the freedom to manage directory
 	contents with greater ability to back up, restore, and modify the directory than is generally possible
 	with Microsoft Active Directory.
 	</para>
@@ -428,22 +428,22 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>Active Directory</primary></indexterm>
 	<indexterm><primary>OpenLDAP</primary></indexterm>
 	A comparison of OpenLDAP with Microsoft Active Directory does not do justice to either. OpenLDAP is an LDAP directory
-	tool-set. Microsoft Active Directory Server is an implementation of an LDAP server that is largely pre-configured
+	tool-set. Microsoft Active Directory Server is an implementation of an LDAP server that is largely preconfigured
 	for a specific task orientation. It comes with a set of administrative tools that is entirely customized
 	for the purpose of running MS Windows applications that include file and print services, Microsoft Exchange
 	server, Microsoft SQL server, and more. The complexity of OpenLDAP is highly valued by the UNIX administrator
-	who wants to built a custom directory solution. Microsoft provides an application called 
+	who wants to build a custom directory solution. Microsoft provides an application called 
 	<ulink url="http://www.microsoft.com/windowsserver2003/adam/default.mspx">
-	MS ADAM</ulink> that provides more-generic LDAP services, yet it does not have the vanilla-like services
+	MS ADAM</ulink> that provides more generic LDAP services, yet it does not have the vanilla-like services
 	of OpenLDAP.
 	</para>
 
 	<para>
 	<indexterm><primary>directory</primary><secondary>schema</secondary></indexterm>
 	<indexterm><primary>passdb backend</primary></indexterm>
-	You may wish to consider out-sourcing the development of your OpenLDAP directory to an expert, particularly
+	You may wish to consider outsourcing the development of your OpenLDAP directory to an expert, particularly
 	if you find the challenge of learning about LDAP directories, schemas, configuration, and management
-	tools, and the creation of shell and Perl scripts a bit
+	tools and the creation of shell and Perl scripts a bit
 	challenging. OpenLDAP can be easily customized, though it includes
 	many ready-to-use schemas. Samba-3 provides an OpenLDAP schema file
 	that is required for use as a passdb backend.
@@ -453,19 +453,19 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>interoperability</primary></indexterm>
 	For those who are willing to brave the process of installing and configuring LDAP and Samba-3 interoperability,
 	there are a few nice Web-based tools that may help you to manage your users and groups more effectively.
-	The Web-based tools you might like to consider include: The
-	<ulink url="http://lam.sourceforge.net/">LDAP Account Manager</ulink> (LAM), as well as the
-	<ulink url="http://www.webmin.com">Webmin</ulink>-based Idealx
-	<ulink url="http://webmin.idealx.org/index.en.html">CGI tools.</ulink>
+	The Web-based tools you might like to consider include the
+	<ulink url="http://lam.sourceforge.net/">LDAP Account Manager</ulink> (LAM) and the Webmin-based
+	<ulink url="http://www.webmin.com">Webmin</ulink> Idealx
+	<ulink url="http://webmin.idealx.org/index.en.html">CGI tools</ulink>.
 	</para>
 
 	<para>
 	Some additional LDAP tools should be mentioned. Every so often a Samba user reports using one of 
-	these so it may be useful to include passing reference to them. 
-	The first is <ulink url="http://biot.com/gq">GQ</ulink>, a GTK-based LDAP browser; 
-	LDAP <ulink url="http://www.iit.edu/~gawojar/ldap/">Browser/Editor,</ulink> 
-	<ulink url="http://www.jxplorer.org/">JXplorer</ulink> (by Computer Associates),
-	and the last is called <ulink url="http://phpldapadmin.sourceforge.net/">phpLDAPadmin.</ulink>
+	these, so it may be useful to them: 
+	<ulink url="http://biot.com/gq">GQ</ulink>, a GTK-based LDAP browser; 
+	LDAP <ulink url="http://www.iit.edu/~gawojar/ldap/">Browser/Editor</ulink> 
+	<ulink url="http://www.jxplorer.org/">; JXplorer</ulink> (by Computer Associates);
+	and <ulink url="http://phpldapadmin.sourceforge.net/">phpLDAPadmin</ulink>.
 	</para>
 
 	<note><para>
@@ -477,9 +477,9 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 	<para>
 	Information to help you get started with OpenLDAP is available from the
-	<ulink url="http://www.openldap.org/pub/">OpenLDAP Web Site.</ulink> Many people have found the book
-	<ulink url="http://www.booksense.com/product/info.jsp?isbn=1565924916">LDAP System Administration,</ulink>
-	written by Jerry Carter, quite useful.
+	<ulink url="http://www.openldap.org/pub/">OpenLDAP web site</ulink>. Many people have found the book
+	<ulink url="http://www.booksense.com/product/info.jsp?isbn=1565924916"><emphasis>LDAP System Administration</emphasis>,</ulink>
+	by Jerry Carter quite useful.
 	</para>
 
 	<para>
@@ -489,8 +489,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>network</primary><secondary>wide-area</secondary></indexterm>
 	Mary's problems are due to two factors. First, the absence of a domain controller on the local network is the
 	main cause of the errors that result in blue screen crashes. Second, Mary has a large profile that must
-	be loaded over the wide-area network connection. This addition of BDCs on each network segment significantly
-	improves overall network performance for most users, but this is not enough. You must gain control over
+	be loaded over the WAN connection. The addition of BDCs on each network segment significantly
+	improves overall network performance for most users, but it is not enough. You must gain control over
 	user desktops, and this must be done in a way that wins their support and does not cause further loss of
 	staff morale. The following procedures solve this problem.
 	</para>
@@ -504,7 +504,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<para>
 	You add the ability to automatically download new printer drivers, even if they are not installed 
 	in the default desktop profile. Only one example of printing configuration is given. It is assumed that
-	you can extrapolate the principles and use this to install all printers that may be needed.
+	you can extrapolate the principles and use them to install all printers that may be needed.
 	</para>
 
 	<sect2>
@@ -516,7 +516,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>Posix</primary></indexterm>
 	The solution provided is a minimal approach to getting OpenLDAP running as an identity management directory
 	server for UNIX system accounts as well as for Samba. From the OpenLDAP perspective, UNIX system
-	accounts are stored Posix schema extensions. Samba provides its own schema to permit storage of account 
+	accounts are stored POSIX schema extensions. Samba provides its own schema to permit storage of account 
 	attributes Samba needs. Samba-3 can use the LDAP backend to store:
 	</para>
 	
@@ -539,10 +539,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<indexterm><primary>nss_ldap</primary></indexterm>
 	The use of LDAP with Samba-3 makes it necessary to store UNIX accounts as well as Windows Networking
 	accounts in the LDAP backend. This implies the need to use the 
-	<ulink url="http://www.padl.com/Contents/OpenSourceSoftware.html">PADL LDAP tools.</ulink> The resolution 
+	<ulink url="http://www.padl.com/Contents/OpenSourceSoftware.html">PADL LDAP tools</ulink>. The resolution 
 	of the UNIX group name to its GID must be enabled from either the <filename>/etc/group</filename> 
 	or from the LDAP backend. This requires the use of the PADL <filename>nss_ldap</filename> tool-set
-	that integrates with the name service switch (NSS). The same requirements exist for resolution
+	that integrates with the NSS. The same requirements exist for resolution
 	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="sbehap-LDAPdiag"/>.
 	</para>
 
@@ -551,12 +551,9 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<imagefile scale="50">UNIX-Samba-and-LDAP</imagefile>
 	</image>
 
-	<para><indexterm>
-	    <primary>security</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP</primary>
-	    <secondary>secure</secondary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>security</primary></indexterm>
+	<indexterm><primary>LDAP</primary><secondary>secure</secondary></indexterm>
 	You configure OpenLDAP so that it is operational. Before deploying the OpenLDAP, you really
 	ought to learn how to configure secure communications over LDAP so that site security is not
 	at risk. This is not covered in the following guidance.
@@ -565,39 +562,35 @@ clients is conservative and if followed will minimize problems - but it is not a
 	<para>
 	<indexterm><primary>PDC</primary></indexterm>
 	<indexterm><primary>LDAP Interchange Format</primary><see>LDIF</see></indexterm>
-	<indexterm><primary>LDIF</primary></indexterm><indexterm><primary>secrets.tdb</primary></indexterm>
-	When OpenLDAP has been made operative, you configure the Primary Domain Controller (PDC)
-	called <constant>MASSIVE</constant>. You initialize the Samba <filename>secrets.tdb<subscript></subscript></filename>
-	file. Then you create the LDAP Interchange Format (LDIF) file from which the LDAP database
-	can be initialized. You need to decide how best to create user and group accounts. A few
-	hints are, of course, provided. You can also find on the enclosed CD-ROM, in the <filename>Chap06</filename>
-	directory, a few tools that help to manage user and group configuration.
+	<indexterm><primary>LDIF</primary></indexterm>
+	<indexterm><primary>secrets.tdb</primary></indexterm>
+	When OpenLDAP has been made operative, you configure the PDC called <constant>MASSIVE</constant>.
+	You initialize the Samba <filename>secrets.tdb<subscript></subscript></filename> file. Then you
+	create the LDAP Interchange Format (LDIF) file from which the LDAP database can be initialized.
+	You need to decide how best to create user and group accounts. A few hints are, of course, provided.
+	You can also find on the enclosed CD-ROM, in the <filename>Chap06</filename> directory, a few tools
+	that help to manage user and group configuration.
 	</para>
 
-	<para><indexterm>
-	    <primary>folder redirection</primary>
-	  </indexterm><indexterm>
-	    <primary>default profile</primary>
-	  </indexterm><indexterm>
-	    <primary>roaming profile</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>folder redirection</primary></indexterm>
+	<indexterm><primary>default profile</primary></indexterm>
+	<indexterm><primary>roaming profile</primary></indexterm>
 	In order to effect folder redirection and to add robustness to the implementation,
-	create a network Default Profile. All network users workstations are configured to use
+	create a network default profile. All network users workstations are configured to use
 	the new profile. Roaming profiles will automatically be deleted from the workstation
 	when the user logs off.
 	</para>
 
-	<para><indexterm>
-	    <primary>mandatory profile</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>mandatory profile</primary></indexterm>
 	The profile is configured so that users cannot change the appearance
 	of their desktop. This is known as a mandatory profile. You make certain that users
 	are able to use their computers efficiently.
 	</para>
 
-	<para><indexterm>
-	    <primary>logon script</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>logon script</primary></indexterm>
 	A network logon script is used to deliver flexible but consistent network drive
 	connections.
 	</para>
@@ -613,8 +606,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 		Samba versions prior to 3.0.11 necessitated the use of a domain administrator account
 		that maps to the UNIX UID=0. The UNIX operating system permits only the <constant>root</constant>
 		user to add user and group accounts. Samba 3.0.11 introduced a new facility known as
-		<constant>Privileges</constant>. This new facility introduced four new privileges that
-		can be assigned to users and/or groups:
+		<constant>Privileges</constant>, which provides five new privileges that
+		can be assigned to users and/or groups; see Table 5.1.
 		</para>
 
 
@@ -655,7 +648,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</table>
 
 		<para>
-		In this network example use will be made of one of the supported privileges purely to demonstrate
+		In this network example use is made of one of the supported privileges purely to demonstrate
 		how any user can now be given the ability to add machines to the domain using a normal user account
 		that has been given the appropriate privileges.
 		</para>
@@ -674,7 +667,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<indexterm><primary>HKEY_CURRENT_USER</primary></indexterm>
 		<indexterm><primary>NTUSER.DAT</primary></indexterm>
 		<indexterm><primary>%USERNAME%</primary></indexterm>
-		An XP Roaming Profile consists of the <constant>HKEY_CURRENT_USER</constant> hive file
+		An XP roaming profile consists of the <constant>HKEY_CURRENT_USER</constant> hive file
 		<filename>NTUSER.DAT</filename> and a number of folders (My Documents, Application Data,
 		Desktop, Start Menu, Templates, NetHood, Favorites, and so on).  When a user logs onto the 
 		network with the default configuration of MS Windows NT/200x/XPP, all this data is 
@@ -682,8 +675,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 		directory. While the user is logged in, any changes made to any of these folders or to the
 		<constant>HKEY_CURRENT_USER</constant> branch of the registry are made to the local copy
 		of the profile.  At logout the profile data is copied back to the server. This behavior
-		can be changed through appropriate registry changes and/or through changes to the Default
-		User profile. In the latter case, it updates the registry with the values that are set in the
+		can be changed through appropriate registry changes and/or through changes to the default
+		user profile. In the latter case, it updates the registry with the values that are set in the
 		profile <filename>NTUSER.DAT</filename>
 		file.
 		</para>
@@ -691,17 +684,17 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<para>
 		The first challenge is to reduce the amount of data that must be transferred to and 
 		from the profile server as roaming profiles are processed.  This includes removing 
-		all the shortcuts in the Recent directory, making sure the cache used by the web browser 
+		all the shortcuts in the Recent directory, making sure the cache used by the Web browser 
 		is not being dumped into the <filename>Application Data</filename> folder, removing the 
 		Java plug-ins cache (the .jpi_cache directory in the profile), as well as training the 
-		user to not place large files on the Desktop and to use his mapped home directory for
-		saving documents instead of the <filename>My Documents</filename> folder.
+		user to not place large files on the desktop and to use his or her mapped home directory
+		instead of the <filename>My Documents</filename> folder for saving documents.
 		</para>
 
 		<para>
 		<indexterm><primary>My Documents</primary></indexterm>
 		Using a folder other than <filename>My Documents</filename> is a nuisance for 
-		some users since many applications use it by default.
+		some users, since many applications use it by default.
 		</para>
 
 		<para>
@@ -717,7 +710,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<para>
 		<indexterm><primary>Network Default Profile</primary></indexterm>
 		<indexterm><primary>redirected folders</primary></indexterm>
-		Every user profile has their own <filename>NTUSER.DAT</filename> file. This means
+		Every user profile has its own <filename>NTUSER.DAT</filename> file. This means
 		you need to edit every user's profile, unless a better method can be
 		followed. Fortunately, with the right preparations, this is not difficult.
 		It is possible to remove the <filename>NTUSER.DAT</filename> file from each
@@ -750,8 +743,8 @@ clients is conservative and if followed will minimize problems - but it is not a
 			<guimenuitem>System</guimenuitem>
 			<guimenuitem>User Profiles</guimenuitem>
 		</menuchoice>. 
-		By default this setting contains:
-		<quote>Local Settings;Temporary Internet Files;History;Temp</quote>.
+		By default this setting contains
+		<quote>Local Settings; Temporary Internet Files; History; Temp</quote>.
 		</para>
 
 		<para>
@@ -771,7 +764,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		There are two changes that should be done to each user's profile. Move each of 
 		the directories that you have excluded from being copied back and forth out of 
 		the usual profile path. Modify each user's <filename>NTUSER.DAT</filename> file 
-		to point to the new paths that are shared over the network, instead of the default
+		to point to the new paths that are shared over the network instead of to the default
 		path (<filename>C:\Documents and Settings\%USERNAME%</filename>).
 		</para>
 
@@ -779,7 +772,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<indexterm><primary>Default User</primary></indexterm>
 		<indexterm><primary>regedt32</primary></indexterm>
 		The above modifies existing user profiles. So that newly created profiles have 
-		these settings, you will need to modify the <filename>NTUSER.DAT</filename> in 
+		these settings, you need to modify the <filename>NTUSER.DAT</filename> in 
 		the <filename>C:\Documents and Settings\Default User</filename> folder on each 
 		client machine, changing the same registry keys.  You could do this by copying 
 		<filename>NTUSER.DAT</filename> to a Linux box and using <command>regedt32</command>.
@@ -794,13 +787,13 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<para>
 		<indexterm><primary>NETLOGON</primary></indexterm>
 		<indexterm><primary>NTUSER.DAT</primary></indexterm>
-		If you are using Samba as your PDC, you should create a file-share called 
+		If you are using Samba as your PDC, you should create a file share called 
 		<constant>NETLOGON</constant> and within that create a directory called 
 		<filename>Default User</filename>, which is a copy of the desired default user 
 		configuration (including a copy of <filename>NTUSER.DAT</filename>).
 		If this share exists and the <filename>Default User</filename> folder exists, 
 		the first login from a new account pulls its configuration from it.
-		See also: <ulink url="http://isg.ee.ethz.ch/tools/realmen/det/skel.en.html">
+		See also <ulink url="http://isg.ee.ethz.ch/tools/realmen/det/skel.en.html">
 		the Real Men Don't Click</ulink> Web site.
 		</para>
 
@@ -815,27 +808,27 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<indexterm><primary>Raw Print Through</primary></indexterm>
 		The subject of printing is quite topical. Printing problems run second place to name
 		resolution issues today. So far in this book, you have experienced only what is generally
-		known as <quote>dumb</quote> printing. Dumb printing is the arrangement where all drivers
+		known as <quote>dumb</quote> printing. Dumb printing is the arrangement by which all drivers
 		are manually installed on each client and the printing subsystems perform no filtering
 		or intelligent processing. Dumb printing is easily understood. It usually works without
 		many problems, but it has its limitations also. Dumb printing is better known as
-		<command>Raw Print Through</command> printing.
+		<command>Raw-Print-Through</command> printing.
 		</para>
 
 		<para>
 		<indexterm><primary>printing</primary><secondary>drag-and-drop</secondary></indexterm>
 		<indexterm><primary>printing</primary><secondary>point-n-click</secondary></indexterm>
-		Samba permits the configuration of <command>Smart</command> printing using the Microsoft
+		Samba permits the configuration of <command>smart</command> printing using the Microsoft
 		Windows point-and-click (also called drag-and-drop) printing. What this provides is
 		essentially the ability to print to any printer. If the local client does not yet have a
 		driver installed, the driver is automatically downloaded from the Samba server and
 		installed on the client. Drag-and-drop printing is neat; it means the user never needs
-		to fuss with driver installation, and that is a <trademark>Good Thing</trademark>,
+		to fuss with driver installation, and that is a <trademark>Good Thing,</trademark>
 		isn't it?
 		</para>
 
 		<para>
-		There is a further layer of print job processing that is known as <command>Intelligent</command>
+		There is a further layer of print job processing that is known as <command>intelligent</command>
 		printing that automatically senses the file format of data submitted for printing and
 		then invokes a suitable print filter to convert the incoming data stream into a format
 		suited to the printer to which the job is dispatched.
@@ -848,15 +841,15 @@ clients is conservative and if followed will minimize problems - but it is not a
 		The CUPS printing subsystem is capable of intelligent printing. It has the capacity to
 		detect the data format and apply a print filter. This means that it is feasible to install
 		on all Windows clients a single printer driver for use with all printers that are routed
-		through CUPS. The most sensible driver to use is one for a Postscript printer. Fortunately,
-		<ulink url="http://www.easysw.com">Easy Software Products,</ulink> the authors of CUPS have
-		released a Postscript printing driver for Windows. It can be installed into the Samba
+		through CUPS. The most sensible driver to use is one for a PostScript printer. Fortunately,
+		<ulink url="http://www.easysw.com">Easy Software Products</ulink>, the authors of CUPS, have
+		released a PostScript printing driver for Windows. It can be installed into the Samba
 		printing backend so that it automatically downloads to the client when needed. 
 		</para>
 
 		<para>
 		This means that so long as there is a CUPS driver for the printer, all printing from Windows 
-		software can use Postscript, no matter what the actual printer language for the physical 
+		software can use PostScript, no matter what the actual printer language for the physical 
 		device is. It also means that the administrator can swap out a printer with a totally 
 		different type of device without ever needing to change a client workstation driver.
 		</para>
@@ -870,12 +863,12 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</sect3>
 
 		<sect3 id="sbeavoid">
-		<title>Avoiding Failures &smbmdash; Solving Problems Before they Happen</title>
+		<title>Avoiding Failures: Solving Problems Before They Happen</title>
 
 		<para>
-		It has often been said that there are three types of people in the world: Those who
-		have sharp minds and those that forget things. Please do not ask what the third group
-		are like! Well, it seems that many of us have company in the second group. There must
+		It has often been said that there are three types of people in the world: those who
+		have sharp minds and those who forget things. Please do not ask what the third group
+		is like! Well, it seems that many of us have company in the second group. There must
 		be a good explanation why so many network administrators fail to solve apparently
 		simple problems efficiently and effectively.
 		</para>
@@ -885,20 +878,20 @@ clients is conservative and if followed will minimize problems - but it is not a
 		</para>
 
 		<sect4>
-		<title>Preliminary Advice &smbmdash; Dangers Can be Avoided</title>
+		<title>Preliminary Advice: Dangers Can Be Avoided</title>
 
 		<para>
-		The best advice regarding how best to mend a broken leg was <quote>never break a leg!</quote>
+		The best advice regarding how to mend a broken leg is <quote>Never break a leg!</quote>
 		</para>
 
 		<para>
 		<indexterm><primary>LDAP</primary></indexterm>
-		New comers to Samba and LDAP seem to struggle a great deal at first.  If you want advice
+		Newcomers to Samba and LDAP seem to struggle a great deal at first.  If you want advice
 		regarding the best way to remedy LDAP and Samba problems: <quote>Avoid them like the plague!</quote>
 		</para>
 
 		<para>
-		If you are now asking yourself how can problems be avoided? The best advice is to start
+		If you are now asking yourself how problems can be avoided, the best advice is to start
 		out your learning experience with a <emphasis>known-good configuration.</emphasis> After
 		you have seen a fully working solution, a good way to learn is to make slow and progressive
 		changes that cause things to break, then observe carefully how and why things ceased to work.
@@ -912,20 +905,20 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		<warning><para>
 		Do not be lulled into thinking that you can easily adopt the examples in this
-		book and adapt them without first working through the working examples provided. A little
-		thing over-looked can cause untold pain and may permanently tarnish your experience.
+		book and adapt them without first working through the examples provided. A little
+		thing overlooked can cause untold pain and may permanently tarnish your experience.
 		</para></warning>
 
 		</sect4>
 
 		<sect4>
-		<title>The Name Service Caching Daemon (nscd)</title>
+		<title>The Name Service Caching Daemon</title>
 
 		<para>
 		The name service caching daemon (nscd) is a primary cause of difficulties with name
 		resolution, particularly where <command>winbind</command> is used. Winbind does its
 		own caching, thus nscd causes double caching which can lead to peculiar problems during
-		debugging. As a rule it is a good idea to turn off the name service caching daemon.
+		debugging. As a rule, it is a good idea to turn off the name service caching daemon.
 		</para>
 
 		<para>
@@ -984,7 +977,7 @@ clients is conservative and if followed will minimize problems - but it is not a
         shared                  hosts           yes
 </screen>
 	It is feasible to comment out the <constant>passwd</constant> and <constant>group</constant>
-	entries so they will not be cached. Alternately, it is often simpler to just disable the
+	entries so they will not be cached. Alternatively, it is often simpler to just disable the
 	<command>nscd</command> service by executing (on Novell SUSE Linux):
 <screen>
 &rootprompt; chkconfig nscd off
@@ -1003,7 +996,7 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<indexterm><primary>slapd</primary></indexterm>
 		In the example <filename>/etc/openldap/slapd.conf</filename> control file
 		(see <link linkend="sbehap-dbconf"/>) there is an entry for <constant>loglevel	256</constant>.
-		To enable logging via the syslog infrastructure it is necessary to uncomment this parameter
+		To enable logging via the syslog infrastructure, it is necessary to uncomment this parameter
 		and restart <command>slapd</command>.
 		</para>
 
@@ -1022,9 +1015,9 @@ local5.*                        -/var/log/localmessages
 local6,local7.*                 -/var/log/localmessages
 local4.*                        -/var/log/ldaplogs
 </screen>
-		In the above case, all LDAP related logs will be directed to the file
+		In this case, all LDAP-related logs will be directed to the file
 		<filename>/var/log/ldaplogs</filename>. This makes it easy to track LDAP errors.
-		The above provides a simple example of usage that can be modified to suit
+		The snippet provides a simple example of usage that can be modified to suit
 		local site needs. The configuration used later in this chapter reflects such
 		customization with the intent that LDAP log files will be stored at a location
 		that meets local site needs and wishes more fully.
@@ -1049,16 +1042,15 @@ logdir /data/logs
 		</para>
 
 		<para>
-		The diagnostic process should follow the following steps:
+		The diagnostic process should follow these steps:
 		</para>
 
 		<procedure>
-		<title>Diagnostic Guidelines</title>
 
 			<step><para>
 			Verify the <constant>nss_base_passwd, nss_base_shadow, nss_base_group</constant> entries
 			in the <filename>/etc/ldap.conf</filename> file and compare them closely with the directory
-			tree location that was chosen in when the directory was first created.
+			tree location that was chosen when the directory was first created.
 			</para>
 
 			<para>
@@ -1083,14 +1075,14 @@ nss_base_group ou=Groups,dc=abmas,dc=biz?one
 </screen>
 			The same process may be followed to determine the appropriate dn for user accounts.
 			If the container for computer accounts is not the same as that for users (see the &smb.conf;
-			file entry for <constant>ldap machine suffix</constant>, it may be necessary to set the 
+			file entry for <constant>ldap machine suffix</constant>), it may be necessary to set the 
 			following DIT dn in the <filename>/etc/ldap.conf</filename> file:
 <screen>
 nss_base_passwd dc=abmas,dc=biz?sub
 </screen>
 			This instructs LDAP to search for machine as well as user entries from the top of the DIT
 			down. This is inefficient, but at least should work. Note: It is possible to specify multiple
-			<constant>nss_base_passwd</constant> entries in the <filename>/etc/ldap.conf</filename> file, they
+			<constant>nss_base_passwd</constant> entries in the <filename>/etc/ldap.conf</filename> file; they
 			will be evaluated sequentially. Let us consider an example of use where the following DIT
 			has been implemented:
 			</para>
@@ -1123,7 +1115,7 @@ nss_base_passwd ou=Computers,ou=Users,dc=abmas,dc=org?one
 			</para></step>
 
 			<step><para>
-			For additional diagnostic information check the contents of the <filename>/var/log/messages</filename>
+			For additional diagnostic information, check the contents of the <filename>/var/log/messages</filename>
 			to see what error messages are being generated as a result of the LDAP lookups. Here is an example of
 			a successful lookup:
 <screen>
@@ -1159,7 +1151,7 @@ slapd[12164]: conn=1 fd=10 closed
 
 			<step><para>
 			Check that the bindpw entry in the <filename>/etc/ldap.conf</filename> or in the
-			<filename>/etc/ldap.secrets</filename> file is correct. i.e.: As specified in the
+			<filename>/etc/ldap.secrets</filename> file is correct, as specified in the
 			<filename>/etc/openldap/slapd.conf</filename> file.
 			</para></step>
 
@@ -1171,7 +1163,7 @@ slapd[12164]: conn=1 fd=10 closed
 		<title>Debugging Samba</title>
 
 		<para>
-		The following parameters in the &smb.conf; file can be useful in tracking down Samba related problems:
+		The following parameters in the &smb.conf; file can be useful in tracking down Samba-related problems:
 <screen>
 [global]
 	...
@@ -1212,7 +1204,7 @@ slapd[12164]: conn=1 fd=10 closed
 		<title>Debugging on the Windows Client</title>
 
 		<para>
-		MS Windows 2000 Professional and Windows  XP Professional clients are capable of being configured
+		MS Windows 2000 Professional and Windows  XP Professional clients can be configured
 		to create a netlogon.log file that can be very helpful in diagnosing network logon problems. Search
 		the Microsoft knowledge base for detailed instructions. The techniques vary a little with each
 		version of MS Windows.
@@ -1231,18 +1223,18 @@ slapd[12164]: conn=1 fd=10 closed
 		<para>
 		MS Windows network users are generally very sensitive to limits that may be imposed when 
 		confronted with locked-down workstation configurations. The challenge you face must 
-		be promoted as a choice between reliable and fast network operation, and a constant flux 	
+		be promoted as a choice between reliable, fast network operation and a constant flux 	
 		of problems that result in user irritation.
 		</para>
 
 	</sect2>
 
 	<sect2>
-		<title>Installation Check-List</title>
+		<title>Installation Checklist</title>
 
 	<para>
-	You are starting a complex project. Even though you have gone through the installation
-	of a complex network in chapter 5, this network is a bigger challenge because of the
+	You are starting a complex project. Even though you went through the installation of a complex
+	network in <link linkend="Big500users"/>, this network is a bigger challenge because of the
 	large number of complex applications that must be configured before the first few steps
 	can be validated. Take stock of what you are about to undertake, prepare yourself, and
 	frequently review the steps ahead while making at least a mental note of what has already
@@ -1254,37 +1246,37 @@ slapd[12164]: conn=1 fd=10 closed
 	<itemizedlist>
 		<listitem><para>Samba-3 PDC Server Configuration</para>
 			<orderedlist>
-				<listitem><para>DHCP and DNS Servers</para></listitem>
-				<listitem><para>OpenLDAP Server</para></listitem>
-				<listitem><para>PAM and NSS Client Tools</para></listitem>
+				<listitem><para>DHCP and DNS servers</para></listitem>
+				<listitem><para>OpenLDAP server</para></listitem>
+				<listitem><para>PAM and NSS client tools</para></listitem>
 				<listitem><para>Samba-3 PDC</para></listitem>
-				<listitem><para>Idealx SMB-LDAP Scripts</para></listitem>
-				<listitem><para>LDAP Initialization</para></listitem>
-				<listitem><para>Create User and Group Accounts</para></listitem>
+				<listitem><para>Idealx smbldap scripts</para></listitem>
+				<listitem><para>LDAP initialization</para></listitem>
+				<listitem><para>Create user and group accounts</para></listitem>
 				<listitem><para>Printers</para></listitem>
-				<listitem><para>Share Point Directory Roots</para></listitem>
-				<listitem><para>Profile Directories</para></listitem>
-				<listitem><para>Logon Scripts</para></listitem>
-				<listitem><para>Configuration of User Rights and Privileges</para></listitem>
+				<listitem><para>Share point directory roots</para></listitem>
+				<listitem><para>Profile directories</para></listitem>
+				<listitem><para>Logon scripts</para></listitem>
+				<listitem><para>Configuration of user rights and privileges</para></listitem>
 			</orderedlist>
 		</listitem>
 		<listitem><para>Samba-3 BDC Server Configuration</para>
 			<orderedlist>
-				<listitem><para>DHCP and DNS Servers</para></listitem>
-				<listitem><para>PAM and NSS Client Tools</para></listitem>
+				<listitem><para>DHCP and DNS servers</para></listitem>
+				<listitem><para>PAM and NSS client tools</para></listitem>
 				<listitem><para>Printers</para></listitem>
-				<listitem><para>Share Point Directory Roots</para></listitem>
-				<listitem><para>Profiles Directories</para></listitem>
+				<listitem><para>Share point directory roots</para></listitem>
+				<listitem><para>Profiles directories</para></listitem>
 			</orderedlist>
 		</listitem>
 		<listitem><para>Windows XP Client Configuration</para>
 			<orderedlist>
-				<listitem><para>Default Profile Folder Redirection</para></listitem>
-				<listitem><para>MS Outlook PST File Relocation</para></listitem>
-				<listitem><para>Delete Roaming Profile on Logout</para></listitem>
-				<listitem><para>Upload Printer Drivers to Samba Servers</para></listitem>
-				<listitem><para>Install Software</para></listitem>
-				<listitem><para>Creation of Roll-out Images</para></listitem>
+				<listitem><para>Default profile folder redirection</para></listitem>
+				<listitem><para>MS Outlook PST file relocation</para></listitem>
+				<listitem><para>Delete roaming profile on logout</para></listitem>
+				<listitem><para>Upload printer drivers to Samba servers</para></listitem>
+				<listitem><para>Install software</para></listitem>
+				<listitem><para>Creation of roll-out images</para></listitem>
 			</orderedlist>
 		</listitem>
 	</itemizedlist>
@@ -1297,61 +1289,53 @@ slapd[12164]: conn=1 fd=10 closed
 <sect1>
 	<title>Samba Server Implementation</title>
 
-      <para><indexterm>
-	  <primary>file servers</primary>
-	</indexterm><indexterm>
-	  <primary>BDC</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>file servers</primary></indexterm>
+	<indexterm><primary>BDC</primary></indexterm>
 	The network design shown in <link linkend="chap6net"/> is not comprehensive. It is assumed
-	that you will install additional file servers, and possibly additional BDCs.
+	that you will install additional file servers and possibly additional BDCs.
 	</para>
 
 	<image id="chap6net">
-		<imagedescription>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</imagedescription>
+		<imagedescription>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend</imagedescription>
 		<imagefile scale="50">chap6-net</imagefile>
 	</image>
 
-      <para><indexterm>
-	  <primary>SUSE Linux</primary>
-	</indexterm><indexterm>
-	  <primary>Red Hat Linux</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>SUSE Linux</primary></indexterm>
+	<indexterm><primary>Red Hat Linux</primary></indexterm>
 	All configuration files and locations are shown for SUSE Linux 9.2 and are equally valid for SUSE
 	Linux Enterprise Server 9. The file locations for Red Hat Linux are similar. You may need to
 	adjust the locations for your particular Linux system distribution/implementation.
 	</para>
 
 <note><para>
-The following information applies to Samba-3.0.20 when used with the Idealx smbldap-tools scripts
-version 0.8.8. If using a different version of Samba, or of the smbldap-tools tarball, please 
-verify that the versions you are about to use are matching. The smbldap-tools package uses counter
-entries in the LDAP directory to avoid duplication of the UIDs and GIDs that are issued for POSIX
-accounts. The LDAP rdn under which this information is stored are called <constant>uidNumber</constant>
-and <constant>gidNumber</constant> respectively. These may be located in any convenient part of the
-directory information tree (DIT). In the examples that follow they have been located under 
-<constant>dn=sambaDomainName=MEGANET2,dc=abmas,dc=biz</constant>. They could just as well be located under the rdn
-<constant>cn=NextFreeUnixId</constant>.
+The following information applies to Samba-3.0.20 when used with the Idealx smbldap-tools
+scripts version 0.8.8. If using a different version of Samba or of the smbldap-tools tarball,
+please verify that the versions you are about to use are matching. The smbldap-tools package
+uses counter-entries in the LDAP directory to avoid duplication of the UIDs and GIDs that are
+issued for POSIX accounts. The LDAP rdn under which this information is stored are called
+<constant>uidNumber</constant> and <constant>gidNumber</constant> respectively. These may be
+located in any convenient part of the directory information tree (DIT). In the examples that
+follow they have been located under <constant>dn=sambaDomainName=MEGANET2,dc=abmas,dc=org</constant>.
+They could just as well be located under the rdn <constant>cn=NextFreeUnixId</constant>.
 </para></note>
 
 	<para>
-	The steps in the process involve changes from the network configuration
-	shown in <link linkend="Big500users"/>.
-	Before implementing the following steps, you must have completed the network implementation shown
-	in that chapter. If you are starting with newly installed Linux servers, you must complete
-	the steps shown in <link linkend="ch5-dnshcp-setup"/> before commencing
-	at <link linkend="ldapsetup"/>:
+	The steps in the process involve changes from the network configuration shown in
+	<link linkend="Big500users"/>.  Before implementing the following steps, you must
+	have completed the network implementation shown in that chapter. If you are starting
+	with newly installed Linux servers, you must complete the steps shown in
+	<link linkend="ch5-dnshcp-setup"/> before commencing at <link linkend="ldapsetup"/>.
 	</para>
 
 	<sect2 id="ldapsetup">
 	<title>OpenLDAP Server Configuration</title>
 
-	<para><indexterm>
-	    <primary>nss_ldap</primary>
-	  </indexterm><indexterm>
-	    <primary>pam_ldap</primary>
-	  </indexterm><indexterm>
-	    <primary>openldap</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>nss_ldap</primary></indexterm>
+	<indexterm><primary>pam_ldap</primary></indexterm>
+	<indexterm><primary>openldap</primary></indexterm>
 	Confirm that the packages shown in <link linkend="oldapreq"/> are installed on your system.
 	</para>
 
@@ -1394,30 +1378,23 @@ directory information tree (DIT). In the examples that follow they have been loc
 	</table>
 
 	<para>
-	Samba-3 and OpenLDAP will have a degree of inter-dependence that is unavoidable. The method
-	for boot-strapping the LDAP and Samba-3 configuration is relatively straight forward. If you
+	Samba-3 and OpenLDAP will have a degree of interdependence that is unavoidable. The method
+	for bootstrapping the LDAP and Samba-3 configuration is relatively straightforward. If you
 	follow these guidelines, the resulting system should work fine.
 	</para>
 
 	<procedure>
-	<title>Implementing the OpenLDAP Server</title>
-	
-	  <step><para><indexterm>
-		<primary>/etc/openldap/slapd.conf</primary>
-	      </indexterm>
+
+		<step><para>
+		<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
 		Install the file shown in <link linkend="sbehap-slapdconf"/> in the directory
 		<filename>/etc/openldap</filename>.
-		The <constant>rootpw</constant> value is an enrypted password string that can be
-		generated by executing the <command>slappasswd</command> command.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>/data/ldap</primary>
-	      </indexterm><indexterm>
-		<primary>group account</primary>
-	      </indexterm><indexterm>
-		<primary>user account</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>/data/ldap</primary></indexterm>
+		<indexterm><primary>group account</primary></indexterm>
+		<indexterm><primary>user account</primary></indexterm>
 		Remove all files from the directory <filename>/data/ldap</filename>, making certain that
 		the directory exists with permissions:
 <screen>
@@ -1427,7 +1404,8 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 		This may require you to add a user and a group account for LDAP if they do not exist.
 		</para></step>
 
-	<step><para><indexterm><primary>DB_CONFIG</primary></indexterm>
+		<step><para>
+		<indexterm><primary>DB_CONFIG</primary></indexterm>
 		Install the file shown in <link linkend="sbehap-dbconf"/> in the directory
 		<filename>/data/ldap</filename>. In the event that this file is added after <constant>ldap</constant>
 		has been started, it is possible to cause the new settings to take effect by shutting down
@@ -1435,10 +1413,11 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 		<filename>/data/ldap</filename> directory, and then restarting the <constant>LDAP</constant> server.
 		</para></step>
 
-	<step><para><indexterm><primary>syslog</primary></indexterm>
+		<step><para>
+		<indexterm><primary>syslog</primary></indexterm>
 		Performance logging can be enabled and should preferably be sent to a file on
 		a file system that is large enough to handle significantly sized logs. To enable
-		the logging at a verbose level to permit detailed analysis uncomment the entry in
+		the logging at a verbose level to permit detailed analysis, uncomment the entry in
 		the <filename>/etc/openldap/slapd.conf</filename> shown as <quote>loglevel 256</quote>.
 		</para>
 
@@ -1448,7 +1427,7 @@ drwx------   2 ldap    ldap       48 Dec 15 22:11 ldap
 <screen>
 local4.*        -/data/ldap/log/openldap.log
 </screen>
-		Note: The path <filename>/data/ldap/log</filename> should be set a a location
+		Note: The path <filename>/data/ldap/log</filename> should be set at a location
 		that is convenient and that can store a large volume of data.
 		</para></step>
 
@@ -1481,7 +1460,7 @@ access to dn.base=""
 		by self write
 		by * auth
 
-access to attr=userPassword,sambaLMPassword,sambaNTPassword
+access to attr=userPassword
 		by self write
 		by * auth
 
@@ -1490,8 +1469,8 @@ access to attr=shadowLastChange
 		by * read
 
 access to *
-        by * read
-        by anonymous auth
+                by * read
+                by anonymous auth
 
 #loglevel	256
 
@@ -1536,62 +1515,44 @@ index default               sub
 	<sect2 id="sbehap-PAM-NSS">
 	<title>PAM and NSS Client Configuration</title>
 
-	<para><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm><indexterm>
-	    <primary>NSS</primary>
-	  </indexterm><indexterm>
-	    <primary>PAM</primary>
-	  </indexterm>
-	The steps that follow involve configuration of LDAP, name service switch (NSS) LDAP-based resolution
-	of users and groups. Also, so that LDAP-based accounts can log onto the system, the steps ahead
-	configure the Pluggable Authentication Modules (PAM) to permit LDAP-based authentication.
+	<para>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>NSS</primary></indexterm>
+	<indexterm><primary>PAM</primary></indexterm>
+	The steps that follow involve configuration of LDAP, NSS LDAP-based resolution of users and
+	groups. Also, so that LDAP-based accounts can log onto the system, the steps ahead configure
+	the Pluggable Authentication Modules (PAM) to permit LDAP-based authentication.
 	</para>
 
 	<para>
+	<indexterm><primary>Pluggable Authentication Modules</primary><see>PAM</see></indexterm>
+	<indexterm><primary>pam_unix2.so</primary></indexterm>
 	Since you have chosen to put UNIX user and group accounts into the LDAP database, it is likely
 	that you may want to use them for UNIX system (Linux) local machine logons. This necessitates
-	  correct configuration of the Pluggable Authentication
-	  Modules<indexterm>
-	    <primary>Pluggable Authentication Modules</primary>
-	    <see>PAM</see>
-	  </indexterm><indexterm>
-	    <primary>pam_unix2.so</primary>
-	  </indexterm>
-	  (PAM). The <command>pam_ldap</command>
-	open source package provides the PAM modules that most people would use. On SUSE Linux systems,
-	the <command>pam_unix2.so</command> module also has the ability to redirect authentication requests
-	through LDAP.
+	correct configuration of PAM. The <command>pam_ldap</command> open source package provides the
+	PAM modules that most people would use. On SUSE Linux systems, the <command>pam_unix2.so</command>
+	module also has the ability to redirect authentication requests through LDAP.
 	</para>
 
-	<para><indexterm>
-	    <primary>YaST</primary>
-	  </indexterm><indexterm>
-	    <primary>SUSE Linux</primary>
-	  </indexterm><indexterm>
-	    <primary>Red Hat Linux</primary>
-	  </indexterm><indexterm>
-	    <primary>authconfig</primary>
-	  </indexterm>
-	You have chosen to configure these services by directly editing the system files but, of course, you
+	<para>
+	<indexterm><primary>YaST</primary></indexterm>
+	<indexterm><primary>SUSE Linux</primary></indexterm>
+	<indexterm><primary>Red Hat Linux</primary></indexterm>
+	<indexterm><primary>authconfig</primary></indexterm>
+	You have chosen to configure these services by directly editing the system files, but of course, you
 	know that this configuration can be done using system tools provided by the Linux system vendor.
-	  SUSE Linux has a facility in YaST (the system admin tool) through <menuchoice><guimenu>yast</guimenu>
+	SUSE Linux has a facility in YaST (the system admin tool) through <menuchoice><guimenu>yast</guimenu>
 	<guimenuitem>system</guimenuitem><guimenuitem>ldap-client</guimenuitem></menuchoice> that permits
-	configuration of SUSE Linux as an LDAP client. Red Hat Linux provides
-	  the <command>authconfig</command>
+	configuration of SUSE Linux as an LDAP client. Red Hat Linux provides the <command>authconfig</command>
 	tool for this.
 	</para>
 
 	<procedure>
-	<title>Configuration of NSS and PAM</title>
 
-	  <step><para><indexterm>
-		<primary>/lib/libnss_ldap.so.2</primary>
-	      </indexterm><indexterm>
-		<primary>/etc/ldap.conf</primary>
-	      </indexterm><indexterm>
-		<primary>nss_ldap</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>/lib/libnss_ldap.so.2</primary></indexterm>
+		<indexterm><primary>/etc/ldap.conf</primary></indexterm>
+		<indexterm><primary>nss_ldap</primary></indexterm>
 		Execute the following command to find where the <filename>nss_ldap</filename> module
 		expects to find its control file:
 <screen>
@@ -1659,12 +1620,11 @@ ssl off
 </screen>
 </example>
 
-	  <step><para><indexterm>
-		<primary>/etc/nsswitch.conf</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 		Edit the NSS control file (<filename>/etc/nsswitch.conf</filename>) so that the lines that
 		control user and group resolution will obtain information from the normal system files as
-		well as from <command>ldap</command> as follows:
+		well as from <command>ldap</command>:
 <screen>
 passwd: files ldap
 shadow: files ldap
@@ -1689,17 +1649,13 @@ hosts:  files dns wins
 		<filename>nsswitch.conf</filename> file is a significant cause of operational problems with LDAP.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>pam_unix2.so</primary>
-		<secondary>use_ldap</secondary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>pam_unix2.so</primary><secondary>use_ldap</secondary></indexterm>
 		For PAM LDAP configuration on this SUSE Linux 9.0 system, the simplest solution is to edit the following
-		files in the <filename>/etc/pam.d</filename> directory:
-	      <command>login, password, samba, sshd</command>.
-		In each file, locate every entry that has the <command>pam_unix2.so</command> entry and add to the
-		line the entry <command>use_ldap</command> as shown for the
-	      <command>login</command> module in
-		this example:
+		files in the <filename>/etc/pam.d</filename> directory: <command>login</command>, <command>password</command>,
+		<command>samba</command>, <command>sshd</command>.  In each file, locate every entry that has the
+		<command>pam_unix2.so</command> entry and add to the line the entry <command>use_ldap</command> as shown
+		for the <command>login</command> module in this example:
 <screen>
 #%PAM-1.0
 auth      requisite  pam_unix2.so   nullok use_ldap #set_secrpc
@@ -1717,9 +1673,8 @@ session   required   pam_limits.so
 </screen>
 		</para>
 
-	    <para><indexterm>
-		<primary>pam_ldap.so</primary>
-	      </indexterm>
+		<para>
+		<indexterm><primary>pam_ldap.so</primary></indexterm>
 		On other Linux systems that do not have an LDAP-enabled <command>pam_unix2.so</command> module,
 		you must edit these files by adding the <command>pam_ldap.so</command> modules as shown here:
 <screen>
@@ -1741,8 +1696,9 @@ session  optional    pam_mail.so
 		This example does have the LDAP-enabled <command>pam_unix2.so</command>, but simply
 		demonstrates the use of the <command>pam_ldap.so</command> module. You can use either
 		implementation, but if the <command>pam_unix2.so</command> on your system supports
-		LDAP, you probably want to use it, rather than add an additional module.
+		LDAP, you probably want to use it rather than add an additional module.
 		</para></step>
+
 	</procedure>
 
 	</sect2>
@@ -1750,19 +1706,18 @@ session  optional    pam_mail.so
 	<sect2 id="sbehap-massive">
 	<title>Samba-3 PDC Configuration</title>
 
-	<para><indexterm>
-	    <primary>Samba RPM Packages</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Samba RPM Packages</primary></indexterm>
 	Verify that the Samba-3.0.20 (or later) packages are installed on each SUSE Linux server 
 	before following the steps below. If Samba-3.0.20 (or later) is not installed, you have the
-	choice to either build your own or to obtain the packages from a dependable source.
-	Packages for SUSE Linux 8.x, 9.x and SUSE Linux Enterprise Server 9, as well as for 
-	Red Hat Fedora Core and Red Hat Enterprise Linux Server 3 and 4 are included on the CD-ROM that
-	is included at the back of this book.
+	choice to either build your own or obtain the packages from a dependable source.
+	Packages for SUSE Linux 8.x, 9.x, and SUSE Linux Enterprise Server 9, as well as for 
+	Red Hat Fedora Core and Red Hat Enterprise Linux Server 3 and 4, are included on the CD-ROM that
+	is included with this book.
 	</para>
 
 	<procedure>
-	<title>Configuration of PDC Called: <constant>MASSIVE</constant></title>
+	<title>Configuration of PDC Called <constant>MASSIVE</constant></title>
 
 		<step><para>
 		Install the files in <link linkend="sbehap-massive-smbconfa"/>, 
@@ -1770,14 +1725,13 @@ session  optional    pam_mail.so
 		and <link linkend="sbehap-shareconfb"/> into the <filename>/etc/samba/</filename> 
 		directory. The three files should be added together to form the &smb.conf; 
 		master file. It is a good practice to call this file something like
-		<filename>smb.conf.master</filename>, and then to perform all file edits
+		<filename>smb.conf.master</filename> and then to perform all file edits
 		on the master file. The operational &smb.conf; is then generated as shown in
 		the next step.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>testparm</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>testparm</primary></indexterm>
 		Create and verify the contents of the &smb.conf; file that is generated by:
 <screen>
 &rootprompt; testparm -s smb.conf.master &gt; smb.conf
@@ -1807,7 +1761,7 @@ Press enter to see a dump of your service definitions
 		</para></step>
 		
 		<step><para>
-		Delete all run-time files from prior Samba operation by executing (for SUSE
+		Delete all runtime files from prior Samba operation by executing (for SUSE
 		Linux):
 <screen>
 &rootprompt; rm /etc/samba/*tdb
@@ -1817,11 +1771,9 @@ Press enter to see a dump of your service definitions
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>secrets.tdb</primary>
-	      </indexterm><indexterm>
-		<primary>smbpasswd</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>secrets.tdb</primary></indexterm>
+		<indexterm><primary>smbpasswd</primary></indexterm>
 		Samba-3 communicates with the LDAP server. The password that it uses to
 		authenticate to the LDAP server must be stored in the <filename>secrets.tdb</filename>
 		file. Execute the following to create the new <filename>secrets.tdb</filename> files
@@ -1835,20 +1787,17 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbd</primary>
-	      </indexterm><indexterm>
-		<primary>net</primary>
-		<secondary>getlocalsid</secondary>
-	      </indexterm>
-		Samba-3 generates a Windows Security Identifier only when <command>smbd</command>
+		<step><para>
+		<indexterm><primary>smbd</primary></indexterm>
+		<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
+		Samba-3 generates a Windows Security Identifier (SID) only when <command>smbd</command>
 		has been started. For this reason, you start Samba. After a few seconds delay,
 		execute:
 <screen>
 &rootprompt; smbclient -L localhost -U%
 &rootprompt; net getlocalsid
 </screen>
-		A report such as the following means that the Domain Security Identifier (SID) has not yet
+		A report such as the following means that the domain SID has not yet
 		been written to the <filename>secrets.tdb</filename> or to the LDAP backend:
 <screen>
 [2005/03/03 23:19:34, 0] lib/smbldap.c:smbldap_connect_system(852)
@@ -1859,37 +1808,29 @@ with dn="cn=Manager,dc=abmas,dc=biz" Error: Can't contact LDAP server
   smbldap_search_suffix: Problem during the LDAP search:
         (unknown) (Timed out)
 </screen>
-		The attempt to read the SID will attempt to bind to the LDAP server. Because the LDAP server
-		is not running this operation will fail by way of a time out, as shown above. This is
-		normal output, do not worry about this error message.  When the Domain has been created and
+		The attempt to read the SID will cause and attempted bind to the LDAP server. Because the LDAP server
+		is not running, this operation will fail by way of a timeout, as shown previously. This is
+		normal output; do not worry about this error message.  When the domain has been created and
 		written to the <filename>secrets.tdb</filename> file, the output should look like this:
 <screen>
 SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 </screen>
-		If, after a short delay (a few seconds), the Domain SID has still not been written to 
+		If, after a short delay (a few seconds), the domain SID has still not been written to 
 		the <filename>secrets.tdb</filename> file, it is necessary to investigate what 
-		may be mis-configured. In this case, carefully check the &smb.conf; file for typographical 
+		may be misconfigured. In this case, carefully check the &smb.conf; file for typographical 
 		errors (the most common problem).  The use of the <command>testparm</command> is highly 
 		recommended to validate the contents of this file.
 		</para></step>
 
 		<step><para>
-		When a positive Domain SID has been reported, stop Samba.
+		When a positive domain SID has been reported, stop Samba.
 		</para></step>
 
 		<step><para>
-		<indexterm>
-			<primary>NFS server</primary>
-		</indexterm>
-		<indexterm>
-			<primary>/etc/exports</primary>
-		</indexterm>
-		<indexterm>
-			<primary>BDC</primary>
-		</indexterm>
-		<indexterm>
-			<primary>rsync</primary>
-		</indexterm>
+		<indexterm><primary>NFS server</primary></indexterm>
+		<indexterm><primary>/etc/exports</primary></indexterm>
+		<indexterm><primary>BDC</primary></indexterm>
+		<indexterm><primary>rsync</primary></indexterm>
 		Configure the NFS server for your Linux system. So you can complete the steps that
 		follow, enter into the <filename>/etc/exports</filename> the following entry:
 <screen>
@@ -1897,9 +1838,9 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 </screen>
 		This permits the user home directories to be used on the BDC servers for testing
 		purposes. You, of course, decide what is the best way for your site to distribute
-		data drives, as well as creating suitable backup and restore procedures for Abmas Inc.
+		data drives, and you create suitable backup and restore procedures for Abmas
 		I'd strongly recommend that for normal operation the BDC is completely independent 
-		of the PDC. rsync is a useful tool here as it resembles the NT replication service quite 
+		of the PDC. rsync is a useful tool here, as it resembles the NT replication service quite 
 		closely. If you do use NFS, do not forget to start the NFS server as follows:
 <screen>
 &rootprompt; rcnfsserver start
@@ -1974,19 +1915,17 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<sect2 id="sbeidealx">
 	<title>Install and Configure Idealx smbldap-tools Scripts</title>
 
-	<para><indexterm>
-	    <primary>Idealx</primary>
-	    <secondary>smbldap-tools</secondary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Idealx</primary><secondary>smbldap-tools</secondary></indexterm>
 	The Idealx scripts, or equivalent, are necessary to permit Samba-3 to manage accounts
-	on the LDAP server. You have chosen the Idealx scripts since they are the best known
+	on the LDAP server. You have chosen the Idealx scripts because they are the best-known
 	LDAP configuration scripts. The use of these scripts will help avoid the necessity
 	to create custom scripts. It is easy to download them from the Idealx
-	<ulink url="http://samba.idealx.org/index.en.html">Web Site.</ulink> The tarball may
+	<ulink url="http://samba.idealx.org/index.en.html">Web site</ulink>. The tarball may
 	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8.tgz">downloaded</ulink>
-	for this site, also. Alternately, you may obtain the 
+	from this site also. Alternatively, you may obtain the 
 	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8-3.src.rpm">smbldap-tools-0.8.8-3.src.rpm</ulink>
-	file that may be used to build an install-able RPM package for your Linux system.
+	file that may be used to build an installable RPM package for your Linux system.
 	</para>
 
 <note><para>
@@ -2001,14 +1940,13 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 	</para>
 
 	<sect3>
-	<title>Installation of smbldap-tools from the tarball</title>
+	<title>Installation of smbldap-tools from the Tarball</title>
 
 	<para>
-	To perform a manual installation of the smbldap-tools scripts the following procedure may be used:
+	To perform a manual installation of the smbldap-tools scripts, the following procedure may be used:
 	</para>
 
 	<procedure id="idealxscript">
-	<title>Idealx smbldap-tools Configuration</title>
 
 		<step><para>
 		Create the <filename>/opt/IDEALX/sbin</filename> directory, and set its permissions
@@ -2025,7 +1963,7 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 
 		<step><para>
 		If you wish to use the downloaded tarball, unpack the smbldap-tools in a suitable temporary location.
-		Change into either the directory extracted from the tarball, or else into the smbldap-tools
+		Change into either the directory extracted from the tarball or the smbldap-tools
 		directory in your <filename>/usr/share/doc/packages</filename> directory tree.
 		</para></step>
 
@@ -2036,6 +1974,7 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 &rootprompt; cd smbldap-tools-0.8.8/
 &rootprompt; cp smbldap-* configure.pl *pm /opt/IDEALX/sbin/
 &rootprompt; cp smbldap*conf /etc/smbldap-tools/
+&rootprompt; chmod 750 /opt/IDEALX/sbin/smbldap-*
 &rootprompt; chmod 750 /opt/IDEALX/sbin/configure.pl
 &rootprompt; chmod 640 /etc/smbldap-tools/smbldap.conf
 &rootprompt; chmod 600 /etc/smbldap-tools/smbldap_bind.conf
@@ -2061,13 +2000,14 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		To complete the configuration of the smbldap-tools, set the permissions and ownership
 		by executing the following commands:
 <screen>
-&rootprompt; chown -R root:root /opt/IDEALX/sbin/* 
+&rootprompt; chown root.root /opt/IDEALX/sbin/* 
 &rootprompt; chmod 755 /opt/IDEALX/sbin/smbldap-*
 &rootprompt; chmod 640 /opt/IDEALX/sbin/smb*pm 
 </screen>
 		The smbldap-tools scripts are now ready for the configuration step outlined in
-		<link linkend="smbldap-init">Configuration of smbldap-tools</link>.
+		<link linkend="smbldap-init"/>.
 		</para></step>
+
 	</procedure>
 
 	</sect3>
@@ -2077,11 +2017,10 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 
 	<para>
 	In the event that you have elected to use the RPM package provided by Idealx, download the
-	source RPM <filename>smbldap-tools-0.8.8-3.src.rpm</filename>, then follow the following procedure:
+	source RPM <filename>smbldap-tools-0.8.8-3.src.rpm</filename>, then follow this procedure:
 	</para>
 
 	<procedure>
-	<title>Installation of smbldap-tools from RPM</title>
 
 		<step><para>
 		Install the source RPM that has been downloaded as follows:
@@ -2116,7 +2055,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 <screen>
 &rootprompt; rpmbuild -ba -v smbldap-tools.spec
 </screen>
-		A build process that has completed without error will place the install-able binary
+		A build process that has completed without error will place the installable binary
 		files in the directory <filename>../RPMS/noarch</filename>.
 		</para></step>
 
@@ -2140,19 +2079,18 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 	<title>Configuration of smbldap-tools</title>
 
 	<para>
-	Prior to use the smbldap-tools must be configured to match the settings in the &smb.conf; file
+	Prior to use, the smbldap-tools must be configured to match the settings in the &smb.conf; file
 	and to match the settings in the <filename>/etc/openldap/slapd.conf</filename> file. The assumption
-	is made that the &smb.conf; file has correct contents. The following procedure will ensure that
+	is made that the &smb.conf; file has correct contents. The following procedure ensures that
 	this is completed correctly:
 	</para>
 
 	<para>
-	The smbldap-tools require that the netbios name (machine name) of the Samba server be included
+	The smbldap-tools require that the NetBIOS name (machine name) of the Samba server be included
 	in the &smb.conf; file.
 	</para>
 
 	<procedure>
-	<title>Configuration of <filename>smbldap.conf</filename></title>
 
 		<step><para>
 		Change into the directory that contains the <filename>configure.pl</filename> script.
@@ -2268,13 +2206,13 @@ writing new configuration file:
   /etc/smbldap-tools/smbldap.conf done.
   /etc/smbldap-tools/smbldap_bind.conf done.
 </screen>
-		Since a slave LDAP server has not been configured it is necessary to specify the IP
+		Since a slave LDAP server has not been configured, it is necessary to specify the IP
 		address of the master LDAP server for both the master and the slave configuration
 		prompts.
 		</para></step>
 
 		<step><para>
-		Change to the directory that contains the <filename>smbldap.conf</filename> file
+		Change to the directory that contains the <filename>smbldap.conf</filename> file,
 		then verify its contents.
 		</para></step>
 
@@ -2292,13 +2230,13 @@ writing new configuration file:
 	<title>LDAP Initialization and Creation of User and Group Accounts</title>
 
 	<para>
-	The LDAP database must be populated with well-known Windows Domain user accounts and Domain Group 
+	The LDAP database must be populated with well-known Windows domain user accounts and domain group 
 	accounts before Samba can be used. The following procedures step you through the process.
 	</para>
 
 	<para>
-	At this time, Samba-3 requires that on a PDC all UNIX (Posix) group accounts that are
-	mapped (linked) to Windows Domain Group accounts must be in the LDAP database. It does not
+	At this time, Samba-3 requires that on a PDC all UNIX (POSIX) group accounts that are
+	mapped (linked) to Windows domain group accounts must be in the LDAP database. It does not
 	hurt to have UNIX user and group accounts in both the system files as well as in the LDAP
 	database. From a UNIX system perspective, the NSS resolver checks system files before
 	referring to LDAP. If the UNIX system can resolve (find) an account in the system file, it
@@ -2306,71 +2244,65 @@ writing new configuration file:
 	</para>
 
 	<para>
-	Addition of an account to the LDAP backend can be done in a number of ways:
+	Addition of an account to the LDAP backend can be done in two ways:
 	</para>
 
-	<blockquote><para><indexterm>
-	      <primary>NIS</primary>
-	    </indexterm><indexterm>
-	      <primary>/etc/passwd</primary>
-	    </indexterm><indexterm>
-	      <primary>Posix accounts</primary>
-	    </indexterm><indexterm>
-	      <primary>pdbedit</primary>
-	    </indexterm><indexterm>
-	      <primary>SambaSamAccount</primary>
-	    </indexterm><indexterm>
-	      <primary>PosixAccount</primary>
-	    </indexterm>
-	If you always have a user account in the <filename>/etc/passwd</filename> on every 
-	server or in a NIS(+) backend, it is not necessary to add Posix accounts for them in 
-	LDAP. In this case, you can add Windows Domain user accounts using the 
-	<command>pdbedit</command> utility. Use of this tool from the command line adds the 
-	SambaSamAccount entry for the user, but does not add the PosixAccount entry for the user.
+	<itemizedlist>
+		<listitem><para>
+		<indexterm><primary>NIS</primary></indexterm>
+		<indexterm><primary>/etc/passwd</primary></indexterm>
+		<indexterm><primary>Posix accounts</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>SambaSamAccount</primary></indexterm>
+		<indexterm><primary>PosixAccount</primary></indexterm>
+		If you always have a user account in the <filename>/etc/passwd</filename> on every 
+		server or in a NIS(+) backend, it is not necessary to add POSIX accounts for them in 
+		LDAP. In this case, you can add Windows domain user accounts using the 
+		<command>pdbedit</command> utility. Use of this tool from the command line adds the 
+		SambaSamAccount entry for the user, but does not add the PosixAccount entry for the user.
+		</para>
+
+		<para>
+		This is the least desirable method because when LDAP is used as the passwd backend Samba
+		expects the POSIX account to be in LDAP also. It is possible to use the PADL account
+		migration tool to migrate all system accounts from either the <filename>/etc/passwd</filename>
+		files, or from NIS, to LDAP.
+		</para></listitem>
+
+		<listitem><para>
+		If you decide that it is probably a good idea to add both the PosixAccount attributes
+		as well as the SambaSamAccount attributes for each user, then a suitable script is needed.
+		In the example system you are installing in this exercise, you are making use of the
+		Idealx smbldap-tools scripts. A copy of these tools, preconfigured for this system,
+		is included on the enclosed CD-ROM under <filename>Chap06/Tools.</filename>
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	<indexterm><primary>Idealx</primary><secondary>smbldap-tools</secondary></indexterm>
+	If you wish to have more control over how the LDAP database is initialized or 
+	if you don't want to use the Idealx smbldap-tools, you should refer to 
+	<link linkend="appendix"/>, <link linkend="altldapcfg"/>.
 	</para>
 
 	<para>
-	If you decide that it is probably a good idea to add both the PosixAccount attributes
-	as well as the SambaSamAccount attributes for each user, then a suitable script is needed.
-	In the example system you are installing in this exercise, you are making use of the
-	Idealx smbldap-tools scripts. A copy of these tools, pre-configured for this system,
-	is included on the enclosed CD-ROM under <filename>Chap06/Tools.</filename>
-	</para></blockquote>
-
-	<para><indexterm>
-	    <primary>Idealx</primary>
-	    <secondary>smbldap-tools</secondary>
-	  </indexterm>
-	If you wish to have more control over how the LDAP database is initialized or 
-	want not to use the Idealx smbldap-tools, you should refer to <link
-	    linkend="altldapcfg"/>.
-	</para>
-
-	<para><indexterm>
-	    <primary>smbldap-populate</primary>
-	  </indexterm>
+	<indexterm><primary>smbldap-populate</primary></indexterm>
 	The following steps initialize the LDAP database, and then you can add user and group
 	accounts that Samba can use. You use the <command>smbldap-populate</command> to
 	seed the LDAP database. You then manually add the accounts shown in <link linkend="sbehap-bigacct"/>. 
 	The list of users does not cover all 500 network users; it provides examples only.
 	</para>
 
-	<note><para><indexterm>
-	      <primary>LDAP</primary>
-	      <secondary>database</secondary>
-	    </indexterm><indexterm>
-	      <primary>directory</primary>
-	      <secondary>People container</secondary>
-	    </indexterm><indexterm>
-	      <primary>directory</primary>
-	      <secondary>Computers container</secondary>
-	    </indexterm>
+	<note><para>
+	<indexterm><primary>LDAP</primary><secondary>database</secondary></indexterm>
+	<indexterm><primary>directory</primary><secondary>People container</secondary></indexterm>
+	<indexterm><primary>directory</primary><secondary>Computers container</secondary></indexterm>
 	In the following examples, as the LDAP database is initialized, we do create a container
 	for Computer (machine) accounts. In the Samba-3 &smb.conf; files, specific use is made
 	of the People container, not the Computers container, for domain member accounts. This is not a
 	mistake; it is a deliberate action that is necessitated by the fact that the resolution of 
 	a machine (computer) account to a UID is done via NSS. The only way this can be handled is
-	using the NSS (<filename>/etc/nsswitch.conf</filename>) entry for <constant>passwd</constant>
+	using the NSS (<filename>/etc/nsswitch.conf</filename>) entry for <constant>passwd</constant>,
 	which is resolved using the <filename>nss_ldap</filename> library. The configuration file for
 	the <filename>nss_ldap</filename> library is the file <filename>/etc/ldap.conf</filename> that
 	provides only one possible LDAP search command that is specified by the entry called
@@ -2378,8 +2310,8 @@ writing new configuration file:
 	the directory structure so that the LDAP search will commence at a level that is above
 	both the Computers container and the Users (or People) container. If this is done, it is
 	necessary to use a search that will descend the directory tree so that the machine account
-	can be found. Alternately, by placing all machine accounts in the People container, we
-	are able to side-step this limitation. This is the simpler solution that has been adopted
+	can be found. Alternatively, by placing all machine accounts in the People container, we
+	are able to sidestep this limitation. This is the simpler solution that has been adopted
 	in this chapter.
 	</para></note>
 
@@ -2447,8 +2379,6 @@ writing new configuration file:
 	</table>
 
 	<procedure id="creatacc">
-	<title>Validation of Configuration</title>
-
 		<step><para>
 		Start the LDAP server by executing:
 <screen>
@@ -2518,10 +2448,9 @@ Starting ldap-server                                 done
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>slapcat</primary>
-	      </indexterm>
-		So that we can use a global IDMAP repository the LDAP directory must have a container object for IDMAP data. 
+		<step><para>
+		<indexterm><primary>slapcat</primary></indexterm>
+		So that we can use a global IDMAP repository, the LDAP directory must have a container object for IDMAP data. 
 		There are several ways you can check that your LDAP database is able to receive IDMAP information. One of 
 		the simplest is to execute:
 <screen>
@@ -2529,9 +2458,7 @@ Starting ldap-server                                 done
 dn: ou=Idmap,dc=abmas,dc=biz
 ou: idmap
 </screen>
-	      <indexterm>
-		<primary>ldapadd</primary>
-	      </indexterm>
+		<indexterm> <primary>ldapadd</primary></indexterm>
 	        If the execution of this command does not return IDMAP entries, you need to create an LDIF
 		template file (see <link linkend="sbehap-ldifadd"/>). You can add the required entries using 
 		the following command:
@@ -2542,9 +2469,8 @@ ou: idmap
 		Samba automatically populates this LDAP directory container when it needs to.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>slapcat</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>slapcat</primary></indexterm>
 		It looks like all has gone well, as expected. Let's confirm that this is the case
 		by running a few tests. First we check the contents of the database directly
 		by running <command>slapcat</command> as follows (the output has been cut down):
@@ -2583,9 +2509,8 @@ modifyTimestamp: 20031217234206Z
 		This looks good so far.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>ldapsearch</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>ldapsearch</primary></indexterm>
 		The next step is to prove that the LDAP server is running and responds to a
 		search request. Execute the following as shown (output has been cut to save space):
 <screen>
@@ -2631,9 +2556,8 @@ result: 0 Success
 		Good. It is all working just fine.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>getent</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>getent</primary></indexterm>
 		You must now make certain that the NSS resolver can interrogate LDAP also.
 		Execute the following commands:
 <screen>
@@ -2645,23 +2569,19 @@ Domain Admins:x:512:root
 Domain Users:x:513:
 Domain Guests:x:514:
 Domain Computers:x:553:
-</screen><indexterm>
-		<primary>nss_ldap</primary>
-	      </indexterm>
+</screen>
+		<indexterm><primary>nss_ldap</primary></indexterm>
 		This demonstrates that the <command>nss_ldap</command> library is functioning
-		as it should. If these two steps fail to produce this information refer to
+		as it should. If these two steps fail to produce this information, refer to
 		<link linkend="sbeavoid"/> for diagnostic procedures that can be followed to
-		isolate the cause of the problem. Proceed to the next step only when the steps
-		above have been successfully completed.
+		isolate the cause of the problem. Proceed to the next step only when the previous steps
+		have been successfully completed.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbldap-useradd</primary>
-	      </indexterm><indexterm>
-		<primary>smbldap-passwd</primary>
-	      </indexterm><indexterm>
-		<primary>smbpasswd</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>smbldap-useradd</primary></indexterm>
+		<indexterm><primary>smbldap-passwd</primary></indexterm>
+		<indexterm><primary>smbpasswd</primary></indexterm>
 		Our database is now ready for the addition of network users. For each user for
 		whom an account must be created, execute the following:
 <screen>
@@ -2675,13 +2595,12 @@ Retype new password : XXXXXXXX
 New SMB password: XXXXXXXX
 Retype new SMB password: XXXXXXXX
 </screen>
-		Where <constant>username</constant> is the login ID for each user.
+		where <constant>username</constant> is the login ID for each user.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>getent</primary>
-	      </indexterm>
-		Now verify that the UNIX (Posix) accounts can be resolved via NSS by executing the
+		<step><para>
+		<indexterm><primary>getent</primary></indexterm>
+		Now verify that the UNIX (POSIX) accounts can be resolved via NSS by executing the
 		following:
 <screen>
 &rootprompt; getent passwd
@@ -2699,23 +2618,25 @@ maryv:x:1003:513:System User:/home/maryv:/bin/bash
 		</para></step>
 
 		<step><para>
-		This step will determine
+		This step will determine whether or not identity resolution is working correctly.
+		Do not procede is this step fails, rather find the cause of the failure. The
+		<command>id</command> command may be used to validate your configuration so far,
+		as shown here:
 <screen>
 &rootprompt; id chrisr
 uid=1002(chrisr) gid=513(Domain Users) groups=513(Domain Users)
 </screen>
-		This confirms that the UNIX (Posix) user account information can be resolved from LDAP
+		This confirms that the UNIX (POSIX) user account information can be resolved from LDAP
 		by system tools that make a getentpw() system call.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbldap-usermod</primary>
-	      </indexterm>
-		The 'root' account must have UID=0, if not this means that operations conducted from
+		<step><para>
+		<indexterm><primary>smbldap-usermod</primary></indexterm>
+		The root account must have UID=0; if not, this means that operations conducted from
 		a Windows client using tools such as the Domain User Manager fails under UNIX because
 		the management of user and group accounts requires that the UID=0. Additionally, it is
-		a good idea to make certain that no matter how 'root' account credentials are resolved
-		that the home directory and shell are valid. You decide to effect this immediately
+		a good idea to make certain that no matter how root account credentials are resolved,
+		the home directory and shell are valid. You decide to effect this immediately
 		as demonstrated here:
 <screen>
 &rootprompt; cd /opt/IDEALX/sbin
@@ -2749,11 +2670,9 @@ drwx------   7 stans  Domain Users     568 Dec 17 01:43 stans/
 		This is precisely what we want to see.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>ldapsam</primary>
-	      </indexterm><indexterm>
-		<primary>pdbedit</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>ldapsam</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
 		The final validation step involves making certain that Samba-3 can obtain the user
 		accounts from the LDAP ldapsam passwd backend. Execute the following command as shown:
 <screen>
@@ -2785,9 +2704,8 @@ Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 		This looks good. Of course, you fully expected that it would all work, didn't you?
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbldap-groupadd</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>smbldap-groupadd</primary></indexterm>
 		Now you add the group accounts that are used on the Abmas network. Execute
 		the following exactly as shown:
 <screen>
@@ -2799,9 +2717,8 @@ Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 		output is of no concern.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>getent</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>getent</primary></indexterm>
 		You really do want to confirm that UNIX group resolution from LDAP is functioning 
 		as it should. Let's do this as shown here:
 <screen>
@@ -2819,12 +2736,9 @@ PIOps:x:1002:
 		as our own site-specific group accounts, are correctly listed. This is looking good.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>groupmap</secondary>
-		<tertiary>list</tertiary>
-	      </indexterm>
-		The final step we need to validate is that Samba can see all the Windows Domain Groups
+		<step><para>
+		<indexterm><primary>net</primary><secondary>groupmap</secondary><tertiary>list</tertiary></indexterm>
+		The final step we need to validate is that Samba can see all the Windows domain groups
 		and that they are correctly mapped to the respective UNIX group account. To do this,
 		just execute the following command:
 <screen>
@@ -2838,7 +2752,7 @@ Finances (S-1-5-21-3504140859-1010554828-2431957765-3003) -> Finances
 PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 </screen>
 		This is looking good. Congratulations &smbmdash; it works! Note that in the above output
-		the lines where shortened by replacing the middle value (1010554828) of the SID with the 
+		the lines were shortened by replacing the middle value (1010554828) of the SID with the 
 		ellipsis (...).
 		</para></step>
 
@@ -2862,19 +2776,19 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 
 		<step><para>
 		The next step might seem a little odd at this point, but take note that you are about to
-		start <command>winbindd</command> which must be able to authenticate to the PDC via the
+		start <command>winbindd</command>, which must be able to authenticate to the PDC via the
 		localhost interface with the <command>smbd</command> process. This account can be
-		easily created by joining the PDC to the Domain by executing the following command:
+		easily created by joining the PDC to the domain by executing the following command:
 <screen>
 &rootprompt; net rpc join -S MASSIVE -U root%not24get
 </screen>
-		Note: Before executing this command on the PDC both <command>nmbd</command> and
+		Note: Before executing this command on the PDC, both <command>nmbd</command> and
 		<command>smbd</command> must be started so that the <command>net</command> command
-		can communicate with <command>smbd</command>. The expected output is:
+		can communicate with <command>smbd</command>. The expected output is as follows:
 <screen>
 Joined domain MEGANET2.
 </screen>
-		This indicates that the Domain security account for the PDC has been correctly created.
+		This indicates that the domain security account for the PDC has been correctly created.
 		</para></step>
 
 		<step><para>
@@ -2885,16 +2799,15 @@ Joined domain MEGANET2.
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>smbclient</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>smbclient</primary></indexterm>
 		You may now check Samba-3 operation as follows:
 <screen>
 &rootprompt; smbclient -L massive -U%
 
         Sharename      Type      Comment
         ---------      ----      -------
-        IPC$           IPC       IPC Service (Samba 3.0.20)
+        IPC$           IPC       IPC Service (Samba 3.0.1)
         accounts       Disk      Accounting Files
         service        Disk      Financial Services Files
         pidata         Disk      Property Insurance Files
@@ -2902,11 +2815,11 @@ Joined domain MEGANET2.
         netlogon       Disk      Network Logon Service
         profiles       Disk      Profile Share
         profdata       Disk      Profile Data Share
-        ADMIN$         IPC       IPC Service (Samba 3.0.20)
+        ADMIN$         IPC       IPC Service (Samba 3.0.1)
 
         Server               Comment
         ---------            -------
-        MASSIVE              Samba 3.0.20
+        MASSIVE              Samba 3.0.1
 
         Workgroup            Master
         ---------            -------
@@ -2916,7 +2829,7 @@ Joined domain MEGANET2.
 		</para></step>
 
 		<step><para>
-		For your finale, let's try an authenticated connection. Follow this as shown:
+		For your finale, let's try an authenticated connection:
 <screen>
 &rootprompt; smbclient //massive/bobj -Ubobj%n3v3r2l8
 smb: \> dir
@@ -2944,28 +2857,25 @@ smb: \> q
 	<sect2 id="sbehap-ptrcfg">
 	<title>Printer Configuration</title>
 
-	<para><indexterm>
-	    <primary>CUPS</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>CUPS</primary></indexterm>
 	The configuration for Samba-3 to enable CUPS raw-print-through printing has already been
-	taken care of in the &smb.conf; file. The only preparation needed for
-	  <constant>smart</constant>
+	taken care of in the &smb.conf; file. The only preparation needed for <constant>smart</constant>
 	printing to be possible involves creation of the directories in which Samba-3 stores
 	Windows printing driver files.
 	</para>
 
 	<procedure>
-	<title>Configuration of Raw Printers</title>
 
                 <step><para>
-                Configure all network attached printers to have a fixed IP address.
+                Configure all network-attached printers to have a fixed IP address.
                 </para></step>
 
                 <step><para>
                 Create an entry in the DNS database on the server <constant>MASSIVE</constant>
                 in both the forward lookup database for the zone <constant>abmas.biz.hosts</constant>
                 and in the reverse lookup database for the network segment that the printer is to
-                be located in. Example configuration files for similar zones were presented in
+                be located in. Example configuration files for similar zones were presented in Chapter 3,
                 <link linkend="abmasbiz"/> and in <link linkend="eth2zone"/>.
                 </para></step>
 
@@ -2977,9 +2887,8 @@ smb: \> q
                 <indexterm><primary>raw printing</primary></indexterm>
                 </para></step>
 
-	  <step><para><indexterm>
-		<primary>lpadmin</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>lpadmin</primary></indexterm>
                 <indexterm><primary>CUPS</primary><secondary>queue</secondary></indexterm>
                 Only on the server to which the printer is attached, configure the CUPS Print
                 Queues as follows:
@@ -2989,7 +2898,7 @@ smb: \> q
 </screen>
                 <indexterm><primary>print filter</primary></indexterm>
                 This step creates the necessary print queue to use no assigned print filter. This
-                is ideal for raw printing, i.e., printing without use of filters.
+                is ideal for raw printing, that is, printing without use of filters.
                 The name <parameter>printque</parameter> is the name you have assigned for
                 the particular printer.
                 </para></step>
@@ -3012,7 +2921,7 @@ smb: \> q
 </screen>
                 </para></step>
 
-	  <step><para>
+		<step><para>
                 <indexterm><primary>mime type</primary></indexterm>
                 <indexterm><primary>/etc/mime.convs</primary></indexterm>
                 <indexterm><primary>application/octet-stream</primary></indexterm>
@@ -3039,7 +2948,7 @@ application/octet-stream
 	        </para></step>
 
 		<step><para>
-		The following action creates the necessary directory sub-system. Follow these 
+		The following action creates the necessary directory subsystem. Follow these 
 		steps to printing heaven:
 <screen>
 &rootprompt; mkdir -p /var/lib/samba/drivers/{W32ALPHA,W32MIPS,W32X86,WIN40}
@@ -3059,7 +2968,6 @@ application/octet-stream
 
 	<procedure>
 	<title>Configuration of BDC Called: <constant>BLDG1</constant></title>
-
 		<step><para>
 		Install the files in <link linkend="sbehap-bldg1-smbconf"/>,
 		<link linkend="sbehap-shareconfa"/>, and <link linkend="sbehap-shareconfb"/>
@@ -3082,15 +2990,14 @@ application/octet-stream
 		to 1 and back to 5 before the NSS LDAP resolver functions. Follow these
 		commands:
 <screen>
-&rootprompt; telinit 1
+&rootprompt; init 1
 </screen>
 		After the run level has been achieved, you are prompted to provide the
 		<constant>root</constant> password. Log on, and then execute:
 <screen>
-&rootprompt; telinit 5
+&rootprompt; init 5
 </screen>
-		When the normal logon prompt appears, log into the system as
-	    <constant>root</constant>
+		When the normal logon prompt appears, log into the system as <constant>root</constant>
 		and then execute these commands:
 <screen>
 &rootprompt; getent passwd
@@ -3142,15 +3049,12 @@ Finances:x:1001:
 PIOps:x:1002:
 </screen>
 		This is also the correct and desired output, because it demonstrates that the LDAP client
-		is able to communicate correctly with the LDAP server
-	    (<constant>MASSIVE</constant>).
+		is able to communicate correctly with the LDAP server (<constant>MASSIVE</constant>).
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>smbpasswd</primary>
-	    </indexterm>
-		You must now set the LDAP administrative password into the
-	    Samba-3 <filename>secrets.tdb</filename>
+		<step><para>
+		<indexterm><primary>smbpasswd</primary></indexterm>
+		You must now set the LDAP administrative password into the Samba-3 <filename>secrets.tdb</filename>
 		file by executing this command:
 <screen>
 &rootprompt; smbpasswd -w not24get
@@ -3159,9 +3063,9 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 		</para></step>
 
 		<step><para>
-		Now you must obtain the Domain Security Identifier from the PDC and store it into the
+		Now you must obtain the domain SID from the PDC and store it into the
 		<filename>secrets.tdb</filename> file also. This step is not necessary with an LDAP
-		passdb backend because Samba-3 obtains the Domain SID from the 
+		passdb backend because Samba-3 obtains the domain SID from the 
 		sambaDomain object it automatically stores in the LDAP backend. It does not hurt to
 		add the SID to the <filename>secrets.tdb</filename>, and if you wish to do so, this 
 		command can achieve that:
@@ -3171,19 +3075,19 @@ Storing SID S-1-5-21-3504140859-1010554828-2431957765 \
                            for Domain MEGANET2 in secrets.tdb
 </screen>
 		When configuring a Samba-3 BDC that has an LDAP backend, there is no need to take
-		any special action to join it to the Domain. However, winbind communicates with the
-		Domain Controller that is running on the localhost and must be able to authenticate,
-		thus requiring that the BDC should be joined to the Domain. The process of joining
-		the Domain creates the necessary authentication accounts.
+		any special action to join it to the domain. However, winbind communicates with the
+		domain controller that is running on the localhost and must be able to authenticate,
+		thus requiring that the BDC should be joined to the domain. The process of joining
+		the domain creates the necessary authentication accounts.
 		</para></step>
 
 		<step><para>
-		To join the Samba BDC to the Domain execute the following:
+		To join the Samba BDC to the domain, execute the following:
 <screen>
 &rootprompt; net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
-		This indicates that the Domain security account for the BDC has been correctly created.
+		This indicates that the domain security account for the BDC has been correctly created.
 		</para></step>
 
 		<step><para>
@@ -3211,7 +3115,7 @@ Accounts (S-1-5-21-3504140859-1010554828-2431957765-3001) -> Accounts
 Finances (S-1-5-21-3504140859-1010554828-2431957765-3003) -> Finances
 PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 </screen>
-		The above results show that all things are in order.
+		These results show that all things are in order.
 		</para></step>
 
                 <step><para>
@@ -3275,7 +3179,7 @@ smb: \> q
 	</procedure>
 
 	<procedure id="sbehap-bldg2">
-	<title>Configuration of BDC Called: <constant>BLDG2</constant></title>
+	<title>Configuration of BDC Called <constant>BLDG2</constant></title>
 
 		<step><para>
 		Install the files in <link linkend="sbehap-bldg2-smbconf"/>,
@@ -3450,7 +3354,7 @@ structuralObjectClass: organizationalUnit
 	<para>
 	My father would say, <quote>Dinner is not over until the dishes have been done.</quote>
 	The makings of a great network environment take a lot of effort and attention to detail.
-	So far you have completed most of the complex (and to many administrators, the interesting
+	So far, you have completed most of the complex (and to many administrators, the interesting
 	part of server configuration) steps, but remember to tie it all together. Here are
 	a few more steps that must be completed so that your network runs like a well-rehearsed
 	orchestra.
@@ -3460,8 +3364,7 @@ structuralObjectClass: organizationalUnit
 	<title>Configuring Directory Share Point Roots</title>
 
 	<para>
-	In your &smb.conf; file, you have specified Windows shares. Each has a
-	  <parameter>path</parameter>
+	In your &smb.conf; file, you have specified Windows shares. Each has a <parameter>path</parameter>
 	parameter. Even though it is obvious to all, one of the common Samba networking problems is
 	caused by forgetting to verify that every such share root directory actually exists and that it
 	has the necessary permissions and ownership.
@@ -3490,13 +3393,13 @@ structuralObjectClass: organizationalUnit
 	<para>
 	You made a conscious decision to do everything it would take to improve network client
 	performance. One of your decisions was to implement folder redirection. This means that Windows
-	user desktop profiles are now made up of two components &smbmdash; a dynamically loaded part and a set of file
+	user desktop profiles are now made up of two components: a dynamically loaded part and a set of file
 	network folders.
 	</para>
 
 	<para>
 	For this arrangement to work, every user needs a directory structure for the network folder
-	portion of their profile as shown here:
+	portion of his or her profile as shown here:
 <screen>
 &rootprompt; mkdir -p /var/lib/samba/profdata
 &rootprompt; chown root.root /var/lib/samba/profdata
@@ -3515,11 +3418,9 @@ structuralObjectClass: organizationalUnit
 </screen>
 	</para>
 
-	<para><indexterm>
-	    <primary>roaming profile</primary>
-	  </indexterm><indexterm>
-	    <primary>mandatory profile</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>roaming profile</primary></indexterm>
+	<indexterm><primary>mandatory profile</primary></indexterm>
 	You have three options insofar as the dynamically loaded portion of the roaming profile
 	is concerned: 
 	</para>
@@ -3531,21 +3432,17 @@ structuralObjectClass: organizationalUnit
 	</itemizedlist>
 
 	<para>
-	  Mandatory profiles cannot be overwritten by a user. The change from
-	  a user profile to a mandatory profile is effected by renaming the
-	  <filename>NTUSER.DAT</filename> to
-	  <filename>NTUSER.MAN</filename>, i.e., just by changing the filename
-	  extension.
-	  </para>
+	Mandatory profiles cannot be overwritten by a user. The change from a user profile to a mandatory
+	profile is effected by renaming the <filename>NTUSER.DAT</filename> to <filename>NTUSER.MAN</filename>,
+	that is, just by changing the filename extension.
+	</para>
 
-	<para><indexterm>
-	    <primary>SRVTOOLS.EXE</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain User Manager</primary>
-	  </indexterm>
-	The location of the profile that a user can obtain is set in the users' account in the LDAP passdb backend.
+	<para>
+	<indexterm><primary>SRVTOOLS.EXE</primary></indexterm>
+	<indexterm><primary>Domain User Manager</primary></indexterm>
+	The location of the profile that a user can obtain is set in the user's account in the LDAP passdb backend.
 	You can manage this using the Idealx smbldap-tools or using the 
-	<ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">Windows NT4 Domain User Manager.</ulink>
+	<ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">Windows NT4 Domain User Manager</ulink>.
 	</para>
 
 	<para>
@@ -3564,9 +3461,8 @@ structuralObjectClass: organizationalUnit
 	<sect2>
 	<title>Preparation of Logon Scripts</title>
 
-	<para><indexterm>
-	    <primary>logon script</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>logon script</primary></indexterm>
 	The use of a logon script with Windows XP Professional is an option that every site should consider.
 	Unless you have locked down the desktop so the user cannot change anything, there is risk that
 	a vital network drive setting may be broken or that printer connections may be lost. Logon scripts
@@ -3577,15 +3473,13 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<para>
-	If you decide to use network logon scripts, by reference to the &smb.conf; files for the Domain
-	Controllers, you see that the path to the share point for the
-	  <constant>NETLOGON</constant>
+	If you decide to use network logon scripts, by reference to the &smb.conf; files for the domain
+	controllers, you see that the path to the share point for the <constant>NETLOGON</constant>
 	share defined is <filename>/var/lib/samba/netlogon</filename>. The path defined for the logon
 	script inside that share is <filename>scripts\logon.bat</filename>. This means that as a Windows
-	NT/200x/XP client logs onto the network, it tries to obtain the file
-	  <filename>logon.bat</filename>
+	NT/200x/XP client logs onto the network, it tries to obtain the file <filename>logon.bat</filename>
 	from the fully qualified path <filename>/var/lib/samba/netlogon/scripts</filename>. This fully
-	qualified path should, therefore, exist where you install the <filename>logon.bat</filename>.
+	qualified path should therefore exist whether you install the <filename>logon.bat</filename>.
 	</para>
 
 	<para>
@@ -3598,7 +3492,7 @@ structuralObjectClass: organizationalUnit
 	<para>
 	You should research the options for logon script implementation by referring to <emphasis>TOSHARG</emphasis>, Chapter 21,
 	Section 21.4. A quick Web search will bring up a host of options. One of the most popular logon
-	facilities in use today is called <ulink url="http://www.kixtart.org">KiXtart.</ulink>
+	facilities in use today is called <ulink url="http://www.kixtart.org">KiXtart</ulink>.
 	</para>
 
 	</sect2>
@@ -3614,9 +3508,8 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<para>
-	By default, even Samba 3.0.11 does not grant any rights even to the <constant>Domain Admins</constant>
-	group. Here we will grant this group all privileges. The assignment of user rights and privileges
-	requires that the parameter <parameter>enable privileges = Yes</parameter> must be set in the &smb.conf; file.
+	By default, even Samba-3.0.11 does not grant any rights even to the <constant>Domain Admins</constant>
+	group. Here we grant this group all privileges.
 	</para>
 
 	<para>
@@ -3626,10 +3519,9 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<procedure>
-	<title>Setting up User Privileges</title>
 
 		<step><para>
-		Log onto the primary domain controller (PDC) as the <constant>root</constant> account.
+		Log onto the PDC as the <constant>root</constant> account.
 		</para></step>
 
 		<step><para>
@@ -3642,8 +3534,8 @@ structuralObjectClass: organizationalUnit
 	SeDiskOperatorPrivilege SeRemoteShutdownPrivilege
 Successfully granted rights.
 </screen>
-		Repeat this step on each domain controller in each case substituting the name of the server
-		(e.g.: BLDG1, BLDG2) in place of the PDC called MASSIVE.
+		Repeat this step on each domain controller, in each case substituting the name of the server
+		(e.g., BLDG1, BLDG2) in place of the PDC called MASSIVE.
 		</para></step>
 
 		<step><para>
@@ -3658,7 +3550,7 @@ Successfully granted rights.
 		</para></step>
 
 		<step><para>
-		Verify that the assignment of privileges have been correctly applied by executing:
+		Verify that privilege assignments have been correctly applied by executing:
 <screen>
 net rpc rights list accounts -Uroot%not24get
 MEGANET2\bobj
@@ -3709,15 +3601,14 @@ SeDiskOperatorPrivilege
 	machine. You will configure all software, printer settings, profile and policy handling, and desktop
 	default profile settings on this system. When it is complete, you copy the contents of the
 	<filename>C:\Documents and Settings\Default User</filename> directory to a directory with the same
-	name in the <constant>NETLOGON</constant> share on the Domain Controllers.
+	name in the <constant>NETLOGON</constant> share on the domain controllers.
 	</para>
 
 	<para>
 	Much can be learned from the Microsoft Support site regarding how best to set up shared profiles.
-	One knowledge-base article in particular stands out. See:
-	<ulink
-	  url="http://support.microsoft.com/default.aspx&amp;scid=kb;en-us;168475">How to Create a 
-	Base Profile for All Users.</ulink>
+	One knowledge-base article in particular stands out:
+	"<ulink url="http://support.microsoft.com/default.aspx&amp;scid=kb;en-us;168475">How to Create a 
+	Base Profile for All Users."</ulink>
 
 	</para>
 
@@ -3727,9 +3618,8 @@ SeDiskOperatorPrivilege
 	<para>
 	<indexterm><primary>folder redirection</primary></indexterm>
 	Log onto the Windows XP Professional workstation as the local <constant>Administrator</constant>.
-	It is necessary to expose folders that are generally hidden to provide
-	  access to the <constant>Default User</constant>
-	folder.
+	It is necessary to expose folders that are generally hidden to provide access to the
+	<constant>Default User</constant> folder.
 	</para>
 
 	<procedure>
@@ -3745,19 +3635,19 @@ SeDiskOperatorPrivilege
                                 <guimenuitem>View Tab</guimenuitem>
                         </menuchoice>.
 		Select <guilabel>Show hidden files and folders</guilabel>,
-		and click <guibutton>OK</guibutton>. Exit Windows Explorer.
+		and click <guibutton>OK</guibutton>.  Exit Windows Explorer.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>regedt32</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>regedt32</primary></indexterm>
 		Launch the Registry Editor. Click 
 		<menuchoice>
 			<guimenu>Start</guimenu>
 			<guimenuitem>Run</guimenuitem>
 		</menuchoice>. Key in <command>regedt32</command>, and click
-	      <guibutton>OK</guibutton>.
+		<guibutton>OK</guibutton>.
 		</para></step>
+
 	</procedure>
 
 	<para>
@@ -3766,21 +3656,19 @@ SeDiskOperatorPrivilege
 	<procedure id="sbehap-rdrfldr">
 	<title>Redirect Folders in Default System User Profile</title>
 
-	  <step><para><indexterm>
-		<primary>HKEY_LOCAL_MACHINE</primary>
-	      </indexterm><indexterm>
-		<primary>Default User</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>HKEY_LOCAL_MACHINE</primary></indexterm>
+		<indexterm><primary>Default User</primary></indexterm>
 		Give focus to <constant>HKEY_LOCAL_MACHINE</constant> hive entry in the left panel.
 		Click <menuchoice>
 			<guimenu>File</guimenu>
 			<guimenuitem>Load Hive...</guimenuitem>
-			<guimenuitem>[Panel] Documents and Settings</guimenuitem>
-			<guimenuitem>[Panel] Default User</guimenuitem>
+			<guimenuitem>Documents and Settings</guimenuitem>
+			<guimenuitem>Default User</guimenuitem>
 			<guimenuitem>NTUSER</guimenuitem>
 			<guimenuitem>Open</guimenuitem>
-		      </menuchoice>. In the dialog box that opens, enter the
-		key name <constant>Default</constant> and click <guibutton>OK</guibutton>.
+		      </menuchoice>. In the dialog box that opens, enter the key name
+		<constant>Default</constant> and click <guibutton>OK</guibutton>.
 		</para></step>
 
 		<step><para>
@@ -3789,30 +3677,26 @@ SeDiskOperatorPrivilege
 HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
                      CurrentVersion\Explorer\User Shell Folders\
 </screen>
-		The contents of the right panel reveals the contents as
-	      shown in <link linkend="XP-screen001"/>.
+		The right panel reveals the contents as shown in <link linkend="XP-screen001"/>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>%USERPROFILE%</primary>
-	      </indexterm><indexterm>
-		<primary>%LOGONSERVER%</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>%USERPROFILE%</primary></indexterm>
+		<indexterm><primary>%LOGONSERVER%</primary></indexterm>
 		You edit hive keys. Acceptable values to replace the 
 		<constant>%USERPROFILE%</constant> variable includes:
 
 		<itemizedlist>
-			<listitem><para>A drive letter such as: <constant>U:</constant></para></listitem>
-			<listitem><para>A direct network path such as:
-		    <constant>\\MASSIVE\profdata</constant></para></listitem>
-			<listitem><para>A network redirection (UNC name) that contains a macro such as: </para>
+			<listitem><para>A drive letter such as <constant>U:</constant></para></listitem>
+			<listitem><para>A direct network path such as
+				<constant>\\MASSIVE\profdata</constant></para></listitem>
+			<listitem><para>A network redirection (UNC name) that contains a macro such as </para>
 				<para><constant>%LOGONSERVER%\profdata\</constant></para></listitem>
 		</itemizedlist>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>registry keys</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>registry keys</primary></indexterm>
 		Set the registry keys as shown in <link linkend="proffold"/>. Your implementation makes the assumption
 		that users have statically located machines. Notebook computers (mobile users) need to be
 		accommodated using local profiles. This is not an uncommon assumption.
@@ -3824,9 +3708,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<guimenuitem>Yes</guimenuitem></menuchoice>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>Registry Editor</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Registry Editor</primary></indexterm>
 		Click <menuchoice><guimenu>File</guimenu><guimenuitem>Exit</guimenuitem></menuchoice>. This exits the
 		Registry Editor.
 		</para></step>
@@ -3838,20 +3721,18 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 		<step><para>
 		You are now ready to copy<footnote><para>
-			There is an alternate method by which a Default User profile can be added to the
+			There is an alternate method by which a default user profile can be added to the
 			<constant>NETLOGON</constant> share. This facility in the Windows System tool 
 			permits profiles to be exported. The export target may be a particular user or 
-			group profile share point, or else into the <constant>NETLOGON</constant> share. 
-			In this case, the profile directory must be named
-		  <constant>Default User</constant>.
+			group profile share point or else the <constant>NETLOGON</constant> share. 
+			In this case, the profile directory must be named <constant>Default User</constant>.
 			</para></footnote> 
-		the Default User profile to the Samba Domain Controllers. Launch Microsoft
-		Windows Explorer, and use it to copy the full contents of the
-	      directory <filename>Default User</filename>
-		that is in the <filename>C:\Documents and Settings</filename> to the root directory of the
+		the Default User profile to the Samba domain controllers. Launch Microsoft Windows Explorer,
+		and use it to copy the full contents of the directory <filename>Default User</filename> that
+		is in the <filename>C:\Documents and Settings</filename> to the root directory of the
 		<constant>NETLOGON</constant> share. If the <constant>NETLOGON</constant> share has the defined
-		UNIX path of <filename>/var/lib/samba/netlogon</filename>, when the copy is complete there must be
-		a directory in there called <filename>Default User</filename>.
+		UNIX path of <filename>/var/lib/samba/netlogon</filename>, when the copy is complete there must
+		be a directory in there called <filename>Default User</filename>.
 		</para></step>
 
 	</procedure>
@@ -3868,8 +3749,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
                                 <guimenuitem>Folder Options</guimenuitem>
                                 <guimenuitem>View Tab</guimenuitem>
                         </menuchoice>.
-		Deselect <guilabel>Show hidden files and folders</guilabel>,
-	      and click <guibutton>OK</guibutton>.
+		Deselect <guilabel>Show hidden files and folders</guilabel>, and click <guibutton>OK</guibutton>.
 		Exit Windows Explorer.
 		</para></step>
 
@@ -3933,10 +3813,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<sect2>
 	<title>Configuration of MS Outlook to Relocate PST File</title>
 
-	<para><indexterm>
-	    <primary>Outlook</primary>
-	    <secondary>PST</secondary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Outlook</primary><secondary>PST</secondary></indexterm>
 	Microsoft Outlook can store a Personal Storage file, generally known as a PST file.
 	It is the nature of email storage that this file grows, at times quite rapidly.
 	So that users' email is available to them at every workstation they may log onto,
@@ -3969,18 +3847,16 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<title>Configure Delete Cached Profiles on Logout</title>
 
 	<para>
-	To configure the Windows XP Professional client to auto-delete roaming profiles on logout:
+	Configure the Windows XP Professional client to auto-delete roaming profiles on logout:
 	</para>
 
-	<para><indexterm>
-	    <primary>MMC</primary>
-	  </indexterm>
-	  Click 
+	<para>
+	<indexterm><primary>MMC</primary></indexterm>
+	Click 
 	<menuchoice>
 		<guimenu>Start</guimenu>
 		<guimenuitem>Run</guimenuitem>
-	</menuchoice>. In the dialog box, enter: <command>MMC</command>
-	  and click <guibutton>OK</guibutton>.
+	</menuchoice>. In the dialog box, enter <command>MMC</command> and click <guibutton>OK</guibutton>.
 	</para>
 
 	<para>
@@ -3998,10 +3874,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</menuchoice>. 
 	</para>
 
-	<para><indexterm>
-	    <primary>Microsoft Management Console</primary>
-	    <see>MMC</see>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Microsoft Management Console</primary><see>MMC</see></indexterm>
 	The Microsoft Management Console now shows the <guimenu>Group Policy</guimenu>
 	utility that enables you to set the policies needed. In the left panel, click
 	<menuchoice>
@@ -4014,8 +3888,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</para>
 
 	<itemizedlist>
-			<listitem><para>Do not check for user ownership of Roaming Profile Folders = Enabled</para></listitem>
-			<listitem><para>Delete cached copies of roaming profiles = Enabled</para></listitem>
+		<listitem><para>Do not check for user ownership of Roaming Profile Folders = Enabled</para></listitem>
+		<listitem><para>Delete cached copies of roaming profiles = Enabled</para></listitem>
 	</itemizedlist>
 
 	<para>
@@ -4039,16 +3913,15 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</para>
 
 	<procedure>
-	<title>Uploading Printer Drivers</title>
 
 		<step><para>
 		Join your Windows XP Professional workstation (the staging machine) to the 
-		<constant>MEGANET2</constant> Domain. If you are not sure of the procedure, 
-		follow the guidance given in <link linkend="domjoin"/>.
+		<constant>MEGANET2</constant> domain. If you are not sure of the procedure, 
+		follow the guidance given in Appendix A, <link linkend="domjoin"/>.
 		</para></step>
 
 		<step><para>
-		After the machine has re-booted, log onto the workstation as the domain
+		After the machine has rebooted, log onto the workstation as the domain
 		<constant>root</constant> (this is the Administrator account for the 
 		operating system that is the host platform for this implementation of Samba.
 		</para></step>
@@ -4078,18 +3951,15 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		The printer properties panel for the <guimenu>ps01-color</guimenu> printer on the server 
 		<constant>MASSIVE</constant> is displayed. Click the <guimenu>Advanced</guimenu> tab.
 		Note that the box labeled <guimenu>Driver</guimenu> is empty. Click the <guimenu>New Driver</guimenu>
-		button that is next to the <guimenu>Driver</guimenu> box. This launches the quote<quote>Add Printer Wizard</quote>.
+		button that is next to the <guimenu>Driver</guimenu> box. This launches the <quote>Add Printer Wizard</quote>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>Add Printer Wizard</primary>
-		<secondary>APW</secondary>
-	      </indexterm><indexterm>
-		<primary>APW</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Add Printer Wizard</primary><secondary>APW</secondary></indexterm>
+		<indexterm><primary>APW</primary></indexterm>
 		The <quote>Add Printer Driver Wizard on <constant>MASSIVE</constant></quote> panel 
 		is now presented. Click <guimenu>Next</guimenu> to continue. From the left panel, select the 
-		Printer Manufacturer. In your case, you are adding a driver for a printer manufactured by 
+		printer manufacturer. In your case, you are adding a driver for a printer manufactured by 
 		Lexmark. In the right panel, select the printer (Lexmark Optra Color 40 PS). Click 
 		<guimenu>Next</guimenu>, and then <guimenu>Finish</guimenu> to commence driver upload. A 
 		progress bar appears and instructs you as each file is being uploaded and that it is being 
@@ -4105,10 +3975,10 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<indexterm><primary>AD printer publishing</primary></indexterm>
 		The driver upload completes in anywhere from a few seconds to a few minutes. When it completes,
 		you are returned to the <guimenu>Advanced</guimenu> tab in the <guimenu>Properties</guimenu> panel. 
-		You can set the Location (under the <guimenu>General</guimenu> tab), and Security settings (under 
+		You can set the Location (under the <guimenu>General</guimenu> tab) and Security settings (under 
 		the <guimenu>Security</guimenu> tab). Under the <guimenu>Sharing</guimenu> tab it is possible to
-		load additional printer drivers, there is also a check-box in this tab called <quote>List in the
-		directory</quote>. When this box is checked the printer will be published in Active Directory
+		load additional printer drivers; there is also a check-box in this tab called <quote>List in the
+		directory</quote>. When this box is checked, the printer will be published in Active Directory
 		(Applicable to Active Directory use only.)
 		</para></step>
 
@@ -4119,14 +3989,14 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		Right-click on the printer, click <menuchoice><guimenu>Properties</guimenu> 
 		<guimenuitem>Device Settings</guimenuitem> </menuchoice>.  Now change the settings to suit 
 		your requirements. BE CERTAIN TO CHANGE AT LEAST ONE SETTING and apply the changes even if 
-		you need to reverse them changes back to their original settings. 
+		you need to reverse the changes back to their original settings. 
 		</para></step>
 
 		<step><para>
 		This is necessary so that the printer settings are initialized in the Samba printers
 		database. Click <guimenu>Apply</guimenu> to commit your settings. Revert any settings you changed
 		just to initialize the Samba printers database entry for this printer. If you need to revert a setting,
-		Click <guimenu>Apply</guimenu> again.
+		click <guimenu>Apply</guimenu> again.
 		</para></step>
 
 		<step><para>
@@ -4139,10 +4009,11 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		</para></step>
 
 		<step><para>
-		You must repeat this process for all network printers (i.e., for every printer, on each server).
+		You must repeat this process for all network printers (i.e., for every printer on each server).
 		When you have finished uploading drivers to all printers, close all applications. The next task
 		is to install software your users require to do their work.
 		</para></step>
+
 	</procedure>
 
 	</sect2>
@@ -4159,7 +4030,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<para>
 	For desktop systems, the installation of software onto administratively centralized application servers
 	make a lot of sense. This means that you can manage software maintenance from a central
-	perspective and that only minimal application stub-ware needs to be installed onto the desktop
+	perspective and that only minimal application stubware needs to be installed onto the desktop
 	systems. You should proceed with software installation and default configuration as far as is humanly
 	possible and so long as it makes sense to do so. Make certain to thoroughly test and validate every aspect
 	of software operations and configuration.
@@ -4167,7 +4038,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	<para>
 	When you believe that the overall configuration is complete, be sure to create a shared group profile
-	and migrate that to the Samba server for later re-use when creating custom mandatory profiles, just in
+	and migrate that to the Samba server for later reuse when creating custom mandatory profiles, just in
 	case a user may have specific needs you had not anticipated.
 	</para>
 
@@ -4181,12 +4052,12 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</para>
 
 	<blockquote><para>
-	Un-join the domain &smbmdash; Each workstation requires a unique name and must be independently
-	joined into Domain Membership.
+	Unjoin the domain &smbmdash; Each workstation requires a unique name and must be independently
+	joined into domain membership.
 	</para></blockquote>
 
 	<blockquote><para>
-	De-fragment the hard disk &smbmdash; While not obvious to the uninitiated, de-fragmentation results
+	Defragment the hard disk &smbmdash; While not obvious to the uninitiated, defragmentation results
 	in better performance and often significantly reduces the size of the compressed disk image. That
 	also means it will take less time to deploy the image onto 500 workstations.
 	</para></blockquote>
@@ -4199,7 +4070,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<title>Key Points Learned</title>
 
 	<para>
-	This chapter has introduced many new concepts. Is it a sad fact that the example presented deliberately
+	This chapter introduced many new concepts. Is it a sad fact that the example presented deliberately
 	avoided any consideration of security. Security does not just happen; you must design it into your total
 	network. Security begins with a systems design and implementation that anticipates hostile behavior from
 	users both inside and outside the organization. Hostile and malicious intruders do not respect barriers;
@@ -4208,20 +4079,17 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	of compromise.
 	</para>
 
-      <para><indexterm>
-	  <primary>Access Control Lists</primary>
-	  <see>ACLs</see>
-	</indexterm><indexterm>
-	  <primary>ACLs</primary>
-	</indexterm>
-	As a minimum, the LDAP server must be protected by way of Access Control Lists (ACLs) and it must be
+	<para>
+	<indexterm><primary>Access Control Lists</primary><see>ACLs</see></indexterm>
+	<indexterm><primary>ACLs</primary></indexterm>
+	As a minimum, the LDAP server must be protected by way of Access Control Lists (ACLs), and it must be
 	configured to use secure protocols for all communications over the network. Of course, secure networking
 	does not result just from systems design and implementation but involves constant user education
-	training, and above all disciplined attention to detail and constant searching for signs of unfriendly
+	training and, above all, disciplined attention to detail and constant searching for signs of unfriendly
 	or alien activities. Security is itself a topic for a whole book. Please do consult appropriate sources.
-	Jerry Carter's book <ulink
-	  url="http://www.booksense.com/product/info.jsp&amp;isbn=1565924916"><emphasis>LDAP System 
-	Administration</emphasis></ulink> is a good place to start reading about OpenLDAP as well as security considerations.
+	Jerry Carter's book <ulink url="http://www.booksense.com/product/info.jsp&amp;isbn=1565924916">
+	<emphasis>LDAP System Administration</emphasis></ulink> is a good place to start reading about OpenLDAP
+	as well as security considerations.
 	</para>
 
 	<para>
@@ -4230,18 +4098,18 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	<itemizedlist>
 		<listitem><para>
-		Implementation of an OpenLDAP-based passwd backend &smbmdash; necessary to support distributed
-		Domain Control.
+		Implementation of an OpenLDAP-based passwd backend, necessary to support distributed
+		domain control.
 		</para></listitem>
 
 		<listitem><para>
-		Implementation of Samba Primary and Secondary Domain Controllers with a common LDAP backend
+		Implementation of Samba primary and secondary domain controllers with a common LDAP backend
 		for user and group accounts that is shared with the UNIX system through the PADL nss_ldap and
 		pam_ldap tool-sets.
 		</para></listitem>
 
 		<listitem><para>
-		Use of the Idealx smbldap-tools scripts for UNIX (Posix) account management as well as
+		Use of the Idealx smbldap-tools scripts for UNIX (POSIX) account management as well as
 		to manage Samba Windows user and group accounts.
 		</para></listitem>
 
@@ -4283,8 +4151,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 		<para>
 		Let's get this right. This is a book about Samba, not about OpenLDAP and secure
-		communication protocols for subjects other than Samba. Earlier on, you note
-		that the Dynamic DNS and DHCP solutions also used no protective secure communications
+		communication protocols for subjects other than Samba. Earlier on, you note,
+		that the dynamic DNS and DHCP solutions also used no protective secure communications
 		protocols. The reason for this is simple: There are so many ways of implementing
 		secure protocols that this book would have been even larger and more complex.
 		</para>
@@ -4321,7 +4189,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<para>
 		Both Red Hat Linux and SUSE Linux comply with the Linux Standards Base specifications
 		for a standard Linux distribution. The differences are marginal. Surely you know
-		your Linux platform and you do have access to administration manuals for it. This
+		your Linux platform, and you do have access to administration manuals for it. This
 		book is not a Linux tutorial; it is a Samba tutorial. Let's keep the focus on
 		the Samba part of the book; all the other bits are peripheral (but important) to
 		creation of a total network solution. 
@@ -4333,9 +4201,9 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		I have paid particular attention to the details of creating a whole solution framework.
 		I have not tightened every nut and bolt, but I have touched on all the issues you
 		need to be familiar with. Over the years many people have approached me wanting to
-		know the details of exactly how to implement a DHCP and Dynamic DNS server with Samba
+		know the details of exactly how to implement a DHCP and dynamic DNS server with Samba
 		and WINS. In this chapter, it is plain to see what needs to be configured to provide
-		transparent interoperability. Likewise for CUPS and Samba inter-operation. These are
+		transparent interoperability. Likewise for CUPS and Samba interoperation. These are
 		key stumbling areas for many people.
 		</para>
 
@@ -4410,7 +4278,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<para>
 		I took this up with Idealx and found them most willing to change that in the next version.
 		Let's give Idealx some credit for the contribution they have made. I appreciate their work
-		and, besides, it does no harm to create accounts that are not now used as at some time 
+		and, besides, it does no harm to create accounts that are not now used &smbmdash; at some time 
 		Samba may well use them.
 		</para>
 
@@ -4428,11 +4296,11 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<answer>
 
 		<para>
-		Yes, you can do that for user accounts only. Samba requires there to be a Posix (UNIX)
-		group account for every Windows Domain group account. But if you put your users into
+		Yes, you can do that for user accounts only. Samba requires there to be a POSIX (UNIX)
+		group account for every Windows domain group account. But if you put your users into
 		the system password account, how do you plan to keep all domain controller system
 		password files in sync? I think that having everything in LDAP makes a lot of sense
-		for the UNIX admin who is still learning the craft and is migrating from MS Windows.
+		for the UNIX administrator who is still learning the craft and is migrating from MS Windows.
 		</para>
 
 	</answer>
@@ -4442,7 +4310,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	<question>
 
 		<para>
-		Why are the Windows Domain RID portions not the same as the UNIX UID?
+		Why are the Windows domain RID portions not the same as the UNIX UID?
 		</para>
 
 	</question>
@@ -4474,8 +4342,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<para>
 		No. You can use any type of printer and must use the interfacing protocol supported
 		by the printer. Many networks use LPR/LPD print servers to which are attached
-		PCL printers, InkJet printers, plotters, and so on. At home I use a USB attached
-		Inkjet printer. Use the appropriate device URI (Universal Resource Interface)
+		PCL printers, inkjet printers, plotters, and so on. At home I use a USB-attached
+		inkjet printer. Use the appropriate device URI (Universal Resource Interface)
 		argument to the <constant>lpadmin -v</constant> option that is right for your
 		printer.
 		</para>
