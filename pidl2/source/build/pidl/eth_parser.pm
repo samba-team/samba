@@ -13,11 +13,6 @@ use ndr;
 
 # the list of needed functions
 
-my $module;
-my $if_uuid;
-my $if_version;
-my $if_endpoints;
-
 # list of known types
 my %typefamily;
 
@@ -176,6 +171,15 @@ sub NeededInterface($$)
 {
 	my($interface) = shift;
 	my($needed) = shift;
+
+	$needed->{"hf_$interface->{NAME}_opnum"} = {
+		'name' => "Operation",
+		'ft'   => "FT_UINT16",
+		'base' => "BASE_DEC"
+	};
+
+	$needed->{"ett_dcerpc_$interface->{NAME}"} = 1;
+	
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
 	    NeededFunction($d, $needed);
 	}
@@ -191,7 +195,6 @@ sub BuildNeeded($)
 	foreach my $d (@{$pidl}) { NeededInterface($d, \%needed); }
 	return \%needed;
 }
-
 
 sub type2ft($)
 {
@@ -1046,7 +1049,7 @@ sub ArgsBitmap($)
 {
 	my $e = shift;
 	my $type_decl = typelist::mapType($e->{DATA}->{BASE_TYPE});
-	return "struct pidl_pull *ndr, pidl_tree *tree, int hf, $type_decl *r";
+	return "struct tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *tree, int hf, int ndr_flags, $type_decl *r";
 }
 
 $typefamily{BITMAP} = {
@@ -1237,6 +1240,7 @@ sub ParseTypedef($)
 
 	pidl "{";
 	indent;
+	pidl "int offset = 0";
 	$typefamily{$e->{DATA}->{TYPE}}->{FN_BODY}->($e->{DATA}, $e->{NAME});
 	pidl "return NT_STATUS_OK;";
 	deindent;
@@ -1282,11 +1286,13 @@ sub ParseFunction($)
 	my $env = GenerateFunctionEnv($fn);
 
 	# request function
-	pidl "int dissect_$fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n{";
+	pidl "int dissect_$fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
+	pidl "{";
+	indent;
 
-	pidl "\tstruct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
-	pidl "\tstruct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
-	pidl "\tpidl_tree ptree;\n";
+	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
+	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
+	pidl "pidl_tree ptree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1301,10 +1307,10 @@ sub ParseFunction($)
 		}
 	}
 
-	pidl "\tptree.proto_tree = tree;";
-	pidl "\tptree.subtree_list = NULL;\n";
+	pidl "ptree.proto_tree = tree;";
+	pidl "ptree.subtree_list = NULL;\n";
 
-	pidl "\tdissect_$fn->{NAME}(ndr, NDR_IN, &ptree, r);";
+	pidl "dissect_$fn->{NAME}(ndr, NDR_IN, &ptree, r);";
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
@@ -1313,15 +1319,18 @@ sub ParseFunction($)
 
 
 
-	pidl "\n\treturn ndr->offset;";
-	pidl "}\n";
+	pidl "return ndr->offset;";
+	deindent;
+	pidl "}";
 
 	# response function
-	pidl "int dissect_$fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n{";
+	pidl "int dissect_$fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
+	pidl "{";
+	indent;
 
-	pidl "\tstruct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
-	pidl "\tstruct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
-	pidl "\tpidl_tree ptree;\n";
+	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
+	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
+	pidl "pidl_tree ptree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1338,10 +1347,10 @@ sub ParseFunction($)
 
 
 
-	pidl "\tptree.proto_tree = tree;";
-	pidl "\tptree.subtree_list = NULL;\n";
+	pidl "ptree.proto_tree = tree;";
+	pidl "ptree.subtree_list = NULL;\n";
 
-	pidl "\tdissect_$fn->{NAME}(ndr, NDR_OUT, &ptree, r);";
+	pidl "dissect_$fn->{NAME}(ndr, NDR_OUT, &ptree, r);";
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
@@ -1352,10 +1361,9 @@ sub ParseFunction($)
 		pidl "dissect_$fn->{RETURN_TYPE}(ndr, tree, hf_$fn->{NAME}_result, &r->out.result);";
 	}
 
-
-
-	pidl "\n\treturn ndr->offset;";
-	pidl "}\n";
+	pidl "return ndr->offset;";
+	deindent;
+	pidl "}";
 }
 
 #####################################################################
@@ -1367,7 +1375,7 @@ sub FunctionTable($)
 	pidl "static dcerpc_sub_dissector dcerpc_dissectors[] = {";
 	my $num = 0;
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    # Strip module name from function name, if present
+	    # Strip interface name from function name, if present
 	    my($n) = $d->{NAME};
 	    $n = substr($d->{NAME}, length($interface->{NAME}) + 1),
 	        if $interface->{NAME} eq substr($d->{NAME}, 0, length($interface->{NAME}));
@@ -1401,8 +1409,6 @@ sub ParseInterface($$)
 		$needed->{"pull_$d->{NAME}"} = 0;
 	}
 }
-
-
 
 #####################################################################
 # generate code to parse an enum
@@ -1446,17 +1452,6 @@ sub DeclTypedef($)
 }
 
 #####################################################################
-# parse the interface definitions
-sub ModuleHeader($)
-{
-    my($h) = shift;
-
-    $if_uuid = $h->{PROPERTIES}->{uuid};
-    $if_version = $h->{PROPERTIES}->{version};
-    $if_endpoints = $h->{PROPERTIES}->{endpoints};
-}
-
-#####################################################################
 # parse a parsed IDL structure back into an IDL file
 sub Parse($$$)
 {
@@ -1477,10 +1472,8 @@ sub Parse($$$)
 	pidl "";
 	pidl "extern const value_string NT_errors[];";
 	pidl "";
-	pidl "static int hf_opnum = -1;";
 	pidl "static int hf_ptr = -1;";
 	pidl "static int hf_array_size = -1;";
-	pidl "static int hf_result_NTSTATUS = -1;";
 	pidl "";
 
 #	print keys %{$needed->{hf_atsvc_JobGetInfo_result}}, "\n";
@@ -1507,7 +1500,6 @@ sub Parse($$$)
 
 	# dissect_* functions
 	foreach my $x (@$ndr) {
-	    ModuleHeader($x);
 		($x->{TYPE} eq "INTERFACE") && ParseInterface($x, $needed);
 	}
 
@@ -1517,91 +1509,92 @@ sub Parse($$$)
 	}
 
 	# Ethereal protocol registration
+
+	foreach my $x (@$ndr) {
+		pidl "int proto_dcerpc_pidl_$x->{NAME} = -1;\n";
 	
-	pidl "int proto_dcerpc_pidl_$module = -1;\n";
-	
-	pidl "static gint ett_dcerpc_$module = -1;\n";
-	
-	if (defined($if_uuid)) {
+		if (defined($x->{UUID})) {
+			my $if_uuid = $x->{UUID};
 	    
-	    pidl "static e_uuid_t uuid_dcerpc_$module = {";
-	    pidl "\t0x" . substr($if_uuid, 1, 8) 
-		. ", 0x" . substr($if_uuid, 10, 4)
-	    . ", 0x" . substr($if_uuid, 15, 4) . ",";
-	    pidl "\t{ 0x" . substr($if_uuid, 20, 2) 
-		. ", 0x" . substr($if_uuid, 22, 2)
-	    . ", 0x" . substr($if_uuid, 25, 2)
-	    . ", 0x" . substr($if_uuid, 27, 2)
-	    . ", 0x" . substr($if_uuid, 29, 2)
-	    . ", 0x" . substr($if_uuid, 31, 2)
-	    . ", 0x" . substr($if_uuid, 33, 2)
-	    . ", 0x" . substr($if_uuid, 35, 2) . " }";
-	    pidl "};\n";
-	}
+		    pidl "static e_uuid_t uuid_dcerpc_$module = {";
+		    pidl "\t0x" . substr($if_uuid, 1, 8) 
+	  		. ", 0x" . substr($if_uuid, 10, 4)
+		    . ", 0x" . substr($if_uuid, 15, 4) . ",";
+		    pidl "\t{ 0x" . substr($if_uuid, 20, 2) 
+			. ", 0x" . substr($if_uuid, 22, 2)
+		    . ", 0x" . substr($if_uuid, 25, 2)
+		    . ", 0x" . substr($if_uuid, 27, 2)
+		    . ", 0x" . substr($if_uuid, 29, 2)
+		    . ", 0x" . substr($if_uuid, 31, 2)
+		    . ", 0x" . substr($if_uuid, 33, 2)
+		    . ", 0x" . substr($if_uuid, 35, 2) . " }";
+		    pidl "};\n";
+		}
 	
-	if (defined($if_version)) {
-	    pidl "static guint16 ver_dcerpc_$module = " . $if_version . ";\n";
+	    pidl "static guint16 ver_dcerpc_$x->{NAME} = $x->{VERSION};";
 	}
 	
 	pidl "void proto_register_dcerpc_pidl_$module(void)";
 	pidl "{";
+	indent;
 	
-	pidl "\tstatic hf_register_info hf[] = {";
-	pidl "\t{ &hf_opnum, { \"Operation\", \"$module.opnum\", FT_UINT16, BASE_DEC, NULL, 0x0, \"Operation\", HFILL }},";
-	pidl "\t{ &hf_result_NTSTATUS, { \"Return code\", \"$module.rc\", FT_UINT32, BASE_HEX, VALS(NT_errors), 0x0, \"Return status code\", HFILL }},";
-	pidl "\t{ &hf_ptr, { \"Pointer\", \"$module.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},";
+	pidl "static hf_register_info hf[] = {";
+	pidl "{ &hf_ptr, { \"Pointer\", \"$module.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},";
 	
 	foreach my $x (sort keys(%{$needed})) {
 	    next, if !($x =~ /^hf_/);
-	    pidl "\t{ &$x,";
+	    pidl "{ &$x,";
 	    $needed->{$x}->{strings} = "NULL", if !defined($needed->{$x}->{strings});
 	    $needed->{$x}->{bitmask} = "0", if !defined($needed->{$x}->{bitmask});
-	    pidl "\t  { \"$needed->{$x}->{name}\", \"$x\", $needed->{$x}->{ft}, $needed->{$x}->{base}, $needed->{$x}->{strings}, $needed->{$x}->{bitmask}, \"$x\", HFILL }},";
+	    pidl "  { \"$needed->{$x}->{name}\", \"$x\", $needed->{$x}->{ft}, $needed->{$x}->{base}, $needed->{$x}->{strings}, $needed->{$x}->{bitmask}, \"$x\", HFILL }},";
 	}
 	
-	pidl "\t};\n";
+	pidl "};\n";
 	
-	pidl "\tstatic gint *ett[] = {";
-	pidl "\t\t&ett_dcerpc_$module,";
+	pidl "static gint *ett[] = {";
+	indent;
 	foreach my $x (sort keys(%{$needed})) {
-	    pidl "\t\t&$x,", if $x =~ /^ett_/;
+	    pidl "&$x,", if $x =~ /^ett_/;
 	}
-	pidl "\t};\n";
-	
+	deindent;
 
-	if (defined($if_uuid)) {
+	pidl "};\n";
+
+	foreach my $x (@$ndr) {
+		if (defined($x->{UUID})) {
+		    # These can be changed to non-pidl names if the old dissectors
+		    # in epan/dissctors are deleted.
 	    
-	    # These can be changed to non-pidl names if the old dissectors
-	    # in epan/dissctors are deleted.
+		    my $name = uc($x->{NAME}) . " (pidl)";
+		    my $short_name = "pidl_$x->{NAME}";
+		    my $filter_name = "pidl_$x->{NAME}";
 	    
-	    my $name = uc($module) . " (pidl)";
-	    my $short_name = "pidl_$module";
-	    my $filter_name = "pidl_$module";
-	    
-	    pidl "\tproto_dcerpc_pidl_$module = proto_register_protocol(\"$name\", \"$short_name\", \"$filter_name\");\n";
-	    
-	    pidl "\tproto_register_field_array(proto_dcerpc_pidl_$module, hf, array_length (hf));";
-	    pidl "\tproto_register_subtree_array(ett, array_length(ett));";
-	    
-	    pidl "}\n";
-	    
-	    pidl "void proto_reg_handoff_dcerpc_pidl_$module(void)";
-	    pidl "{";
-	    pidl "\tdcerpc_init_uuid(proto_dcerpc_pidl_$module, ett_dcerpc_$module,";
-	    pidl "\t\t&uuid_dcerpc_$module, ver_dcerpc_$module,";
-	    pidl "\t\tdcerpc_dissectors, hf_opnum);";
-	    pidl "}";
-	    
-	} else {
-	    
-	    pidl "\tint proto_dcerpc;\n";
-	    pidl "\tproto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");";
-	    pidl "\tproto_register_field_array(proto_dcerpc, hf, array_length(hf));";
-	    pidl "\tproto_register_subtree_array(ett, array_length(ett));";
-	    
-	    pidl "}";
+		    pidl "proto_dcerpc_pidl_$x->{NAME} = proto_register_protocol(\"$name\", \"$short_name\", \"$filter_name\");";
+		    
+		    pidl "proto_register_field_array(proto_dcerpc_pidl_$x->{NAME}, hf, array_length (hf));";
+		    pidl "proto_register_subtree_array(ett, array_length(ett));";
+		} else {
+		    pidl "int proto_dcerpc;";
+		    pidl "proto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");";
+		    pidl "proto_register_field_array(proto_dcerpc, hf, array_length(hf));";
+		    pidl "proto_register_subtree_array(ett, array_length(ett));";
+		}
 	}
-
+	    
+	deindent;
+	pidl "}\n";
+	    
+	foreach my $x (@$ndr) {
+		pidl "void proto_reg_handoff_dcerpc_pidl_$x->{NAME}(void)";
+		pidl "{";
+		indent;
+		pidl "dcerpc_init_uuid(proto_dcerpc_pidl_$x->{NAME}, ett_dcerpc_$x->{NAME},";
+		pidl "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
+		pidl "\tdcerpc_dissectors, hf_opnum);";
+		deindent;
+		pidl "}";
+	}
+	    
 	return $res;
 }
 

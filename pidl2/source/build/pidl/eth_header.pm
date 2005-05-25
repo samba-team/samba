@@ -1,6 +1,7 @@
 ###################################################
 # create C header files for an IDL structure
 # Copyright tridge@samba.org 2000
+# Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
 package EthHeader;
@@ -24,38 +25,11 @@ sub tabs()
 }
 
 #####################################################################
-# parse a properties list
-sub HeaderProperties($$)
-{
-    my($props) = shift;
-	my($ignores) = shift;
-	my $ret = "";
-
-	return; 
-
-    foreach my $d (keys %{$props}) {
-		next if ($ignores->{$d});
-		if($props->{$d} ne "1") {
-			$ret.= "$d(" . $props->{$d} . "),";
-		} else {
-			$ret.="$d,";
-		}
-	}
-
-	if ($ret) {
-		pidl "/* [" . substr($ret, 0, -1) . "] */";
-	}
-}
-
-#####################################################################
 # parse a structure element
 sub HeaderElement($)
 {
     my($element) = shift;
 
-    if (defined $element->{PROPERTIES}) {
-		HeaderProperties($element->{PROPERTIES}, {"in" => 1, "out" => 1});
-	}
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
@@ -151,9 +125,6 @@ sub HeaderUnion($$)
 	my($name) = shift;
 	my %done = ();
 
-	if (defined $union->{PROPERTIES}) {
-		HeaderProperties($union->{PROPERTIES}, {});
-	}
 	pidl "\nunion $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$union->{ELEMENTS}}) {
