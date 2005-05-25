@@ -1307,16 +1307,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * a Win2k client bug. JRA.
 			 */
 			memset(p,'\0',26);
-			if (!was_8_3 && lp_manglednames(SNUM(conn))) {
+			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
-			} else {
-				SSVAL(p,0,0);
-				*(p+2) = 0;
 			}
 			p += 2 + 24;
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
@@ -1443,16 +1440,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * a Win2k client bug. JRA.
 			 */
 			memset(p,'\0',26);
-			if (!was_8_3 && lp_manglednames(SNUM(conn))) {
+			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
-			} else {
-				SSVAL(p,0,0);
-				*(p+2) = 0;
 			}
 			p += 26;
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
