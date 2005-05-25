@@ -69,7 +69,6 @@ sub NeededFunction($$)
 	}
 
 	# Add entry for return value
-	
 	if (defined($fn->{RETURN_TYPE})) {
 		$needed->{"hf_$fn->{NAME}_result"} = {
 	    'name' => field2name('result'),
@@ -167,32 +166,26 @@ sub NeededTypedef($$)
 
 #####################################################################
 # work out what parse functions are needed
-sub NeededInterface($$)
+sub NeededInterface($)
 {
 	my($interface) = shift;
-	my($needed) = shift;
+	my %needed = ();
 
-	$needed->{"hf_$interface->{NAME}_opnum"} = {
+	$needed{"hf_$interface->{NAME}_opnum"} = {
 		'name' => "Operation",
 		'ft'   => "FT_UINT16",
 		'base' => "BASE_DEC"
 	};
 
-	$needed->{"ett_dcerpc_$interface->{NAME}"} = 1;
+	$needed{"ett_dcerpc_$interface->{NAME}"} = 1;
 	
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    NeededFunction($d, $needed);
+	    NeededFunction($d, \%needed);
 	}
 	foreach my $d (reverse @{$interface->{TYPEDEFS}}) {
-	    NeededTypedef($d, $needed);
+	    NeededTypedef($d, \%needed);
 	}
-}
 
-sub BuildNeeded($)
-{
-	my $pidl = shift;
-	my %needed;
-	foreach my $d (@{$pidl}) { NeededInterface($d, \%needed); }
 	return \%needed;
 }
 
@@ -462,90 +455,16 @@ sub GenerateFunctionEnv($)
 }
 
 #####################################################################
-sub ParseArrayPreceding($$$$)
+sub ParseArrayPreceding($$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $var_name = shift;
-	my $ndr_flags = shift;
 
 	return if ($l->{NO_METADATA});
 	
 	# non fixed arrays encode the size just before the array
 	pidl "ndr_pull_array_size(ndr, tree, " . get_pointer_to($var_name) . ");";
-}
-
-#####################################################################
-# parse an array - pull side
-sub ParseArray($$$$$$$)
-{
-        my $struct = shift;
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;
-	my $env = shift;
-
-	unless ($l->{NO_METADATA}) {
-		$var_name = get_pointer_to($var_name);
-	}
-
-	# $var_name contains the name of the first argument here
-
-	my $length = ParseExpr($l->{SIZE_IS}, $env);
-	my $size = $length;
-
-	if ($l->{IS_CONFORMANT}) {
-		$length = $size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
-	}
-
-	# if this is a conformant array then we use that size to allocate, and make sure
-	# we allocate enough to pull the elements
-	if (!$l->{IS_SURROUNDING}) {
-		ParseArrayPreceding($e, $l, $var_name, $ndr_flags);
-	}
-
-	if ($l->{IS_VARYING}) {
-		pidl "ndr_pull_array_length($ndr, tree, " . get_pointer_to($var_name) . ");";
-		$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
-	}
-
-	check_null_pointer($length);
-
-	if ($length ne $size) {
-		pidl "if ($length > $size) {";
-		indent;
-		pidl "return NT_STATUS_OK;";
-		deindent;
-		pidl "}";
-	}
-
-	if ($l->{IS_CONFORMANT}) {
-		my $size = ParseExpr($l->{SIZE_IS}, $env);
-		check_null_pointer($size);
-		pidl "ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size);";
-	}
-
-	if ($l->{IS_VARYING}) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env);
-		check_null_pointer($length);
-		pidl "ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length);";
-	}
-
-	if (!$l->{IS_FIXED}) {
-		AllocateArrayLevel($e,$l,$ndr,$env,$size);
-	}
-
-	if (Ndr::is_scalar_type($e->{TYPE})) {
-	    if ($l->{IS_DEFERRED}) {
-		$var_name = get_value_of($var_name);
-	    }
-
-		pidl "ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length);";
-	} else {
-		pidl "ndr_pull_array($ndr, $ndr_flags, (void **)$var_name, sizeof($var_name\[0]), $length, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE});";
-	}
 }
 
 sub compression_alg($$)
@@ -723,7 +642,7 @@ sub ParseData($$$$$)
 		$var_name = get_pointer_to($var_name);
 	}
 
-	pidl "dissect_$l->{DATA_TYPE}($ndr, $ndr_flags, $var_name);";
+	pidl "offset += dissect_$l->{DATA_TYPE}($ndr, $ndr_flags, $var_name);";
 
 	if (my $range = util::has_property($e, "range")) {
 		$var_name = get_value_of($var_name);
@@ -738,20 +657,14 @@ sub ParseData($$$$$)
 	}
 }
 
-sub CalcNdrFlags($$$$$)
+sub CalcNdrFlags($$$)
 {
-        my $struct = shift;
-        my $e = shift;
 	my $l = shift;
 	my $primitives = shift;
 	my $deferred = shift;
 
 	my $scalars = 0;
 	my $buffers = 0;
-
-	if (defined $l->{DATA_TYPE} and $l->{DATA_TYPE} =~ /uint(16|32)/) {
-	    return "tree, hf_${struct}_$e->{NAME}";
-	}
 
 	# Add NDR_SCALARS if this one is deferred 
 	# and deferreds may be pushed
@@ -765,101 +678,98 @@ sub CalcNdrFlags($$$$$)
 	# and deferreds may be pushed
 	$buffers = 1 if ($l->{CONTAINS_DEFERRED} and $deferred);
 
-	#
-	# ALAND! In some contexts,this is quite wrong..
-	if ($scalars and $buffers and !Ndr::is_scalar_type($e->{TYPE}) and ($l->{TYPE} ne "SUBCONTEXT")) {
-	    return "NDR_SCALARS|NDR_BUFFERS, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE})";
-	}
-
-
-	if ($scalars and !Ndr::is_scalar_type($e->{TYPE}) and ($l->{TYPE} ne "SUBCONTEXT")) {
-	    return "NDR_SCALARS, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE})";
-	}
-
-
-	if ($buffers and !Ndr::is_scalar_type($e->{TYPE}) and ($l->{TYPE} ne "SUBCONTEXT")) {
-	    return "NDR_BUFFERS, get_subtree(tree, \"$e->{NAME}\", ndr, ett_$e->{TYPE})";
-	}
-
-
-	# ALAND!
-#	return "1NDR_SCALARS|NDR_BUFFERS" if ($scalars and $buffers);
-
-	return "tree, hf_${struct}_$e->{NAME}" if ($scalars and $buffers);
-#	return "2 NDR_SCALARS" if ($scalars);
-
-	if ($scalars) {
-	    if ($l->{TYPE} eq "ARRAY") {
-		return "NDR_SCALARS, tree, hf_${struct}_$e->{NAME}_array";
-	    } else {
-		return "tree, hf_${struct}_$e->{NAME}";
-	    }
-	}
-
-	if ($buffers) {
-	    if ($l->{TYPE} eq "ARRAY") {
-		return "NDR_BUFFERS, tree, hf_${struct}_$e->{NAME}_array";
-	    } else {
-		return "tree, hf_${struct}_$e->{NAME}";
-	    }
-	}
-#	return "3 NDR_BUFFERS" if ($buffers);
-
-
-	#
-	# $scalars === 0 and $buffers == 0  ? HUH?
-	if (Ndr::is_scalar_type($e->{TYPE}) and ($l->{TYPE} eq "ARRAY")) {
-	    return "NDR_SCALARS, tree, hf_${struct}_$e->{NAME}_array";
-	}
+	return "NDR_SCALARS|NDR_BUFFERS" if ($scalars and $buffers);
+	return "NDR_SCALARS" if ($scalars);
+	return "NDR_BUFFERS" if ($buffers);
 	return undef;
 }
 
-sub GetPrevLevel($$)
-{
-	my $e = shift;
-	my $fl = shift;
-	my $prev = undef;
 
-	foreach my $l (@{$e->{LEVELS}}) {
-		(return $prev) if ($l == $fl);
-		$prev = $l;
+sub ParseElementLevel
+{
+	my($e) = shift;
+	my $l = shift;
+	my $ndr = shift;
+	my($var_name) = shift;
+	my $env = shift;
+	my $primitives = shift;
+	my $deferred = shift;
+
+	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+
+	# Only pull something if there's actually something to be pulled
+	if (defined($ndr_flags)) {
+		if ($l->{TYPE} eq "SUBCONTEXT") {
+				($ndr,$var_name) = ParseSubcontextStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
+				ParseElementLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+				ParseSubcontextEnd($e, $l);
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			my $length = ParseArrayHeader($e, $l, $ndr, $var_name, $env); 
+		} elsif ($l->{TYPE} eq "POINTER") {
+			ParsePtr($e, $l, $ndr, $var_name);
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			ParseSwitch($e, $l, $ndr, $var_name, $ndr_flags, $env);
+		} elsif ($l->{TYPE} eq "DATA") {
+			ParseData($e, $l, $ndr, $var_name, $ndr_flags);
+		}
 	}
 
-	return undef;
-}
+	# add additional constructions
+	if ($l->{TYPE} eq "POINTER" and $deferred) {
+		if ($l->{POINTER_TYPE} ne "ref") {
+			pidl "if ($var_name) {";
+			indent;
 
-sub GetNextLevel($$)
-{
-	my $e = shift;
-	my $fl = shift;
+			if ($l->{POINTER_TYPE} eq "relative") {
+				pidl "struct ndr_pull_save _relative_save;";
+				pidl "ndr_pull_save(ndr, &_relative_save);";
+				pidl "NDR_CHECK(ndr_pull_relative_ptr2(ndr, $var_name));";
+			}
+		}
 
-	my $seen = 0;
+		$var_name = get_value_of($var_name);
+		ParseElementLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 
-	foreach my $l (@{$e->{LEVELS}}) {
-		return $l if ($seen);
-		($seen = 1) if ($l == $fl);
+		if ($l->{POINTER_TYPE} ne "ref") {
+    		if ($l->{POINTER_TYPE} eq "relative") {
+				pidl "ndr_pull_restore(ndr, &_relative_save);";
+			}
+			deindent;
+			pidl "}";
+		}
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+
+		$var_name = $var_name . "[$counter]";
+		unless ($l->{NO_METADATA}) {
+			$var_name = get_pointer_to($var_name);
+		}
+
+		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
+			deindent;
+			pidl "}";
+		}
+
+		if ($deferred and Ndr::ContainsDeferred($e, $l)) {
+			pidl "for ($counter = 0; $counter < $length; $counter++) {";
+			indent;
+			ParseElementLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
+			deindent;
+			pidl "}";
+		}
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		ParseElementLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
-
-	return undef;
-}
-
-sub ContainsDeferred($)
-{
-	my $e = shift;
-
-	foreach my $l (@{$e->{LEVELS}}) { 
-		return 1 if ($l->{IS_DEFERRED}); 
-		return 1 if ($l->{CONTAINS_DEFERRED});
-	}
-	
-	return 0;
 }
 
 #####################################################################
 # parse scalars in a structure element - pull size
-sub ParseElement($$$$$$$)
+sub ParseElement($$$$$$)
 {
-        my($struct) = shift;
 	my($e) = shift;
 	my $ndr = shift;
 	my($var_prefix) = shift;
@@ -871,71 +781,11 @@ sub ParseElement($$$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	my $previous = undef;
-
-	return unless $primitives or ($deferred and ContainsDeferred($e));
+	return unless $primitives or ($deferred and Ndr::ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
-	foreach my $l (@{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($struct, $e, $l, $primitives, $deferred);
-
- 		# Only pull something if there's actually something to be pulled
-		if (defined($ndr_flags)) {
-			if ($l->{TYPE} eq "SUBCONTEXT") {
-				($ndr,$var_name) = ParseSubcontextStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			} elsif ($l->{TYPE} eq "ARRAY") {
-			    ParseArray($struct, $e, $l, $ndr, $var_name, $ndr_flags, $env);
-			    last;
-			} elsif ($l->{TYPE} eq "POINTER") {
-			        ParsePtr($e, $l, $ndr, $var_name);
-			} elsif ($l->{TYPE} eq "SWITCH") {
-				ParseSwitch($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			} elsif ($l->{TYPE} eq "DATA") {
-				ParseData($e, $l, $ndr, $var_name, $ndr_flags);
-			}
-
-			$previous = $l;
-		} else {
-			$previous = undef;
-		}
-
-		# add additional constructions
-		if ($l->{TYPE} eq "POINTER" and $deferred) {
-			if ($l->{POINTER_TYPE} ne "ref") {
-				pidl "if ($var_name) {";
-				indent;
-
-				if ($l->{POINTER_TYPE} eq "relative") {
-					pidl "struct ndr_pull_save _relative_save;";
-					pidl "ndr_pull_save(ndr, &_relative_save);";
-					pidl "ndr_pull_relative_ptr2(ndr, $var_name);";
-				}
-			}
-
-			$var_name = get_value_of($var_name);
-		}
-
-	    }
-
-	foreach my $l (reverse @{$e->{LEVELS}}) {
-		my $ndr_flags = CalcNdrFlags($struct, $e, $l, $primitives, $deferred);
-
-		if (defined ($ndr_flags)) {
-			if ($l->{TYPE} eq "SUBCONTEXT") {
-				ParseSubcontextEnd($e, $l);
-			}
-		}
-
-		if ($l->{TYPE} eq "POINTER" and $deferred 
-			and $l->{POINTER_TYPE} ne "ref") {
-		    	if ($l->{POINTER_TYPE} eq "relative") {
-				pidl "ndr_pull_restore(ndr, &_relative_save);";
-			}
-			deindent;
-			pidl "}";
-		}
-	}
+	ParseElementLevel($e,$e->{LEVELS}[0],$ndr,$var_name,$env,$primitives,$deferred);
 
 	end_flags($e);
 }
@@ -949,7 +799,7 @@ sub ParsePtr($$$$)
 	my $ndr = shift;
 	my($var_name) = shift;
 
-	my $nl = GetNextLevel($e, $l);
+	my $nl = Ndr::GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 
 	if ($l->{POINTER_TYPE} eq "ref") {
@@ -1008,7 +858,7 @@ sub ParseEnum($$)
 sub ArgsEnum($)
 {
 	my $e = shift;
-	return "struct pidl_pull *ndr, pidl_tree *tree, int hf, enum $e->{NAME} *r";
+	return "tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep";
 }
 
 $typefamily{ENUM} = {
@@ -1092,13 +942,13 @@ sub ParseStruct($$)
 	indent;
 
 	if (defined $conform_e) {
-		ParseArrayPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}", "4 NDR_SCALARS");
+		ParseArrayPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}");
 	}
 
 	pidl "ndr_pull_align(ndr, $struct->{ALIGN});";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElement($name, $e, "ndr", "r->", $env, 1, 0);
+		ParseElement($e, "ndr", "r->", $env, 1, 0);
 	}	
 	deindent;
 	pidl "}";
@@ -1106,7 +956,7 @@ sub ParseStruct($$)
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
 	indent;
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElement($name, $e, "ndr", "r->", $env, 0, 0);
+		ParseElement($e, "ndr", "r->", $env, 0, 0);
 	}
 
 	pidl "proto_item_set_end(tree->proto_tree, ndr->tvb, ndr->offset);";
@@ -1177,7 +1027,7 @@ sub ParseUnion($$$)
 					last;
 				}
 			}
-			ParseElement($name, $el, "ndr", "r->", {}, 1, 0);
+			ParseElement($el, "ndr", "r->", {}, 1, 0);
 			deindent;
 		}
 		pidl "break; }";
@@ -1199,7 +1049,7 @@ sub ParseUnion($$$)
 		pidl "$el->{CASE}:";
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElement($name, $el, "ndr", "r->", {}, 0, 1);
+			ParseElement($el, "ndr", "r->", {}, 0, 1);
 			deindent;
 		}
 		pidl "break;";
@@ -1227,6 +1077,70 @@ $typefamily{UNION} = {
 	FN_BODY => \&ParseUnion,
 	FN_ARGS => \&ArgsUnion,
 };
+
+#####################################################################
+# parse an array
+sub ParseArrayHeader($$$$$)
+{
+	my $e = shift;
+	my $l = shift;
+	my $ndr = shift;
+	my $var_name = shift;
+	my $env = shift;
+
+	unless ($l->{NO_METADATA}) {
+		$var_name = get_pointer_to($var_name);
+	}
+
+	# $var_name contains the name of the first argument here
+
+	my $length = ParseExpr($l->{SIZE_IS}, $env);
+	my $size = $length;
+
+	if ($l->{IS_CONFORMANT}) {
+		$length = $size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
+	}
+
+	# if this is a conformant array then we use that size to allocate, and make sure
+	# we allocate enough to pull the elements
+	if (!$l->{IS_SURROUNDING}) {
+		ParseArrayPreceding($e, $l, $var_name);
+	}
+
+
+	if ($l->{IS_VARYING}) {
+		pidl "NDR_CHECK(ndr_pull_array_length($ndr, " . get_pointer_to($var_name) . "));";
+		$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
+	}
+
+	check_null_pointer($length);
+
+	if ($length ne $size) {
+		pidl "if ($length > $size) {";
+		indent;
+		pidl "return ndr_pull_error($ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should exceed array length %u\", $size, $length);";
+		deindent;
+		pidl "}";
+	}
+
+	if ($l->{IS_CONFORMANT}) {
+		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		check_null_pointer($size);
+		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
+	}
+
+	if ($l->{IS_VARYING}) {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		check_null_pointer($length);
+		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
+	}
+
+	if (!$l->{IS_FIXED}) {
+		AllocateArrayLevel($e,$l,$ndr,$env,$size);
+	}
+
+	return $length;
+}
 	
 #####################################################################
 # parse a typedef - pull side
@@ -1259,7 +1173,7 @@ sub AllocateArrayLevel($$$$$)
 	my $var = ParseExpr($e->{NAME}, $env);
 
 	check_null_pointer($size);
-	my $pl = GetPrevLevel($e, $l);
+	my $pl = Ndr::GetPrevLevel($e, $l);
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
 	    $pl->{POINTER_TYPE} eq "ref") {
@@ -1278,21 +1192,19 @@ sub AllocateArrayLevel($$$$$)
 
 #####################################################################
 # parse a function
-sub ParseFunction($)
+sub ParseFunctionRqst($)
 { 
 	my($fn) = shift;
-	my $static = fn_prefix($fn);
 
 	my $env = GenerateFunctionEnv($fn);
 
 	# request function
-	pidl "int dissect_$fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
+	pidl "static int dissect_$fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
 	pidl "{";
 	indent;
 
 	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
 	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
-	pidl "pidl_tree ptree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1307,30 +1219,29 @@ sub ParseFunction($)
 		}
 	}
 
-	pidl "ptree.proto_tree = tree;";
-	pidl "ptree.subtree_list = NULL;\n";
-
-	pidl "dissect_$fn->{NAME}(ndr, NDR_IN, &ptree, r);";
-
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
-		ParseElement($fn->{NAME}, $e, "ndr", "r->in.", $env, 1, 1);
+		ParseElement($e, "ndr", "r->in.", $env, 1, 1);
 	}
 
-
-
-	pidl "return ndr->offset;";
+	pidl "return offset;";
 	deindent;
 	pidl "}";
+}
+
+sub ParseFunctionResp($)
+{ 
+	my($fn) = shift;
+
+	my $env = GenerateFunctionEnv($fn);
 
 	# response function
-	pidl "int dissect_$fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
+	pidl "static int dissect_$fn->{NAME}_resp(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
 	pidl "{";
 	indent;
 
 	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
 	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
-	pidl "pidl_tree ptree;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1345,23 +1256,16 @@ sub ParseFunction($)
 		}
 	}
 
-
-
-	pidl "ptree.proto_tree = tree;";
-	pidl "ptree.subtree_list = NULL;\n";
-
-	pidl "dissect_$fn->{NAME}(ndr, NDR_OUT, &ptree, r);";
-
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
-		ParseElement($fn->{NAME}, $e, "ndr", "r->out.", $env, 1, 1);
+		ParseElement($e, "ndr", "r->out.", $env, 1, 1);
 	}
 
 	if ($fn->{RETURN_TYPE}) {
-		pidl "dissect_$fn->{RETURN_TYPE}(ndr, tree, hf_$fn->{NAME}_result, &r->out.result);";
+		pidl "dissect_$fn->{RETURN_TYPE}(ndr, tree, hf_$fn->{NAME}_result, drep);";
 	}
 
-	pidl "return ndr->offset;";
+	pidl "return offset;";
 	deindent;
 	pidl "}";
 }
@@ -1403,7 +1307,10 @@ sub ParseInterface($$)
 
 	# Functions
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		($needed->{"pull_$d->{NAME}"}) && ParseFunction($d);
+		if ($needed->{"pull_$d->{NAME}"}) {
+			ParseFunctionRqst($d);
+			ParseFunctionResp($d);
+		}
 
 		# Make sure we don't generate a function twice...
 		$needed->{"pull_$d->{NAME}"} = 0;
@@ -1451,95 +1358,17 @@ sub DeclTypedef($)
 	}
 }
 
-#####################################################################
-# parse a parsed IDL structure back into an IDL file
-sub Parse($$$)
+sub RegisterInterface($$)
 {
-	my($ndr) = shift;
-	my $module = shift;
-	my($filename) = shift;
-	my $needed = BuildNeeded($ndr);
+	my $x = shift;
+	my $needed = shift;
 
-	$tabs = "";
-	my $h_filename = $filename;
-	$res = "";
-
-	if ($h_filename =~ /(.*)\.c/) {
-		$h_filename = "$1.h";
-	}
-
-	pidl "#include \"eparser.h\"";
-	pidl "";
-	pidl "extern const value_string NT_errors[];";
-	pidl "";
-	pidl "static int hf_ptr = -1;";
-	pidl "static int hf_array_size = -1;";
-	pidl "";
-
-#	print keys %{$needed->{hf_atsvc_JobGetInfo_result}}, "\n";
-
-	foreach my $y (sort keys(%{$needed})) {
-	    pidl "static int $y = -1;", if $y =~ /^hf_/;
-	}
-	pidl "";
-
-	foreach my $y (sort keys(%{$needed})) {
-	    pidl "static gint $y = -1;", if $y =~ /^ett_/;
-	}
-	pidl "";
-	
-	pidl "/* parser auto-generated by pidl */";
-	pidl "";
-	pidl "#include \"$h_filename\"";
-	pidl "";
-
-	# Required global declarations
-	foreach my $x (@$ndr) {
-		($x->{TYPE} eq "INTERFACE") && DeclInterface($x, $needed);
-	}
-
-	# dissect_* functions
-	foreach my $x (@$ndr) {
-		($x->{TYPE} eq "INTERFACE") && ParseInterface($x, $needed);
-	}
-
-	# Function call tables
-	foreach my $x (@$ndr) {
-	    ($x->{TYPE} eq "INTERFACE") && FunctionTable($x);
-	}
-
-	# Ethereal protocol registration
-
-	foreach my $x (@$ndr) {
-		pidl "int proto_dcerpc_pidl_$x->{NAME} = -1;\n";
-	
-		if (defined($x->{UUID})) {
-			my $if_uuid = $x->{UUID};
-	    
-		    pidl "static e_uuid_t uuid_dcerpc_$module = {";
-		    pidl "\t0x" . substr($if_uuid, 1, 8) 
-	  		. ", 0x" . substr($if_uuid, 10, 4)
-		    . ", 0x" . substr($if_uuid, 15, 4) . ",";
-		    pidl "\t{ 0x" . substr($if_uuid, 20, 2) 
-			. ", 0x" . substr($if_uuid, 22, 2)
-		    . ", 0x" . substr($if_uuid, 25, 2)
-		    . ", 0x" . substr($if_uuid, 27, 2)
-		    . ", 0x" . substr($if_uuid, 29, 2)
-		    . ", 0x" . substr($if_uuid, 31, 2)
-		    . ", 0x" . substr($if_uuid, 33, 2)
-		    . ", 0x" . substr($if_uuid, 35, 2) . " }";
-		    pidl "};\n";
-		}
-	
-	    pidl "static guint16 ver_dcerpc_$x->{NAME} = $x->{VERSION};";
-	}
-	
-	pidl "void proto_register_dcerpc_pidl_$module(void)";
+	pidl "void proto_register_dcerpc_pidl_$x->{NAME}(void)";
 	pidl "{";
 	indent;
 	
 	pidl "static hf_register_info hf[] = {";
-	pidl "{ &hf_ptr, { \"Pointer\", \"$module.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},";
+	pidl "{ &hf_ptr, { \"Pointer\", \"$x->{NAME}.ptr\", FT_UINT32, BASE_HEX, NULL, 0x0, \"Pointer\", HFILL }},";
 	
 	foreach my $x (sort keys(%{$needed})) {
 	    next, if !($x =~ /^hf_/);
@@ -1560,41 +1389,125 @@ sub Parse($$$)
 
 	pidl "};\n";
 
-	foreach my $x (@$ndr) {
-		if (defined($x->{UUID})) {
-		    # These can be changed to non-pidl names if the old dissectors
-		    # in epan/dissctors are deleted.
-	    
-		    my $name = uc($x->{NAME}) . " (pidl)";
-		    my $short_name = "pidl_$x->{NAME}";
-		    my $filter_name = "pidl_$x->{NAME}";
-	    
-		    pidl "proto_dcerpc_pidl_$x->{NAME} = proto_register_protocol(\"$name\", \"$short_name\", \"$filter_name\");";
-		    
-		    pidl "proto_register_field_array(proto_dcerpc_pidl_$x->{NAME}, hf, array_length (hf));";
-		    pidl "proto_register_subtree_array(ett, array_length(ett));";
-		} else {
-		    pidl "int proto_dcerpc;";
-		    pidl "proto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");";
-		    pidl "proto_register_field_array(proto_dcerpc, hf, array_length(hf));";
-		    pidl "proto_register_subtree_array(ett, array_length(ett));";
+	if (defined($x->{UUID})) {
+	    # These can be changed to non-pidl names if the old dissectors
+	    # in epan/dissctors are deleted.
+    
+	    my $name = "\"" . uc($x->{NAME}) . " (pidl)\"";
+		if (util::has_property($x, "helpstring")) {
+			$name = $x->{PROPERTIES}->{helpstring};
 		}
+	    my $short_name = "pidl_$x->{NAME}";
+	    my $filter_name = "pidl_$x->{NAME}";
+    
+	    pidl "proto_dcerpc_pidl_$x->{NAME} = proto_register_protocol($name, \"$short_name\", \"$filter_name\");";
+	    
+	    pidl "proto_register_field_array(proto_dcerpc_pidl_$x->{NAME}, hf, array_length (hf));";
+	    pidl "proto_register_subtree_array(ett, array_length(ett));";
+	} else {
+	    pidl "int proto_dcerpc;";
+	    pidl "proto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");";
+	    pidl "proto_register_field_array(proto_dcerpc, hf, array_length(hf));";
+	    pidl "proto_register_subtree_array(ett, array_length(ett));";
 	}
 	    
 	deindent;
 	pidl "}\n";
-	    
-	foreach my $x (@$ndr) {
-		pidl "void proto_reg_handoff_dcerpc_pidl_$x->{NAME}(void)";
-		pidl "{";
-		indent;
-		pidl "dcerpc_init_uuid(proto_dcerpc_pidl_$x->{NAME}, ett_dcerpc_$x->{NAME},";
-		pidl "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
-		pidl "\tdcerpc_dissectors, hf_opnum);";
-		deindent;
-		pidl "}";
+}
+
+sub RegisterInterfaceHandoff($)
+{
+	my $x = shift;
+	pidl "void proto_reg_handoff_dcerpc_pidl_$x->{NAME}(void)";
+	pidl "{";
+	indent;
+	pidl "dcerpc_init_uuid(proto_dcerpc_pidl_$x->{NAME}, ett_dcerpc_$x->{NAME},";
+	pidl "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
+	pidl "\tdcerpc_dissectors, hf_opnum);";
+	deindent;
+	pidl "}";
+}
+
+sub ProcessInterface($)
+{
+	my $x = shift;
+	my $needed = NeededInterface($x);
+
+	# Required global declarations
+	DeclInterface($x, $needed);
+
+	foreach my $y (sort keys(%{$needed})) {
+	    pidl "static int $y = -1;", if $y =~ /^hf_/;
 	}
+	pidl "";
+
+	foreach my $y (sort keys(%{$needed})) {
+	    pidl "static gint $y = -1;", if $y =~ /^ett_/;
+	}
+	pidl "";
+
+	pidl "int proto_dcerpc_pidl_$x->{NAME} = -1;\n";
+	
+	if (defined($x->{UUID})) {
+		my $if_uuid = $x->{UUID};
 	    
+	    pidl "static e_uuid_t uuid_dcerpc_$x->{NAME} = {";
+	    pidl "\t0x" . substr($if_uuid, 1, 8) 
+  		. ", 0x" . substr($if_uuid, 10, 4)
+	    . ", 0x" . substr($if_uuid, 15, 4) . ",";
+	    pidl "\t{ 0x" . substr($if_uuid, 20, 2) 
+		. ", 0x" . substr($if_uuid, 22, 2)
+	    . ", 0x" . substr($if_uuid, 25, 2)
+	    . ", 0x" . substr($if_uuid, 27, 2)
+	    . ", 0x" . substr($if_uuid, 29, 2)
+	    . ", 0x" . substr($if_uuid, 31, 2)
+	    . ", 0x" . substr($if_uuid, 33, 2)
+	    . ", 0x" . substr($if_uuid, 35, 2) . " }";
+	    pidl "};\n";
+	
+	    pidl "static guint16 ver_dcerpc_$x->{NAME} = $x->{VERSION};";
+	}
+
+	# dissect_* functions
+	ParseInterface($x, $needed);
+
+	# Function call tables
+	FunctionTable($x);
+
+	RegisterInterface($x, $needed);
+	RegisterInterfaceHandoff($x);
+}
+
+#####################################################################
+# parse a parsed IDL structure back into an IDL file
+sub Parse($$$)
+{
+	my($ndr) = shift;
+	my $module = shift;
+	my($filename) = shift;
+
+	$tabs = "";
+	my $h_filename = $filename;
+	$res = "";
+
+	if ($h_filename =~ /(.*)\.c/) {
+		$h_filename = "$1.h";
+	}
+
+	pidl "/* parser auto-generated by pidl */";
+	pidl "#include \"packet-dcerpc.h\"";
+	pidl "#include \"$h_filename\"";
+	pidl "";
+	pidl "static int hf_ptr = -1;";
+	pidl "static int hf_array_size = -1;";
+	pidl "";
+
+#	print keys %{$needed->{hf_atsvc_JobGetInfo_result}}, "\n";
+
+	# Ethereal protocol registration
+
+	ProcessInterface($_) foreach (@$ndr);
+    
 	return $res;
 }
 

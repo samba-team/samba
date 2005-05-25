@@ -178,7 +178,7 @@ sub HeaderTypedefProto($)
 
     my $pull_args = $tf->{PULL_FN_ARGS}->($d);
     unless (util::has_property($d, "nopull")) {
-	pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
+	pidl "NTSTATUS dissect_$d->{NAME}($pull_args);\n";
     }
 }
 
@@ -194,106 +194,7 @@ sub HeaderConst($)
     }
 }
 
-#####################################################################
-# parse a function
-sub HeaderFunctionInOut($$)
-{
-    my($fn) = shift;
-    my($prop) = shift;
-
-    foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (util::has_property($e, $prop)) {
-		    HeaderElement($e);
-	    }
-    }
-}
-
-#####################################################################
-# determine if we need an "in" or "out" section
-sub HeaderFunctionInOut_needed($$)
-{
-    my($fn) = shift;
-    my($prop) = shift;
-
-    if ($prop eq "out" && $fn->{RETURN_TYPE}) {
-	    return 1;
-    }
-
-    foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (util::has_property($e, $prop)) {
-		    return 1;
-	    }
-    }
-
-    return undef;
-}
-
 my %headerstructs = ();
-
-#####################################################################
-# parse a function
-sub HeaderFunction($)
-{
-    my($fn) = shift;
-
-    return if ($headerstructs{$fn->{NAME}});
-
-    $headerstructs{$fn->{NAME}} = 1;
-
-    pidl "\nstruct $fn->{NAME} {\n";
-    $tab_depth++;
-    my $needed = 0;
-
-    if (HeaderFunctionInOut_needed($fn, "in")) {
-	    tabs();
-	    pidl "struct {\n";
-	    $tab_depth++;
-	    HeaderFunctionInOut($fn, "in");
-	    $tab_depth--;
-	    tabs();
-	    pidl "} in;\n\n";
-	    $needed++;
-    }
-
-    if (HeaderFunctionInOut_needed($fn, "out")) {
-	    tabs();
-	    pidl "struct {\n";
-	    $tab_depth++;
-	    HeaderFunctionInOut($fn, "out");
-	    if ($fn->{RETURN_TYPE}) {
-		    tabs();
-		    pidl typelist::mapType($fn->{RETURN_TYPE}) . " result;\n";
-	    }
-	    $tab_depth--;
-	    tabs();
-	    pidl "} out;\n\n";
-	    $needed++;
-    }
-
-    if (! $needed) {
-	    # sigh - some compilers don't like empty structures
-	    tabs();
-	    pidl "int _dummy_element;\n";
-    }
-
-    $tab_depth--;
-    pidl "};\n\n";
-}
-
-#####################################################################
-# output prototypes for a IDL function
-sub HeaderFnProto($$)
-{
-    my $interface = shift;
-    my $fn = shift;
-    my $name = $fn->{NAME};
-	
-    return unless util::has_property($fn, "public");
-
-    pidl "NTSTATUS ndr_pull_$name(struct pidl_pull *ndr, int flags, pidl_tree *tree, struct $name *r);\n";
-
-    pidl "\n";
-}
 
 #####################################################################
 # parse the interface definitions
@@ -358,12 +259,6 @@ sub HeaderInterface($)
 	    HeaderTypedefProto($d);
 	}
 
-    foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    HeaderFunction($d);
-	    HeaderFnProto($interface, $d);
-	}
-
-  
     pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 

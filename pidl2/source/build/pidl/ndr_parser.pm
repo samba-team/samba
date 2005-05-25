@@ -61,7 +61,7 @@ sub is_scalar_array($$)
 
 	return 0 if ($l->{TYPE} ne "ARRAY");
 
-	my $nl = GetNextLevel($e,$l);
+	my $nl = Ndr::GetNextLevel($e,$l);
 	return (($nl->{TYPE} eq "DATA") and 
 	        (Ndr::is_scalar_type($nl->{DATA_TYPE})));
 }
@@ -614,7 +614,7 @@ sub ParseElementPushLevel
 	if (defined($ndr_flags)) {
 	    if ($l->{TYPE} eq "SUBCONTEXT") {
 			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 			ParseSubcontextPushEnd($e, $l, $ndr_flags);
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPush($e, $l, $var_name);
@@ -645,7 +645,7 @@ sub ParseElementPushLevel
 			}
 		}
 		$var_name = get_value_of($var_name);
-		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
 			deindent;
@@ -664,20 +664,20 @@ sub ParseElementPushLevel
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 		}
 
-		if ($deferred and ContainsDeferred($e, $l)) {
+		if ($deferred and Ndr::ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
+			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
 			deindent;
 			pidl "}";
 		}	
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -697,7 +697,7 @@ sub ParseElementPush($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
+	return unless $primitives or ($deferred and Ndr::ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
@@ -920,48 +920,6 @@ sub CalcNdrFlags($$$)
 	return undef;
 }
 
-sub GetPrevLevel($$)
-{
-	my $e = shift;
-	my $fl = shift;
-	my $prev = undef;
-
-	foreach my $l (@{$e->{LEVELS}}) {
-		(return $prev) if ($l == $fl);
-		$prev = $l;
-	}
-
-	return undef;
-}
-
-sub GetNextLevel($$)
-{
-	my $e = shift;
-	my $fl = shift;
-
-	my $seen = 0;
-
-	foreach my $l (@{$e->{LEVELS}}) {
-		return $l if ($seen);
-		($seen = 1) if ($l == $fl);
-	}
-
-	return undef;
-}
-
-sub ContainsDeferred($$)
-{
-	my $e = shift;
-	my $l = shift;
-
-	do {
-		return 1 if ($l->{IS_DEFERRED}); 
-		return 1 if ($l->{CONTAINS_DEFERRED});
-	} while ($l = GetNextLevel($e,$l));
-	
-	return 0;
-}
-
 sub ParseElementPullLevel
 {
 	my($e) = shift;
@@ -978,7 +936,7 @@ sub ParseElementPullLevel
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
 				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-				ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+				ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 				ParseSubcontextPullEnd($e, $l);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
@@ -1016,7 +974,7 @@ sub ParseElementPullLevel
 		}
 
 		$var_name = get_value_of($var_name);
-		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     		if ($l->{POINTER_TYPE} eq "relative") {
@@ -1037,20 +995,20 @@ sub ParseElementPullLevel
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 		}
 
-		if ($deferred and ContainsDeferred($e, $l)) {
+		if ($deferred and Ndr::ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
+			ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
 			deindent;
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -1069,7 +1027,7 @@ sub ParseElementPull($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
+	return unless $primitives or ($deferred and Ndr::ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
@@ -1087,7 +1045,7 @@ sub ParsePtrPull($$$$)
 	my $ndr = shift;
 	my($var_name) = shift;
 
-	my $nl = GetNextLevel($e, $l);
+	my $nl = Ndr::GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 
 	if ($l->{POINTER_TYPE} eq "ref") {
@@ -1991,7 +1949,7 @@ sub AllocateArrayLevel($$$$$)
 	my $var = ParseExpr($e->{NAME}, $env);
 
 	check_null_pointer($size);
-	my $pl = GetPrevLevel($e, $l);
+	my $pl = Ndr::GetPrevLevel($e, $l);
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
 	    $pl->{POINTER_TYPE} eq "ref") {

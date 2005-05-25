@@ -634,4 +634,47 @@ sub Parse($)
 	return \@ndr;
 }
 
+sub GetNextLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+
+	my $seen = 0;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		return $l if ($seen);
+		($seen = 1) if ($l == $fl);
+	}
+
+	return undef;
+}
+
+sub GetPrevLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+	my $prev = undef;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		(return $prev) if ($l == $fl);
+		$prev = $l;
+	}
+
+	return undef;
+}
+
+sub ContainsDeferred($$)
+{
+	my $e = shift;
+	my $l = shift;
+
+	do {
+		return 1 if ($l->{IS_DEFERRED}); 
+		return 1 if ($l->{CONTAINS_DEFERRED});
+	} while ($l = Ndr::GetNextLevel($e,$l));
+	
+	return 0;
+}
+
+
 1;
