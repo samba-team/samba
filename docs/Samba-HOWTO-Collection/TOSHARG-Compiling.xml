@@ -244,78 +244,98 @@ example of what you would not want to see would be:
 	To build the binaries, run the program <userinput>./configure
 	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
-	needs, then you may wish to run</para>
-	
-<para><screen>&rootprompt;<userinput>./configure --help
-</userinput></screen></para>
-	
-<para>first to see what special options you can enable. Now execute <userinput>./configure</userinput> with any arguments it might need:</para>
-
-<para><screen>&rootprompt;<userinput>./configure <replaceable>[... arguments ...]</replaceable></userinput></screen></para>
-	
-	<para>Executing</para>
-
+	needs, then you may wish to run:
+<screen>
+&rootprompt;<userinput>./configure --help</userinput>
+</screen>
+</para>
 	
 	<para>
-<indexterm><primary>make</primary></indexterm>
-		<screen>&rootprompt;<userinput>make</userinput></screen></para>
+	This will help you to see what special options can be enabled. Now execute
+	<userinput>./configure</userinput> with any arguments it might need:
+<screen>
+&rootprompt;<userinput>./configure <replaceable>[... arguments ...]</replaceable></userinput>
+</screen>
+	</para>
 	
-	<para>will create the binaries. Once it is successfully 
-	compiled you can use</para>
+	<para>
+	<indexterm><primary>make</primary></indexterm>
+	Execute the following create the binaries:
+<screen>
+&rootprompt; <userinput>make</userinput>
+</screen>
+	Once it is successfully compiled you can execute the command shown here to
+	install the binaries and manual pages:
+<screen>
+&rootprompt; <userinput>make install</userinput>
+</screen>
+	</para>
 	
-<para><screen>&rootprompt;<userinput>make install</userinput></screen></para>
-	
-	<para>to install the binaries and manual pages. You can 
-	separately install the binaries and/or man pages using</para>
-	
-<para><screen>&rootprompt;<userinput>make installbin
-</userinput></screen></para>
-	
-	<para>and</para>
-	
-	<para><screen>&rootprompt;<userinput>make installman
-	</userinput></screen></para>
+	<para>
+	Some people prefer to install binary files and man pages separately. If this is
+	your wish, the binary files can be installed by executing:
+<screen>
+&rootprompt; <userinput>make installbin</userinput>
+</screen>
+	The man pages can be installed using this command:
+<screen>
+&rootprompt; <userinput>make installman</userinput>
+</screen>
+	</para>
 
-	<para>Note that if you are upgrading from a previous version 
-	of Samba you might like to know that the old versions of 
-	the binaries will be renamed with an <quote>.old</quote> extension. You 
-	can go back to the previous version with</para>
+	<para>
+	Note that if you are upgrading from a previous version of Samba the old
+	versions of the binaries will be renamed with an <quote>.old</quote> extension.
+	You can go back to the previous version by executing:
+<screen>
+&rootprompt; <userinput>make revert</userinput>
+</screen>
+	As you can see from this, building and installing Samba does not need to
+	result in disaster!
+	</para>
 	
-<para><screen>&rootprompt;<userinput>make revert
-</userinput></screen></para>
-	
-	<para>if you find this version a disaster!</para>
 
 	<sect2>
 	<title>Compiling Samba with Active Directory Support</title>
 	
-	<para>In order to compile Samba with ADS support, you need to have installed
-	on your system:</para>
+	<para>
+	In order to compile Samba with ADS support, you need to have installed
+	on your system:
+	</para>
+
 	<itemizedlist>
 	
-	    <listitem><para>The MIT or Heimdal Kerberos development libraries
-	    (either install from the sources or use a package).</para></listitem>
+	    <listitem><para>
+		The MIT or Heimdal Kerberos development libraries
+	    (either install from the sources or use a package).
+		</para></listitem>
 	
-	    <listitem><para>The OpenLDAP development libraries.</para></listitem>
+	    <listitem><para>
+		The OpenLDAP development libraries.
+		</para></listitem>
 	    
 	</itemizedlist>
 
-	<para>If your Kerberos libraries are in a non-standard location, then
-		remember to add the configure option 
-		<option>--with-krb5=<replaceable>DIR</replaceable></option>.</para>
+	<para>
+	If your Kerberos libraries are in a non-standard location, then
+	remember to add the configure option
+	<option>--with-krb5=<replaceable>DIR</replaceable></option>.
+	</para>
 
-	<para>After you run configure, make sure that 
-		<filename>include/config.h</filename> it generates contain lines like 
-		this:</para>
-
-<para><programlisting>
+	<para>
+	After you run configure, make sure that 
+	<filename>include/config.h</filename> it generates contain lines like this:
+<programlisting>
 #define HAVE_KRB5 1
 #define HAVE_LDAP 1
-</programlisting></para>
+</programlisting>
+	</para>
 
-	<para>If it does not, configure did not find your KRB5 libraries or
+	<para>
+	If it does not, configure did not find your KRB5 libraries or
 	your LDAP libraries. Look in <filename>config.log</filename> to figure
-	out why and fix it.</para>
+	out why and fix it.
+	</para>
 
 	<sect3>
 	<title>Installing the Required Packages for Debian</title>
@@ -352,12 +372,14 @@ example of what you would not want to see would be:
 	<sect3>
 	<title>SuSE Linux Package Requirements</title>
 
-	<para>SuSE Linux installs Heimdal packages that may be required to allow you to build
+	<para>
+	SuSE Linux installs Heimdal packages that may be required to allow you to build
 	binary packages. You should verify that the development libraries have been installed on
 	your system.
 	</para>
 
-	<para>SuSE Linux Samba RPMs support Kerberos. Please refer to the documentation for
+	<para>
+	SuSE Linux Samba RPMs support Kerberos. Please refer to the documentation for
 	your SuSE Linux system for information regarding SuSE Linux specific configuration.
 	Additionally, SuSE are very active in the maintenance of Samba packages that provide
 	the maximum capabilities that are available. You should consider using SuSE provided
@@ -376,124 +398,128 @@ example of what you would not want to see would be:
 
 	<para>
 	<indexterm><primary>inetd</primary></indexterm>
-		You must choose to start &smbd; and &nmbd; either
-	as daemons or from <application>inetd</application>. Don't try
-	to do both!  Either you can put them in <filename>
-	inetd.conf</filename> and have them started on demand
-	by <application>inetd</application> or <application>xinetd</application>, 
-	or you can start them as
-	daemons either from the command line or in <filename>
-	/etc/rc.local</filename>. See the man pages for details
-	on the command line options. Take particular care to read
-	the bit about what user you need to have to start
-	Samba. In many cases, you must be root.</para>
-
-	<para>The main advantage of starting &smbd;
-	and &nmbd; using the recommended daemon method
-	is that they will respond slightly more quickly to an initial connection
-	request.</para>
-
-	<sect2>
-		<title>Starting from inetd.conf</title>
-
-		<indexterm><primary>inetd</primary></indexterm>
-		
-		<note>
-		<para>The following will be different if 
-		you use NIS, NIS+ or LDAP to distribute services maps.</para>
-		</note>
-		
-		<para>Look at your <filename>/etc/services</filename>. 
-		What is defined at port 139/tcp? If nothing is defined, 
-		then add a line like this:</para>
-
-		<para><programlisting>netbios-ssn     139/tcp</programlisting></para>
-
-		<para>Similarly for 137/udp, you should have an entry like:</para>
-
-		<para><programlisting>netbios-ns	137/udp</programlisting></para>
-
-		<para>Next, edit your <filename>/etc/inetd.conf</filename> 
-		and add two lines like this:</para>
-
-		<para><programlisting>
-		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
-		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
-		</programlisting></para>
-
-		<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
-		varies between UNIXes. Look at the other entries in inetd.conf 
-		for a guide. </para>
+	You must choose to start &smbd; and &nmbd; either as daemons or from
+	<application>inetd</application>. Don't try to do both!  Either you can put
+	them in <filename> inetd.conf</filename> and have them started on demand by
+	<application>inetd</application> or <application>xinetd</application>, or you
+	can start them as daemons either from the command line or in
+	<filename>/etc/rc.local</filename>. See the man pages for details on the
+	command line options. Take particular care to read the bit about what user
+	you need to have to start Samba. In many cases, you must be root.
+	</para>
 
 	<para>
-		<indexterm><primary>xinetd</primary></indexterm>
-		Some distributions use xinetd instead of inetd. Consult the 
-		xinetd manual for configuration information.</para>
+	The main advantage of starting &smbd; and &nmbd; using the recommended daemon method
+	is that they will respond slightly more quickly to an initial connection request.
+	</para>
 
-		<note><para>Some UNIXes already have entries like netbios_ns 
-		(note the underscore) in <filename>/etc/services</filename>. 
-		You must edit <filename>/etc/services</filename> or
-		<filename>/etc/inetd.conf</filename> to make them consistent.
-		</para></note>
+	<sect2>
+	<title>Starting from inetd.conf</title>
 
-		<note><para>
-		<indexterm><primary>ifconfig</primary></indexterm>
-				On many systems you may need to use the 
-		<smbconfoption name="interfaces"/> option in &smb.conf; to specify the IP
-		address and netmask of your interfaces. Run 
-		<application>ifconfig</application> 
-		as root if you do not know what the broadcast is for your
-		net. &nmbd; tries to determine it at run 
-		time, but fails on some UNIXes. 
-		</para></note>
+	<indexterm><primary>inetd</primary></indexterm>
+	
+	<note>
+	<para>The following will be different if 
+	you use NIS, NIS+ or LDAP to distribute services maps.</para>
+	</note>
+	
+	<para>Look at your <filename>/etc/services</filename>. 
+	What is defined at port 139/tcp? If nothing is defined, 
+	then add a line like this:</para>
 
-		<warning><para>Many UNIXes only accept around five 
-		parameters on the command line in <filename>inetd.conf</filename>. 
-		This means you shouldn't use spaces between the options and 
-		arguments, or you should use a script and start the script 
-		from <command>inetd</command>.</para></warning>
+	<para><programlisting>netbios-ssn     139/tcp</programlisting></para>
 
-		<para>Restart <application>inetd</application>, perhaps just send 
-			it a HUP. </para>
+	<para>Similarly for 137/udp, you should have an entry like:</para>
 
-		<screen>
-			&rootprompt;<userinput>killall -HUP inetd</userinput>
-		</screen>
+	<para><programlisting>netbios-ns	137/udp</programlisting></para>
+
+	<para>Next, edit your <filename>/etc/inetd.conf</filename> 
+	and add two lines like this:</para>
+
+	<para><programlisting>
+	netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+	netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+	</programlisting></para>
+
+	<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
+	varies between UNIXes. Look at the other entries in inetd.conf 
+	for a guide. </para>
+
+	<para>
+	<indexterm><primary>xinetd</primary></indexterm>
+	Some distributions use xinetd instead of inetd. Consult the 
+	xinetd manual for configuration information.</para>
+
+	<note><para>Some UNIXes already have entries like netbios_ns 
+	(note the underscore) in <filename>/etc/services</filename>. 
+	You must edit <filename>/etc/services</filename> or
+	<filename>/etc/inetd.conf</filename> to make them consistent.
+	</para></note>
+
+	<note><para>
+	<indexterm><primary>ifconfig</primary></indexterm>
+	On many systems you may need to use the
+	<smbconfoption name="interfaces"/> option in &smb.conf; to specify
+	the IP address and netmask of your interfaces. Run 
+	<application>ifconfig</application> as root if you do
+	not know what the broadcast is for your net. &nmbd; tries
+	to determine it at run time, but fails on some UNIXes. 
+	</para></note>
+
+	<warning><para>
+	Many UNIXes only accept about five parameters on the command
+	line in <filename>inetd.conf</filename>.  This means you shouldn't
+	use spaces between the options and arguments, or you should use
+	a script and start the script from <command>inetd</command>.
+	</para></warning>
+
+	<para>
+	Restart <application>inetd</application>, perhaps just send it a HUP,
+	like this:
+<screen>
+&rootprompt;<userinput>killall -HUP inetd</userinput>
+</screen>
 		
 	</sect2>
 	
 	<sect2>
-		<title>Alternative: Starting &smbd; as a Daemon</title>
-
+	<title>Alternative: Starting &smbd; as a Daemon</title>
 		
+	<para>
+	<indexterm><primary>daemon</primary></indexterm>
+	To start the server as a daemon, you should create a script something
+	like this one, perhaps calling it <filename>startsmb</filename>.
+	</para>
+
+<smbfile name="startsmb.sh">
+<para><programlisting>
+#!/bin/sh
+/usr/local/samba/bin/smbd -D 
+/usr/local/samba/bin/nmbd -D 
+</programlisting></para>
+</smbfile>
+
 		<para>
-		<indexterm><primary>daemon</primary></indexterm>
-			To start the server as a daemon, you should create 
-		a script something like this one, perhaps calling 
-		it <filename>startsmb</filename>.</para>
-
-	<smbfile name="startsmb.sh">
-		<para><programlisting>
-		#!/bin/sh
-		/usr/local/samba/bin/smbd -D 
-		/usr/local/samba/bin/nmbd -D 
-		</programlisting></para>
-	</smbfile>
-
-		<para>Make it executable with <command>chmod 
-		+x startsmb</command></para>
-
-		<para>You can then run <command>startsmb</command> by 
-		hand or execute it from <filename>/etc/rc.local</filename>.
+		Make it executable with <command>chmod +x startsmb</command>
 		</para>
 
-		<para>To kill it, send a kill signal to the processes 
-			&nmbd; and &smbd;.</para>
+		<para>
+		You can then run <command>startsmb</command> by hand or execute
+		it from <filename>/etc/rc.local</filename>.
+		</para>
 
-		<note><para>If you use the SVR4 style init system, 
-		you may like to look at the <filename>examples/svr4-startup</filename>
-		script to make Samba fit into that system.</para></note>
+		<para>
+		To kill it, send a kill signal to the processes &nmbd; and &smbd;.
+		</para>
+
+		<note><para>
+		If you use the SVR4 style init system, you may like to look at the
+		<filename>examples/svr4-startup</filename> script to make Samba fit
+		into that system.
+		</para></note>
+
 	</sect2>
+
 </sect1>
 
 </chapter>
