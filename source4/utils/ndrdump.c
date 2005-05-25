@@ -200,6 +200,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		blob.length = size;
 
 		ndr = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		status = f->ndr_pull(ndr, NDR_IN, st);
 
@@ -230,10 +231,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	blob.length = size;
 
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
-
-	if (flags == NDR_OUT) {
-		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
-	}
+	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	status = f->ndr_pull(ndr, flags, st);
 

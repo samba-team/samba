@@ -66,7 +66,7 @@
 
 	/* the ndr parser for nbt_name is separately defined in
 	   nbtname.c (along with the parsers for nbt_string) */
-	typedef [nopull,nopush] struct {
+	typedef [public,nopull,nopush] struct {
 		string        name;
 		string        scope;
 		nbt_name_type type;

@@ -1,12 +1,12 @@
 ###################################################
 # create C header files for an IDL structure
 # Copyright tridge@samba.org 2000
+# Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
 package NdrHeader;
 
 use strict;
-use needed;
 use typelist;
 
 my($res);
@@ -60,17 +60,23 @@ sub HeaderElement($)
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
-    if ($element->{POINTERS} && not $element->{TYPE} =~ "string") {
-	    for (my($i)=$element->{POINTERS}; $i > 0; $i--) {
+    my $pointers = 0;
+	foreach my $l (@{$element->{LEVELS}}) 
+	{
+		if (($l->{TYPE} eq "POINTER")) {
+			next if ($element->{TYPE} eq "string");
 		    pidl "*";
-	    }
-    } elsif (Ndr::is_surrounding_array($element) || 
-		defined $element->{ARRAY_LEN} && !util::is_constant($element->{ARRAY_LEN})) {
-	    # surrounding arrays are ugly! I choose to implement them with
-	    # pointers instead of the [1] method
-	    pidl "*";
-    }
-    pidl "$element->{NAME}";
+		    $pointers+=1;
+	    } elsif ($l->{TYPE} eq "ARRAY") {
+	    	if (!$pointers and !$l->{IS_FIXED}) { pidl "*"; }
+    		pidl "$element->{NAME}";
+		if ($l->{IS_FIXED}) { pidl "[$l->{SIZE_IS}]"; }
+		last; #FIXME
+	    } elsif ($l->{TYPE} eq "DATA") {
+    		pidl "$element->{NAME}";
+		}
+	}
+	
     if (defined $element->{ARRAY_LEN} && util::is_constant($element->{ARRAY_LEN})) {
 	    pidl "[$element->{ARRAY_LEN}]";
     }
@@ -106,24 +112,17 @@ sub HeaderEnum($$)
 {
     my($enum) = shift;
     my($name) = shift;
+    my $first = 1;
 
     pidl "\nenum $name {\n";
     $tab_depth++;
-    my $els = \@{$enum->{ELEMENTS}};
-    foreach my $i (0 .. $#{$els}-1) {
-	    my $e = ${$els}[$i];
+    foreach my $e (@{$enum->{ELEMENTS}}) {
+ 	    unless ($first) { pidl ",\n"; }
+	    $first = 0;
 	    tabs();
-	    chomp $e;
-	    pidl "$e,\n";
+	    pidl $e;
     }
-
-    my $e = ${$els}[$#{$els}];
-    tabs();
-    chomp $e;
-    if ($e !~ /^(.*?)\s*$/) {
-	    die "Bad enum $name\n";
-    }
-    pidl "$1\n";
+    pidl "\n";
     $tab_depth--;
     pidl "}";
 }
@@ -137,10 +136,8 @@ sub HeaderBitmap($$)
 
     pidl "\n/* bitmap $name */\n";
 
-    my $els = \@{$bitmap->{ELEMENTS}};
-    foreach my $i (0 .. $#{$els}) {
-	    my $e = ${$els}[$i];
-	    chomp $e;
+    foreach my $e (@{$bitmap->{ELEMENTS}})
+    {
 	    pidl "#define $e\n";
     }
 
@@ -180,18 +177,14 @@ sub HeaderType($$$)
 	my($data) = shift;
 	my($name) = shift;
 	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "ENUM") &&
-		    HeaderEnum($data, $name);
-		($data->{TYPE} eq "BITMAP") &&
-		    HeaderBitmap($data, $name);
-		($data->{TYPE} eq "STRUCT") &&
-		    HeaderStruct($data, $name);
-		($data->{TYPE} eq "UNION") &&
-		    HeaderUnion($data, $name);
+		($data->{TYPE} eq "ENUM") && HeaderEnum($data, $name);
+		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data, $name);
+		($data->{TYPE} eq "STRUCT") && HeaderStruct($data, $name);
+		($data->{TYPE} eq "UNION") && HeaderUnion($data, $name);
 		return;
 	}
 
-	pidl typelist::mapType($e);
+	pidl typelist::mapType($e->{TYPE});
 }
 
 #####################################################################
@@ -211,7 +204,7 @@ sub HeaderTypedefProto($)
 
 	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
 
-    if (needed::is_needed("ndr_size_$d->{NAME}")) {
+    if (util::has_property($d, "gensize")) {
 		my $size_args = $tf->{SIZE_FN_ARGS}->($d);
 		pidl "size_t ndr_size_$d->{NAME}($size_args);\n";
     }
@@ -265,7 +258,7 @@ sub HeaderFunctionInOut_needed($$)
     my($fn) = shift;
     my($prop) = shift;
 
-    if ($prop eq "out" && $fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+    if ($prop eq "out" && $fn->{RETURN_TYPE}) {
 	    return 1;
     }
 
@@ -278,11 +271,17 @@ sub HeaderFunctionInOut_needed($$)
     return undef;
 }
 
+my %headerstructs = ();
+
 #####################################################################
 # parse a function
 sub HeaderFunction($)
 {
     my($fn) = shift;
+
+    return if ($headerstructs{$fn->{NAME}});
+
+    $headerstructs{$fn->{NAME}} = 1;
 
     pidl "\nstruct $fn->{NAME} {\n";
     $tab_depth++;
@@ -304,9 +303,9 @@ sub HeaderFunction($)
 	    pidl "struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "out");
-	    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
+	    if ($fn->{RETURN_TYPE}) {
 		    tabs();
-		    pidl typelist::mapScalarType($fn->{RETURN_TYPE}) . " result;\n";
+		    pidl typelist::mapType($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
 	    tabs();
@@ -350,7 +349,6 @@ sub HeaderFnProto($$)
 sub HeaderInterface($)
 {
     my($interface) = shift;
-    my($data) = $interface->{DATA};
 
     my $count = 0;
 
@@ -363,11 +361,6 @@ sub HeaderInterface($)
 		    pidl "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
 	    }
     }
-
-	# Object interfaces use ORPC
-	if (util::has_property($interface, "object")) {
-		pidl "#include \"librpc/gen_ndr/ndr_orpc.h\"\n";
-	}
 
     if (defined $interface->{PROPERTIES}->{uuid}) {
 	    my $name = uc $interface->{NAME};
@@ -386,18 +379,16 @@ sub HeaderInterface($)
 	    pidl "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
     }
 
-    foreach my $d (@{$data}) {
-	    if ($d->{TYPE} eq "FUNCTION") {
-		    my $u_name = uc $d->{NAME};
-			pidl "#define DCERPC_$u_name (";
+    foreach my $d (@{$interface->{FUNCTIONS}}) {
+	    my $u_name = uc $d->{NAME};
+		pidl "#define DCERPC_$u_name (";
+	
+		if (defined($interface->{BASE})) {
+			pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
+		}
 		
-			if (defined($interface->{BASE})) {
-				pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
-			}
-			
-		    pidl sprintf("0x%02x", $count) . ")\n";
-		    $count++;
-	    }
+	    pidl sprintf("0x%02x", $count) . ")\n";
+	    $count++;
     }
 
 	pidl "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
@@ -408,19 +399,21 @@ sub HeaderInterface($)
 	
 	pidl "$count)\n\n";
 
-    foreach my $d (@{$data}) {
-	($d->{TYPE} eq "CONST") &&
+	foreach my $d (@{$interface->{CONSTS}}) {
 	    HeaderConst($d);
-	($d->{TYPE} eq "TYPEDEF") &&
-	    HeaderTypedef($d);
-	($d->{TYPE} eq "TYPEDEF") &&
-	    HeaderTypedefProto($d);
-	($d->{TYPE} eq "FUNCTION") &&
-	    HeaderFunction($d);
-	($d->{TYPE} eq "FUNCTION") &&
-	    HeaderFnProto($interface, $d);
     }
-	
+
+    foreach my $d (@{$interface->{TYPEDEFS}}) {
+	    HeaderTypedef($d);
+	    HeaderTypedefProto($d);
+	}
+
+    foreach my $d (@{$interface->{FUNCTIONS}}) {
+	    HeaderFunction($d);
+	    HeaderFnProto($interface, $d);
+	}
+
+  
     pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 
@@ -431,13 +424,10 @@ sub Parse($)
     my($idl) = shift;
     $tab_depth = 0;
 
-	NdrParser::Load($idl);
-
 	$res = "";
     pidl "/* header auto-generated by pidl */\n\n";
     foreach my $x (@{$idl}) {
 	    if ($x->{TYPE} eq "INTERFACE") {
-		    needed::BuildNeeded($x);
 		    HeaderInterface($x);
 	    }
     }

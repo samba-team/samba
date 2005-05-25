@@ -87,7 +87,7 @@ sub link_files($$)
 {
 	my ($exe_name,$objs) = @_;
 
-	return system($cc, @ldflags, '-Lbin', '-o', $exe_name, @$objs, '-lrpc', '-ldl', '-lldap');
+	return system($cc, @ldflags, '-Lbin', '-lrpc', '-o', $exe_name, @$objs);
 }
 
 sub test_idl($$$$)

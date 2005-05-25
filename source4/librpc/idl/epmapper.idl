@@ -14,6 +14,7 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
  endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]"),
  helpstring("EndPoint Mapper"),
+ pointer_default_top(unique),
  pointer_default(unique)
 ]
 interface epmapper
@@ -202,7 +203,7 @@ interface epmapper
 
 	typedef struct {
 		[subcontext(2)] epm_lhs lhs;
-		[subcontext(2),switch_is(lhs.protocol)] epm_rhs rhs;
+		[subcontext(2),switch_is(r->lhs.protocol)] epm_rhs rhs;
 	} epm_floor;
 
 	/* note that the NDR_NOALIGN flag is inherited by all nested
