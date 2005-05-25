@@ -7,6 +7,7 @@
   authservice("ldap"),
   helpstring("Active Directory Replication"),
   pointer_default(unique),
+  pointer_default_top(unique),
   depends(security)
 ] 
 interface drsuapi
@@ -554,7 +555,7 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsReplicaMetaData meta_data[];
 	} drsuapi_DsReplicaMetaDataCtr;
 
-	typedef [noprint] struct {
+	typedef [public,noprint] struct {
 		drsuapi_DsReplicaObjectListItemEx *next_object;
 		drsuapi_DsReplicaObject object;
 		uint32 unknown1;
@@ -908,7 +909,7 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x11 */
-	typedef [noprint] struct {
+	typedef [public,noprint] struct {
 		drsuapi_DsReplicaObjectListItem *next_object;
 		drsuapi_DsReplicaObject object;
 	} drsuapi_DsReplicaObjectListItem;

@@ -7,6 +7,7 @@
 [ uuid("367abb81-9844-35f1-ad32-98f038001003"),
   version(2.0),
   pointer_default(unique),
+  pointer_default_top(unique),
   endpoint("ncacn_np:[\\pipe\\svcctl]", "ncalrpc:"),
   helpstring("Service Control")
 ] interface svcctl
@@ -233,7 +234,7 @@
 	WERROR svcctl_StartServiceW(
 							   [in,ref] policy_handle *handle,
 							   [in] uint32 NumArgs,
-							   [in,length_of(NumArgs)] unistr *Arguments);
+							   [in,length_is(NumArgs)] unistr *Arguments);
 
 	/*****************/
 	/* Function 0x14 */
@@ -343,7 +344,7 @@
 	WERROR svcctl_StartServiceA(
 							   [in,ref] policy_handle *handle,
 							   [in] uint32 NumArgs,
-							   [in,length_of(NumArgs)] unistr *Arguments);
+							   [in,length_is(NumArgs)] unistr *Arguments);
 
 	/*****************/
 	/* Function 0x20 */

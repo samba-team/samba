@@ -23,40 +23,73 @@ sub GetElementLevelTable($)
 {
 	my $e = shift;
 
-	return ($e->{NDR_ORDER_TABLE}) if (defined $e->{NDR_ORDER_TABLE});
-
 	my $order = [];
 	my $is_deferred = 0;
 	
-	# FIXME: Process {ARRAY_SIZE} kinds of arrays
+	# FIXME: Process {ARRAY_LEN} kinds of arrays
 
 	# First, all the pointers
-	foreach my $i (1..need_wire_pointer($e)) {
+	foreach my $i (1..$e->{POINTERS}) {
+		my $pt = pointer_type($e);
+
+		my $level = "EMBEDDED";
+		# Top level "ref" pointers do not have a referrent identifier
+		$level = "TOP" if ( defined($pt) 
+				and $i == 1
+				and $e->{PARENT}->{TYPE} eq "FUNCTION");
+
 		push (@$order, { 
 			TYPE => "POINTER",
 			# for now, there can only be one pointer type per element
 			POINTER_TYPE => pointer_type($e),
-			IS_DEFERRED => "$is_deferred"
+			IS_DEFERRED => "$is_deferred",
+			LEVEL => $level
 		});
 		# everything that follows will be deferred
-		$is_deferred = 1;
+		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");
 		# FIXME: Process array here possibly (in case of multi-dimensional arrays, etc)
 	}
 
-	if (defined($e->{ARRAY_LEN})) {
+	if (defined($e->{ARRAY_LEN}) or util::has_property($e, "size_is")) {
+		my $length = util::has_property($e, "length_is");
+		my $size = util::has_property($e, "size_is");
+
+		if (not defined($size) and defined($e->{ARRAY_LEN})) { 
+			$size = $e->{ARRAY_LEN};
+		}
+
+		if (not defined($length)) {
+			$length = $size;
+		}
+
 		push (@$order, {
 			TYPE => "ARRAY",
-			ARRAY_TYPE => array_type($e),
-			SIZE_IS => util::has_property($e, "size_is"),
-			LENGTH_IS => util::has_property($e, "length_is"),
-			IS_DEFERRED => "$is_deferred"
+			SIZE_IS => $size,
+			LENGTH_IS => $length,
+			IS_DEFERRED => "$is_deferred",
+			# Inline arrays (which are a pidl extension) are never encoded
+			# as surrounding the struct they're part of
+			IS_SURROUNDING => (is_surrounding_array($e) and not is_inline_array($e)),
+			IS_VARYING => is_varying_array($e),
+			IS_CONFORMANT => is_conformant_array($e),
+			IS_FIXED => is_fixed_array($e),
+			NO_METADATA => (is_inline_array($e) or is_fixed_array($e)),
+			IS_INLINE => is_inline_array($e)
 		});
+
+		$is_deferred = 0;
 	}
 
-	if (my $sub_size = util::has_property($e, "subcontext")) {
+	if (my $hdr_size = util::has_property($e, "subcontext")) {
+		my $subsize = util::has_property($e, "subcontext_size");
+		if (not defined($subsize)) { 
+			$subsize = -1; 
+		}
+		
 		push (@$order, {
 			TYPE => "SUBCONTEXT",
-			SUBCONTEXT_SIZE => $sub_size,
+			HEADER_SIZE => $hdr_size,
+			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
 			COMPRESSION => util::has_property($e, "compression")
 		});
@@ -73,12 +106,13 @@ sub GetElementLevelTable($)
 	push (@$order, {
 		TYPE => "DATA",
 		DATA_TYPE => $e->{TYPE},
-		NAME => $e->{NAME},
 		IS_DEFERRED => $is_deferred,
-		CONTAINS_DEFERRED => can_contain_deferred($e)
+		CONTAINS_DEFERRED => can_contain_deferred($e),
+		IS_SURROUNDING => is_surrounding_string($e)
 	});
 
-	$e->{NDR_ORDER_TABLE} = $order;
+	my $i = 0;
+	foreach (@$order) { $_->{LEVEL_INDEX} = $i; $i+=1; }
 
 	return $order;
 }
@@ -107,7 +141,7 @@ sub is_scalar_type($)
 {
     my $type = shift;
 
-	return 0 unless typelist::hasType($type);
+	return 0 unless(typelist::hasType($type));
 
 	if (my $dt = typelist::getType($type)->{DATA}->{TYPE}) {
 		return 1 if ($dt eq "SCALAR" or $dt eq "ENUM" or $dt eq "BITMAP");
@@ -152,9 +186,8 @@ sub is_conformant_array($)
 sub is_inline_array($)
 {
 	my $e = shift;
-	my $len = $e->{"ARRAY_LEN"};
-	if (is_fixed_array($e) ||
-	    defined $len && $len ne "*") {
+	my $len = $e->{ARRAY_LEN};
+	if (defined $len && $len ne "*" && !is_fixed_array($e)) {
 		return 1;
 	}
 	return 0;
@@ -181,17 +214,15 @@ sub is_surrounding_array($)
 		and $e->{PARENT}->{TYPE} ne "FUNCTION");
 }
 
-sub array_type($)
+sub is_surrounding_string($)
 {
 	my $e = shift;
 
-	return "conformant-varying" if (is_varying_array($e) and is_conformant_array($e));
-	return "conformant" if (is_varying_array($e));
-	return "varying" if (is_varying_array($e));
-	return "inline" if (is_inline_array($e));
-	return "fixed" if (is_fixed_array($e));
+	return 0; #FIXME
 
-	return undef;
+	return ($e->{TYPE} eq "string") and ($e->{POINTERS} == 0) 
+		and util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*") 
+		and $e->{PARENT}->{TYPE} ne "FUNCTION";
 }
 
 #####################################################################
@@ -216,6 +247,35 @@ sub find_largest_alignment($)
 	return $align;
 }
 
+my %scalar_alignments = 
+(
+     "char"           => 1,
+     "int8"           => 1,
+     "uint8"          => 1,
+     "short"          => 2,
+     "wchar_t"        => 2,
+     "int16"          => 2,
+     "uint16"         => 2,
+     "long"           => 4,
+     "int32"          => 4,
+     "uint32"         => 4,
+     "dlong"          => 4,
+     "udlong"         => 4,
+     "udlongr"        => 4,
+     "NTTIME"         => 4,
+     "NTTIME_1sec"    => 4,
+     "time_t"         => 4,
+     "DATA_BLOB"      => 4,
+     "error_status_t" => 4,
+     "WERROR"         => 4,
+	 "NTSTATUS" 	  => 4,
+     "boolean32"      => 4,
+     "unsigned32"     => 4,
+     "ipv4address"    => 4,
+     "hyper"          => 8,
+     "NTTIME_hyper"   => 8
+);
+
 #####################################################################
 # align a type
 sub align_type
@@ -237,10 +297,10 @@ sub align_type
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
 		return find_largest_alignment($dt);
 	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return typelist::getScalarAlignment($dt->{NAME});
+		return $scalar_alignments{$dt->{NAME}};
+	} else { 
+		die("Unknown data type type $dt->{TYPE}");
 	}
-
-	die("Unknown data type type $dt->{TYPE}");
 }
 
 # determine if an element needs a reference pointer on the wire
@@ -269,6 +329,7 @@ sub ParseElement($)
 
 	return {
 		NAME => $e->{NAME},
+		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
 		LEVELS => GetElementLevelTable($e)
 	};
@@ -276,18 +337,31 @@ sub ParseElement($)
 
 sub ParseStruct($)
 {
-	my $e = shift;
+	my $struct = shift;
 	my @elements = ();
+	my $surrounding = undef;
 
-	foreach my $x (@{$e->{ELEMENTS}}) 
+	foreach my $x (@{$struct->{ELEMENTS}}) 
 	{
 		push @elements, ParseElement($x);
 	}
 
+	my $e = $elements[-1];
+	if (defined($e) and defined($e->{LEVELS}[0]->{IS_SURROUNDING}) and
+		$e->{LEVELS}[0]->{IS_SURROUNDING}) {
+		$surrounding = $e;
+	}
+
+	if (defined $e->{TYPE} && $e->{TYPE} eq "string"
+	    &&  util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
+		$surrounding = $struct->{ELEMENTS}[-1];
+	}
+		
 	return {
 		TYPE => "STRUCT",
+		SURROUNDING_ELEMENT => $surrounding,
 		ELEMENTS => \@elements,
-		PROPERTIES => $e->{PROPERTIES}
+		PROPERTIES => $struct->{PROPERTIES}
 	};
 }
 
@@ -295,6 +369,10 @@ sub ParseUnion($)
 {
 	my $e = shift;
 	my @elements = ();
+	my $switch_type = util::has_property($e, "switch_type");
+	unless (defined($switch_type)) { $switch_type = "uint32"; }
+
+	if (util::has_property($e, "nodiscriminant")) { $switch_type = undef; }
 	
 	foreach my $x (@{$e->{ELEMENTS}}) 
 	{
@@ -303,17 +381,20 @@ sub ParseUnion($)
 			$t = { TYPE => "EMPTY" };
 		} else {
 			$t = ParseElement($x);
-			if (util::has_property($t, "default")) {
-				$t->{DEFAULT} = "default";
-			} else {
-				$t->{CASE} = $t->{PROPERTIES}->{CASE};
-			}
+		}
+		if (util::has_property($x, "default")) {
+			$t->{CASE} = "default";
+		} elsif (defined($x->{PROPERTIES}->{case})) {
+			$t->{CASE} = "case $x->{PROPERTIES}->{case}";
+		} else {
+			die("Union element $x->{NAME} has neither default nor case property");
 		}
 		push @elements, $t;
 	}
 
 	return {
 		TYPE => "UNION",
+		SWITCH_TYPE => $switch_type,
 		ELEMENTS => \@elements,
 		PROPERTIES => $e->{PROPERTIES}
 	};
@@ -325,6 +406,7 @@ sub ParseEnum($)
 
 	return {
 		TYPE => "ENUM",
+		BASE_TYPE => typelist::enum_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
 		PROPERTIES => $e->{PROPERTIES}
 	};
@@ -336,9 +418,17 @@ sub ParseBitmap($)
 
 	return {
 		TYPE => "BITMAP",
+		BASE_TYPE => typelist::bitmap_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
 		PROPERTIES => $e->{PROPERTIES}
 	};
+}
+
+sub ParseDeclare($$)
+{
+	my $ndr = shift;
+	my $d = shift;
+
 }
 
 sub ParseTypedef($$)
@@ -371,41 +461,56 @@ sub ParseTypedef($$)
 
 	return {
 		NAME => $d->{NAME},
-		TYPE => "TYPEDEF",
+		TYPE => $d->{TYPE},
 		PROPERTIES => $d->{PROPERTIES},
 		DATA => $data
 	};
 }
 
-sub ParseFunction($$)
+sub ParseConst($$)
 {
 	my $ndr = shift;
 	my $d = shift;
-	my @in = ();
-	my @out = ();
+
+	return $d;
+}
+
+sub ParseFunction($$$)
+{
+	my $ndr = shift;
+	my $d = shift;
+	my $opnum = shift;
+	my @elements = ();
+	my $rettype = undef;
 
 	CheckPointerTypes($d, 
-		$ndr->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
+		$ndr->{PROPERTIES}->{pointer_default_top}
 	);
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
+		my $e = ParseElement($x);
 		if (util::has_property($x, "in")) {
-			push (@in, ParseElement($x));
+			push (@{$e->{DIRECTION}}, "in");
 		}
+
 		if (util::has_property($x, "out")) {
-			push (@out, ParseElement($x));
+			push (@{$e->{DIRECTION}}, "out");
 		}
+
+		push (@elements, $e);
+	}
+
+	if ($d->{RETURN_TYPE} ne "void") {
+		$rettype = $d->{RETURN_TYPE};
 	}
 	
 	return {
 			NAME => $d->{NAME},
 			TYPE => "FUNCTION",
-			RETURN_TYPE => $d->{RETURN_TYPE},
+			OPNUM => $opnum,
+			RETURN_TYPE => $rettype,
 			PROPERTIES => $d->{PROPERTIES},
-			ELEMENTS => {
-				IN => \@in,
-				OUT => \@out
-			}
+			ELEMENTS => \@elements
 		};
 }
 
@@ -430,8 +535,12 @@ sub CheckPointerTypes($$)
 sub ParseInterface($)
 {
 	my $idl = shift;
-	my @functions = ();
 	my @typedefs = ();
+	my @consts = ();
+	my @functions = ();
+	my @endpoints;
+	my @declares = ();
+	my $opnum = 0;
 	my $version;
 
 	if (not util::has_property($idl, "pointer_default")) {
@@ -440,22 +549,41 @@ sub ParseInterface($)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
 	}
 
+	if (not util::has_property($idl, "pointer_default_top")) {
+		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
+	}
+
 	foreach my $d (@{$idl->{DATA}}) {
-		if ($d->{TYPE} eq "DECLARE" or $d->{TYPE} eq "TYPEDEF") {
+		if ($d->{TYPE} eq "TYPEDEF") {
 			push (@typedefs, ParseTypedef($idl, $d));
 		}
 
+		if ($d->{TYPE} eq "DECLARE") {
+			push (@declares, ParseDeclare($idl, $d));
+		}
+
 		if ($d->{TYPE} eq "FUNCTION") {
-			push (@functions, ParseFunction($idl, $d));
+			push (@functions, ParseFunction($idl, $d, $opnum));
+			$opnum+=1;
+		}
+
+		if ($d->{TYPE} eq "CONST") {
+			push (@consts, ParseConst($idl, $d));
 		}
 	}
-	
+
 	$version = "0.0";
 
 	if(defined $idl->{PROPERTIES}->{version}) { 
 		$version = $idl->{PROPERTIES}->{version}; 
 	}
-	
+
+	# If no endpoint is set, default to the interface name as a named pipe
+	if (!defined $idl->{PROPERTIES}->{endpoint}) {
+		push @endpoints, "\"ncacn_np:[\\\\pipe\\\\" . $idl->{NAME} . "]\"";
+	} else {
+		@endpoints = split / /, $idl->{PROPERTIES}->{endpoint};
+	}
 
 	return { 
 		NAME => $idl->{NAME},
@@ -464,7 +592,10 @@ sub ParseInterface($)
 		TYPE => "INTERFACE",
 		PROPERTIES => $idl->{PROPERTIES},
 		FUNCTIONS => \@functions,
-		TYPEDEFS => \@typedefs
+		CONSTS => \@consts,
+		TYPEDEFS => \@typedefs,
+		DECLARES => \@declares,
+		ENDPOINTS => \@endpoints
 	};
 }
 
@@ -502,5 +633,48 @@ sub Parse($)
 
 	return \@ndr;
 }
+
+sub GetNextLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+
+	my $seen = 0;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		return $l if ($seen);
+		($seen = 1) if ($l == $fl);
+	}
+
+	return undef;
+}
+
+sub GetPrevLevel($$)
+{
+	my $e = shift;
+	my $fl = shift;
+	my $prev = undef;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		(return $prev) if ($l == $fl);
+		$prev = $l;
+	}
+
+	return undef;
+}
+
+sub ContainsDeferred($$)
+{
+	my $e = shift;
+	my $l = shift;
+
+	do {
+		return 1 if ($l->{IS_DEFERRED}); 
+		return 1 if ($l->{CONTAINS_DEFERRED});
+	} while ($l = Ndr::GetNextLevel($e,$l));
+	
+	return 0;
+}
+
 
 1;

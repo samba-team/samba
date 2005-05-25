@@ -1025,6 +1025,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	status = ndr_pull(pull, NDR_IN, st);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1277,7 +1278,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	if (pull->offset != pull->data_size) {
 		DEBUG(0,("Warning! ignoring %d unread bytes in rpc packet!\n", 
 			 pull->data_size - pull->offset));
-		/* we used return NT_STATUS_INFO_LENGTH_MISMATCH here,
+		/* we used to return NT_STATUS_INFO_LENGTH_MISMATCH here,
 		   but it turns out that early versions of NT
 		   (specifically NT3.1) add junk onto the end of rpc
 		   packets, so if we want to interoperate at all with

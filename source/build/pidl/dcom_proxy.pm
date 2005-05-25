@@ -173,7 +173,7 @@ sub RegistrationFunction($$)
 		next if $interface->{TYPE} ne "INTERFACE";
 		next if not util::has_property($interface, "object");
 
-		my $data = $interface->{INHERITED_DATA};
+		my $data = $interface->{DATA};
 		my $count = 0;
 		foreach my $d (@{$data}) {
 			if ($d->{TYPE} eq "FUNCTION") { $count++; }

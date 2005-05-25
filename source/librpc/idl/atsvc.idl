@@ -7,6 +7,7 @@
 [ uuid("1ff70682-0a51-30e8-076d-740be8cee98b"),
   version(1.0),
   pointer_default(unique),
+  pointer_default_top(unique),
   helpstring("Queue/List/Remove jobs for later execution"),
   endpoint("ncacn_np:[\\pipe\\atsvc]", "ncalrpc:")
 ] interface atsvc
@@ -46,7 +47,7 @@
 
 	typedef struct {
 		uint32 entries_read;
-		[size_is(entries_read)] atsvc_JobEnumInfo *first_entry[];
+		[size_is(entries_read)] atsvc_JobEnumInfo *first_entry;
 	} atsvc_enum_ctr;
 
 	/******************/

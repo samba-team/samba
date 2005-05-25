@@ -17,6 +17,7 @@
 	helpstring("Object Exporter ID Resolver"),
 	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", "ncalrpc:"),
 	pointer_default(unique),
+  	pointer_default_top(unique),
 	depends(dcom)
 ]
 interface IOXIDResolver

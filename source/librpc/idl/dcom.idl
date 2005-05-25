@@ -10,6 +10,7 @@
 [
 	uuid("18f70770-8e64-11cf-9af1-0020af6e72f4"),
 	pointer_default(unique),
+	pointer_default_top(unique),
 	version(0.0)
 ] interface dcom_Unknown
 {
@@ -22,6 +23,7 @@
 	object,
 	uuid("00000000-0000-0000-C000-000000000046"),
 	pointer_default(unique),
+	pointer_default_top(unique),
 	helpstring("Base interface for all COM interfaces")
 ]
 interface IUnknown
@@ -46,6 +48,7 @@ interface IUnknown
 [
 	object,
 	uuid("00000001-0000-0000-C000-000000000046"),
+	pointer_default_top(unique),
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
@@ -72,6 +75,7 @@ interface IUnknown
 [
 	uuid("00000131-0000-0000-C000-000000000046"),
 	object,
+	pointer_default_top(unique),
 	pointer_default(unique),
 	helpstring("Remote version of IUnknown")
 ]
@@ -113,6 +117,7 @@ interface IRemUnknown : IUnknown
 
 [
 	uuid("00000140-0000-0000-c000-000000000046"),
+	pointer_default_top(unique),
 	pointer_default(unique),
 	object
 ] interface IClassActivator : IUnknown
@@ -126,6 +131,7 @@ interface IRemUnknown : IUnknown
 
 [
 	uuid("00000136-0000-0000-c000-000000000046"),
+	pointer_default_top(unique),
 	pointer_default(unique),
 	object
 ] interface ISCMLocalActivator : IClassActivator
@@ -135,6 +141,7 @@ interface IRemUnknown : IUnknown
 
 [
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("c6f3ee72-ce7e-11d1-b71e-00c04fc3111a")
 ] interface IMachineLocalActivator 
 {
@@ -143,6 +150,7 @@ interface IRemUnknown : IUnknown
 
 [
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("e60c73e6-88f9-11cf-9af1-0020af6e72f4")
 ] interface ILocalObjectExporter
 {
@@ -154,6 +162,7 @@ interface IRemUnknown : IUnknown
 [
 	uuid("000001a0-0000-0000-c000-000000000046"),
 	pointer_default(unique),
+	pointer_default_top(unique),
 	object
 ]
 	interface ISystemActivator : IClassActivator
@@ -173,6 +182,7 @@ interface IRemUnknown : IUnknown
 [
 	object,
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("00000143-0000-0000-C000-000000000046")
 ]
 
@@ -188,8 +198,9 @@ interface IRemUnknown2 : IRemUnknown
 }
 
 [
-object,
+	object,
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("00000136-0000-0000-C000-000000000046")
 	] interface ISCMActivator : IClassActivator
 {
@@ -199,6 +210,7 @@ object,
 [
 	object,
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("00020400-0000-0000-C000-000000000046")
 	] interface IDispatch : IUnknown
 {
@@ -267,6 +279,7 @@ object,
 	uuid(DA23F6DB-6F45-466C-9EED-0B65286F2D78),
 	helpstring("ICoffeeMachine Interface"),
 	pointer_default(unique),
+	pointer_default_top(unique),
 	object
 ] interface ICoffeeMachine : IUnknown
 {
@@ -284,6 +297,7 @@ object,
 [
 	object,
 	pointer_default(unique),
+	pointer_default_top(unique),
 	uuid("0000000C-0000-0000-C000-000000000046"),
 	helpstring("Stream")
 ]

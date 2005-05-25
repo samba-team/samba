@@ -14,7 +14,7 @@ sub GetArgumentProtoList($)
 
 	foreach my $a (@{$f->{ELEMENTS}}) {
 
-		$res .= ", " . typelist::mapType($a) . " ";
+		$res .= ", " . typelist::mapType($a->{TYPE}) . " ";
 
 		my $l = $a->{POINTERS};
 		$l-- if ($a->{TYPE} eq "string");
@@ -61,7 +61,7 @@ sub HeaderVTable($)
 
 	my $data = $interface->{DATA};
 	foreach my $d (@{$data}) {
-		$res .= "\t" . typelist::mapScalarType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
+		$res .= "\t" . typelist::mapType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
 	}
 	$res .= "\n";
 	$res .= "struct $interface->{NAME}_vtable {\n";

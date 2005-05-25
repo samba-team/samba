@@ -182,120 +182,6 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 	return NT_STATUS_OK;
 }
 
-/* This function does not appear to be used */
-
-#if 0
-
-/*
-  set the push offset to 'ofs'
-*/
-static NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
-{
-	NDR_CHECK(ndr_push_expand(ndr, ofs));
-	ndr->offset = ofs;
-	return NT_STATUS_OK;
-}
-
-#endif
-
-/*
-  push a generic array
-*/
-NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32_t count, 
-			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
-{
-	int i;
-	char *p = base;
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	for (i=0;i<count;i++) {
-		NDR_CHECK(push_fn(ndr, NDR_SCALARS, p));
-		p += elsize;
-	}
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-buffers:
-	p = base;
-	for (i=0;i<count;i++) {
-		NDR_CHECK(push_fn(ndr, NDR_BUFFERS, p));
-		p += elsize;
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-/*
-  pull a constant sized array
-*/
-NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32_t count, 
-			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
-{
-	int i;
-	char *p;
-	p = base;
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	for (i=0;i<count;i++) {
-		NDR_CHECK(pull_fn(ndr, NDR_SCALARS, p));
-		p += elsize;
-	}
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-buffers:
-	p = base;
-	for (i=0;i<count;i++) {
-		NDR_CHECK(pull_fn(ndr, NDR_BUFFERS, p));
-		p += elsize;
-	}
-done:
-	return NT_STATUS_OK;
-}
-
-/*
-  pull a constant size array of structures
-*/
-NTSTATUS ndr_pull_struct_array(struct ndr_pull *ndr, uint32_t count,
-			       size_t elsize, void **info,
-			       NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
-{
-	int i;
-	char *base;
-
-	NDR_ALLOC_N_SIZE(ndr, *info, count, elsize);
-	base = (char *)*info;
-
-	for (i = 0; i < count; i++) {
-		ndr->data += ndr->offset;
-		ndr->offset = 0;
-		NDR_CHECK(pull_fn(ndr, NDR_SCALARS|NDR_BUFFERS, &base[count * elsize]));
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*
-  print a generic array
-*/
-void ndr_print_array(struct ndr_print *ndr, const char *name, void *base, 
-		     size_t elsize, uint32_t count, 
-		     void (*print_fn)(struct ndr_print *, const char *, void *))
-{
-	int i;
-	char *p = base;
-	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
-	ndr->depth++;
-	for (i=0;i<count;i++) {
-		char *idx=NULL;
-		asprintf(&idx, "[%d]", i);
-		if (idx) {
-			print_fn(ndr, idx, p);
-			free(idx);
-		}
-		p += elsize;
-	}
-	ndr->depth--;
-}
-
-
-
 void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
@@ -390,7 +276,7 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 		break;
 	}
 
-	/* we should all error codes to different status codes */
+	/* we should map all error codes to different status codes */
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
@@ -623,7 +509,7 @@ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
 NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
 {
 	uint32_t stored;
-	NDR_CHECK(ndr_token_retrieve(&ndr->array_size_list, p, &stored));
+	stored = ndr_token_peek(&ndr->array_size_list, p);
 	if (stored != size) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
 				      "Bad array size - got %u expected %u\n",
@@ -661,7 +547,7 @@ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
 NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 {
 	uint32_t stored;
-	NDR_CHECK(ndr_token_retrieve(&ndr->array_length_list, p, &stored));
+	stored = ndr_token_peek(&ndr->array_length_list, p);
 	if (stored != length) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
 				      "Bad array length - got %u expected %u\n",

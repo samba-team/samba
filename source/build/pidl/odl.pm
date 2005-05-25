@@ -43,11 +43,28 @@ sub ODL2IDL($)
 	
 	foreach my $x (@{$odl}) {
 		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+		# and replace interfacepointers with MInterfacePointer
 		# for 'object' interfaces
 		if (util::has_property($x, "object")) {
 			foreach my $e (@{$x->{DATA}}) {
 				($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
 				ReplaceInterfacePointers($e);
+			}
+			# Object interfaces use ORPC
+			my @depends = ();
+			if(util::has_property($x, "depends")) {
+				@depends = split /,/, $x->{PROPERTIES}->{depends};
+			}
+			push @depends, "orpc";
+			$x->{PROPERTIES}->{depends} = join(',',@depends);
+		}
+
+		if ($x->{BASE}) {
+			my $base = util::get_interface($odl, $x->{BASE});
+
+			foreach my $fn (reverse @{$base->{DATA}}) {
+				next unless ($fn->{TYPE} eq "FUNCTION");
+				unshift (@{$x->{DATA}}, $fn);
 			}
 		}
 	}

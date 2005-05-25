@@ -14,9 +14,9 @@ use lib "$RealBin";
 use lib "$RealBin/lib";
 use Getopt::Long;
 use File::Basename;
+use idl;
 use dump;
 use ndr_client;
-use idl;
 use ndr_header;
 use ndr_parser;
 use server;
@@ -24,12 +24,14 @@ use dcom_proxy;
 use dcom_stub;
 use com_header;
 use odl;
-use eparser;
+use eth_parser;
+use eth_header;
 use validator;
 use typelist;
 use util;
 use template;
 use swig;
+use compat;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -40,7 +42,8 @@ my($opt_template) = 0;
 my($opt_client) = 0;
 my($opt_server) = 0;
 my($opt_parser);
-my($opt_eparser) = 0;
+my($opt_eth_parser);
+my($opt_eth_header);
 my($opt_keep) = 0;
 my($opt_swig) = 0;
 my($opt_dcom_proxy) = 0;
@@ -48,6 +51,7 @@ my($opt_com_header) = 0;
 my($opt_odl) = 0;
 my($opt_quiet) = 0;
 my($opt_output);
+my($opt_warn_compat) = 0;
 
 my $idl_parser = new idl;
 
@@ -71,13 +75,15 @@ sub ShowHelp()
          --client              create a C NDR client
          --server              create server boilerplate
          --template            print a template for a pipe
-         --eparser             create an ethereal parser
+         --eth-parser          create an ethereal parser
+		 --eth-header          create an ethereal header file
          --swig                create swig wrapper file
          --diff                run diff on the idl and dumped output
          --keep                keep the .pidl file
          --odl                 accept ODL input
          --dcom-proxy          create DCOM proxy (implies --odl)
          --com-header          create header for COM interfaces (implies --odl)
+		 --warn-compat         warn about incompatibility with other compilers
 		 --quiet               be quiet
          \n";
     exit(0);
@@ -94,14 +100,16 @@ GetOptions (
 	    'template' => \$opt_template,
 	    'parser:s' => \$opt_parser,
         'client' => \$opt_client,
-	    'eparser' => \$opt_eparser,
+	    'eth-parser:s' => \$opt_eth_parser,
+		'eth-header:s' => \$opt_eth_header,
 	    'diff' => \$opt_diff,
 		'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
 	    'swig' => \$opt_swig,
 		'dcom-proxy' => \$opt_dcom_proxy,
 		'com-header' => \$opt_com_header,
-		'quiet' => \$opt_quiet
+		'quiet' => \$opt_quiet,
+		'warn-compat' => \$opt_warn_compat
 	    );
 
 if ($opt_help) {
@@ -114,6 +122,7 @@ sub process_file($)
 	my $idl_file = shift;
 	my $output;
 	my $pidl;
+	my $ndr;
 
 	my $basename = basename($idl_file, ".idl");
 
@@ -175,8 +184,17 @@ sub process_file($)
 		$opt_odl = 1;
 	}
 
+	if ($opt_warn_compat) {
+		IDLCompat::Check($pidl);
+	}
+
 	if ($opt_odl) {
 		$pidl = ODL::ODL2IDL($pidl);
+	}
+
+	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or $opt_client or $opt_server or defined($opt_parser)) {
+		$ndr = Ndr::Parse($pidl);
+#		print util::MyDumper($ndr);
 	}
 
 	if (defined($opt_header)) {
@@ -184,18 +202,22 @@ sub process_file($)
 		if ($header eq "") {
 			$header = util::ChangeExtension($output, ".h");
 		}
-
-		util::FileSave($header, NdrHeader::Parse($pidl));
-		if ($opt_eparser) {
-		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
-		  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
-		}
+		util::FileSave($header, NdrHeader::Parse($ndr));
 		if ($opt_swig) {
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
 		  $filename = util::ChangeExtension($filename, ".i");
 		  IdlSwig::RewriteHeader($pidl, $header, $filename);
 		}
+	}
+
+	if (defined($opt_eth_header)) {
+	  my($eparserhdr) = $opt_eth_header;
+	  if ($eparserhdr eq "") {
+		  $eparserhdr = dirname($output) . "/packet-dcerpc-$basename.h";
+	  }
+
+	  util::FileSave($eparserhdr, EthHeader::Parse($ndr));
 	}
 
 	if ($opt_client) {
@@ -250,12 +272,18 @@ $dcom
 		if ($parser eq "") {
 			$parser = util::ChangeExtension($output, ".c");
 		}
-		util::FileSave($parser, NdrParser::Parse($pidl, $parser));
-		if($opt_eparser) {
-		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
-		  IdlEParser::RewriteC($pidl, $parser, $eparser);
-		}
+		
+		util::FileSave($parser, NdrParser::Parse($ndr, $parser));
 	}
+
+	if (defined($opt_eth_parser)) {
+	  my($eparser) = $opt_eth_parser;
+	  if ($eparser eq "") {
+		  $eparser = dirname($output) . "/packet-dcerpc-$basename.c";
+	  }
+	  util::FileSave($eparser, EthParser::Parse($ndr, $basename, $eparser));
+	}
+
 
 	if ($opt_template) {
 		print IdlTemplate::Parse($pidl);
