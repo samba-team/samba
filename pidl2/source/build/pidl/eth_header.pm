@@ -25,148 +25,6 @@ sub tabs()
 }
 
 #####################################################################
-# parse a structure element
-sub HeaderElement($)
-{
-    my($element) = shift;
-
-    pidl tabs();
-    HeaderType($element, $element->{TYPE}, "");
-    pidl " ";
-    my $pointers = 0;
-	foreach my $l (@{$element->{LEVELS}}) 
-	{
-		if (($l->{TYPE} eq "POINTER")) {
-			next if ($element->{TYPE} eq "string");
-		    pidl "*";
-		    $pointers+=1;
-	    } elsif ($l->{TYPE} eq "ARRAY") {
-	    	if (!$pointers and !$l->{IS_FIXED}) { pidl "*"; }
-    		pidl "$element->{NAME}";
-		if ($l->{IS_FIXED}) { pidl "[$l->{SIZE_IS}]"; }
-		last; #FIXME
-	    } elsif ($l->{TYPE} eq "DATA") {
-    		pidl "$element->{NAME}";
-		}
-	}
-	
-    if (defined $element->{ARRAY_LEN} && util::is_constant($element->{ARRAY_LEN})) {
-	    pidl "[$element->{ARRAY_LEN}]";
-    }
-    pidl ";\n";
-}
-
-#####################################################################
-# parse a struct
-sub HeaderStruct($$)
-{
-    my($struct) = shift;
-    my($name) = shift;
-    pidl "\nstruct $name {\n";
-    $tab_depth++;
-    my $el_count=0;
-    if (defined $struct->{ELEMENTS}) {
-		foreach my $e (@{$struct->{ELEMENTS}}) {
-		    HeaderElement($e);
-		    $el_count++;
-		}
-    }
-    if ($el_count == 0) {
-	    # some compilers can't handle empty structures
-	    pidl "\tchar _empty_;\n";
-    }
-    $tab_depth--;
-    pidl "}";
-}
-
-#####################################################################
-# parse a enum
-sub HeaderEnum($$)
-{
-    my($enum) = shift;
-    my($name) = shift;
-    my $first = 1;
-
-    pidl "\nenum $name {\n";
-    $tab_depth++;
-    foreach my $e (@{$enum->{ELEMENTS}}) {
- 	    unless ($first) { pidl ",\n"; }
-	    $first = 0;
-	    tabs();
-	    pidl $e;
-    }
-    pidl "\n";
-    $tab_depth--;
-    pidl "}";
-}
-
-#####################################################################
-# parse a bitmap
-sub HeaderBitmap($$)
-{
-    my($bitmap) = shift;
-    my($name) = shift;
-
-    pidl "\n/* bitmap $name */\n";
-
-    foreach my $e (@{$bitmap->{ELEMENTS}})
-    {
-	    pidl "#define $e\n";
-    }
-
-    pidl "\n";
-}
-
-#####################################################################
-# parse a union
-sub HeaderUnion($$)
-{
-	my($union) = shift;
-	my($name) = shift;
-	my %done = ();
-
-	pidl "\nunion $name {\n";
-	$tab_depth++;
-	foreach my $e (@{$union->{ELEMENTS}}) {
-		if ($e->{TYPE} ne "EMPTY") {
-			if (! defined $done{$e->{NAME}}) {
-				HeaderElement($e);
-			}
-			$done{$e->{NAME}} = 1;
-		}
-	}
-	$tab_depth--;
-	pidl "}";
-}
-
-#####################################################################
-# parse a type
-sub HeaderType($$$)
-{
-	my $e = shift;
-	my($data) = shift;
-	my($name) = shift;
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "ENUM") && HeaderEnum($data, $name);
-		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data, $name);
-		($data->{TYPE} eq "STRUCT") && HeaderStruct($data, $name);
-		($data->{TYPE} eq "UNION") && HeaderUnion($data, $name);
-		return;
-	}
-
-	pidl typelist::mapType($e->{TYPE});
-}
-
-#####################################################################
-# parse a typedef
-sub HeaderTypedef($)
-{
-    my($typedef) = shift;
-    HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    pidl ";\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
-}
-
-#####################################################################
 # prototype a typedef
 sub HeaderTypedefProto($)
 {
@@ -176,9 +34,8 @@ sub HeaderTypedefProto($)
 
     return unless util::has_property($d, "public");
 
-    my $pull_args = $tf->{PULL_FN_ARGS}->($d);
     unless (util::has_property($d, "nopull")) {
-	pidl "NTSTATUS dissect_$d->{NAME}($pull_args);\n";
+		pidl "dcerpc_dissect_fnct_t $d->{NAME};\n";
     }
 }
 
@@ -214,48 +71,11 @@ sub HeaderInterface($)
 	    }
     }
 
-    if (defined $interface->{PROPERTIES}->{uuid}) {
-	    my $name = uc $interface->{NAME};
-	    pidl "#define DCERPC_$name\_UUID " . 
-		util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
-
-		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
-	    pidl "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
-
-	    pidl "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
-
-		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
-		pidl "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
-
-	    pidl "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
-    }
-
-    foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    my $u_name = uc $d->{NAME};
-		pidl "#define DCERPC_$u_name (";
-	
-		if (defined($interface->{BASE})) {
-			pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
-		}
-		
-	    pidl sprintf("0x%02x", $count) . ")\n";
-	    $count++;
-    }
-
-	pidl "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
-	
-	if (defined($interface->{BASE})) {
-		pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
-	}
-	
-	pidl "$count)\n\n";
-
 	foreach my $d (@{$interface->{CONSTS}}) {
 	    HeaderConst($d);
     }
 
     foreach my $d (@{$interface->{TYPEDEFS}}) {
-	    HeaderTypedef($d);
 	    HeaderTypedefProto($d);
 	}
 

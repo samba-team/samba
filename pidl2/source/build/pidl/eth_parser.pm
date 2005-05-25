@@ -642,7 +642,7 @@ sub ParseData($$$$$)
 		$var_name = get_pointer_to($var_name);
 	}
 
-	pidl "offset += dissect_$l->{DATA_TYPE}($ndr, $ndr_flags, $var_name);";
+	pidl "offset += dissect_$l->{DATA_TYPE}(tvb, offset, pinfo, tree, drep, hf_FIXME, NULL);";
 
 	if (my $range = util::has_property($e, "range")) {
 		$var_name = get_value_of($var_name);
@@ -802,69 +802,20 @@ sub ParsePtr($$$$)
 	my $nl = Ndr::GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 
-	if ($l->{POINTER_TYPE} eq "ref") {
-		unless ($l->{LEVEL} eq "TOP") {
-			pidl "ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME});";
-		}
-
-		unless ($next_is_array) {
-			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\tNDR_ALLOC($ndr, $var_name);"; 
-			pidl "}";
-		}
-		
-		return;
-	} else {
-		pidl "ndr_pull_ptr($ndr, tree, \"$e->{NAME}\", &_ptr_$e->{NAME});";
-		pidl "if (_ptr_$e->{NAME}) {";
-		indent;
-	}
-
-	# Don't do this for arrays, they're allocated at the actual level 
-	# of the array
-	unless ($next_is_array) { 
-		pidl "NDR_ALLOC($ndr, $var_name);"; 
+	if ($l->{LEVEL} eq "EMBEDDED") {
+		pidl "dissect_ndr_embedded_pointer(FIXME);";
+	} elsif ($l->{POINTER_TYPE} ne "ref") {
+			pidl "dissect_ndr_toplevel_pointer(FIXME);";
 	}
 
 	#pidl "memset($var_name, 0, sizeof($var_name));";
 	if ($l->{POINTER_TYPE} eq "relative") {
 		pidl "ndr_pull_relative_ptr1($ndr, $var_name, _ptr_$e->{NAME});";
 	}
-	deindent;
-	pidl "} else {";
-	pidl "\t$var_name = NULL;";
-	pidl "}";
-}
-
-#####################################################################
-# generate a pull function for an enum
-sub ParseEnum($$)
-{
-	my($enum) = shift;
-	my $name = shift;
-	my($type_fn) = $enum->{BASE_TYPE};
-	my($type_v_decl) = typelist::mapType($type_fn);
-
-	pidl "$type_v_decl v_enum;";
-	start_flags($enum);
-
-	pidl "hf = hf; /* -Wunused */";
-	pidl "dissect_$type_fn(ndr, tree, hf_$name, &v_enum);";
-	pidl "*r = v_enum;";
-
-	end_flags($enum);
-}
-
-sub ArgsEnum($)
-{
-	my $e = shift;
-	return "tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep";
 }
 
 $typefamily{ENUM} = {
 	DECL => \&DeclEnum,
-	FN_BODY => \&ParseEnum,
-	FN_ARGS => \&ArgsEnum,
 };
 
 #####################################################################
@@ -895,16 +846,8 @@ sub ParseBitmap($$)
 	end_flags($bitmap);
 }
 
-sub ArgsBitmap($)
-{
-	my $e = shift;
-	my $type_decl = typelist::mapType($e->{DATA}->{BASE_TYPE});
-	return "struct tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *tree, int hf, int ndr_flags, $type_decl *r";
-}
-
 $typefamily{BITMAP} = {
 	FN_BODY => \&ParseBitmap,
-	FN_ARGS => \&ArgsBitmap,
 };
 
 #####################################################################
@@ -966,15 +909,8 @@ sub ParseStruct($$)
 	end_flags($struct);
 }
 
-sub ArgsStruct($)
-{
-	my $e = shift;
-	return "struct pidl_pull *ndr, int ndr_flags, pidl_tree *tree, struct $e->{NAME} *r";
-}
-
 $typefamily{STRUCT} = {
 	FN_BODY => \&ParseStruct,
-	FN_ARGS => \&ArgsStruct,
 };
 
 #####################################################################
@@ -1067,15 +1003,8 @@ sub ParseUnion($$$)
 	end_flags($e);
 }
 
-sub ArgsUnion($)
-{
-	my $e = shift;
-	return "struct pidl_pull *ndr, int ndr_flags, pidl_tree *tree, union $e->{NAME} *r";
-}
-
 $typefamily{UNION} = {
 	FN_BODY => \&ParseUnion,
-	FN_ARGS => \&ArgsUnion,
 };
 
 #####################################################################
@@ -1135,10 +1064,6 @@ sub ParseArrayHeader($$$$$)
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 	}
 
-	if (!$l->{IS_FIXED}) {
-		AllocateArrayLevel($e,$l,$ndr,$env,$size);
-	}
-
 	return $length;
 }
 	
@@ -1148,46 +1073,17 @@ sub ParseTypedef($)
 {
 	my($e) = shift;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{FN_ARGS}->($e);
+	return unless (defined ($typefamily{$e->{DATA}->{TYPE}}));
 
-	pidl fn_prefix($e) . "NTSTATUS dissect_$e->{NAME}($args)";
+	pidl fn_prefix($e) . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, int hf_index, guint32 param)";
 
 	pidl "{";
 	indent;
-	pidl "int offset = 0";
 	$typefamily{$e->{DATA}->{TYPE}}->{FN_BODY}->($e->{DATA}, $e->{NAME});
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
 	pidl "";
-}
-
-sub AllocateArrayLevel($$$$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $env = shift;
-	my $size = shift;
-
-	my $var = ParseExpr($e->{NAME}, $env);
-
-	check_null_pointer($size);
-	my $pl = Ndr::GetPrevLevel($e, $l);
-	if (defined($pl) and 
-	    $pl->{TYPE} eq "POINTER" and 
-	    $pl->{POINTER_TYPE} eq "ref") {
-	    pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-	    pidl "\tNDR_ALLOC_N($ndr, $var, $size);";
-	    pidl "}";
-	} else {
-		pidl "NDR_ALLOC_N($ndr, $var, $size);";
-	}
-	#pidl "memset($var, 0, $size * sizeof(" . $var . "[0]));";
-	if (grep(/in/,@{$e->{DIRECTION}}) and
-	    grep(/out/,@{$e->{DIRECTION}})) {
-		pidl "memcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));";
-	}
 }
 
 #####################################################################
@@ -1204,7 +1100,6 @@ sub ParseFunctionRqst($)
 	indent;
 
 	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
-	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1227,6 +1122,7 @@ sub ParseFunctionRqst($)
 	pidl "return offset;";
 	deindent;
 	pidl "}";
+	pidl "";
 }
 
 sub ParseFunctionResp($)
@@ -1241,7 +1137,6 @@ sub ParseFunctionResp($)
 	indent;
 
 	pidl "struct pidl_pull *ndr = pidl_pull_init(tvb, offset, pinfo, drep);";
-	pidl "struct $fn->{NAME} *r = talloc(NULL, struct $fn->{NAME});";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -1268,6 +1163,7 @@ sub ParseFunctionResp($)
 	pidl "return offset;";
 	deindent;
 	pidl "}";
+	pidl "";
 }
 
 #####################################################################
