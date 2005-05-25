@@ -63,7 +63,7 @@ Kerberos 5 Library (libkadm5srv, -lkadm5srv)
 .Fa "krb5_data *pwd_data"
 .Fc
 .Ft int
-.Fo (*kadm5_passwd_quality_check_func)
+.Fo "(*kadm5_passwd_quality_check_func)"
 .Fa "krb5_context context"
 .Fa "krb5_principal principal"
 .Fa "krb5_data *password"
@@ -98,7 +98,7 @@ of the type
 .Ft "struct kadm5_pw_policy_verifier" .
 .Pp
 Its
-.Ft name 
+.Ft name
 and
 .Ft vendor
 fields should be contain the obvious information and
@@ -125,7 +125,7 @@ it returns non-zero and fills in the message buffer with an
 appropriate explanation.
 .Sh RUNNING THE CHECKS
 .Nm kadm5_setup_passwd_quality_check
-sets up type 0 checks.  It sets up all type 0 checks defined in 
+sets up type 0 checks.  It sets up all type 0 checks defined in
 .Xr krb5.conf 5
 if called with the last two arguments null.
 .Pp
@@ -141,6 +141,6 @@ module's
 .Ft funcs
 array until one returns non-zero.
 .Sh SEE ALSO
+.Xr libtool 1 ,
 .Xr krb5 3 ,
-.Xr krb5.conf 5 ,
-.Xr libtool 1 .
+.Xr krb5.conf 5
