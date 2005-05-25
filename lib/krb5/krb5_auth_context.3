@@ -35,7 +35,7 @@
 .Dt KRB5_AUTH_CONTEXT 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_auth_con_addflags,
+.Nm krb5_auth_con_addflags ,
 .Nm krb5_auth_con_free ,
 .Nm krb5_auth_con_genaddrs ,
 .Nm krb5_auth_con_generatelocalsubkey ,
@@ -49,7 +49,7 @@
 .Nm krb5_auth_con_getuserkey ,
 .Nm krb5_auth_con_init ,
 .Nm krb5_auth_con_initivector ,
-.Nm krb5_auth_con_removeflags,
+.Nm krb5_auth_con_removeflags ,
 .Nm krb5_auth_con_setaddrs ,
 .Nm krb5_auth_con_setaddrs_from_fd ,
 .Nm krb5_auth_con_setflags ,
@@ -205,7 +205,7 @@ structure must be freed by
 .Pp
 .Fn krb5_auth_con_getflags ,
 .Fn krb5_auth_con_setflags ,
-.Fn krb5_auth_con_addflags 
+.Fn krb5_auth_con_addflags
 and
 .Fn krb5_auth_con_removeflags
 gets and modifies the flags for a
@@ -245,7 +245,7 @@ functions.
 The flags
 .Dv KRB5_AUTH_CONTEXT_DO_TIME
 also modifies the behavior the function
-.Fn krb5_get_forwarded_creds 
+.Fn krb5_get_forwarded_creds
 by removing the timestamp in the forward credential message, this have
 backward compatibility problems since not all versions of the heimdal
 supports timeless credentional messages.
