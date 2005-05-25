@@ -821,6 +821,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="bind interfaces only">Yes</smbconfoption>
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
 <smbconfoption name="pam password change">Yes</smbconfoption>
+<smbconfoption name="passwd program">/usr/bin/passwd %u</smbconfoption>
 <smbconfoption name="passwd chat"></smbconfoption>
 <member><parameter>*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</parameter></member>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
@@ -2207,14 +2208,15 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 	be done with notebook computers as long as they are identical or sufficiently similar.
 	</para>
 
-	<procedure>
+	<procedure id="sbewinclntprep">
+	<title>Windows Client Configuration Procedure</title>
+
 		<step><para>
-		Install MS Windows XP Professional. During installation, configure the client to use DHCP for 
-		TCP/IP protocol configuration.
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>DHCP</primary></indexterm>
-		DHCP configures all Windows clients to use the WINS Server address that has been defined
-		for the local subnet.
+		Install MS Windows XP Professional. During installation, configure the client to use DHCP for 
+		TCP/IP protocol configuration. DHCP configures all Windows clients to use the WINS Server
+		address that has been defined for the local subnet.
 		</para></step>
 
 		<step><para>
@@ -2229,8 +2231,8 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		<step><para>
 		Verify <constant>DIAMOND</constant> is visible in <guimenu>My Network Places</guimenu>, 
 		that it is possible to connect to it and see the shares <guimenuitem>accounts</guimenuitem>,
-		<guimenuitem>apps</guimenuitem>, and <guimenuitem>finsvcs</guimenuitem>,
-		and that it is possible to open each share to reveal its contents.
+		<guimenuitem>apps</guimenuitem>, and <guimenuitem>finsvcs</guimenuitem>, and that it is
+		possible to open each share to reveal its contents.
 		</para></step>
 
 		<step><para>
@@ -2253,94 +2255,95 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		Now install all four printers onto the staging system. The printers you install
 		include the accounting department HP LaserJet 6 and Minolta QMS Magicolor printers. You will
 		also configure identical printers that are located in the financial services department.
-		Install printers on each machine using the following steps:
-		</para>
+		Install printers on each machine using the steps shown in <link linkend="sbewinclntptrprep"/>.
+		</para></step>
 
-		<procedure>
-				<step><para>
-				Click <menuchoice>
-					<guimenu>Start</guimenu>
-					<guimenuitem>Settings</guimenuitem>
-					<guimenuitem>Printers</guimenuitem>
-					<guiicon>Add Printer</guiicon>
-					<guibutton>Next</guibutton>
-					</menuchoice>. Do not click <guimenuitem>Network printer</guimenuitem>.
-					Ensure that <guimenuitem>Local printer</guimenuitem> is selected.
-				</para></step>
+		<step><para>
+		<indexterm><primary>defragmentation</primary></indexterm>
+		When you are satisfied that the staging systems are complete, use the appropriate procedure to
+		remove the client from the domain. Reboot the system and then log on as the local administrator
+		and clean out all temporary files stored on the system. Before shutting down, use the disk
+		defragmentation tool so that the file system is in optimal condition before replication.
+		</para></step>
 
-				<step><para>
-				Click <guibutton>Next</guibutton>. In the
-				<guimenuitem>Manufacturer:</guimenuitem> panel, select <constant>HP</constant>.
-				In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
-				<constant>HP LaserJet 6</constant>. Click <guibutton>Next</guibutton>.
-				</para></step>
+		<step><para>
+		Boot the workstation using the Norton (Symantec) Ghosting diskette (or CD-ROM) and image the
+		machine to a network share on the server.
+		</para></step>
 
-				<step><para>
-				In the <guimenuitem>Available ports:</guimenuitem> panel, select
-				<constant>FILE:</constant>. Accept the default printer name by clicking
-				<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
-				test page?,</quote> click <guimenuitem>No</guimenuitem>. Click
-				<guibutton>Finish</guibutton>.
-				</para></step>
+		<step><para>
+		<indexterm><primary>Windows security identifier</primary><see>SID</see></indexterm>
+		<indexterm><primary>SID</primary></indexterm>
+		You may now replicate the image to the target machines using the appropriate Norton Ghost 
+		procedure. Make sure to use the procedure that ensures each machine has a unique
+		Windows security identifier (SID). When the installation of the disk image has completed, boot the PC. 
+		</para></step>
 
-				<step><para>
-				You may be prompted for the name of a file to print to. If so, close the
-				dialog panel. Right-click <menuchoice>
-					<guiicon>HP LaserJet 6</guiicon>
-					<guimenuitem>Properties</guimenuitem>
-					<guisubmenu>Details (Tab)</guisubmenu>
-					<guimenuitem>Add Port</guimenuitem>
-					</menuchoice>.
-				</para></step>
+		<step><para>
+		Log onto the machine as the local Administrator (the only option), and join the machine to
+		the Domain, following the procedure set out in Appendix A, <link linkend="domjoin"/>. The system is now 
+		ready for the user to log on, provided you have created a network logon account for that 
+		user, of course.
+		</para></step>
 
-				<step><para>
-				In the <guimenuitem>Network</guimenuitem> panel, enter the name of
-				the print queue on the Samba server as follows: <constant>\\DIAMOND\hplj6a</constant>.
-				Click <menuchoice> 
-					<guibutton>OK</guibutton>
-					<guibutton>OK</guibutton>
-					</menuchoice> to complete the installation.
-				</para></step>
+		<step><para>
+		Instruct all users to log onto the workstation using their assigned username and password.
+		</para></step>
+	</procedure>
 
-				<step><para>
-				Repeat the printer installation steps above for both HP LaserJet 6 printers
-				as well as for both QMS Magicolor laser printers.
-				</para></step>
-			</procedure>
-			</step>
+	<procedure id="sbewinclntptrprep">
+	<title>Windows Client Printer Preparation Procedure</title>
 
-			<step><para>
-			<indexterm><primary>defragmentation</primary></indexterm>
-			When you are satisfied that the staging systems are complete, use the appropriate procedure to
-			remove the client from the domain. Reboot the system and then log on as the local administrator
-			and clean out all temporary files stored on the system. Before shutting down, use the disk
-			defragmentation tool so that the file system is in optimal condition before replication.
-			</para></step>
+		<step><para>
+		Click <menuchoice>
+			<guimenu>Start</guimenu>
+			<guimenuitem>Settings</guimenuitem>
+			<guimenuitem>Printers</guimenuitem>
+			<guiicon>Add Printer</guiicon>
+			<guibutton>Next</guibutton>
+			</menuchoice>. Do not click <guimenuitem>Network printer</guimenuitem>.
+			Ensure that <guimenuitem>Local printer</guimenuitem> is selected.
+		</para></step>
 
-			<step><para>
-			Boot the workstation using the Norton (Symantec) Ghosting diskette (or CD-ROM) and image the
-			machine to a network share on the server.
-			</para></step>
+		<step><para>
+		Click <guibutton>Next</guibutton>. In the
+		<guimenuitem>Manufacturer:</guimenuitem> panel, select <constant>HP</constant>.
+		In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
+		<constant>HP LaserJet 6</constant>. Click <guibutton>Next</guibutton>.
+		</para></step>
 
-			<step><para>
-			<indexterm><primary>Windows security identifier</primary><see>SID</see></indexterm>
-			<indexterm><primary>SID</primary></indexterm>
-			You may now replicate the image to the target machines using the appropriate Norton Ghost 
-			procedure. Make sure to use the procedure that ensures each machine has a unique
-			Windows security identifier (SID). When the installation of the disk image has completed, boot the PC. 
-			</para></step>
+		<step><para>
+		In the <guimenuitem>Available ports:</guimenuitem> panel, select
+		<constant>FILE:</constant>. Accept the default printer name by clicking
+		<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
+		test page?,</quote> click <guimenuitem>No</guimenuitem>. Click
+		<guibutton>Finish</guibutton>.
+		</para></step>
 
-			<step><para>
-			Log onto the machine as the local Administrator (the only option), and join the machine to
-			the Domain, following the procedure set out in Appendix A, <link linkend="domjoin"/>. The system is now 
-			ready for the user to log on, provided you have created a network logon account for that 
-			user, of course.
-			</para></step>
+		<step><para>
+		You may be prompted for the name of a file to print to. If so, close the
+		dialog panel. Right-click <menuchoice>
+			<guiicon>HP LaserJet 6</guiicon>
+			<guimenuitem>Properties</guimenuitem>
+			<guisubmenu>Details (Tab)</guisubmenu>
+			<guimenuitem>Add Port</guimenuitem>
+			</menuchoice>.
+		</para></step>
 
-			<step><para>
-			Instruct all users to log onto the workstation using their assigned username and password.
-			</para></step>
-		</procedure>
+		<step><para>
+		In the <guimenuitem>Network</guimenuitem> panel, enter the name of
+		the print queue on the Samba server as follows: <constant>\\DIAMOND\hplj6a</constant>.
+		Click <menuchoice> 
+			<guibutton>OK</guibutton>
+			<guibutton>OK</guibutton>
+			</menuchoice> to complete the installation.
+		</para></step>
+
+		<step><para>
+		Repeat the printer installation steps above for both HP LaserJet 6 printers
+		as well as for both QMS Magicolor laser printers.
+		</para></step>
+	</procedure>
 
 	</sect2>
 
