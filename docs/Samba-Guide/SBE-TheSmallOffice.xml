@@ -4,41 +4,41 @@
   <title>Small Office Networking</title>
 
 	<para>
-	So far, this book has focused on the basics of simple yet effective
+	Chapter 1 focused on the basics of simple yet effective
 	network solutions. Network administrators who take pride in their work 
 	(that's most of us, right?) take care to deliver what our users want, 
-	but not too much more. If we make things too complex, we confound our users and 
-	increase costs of network ownership. A professional network manager 
+	but not too much more. If we make things too complex, we confound our users
+	and increase costs of network ownership. A professional network manager 
 	avoids the temptation to put too much pizazz into the way that the network 
-	operates. Some creativity is helpful, but do keep it under control.
+	operates. Some creativity is helpful, but keep it under control &smbmdash;
+	good advice that the following two scenarios illustrate.
 	</para>
 
 	<para>
 	<indexterm><primary>Netware</primary></indexterm>
-	Five years ago there were two companies from which a lesson can be learned.	
-	In one case the network administrator spent three months building a new
-	network to replace an old Netware server. What he delivered had all the
-	bells and whistles he could muster. There were a few teething problems
-	during the change-over, nothing serious but a little disruptive all the
-	same. Users were exposed to many changes at once. The network
-	administrator was asked to resign two months after implementing the
-	new system. This was necessary because so many staff had complained
-	they had lost time and were not happy with the new network.
-	Everything was automated and he delivered more features than any advanced
-	user could think of. He was just too smart for his own good.
+	In one case the network administrator of a mid-sized company spent three
+	months building a new network to replace an old Netware server. What he
+	delivered had all the bells and whistles he could muster. There were a
+	few teething problems during the changeover, nothing serious but a little
+	disruptive all the same. Users were exposed to many changes at once. The
+	network administrator was asked to resign two months after implementing
+	the new system because so many staff complained they had lost time and
+	were not happy with the new network.  Everything was automated, and he
+	delivered more features than any advanced user could think of. He was
+	just too smart for his own good.
 	</para>
 
 	<para>
 	In the case of the other company, a new network manager was appointed
 	to oversee the replacement of a LanTastic network with an MS Windows
 	NT 4.0 network. He had the replacement installed and operational within
-	two weeks. Before installation and change-over, he called a meeting to
-	explain to all users what was going to happen, how it would affect them
+	two weeks. Before installation and changeover, he called a meeting to
+	explain to all users what was going to happen, how it would affect them,
 	and that he would be available 24 hours a day to help them transition.
 	One week after conversion, he held another meeting asking for cooperation
 	in the introduction of a few new features that would help to make life
-	easier. Network users were thrilled with what he was doing to help
-	them. The network he implemented was nowhere near as complex as the first example, had fewer
+	easier. Network users were thrilled with the help he provided. The network
+	he implemented was nowhere near as complex as in the first example, had fewer
 	features, and yet he had happy users. Months later he was still adding
 	new innovations. He always asked the users if a
 	particular feature was what they wanted. He asked his boss for a raise
@@ -51,7 +51,7 @@
 	<title>Introduction</title>
 
 	<para>
-	Abmas Accounting Inc. has grown. Mr. Meany likes you and says he knew you
+	Abmas Accounting has grown. Mr. Meany likes you and says he knew you
 	were the right person for the job. That's why he asked you to install the
 	new server. The past few months have been hard work. You advised Mr. Meany
 	that it is time for a change. Abmas now has 52 users, having acquired an
@@ -60,9 +60,9 @@
 	</para>
 
 	<para>
-	Some of the Windows clients are getting to be past their use-by date. 
-	You have found damaged and unusable software on some of the workstations
-	that came with the acquired business and found some machines that are 
+	Some of the Windows clients are nearly past their use-by date. 
+	You found damaged and unusable software on some of the workstations
+	that came with the acquired business and found some machines 
 	in need of both hardware and software maintenance. 
 	</para>
 
@@ -71,12 +71,12 @@
 
 		<para>
 		<indexterm><primary>Windows XP</primary></indexterm>
-		Mr. Meany has decided to retire in 12 months. He wants you to help him
-		make the business run better. Many of the new staff want notebook computers.
-		They visit customer business premises with the need to use local network
+		Mr. Meany is retiring in 12 months. Before he goes, he wants you to help ensure
+		that the business is running efficiently. Many of the new staff want notebook
+		computers.  They visit customer business premises and need to use local network
 		facilities; these users are technically competent. The company uses a
-		business application that requires Windows XP Professional. In short, a
-		complete client upgrade is about to happen. Mr. Meany told you that he is working
+		business application that requires Windows XP Professional. In short, a complete
+		client upgrade is about to happen. Mr. Meany told you that he is working
 		on another business acquisition and that by the time he retires there will be
 		80 to 100 users.
 		</para>
@@ -92,16 +92,16 @@
 		</para>
 
 		<para>
-		In a few months, Abmas will require an Internet connection for email
-		and so staff easily obtain software updates. Mr. Meany is warming up to the
-		installation of anti-virus software, but is not yet ready to approve
+		In a few months, Abmas will require an Internet connection for email and so
+		that staff can easily obtain software updates. Mr. Meany is warming up to
+		the installation of antivirus software but is not yet ready to approve
 		this expense. He told you to spend the money a virus scanner costs
 		on better quality notebook computers for mobile users.
 		</para>
 
 		<para>
-		One of Mr. Meany's golfing partners sold him on the idea to buy new laser
-		printers. One black only, the other a color laser printer. Staff support
+		One of Mr. Meany's golfing partners convinced him to buy new laser
+		printers, one black only, the other a color laser printer. Staff support
 		the need for a color printer so they can present more attractive proposals
 		and reports.
 		</para>
@@ -120,12 +120,12 @@
 
 	<para>
 	What are the key requirements in this business example? A quick review indicates
-	a need for:
+	a need for
 	</para>
 
 	<itemizedlist>
 		<listitem><para>
-		Scalability &smbmdash; from 52 to over 100 users in 12 months
+		Scalability, from 52 to over 100 users in 12 months
 		</para></listitem>
 
 		<listitem><para>
@@ -160,7 +160,7 @@
 		<indexterm><primary>Domain</primary></indexterm>
 		It is time to implement a domain security environment. You will use the <constant>
 		smbpasswd</constant> (default) backend. You should implement a DHCP server. There is no need to
-		run DNS at this time, but the system will use WINS. The Domain name will be <constant>
+		run DNS at this time, but the system will use WINS. The domain name will be <constant>
 		BILLMORE</constant>. This time, the name of the server will be <constant>SLEETH</constant>.
 		</para>
 
@@ -174,8 +174,8 @@
 		The &smb.conf; file you are creating in this exercise can be used with equal effectiveness
 		with Samba-2.2.x series releases. This is deliberate so that in the next chapter it is
 		possible to start with the installation that you have created here, migrate it
-		to a Samba-3 configuration and then secure the system further. Configurations following
-		this one will utilize features that may not be supported in Samba-2.2.x releases.
+		to a Samba-3 configuration, and then secure the system further. Configurations following
+		this one utilize features that may not be supported in Samba-2.2.x releases.
 		However, you should note that the examples in each chapter start with the assumption
 		that a fresh new installation is being effected.
 		</para></note>
@@ -198,7 +198,7 @@
 		You will provide separate file storage areas for each business entity. The old system
 		will go away, accounting files will be handled under a single directory, and files will
 		be stored under customer name, not under a personal work area. Staff will be made
-		responsible for file location, so maintain the old share point.
+		responsible for file location, so the old share point must be maintained.
 		</para>
 
 		<para>
@@ -209,27 +209,29 @@
 		<para>
 		<indexterm><primary>Domain</primary><secondary>groups</secondary></indexterm>
 		<indexterm><primary>UNIX</primary><secondary>groups</secondary></indexterm>
-		It is necessary to map Windows Domain Groups to UNIX groups as a minimum. It is
+		It is necessary to map Windows Domain Groups to UNIX groups. It is
 		advisable to also map Windows Local Groups to UNIX groups. Additionally, the two
-		key staff groups in the firm are Accounting Staff and Financial Services Staff.
+		key staff groups in the firm are accounting staff and financial services staff.
 		For these, it is necessary to create UNIX groups as well as Windows Domain Groups.
 		</para>
 
 		<para>
-		In the sample &smb.conf; file, you have configured Samba to call the UNIX <command>groupadd</command>
-		to add group entries. This utility does not permit the addition of group names that
-		contain upper-case characters or spaces. This is considered a bug. The <command>groupadd</command>
-		is part of the <command>shadow-utils</command> Open Source Software package.
-		A later release of this package may have been patched to resolve this bug.
-		If your operating platform has this bug, it means that attempts to add a Windows Domain
-		Group that has either a space or upper-case characters in it will fail. See <emphasis>TOSHARG</emphasis>, Section 11.3.1,
-		Example 11.1, for more information.
+		In the sample &smb.conf; file, you have configured Samba to call the UNIX
+		<command>groupadd</command> to add group entries. This utility does not permit
+		the addition of group names that contain uppercase characters or spaces. This
+		is considered a bug. The <command>groupadd</command> is part of the
+		<command>shadow-utils</command> open source software package.  A later release
+		of this package may have been patched to resolve this bug.  If your operating
+		platform has this bug, it means that attempts to add a Windows Domain Group that
+		has either a space or uppercase characters in it will fail. See
+		<emphasis>TOSHARG</emphasis>, Chapter 11, Section 11.3.1, Example 11.1, for
+		more information.
 		</para>
 
 		<para>
 		<indexterm><primary>CUPS</primary></indexterm>
-		Vendor-supplied printer drivers will be installed on each client. The CUPS print spooler
-		on the UNIX host will be operated in <constant>raw</constant> mode.
+		Vendor-supplied printer drivers will be installed on each client. The CUPS print
+		spooler on the UNIX host will be operated in <constant>raw</constant> mode.
 		</para>
 
 	</sect2>
@@ -245,7 +247,7 @@
 
 		<para>
 		Go ahead, buy better notebooks. Wouldn't it be neat if they happened to be
-		supplied with anti-virus software? Above all, demonstrate good purchase value and remember
+		supplied with antivirus software? Above all, demonstrate good purchase value and remember
 		to make your users happy.
 		</para>
 
@@ -256,23 +258,21 @@
 <sect1>
 	<title>Implementation</title>
 
-      <para><indexterm>
-	  <primary>migration</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>migration</primary></indexterm>
 	In this example, the assumption is made that this server is being configured from a clean start.
 	The alternate approach could be to demonstrate the migration of the system that is documented
 	in <link linkend="AcctgNet"/> to meet the new requirements. The decision to treat this case, as with
 	future examples, as a new installation is based on the premise that you can determine
-	the migration steps from the information provided in the separate chapter on this subject.
+	the migration steps from the information provided in Chapter ?????????.
 	Additionally, a fresh installation makes the example easier to follow.
 	</para>
 
-      <para><indexterm>
-	  <primary>group membership</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>group membership</primary></indexterm>
 	Each user will be given a home directory on the UNIX system, which will be available as a private
-	share. Two additional shares will be created, one for the Accounting Department and the other for
-	the Financial Services Department. Network users will be given access to these shares by way
+	share. Two additional shares will be created, one for the accounting department and the other for
+	the financial services department. Network users will be given access to these shares by way
 	of group membership.
 	</para>
 
@@ -289,13 +289,11 @@
 	</para>
 
 	<image id="acct2net">
-		<imagedescription>Abmas Accounting &smbmdash; 52 User Network Topology</imagedescription>
+		<imagedescription>Abmas Accounting &smbmdash; 52-User Network Topology</imagedescription>
 		<imagefile scale="100">acct2net</imagefile>
 	</image>
 
 	<procedure>
-	<title>Implementation Procedure</title>
-
 		<step><para>
 		Using UNIX/Linux system tools, name the server <constant>sleeth</constant>.
 		</para></step>
@@ -303,7 +301,7 @@
 		<step><para>
 		<indexterm><primary>/etc/hosts</primary></indexterm>
 		Place an entry for the machine <constant>sleeth</constant> in the <filename>/etc/hosts</filename>.
-		The printers are network attached, so it is desirable that there should be entries for the
+		The printers are network attached, so there should be entries for the
 		network printers also. An example <filename>/etc/hosts</filename> file is shown here:
 <screen>
 192.168.1.1     sleeth sleeth1
@@ -322,18 +320,14 @@
 		Install the ISC DHCP server using the UNIX/Linux system tools available to you.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>/etc/rc.d/rc.local</primary>
-	    </indexterm><indexterm>
-	      <primary>IP forwarding</primary>
-	    </indexterm><indexterm>
-	      <primary>router</primary>
-	    </indexterm><indexterm>
-	      <primary>/proc/sys/net/ipv4/ip_forward</primary>
-	    </indexterm>
-		Given that Samba will be operating over two network interfaces and clients on each side
+		<step><para>
+		<indexterm><primary>/etc/rc.d/rc.local</primary></indexterm>
+		<indexterm><primary>IP forwarding</primary></indexterm>
+		<indexterm><primary>router</primary></indexterm>
+		<indexterm><primary>/proc/sys/net/ipv4/ip_forward</primary></indexterm>
+		Because Samba will be operating over two network interfaces and clients on each side
 		may want to be able to reach clients on the other side, it is imperative that IP forwarding
-		shall be enabled. Use the system tool of your choice to enable IP forwarding. In the
+		is enabled. Use the system tool of your choice to enable IP forwarding. In the
 		absence of such a tool on the Linux system, add to the <filename>/etc/rc.d/rc.local</filename>
 		file an entry as follows:
 <screen>
@@ -348,9 +342,8 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 		<filename>/etc/samba/smb.conf</filename> file.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>smbpasswd</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>smbpasswd</primary></indexterm>
 		Add the user <command>root</command> to the Samba password backend:
 <screen>
 &rootprompt; smbpasswd -a root
@@ -361,8 +354,8 @@ Retype new SMB password: XXXXXXX
 		<indexterm><primary>administrator</primary></indexterm>
 		This is the Windows Domain Administrator password. Never delete this account from
 		the password backend after Windows Domain Groups have been initialized. If you delete
-		this account, your system is crippled. You cannot restore this account
-		and your Samba server is no longer capable of being administered.
+		this account, your system is crippled. You cannot restore this account,
+		and your Samba server can no longer be administered.
 		</para></step>
 
 		<step><para>
@@ -462,7 +455,7 @@ Users (S-1-5-32-545) -> -1
 		<indexterm><primary>smbpasswd</primary></indexterm>
 		For each user who needs to be given a Windows Domain account, make an entry in the
 		<filename>/etc/passwd</filename> file as well as in the Samba password backend.
-		Use the system tool of your choice to create the UNIX system accounts and use the Samba
+		Use the system tool of your choice to create the UNIX system accounts, and use the Samba
 		<command>smbpasswd</command> program to create the Domain user accounts.
 		</para>
 
@@ -470,19 +463,19 @@ Users (S-1-5-32-545) -> -1
 		<indexterm><primary>useradd</primary></indexterm>
 		<indexterm><primary>adduser</primary></indexterm>
 		<indexterm><primary>user</primary><secondary>management</secondary></indexterm>
-		There are a number of tools for user management under UNIX. Commonly known ones include:
-		<command>useradd</command>, <command>adduser</command>. In addition to these, there are a plethora of custom
+		There are a number of tools for user management under UNIX, such as
+		<command>useradd</command> and <command>adduser</command>, as well as a plethora of custom
 		tools. With the tool of your choice, create a home directory for each user.
 		</para></step>
 
 		<step><para>
 		Using the preferred tool for your UNIX system, add each user to the UNIX groups created
-		previously as necessary. File system access control will be based on UNIX group membership.
+		previously, as necessary. File system access control will be based on UNIX group membership.
 		</para></step>
 
 		<step><para>
-		Create the directory mount point for the disk sub-system that is mounted to provide
-		data storage for company files. In this case the mount point indicated in the &smb.conf;
+		Create the directory mount point for the disk subsystem that is mounted to provide
+		data storage for company files. In this case the mount point is indicated in the &smb.conf;
 		file is <filename>/data</filename>. Format the file system as required, mount the formatted
 		file system partition using <command>mount</command>, 
 		and make the appropriate changes in <filename>/etc/fstab</filename>.
@@ -511,9 +504,8 @@ Users (S-1-5-32-545) -> -1
 		</para></step>
 
 		<step><para>
-	    <indexterm><primary>CUPS</primary><secondary>queue</secondary></indexterm><indexterm>
-	      <primary>lpadmin</primary>
-	    </indexterm>
+		<indexterm><primary>CUPS</primary><secondary>queue</secondary></indexterm>
+		<indexterm><primary>lpadmin</primary></indexterm>
 		Configure the CUPS Print Queues as follows:
 <screen>
 &rootprompt; lpadmin -p hplj4 -v socket://192.168.1.11:9100 -E
@@ -542,9 +534,8 @@ application/octet-stream
 </screen>
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>DHCP Server</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>DHCP Server</primary></indexterm>
 		Using your favorite system editor, create an <filename>/etc/dhcpd.conf</filename> with the
 		contents as shown in <link linkend="dhcp01"/>.
 <example id="dhcp01">
@@ -600,16 +591,15 @@ subnet 127.0.0.0 netmask 255.0.0.0 {
 
 		<step><para>
 		Use the standard system tool to start Samba and CUPS and configure them to start
-		automatically at every system reboot. For example:
+		automatically at every system reboot. For example,
 		</para>
 
 		<para>
 		<indexterm><primary>chkconfig</primary></indexterm>
 		<indexterm><primary>starting dhcpd</primary></indexterm>
 		<indexterm><primary>starting samba</primary></indexterm>
-	    <indexterm><primary>starting CUPS</primary></indexterm><indexterm>
-	      <primary>chkconfig</primary>
-	    </indexterm>
+		<indexterm><primary>starting CUPS</primary></indexterm>
+		<indexterm><primary>chkconfig</primary></indexterm>
 <screen>
 &rootprompt; chkconfig dhcp on
 &rootprompt; chkconfig smb on
@@ -623,12 +613,11 @@ subnet 127.0.0.0 netmask 255.0.0.0 {
 		<step><para>
 		<indexterm><primary>name service switch</primary></indexterm>
 		<indexterm><primary>NSS</primary><see>same service switch</see></indexterm>
-	    <indexterm><primary>DNS</primary></indexterm><indexterm>
-	      <primary>DNS server</primary>
-	    </indexterm>
+		<indexterm><primary>DNS</primary></indexterm>
+		<indexterm><primary>DNS server</primary></indexterm>
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
-		Configure the name service switch (NSS) to handle WINS based name resolution.
+		Configure the name service switch (NSS) to handle WINS-based name resolution.
 		Since this system does not use a DNS server, it is safe to remove this option from
 		the NSS configuration. Edit the <filename>/etc/nsswitch.conf</filename> file so that
 		the <constant>hosts:</constant> entry looks like this:
@@ -640,7 +629,7 @@ hosts:	files wins
 	</procedure>
 
 <smbconfexample id="acct2conf">
-<title>Accounting Office Network &smb.conf; File &smbmdash; [global] Section</title>
+<title>Accounting Office Network &smb.conf; File &smbmdash; [globals] Section</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
@@ -711,11 +700,9 @@ hosts:	files wins
 		</para>
 
 		<procedure>
-		<title>Validation Steps</title>
 
-	  <step><para><indexterm>
-		<primary>testparm</primary>
-	      </indexterm>
+			<step><para>
+			<indexterm><primary>testparm</primary></indexterm>
 			If your &smb.conf; file has bogus options or parameters, this may cause Samba
 			to refuse to start. The first step should always be to validate the contents
 			of this file by running:
@@ -761,18 +748,14 @@ Loaded services file OK.
 Unknown parameter encountered: "dogbert"
 Ignoring unknown parameter "dogbert"
 </screen>
-			Clear away all errors before proceeding and start or restart samba as necessary.
+			Clear away all errors before proceeding, and start or restart samba as necessary.
 			</para></step>
 
 			<step><para>
-	      <indexterm><primary>check samba
-		  daemons</primary></indexterm><indexterm>
-		<primary>nmbd</primary>
-	      </indexterm><indexterm>
-		<primary>smbd</primary>
-	      </indexterm><indexterm>
-		<primary>winbindd</primary>
-	      </indexterm>
+			<indexterm><primary>check samba daemons</primary></indexterm>
+			<indexterm><primary>nmbd</primary></indexterm>
+			<indexterm><primary>smbd</primary></indexterm>
+			<indexterm><primary>winbindd</primary></indexterm>
 			Check that the Samba server is running:
 <screen>
 &rootprompt; ps ax | grep mbd
@@ -784,8 +767,8 @@ $rootprompt; ps ax | grep winbind
 14293 ?        S     0:00 /usr/sbin/winbindd -B
 14295 ?        S     0:00 /usr/sbin/winbindd -B
 </screen>
-			The <command>winbindd</command> daemon is running in split mode (normal) so there are also
-			two instances of it. For more information regarding winbindd, see <emphasis>TOSHARG</emphasis>,
+			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
+			two instances of it. For more information regarding <command>winbindd</command>, see <emphasis>TOSHARG</emphasis>,
 			Chapter 22, Section 22.3. The single instance of <command>smbd</command> is normal.
 			</para></step>
 	
@@ -816,22 +799,20 @@ $rootprompt; ps ax | grep winbind
 </screen>
 			This demonstrates that an anonymous listing of shares can be obtained. This is the equivalent
 			of browsing the server from a Windows client to obtain a list of shares on the server.
-			The <constant>-U%</constant> argument means, send a "<constant>NULL</constant> username and
-			a <constant>NULL</constant> password."
+			The <constant>-U%</constant> argument means to send a <constant>NULL</constant> username and
+			a <constant>NULL</constant> password.
 			</para></step>
 
 			<step><para>
 			<indexterm><primary>dhcp client validation</primary></indexterm>
-	      <indexterm><primary>printer
-		  validation</primary></indexterm><indexterm>
-		<primary>/etc/dhcpd.conf</primary>
-	      </indexterm>
+			<indexterm><primary>printer validation</primary></indexterm>
+			<indexterm><primary>/etc/dhcpd.conf</primary></indexterm>
 			Verify that the printers have the IP addresses assigned in the DHCP server configuration file.
 			The easiest way to do this is to ping the printer name. Immediately after the ping response
 			has been received, execute <command>arp -a</command> to find the MAC address of the printer
 			that has responded. Now you can compare the IP address and the MAC address of the printer
 			with the configuration information in the <filename>/etc/dhcpd.conf</filename> file. They
-			should, of course, match. For example:
+			should, of course, match. For example,
 <screen>
 &rootprompt; ping hplj4
 PING hplj4 (192.168.1.11) 56(84) bytes of data.
@@ -841,7 +822,7 @@ PING hplj4 (192.168.1.11) 56(84) bytes of data.
 hplj4 (192.168.1.11) at 08:00:46:7A:35:E4 [ether] on eth0
 </screen>
 			The MAC address <constant>08:00:46:7A:35:E4</constant> matches that specified for the
-			IP address from which the printer has responded and with the entry for it in the
+			IP address from which the printer has responded and the entry for it in the
 			<filename>/etc/dhcpd.conf</filename> file.
 			</para></step>
 	
@@ -883,10 +864,10 @@ smb: \> q
 
 		<step><para>
 		Join the Windows Domain called <constant>BILLMORE</constant>. Use the Domain Administrator
-		user name <constant>root</constant> and the SMB password you assigned to this account.
+		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in <link linkend="domjoin"/>. 
-		Reboot the machine as prompted and then logon using a Domain User account.
+		a Windows Domain is given in Appendix A, <link linkend="domjoin"/>. 
+		Reboot the machine as prompted and then log on using a Domain User account.
 		</para></step>
 
 		<step><para>
@@ -898,7 +879,7 @@ smb: \> q
 		</para></step>
 
 		<step><para>
-		Instruct all users to log onto the workstation using their assigned user name and password.
+		Instruct all users to log onto the workstation using their assigned username and password.
 		</para></step>
 
 		<step><para>
@@ -906,8 +887,6 @@ smb: \> q
 		</para>
 
 			<procedure>
-			<title>Printer Installation</title>
-
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
@@ -920,14 +899,14 @@ smb: \> q
 				</para></step>
 
 				<step><para>
-				Click <guibutton>Next</guibutton>. In the panel labeled
-				<guimenuitem>Manufacturer:</guimenuitem>, select <constant>HP</constant>.
+				Click <guibutton>Next</guibutton>. In the
+				<guimenuitem>Manufacturer:</guimenuitem> panel, select <constant>HP</constant>.
 				In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
 				<constant>HP LaserJet 4</constant>. Click <guibutton>Next</guibutton>.
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Available ports:</guimenuitem>, select
+				In the <guimenuitem>Available ports:</guimenuitem> panel, select
 				<constant>FILE:</constant>. Accept the default printer name by clicking
 				<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
 				test page?</quote>, click <guimenuitem>No</guimenuitem>. Click
@@ -945,7 +924,7 @@ smb: \> q
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Network</guimenuitem>, enter the name of
+				In the <guimenuitem>Network</guimenuitem> panel, enter the name of
 				the print queue on the Samba server as follows: <constant>\\SERVER\hplj4</constant>.
 				Click <menuchoice> 
 					<guibutton>OK</guibutton>
@@ -971,10 +950,10 @@ smb: \> q
 	</para>
 
 	<para>
-	By creating a local machine account that has the same user name and password as you create for that
+	By creating a local machine account that has the same username and password as you create for that
 	user in the Windows Domain environment, the user can log onto the machine locally and still
 	transparently access network resources as if logged onto the domain itself. There are some trade-offs
-	that mean that as the network is more tightly secured it becomes necessary to modify Windows client
+	that mean that as the network is more tightly secured, it becomes necessary to modify Windows client
 	configuration somewhat.
 	</para>
 
@@ -984,16 +963,16 @@ smb: \> q
 		<title>Key Points Learned</title>
 
 		<para>
-		In this network design and implementation exercise, you have created a Windows NT4 style Domain
-		Controller using Samba-3.0.20. As a result of following these guidelines meant that you experienced
-		and implemented several important aspects of Windows networking. In the next chapter of this book,
-		you build on the experience gained. These are the highlights from this chapter:
+		In this network design and implementation exercise, you created a Windows NT4-style Domain
+		Controller using Samba-3.0.20. Following these guidelines, you experienced
+		and implemented several important aspects of Windows networking. In the next chapter,
+		you build on the experience. These are the highlights from this chapter:
 		</para>
 
 		<itemizedlist>
 			<listitem><para>
 			<indexterm><primary>DHCP</primary></indexterm>
-			You implemented a DHCP Server and Microsoft Windows clients were able to obtain all necessary
+			You implemented a DHCP server, and Microsoft Windows clients were able to obtain all necessary
 			network configuration settings from this server.
 			</para></listitem>
 
@@ -1070,7 +1049,7 @@ smb: \> q
 		Yes. The configuration you created automatically provides each client with the IP address
 		of your WINS server. It also configures the client to preferentially register NetBIOS names
 		with the WINS server, and then instructs the client to first query the WINS server when a
-		NetBIOS machine name needs to be resolved to an IP Address. This means that this configuration
+		NetBIOS machine name needs to be resolved to an IP Address. This configuration
 		results in far lower UDP broadcast traffic than would be the case if WINS was not used.
 		</para>
 
@@ -1088,7 +1067,7 @@ smb: \> q
 	<answer>
 
 		<para>
-		You can surely create a Windows Domain Account called <constant>Administrator</constant>. It is also
+		You can surely create a Windows Domain account called <constant>Administrator</constant>. It is also
 		possible to map that account so that it has the effective UNIX UID of 0. This way it isn't
 		necessary to use the <parameter>username map</parameter> facility to map this account to the UNIX
 		account called <constant>root</constant>.
@@ -1109,10 +1088,10 @@ smb: \> q
 
 		<para>
 		The Windows Domain <constant>Administrator</constant> account is the most privileged account that
-		exists on the Windows platform. This user can change any setting, add/delete or modify user
+		exists on the Windows platform. This user can change any setting, add, delete, or modify user
 		accounts, and completely reconfigure the system. The equivalent to this account in the UNIX
 		environment is the <constant>root</constant> account. If you want to permit the Windows Domain
-		Administrator to manage accounts, as well as permissions, privileges, and security
+		Administrator to manage accounts as well as permissions, privileges, and security
 		settings within the Domain and on the Samba server, equivalent rights must be assigned. This is
 		achieved with the <constant>root</constant> UID equal to 0.
 		</para>
@@ -1134,7 +1113,7 @@ smb: \> q
 		<para>
 		Users who are members of the <constant>Domain Admins</constant> group can add machines to the
 		Domain. This group is mapped to the UNIX group account called <constant>root</constant>
-		(or equivalent on <constant>wheel</constant> on some UNIX systems) that has a GID of 0.
+		(or the equivalent <constant>wheel</constant> on some UNIX systems) that has a GID of 0.
 		This must be the primary GID of the account of the user who is a member of the Windows <constant>
 		Domain Admins</constant> account.
 		</para>
@@ -1154,8 +1133,8 @@ smb: \> q
 
 		<para>
 		Samba-3 does not permit a Domain Group to become visible to Domain network clients unless the account
-		has a UNIX group account equivalent. The Domain groups that should be given UNIX equivalents are:
-		<guimenu>Domain Guests, Domain Users, Domain Admins</guimenu>.
+		has a UNIX group account equivalent. The Domain groups that should be given UNIX equivalents are
+		<guimenu>Domain Guests</guimenu>, <guimenu>Domain Users</guimenu>, and <guimenu>Domain Admins</guimenu>.
 		</para>
 
 	</answer>
@@ -1172,12 +1151,10 @@ smb: \> q
 	<answer>
 
 		<para>
-		This is a nasty problem. Fortunately, here is a solution. 
+		This is a nasty problem. Fortunately, there is a solution. 
 		</para>
 
 		<procedure>
-		<title>Re-creating the Samba <constant>root</constant> Account</title>
-
 			<step><para>
 			Back up your existing configuration files in case you need to restore them.
 			</para></step>
@@ -1223,23 +1200,23 @@ smb: \> q
 	<question>
 
 		<para>
-		What is the effect of changing the name of a Samba server, or of changing the Domain name?
+		What is the effect of changing the name of a Samba server or of changing the Domain name?
 		</para>
 
 	</question>
 	<answer>
 
 		<para>
-		In the event that you elect to change the name of the Samba server, on restarting <command>smbd</command>,
-		Windows security identifiers are changed. In the case of a Stand-Alone server or a Domain Member server,
-		the machine SID is changed. This may break Domain Membership. In the case of a change of the Domain name
-		(Workgroup name), the Domain SID is changed. This affects all Domain Memberships.
+		If you elect to change the name of the Samba server, on restarting <command>smbd</command>,
+		Windows security identifiers are changed. In the case of a standalone server or a Domain Member server,
+		the machine SID is changed. This may break Domain membership. In the case of a change of the Domain name
+		(Workgroup name), the Domain SID is changed. This affects all Domain memberships.
 		</para>
 
 		<para>
-		If it becomes necessary to change either the Server name or the Domain name, be sure to back up the respective
-		SID before the change is made. You can back up the SID from use of the <command>net getlocalsid</command> (Samba-3),
-		or by way of the <command>smbpasswd</command> (Samba-2.2.x). To change the SID, you use the same tool. Be sure
+		If it becomes necessary to change either the server name or the Domain name, be sure to back up the respective
+		SID before the change is made. You can back up the SID using the <command>net getlocalsid</command> (Samba-3)
+		or the <command>smbpasswd</command> (Samba-2.2.x). To change the SID, you use the same tool. Be sure
 		to check the man page for this command for detailed instructions regarding the steps involved.
 		</para>
 
@@ -1257,10 +1234,10 @@ smb: \> q
 	<answer>
 
 		<para>
-		Samba-3 implements a Windows NT4 style security domain architecture. This type of Domain cannot
+		Samba-3 implements a Windows NT4-style security domain architecture. This type of Domain cannot
 		be managed using tools present on a Windows XP Professional installation. You may download from the
 		Microsoft Web site the SRVTOOLS.EXE package. Extract it into the directory from which you wish to use
-		it. This package extracts the tools known as: <command>User Manager for Domains, Server Manager, Event
+		it. This package extracts the tools: <command>User Manager for Domains</command>, <command>Server Manager</command>, and <command>Event
 		Viewer</command>. You may use the <guimenu>User Manager for Domains</guimenu> to manage your Samba-3
 		Domain user and group accounts. Of course, you do need to be logged on as the <constant>Administrator</constant>
 		for the Samba-3 Domain. It may help to log on as the <constant>root</constant> account.

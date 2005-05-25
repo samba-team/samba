@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="Big500users">
-  <title>The 500 User Office</title>
+  <title>The 500-User Office</title>
 
 	<para>
-	The Samba-3 networking you explored in the previous chapter covers the finer points of 
+	The Samba-3 networking you explored in <link linkend="secure"/> covers the finer points of 
 	configuration of peripheral services such as DHCP and DNS, and WINS. You experienced
 	implementation of a simple configuration of the services that are important adjuncts 
 	to successful deployment of Samba. 
@@ -12,7 +12,7 @@
 
 	<para>
 	An analysis of the history of postings to the Samba mailing list easily demonstrates 
-	that the two most prevalent Samba problem areas are:
+	that the two most prevalent Samba problem areas are
 	</para>
 
 	<itemizedlist>
@@ -27,23 +27,20 @@
 	</itemizedlist>
 
 	<para>
-	The next chapter deals with more complex printing configurations. The exercises
+	The exercises
 	so far in this book have focused on implementation of the simplest printing processes
 	involving  no print job processing intelligence. In this chapter, you maintain 
-	that same approach to printing, but in the following chapter, there is an opportunity 
+	that same approach to printing, but <link linkend="happy"/> presents an opportunity 
 	to make printing more complex for the administrator while making it easier for the user.
 	</para>
 
-    <para><indexterm>
-	<primary>WINS server</primary>
-      </indexterm><indexterm>
-	<primary>tdbsam</primary>
-      </indexterm><indexterm>
-	<primary>passdb backend</primary>
-      </indexterm>
-	The previous chapter demonstrates operation of a DHCP server and a DNS server, 
+	<para>
+	<indexterm><primary>WINS server</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<link linkend="secure"/> demonstrates operation of a DHCP server and a DNS server 
 	as well as a central WINS server. You validated the operation of these services and
-	saw an effective implementation of a Samba Domain Controller using the 
+	saw an effective implementation of a Samba domain controller using the 
 	<parameter>tdbsam</parameter> passdb backend.
 	</para>
 
@@ -51,14 +48,14 @@
 	The objective of this chapter is to introduce more complex techniques that can be used to
 	improve manageability of Samba as networking needs grow. In this chapter, you implement
 	a distributed DHCP server environment, a distributed DNS server arrangement, a centralized
-	WINS server, and a centralized Samba Domain Controller.
+	WINS server, and a centralized Samba domain controller.
 	</para>
 
 	<para>
 	A note of caution is important regarding the Samba configuration that is used in this
-	chapter. The use of a single Domain Controller on a routed, multi-segment network is 
-	a poor design choice that leads to potential network user complaints. As stated 
-	in the paragraph above, the objective in this chapter is to demonstrate some successful 
+	chapter. The use of a single domain controller on a routed, multisegment network is 
+	a poor design choice that leads to potential network user complaints. 
+	This chapter demonstrates some successful 
 	techniques in deployment and configuration management. This should be viewed as a 
 	foundation chapter for complex Samba deployments.
 	</para>
@@ -76,25 +73,25 @@
 	<para>
 	Business continues to go well for Abmas. Mr. Meany is driving your success and the
 	network continues to grow thanks to the hard work Christine has done. You recently
-	hired Stanley Soroka as Manager of Information Systems. Christine recommended Stan
+	hired Stanley Soroka as manager of information systems. Christine recommended Stan
 	to the role. She told you Stan is so good at handling Samba that he can make a cast
 	iron rocking horse that is embedded in concrete kick like a horse at a rodeo. You
 	need skills like his. Christine and Stan get along just fine. Let's see what 
-	you can get out of this pair as they plot the next generation networks.
+	you can get out of this pair as they plot the next-generation networks.
 	</para>
 
 	<para>
 	Ten months ago Abmas closed an acquisition of a property insurance business. The
-	founder lost interest in the business and decided to sell it to Mr. Meany.
-	Because they were former university classmates, the purchase was concluded with mutual assent. The
-	acquired business is located at the other end of town in much larger facilities.
-	The old Abmas building has become too small. Located on the same campus as the
-	newly acquired business are two empty buildings that are ideal to provide
-	Abmas with opportunity for growth.
+	founder lost interest in the business and decided to sell it to Mr. Meany.  Because
+	they were former university classmates, the purchase was concluded with mutual assent.
+	The acquired business is located at the other end of town in much larger facilities.
+	The old Abmas building has become too small. Located on the same campus as the newly
+	acquired business are two empty buildings that are ideal to provide Abmas with
+	opportunity for growth.
 	</para>
 
 	<para>
-	Abmas has now completed the purchase of the two empty buildings and you are
+	Abmas has now completed the purchase of the two empty buildings, and you are
 	to install a new network and relocate staff in nicely furnished new facilities.
 	The new network is to be used to fully integrate company operations. You have
 	decided to locate the new network operations control center in the larger building
@@ -131,15 +128,15 @@
 		</para>
 
 		<para>
-		The Internet gateway is upgraded to 15 Megabit/sec service. Your ISP
+		The Internet gateway is upgraded to 15 Mb/sec service. Your ISP
 		provides on your premises a fully managed Cisco PIX firewall. You no longer need
 		to worry about firewall facilities on your network.
 		</para>
 
 		<para>
-		Stanley Soroka and Christine have purchased new server hardware. Christine wants to
+		Stanley and Christine have purchased new server hardware. Christine wants to
 		roll out a network that has whistles and bells. Stan wants to start off with
-		a simple to manage, not-too-complex network. He is of the opinion that network
+		a simple to manage, not-too-complex network. He believes that network
 		users need to be gradually introduced to new features and capabilities and not
 		rushed into an environment that may cause disorientation and loss of productivity.
 		</para>
@@ -149,8 +146,8 @@
 		that closely mirrors the successful system you installed in the old Abmas building.
 		The new network infrastructure is owned by Abmas, but all desktop systems
 		are being procured through a new out-source services and leasing company. Under
-		the terms of a deal with Mr. M. Proper (CEO), DirectPointe Inc., provides
-		all desktop systems and includes full level-one Help desk support for 
+		the terms of a deal with Mr. M. Proper (CEO), DirectPointe, Inc., provides
+		all desktop systems and includes full level-one help desk support for 
 		a flat per-machine monthly fee. The deal allows you to add workstations on demand.
 		This frees Stan and Christine to deal with deeper issues as they emerge and 
 		permits Stan to work on creating new future value-added services.
@@ -165,14 +162,14 @@
 	<para><indexterm>
 	    <primary>PDC</primary>
 	  </indexterm>
-		The new network has a single Samba Domain Controller (PDC) located in the
+		The new network has a single Samba Primary Domain Controller (PDC) located in the
 		Network Operation Center (NOC). Buildings 1 and 2 each have a local server
-		for local application servicing. It is a Domain Member. The new system
+		for local application servicing. It is a domain member. The new system
 		uses the <parameter>tdbsam</parameter> passdb backend.
 		</para>
 
 		<para>
-		Printing is based on raw pass-through facilities as it has been used so far.
+		Printing is based on raw pass-through facilities just as it has been used so far.
 		All printer drivers are installed on the desktop and notebook computers.
 		</para>
 
@@ -184,16 +181,16 @@
 
 	<para>
 	<indexterm><primary>network load factors</primary></indexterm>
-	The example you are building in this chapter is an example of a network design that works,
-	but this does not make it a design that is recommended. As a general rule, there should
-	be at least one Backup Domain Controller per 150 Windows network clients. The principle behind
-	this recommendation is the fact that correct operation of MS Windows clients requires rapid
+	The example you are building in this chapter is of a network design that works, but this
+	does not make it a design that is recommended. As a general rule, there should be at least
+	one Backup Domain Controller (BDC) per 150 Windows network clients. The principle behind
+	this recommendation is that correct operation of MS Windows clients requires rapid
 	network response to all SMB/CIFS requests. The same rule says that if there are more than
-	50 clients per Domain Controller they are too busy to service requests. Let's put such
-	rules aside and recognize that network load affects the integrity of Domain Controller
-	responsiveness. This network will have 500 clients serviced by one central Domain
-	Controller. This is not a good omen for user satisfaction. You, of course, address this
-	very soon (see next chapter).
+	50 clients per domain controller, they are too busy to service requests. Let's put such
+	rules aside and recognize that network load affects the integrity of domain controller
+	responsiveness. This network will have 500 clients serviced by one central domain
+	controller. This is not a good omen for user satisfaction. You, of course, address this
+	very soon (see <link linkend="happy"/>).
 	</para>
 
 	<sect2>
@@ -205,7 +202,7 @@
 		</para>
 
 		<para>
-		Design decisions made in this design include:
+		Design decisions made in this design include the following:
 		</para>
 
 		<itemizedlist>
@@ -213,29 +210,28 @@
 			<indexterm><primary>PDC</primary></indexterm>
 			<indexterm><primary>LDAP</primary></indexterm>
 			<indexterm><primary>identity management</primary></indexterm>
-			A single Primary Domain Controller (PDC) is being implemented. This limitation
-			is based on the choice not to use LDAP. Many network administrators fear using
-			LDAP based on the perceived complexity of implementation and management of an
-			LDAP-based backend for all user identity management as well as to store network	
-			access credentials.
+			A single PDC is being implemented. This limitation is based on the choice not to
+			use LDAP. Many network administrators fear using LDAP because of the perceived
+			complexity of implementation and management of an LDAP-based backend for all user
+			identity management as well as to store network access credentials.
 			</para></listitem>
 
 			<listitem><para>
 			<indexterm><primary>BDC</primary></indexterm>
 			<indexterm><primary>machine secret password</primary></indexterm>
-			Because of the refusal to use an LDAP (ldapsam) passdb backend at this time,
-			the only choice that makes sense with 500 users is to use the tdbsam passwd backend.
-			This type of backend is not receptive to replication to Backup Domain Controllers.
-			If the tdbsam <filename>passdb.tdb</filename> file is replicated to Backup Domain
-			Controllers (BDCs) using <command>rsync</command>, there are two potential problems:
-			1) Data that is in memory but not yet written to disk will not be replicated,
-			and 2) Domain Member machines periodically change the secret machine password. When
-			this happens, there is no mechanism to return the changed password to the PDC.
+			Because of the refusal to use an LDAP (ldapsam) passdb backend at this time, the
+			only choice that makes sense with 500 users is to use the tdbsam passwd backend. 
+			This type of backend is not receptive to replication to BDCs.  If the tdbsam
+			<filename>passdb.tdb</filename> file is replicated to BDCs using
+			<command>rsync</command>, there are two potential problems: (1) data that is in
+			memory but not yet written to disk will not be replicated, and (2) domain member
+			machines periodically change the secret machine password. When this happens, there
+			is no mechanism to return the changed password to the PDC.
 			</para></listitem>
 
 			<listitem><para>
-			All Domain user, group, and machine accounts are managed on the PDC. This makes
-			for a simple mode of operation, but has to be balanced with network performance and
+			All domain user, group, and machine accounts are managed on the PDC. This makes
+			for a simple mode of operation but has to be balanced with network performance and
 			integrity of operations considerations.
 			</para></listitem>
 
@@ -250,14 +246,14 @@
 			</para></listitem>
 
 			<listitem><para>
-			At this time the Samba WINS database is not capable of being replicated. That is
+			At this time the Samba WINS database cannot be replicated. That is
 			why a single WINS server is being implemented. This should work without a problem.
 			</para></listitem>
 
 			<listitem><para>
 			<indexterm><primary>winbindd</primary></indexterm>
-			Backup Domain Controllers make use of <command>winbindd</command> to provide
-			access to Domain security credentials for file system access and object storage.
+			BDCs make use of <command>winbindd</command> to provide
+			access to domain security credentials for file system access and object storage.
 			</para></listitem>
 
 			<listitem><para>
@@ -271,15 +267,15 @@
 			</para></listitem>
 
 			<listitem><para>
-			All network users are granted the ability to print to any printer that is network
-			attached. All printers are available from each server. Print jobs that are spooled
-			to a printer that is not on the local network segment are automatically routed to
-			the print spooler that is in control of that printer. The specific details of how this
-			might be done is demonstrated for one example only.
+			All network users are granted the ability to print to any printer that is
+			network-attached. All printers are available from each server. Print jobs that
+			are spooled to a printer that is not on the local network segment are automatically
+			routed to the print spooler that is in control of that printer. The specific details
+			of how this might be done are demonstrated for one example only.
 			</para></listitem>
 
 			<listitem><para>
-			The network address and sub-netmask chosen provide 1022 usable IP addresses in
+			The network address and subnetmask chosen provide 1022 usable IP addresses in
 			each subnet. If in the future more addresses are required, it would make sense
 			to add further subnets rather than change addressing.
 			</para></listitem>
@@ -294,10 +290,10 @@
 
 		<para>
 		This case gets close to the real world. You and I know the right way to implement
-		Domain Control. Politically, we have to navigate a mine field. In this case, the need is to
+		domain control. Politically, we have to navigate a minefield. In this case, the need is to
 		get the PDC rolled out in compliance with expectations and also to be ready to save the day
 		by having the real solution ready before it is needed. That real solution is presented in
-		the next chapter.
+		Chapter 5.
 		</para>
 
 	</sect2>
@@ -328,7 +324,7 @@
 	</para>
 
 	<para>
-	The abbreviation shown in this table as <constant>{VLN}</constant> means
+	The abbreviation shown in this table as <constant>{VLN}</constant> refers to
 	the directory location beginning with <filename>/var/lib/named</filename>.
 	</para>
 
@@ -494,15 +490,13 @@
 	</sect2>
 
 	<sect2>
-	<title>Server Preparation &smbmdash; All Servers</title>
+	<title>Server Preparation: All Servers</title>
 
 	<para>
 	The following steps apply to all servers. Follow each step carefully.
 	</para>
 
 		<procedure>
-		<title>Server Preparation Steps</title>
-
 			<step><para>
 			Using the UNIX/Linux system tools, set the name of the server as shown in the network
 			topology diagram in <link linkend="chap05net"/>. For SUSE Linux products, the tool
@@ -548,14 +542,14 @@ nameserver 127.0.0.1
 	      <indexterm><primary>administrator</primary></indexterm><indexterm>
 		<primary>smbpasswd</primary>
 	      </indexterm>
-			Add the <constant>root</constant> user to the password backend as follows:
+			Add the <constant>root</constant> user to the password backend:
 <screen>
 &rootprompt; smbpasswd -a root
 New SMB password: XXXXXXXX
 Retype new SMB password: XXXXXXXX
 &rootprompt;
 </screen>
-			The <constant>root</constant> account is the UNIX equivalent of the Windows Domain Administrator.
+			The <constant>root</constant> account is the UNIX equivalent of the Windows domain administrator.
 			This account is essential in the regular maintenance of your Samba server. It must never be
 			deleted. If for any reason the account is deleted, you may not be able to recreate this account
 			without considerable trouble.
@@ -593,14 +587,14 @@ root = Administrator
 			</para></step>
 
 			<step><para>
-			Configure all network attached printers to have a fixed IP address.
+			Configure all network-attached printers to have a fixed IP address.
 			</para></step>
 
 			<step><para>
 			Create an entry in the DNS database on the server <constant>MASSIVE</constant>
 			in both the forward lookup database for the zone <constant>abmas.biz.hosts</constant>
 			and in the reverse lookup database for the network segment that the printer is
-			located in. Example configuration files for similar zones were presented in
+			located in. Example configuration files for similar zones were presented in Chapter 3,
 			<link linkend="abmasbiz"/> and <link linkend="eth2zone"/>.
 			</para></step>
 
@@ -621,7 +615,7 @@ root = Administrator
 </screen>
 			<indexterm><primary>print filter</primary></indexterm>
 			This step creates the necessary print queue to use no assigned print filter. This
-			is ideal for raw printing, i.e., printing without use of filters.
+			is ideal for raw printing, that is, printing without use of filters.
 			The name <parameter>printque</parameter> is the name you have assigned for
 			the particular printer.
 			</para></step>
@@ -671,7 +665,7 @@ application/octet-stream
 			</para></step>
 
 			<step><para>
-			As part of the rollout program, you need to configure the application's
+			As part of the roll-out program, you need to configure the application's
 			server shares. This can be done once on the central server and may then be
 			replicated using a tool such as <command>rsync</command>. Refer to the man
 			page for <command>rsync</command> for details regarding use. The notes in	
@@ -682,8 +676,8 @@ application/octet-stream
 		</procedure>
 
 	<note><para>
-	Logon scripts that are run from a Domain Controller (PDC or BDC) are capable of using semi-intelligent
-	processes to auto-map Windows client drives to an application server that is nearest to the client. This
+	Logon scripts that are run from a domain controller (PDC or BDC) are capable of using semi-intelligent
+	processes to automap Windows client drives to an application server that is nearest to the client. This
 	is considerably more difficult when a single PDC is used on a routed network. It can be done, but not
 	as elegantly as you see in the next chapter.
 	</para></note>
@@ -691,7 +685,7 @@ application/octet-stream
 	</sect2>
 
 	<sect2>
-	<title>Server Specific Preparation</title>
+	<title>Server-Specific Preparation</title>
 
 	<para>
 	There are some steps that apply to particular server functionality only. Each step is critical
@@ -702,13 +696,11 @@ application/octet-stream
 		<title>Configuration for Server: <constant>MASSIVE</constant></title>
 
 		<procedure>
-		<title>Function Specific Configuration Steps</title>
-
 			<step><para>
 			<indexterm><primary>/etc/rc.d/boot.local</primary></indexterm>
 			<indexterm><primary>IP forwarding</primary></indexterm>
 			The host server acts as a router between the two internal network segments as well
-			as for all Internet access. This necessitates that IP forwarding must be enabled. This can be
+			as for all Internet access. This necessitates that IP forwarding be enabled. This can be
 			achieved by adding to the <filename>/etc/rc.d/boot.local</filename> an entry as follows:
 <screen>
 echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -718,9 +710,9 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 			</para></step>
 
 			<step><para>
-			This server is dual hosted (i.e., has two network interfaces) &smbmdash; one goes to the Internet,
+			This server is dual hosted (i.e., has two network interfaces) &smbmdash; one goes to the Internet
 			and the other to a local network that has a router that is the gateway to the remote networks.
-			You must, therefore, configure the server with route table entries so that it can find machines
+			You must therefore configure the server with route table entries so that it can find machines
 			on the remote networks. You can do this using the appropriate system tools for your Linux
 			server or using static entries that you place in one of the system startup files. It is best
 			to always use the tools that the operating system vendor provided. In the case of SUSE Linux, the
@@ -749,40 +741,40 @@ hosts:      files dns wins
 
 			<step><para>
 			<indexterm><primary>initGrps.sh</primary></indexterm>
-			Create and map Windows Domain Groups to UNIX groups. A sample script is provided in
+			Create and map Windows domain groups to UNIX groups. A sample script is provided in
 			<link linkend="ch5-initgrps"/>. Create a file containing this script. You called yours
 			<filename>/etc/samba/initGrps.sh</filename>. Set this file so it can be executed
 			and then execute the script. An example of the execution of this script as well as its
-			validation are shown in Chapter 4, Section 4.3.2, Step 5.
+			validation are shown in Section 4.3.2, Step 5.
 			</para></step>
 
 			<step><para>
 			<indexterm><primary>/etc/passwd</primary></indexterm>
 			<indexterm><primary>password</primary><secondary>backend</secondary></indexterm>
 			<indexterm><primary>smbpasswd</primary></indexterm>
-			For each user who needs to be given a Windows Domain account, make an entry in the
-			<filename>/etc/passwd</filename> file, as well as in the Samba password backend.
-			Use the system tool of your choice to create the UNIX system account and use the Samba
-			<command>smbpasswd</command> to create a Domain user account.
+			For each user who needs to be given a Windows domain account, make an entry in the
+			<filename>/etc/passwd</filename> file as well as in the Samba password backend.
+			Use the system tool of your choice to create the UNIX system account, and use the Samba
+			<command>smbpasswd</command> to create a domain user account.
 			</para>
 
 			<para>
 			<indexterm><primary>useradd</primary></indexterm>
 			<indexterm><primary>adduser</primary></indexterm>
 			<indexterm><primary>user</primary><secondary>management</secondary></indexterm>
-			There are a number of tools for user management under UNIX. Commonly known ones include:
-			<command>useradd, adduser</command>. In addition to these, there is a plethora of custom
+			There are a number of tools for user management under UNIX, such as
+			<command>useradd</command>, <command>adduser</command>, as well as a plethora of custom
 			tools. With the tool of your choice, create a home directory for each user.
 			</para></step>
 
 			<step><para>
 			Using the preferred tool for your UNIX system, add each user to the UNIX groups created
-			previously as necessary. File system access control based on UNIX group membership.
+			previously as necessary. File system access control is based on UNIX group membership.
 			</para></step>
 
 			<step><para>
-			Create the directory mount point for the disk sub-system that is to be mounted to provide
-			data storage for company files. In this case, the mount point indicated in the &smb.conf;
+			Create the directory mount point for the disk subsystem that is to be mounted to provide
+			data storage for company files, in this case, the mount point indicated in the &smb.conf;
 			file is <filename>/data</filename>. Format the file system as required and mount the formatted
 			file system partition using appropriate system tools.
 			</para></step>
@@ -813,8 +805,8 @@ hosts:      files dns wins
 			The &smb.conf; file specifies an infrastructure to support roaming profiles and network
 			logon services. You can now create the file system infrastructure to provide the
 			locations on disk that these services require. Adequate planning is essential
-			since desktop profiles can grow to be quite large. For planning purposes, a minimum of
-			200 Megabytes of storage should be allowed per user for profile storage. The following
+			because desktop profiles can grow to be quite large. For planning purposes, a minimum of
+			200 MB of storage should be allowed per user for profile storage. The following
 			commands create the directory infrastructure needed:
 <screen>
 &rootprompt; mkdir -p /var/spool/samba
@@ -842,7 +834,7 @@ hosts:      files dns wins
 net time \\massive /set /yes
 net use h: /home
 </screen>
-			Convert the UNIX file to a DOS file as follows:
+			Convert the UNIX file to a DOS file:
 <screen>
 &rootprompt; dos2unix &lt; /var/lib/samba/netlogon/scripts/logon.bat.unix \
         &gt; /var/lib/samba/netlogon/scripts/logon.bat
@@ -875,7 +867,7 @@ Added user <parameter>username</parameter>.
 			<step><para>
 			Your server is ready for validation testing. Do not proceed with the steps in
 			<link linkend="ch5-domsvrspec"/> until after the operation of the server has been
-			validated following the same methods as outlined in <link linkend="ch4valid"/>.
+			validated following the same methods as outlined in Chapter 3, <link linkend="ch4valid"/>.
 			</para></step>
 
 		</procedure>
@@ -886,8 +878,6 @@ Added user <parameter>username</parameter>.
 		<title>Configuration Specific to Domain Member Servers: <constant>BLDG1, BLDG2</constant></title>
 
 		<procedure>
-		<title>Domain Member Specific Steps</title>
-
                         <step><para>
                         <indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
                         The final step that must be completed is to edit the <filename>/etc/nsswitch.conf</filename> file.
@@ -910,7 +900,7 @@ hosts:      files dns wins
 		  <secondary>rpc</secondary>
 		  <tertiary>join</tertiary>
 		</indexterm>
-			At this time, you must now attempt to join the Domain Member servers to the Domain. The following
+			You must now attempt to join the domain member servers to the domain. The following
 			instructions should be executed to effect this:
 <screen>
 &rootprompt; net rpc join 
@@ -1526,7 +1516,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
         <para>
         <indexterm><primary>/etc/xinetd.d</primary></indexterm>
-        In the event that a service is provided not as a daemon but via the inter-networking
+        In the event that a service is provided not as a daemon but via the internetworking
         super daemon (<command>inetd</command> or <command>xinetd</command>), then the <command>chkconfig</command>
         tool makes the necessary entries in the <filename>/etc/xinetd.d</filename> directory
         and sends a hang-up (HUP) signal to the super daemon, thus forcing it to
@@ -1538,11 +1528,9 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
         </para>
 
         <procedure>
-	<title>Daemon Start-up Steps</title>
-
                 <step><para>
                 Use the standard system tool to configure each service to restart
-                automatically at every system reboot. For example:
+                automatically at every system reboot. For example,
                 <indexterm><primary>chkconfig</primary></indexterm>
 <screen>
 &rootprompt; chkconfig dhpc on
@@ -1581,8 +1569,6 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	</para>
 
 	<procedure>
-	<title>Windows Client Configuration Steps</title>
-
 		<step><para>
 		Install MS Windows XP Professional. During installation, configure the client to use DHCP for 
 		TCP/IP protocol configuration.
@@ -1593,11 +1579,11 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		</para></step>
 
 		<step><para>
-		Join the Windows Domain <constant>MEGANET</constant>. Use the Domain Administrator
-		user name <constant>root</constant> and the SMB password you assigned to this account.
+		Join the Windows domain <constant>MEGANET</constant>. Use the domain administrator
+		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in <link linkend="domjoin"/>. 
-		Reboot the machine as prompted and then logon using the Domain Administrator account
+		a Windows domain is given in Appendix A, <link linkend="domjoin"/>. 
+		Reboot the machine as prompted and then log on using the domain administrator account
 		(<constant>root</constant>).
 		</para></step>
 
@@ -1622,21 +1608,19 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		</para></step>
 
 		<step><para>
-		Now install all applications to be installed locally. Typical tools includes: Adobe Acrobat,
+		Now install all applications to be installed locally. Typical tools include Adobe Acrobat,
 		NTP-based time synchronization software, drivers for specific local devices such as fingerprint
 		scanners, and the like. Probably the most significant application to be locally installed
-		is anti-virus software.
+		is antivirus software.
 		</para></step>
 
 		<step><para>
 		Now install all four printers onto the staging system. The printers you install
-		include the Accounting department HP LaserJet 6 and Minolta QMS Magicolor printers, and you
+		include the accounting department HP LaserJet 6 and Minolta QMS Magicolor printers, and you
 		also configure use of the identical printers that are located in the financial services department.
 		Install printers on each machine using the following steps:
 
 			<procedure>
-			<title>Printer Confuiguration Steps</title>
-
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
@@ -1649,14 +1633,14 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 				</para></step>
 
 				<step><para>
-				Click <guibutton>Next</guibutton>. In the panel labeled
-				<guimenuitem>Manufacturer:</guimenuitem>, select <constant>HP</constant>.
+				Click <guibutton>Next</guibutton>. In the
+				<guimenuitem>Manufacturer:</guimenuitem> panel, select <constant>HP</constant>.
 				In the <guimenuitem>Printers:</guimenuitem> panel, select the printer called
 				<constant>HP LaserJet 6</constant>. Click <guibutton>Next</guibutton>.
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Available ports:</guimenuitem>, select
+				In the <guimenuitem>Available ports:</guimenuitem> panel, select
 				<constant>FILE:</constant>. Accept the default printer name by clicking
 				<guibutton>Next</guibutton>. When asked, <quote>Would you like to print a
 				test page?</quote>, click <guimenuitem>No</guimenuitem>. Click
@@ -1674,7 +1658,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 				</para></step>
 
 				<step><para>
-				In the panel labeled <guimenuitem>Network</guimenuitem>, enter the name of
+				In the <guimenuitem>Network</guimenuitem> panel, enter the name of
 				the print queue on the Samba server as follows: <constant>\\BLDG1\hplj6a</constant>.
 				Click <menuchoice> 
 					<guibutton>OK</guibutton>
@@ -1685,8 +1669,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 				<step><para>
 				Repeat the printer installation steps above for both HP LaserJet 6 printers
 				as well as for both QMS Magicolor laser printers. Remember to install all
-				printers, but to set the destination port for each to the server on the
-				local network. For example, a workstation in the Accounting group should
+				printers but to set the destination port for each to the server on the
+				local network. For example, a workstation in the accounting group should
 				have all printers directed at the server <constant>BLDG1</constant>.
 				You may elect to point all desktop workstation configurations at the
 				server called <constant>MASSIVE</constant> and then in your deployment	
@@ -1701,7 +1685,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		When you are satisfied that the staging systems are complete, use the appropriate procedure to
 		remove the client from the domain. Reboot the system, and then log on as the local administrator
 		and clean out all temporary files stored on the system. Before shutting down, use the disk
-		de-fragmentation tool so that the file system is in an optimal condition before replication.
+		defragmentation tool so that the file system is in optimal condition before replication.
 		</para></step>
 
 		<step><para>
@@ -1712,19 +1696,19 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		<step><para>
 		You may now replicate the image using the appropriate Norton Ghost procedure to the target
 		machines. Make sure to use the procedure that ensures each machine has a unique
-		Windows security identifier (SID). When the installation of the disk image has completed, boot the PC. 
+		Windows security identifier (SID). When the installation of the disk image is complete, boot the PC. 
 		</para></step>
 
 		<step><para>
 		Log onto the machine as the local Administrator (the only option), and join the machine to
-		the Domain following the procedure set out in <link linkend="domjoin"/>. You must now set the 
+		the domain following the procedure set out in Appendix A, <link linkend="domjoin"/>. You must now set the 
 		persistent drive mapping to the applications server that the user is to use. The system is now 
-		ready for the user to logon, providing you have created a network logon account for that 
+		ready for the user to log on, provided you have created a network logon account for that 
 		user, of course.
 		</para></step>
 
 		<step><para>
-		Instruct all users to log onto the workstation using their assigned user name and password.
+		Instruct all users to log onto the workstation using their assigned username and password.
 		</para></step>
 	</procedure>
 
@@ -1736,8 +1720,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		<para>
 		The network you have just deployed has been a valuable exercise in forced constraint.
 		You have deployed a network that works well, although you may soon start to see
-		performance problems, at which time the modifications demonstrated in the following
-		chapter bring the network to life. The following key learning points were experienced:
+		performance problems, at which time the modifications demonstrated in
+		Chapter 5 bring the network to life. The following key learning points were experienced:
 		</para>
 
 		<itemizedlist>
@@ -1750,12 +1734,12 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 			</para></listitem>
 
 			<listitem><para>
-			Joining a Samba-3 Domain Member server to a Samba-3 Domain
+			Joining a Samba-3 domain member server to a Samba-3 domain
 			</para></listitem>
 
 			<listitem><para>
-			Configuration of winbind to use Domain Users and Groups for Samba access
-			to resources on the Domain Member servers
+			Configuration of winbind to use domain users and groups for Samba access
+			to resources on the domain member servers
 			</para></listitem>
 
 			<listitem><para>
@@ -1838,7 +1822,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		<para>
 		Replication of the <parameter>tdbsam</parameter> database file can result in loss of currency in its
 		contents between the PDC and BDCs. The most notable symptom is that workstations may not be able
-		to log onto the network following a reboot and may have to re-join the Domain to recover network
+		to log onto the network following a reboot and may have to rejoin the domain to recover network
 		access capability.
 		</para>
 
@@ -1901,7 +1885,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
 		<para>
 		The server called <constant>MASSIVE</constant> is acting as a router to the Internet. No other server
-		(BLDG1 or BLDG2) has any need for IP forwarding since they are attached only to their own network.
+		(BLDG1 or BLDG2) has any need for IP forwarding because they are attached only to their own network.
 		Route table entries are needed to direct MASSIVE to send all traffic intended for the remote network
 		segments to the router that is its gateway to them.
 		</para>
@@ -1931,7 +1915,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	<question>
 
 		<para>
-		On the Domain Member computers, you configured winbind in the <filename>/etc/nsswitch.conf</filename> file.
+		On the domain member computers, you configured winbind in the <filename>/etc/nsswitch.conf</filename> file.
 		You did not configure any PAM settings. Is this an omission?
 		</para>
 
@@ -1940,8 +1924,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
 		<para>
 		PAM is needed only for authentication. When Samba is using Microsoft encrypted passwords, it makes only
-		marginal use of PAM. PAM configuration handles only authentication. If you want to log onto the Domain
-		Member servers using Windows networking user names and passwords, it is necessary to configure PAM
+		marginal use of PAM. PAM configuration handles only authentication. If you want to log onto the domain
+		member servers using Windows networking usernames and passwords, it is necessary to configure PAM
 		to enable the use of winbind. Samba makes use only of the identity resolution facilities of the name
 		service switch (NSS).
 		</para>
@@ -1961,10 +1945,10 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
 		<para>
 		Oh, I did not think you would notice that. It is there so that it can be used. This is more fully discussed
-		in <emphasis>TOSHARG</emphasis>, where it has a full chapter dedicated to the subject. While we are on the 
+		in <emphasis>TOSHARG</emphasis>, which has a full chapter dedicated to the subject. While we are on the 
 		subject, it should be noted that you should definitely not use SWAT on any system that makes use 
 		of &smb.conf; <parameter>include</parameter> files because SWAT optimizes them out into an aggregated 
-		file but leaves in place a broken reference to the top layer include file. SWAT was not designed to 
+		file but leaves in place a broken reference to the top-layer include file. SWAT was not designed to 
 		handle this functionality gracefully.
 		</para>
 
@@ -1975,7 +1959,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	<question>
 
 		<para>
-		The Domain Controller has an auto-shutdown script. Isn't that dangerous?
+		The domain controller has an auto-shutdown script. Isn't that dangerous?
 		</para>
 
 	</question>
