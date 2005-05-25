@@ -1,5 +1,9 @@
 2005-05-25  Dave Love  <fx@gnu.org>
 
+	* kadm5_pwcheck.3: please mdoclint
+
+2005-05-25  Dave Love  <fx@gnu.org>
+
 	* kadm5_pwcheck.3: document kadm5_add_passwd_quality_verifier,
 	improve text
 
