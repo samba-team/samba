@@ -95,6 +95,10 @@ static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
 	}
 
 	while (*s) {
+		if (*s <= 0x1f) {
+			/* Control characters. */
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 		switch(*s) {
 			case UCS2_CHAR('\\'):
 			case UCS2_CHAR('/'):
