@@ -20,35 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-/* -------------------------------------------------------------------------- **
- * Notable problems...
- *
- *  March/April 1998  CRH
- *  - Many of the functions in this module overwrite string buffers passed to
- *    them.  This causes a variety of problems and is, generally speaking,
- *    dangerous and scarry.  See the kludge notes in name_map()
- *    below.
- *  - It seems that something is calling name_map() twice.  The
- *    first call is probably some sort of test.  Names which contain
- *    illegal characters are being doubly mangled.  I'm not sure, but
- *    I'm guessing the problem is in server.c.
- *
- * -------------------------------------------------------------------------- **
- */
-
-/* -------------------------------------------------------------------------- **
- * History...
- *
- *  March/April 1998  CRH
- *  Updated a bit.  Rewrote is_mangled() to be a bit more selective.
- *  Rewrote the mangled name cache.  Added comments here and there.
- *  &c.
- * -------------------------------------------------------------------------- **
- */
-
 #include "includes.h"
-
 
 /* -------------------------------------------------------------------------- **
  * Other stuff...
@@ -67,23 +39,16 @@
  *
  * chartest       - array 0..255.  The index range is the set of all possible
  *                  values of a byte.  For each byte value, the content is a
- *                  two nibble pair.  See BASECHAR_MASK and ILLEGAL_MASK,
- *                  below.
+ *                  two nibble pair.  See BASECHAR_MASK below.
  *
  * ct_initialized - False until the chartest array has been initialized via
  *                  a call to init_chartest().
  *
  * BASECHAR_MASK  - Masks the upper nibble of a one-byte value.
  *
- * ILLEGAL_MASK   - Masks the lower nibble of a one-byte value.
- *
  * isbasecahr()   - Given a character, check the chartest array to see
  *                  if that character is in the basechars set.  This is
  *                  faster than using strchr_m().
- *
- * isillegal()    - Given a character, check the chartest array to see
- *                  if that character is in the illegal characters set.
- *                  This is faster than using strchr_m().
  *
  */
 
@@ -97,9 +62,7 @@ static BOOL          ct_initialized = False;
 
 #define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
-#define ILLEGAL_MASK  0x0f
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
-#define isillegal(C) ( (chartest[ ((C) & 0xff) ]) & ILLEGAL_MASK )
 
 static TDB_CONTEXT *tdb_mangled_cache;
 
@@ -107,17 +70,38 @@ static TDB_CONTEXT *tdb_mangled_cache;
 
 static NTSTATUS has_valid_83_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
 {
-	if (!s || !*s)
+	if (!*s) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	/* CHECK: this should not be necessary if the ms wild chars
-	   are not valid in valid.dat  --- simo */
-	if (!allow_wildcards && ms_has_wild_w(s))
+	if (!allow_wildcards && ms_has_wild_w(s)) {
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	while (*s) {
-		if(!isvalid83_w(*s))
+		if(!isvalid83_w(*s)) {
 			return NT_STATUS_UNSUCCESSFUL;
+		}
+		s++;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, BOOL allow_wildcards)
+{
+	if (!allow_wildcards && ms_has_wild_w(s)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	while (*s) {
+		switch(*s) {
+			case UCS2_CHAR('\\'):
+			case UCS2_CHAR('/'):
+			case UCS2_CHAR('|'):
+			case UCS2_CHAR(':'):
+				return NT_STATUS_UNSUCCESSFUL;
+		}
 		s++;
 	}
 
@@ -156,10 +140,11 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
 
 /* ************************************************************************** **
  * Return NT_STATUS_UNSUCCESSFUL if a name is a special msdos reserved name.
+ * or contains illegal characters.
  *
  *  Input:  fname - String containing the name to be tested.
  *
- *  Output: NT_STATUS_UNSUCCESSFUL, if the name matches one of the list of reserved names.
+ *  Output: NT_STATUS_UNSUCCESSFUL, if the condition above is true.
  *
  *  Notes:  This is a static function called by is_8_3(), below.
  *
@@ -187,6 +172,10 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOO
 		if (!NT_STATUS_IS_OK(ret))
 			return ret;
 	}
+
+	ret = has_illegal_chars(fname, allow_wildcards);
+	if (!NT_STATUS_IS_OK(ret))
+		return ret;
 
 	str = strdup_w(fname);
 	p = strchr_w(str, UCS2_CHAR('.'));
@@ -333,16 +322,13 @@ done:
  */
 static void init_chartest( void )
 {
-	const char          *illegalchars = "*\\/?<>|\":";
 	const unsigned char *s;
   
 	memset( (char *)chartest, '\0', 256 );
 
-	for( s = (const unsigned char *)illegalchars; *s; s++ )
-		chartest[*s] = ILLEGAL_MASK;
-
-	for( s = (const unsigned char *)basechars; *s; s++ )
+	for( s = (const unsigned char *)basechars; *s; s++ ) {
 		chartest[*s] |= BASECHAR_MASK;
+	}
 
 	ct_initialized = True;
 }
@@ -566,7 +552,7 @@ static void to_8_3(char *s, int default_case)
 	p = s;
 
 	while( *p && baselen < 5 ) {
-		if (*p != '.') {
+		if (isbasechar(*p)) {
 			base[baselen++] = p[0];
 		}
 		p++;
