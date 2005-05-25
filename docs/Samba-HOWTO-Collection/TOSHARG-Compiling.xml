@@ -13,7 +13,7 @@
 <title>How to Compile Samba</title>
 
 <para>
-You can obtain the Samba source from the
+You can obtain the Samba source file from the
 <ulink url="http://samba.org/">Samba Website.</ulink> To obtain a development version, 
 you can download Samba from Subversion or using <command>rsync</command>.
 </para>
@@ -433,22 +433,25 @@ example of what you would not want to see would be:
 
 	<para><programlisting>netbios-ns	137/udp</programlisting></para>
 
-	<para>Next, edit your <filename>/etc/inetd.conf</filename> 
-	and add two lines like this:</para>
+	<para>
+	Next, edit your <filename>/etc/inetd.conf</filename> and add two lines like this:
+<programlisting>
+netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
+netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
+</programlisting>
+	</para>
 
-	<para><programlisting>
-	netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
-	netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
-	</programlisting></para>
-
-	<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
+	<para>
+	The exact syntax of <filename>/etc/inetd.conf</filename> 
 	varies between UNIXes. Look at the other entries in inetd.conf 
-	for a guide. </para>
+	for a guide.
+	</para>
 
 	<para>
 	<indexterm><primary>xinetd</primary></indexterm>
 	Some distributions use xinetd instead of inetd. Consult the 
-	xinetd manual for configuration information.</para>
+	xinetd manual for configuration information.
+	</para>
 
 	<note><para>Some UNIXes already have entries like netbios_ns 
 	(note the underscore) in <filename>/etc/services</filename>. 
@@ -499,24 +502,24 @@ example of what you would not want to see would be:
 </programlisting></para>
 </smbfile>
 
-		<para>
-		Make it executable with <command>chmod +x startsmb</command>
-		</para>
+	<para>
+	Make it executable with <command>chmod +x startsmb</command>
+	</para>
 
-		<para>
-		You can then run <command>startsmb</command> by hand or execute
-		it from <filename>/etc/rc.local</filename>.
-		</para>
+	<para>
+	You can then run <command>startsmb</command> by hand or execute
+	it from <filename>/etc/rc.local</filename>.
+	</para>
 
-		<para>
-		To kill it, send a kill signal to the processes &nmbd; and &smbd;.
-		</para>
+	<para>
+	To kill it, send a kill signal to the processes &nmbd; and &smbd;.
+	</para>
 
-		<note><para>
-		If you use the SVR4 style init system, you may like to look at the
-		<filename>examples/svr4-startup</filename> script to make Samba fit
-		into that system.
-		</para></note>
+	<note><para>
+	If you use the SVR4 style init system, you may like to look at the
+	<filename>examples/svr4-startup</filename> script to make Samba fit
+	into that system.
+	</para></note>
 
 	</sect2>
 
