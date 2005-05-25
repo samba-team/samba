@@ -2,22 +2,17 @@
 <!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
 <chapter id="DomApps">
-  <title>Integrating Additional Services</title>
+<title>Integrating Additional Services</title>
 
-    <para><indexterm>
-	<primary>authentication</primary>
-      </indexterm><indexterm>
-	<primary>backends</primary>
-      </indexterm><indexterm>
-	<primary>smbpasswd</primary>
-      </indexterm><indexterm>
-	<primary>ldapsam</primary>
-      </indexterm><indexterm>
-	<primary>Active Directory</primary>
-      </indexterm>
+	<para>
+	<indexterm><primary>authentication</primary></indexterm>
+	<indexterm><primary>backends</primary></indexterm>
+	<indexterm><primary>smbpasswd</primary></indexterm>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>Active Directory</primary></indexterm>
 	You've come a long way now. You have pretty much mastered Samba-3 for 
 	most uses it can be put to. Up until now, you have cast Samba-3 in the leading 
-	role and where authentication was required, you have used one or another of 
+	role, and where authentication was required, you have used one or another of 
 	Samba's many authentication backends (from flat text files with smbpasswd 
 	to LDAP directory integration with ldapsam). Now you can design a 
 	solution for a new Abmas business. This business is running Windows Server 
@@ -39,9 +34,9 @@
 
 	<para>
 	With this acquisition comes new challenges for you and your team. Abmas Snack 
-	Foods is a well-developed business with a huge and heterogeneous network. They 
-	already have Windows, NetWare, and Proprietary UNIX, but as yet no Samba or Linux. 
-	The network is mature and well established, and there is no question of their chosen 
+	Foods is a well-developed business with a huge and heterogeneous network. It 
+	already has Windows, NetWare, and Proprietary UNIX, but as yet no Samba or Linux. 
+	The network is mature and well established, and there is no question of its chosen 
 	user authentication scheme being changed for now. You need to take a wise new 
 	approach.
 	</para>
@@ -53,15 +48,11 @@
 	</para>
 
 	<sect2>
-		<title>Assignment Tasks</title>
+	<title>Assignment Tasks</title>
 
-	<para><indexterm>
-	    <primary>web</primary>
-	    <secondary>proxying</secondary>
-	  </indexterm><indexterm>
-	    <primary>web</primary>
-	    <secondary>caching</secondary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>web</primary><secondary>proxying</secondary></indexterm>
+		<indexterm><primary>web</primary><secondary>caching</secondary></indexterm>
 	        You've promised the skeptical Abmas Snack Foods management team 
 		that you can show them how Samba can ease itself and other Open Source 
 		technologies into their existing infrastructure and deliver sound business 
@@ -69,34 +60,29 @@
 		acquisition). You have chosen Web proxying and caching as your proving ground.
 		</para>
 
-	<para><indexterm>
-	    <primary>bandwidth</primary>
-	  </indexterm><indexterm>
-	    <primary>Microsoft ISA</primary>
-	  </indexterm>
-		Abmas Snack Foods has several thousand users housed at their Head Office 
+		<para>
+		<indexterm><primary>bandwidth</primary></indexterm>
+		<indexterm><primary>Microsoft ISA</primary></indexterm>
+		Abmas Snack Foods has several thousand users housed at its head office 
 		and multiple regional offices, plants, and warehouses. A high proportion of 
 		the business's work is done online, so Internet access for most of these 
-		users is essential. All Internet access, including all of their regional offices, 
+		users is essential. All Internet access, including for all regional offices, 
 		is funneled through the head office and is the job of the (now your) networking 
 		team. The bandwidth requirements were horrific (comparable to a small ISP), and 
 		the team soon discovered proxying and caching. In fact, they became one of 
 		the earliest commercial users of Microsoft ISA.
 		</para>
 
-	<para><indexterm>
-	    <primary>Active Directory</primary>
-	  </indexterm><indexterm>
-	    <primary>authenticated</primary>
-	  </indexterm><indexterm>
-	    <primary>proxy</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>Active Directory</primary></indexterm>
+		<indexterm><primary>authenticated</primary></indexterm>
+		<indexterm><primary>proxy</primary></indexterm>
 		The team is not happy with ISA. Because it never lived up to its marketing promises, 
-		it under-performed and had reliability problems. You have pounced on the opportunity 
+		it underperformed and had reliability problems. You have pounced on the opportunity 
 		to show what Open Source can do. The one thing they do like, however, is ISA's 
 		integration with Active Directory. They like that their users, once logged on, 
 		are automatically authenticated against the proxy. If your alternative to ISA 
-		can operate completely seamlessly in their Active Directory Domain, it will be
+		can operate completely seamlessly in their Active Directory domain, it will be
 		approved.
 		</para>
 
@@ -109,7 +95,7 @@
 </sect1>
 
 <sect1>
-	<title>Dissection and Discussion</title>
+<title>Dissection and Discussion</title>
 
 	<para>
 	The key requirements in this business example are straightforward. You are not required 
@@ -133,42 +119,26 @@
 	<sect2>
 		<title>Technical Issues</title>
 
-	<para><indexterm>
-	    <primary>browsing</primary>
-	  </indexterm><indexterm>
-	    <primary>Squid proxy</primary>
-	  </indexterm><indexterm>
-	    <primary>proxy</primary>
-	  </indexterm><indexterm>
-	    <primary>authentication</primary>
-	  </indexterm><indexterm>
-	    <primary>Internet Explorer</primary>
-	  </indexterm><indexterm>
-	    <primary>winbind</primary>
-	  </indexterm><indexterm>
-	    <primary>NTLM</primary>
-	  </indexterm><indexterm>
-	    <primary>NTLM authentication daemon</primary>
-	  </indexterm><indexterm>
-	    <primary>authentication</primary>
-	  </indexterm><indexterm>
-	    <primary>daemon</primary>
-	  </indexterm><indexterm>
-	    <primary>Active Directory</primary>
-	  </indexterm><indexterm>
-	    <primary>domain</primary>
-	    <secondary>Active Directory</secondary>
-	  </indexterm><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm><indexterm>
-	    <primary>token</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>browsing</primary></indexterm>
+		<indexterm><primary>Squid proxy</primary></indexterm>
+		<indexterm><primary>proxy</primary></indexterm>
+		<indexterm><primary>authentication</primary></indexterm>
+		<indexterm><primary>Internet Explorer</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>NTLM</primary></indexterm>
+		<indexterm><primary>NTLM authentication daemon</primary></indexterm>
+		<indexterm><primary>authentication</primary></indexterm>
+		<indexterm><primary>daemon</primary></indexterm>
+		<indexterm><primary>Active Directory</primary></indexterm>
+		<indexterm><primary>domain</primary><secondary>Active Directory</secondary></indexterm>
+		<indexterm><primary>Kerberos</primary></indexterm><indexterm><primary>token</primary></indexterm>
 		Functionally, the user's Internet Explorer requests a browsing session with the 
 		Squid proxy, for which it offers its AD authentication token. Squid hands off 
 		the authentication request to the Samba-3 authentication helper application
 		called <command>ntlm_auth</command>. This helper is a hook into winbind, the 
 		Samba-3 NTLM authentication daemon. Winbind enables UNIX services to authenticate 
-		against Microsoft Windows Domains, including Active Directory domains. As Active 
+		against Microsoft Windows domains, including Active Directory domains. As Active 
 		Directory authentication is a modified Kerberos authentication, winbind is assisted 
 		in this by local Kerberos 5 libraries configured to check passwords with the Active 
 		Directory server. Once the token has been checked, a browsing session is established. 
@@ -181,7 +151,7 @@
 
 		<itemizedlist>
 			<listitem><para>
-			Preparing the necessary environment using pre-configured packages
+			Preparing the necessary environment using preconfigured packages
 			</para></listitem>
 
 			<listitem><para>
@@ -204,7 +174,7 @@
 		<title>Political Issues</title>
 
 		<para>
-		You are a stranger in a strange land and all eyes are upon you. Some would even like to see 
+		You are a stranger in a strange land, and all eyes are upon you. Some would even like to see 
 		you fail. For you to gain the trust of your newly acquired IT people, it is essential that your 
 		solution does everything the old one did, but does it better in every way. Only then 
 		will the entrenched positions consider taking up your new way of doing things on a 
@@ -218,9 +188,8 @@
 <sect1>
 	<title>Implementation</title>
 
-      <para><indexterm>
-	  <primary>Squid</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Squid</primary></indexterm>
 	First, your system needs to be prepared and in a known good state to proceed. This consists 
 	of making sure that everything the system depends on is present and that everything that could 
 	interfere or conflict with the system is removed. You will be configuring the Squid and Samba-3 
@@ -228,18 +197,15 @@
 	they must be removed.
 	</para>
 
-      <para><indexterm>
-	  <primary>Red Hat Linux</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Red Hat Linux</primary></indexterm>
 	The following packages should be available on your Red Hat Linux system:
 	</para>
 
 	<itemizedlist>
-	<listitem><para><indexterm>
-	      <primary>krb5</primary>
-	    </indexterm><indexterm>
-	      <primary>Kerberos</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>krb5</primary></indexterm>
+		<indexterm><primary>Kerberos</primary></indexterm>
 		krb5-libs
 		</para></listitem>
 
@@ -260,9 +226,8 @@
 		</para></listitem>
 	</itemizedlist>
 
-      <para><indexterm>
-	  <primary>SUSE Linux</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>SUSE Linux</primary></indexterm>
 	In the case of SUSE Linux, these packages are called:
 	</para>
 
@@ -275,9 +240,8 @@
                 heimdal-devel
                 </para></listitem>
 
-	<listitem><para><indexterm>
-	      <primary>Heimdal</primary>
-	    </indexterm>
+		<listitem><para>
+		<indexterm><primary>Heimdal</primary></indexterm>
                 heimdal
                 </para></listitem>
 
@@ -292,45 +256,36 @@
 	for your Linux system to ensure that the packages are correctly updated.
 	</para>
 
-      <note><para><indexterm>
-	    <primary>MS Windows Server 2003</primary>
-	  </indexterm><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm><indexterm>
-	    <primary>MIT</primary>
-	  </indexterm>
-	If the requirement is for inter-operation with MS Windows Server 2003, it
+	<note><para>
+	<indexterm><primary>MS Windows Server 2003</primary></indexterm>
+	<indexterm><primary>Kerberos</primary></indexterm>
+	<indexterm><primary>MIT</primary></indexterm>
+	If the requirement is for interoperation with MS Windows Server 2003, it
 	will be necessary to ensure that you are using MIT Kerberos version 1.3.1
 	or later. Red Hat Linux 9 ships with MIT Kerberos 1.2.7 and thus requires
 	updating.
 	</para>
 
-	<para><indexterm>
-	    <primary>Heimdal</primary>
-	  </indexterm><indexterm>
-	    <primary>SUSE Enterprise Linux Server</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Heimdal</primary></indexterm>
+	<indexterm><primary>SUSE Enterprise Linux Server</primary></indexterm>
 	Heimdal 0.6 or later is required in the case of SUSE Linux. SUSE Enterprise
 	Linux Server 8 ships with Heimdal 0.4. SUSE 9 ships with the necessary version.
 	</para></note>
 
 	<sect2 id="ch10-one">
-	<title>Removal of Pre-existing Conflicting RPMs</title>
+	<title>Removal of Pre-Existing Conflicting RPMs</title>
 
-	<para><indexterm>
-	    <primary>Squid</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Squid</primary></indexterm>
 	If Samba and/or Squid RPMs are installed, they should be updated. You can 
 	build both from source.
 	</para>
 
-	<para><indexterm>
-	    <primary>rpm</primary>
-	  </indexterm><indexterm>
-	    <primary>samba</primary>
-	  </indexterm><indexterm>
-	    <primary>squid</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>rpm</primary></indexterm>
+	<indexterm><primary>samba</primary></indexterm>
+	<indexterm><primary>squid</primary></indexterm>
 	Locating the packages to be un-installed can be achieved by running:
 <screen>
 &rootprompt; rpm -qa | grep -i samba
@@ -345,110 +300,80 @@
 	<sect2>
 	<title>Kerberos Configuration</title>
 
-	<para><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm><indexterm>
-	    <primary>Active Directory</primary>
-	    <secondary>server</secondary>
-	  </indexterm><indexterm>
-	    <primary>ADS</primary>
-	  </indexterm><indexterm>
-	    <primary>KDC</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Kerberos</primary></indexterm>
+	<indexterm><primary>Active Directory</primary><secondary>server</secondary></indexterm>
+	<indexterm><primary>ADS</primary></indexterm>
+	<indexterm><primary>KDC</primary></indexterm>
 	The systems Kerberos installation must be configured to communicate with 
 	your primary Active Directory server (ADS KDC).
 	</para>
 
 	<para>
-	Strictly speaking, MIT Kerberos version 1.3.1 currently gives the best results, 
+	Strictly speaking, MIT Kerberos version 1.3.4 currently gives the best results, 
 	although the current default Red Hat MIT version 1.2.7 gives acceptable results 
 	unless you are using Windows 2003 servers.
 	</para>
 
-	<para><indexterm>
-	    <primary>MIT</primary>
-	  </indexterm><indexterm>
-	    <primary>Heimdal</primary>
-	  </indexterm><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm><indexterm>
-	    <primary>/etc/krb5.conf</primary>
-	  </indexterm><indexterm>
-	    <primary>DNS</primary>
-	    <secondary>SRV records</secondary>
-	  </indexterm><indexterm>
-	    <primary>KDC</primary>
-	  </indexterm><indexterm>
-	    <primary>DNS</primary>
-	    <secondary>lookup</secondary>
-	  </indexterm>
-	Officially, neither MIT (1.3.1) nor Heimdal (0.6) Kerberos needs an <filename>/etc/krb5.conf</filename> 
+	<para>
+	<indexterm><primary>MIT</primary></indexterm>
+	<indexterm><primary>Heimdal</primary></indexterm>
+	<indexterm><primary>Kerberos</primary></indexterm>
+	<indexterm><primary>/etc/krb5.conf</primary></indexterm>
+	<indexterm><primary>DNS</primary><secondary>SRV records</secondary></indexterm>
+	<indexterm><primary>KDC</primary></indexterm>
+	<indexterm><primary>DNS</primary><secondary>lookup</secondary></indexterm>
+	Officially, neither MIT (1.3.4) nor Heimdal (0.63) Kerberos needs an <filename>/etc/krb5.conf</filename> 
 	file in order to work correctly. All ADS domains automatically create SRV records in the 
 	DNS zone <constant>Kerberos.REALM.NAME</constant> for each KDC in the realm. Since both 
 	MIT and Heimdal, KRB5 libraries default to checking for these records, so they 
-	automatically find the KDCs. In addition, <filename>krb5.conf</filename> only allows 
-	specifying a single KDC, even there if there is more than one. Using the DNS lookup 
+	automatically find the KDCs. In addition, <filename>krb5.conf</filename> allows 
+	specifying only a single KDC, even if there is more than one. Using the DNS lookup 
 	allows the KRB5 libraries to use whichever KDCs are available.
 	</para>
 
 	<procedure>
 	<title>Kerberos Configuration Steps</title>
 
-	  <step><para><indexterm>
-		<primary>krb5.conf</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>krb5.conf</primary></indexterm>
 		If you find the need to manually configure the <filename>krb5.conf</filename>, you should edit it
 		to have the contents shown in <link linkend="ch10-krb5conf"/>. The final fully qualified path for this file 
 		should be <filename>/etc/krb5.conf</filename>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>Kerberos</primary>
-	      </indexterm><indexterm>
-		<primary>realm</primary>
-	      </indexterm><indexterm>
-		<primary>case-sensitive</primary>
-	      </indexterm><indexterm>
-		<primary>KDC</primary>
-	      </indexterm><indexterm>
-		<primary>synchronization</primary>
-	      </indexterm><indexterm>
-		<primary>initial credentials</primary>
-	      </indexterm><indexterm>
-		<primary>Clock skew</primary>
-	      </indexterm><indexterm>
-		<primary>NTP</primary>
-	      </indexterm><indexterm>
-		<primary>DNS</primary>
-		<secondary>lookup</secondary>
-	      </indexterm><indexterm>
-		<primary>reverse DNS</primary>
-	      </indexterm><indexterm>
-		<primary>NetBIOS name </primary>
-	      </indexterm><indexterm>
-		<primary>/etc/hosts</primary>
-	      </indexterm><indexterm>
-		<primary>mapping</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Kerberos</primary></indexterm>
+		<indexterm><primary>realm</primary></indexterm>
+		<indexterm><primary>case-sensitive</primary></indexterm>
+		<indexterm><primary>KDC</primary></indexterm>
+		<indexterm><primary>synchronization</primary></indexterm>
+		<indexterm><primary>initial credentials</primary></indexterm>
+		<indexterm><primary>Clock skew</primary></indexterm>
+		<indexterm><primary>NTP</primary></indexterm>
+		<indexterm><primary>DNS</primary><secondary>lookup</secondary></indexterm>
+		<indexterm><primary>reverse DNS</primary></indexterm>
+		<indexterm><primary>NetBIOS name </primary></indexterm>
+		<indexterm><primary>/etc/hosts</primary></indexterm>
+		<indexterm><primary>mapping</primary></indexterm>
 		The following gotchas often catch people out. Kerberos is case sensitive. Your realm must
 		be in UPPERCASE, or you will get an error: <quote>Cannot find KDC for requested realm while getting
 		initial credentials</quote>.  Kerberos is picky about time synchronization. The time
-		according to your participating servers must be within 5 minutes or you get an error
+		according to your participating servers must be within 5 minutes or you get an error:
 		<quote>kinit(v5): Clock skew too great while getting initial credentials</quote>.
 		Clock skew limits are, in fact, configurable in the Kerberos protocols (the default is
 		5 minutes). A better solution is to implement NTP throughout your server network.
 		Kerberos needs to be able to do a reverse DNS lookup on the IP address of your KDC.
 		Also, the name that this reverse lookup maps to must either be the NetBIOS name of
-		the KDC (i.e., the hostname with no domain attached), or it can alternately be the
+		the KDC (i.e., the hostname with no domain attached) or the
 		NetBIOS name followed by the realm. If all else fails, you can add a
 		<filename>/etc/hosts</filename> entry mapping the IP address of your KDC to its
 		NetBIOS name. If Kerberos cannot do this reverse lookup, you will get a local error
 		when you try to join the realm.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>kinit</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>kinit</primary></indexterm>
 		You are now ready to test your installation by issuing the command:
 <screen>
 &rootprompt; kinit [USERNAME@REALM]
@@ -479,48 +404,40 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 	<para><indexterm>
 	    <primary>klist</primary>
 	  </indexterm>
-	The command:
+	The command
 <screen>
 &rootprompt; klist -e 
 </screen>
-	shows the Kerberos tickets cached by the system:
+	shows the Kerberos tickets cached by the system.
 	</para>
 
 	<sect3>
 	<title>Samba Configuration</title>
 
-	  <para><indexterm>
-	      <primary>Active Directory</primary>
-	    </indexterm>
-	Samba must be configured to correctly use Active Directory. Samba-3 must be used, as 
-	this has the necessary components to interface with Active Directory.
+	<para>
+	<indexterm><primary>Active Directory</primary></indexterm>
+	Samba must be configured to correctly use Active Directory. Samba-3 must be used, since it 
+	has the necessary components to interface with Active Directory.
 	</para>
 
 	<procedure>
 	<title>Securing Samba-3 With ADS Support Steps</title>
 
-	    <step><para><indexterm>
-		  <primary>Red Hat Linux</primary>
-		</indexterm><indexterm>
-		  <primary>Samba Tea</primary>
-		</indexterm><indexterm>
-		  <primary>Red Hat Fedora Linux</primary>
-		</indexterm><indexterm>
-		  <primary>MIT KRB5</primary>
-		</indexterm><indexterm>
-		  <primary>ntlm_auth</primary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>Red Hat Linux</primary></indexterm>
+		<indexterm><primary>Samba Tea</primary></indexterm>
+		<indexterm><primary>Red Hat Fedora Linux</primary></indexterm>
+		<indexterm><primary>MIT KRB5</primary></indexterm>
+		<indexterm><primary>ntlm_auth</primary></indexterm>
 		Download the latest stable Samba-3 for Red Hat Linux from the official Samba Team
 		<ulink url="http://ftp.samba.org">FTP site.</ulink> The official Samba Team
 		RPMs for Red Hat Fedora Linux contain the <command>ntlm_auth</command> tool
-		needed, and are linked against MIT KRB5 version 1.3.1 and, therefore, are ready for use.
+		needed, and are linked against MIT KRB5 version 1.3.1 and therefore are ready for use.
 		</para>
 
-	      <para><indexterm>
-		  <primary>SerNet</primary>
-		</indexterm><indexterm>
-		  <primary>RPMs</primary>
-		</indexterm>
+		<para>
+		<indexterm><primary>SerNet</primary></indexterm>
+		<indexterm><primary>RPMs</primary></indexterm>
 		The necessary, validated RPM packages for SUSE Linux may be obtained from
 		the <ulink url="ftp://ftp.sernet.de/pub/samba">SerNet</ulink> FTP site that
 		is located in Germany. All SerNet RPMs are validated, have the necessary
@@ -533,19 +450,12 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 		file so it has contents similar to the example shown in <link linkend="ch10-smbconf"/>.
 		</para></step>
 
-	    <step><para><indexterm>
-		  <primary>computer account</primary>
-		</indexterm><indexterm>
-		  <primary>Active Directory</primary>
-		</indexterm><indexterm>
-		  <primary>net</primary>
-		  <secondary>ads</secondary>
-		  <tertiary>join</tertiary>
-		</indexterm><indexterm>
-		  <primary>Kerberos ticket</primary>
-		</indexterm><indexterm>
-		  <primary>ticket</primary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>computer account</primary></indexterm>
+		<indexterm><primary>Active Directory</primary></indexterm>
+		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>join</tertiary></indexterm>i
+		<indexterm><primary>Kerberos ticket</primary></indexterm>
+		<indexterm><primary>ticket</primary></indexterm>
 		Next you need to create a computer account in the Active Directory. 
 		This sets up the trust relationship needed for other clients to 
 		authenticate to the Samba server with an Active Directory Kerberos ticket. 
@@ -556,20 +466,14 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 </screen>
 		</para></step>
 
-	    <step><para><indexterm>
-		  <primary>smbd</primary>
-		</indexterm><indexterm>
-		  <primary>nmbd</primary>
-		</indexterm><indexterm>
-		  <primary>winbindd</primary>
-		</indexterm><indexterm>
-		  <primary>Active Directory</primary>
-		</indexterm><indexterm>
-		  <primary>Samba</primary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>smbd</primary></indexterm>
+		<indexterm><primary>nmbd</primary></indexterm>
+		<indexterm><primary>winbindd</primary></indexterm>
+		<indexterm><primary>Active Directory</primary></indexterm>
+		<indexterm><primary>Samba</primary></indexterm>
 		Your new Samba binaries must be started in the standard manner as is applicable
-		to the platform you are running on. Alternately, start your Active Directory 
-		enabled Samba with the following commands:
+		to the platform you are running on. Alternatively, start your Active Directory-enabled Samba with the following commands:
 <screen>
 &rootprompt; smbd -D
 &rootprompt; nmbd -D
@@ -577,19 +481,12 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 </screen>
 		</para></step>
 
-	    <step><para><indexterm>
-		  <primary>winbind</primary>
-		</indexterm><indexterm>
-		  <primary>Active Directory</primary>
-		  <secondary>domain</secondary>
-		</indexterm><indexterm>
-		  <primary>wbinfo</primary>
-		</indexterm><indexterm>
-		  <primary>enumerating</primary>
-		</indexterm><indexterm>
-		  <primary>Active Directory</primary>
-		  <secondary>tree</secondary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>Active Directory</primary><secondary>domain</secondary></indexterm>
+		<indexterm><primary>wbinfo</primary></indexterm>
+		<indexterm><primary>enumerating</primary></indexterm>
+		<indexterm><primary>Active Directory</primary><secondary>tree</secondary></indexterm>
 		We now need to test that Samba is communicating with the Active 
 		Directory domain; most specifically, we want to see whether winbind 
 		is enumerating users and groups. Issue the following commands:
@@ -623,11 +520,9 @@ LONDON+DnsUpdateProxy
 		This enumerates all the groups in your Active Directory tree.
 		</para></step>
 
-	    <step><para><indexterm>
-		  <primary>Squid</primary>
-		</indexterm><indexterm>
-		  <primary>ntlm_auth</primary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>Squid</primary></indexterm>
+		<indexterm><primary>ntlm_auth</primary></indexterm>
 		Squid uses the <command>ntlm_auth</command> helper build with Samba-3.
 		You may test <command>ntlm_auth</command> with the command:
 <screen>
@@ -640,23 +535,15 @@ password: XXXXXXXX
 </screen>
 		</para></step>
 
-		<step><para><indexterm>
-		  <primary>ntlm_auth</primary>
-		</indexterm><indexterm>
-		  <primary>authenticate</primary>
-		</indexterm><indexterm>
-		  <primary>winbind</primary>
-		</indexterm><indexterm>
-		  <primary>privileged pipe</primary>
-		</indexterm><indexterm>
-		  <primary>squid</primary>
-		</indexterm><indexterm>
-		  <primary>chgrp</primary>
-		</indexterm><indexterm>
-		  <primary>chmod</primary>
-		</indexterm><indexterm>
-		  <primary>failure</primary>
-		</indexterm>
+		<step><para>
+		<indexterm><primary>ntlm_auth</primary></indexterm>
+		<indexterm><primary>authenticate</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>privileged pipe</primary></indexterm>
+		<indexterm><primary>squid</primary></indexterm>
+		<indexterm><primary>chgrp</primary></indexterm>
+		<indexterm><primary>chmod</primary></indexterm>
+		<indexterm><primary>failure</primary></indexterm>
 		The <command>ntlm_auth</command> helper, when run from a command line as the user 
 		<quote>root</quote>, authenticates against your Active Directory domain (with 
 		the aid of winbind). It manages this by reading from the winbind privileged pipe. 
@@ -682,13 +569,10 @@ password: XXXXXXXX
 	<sect3>
 	<title>NSS Configuration</title>
 
-	  <para><indexterm>
-	      <primary>NSS</primary>
-	    </indexterm><indexterm>
-	      <primary>winbind</primary>
-	    </indexterm><indexterm>
-	      <primary>authentication</primary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>NSS</primary></indexterm>
+	<indexterm><primary>winbind</primary></indexterm>
+	<indexterm><primary>authentication</primary></indexterm>
 	For Squid to benefit from Samba-3, NSS must be updated to allow winbind as a valid route to user authentication.
 	</para>
 
@@ -735,12 +619,9 @@ group: files winbind
 	<sect3>
 	<title>Squid Configuration</title>
 
-	  <para><indexterm>
-	      <primary>Squid</primary>
-	    </indexterm><indexterm>
-	      <primary>Active Directory</primary>
-	      <secondary>authentication</secondary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>Squid</primary></indexterm>
+	<indexterm><primary>Active Directory</primary><secondary>authentication</secondary></indexterm>
 	Squid must be configured correctly to interact with the Samba-3 
 	components that handle Active Directory authentication.
 	</para>
@@ -755,30 +636,22 @@ group: files winbind
 	<procedure>
 	<title>Squid Configuration Steps</title>
 
-	<step><para><indexterm>
-	      <primary>SUSE Linux</primary>
-	    </indexterm><indexterm>
-	      <primary>Squid</primary>
-	    </indexterm><indexterm>
-	      <primary>helper agent</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>SUSE Linux</primary></indexterm>
+		<indexterm><primary>Squid</primary> </indexterm>
+		<indexterm><primary>helper agent</primary></indexterm>
 		If your Linux distribution is SUSE Linux 9, the version of Squid 
 		supplied is already enabled to use the winbind helper agent. You
-		can, therefore, omit the steps that would build the Squid binary
+		can therefore omit the steps that would build the Squid binary
 		programs.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>nobody</primary>
-	    </indexterm><indexterm>
-	      <primary>squid</primary>
-	    </indexterm><indexterm>
-	      <primary>rpms</primary>
-	    </indexterm><indexterm>
-	      <primary>/etc/passwd</primary>
-	    </indexterm><indexterm>
-	      <primary>/etc/group</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>nobody</primary></indexterm>
+		<indexterm><primary>squid</primary></indexterm>
+		<indexterm><primary>rpms</primary></indexterm>
+		<indexterm><primary>/etc/passwd</primary></indexterm>
+		<indexterm><primary>/etc/group</primary></indexterm>
 		Squid, by default, runs as the user <constant>nobody</constant>. You need to 
 		add a system user <constant>squid</constant> and a system group 
 		<constant>squid</constant> if they are not set up already (if the default 
@@ -787,11 +660,9 @@ group: files winbind
 		and a <constant>squid</constant> group in <filename>/etc/group</filename> if these aren't there already.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>permissions</primary>
-	    </indexterm><indexterm>
-	      <primary>chown</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>permissions</primary></indexterm>
+		<indexterm><primary>chown</primary></indexterm>
 		You now need to change the permissions on Squid's <constant>var</constant>
 		directory.  Enter the following command:
 <screen>
@@ -799,11 +670,9 @@ group: files winbind
 </screen>
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>logging</primary>
-	    </indexterm><indexterm>
-	      <primary>Squid</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>logging</primary></indexterm>
+		<indexterm><primary>Squid</primary></indexterm>
 		Squid must also have control over its logging. Enter the following commands:
 <screen>
 &rootprompt; chown -R chown squid:squid /var/log/squid
@@ -820,16 +689,14 @@ group: files winbind
 </screen>
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>/etc/squid/squid.conf</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>/etc/squid/squid.conf</primary></indexterm>
 		The <filename>/etc/squid/squid.conf</filename> file must be edited to include the lines from 
 		<link linkend="etcsquidcfg"/> and <link linkend="etcsquid2"/>.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>cache directories</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>cache directories</primary></indexterm>
 		You must create Squid's cache directories before it may be run.  Enter the following command: 
 <screen>
 &rootprompt; squid -z
@@ -876,19 +743,12 @@ group: files winbind
 	<sect2>
 		<title>Key Points Learned</title>
 
-	<para><indexterm>
-	    <primary>Web browsers</primary>
-	  </indexterm><indexterm>
-	    <primary>services</primary>
-	  </indexterm><indexterm>
-	    <primary>authentication protocols</primary>
-	  </indexterm><indexterm>
-	    <primary>Web</primary>
-	    <secondary>proxy</secondary>
-	    <tertiary>access</tertiary>
-	  </indexterm><indexterm>
-	    <primary>NTLMSSP</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>Web browsers</primary></indexterm>
+		<indexterm><primary>services</primary></indexterm>
+		<indexterm><primary>authentication protocols</primary></indexterm>
+		<indexterm><primary>Web</primary><secondary>proxy</secondary><tertiary>access</tertiary></indexterm>
+		<indexterm><primary>NTLMSSP</primary></indexterm>
 		Microsoft Windows networking protocols permeate the spectrum of technologies that Microsoft
 		Windows clients use, even when accessing traditional services such as Web browsers. Depending 
 		on whom you discuss this with, this is either good or bad. No matter how you might evaluate this,
@@ -904,15 +764,11 @@ group: files winbind
 <sect1>
 	<title>Questions and Answers</title>
 
-      <para><indexterm>
-	  <primary>ntlm_auth</primary>
-	</indexterm><indexterm>
-	  <primary>SambaXP conference</primary>
-	</indexterm><indexterm>
-	  <primary>Goettingen</primary>
-	</indexterm><indexterm>
-	  <primary>Italian</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>ntlm_auth</primary></indexterm>
+	<indexterm><primary>SambaXP conference</primary></indexterm>
+	<indexterm><primary>Goettingen</primary></indexterm>
+	<indexterm><primary>Italian</primary></indexterm>
 	The development of the <command>ntlm_auth</command> module was first discussed in many Open Source circles
 	in 2002. At the SambaXP conference in Goettingen, Germany, Mr. Francesco Chemolli demonstrated the use of 
 	<command>ntlm_auth</command> during one of the late developer meetings that took place. Since that time, the 
@@ -921,20 +777,20 @@ group: files winbind
 
 	<para>
 	The largest report from a site that uses Squid with <command>ntlm_auth</command>-based authentication
-	support uses a dual processor server that has 2 GBytes of memory. It provides Web and FTP proxy services for 10,000
+	support uses a dual processor server that has 2 GB of memory. It provides Web and FTP proxy services for 10,000
 	users. Approximately 2,000 of these users make heavy use of the proxy services. According to the source, who
 	wishes to remain anonymous, the sustained transaction load on this server hovers around 140 hits/sec. The following
 	comments were made with respect to questions regarding the performance of this installation:
 	</para>
 
 	<blockquote><para>
-	[In our] EXTREMELY optimized environment ... [the] performance impact is almost [nothing]. The <quote>almost</quote> 
+	[In our] EXTREMELY optimized environment . . . [the] performance impact is almost [nothing]. The <quote>almost</quote> 
 	part is due to the brain damage of the ntlm-over-http protocol definition. Suffice to say that its worst-case 
 	scenario triples the number of hits needed to perform the same transactions versus basic or digest auth[entication].
 	</para></blockquote>
 
 	<para>
-	You would be well advised to recognize the fact that all cache-intensive proxying solutions demand a lot of memory.
+	You would be well advised to recognize that all cache-intensive proxying solutions demand a lot of memory.
 	Make certain that your Squid proxy server is equipped with sufficient memory to permit all proxy operations to run 
 	out of memory without invoking the overheads involved in the use of memory that has to be swapped to disk.
 	</para>
@@ -950,57 +806,38 @@ group: files winbind
 	</question>
 	<answer>
 
-	    <para><indexterm>
-		<secondary>transparent inter-operability</secondary>
-	      </indexterm><indexterm>
-		<primary>Windows clients</primary>
-	      </indexterm><indexterm>
-		<primary>network</primary>
-		<secondary>services</secondary>
-	      </indexterm><indexterm>
-		<primary>authentication</primary>
-	      </indexterm><indexterm>
-		<primary>wrapper</primary>
-	      </indexterm>
+		<para>
+		<indexterm><secondary>transparent inter-operability</secondary></indexterm>
+		<indexterm><primary>Windows clients</primary></indexterm>
+		<indexterm><primary>network</primary><secondary>services</secondary></indexterm>
+		<indexterm><primary>authentication</primary></indexterm>
+		<indexterm><primary>wrapper</primary></indexterm>
 		To provide transparent interoperability between Windows clients and the network services
-		that are used from them, Samba has had to develop tools and facilities that deliver that. The benefit
+		that are used from them, Samba had to develop tools and facilities that deliver that feature. The benefit
 		of Open Source software is that it can readily be reused. The current <command>ntlm_auth</command>
 		module is basically a wrapper around authentication code from the core of the Samba project.
 		</para>
 
-	    <para><indexterm>
-		<primary>plain-text</primary>
-	      </indexterm><indexterm>
-		<primary>authentication</primary>
-		<secondary>plain-text</secondary>
-	      </indexterm><indexterm>
-		<primary>Web</primary>
-		<secondary>proxy</secondary>
-	      </indexterm><indexterm>
-		<primary>FTP</primary>
-		<secondary>proxy</secondary>
-	      </indexterm><indexterm>
-		<primary>NTLMSSP</primary>
-	      </indexterm><indexterm>
-		<primary>logon credentials</primary>
-	      </indexterm><indexterm>
-		<primary>Windows explorer</primary>
-	      </indexterm><indexterm>
-		<primary>Internet Information Server</primary>
-	      </indexterm><indexterm>
-		<primary>Apache Web server</primary>
-	      </indexterm>
+		<para>
+		<indexterm><primary>plain-text</primary></indexterm>
+		<indexterm><primary>authentication</primary><secondary>plain-text</secondary></indexterm>
+		<indexterm><primary>Web</primary><secondary>proxy</secondary></indexterm>
+		<indexterm><primary>FTP</primary><secondary>proxy</secondary></indexterm>
+		<indexterm><primary>NTLMSSP</primary></indexterm>
+		<indexterm><primary>logon credentials</primary></indexterm>
+		<indexterm><primary>Windows explorer</primary></indexterm>
+		<indexterm><primary>Internet Information Server</primary></indexterm>
+		<indexterm><primary>Apache Web server</primary></indexterm>
 		The <command>ntlm_auth</command> module supports basic plain-text authentication and NTLMSSP 
 		protocols. This module makes it possible for Web and FTP proxy requests to be authenticated without
-		the user being interrupted via his/her Windows logon credentials. This facility is available with
-		MS Windows explorer and is one of the key benefits claimed for Microsoft Internet Information Server.
+		the user being interrupted via his or her Windows logon credentials. This facility is available with
+		MS Windows Explorer and is one of the key benefits claimed for Microsoft Internet Information Server.
 		There are a few open source initiatives to provide support for these protocols in the Apache Web server
 		also.
 		</para>
 
-	    <para><indexterm>
-		<primary>wrapper</primary>
-	      </indexterm>
+		<para>
+		<indexterm><primary>wrapper</primary></indexterm>
 		The short answer is that by adding a wrapper around key authentication components of Samba, other
 		projects (like Squid) can benefit from the labors expended in meeting user interoperability needs.
 		</para>
@@ -1018,45 +855,33 @@ group: files winbind
 	</question>
 	<answer>
 
-	    <para><indexterm>
-		<primary>winbindd</primary>
-	      </indexterm><indexterm>
-		<primary>Identity resolver</primary>
-	      </indexterm><indexterm>
-		<primary>daemon</primary>
-	      </indexterm><indexterm>
-		<primary>smbd</primary>
-	      </indexterm><indexterm>
-		<primary>file and print server</primary>
-	      </indexterm>
+		<para>
+		<indexterm><primary>winbindd</primary></indexterm>
+		<indexterm><primary>Identity resolver</primary></indexterm>
+		<indexterm><primary>daemon</primary></indexterm>
+		<indexterm><primary>smbd</primary></indexterm>
+		<indexterm><primary>file and print server</primary></indexterm>
 		Samba-3 is a file and print server. The core components that provide this functionality are <command>smbd</command>,
-		<command>nmbd</command>, and the Identity resolver daemon, <command>winbindd</command>.
+		<command>nmbd</command>, and the identity resolver daemon, <command>winbindd</command>.
 		</para>
 
-	    <para><indexterm>
-		<primary>SMB/CIFS</primary>
-	      </indexterm><indexterm>
-		<primary>smbclient</primary>
-	      </indexterm>
+		<para>
+		<indexterm><primary>SMB/CIFS</primary></indexterm>
+		<indexterm><primary>smbclient</primary></indexterm>
 		Samba-3 is an SMB/CIFS client. The core component that provides this is called <command>smbclient</command>.
 		</para>
 
-	    <para><indexterm>
-		<primary>modules</primary>
-	      </indexterm><indexterm>
-		<primary>utilities</primary>
-	      </indexterm><indexterm>
-		<primary>validation</primary>
-	      </indexterm><indexterm>
-		<primary>inter-operability</primary>
-	      </indexterm><indexterm>
-		<primary>authentication</primary>
-	      </indexterm>
-		Samba-3 includes a number of helper tools, plug-in modules, utilities, and test/validation facilities.
+		<para>
+		<indexterm><primary>modules</primary></indexterm>
+		<indexterm><primary>utilities</primary></indexterm>
+		<indexterm><primary>validation</primary></indexterm>
+		<indexterm><primary>inter-operability</primary></indexterm>
+		<indexterm><primary>authentication</primary></indexterm>
+		Samba-3 includes a number of helper tools, plug-in modules, utilities, and test and validation facilities.
 		Samba-3 includes glue modules that help provide interoperability between MS Windows clients and UNIX/Linux
-		servers and client. It includes Winbind agents that make it possible to authenticate UNIX/Linux access attempts
+		servers and clients. It includes Winbind agents that make it possible to authenticate UNIX/Linux access attempts
 		as well as logins to an SMB/CIFS authentication server backend. Samba-3 includes name service switch (NSS) modules
-		to permit Identity resolution via SMB/CIFS servers (Windows NT4/200x, Samba, and a host of other commercial
+		to permit identity resolution via SMB/CIFS servers (Windows NT4/200x, Samba, and a host of other commercial
 		server products).
 		</para>
 
@@ -1075,7 +900,7 @@ group: files winbind
 
 		<para>
 		Not really. Samba's <command>ntlm_auth</command> module handles only authentication. It requires that
-		Squid make an external call to <command>ntlm_auth</command> and, therefore, actually incurs a
+		Squid make an external call to <command>ntlm_auth</command> and therefore actually incurs a
 		little more overhead. Compared with the benefit obtained, that overhead is well worth enduring. Since
 		Squid is a proxy server, and proxy servers tend to require lots of memory, it is good advice to provide
 		sufficient memory when using Squid. Just add a little more to accommodate <command>ntlm_auth</command>.
