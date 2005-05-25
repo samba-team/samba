@@ -24,7 +24,8 @@ use dcom_proxy;
 use dcom_stub;
 use com_header;
 use odl;
-use eparser;
+use eth_parser;
+use eth_header;
 use validator;
 use typelist;
 use util;
@@ -41,7 +42,8 @@ my($opt_template) = 0;
 my($opt_client) = 0;
 my($opt_server) = 0;
 my($opt_parser);
-my($opt_eparser) = 0;
+my($opt_eth_parser);
+my($opt_eth_header);
 my($opt_keep) = 0;
 my($opt_swig) = 0;
 my($opt_dcom_proxy) = 0;
@@ -83,7 +85,8 @@ sub ShowHelp()
          --client              create a C NDR client
          --server              create server boilerplate
          --template            print a template for a pipe
-         --eparser             create an ethereal parser
+         --eth-parser          create an ethereal parser
+		 --eth-header          create an ethereal header file
          --swig                create swig wrapper file
          --diff                run diff on the idl and dumped output
          --keep                keep the .pidl file
@@ -107,7 +110,8 @@ GetOptions (
 	    'template' => \$opt_template,
 	    'parser:s' => \$opt_parser,
         'client' => \$opt_client,
-	    'eparser' => \$opt_eparser,
+	    'eth-parser:s' => \$opt_eth_parser,
+		'eth-header:s' => \$opt_eth_header,
 	    'diff' => \$opt_diff,
 		'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
@@ -198,7 +202,7 @@ sub process_file($)
 		$pidl = ODL::ODL2IDL($pidl);
 	}
 
-	if (defined($opt_header) or $opt_client or $opt_server or defined($opt_parser)) {
+	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or $opt_client or $opt_server or defined($opt_parser)) {
 		$ndr = Ndr::Parse($pidl);
 #		print util::MyDumper($ndr);
 	}
@@ -209,16 +213,21 @@ sub process_file($)
 			$header = util::ChangeExtension($output, ".h");
 		}
 		util::FileSave($header, NdrHeader::Parse($ndr));
-		if ($opt_eparser) {
-		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
-		  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
-		}
 		if ($opt_swig) {
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
 		  $filename = util::ChangeExtension($filename, ".i");
 		  IdlSwig::RewriteHeader($pidl, $header, $filename);
 		}
+	}
+
+	if (defined($opt_eth_header)) {
+	  my($eparserhdr) = $opt_eth_header;
+	  if ($eparserhdr eq "") {
+		  $eparserhdr = dirname($output) . "/packet-dcerpc-$basename.h";
+	  }
+
+	  util::FileSave($eparserhdr, EthHeader::Parse($ndr));
 	}
 
 	if ($opt_client) {
@@ -275,11 +284,16 @@ $dcom
 		}
 		
 		util::FileSave($parser, NdrParser::Parse($ndr, $parser));
-		if($opt_eparser) {
-		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
-		  IdlEParser::RewriteC($pidl, $parser, $eparser);
-		}
 	}
+
+	if (defined($opt_eth_parser)) {
+	  my($eparser) = $opt_eth_parser;
+	  if ($eparser eq "") {
+		  $eparser = dirname($output) . "/packet-dcerpc-$basename.c";
+	  }
+	  util::FileSave($eparser, EthParser::Parse($ndr, $basename, $eparser));
+	}
+
 
 	if ($opt_template) {
 		print IdlTemplate::Parse($pidl);
