@@ -25,7 +25,8 @@
 	</para>
 
 	<para>If you need to compile Samba from source, check 
-	<link linkend="compiling">How to compile Samba</link> chapter.</para>
+	<link linkend="compiling">How to compile Samba.</link>
+	</para>
 
 </sect1>
 

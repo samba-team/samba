@@ -482,6 +482,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 <screen>
 &rootprompt;<userinput>killall -HUP inetd</userinput>
 </screen>
+	</para>
 		
 	</sect2>
 	
