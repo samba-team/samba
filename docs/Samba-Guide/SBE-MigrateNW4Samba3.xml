@@ -6,12 +6,12 @@
 	<para>
 	<indexterm><primary>Novell</primary></indexterm>
 	<indexterm><primary>SUSE</primary></indexterm>
-	Novell is a company any seasoned IT manager has to admire. They have become increasingly
-	Linux-friendly and are emerging out of a deep regression that almost saw the company
+	Novell is a company any seasoned IT manager has to admire. It has become increasingly
+	Linux-friendly and is emerging out of a deep regression that almost saw the company
 	disappear into obscurity. Novell's SUSE Linux hosts the NetWare server and it is the
 	platform of choice to which many older NetWare servers are being migrated. 
-	It will be interesting to see what will become of NetWare over time.
-	Meanwhile, there can be no denying the fact that Novell is a Linux company.
+	It will be interesting to see what becomes of NetWare over time.
+	Meanwhile, there can be no denying that Novell is a Linux company.
 	</para>
 
 	<para>
@@ -20,15 +20,15 @@
 	<indexterm><primary>Gentoo</primary></indexterm>
 	<indexterm><primary>Mandrake</primary></indexterm>
 	Whatever flavor of Linux is preferred in your environment, whether Red Hat, Debian,
-	Gentoo, Mandrake, SUSE (Novell) the information in this chapter should be read with
-	appropriate cognizance that file locations may vary a little; even so the information
+	Gentoo, Mandrake, or SUSE (Novell), the information in this chapter should be read with
+	the knowledge that file locations may vary a little; even so, the information
 	in this chapter should provide something of value.
 	</para>
 
 	<para>
 	<indexterm><primary>migration</primary></indexterm>
-	This chapter was contributed by Misty Stanley-Jones, a UNIX administrator of many
-	years who surfaced on the Samba mailing list with a barrage of questions, and who
+	Contributions to this chapter were made by Misty Stanley-Jones, a UNIX administrator of many
+	years who surfaced on the Samba mailing list with a barrage of questions and who
 	regularly now helps other administrators to solve thorny Samba migration questions.
 	</para>
 
@@ -38,33 +38,33 @@
 	<indexterm><primary>NetWare</primary></indexterm>
 	<indexterm><primary>Mars_NWE</primary></indexterm>
 	One wonders how many NetWare servers remain in active service. Many are being migrated
-	to Samba on Linux. Red Hat Linux, SUSE Linux 9.x and SUSE Linux Enterprise Server 9 are
+	to Samba on Linux. Red Hat Linux, SUSE Linux 9.x, and SUSE Linux Enterprise Server 9 are
 	ideal target platforms to which a NetWare server may be migrated. The migration method
-	of choice is much dependant on the tools that the administrator finds most natural to use.
-	The old-hand NetWare guru will likely want to use the tools like the NetWare NLM for
+	of choice is much dependent on the tools that the administrator finds most natural to use.
+	The old-hand NetWare guru will likely want to use tools like the NetWare NLM for
 	<command>rsync</command> to migrate files from the NetWare server to the Samba server.
 	The UNIX administrator might prefer tools that are part of the Mars_NWE (Martin Stovers' NetWare
 	Emulator) open source package. The MS Windows network administrator will likely make use of the
 	NWConv utility that is a part of Windows NT4 Server. Whatever your tool of choice,
-	migration will be filled with joyous and challenging moments - though probably not
+	migration will be filled with joyous and challenging moments &smbmdash; though probably not
 	concurrently.
 	</para>
 
 	<para>
 	The priority that Misty faced was one of migration of the data files off the NetWare 4.11
-	server and onto a Samba based Windows file and print server. This chapter does not pretend
+	server and onto a Samba-ased Windows file and print server. This chapter does not pretend
 	to document all the different methods that could be used to migrate user and group accounts
-	off a NetWare server, its focus is on migration of data files.
+	off a NetWare server. Its focus is on migration of data files.
 	</para>
 
 	<para>
-	This chapter tells its own story, so ride along, ... maybe the information here presented
+	This chapter tells its own story, so ride along. Maybe the information presented here
 	will help to smooth over a similar migration challenge in your favorite networking environment.
 	</para>
 
 	<para>
 	File paths have been modified to permit use of RPM packages provided by Novell. In the
-	original documentation contributed by Misty a the Courier-IMAP package had been built
+	original documentation contributed by Misty, the Courier-IMAP package had been built
 	directly from the original source tarball.
 	</para>
 
@@ -73,9 +73,9 @@
 
 	<para>
 	<indexterm><primary>Novell</primary></indexterm>
-	Misty Stanley-Jones was recruited by Abmas Inc. to administer a network that had
-	not received much attention for some years and was much in need of a make-over.
-	As a brand-new sysadmin to this company, she inherited a very old Novell file server,
+	Misty Stanley-Jones was recruited by Abmas to administer a network that had
+	not received much attention for some years and was much in need of a makeover.
+	As a brand-new sysadmin to this company, she inherited a very old Novell file server
 	and came with a determination to change things for the better.
 	</para>
 
@@ -93,7 +93,7 @@
 	</simplelist>
 
 	<para>
-	The company had outgrown this server several years before and were dealing with
+	The company had outgrown this server several years before and was dealing with
 	severe growing pains. Some of the problems experienced were:
 	</para>
 		
@@ -102,7 +102,7 @@
 			<para>Very slow performance</para>
 		</listitem>
 		<listitem>
-			<para>Available storage hovering around the 5% range.</para>
+			<para>Available storage hovering around the 5% range</para>
 			<itemizedlist>
 				<listitem>
 					<para>Extremely slow print spooling.</para>
@@ -110,7 +110,7 @@
 				<listitem>
 					<para>
 					Users storing information on their local hard
-					drives, causing backup integrity problems.
+					drives, causing backup integrity problems
 					</para>
 				</listitem>
 			</itemizedlist>
@@ -119,7 +119,7 @@
 
 	<para>
 	<indexterm><primary>payroll</primary></indexterm>
-	At one point disk space had filled up to 100% causing the payroll database
+	At one point disk space had filled up to 100 percent, causing the payroll database
 	to become corrupt. This caused the accounting department to be down for over
 	a week and necessitated deployment of another file server. The replacement
 	server was created with very poor security and design considerations from
@@ -135,8 +135,8 @@
 	configuration files and background will accelerate your learning as you
 	grapple with a similar migration challenge. Let there be no confusion,
 	the information presented in this chapter is provided to demonstrate
-	how Misty dealt with a particular NetWare migration requirement and
-	it provides an over-all approach to the implementation of a Samba-3
+	how Misty dealt with a particular NetWare migration requirement, and
+	it provides an overall approach to the implementation of a Samba-3
 	environment that is significantly divergent from that presented in
 	<link linkend="happy"/>.
 	</para>
@@ -144,19 +144,19 @@
 	<para>
 	The complete removal of all site-specific information in order to produce	
 	a generic migration solution would rob this chapter of its character.
-	It should be recognized therefore, that the examples given will require
-	significant adaptation to suit local needs and thus it is recognized that
-	there are some gaps in the example files. That is not Misty's fault, it
+	It should be recognized, therefore, that the examples given require
+	significant adaptation to suit local needs and thus
+	there are some gaps in the example files. That is not Misty's fault;it
 	is the result of treatment given to her files in an attempt to make
 	the overall information more useful to you.
 	</para>
 
 	<para>
 	<indexterm><primary>cost-benefit</primary></indexterm>
-	After presenting a cost-benefit report to management, as well as an estimated
+	After management reviewed a cost-benefit report as well as an estimated
 	time-to-completion, approval was given proceed with the solution proposed.
 	The server was built from purchased components. The total project cost
-	was $3000. A brief description of the configuration follows:
+	was $3,000. A brief description of the configuration follows:
 	</para>
 
 	<simplelist>
@@ -184,7 +184,7 @@
 	</simplelist>
 
 	<para>
-	The new system has operated for six months without problems. Over the past months
+	The new system has operated for 6 months without problems. Over the past months
 	much attention has been focused on cleaning up desktops and user profiles.
 	</para>
 
@@ -199,8 +199,8 @@
 	<indexterm><primary>e-Directory</primary></indexterm>
 	<indexterm><primary>authentication</primary></indexterm>
 	<indexterm><primary>identity management</primary></indexterm>
-	A decision to use LDAP was made even though I know nothing about LDAP except that
-	I had been reading the book <quote>LDAP System Administration</quote>, by Gerald Carter.
+	A decision to use LDAP was made even though I knew nothing about LDAP except that
+	I had been reading the book <quote>LDAP System Administration,</quote> by Gerald Carter.
 	LDAP seemed to provide some of the functionality of Novell's e-Directory Services
 	and would provide centralized authentication and identity management.
 	</para>
@@ -209,9 +209,9 @@
 	<indexterm><primary>database</primary></indexterm>
 	<indexterm><primary>RPM</primary></indexterm>
 	<indexterm><primary>tree</primary></indexterm>
-	Building the LDAP database took a while, and a lot of trial and error. Following
-	the guidance I obtained from Jerry Carter's book <quote>LDAP System 
-	Administration</quote>, I installed OpenLDAP (from RPM; later I compiled
+	Building the LDAP database took a while and a lot of trial and error. Following
+	the guidance I obtained from <quote>LDAP System 
+	Administration,</quote> I installed OpenLDAP (from RPM; later I compiled
 	a more current version from source) and built my initial LDAP tree.
 	</para>
 
@@ -228,19 +228,19 @@
 	<indexterm><primary>IMAP</primary></indexterm>
 	<indexterm><primary>POP3</primary></indexterm>
 	<indexterm><primary>SMTP</primary></indexterm>
-	The first challenge was to create a company white-pages, followed by manually
+	The first challenge was to create a company white pages, followed by manually
 	entering everything from the printed company directory. This used only the inetOrgPerson
-	objectclass from the OpenLDAP schemas. The next step was to write a shell script which
+	object class from the OpenLDAP schemas. The next step was to write a shell script that
 	would look at the <filename>/etc/passwd</filename> and <filename>/etc/shadow</filename>
-	files on our mail server, and create a LDIF file from which the information could be
+	files on our mail server and create a LDIF file from which the information could be
 	imported into LDAP. This would allow use of LDAP for Linux authentication, IMAP, POP3,
 	and SMTP.
 	</para>
 
 	<para>
-	Given that a decision had been made to use Courier-IMAP the schema <quote>authldap.schema</quote>
-	from the Courier-IMAP source tarball is necessary to resolve Courier-specific LDAP directory
-	needs. Where the Courier-IMAP file provided by SUSE is used this file is named
+	Because a decision was made to use Courier-IMAP the schema <quote>authldap.schema</quote>
+	from the Courier-IMAP source, tarball is necessary to resolve Courier-specific LDAP directory
+	needs. Where the Courier-IMAP file provided by SUSE is used, this file is named
 	<filename>courier.schema</filename>.
 	</para>
 
@@ -252,7 +252,7 @@
 	</para>
 
 	<para>
-	An attempt was made to use the PADL POSIX account migration scripts but I gave up trying to
+	An attempt was made to use the PADL POSIX account migration scripts, but I gave up trying to
 	make them work. Instead, even though it is most inelegant, I wrote a simple script that did
 	what I needed. It is enclosed as a simple example to demonstrate that you do not need to be
 	a guru to make light of otherwise painful repetition. This file is listed in <link linkend="sbeamg"/>.
@@ -287,12 +287,12 @@ done
 </example>
 
 	<note><para>
-	<title>Editors' Note</title>
+	
 	The PADL MigrationTools are recommended for migration of the UNIX account information into
 	the LDAP directory. The tools consist of a set of Perl scripts for migration of users, groups,
 	aliases, hosts, netgroups, networks, protocols, PRCs, and services from the existing ASCII text
 	files (or from a name service such as NIS). This too set can be obtained from the <ulink url=
-	"http://www.padl.com">PADL</ulink> web site.
+	"http://www.padl.com">PADL Web site</ulink>.
 	</para></note>
 
 	</sect2>
@@ -551,7 +551,7 @@ tls_cacertfile /etc/ssl/certs/private/abmas-cert.pem
 </example>
 
 	<para>
-	The Name Server Switch control file <filename>/etc/nsswitch.conf</filename> has the following contents:
+	The NSS control file <filename>/etc/nsswitch.conf</filename> has the following contents:
 <screen>
 # /etc/nsswitch.conf
 # This file controls the resolve order for system databases.
@@ -572,7 +572,7 @@ group:    compat ldap
 	module is shown in <link linkend="sbepu2"/> file.
 	This works out of the box with the configuration files in this chapter. It
 	enables you to have no local accounts for users (it is highly advisable 
-	to have a local account for the root user).  Traps for the unwary include:
+	to have a local account for the root user).  Traps for the unwary include the following:
 	</para>
 
 <example id="sbepu2">
@@ -626,15 +626,15 @@ session: none
 
 		<listitem>
 			<para>
-			If fail-over is configured incorrectly weird behavior can occur. For example, 
-			DNS failing to resolve.
+			If failover is configured incorrectly, weird behavior can occur. For example, 
+			DNS can fail to resolve.
 			</para>
 		</listitem>
 	</itemizedlist>
 
 	<para>
 	I do have two LDAP slave servers configured. That subject is beyond the scope
-	of this document and steps for implementing it are well-documented.
+	of this document, and steps for implementing it are well documented.
 	</para>
 
 	<para>
@@ -652,15 +652,15 @@ session: none
 	<para>
 	<indexterm><primary>white-pages</primary></indexterm>
 	<indexterm><primary>Windows Address Book</primary></indexterm>
-	Company-wide White-Pages can be searched using a LDAP client
+	Companywide white pages can be searched using an LDAP client
 	such as the one in the Windows Address Book.
 	</para>
 
 	<para>
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>smbldap-tools</primary></indexterm>
-	Having gained a solid understanding of LDAP, and a relatively workable LDAP tree
-	thus far, it was time to configure Samba. I compiled the latest stable SAMBA and
+	Having gained a solid understanding of LDAP and a relatively workable LDAP tree
+	thus far, it was time to configure Samba. I compiled the latest stable Samba and
 	also installed the latest <command>smbldap-tools</command> from 
 	<ulink url="http://idealx.com">Idealx</ulink>.
 	</para>
@@ -883,21 +883,21 @@ session: none
 	<indexterm><primary>rsyncd.conf</primary></indexterm>
 	<indexterm><primary>synchronize</primary></indexterm>
 	Note: During the process of building the new server, I kept data files
-	up-to-date with the Novell server via use of <command>rsync</command>. 
-	On a separate system (my workstation in fact) which could be rebooted
+	up to date with the Novell server via use of <command>rsync</command>. 
+	On a separate system (my workstation in fact), which could be rebooted
 	whenever necessary, I set up a mount point to the Novell server via
 	<command>ncpmount</command>. I then created a
 	<filename>rsyncd.conf</filename> to share that mount point out to my
 	new server, and synchronized once an hour. The script I used to synchronize
 	is shown in <link linkend="sbersync"/>. The files exclusion list I used
 	is shown in <link linkend="sbexcld"/>.  The reason I had to have the
-	<command>rsync</command> daemon running on a system which could be
+	<command>rsync</command> daemon running on a system that could be
 	rebooted frequently is because <constant>ncpfs</constant>
 	(part of the MARS NetWare Emulation package) has a nasty habit of creating stale
-	mount points which cannot be recovered without a reboot. The reason for hourly
+	mount points that cannot be recovered without a reboot. The reason for hourly
 	synchronization is because some part of the chain was very slow and
 	performance-heavy (whether <command>rsync</command> itself, the network,
-	or the Novell server I am not sure probably the Novell server).
+	or the Novell server, I am not sure, but it was probably the Novell server).
 	</para>
 
 <example id="sbersync">
@@ -951,8 +951,8 @@ fi
 </example>
 
 	<para>
-	After Samba had been configured, I initialized the LDAP database. So the first
-	thing I had to do was to store the LDAP password in the Samba configuration by
+	After Samba was configured, I initialized the LDAP database. The first
+	thing I had to do was store the LDAP password in the Samba configuration by
 	issuing the command (as root):
 <screen>
 &rootprompt; smbpasswd -w verysecret
@@ -964,12 +964,12 @@ fi
 The Idealx smbldap-tools package can be configured using a script called 
 <command>configure.pl</command> that is provided as part of the tool. See <link linkend="happy"/>
 for an example of its use. Many administrators, like Misty, choose to do this manually
-so as to maintain greater awareness of how the tool-chain works, and possibly to avoid
+so as to maintain greater awareness of how the tool-chain works and possibly to avoid
 undesirable actions from occurring un-noticed.
 </para></note>
 
 	<para>
-	Now Samba is ready for use. Now configure the smbldap-tools. There are two
+	Now Samba was ready for use and it was time to configure the smbldap-tools. There are two
 	relevant files, which are usually put into the directory
 	<filename>/etc/smbldap-tools</filename>. The main file,
 	<filename>smbldap.conf</filename> is shown in <link linkend="ch8ideal"/>.
@@ -1164,8 +1164,8 @@ smbpasswd="/usr/bin/smbpasswd"
 
 	<para>
 	<indexterm><primary>TLS</primary></indexterm>
-	NOTE: I chose not to take advantage of the TLS capability of this. 
-	Eventually I may go back and tweak it.  Also I chose not to take advantage
+	Note: I chose not to take advantage of the TLS capability of this. 
+	Eventually I may go back and tweak it.  Also, I chose not to take advantage
 	of the master/slave configuration as I heard horror stories that it was
 	unstable.  My slave servers are replicas only.
 	</para>
@@ -1182,7 +1182,7 @@ smbpasswd="/usr/bin/smbpasswd"
 ############################
 # Credential Configuration #
 ############################
-# Notes: you can specify two different configuration if you use a
+# Notes: you can specify two different configurations if you use a
 # master ldap for writing access and a slave ldap server for reading access
 # By default, we will use the same DN (so it will work for standard Samba
 # release)
@@ -1194,16 +1194,16 @@ masterPw="verysecret"
 	</para>
 
 	<para>
-	We can now run the <command>smbldap-populate</command> command which will populate
+	The next step was to run the <command>smbldap-populate</command> command, which populates
 	the LDAP tree with the appropriate default users, groups, and UID and GID pools.
-	It will create a user called Administrator with UID=0 and GID=0 matching the
-	Domain Admins group. This is fine you can still log in a root to a Windows system,
-	but it will break cached credentials if you need to log in as the administrator
-	to a system that is not on the network for whatever reason.
+	It creates a user called Administrator with UID=0 and GID=0 matching the
+	Domain Admins group. This is fine because you can still log on a root to a Windows system,
+	but it will break cached credentials if you need to log on as the administrator
+	to a system that is not on the network.
 	</para>
 
 	<para>
-	After the LDAP database has been pre-loaded it is prudent to validate that the
+	After the LDAP database has been preloaded, it is prudent to validate that the
 	information needed is in the LDAP directory. This can be done done by restarting
 	the LDAP server, then performing an LDAP search by executing:
 <screen>
@@ -1250,11 +1250,11 @@ ou: Idmap
 	<indexterm><primary>smbldap-groupadd</primary></indexterm>
 	<indexterm><primary>RID</primary></indexterm>
 	<indexterm><primary>sambaGroupMapping</primary></indexterm>
-	With the LDAP directory now initialized it is time to create the Windows and POSIX
+	With the LDAP directory now initialized, it was time to create the Windows and POSIX
 	(UNIX) group accounts as well as the mappings from Windows groups to UNIX groups.
-	The easiest way to do this is to use <command>smbldap-groupadd</command> command.
-	It will create the group with the posixGroup and sambaGroupMapping attributes, a
-	unique GID, and an automatically-determined RID. I learned the hard way not to
+	The easiest way to do this was to use <command>smbldap-groupadd</command> command.
+	It creates the group with the posixGroup and sambaGroupMapping attributes, a
+	unique GID, and an automatically determined RID. I learned the hard way not to
 	try to do this by hand.
 	</para>
 
@@ -1273,7 +1273,7 @@ ou: Idmap
 	<indexterm><primary>posixAccount</primary></indexterm>
 	<indexterm><primary>smbldap-usermod</primary></indexterm>
 	The most monumental task of all was adding the sambaSamAccount information to each
-	already-existent posixAccount entry.  I did it one at a time as I moved people onto
+	already existent posixAccount entry.  I did it one at a time as I moved people onto
 	the new server, by issuing the command:
 <screen>
 &rootprompt; smbldap-usermod -a -P username
@@ -1281,8 +1281,8 @@ ou: Idmap
 	<indexterm><primary>NetWare</primary></indexterm>
 	<indexterm><primary>LDIF</primary></indexterm>
 	<indexterm><primary>slapcat</primary></indexterm>
-	I completed that step for every user after asking the person what their current
-	NetWare password was. The wiser way to have done it would probably be to dump the
+	I completed that step for every user after asking the person what his or her current
+	NetWare password was. The wiser way to have done it would probably have been to dump the
 	entire database to an LDIF file. This can be done by executing:
 <screen>
 &rootprompt; slapcat &gt; somefile.ldif
@@ -1307,7 +1307,7 @@ ou: Idmap
 	</para>
 
 	<para>
-	So first I added a test user, of course. The LDIF for this test user looks like
+	I first added a test user, of course. The LDIF for this test user looks like
 	this, to give you an idea:
 <screen>
 # Entry 1: cn=Test User,ou=people,ou=corp,dc=abmas,dc=biz
@@ -1378,10 +1378,10 @@ sambaAcctFlags: [W          ]
 
 	<para>
 	<indexterm><primary>netlogon</primary></indexterm>
-	So now I can log in with a test user from the machine w2kengrspare. It's all fine and
-	good, but that user is in no groups yet so has pretty boring access.  We can fix that
+	So now I could log on with a test user from the machine w2kengrspare. It was all fine and
+	good, but that user was in no groups yet and so had pretty boring access.  I fixed that
 	by writing the login script! To write the login script, I used
-	<ulink url="http://www.kixtart.org">Kixtart</ulink>. I used it because it will work
+	<ulink url="http://www.kixtart.org">Kixtart</ulink> because it will work
 	with every architecture of Windows, has an active and helpful user base, and was both
 	easier to learn and more powerful than the standard netlogon scripts I have seen.
 	I also did not have to do a logon script per user or per group.
@@ -1389,7 +1389,7 @@ sambaAcctFlags: [W          ]
 
 	<para>
 	<indexterm><primary>Kixtart</primary></indexterm>
-	I downloaded Kixtart and put the following files in my [netlogon] share:
+	I downloaded Kixtart and put the following files in my netlogon share:
 <screen>
 KIX32.EXE
 KX32.dll
@@ -1589,16 +1589,16 @@ ENDIF
 </example>
 
 	<para>
-	As you can see in the script, I redirect the My Documents to the user's home
-	share if they are not in the Laptop group. I also add printers on a
-	group-by-group basis, and if applicable I setthe group printer. For this to
+	As you can see in the script, I redirected the My Documents to the user's home
+	share if he or she were not in the Laptop group. I also added printers on a
+	group-by-group basis, and if applicable I set the group printer. For this to
 	be effective, the print drivers must be installed on the Samba server in the
 	<filename>[print$]</filename> share. Ample documentation exists about how to
-	do that so I did not cover it.
+	do that, so it is not covered here.
 	</para>
 
 	<para>
-	I actually call this script via the logon.bat script in the [netlogon] directory:
+	I call this script via the logon.bat script in the [netlogon] directory:
 <screen>
 \\corpsrv\netlogon\kix32 \\corpsrv\netlogon\logon.kix /f
 </screen>
@@ -1608,12 +1608,12 @@ ENDIF
 
 	<para>
 	Also of note for Win9x is that the drive mappings and printer setup will not
-	work because they rely on RPC. One merely has to put the appropriate settings
+	work because they rely on RPC. You merely have to put the appropriate settings
 	into the <filename>c:\autoexec.bat</filename> file or map the drives manually.
-	One option would be to check the OS as part of the Kixtart script, and if it
-	is Win9x and if it is the first login, copy a pre-made
+	One option is to check the OS as part of the Kixtart script, and if it
+	is Win9x and is the first login, copy a premade
 	<filename>autoexec.bat</filename> to the <filename>C:</filename> drive. I
-	only have three such machines and one is going away in the very near future,
+	have onlythree such machines, and one is going away in the very near future,
 	so it was easier to do it by hand.
 	</para>
 
@@ -1622,14 +1622,14 @@ ENDIF
 	At this point I was able to add the users. This is the part that really falls
 	into upgrade. I moved the users over one group at a time, starting with the
 	people who used the least amount of resources on the network. With each group
-	that I moved, I first logged in as a standard user in that group and took
-	careful note of their environment, mainly the printers they used, their PATH,
-	and what network resources they had access to (most importantly which ones
-	they actually needed access to).
+	that I moved, I first logged on as a standard user in that group and took
+	careful note of the environment, mainly the printers he or she used, the PATH,
+	and what network resources he or she had access to (most importantly, which ones
+	the user actually needed access to).
 	</para>
 
 	<para>
-	I would then add the user's SambaSamAccount information as mentioned earlier,
+	I then added the user's SambaSamAccount information as mentioned earlier,
 	and join the computer to the domain. The very first thing I had to do was to
 	copy the user's profile to the new server. This was very important, and I really
 	struggled with the most effective way to do it.  Here is the method that worked
@@ -1639,7 +1639,7 @@ ENDIF
 	<procedure>
 		<step><para>
 			Log in as the user on the domain. This creates the local copy
-			of the user's profile and copies it to the server as they log out.
+			of the user's profile and copies it to the server as he or she logs out.
 		</para></step>
 
 		<step><para>
@@ -1660,17 +1660,17 @@ ENDIF
 			In the next dialog, copy it directly to the profiles share on the
 			Samba server (\\PDCname\profiles\user\&lt;architecture&gt; in my
 			case). You will have had to make a connection to the share as that
-			user (e.g.: Windows Explorer type \\PDCname\profiles\username).
+			user (e.g., Windows Explorer type \\PDCname\profiles\username).
 		</para></step>
 
 		<step><para>
 			When the copy is complete (it can take a while) log out, and log back in
-			as the user. All his/her settings and all contents of My Documents,
+			as the user. All of his or her settings and all contents of My Documents,
 			Favorites, and the registry should have been copied successfully.
 		</para></step>
 
 		<step><para>
-			If it doesn't look right (the dead giveaway is the desktop background)
+			If it doesn't look right (the dead giveaway is the desktop background),
 			shut down the computer without logging out (power cycle) and try logging
 			in as the user again. If it still doesn't work, repeat the steps above.
 			I only had to ever repeat it once.
@@ -1679,18 +1679,18 @@ ENDIF
 	</procedure>
 
 	<para>
-	WORDS TO THE WISE:
+	Words to the Wise:
 	</para>
 
 	<itemizedlist>
 		<listitem><para>
-			If the user was anything other than a standard user on his/her system
-			before, you will save yourself some headaches by giving them identical
-			permissions (on the local machine) as their domain account, BEFORE
-			copying their profile over. Do this through the User Administrator
+			If the user was anything other than a standard user on his or her system
+			before, you will save yourself some headaches by giving him or her identical
+			permissions (on the local machine) as his or her domain account <emphasis>before</emphasis>
+			copying the profile over. Do this through the User Administrator
 			in the Control Panel, after joining the computer to the domain and
-			before logging as that user for the first time. Otherwise they will
-			have trouble with permissions on their registry keys.
+			before logging on as that user for the first time. Otherwise the user will
+			have trouble with permissions on his or her registry keys.
 		</para></listitem>
 
 		<listitem><para>
@@ -1703,53 +1703,53 @@ ENDIF
 	After all these steps are accomplished, only cleanup details are left. Make sure user's
 	shortcuts and Network Places point to the appropriate place on the new server, check
 	the important applications to be sure they work as expected and troubleshoot any problems
-	that might arise, check to be sure the user's printers are present and working. By the
-	way, if there are any network printers installed as system printers (the Novell way)
+	that might arise, and check to be sure the user's printers are present and working. By the
+	way, if there are any network printers installed as system printers (the Novell way),
 	you will need to log in as a local administrator and delete them.
 	</para>
 
 	<para>
-	For my non-laptop systems, I would then log in and out a couple times as the user,
-	to be sure that their registry settings were modified, then I was finished.
+	For my non-laptop systems, I would then log in and out a couple times as the user
+	to be sure that his or her registry settings were modified, and then I was finished.
 	</para>
 
 	<para>
-	Some compatibility issues that cropped up included:
+	Some compatibility issues that cropped up included the following:
 	</para>
 
 	<para>
-	Blackberry client &smbmdash; It did not like having its registry settings moved around,
-	and had to be reinstalled. Also it needed write permissions to a portion of
+	Blackberry client: It did not like having its registry settings moved around
+	and so had to be reinstalled. Also, it needed write permissions to a portion of
 	the hard drive, and I had to give it those manually on the one system where
 	this was an issue.
 	</para>
 
 	<para>
-	CAMedia &smbmdash; digital camera software for Canon cameras I had all kinds of trouble
+	CAMedia: Digital camera software for Canon cameras caused all kinds of trouble
 	with the registry. I had to use the Run as service to open the registry of
 	the local user while logged in as the domain user, and give the domain user
 	the appropriate permissions to some registry keys, then export that portion
-	of the registry to a file. Then as the domain user I had to import that file
+	of the registry to a file. Then, as the domain user, I had to import that file
 	into the registry.
 	</para>
 
 	<para>
-	Crystal Reports version 7 &smbmdash; More registry problems that were solved by re-copying
+	Crystal Reports version 7: More registry problems that were solved by recopying
 	the user's profile.
 	</para>
 
 	<para>
-	Printing from legacy applications &smbmdash; I found out that Novell sent its jobs to
-	the printer in a raw format. CUPS sends them in Postscript by default. I had
+	Printing from legacy applications: I found out that Novell sends its jobs to
+	the printer in a raw format. CUPS sends them in PostScript by default. I had
 	to make a second printer definition for one printer and tell CUPS specifically
-	to send raw data to the printer, and assign this printer to the LPT port with
+	to send raw data to the printer, then assign this printer to the LPT port with
 	Kixtart's version of the net use command.
 	</para>
 
 	<para>
 	These were all eventually solved by elbow grease, queries to the Samba mailing
 	list and others, and diligence. The complete migration took about 5 weeks.
-	My userbase is relatively small, but includes multiple versions of Windows,
+	My userbase is relatively small but includes multiple versions of Windows,
 	multiple Linux member servers, a mechanized saw, a pen plotter, and legacy
 	applications written in Qbasic and R:Base, just to name a few. I actually
 	ended up making some of these applications work better (or work again, as
@@ -1759,22 +1759,22 @@ ENDIF
 
 	<para>
 	The one thing I have not been able to get working is a very old database that
-	we had around for reference purposes which uses Novell's Btrieve engine.
+	we had around for reference purposes; it uses Novell's Btrieve engine.
 	</para>
 
 	<para>
-	As the resources compare, I went from 95% disk usage to just around 10%.
-	I went from a very high load on the server to an average load of between 1
-	and 2 runnable processes on the server. I have improved the security and
+	As the resources compare, I went from 95 percent disk usage to just around 10 percent.
+	I went from a very high load on the server to an average load of between one
+	and two runnable processes on the server. I have improved the security and
 	robustness of the system. I have also implemented
-	<ulink url="http://www.clamav.net">ClamAV</ulink> Anti-virus
-	which scans the entire Samba server for viruses every two hours and
+	<ulink url="http://www.clamav.net">ClamAV</ulink> antivirus software,
+	which scans the entire Samba server for viruses every 2 hours and
 	quarantines them. I have found it much less problematic than our ancient
-	version of Norton Anti-virus Corporate Edition, and much more up-to-date.
+	version of Norton Antivirus Corporate Edition, and much more up-to-date.
 	</para>
 
 	<para>
-	In short, my users are much happier now that the new server is running, that
+	In short, my users are much happier now that the new server is running, and that
 	is what is important to me.
 	</para>
 

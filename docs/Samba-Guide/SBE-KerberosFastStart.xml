@@ -57,17 +57,17 @@
 	interesting portfolio of companies that includes accounting services, financial advice, investment
 	portfolio management, property insurance, risk assessment, and the recent addition of a a video rental
 	business. The pieces do not always appear to fit together, but Mr. Meany is certainly executing an 
-	interesting business growth and development plan. Abmas Video Rentals has been recently acquired. 
-	During the time that the acquisition was closing, the Video Rentals business upgraded their Windows 
+	interesting business growth and development plan. Abmas Video Rentals was recently acquired. 
+	During the time that the acquisition was closing, the Video Rentals business upgraded its Windows 
 	NT4-based network to Windows 2003 Server and Active Directory.
 	</para>
 
       <para><indexterm>
 	  <primary>Active Directory</primary>
 	</indexterm>
-	Bob Jordan has been accepting of the fact that Abmas Video Rentals will use Microsoft Active Directory.
-	The IT team led by Stan Soroka is committed to Samba-3 and to maintaining a uniform technology platform. 
-	Stan Soroka's team voiced their disapproval over the decision to permit this business to continue to 
+	You have accepted the fact that Abmas Video Rentals will use Microsoft Active Directory.
+	The IT team, led by Stan Soroka, is committed to Samba-3 and to maintaining a uniform technology platform. 
+	Stan Soroka's team voiced its disapproval over the decision to permit this business to continue to 
 	operate with a solution that is viewed by Christine and her group as <quote>an island of broken 
 	technologies.</quote> This comment was made by one of Christine's staff as they were installing a new 
 	Samba-3 server at the new business.
@@ -122,7 +122,7 @@
 	  </indexterm><indexterm>
 	    <primary>off-site storage</primary>
 	  </indexterm>
-	User and Group accounts, and respective privileges, have been well thought out. File system shares are
+	User and group accounts, and respective privileges, have been well thought out. File system shares are
 	appropriately secured. Backup and disaster recovery plans are well managed and validated regularly, and
 	effective off-site storage practices are considered to exceed industry norms.
 	</para>
@@ -154,7 +154,7 @@
 	stored on the Linux system. We are alarmed that secure information is accessible to staff who should 
 	not even be aware that it exists. We share the concerns of your network management staff who have gone 
 	to great lengths to set fine-grained controls that limit information access to those who need access. 
-	It seems incongruous to us that Samba winbind should be permitted to be used as it voids this fine work.
+	It seems incongruous to us that Samba winbind should be permitted to be used considering that it voids this fine work.
 	</para>
 
 	<para><indexterm>
@@ -185,12 +185,12 @@
 	  </indexterm><indexterm>
 	    <primary>trusted computing</primary>
 	  </indexterm>
-	In respect of the use of Samba, we offer the following comments: Samba is in use in nearly half of
+	Regarding the use of Samba, we offer the following comments: Samba is in use in nearly half of
 	all sites we have surveyed. ... It is our opinion that Samba offers no better security than Microsoft
 	... what worries us regarding Samba is the need to disable essential Windows security features such as
-	secure channel support, digital sign'n'seal on all communication traffic, running Active Directory in
+	secure channel support, digital sign'n'seal on all communication traffic, and running Active Directory in
 	mixed mode so that Samba clients and servers can authenticate all of it. Additionally, we are concerned that
-	Samba is not at the full capabilites of Microsoft Windows NT4 server. Microsoft has moved well beyond that
+	Samba is not at the full capabilities of Microsoft Windows NT4 server. Microsoft has moved well beyond that
 	with trusted computing initiatives that the Samba developers do not participate in.
 	</para>
 
@@ -230,13 +230,13 @@
 	</indexterm><indexterm>
 	  <primary>independent expert</primary>
 	</indexterm>
-	This is also a challenge to rise above the trouble spot.  Bob calls Stan's team together for a simple 
-	discussion, but it gets further out of hand.  When he returns to his office, he finds the following 
-	email in his in-box:
+	This is also a challenge to rise above the trouble spot. You call Stan's team together for a simple 
+	discussion, but it gets further out of hand.  When you return to your office, you find the following 
+	email in your in-box:
 	</para>
 
 	<para>
-	Bob,
+	Good afternoon,
 	</para>
 
 	<blockquote><attribution>Stan</attribution><para>
@@ -282,7 +282,7 @@
 	will approve the use of Microsoft Windows Servers (and Active Directory) subject to all costs being covered 
 	out of the budget of the division that wishes to go its own way. I propose that dissenters will still remain
 	responsible to meet the budgeted contribution to IT operations as a whole. I believe we should not coerce 
-	use of any centrally proposed standards, but make all non-compliance the financial responsibility of the 
+	use of any centrally proposed standards, but make all noncompliance the financial responsibility of the 
 	out-of-step division. Hopefully, this will encourage all divisions to walk with us and not alone.
 	</para></blockquote>
 
@@ -290,9 +290,9 @@
 		<title>Assignment Tasks</title>
 
 		<para>
-		Bob agreed with Stan's recommendations and has hired your services to help defuse the powder
-		keg. Your task is to answer each of the issues raised with a tractable answer. You must be able
-		to support your claims, keep emotions to a side, and answer technically.
+		You agreed with Stan's recommendations and hired a consultant to help defuse the powder
+		keg. The consultant's task is to provide a tractable answer to each of the issues raised. The consultant must be able
+		to support his or her claims, keep emotions to a side, and answer technically.
 		</para>
 
 	</sect2>
@@ -316,9 +316,9 @@
 	</indexterm><indexterm>
 	  <primary>employment</primary>
 	</indexterm>
-	Samba-3 is a tool. No one pounding your door to use Samba. That is a choice that you are free to 
-	make or reject. It is likely that your decision to use Samba can benefit your company more than 
-	anyone else. The Samba Team obviously believes that the Samba software is a worthy choice. 
+	Samba-3 is a tool. No one is pounding your door to make you use Samba. That is a choice that you are free to 
+	make or reject. It is likely that your decision to use Samba can greatly benefit your company. 
+	The Samba Team obviously believes that the Samba software is a worthy choice. 
 	If you hire a consultant to assist with the installation and/or deployment of Samba, or if you hire 
 	someone to help manage your Samba installation, you can create income and employment. Alternately, 
 	money saved by not spending in the IT area can be spent elsewhere in the business. All money saved 
@@ -353,8 +353,8 @@
 	  <primary>broken</primary>
 	</indexterm>
 	It would be foolish to adopt a technology that might put any data or users at risk. Security affects 
-	everyone. The Samba Team are fully cognizant of the responsibility they have to their users. 
-	The Samba documentation clearly reveals the fact that full responsibility is accepted to fix anything 
+	everyone. The Samba-Team is fully cognizant of the responsibility they have to their users. 
+	The Samba documentation clearly reveals that full responsibility is accepted to fix anything 
 	that is broken.
 	</para>
 
@@ -404,8 +404,8 @@
 	</indexterm><indexterm>
 	  <primary>vendor</primary>
 	</indexterm>
-	The real issues that a consumer (like you) needs answered is what is the way of escape from technical 
-	problems and how long will it take? The average problem turnaround time in the Open Source community is 
+	The real issues that a consumer (like you) needs answered are What is the way of escape from technical 
+	problems, and how long will it take? The average problem turnaround time in the Open Source community is 
 	approximately 48 hours. What does the EULA offer? What is the track record in the commercial software 
 	industry? What happens when your commercial vendor decides to cease providing support?
 	</para>
@@ -426,7 +426,7 @@
 	  <secondary>problem</secondary>
 	</indexterm>
 	Open Source software at least puts you in possession of the source code. This means that when
-	all else fails, you can hire a programmer to solve/fix the problem.
+	all else fails, you can hire a programmer to solve the problem.
 	</para>
 
 	<sect2>
@@ -463,8 +463,8 @@
 		  <primary>shares</primary>
 		</indexterm>
 				Windows network administrators may be dismayed to find that <command>winbind</command> 
-				exposes all Domain users so that they may use their Domain account credentials to 
-				log onto a UNIX/Linux system. The fact that all users in the Domain can see the 
+				exposes all domain users so that they may use their domain account credentials to 
+				log onto a UNIX/Linux system. The fact that all users in the domain can see the 
 				UNIX/Linux server in their Network Neighborhood and can browse the shares on the 
 				server seems to excite them further.
 				</para>
@@ -478,10 +478,10 @@
 		</indexterm><indexterm>
 		  <primary>unknown</primary>
 		</indexterm>
-				<command>winbind</command> provides for the UNIX/Linux Domain Member server or 
+				<command>winbind</command> provides for the UNIX/Linux domain member server or 
 				client, the same as one would obtain by adding a Microsoft Windows server or 
-				client to the Domain. The real objection is the fact that Samba is not MS Windows 
-				and, therefore, requires handling a little differently from the familiar Windows systems.
+				client to the domain. The real objection is the fact that Samba is not MS Windows 
+				and therefore requires handling a little differently from the familiar Windows systems.
 				One must recognize fear of the unknown.
 				</para>
 
@@ -526,7 +526,7 @@
 		</indexterm><indexterm>
 		  <primary>access controls</primary>
 		</indexterm>
-				Where Samba and the ADS Domain account information obtained through the use of
+				Where Samba and the ADS domain account information obtained through the use of
 				<command>winbind</command> permits access, by browsing or by the drive mapping to
 				a share, to data that should be better protected. This can only happen when security
 				controls have not been properly implemented. Samba permits access controls to be set
@@ -537,7 +537,7 @@
 					<listitem><para>Shares themselves (i.e., the logical share itself)</para></listitem>
 					<listitem><para>The share definition in &smb.conf;</para></listitem>
 					<listitem><para>The shared directories and files using UNIX permissions</para></listitem>
-                                        <listitem><para>Using Windows 2000 ACLs &smbmdash; if the file system is Posix enabled</para></listitem>
+                                        <listitem><para>Using Windows 2000 ACLs &smbmdash; if the file system is POSIX enabled</para></listitem>
 				</itemizedlist>
 
 				<para>
@@ -608,7 +608,7 @@
 		  <primary>weakness</primary>
 		</indexterm>
 				The report that is critical of Samba really ought to have exercised greater due
-				diligence, as the real weakness is on the side of a Microsoft Windows environment.
+				diligence: the real weakness is on the side of a Microsoft Windows environment.
 				</para></listitem>
 		</varlistentry>
 
@@ -617,7 +617,7 @@
 	    <listitem><para><indexterm>
 		  <primary>defects</primary>
 		</indexterm>
-				Samba has been designed in such a manner that weaknesses inherent in the design of
+				Samba is designed in such a manner that weaknesses inherent in the design of
 				Microsoft Windows networking ought not to expose the underlying UNIX/Linux file
 				system in any way. All software has potential defects, and Samba is no exception.
 				What matters more is how defects that are discovered get dealt with.
@@ -656,7 +656,7 @@
 		  <primary>turn-around time</primary>
 		</indexterm>
 				The report condemns Samba for releasing updates and security fixes, yet Microsoft
-				on-line updates need to be applied almost weekly. The answer to the criticism made 
+				online updates need to be applied almost weekly. The answer to the criticism 
 				lies in the fact that Samba development is continuing, documentation is improving, 
 				user needs are being increasingly met or exceeded, and security updates are issued 
 				with a short turnaround time.
@@ -676,10 +676,10 @@
 		</indexterm>
 				The release of Samba-4 is expected around late 2004 to early 2005 and involves a near 
 				complete rewrite to permit extensive modularization and to prepare Samba for new 
-				functionality planned for addition  during the next generation series. The Samba Team 
-				is responsible and can be depended upon; the history to date would suggest a high 
-				degree of dependability as well as on charter development consistent with published 
-				road-map projections.
+				functionality planned for addition  during the next-generation series. The Samba Team 
+				is responsible and can be depended upon; the history to date suggests a high 
+				degree of dependability as well on charter development consistent with published 
+				roadmap projections.
 				</para>
 
 	      <para><indexterm>
@@ -719,12 +719,12 @@
 		</indexterm><indexterm>
 		  <primary>digital sign'n'seal</primary>
 		</indexterm>
-				The report correctly mentions the fact that Samba did not support the most recent
+				The report correctly mentions that Samba did not support the most recent
 				<constant>schannel</constant> and <constant>digital sign'n'seal</constant> features
 				of Microsoft Windows NT/200x/XPPro products. This is one of the key features 
 				of the Samba-3 release. Market research reports take so long to generate that they are
 				seldom a reflection of current practice, and in many respects reports are like a
-				pathology report &smbmdash; they reflect accurately (at best) status at a snap-shot in time.
+				pathology report &smbmdash; they reflect accurately (at best) status at a snapshot in time.
 				Meanwhile, the world moves on.
 				</para>
 
@@ -746,11 +746,11 @@
 		  <primary>secure networking</primary>
 		</indexterm>
 				It should be pointed out that had clear public specifications for the protocols
-				been published, it would have been much easier to implement this and would have
+				been published, it would have been much easier to implement these features and would have
 				taken less time to do. The sole mechanism used to find an algorithm that is compatible
 				with the methods used by Microsoft has been based on observation of network traffic
 				and trial-and-error implementation of potential techniques. The real value of public
-				and defensible standards is obvious to all, and would have enabled more secure networking
+				and defensible standards is obvious to all and would have enabled more secure networking
 				for everyone.
 				</para>
 
@@ -766,8 +766,8 @@
 				<ulink url="http://support.microsoft.com/default.aspx?kbid=321733">acknowledged</ulink>
 				and for which a fix was provided. In fact,
 				<ulink url="http://www.tangent-systems.com/support/delayedwrite.html">Tangent Systems</ulink> 
-				appears even today<footnote>January 2004</footnote> to not be sure that the problem has been resolved.
-				So it is evident that some delay in release of new functionality may have
+				appears even today<footnote>January 2004</footnote> to be unsure whether the problem has been resolved,
+				it is evident that some delay in release of new functionality may have
 				fortuitous consequences.
 				</para>
 
@@ -795,7 +795,7 @@
 				and working together to help define open and publicly refereed standards. The
 				development of closed source, proprietary methods that are developed in a
 				clandestine framework of secrecy, under claims of digital rights protection, does
-				not favor the diffusion of safe networking protocols, and certainly does not
+				not favor the diffusion of safe networking protocols and certainly does not
 				help the consumer to make a better choice.
 				</para></listitem>
 		</varlistentry>
@@ -817,7 +817,7 @@
 				<literallayout>    </literallayout>
 				The Microsoft networking protocols extensively make use of remote procedure call (RPC)
 				technology. Active Directory is not a simple mixture of LDAP and Kerberos together
-				with file and print services, but rather is a complex intertwined implementation
+				with file and print services, but rather is a complex, intertwined implementation
 				of them that uses RPCs that are not supported by any of these component technologies
 				and yet by which they are made to interoperate in ways that the components do not
 				support.
@@ -841,7 +841,7 @@
 				overall support for all project maintainers to work together on the complex
 				challenge of developing and integrating the necessary technologies. Therefore, if
 				the Samba Team does not make it a priority to absorb Kerberos and LDAP functionality
-				into the Samba project, this dream request can not become a reality.
+				into the Samba project, this dream request cannot become a reality.
 				</para>
 
 	      <para><indexterm>
@@ -859,7 +859,7 @@
 				At this time, the integration of LDAP, Kerberos, and the missing RPCs is not on the
 				Samba development roadmap. If it is not on the published roadmap, it cannot be delivered
 				anytime soon. Ergo, ADS server support is not a current goal for Samba development.
-				The Samba Team is most committed to permitting Samba to be a full ADS Domain member
+				The Samba Team is most committed to permitting Samba to be a full ADS domain member
 				that is increasingly capable of being managed using Microsoft Windows MMC tools.
 				</para></listitem>
 		</varlistentry>
@@ -877,8 +877,8 @@
 	    </indexterm>
 	Kerberos is a network authentication protocol that provides secure authentication for 
 	client-server applications by using secret-key cryptography. Firewalls are an insufficient 
-	barrier mechanism in todays networking world as at best they only restrict incoming network 
-	traffic but can not prevent network traffic that comes from authorized locations from 
+	barrier mechanism in todays networking world; at best they only restrict incoming network 
+	traffic but cannot prevent network traffic that comes from authorized locations from 
 	performing unauthorized activities.
 	</para>
 
@@ -911,7 +911,7 @@
 	Kerberos is a trusted third-party service. That means that there is a third party (the kerberos 
 	server) that is trusted by all the entities on the network (users and services, usually called 
 	principals). All principals share a secret password (or key) with the kerberos server and this 
-	enables principals to verify that the messages from the kerberos server are authentic. Thus 
+	enables principals to verify that the messages from the kerberos server are authentic. Therefore, 
 	trusting the kerberos server, users and services can authenticate each other.
 	</para>
 
@@ -922,12 +922,12 @@
 	    </indexterm><indexterm>
 	      <primary>Heimdal Kerberos</primary>
 	    </indexterm>
-	Kerberos was until recently a technology that was restricted from being exported from the United States.
-	For many years that hindered global adoption of more secure networking technologies both within the USA
-	as well as outside it. A free an unencumbered implementation of MIT Kerberos has been produced in Europe
+	Kerberos was, until recently, a technology that was restricted from being exported from the United States.
+	For many years that hindered global adoption of more secure networking technologies both within the United States
+	and abroad. A free an unencumbered implementation of MIT Kerberos has been produced in Europe
 	and is available from the University of Paderborn, Sweden. It is known as the Heimdal Kerberos project.
-	In recent times the USA government has removed sanctions affecting the global distribution of MIT Kerberos.
-	It is likely that there will be a significant surge forward in the development of Kerberos enabled applications
+	In recent times the U.S. government has removed sanctions affecting the global distribution of MIT Kerberos.
+	It is likely that there will be a significant surge forward in the development of Kerberos-enabled applications
 	and in the general deployment and use of Kerberos across the spectrum of the information technology industry.
 	</para>
 
@@ -936,7 +936,7 @@
 	      <secondary>interoperability</secondary>
 	    </indexterm>
 	A storm has broken out concerning interoperability between MIT Kerberos and Microsofts' implementation
-	of it. For example, a 2002 new report by <ulink url="http://www.idg.com.sg/idgwww.nsf/0/5DDA8D153A7505A748256BAB000D992A?OpenDocument">IDG</ulink>
+	of it. For example, a 2002 report by <ulink url="http://www.idg.com.sg/idgwww.nsf/0/5DDA8D153A7505A748256BAB000D992A?OpenDocument">IDG</ulink>
 	states:
 	</para>
 
@@ -965,11 +965,11 @@
 	      <primary>RPC</primary>
 	    </indexterm>
 	It so happens that Microsoft Windows clients depend on and expect the contents of the <emphasis>unspecified
-	fields</emphasis> in the Kerberos 5 communications data stream for their Windows interoperability, in
-	particular when Samba is being expected to emulate a Windows Server 200x Domain Controller. But the interoperability
-	issue goes far deeper than this. In the Domain control protocols that are used by MS Windows XP Professional
+	fields</emphasis> in the Kerberos 5 communications data stream for their Windows interoperability,
+	particularly when Samba is being expected to emulate a Windows Server 200x domain controller. But the interoperability
+	issue goes far deeper than this. In the domain control protocols that are used by MS Windows XP Professional,
 	there is a tight interdependency between the Kerberos protocols and the Microsoft distributed computing environment
-	(DCE) remote procedure calls (RPCs) that themselves are an integral part of the SMB/CIFS protocols as used by
+	(DCE) RPCs that themselves are an integral part of the SMB/CIFS protocols as used by
 	Microsoft.
 	</para>
 
@@ -1027,8 +1027,8 @@
 	      </indexterm><indexterm>
 		<primary>account</primary>
 	      </indexterm>
-		From a Windows 200x/XP Professional workstation, log onto the Domain using the Domain Administrator 
-		account (on Samba Domains, this is usually the account called <constant>root</constant>).
+		From a Windows 200x/XP Professional workstation, log onto the domain using the Domain Administrator 
+		account (on Samba domains, this is usually the account called <constant>root</constant>).
 		</para></step>
 
 		<step><para>
@@ -1060,7 +1060,7 @@
 	      </indexterm>
 		In the left panel, the entry <guimenu>Computer Management (Local)</guimenu> should now reflect
 		the change made. For example, if the server you are administering is called <constant>FRODO</constant>,
-		the Computer Management entry should now say: <guimenu>Computer Management (FRODO)</guimenu>.
+		the Computer Management entry should now say <guimenu>Computer Management (FRODO)</guimenu>.
 		</para></step>
 
 		<step><para>
@@ -1094,7 +1094,7 @@
 		<primary>rejected</primary>
 	      </indexterm>
 		You may now edit/add/remove access control settings. Be very careful. Many problems have been
-		created by people who decided that Everyone should be rejected but one particular group should
+		created by people who decided that everyone should be rejected but one particular group should
 		have full control. This is a catch-22 situation because members of that particular group also
 		belong to the group <constant>Everyone</constant>, which therefore overrules any permissions
 		set for the permitted group.
@@ -1125,10 +1125,10 @@
 	  </indexterm><indexterm>
 	    <primary>privileges</primary>
 	  </indexterm>
-	Share-definition-based access controls can be used like a check-point or like a pile-driver. Just as a
-	check-point can be used to require someone who wants to get through to meet certain requirements, so
+	Share-definition-based access controls can be used like a checkpoint or like a pile-driver. Just as a
+	checkpoint can be used to require someone who wants to get through to meet certain requirements, so
 	it is possible to require the user (or group the user belongs to) to meet specified credential-related 
-	objectives. It can be likened to a pile-driver by overriding default controls, in that having met the 
+	objectives. It can be likened to a pile-driver by overriding default controls in that having met the 
 	credential-related objectives, the user can be granted powers and privileges that would not normally be 
 	available under default settings.
 	</para>
@@ -1142,25 +1142,25 @@
 	  </indexterm><indexterm>
 	    <primary>hierarchy of control</primary>
 	  </indexterm>
-	It must be emphasized that the controls here discussed can act as a filter, or give rights of passage,
-	that act as a super-structure over normal directory and file access controls. However, share level
-	ACLs act at a higher level than to share definition controls because the user must filter through the
-	share level controls to get to the share definition controls. The proper hierarchy of controls implemented
+	It must be emphasized that the controls here discussed can act as a filter or give rights of passage
+	that act as a superstructure over normal directory and file access controls. However, share-level
+	ACLs act at a higher level than do share definition controls because the user must filter through the
+	share-level controls to get to the share-definition controls. The proper hierarchy of controls implemented
 	by Samba and Windows networking consists of:
 	</para>
 
 	<orderedlist>
-		<listitem><para>Share Level ACLs</para></listitem>
-		<listitem><para>Share Definition Controls</para></listitem>
-		<listitem><para>Directory and File Permissions</para></listitem>
-		<listitem><para>Directory and File Posix ACLs</para></listitem>
+		<listitem><para>Share-level ACLs</para></listitem>
+		<listitem><para>Share-definition controls</para></listitem>
+		<listitem><para>Directory and file permissions</para></listitem>
+		<listitem><para>Directory and file POSIX ACLs</para></listitem>
 	</orderedlist>
 
 	<sect3>
-	<title>Check-point Controls</title>
+	<title>Checkpoint Controls</title>
 
 	  <para><indexterm>
-	      <primary>Check-point Controls</primary>
+	      <primary>Checkpoint Controls</primary>
 	    </indexterm>
 	Consider the following extract from a &smb.conf; file defining the share called <constant>Apps</constant>:
 <screen>
@@ -1186,8 +1186,8 @@
 	      </indexterm><indexterm>
 		<primary>delimiter</primary>
 	      </indexterm>
-	On Domain Member servers and clients, even when the <parameter>winbind use default domain</parameter> has
-	been specified, the use of Domain accounts in security controls requires fully qualified Domain specification,
+	On domain member servers and clients, even when the <parameter>winbind use default domain</parameter> has
+	been specified, the use of domain accounts in security controls requires fully qualified domain specification,
 	for example, <smbconfoption name="valid users">@"MEGANET\Northern Engineers"</smbconfoption>. 
 	Note the necessity to use the double quotes to avoid having the space in the Windows group name interpreted as a
 	delimiter. 
@@ -1211,8 +1211,8 @@
 	      <primary>share definition controls</primary>
 	    </indexterm>
 	Consider another example. In this case, you want to permit all members of the group <constant>Employees</constant>
-	to access the <constant>Apps</constant> share, except the user <constant>patrickj</constant>. This can be
-	easily achieved by setting a share level ACL permitting only <constant>Employees</constant> to access the share,
+	except the user <constant>patrickj</constant> to access the <constant>Apps</constant> share. This can be
+	easily achieved by setting a share-level ACL permitting only <constant>Employees</constant> to access the share,
 	and then in the share definition controls excluding just <constant>patrickj</constant>. Here is how that might
 	be done:
 <screen>
@@ -1225,7 +1225,7 @@
 	    <indexterm>
 	      <primary>permissions</primary>
 	    </indexterm>
-	Let us assume that you want to permit the user <constant>gbshaw</constant>, to manage any file in the
+	Let us assume that you want to permit the user <constant>gbshaw</constant> to manage any file in the
 	UNIX/Linux file system directory <filename>/data/apps</filename>, but you do not want to grant any write
 	permissions beyond that directory tree. Here is one way this can be done:
 <screen>
@@ -1243,13 +1243,13 @@
 	the group <constant>Doctors</constant>, excluding the user <constant>patrickj</constant>, to have 
 	read-only privilege, but the user <constant>gbshaw</constant> is granted administrative rights.
 	The administrative rights conferred upon the user <constant>gbshaw</constant> permit operation as
-	if that user has logged in as the user <constant>root</constant> on the UNIX/Linux system, and thus
-	for access to the directory tree that has been shared (exported) permit the user to override controls
+	if that user has logged in as the user <constant>root</constant> on the UNIX/Linux system and thus,
+	for access to the directory tree that has been shared (exported), permit the user to override controls
 	that apply to all other users on that resource.
 	</para>
 
 	<para>
-	There are additional check-point controls that may be used. For example, if for the same share we now
+	There are additional checkpoint controls that may be used. For example, if for the same share we now
 	want to provide the user <constant>peters</constant> with the ability to write to one directory to
 	which he has write privilege in the UNIX file system, you can specifically permit that with the
 	following settings:
@@ -1266,8 +1266,8 @@
 	      <primary>check-point controls</primary>
 	    </indexterm>
 	This is a particularly complex example at this point, but it begins to demonstrate the possibilities.
-	You should refer to the on-line manual page for the &smb.conf; file for more information regarding
-	the check-point controls that Samba implements.
+	You should refer to the online manual page for the &smb.conf; file for more information regarding
+	the checkpoint controls that Samba implements.
 	</para>
 
 	</sect3>
@@ -1280,7 +1280,7 @@
 	    </indexterm>
 	Override controls implemented by Samba permit actions like the adoption of a different identity 
 	during file system operations, the forced overwriting of normal file and directory permissions,
-	and so on. You should refer to the on-line manual page for the &smb.conf; file for more information regarding
+	and so on. You should refer to the online manual page for the &smb.conf; file for more information regarding
         the override controls that Samba implements.
 	</para>
 
@@ -1305,9 +1305,9 @@
 	That is all there is to it. Well, it is almost that simple. The downside of this method is that
 	users are logged onto the Windows client as themselves, and then immediately before accessing the
 	file, Samba makes system calls to change the effective user and group to the forced settings
-	specified, completes the file transaction, and then reverts to the actually logged on identity.
-	This imposes significant overhead on Samba. The alternative way that effectively the same result
-	can be achieved (but with lower system CPU overheads) is described next.
+	specified, completes the file transaction, and then reverts to the actually logged-on identity.
+	This imposes significant overhead on Samba. The alternative way to effectively achieve the same result
+	(but with lower system CPU overheads) is described next.
 	</para>
 
 	  <para><indexterm>
@@ -1322,10 +1322,10 @@
 	    </indexterm><indexterm>
 	      <primary>performance degradation</primary>
 	    </indexterm>
-	The use of the <parameter>force user</parameter>, or the <parameter>force group</parameter>, may
-	also have a severe impact on system (and in particular Windows client) performance. If opportunistic
+	The use of the <parameter>force user</parameter> or the <parameter>force group</parameter> may
+	also have a severe impact on system (particularly on Windows client) performance. If opportunistic
 	locking is enabled on the share (the default), it causes an <constant>oplock break</constant> to be
-	sent to the client, even if the client has not opened the file. On networks that have high traffic
+	sent to the client even if the client has not opened the file. On networks that have high traffic
 	density, or on links that are routed to a remote network segment, <constant>oplock breaks</constant>
 	can be lost. This results in possible retransmission of the request, or the client may time-out while
 	waiting for the file system transaction (read or write) to complete. The result can be a profound
@@ -1372,7 +1372,7 @@
 	<orderedlist>
 		<listitem><para>
 		A user opens a Work document from a network drive. The file was owned by user <constant>janetp</constant>
-		and <group>users</group>, and was set read/write enabled for everyone.
+		and <group>users</group>, and was set read/write-enabled for everyone.
 		</para></listitem>
 
 		<listitem><para>
@@ -1385,19 +1385,19 @@
 
 		<listitem><para>
 		The file is now owned by the user <constant>billc</constant> and group <constant>doctors</constant>,
-		and is set read/write by <constant>billc</constant>, read only by <constant>doctors</constant>, and
+		and is set read/write by <constant>billc</constant>, read-only by <constant>doctors</constant>, and
 		no access by everyone.
 		</para></listitem>
 
 		<listitem><para>
-		The original owner can not now access her own file and is <quote>justifiably</quote> upset.
+		The original owner cannot now access her own file and is <quote>justifiably</quote> upset.
 		</para></listitem>
 	</orderedlist>
 
 	<para>
 	There have been many postings over the years that report the same basic problem. Frequently Samba users
 	want to know when this <quote>bug</quote> will be fixed. The fact is, this is not a bug in Samba at all.
-	Here is the real sequence of what happens in the case mentioned above.
+	Here is the real sequence of what happens in this case.
 	</para>
 
 	<para><indexterm>
@@ -1423,7 +1423,7 @@
 	</para>
 
 	<para>
-	The question is: <quote>How can we solve the problem?</quote>
+	The question is, <quote>How can we solve the problem?</quote>
 	</para>
 
 	<para>
@@ -1462,7 +1462,7 @@
 		<primary>accessible</primary>
 	      </indexterm>
 		Set the files and directory permissions to be read/write for owner and group, and not accessible
-		to others (everyone) using the following command:
+		to others (everyone), using the following command:
 <screen>
 &rootprompt; chmod ug+rwx,o-rwx /usr/data/finance
 </screen>
@@ -1471,7 +1471,7 @@
 	  <step><para><indexterm>
 		<primary>SGID</primary>
 	      </indexterm>
-		Set the SGID (super-group) bit on all directories from the top down. This means all files 
+		Set the SGID (supergroup) bit on all directories from the top down. This means all files 
 		can be created with the permissions of the group set on the directory. It means all users 
 		who are members of the group <constant>finance</constant> can read and write all files in 
 		the directory. The directory is not readable or writable by anyone who is not in the 
@@ -1509,8 +1509,8 @@
 	  </indexterm><indexterm>
 	    <primary>side effects</primary>
 	  </indexterm>
-	Samba must translate Windows 2000 ACLs to UNIX Posix ACLs. This has some interesting side effects because
-	of the fact that there is not a 1:1 equivalence between them. The as-close-as-possible ACLs match means
+	Samba must translate Windows 2000 ACLs to UNIX POSIX ACLs. This has some interesting side effects because
+	there is not a one-to-one equivalence between them. The as-close-as-possible ACLs match means
 	that some transactions are not possible from MS Windows clients. One of these is to reset the ownership
 	of directories and files. If you want to reset ownership, this must be done from a UNIX/Linux login.
 	</para>
@@ -1525,8 +1525,8 @@
 
 	<procedure>
 		<step><para>
-		From a Windows 200x/XP Professional workstation, log onto the Domain using the Domain Administrator 
-		account (on Samba Domains, this is usually the account called <constant>root</constant>).
+		From a Windows 200x/XP Professional workstation, log onto the domain using the Domain Administrator 
+		account (on Samba domains, this is usually the account called <constant>root</constant>).
 		</para></step>
 
 		<step><para>
@@ -1581,7 +1581,7 @@
 		to edit ACLs using the <constant>Advanced</constant> editing features. Click the 
 		<guimenu>Advanced</guimenu> button. This opens a panel that has four tabs. Only the 
 		functionality under the <constant>Permissions</constant> tab can be utilized with respect 
-		to a Samba Domain server.
+		to a Samba domain server.
 		</para></step>
 
 	    <step><para><indexterm>
@@ -1590,7 +1590,7 @@
 		  <primary>permitted group</primary>
 		</indexterm>
 		You may now edit/add/remove access control settings. Be very careful. Many problems have been
-		created by people who decided that Everyone should be rejected but one particular group should
+		created by people who decided that everyone should be rejected but one particular group should
 		have full control. This is a catch-22 situation because members of that particular group also
 		belong to the group <constant>Everyone</constant>, which therefore overrules any permissions
 		set for the permitted group.
@@ -1609,7 +1609,7 @@
 
 	<para>
 	The following alternative method may be used from a Windows workstation. In this example we work
-	with a Domain called <constant>MEGANET</constant>, a server called <constant>MASSIVE</constant>, and a
+	with a domain called <constant>MEGANET</constant>, a server called <constant>MASSIVE</constant>, and a
 	share called <constant>Apps</constant>. The underlying UNIX/Linux share point for this share is
 	<filename>/data/apps</filename>.
 	</para>
@@ -1630,7 +1630,7 @@
 			<guimenuitem>Security</guimenuitem>
 			<guimenuitem>Advanced</guimenuitem>
 		</menuchoice>. This opens a panel that has four tabs. Only the functionality under the 
-		<constant>Permissions</constant> tab can be utilized in respect to a Samba Domain server.
+		<constant>Permissions</constant> tab can be utilized for a Samba domain server.
 		</para></step>
 
 	    <step><para><indexterm>
@@ -1639,7 +1639,7 @@
 		  <primary>over-rule</primary>
 		</indexterm>
                 You may now edit/add/remove access control settings. Be very careful. Many problems have been
-                created by people who decided that Everyone should be rejected but one particular group should
+                created by people who decided that everyone should be rejected but one particular group should
                 have full control. This is a catch-22 situation because members of that particular group also
                 belong to the group <constant>Everyone</constant>, which therefore overrules any permissions
                 set for the permitted group.
@@ -1662,7 +1662,7 @@
 	      <primary>shared resource</primary>
 	    </indexterm>
 	Yet another alternative method for setting desired security settings on the shared resource files and
-	directories can be achieved by logging into UNIX/Linux and setting Posix ACLs directly using command-line
+	directories can be achieved by logging into UNIX/Linux and setting POSIX ACLs directly using command-line
 	tools. Here is an example session on the same resource as in the immediately preceding example on a SUSE 9
 	Linux system:
 	</para>
@@ -1678,7 +1678,7 @@
 <screen>
 &rootprompt; cd /data
 </screen>
-		Retrieve the existing Posix ACLs entry by executing:
+		Retrieve the existing POSIX ACLs entry by executing:
 <screen>
 &rootprompt; getfacl apps
 # file: apps
@@ -1714,7 +1714,7 @@ group:AppsMgrs:rwx
 mask::rwx
 other::r-x
 </screen>
-		This confirms that the change of Posix ACL permissions has been effective.
+		This confirms that the change of POSIX ACL permissions has been effective.
 		</para></step>
 
 	    <step><para><indexterm>
@@ -1728,7 +1728,7 @@ other::r-x
 		</indexterm><indexterm>
 		  <primary>inheritance</primary>
 		</indexterm>
-		It is highly recommend that you should read the on-line manual page for the <command>setfacl</command>
+		It is highly recommend that you read the online manual page for the <command>setfacl</command>
 		and <command>getfacl</command> commands. This provides information regarding how to set/read the default
 		ACLs and how that may be propagated through the directory tree. In Windows ACLs terms, this is the equivalent
 		of setting <constant>inheritance</constant> properties.
@@ -1745,7 +1745,7 @@ other::r-x
 		<para>
 		The mish-mash of issues were thrown together into one chapter because it seemed like a good idea.
 		Looking back, this chapter could be broken into two, but it's too late now. It has been done.
-		The highlights covered are:
+		The highlights covered are as follows:
 		</para>
 
 		<itemizedlist>
@@ -1760,7 +1760,7 @@ other::r-x
 	      </indexterm>
 			Winbind honors and does not override account controls set in Active Directory.
 			This means that password change, logon hours, and so on, are (or soon will be) enforced
-			by Samba Winbind. At this time, an out-of-hours login is denied and password
+			by Samba winbind. At this time, an out-of-hours login is denied and password
 			change is enforced. At this time, if logon hours expire, the user is not forcibly
 			logged off. That may be implemented at some later date.
 			</para></listitem>
@@ -1771,7 +1771,7 @@ other::r-x
 		<primary>schannel</primary>
 	      </indexterm>
 			Sign'n'seal (plus schannel support) has been implemented in Samba-3. Beware of potential
-			problems acknowledged by Microsoft as having been fixed, but reported by some as still
+			problems acknowledged by Microsoft as having been fixed but reported by some as still
 			possibly an open issue.
 			</para></listitem>
 
@@ -1787,7 +1787,7 @@ other::r-x
 			The combination of Kerberos 5, plus OpenLDAP, plus Samba, cannot replace Microsoft
 			Active Directory. The possibility to do this is not planned in the current Samba-3
 			roadmap. Samba-3 does aim to provide further improvements in interoperability so that
-			UNIX/Linux systems may be fully integrated into Active Directory Domains.
+			UNIX/Linux systems may be fully integrated into Active Directory domains.
 			</para></listitem>
 
 			<listitem><para>
@@ -1830,7 +1830,7 @@ other::r-x
 		<primary>registry change</primary>
 	      </indexterm>
 		No. Samba-3 fully supports <constant>Sign'n'seal</constant> as well as <constant>schannel</constant>
-		operation. The registry change should not be applied when Samba-3 is used as a Domain Controller.
+		operation. The registry change should not be applied when Samba-3 is used as a domain controller.
 		</para>
 
 	</answer>
@@ -1852,7 +1852,7 @@ other::r-x
 		Yes. Samba-3 can be a fully participating native mode Active Directory client. Samba-3 does not
 		provide Active Directory services. It cannot be used to replace a Microsoft Active Directory
 		server implementation. Samba-3 can function as an Active Directory client (workstation) toolkit,
-		and it can function as an Active Directory Domain Member server.
+		and it can function as an Active Directory domain member server.
 		</para>
 
 	</answer>
@@ -1876,7 +1876,7 @@ other::r-x
 	      </indexterm>
 		No. Samba-3 can be used with NetBIOS over TCP/IP disabled, just as can be done with Windows 200x
 		Server and 200x/XPPro client products. It is no longer necessary to run mixed-mode operation,
-		as Samba-3 can join a native Windows 2003 Server ADS Domain.
+		because Samba-3 can join a native Windows 2003 Server ADS domain.
 		</para>
 
 	</answer>
@@ -1888,14 +1888,14 @@ other::r-x
 	    <para><indexterm>
 		<primary>share level access controls</primary>
 	      </indexterm>
-		Is it safe to set share level access controls in Samba?
+		Is it safe to set share-level access controls in Samba?
 		</para>
 
 	</question>
 	<answer>
 
 		<para>
-		Yes. Share level access controls have been supported since early versions of Samba-2. This is
+		Yes. Share-level access controls have been supported since early versions of Samba-2. This is
 		very mature technology. Not enough sites make use of this powerful capability, neither on
 		Windows server or with Samba servers.
 		</para>
@@ -1928,7 +1928,7 @@ other::r-x
 	      </indexterm>
 		No. Samba-3 honors UNIX/Linux file system security, supports Windows 200x ACLs, and provides 
 		means of securing shares through share definition controls in the &smb.conf; file. The additional
-		support for share level ACLs is like frosting on the cake. It adds to security, but is not essential
+		support for share-level ACLs is like frosting on the cake. It adds to security but is not essential
 		to it.
 		</para>
 
@@ -2034,7 +2034,7 @@ other::r-x
 		Either tool can be used with equal effect. There is no benefit of one over the other, except that
 		the MMC utility is present on all Windows 200x/XP systems and does not require additional software
 		to be downloaded and installed. Note that if you want to manage user and group accounts in your
-		Samba controlled Domain, the only tool that permits that is the NT4 Domain User Manager which
+		Samba-controlled domain, the only tool that permits that is the NT4 Domain User Manager, which
 		is provided as part of the <filename>SRVTOOLS.EXE</filename> utility.
 		</para>
 
@@ -2052,14 +2052,14 @@ other::r-x
 		<primary>Domain Member server</primary>
 	      </indexterm>
 		I tried to set <parameter>valid users = @Engineers</parameter>, but it does not work. My Samba
-		server is an Active Directory Domain Member server. Has this been fixed now?
+		server is an Active Directory domain member server. Has this been fixed now?
 		</para>
 
 	</question>
 	<answer>
 
 		<para>
-		The use of this parameter has always required the full specification of the Domain account, for
+		The use of this parameter has always required the full specification of the domain account, for
 		example, <parameter>valid users = @"MEGANET2\Domain Admins"</parameter>.
 		</para>
 
