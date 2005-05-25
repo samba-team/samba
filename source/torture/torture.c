@@ -1384,12 +1384,14 @@ static BOOL run_vuidtest(void)
 	static struct smbcli_state *cli1;
 	static struct smbcli_state *cli2;
 	const char *fname = "\\readonly.file";
+	char *control_char_fname;
 	int fnum1, fnum2;
 	uint8_t buf[20];
 	size_t fsize;
 	BOOL correct = True;
 	char *tmp_path;
 	int failures = 0;
+	int i;
 
 	printf("starting open test\n");
 	
@@ -1397,6 +1399,30 @@ static BOOL run_vuidtest(void)
 		return False;
 	}
 	
+	asprintf(&control_char_fname, "\\readonly.afile");
+	for (i = 1; i <= 0x1f; i++) {
+		control_char_fname[10] = i;
+		fnum1 = smbcli_nt_create_full(cli1->tree, control_char_fname, 0, SEC_FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
+				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+		
+        	if (!check_error(__location__, cli1, ERRDOS, ERRinvalidname, 
+				NT_STATUS_OBJECT_NAME_INVALID)) {
+			printf("Error code should be NT_STATUS_OBJECT_NAME_INVALID, was %s for file with %d char\n",
+					smbcli_errstr(cli1->tree), i);
+			failures++;
+		}
+
+		if (fnum1 != -1) {
+			smbcli_close(cli1->tree, fnum1);
+		}
+		smbcli_setatr(cli1->tree, control_char_fname, 0, 0);
+		smbcli_unlink(cli1->tree, control_char_fname);
+	}
+	free(control_char_fname);
+
+	if (!failures)
+		printf("Create file with control char names passed.\n");
+
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 	
