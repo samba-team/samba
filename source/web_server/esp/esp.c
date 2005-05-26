@@ -952,7 +952,7 @@ void *espGetThisPtr(EspRequest *ep)
 }
 
 /******************************************************************************/
-#if UNUSED
+#if XX_UNUSED_XX
  
 int espReadProperty(MprVar *dest, MprVar *prop)
 {
@@ -1008,7 +1008,7 @@ int espWriteVarValue(EspRequest *ep, char *var, MprVar value)
 }
 
 /******************************************************************************/
-#if UNUSED
+#if XX_UNUSED_XX
 
 int espWriteProperty(MprVar *prop, MprVar *newValue)
 {
