@@ -97,13 +97,44 @@ static void http_output_headers(struct websrv_context *web)
 }
 
 /*
+  return the local path for a URL
+*/
+static const char *http_local_path(struct websrv_context *web, const char *url)
+{
+	int i;
+	char *path;
+
+	/* check that the url is OK */
+	if (url[0] != '/') return NULL;
+
+	for (i=0;url[i];i++) {
+		if ((!isalnum(url[i]) && !strchr("./", url[i])) ||
+		    (url[i] == '.' && strchr("/.", url[i+1]))) {
+			return NULL;
+		}
+	}
+
+	path = talloc_asprintf(web, "%s/%s", lp_swat_directory(), url+1);
+	if (path == NULL) return NULL;
+
+	if (directory_exist(path)) {
+		path = talloc_asprintf_append(path, "/index.html");
+	}
+	return path;
+}
+
+/*
   called when esp wants to read a file to support include() calls
 */
-static int http_readFile(EspHandle handle, char **buf, int *len, char *path)
+static int http_readFile(EspHandle handle, char **buf, int *len, const char *path)
 {
+	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
 	int fd = -1;
 	struct stat st;
 	*buf = NULL;
+
+	path = http_local_path(web, path);
+	if (path == NULL) goto failed;
 
 	fd = open(path, O_RDONLY);
 	if (fd == -1 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) goto failed;
@@ -263,33 +294,6 @@ void http_error_unix(struct websrv_context *web, const char *info)
 	http_error(web, code, info);
 }
 
-/*
-  return the local path for a URL
-*/
-static const char *http_local_path(struct websrv_context *web, const char *url)
-{
-	int i;
-	char *path;
-
-	/* check that the url is OK */
-	if (url[0] != '/') return NULL;
-
-	for (i=0;url[i];i++) {
-		if ((!isalnum(url[i]) && !strchr("./", url[i])) ||
-		    (url[i] == '.' && strchr("/.", url[i+1]))) {
-			return NULL;
-		}
-	}
-
-	path = talloc_asprintf(web, "%s/%s", lp_swat_directory(), url+1);
-	if (path == NULL) return NULL;
-
-	if (directory_exist(path)) {
-		path = talloc_asprintf_append(path, "/index.html");
-	}
-	return path;
-}
-
 
 /*
   a simple file request
@@ -356,6 +360,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	espSetStringVar(req, ESP_SERVER_OBJ, "SERVER_PORT", 
 			talloc_asprintf(esp, "%u", socket_get_my_port(web->conn->socket)));
 	espSetStringVar(req, ESP_SERVER_OBJ, "SERVER_PROTOCOL", "http");
+	espSetStringVar(esp->req, ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
 }
 
 
@@ -369,34 +374,24 @@ static void esp_request(struct esp_state *esp)
 {
 	struct websrv_context *web = esp->web;
 	const char *url = web->input.url;
-	const char *path;
 	size_t size;
 	int res;
 	char *emsg = NULL, *buf;
 
 	http_setup_arrays(esp);
 
-	path = http_local_path(web, url);
-	if (path == NULL) goto invalid;
-
-	espSetStringVar(esp->req, ESP_REQUEST_OBJ, "SCRIPT_FILENAME", path);
-
-	if (http_readFile(web, &buf, &size, path) != 0) {
-		http_error_unix(web, path);
+	if (http_readFile(web, &buf, &size, url) != 0) {
+		http_error_unix(web, url);
 		return;
 	}
 
-	res = espProcessRequest(esp->req, path, buf, &emsg);
+	res = espProcessRequest(esp->req, url, buf, &emsg);
 	if (res != 0 && emsg) {
-		http_writeBlock(esp, emsg, strlen(emsg));
+		http_writeBlock(web, emsg, strlen(emsg));
 	}
 	talloc_free(buf);
 	http_output_headers(web);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
-	return;
-
-invalid:
-	http_error(web, 400, "Malformed URL");
 }
 
 
