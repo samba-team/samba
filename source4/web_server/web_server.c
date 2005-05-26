@@ -202,7 +202,7 @@ static const struct stream_server_ops web_stream_ops = {
 static void websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
-	uint16_t port = lp_swat_port();
+	uint16_t port = lp_web_port();
 	const struct model_ops *model_ops;
 
 	/* run the web server as a single process */

@@ -41,6 +41,7 @@ SBINDIR = @sbindir@
 LIBDIR = @libdir@
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
+SWATDIR = @swatdir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -71,7 +72,8 @@ PATH_FLAGS4 = $(PATH_FLAGS3) -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
 PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
 	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
 PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\"
-PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
+PATH_FLAGS7 = $(PATH_FLAGS6) -DSWATDIR=\"$(SWATDIR)\"
+PATH_FLAGS = $(PATH_FLAGS7) $(PASSWD_FLAGS)
 
 __EOD__
 
@@ -622,6 +624,7 @@ showlayout:
 	@echo "  privatedir:  $(PRIVATEDIR)"
 	@echo "  piddir:  $(PIDDIR)"
 	@echo "  lockdir:  $(LOCKDIR)"
+	@echo "  swatdir:  $(SWATDIR)"
 
 showflags:
 	@echo "Samba will be compiled with flags:"
@@ -655,7 +658,7 @@ REG_PROGS = 	bin/regpatch \
 		bin/regpatch \
 		bin/regdiff
 
-install: showlayout installbin installtorture installldb installreg installdat 
+install: showlayout installbin installtorture installldb installreg installdat installswat
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege
@@ -683,6 +686,9 @@ installreg: all installdirs
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
+
+installswat: installdirs
+	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg
 
