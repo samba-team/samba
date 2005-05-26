@@ -372,8 +372,9 @@ static void rw_callback(struct fd_event *event, int flags)
 
 	if (event->flags & EVENT_FD_WRITE) {
 		SMB_ASSERT(flags == EVENT_FD_WRITE);
-		done = write(event->fd, &((char *)event->data)[event->done],
-			     todo);
+		done = sys_write(event->fd,
+				 &((char *)event->data)[event->done],
+				 todo);
 
 		if (done <= 0) {
 			event->flags = 0;
@@ -384,8 +385,8 @@ static void rw_callback(struct fd_event *event, int flags)
 
 	if (event->flags & EVENT_FD_READ) {
 		SMB_ASSERT(flags == EVENT_FD_READ);
-		done = read(event->fd, &((char *)event->data)[event->done],
-			    todo);
+		done = sys_read(event->fd, &((char *)event->data)[event->done],
+				todo);
 
 		if (done <= 0) {
 			event->flags = 0;
