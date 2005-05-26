@@ -646,7 +646,8 @@ static BOOL remove_idle_client(void)
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (state->read_buf_len == 0 && state->write_buf_len == 0 &&
-				!state->getpwent_state && !state->getgrent_state) {
+		    state->response.result != WINBINDD_PENDING &&
+		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
 				last_access = state->last_access;
