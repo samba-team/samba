@@ -8,6 +8,12 @@ including /scripting/test.ejs<p>
 calling a function from test.ejs ...<p>
 <% showArray("request", request); %>
 
+including /scripting/test.esp<p>
+<% include /scripting/test.esp %>
+calling a function from test.esp ...<p>
+<% res = testfn('foo'); %>
+result is: @@res
+
 <form name="Cancel" method="POST" action="index.html"> 
     <input name="submit" type="submit" value="Cancel"><br>
 </form>

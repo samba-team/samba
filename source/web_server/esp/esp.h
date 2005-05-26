@@ -97,7 +97,7 @@ typedef struct Esp {
 	void	(*createSession)(EspHandle handle, int timeout);
 	void	(*destroySession)(EspHandle handle);
 	char	*(*getSessionId)(EspHandle handle);
-	int		(*mapToStorage)(EspHandle handle, char *path, int len, char *uri,
+	int		(*mapToStorage)(EspHandle handle, char *path, int len, const char *uri,
 				int flags);
 	int		(*readFile)(EspHandle handle, char **buf, int *len, const char *path);
 	void	(*redirect)(EspHandle handle, int code, char *url);
