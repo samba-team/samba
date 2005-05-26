@@ -1,0 +1,16 @@
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+including /scripting/test.ejs<p>
+<% include("/scripting/test.ejs"); %>
+calling a function from test.ejs ...<p>
+<% showArray("request", request); %>
+
+<form name="Cancel" method="POST" action="index.html"> 
+    <input name="submit" type="submit" value="Cancel"><br>
+</form>
+
+</BODY>
+</HTML>
