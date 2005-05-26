@@ -29,7 +29,7 @@ Open source software has matured greatly over the past 5 years with the result t
 people who hold key influential decision-making positions want to know how the business model works. They
 want to understand how problems get resolved, how questions get answered, and how the development model
 is sustained. Information and Communications Technology directors in defense organizations, and in other
-government agencies that deal with sensitive information, want to become familiar with development roadmaps
+government agencies that deal with sensitive information, want to become familiar with development road-maps
 and, in particular, seek to evaluate the track record of the main-stream open-source project teams.
 </para>
 
@@ -51,7 +51,7 @@ pace with demands, but in many areas each project has also proven to be an indus
 
 <para>
 One of the areas in which the Samba project has demonstrated key leadership is in documentation. The OSSI
-was delighted when we saw the Samba Team, and John H. Terpstra in particular, release two amzingly well
+was delighted when we saw the Samba Team, and John H. Terpstra in particular, release two amazingly well
 written books to help Samba software users to deploy, maintain and trouble-shoot Windows networking
 installations. We were concerned that, given the large volume of documentation, the challenge to maintain
 it and keep it current might prove difficult.
@@ -59,9 +59,9 @@ it and keep it current might prove difficult.
 
 <para>
 This second edition of the book, <quote>Samba-3 by Example</quote> barely one year following the release
-of the first edition has removed all concerns and is proof that open-source solutiosn are a compelling choice.
+of the first edition has removed all concerns and is proof that open-source solutions are a compelling choice.
 The first edition was released shortly following the release of Samba version 3.0 itself, and has become
-the authorative instrument for training and for guiding deployment.
+the authoritative instrument for training and for guiding deployment.
 </para>
 
 <para>
@@ -77,7 +77,7 @@ who use Samba.
 This book is the first source you should turn to before you deploy Samba and as you are mastering its
 deployment. I am proud and excited to be associated in a small way with such a useful tool. This book has
 reached maturity that is demonstrated by reiteration that at every step in deployment must be validated.
-This book makes it easy to succeed, and dificutly to fail to gain a stable working network environment.
+This book makes it easy to succeed, and difficulty to fail to gain a stable working network environment.
 </para>
 
 <para>
