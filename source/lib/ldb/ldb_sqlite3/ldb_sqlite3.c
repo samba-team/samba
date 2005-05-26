@@ -457,7 +457,7 @@ static int lsqlite3_lock(struct ldb_module *module, const char *lockname)
         /* Write-lock (but not read-lock) the database */
         lsqlite3->last_rc = sqlite3_step(lsqlite3->begin);
 
-        /* Ready the compiled statememt for its next use */
+        /* Ready the compiled statement for its next use */
         (void ) sqlite_reset(lsqlite3->begin);
 
 	return lsqlite3->last_rc == 0 ? 0 : -1;
@@ -484,7 +484,7 @@ static int lsqlite3_unlock(struct ldb_module *module, const char *lockname)
                 /* Final unlock.  Unlock the database */
                 lsqlite3->last_rc = sqlite3_step(lsqlite3->commit);
 
-                /* Ready the compiled statememt for its next use */
+                /* Ready the compiled statement for its next use */
                 (void ) sqlite_reset(lsqlite3->commit);
         }
 
@@ -904,7 +904,7 @@ struct ldb_context *lsqlite3_connect(const char *url,
         lsqlite3->lock_count = 0;
 
 	lsqlite3->last_rc = lsqlite3_initialize(&lsqlite3->sqlite3, url);
-	if (lsqlite3->last_rc != LDAP_SUCCESS) {
+	if (lsqlite3->last_rc != SQLITE_SUCCESS) {
 		goto failed;
 	}
 

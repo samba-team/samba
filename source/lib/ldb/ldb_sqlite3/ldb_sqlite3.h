@@ -23,3 +23,10 @@ struct lsqlite3_private {
                 sqlite3_stmt *insertSubclass;
         } queries;
 };
+
+void
+lsqlite3_base160(unsigned long val,
+                 unsigned char result[5]);
+
+char *
+lsqlite3_base160Next(char base160[]);
