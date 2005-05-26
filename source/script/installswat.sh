@@ -18,9 +18,9 @@ installdir() {
     done
 }
 
-installdir html html
-installdir html/esptest html
-installdir html/images png
+installdir . html
+installdir esptest html
+installdir images png
 installdir scripting ejs
 
 cat << EOF

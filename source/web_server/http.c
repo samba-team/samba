@@ -97,6 +97,36 @@ static void http_output_headers(struct websrv_context *web)
 }
 
 /*
+  called when esp wants to read a file to support include() calls
+*/
+static int http_readFile(EspHandle handle, char **buf, int *len, char *path)
+{
+	int fd = -1;
+	struct stat st;
+	*buf = NULL;
+
+	fd = open(path, O_RDONLY);
+	if (fd == -1 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) goto failed;
+
+	*buf = talloc_size(handle, st.st_size+1);
+	if (*buf == NULL) goto failed;
+
+	if (read(fd, *buf, st.st_size) != st.st_size) goto failed;
+
+	(*buf)[st.st_size] = 0;
+
+	close(fd);
+	*len = st.st_size;
+	return 0;
+
+failed:
+	if (fd != -1) close(fd);
+	talloc_free(*buf);
+	*buf = NULL;
+	return -1;
+}
+
+/*
   called when esp wants to output something
 */
 static int http_writeBlock(EspHandle handle, char *buf, int size)
@@ -191,7 +221,8 @@ static const struct Esp esp_control = {
 	.writeBlock      = http_writeBlock,
 	.setHeader       = http_setHeader,
 	.redirect        = http_redirect,
-	.setResponseCode = http_setResponseCode
+	.setResponseCode = http_setResponseCode,
+	.readFile        = http_readFile
 };
 
 
@@ -250,7 +281,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 		}
 	}
 
-	path = talloc_asprintf(web, "%s/html/%s", lp_swat_directory(), url+1);
+	path = talloc_asprintf(web, "%s/%s", lp_swat_directory(), url+1);
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
@@ -338,11 +369,10 @@ static void esp_request(struct esp_state *esp)
 {
 	struct websrv_context *web = esp->web;
 	const char *url = web->input.url;
-	char *buf;
 	const char *path;
-	struct stat st;
-	int fd, res;
-	char *emsg = NULL;
+	size_t size;
+	int res;
+	char *emsg = NULL, *buf;
 
 	http_setup_arrays(esp);
 
@@ -351,31 +381,16 @@ static void esp_request(struct esp_state *esp)
 
 	espSetStringVar(esp->req, ESP_REQUEST_OBJ, "SCRIPT_FILENAME", path);
 
-	/* looks ok */
-	fd = open(path, O_RDONLY);
-	if (fd == -1) {
+	if (http_readFile(web, &buf, &size, path) != 0) {
 		http_error_unix(web, path);
 		return;
 	}
-
-	if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)) {
-		close(fd);
-		goto invalid;
-	}
-
-	buf = talloc_size(esp, st.st_size+1);
-	if (buf == NULL) goto invalid;
-
-	if (read(fd, buf, st.st_size) != st.st_size) {
-		goto invalid;
-	}
-	buf[st.st_size] = 0;
-	close(fd);
 
 	res = espProcessRequest(esp->req, path, buf, &emsg);
 	if (res != 0 && emsg) {
 		http_writeBlock(esp, emsg, strlen(emsg));
 	}
+	talloc_free(buf);
 	http_output_headers(web);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
 	return;
