@@ -1,0 +1,23 @@
+<%
+  var tests = new Array("formtest", "showvars");
+%>
+
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+<img src="/images/logo.png" alt="Samba">
+<h1>Samba4 ESP test</h1>
+
+Please choose one of the following tests:
+<ul>
+<%
+  for (test in tests) {
+     url = tests[test] + ".html";
+     write("<li> <a href=" + url + ">" + tests[test] + "</a>");
+  }
+%>
+</ul>
+</BODY>
+</HTML>
