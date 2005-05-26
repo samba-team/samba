@@ -136,7 +136,7 @@ MprVar ejsCreateArray(const char *name, int size)
 
 static int objectConsProc(EjsHandle eid, int argc, MprVar **argv)
 {
-#if UNUSED
+#if XX_UNUSED_XX
 	MprVar	*obj;
 	Ejs		*ep;
 
