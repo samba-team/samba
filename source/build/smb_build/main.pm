@@ -41,6 +41,7 @@ sub smb_build_main($)
 		"smb_server/config.mk",
 		"rpc_server/config.mk",
 		"ldap_server/config.mk",
+		"web_server/config.mk",
 		"winbind/config.mk",
 		"nbt_server/config.mk",
 		"cldap_server/config.mk",
