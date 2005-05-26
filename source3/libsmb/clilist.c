@@ -32,7 +32,7 @@ extern file_info def_finfo;
 ****************************************************************************/
 
 static size_t interpret_long_filename(struct cli_state *cli,
-				   int level,char *p,file_info *finfo)
+				   int level,char *p,file_info *finfo, uint32 *p_resume_key)
 {
 	file_info finfo2;
 	int len;
@@ -40,6 +40,7 @@ static size_t interpret_long_filename(struct cli_state *cli,
 
 	if (!finfo) finfo = &finfo2;
 
+	*p_resume_key = 0;
 	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
 	switch (level) {
@@ -85,6 +86,8 @@ static size_t interpret_long_filename(struct cli_state *cli,
 		{
 			size_t namelen, slen;
 			p += 4; /* next entry offset */
+
+			*p_resume_key = IVAL(p,0);
 			p += 4; /* fileindex */
 				
 			/* these dates appear to arrive in a
@@ -146,7 +149,7 @@ static size_t interpret_long_filename(struct cli_state *cli,
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
-#if 0
+#if 1
 	int max_matches = 1366; /* Match W2k - was 512. */
 #else
 	int max_matches = 512;
@@ -170,6 +173,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	uint16 setup;
 	pstring param;
 	const char *mnt;
+	uint32 resume_key = 0;
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
@@ -204,7 +208,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,0,ff_dir_handle);
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
-			SIVAL(param,6,0); /* ff_resume_key */
+			/* For W2K servers serving out FAT filesystems we *must* set the
+			   resume key. If it's not FAT then it's returned as zero. */
+			SIVAL(param,6,resume_key); /* ff_resume_key */
 			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
 			   can miss filenames. Use last filename continue instead. JRA */
 			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
@@ -277,7 +283,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				/* Last entry - fixup the last offset length. */
 				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
 			}
-			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
+			p2 += interpret_long_filename(cli,info_level,p2,&finfo,&resume_key);
 		}
 
 		if (ff_lastname > 0) {
@@ -317,7 +323,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	mnt = cli_cm_get_mntpoint( cli );
 
 	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(cli,info_level,p,&finfo);
+		p += interpret_long_filename(cli,info_level,p,&finfo,&resume_key);
 		fn( mnt,&finfo, Mask, state );
 	}
 
