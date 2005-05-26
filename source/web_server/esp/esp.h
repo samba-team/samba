@@ -99,7 +99,7 @@ typedef struct Esp {
 	char	*(*getSessionId)(EspHandle handle);
 	int		(*mapToStorage)(EspHandle handle, char *path, int len, char *uri,
 				int flags);
-	int		(*readFile)(EspHandle handle, char **buf, int *len, char *path);
+	int		(*readFile)(EspHandle handle, char **buf, int *len, const char *path);
 	void	(*redirect)(EspHandle handle, int code, char *url);
 	void 	(*setCookie)(EspHandle handle, char *name, char *value, 
 				int lifetime, char *path, bool secure);

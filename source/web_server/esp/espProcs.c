@@ -77,8 +77,12 @@ static int includeProc(EspRequest *ep, int argc, char **argv)
 	esp = ep->esp;
 	mprAssert(argv);
 	for (i = 0; i < argc; i++) {
-		mprGetDirName(dir, sizeof(dir), ep->docPath);
-		mprSprintf(path, sizeof(path), "%s/%s", dir, argv[i]);
+		if (argv[i][0] != '/') {
+			mprGetDirName(dir, sizeof(dir), ep->docPath);
+			mprSprintf(path, sizeof(path), "%s/%s", dir, argv[i]);
+		} else {
+			mprSprintf(path, sizeof(path), "%s", argv[i]);
+		}
 		
 		if (esp->readFile(ep->requestHandle, &buf, &size, path) < 0) {
 			espError(ep, "Can't read include file: %s", path);
