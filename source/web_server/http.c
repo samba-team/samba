@@ -158,6 +158,16 @@ failed:
 }
 
 /*
+  called when esp wants to find the real path of a file
+*/
+static int http_mapToStorage(EspHandle handle, char *path, int len, const char *uri, int flags)
+{
+	if (uri == NULL || strlen(uri) >= len) return -1;
+	strncpy(path, uri, len);
+	return 0;
+}
+
+/*
   called when esp wants to output something
 */
 static int http_writeBlock(EspHandle handle, char *buf, int size)
@@ -253,7 +263,8 @@ static const struct Esp esp_control = {
 	.setHeader       = http_setHeader,
 	.redirect        = http_redirect,
 	.setResponseCode = http_setResponseCode,
-	.readFile        = http_readFile
+	.readFile        = http_readFile,
+	.mapToStorage    = http_mapToStorage
 };
 
 

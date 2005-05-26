@@ -22,6 +22,7 @@ installdir . html
 installdir esptest html
 installdir images png
 installdir scripting ejs
+installdir scripting esp
 
 cat << EOF
 ======================================================================
