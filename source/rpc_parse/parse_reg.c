@@ -621,6 +621,16 @@ BOOL reg_io_r_restore_key(const char *desc,  REG_R_RESTORE_KEY *r_u, prs_struct 
 }
 
 /*******************************************************************
+********************************************************************/
+
+void init_q_reg_save_key( REG_Q_SAVE_KEY *q_u, POLICY_HND *handle, const char *fname )
+{
+	memcpy(&q_u->pol, handle, sizeof(q_u->pol));
+	init_unistr4( &q_u->filename, fname, UNI_STR_TERMINATE );
+	q_u->sec_attr = NULL;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
