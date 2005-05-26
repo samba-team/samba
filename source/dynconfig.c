@@ -72,3 +72,4 @@ const pstring dyn_PIDDIR  = PIDDIR;
 
 const pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
 const pstring dyn_PRIVATE_DIR = PRIVATE_DIR;
+const pstring dyn_SWATDIR = SWATDIR;

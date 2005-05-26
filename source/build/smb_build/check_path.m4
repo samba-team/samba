@@ -107,6 +107,20 @@ AC_ARG_WITH(logfilebase,
     ;;
   esac])
 
+
+#################################################
+# set swat directory location
+AC_ARG_WITH(swatdir,
+[  --with-swatdir=DIR    Where to put configuration files (\$swatdir)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-swatdir called without argument - will use default])
+  ;;
+  * )
+    swatdir="$withval"
+    ;;
+  esac])
+
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
@@ -114,6 +128,7 @@ AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
+AC_SUBST(swatdir)
 
 debug=no
 AC_ARG_ENABLE(debug, 
