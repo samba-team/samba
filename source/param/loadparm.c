@@ -211,6 +211,7 @@ typedef struct
 	BOOL bWinbindUseDefaultDomain;
 	char *szIDMapBackend;
 	char *szGuestaccount;
+	char *swat_directory;
 	int max_mux;
 	int max_xmit;
 	int pwordlevel;
@@ -238,6 +239,7 @@ typedef struct
 	int nbt_port;
 	int dgram_port;
 	int cldap_port;
+	int swat_port;
 	char *socket_options;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -621,6 +623,8 @@ static struct parm_struct parm_table[] = {
 	{"nbt port", P_INTEGER, P_GLOBAL, &Globals.nbt_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"dgram port", P_INTEGER, P_GLOBAL, &Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"cldap port", P_INTEGER, P_GLOBAL, &Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"swat port", P_INTEGER, P_GLOBAL, &Globals.swat_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"swat directory", P_STRING, P_GLOBAL, &Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -938,7 +942,7 @@ static void init_globals(void)
 	do_parameter("max connections", "-1");
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup");
-	do_parameter("server services", "smb rpc nbt ldap cldap");
+	do_parameter("server services", "smb rpc nbt ldap cldap web");
 	do_parameter("auth methods", "anonymous sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
 	do_parameter("private dir", dyn_PRIVATE_DIR);
@@ -1057,6 +1061,8 @@ static void init_globals(void)
 	do_parameter("nbt port", "137");
 	do_parameter("dgram port", "138");
 	do_parameter("cldap port", "389");
+	do_parameter("swat port", "901");
+	do_parameter_var("swat directory", "%s%s", dyn_LIBDIR, "/swat");
 
 	do_parameter("nt status support", "True");
 
@@ -1160,7 +1166,9 @@ FN_GLOBAL_LIST(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_INTEGER(lp_nbt_port, &Globals.nbt_port)
 FN_GLOBAL_INTEGER(lp_dgram_port, &Globals.dgram_port)
 FN_GLOBAL_INTEGER(lp_cldap_port, &Globals.cldap_port)
+FN_GLOBAL_INTEGER(lp_swat_port, &Globals.swat_port)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
+FN_GLOBAL_STRING(lp_swat_directory, &Globals.swat_directory)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
