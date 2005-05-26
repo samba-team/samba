@@ -1653,8 +1653,11 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 		vk->data_off = prs_offset( &data_hbin->ps ) + data_hbin->first_hbin_off - HBIN_HDR_SIZE;
 	}
 	else {
+		/* make sure we don't try to copy from a NULL value pointer */
+
+		if ( vk->data_size != 0 ) 
+			memcpy( &vk->data_off, regval_data_p(value), sizeof(uint32) );
 		vk->data_size |= VK_DATA_IN_OFFSET;		
-		memcpy( &vk->data_off, regval_data_p(value), sizeof(uint32) );
 	}
 
 	return True;

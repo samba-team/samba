@@ -651,6 +651,31 @@ WERROR cli_reg_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return out.status;
 }
 
+/****************************************************************************
+do a REG Query Info
+****************************************************************************/
+WERROR cli_reg_save_key( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         POLICY_HND *hnd, const char *filename )
+{
+	REG_Q_SAVE_KEY in;
+	REG_R_SAVE_KEY out;
+	prs_struct qbuf, rbuf;
+
+	ZERO_STRUCT (in);
+	ZERO_STRUCT (out);
+	
+	init_q_reg_save_key( &in, hnd, filename );
+
+	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SAVE_KEY, 
+	            in, out, 
+	            qbuf, rbuf,
+	            reg_io_q_save_key,
+	            reg_io_r_save_key,
+	            WERR_GENERAL_FAILURE );
+
+	return out.status;
+}
+
 
 /* 
  #################################################################
