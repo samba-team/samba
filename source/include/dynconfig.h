@@ -40,3 +40,4 @@ extern const pstring dyn_LOCKDIR;
 extern const pstring dyn_PIDDIR;
 extern const pstring dyn_SMB_PASSWD_FILE;
 extern const pstring dyn_PRIVATE_DIR;
+extern const pstring dyn_SWATDIR;

@@ -250,7 +250,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 		}
 	}
 
-	path = talloc_asprintf(web, "%s/%s", lp_swat_directory(), url+1);
+	path = talloc_asprintf(web, "%s/html/%s", lp_swat_directory(), url+1);
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
@@ -275,7 +275,7 @@ static void http_simple_request(struct websrv_context *web)
 	/* looks ok */
 	web->output.fd = open(path, O_RDONLY);
 	if (web->output.fd == -1) {
-		http_error_unix(web, url);
+		http_error_unix(web, path);
 		return;
 	}
 
@@ -354,7 +354,7 @@ static void esp_request(struct esp_state *esp)
 	/* looks ok */
 	fd = open(path, O_RDONLY);
 	if (fd == -1) {
-		http_error_unix(web, url);
+		http_error_unix(web, path);
 		return;
 	}
 
