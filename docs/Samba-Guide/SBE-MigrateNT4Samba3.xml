@@ -401,19 +401,16 @@
 
 <smbconfexample id="sbent4smb">
 <title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: A</title>
-<smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
         <smbconfoption name="workgroup">DAMNATION</smbconfoption>
         <smbconfoption name="netbios name">MERLIN</smbconfoption>
         <smbconfoption name="passdb backend">ldapsam:ldap://localhost</smbconfoption>
-        <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
         <smbconfoption name="log level">1</smbconfoption>
         <smbconfoption name="syslog">0</smbconfoption>
         <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
         <smbconfoption name="max log size">0</smbconfoption>
         <smbconfoption name="smb ports">139 445</smbconfoption>
         <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
-        <smbconfoption name="show add printer wizard">Yes</smbconfoption>
         <smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m '%u'</smbconfoption>
         <smbconfoption name="#delete user script">/opt/IDEALX/sbin/smbldap-userdel '%u'</smbconfoption>
         <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd '%g'</smbconfoption>
