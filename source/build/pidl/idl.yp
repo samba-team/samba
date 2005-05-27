@@ -183,6 +183,7 @@ empty_element: property_list ';'
 		 "TYPE" => "EMPTY",
 		 "PROPERTIES" => $_[1],
 		 "POINTERS" => 0,
+		 "ARRAY_LEN" => [],
 		 "FILE" => $_[0]->YYData->{INPUT_FILENAME},
 		 "LINE" => $_[0]->YYData->{LINE},
 	 }}
@@ -238,9 +239,9 @@ element_list2:
 ;
 
 array_len: 
-    #empty 
-    | '[' ']'            { "*" }
-    | '[' anytext ']'    { "$_[2]" }
+    #empty                        { [] }
+    | '[' ']' array_len           { push(@{$_[3]}, "*"); $_[3] }
+    | '[' anytext ']' array_len   { push(@{$_[4]}, "$_[2]"); $_[4] }
 ;
 
 
