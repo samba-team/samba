@@ -597,7 +597,12 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 	}
 
 	if(len > 0) {
-		ret = read_socket_data(fd,buffer+4,len);
+		if (timeout > 0) {
+			ret = read_socket_with_timeout(fd,buffer+4,len,len,timeout);
+		} else {
+			ret = read_socket_data(fd,buffer+4,len);
+		}
+
 		if (ret != len) {
 			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
