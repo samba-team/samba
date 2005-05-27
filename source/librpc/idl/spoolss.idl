@@ -957,14 +957,14 @@
 		uint32 u3;
 		uint32 u4;
 		uint32 count;
-		[size_is(count)] uint16 *array[];
+		[size_is(count)] uint16 *array;
 	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2;
 
 	typedef struct {
 		uint32 u1;
 		uint32 u2;
 		uint32 count;
-		[size_is(count)] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2 *t2[];
+		[size_is(count)] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2 *t2;
 	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1;
 
 	WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
