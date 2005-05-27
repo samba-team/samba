@@ -62,6 +62,43 @@ static int esp_typeof(struct EspRequest *ep, int argc, struct MprVar **argv)
 	return 0;
 }
 
+/*
+  setup a return of a string list
+*/
+static void esp_returnlist(struct EspRequest *ep, 
+			   const char *name, const char **list)
+{
+	struct MprVar var;
+	int i;
+
+	var = mprCreateObjVar(name, ESP_HASH_SIZE);
+	for (i=0;list[i];i++) {
+		char idx[16];
+		struct MprVar val;
+		mprItoa(i, idx, sizeof(idx));
+		val = mprCreateStringVar(list[i], 1);
+		mprCreateProperty(&var, idx, &val);
+	}
+	espSetReturn(ep, var);
+}
+
+/*
+  return a list of defined services
+*/
+static int esp_lpServices(struct EspRequest *ep, int argc, char **argv)
+{
+	int i;
+	const char **list;
+	if (argc != 0) return -1;
+	
+	for (i=0;i<lp_numservices();i++) {
+		list = str_list_add(list, lp_servicename(i));
+	}
+	talloc_steal(ep, list);
+	esp_returnlist(ep, "services", list);
+	return 0;
+}
+
 
 /*
   allow access to loadparm variables from inside esp scripts in swat
@@ -146,24 +183,12 @@ static int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
 				return 0;
 			}
 		}
-		return -1;
-	
-	case P_LIST: {
-		const char **list = *(const char ***)parm_ptr;
-		struct MprVar var;
-		var = mprCreateObjVar(parm->label, 10);
-		for (i=0;list[i];i++) {
-			char idx[16];
-			struct MprVar val;
-			mprItoa(i, idx, sizeof(idx));
-			val = mprCreateStringVar(list[i], 1);
-			mprCreateProperty(&var, idx, &val);
-		}
-		espSetReturn(ep, var);
+		return -1;	
+	case P_LIST: 
+		esp_returnlist(ep, parm->label, *(const char ***)parm_ptr);
 		break;
 	case P_SEP:
 		return -1;
-	}
 	}
 	return 0;
 }
@@ -174,5 +199,6 @@ static int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
 void http_setup_ejs_functions(void)
 {
 	espDefineStringCFunction(NULL, "lpGet", esp_lpGet, NULL);
+	espDefineStringCFunction(NULL, "lpServices", esp_lpServices, NULL);
 	espDefineCFunction(NULL, "typeof", esp_typeof, NULL);
 }

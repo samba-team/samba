@@ -57,6 +57,9 @@ if (request['REQUEST_METHOD'] == "POST") {
 Here are some commonly used parameters:<p>
 
 <%
+
+showValue("defined services", lpServices());
+
 function showParameter(name) {
 	showValue(name, lpGet(name));
 }
