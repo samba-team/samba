@@ -5,7 +5,12 @@ Samba4 ESP test
 <BODY>
 redirecting you to the test pages ...
 <%
-  redirect("esptest/index.esp");
+if (server['SERVER_PROTOCOL'] == "http" &&
+    server['TLS_SUPPORT'] == "True") {
+	redirect("https://" + headers['HOST'] + request['REQUEST_URI']);
+} else {
+	redirect("esptest/index.esp");
+}
 %>
 </BODY>
 </HTML>
