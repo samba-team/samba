@@ -455,6 +455,28 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
 }
 
+#if HAVE_SETJMP_H
+/* the esp scripting lirary generates exceptions when
+   it hits a major error. We need to catch these and
+   report a internal server error via http
+*/
+#include <setjmp.h>
+static jmp_buf http_exception_buf;
+static const char *exception_reason;
+
+void http_exception(const char *reason)
+{
+	exception_reason = reason;
+	DEBUG(0,("%s", reason));
+	longjmp(http_exception_buf, -1);
+}
+#else
+void http_exception(const char *reason)
+{
+	DEBUG(0,("%s", reason));
+	smb_panic(reason);
+}
+#endif
 
 /*
   process a esp request
@@ -474,6 +496,12 @@ static void esp_request(struct esp_state *esp)
 		return;
 	}
 
+#if HAVE_SETJMP_H
+	if (setjmp(http_exception_buf) != 0) {
+		http_error(web, 500, exception_reason);
+		return;
+	}
+#endif
 	res = espProcessRequest(esp->req, url, buf, &emsg);
 	if (res != 0 && emsg) {
 		http_writeBlock(web, emsg, strlen(emsg));

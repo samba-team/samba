@@ -160,10 +160,10 @@ void mprLog(int level, const char *fmt, ...)
 
 void mprBreakpoint(const char *file, int line, const char *cond)
 {
-	/*
-	 *	Optionally break into the debugger here
-	 */
-	mprLog(0, "ASSERT at %s:%d, %s\n", file, line, cond);
+	char *buf;
+	mprAllocSprintf(&buf, MPR_MAX_STRING, "esp exception - ASSERT at %s:%d, %s\n", 
+					file, line, cond);
+	http_exception(buf);
 }
 
 #endif /* !BLD_GOAHEAD_WEBSERVER */
