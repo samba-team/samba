@@ -8,7 +8,11 @@
 Samba4 ESP test
 </TITLE>
 <BODY>
-<img src="/images/logo.png" alt="Samba">
+<% 
+/* this allows us to force the image to go over more efficiently as http */
+ var imagedir = "http://" + headers['HOST'] + "/images"; 
+%>
+<img src="@@imagedir/logo.png" alt="Samba">
 <h1>Samba4 ESP test</h1>
 
 Please choose one of the following tests:
