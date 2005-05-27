@@ -35,10 +35,7 @@
 /*
  *	Find out about our configuration
  */
-/*
-	this is not needed in samba builds, and breaks the build with my gcc-4.0 --metze
-	#include	"includes.h"
-*/
+    #include	"includes.h"
 
 /* allow this library to use strcpy() */
 #undef strcpy
@@ -195,7 +192,7 @@ typedef int 			bool;
 	typedef __int64 			int64;
 	typedef unsigned __int64 	uint64;
 #else
-	#define O_BINARY 0
+#define O_BINARY 0
 #ifndef uint
 	#define uint unsigned
 #endif
@@ -270,8 +267,7 @@ extern int		mprReallocStrcat(char **dest, int max, int existingLen,
 extern int		mprStrcpy(char *dest, int destMax, const char *src);
 extern int 		mprMemcpy(char *dest, int destMax, const char *src, int nbytes);
 
-extern void mprFreeAll(void);
-extern void mprSetCtx(TALLOC_CTX *ctx);
+extern void mprSetCtx(void *ctx);
 
 #ifdef __cplusplus
 }

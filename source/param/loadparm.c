@@ -63,7 +63,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "dlinklist.h"
-#include "web_server/esp/esp.h"
+#include "param/loadparm.h"
 
 BOOL in_client = False;		/* Not in the client by default */
 static BOOL bLoaded = False;
@@ -103,39 +103,6 @@ static BOOL defaults_saved = False;
 #define FLAG_CMDLINE    0x8000 /* this option was set from the command line */
 
 
-/* the following are used by loadparm for option lists */
-typedef enum
-{
-  P_BOOL,P_INTEGER,P_LIST,P_STRING,P_USTRING,P_ENUM,P_SEP
-} parm_type;
-
-typedef enum
-{
-  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
-} parm_class;
-
-struct enum_list {
-	int value;
-	const char *name;
-};
-
-struct parm_struct
-{
-	const char *label;
-	parm_type type;
-	parm_class class;
-	void *ptr;
-	BOOL (*special)(const char *, char **);
-	const struct enum_list *enum_list;
-	uint_t flags;
-	union {
-		BOOL bvalue;
-		int ivalue;
-		char *svalue;
-		char cvalue;
-		const char **lvalue;
-	} def;
-};
 
 
 struct param_opt {
@@ -1347,7 +1314,7 @@ static void init_copymap(service * pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-static const char *get_parametrics(int lookup_service, const char *type, const char *option)
+const char *lp_get_parametric(int lookup_service, const char *type, const char *option)
 {
 	char *vfskey;
         struct param_opt *data;
@@ -1442,7 +1409,7 @@ static BOOL lp_bool(const char *s)
 
 const char *lp_parm_string(int lookup_service, const char *type, const char *option)
 {
-	const char *value = get_parametrics(lookup_service, type, option);
+	const char *value = lp_get_parametric(lookup_service, type, option);
 
 	if (value)
 		return lp_string(value);
@@ -1457,7 +1424,7 @@ const char *lp_parm_string(int lookup_service, const char *type, const char *opt
 const char **lp_parm_string_list(int lookup_service, const char *type, const char *option,
 				 const char *separator)
 {
-	const char *value = get_parametrics(lookup_service, type, option);
+	const char *value = lp_get_parametric(lookup_service, type, option);
 	
 	if (value)
 		return str_list_make(talloc_autofree_context(), value, separator);
@@ -1470,7 +1437,7 @@ const char **lp_parm_string_list(int lookup_service, const char *type, const cha
 
 int lp_parm_int(int lookup_service, const char *type, const char *option, int default_v)
 {
-	const char *value = get_parametrics(lookup_service, type, option);
+	const char *value = lp_get_parametric(lookup_service, type, option);
 	
 	if (value)
 		return lp_int(value);
@@ -1483,7 +1450,7 @@ int lp_parm_int(int lookup_service, const char *type, const char *option, int de
 
 unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *option, unsigned long default_v)
 {
-	const char *value = get_parametrics(lookup_service, type, option);
+	const char *value = lp_get_parametric(lookup_service, type, option);
 	
 	if (value)
 		return lp_ulong(value);
@@ -1496,7 +1463,7 @@ unsigned long lp_parm_ulong(int lookup_service, const char *type, const char *op
 
 BOOL lp_parm_bool(int lookup_service, const char *type, const char *option, BOOL default_v)
 {
-	const char *value = get_parametrics(lookup_service, type, option);
+	const char *value = lp_get_parametric(lookup_service, type, option);
 	
 	if (value)
 		return lp_bool(value);
@@ -1779,6 +1746,28 @@ static int map_parameter(const char *pszParmName)
 	   stored in different storage
 	 */
 	return (-1);
+}
+
+
+/*
+  return the parameter structure for a parameter
+*/
+struct parm_struct *lp_parm_struct(const char *name)
+{
+	int parmnum = map_parameter(name);
+	if (parmnum == -1) return NULL;
+	return &parm_table[parmnum];
+}
+
+/*
+  return the parameter pointer for a parameter
+*/
+void *lp_parm_ptr(int snum, struct parm_struct *parm)
+{
+	if (snum == -1) {
+		return parm->ptr;
+	}
+	return ((char *)ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
 }
 
 /***************************************************************************
@@ -3303,118 +3292,4 @@ int lp_maxprintjobs(int snum)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
 	return maxjobs;
-}
-
-
-/*
-  allow access to loadparm variables from inside esp scripts in swat
-  
-  can be called in 4 ways:
-
-    v = lpGet("type:parm");             gets a parametric variable
-    v = lpGet("share", "type:parm");    gets a parametric variable on a share
-    v = lpGet("parm");                  gets a global variable
-    v = lpGet("share", "parm");         gets a share variable
-
-  the returned variable is a ejs object. It is an array object for lists.  
-*/
-int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
-{
-	struct parm_struct *parm = NULL;
-	void *parm_ptr = NULL;
-	int i;
-
-	if (argc < 1) return -1;
-
-	if (argc == 2) {
-		/* its a share parameter */
-		int parmnum, snum = lp_servicenumber(argv[0]);
-		if (snum == -1) {
-			return -1;
-		}
-		if (strchr(argv[1], ':')) {
-			/* its a parametric option on a share */
-			const char *type = talloc_strndup(ep, argv[1], strcspn(argv[1], ":"));
-			const char *option = strchr(argv[1], ':') + 1;
-			const char *value;
-			if (type == NULL || option == NULL) return -1;
-			value = get_parametrics(snum, type, option);
-			if (value == NULL) return -1;
-			espSetReturnString(ep, value);
-			return 0;
-		}
-
-		/* find a share parameter */
-		parmnum = map_parameter(argv[1]);
-		if (parmnum == -1) {
-			return -1;
-		}
-		parm = &parm_table[parmnum];
-		if (parm->class == P_GLOBAL) {
-			return -1;
-		}
-		parm_ptr = ((char *)ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
-	} else if (strchr(argv[0], ':')) {
-		/* its a global parametric option */
-		const char *type = talloc_strndup(ep, argv[0], strcspn(argv[0], ":"));
-		const char *option = strchr(argv[0], ':') + 1;
-		const char *value;
-		if (type == NULL || option == NULL) return -1;
-		value = get_parametrics(-1, type, option);
-		if (value == NULL) return -1;
-		espSetReturnString(ep, value);
-		return 0;
-	} else {
-		/* its a global parameter */
-		int parmnum = map_parameter(argv[0]);
-		if (parmnum == -1) {
-			return -1;
-		}
-		parm = &parm_table[parmnum];
-		parm_ptr = parm->ptr;
-	}
-
-	if (parm == NULL || parm_ptr == NULL) {
-		return -1;
-	}
-
-	/* construct and return the right type of ejs object */
-	switch (parm->type) {
-	case P_STRING:
-	case P_USTRING:
-		espSetReturnString(ep, *(char **)parm_ptr);
-		break;
-	case P_BOOL:
-		espSetReturn(ep, mprCreateBoolVar(*(BOOL *)parm_ptr));
-		break;
-	case P_INTEGER:
-		espSetReturn(ep, mprCreateIntegerVar(*(int *)parm_ptr));
-		break;
-	case P_ENUM:
-		for (i=0; parm->enum_list[i].name; i++) {
-			if (*(int *)parm_ptr == parm->enum_list[i].value) {
-				espSetReturnString(ep, parm->enum_list[i].name);
-				return 0;
-			}
-		}
-		return -1;
-	
-	case P_LIST: {
-		const char **list = *(const char ***)parm_ptr;
-		struct MprVar var;
-		var = mprCreateObjVar(parm->label, 10);
-		for (i=0;list[i];i++) {
-			char idx[16];
-			struct MprVar val;
-			mprItoa(i, idx, sizeof(idx));
-			val = mprCreateStringVar(list[i], 1);
-			mprCreateProperty(&var, idx, &val);
-		}
-		espSetReturn(ep, var);
-		break;
-	case P_SEP:
-		return -1;
-	}
-	}
-	return 0;
 }
