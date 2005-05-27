@@ -781,6 +781,7 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 	</para>
 
 	<procedure>
+	<title>Implementation Steps for an LDAP Slave Server</title>
 
 		<step><para>
 	    <indexterm><primary>SUSE Linux</primary></indexterm>
