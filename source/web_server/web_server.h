@@ -28,6 +28,9 @@ struct websrv_context {
 	struct task_server *task;
 	struct stream_connection *conn;
 	struct {
+		BOOL tls_detect;
+		BOOL tls_first_char;
+		uint8_t first_byte;
 		DATA_BLOB partial;
 		BOOL end_of_headers;
 		char *url;
@@ -45,13 +48,32 @@ struct websrv_context {
 		const char *session_key;
 	} input;
 	struct {
+		BOOL output_pending;
 		DATA_BLOB content;
 		int fd;
 		unsigned nsent;
 		int response_code;
 		const char **headers;
 	} output;
+	void *tls_session;
 	struct session_data *session;
 };
 
+
+/*
+  context for long term storage in the web server, to support session[]
+  and application[] data. Stored in task->private.
+*/
+struct esp_data {
+	struct session_data {
+		struct session_data *next, *prev;
+		struct esp_data *edata;
+		const char *id;
+		struct MprVar *data;
+		struct timed_event *te;
+		int lifetime;
+	} *sessions;
+	struct MprVar *application_data;
+	void *tls_data;
+};
 
