@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "web_server/esp/esp.h"
+#include "param/loadparm.h"
 
 
 /*
@@ -61,6 +62,111 @@ static int esp_typeof(struct EspRequest *ep, int argc, struct MprVar **argv)
 	return 0;
 }
 
+
+/*
+  allow access to loadparm variables from inside esp scripts in swat
+  
+  can be called in 4 ways:
+
+    v = lpGet("type:parm");             gets a parametric variable
+    v = lpGet("share", "type:parm");    gets a parametric variable on a share
+    v = lpGet("parm");                  gets a global variable
+    v = lpGet("share", "parm");         gets a share variable
+
+  the returned variable is a ejs object. It is an array object for lists.  
+*/
+static int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
+{
+	struct parm_struct *parm = NULL;
+	void *parm_ptr = NULL;
+	int i;
+
+	if (argc < 1) return -1;
+
+	if (argc == 2) {
+		/* its a share parameter */
+		int snum = lp_servicenumber(argv[0]);
+		if (snum == -1) {
+			return -1;
+		}
+		if (strchr(argv[1], ':')) {
+			/* its a parametric option on a share */
+			const char *type = talloc_strndup(ep, argv[1], strcspn(argv[1], ":"));
+			const char *option = strchr(argv[1], ':') + 1;
+			const char *value;
+			if (type == NULL || option == NULL) return -1;
+			value = lp_get_parametric(snum, type, option);
+			if (value == NULL) return -1;
+			espSetReturnString(ep, value);
+			return 0;
+		}
+
+		parm = lp_parm_struct(argv[1]);
+		if (parm == NULL || parm->class == P_GLOBAL) {
+			return -1;
+		}
+		parm_ptr = lp_parm_ptr(snum, parm);
+	} else if (strchr(argv[0], ':')) {
+		/* its a global parametric option */
+		const char *type = talloc_strndup(ep, argv[0], strcspn(argv[0], ":"));
+		const char *option = strchr(argv[0], ':') + 1;
+		const char *value;
+		if (type == NULL || option == NULL) return -1;
+		value = lp_get_parametric(-1, type, option);
+		if (value == NULL) return -1;
+		espSetReturnString(ep, value);
+		return 0;
+	} else {
+		/* its a global parameter */
+		parm = lp_parm_struct(argv[0]);
+		if (parm == NULL) return -1;
+		parm_ptr = parm->ptr;
+	}
+
+	if (parm == NULL || parm_ptr == NULL) {
+		return -1;
+	}
+
+	/* construct and return the right type of ejs object */
+	switch (parm->type) {
+	case P_STRING:
+	case P_USTRING:
+		espSetReturnString(ep, *(char **)parm_ptr);
+		break;
+	case P_BOOL:
+		espSetReturn(ep, mprCreateBoolVar(*(BOOL *)parm_ptr));
+		break;
+	case P_INTEGER:
+		espSetReturn(ep, mprCreateIntegerVar(*(int *)parm_ptr));
+		break;
+	case P_ENUM:
+		for (i=0; parm->enum_list[i].name; i++) {
+			if (*(int *)parm_ptr == parm->enum_list[i].value) {
+				espSetReturnString(ep, parm->enum_list[i].name);
+				return 0;
+			}
+		}
+		return -1;
+	
+	case P_LIST: {
+		const char **list = *(const char ***)parm_ptr;
+		struct MprVar var;
+		var = mprCreateObjVar(parm->label, 10);
+		for (i=0;list[i];i++) {
+			char idx[16];
+			struct MprVar val;
+			mprItoa(i, idx, sizeof(idx));
+			val = mprCreateStringVar(list[i], 1);
+			mprCreateProperty(&var, idx, &val);
+		}
+		espSetReturn(ep, var);
+		break;
+	case P_SEP:
+		return -1;
+	}
+	}
+	return 0;
+}
 
 /*
   setup the C functions that be called from ejs

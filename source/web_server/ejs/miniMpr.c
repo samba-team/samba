@@ -35,7 +35,7 @@
 #if !BLD_APPWEB
 #if !BLD_GOAHEAD_WEBSERVER
 
-static TALLOC_CTX *mpr_ctx;
+static void *mpr_ctx;
 
 void mprSetCtx(TALLOC_CTX *ctx)
 {
