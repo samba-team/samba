@@ -35,7 +35,9 @@
 /*
  *	Find out about our configuration
  */
-    #include	"includes.h"
+#ifndef _INCLUDES_H
+	#include	"includes.h"
+#endif
 
 /* allow this library to use strcpy() */
 #undef strcpy
