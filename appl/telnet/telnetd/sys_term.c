@@ -215,13 +215,14 @@ set_termbuf(void)
     /*
      * Only make the necessary changes.
 	 */
-    if (memcmp(&termbuf, &termbuf2, sizeof(termbuf)))
+    if (memcmp(&termbuf, &termbuf2, sizeof(termbuf))) {
 # ifdef  STREAMSPTY
 	if (really_stream)
 	    tcsetattr(ttyfd, TCSANOW, &termbuf);
 	else
 # endif
 	    tcsetattr(ourpty, TCSANOW, &termbuf);
+    }
 }
 
 
