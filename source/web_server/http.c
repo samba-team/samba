@@ -409,6 +409,7 @@ invalid:
 static void http_setup_arrays(struct esp_state *esp)
 {
 	struct websrv_context *web = esp->web;
+	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
 	struct EspRequest *req = esp->req;
 	char *p;
 
@@ -424,6 +425,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_REQUEST_OBJ, "REQUEST_URI", web->input.url);
 	p = strrchr(web->input.url, '/');
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_NAME", p+1);
+	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
 	p = socket_get_peer_name(web->conn->socket, esp);
 	SETVAR(ESP_REQUEST_OBJ, "REMOTE_HOST", p);
 	SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", p);
@@ -450,7 +452,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", web->tls_session?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
-	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
+	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", edata->tls_data?"True":"False");
 }
 
 #if HAVE_SETJMP_H
