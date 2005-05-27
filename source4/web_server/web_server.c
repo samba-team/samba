@@ -169,11 +169,13 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 */
 static void websrv_accept(struct stream_connection *conn)
 {
+	struct task_server *task = talloc_get_type(conn->private, struct task_server);
 	struct websrv_context *web;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
 
+	web->task = task;
 	web->conn = conn;
 	conn->private = web;
 	web->output.fd = -1;
@@ -227,6 +229,11 @@ static void websrv_task_init(struct task_server *task)
 					     &port, task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
+
+	/* startup the esp processor - unfortunately we can't do this
+	   per connection as that wouldn't allow for session variables */
+	status = http_setup_esp(task);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	return;
 
