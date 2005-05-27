@@ -71,8 +71,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 
 			<itemizedlist>
 				<listitem><para>
-				<indexterm><primary>NetBIOS</primary><secondary>name resolution</secondary>
-					<tertiary>delays</tertiary></indexterm>
+				<indexterm><primary>NetBIOS</primary><secondary>name resolution</secondary><tertiary>delays</tertiary></indexterm>
 				<indexterm><primary>WINS</primary><secondary>server</secondary></indexterm>
 				Excessive delays in the resolution of a NetBIOS name to its IP
 				address. This may be observed when an overloaded domain controller 
@@ -90,8 +89,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 				</para></listitem>
 
 				<listitem><para>
-				<indexterm><primary>networking hardware</primary>
-					<secondary>defective</secondary></indexterm>
+				<indexterm><primary>networking hardware</primary><secondary>defective</secondary></indexterm>
 				Defective networking hardware. Over the past few years, we have seen
 				on the Samba mailing list a significant increase in the number of
 				problems that were traced to a defective network interface controller,
@@ -101,10 +99,8 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 				</para></listitem>
 
 				<listitem><para>
-				<indexterm><primary>profile</primary>
-					<secondary>roaming</secondary></indexterm>
-				<indexterm><primary>MS Outlook</primary>
-					<secondary>PST file</secondary></indexterm>
+				<indexterm><primary>profile</primary><secondary>roaming</secondary></indexterm>
+				<indexterm><primary>MS Outlook</primary><secondary>PST file</secondary></indexterm>
 				Excessively large roaming profiles. This type of problem is typically
 				the result of poor user education as well as poor network management.
 				It can be avoided by users not storing huge quantities of email in
@@ -1046,6 +1042,7 @@ logdir /data/logs
 		</para>
 
 		<procedure>
+		<title>NSS_LDAP Diagnostic Steps</title>
 
 			<step><para>
 			Verify the <constant>nss_base_passwd, nss_base_shadow, nss_base_group</constant> entries
@@ -1384,6 +1381,7 @@ They could just as well be located under the rdn <constant>cn=NextFreeUnixId</co
 	</para>
 
 	<procedure>
+	<title>OpenLDAP Server Configuration Steps</title>
 
 		<step><para>
 		<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
@@ -1548,6 +1546,7 @@ index default               sub
 	</para>
 
 	<procedure>
+	<title>PAM and NSS Client Configuration Steps</title>
 
 		<step><para>
 		<indexterm><primary>/lib/libnss_ldap.so.2</primary></indexterm>
@@ -1947,6 +1946,7 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 	</para>
 
 	<procedure id="idealxscript">
+	<title>Unpacking and Installation Steps for the <constant>smbldap-tools</constant> Tarball</title>
 
 		<step><para>
 		Create the <filename>/opt/IDEALX/sbin</filename> directory, and set its permissions
@@ -2021,6 +2021,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 	</para>
 
 	<procedure>
+	<title>Installation Steps for <constant>smbldap-tools</constant> RPM's</title>
 
 		<step><para>
 		Install the source RPM that has been downloaded as follows:
@@ -2091,6 +2092,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 	</para>
 
 	<procedure>
+	<title>Configuration Steps for <constant>smbldap-tools</constant> to Enable Use</title>
 
 		<step><para>
 		Change into the directory that contains the <filename>configure.pl</filename> script.
@@ -2379,6 +2381,8 @@ writing new configuration file:
 	</table>
 
 	<procedure id="creatacc">
+	<title>LDAP Directory Initialization Steps</title>
+
 		<step><para>
 		Start the LDAP server by executing:
 <screen>
@@ -2807,7 +2811,7 @@ Joined domain MEGANET2.
 
         Sharename      Type      Comment
         ---------      ----      -------
-        IPC$           IPC       IPC Service (Samba 3.0.1)
+        IPC$           IPC       IPC Service (Samba 3.0.20)
         accounts       Disk      Accounting Files
         service        Disk      Financial Services Files
         pidata         Disk      Property Insurance Files
@@ -2815,11 +2819,11 @@ Joined domain MEGANET2.
         netlogon       Disk      Network Logon Service
         profiles       Disk      Profile Share
         profdata       Disk      Profile Data Share
-        ADMIN$         IPC       IPC Service (Samba 3.0.1)
+        ADMIN$         IPC       IPC Service (Samba 3.0.20)
 
         Server               Comment
         ---------            -------
-        MASSIVE              Samba 3.0.1
+        MASSIVE              Samba 3.0.20
 
         Workgroup            Master
         ---------            -------
@@ -2968,6 +2972,7 @@ application/octet-stream
 
 	<procedure>
 	<title>Configuration of BDC Called: <constant>BLDG1</constant></title>
+
 		<step><para>
 		Install the files in <link linkend="sbehap-bldg1-smbconf"/>,
 		<link linkend="sbehap-shareconfa"/>, and <link linkend="sbehap-shareconfb"/>
@@ -3019,9 +3024,8 @@ bldg1$:x:1006:553:bldg1$:/dev/null:/bin/false
 		This is the correct output. If the accounts that have UIDs above 512 are not shown, there is a problem.
 		</para></step>
 
-	<step><para><indexterm>
-	      <primary>getent</primary>
-	    </indexterm>
+		<step><para>
+		<indexterm><primary>getent</primary></indexterm>
 		The next step in the verification process involves testing the operation of UNIX group
 		resolution via the NSS LDAP resolver. Execute these commands:
 <screen>
@@ -3177,6 +3181,11 @@ smb: \> q
 		</para></step>
 
 	</procedure>
+
+	<para>
+	Now that the first BDC (<constant>BDLG1</constant>) has been configured it is time to build 
+	and configure the second BDC server (<constant>BLDG2</constant>) as follows:
+	</para>
 
 	<procedure id="sbehap-bldg2">
 	<title>Configuration of BDC Called <constant>BLDG2</constant></title>
@@ -3519,6 +3528,7 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<procedure>
+	<title>Steps for Assignment of User Rights and Privileges</title>
 
 		<step><para>
 		Log onto the PDC as the <constant>root</constant> account.
@@ -3737,6 +3747,12 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	</procedure>
 
+	<para>
+	Before puching out new desktop images for the client workstations, it is perhaps a good idea that
+	desktop behavior should be returned to the original Microsoft settings. The followin steps achieve
+	that ojective:
+	</para>
+
 	<procedure>
 	<title>Reset Folder Display to Original Behavior</title>
 
@@ -3913,6 +3929,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</para>
 
 	<procedure>
+	<title>Steps to Install Printer Drivers on the Samba Servers</title>
 
 		<step><para>
 		Join your Windows XP Professional workstation (the staging machine) to the 
