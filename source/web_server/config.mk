@@ -33,7 +33,8 @@ NOPROTO=YES
 INIT_OBJ_FILES = \
 		web_server/web_server.o
 ADD_OBJ_FILES = \
-		web_server/http.o
+		web_server/http.o \
+		web_server/calls.o
 REQUIRED_SUBSYSTEMS = ESP
 # End SUBSYSTEM WEB
 #######################
