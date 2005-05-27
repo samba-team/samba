@@ -57,7 +57,7 @@ void tls_initialise(struct task_server *task)
 	const char *cafile = lp_web_cafile();
 	const char *crlfile = lp_web_crlfile();
 
-	if (!lp_parm_bool(-1, "web", "tls", False)) {
+	if (!lp_web_tls() || keyfile == NULL || *keyfile == 0) {
 		return;
 	}
 

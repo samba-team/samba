@@ -179,6 +179,7 @@ typedef struct
 	char *szIDMapBackend;
 	char *szGuestaccount;
 	char *swat_directory;
+	BOOL web_tls;
 	char *web_keyfile;
 	char *web_certfile;
 	char *web_cafile;
@@ -595,6 +596,7 @@ static struct parm_struct parm_table[] = {
 	{"dgram port", P_INTEGER, P_GLOBAL, &Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"cldap port", P_INTEGER, P_GLOBAL, &Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web port", P_INTEGER, P_GLOBAL, &Globals.web_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"web tls", P_BOOL, P_GLOBAL, &Globals.web_tls, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web tls keyfile", P_STRING, P_GLOBAL, &Globals.web_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web tls certfile", P_STRING, P_GLOBAL, &Globals.web_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web tls cafile", P_STRING, P_GLOBAL, &Globals.web_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1044,6 +1046,7 @@ static void init_globals(void)
 	do_parameter("max wins ttl", "432000");
 	do_parameter("min wins ttl", "10");
 
+	do_parameter("web tls", "True");
 	do_parameter_var("web tls keyfile", "%s/tls/key.pem", dyn_PRIVATE_DIR);
 	do_parameter_var("web tls certfile", "%s/tls/cert.pem", dyn_PRIVATE_DIR);
 	do_parameter_var("web tls cafile", "%s/tls/ca.pem", dyn_PRIVATE_DIR);
@@ -1148,6 +1151,7 @@ FN_GLOBAL_INTEGER(lp_cldap_port, &Globals.cldap_port)
 FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_swat_directory, &Globals.swat_directory)
+FN_GLOBAL_BOOL(lp_web_tls, &Globals.web_tls)
 FN_GLOBAL_STRING(lp_web_keyfile, &Globals.web_keyfile)
 FN_GLOBAL_STRING(lp_web_certfile, &Globals.web_certfile)
 FN_GLOBAL_STRING(lp_web_cafile, &Globals.web_cafile)
