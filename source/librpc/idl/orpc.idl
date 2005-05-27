@@ -59,8 +59,7 @@ interface ObjectRpcBaseTypes
 	{ 	
 		GUID id; /* Extension identifier. */
 		uint32 size; /* Extension size. */
-		/*FIXME[size_is((size+7)&~7)] uint8 data[]; Extension data. */
-		[size_is(size)] uint8 data[];
+		[size_is((size+7)&~7)] uint8 data[]; /* Extension data. */
 	} 	ORPC_EXTENT;
 
 
@@ -69,8 +68,7 @@ interface ObjectRpcBaseTypes
 	{
 		uint32 size; /* Num extents. */
 		uint32 reserved; /* Must be zero. */
-		/*FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; extents */
-		[size_is(size)] ORPC_EXTENT extent[];
+		[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; /* extents */
 	} ORPC_EXTENT_ARRAY;
 
 
