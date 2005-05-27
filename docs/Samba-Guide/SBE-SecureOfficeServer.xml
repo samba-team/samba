@@ -1509,9 +1509,17 @@ hosts:      files dns wins
 	<title>Printer Configuration</title>
 
 	<para>
+	Network administrators who are new to CUPS based printing typically experience some difficulty mastering
+	its powerful features. The steps outlined in this section are designed to navigate around the distractions
+	of learning CUPS. Instead of implementing smart features and capabilties our approach is to use it as a
+	transparent print queue that performs no filtering, and only minimal handling of each print job that is
+	submitted to it. In other words, our configuration turns CUPS into a raw-mode print queue. This means that
+	the correct printer driver must be installed on all clients.
 	</para>
 
 	<procedure>
+	<title>Printer Configuration Steps</title>
+
 		<step><para>
 		Configure each printer to be a DHCP client, carefully following the manufacturer's guidelines.
 		</para></step>
@@ -1591,6 +1599,11 @@ application/octet-stream
 		Printing drivers are installed on each network client workstation.
 		</para></step>
 	</procedure>
+
+	<para>
+	Note: The last two steps can be omitted where CUPS version 1.1.18, or later, is used &smbmdash; so
+	long as the parameter <parameter>cups options = Raw</parameter> is specified in the &smb.conf; file.
+	</para>
 
 	<para>
 	The UNIX system print queues have been configured and are ready for validation testing.
