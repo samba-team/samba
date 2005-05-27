@@ -26,8 +26,8 @@ static struct {
 	char *to;
 	int len;
 } weird_table[] = {
-	{'q', "^q^", 3},
-	{'Q', "^Q^", 3},
+	{'q', CONST_DISCARD(char *, "^q^"), 3},
+	{'Q', CONST_DISCARD(char *, "^Q^"), 3},
 	{0, NULL}
 };
 

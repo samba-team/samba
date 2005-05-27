@@ -231,7 +231,7 @@ const char *lang_msg(const char *msgid)
 void lang_msg_free(const char *msgstr)
 {
 	if (!tdb) return;
-	free((void *)msgstr);
+	free(CONST_DISCARD(void *, msgstr));
 }
 
 
@@ -248,7 +248,7 @@ const char *lang_msg_rotate(const char *msgid)
 	static pstring bufs[NUM_LANG_BUFS];
 	static int next;
 
-	msgstr = (char *)lang_msg(msgid);
+	msgstr = CONST_DISCARD(char *, lang_msg(msgid));
 	if (!msgstr) return msgid;
 
 	pstrcpy(bufs[next], msgstr);

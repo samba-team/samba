@@ -313,7 +313,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
         /* wrap that up in a nice GSS-API wrapping */
 	if (NT_STATUS_IS_OK(ret)) {
-		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_AP_REP);
+		ap_rep_wrapped = spnego_gen_krb5_wrap(
+                        ap_rep,
+                        CONST_ADD(const uint8 *, TOK_ID_KRB_AP_REP));
 	} else {
 		ap_rep_wrapped = data_blob(NULL, 0);
 	}
