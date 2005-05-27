@@ -35,7 +35,10 @@
 /*
  *	Find out about our configuration
  */
-    #include	"includes.h"
+/*
+	this is not needed in samba builds, and breaks the build with my gcc-4.0 --metze
+	#include	"includes.h"
+*/
 
 /* allow this library to use strcpy() */
 #undef strcpy
