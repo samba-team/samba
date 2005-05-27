@@ -513,6 +513,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
  *new_pw_len is the length in bytes of the possibly mulitbyte
  returned password including termination.
 ************************************************************/
+
 BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      int string_flags)
@@ -553,4 +554,32 @@ BOOL decode_pw_buffer(uint8 in_buffer[516], char *new_pwrd,
 #endif
 	
 	return True;
+}
+
+/***********************************************************
+ Encrypt/Decrypt used for LSA secrets and trusted domain
+ passwords.
+************************************************************/
+
+void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key, int forward)
+{
+	int i, k;
+
+	for (i=0,k=0;
+	     i<in->length;
+	     i += 8, k += 7) {
+		uint8_t bin[8], bout[8], key[7];
+
+		memset(bin, 0, 8);
+		memcpy(bin,  &in->data[i], MIN(8, in->length-i));
+
+		if (k + 7 > session_key->length) {
+			k = (session_key->length - k);
+		}
+		memcpy(key, &session_key->data[k], 7);
+
+		smbhash(bout, bin, key, forward?1:0);
+
+		memcpy(&out->data[i], bout, MIN(8, in->length-i));
+        }
 }
