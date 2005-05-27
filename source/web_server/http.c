@@ -780,13 +780,19 @@ void http_process_input(struct websrv_context *web)
 		talloc_free(web->session->data);
 		web->session->data = talloc_zero(web->session, struct MprVar);
 		mprSetCtx(web->session->data);
-		mprCopyVar(web->session->data, &esp->variables[ESP_SESSION_OBJ], MPR_DEEP_COPY);
-
-		/* setup the timeout for the session data */
-		talloc_free(web->session->te);
-		web->session->te = event_add_timed(web->conn->event.ctx, web->session, 
-						   timeval_current_ofs(web->session->lifetime, 0), 
-						   session_timeout, web->session);
+		if (esp->variables[ESP_SESSION_OBJ].properties == NULL ||
+		    esp->variables[ESP_SESSION_OBJ].properties[0].numItems == 0) {
+			talloc_free(web->session);
+			web->session = NULL;
+		} else {
+			mprCopyVar(web->session->data, &esp->variables[ESP_SESSION_OBJ], 
+				   MPR_DEEP_COPY);
+			/* setup the timeout for the session data */
+			talloc_free(web->session->te);
+			web->session->te = event_add_timed(web->conn->event.ctx, web->session, 
+							   timeval_current_ofs(web->session->lifetime, 0), 
+							   session_timeout, web->session);
+		}
 	}
 
 	talloc_free(esp);
