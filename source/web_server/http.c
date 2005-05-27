@@ -60,6 +60,7 @@ static void http_output_headers(struct websrv_context *web)
 	int i;
 	char *s;
 	DATA_BLOB b;
+	uint32_t content_length = 0;
 	const char *response_string = "Unknown Code";
 	const struct {
 		unsigned code;
@@ -90,7 +91,15 @@ static void http_output_headers(struct websrv_context *web)
 	for (i=0;web->output.headers[i];i++) {
 		s = talloc_asprintf_append(s, "%s\r\n", web->output.headers[i]);
 	}
-	s = talloc_asprintf_append(s, "\r\n");
+
+	/* work out the content length */
+	content_length = web->output.content.length;
+	if (web->output.fd != -1) {
+		struct stat st;
+		fstat(web->output.fd, &st);
+		content_length += st.st_size;
+	}
+	s = talloc_asprintf_append(s, "Content-Length: %u\r\n\r\n", content_length);
 	if (s == NULL) return;
 
 	b = web->output.content;
