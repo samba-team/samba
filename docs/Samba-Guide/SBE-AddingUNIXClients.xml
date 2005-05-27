@@ -78,9 +78,8 @@
 <sect1>
 	<title>Dissection and Discussion</title>
 
-      <para><indexterm>
-	  <primary>winbind</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>winbind</primary></indexterm>
 	Recent Samba mailing-list activity is witness to how many sites are using winbind. Some have no trouble
 	at all with it, yet to others the problems seem insurmountable. Periodically there are complaints concerning
 	an inability to achieve identical user and group IDs between Windows and UNIX environments.
@@ -101,42 +100,29 @@
 		the immediate technical problem, but also can understand how needs may change.
 		</para>
 
-	<para><indexterm>
-	    <primary>integrate</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>integrate</primary></indexterm>
 		There are a few facts we should note when dealing with the question of how best to
 		integrate UNIX/Linux clients and servers into a Windows networking environment:
 		</para>
 
 		<itemizedlist>
-	  <listitem><para><indexterm>
-		<primary>Domain Controller</primary>
-	      </indexterm><indexterm>
-		<primary>authoritative</primary>
-	      </indexterm><indexterm>
-		<primary>accounts</primary>
-		<secondary>authoritative</secondary>
-	      </indexterm><indexterm>
-		<primary>PDC</primary>
-	      </indexterm><indexterm>
-		<primary>BDC</primary>
-	      </indexterm>
+			<listitem><para>
+			<indexterm><primary>Domain Controller</primary></indexterm>
+			<indexterm><primary>authoritative</primary></indexterm>
+			<indexterm><primary>accounts</primary><secondary>authoritative</secondary></indexterm>
+			<indexterm><primary>PDC</primary></indexterm>
+			<indexterm><primary>BDC</primary></indexterm>
 			A domain controller (PDC or BDC) is always authoritative for all accounts in its Domain.
 			This means that a BDC must (of necessity) be able to resolve all account UIDs and GIDs
 			to the same values that the PDC resolved them to.
 			</para></listitem>
 
-	  <listitem><para><indexterm>
-		<primary>local accounts</primary>
-	      </indexterm><indexterm>
-		<primary>Domain Member</primary>
-		<secondary>authoritative</secondary>
-		<tertiary>local accounts</tertiary>
-	      </indexterm><indexterm>
-		<primary>Domain accounts</primary>
-	      </indexterm><indexterm>
-		<primary>winbindd</primary>
-	      </indexterm>
+			<listitem><para>
+			<indexterm><primary>local accounts</primary></indexterm>
+			<indexterm><primary>Domain Member</primary><secondary>authoritative</secondary><tertiary>local accounts</tertiary></indexterm>
+			<indexterm><primary>Domain accounts</primary></indexterm>
+			<indexterm><primary>winbindd</primary></indexterm>
 			A domain member can be authoritative for local accounts, but is never authoritative for
 			domain accounts. If a user is accessing a domain member server and that user's account
 			is not known locally, the domain member server must resolve the identity of that user
@@ -147,45 +133,34 @@
 			<listitem><para>
 			Samba, when running on a domain member server, can resolve user identities from a
 			number of sources:
+			</para>
 
 			<itemizedlist>
-		<listitem><para><indexterm>
-		      <primary>getpwnam</primary>
-		    </indexterm><indexterm>
-		      <primary>getgrnam</primary>
-		    </indexterm><indexterm>
-		      <primary>NSS</primary>
-		    </indexterm><indexterm>
-		      <primary>LDAP</primary>
-		    </indexterm><indexterm>
-		      <primary>NIS</primary>
-		    </indexterm>
+				<listitem><para>
+				<indexterm><primary>getpwnam</primary></indexterm>
+				<indexterm><primary>getgrnam</primary></indexterm>
+				<indexterm><primary>NSS</primary></indexterm>
+				<indexterm><primary>LDAP</primary></indexterm>
+				<indexterm><primary>NIS</primary></indexterm>
 				By executing a system <command>getpwnam()</command> or <command>getgrnam()</command> call. 
 				On systems that support it, this utilizes the name service switch (NSS) facility to 
 				resolve names according to the configuration of the <filename>/etc/nsswitch.conf</filename> 
 				file. NSS can be configured to use LDAP, winbind, NIS, or local files.
 				</para></listitem>
 
-		<listitem><para><indexterm>
-		      <primary>passdb backend</primary>
-		    </indexterm><indexterm>
-		      <primary>PADL</primary>
-		    </indexterm><indexterm>
-		      <primary>nss_ldap</primary>
-		    </indexterm>
+				<listitem><para>
+				<indexterm><primary>passdb backend</primary></indexterm>
+				<indexterm><primary>PADL</primary></indexterm>
+				<indexterm><primary>nss_ldap</primary></indexterm>
 				Performing, via NSS, a direct LDAP search (where an LDAP passdb backend has been configured).
 				This requires the use of the PADL nss_ldap tool (or equivalent).
 				</para></listitem>
 
-		<listitem><para><indexterm>
-		      <primary>winbindd</primary>
-		    </indexterm><indexterm>
-		      <primary>SID</primary>
-		    </indexterm><indexterm>
-		      <primary>winbindd_idmap.tdb</primary>
-		    </indexterm><indexterm>
-		      <primary>winbindd_cache.tdb</primary>
-		    </indexterm>
+				<listitem><para>
+				<indexterm><primary>winbindd</primary></indexterm>
+				<indexterm><primary>SID</primary></indexterm>
+				<indexterm><primary>winbindd_idmap.tdb</primary></indexterm>
+				<indexterm><primary>winbindd_cache.tdb</primary></indexterm>
 				Directly by querying <command>winbindd</command>. The <command>winbindd</command>
 				contacts a domain controller to attempt to resolve the identity of the user or group. It
 				receives the Windows networking security identifier (SID) for that appropriate
@@ -194,18 +169,14 @@
 				<filename>winbindd_cache.tdb</filename> files.
 				</para>
 
-		  <para><indexterm>
-		      <primary>idmap backend</primary>
-		    </indexterm><indexterm>
-		      <primary>mapping</primary>
-		    </indexterm>
-				If the parameter 
-			<smbconfoption name="idmap backend">ldap:ldap://myserver.domain</smbconfoption>
+				<para>
+				<indexterm><primary>idmap backend</primary></indexterm>
+				<indexterm><primary>mapping</primary></indexterm>
+				If the parameter <smbconfoption name="idmap backend">ldap:ldap://myserver.domain</smbconfoption>
 				was specified and the LDAP server has been configured with a container in which it may
 				store the IDMAP entries, all domain members may share a common mapping.
 				</para></listitem>
 			</itemizedlist>
-			</para>
 
 			<para>
 			Irrespective of how &smb.conf; is configured, winbind creates and caches a local copy of
@@ -465,36 +436,27 @@
 		All accounts in <filename>/etc/passwd</filename> or in <filename>/etc/group</filename>.
 		</para></listitem>
 
-	  <listitem><para><indexterm>
-		<primary>NSS</primary>
-	      </indexterm><indexterm>
-		<primary>compat</primary>
-	      </indexterm><indexterm>
-		<primary>ldap</primary>
-	      </indexterm><indexterm>
-		<primary>nis</primary>
-	      </indexterm><indexterm>
-		<primary>nisplus</primary>
-	      </indexterm><indexterm>
-		<primary>hesiod</primary>
-	      </indexterm><indexterm>
-		<primary>ldap</primary>
-	      </indexterm><indexterm>
-		<primary>nss_ldap</primary>
-	      </indexterm><indexterm>
-		<primary>PADL Software</primary>
-	      </indexterm>
+		<listitem><para>
+		<indexterm><primary>NSS</primary></indexterm>
+		<indexterm><primary>compat</primary></indexterm>
+		<indexterm><primary>ldap</primary></indexterm>
+		<indexterm><primary>nis</primary></indexterm>
+		<indexterm><primary>nisplus</primary></indexterm>
+		<indexterm><primary>hesiod</primary></indexterm>
+		<indexterm><primary>ldap</primary></indexterm>
+		<indexterm><primary>nss_ldap</primary></indexterm>
+		<indexterm><primary>PADL Software</primary></indexterm>
 		Resolution via NSS. On NSS-enabled systems, there is usually a facility to resolve IDs
-		via multiple methods. The methods typically include <command>files</command>, <command>compat</command>, <command>db</command>, <command>ldap</command>, 
-		<command>nis</command>, <command>nisplus</command>, <command>hesiod.</command>  When correctly installed, Samba adds to this list
-		the <command>winbindd</command> facility. The ldap facility is frequently the nss_ldap
-		tool provided by PADL Software.
+		via multiple methods. The methods typically include <command>files</command>,
+		<command>compat</command>, <command>db</command>, <command>ldap</command>, 
+		<command>nis</command>, <command>nisplus</command>, <command>hesiod.</command>  When
+		correctly installed, Samba adds to this list the <command>winbindd</command> facility.
+		The ldap facility is frequently the nss_ldap tool provided by PADL Software.
 		</para></listitem>
 	</itemizedlist>
 
-	<para><indexterm>
-	    <primary>Identity resolution</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Identity resolution</primary></indexterm>
 	The diagram in <link linkend="ch9-sambadc"/> demonstrates the relationship of Samba and system 
 	components that are involved in the identity resolution process where Samba is used as a domain
 	member server within a Samba domain control network.
@@ -719,7 +681,7 @@ Join to 'MEGANET2' failed.
 	</procedure>
 
 <smbconfexample id="ch9-sdmsdc">
-<title>Samba Domain Member in Samba Domain Control Context &smbmdash; &smb.conf; File</title>
+<title>Samba Domain Member in Samba Domain Using LDAP &smbmdash; &smb.conf; File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1018,7 +980,7 @@ MEGANET2+PIOps:x:10005:
 	</procedure>
 
 <smbconfexample id="ch0-NT4DSDM">
-<title>Samba Domain Member Server &smb.conf; File for NT4 Domain</title>
+<title>Samba Domain Member Server Using Winbind &smb.conf; File for NT4 Domain</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1110,7 +1072,7 @@ Joined domain MEGANET2.
 	</procedure>
 
 <smbconfexample id="ch0-NT4DSCM">
-<title>Samba Domain Member Server &smb.conf; File for NT4 Domain</title>
+<title>Samba Domain Member Server Using Local Accounts &smb.conf; File for NT4 Domain</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
