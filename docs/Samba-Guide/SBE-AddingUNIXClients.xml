@@ -1174,7 +1174,7 @@ Joined domain MEGANET2.
 	<indexterm><primary>Active Directory</primary></indexterm>
 	<indexterm><primary>LDAP</primary></indexterm>
 	<indexterm><primary>Identity resolution</primary></indexterm>
-	<indexterm <primary>Kerberos</primary></indexterm>
+	<indexterm><primary>Kerberos</primary></indexterm>
 	The diagram in <link linkend="ch9-adsdc"/> demonstrates how Samba-3 interfaces with
 	Microsoft Active Directory components. It should be noted that if Microsoft Windows Services
 	for UNIX (SFU) has been installed and correctly configured, it is possible to use client LDAP
@@ -1802,7 +1802,7 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="realm">CORP.KPAK.COM</smbconfoption>
 <smbconfoption name="server string">Office Server</smbconfoption>
 <smbconfoption name="security">ADS</smbconfoption>
-<smbconfoption name="<smbconfoption name="allow trusted domains">No</smbconfoption>
+<smbconfoption name="allow trusted domains">No</smbconfoption>
 <smbconfoption name="idmap backend">idmap_rid:KPAK=500-100000000</smbconfoption>
 <smbconfoption name="idmap uid">500-100000000</smbconfoption>
 <smbconfoption name="idmap gid">500-100000000</smbconfoption>
