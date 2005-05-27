@@ -566,9 +566,17 @@ Password changed
 				</para></step>
 
 				<step><para>
-				Install the &smb.conf; file shown in <link linkend="charity-smbconf"/> in the
-				<filename>/etc/samba</filename> directory.
+				Install the &smb.conf; file shown in <link linkend="charity-smbconfnew"/> in the
+				<filename>/etc/samba</filename> directory. This newer &smb.conf; file uses user-mode security
+				and is more suited to the mode of operation of Samba-3 that the older share-mode security
+				configuration that was shown in the first edition of this book.
 				</para></step>
+
+				<note><para>
+				If you want to use the older style configuration that uses share-mode security, you can
+				install the file shown in <link linkend="charity-smbconf"/> in the
+				<filename>/etc/samba</filename> directory.
+				</para></note>
 
 				<step><para>
 				<indexterm><primary>smbd</primary></indexterm>
@@ -633,6 +641,44 @@ application/octet-stream
 				</para></step>
 
 			</procedure>
+
+<smbconfexample id="charity-smbconfnew">
+<title>Charity Administration Office &smb.conf; File</title>
+<smbconfcomment>Global Parameters - Newer Configuration`</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="printing">CUPS</smbconfoption>
+<smbconfoption name="printcap name">CUPS</smbconfoption>
+<smbconfoption name="map to guest">Bad User</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="wins support">yes</smbconfoption>
+
+<smbconfsection name="[FTMFILES]"/>
+<smbconfoption name="comment">Funds Tracking &amp; Management Files</smbconfoption>
+<smbconfoption name="path">/data/ftmfiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="force user">abmas</smbconfoption>
+<smbconfoption name="force group">office</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="nt acl support">No</smbconfoption>
+
+<smbconfsection name="[office]"/>
+<smbconfoption name="comment">General Office Files</smbconfoption>
+<smbconfoption name="path">/data/officefiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="force user">abmas</smbconfoption>
+<smbconfoption name="force group">office</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="nt acl support">No</smbconfoption>
+
+<smbconfsection name="[printers]"/>
+<smbconfoption name="comment">Print Temporary Spool Configuration</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
+</smbconfexample>
 
 <smbconfexample id="charity-smbconf">
 <title>Charity Administration Office &smb.conf; File</title>
@@ -1233,14 +1279,14 @@ application/octet-stream
 		</procedure>
 
 <smbconfexample id="acctconf">
-<title>Accounting Office Network &smb.conf; File</title>
+<title>Accounting Office Network &smb.conf; Old Style Configuration File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
-<smbconfoption name="printing">CUPS</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="disable spoolss">Yes</smbconfoption>
 <smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection name="[files]"/>
 <smbconfoption name="comment">Work area files</smbconfoption>

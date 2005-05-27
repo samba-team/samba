@@ -633,7 +633,7 @@ hosts:	files wins
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
-<smbconfoption name="passwd chat"></smbconfoption>
+<smbconfoption name="passwd chat"> </smbconfoption>
 <member><parameter>*New*Password* %n\n*Re-enter*new*password* %n\n *Password*changed*</parameter></member>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="syslog">0</smbconfoption>
