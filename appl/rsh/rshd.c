@@ -819,7 +819,8 @@ doit (void)
 	int fd;
  
 	if (!do_unique_tkfile)
-	    snprintf(tkfile,sizeof(tkfile),"FILE:/tmp/krb5cc_%u",pwd->pw_uid);
+	    snprintf(tkfile,sizeof(tkfile),"FILE:/tmp/krb5cc_%lu",
+		     (unsigned long)pwd->pw_uid);
 	else if (*tkfile=='\0') {
 	    snprintf(tkfile,sizeof(tkfile),"FILE:/tmp/krb5cc_XXXXXX");
 	    fd = mkstemp(tkfile+5);

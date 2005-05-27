@@ -533,7 +533,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    break;
 
 	snprintf (ccname, sizeof(ccname),
-		  "FILE:/tmp/krb5cc_%u", pwd->pw_uid);
+		  "FILE:/tmp/krb5cc_%lu", (unsigned long)pwd->pw_uid);
 
 	ret = krb5_cc_resolve (context, ccname, &ccache);
 	if (ret) {

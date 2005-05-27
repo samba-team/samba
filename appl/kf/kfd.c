@@ -235,7 +235,8 @@ proto (int sock, const char *service)
     if (tk_file.length != 1)
 	snprintf (ccname, sizeof(ccname), "%s", (char *)(tk_file.data));
     else
-	snprintf (ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%u",pwd->pw_uid);
+	snprintf (ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%lu",
+		  (unsigned long)pwd->pw_uid);
 
     status = krb5_cc_resolve (context, ccname, &ccache);
     if (status) {
