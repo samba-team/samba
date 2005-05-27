@@ -20,7 +20,7 @@ Samba4 ESP test
 
   /* if they cancelled then take them back to the list of tests */
   if (form['submit'] == "Cancel") {
-     redirect("index.html");
+     redirect("index.esp");
   }
 %>
   You chose firstName=@@form['firstName'] lastName=@@form['lastName']

@@ -5,7 +5,7 @@ Samba4 ESP test
 <BODY>
 redirecting you to the test pages ...
 <%
-  redirect("esptest/index.html");
+  redirect("esptest/index.esp");
 %>
 </BODY>
 </HTML>
