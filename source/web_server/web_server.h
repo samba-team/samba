@@ -25,6 +25,7 @@
   context of one open web connection
 */
 struct websrv_context {
+	struct task_server *task;
 	struct stream_connection *conn;
 	struct {
 		DATA_BLOB partial;
@@ -38,6 +39,10 @@ struct websrv_context {
 		const char *referer;
 		const char *host;
 		const char *accept_encoding;
+		const char *accept_language;
+		const char *accept_charset;
+		const char *cookie;
+		const char *session_key;
 	} input;
 	struct {
 		DATA_BLOB content;
@@ -46,4 +51,7 @@ struct websrv_context {
 		int response_code;
 		const char **headers;
 	} output;
+	struct session_data *session;
 };
+
+

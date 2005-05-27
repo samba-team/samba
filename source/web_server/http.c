@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smbd/service_task.h"
 #include "web_server/web_server.h"
 #include "smbd/service_stream.h"
 #include "lib/events/events.h"
@@ -28,23 +29,42 @@
 #include "system/iconv.h"
 #include "system/time.h"
 #include "web_server/esp/esp.h"
+#include "dlinklist.h"
 
-/* state of the esp subsystem */
+#define SWAT_SESSION_KEY "_swat_session_"
+
+/*
+  context for long term storage in the web server, to support session[]
+  and application[] data. Stored in task->private.
+*/
+struct esp_data {
+	struct session_data {
+		struct session_data *next, *prev;
+		struct esp_data *edata;
+		const char *id;
+		struct MprVar *data;
+		struct timed_event *te;
+		int lifetime;
+	} *sessions;
+	struct MprVar *application_data;
+};
+
+/* state of the esp subsystem for a specific request */
 struct esp_state {
 	struct websrv_context *web;
-	struct MprVar variables[ESP_OBJ_MAX];
 	struct EspRequest *req;
+	struct MprVar variables[ESP_OBJ_MAX];
+	struct session_data *session;
 };
 
 /* destroy a esp session */
 static int esp_destructor(void *ptr)
 {
 	struct esp_state *esp = talloc_get_type(ptr, struct esp_state);
+
 	if (esp->req) {
 		espDestroyRequest(esp->req);
 	}
-	espClose();
-	mprFreeAll();
 	return 0;
 }
 
@@ -118,7 +138,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 	if (path == NULL) return NULL;
 
 	if (directory_exist(path)) {
-		path = talloc_asprintf_append(path, "/index.html");
+		path = talloc_asprintf_append(path, "/index.esp");
 	}
 	return path;
 }
@@ -199,6 +219,7 @@ static void http_setHeader(EspHandle handle, const char *value, bool allowMultip
 	}
 
 	web->output.headers = str_list_add(web->output.headers, value);
+	talloc_steal(web, web->output.headers);
 }
 
 /*
@@ -256,16 +277,61 @@ internal_error:
 }
 
 
-/* callbacks for esp processing */
-static const struct Esp esp_control = {
-	.maxScriptSize   = 60000,
-	.writeBlock      = http_writeBlock,
-	.setHeader       = http_setHeader,
-	.redirect        = http_redirect,
-	.setResponseCode = http_setResponseCode,
-	.readFile        = http_readFile,
-	.mapToStorage    = http_mapToStorage
-};
+/*
+  setup a cookie
+*/
+static void http_setCookie(EspHandle handle, const char *name, const char *value, 
+			   int lifetime, const char *path, bool secure)
+{
+	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
+	char *buf;
+	
+	if (lifetime > 0) {
+		buf = talloc_asprintf(web, "Set-Cookie: %s=%s; path=%s; Expires=%s; %s",
+				      name, value, path?path:"/", 
+				      http_timestring(web, time(NULL)+lifetime),
+				      secure?"secure":"");
+	} else {
+		buf = talloc_asprintf(web, "Set-Cookie: %s=%s; path=%s; %s",
+				      name, value, path?path:"/", 
+				      secure?"secure":"");
+	}
+	http_setHeader(handle, "Cache-control: no-cache=\"set-cookie\"", 0);
+	http_setHeader(handle, buf, 0);
+	talloc_free(buf);
+}
+
+/*
+  return the session id
+*/
+static const char *http_getSessionId(EspHandle handle)
+{
+	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
+	return web->session->id;
+}
+
+/*
+  setup a session
+*/
+static void http_createSession(EspHandle handle, int timeout)
+{
+	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
+	if (web->session) {
+		web->session->lifetime = timeout;
+		http_setCookie(web, SWAT_SESSION_KEY, web->session->id, 
+			       web->session->lifetime, "/", 0);
+	}
+}
+
+/*
+  destroy a session
+*/
+static void http_destroySession(EspHandle handle)
+{
+	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
+	talloc_free(web->session);
+	web->session = NULL;
+}
 
 
 /*
@@ -302,6 +368,7 @@ void http_error_unix(struct websrv_context *web, const char *info)
 		code = 403;
 		break;
 	}
+	info = talloc_asprintf(web, "%s<p>%s<p>\n", info, strerror(errno));
 	http_error(web, code, info);
 }
 
@@ -347,35 +414,46 @@ static void http_setup_arrays(struct esp_state *esp)
 	struct EspRequest *req = esp->req;
 	char *p;
 
-	espSetStringVar(req, ESP_REQUEST_OBJ, "CONTENT_LENGTH", 
-			talloc_asprintf(esp, "%u", web->input.content_length));
-	if (web->input.query_string) {
-		espSetStringVar(req, ESP_REQUEST_OBJ, "QUERY_STRING", 
-				web->input.query_string);
-	}
-	espSetStringVar(req, ESP_REQUEST_OBJ, "REQUEST_METHOD", 
-			web->input.post_request?"POST":"GET");
-	espSetStringVar(req, ESP_REQUEST_OBJ, "REQUEST_URI", web->input.url);
+#define SETVAR(type, name, value) do { \
+		const char *v = value; \
+		if (v) espSetStringVar(req, type, name, v); \
+} while (0)
+
+	SETVAR(ESP_REQUEST_OBJ, "CONTENT_LENGTH", 
+	       talloc_asprintf(esp, "%u", web->input.content_length));
+	SETVAR(ESP_REQUEST_OBJ, "QUERY_STRING", web->input.query_string);
+	SETVAR(ESP_REQUEST_OBJ, "REQUEST_METHOD", web->input.post_request?"POST":"GET");
+	SETVAR(ESP_REQUEST_OBJ, "REQUEST_URI", web->input.url);
 	p = strrchr(web->input.url, '/');
-	espSetStringVar(req, ESP_REQUEST_OBJ, "SCRIPT_NAME", p+1);
-
-	if (web->input.referer) {
-		espSetStringVar(req, ESP_HEADERS_OBJ, "HTT_REFERER", web->input.referer);
+	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_NAME", p+1);
+	p = socket_get_peer_name(web->conn->socket, esp);
+	SETVAR(ESP_REQUEST_OBJ, "REMOTE_HOST", p);
+	SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", p);
+	SETVAR(ESP_REQUEST_OBJ, "REMOTE_USER", "");
+	SETVAR(ESP_REQUEST_OBJ, "CONTENT_TYPE", web->input.content_type);
+	if (web->session) {
+		SETVAR(ESP_REQUEST_OBJ, "SESSION_ID", web->session->id);
 	}
-	if (web->input.user_agent) {
-		espSetStringVar(req, ESP_HEADERS_OBJ, "USER_AGENT", web->input.user_agent);
-	}
 
-	espSetStringVar(req, ESP_SERVER_OBJ, "SERVER_ADDR", 
-			socket_get_my_addr(web->conn->socket, esp));
-	espSetStringVar(req, ESP_SERVER_OBJ, "SERVER_PORT", 
-			talloc_asprintf(esp, "%u", socket_get_my_port(web->conn->socket)));
-	espSetStringVar(req, ESP_SERVER_OBJ, "SERVER_PROTOCOL", "http");
-	espSetStringVar(esp->req, ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
+	SETVAR(ESP_HEADERS_OBJ, "HTT_REFERER", web->input.referer);
+	SETVAR(ESP_HEADERS_OBJ, "HOST", web->input.host);
+	SETVAR(ESP_HEADERS_OBJ, "ACCEPT_ENCODING", web->input.accept_encoding);
+	SETVAR(ESP_HEADERS_OBJ, "ACCEPT_LANGUAGE", web->input.accept_language);
+	SETVAR(ESP_HEADERS_OBJ, "ACCEPT_CHARSET", web->input.accept_charset);
+	SETVAR(ESP_HEADERS_OBJ, "COOKIE", web->input.cookie);
+	SETVAR(ESP_HEADERS_OBJ, "USER_AGENT", web->input.user_agent);
+
+	SETVAR(ESP_SERVER_OBJ, "SERVER_ADDR", socket_get_my_addr(web->conn->socket, esp));
+	SETVAR(ESP_SERVER_OBJ, "SERVER_NAME", socket_get_my_addr(web->conn->socket, esp));
+	SETVAR(ESP_SERVER_OBJ, "SERVER_HOST", socket_get_my_addr(web->conn->socket, esp));
+	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
+	SETVAR(ESP_SERVER_OBJ, "SERVER_PORT", 
+	       talloc_asprintf(esp, "%u", socket_get_my_port(web->conn->socket)));
+	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", "http");
+	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
+	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
+	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
 }
-
-
-
 
 
 /*
@@ -503,13 +581,125 @@ static NTSTATUS http_parse_get(struct esp_state *esp)
 }
 
 /*
-  setup some standard variables
+  called when a session times out
 */
-static void http_setup_vars(struct esp_state *esp)
+static void session_timeout(struct event_context *ev, struct timed_event *te, 
+			    struct timeval t, void *private)
 {
-	int i;
+	struct session_data *s = talloc_get_type(private, struct session_data);
+	talloc_free(s);
+}
 
-	for (i = 0; i < ESP_OBJ_MAX; i++) {
+/*
+  destroy a session
+ */
+static int session_destructor(void *ptr)
+{
+	struct session_data *s = talloc_get_type(ptr, struct session_data);
+	DLIST_REMOVE(s->edata->sessions, s);
+	return 0;
+}
+
+/*
+  setup the session for this request
+*/
+static void http_setup_session(struct esp_state *esp)
+{
+	const char *session_key = SWAT_SESSION_KEY;
+	char *p;
+	const char *cookie = esp->web->input.cookie;
+	const char *key = NULL;
+	struct esp_data *edata = talloc_get_type(esp->web->task->private, struct esp_data);
+	struct session_data *s;
+
+	/* look for our session key */
+	if (cookie && (p = strstr(cookie, session_key)) && 
+	    p[strlen(session_key)] == '=') {
+		p += strlen(session_key)+1;
+		key = talloc_strndup(esp, p, strcspn(p, ";"));
+	}
+
+	if (key == NULL) {
+		key = generate_random_str_list(esp, 64, "0123456789");
+	}
+
+	/* try to find this session in the existing session list */
+	for (s=edata->sessions;s;s=s->next) {
+		if (strcmp(key, s->id) == 0) break;
+	}
+
+	if (s == NULL) {
+		/* create a new session */
+		s = talloc_zero(edata, struct session_data);
+		s->id = talloc_steal(s, key);
+		s->data = NULL;
+		s->te = NULL;
+		s->edata = edata;
+		s->lifetime = lp_parm_int(-1, "http", "sessiontimeout", 300);
+		DLIST_ADD(edata->sessions, s);
+		talloc_set_destructor(s, session_destructor);
+	}
+
+	http_setCookie(esp->web, session_key, key, s->lifetime, "/", 0);
+
+	if (s->data) {
+		mprCopyVar(&esp->variables[ESP_SESSION_OBJ], s->data, MPR_DEEP_COPY);
+	}
+
+	esp->web->session = s;
+}
+
+
+/* callbacks for esp processing */
+static const struct Esp esp_control = {
+	.maxScriptSize   = 60000,
+	.writeBlock      = http_writeBlock,
+	.setHeader       = http_setHeader,
+	.redirect        = http_redirect,
+	.setResponseCode = http_setResponseCode,
+	.readFile        = http_readFile,
+	.mapToStorage    = http_mapToStorage,
+	.setCookie       = http_setCookie,
+	.createSession   = http_createSession,
+	.destroySession  = http_destroySession,
+	.getSessionId    = http_getSessionId
+};
+
+/*
+  process a complete http request
+*/
+void http_process_input(struct websrv_context *web)
+{
+	NTSTATUS status;
+	struct esp_state *esp;
+	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
+	char *p;
+	int i;
+	const char *file_type = NULL;
+	BOOL esp_enable = False;
+	const struct {
+		const char *extension;
+		const char *mime_type;
+		BOOL esp_enable;
+	} mime_types[] = {
+		{"gif",  "image/gif"},
+		{"png",  "image/png"},
+		{"jpg",  "image/jpeg"},
+		{"txt",  "text/plain"},
+		{"ico",  "image/x-icon"},
+		{"esp",  "text/html", True}
+	};
+
+	esp = talloc_zero(web, struct esp_state);
+	if (esp == NULL) goto internal_error;
+
+	esp->web = web;
+
+	mprSetCtx(esp);
+
+	if (espOpen(&esp_control) != 0) goto internal_error;
+
+	for (i=0;i<ARRAY_SIZE(esp->variables);i++) {
 		esp->variables[i] = mprCreateUndefinedVar();
 	}
 	esp->variables[ESP_HEADERS_OBJ]     = mprCreateObjVar("headers", ESP_HASH_SIZE);
@@ -520,41 +710,16 @@ static void http_setup_vars(struct esp_state *esp)
 	esp->variables[ESP_REQUEST_OBJ]     = mprCreateObjVar("request", ESP_HASH_SIZE);
 	esp->variables[ESP_SERVER_OBJ]      = mprCreateObjVar("server", ESP_HASH_SIZE);
 	esp->variables[ESP_SESSION_OBJ]     = mprCreateObjVar("session", ESP_HASH_SIZE);
-}
 
-/*
-  process a complete http request
-*/
-void http_process_input(struct websrv_context *web)
-{
-	NTSTATUS status;
-	struct esp_state *esp;
-	char *p;
-	int i;
-	const char *file_type = NULL;
-	const struct {
-		const char *extension;
-		const char *mime_type;
-	} mime_types[] = {
-		{"gif",  "image/gif"},
-		{"png",  "image/png"},
-		{"jpg",  "image/jpeg"},
-		{"txt",  "text/plain"}
-	};
+	if (edata->application_data) {
+		mprCopyVar(&esp->variables[ESP_APPLICATION_OBJ], 
+			   edata->application_data, MPR_DEEP_COPY);
+	}
 
-	esp = talloc_zero(web, struct esp_state);
-	if (esp == NULL) goto internal_error;
-
-	esp->web = web;
-
-	mprSetCtx(esp);
+	http_setup_session(esp);
 
 	talloc_set_destructor(esp, esp_destructor);
 
-	if (espOpen(&esp_control) != 0) goto internal_error;
-
-	http_setup_vars(esp);
-	
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
 
@@ -562,7 +727,8 @@ void http_process_input(struct websrv_context *web)
 		http_error(web, 400, "You must specify a GET or POST request");
 		return;
 	}
-
+	
+	/* parse any form or get variables */
 	if (web->input.post_request) {
 		status = http_parse_post(esp);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -577,11 +743,12 @@ void http_process_input(struct websrv_context *web)
 		}
 	}
 
-	/* process all html files as ESP */
+	/* work out the mime type */
 	p = strrchr(web->input.url, '.');
 	for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
 			file_type = mime_types[i].mime_type;
+			esp_enable = mime_types[i].esp_enable;
 		}
 	}
 	if (file_type == NULL) {
@@ -596,11 +763,32 @@ void http_process_input(struct websrv_context *web)
 	http_setHeader(web, "Connection: close", 0);
 	http_setHeader(web, talloc_asprintf(esp, "Content-Type: %s", file_type), 0);
 
-	if (strcmp(file_type, "text/html") == 0) {
+	if (esp_enable) {
 		esp_request(esp);
 	} else {
 		http_simple_request(web);
 	}
+
+	/* copy any application data to long term storage in edata */
+	talloc_free(edata->application_data);
+	edata->application_data = talloc_zero(edata, struct MprVar);
+	mprSetCtx(edata->application_data);
+	mprCopyVar(edata->application_data, &esp->variables[ESP_APPLICATION_OBJ], MPR_DEEP_COPY);
+
+	/* copy any session data */
+	if (web->session) {
+		talloc_free(web->session->data);
+		web->session->data = talloc_zero(web->session, struct MprVar);
+		mprSetCtx(web->session->data);
+		mprCopyVar(web->session->data, &esp->variables[ESP_SESSION_OBJ], MPR_DEEP_COPY);
+
+		/* setup the timeout for the session data */
+		talloc_free(web->session->te);
+		web->session->te = event_add_timed(web->conn->event.ctx, web->session, 
+						   timeval_current_ofs(web->session->lifetime, 0), 
+						   session_timeout, web->session);
+	}
+
 	talloc_free(esp);
 	return;
 	
@@ -639,6 +827,9 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 		PULL_HEADER(referer, "Referer: ");
 		PULL_HEADER(host, "Host: ");
 		PULL_HEADER(accept_encoding, "Accept-Encoding: ");
+		PULL_HEADER(accept_language, "Accept-Language: ");
+		PULL_HEADER(accept_charset, "Accept-Charset: ");
+		PULL_HEADER(cookie, "Cookie: ");
 	}
 
 	/* ignore all other headers for now */
@@ -646,3 +837,19 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 }
 
 
+/*
+  setup the esp processor - called at task initialisation
+*/
+NTSTATUS http_setup_esp(struct task_server *task)
+{
+	struct esp_data *edata;
+
+	edata = talloc(task, struct esp_data);
+	NT_STATUS_HAVE_NO_MEMORY(edata);
+
+	task->private = edata;
+	edata->sessions = NULL;
+	edata->application_data = NULL;
+
+	return NT_STATUS_OK;
+}
