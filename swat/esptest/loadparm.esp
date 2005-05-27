@@ -1,0 +1,74 @@
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+<h1>Samba4 loadparm test</h1>
+
+<form name="LoadparmTest" method="POST" action="@@request['SCRIPT_NAME']"> 
+    Share:      <input name="Share" type="text" value=""><br>
+    Parameter:  <input name="Name"  type="text" value=""><br>
+    <input name="submit" type="submit" value="OK">
+    <input name="submit" type="submit" value="Cancel"><br>
+</form>
+
+<%
+
+function stringVar(v) {
+	var type = typeof(v);
+	var ret = "";
+	if (type == "object") {
+		for (val in v) {
+			ret = ret + " " + v[val];
+		}
+	} else {
+		ret = ret + v;
+	}
+	return ret;
+}
+
+function showValue(name, v) {
+	write("parameter:" + name + "<br>\n");
+	write("Type  is: " + typeof(v) + "<br>\n");
+	write("Value is: " + stringVar(v) + "<p>\n");
+}
+
+
+if (request['REQUEST_METHOD'] == "POST") {
+	/* if they cancelled then take them back to the list of tests */
+	if (form['submit'] == "Cancel") {
+		redirect("index.esp");
+	}
+	
+	var v;
+
+	share = form['Share'];
+	name  = form['Name'];
+	if (share && name) {
+		v = lpGet(share, name);
+	} else if (name) {
+		v = lpGet(name);
+	}
+
+	showValue(name, v);
+}
+%>
+
+Here are some commonly used parameters:<p>
+
+<%
+function showParameter(name) {
+	showValue(name, lpGet(name));
+}
+
+showParameter("server services");
+showParameter("netbios name");
+showParameter("security");
+showParameter("workgroup");
+showParameter("log level");
+showParameter("server signing");
+showParameter("interfaces");
+%>
+
+</BODY>
+</HTML>
