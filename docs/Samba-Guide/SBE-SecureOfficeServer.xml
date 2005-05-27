@@ -223,9 +223,7 @@
 		<indexterm><primary>iptables</primary></indexterm>
 		<indexterm><primary>NAT</primary></indexterm>
 		<indexterm><primary>Network Address Translation</primary><see>NAT</see></indexterm>
-	  <indexterm>
-	    <primary>firewall</primary>
-	  </indexterm>
+		<indexterm><primary>firewall</primary></indexterm>
 		You know that your ISP is providing full firewall services, but you cannot rely on that.
 		Always assume that human error will occur, so be prepared by using Linux firewall facilities
 		based on <command>iptables</command> to effect NAT. Block all
@@ -239,9 +237,8 @@
 		covered except insofar as this affects Samba-3.
 		</para>
 
-	<para><indexterm>
-	    <primary>login</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>login</primary></indexterm>
 		Notebook computers are configured to use a network login when in the office and a
 		local account to log in while away from the office. Users store all work done in
 		transit (away from the office) by using a local share for work files. Standard procedures
@@ -252,9 +249,8 @@
 		records.
 		</para>
 
-	<para><indexterm>
-	    <primary>application server</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>application server</primary></indexterm>
 		All applications are served from the central server from a share called <constant>apps</constant>.
 		Microsoft Office XP Professional and OpenOffice 1.1.0 will be installed using a network 
 		(or administrative) installation. Accounting and financial management software can also
@@ -619,6 +615,8 @@ Given 500 Users and 2 years:
 	</para>
 
 	<procedure>
+	<title>Server Configuration Steps</title>
+
 		<step><para>
 		<indexterm><primary>hostname</primary></indexterm>
 		Using the UNIX/Linux system tools, name the server <constant>server.abmas.us</constant>.
@@ -787,6 +785,8 @@ echo -e "\nNAT firewall done.\n"
 	</para>
 
 	<procedure>
+	<title>Samba Configuration Steps</title>
+
 		<step><para>
 		Install the Samba-3 binary RPM from the Samba-Team FTP site. Assuming that the binary
 		RPM file is called <filename>samba-3.0.20-1.i386.rpm</filename>, one way to install this
@@ -1145,6 +1145,8 @@ net use p: \\diamond\apps
 	</para>
 
 	<procedure>
+	<title>DHCP and DNS Server Configuration Steps</title>
+
 		<step><para>
 		<indexterm><primary>/etc/dhcpd.conf</primary></indexterm>
 		Create a file called <filename>/etc/dhcpd.conf</filename> with the contents as
@@ -1601,8 +1603,8 @@ application/octet-stream
 	</procedure>
 
 	<para>
-	Note: The last two steps can be omitted where CUPS version 1.1.18, or later, is used &smbmdash; so
-	long as the parameter <parameter>cups options = Raw</parameter> is specified in the &smb.conf; file.
+	Note: If the parameter <parameter>cups options = Raw</parameter> is specified in the &smb.conf; file,
+	the last two steps can be omitted where CUPS version 1.1.18, or later.
 	</para>
 
 	<para>
@@ -1690,6 +1692,7 @@ application/octet-stream
 	</para>
 
 		<procedure>
+		<title>Server Validation Steps</title>
 
 			<step><para>
 			<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>

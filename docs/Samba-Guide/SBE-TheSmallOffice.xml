@@ -294,6 +294,8 @@
 	</image>
 
 	<procedure>
+	<title>Server Installation Steps</title>
+
 		<step><para>
 		Using UNIX/Linux system tools, name the server <constant>sleeth</constant>.
 		</para></step>
@@ -700,6 +702,7 @@ hosts:	files wins
 		</para>
 
 		<procedure>
+		<title>Validation Steps</title>
 
 			<step><para>
 			<indexterm><primary>testparm</primary></indexterm>
@@ -738,7 +741,6 @@ Loaded services file OK.
         domain logons = Yes
         preferred master = Yes
         wins support = Yes
-        printing = cups
 ...
 ### Remainder cut to save space ###
 </screen>
