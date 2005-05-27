@@ -18,8 +18,9 @@ installdir() {
     done
 }
 
-installdir . html
-installdir esptest html
+installdir . esp
+installdir . ico
+installdir esptest esp
 installdir images png
 installdir scripting ejs
 installdir scripting esp
