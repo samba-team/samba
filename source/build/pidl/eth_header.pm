@@ -44,7 +44,7 @@ sub HeaderTypedefProto($)
 sub HeaderConst($)
 {
     my($const) = shift;
-    if (!defined($const->{ARRAY_LEN})) {
+    if (!defined($const->{ARRAY_LEN}[0])) {
     	pidl "#define $const->{NAME}\t( $const->{VALUE} )\n";
     } else {
     	pidl "#define $const->{NAME}\t $const->{VALUE}\n";

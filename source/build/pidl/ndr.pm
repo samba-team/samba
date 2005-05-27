@@ -50,22 +50,27 @@ sub GetElementLevelTable($)
 		# FIXME: Process array here possibly (in case of multi-dimensional arrays, etc)
 	}
 
-	if (defined($e->{ARRAY_LEN}) or util::has_property($e, "size_is")) {
-		my $length = util::has_property($e, "length_is");
-		my $size = util::has_property($e, "size_is");
+	if ((defined($e->{ARRAY_LEN}) and scalar(@{$e->{ARRAY_LEN}})) or 
+		 util::has_property($e, "size_is")) {
+		my @length;
+		my @size;
 
-		if (not defined($size) and defined($e->{ARRAY_LEN})) { 
-			$size = $e->{ARRAY_LEN};
+		if (util::has_property($e, "size_is")) {
+			@size = split /,/, util::has_property($e, "size_is");
+		} elsif (defined($e->{ARRAY_LEN})) { 
+			@size = @{$e->{ARRAY_LEN}};
 		}
 
-		if (not defined($length)) {
-			$length = $size;
+		if (util::has_property($e, "length_is")) {
+			@length = split /,/, util::has_property($e, "length_is");
+		} else {
+			@length = @size;
 		}
 
 		push (@$order, {
 			TYPE => "ARRAY",
-			SIZE_IS => $size,
-			LENGTH_IS => $length,
+			SIZE_IS => $size[0],
+			LENGTH_IS => $length[0],
 			IS_DEFERRED => "$is_deferred",
 			# Inline arrays (which are a pidl extension) are never encoded
 			# as surrounding the struct they're part of
@@ -169,7 +174,7 @@ sub pointer_type($)
 sub is_fixed_array($)
 {
 	my $e = shift;
-	my $len = $e->{"ARRAY_LEN"};
+	my $len = $e->{"ARRAY_LEN"}[0];
 	return 1 if (defined $len && util::is_constant($len));
 	return 0;
 }
@@ -186,7 +191,7 @@ sub is_conformant_array($)
 sub is_inline_array($)
 {
 	my $e = shift;
-	my $len = $e->{ARRAY_LEN};
+	my $len = $e->{ARRAY_LEN}[0];
 	if (defined $len && $len ne "*" && !is_fixed_array($e)) {
 		return 1;
 	}
@@ -208,8 +213,8 @@ sub is_surrounding_array($)
 	my $e = shift;
 
 	return ($e->{POINTERS} == 0 
-		and defined $e->{ARRAY_LEN} 
-		and	$e->{ARRAY_LEN} eq "*"
+		and defined $e->{ARRAY_LEN}[0] 
+		and	$e->{ARRAY_LEN}[0] eq "*"
 		and $e == $e->{PARENT}->{ELEMENTS}[-1] 
 		and $e->{PARENT}->{TYPE} ne "FUNCTION");
 }

@@ -29,43 +29,19 @@ sub NeededFunction($$)
 		}
 
 		# for Ethereal
-		if (Ndr::is_scalar_type($e->{TYPE})) {
-		    
-		    if (defined($e->{ARRAY_LEN}) or 
-			util::has_property($e, "size_is")) {
-			
-			# Array of scalar types
-			
-			$needed->{"hf_$fn->{NAME}_$e->{NAME}_array"} = {
-			    'name' => field2name($e->{NAME}),
-			    'type' => $e->{TYPE},
-			    'ft'   => "FT_BYTES",
-			    'base' => elementbase($e)
-			    };
-			
-		    } else {				
-			$needed->{"hf_$fn->{NAME}_$e->{NAME}"} = {
-			    'name' => field2name($e->{NAME}),
-			    'type' => $e->{TYPE},
-			    'ft'   => type2ft($e->{TYPE}),
-			    'base' => elementbase($e)
-			    };
-		    }
-		} else {
-		    $needed->{"hf_$fn->{NAME}_$e->{NAME}"} = {
+	    $needed->{"hf_$fn->{NAME}_$e->{NAME}"} = {
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
 			'base' => elementbase($e)
-			};
-		    $needed->{"hf_$e->{TYPE}"} = {
+		};
+	    $needed->{"hf_$e->{TYPE}"} = {
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
 			'base' => elementbase($e)
-			};
-		    $needed->{"ett_$e->{TYPE}"} = 1;
-		}
+		};
+	    $needed->{"ett_$e->{TYPE}"} = 1;
 	}
 
 	# Add entry for return value
@@ -97,43 +73,13 @@ sub NeededTypedef($$)
 				$needed->{"pull_$e->{TYPE}"} = 1;
 			}
 
-			if (Ndr::is_scalar_type($e->{TYPE})) {
-				if (defined($e->{ARRAY_LEN}) or 
-				util::has_property($e, "size_is")) {
-
-					# Arrays of scalar types are FT_BYTES
-				    
-				    $needed->{"hf_$t->{NAME}_$e->{NAME}_array"} = {
-					'name' => field2name($e->{NAME}),
-					'type' => $e->{TYPE},
-					'ft'   => "FT_BYTES",
-					'base' => elementbase($e)
-					};
-
-				} else {
-				    $needed->{"hf_$t->{NAME}_$e->{NAME}"} = {
-					'name' => field2name($e->{NAME}),
-					'type' => $e->{TYPE},
-					'ft'   => type2ft($e->{TYPE}),
-					'base' => elementbase($e)
-					};
-				}
-
-				$e->{PARENT} = $t->{DATA};
-
-				if ($needed->{"pull_$t->{NAME}"}) {
-					$needed->{"pull_$e->{TYPE}"} = 1;
-				}
-
-			} else {
-			        $needed->{"hf_$t->{NAME}_$e->{NAME}"} = {
-					'name' => field2name($e->{NAME}),
-					'type' => $e->{TYPE},
-					'ft'   => type2ft($e->{TYPE}),
-					'base' => elementbase($e)
-					};
-				$needed->{"ett_$e->{TYPE}"} = 1;
-			    }
+	        $needed->{"hf_$t->{NAME}_$e->{NAME}"} = {
+				'name' => field2name($e->{NAME}),
+				'type' => $e->{TYPE},
+				'ft'   => type2ft($e->{TYPE}),
+				'base' => elementbase($e)
+			};
+			$needed->{"ett_$e->{TYPE}"} = 1;
 		 }
 	}
 
@@ -1319,7 +1265,7 @@ sub RegisterInterfaceHandoff($)
 	indent;
 	pidl "dcerpc_init_uuid(proto_dcerpc_pidl_$x->{NAME}, ett_dcerpc_$x->{NAME},";
 	pidl "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
-	pidl "\tdcerpc_dissectors, hf_opnum);";
+	pidl "\tdcerpc_dissectors, hf_$x->{NAME}_opnum);";
 	deindent;
 	pidl "}";
 }

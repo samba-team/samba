@@ -77,8 +77,8 @@ sub HeaderElement($)
 		}
 	}
 	
-    if (defined $element->{ARRAY_LEN} && util::is_constant($element->{ARRAY_LEN})) {
-	    pidl "[$element->{ARRAY_LEN}]";
+    if (defined $element->{ARRAY_LEN}[0] && util::is_constant($element->{ARRAY_LEN}[0])) {
+	    pidl "[$element->{ARRAY_LEN}[0]]";
     }
     pidl ";\n";
 }
@@ -230,7 +230,7 @@ sub HeaderTypedefProto($)
 sub HeaderConst($)
 {
     my($const) = shift;
-    if (!defined($const->{ARRAY_LEN})) {
+    if (!defined($const->{ARRAY_LEN}[0])) {
     	pidl "#define $const->{NAME}\t( $const->{VALUE} )\n";
     } else {
     	pidl "#define $const->{NAME}\t $const->{VALUE}\n";
