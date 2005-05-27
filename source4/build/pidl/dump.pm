@@ -51,7 +51,9 @@ sub DumpElement($)
 	    $res .= "*";
     }
     $res .= "$element->{NAME}";
-    (defined $element->{ARRAY_LEN}) && ($res .= "[$element->{ARRAY_LEN}]");
+	foreach (@{$element->{ARRAY_LEN}}) {
+		$res .= "[$_]";
+	}
 
     return $res;
 }

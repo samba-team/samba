@@ -212,21 +212,6 @@ sub is_ref_struct($)
 	return 0;
 }
 
-# determine the array size (size_is() or ARRAY_LEN)
-sub array_size($)
-{
-	my $e = shift;
-	my $size = has_property($e, "size_is");
-	if ($size) {
-		return $size;
-	}
-	$size = $e->{ARRAY_LEN};
-	if ($size) {
-		return $size;
-	}
-	return undef;
-}
-
 # return 1 if the string is a C constant
 sub is_constant($)
 {

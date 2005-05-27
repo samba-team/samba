@@ -22,14 +22,14 @@ sub GetArgumentProtoList($)
 			$res .= "*";
 		}
 
-		if (defined $a->{ARRAY_LEN} && 
-		!util::is_constant($a->{ARRAY_LEN}) &&
+		if (defined $a->{ARRAY_LEN}[0] && 
+		!util::is_constant($a->{ARRAY_LEN}[0]) &&
 		!$a->{POINTERS}) {
 			$res .= "*";
 		}
 		$res .= $a->{NAME};
-		if (defined $a->{ARRAY_LEN} && util::is_constant($a->{ARRAY_LEN})) {
-			$res .= "[$a->{ARRAY_LEN}]";
+		if (defined $a->{ARRAY_LEN}[0] && util::is_constant($a->{ARRAY_LEN}[0])) {
+			$res .= "[$a->{ARRAY_LEN}[0]]";
 		}
 	}
 
