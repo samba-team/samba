@@ -160,12 +160,12 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     if ((password = strchr_m(username, ':')) != NULL)
       *password++ = '\0';
     else
-      password = CONST_DISCARD(char *, "");
+      password = "";
   }
   else
   {
     username = "";
-    password = CONST_DISCARD(char *, "");
+    password = "";
     server   = uri + 6;
   }
 

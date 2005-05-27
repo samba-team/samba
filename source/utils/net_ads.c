@@ -1172,7 +1172,7 @@ static int net_ads_password(int argc, const char **argv)
 	}
 
 	if (argv[1]) {
-		new_password = CONST_DISCARD(char *, argv[1]);
+		new_password = (char *)argv[1];
 	} else {
 		asprintf(&prompt, "Enter new password for %s:", user);
 		new_password = getpass(prompt);

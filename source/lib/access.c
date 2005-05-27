@@ -133,7 +133,7 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 /* client_match - match host name and address against token */
 static BOOL client_match(const char *tok, const char *item)
 {
-        const char **client = CONST_ADD(const char **, item);
+	const char **client = (const char **)item;
 	BOOL match;
 	char invalid_char = '\0';
 
