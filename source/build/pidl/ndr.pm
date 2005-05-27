@@ -143,7 +143,8 @@ sub GetElementLevelTable($)
 			HEADER_SIZE => $hdr_size,
 			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
-			COMPRESSION => util::has_property($e, "compression")
+			COMPRESSION => util::has_property($e, "compression"),
+			OBFUSCATION => util::has_property($e, "obfuscation")
 		});
 	}
 
