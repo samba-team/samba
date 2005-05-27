@@ -71,3 +71,13 @@ REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
 	LIBCLI_COMPOSITE LIBCLI_NBT LIB_SECURITY LIBCLI_RESOLVE \
 	LIBCLI_DGRAM
+
+[SUBSYSTEM::LIBSMB]
+REQUIRED_SUBSYSTEMS = LIBCLI SOCKET
+ADD_OBJ_FILES = libcli/clireadwrite.o \
+		libcli/cliconnect.o \
+		libcli/clifile.o \
+		libcli/clilist.o \
+		libcli/clitrans2.o \
+		libcli/climessage.o \
+		libcli/clideltree.o
