@@ -1158,15 +1158,10 @@ Joined domain MEGANET2.
 	<sect2 id="adssdm">
 	<title>Active Directory Domain with Samba Domain Member Server</title>
 
-	<para><indexterm>
-	    <primary>Active Directory</primary>
-	    <secondary>join</secondary>
-	  </indexterm><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain Member</primary>
-	    <secondary>server</secondary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Active Directory</primary><secondary>join</secondary></indexterm>
+	<indexterm><primary>Kerberos</primary></indexterm>
+	<indexterm><primary>Domain Member</primary><secondary>server</secondary></indexterm>
 	One of the much-sought-after features new to Samba-3 is the ability to join an Active Directory
 	domain using Kerberos protocols. This makes it possible to operate an entire Windows network
 	without the need to run NetBIOS over TCP/IP and permits more secure networking in general. An
@@ -1175,15 +1170,11 @@ Joined domain MEGANET2.
 	in. For now, we simply focus on how a Samba-3 server can be made a domain member server.
 	</para>
 
-	<para><indexterm>
-	    <primary>Active Directory</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm><indexterm>
-	    <primary>Identity resolution</primary>
-	  </indexterm><indexterm>
-	    <primary>Kerberos</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Active Directory</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>Identity resolution</primary></indexterm>
+	<indexterm <primary>Kerberos</primary></indexterm>
 	The diagram in <link linkend="ch9-adsdc"/> demonstrates how Samba-3 interfaces with
 	Microsoft Active Directory components. It should be noted that if Microsoft Windows Services
 	for UNIX (SFU) has been installed and correctly configured, it is possible to use client LDAP
@@ -1219,6 +1210,8 @@ Joined domain MEGANET2.
 	</image>
 
 	<procedure>
+	<title>Joining a Samba Server as an ADS Domain Member</title>
+
 	  <step><para><indexterm>
 		<primary>smbd</primary>
 	      </indexterm>
@@ -1289,28 +1282,16 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		support. You are relieved to know that it is safe to progress.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>Kerberos</primary>
-		<secondary>libraries</secondary>
-	      </indexterm><indexterm>
-		<primary>MIT Kerberos</primary>
-	      </indexterm><indexterm>
-		<primary>Heimdal Kerberos</primary>
-	      </indexterm><indexterm>
-		<primary>Kerberos</primary>
-		<secondary>MIT</secondary>
-	      </indexterm><indexterm>
-		<primary>Kerberos</primary>
-		<secondary>Heimdal</secondary>
-	      </indexterm><indexterm>
-		<primary>Red Hat Linux</primary>
-	      </indexterm><indexterm>
-		<primary>SUSE Linux</primary>
-	      </indexterm><indexterm>
-		<primary>SerNet</primary>
-	      </indexterm><indexterm>
-		<primary>validated</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Kerberos</primary><secondary>libraries</secondary></indexterm>
+		<indexterm><primary>MIT Kerberos</primary></indexterm>
+		<indexterm><primary>Heimdal Kerberos</primary></indexterm>
+		<indexterm><primary>Kerberos</primary><secondary>MIT</secondary></indexterm>
+		<indexterm><primary>Kerberos</primary><secondary>Heimdal</secondary></indexterm>
+		<indexterm><primary>Red Hat Linux</primary></indexterm>
+		<indexterm><primary>SUSE Linux</primary></indexterm>
+		<indexterm><primary>SerNet</primary></indexterm>
+		<indexterm><primary>validated</primary></indexterm>
 		The next step is to identify which version of the Kerberos libraries have been used.
 		In order to permit Samba-3 to interoperate with Windows 2003 Active Directory, it is
 		essential that it has been linked with either MIT Kerberos version 1.3.1 or later,
@@ -1345,9 +1326,8 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		Edit or create the NSS control file so it has the contents shown in <link linkend="ch9-sdmnss"/>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>/etc/samba/secrets.tdb</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>/etc/samba/secrets.tdb</primary></indexterm>
 		Delete the file <filename>/etc/samba/secrets.tdb</filename> if it exists. Of course, you
 		do keep a backup, don't you?
 		</para></step>
@@ -1361,9 +1341,8 @@ massive:/usr/sbin # smbd -b | grep LDAP
 </screen>
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>testparm</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>testparm</primary></indexterm>
 		Validate your &smb.conf; file using <command>testparm</command> (as you have
 		done previously). Correct all errors reported before proceeding. The command you
 		execute is:
@@ -1374,13 +1353,9 @@ massive:/usr/sbin # smbd -b | grep LDAP
 		ADS domain, let's move on.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>ads</secondary>
-		<tertiary>join</tertiary>
-	      </indexterm><indexterm>
-		<primary>Kerberos</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>join</tertiary></indexterm>
+		<indexterm><primary>Kerberos</primary></indexterm>
 		This is a good time to double-check everything and then execute the following
 		command when everything you have done has checked out okay:
 <screen>
@@ -1392,26 +1367,21 @@ Joined 'FRAN' to realm 'LONDON.ABMAS.BIZ'
 		using Kerberos protocols.
 		</para>
 
-	    <para><indexterm>
-		<primary>silent return</primary>
-	      </indexterm><indexterm>
-		<primary>failed join</primary>
-	      </indexterm>
+	    <para>
+		<indexterm><primary>silent return</primary></indexterm>
+		<indexterm><primary>failed join</primary></indexterm>
 		In the event that you receive no output messages, a silent return means that the
 		domain join failed. You should use <command>ethereal</command> to identify what
 		may be failing. Common causes of a failed join include:
 
 		<itemizedlist>
-		<listitem><para><indexterm>
-		      <primary>name resolution</primary>
-		      <secondary>Defective</secondary>
-		    </indexterm>
+			<listitem><para>
+			<indexterm><primary>name resolution</primary><secondary>Defective</secondary></indexterm>
 			Defective or misconfigured DNS name resolution.
 			</para></listitem>
 
-		<listitem><para><indexterm>
-		      <primary>Restrictive security</primary>
-		    </indexterm>
+			<listitem><para>
+			<indexterm><primary>Restrictive security</primary></indexterm>
 			Restrictive security settings on the Windows 200x ADS domain controller
 			preventing needed communications protocols. You can check this by searching
 			the Windows Server 200x Event Viewer.
@@ -1427,26 +1397,19 @@ Joined 'FRAN' to realm 'LONDON.ABMAS.BIZ'
 			functionality.
 			</para></listitem>
 		</itemizedlist>
-	      <indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>join</tertiary>
-	      </indexterm><indexterm>
-		<primary>RPC</primary>
-	      </indexterm><indexterm>
-		<primary>mixed mode</primary>
-	      </indexterm>
+
+		<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
+		<indexterm><primary>RPC</primary></indexterm>
+		<indexterm><primary>mixed mode</primary></indexterm>
 		In any case, never execute the <command>net rpc join</command> command in an attempt
 		to join the Samba server to the domain, unless you wish not to use the Kerberos
 		security protocols. Use of the older RPC-based domain join facility requires that
 		Windows Server 200x ADS has been configured appropriately for mixed mode operation.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>tdbdump</primary>
-	      </indexterm><indexterm>
-		<primary>/etc/samba/secrets.tdb</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>tdbdump</primary></indexterm>
+		<indexterm><primary>/etc/samba/secrets.tdb</primary></indexterm>
 		If the <command>tdbdump</command> is installed on your system (not essential),
 		you can look inside the <filename>/etc/samba/secrets.tdb</filename> file. If
 		you wish to do this, execute:
@@ -1480,9 +1443,8 @@ data = "E\89\F6?"
 		in this book).	
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>wbinfo</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>wbinfo</primary></indexterm>
 		This is a good time to verify that everything is working. First, check that
 		winbind is able to obtain the list of users and groups from the ADS domain controller.
 		Execute the following:
@@ -1546,16 +1508,10 @@ LONDON+DnsUpdateProxy:x:10008:
 		This is very pleasing. Everything works as expected.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>ads</secondary>
-		<tertiary>info</tertiary>
-	      </indexterm><indexterm>
-		<primary>Active Directory</primary>
-		<secondary>server</secondary>
-	      </indexterm><indexterm>
-		<primary>Kerberos</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>info</tertiary></indexterm>
+		<indexterm><primary>Active Directory</primary><secondary>server</secondary></indexterm>
+		<indexterm><primary>Kerberos</primary></indexterm>
 		You may now perform final verification that communications between Samba-3 winbind and
 		the Active Directory server is using Kerberos protocols. Execute the following:
 <screen>
@@ -1834,27 +1790,29 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
         </para>
 
         <para>
-        An example &smb.conf; file for and ADS domain environment is shown here:
-<screen>
-# Global parameters
-[global]
-        workgroup = KPAK
-        netbios name = BIGJOE
-        realm = CORP.KPAK.COM
-        server string = Office Server
-        security = ADS
-        allow trusted domains = No
-        idmap backend = idmap_rid:KPAK=500-100000000
-        idmap uid = 500-100000000
-        idmap gid = 500-100000000
-        template shell = /bin/bash
-        winbind use default domain = Yes
-        winbind enum users = No
-        winbind enum groups = No
-        winbind nested groups = Yes
-        printer admin = "Domain Admins"
-</screen>
+        An example &smb.conf; file for an ADS domain environment is shown in <link linkend="sbe-idmapridex"/>.
         </para>
+
+<smbconfexample id="sbe-idmapridex">
+<title>Example &smb.conf; File Using <constant>idmap_rid</constant></title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">KPAK</smbconfoption>
+<smbconfoption name="netbios name">BIGJOE</smbconfoption>
+<smbconfoption name="realm">CORP.KPAK.COM</smbconfoption>
+<smbconfoption name="server string">Office Server</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="<smbconfoption name="allow trusted domains">No</smbconfoption>
+<smbconfoption name="idmap backend">idmap_rid:KPAK=500-100000000</smbconfoption>
+<smbconfoption name="idmap uid">500-100000000</smbconfoption>
+<smbconfoption name="idmap gid">500-100000000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="winbind enum users">No</smbconfoption>
+<smbconfoption name="winbind enum groups">No</smbconfoption>
+<smbconfoption name="winbind nested groups">Yes</smbconfoption>
+<smbconfoption name="printer admin">"KPAK\Domain Admins"</smbconfoption>
+</smbconfexample>
 
         <para>
         <indexterm><primary>large domain</primary></indexterm>
@@ -1956,27 +1914,25 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         The example in <link linkend="sbeunxa"/> is for an ADS-style domain.
         </para>
 
-<example id="sbeunxa">
+<smbconfexample id="sbeunxa">
 <title>Typical ADS Style Domain &smb.conf; File</title>
-<screen>
-# Global parameters
-[global]
-        workgroup = SNOWSHOW
-        netbios name = GOODELF
-        realm = SNOWSHOW.COM
-        server string = Samba Server
-        security = ADS
-        log level = 1 ads:10 auth:10 sam:10 rpc:10
-        ldap admin dn = cn=Manager,dc=SNOWSHOW,dc=COM
-        ldap idmap suffix = ou=Idmap
-        ldap suffix = dc=SNOWSHOW,dc=COM
-        idmap backend = ldap:ldap://ldap.snowshow.com
-        idmap uid = 150000-550000
-        idmap gid = 150000-550000
-        template shell = /bin/bash
-        winbind use default domain = Yes
-</screen>
-</example>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">SNOWSHOW</smbconfoption>
+<smbconfoption name="netbios name">GOODELF</smbconfoption>
+<smbconfoption name="realm">SNOWSHOW.COM</smbconfoption>
+<smbconfoption name="server string">Samba Server</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="<smbconfoption name="log level">1 ads:10 auth:10 sam:10 rpc:10</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=SNOWSHOW,dc=COM</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+<smbconfoption name="ldap suffix">dc=SNOWSHOW,dc=COM</smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://ldap.snowshow.com</smbconfoption>
+<smbconfoption name="idmap uid">150000-550000</smbconfoption>
+<smbconfoption name="idmap gid">150000-550000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+</smbconfexample>
 
         <para>
         <indexterm><primary>realm</primary></indexterm>
@@ -2157,22 +2113,25 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
         </para>
 
         <para>
-        The following is an example &smb.conf; file:
-<screen>
-# Global parameters
-[global]
-        workgroup = BOBBY
-        realm = BOBBY.COM
-        security = ADS
-        idmap uid = 150000-550000
-        idmap gid = 150000-550000
-        template shell = /bin/bash
-        winbind cache time = 5
-        winbind use default domain = Yes
-        winbind trusted domains only = Yes
-        winbind nested groups = Yes
-</screen>
+        An example &smb.conf; file is shown in <link linkend="sbewinbindex"/>.
         </para>
+
+<smbconfexample id="sbewinbindex">
+<title>ADS Membership Using RFC2307bis Identity Resolution &smb.conf; File</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">BUBBAH</smbconfoption>
+<smbconfoption name="netbios name">MADMAX</smbconfoption>
+<smbconfoption name="realm">BUBBAH.COM</smbconfoption>
+<smbconfoption name="server string">Samba Server</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="idmap uid">150000-550000</smbconfoption>
+<smbconfoption name="idmap gid">150000-550000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
+<smbconfoption name="winbind nested groups">Yes</smbconfoption>
+</smbconfexample>
 
         <para>
         <indexterm><primary>nss_ldap</primary></indexterm>
@@ -2314,23 +2273,18 @@ hosts:  files wins
 	support via Samba-3.
 	</para>
 
-	<para><indexterm>
-	    <primary>Windows Services for UNIX</primary>
-	    <see>SUS</see>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Windows Services for UNIX</primary><see>SUS</see></indexterm>
 	On the other hand, if the authentication and identity resolution backend must be provided by
 	a Windows NT4-style domain or from an Active Directory Domain that does not have the Microsoft
 	Windows Services for UNIX installed, winbind is your best friend. Specific guidance for these
 	situations now follows.
 	</para>
 
-	<para><indexterm>
-	    <primary>PAM</primary>
-	  </indexterm><indexterm>
-	    <primary>Identity resolution</primary>
-	  </indexterm><indexterm>
-	    <primary>NSS</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>PAM</primary></indexterm>
+	<indexterm><primary>Identity resolution</primary></indexterm>
+	<indexterm><primary>NSS</primary></indexterm>
 	To permit users to log onto a Linux system using Windows network credentials, you need to
 	configure identity resolution (NSS) and PAM. This means that the basic steps include those
 	outlined above with the addition of PAM configuration. Given that most workstations (desktop/client)
@@ -2566,19 +2520,13 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 	</question>
 	<answer>
 
-	    <para><indexterm>
-		<primary>NIS</primary>
-	      </indexterm><indexterm>
-		<primary>encrypted passwords</primary>
-	      </indexterm><indexterm>
-		<primary>smbpasswd</primary>
-	      </indexterm><indexterm>
-		<primary>tdbsam</primary>
-	      </indexterm><indexterm>
-		<primary>passdb backend</primary>
-	      </indexterm><indexterm>
-		<primary>Winbind</primary>
-	      </indexterm>
+	    <para>
+		<indexterm><primary>NIS</primary></indexterm>
+		<indexterm><primary>encrypted passwords</primary></indexterm>
+		<indexterm><primary>smbpasswd</primary></indexterm>
+		<indexterm><primary>tdbsam</primary></indexterm>
+		<indexterm><primary>passdb backend</primary></indexterm>
+		<indexterm><primary>Winbind</primary></indexterm>
 		You can use NIS for your UNIX accounts. NIS does not store the Windows encrypted
 		passwords that need to be stored in one of the acceptable passdb backends.
 		Your choice of backend is limited to <parameter>smbpasswd</parameter> or
@@ -2586,11 +2534,9 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 		SIDs from trusted domains to local UID/GID values.
 		</para>
 
-	    <para><indexterm>
-		<primary>winbind trusted domains only</primary>
-	      </indexterm><indexterm>
-		<primary>getpwnam()</primary>
-	      </indexterm>
+	    <para>
+		<indexterm><primary>winbind trusted domains only</primary></indexterm>
+		<indexterm><primary>getpwnam()</primary></indexterm>
 		On a domain member server, you effectively map Windows domain users to local users
 		that are in your NIS database by specifying the <parameter>winbind trusted domains
 		only</parameter>. This causes user and group account lookups to be routed via
