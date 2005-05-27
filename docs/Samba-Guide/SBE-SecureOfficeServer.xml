@@ -560,13 +560,6 @@ Given 500 Users and 2 years:
 		</para></listitem>
 
 		<listitem><para>
-		<indexterm><primary>IPC$</primary></indexterm>
-		Explicit controls are effected to restrict access to the <constant>IPC$</constant> share to
-		local networks only. The <constant>IPC$</constant> share plays an important role in network
-		browsing and in establishment of network connections.
-		</para></listitem>
-
-		<listitem><para>
 		Every user has a private home directory on the UNIX/Linux host. This is mapped to
 		a network drive that is the same for all users.
 		</para></listitem>
@@ -822,7 +815,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
 <smbconfoption name="pam password change">Yes</smbconfoption>
 <smbconfoption name="passwd program">/usr/bin/passwd %u</smbconfoption>
-<smbconfoption name="passwd chat"></smbconfoption>
+<smbconfoption name="passwd chat"> </smbconfoption>
 <member><parameter>*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</parameter></member>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="unix password sync">Yes</smbconfoption>
@@ -859,11 +852,6 @@ echo -e "\nNAT firewall done.\n"
 
 <smbconfexample id="promisnetsvca">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part A</title>
-<smbconfsection name="[IPC$]"/>
-<smbconfoption name="path">/tmp</smbconfoption>
-<smbconfoption name="hosts allow">192.168.1.0/24, 192.168.2.0/24, 127.0.0.1</smbconfoption>
-<smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
-
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -884,10 +872,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="locking">No</smbconfoption>
-</smbconfexample>
 
-<smbconfexample id="promisnetsvcb">
-<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part B</title>
 <smbconfsection name="[profiles]"/>
 <smbconfoption name="comment">Profile Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
@@ -898,10 +883,18 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
+</smbconfexample>
 
+<smbconfexample id="promisnetsvcb">
+<title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part B</title>
 <smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+
+<smbconfsection name="[pidata]"/>
+<smbconfoption name="comment">Property Insurance Files</smbconfoption>
+<smbconfoption name="path">/data/pidata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection name="[apps]"/>
@@ -989,6 +982,7 @@ net groupmap modify ntgroup="Domain Guests"  unixgroup=nobody
 # Add Functional Domain Groups
 net groupmap add ntgroup="Accounts Dept"  unixgroup=acctsdep type=d
 net groupmap add ntgroup="Financial Services" unixgroup=finsrvcs type=d
+net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
 # Map Windows NT machine local groups to local UNIX groups
 # Mapping of local groups is not necessary and not functional
@@ -1168,7 +1162,7 @@ option domain-name-servers 192.168.1.1, 192.168.2.1;
 option netbios-name-servers 192.168.1.1, 192.168.2.1;
 option netbios-node-type 8;       ### Node type = Hybrid ###
 ddns-updates on;                  ### Dynamic DNS enabled ###
-ddns-update-style ad-hoc;
+ddns-update-style interim;
 
 subnet 192.168.1.0 netmask 255.255.255.0 {
         range dynamic-bootp 192.168.1.128 192.168.1.254;
