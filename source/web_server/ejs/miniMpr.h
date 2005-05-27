@@ -196,7 +196,9 @@ typedef int 			bool;
 	typedef unsigned __int64 	uint64;
 #else
 	#define O_BINARY 0
-	typedef unsigned int 		uint;
+#ifndef uint
+	#define uint unsigned
+#endif
 	__extension__ typedef long long int int64;
 	__extension__ typedef unsigned long long int uint64;
 #endif
