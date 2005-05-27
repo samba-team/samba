@@ -1,0 +1,37 @@
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+<h1>Samba4 exception test</h1>
+
+<form name="ExceptionTest" method="POST" action="@@request['SCRIPT_NAME']"> 
+    <input name="submit" type="submit" value="Generate Exception">
+    <input name="submit" type="submit" value="No Exception">
+    <input name="submit" type="submit" value="Cancel"><br>
+</form>
+
+<%
+if (request['REQUEST_METHOD'] == "POST") {
+	/* if they cancelled then take them back to the list of tests */
+	if (form['submit'] == "Cancel") {
+		redirect("index.esp");
+	}
+
+	function TestFunction(arg1, arg2) {
+		 return "OK";
+	}
+
+	if (form['submit'] == "Generate Exception") {
+	    write("I expect you to die Mr Bond!<br>\n");
+	    TestFunction("foo");
+	} else {
+	    write("no exception<br>\n");
+	    TestFunction("foo", "bar");
+	}
+}
+%>
+
+and here is some filler text ...
+</BODY>
+</HTML>
