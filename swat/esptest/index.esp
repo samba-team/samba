@@ -1,5 +1,6 @@
 <%
-  var tests = new Array("formtest", "showvars", "include", "session", "loadparm");
+  var tests = new Array("formtest", "showvars", "include", 
+                        "session", "loadparm", "exception");
 %>
 
 <HTML>
