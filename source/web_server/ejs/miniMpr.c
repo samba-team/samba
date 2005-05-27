@@ -37,16 +37,9 @@
 
 static TALLOC_CTX *mpr_ctx;
 
-void mprFreeAll(void)
-{
-	talloc_free(mpr_ctx);
-	mpr_ctx = NULL;
-}
-
 void mprSetCtx(TALLOC_CTX *ctx)
 {
-	talloc_free(mpr_ctx);
-	mpr_ctx = talloc_new(ctx);
+	mpr_ctx = ctx;
 }
 
 void mprFree(void *ptr)

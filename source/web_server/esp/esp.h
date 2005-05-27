@@ -96,13 +96,13 @@ typedef struct Esp {
 	int		maxScriptSize;
 	void	(*createSession)(EspHandle handle, int timeout);
 	void	(*destroySession)(EspHandle handle);
-	char	*(*getSessionId)(EspHandle handle);
+	const char *(*getSessionId)(EspHandle handle);
 	int		(*mapToStorage)(EspHandle handle, char *path, int len, const char *uri,
 				int flags);
 	int		(*readFile)(EspHandle handle, char **buf, int *len, const char *path);
 	void	(*redirect)(EspHandle handle, int code, char *url);
-	void 	(*setCookie)(EspHandle handle, char *name, char *value, 
-				int lifetime, char *path, bool secure);
+	void 	(*setCookie)(EspHandle handle, const char *name, const char *value, 
+				int lifetime, const char *path, bool secure);
 	void	(*setHeader)(EspHandle handle, const char *value, bool allowMultiple);
 	void	(*setResponseCode)(EspHandle handle, int code);
 	int		(*writeBlock)(EspHandle handle, char *buf, int size);
