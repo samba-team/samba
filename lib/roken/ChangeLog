@@ -1,3 +1,7 @@
+2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hex.c: include "roken.h" to avoid undefined size_t/ssize_t
+
 2005-05-24  Dave Love  <fx@gnu.org>
 
 	* Makefile.am (snprintf_test_SOURCES): Add snprintf-test.h.
