@@ -24,12 +24,12 @@ interface rpcecho
 	/* Sink data to the server */
 	void echo_SinkData(
 		[in] uint32 len,
-		[in,ref,size_is(len)] uint8 *data[]
+		[in,ref,size_is(len)] uint8 *data
 	);
 	/* Source data from server */
 	void echo_SourceData(
 		[in] uint32 len,
-		[out,ref,size_is(len)] uint8 *data[]
+		[out,ref,size_is(len)] uint8 *data
 	);
 
 

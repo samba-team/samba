@@ -25,10 +25,66 @@ sub GetElementLevelTable($)
 
 	my $order = [];
 	my $is_deferred = 0;
-	
-	# FIXME: Process {ARRAY_LEN} kinds of arrays
+	my @bracket_array = ();
+	my @length_is = ();
+	my @size_is = ();
 
-	# First, all the pointers
+	if (util::has_property($e, "size_is")) {
+		@size_is = split /,/, util::has_property($e, "size_is");
+	}
+
+	if (util::has_property($e, "length_is")) {
+		@length_is = split /,/, util::has_property($e, "length_is");
+	}
+
+	if (defined($e->{ARRAY_LEN})) {
+		@bracket_array = @{$e->{ARRAY_LEN}};
+	}
+	
+	# Parse the [][][][] style array stuff
+	foreach my $d (@bracket_array) {
+		my $size = $d;
+		my $length = $d;
+		my $is_surrounding = 0;
+		my $is_varying = 0;
+		my $is_conformant = 0;
+
+		if ($d eq "*") {
+			$is_conformant = 1;
+			unless ($size = shift @size_is) {
+				print "$e->{FILE}:$e->{LINE}: Must specify size_is() for conformant array!\n";
+				exit 1;
+			}
+
+			if ($length = shift @length_is) {
+				$is_varying = 1;
+			} else {
+				$length = $size;
+			}
+
+			if ($e == $e->{PARENT}->{ELEMENTS}[-1] 
+				and $e->{PARENT}->{TYPE} ne "FUNCTION") {
+				$is_surrounding = 1;
+			}
+		}
+
+		push (@$order, {
+			TYPE => "ARRAY",
+			SIZE_IS => $size,
+			LENGTH_IS => $length,
+			IS_DEFERRED => "$is_deferred",
+			# Inline arrays (which are a pidl extension) are never encoded
+			# as surrounding the struct they're part of
+			IS_SURROUNDING => "$is_surrounding",
+			IS_VARYING => "$is_varying",
+			IS_CONFORMANT => "$is_conformant",
+			IS_FIXED => (not $is_conformant and util::is_constant($size)),
+			NO_METADATA => (not $is_conformant),
+			IS_INLINE => (not $is_conformant and not util::is_constant($size))
+		});
+	}
+
+	# Next, all the pointers
 	foreach my $i (1..$e->{POINTERS}) {
 		my $pt = pointer_type($e);
 
@@ -45,44 +101,35 @@ sub GetElementLevelTable($)
 			IS_DEFERRED => "$is_deferred",
 			LEVEL => $level
 		});
+		
 		# everything that follows will be deferred
 		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");
-		# FIXME: Process array here possibly (in case of multi-dimensional arrays, etc)
-	}
 
-	if ((defined($e->{ARRAY_LEN}) and scalar(@{$e->{ARRAY_LEN}})) or 
-		 util::has_property($e, "size_is")) {
-		my @length;
-		my @size;
+		my $array_size;
+		my $array_length;
+		if ($array_size = shift @size_is) {
+			my $is_varying = 0;
+			if ($array_length = shift @length_is) {
+				$is_varying = 1;
+			} else {
+				$array_length = $array_size;
+			}
 
-		if (util::has_property($e, "size_is")) {
-			@size = split /,/, util::has_property($e, "size_is");
-		} elsif (defined($e->{ARRAY_LEN})) { 
-			@size = @{$e->{ARRAY_LEN}};
+			push (@$order, {
+				TYPE => "ARRAY",
+				SIZE_IS => $array_size,
+				LENGTH_IS => $array_length,
+				IS_DEFERRED => "$is_deferred",
+				IS_SURROUNDING => 0,
+				IS_VARYING => "$is_varying",
+				IS_CONFORMANT => 1,
+				IS_FIXED => 0,
+				NO_METADATA => 0,
+				IS_INLINE => 0,
+			});
+
+			$is_deferred = 0;
 		}
-
-		if (util::has_property($e, "length_is")) {
-			@length = split /,/, util::has_property($e, "length_is");
-		} else {
-			@length = @size;
-		}
-
-		push (@$order, {
-			TYPE => "ARRAY",
-			SIZE_IS => $size[0],
-			LENGTH_IS => $length[0],
-			IS_DEFERRED => "$is_deferred",
-			# Inline arrays (which are a pidl extension) are never encoded
-			# as surrounding the struct they're part of
-			IS_SURROUNDING => (is_surrounding_array($e) and not is_inline_array($e)),
-			IS_VARYING => is_varying_array($e),
-			IS_CONFORMANT => is_conformant_array($e),
-			IS_FIXED => is_fixed_array($e),
-			NO_METADATA => (is_inline_array($e) or is_fixed_array($e)),
-			IS_INLINE => is_inline_array($e)
-		});
-
-		$is_deferred = 0;
 	}
 
 	if (my $hdr_size = util::has_property($e, "subcontext")) {
@@ -170,55 +217,6 @@ sub pointer_type($)
 	return undef;
 }
 
-# return 1 if this is a fixed array
-sub is_fixed_array($)
-{
-	my $e = shift;
-	my $len = $e->{"ARRAY_LEN"}[0];
-	return 1 if (defined $len && util::is_constant($len));
-	return 0;
-}
-
-# return 1 if this is a conformant array
-sub is_conformant_array($)
-{
-	my $e = shift;
-	return 1 if (util::has_property($e, "size_is"));
-	return 0;
-}
-
-# return 1 if this is a inline array
-sub is_inline_array($)
-{
-	my $e = shift;
-	my $len = $e->{ARRAY_LEN}[0];
-	if (defined $len && $len ne "*" && !is_fixed_array($e)) {
-		return 1;
-	}
-	return 0;
-}
-
-# return 1 if this is a varying array
-sub is_varying_array($)
-{
-	my $e = shift;
-	return util::has_property($e, "length_is");
-}
-
-# return 1 if this is a surrounding array (sometimes 
-# referred to as an embedded array). Can only occur as 
-# the last element in a struct and can not contain any pointers.
-sub is_surrounding_array($)
-{
-	my $e = shift;
-
-	return ($e->{POINTERS} == 0 
-		and defined $e->{ARRAY_LEN}[0] 
-		and	$e->{ARRAY_LEN}[0] eq "*"
-		and $e == $e->{PARENT}->{ELEMENTS}[-1] 
-		and $e->{PARENT}->{TYPE} ne "FUNCTION");
-}
-
 sub is_surrounding_string($)
 {
 	my $e = shift;
@@ -229,6 +227,7 @@ sub is_surrounding_string($)
 		and util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*") 
 		and $e->{PARENT}->{TYPE} ne "FUNCTION";
 }
+
 
 #####################################################################
 # work out the correct alignment for a structure or union
