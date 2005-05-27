@@ -125,7 +125,6 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 		return nt_status;
 	}
 
-
 	if (!make_user_info_guest(&user_info)) {
 		(auth_context->free)(&auth_context);
 		return NT_STATUS_NO_MEMORY;
@@ -147,7 +146,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				 int length, int bufsize,
 				 DATA_BLOB *secblob)
 {
-	int map_domainuser_to_guest = 0;
 	DATA_BLOB ticket;
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
@@ -247,19 +245,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	asprintf(&user, "%s%c%s", domain, *lp_winbind_separator(), client);
+	
 	/* lookup the passwd struct, create a new user if necessary */
-		if (lp_map_to_guest() == MAP_TO_GUEST_ON_VALID_DOMAIN_USER ){ 
-			map_domainuser_to_guest == 1;
-			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam( user, real_username, True );
-		} else {
 
 	map_username( user );
 
 	pw = smb_getpwnam( user, real_username, True );
 	
 	if (!pw) {
-		}
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		SAFE_FREE(user);
 		SAFE_FREE(client);
@@ -272,19 +265,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	sub_set_smb_name( real_username );
 	reload_services(True);
-	if (map_domainuser_to_guest == 1) {			
-			make_server_info_guest(&server_info);
-	}else{
-	 if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info, real_username, pw))) 
+	
+	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info, real_username, pw))) 
 	{
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
 		SAFE_FREE(user);
 		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
-
 		data_blob_free(&session_key);
 		return ERROR_NT(ret);
-	}
 	}
 
         /* make_server_info_pw does not set the domain. Without this we end up
