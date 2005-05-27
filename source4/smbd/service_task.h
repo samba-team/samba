@@ -26,5 +26,6 @@ struct task_server {
 	const struct model_ops *model_ops;
 	struct messaging_context *msg_ctx;
 	uint32_t server_id;
+	void *private;
 };
 
