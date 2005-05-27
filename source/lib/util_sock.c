@@ -248,7 +248,7 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime)
 {
 	struct timeval now;
-	SMB_BIG_UINT t_dif;
+	SMB_BIG_INT t_dif;
 
 	GetTimeOfDay(&now);
 
@@ -257,8 +257,8 @@ static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime
 		return False;
 	}
 
-	timeout->tv_sec = (t_dif / 1000000);
-	timeout->tv_usec = (t_dif % 1000000);
+	timeout->tv_sec = (t_dif / (SMB_BIG_INT)1000000);
+	timeout->tv_usec = (t_dif % (SMB_BIG_INT)1000000);
 	return True;
 }
 
@@ -462,7 +462,7 @@ ssize_t write_data_until(int fd,const char *buffer,size_t N,
 		ret = sys_write(fd,buffer + total,N - total);
 
 		if (ret == -1) {
-			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			DEBUG(0,("write_data_until: write failure. Error = %s\n", strerror(errno) ));
 			return -1;
 		}
 		if (ret == 0)
