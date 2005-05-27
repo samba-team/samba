@@ -63,6 +63,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "dlinklist.h"
+#include "web_server/esp/esp.h"
 
 BOOL in_client = False;		/* Not in the client by default */
 static BOOL bLoaded = False;
@@ -105,8 +106,7 @@ static BOOL defaults_saved = False;
 /* the following are used by loadparm for option lists */
 typedef enum
 {
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-  P_STRING,P_USTRING,P_ENUM,P_SEP
+  P_BOOL,P_INTEGER,P_LIST,P_STRING,P_USTRING,P_ENUM,P_SEP
 } parm_type;
 
 typedef enum
@@ -1853,18 +1853,12 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
-				case P_BOOLREV:
 					*(BOOL *)dest_ptr = *(BOOL *)src_ptr;
 					break;
 
 				case P_INTEGER:
 				case P_ENUM:
-				case P_OCTAL:
 					*(int *)dest_ptr = *(int *)src_ptr;
-					break;
-
-				case P_CHAR:
-					*(char *)dest_ptr = *(char *)src_ptr;
 					break;
 
 				case P_STRING:
@@ -2374,21 +2368,8 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			set_boolean(parm_ptr, pszParmValue);
 			break;
 
-		case P_BOOLREV:
-			set_boolean(parm_ptr, pszParmValue);
-			*(BOOL *)parm_ptr = !*(BOOL *)parm_ptr;
-			break;
-
 		case P_INTEGER:
 			*(int *)parm_ptr = atoi(pszParmValue);
-			break;
-
-		case P_CHAR:
-			*(char *)parm_ptr = *pszParmValue;
-			break;
-
-		case P_OCTAL:
-			sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			break;
 
 		case P_LIST:
@@ -2557,24 +2538,8 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%s", BOOLSTR(*(BOOL *)ptr));
 			break;
 
-		case P_BOOLREV:
-			fprintf(f, "%s", BOOLSTR(!*(BOOL *)ptr));
-			break;
-
 		case P_INTEGER:
 			fprintf(f, "%d", *(int *)ptr);
-			break;
-
-		case P_CHAR:
-			fprintf(f, "%c", *(char *)ptr);
-			break;
-
-		case P_OCTAL:
-			if (*(int *)ptr == -1) {
-				fprintf(f, "-1");
-			} else {
-				fprintf(f, "0%o", *(int *)ptr);
-			}
 			break;
 
 		case P_LIST:
@@ -2606,17 +2571,12 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
-		case P_BOOLREV:
 			return (*((BOOL *)ptr1) == *((BOOL *)ptr2));
 
 		case P_INTEGER:
 		case P_ENUM:
-		case P_OCTAL:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
-		case P_CHAR:
-			return (*((char *)ptr1) == *((char *)ptr2));
-		
 		case P_LIST:
 			return str_list_equal((const char **)(*(char ***)ptr1), 
 					      (const char **)(*(char ***)ptr2));
@@ -2702,14 +2662,9 @@ static BOOL is_default(int i)
 			return strequal(parm_table[i].def.svalue,
 					*(char **)parm_table[i].ptr);
 		case P_BOOL:
-		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
 				*(BOOL *)parm_table[i].ptr;
-		case P_CHAR:
-			return parm_table[i].def.cvalue ==
-				*(char *)parm_table[i].ptr;
 		case P_INTEGER:
-		case P_OCTAL:
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
 				*(int *)parm_table[i].ptr;
@@ -2965,16 +2920,10 @@ static void lp_save_defaults(void)
 				}
 				break;
 			case P_BOOL:
-			case P_BOOLREV:
 				parm_table[i].def.bvalue =
 					*(BOOL *)parm_table[i].ptr;
 				break;
-			case P_CHAR:
-				parm_table[i].def.cvalue =
-					*(char *)parm_table[i].ptr;
-				break;
 			case P_INTEGER:
-			case P_OCTAL:
 			case P_ENUM:
 				parm_table[i].def.ivalue =
 					*(int *)parm_table[i].ptr;
@@ -3354,4 +3303,118 @@ int lp_maxprintjobs(int snum)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
 	return maxjobs;
+}
+
+
+/*
+  allow access to loadparm variables from inside esp scripts in swat
+  
+  can be called in 4 ways:
+
+    v = lpGet("type:parm");             gets a parametric variable
+    v = lpGet("share", "type:parm");    gets a parametric variable on a share
+    v = lpGet("parm");                  gets a global variable
+    v = lpGet("share", "parm");         gets a share variable
+
+  the returned variable is a ejs object. It is an array object for lists.  
+*/
+int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
+{
+	struct parm_struct *parm = NULL;
+	void *parm_ptr = NULL;
+	int i;
+
+	if (argc < 1) return -1;
+
+	if (argc == 2) {
+		/* its a share parameter */
+		int parmnum, snum = lp_servicenumber(argv[0]);
+		if (snum == -1) {
+			return -1;
+		}
+		if (strchr(argv[1], ':')) {
+			/* its a parametric option on a share */
+			const char *type = talloc_strndup(ep, argv[1], strcspn(argv[1], ":"));
+			const char *option = strchr(argv[1], ':') + 1;
+			const char *value;
+			if (type == NULL || option == NULL) return -1;
+			value = get_parametrics(snum, type, option);
+			if (value == NULL) return -1;
+			espSetReturnString(ep, value);
+			return 0;
+		}
+
+		/* find a share parameter */
+		parmnum = map_parameter(argv[1]);
+		if (parmnum == -1) {
+			return -1;
+		}
+		parm = &parm_table[parmnum];
+		if (parm->class == P_GLOBAL) {
+			return -1;
+		}
+		parm_ptr = ((char *)ServicePtrs[snum]) + PTR_DIFF(parm->ptr, &sDefault);
+	} else if (strchr(argv[0], ':')) {
+		/* its a global parametric option */
+		const char *type = talloc_strndup(ep, argv[0], strcspn(argv[0], ":"));
+		const char *option = strchr(argv[0], ':') + 1;
+		const char *value;
+		if (type == NULL || option == NULL) return -1;
+		value = get_parametrics(-1, type, option);
+		if (value == NULL) return -1;
+		espSetReturnString(ep, value);
+		return 0;
+	} else {
+		/* its a global parameter */
+		int parmnum = map_parameter(argv[0]);
+		if (parmnum == -1) {
+			return -1;
+		}
+		parm = &parm_table[parmnum];
+		parm_ptr = parm->ptr;
+	}
+
+	if (parm == NULL || parm_ptr == NULL) {
+		return -1;
+	}
+
+	/* construct and return the right type of ejs object */
+	switch (parm->type) {
+	case P_STRING:
+	case P_USTRING:
+		espSetReturnString(ep, *(char **)parm_ptr);
+		break;
+	case P_BOOL:
+		espSetReturn(ep, mprCreateBoolVar(*(BOOL *)parm_ptr));
+		break;
+	case P_INTEGER:
+		espSetReturn(ep, mprCreateIntegerVar(*(int *)parm_ptr));
+		break;
+	case P_ENUM:
+		for (i=0; parm->enum_list[i].name; i++) {
+			if (*(int *)parm_ptr == parm->enum_list[i].value) {
+				espSetReturnString(ep, parm->enum_list[i].name);
+				return 0;
+			}
+		}
+		return -1;
+	
+	case P_LIST: {
+		const char **list = *(const char ***)parm_ptr;
+		struct MprVar var;
+		var = mprCreateObjVar(parm->label, 10);
+		for (i=0;list[i];i++) {
+			char idx[16];
+			struct MprVar val;
+			mprItoa(i, idx, sizeof(idx));
+			val = mprCreateStringVar(list[i], 1);
+			mprCreateProperty(&var, idx, &val);
+		}
+		espSetReturn(ep, var);
+		break;
+	case P_SEP:
+		return -1;
+	}
+	}
+	return 0;
 }

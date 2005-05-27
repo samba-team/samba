@@ -159,9 +159,9 @@ extern int			espProcessRequest(EspRequest *ep, const char *docPath,
 /*
  *	Method invocation
  */
-extern void			espDefineCFunction(EspRequest *ep, char *functionName, 
+extern void			espDefineCFunction(EspRequest *ep, const char *functionName, 
 						EspCFunction fn, void *thisPtr);
-extern void 		espDefineFunction(EspRequest *ep, char *functionName, 
+extern void 		espDefineFunction(EspRequest *ep, const char *functionName, 
 						char *args, char *body);
 extern void			espDefineStringCFunction(EspRequest *ep, 
 						const char *functionName, EspStringCFunction fn, 
@@ -188,7 +188,7 @@ extern EjsId 		espGetScriptHandle(EspRequest *ep);
 extern void			espRedirect(EspRequest *ep, int code, char *url);
 extern void			espSetHeader(EspRequest *ep, char *header, 
 						bool allowMultiple);
-extern void			espSetReturnString(EspRequest *ep, char *str);
+extern void			espSetReturnString(EspRequest *ep, const char *str);
 extern int			espWrite(EspRequest *ep, char *buf, int size);
 extern int			espWriteString(EspRequest *ep, char *buf);
 extern int			espWriteFmt(EspRequest *ep, char *fmt, ...);
