@@ -570,13 +570,13 @@ Password changed
 				<filename>/etc/samba</filename> directory. This newer &smb.conf; file uses user-mode security
 				and is more suited to the mode of operation of Samba-3 that the older share-mode security
 				configuration that was shown in the first edition of this book.
-				</para></step>
+				</para>
 
-				<note><para>
-				If you want to use the older style configuration that uses share-mode security, you can
-				install the file shown in <link linkend="charity-smbconf"/> in the
+				<para>
+				Note: If you want to use the older style configuration that uses share-mode security, you
+				can install the file shown in <link linkend="charity-smbconf"/> in the
 				<filename>/etc/samba</filename> directory.
-				</para></note>
+				</para></step>
 
 				<step><para>
 				<indexterm><primary>smbd</primary></indexterm>
@@ -644,7 +644,7 @@ application/octet-stream
 
 <smbconfexample id="charity-smbconfnew">
 <title>Charity Administration Office &smb.conf; File</title>
-<smbconfcomment>Global Parameters - Newer Configuration`</smbconfcomment>
+<smbconfcomment>Global Parameters - Newer Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="printing">CUPS</smbconfoption>
@@ -682,7 +682,7 @@ application/octet-stream
 
 <smbconfexample id="charity-smbconf">
 <title>Charity Administration Office &smb.conf; File</title>
-<smbconfcomment>Global Parameters</smbconfcomment>
+<smbconfcomment>Global Parameters - Older Style Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="security">SHARE</smbconfoption>
