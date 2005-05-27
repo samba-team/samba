@@ -33,22 +33,6 @@
 
 #define SWAT_SESSION_KEY "_swat_session_"
 
-/*
-  context for long term storage in the web server, to support session[]
-  and application[] data. Stored in task->private.
-*/
-struct esp_data {
-	struct session_data {
-		struct session_data *next, *prev;
-		struct esp_data *edata;
-		const char *id;
-		struct MprVar *data;
-		struct timed_event *te;
-		int lifetime;
-	} *sessions;
-	struct MprVar *application_data;
-};
-
 /* state of the esp subsystem for a specific request */
 struct esp_state {
 	struct websrv_context *web;
@@ -250,10 +234,13 @@ static void http_redirect(EspHandle handle, int code, char *url)
 		if (url[0] != '/') {
 			char *p = strrchr(web->input.url, '/');
 			if (p == web->input.url) {
-				url = talloc_asprintf(web, "http://%s/%s", host, url);
+				url = talloc_asprintf(web, "http%s://%s/%s", 
+						      web->tls_session?"s":"",
+						      host, url);
 			} else {
 				int dirlen = p - web->input.url;
-				url = talloc_asprintf(web, "http://%s%*.*s/%s",
+				url = talloc_asprintf(web, "http%s://%s%*.*s/%s",
+						      web->tls_session?"s":"",
 						      host, 
 						      dirlen, dirlen, web->input.url,
 						      url);
@@ -351,6 +338,7 @@ void http_error(struct websrv_context *web, int code, const char *info)
 	http_output_headers(web);
 	EVENT_FD_NOT_READABLE(web->conn->event.fde);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = True;
 }
 
 /*
@@ -399,6 +387,7 @@ static void http_simple_request(struct websrv_context *web)
 
 	http_output_headers(web);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = True;
 	return;
 
 invalid:
@@ -449,7 +438,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PORT", 
 	       talloc_asprintf(esp, "%u", socket_get_my_port(web->conn->socket)));
-	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", "http");
+	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", web->tls_session?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
@@ -509,6 +498,7 @@ static void esp_request(struct esp_state *esp)
 	talloc_free(buf);
 	http_output_headers(web);
 	EVENT_FD_WRITEABLE(web->conn->event.fde);
+	web->output.output_pending = True;
 }
 
 
@@ -663,7 +653,7 @@ static void http_setup_session(struct esp_state *esp)
 		s->data = NULL;
 		s->te = NULL;
 		s->edata = edata;
-		s->lifetime = lp_parm_int(-1, "http", "sessiontimeout", 300);
+		s->lifetime = lp_parm_int(-1, "web", "sessiontimeout", 300);
 		DLIST_ADD(edata->sessions, s);
 		talloc_set_destructor(s, session_destructor);
 	}
@@ -775,6 +765,9 @@ void http_process_input(struct websrv_context *web)
 
 	/* work out the mime type */
 	p = strrchr(web->input.url, '.');
+	if (p == NULL) {
+		esp_enable = True;
+	}
 	for (i=0;p && i<ARRAY_SIZE(mime_types);i++) {
 		if (strcmp(mime_types[i].extension, p+1) == 0) {
 			file_type = mime_types[i].mime_type;
@@ -880,12 +873,10 @@ NTSTATUS http_setup_esp(struct task_server *task)
 {
 	struct esp_data *edata;
 
-	edata = talloc(task, struct esp_data);
+	edata = talloc_zero(task, struct esp_data);
 	NT_STATUS_HAVE_NO_MEMORY(edata);
 
 	task->private = edata;
-	edata->sessions = NULL;
-	edata->application_data = NULL;
 
 	return NT_STATUS_OK;
 }

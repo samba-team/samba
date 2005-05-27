@@ -68,7 +68,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	DATA_BLOB b;
 
 	/* not the most efficient http parser ever, but good enough for us */
-	status = socket_recv(conn->socket, buf, sizeof(buf), &nread, 0);
+	status = tls_socket_recv(web, buf, sizeof(buf), &nread);
 	if (NT_STATUS_IS_ERR(status)) goto failed;
 	if (!NT_STATUS_IS_OK(status)) return;
 
@@ -128,7 +128,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 	b.data += web->output.nsent;
 	b.length -= web->output.nsent;
 
-	status = socket_send(conn->socket, &b, &nsent, 0);
+	status = tls_socket_send(web, &b, &nsent);
 	if (NT_STATUS_IS_ERR(status)) {
 		stream_terminate_connection(web->conn, "socket_send: failed");
 		return;
@@ -159,7 +159,8 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 		web->output.content = data_blob_talloc(web, buf, nread);
 	}
 
-	if (web->output.content.length == web->output.nsent) {
+	if (web->output.content.length == web->output.nsent && 
+	    web->output.fd == -1) {
 		stream_terminate_connection(web->conn, NULL);
 	}
 }
@@ -171,6 +172,7 @@ static void websrv_accept(struct stream_connection *conn)
 {
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
 	struct websrv_context *web;
+	NTSTATUS status;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
@@ -184,6 +186,10 @@ static void websrv_accept(struct stream_connection *conn)
 	event_add_timed(conn->event.ctx, web, 
 			timeval_current_ofs(HTTP_TIMEOUT, 0),
 			websrv_timeout, web);
+
+	status = tls_init_connection(web);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
 	return;
 
 failed:
@@ -234,6 +240,8 @@ static void websrv_task_init(struct task_server *task)
 	   per connection as that wouldn't allow for session variables */
 	status = http_setup_esp(task);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	tls_initialise(task);
 
 	return;
 
