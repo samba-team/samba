@@ -242,117 +242,23 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 }
 
 /****************************************************************************
- Read data from a socket with a timout in msec.
- mincount = if timeout, minimum to read before returning
- maxcount = number to be read.
- time_out = timeout in milliseconds
+ Work out if we've timed out.
 ****************************************************************************/
 
-ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
-{
-	fd_set fds;
-	int selrtn;
-	ssize_t readret;
-	size_t nread = 0;
-	struct timeval timeout;
-	
-	/* just checking .... */
-	if (maxcnt <= 0)
-		return(0);
-	
-	smb_read_error = 0;
-	
-	/* Blocking read */
-	if (time_out <= 0) {
-		if (mincnt == 0) mincnt = maxcnt;
-		
-		while (nread < mincnt) {
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
-			
-			if (readret == 0) {
-				DEBUG(5,("read_socket_with_timeout: blocking read. EOF from client.\n"));
-				smb_read_error = READ_EOF;
-				return -1;
-			}
-			
-			if (readret == -1) {
-				DEBUG(0,("read_socket_with_timeout: read error = %s.\n", strerror(errno) ));
-				smb_read_error = READ_ERROR;
-				return -1;
-			}
-			nread += readret;
-		}
-		return((ssize_t)nread);
-	}
-	
-	/* Most difficult - timeout read */
-	/* If this is ever called on a disk file and 
-	   mincnt is greater then the filesize then
-	   system performance will suffer severely as 
-	   select always returns true on disk files */
-	
-	/* Set initial timeout */
-	timeout.tv_sec = (time_t)(time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-	
-	for (nread=0; nread < mincnt; ) {      
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
-		
-		selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
-		
-		/* Check if error */
-		if (selrtn == -1) {
-			/* something is wrong. Maybe the socket is dead? */
-			DEBUG(0,("read_socket_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		
-		/* Did we timeout ? */
-		if (selrtn == 0) {
-			DEBUG(10,("read_socket_with_timeout: timeout read. select timed out.\n"));
-			smb_read_error = READ_TIMEOUT;
-			return -1;
-		}
-		
-		readret = sys_read(fd, buf+nread, maxcnt-nread);
-		
-		if (readret == 0) {
-			/* we got EOF on the file descriptor */
-			DEBUG(5,("read_socket_with_timeout: timeout read. EOF from client.\n"));
-			smb_read_error = READ_EOF;
-			return -1;
-		}
-		
-		if (readret == -1) {
-			/* the descriptor is probably dead */
-			DEBUG(0,("read_socket_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		
-		nread += readret;
-	}
-	
-	/* Return the number we got */
-	return (ssize_t)nread;
-}
-
-static BOOL timeout_until(struct timeval *timeout,
-			  const struct timeval *endtime)
+static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime)
 {
 	struct timeval now;
+	SMB_BIG_UINT t_dif;
 
 	GetTimeOfDay(&now);
 
-	if ((now.tv_sec > endtime->tv_sec) ||
-	    ((now.tv_sec == endtime->tv_sec) &&
-	     (now.tv_usec > endtime->tv_usec)))
+	t_dif = usec_time_diff(endtime, &now);
+	if (t_dif <= 0) {
 		return False;
+	}
 
-	timeout->tv_sec = endtime->tv_sec - now.tv_sec;
-	timeout->tv_usec = endtime->tv_usec - now.tv_usec;
+	timeout->tv_sec = (t_dif / 1000000);
+	timeout->tv_usec = (t_dif % 1000000);
 	return True;
 }
 
@@ -360,8 +266,7 @@ static BOOL timeout_until(struct timeval *timeout,
  Read data from the client, reading exactly N bytes. 
 ****************************************************************************/
 
-ssize_t read_data_until(int fd,char *buffer,size_t N,
-			const struct timeval *endtime)
+ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endtime)
 {
 	ssize_t ret;
 	size_t total=0;  
@@ -378,8 +283,11 @@ ssize_t read_data_until(int fd,char *buffer,size_t N,
 			FD_ZERO(&r_fds);
 			FD_SET(fd, &r_fds);
 
-			if (!timeout_until(&timeout, endtime))
+			if (!timeout_until(&timeout, endtime)) {
+				DEBUG(10,("read_data_until: read timed out\n"));
+				smb_read_error = READ_TIMEOUT;
 				return -1;
+			}
 
 			res = sys_select(fd+1, &r_fds, NULL, NULL, &timeout);
 			if (res <= 0)
@@ -389,13 +297,13 @@ ssize_t read_data_until(int fd,char *buffer,size_t N,
 		ret = sys_read(fd,buffer + total,N - total);
 
 		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			DEBUG(10,("read_data_until: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
 			smb_read_error = READ_EOF;
 			return 0;
 		}
 
 		if (ret == -1) {
-			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			DEBUG(0,("read_data_until: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
 			smb_read_error = READ_ERROR;
 			return -1;
 		}
@@ -440,6 +348,90 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 }
 
 /****************************************************************************
+ Read data from a socket with a timout in msec.
+ mincount = if timeout, minimum to read before returning
+ maxcount = number to be read.
+ time_out = timeout in milliseconds
+****************************************************************************/
+
+ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
+{
+	fd_set fds;
+	int selrtn;
+	ssize_t readret;
+	size_t nread = 0;
+	struct timeval timeout;
+	
+	smb_read_error = 0;
+	
+	if (time_out <= 0) {
+		/* Blocking read */
+		if (mincnt == 0) {
+			mincnt = maxcnt;
+		}
+		return read_socket_data(fd, buf, mincnt);
+	}
+	
+	/* Most difficult - timeout read */
+	/* If this is ever called on a disk file and 
+	   mincnt is greater then the filesize then
+	   system performance will suffer severely as 
+	   select always returns true on disk files */
+	
+	/* Set initial timeout */
+	timeout.tv_sec = (time_t)(time_out / 1000);
+	timeout.tv_usec = (long)(1000 * (time_out % 1000));
+	
+	for (nread=0; nread < mincnt; ) {      
+		FD_ZERO(&fds);
+		FD_SET(fd,&fds);
+		
+		selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
+		
+		/* Check if error */
+		if (selrtn == -1) {
+			/* something is wrong. Maybe the socket is dead? */
+			DEBUG(0,("read_socket_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		
+		/* Did we timeout ? */
+		if (selrtn == 0) {
+			DEBUG(10,("read_socket_with_timeout: timeout read. select timed out.\n"));
+			smb_read_error = READ_TIMEOUT;
+			return -1;
+		}
+		
+		readret = sys_read(fd, buf+nread, maxcnt-nread);
+		
+		if (readret == 0) {
+			/* we got EOF on the file descriptor */
+			DEBUG(5,("read_socket_with_timeout: timeout read. EOF from client.\n"));
+			smb_read_error = READ_EOF;
+			return -1;
+		}
+		
+		if (readret == -1) {
+			if (errno == EAGAIN) {
+				/* Non-blocking socket with no data available. Try select again. */
+				continue;
+			}
+
+			/* the descriptor is probably dead */
+			DEBUG(0,("read_socket_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		
+		nread += readret;
+	}
+	
+	/* Return the number we got */
+	return (ssize_t)nread;
+}
+
+/***************************************************************************
  Write data to a fd.
 ****************************************************************************/
 
