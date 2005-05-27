@@ -544,10 +544,10 @@ static int printlnProc(EjsHandle eid, int argc, MprVar **argv)
 static int traceProc(EjsHandle eid, int argc, char **argv)
 {
 	if (argc == 1) {
-		mprLog(0, argv[0]);
+		mprLog(0, "%s", argv[0]);
 
 	} else if (argc == 2) {
-		mprLog(atoi(argv[0]), argv[1]);
+		mprLog(atoi(argv[0]), "%s", argv[1]);
 
 	} else {
 		ejsSetErrorMsg(eid, "Usage: trace([level], message)");

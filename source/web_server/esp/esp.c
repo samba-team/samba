@@ -46,7 +46,7 @@
  *	Master ESP control interface with the web server
  */
 
-static Esp *esp;
+static const Esp *esp;
 
 /***************************** Forward Declarations ***************************/
 
@@ -58,7 +58,7 @@ static int	buildScript(EspRequest *ep, char **jsBuf, char *input, char
  *	Called at server initialization
  */
 
-int espOpen(Esp *control)
+int espOpen(const Esp *control)
 {
 	mprAssert(control);
 
