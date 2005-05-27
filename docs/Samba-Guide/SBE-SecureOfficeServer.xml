@@ -846,6 +846,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="utmp">Yes</smbconfoption>
 <smbconfoption name="map acl inherit">Yes</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
+<smbconfoption name="cups options">Raw</smbconfoption>
 <smbconfoption name="veto files">/*.eml/*.nws/*.{*}/</smbconfoption>
 <smbconfoption name="veto oplock files">/*.doc/*.xls/*.mdb/</smbconfoption>
 </smbconfexample>
@@ -1803,9 +1804,8 @@ hosts:       files dns wins
 			of this file by running:
 <screen>
 &rootprompt; testparm -s
-Load smb config files from /etc/samba/smb.conf
-Processing section "[IPC$]"
-Processing section "[homes]"
+Load smb config files from smb.conf
+rocessing section "[homes]"
 Processing section "[printers]"
 Processing section "[netlogon]"
 Processing section "[profiles]"
@@ -1815,52 +1815,54 @@ Processing section "[apps]"
 Loaded services file OK.
 # Global parameters
 [global]
-        workgroup = PROMISES
-        netbios name = DIAMOND
-        interfaces = eth1, eth2, lo
-        bind interfaces only = Yes
-        passdb backend = tdbsam
-        pam password change = Yes
-        passwd chat = *New*Password* %n\n \
-		*Re-enter*new*password* %n\n *Password*changed*
-        username map = /etc/samba/smbusers
-        unix password sync = Yes
-        log level = 1
-        syslog = 0
-        log file = /var/log/samba/%m
-        max log size = 50
-        smb ports = 139 445
-        name resolve order = wins bcast hosts
-        time server = Yes
-        printcap name = CUPS
-        show add printer wizard = No
-        add user script = /usr/sbin/useradd -m %u
-        delete user script = /usr/sbin/userdel -r %u
-        add group script = /usr/sbin/groupadd %g
-        delete group script = /usr/sbin/groupdel %g
-        add user to group script = /usr/sbin/usermod -G %g %u
-        add machine script = /usr/sbin/useradd \
-				-s /bin/false -d /var/lib/nobody %u
-        shutdown script = /var/lib/samba/scripts/shutdown.sh
-        abort shutdown script = /sbin/shutdown -c
-        logon script = scripts\logon.bat
-        logon path = \\%L\profiles\%U
-        logon drive = X:
-        logon home = \\%L\%U
-        domain logons = Yes
-        preferred master = Yes
-        wins support = Yes
-        utmp = Yes
-        winbind use default domain = Yes
-        map acl inherit = Yes
-        printing = cups
-        veto files = /*.eml/*.nws/riched20.dll/*.{*}/
-        veto oplock files = /*.doc/*.xls/*.mdb/
+    workgroup = PROMISES
+    netbios name = DIAMOND
+    interfaces = eth1, eth2, lo
+    bind interfaces only = Yes
+    passdb backend = tdbsam
+    pam password change = Yes
+    passwd program = /usr/bin/passwd '%u'
+    passwd chat = *New*Password* %n\n \
+             *Re-enter*new*password* %n\n *Password*changed*
+    username map = /etc/samba/smbusers
+    unix password sync = Yes
+    log level = 1
+    syslog = 0
+    log file = /var/log/samba/%m
+    max log size = 50
+    smb ports = 139 445
+    name resolve order = wins bcast hosts
+    time server = Yes
+    printcap name = CUPS
+    show add printer wizard = No
+    add user script = /usr/sbin/useradd -m '%u'
+    delete user script = /usr/sbin/userdel -r '%u'
+    add group script = /usr/sbin/groupadd '%g'
+    delete group script = /usr/sbin/groupdel '%g'
+    add user to group script = /usr/sbin/usermod -G '%g' '%u'
+    add machine script = /usr/sbin/useradd \
+                              -s /bin/false -d /dev/null '%u'
+    shutdown script = /var/lib/samba/scripts/shutdown.sh
+    abort shutdown script = /sbin/shutdown -c
+    logon script = scripts\logon.bat
+    logon path = \\%L\profiles\%U
+    logon drive = X:
+    logon home = \\%L\%U
+    domain logons = Yes
+    preferred master = Yes
+    wins support = Yes
+    utmp = Yes
+    winbind use default domain = Yes
+    map acl inherit = Yes
+    cups options = Raw
+    veto files = /*.eml/*.nws/*.{*}/
+    veto oplock files = /*.doc/*.xls/*.mdb/
 
-[IPC$]
-        path = /tmp
-        hosts allow = 192.168.1.0/24, 192.168.2.0/24, 127.0.0.1
-        hosts deny = 0.0.0.0/0
+[homes]
+    comment = Home Directories
+    valid users = %S
+    read only = No
+    browseable = No
 ...
 ### Remainder cut to save space ###
 </screen>
@@ -1916,7 +1918,7 @@ $rootprompt; ps ax | grep winbind
 
         Server               Comment
         ---------            -------
-        DIAMOND              Samba CVS 3.0.20
+        DIAMOND              Samba 3.0.20
 
         Workgroup            Master
         ---------            -------
