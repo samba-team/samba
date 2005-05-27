@@ -554,8 +554,7 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout)
 
 BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 {
-        char *p;
-	ssize_t n_remaining, n_read, len, ret;
+	ssize_t len,ret;
 
 	smb_read_error = 0;
 
@@ -571,20 +570,18 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 		 * variables still suck :-). JRA.
 		 */
 
-		if (smb_read_error == 0) {
+		if (smb_read_error == 0)
 			smb_read_error = READ_ERROR;
-                }
 		return False;
 	}
 
 	/*
-         * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65
-         * bytes of header. Don't print the error if this fits.... JRA.
-         */
+	 * A WRITEX with CAP_LARGE_WRITEX can be 64k worth of data plus 65 bytes
+	 * of header. Don't print the error if this fits.... JRA.
+	 */
 
 	if (len > (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE)) {
-		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
-                         (unsigned long)len));
+		DEBUG(0,("Invalid packet length! (%lu bytes).\n",(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
 
 			/*
@@ -593,65 +590,23 @@ BOOL receive_smb_raw(int fd, char *buffer, unsigned int timeout)
 			 * variables still suck :-). JRA.
 			 */
 
-			if (smb_read_error == 0) {
+			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
-                        }
 			return False;
 		}
 	}
 
 	if(len > 0) {
-                /*
-                 * Read the remainder of the data.  Don't use a timeout since
-                 * the overhead of it is not usually necessary.
-                 */
-                p = buffer + 4;         /* initial read buffer pointer */
-                n_remaining = len;      /* initial length to be read */
-                n_read = 0;             /* initialize number of bytes read */
-
-                ret = read_socket_data(fd, p, n_remaining);
-
-                if ((ret < 0 && errno == EAGAIN) ||
-                    (ret > 0 && ret < n_remaining)) {
-                        /*
-                         * We were able to read the length earlier, but all of
-                         * the remainder of the data is not yet available to
-                         * us (as indicated by EAGAIN if we got nothing, or by
-                         * the amount of just-read data not matching the
-                         * packet length).  Read again, this time awaiting the
-                         * data to arrive for a short period of time.
-                         */
-
-                        /* If partial read occurred... */
-                        if (ret > 0) {
-                                /* ... then update buffer pointer and counts */
-                                p += ret;
-                                n_read += ret;
-                                n_remaining -= ret;
-                        }
-
-                        ret = read_socket_with_timeout(fd, p, n_remaining,
-                                                       n_remaining, 20000);
-                        if (ret > 0) {
-                                n_read += ret;
-                        }
-                } else {
-                        n_read = ret;
-                }
-
-		if (n_read != len) {
-			if (smb_read_error == 0) {
+		ret = read_socket_data(fd,buffer+4,len);
+		if (ret != len) {
+			if (smb_read_error == 0)
 				smb_read_error = READ_ERROR;
-                        }
 			return False;
 		}
 		
-		/*
-                 * not all of samba3 properly checks for packet-termination of
-                 * strings. This ensures that we don't run off into empty
-                 * space.
-                 */
-		SSVAL(buffer+4, len, 0);
+		/* not all of samba3 properly checks for packet-termination of strings. This
+		   ensures that we don't run off into empty space. */
+		SSVAL(buffer+4,len, 0);
 	}
 
 	return True;
