@@ -35,8 +35,7 @@
 #include <config.h>
 RCSID("$Id$");
 #endif
-#include <stdlib.h>
-#include <string.h>
+#include "roken.h"
 #include <ctype.h>
 #include "hex.h"
 
