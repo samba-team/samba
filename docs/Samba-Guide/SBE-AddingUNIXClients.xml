@@ -1923,7 +1923,7 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 <smbconfoption name="realm">SNOWSHOW.COM</smbconfoption>
 <smbconfoption name="server string">Samba Server</smbconfoption>
 <smbconfoption name="security">ADS</smbconfoption>
-<smbconfoption name="<smbconfoption name="log level">1 ads:10 auth:10 sam:10 rpc:10</smbconfoption>
+<smbconfoption name="log level">1 ads:10 auth:10 sam:10 rpc:10</smbconfoption>
 <smbconfoption name="ldap admin dn">cn=Manager,dc=SNOWSHOW,dc=COM</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
 <smbconfoption name="ldap suffix">dc=SNOWSHOW,dc=COM</smbconfoption>
