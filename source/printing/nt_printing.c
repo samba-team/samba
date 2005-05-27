@@ -38,8 +38,9 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 #define NTDRIVERS_DATABASE_VERSION_1 1
 #define NTDRIVERS_DATABASE_VERSION_2 2
 #define NTDRIVERS_DATABASE_VERSION_3 3 /* little endian version of v2 */
+#define NTDRIVERS_DATABASE_VERSION_4 4 /* fix generic bits in security descriptors */
  
-#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_3
+#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_4
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -283,6 +284,128 @@ static BOOL upgrade_to_version_3(void)
 	return True;
 }
 
+/*******************************************************************
+ Fix an issue with security descriptors.  Printer sec_desc must 
+ use more than the generic bits that were previously used 
+ in <= 3.0.14a.  They must also have a owner and group SID assigned.
+ Otherwise, any printers than have been migrated to a Windows 
+ host using printmig.exe will not be accessible.
+*******************************************************************/
+
+static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
+                            TDB_DATA data, void *state )
+{
+	prs_struct ps;
+	SEC_DESC_BUF *sd_orig = NULL;
+	SEC_DESC_BUF *sd_new, *sd_store;
+	SEC_DESC *sec, *new_sec;
+	TALLOC_CTX *ctx = state;
+	int result, i;
+	uint32 sd_size, size_new_sec;
+	DOM_SID sid;
+
+	if (!data.dptr || data.dsize == 0)
+		return 0;
+
+	if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 )
+		return 0;
+
+	/* upgrade the security descriptor */
+
+	ZERO_STRUCT( ps );
+
+	prs_init( &ps, 0, ctx, UNMARSHALL );
+	prs_give_memory( &ps, data.dptr, data.dsize, True );
+
+	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
+		/* delete bad entries */
+		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n", key.dptr ));
+		tdb_delete( tdb_printers, key );
+		return 0;
+	}
+
+	sec = sd_orig->sec;
+		
+	/* is this even valid? */
+	
+	if ( !sec->dacl )
+		return 0;
+		
+	/* update access masks */
+	
+	for ( i=0; i<sec->dacl->num_aces; i++ ) {
+		switch ( sec->dacl->ace[i].info.mask ) {
+			case (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS):
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_PRINT;
+				break;
+				
+			case GENERIC_ALL_ACCESS:
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_FULL_CONTROL;
+				break;
+				
+			case READ_CONTROL_ACCESS:
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_MANAGE_DOCUMENTS;
+			
+			default:	/* no change */
+				break;
+		}
+	}
+
+	/* create a new SEC_DESC with the appropriate owner and group SIDs */
+
+	string_to_sid(&sid, "S-1-5-32-544" );
+	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, 
+		&sid, &sid,
+		NULL, NULL, &size_new_sec );
+	sd_new = make_sec_desc_buf( ctx, size_new_sec, new_sec );
+
+	if ( !(sd_store = sec_desc_merge( ctx, sd_new, sd_orig )) ) {
+		DEBUG(0,("sec_desc_upg_fn: Failed to update sec_desc for %s\n", key.dptr ));
+		return 0;
+	}
+	
+	/* store it back */
+	
+	sd_size = sec_desc_size(sd_store->sec) + sizeof(SEC_DESC_BUF);
+	prs_init(&ps, sd_size, ctx, MARSHALL);
+
+	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
+		DEBUG(0,("sec_desc_upg_fn: Failed to parse new sec_desc for %s\n", key.dptr ));
+		return 0;
+	}
+
+	data.dptr = prs_data_p( &ps );
+	data.dsize = sd_size;
+	
+	result = tdb_store( tdb_printers, key, data, TDB_REPLACE );
+
+	prs_mem_free( &ps );
+	
+	/* 0 to continue and non-zero to stop traversal */
+
+	return (result == -1);
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL upgrade_to_version_4(void)
+{
+	TALLOC_CTX *ctx;
+	int result;
+
+	DEBUG(0,("upgrade_to_version_4: upgrading printer security descriptors\n"));
+
+	if ( !(ctx = talloc_init_named( "upgrade_to_version_4" )) ) 
+		return False;
+
+	result = tdb_traverse( tdb_printers, sec_desc_upg_fn, ctx );
+
+	talloc_destroy( ctx );
+
+	return ( result != -1 );
+}
+
 /****************************************************************************
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
@@ -327,29 +450,41 @@ BOOL nt_printing_init(void)
  
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb_drivers, vstring, 0);
-	{
-		int32 vers_id;
 
-		/* Cope with byte-reversed older versions of the db. */
-		vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+	/* ---------------- Start Lock Region ---------------- */
+
+	/* Cope with byte-reversed older versions of the db. */
+	vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+
+	if ( vers_id != NTDRIVERS_DATABASE_VERSION ) {
+
 		if ((vers_id == NTDRIVERS_DATABASE_VERSION_2) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_2)) {
 			/* Written on a bigendian machine with old fetch_int code. Save as le. */
 			/* The only upgrade between V2 and V3 is to save the version in little-endian. */
-			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
-			vers_id = NTDRIVERS_DATABASE_VERSION;
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
+			vers_id = NTDRIVERS_DATABASE_VERSION_3;
 		}
 
-		if (vers_id != NTDRIVERS_DATABASE_VERSION) {
-
+		if (vers_id != NTDRIVERS_DATABASE_VERSION_3 ) {
+	
 			if ((vers_id == NTDRIVERS_DATABASE_VERSION_1) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_1)) { 
 				if (!upgrade_to_version_3())
 					return False;
 			} else
 				tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
 			 
-			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
 		}
+
+		/* at this point we know that the database is at version 3 so upgrade to v4 */
+
+		if ( !upgrade_to_version_4() )
+			return False;
+		tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
 	}
+
+	/* ---------------- End Lock Region ------------------ */
+
 	tdb_unlock_bystring(tdb_drivers, vstring);
 
 	update_c_setprinter(True);
