@@ -235,7 +235,7 @@ interface drsuapi
 
 	typedef [flag(NDR_PAHEX)] struct {
 		[range(0,10000)] uint32 length;
-		[size_is(length)] uint8 *byte_array[];
+		[size_is(length)] uint8 *byte_array;
 	} drsuapi_DsGetNCChangesRequest_Ctr14;
 
 	typedef struct {
@@ -245,7 +245,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,0x100000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetNCChangesRequest_Ctr13 *array[];
+		[size_is(count)] drsuapi_DsGetNCChangesRequest_Ctr13 *array;
 	} drsuapi_DsGetNCChangesRequest_Ctr12;
 
 	typedef struct {
@@ -386,7 +386,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueDataBlob *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueDataBlob *values;
 	} drsuapi_DsAttributeValueCtrDataBlob;
 
 	/* objectClass values */
@@ -397,7 +397,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueObjectClassId *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueObjectClassId *values;
 	} drsuapi_DsAttributeValueCtrObjectClassId;
 
 	/* uint32 values */
@@ -408,7 +408,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueUINT32 *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueUINT32 *values;
 	} drsuapi_DsAttributeValueCtrUINT32;
 
 	/* UnicodeString values */
@@ -419,7 +419,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueUnicodeString *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueUnicodeString *values;
 	} drsuapi_DsAttributeValueCtrUnicodeString;
 
 	/* DN String values */
@@ -438,7 +438,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueDNString *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueDNString *values;
 	} drsuapi_DsAttributeValueCtrDNString;
 
 	/* GUID values */
@@ -449,7 +449,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueGUID *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueGUID *values;
 	} drsuapi_DsAttributeValueCtrGUID;
 
 	/* SID values */
@@ -460,7 +460,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueSID *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueSID *values;
 	} drsuapi_DsAttributeValueCtrSID;
 
 	/* SecurityDescriptor values */
@@ -471,7 +471,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueSecurityDescriptor *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueSecurityDescriptor *values;
 	} drsuapi_DsAttributeValueCtrSecurityDescriptor;
 
 	/* NTTIME_1sec values */
@@ -482,7 +482,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10485760)] uint32 num_values;
-		[size_is(num_values)] drsuapi_DsAttributeValueNTTIME_1sec *values[];
+		[size_is(num_values)] drsuapi_DsAttributeValueNTTIME_1sec *values;
 	} drsuapi_DsAttributeValueCtrNTTIME_1sec;
 
 	typedef [nodiscriminant] union {
@@ -534,7 +534,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,1048576)] uint32 num_attributes;
-		[size_is(num_attributes)]  drsuapi_DsReplicaAttribute *attributes[];
+		[size_is(num_attributes)]  drsuapi_DsReplicaAttribute *attributes;
 	} drsuapi_DsReplicaAttributeCtr;
 
 	typedef [public] struct {
@@ -753,7 +753,7 @@ interface drsuapi
 		drsuapi_DsNameFormat format_offered;
 		drsuapi_DsNameFormat format_desired;
 		[range(1,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsNameString *names[];
+		[size_is(count)] drsuapi_DsNameString *names;
 	} drsuapi_DsNameRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -768,7 +768,7 @@ interface drsuapi
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] drsuapi_DsNameInfo1 *array[];
+		[size_is(count)] drsuapi_DsNameInfo1 *array;
 	} drsuapi_DsNameCtr1;
 
 	typedef [switch_type(int32)] union {
@@ -795,7 +795,7 @@ interface drsuapi
 		uint32 unknown1;
 		unistr *object_dn;
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsNameString *spn_names[];
+		[size_is(count)] drsuapi_DsNameString *spn_names;
 	} drsuapi_DsWriteAccountSpnRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -848,7 +848,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo1 *array[];
+		[size_is(count)] drsuapi_DsGetDCInfo1 *array;
 	} drsuapi_DsGetDCInfoCtr1;
 
 	typedef struct {
@@ -870,7 +870,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo2 *array[];
+		[size_is(count)] drsuapi_DsGetDCInfo2 *array;
 	} drsuapi_DsGetDCInfoCtr2;
 
 	typedef struct {
@@ -885,7 +885,7 @@ interface drsuapi
 
 	typedef struct {
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsGetDCInfo01 *array[];
+		[size_is(count)] drsuapi_DsGetDCInfo01 *array;
 	} drsuapi_DsGetDCInfoCtr01;
 
 	typedef [v1_enum] enum {
@@ -942,7 +942,7 @@ interface drsuapi
 		uint32 level;
 		[switch_is(level)] drsuapi_DsAddEntryCtr3Info *info;
 		[range(0,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects[];
+		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects;
 	} drsuapi_DsAddEntryCtr3;
 
 	typedef [switch_type(int32)] union {
@@ -1106,7 +1106,7 @@ interface drsuapi
 		unistr *attribute_name;
 		unistr *object_dn;
 		uint32 value_length;
-		[size_is(value_length)] uint8 *value[];
+		[size_is(value_length)] uint8 *value;
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;
@@ -1161,7 +1161,7 @@ interface drsuapi
 		unistr *attribute_name;
 		unistr *object_dn;
 		uint32 value_length;
-		[size_is(value_length)] uint8 *value[];
+		[size_is(value_length)] uint8 *value;
 		NTTIME deleted;
 		NTTIME created;
 		uint32 version;

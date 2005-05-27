@@ -134,7 +134,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] wkssvc_NetWkstaTransportInfo0 *array[];
+		[size_is(count)] wkssvc_NetWkstaTransportInfo0 *array;
 	} wkssvc_NetWkstaTransportCtr0;
 
 	typedef union {

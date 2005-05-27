@@ -100,7 +100,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_SamEntry *entries[];
+		[size_is(count)] samr_SamEntry *entries;
 	} samr_SamArray;
 
 	NTSTATUS samr_EnumDomains (
@@ -311,7 +311,7 @@
 
 	typedef struct {
 		[range(0,1024)]  uint32 count;
-		[size_is(count)] uint32 *ids[];
+		[size_is(count)] uint32 *ids;
 	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
@@ -432,8 +432,8 @@
 	/* Function    0x19     */
 	typedef struct {
 		uint32 count;
-		[size_is(count)] uint32 *rids[];
-		[size_is(count)] uint32 *types[];
+		[size_is(count)] uint32 *rids;
+		[size_is(count)] uint32 *types;
 	} samr_RidTypeArray;
 
 	NTSTATUS samr_QueryGroupMember(
@@ -565,7 +565,7 @@
 	/* this is also used in samr and netlogon */
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint16 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *bits[];
+		[size_is(1260), length_is(units_per_week/8)] uint8 *bits;
 	} samr_LogonHours;
 
 	typedef struct {
@@ -703,7 +703,7 @@
 		samr_String unknown2;
 		samr_String unknown3;
 		uint32 buf_count;
-		[size_is(buf_count)] uint8 *buffer[];
+		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
 		uint32 primary_gid;
 		samr_AcctFlags acct_flags;
@@ -821,7 +821,7 @@
 
 	typedef [public] struct {
 		uint32     count;
-		[size_is(count)] samr_RidWithType *rids[];
+		[size_is(count)] samr_RidWithType *rids;
 	} samr_RidWithTypeArray;
 
 	NTSTATUS samr_GetGroupsForUser(
@@ -843,7 +843,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryGeneral *entries[];
+		[size_is(count)] samr_DispEntryGeneral *entries;
 	} samr_DispInfoGeneral;
 
 	typedef struct {
@@ -856,7 +856,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryFull *entries[];
+		[size_is(count)] samr_DispEntryFull *entries;
 	} samr_DispInfoFull;
 
 	typedef struct {
@@ -872,7 +872,7 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntryAscii *entries[];
+		[size_is(count)] samr_DispEntryAscii *entries;
 	} samr_DispInfoAscii;
 
 	typedef [switch_type(uint16)] union {

@@ -65,7 +65,7 @@ interface xattr
 
 	typedef [public] struct {
 		uint16 num_eas;
-		[size_is(num_eas)] xattr_EA *eas[];
+		[size_is(num_eas)] xattr_EA *eas;
 	} xattr_DosEAs;
 
 	/* we store stream information in this xattr structure. Then
@@ -90,7 +90,7 @@ interface xattr
 
 	typedef [public] struct {
 		uint32 num_streams;
-		[size_is(num_streams)] xattr_DosStream *streams[];
+		[size_is(num_streams)] xattr_DosStream *streams;
 	} xattr_DosStreams;
 
 

@@ -65,7 +65,7 @@
 		unistr *comment;
 		uint32 state;
 		uint32 num_stores;
-		[size_is(num_stores)] dfs_StorageInfo *stores[];
+		[size_is(num_stores)] dfs_StorageInfo *stores;
 	} dfs_Info3;
 
 	typedef struct {
@@ -75,7 +75,7 @@
 		uint32 timeout;
 		GUID   guid;
 		uint32 num_stores;
-		[size_is(num_stores)] dfs_StorageInfo *stores[];
+		[size_is(num_stores)] dfs_StorageInfo *stores;
 	} dfs_Info4;
 
 	typedef struct {
@@ -123,32 +123,32 @@
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info1 *s[];
+		[size_is(count)] dfs_Info1 *s;
 	} dfs_EnumArray1;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info2 *s[];
+		[size_is(count)] dfs_Info2 *s;
 	} dfs_EnumArray2;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info3 *s[];
+		[size_is(count)] dfs_Info3 *s;
 	} dfs_EnumArray3;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info4 *s[];
+		[size_is(count)] dfs_Info4 *s;
 	} dfs_EnumArray4;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info200 *s[];
+		[size_is(count)] dfs_Info200 *s;
 	} dfs_EnumArray200;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] dfs_Info300 *s[];
+		[size_is(count)] dfs_Info300 *s;
 	} dfs_EnumArray300;
 
 
