@@ -99,9 +99,9 @@ extern MprVar	*ejsGetGlobalObject(EjsId eid);
 /*
  *	Function routines
  */
-extern void 	ejsDefineFunction(EjsId eid, char *functionName, char *args, 
+extern void 	ejsDefineFunction(EjsId eid, const char *functionName, char *args, 
 					char *body);
-extern void 	ejsDefineCFunction(EjsId eid, char *functionName, 
+extern void 	ejsDefineCFunction(EjsId eid, const char *functionName, 
 					MprCFunction fn, void *thisPtr, int flags);
 extern void		ejsDefineStringCFunction(EjsId eid, const char *functionName, 
 					MprStringCFunction fn, void *thisPtr, int flags);

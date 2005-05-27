@@ -754,7 +754,7 @@ MprVar *ejsGetReturnValue(EjsId eid)
  *	or "[]".  
  */
 
-void ejsDefineCFunction(EjsId eid, char *functionName, MprCFunction fn, 
+void ejsDefineCFunction(EjsId eid, const char *functionName, MprCFunction fn, 
 	void *thisPtr, int flags)
 {
 	if (eid < 0) {
@@ -793,7 +793,7 @@ void ejsDefineStringCFunction(EjsId eid, const char *functionName,
  *	Body should not contain braces.
  */
 
-void ejsDefineFunction(EjsId eid, char *functionName, char *args, char *body)
+void ejsDefineFunction(EjsId eid, const char *functionName, char *args, char *body)
 {
 	MprVar		v;
 

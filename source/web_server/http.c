@@ -720,6 +720,8 @@ void http_process_input(struct websrv_context *web)
 
 	talloc_set_destructor(esp, esp_destructor);
 
+	http_setup_ejs_functions();
+
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
 

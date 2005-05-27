@@ -218,7 +218,7 @@ void espDestroyRequest(EspRequest *ep)
  *		rq = (requiredCast) espGetHandle(ep);
  */
 
-void espDefineCFunction(EspRequest *ep, char *functionName, EspCFunction fn, 
+void espDefineCFunction(EspRequest *ep, const char *functionName, EspCFunction fn, 
 	void *thisPtr)
 {
 	mprAssert(functionName && *functionName);
@@ -389,7 +389,7 @@ void espSetReturn(EspRequest *ep, MprVar value)
 
 /******************************************************************************/
 
-void espSetReturnString(EspRequest *ep, char *str)
+void espSetReturnString(EspRequest *ep, const char *str)
 {
 	mprAssert(ep);
 
@@ -866,7 +866,7 @@ MprVar *espCreatePropertyValue(MprVar *obj, char *property, MprVar newValue)
 
 /******************************************************************************/
 
-void espDefineFunction(EspRequest *ep, char *functionName, char *args, char *body)
+void espDefineFunction(EspRequest *ep, const char *functionName, char *args, char *body)
 {
 	ejsDefineFunction(ep->eid, functionName, args, body);
 }
