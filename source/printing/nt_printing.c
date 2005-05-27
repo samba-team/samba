@@ -354,7 +354,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	/* create a new SEC_DESC with the appropriate owner and group SIDs */
 
 	string_to_sid(&sid, "S-1-5-32-544" );
-	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, 
+	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 		&sid, &sid,
 		NULL, NULL, &size_new_sec );
 	sd_new = make_sec_desc_buf( ctx, size_new_sec, new_sec );
@@ -396,7 +396,7 @@ static BOOL upgrade_to_version_4(void)
 
 	DEBUG(0,("upgrade_to_version_4: upgrading printer security descriptors\n"));
 
-	if ( !(ctx = talloc_init_named( "upgrade_to_version_4" )) ) 
+	if ( !(ctx = talloc_init( "upgrade_to_version_4" )) ) 
 		return False;
 
 	result = tdb_traverse( tdb_printers, sec_desc_upg_fn, ctx );
@@ -415,6 +415,7 @@ BOOL nt_printing_init(void)
 	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
+	uint32 vers_id;
 
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
