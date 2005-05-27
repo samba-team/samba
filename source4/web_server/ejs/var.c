@@ -1319,7 +1319,7 @@ MprVar mprCreateObjVar(const char *name, int hashSize)
 	}
 	v.allocatedData = 1;
 	v.name = mprStrdup(name);
-	mprLog(7, "mprCreateObjVar %s, 0x%x\n", name, v.properties);
+	mprLog(7, "mprCreateObjVar %s, 0x%p\n", name, v.properties);
 	return v;
 }
 

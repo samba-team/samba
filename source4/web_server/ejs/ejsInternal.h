@@ -274,7 +274,7 @@ extern int		ejsDefineStandardProperties(MprVar *objVar);
 /*
  *	Error handling
  */
-extern void		ejsError(Ejs *ep, const char *fmt, ...);
+extern void		ejsError(Ejs *ep, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 #ifdef __cplusplus
 }

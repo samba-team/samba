@@ -109,7 +109,7 @@ extern void 	*ejsGetThisPtr(EjsId eid);
 extern MprVar	*ejsGetReturnValue(EjsId eid);
 extern int		ejsGetLineNumber(EjsId eid);
 extern int 		ejsParseArgs(int argc, char **argv, char *fmt, ...);
-extern void 	ejsSetErrorMsg(EjsId eid, const char* fmt, ...);
+extern void 	ejsSetErrorMsg(EjsId eid, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
 extern void		ejsSetReturnValue(EjsId eid, MprVar value);
 extern void		ejsSetReturnString(EjsId eid, const char *str);
 

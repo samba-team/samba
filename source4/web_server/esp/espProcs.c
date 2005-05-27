@@ -69,7 +69,7 @@ static int destroySessionProc(EspRequest *ep, int argc, char **argv)
 
 static int includeProc(EspRequest *ep, int argc, char **argv)
 {
-	Esp		*esp;
+	const Esp		*esp;
 	char	path[MPR_MAX_FNAME], dir[MPR_MAX_FNAME];
 	char	*emsg, *buf;
 	int		size, i;

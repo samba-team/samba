@@ -250,10 +250,10 @@ extern void		*mprRealloc(void *ptr, uint size);
 extern void 	mprFree(void *ptr);
 extern char		*mprStrdup(const char *str);
 extern int 		mprAllocVsprintf(char **msgbuf, int maxSize, const char *fmt, 
-					va_list args);
-extern int 		mprAllocSprintf(char **msgbuf, int maxSize, const char *fmt, ...);
+								 va_list args) PRINTF_ATTRIBUTE(3,0);
+extern int 		mprAllocSprintf(char **msgbuf, int maxSize, const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 extern char 	*mprItoa(int num, char *buf, int width);
-extern void		mprLog(int level, const char *fmt, ...);
+extern void		mprLog(int level, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 extern void		mprBreakpoint(const char *file, int line, const char *msg);
 #endif /* BLD_GOAHEAD_WEBSERVER */
 
