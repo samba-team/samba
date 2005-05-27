@@ -1,3 +1,7 @@
+2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rshd.c: case uid_t to unsigned long in printf format
+	
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsh_locl.h: Use larger buffer for recving data to be compatible
