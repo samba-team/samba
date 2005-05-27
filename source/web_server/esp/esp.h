@@ -81,7 +81,7 @@ typedef void* EspHandle;					/* Opaque Web server handle type */
 typedef struct EspRequest {
 	MprStr		docPath;					/* Physical path for ESP page */	
 	EjsId		eid;						/* EJS instance handle */
-	struct Esp	*esp;						/* Pointer to ESP control block */
+	const struct Esp	*esp;				/* Pointer to ESP control block */
 	EspHandle	requestHandle;				/* Per request web server handle */
 	MprStr		uri;						/* Request URI */		
 	MprVar		*variables;					/* Pointer to variables */
@@ -148,7 +148,7 @@ typedef int 		(*EspStringCFunction)(EspRequest *ep, int argc,
 /*
  *	APIs for those hosting the ESP module
  */
-extern int 			espOpen(Esp *control);
+extern int 			espOpen(const Esp *control);
 extern void			espClose(void);
 extern EspRequest	*espCreateRequest(EspHandle webServerRequestHandle, 
 						char *uri, MprVar *envObj);
@@ -175,7 +175,7 @@ extern void 		*espGetThisPtr(EspRequest *ep);
 /*
  *	Utility routines to use in C methods
  */
-extern void			espError(EspRequest *ep, const char *fmt, ...);
+extern void			espError(EspRequest *ep, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 extern int			espEvalFile(EspRequest *ep, char *path, MprVar *result, 
 						char **emsg);
 extern int			espEvalScript(EspRequest *ep, char *script, MprVar *result, 
@@ -191,7 +191,7 @@ extern void			espSetHeader(EspRequest *ep, char *header,
 extern void			espSetReturnString(EspRequest *ep, const char *str);
 extern int			espWrite(EspRequest *ep, char *buf, int size);
 extern int			espWriteString(EspRequest *ep, char *buf);
-extern int			espWriteFmt(EspRequest *ep, char *fmt, ...);
+extern int			espWriteFmt(EspRequest *ep, char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 /*
  *	ESP array[] variable access (set will update/create)

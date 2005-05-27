@@ -275,7 +275,7 @@ int ejsEvalFile(EjsId eid, char *path, MprVar *result, char **emsg)
 	
 	if ((script = (char*) mprMalloc(sbuf.st_size + 1)) == NULL) {
 		close(fd);
-		ejsError(ep, "Cant malloc %d", sbuf.st_size);
+		ejsError(ep, "Cant malloc %d", (int)sbuf.st_size);
 		goto error;
 	}
 	
@@ -468,7 +468,9 @@ int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
  *	Core error handling
  */
 
-void ejsErrorCore(Ejs* ep, const char *fmt, va_list args)
+static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args) PRINTF_ATTRIBUTE(2, 0);
+
+static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args)
 {
 	EjsInput	*ip;
 	char		*errbuf, *msgbuf;
