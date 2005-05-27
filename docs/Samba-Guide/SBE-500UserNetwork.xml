@@ -497,6 +497,8 @@
 	</para>
 
 		<procedure>
+		<title>Server Preparation Steps</title>
+
 			<step><para>
 			Using the UNIX/Linux system tools, set the name of the server as shown in the network
 			topology diagram in <link linkend="chap05net"/>. For SUSE Linux products, the tool
@@ -512,10 +514,9 @@
 </screen>
 			</para></step>
 
-			 <step><para>
-	      <indexterm><primary>/etc/hosts</primary></indexterm><indexterm>
-		<primary>named</primary>
-	      </indexterm>
+			<step><para>
+			<indexterm><primary>/etc/hosts</primary></indexterm>
+			<indexterm><primary>named</primary></indexterm>
 			Edit your <filename>/etc/hosts</filename> file to include the primary names and addresses
 			of all network interfaces that are on the host server. This is necessary so that during
 			startup the system is able to resolve all its own names to the IP address prior to
@@ -539,9 +540,8 @@ nameserver 127.0.0.1
 
 
 			<step><para>
-	      <indexterm><primary>administrator</primary></indexterm><indexterm>
-		<primary>smbpasswd</primary>
-	      </indexterm>
+			<indexterm><primary>administrator</primary></indexterm>
+			<indexterm><primary>smbpasswd</primary></indexterm>
 			Add the <constant>root</constant> user to the password backend:
 <screen>
 &rootprompt; smbpasswd -a root
@@ -556,9 +556,8 @@ Retype new SMB password: XXXXXXXX
 			</para></step>
 
 			<step><para>
-	      <indexterm><primary>username map</primary></indexterm><indexterm>
-		<primary>/etc/samba/smbusers</primary>
-	      </indexterm>
+			<indexterm><primary>username map</primary></indexterm>
+			<indexterm><primary>/etc/samba/smbusers</primary></indexterm>
 			Create the username map file to permit the <constant>root</constant> account to be called
 			<constant>Administrator</constant> from the Windows network environment. To do this, create
 			the file <filename>/etc/samba/smbusers</filename> with the following contents:
@@ -642,7 +641,12 @@ root = Administrator
 			<indexterm><primary>mime type</primary></indexterm>
 			<indexterm><primary>/etc/mime.convs</primary></indexterm>
 			<indexterm><primary>application/octet-stream</primary></indexterm>
-			Edit the file <filename>/etc/cups/mime.convs</filename> to uncomment the line:
+			This step, as well as the next one, may be omitted where CUPS version 1.1.18
+			or later is in use.  Although it does no harm to follow it anyhow, and may
+			help to avoid later time spent trying to figure out why print jobs may be
+			disappearing without trace. Look at these two steps as <emphasis>insurance</emphasis>
+			against lost time. Edit  file <filename>/etc/cups/mime.convs</filename> to 
+			uncomment the line:
 <screen>
 application/octet-stream     application/vnd.cups-raw      0     -
 </screen>
@@ -689,13 +693,22 @@ application/octet-stream
 
 	<para>
 	There are some steps that apply to particular server functionality only. Each step is critical
-	to correct server operation.
+	to correct server operation. The following step-by-step installation guidance will assist you 
+	to work through the process of configuring the PDC and then both BDC's.
 	</para>
 
 		<sect3>
 		<title>Configuration for Server: <constant>MASSIVE</constant></title>
 
+		<para>
+		The steps presented here attempt to implement Samba installation in a generic manner. While
+		some steps are clearly specific to Linux, it should not be too difficult to apply them to
+		your platform of choice.
+		</para>
+
 		<procedure>
+		<title>Primary Domain Controller Preparation</title>
+
 			<step><para>
 			<indexterm><primary>/etc/rc.d/boot.local</primary></indexterm>
 			<indexterm><primary>IP forwarding</primary></indexterm>
@@ -825,6 +838,8 @@ hosts:      files dns wins
 			</para></step>
 
 			<step><para>
+			<indexterm><primary>unix2dos</primary></indexterm>
+			<indexterm><primary>dos2unix</primary></indexterm>
 			Create a logon script. It is important that each line is correctly terminated with
 			a carriage return and line-feed combination (i.e., DOS encoding). The following procedure
 			works if the right tools (<constant>unxi2dos</constant> and <constant>dos2unix</constant>) are installed.
@@ -877,12 +892,20 @@ Added user <parameter>username</parameter>.
 		<sect3 id="ch5-domsvrspec">
 		<title>Configuration Specific to Domain Member Servers: <constant>BLDG1, BLDG2</constant></title>
 
+		<para>
+		The following steps will guide you trough the nuances of imlplementing BDC's for the broadcast
+		isolated network segments. Remember that if the target installation platform is not Linux, it may
+		be necessary to adapt some commands to the equivalent on the target platform.
+		</para>
+
 		<procedure>
-                        <step><para>
-                        <indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
-                        The final step that must be completed is to edit the <filename>/etc/nsswitch.conf</filename> file.
-                        This file controls the operation of the various resolver libraries that are part of the Linux
-                        Glibc libraries. Edit this file so that it contains the following entries:
+		<title>Backup Domain Controller Configuration Steps</title>
+
+			<step><para>
+			<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+			The final step that must be completed is to edit the <filename>/etc/nsswitch.conf</filename> file.
+			This file controls the operation of the various resolver libraries that are part of the Linux
+			Glibc libraries. Edit this file so that it contains the following entries:
 <screen>
 passwd:     files winbind
 group:      files winbind
@@ -895,11 +918,8 @@ hosts:      files dns wins
 			start Samba at this time. Samba is controlled by the process called <command>smb</command>.
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>net</primary>
-		  <secondary>rpc</secondary>
-		  <tertiary>join</tertiary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
 			You must now attempt to join the domain member servers to the domain. The following
 			instructions should be executed to effect this:
 <screen>
@@ -907,11 +927,8 @@ hosts:      files dns wins
 </screen>
 			</para></step>
 
-	    <step><para><indexterm>
-		  <primary>service</primary>
-		  <secondary>smb</secondary>
-		  <tertiary>start</tertiary>
-		</indexterm>
+			<step><para>
+			<indexterm><primary>service</primary><secondary>smb</secondary><tertiary>start</tertiary></indexterm>
 			You now start the Samba services by executing:
 <screen>
 &rootprompt; service smb start
@@ -1502,9 +1519,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
         <title>Process Startup Configuration</title>
 
         <para>
-	  <indexterm><primary>chkconfig</primary></indexterm><indexterm>
-	    <primary>daemon control</primary>
-	  </indexterm>
+		<indexterm><primary>chkconfig</primary></indexterm>
+		<indexterm><primary>daemon control</primary></indexterm>
         There are two essential steps to process startup configuration. A process
         must be configured so that it is automatically restarted each time the server
         is rebooted. This step involves use of the <command>chkconfig</command> tool that
