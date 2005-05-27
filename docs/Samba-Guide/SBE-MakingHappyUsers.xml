@@ -2870,6 +2870,7 @@ smb: \> q
 	</para>
 
 	<procedure>
+	<title>Printer Configuration Steps</title>
 
                 <step><para>
                 Configure all network-attached printers to have a fixed IP address.
