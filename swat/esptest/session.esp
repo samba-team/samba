@@ -1,0 +1,65 @@
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+<h1>Samba4 session test</h1>
+
+<form name="SessionTest" method="POST" action="@@request['SCRIPT_NAME']"> 
+    Name:   <input name="Name"  type="text" value=""><br>
+    Value:  <input name="Value" type="text" value=""><br>
+    Timeout: <input name="Timeout" type="text" value=""><br>
+    <input name="submit" type="submit" value="Append">
+    <input name="submit" type="submit" value="Reset">
+    <input name="submit" type="submit" value="Destroy">
+    <input name="submit" type="submit" value="Cancel"><br>
+</form>
+
+<%
+  /* if its a post then the user has filled in the form, so
+     report the values 
+  */
+if (request['REQUEST_METHOD'] == "POST") {
+	/* if they cancelled then take them back to the list of tests */
+	if (form['submit'] == "Cancel") {
+		redirect("index.esp");
+	}
+	
+	name  = form['Name'];
+	value = form['Value'];
+	timeout = form['Timeout'];
+	
+	if (timeout) {
+		useSession(timeout);
+	}
+	
+	if (form['submit'] == "Reset" && name) {
+		session[name] = null;
+	}
+	
+	if (form['submit'] == "Append" && name) {
+		session[name] = "" + session[name] + value;
+	}
+	
+	if (form['submit'] == "Destroy") {
+		destroySession();
+	}
+}
+
+function showArray(name, array) {
+	write("<h3>Array: " + name + "</h3>\n");
+	if (array == undefined) {
+		write("undefined<br>\n");
+		return;
+	}
+	for (v in array) {
+		write(name + "[" + v + "]=" + array[v] + "<br>\n");
+	}
+}
+
+showArray("session", session);
+write("SessionId=" + request['SESSION_ID'] + "<br>\n");
+%>
+
+</BODY>
+</HTML>
