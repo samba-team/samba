@@ -416,14 +416,14 @@ static void info_tdb(void)
 
 static char *tdb_getline(const char *prompt)
 {
-	static char line[1024];
+	static char thisline[1024];
 	char *p;
 	fputs(prompt, stdout);
-	line[0] = 0;
-	p = fgets(line, sizeof(line)-1, stdin);
+	thisline[0] = 0;
+	p = fgets(thisline, sizeof(thisline)-1, stdin);
 	if (p) p = strchr(p, '\n');
 	if (p) *p = 0;
-	return p?line:NULL;
+	return p?thisline:NULL;
 }
 
 static int do_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
@@ -560,6 +560,15 @@ static int do_command(void)
 	    case CMD_HELP:
 		help();
 		return 0;
+            case CMD_CREATE_TDB:
+            case CMD_OPEN_TDB:
+            case CMD_SYSTEM:
+            case CMD_QUIT:
+                /*
+                 * unhandled commands.  cases included here to avoid compiler
+                 * warnings.
+                 */
+                return 0;
 	    }
 	}
 
@@ -600,19 +609,17 @@ static char *convert_string(char *instring, size_t *sizep)
 
 int main(int argc, char *argv[])
 {
-    int i;
-
-    cmdname = "";
+    cmdname = (char *) "";
     arg1 = NULL;
     arg1len = 0;
     arg2 = NULL;
     arg2len = 0;
 
     if (argv[1]) {
-	cmdname = "open";
+	cmdname = (char *) "open";
 	arg1 = argv[1];
         do_command();
-	cmdname = "";
+	cmdname = (char *) "";
 	arg1 = NULL;
     }
 
@@ -622,7 +629,7 @@ int main(int argc, char *argv[])
 	    /* Interactive mode */
 	    while ((cmdname = tdb_getline("tdb> "))) {
 		arg2 = arg1 = NULL;
-		if (arg1 = strchr((const char *)cmdname,' ')) {
+		if ((arg1 = strchr((const char *)cmdname,' ')) != NULL) {
 		    arg1++;
 		    arg2 = arg1;
 		    while (*arg2) {
