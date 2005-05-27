@@ -1679,7 +1679,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
                                SEC_DESC *sec_desc, REGF_NK_REC *parent )
 {
 	REGF_NK_REC *nk;
-	REGF_HBIN *vlist_hbin;
+	REGF_HBIN *vlist_hbin = NULL;
 	uint32 size;
 
 	if ( !(nk = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) )
