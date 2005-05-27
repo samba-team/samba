@@ -1540,10 +1540,14 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
         </para>
 
         <para>
-        Last, each service must be started to permit system validation to proceed.
+        Last, each service must be started to permit system validation to proceed. The following steps
+		are for a Red Hat Linux system, please adapt them to suit the target OS platform on which you 
+		are installing Samba.
         </para>
 
         <procedure>
+		<title>Process Startup Configuration Steps</title>
+
                 <step><para>
                 Use the standard system tool to configure each service to restart
                 automatically at every system reboot. For example,
@@ -1585,6 +1589,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 	</para>
 
 	<procedure>
+	<title>Windows Client Configuration Steps</title>
+
 		<step><para>
 		Install MS Windows XP Professional. During installation, configure the client to use DHCP for 
 		TCP/IP protocol configuration.
@@ -1637,6 +1643,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		Install printers on each machine using the following steps:
 
 			<procedure>
+			<title>Steps to Install Printer Drivers on Windows Clients</title>
+
 				<step><para>
 				Click <menuchoice>
 					<guimenu>Start</guimenu>
