@@ -116,33 +116,23 @@ sub deindent()
 # work out the name of a size_is() variable
 sub ParseExpr($$)
 {
-	my($orig_expr) = shift;
+	my($expr) = shift;
 	my $varlist = shift;
 
-	die("Undefined value in ParseExpr") if not defined($orig_expr);
+	die("Undefined value in ParseExpr") if not defined($expr);
 
-	my $expr = $orig_expr;
+	my @tokens = split /((?:[A-Za-z_])(?:(?:(?:[A-Za-z0-9_.])|(?:->))+))/, $expr;
+	my $ret = "";
 
-	return $expr if (util::is_constant($expr));
-
-	my $prefix = "";
-	my $postfix = "";
-
-	if ($expr =~ /\*(.*)/) {
-		$expr = $1;
-		$prefix = "*";
+	foreach my $t (@tokens) {
+		if (defined($varlist->{$t})) {
+			$ret .= $varlist->{$t};
+		} else {
+			$ret .= $t;
+		}
 	}
 
-	if ($expr =~ /^(.*)([\&\|\/+])(.*)$/) {
-		$postfix = $2.$3;
-		$expr = $1;
-	}
-
-	if (defined($varlist->{$expr})) {
-		return $prefix.$varlist->{$expr}.$postfix;
-	}
-
-	return $prefix.$expr.$postfix;
+	return $ret;
 }
 
 #####################################################################
