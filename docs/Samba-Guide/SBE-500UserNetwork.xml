@@ -1090,7 +1090,7 @@ default-lease-time 86400;
 max-lease-time 172800;
 default-lease-time 86400;
 ddns-updates on;
-ddns-update-style ad-hoc;
+ddns-update-style interim;
 
 option ntp-servers 172.16.0.1;
 option domain-name "abmas.biz";
@@ -1168,7 +1168,7 @@ default-lease-time 86400;
 max-lease-time 172800;
 default-lease-time 86400;
 ddns-updates on;
-ddns-update-style ad-hoc;
+ddns-update-style interim;
 
 option ntp-servers 172.16.0.1;
 option domain-name "abmas.biz";
