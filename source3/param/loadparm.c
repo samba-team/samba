@@ -754,7 +754,6 @@ static const struct enum_list enum_smb_signing_vals[] = {
    are rejected, unless the username does not exist, in which case it
    is treated as a guest login
 
-      {MAP_TO_GUEST_ON_VALID_DOMAIN_USER, "Non-UNIX Valid Domain User"},
    "Bad Password" means session setups with an invalid password
    are treated as a guest login
 

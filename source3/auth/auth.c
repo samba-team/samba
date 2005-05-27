@@ -215,7 +215,6 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	if (!user_info || !auth_context || !server_info)
 		return NT_STATUS_LOGON_FAILURE;
 
-
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
 		  user_info->client_domain.str, user_info->smb_name.str, user_info->wksta_name.str));
 
@@ -306,19 +305,12 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 			       unix_username));
 		}
 	}
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
-			if (lp_map_to_guest() == MAP_TO_GUEST_ON_VALID_DOMAIN_USER ){
-				/*user_info->smb_name.str = lp_guestaccount();*/
-			 	become_root();
-			 	nt_status = smb_pam_accountcheck(lp_guestaccount());
-			 	unbecome_root();
-			 	make_server_info_guest(server_info); 
-			 }else{
-				DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
-			  	user_info->smb_name.str, user_info->internal_username.str, 
-			  	nt_errstr(nt_status)));
-				ZERO_STRUCTP(server_info); 
-			}
+		DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
+			  user_info->smb_name.str, user_info->internal_username.str, 
+			  nt_errstr(nt_status)));
+		ZERO_STRUCTP(server_info);
 	}
 	return nt_status;
 }
