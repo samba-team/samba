@@ -1654,6 +1654,7 @@ struct unix_error_map {
 #include "client.h"
 */
 
+#define MAP_TO_GUEST_ON_VALID_DOMAIN_USER 3
 /*
  * Size of new password account encoding string.  This is enough space to
  * hold 11 ACB characters, plus the surrounding [] and a terminating null.
