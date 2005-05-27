@@ -60,20 +60,24 @@ sub HeaderElement($)
     pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
-    my $pointers = 0;
+	my $prefix = "";
+	my $postfix = "";
 	foreach my $l (@{$element->{LEVELS}}) 
 	{
 		if (($l->{TYPE} eq "POINTER")) {
 			next if ($element->{TYPE} eq "string");
-		    pidl "*";
-		    $pointers+=1;
-	    } elsif ($l->{TYPE} eq "ARRAY") {
-	    	if (!$pointers and !$l->{IS_FIXED}) { pidl "*"; }
-    		pidl "$element->{NAME}";
-		if ($l->{IS_FIXED}) { pidl "[$l->{SIZE_IS}]"; }
-		last; #FIXME
+			$prefix .= "*";
+	    } elsif (($l->{TYPE} eq "ARRAY")) {
+			my $pl = Ndr::GetPrevLevel($element, $l);
+			next if ($pl and $pl->{TYPE} eq "POINTER");
+
+			if ($l->{IS_FIXED}) { 
+				$postfix .= "[$l->{SIZE_IS}]"; 
+			} else {
+				$prefix .= "*";
+			}
 	    } elsif ($l->{TYPE} eq "DATA") {
-    		pidl "$element->{NAME}";
+    		pidl "$prefix$element->{NAME}$postfix";
 		}
 	}
 	
