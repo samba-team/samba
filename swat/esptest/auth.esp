@@ -1,0 +1,52 @@
+<HTML>
+<TITLE>
+Samba4 ESP test
+</TITLE>
+<BODY>
+<h1>Samba4 unixAuth test</h1>
+
+<form name="AuthTest" method="POST" action="@@request['SCRIPT_NAME']"> 
+    <input name="submit" type="submit" value="Logout">
+    <input name="submit" type="submit" value="Cancel"><br>
+    <br>
+    Username:   <input name="Username"  type="text" value=""><br>
+    Password:  <input name="Password" type="password" value=""><br>
+    <br>
+    <input name="submit" type="submit" value="Login"><br>
+</form>
+
+<%
+  /* if its a post then the user has filled in the form, so
+     report the values 
+  */
+if (request['REQUEST_METHOD'] == "POST") {
+	/* if they cancelled then take them back to the list of tests */
+	if (form['submit'] == "Cancel") {
+		redirect("index.esp");
+	}
+	
+	username  = form['Username'];
+	password = form['Password'];
+	
+	if (form['submit'] == "Logout") {
+		res = unixAuth("logout", "logout");
+	}
+	
+	if (form['submit'] == "Login") {
+		res = unixAuth(username, password);
+		if (res != 0) {
+			write ("<br>Unsuccessful authentication\n");
+		} else {
+			write ("<br>Successfully authenticated\n");
+		}
+	}
+}
+
+write ("<br>AUTHENTICATED = " + session['AUTHENTICATED'] + "\n");
+write ("<br>USERNAME = " + session['USERNAME'] + "\n");
+write ("<br>PRIVILEGE = " + session['PRIVILEGE'] + "\n");
+
+%>
+
+</BODY>
+</HTML>
