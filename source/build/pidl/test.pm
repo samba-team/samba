@@ -5,7 +5,7 @@
 package Test;
 
 use strict;
-use util;
+use pidl::util;
 use Getopt::Long;
 
 my $cc = $ENV{CC};

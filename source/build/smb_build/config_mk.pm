@@ -7,7 +7,7 @@
 ###########################################################
 
 package config_mk;
-use input;
+use smb_build::input;
 
 use strict;
 

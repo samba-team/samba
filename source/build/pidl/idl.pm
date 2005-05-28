@@ -2390,7 +2390,7 @@ sub
 #line 305 "build/pidl/idl.yp"
 
 
-use util;
+use pidl::util;
 
 sub _Error {
     if (exists $_[0]->YYData->{ERRMSG}) {
