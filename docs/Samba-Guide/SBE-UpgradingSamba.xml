@@ -509,6 +509,27 @@ Paths:
 
 	</sect3>
 
+	<sect3>
+	<title>Updates and Changes in Idealx smbldap-tools</title>
+
+	<para>
+	The smbldap-tools have been maturing rapidly over the past year. With maturation comes change.
+	The location of the <filename>smbldap.conf</filename> and the <filename>smbldap_bind.conf</filename>
+	configuration files have been moved from the directory <filename>/etc/smbldap-tools</filenam> to
+	the new location of <filename>/etc/opt/IDEALX/smblda-tools</filename> directory.
+	</para>
+
+	<para>
+	The smbldap-tools maintains an entry in the LDAP directory in which it stores the next
+	values that should be used for UID and GID allocation for POSIX accounts that are created
+	using this tool. The DIT location of these values has changed recently. The original
+	<constant>sambaUnixIdPooldn object</constant> entity was stored in a directory entry (DIT object)
+	called <constant>NextFreeUnixId</constant>, this has been changed to the DIT object
+	<constant>sambaDomainName</constant>. Anyone who updates from an older version to the
+	current release should note that the information stored under <constant>NextFreeUnixId</constant>
+	must now be relocated to the DIT object <constant>sambaDomainName</constant>.
+	</para>
+
 	</sect2>
 
 </sect1>
