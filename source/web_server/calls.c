@@ -78,11 +78,12 @@ static struct MprVar mprLdbMessage(struct ldb_message *msg)
 	   need a special case for the single value case */
 	const char *multivalued[] = { "objectClass", "memberOf", "privilege", 
 					    "member", NULL };
+	struct MprVar val;
 
 	var = mprCreateObjVar(msg->dn, ESP_HASH_SIZE);
+
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
-		struct MprVar val;
 		if (el->num_values == 1 &&
 		    !str_list_check_ci(multivalued, el->name)) {
 			val = mprData(el->values[0].data, el->values[0].length);
@@ -96,6 +97,12 @@ static struct MprVar mprLdbMessage(struct ldb_message *msg)
 			}
 		}
 		mprCreateProperty(&var, el->name, &val);
+	}
+
+	/* add the dn if it is not already specified */
+	if (mprGetProperty(&var, "dn", 0) == 0) {
+		val = mprCreateStringVar(msg->dn, 1);
+		mprCreateProperty(&var, "dn", &val);
 	}
 	
 	return var;		
