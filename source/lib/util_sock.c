@@ -263,7 +263,8 @@ static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime
 }
 
 /****************************************************************************
- Read data from the client, reading exactly N bytes. 
+ Read data from the client, reading exactly N bytes, or until endtime timeout.
+ Use with a non-blocking socket if endtime != NULL.
 ****************************************************************************/
 
 ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endtime)
@@ -278,10 +279,7 @@ ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endt
 		if (endtime != NULL) {
 			fd_set r_fds;
 			struct timeval timeout;
-			int res;
-
-			FD_ZERO(&r_fds);
-			FD_SET(fd, &r_fds);
+			int selrtn;
 
 			if (!timeout_until(&timeout, endtime)) {
 				DEBUG(10,("read_data_until: read timed out\n"));
@@ -289,9 +287,24 @@ ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endt
 				return -1;
 			}
 
-			res = sys_select(fd+1, &r_fds, NULL, NULL, &timeout);
-			if (res <= 0)
+			FD_ZERO(&r_fds);
+			FD_SET(fd, &r_fds);
+
+			/* Select but ignore EINTR. */
+			selrtn = sys_select_intr(fd+1, &r_fds, NULL, NULL, &timeout);
+			if (selrtn == -1) {
+				/* something is wrong. Maybe the socket is dead? */
+				DEBUG(0,("read_data_until: select error = %s.\n", strerror(errno) ));
+				smb_read_error = READ_ERROR;
 				return -1;
+			}
+		
+			/* Did we timeout ? */
+			if (selrtn == 0) {
+				DEBUG(10,("read_data_until: select timed out.\n"));
+				smb_read_error = READ_TIMEOUT;
+				return -1;
+			}
 		}
 
 		ret = sys_read(fd,buffer + total,N - total);
@@ -303,6 +316,10 @@ ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endt
 		}
 
 		if (ret == -1) {
+			if (errno == EAGAIN) {
+				/* Non-blocking socket with no data available. Try select again. */
+				continue;
+			}
 			DEBUG(0,("read_data_until: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
 			smb_read_error = READ_ERROR;
 			return -1;
@@ -448,13 +465,14 @@ ssize_t write_data_until(int fd,const char *buffer,size_t N,
 			struct timeval timeout;
 			int res;
 
-			FD_ZERO(&w_fds);
-			FD_SET(fd, &w_fds);
-
 			if (!timeout_until(&timeout, endtime))
 				return -1;
 
-			res = sys_select(fd+1, NULL, &w_fds, NULL, &timeout);
+			FD_ZERO(&w_fds);
+			FD_SET(fd, &w_fds);
+
+			/* select but ignore EINTR. */
+			res = sys_select_intr(fd+1, NULL, &w_fds, NULL, &timeout);
 			if (res <= 0)
 				return -1;
 		}
