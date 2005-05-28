@@ -19,12 +19,12 @@ dnl		)
 AC_DEFUN([_SMB_BUILD_CORE],
 [
 
-$PERL -I$srcdir/build/smb_build <<\_SMB_ACEOF
+$PERL -I$srcdir/build <<\_SMB_ACEOF
 use strict;
 
 my %INPUT;
 
-use main;
+use smb_build::main;
 
 ###########################################################
 ### First we list all info from configure		###

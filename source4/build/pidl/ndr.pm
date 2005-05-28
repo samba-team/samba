@@ -8,7 +8,7 @@
 package Ndr;
 
 use strict;
-use typelist;
+use pidl::typelist;
 
 #####################################################################
 # return a table describing the order in which the parts of an element
