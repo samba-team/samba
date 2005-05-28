@@ -8,8 +8,8 @@
 package NdrParser;
 
 use strict;
-use typelist;
-use ndr;
+use pidl::typelist;
+use pidl::ndr;
 
 # list of known types
 my %typefamily;

@@ -6,7 +6,7 @@
 use strict;
 
 use FindBin qw($RealBin);
-use lib "$RealBin/..";
+use lib "$RealBin/../..";
 use test;
 
 my %settings = Test::GetSettings(@ARGV);

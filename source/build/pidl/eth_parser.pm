@@ -8,8 +8,8 @@
 package EthParser;
 
 use strict;
-use typelist;
-use ndr;
+use pidl::typelist;
+use pidl::ndr;
 
 # the list of needed functions
 

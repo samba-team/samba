@@ -7,7 +7,7 @@
 package NdrHeader;
 
 use strict;
-use typelist;
+use pidl::typelist;
 
 my($res);
 my($tab_depth);

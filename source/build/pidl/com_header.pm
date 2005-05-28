@@ -3,7 +3,7 @@
 
 package COMHeader;
 
-use typelist;
+use pidl::typelist;
 
 use strict;
 

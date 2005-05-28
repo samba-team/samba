@@ -10,28 +10,27 @@
 use strict;
 
 use FindBin qw($RealBin);
-use lib "$RealBin";
-use lib "$RealBin/lib";
+use lib "$RealBin/..";
 use Getopt::Long;
 use File::Basename;
-use idl;
-use dump;
-use ndr_client;
-use ndr_header;
-use ndr_parser;
-use server;
-use dcom_proxy;
-use dcom_stub;
-use com_header;
-use odl;
-use eth_parser;
-use eth_header;
-use validator;
-use typelist;
-use util;
-use template;
-use swig;
-use compat;
+use pidl::idl;
+use pidl::dump;
+use pidl::ndr_client;
+use pidl::ndr_header;
+use pidl::ndr_parser;
+use pidl::server;
+use pidl::dcom_proxy;
+use pidl::dcom_stub;
+use pidl::com_header;
+use pidl::odl;
+use pidl::eth_parser;
+use pidl::eth_header;
+use pidl::validator;
+use pidl::typelist;
+use pidl::util;
+use pidl::template;
+use pidl::swig;
+use pidl::compat;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -59,33 +58,32 @@ my $idl_parser = new idl;
 # display help text
 sub ShowHelp()
 {
-    print "
-       perl IDL parser and code generator
-       Copyright (C) tridge\@samba.org
+print "perl IDL parser and code generator
+Copyright (C) tridge\@samba.org
 
-       Usage: pidl.pl [options] <idlfile>
+Usage: pidl.pl [options] <idlfile>
 
-       Options:
-         --help                this help page
-         --output=OUTNAME      put output in OUTNAME.*
-         --parse               parse a idl file to a .pidl file
-         --dump                dump a pidl file back to idl
-         --header[=OUTFILE]    create a C NDR header file
-         --parser[=OUTFILE]    create a C NDR parser
-         --client              create a C NDR client
-         --server              create server boilerplate
-         --template            print a template for a pipe
-         --eth-parser          create an ethereal parser
-		 --eth-header          create an ethereal header file
-         --swig                create swig wrapper file
-         --diff                run diff on the idl and dumped output
-         --keep                keep the .pidl file
-         --odl                 accept ODL input
-         --dcom-proxy          create DCOM proxy (implies --odl)
-         --com-header          create header for COM interfaces (implies --odl)
-		 --warn-compat         warn about incompatibility with other compilers
-		 --quiet               be quiet
-         \n";
+Options:
+ --help                this help page
+ --output=OUTNAME      put output in OUTNAME.*
+ --parse               parse a idl file to a .pidl file
+ --dump                dump a pidl file back to idl
+ --header[=OUTFILE]    create a C NDR header file
+ --parser[=OUTFILE]    create a C NDR parser
+ --client              create a C NDR client
+ --server              create server boilerplate
+ --template            print a template for a pipe
+ --eth-parser          create an ethereal parser
+ --eth-header          create an ethereal header file
+ --swig                create swig wrapper file
+ --diff                run diff on the idl and dumped output
+ --keep                keep the .pidl file
+ --odl                 accept ODL input
+ --dcom-proxy          create DCOM proxy (implies --odl)
+ --com-header          create header for COM interfaces (implies --odl)
+ --warn-compat         warn about incompatibility with other compilers
+ --quiet               be quiet
+\n";
     exit(0);
 }
 

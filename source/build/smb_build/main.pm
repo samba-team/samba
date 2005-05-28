@@ -6,12 +6,12 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
-use makefile;
-use smb_build_h;
-use input;
-use config_mk;
-use output;
-use dot;
+use smb_build::makefile;
+use smb_build::smb_build_h;
+use smb_build::input;
+use smb_build::config_mk;
+use smb_build::output;
+use smb_build::dot;
 use strict;
 
 sub smb_build_main($)

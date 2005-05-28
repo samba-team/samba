@@ -7,7 +7,6 @@
 package EthHeader;
 
 use strict;
-use typelist;
 
 my($res);
 my($tab_depth);

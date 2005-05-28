@@ -6,7 +6,7 @@
 
 package DCOMProxy;
 
-use com_header;
+use pidl::com_header;
 
 use strict;
 
