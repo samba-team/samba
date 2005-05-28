@@ -515,7 +515,7 @@ Paths:
 	<para>
 	The smbldap-tools have been maturing rapidly over the past year. With maturation comes change.
 	The location of the <filename>smbldap.conf</filename> and the <filename>smbldap_bind.conf</filename>
-	configuration files have been moved from the directory <filename>/etc/smbldap-tools</filenam> to
+	configuration files have been moved from the directory <filename>/etc/smbldap-tools</filename> to
 	the new location of <filename>/etc/opt/IDEALX/smblda-tools</filename> directory.
 	</para>
 
