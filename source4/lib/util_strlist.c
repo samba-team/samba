@@ -173,3 +173,16 @@ BOOL str_list_check(const char **list, const char *s)
 	}
 	return False;
 }
+
+/*
+  return True if a string is in a list, case insensitively
+*/
+BOOL str_list_check_ci(const char **list, const char *s)
+{
+	int i;
+
+	for (i=0;list[i];i++) {
+		if (strcasecmp(list[i], s) == 0) return True;
+	}
+	return False;
+}
