@@ -240,17 +240,23 @@ void tls_initialise(struct task_server *task)
 	tls = talloc_zero(edata, struct tls_data);
 	edata->tls_data = tls;
 
+	if (!file_exist(cafile)) {
+		tls_cert_generate(tls, keyfile, certfile, cafile);
+	}
+
 	ret = gnutls_global_init();
 	if (ret < 0) goto init_failed;
 
 	gnutls_certificate_allocate_credentials(&tls->x509_cred);
 	if (ret < 0) goto init_failed;
 
-	ret = gnutls_certificate_set_x509_trust_file(tls->x509_cred, cafile, 
-						     GNUTLS_X509_FMT_PEM);	
-	if (ret < 0) {
-		DEBUG(0,("TLS failed to initialise cafile %s\n", cafile));
-		goto init_failed;
+	if (cafile && *cafile) {
+		ret = gnutls_certificate_set_x509_trust_file(tls->x509_cred, cafile, 
+							     GNUTLS_X509_FMT_PEM);	
+		if (ret < 0) {
+			DEBUG(0,("TLS failed to initialise cafile %s\n", cafile));
+			goto init_failed;
+		}
 	}
 
 	if (crlfile && *crlfile) {
@@ -258,7 +264,7 @@ void tls_initialise(struct task_server *task)
 							   crlfile, 
 							   GNUTLS_X509_FMT_PEM);
 		if (ret < 0) {
-			DEBUG(0,("TLS failed to initialise crlfile %s\n", cafile));
+			DEBUG(0,("TLS failed to initialise crlfile %s\n", crlfile));
 			goto init_failed;
 		}
 	}
@@ -268,7 +274,7 @@ void tls_initialise(struct task_server *task)
 						   GNUTLS_X509_FMT_PEM);
 	if (ret < 0) {
 		DEBUG(0,("TLS failed to initialise certfile %s and keyfile %s\n", 
-			 lp_web_certfile(), lp_web_keyfile()));
+			 certfile, keyfile));
 		goto init_failed;
 	}
 	
