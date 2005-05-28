@@ -1,7 +1,7 @@
 <%
   var tests = new Array("formtest", "showvars", "include", 
                         "session", "loadparm", "exception",
-			"ldb");
+			"ldb", "auth");
 %>
 
 <HTML>
