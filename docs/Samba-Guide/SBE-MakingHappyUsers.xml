@@ -1308,7 +1308,7 @@ slapd[12164]: conn=1 fd=10 closed
 
 <note><para>
 The following information applies to Samba-3.0.20 when used with the Idealx smbldap-tools
-scripts version 0.8.8. If using a different version of Samba or of the smbldap-tools tarball,
+scripts version 0.9.0. If using a different version of Samba or of the smbldap-tools tarball,
 please verify that the versions you are about to use are matching. The smbldap-tools package
 uses counter-entries in the LDAP directory to avoid duplication of the UIDs and GIDs that are
 issued for POSIX accounts. The LDAP rdn under which this information is stored are called
@@ -1921,9 +1921,9 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	LDAP configuration scripts. The use of these scripts will help avoid the necessity
 	to create custom scripts. It is easy to download them from the Idealx
 	<ulink url="http://samba.idealx.org/index.en.html">Web site</ulink>. The tarball may
-	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8.tgz">downloaded</ulink>
+	be directly <ulink url="http://samba.idealx.org/dist/smbldap-tools-0.9.0.tgz">downloaded</ulink>
 	from this site also. Alternatively, you may obtain the 
-	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.8.8-3.src.rpm">smbldap-tools-0.8.8-3.src.rpm</ulink>
+	<ulink url="http://samba.idealx.org/dist/smbldap-tools-0.9.0-1.src.rpm">smbldap-tools-0.9.0-1.src.rpm</ulink>
 	file that may be used to build an installable RPM package for your Linux system.
 	</para>
 
@@ -1971,7 +1971,7 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 		Copy all the <filename>smbldap-*</filename> and the <filename>configure.pl</filename> files into the 
 		<filename>/opt/IDEALX/sbin</filename> directory, as shown here:
 <screen>
-&rootprompt; cd smbldap-tools-0.8.8/
+&rootprompt; cd smbldap-tools-0.9.0/
 &rootprompt; cp smbldap-* configure.pl *pm /opt/IDEALX/sbin/
 &rootprompt; cp smbldap*conf /etc/smbldap-tools/
 &rootprompt; chmod 750 /opt/IDEALX/sbin/smbldap-*
@@ -2017,7 +2017,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 
 	<para>
 	In the event that you have elected to use the RPM package provided by Idealx, download the
-	source RPM <filename>smbldap-tools-0.8.8-3.src.rpm</filename>, then follow this procedure:
+	source RPM <filename>smbldap-tools-0.9.0-1.src.rpm</filename>, then follow this procedure:
 	</para>
 
 	<procedure>
@@ -2026,7 +2026,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the source RPM that has been downloaded as follows:
 <screen>
-&rootprompt; rpm -i smbldap-tools-0.8.8-3.src.rpm
+&rootprompt; rpm -i smbldap-tools-0.9.0-1.src.rpm
 </screen>
 		</para></step>
 
@@ -2063,7 +2063,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the binary package by executing:
 <screen>
-&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.8-3.noarch.rpm
+&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.9.0-1.noarch.rpm
 </screen>
 		</para></step>
 
@@ -2108,7 +2108,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 </screen>
 		The interactive use of this script for the PDC is demonstrated here:
 <screen>
-Unrecognized escape \p passed through at ./configure.pl line 194.
+&rootprompt; /opt/IDEALX/sbin/configure.pl 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
        smbldap-tools script configuration
        -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -2121,92 +2121,73 @@ Before starting, check
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Looking for configuration files...
 
-Samba Config File Location [/etc/samba/smb.conf] &gt;
+Samba Config File Location [/etc/samba/smb.conf] > 
 smbldap Config file Location (global parameters)
-	 [/etc/smbldap-tools/smbldap.conf] &gt;
-smbldap Config file Location (bind parameters)
-	 [/etc/smbldap-tools/smbldap_bind.conf] &gt;
+                              [/etc/opt/IDEALX/smbldap-tools/smbldap.conf] > 
+smbldap Config file Location (bind parameters) 
+                         [/etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf] > 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Let's start configuring the smbldap-tools scripts ...
 
 . workgroup name: name of the domain Samba act as a PDC
-  workgroup name [MEGANET2] &gt;
-. netbios name: netbios name of the samba controller
-  netbios name [MASSIVE] &gt;
-. logon drive: local path to which the home directory
-	 will be connected (for NT Workstations). Ex: 'H:'
-  logon drive [X:] &gt;
+  workgroup name [MEGANET2] > 
+. netbios name: netbios name of the samba controler
+  netbios name [MASSIVE] > 
+. logon drive: local path to which the home directory will 
+                                be connected (for NT Workstations). Ex: 'H:'
+  logon drive [H:] > 
 . logon home: home directory location (for Win95/98 or NT Workstation).
-  (use %U as username) Ex:'\\MASSIVE\home\%U'
-  logon home (leave blank if you don't want homeDirectory)
-	 [\\MASSIVE\home\%U] &gt; \\MASSIVE\%U
-. logon path: directory where roaming profiles are stored.
-	 Ex:'\\MASSIVE\profiles\%U'
-  logon path (leave blank if you don't want roaming profile)
-	 [\\MASSIVE\profiles\%U] &gt;
-. home directory prefix (use %U as username)
-	 [/home/%U] &gt; /home/users/%U
-. default user netlogon script (use %U as username)
-	 [%U.cmd] &gt; scripts\login.cmd
-  default password validation time (time in days) [45] &gt; 0
-. ldap suffix [dc=abmas,dc=biz] &gt;
-. ldap group suffix [ou=Groups] &gt;
-. ldap user suffix [ou=People] &gt;
-. ldap machine suffix [ou=People] &gt;
-. Idmap suffix [ou=Idmap] &gt;
+  (use %U as username) Ex:'\\MASSIVE\%U'
+  logon home (press the "." character if you don't want homeDirectory) 
+                                                   [\\MASSIVE\%U] > \\%L\%U
+. logon path: directory where roaming profiles are stored. 
+                                                  Ex:'\\MASSIVE\profiles\%U'
+  logon path (press the "." character if you don't want roaming profile) 
+                                                       [\\%L\profiles\%U] > 
+. home directory prefix (use %U as username) [/home/%U] > /data/users/%U
+. default users' homeDirectory mode [700] > 
+. default user netlogon script (use %U as username) [scripts\logon.bat] > 
+  default password validation time (time in days) [45] > 900
+. ldap suffix [dc=terpstra-world,dc=org] > 
+. ldap group suffix [ou=Groups] > 
+. ldap user suffix [ou=People,ou=Users] > 
+. ldap machine suffix [ou=Computers,ou=Users] > 
+. Idmap suffix [ou=Idmap] > 
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
-  sambaUnixIdPooldn object (relative to ${suffix})
-          [cn=NextFreeUnixId] &gt; sambaDomainName=MEGANET2
-. ldap master server: IP address or DNS name
-	 of the master (writable) ldap server
-Use of uninitialized value in scalar chomp at ./configure.pl
-	 line 138, &lt;STDIN&gt; line 17.
-Use of uninitialized value in hash element at ./configure.pl
-	 line 140, &lt;STDIN&gt; line 17.
-Use of uninitialized value in concatenation (.) or string at
-	 ./configure.pl line 144, &lt;STDIN&gt; line 17.
-Use of uninitialized value in string at ./configure.pl
-	 line 145, &lt;STDIN&gt; line 17.
-  ldap master server [] &gt; 127.0.0.1
-. ldap master port [389] &gt;
-. ldap master bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
-. ldap master bind password [] &gt;
-. ldap slave server: IP address or DNS name of the slave
-	 ldap server: can also be the master one
-Use of uninitialized value in scalar chomp at ./configure.pl
-	 line 138, &lt;STDIN&gt; line 21.
-Use of uninitialized value in hash element at ./configure.pl
-	 line 140, &lt;STDIN&gt; line 21.
-Use of uninitialized value in concatenation (.) or string at
-	 ./configure.pl line 144, &lt;STDIN&gt; line 21.
-Use of uninitialized value in string at ./configure.pl line 145,
-	 &lt;STDIN&gt; line 21.
-  ldap slave server [] &gt; 127.0.0.1
-. ldap slave port [389] &gt;
-. ldap slave bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
-. ldap slave bind password [] &gt;
-. ldap tls support (1/0) [0] &gt;
-. SID for domain MEGANET2: SID of the domain
-	 (can be obtained with 'net getlocalsid MASSIVE')
-  SID for domain MEGANET2
-	 [S-1-5-21-3504140859-1010554828-2431957765] &gt;
+  sambaUnixIdPooldn object (relative to ${suffix}) 
+                                               [sambaDomainName=MEGANET2] > 
+. ldap master server: IP adress or DNS name of the 
+                                             master (writable) ldap server
+  ldap master server [merlin.terpstra-world.org] > 
+. ldap master port [389] > 
+. ldap master bind dn [cn=Manager,dc=terpstra-world,dc=org] > 
+. ldap master bind password [] > 
+. ldap slave server: IP adress or DNS name of the slave ldap server: 
+                                                can also be the master one
+  ldap slave server [merlin.terpstra-world.org] > 
+. ldap slave port [389] > 
+. ldap slave bind dn [cn=Manager,dc=terpstra-world,dc=org] > 
+. ldap slave bind password [] > 
+. ldap tls support (1/0) [0] > 
+. SID for domain MEGANET2: SID of the domain 
+                          (can be obtained with 'net getlocalsid MASSIVE')
+  SID for domain MEGANET2 [S-1-5-21-3504140859-1010554828-2431957765] > 
 . unix password encryption: encryption used for unix passwords
-  unix password encryption
-	 (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
-. default user gidNumber [513] &gt;
-. default computer gidNumber [515] &gt;
-. default login shell [/bin/bash] &gt;
-. default domain name to append to mail address [] &gt; abmas.biz
+  unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] > MD5
+. default user gidNumber [513] > 
+. default computer gidNumber [515] > 
+. default login shell [/bin/bash] > 
+. default domain name to append to mail adress [] > terpstra-world.org
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
-  /etc/smbldap-tools/smbldap.conf-&gt;
-	etc/smbldap-tools/smbldap.conf.old
-  /etc/smbldap-tools/smbldap_bind.conf-&gt;
-	etc/smbldap-tools/smbldap_bind.conf.old
+  /etc/opt/IDEALX/smbldap-tools/smbldap.conf->
+                            /etc/opt/IDEALX/smbldap-tools/smbldap.conf.old
+  /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf->
+                       /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf.old
 writing new configuration file:
-  /etc/smbldap-tools/smbldap.conf done.
-  /etc/smbldap-tools/smbldap_bind.conf done.
+  /etc/opt/IDEALX/smbldap-tools/smbldap.conf done.
+  /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf done.
 </screen>
 		Since a slave LDAP server has not been configured, it is necessary to specify the IP
 		address of the master LDAP server for both the master and the slave configuration
