@@ -1953,10 +1953,10 @@ change the path to them in your &smb.conf; file on the PDC (<constant>MASSIVE</c
 		and ownership as shown here:
 <screen>
 &rootprompt; mkdir -p /opt/IDEALX/sbin
-&rootprompt; chown root.root /opt/IDEALX/sbin
+&rootprompt; chown root:root /opt/IDEALX/sbin
 &rootprompt; chmod 755 /opt/IDEALX/sbin
 &rootprompt; mkdir -p /etc/smbldap-tools
-&rootprompt; chown root.root /etc/smbldap-tools
+&rootprompt; chown root:root /etc/smbldap-tools
 &rootprompt; chmod 755 /etc/smbldap-tools
 </screen>
 		</para></step>
@@ -2000,7 +2000,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		To complete the configuration of the smbldap-tools, set the permissions and ownership
 		by executing the following commands:
 <screen>
-&rootprompt; chown root.root /opt/IDEALX/sbin/* 
+&rootprompt; chown root:root /opt/IDEALX/sbin/* 
 &rootprompt; chmod 755 /opt/IDEALX/sbin/smbldap-*
 &rootprompt; chmod 640 /opt/IDEALX/sbin/smb*pm 
 </screen>
@@ -2938,7 +2938,7 @@ application/octet-stream
 		steps to printing heaven:
 <screen>
 &rootprompt; mkdir -p /var/lib/samba/drivers/{W32ALPHA,W32MIPS,W32X86,WIN40}
-&rootprompt; chown -R root.root /var/lib/samba/drivers
+&rootprompt; chown -R root:root /var/lib/samba/drivers
 &rootprompt; chmod -R ug=rwx,o=rx /var/lib/samba/drivers
 </screen>
 		</para></step>
@@ -3366,11 +3366,11 @@ structuralObjectClass: organizationalUnit
 <screen>
 &rootprompt; mkdir -p /data/{accounts,finsvcs,piops}
 &rootprompt; mkdir -p /apps
-&rootprompt; chown -R root.root /data
-&rootprompt; chown -R root.root /apps
-&rootprompt; chown -R bobj.Accounts /data/accounts
-&rootprompt; chown -R bobj.Finances /data/finsvcs
-&rootprompt; chown -R bobj.PIOps /data/pidata
+&rootprompt; chown -R root:root /data
+&rootprompt; chown -R root:root /apps
+&rootprompt; chown -R bobj:Accounts /data/accounts
+&rootprompt; chown -R bobj:Finances /data/finsvcs
+&rootprompt; chown -R bobj:PIOps /data/pidata
 &rootprompt; chmod -R ug+rwxs,o-rwx /data
 &rootprompt; chmod -R ug+rwx,o+rx-w /apps
 </screen>
@@ -3393,7 +3393,7 @@ structuralObjectClass: organizationalUnit
 	portion of his or her profile as shown here:
 <screen>
 &rootprompt; mkdir -p /var/lib/samba/profdata
-&rootprompt; chown root.root /var/lib/samba/profdata
+&rootprompt; chown root:root /var/lib/samba/profdata
 &rootprompt; chmod 755 /var/lib/samba/profdata
 
 # Per user structure
@@ -3404,7 +3404,7 @@ structuralObjectClass: organizationalUnit
 &rootprompt; do
 &rootprompt; mkdir <emphasis>username</emphasis>/$i
 &rootprompt; done
-&rootprompt; chown -R <emphasis>username</emphasis>.Domain\ Users <emphasis>username</emphasis>
+&rootprompt; chown -R <emphasis>username</emphasis>:Domain\ Users <emphasis>username</emphasis>
 &rootprompt; chmod -R 750 <emphasis>username</emphasis>
 </screen>
 	</para>
@@ -3441,7 +3441,7 @@ structuralObjectClass: organizationalUnit
 	and has the needed permissions. Use the following commands to create this directory:
 <screen>
 &rootprompt; mkdir -p /var/lib/samba/profiles/<emphasis>username</emphasis>
-&rootprompt; chown <emphasis>username</emphasis>.Domain\ Users
+&rootprompt; chown <emphasis>username</emphasis>:Domain\ Users
 	    /var/lib/samba/profiles/<emphasis>username</emphasis>
 &rootprompt; chmod 700  /var/lib/samba/profiles/<emphasis>username</emphasis>
 </screen>

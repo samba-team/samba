@@ -799,11 +799,11 @@ hosts:      files dns wins
 <screen>
 &rootprompt; mkdir -p /data/{accounts,finsvcs,pidata}
 &rootprompt; mkdir -p /apps
-&rootprompt; chown -R root.root /data
-&rootprompt; chown -R root.root /apps
-&rootprompt; chown -R bjordan.accounts /data/accounts
-&rootprompt; chown -R bjordan.finsvcs /data/finsvcs
-&rootprompt; chown -R bjordan.finsvcs /data/pidata
+&rootprompt; chown -R root:root /data
+&rootprompt; chown -R root:root /apps
+&rootprompt; chown -R bjordan:accounts /data/accounts
+&rootprompt; chown -R bjordan:finsvcs /data/finsvcs
+&rootprompt; chown -R bjordan:finsvcs /data/pidata
 &rootprompt; chmod -R ug+rwxs,o-rwx /data
 &rootprompt; chmod -R ug+rwx,o+rx-w /apps
 </screen>
@@ -824,15 +824,15 @@ hosts:      files dns wins
 <screen>
 &rootprompt; mkdir -p /var/spool/samba
 &rootprompt; mkdir -p /var/lib/samba/{netlogon/scripts,profiles}
-&rootprompt; chown -R root.root /var/spool/samba
-&rootprompt; chown -R root.root /var/lib/samba
+&rootprompt; chown -R root:root /var/spool/samba
+&rootprompt; chown -R root:root /var/lib/samba
 &rootprompt; chmod a+rwxt /var/spool/samba
 </screen>
 			For each user account that is created on the system, the following commands should be
 			executed:
 <screen>
 &rootprompt; mkdir /var/lib/samba/profiles/'username'
-&rootprompt; chown 'username'.users /var/lib/samba/profiles/'username'
+&rootprompt; chown 'username':users /var/lib/samba/profiles/'username'
 &rootprompt; chmod ug+wrx,o+rx,-w /var/lib/samba/profiles/'username'
 </screen>
 			</para></step>
