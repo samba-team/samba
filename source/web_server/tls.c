@@ -45,74 +45,6 @@ struct tls_data {
 };
 
 /*
-  initialise global tls state
-*/
-void tls_initialise(struct task_server *task)
-{
-	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
-	struct tls_data *tls;
-	int ret;
-	const char *keyfile = lp_web_keyfile();
-	const char *certfile = lp_web_certfile();
-	const char *cafile = lp_web_cafile();
-	const char *crlfile = lp_web_crlfile();
-
-	if (!lp_web_tls() || keyfile == NULL || *keyfile == 0) {
-		return;
-	}
-
-	tls = talloc_zero(edata, struct tls_data);
-	edata->tls_data = tls;
-
-	ret = gnutls_global_init();
-	if (ret < 0) goto init_failed;
-
-	gnutls_certificate_allocate_credentials(&tls->x509_cred);
-	if (ret < 0) goto init_failed;
-
-	ret = gnutls_certificate_set_x509_trust_file(tls->x509_cred, cafile, 
-						     GNUTLS_X509_FMT_PEM);	
-	if (ret < 0) {
-		DEBUG(0,("TLS failed to initialise cafile %s\n", cafile));
-		goto init_failed;
-	}
-
-	if (crlfile && *crlfile) {
-		ret = gnutls_certificate_set_x509_crl_file(tls->x509_cred, 
-							   crlfile, 
-							   GNUTLS_X509_FMT_PEM);
-		if (ret < 0) {
-			DEBUG(0,("TLS failed to initialise crlfile %s\n", cafile));
-			goto init_failed;
-		}
-	}
-	
-	ret = gnutls_certificate_set_x509_key_file(tls->x509_cred, 
-						   certfile, keyfile,
-						   GNUTLS_X509_FMT_PEM);
-	if (ret < 0) {
-		DEBUG(0,("TLS failed to initialise certfile %s and keyfile %s\n", 
-			 lp_web_certfile(), lp_web_keyfile()));
-		goto init_failed;
-	}
-	
-	ret = gnutls_dh_params_init(&tls->dh_params);
-	if (ret < 0) goto init_failed;
-
-	ret = gnutls_dh_params_generate2(tls->dh_params, DH_BITS);
-	if (ret < 0) goto init_failed;
-
-	gnutls_certificate_set_dh_params(tls->x509_cred, tls->dh_params);
-	return;
-
-init_failed:
-	DEBUG(0,("GNUTLS failed to initialise with code %d - disabling\n", ret));
-	talloc_free(tls);
-	edata->tls_data = NULL;
-}
-
-
-/*
   callback for reading from a socket
 */
 static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
@@ -176,59 +108,14 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 static int tls_destructor(void *ptr)
 {
 	struct tls_session *tls_session = talloc_get_type(ptr, struct tls_session);
-	gnutls_bye(tls_session->session, GNUTLS_SHUT_WR);
+	int ret;
+	ret = gnutls_bye(tls_session->session, GNUTLS_SHUT_WR);
+	if (ret < 0) {
+		DEBUG(0,("TLS gnutls_bye failed - %s\n", gnutls_strerror(ret)));
+	}
 	return 0;
 }
 
-
-/*
-  setup for a new connection
-*/
-NTSTATUS tls_init_connection(struct websrv_context *web)
-{
-	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
-	struct tls_data *tls_data = talloc_get_type(edata->tls_data, struct tls_data);
-	struct tls_session *tls_session;
-	int ret;
-
-	if (edata->tls_data == NULL) {
-		web->tls_session = NULL;
-		return NT_STATUS_OK;
-	}
-
-#define TLSCHECK(call) do { \
-	ret = call; \
-	if (ret < 0) { \
-		DEBUG(0,("TLS failed with code %d - %s\n", ret, #call)); \
-		goto failed; \
-	} \
-} while (0)
-
-	tls_session = talloc_zero(web, struct tls_session);
-	web->tls_session = tls_session;
-
-	TLSCHECK(gnutls_init(&tls_session->session, GNUTLS_SERVER));
-
-	talloc_set_destructor(tls_session, tls_destructor);
-
-	TLSCHECK(gnutls_set_default_priority(tls_session->session));
-	TLSCHECK(gnutls_credentials_set(tls_session->session, GNUTLS_CRD_CERTIFICATE, tls_data->x509_cred));
-	gnutls_certificate_server_set_request(tls_session->session, GNUTLS_CERT_REQUEST);
-	gnutls_dh_set_prime_bits(tls_session->session, DH_BITS);
-	gnutls_transport_set_ptr(tls_session->session, (gnutls_transport_ptr)web);
-	gnutls_transport_set_pull_function(tls_session->session, (gnutls_pull_func)tls_pull);
-	gnutls_transport_set_push_function(tls_session->session, (gnutls_push_func)tls_push);
-	gnutls_transport_set_lowat(tls_session->session, 0);
-
-	web->input.tls_detect = True;
-	
-	return NT_STATUS_OK;
-
-failed:
-	web->tls_session = NULL;
-	talloc_free(tls_session);
-	return NT_STATUS_OK;
-}
 
 /*
   possibly continue the handshake process
@@ -246,6 +133,7 @@ static NTSTATUS tls_handshake(struct tls_session *tls_session)
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
+		DEBUG(0,("TLS gnutls_handshake failed - %s\n", gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	tls_session->done_handshake = True;
@@ -293,6 +181,7 @@ NTSTATUS tls_socket_recv(struct websrv_context *web, void *buf, size_t wantlen,
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
+		DEBUG(0,("gnutls_record_recv failed - %s\n", gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	*nread = ret;
@@ -323,14 +212,137 @@ NTSTATUS tls_socket_send(struct websrv_context *web, const DATA_BLOB *blob,
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
+		DEBUG(0,("gnutls_record_send failed - %s\n", gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	*sendlen = ret;
 	return NT_STATUS_OK;
 }
+
+
+/*
+  initialise global tls state
+*/
+void tls_initialise(struct task_server *task)
+{
+	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
+	struct tls_data *tls;
+	int ret;
+	const char *keyfile = lp_web_keyfile();
+	const char *certfile = lp_web_certfile();
+	const char *cafile = lp_web_cafile();
+	const char *crlfile = lp_web_crlfile();
+
+	if (!lp_web_tls() || keyfile == NULL || *keyfile == 0) {
+		return;
+	}
+
+	tls = talloc_zero(edata, struct tls_data);
+	edata->tls_data = tls;
+
+	ret = gnutls_global_init();
+	if (ret < 0) goto init_failed;
+
+	gnutls_certificate_allocate_credentials(&tls->x509_cred);
+	if (ret < 0) goto init_failed;
+
+	ret = gnutls_certificate_set_x509_trust_file(tls->x509_cred, cafile, 
+						     GNUTLS_X509_FMT_PEM);	
+	if (ret < 0) {
+		DEBUG(0,("TLS failed to initialise cafile %s\n", cafile));
+		goto init_failed;
+	}
+
+	if (crlfile && *crlfile) {
+		ret = gnutls_certificate_set_x509_crl_file(tls->x509_cred, 
+							   crlfile, 
+							   GNUTLS_X509_FMT_PEM);
+		if (ret < 0) {
+			DEBUG(0,("TLS failed to initialise crlfile %s\n", cafile));
+			goto init_failed;
+		}
+	}
+	
+	ret = gnutls_certificate_set_x509_key_file(tls->x509_cred, 
+						   certfile, keyfile,
+						   GNUTLS_X509_FMT_PEM);
+	if (ret < 0) {
+		DEBUG(0,("TLS failed to initialise certfile %s and keyfile %s\n", 
+			 lp_web_certfile(), lp_web_keyfile()));
+		goto init_failed;
+	}
+	
+	ret = gnutls_dh_params_init(&tls->dh_params);
+	if (ret < 0) goto init_failed;
+
+	ret = gnutls_dh_params_generate2(tls->dh_params, DH_BITS);
+	if (ret < 0) goto init_failed;
+
+	gnutls_certificate_set_dh_params(tls->x509_cred, tls->dh_params);
+	return;
+
+init_failed:
+	DEBUG(0,("GNUTLS failed to initialise - %s\n", gnutls_strerror(ret)));
+	talloc_free(tls);
+	edata->tls_data = NULL;
+}
+
+
+/*
+  setup for a new connection
+*/
+NTSTATUS tls_init_connection(struct websrv_context *web)
+{
+	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
+	struct tls_data *tls_data = talloc_get_type(edata->tls_data, struct tls_data);
+	struct tls_session *tls_session;
+	int ret;
+
+	if (edata->tls_data == NULL) {
+		web->tls_session = NULL;
+		return NT_STATUS_OK;
+	}
+
+#define TLSCHECK(call) do { \
+	ret = call; \
+	if (ret < 0) { \
+		DEBUG(0,("TLS %s - %s\n", #call, gnutls_strerror(ret))); \
+		goto failed; \
+	} \
+} while (0)
+
+	tls_session = talloc_zero(web, struct tls_session);
+	web->tls_session = tls_session;
+
+	TLSCHECK(gnutls_init(&tls_session->session, GNUTLS_SERVER));
+
+	talloc_set_destructor(tls_session, tls_destructor);
+
+	TLSCHECK(gnutls_set_default_priority(tls_session->session));
+	TLSCHECK(gnutls_credentials_set(tls_session->session, GNUTLS_CRD_CERTIFICATE, tls_data->x509_cred));
+	gnutls_certificate_server_set_request(tls_session->session, GNUTLS_CERT_REQUEST);
+	gnutls_dh_set_prime_bits(tls_session->session, DH_BITS);
+	gnutls_transport_set_ptr(tls_session->session, (gnutls_transport_ptr)web);
+	gnutls_transport_set_pull_function(tls_session->session, (gnutls_pull_func)tls_pull);
+	gnutls_transport_set_push_function(tls_session->session, (gnutls_push_func)tls_push);
+	gnutls_transport_set_lowat(tls_session->session, 0);
+
+	web->input.tls_detect = True;
+	
+	return NT_STATUS_OK;
+
+failed:
+	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
+	web->tls_session = NULL;
+	talloc_free(tls_session);
+	return NT_STATUS_OK;
+}
+
+
 #else
 
-/* for systems without tls */
+/* for systems without tls we just map the tls socket calls to the
+   normal socket calls */
 NTSTATUS tls_socket_recv(struct websrv_context *web, void *buf, size_t wantlen, 
 			 size_t *nread)
 {
