@@ -530,6 +530,8 @@ Paths:
 	must now be relocated to the DIT object <constant>sambaDomainName</constant>.
 	</para>
 
+	</sect3>
+
 	</sect2>
 
 </sect1>
