@@ -540,7 +540,7 @@ Password changed
 				ownership and permissions:
 <screen>
 &rootprompt; mkdir -p /data/{ftmfiles,officefiles/{letters,invitations,misc}}
-&rootprompt; chown -R abmas.office /data
+&rootprompt; chown -R abmas:office /data
 &rootprompt; chmod -R ug+rwxs,o-w,o+rx /data
 </screen>
 				These demonstrate compound operations. The <command>mkdir</command> command

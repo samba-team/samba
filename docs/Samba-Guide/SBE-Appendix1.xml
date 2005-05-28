@@ -603,7 +603,7 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 		the LDAP LDIF file for your system. Execute the following:
 <screen>
 &rootprompt; mkdir /etc/openldap/SambaInit
-&rootprompt; chown root.root /etc/openldap/SambaInit
+&rootprompt; chown root:root /etc/openldap/SambaInit
 &rootprompt; chmod 700 /etc/openldap/SambaInit
 </screen>
 		</para></step>
@@ -1085,7 +1085,7 @@ to LAM using only SSL.
 	<indexterm><primary>file permissions</primary></indexterm>
 	Set file permissions using the following commands:
 <screen>
-&rootprompt; chown -R wwwrun.www /srv/www/htdocs/lam
+&rootprompt; chown -R wwwrun:www /srv/www/htdocs/lam
 &rootprompt; chmod 755 /srv/www/htdocs/lam/sess
 &rootprompt; chmod 755 /srv/www/htdocs/lam/tmp
 &rootprompt; chmod 755 /srv/www/htdocs/lam/config
