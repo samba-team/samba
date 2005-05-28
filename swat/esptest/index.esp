@@ -21,5 +21,12 @@ Please choose one of the following tests:
   }
 %>
 </ul>
-</BODY>
+
+For more information on ejs see <a
+href="http://www.appwebserver.org/products/ejs/ejs.html">http://www.appwebserver.org/products/ejs/ejs.html</a><p>
+
+For more information on esp see <a
+href="http://www.appwebserver.org/products/esp/esp.html">http://www.appwebserver.org/products/esp/esp.html</a><p>
+
+</BODY> 
 </HTML>
