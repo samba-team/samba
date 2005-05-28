@@ -23,7 +23,135 @@
 #include "includes.h"
 #include "web_server/esp/esp.h"
 #include "param/loadparm.h"
+#include "lib/ldb/include/ldb.h"
 
+
+/*
+  add an indexed array element to a property
+*/
+static void mprAddArray(struct MprVar *var, int i, struct MprVar v)
+{
+	char idx[16];
+	mprItoa(i, idx, sizeof(idx));
+	mprCreateProperty(var, idx, &v);
+}
+
+/*
+  construct a MprVar from a list
+*/
+static struct MprVar mprList(const char *name, const char **list)
+{
+	struct MprVar var;
+	int i;
+
+	var = mprCreateObjVar(name, ESP_HASH_SIZE);
+	for (i=0;list && list[i];i++) {
+		mprAddArray(&var, i, mprCreateStringVar(list[i], 1));
+	}
+	return var;
+}
+
+/*
+  construct a string MprVar from a lump of data
+*/
+static struct MprVar mprData(const uint8_t *p, size_t length)
+{
+	struct MprVar var;
+	char *s = talloc_strndup(NULL, p, length);
+	if (s == NULL) {
+		return mprCreateUndefinedVar();
+	}
+	var = mprCreateStringVar(s, 1);
+	talloc_free(s);
+	return var;
+}
+
+/*
+  turn a ldb_message into a ejs object variable
+*/
+static struct MprVar mprLdbMessage(struct ldb_message *msg)
+{
+	struct MprVar var;
+	int i;
+	/* we force some attributes to always be an array in the
+	   returned structure. This makes the scripting easier, as you don't 
+	   need a special case for the single value case */
+	const char *multivalued[] = { "objectClass", "memberOf", "privilege", 
+					    "member", NULL };
+
+	var = mprCreateObjVar(msg->dn, ESP_HASH_SIZE);
+	for (i=0;i<msg->num_elements;i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		struct MprVar val;
+		if (el->num_values == 1 &&
+		    !str_list_check_ci(multivalued, el->name)) {
+			val = mprData(el->values[0].data, el->values[0].length);
+		} else {
+			int j;
+			val = mprCreateObjVar(el->name, ESP_HASH_SIZE);
+			for (j=0;j<el->num_values;j++) {
+				mprAddArray(&val, j, 
+					    mprData(el->values[j].data, 
+						    el->values[j].length));
+			}
+		}
+		mprCreateProperty(&var, el->name, &val);
+	}
+	
+	return var;		
+}
+
+
+/*
+  turn an array of ldb_messages into a ejs object variable
+*/
+static struct MprVar mprLdbArray(struct ldb_message **msg, int count, 
+				 const char *name)
+{
+	struct MprVar res;
+	int i;
+
+	res = mprCreateObjVar(name?name:"(NULL)", ESP_HASH_SIZE);
+	for (i=0;i<count;i++) {
+		mprAddArray(&res, i, mprLdbMessage(msg[i]));
+	}
+	return res;	
+}
+
+
+/*
+  turn a MprVar string variable into a const char *
+ */
+static const char *mprToString(const struct MprVar *v)
+{
+	if (v->type != MPR_TYPE_STRING) return NULL;
+	return v->string;
+}
+
+/*
+  turn a MprVar object variable into a string list
+  this assumes the object variable consists only of strings
+*/
+static const char **mprToList(TALLOC_CTX *mem_ctx, struct MprVar *v)
+{
+	const char **list = NULL;
+	struct MprVar *el;
+
+	if (v->type != MPR_TYPE_OBJECT ||
+	    v->properties == NULL) {
+		return NULL;
+	}
+	for (el=mprGetFirstProperty(v, MPR_ENUM_DATA);
+	     el;
+	     el=mprGetNextProperty(v, el, MPR_ENUM_DATA)) {
+		const char *s = mprToString(el);
+		if (s) {
+			list = str_list_add(list, s);
+		}
+	}
+	talloc_steal(mem_ctx, list);
+	return list;
+}
 
 /*
   return the type of a variable
@@ -68,18 +196,7 @@ static int esp_typeof(struct EspRequest *ep, int argc, struct MprVar **argv)
 static void esp_returnlist(struct EspRequest *ep, 
 			   const char *name, const char **list)
 {
-	struct MprVar var;
-	int i;
-
-	var = mprCreateObjVar(name, ESP_HASH_SIZE);
-	for (i=0;list[i];i++) {
-		char idx[16];
-		struct MprVar val;
-		mprItoa(i, idx, sizeof(idx));
-		val = mprCreateStringVar(list[i], 1);
-		mprCreateProperty(&var, idx, &val);
-	}
-	espSetReturn(ep, var);
+	espSetReturn(ep, mprList(name, list));
 }
 
 /*
@@ -88,7 +205,7 @@ static void esp_returnlist(struct EspRequest *ep,
 static int esp_lpServices(struct EspRequest *ep, int argc, char **argv)
 {
 	int i;
-	const char **list;
+	const char **list = NULL;
 	if (argc != 0) return -1;
 	
 	for (i=0;i<lp_numservices();i++) {
@@ -194,6 +311,66 @@ static int esp_lpGet(struct EspRequest *ep, int argc, char **argv)
 }
 
 
+/*
+  perform an ldb search, returning an array of results
+
+  syntax:
+     ldbSearch("dbfile", "expression");
+     var attrs = new Array("attr1", "attr2", "attr3");
+     ldbSearch("dbfile", "expression", attrs);
+*/
+static int esp_ldbSearch(struct EspRequest *ep, int argc, struct MprVar **argv)
+{
+	const char **attrs = NULL;
+	const char *expression, *dbfile;
+	TALLOC_CTX *tmp_ctx = talloc_new(ep);
+	struct ldb_context *ldb;
+	int ret;
+	struct ldb_message **res;
+
+	/* validate arguments */
+	if (argc < 2 || argc > 3 ||
+	    argv[0]->type != MPR_TYPE_STRING) {
+		espError(ep, "ldbSearch invalid arguments");
+		goto failed;
+	}
+	if (argc == 3 && argv[2]->type != MPR_TYPE_OBJECT) {
+		espError(ep, "ldbSearch attributes must be an object");
+		goto failed;
+	}
+
+	dbfile     = mprToString(argv[0]);
+	expression = mprToString(argv[1]);
+	if (argc > 2) {
+		attrs = mprToList(tmp_ctx, argv[2]);
+	}
+	if (dbfile == NULL || expression == NULL) {
+		espError(ep, "ldbSearch invalid arguments");
+		goto failed;
+	}
+
+	ldb = ldb_wrap_connect(tmp_ctx, dbfile, 0, NULL);
+	if (ldb == NULL) {
+		espError(ep, "ldbSearch failed to open %s", dbfile);
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, NULL, LDB_SCOPE_DEFAULT, expression, attrs, &res);
+	if (ret == -1) {
+		espError(ep, "ldbSearch failed - %s", ldb_errstring(ldb));
+		goto failed;
+	}
+
+	espSetReturn(ep, mprLdbArray(res, ret, "ldb_message"));
+
+	talloc_free(tmp_ctx);
+	return 0;
+
+failed:
+	talloc_free(tmp_ctx);
+	return -1;
+}
+
 
 /*
   setup the C functions that be called from ejs
@@ -203,4 +380,5 @@ void http_setup_ejs_functions(void)
 	espDefineStringCFunction(NULL, "lpGet", esp_lpGet, NULL);
 	espDefineStringCFunction(NULL, "lpServices", esp_lpServices, NULL);
 	espDefineCFunction(NULL, "typeof", esp_typeof, NULL);
+	espDefineCFunction(NULL, "ldbSearch", esp_ldbSearch, NULL);
 }
