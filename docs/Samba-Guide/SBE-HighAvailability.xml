@@ -613,31 +613,89 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	</sect2>
 
 	<sect2>
-		<title>Key Points Learned</title>
+	<title>Large Directories</title>
 
-		<para>
-		This chapter has touched in broad sweeps on a number of simple steps that can be taken
-		to ensure that your Samba network is resilient, scalable, and reliable, and that it
-		performs well.
-		</para>
+	<para>
+	There exist applications that create or manage directories containing many thousands of files. Such
+	applications typically generate many small files (less than 100 KB). At the best of times under UNIX
+	listing of the files in a directory that contains many files is slow. By default Windows NT, 200x, 
+	and XP Pro cause network file system directory lookups on a Samba server to be performed for both 
+	the case preserving file name as well as for the mangled (8.3) file name. This incurs a huge overhead
+	on the Samba server that may slow down the system dramatically.
+	</para>
 
-		<para>
-		Always keep in mind that someone is responsible to maintain and manage your design.
-		In the long term, that may not be you. Spare a thought for your successor and give him or
-		her an even break.
-		</para>
+	<para>
+	In an extreme case the performance impact was dramatic. File transfer from the Samba server to a Windows
+	XP Professional workstation over 1 Gigabit Ethernet for 250-500 KB files was measured at approximately
+	30 MB/sec. But when tranfering a directory containng 120,000 files, all from 50KB to 60KB in size, the
+	transfer rate to the same workstation was measured at approximately 1.5 KB/sec. The net transfer was
+	of the order of a factor of 20-fold slower.
+	</para>
 
-		<para>
-		<indexterm><primary>assumptions</primary></indexterm>
-		Last, but not least, you should not only keep the network design simple, but also be sure it is
-		well documented. This book may serve as your pattern for documenting every
-		aspect of your design, its implementation, and particularly the objects and assumptions
-		that underlie it.
-		</para>
+	<para>
+	The symptoms that will be observed on the Samba server when a large directory is accessed will be that
+	aggregate I/O (typically blocks read) will be relatively low, yet the wait I/O times will be incredably
+	long while at the same time the read queue is large. Close observation will show that the hard drive
+	that the file system is on will be thrashing wildly.
+	</para>
+
+	<para>
+	Samba-3.0.12, and later, includes new code that radically improves Samba perfomance. The secret to this is
+	really in the <smbconfoption name="case sensitive">True</smbconfoption> line. This tells smbd never to scan
+	for case-insensitive versions of names. So if an application asks for a file called <filename>FOO</filename>,
+	and it can not be found by a simple stat call, then smbd will return file not found immediately without
+	scanning the containing directory for a version of a different case.
+	</para>
+
+	<para>
+	Canonicalize all the files in the directory to have one case, upper or lower - either will do. Then set up 
+	a new custom share for the application as follows:
+	<screen>
+	[bigshare]
+			path = /data/xrayfiles/neurosurgeons/
+			read only = no
+			case sensitive = True
+			default case = upper
+			preserve case = no
+			short preserve case = no
+	</screen>
+	</para>
+
+	<para>
+	All files and directories under the <parameter>path</parameter> directory must be in the same case
+	as specified in the &smb.conf; stanza. This means that smbd will not be able to find lower case 
+	filenames with these settings.  Note, this is done on a per-share basis.
+	</para>
 
 	</sect2>
 
 </sect1>
+
+<sect1>
+	<title>Key Points Learned</title>
+
+	<para>
+	This chapter has touched in broad sweeps on a number of simple steps that can be taken
+	to ensure that your Samba network is resilient, scalable, and reliable, and that it
+	performs well.
+	</para>
+
+	<para>
+	Always keep in mind that someone is responsible to maintain and manage your design.
+	In the long term, that may not be you. Spare a thought for your successor and give him or
+	her an even break.
+	</para>
+
+	<para>
+	<indexterm><primary>assumptions</primary></indexterm>
+	Last, but not least, you should not only keep the network design simple, but also be sure it is
+	well documented. This book may serve as your pattern for documenting every
+	aspect of your design, its implementation, and particularly the objects and assumptions
+	that underlie it.
+	</para>
+
+</sect1>
+
 
 </chapter>
 
