@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "lib/ejs/ejs.h"
 
-void http_exception(const char *reason)
+void ejs_exception(const char *reason)
 {
 	fprintf(stderr, "smbscript exception: %s", reason);
 	exit(1);
@@ -61,7 +61,7 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 		exit(1);
 	}
 
-	if (ejsEvalScript(eid, "write(\"hello\n\");", &result, &emsg) == -1) {
+	if (ejsEvalFile(eid, (char *)argv[1], &result, &emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
 		exit(1);
 	}
