@@ -111,6 +111,10 @@
 	
 2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c (_krb5_pk_rd_pa_reply): non non asn1 decoding
+	errors, fail. Make sure we free memory on error.
+	(pk_verify_chain_standard): make sure we provide good errors.
+
 	* lib/krb5/verify_krb5_conf.c: add missing options, prompted by
 	James F. Hranicky mail to heimdal-discuss
 
