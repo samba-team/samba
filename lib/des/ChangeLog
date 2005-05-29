@@ -5,6 +5,11 @@
 
 	* destest.c: add test for the empty password ""
 
+2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rctest.c (cipher3): used unsigned char to avoid problems with
+	platforms using "signed char"
+	
 2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2.c: use unsigned char to avoid signess warning
