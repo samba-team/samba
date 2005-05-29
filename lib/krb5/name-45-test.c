@@ -159,8 +159,7 @@ main(int argc, char **argv)
     setprogname(argv[0]);
 
     gethostname(hostname, sizeof(hostname));
-    if (strstr(hostname, "kth.se") == NULL &&
-	strstr(hostname, "su.se") == NULL)
+    if (!(strstr(hostname, "kth.se") != NULL || strstr(hostname, "su.se") != NULL))
 	return 0;
 
     for (t = tests; t->v4_name; ++t) {
