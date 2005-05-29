@@ -600,9 +600,9 @@ user(char *name)
 	    else
 		reply(530, "User %s access denied.", name);
 	} else {
+#ifdef OTP
 		char ss[256];
 
-#ifdef OTP
 		if (otp_challenge(&otp_ctx, name, ss, sizeof(ss)) == 0) {
 			reply(331, "Password %s for %s required.",
 			      ss, name);
@@ -613,9 +613,9 @@ user(char *name)
 		    reply(331, "Password required for %s.", name);
 		    askpasswd = 1;
 		} else {
-		    char *s;
-		    
 #ifdef OTP
+		    char *s;
+
 		    if ((s = otp_error (&otp_ctx)) != NULL)
 			lreply(530, "OTP: %s", s);
 #endif

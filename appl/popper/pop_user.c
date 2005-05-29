@@ -14,13 +14,12 @@ RCSID("$Id$");
 int
 pop_user (POP *p)
 {
-    char ss[256];
-
     strlcpy(p->user, p->pop_parm[1], sizeof(p->user));
 
     if (p->auth_level == AUTH_OTP) {
-	char *s = NULL;
 #ifdef OTP
+	char ss[256], *s;
+
 	if(otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0)
 	    return pop_msg(p, POP_SUCCESS, "Password %s required for %s.",
 			   ss, p->user);
