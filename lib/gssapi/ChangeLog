@@ -1,3 +1,11 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c: Prefix Der_class with ASN1_C_ to avoid
+	problems with system headerfiles that pollute the name space.
+
+	* accept_sec_context.c: Prefix Der_class with ASN1_C_ to avoid
+	problems with system headerfiles that pollute the name space.
+
 2005-05-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c (init_auth): set
