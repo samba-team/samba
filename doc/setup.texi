@@ -488,7 +488,7 @@ for the database) and a keytab with the principal
 @pindex ktutil
 @command{ktutil} command and start
 @pindex hpropd
-@command{propd}, as follows:
+@command{hpropd}, as follows:
 
 @example
 slave# ktutil get -p foo/admin hprop/`hostname`
