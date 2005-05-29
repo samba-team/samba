@@ -1,5 +1,9 @@
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/name-45-test.c: XXX don't run the test unless the
+	machine is in kth.se or su.se because it depends on local resolver
+	configuration.
+
 	* lib/hdb/hdb.c: provde RTLD_NOW and RTLD_GLOBAL if they don't
 	exists
 

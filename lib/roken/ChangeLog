@@ -1,3 +1,9 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse_reply-test.c: avoid signedness warnings
+
+	* test-mem.c: avoid signedness warnings
+
 2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hex.c: include "roken.h" to avoid undefined size_t/ssize_t
