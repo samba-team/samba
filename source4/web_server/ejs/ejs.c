@@ -845,7 +845,7 @@ int ejsGetVarCore(Ejs *ep, const char *varName_c, MprVar **obj, MprVar **varValu
 	if (varValue) {
 		*varValue = 0;
 	}
-	currentObj = ejsFindObj(ep, 0, varName, flags);
+	currentObj = ejsFindObj(ep, 0, varName_c, flags);
 	currentVar = 0;
 	propertyName = 0;
 
