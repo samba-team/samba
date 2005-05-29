@@ -1,5 +1,24 @@
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb.c: provde RTLD_NOW and RTLD_GLOBAL if they don't
+	exists
+
+	* kcm/connect.c: fix doors support, fix signedness warnings
+
+	* kcm/config.c: add --door-path=
+	
+	* configure.in: comment what the "detect doors on solaris"
+	fragment tries to do
+
+	* kcm/acquire.c (generate_random_pw): fix signed-ness warnings
+
+	* kcm/connect.c (update_client_creds): fix compile error in the
+	getpeerucred case
+
+	* lib/krb5/test_cc.c: change format for expantion variables in
+	default_cc_name to %{variable} to not confuse them with shell
+	ditto
+
 	* kcm/headers.h: Maybe include <door.h>.
 
 	* kcm/kcm_locl.h: add extern door_path;
