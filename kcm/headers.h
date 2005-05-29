@@ -67,6 +67,9 @@
 #ifdef HAVE_GETPEERUCRED
 #include <ucred.h>
 #endif
+#ifdef HAVE_DOOR_CREATE
+#include <door.h>
+#endif
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
