@@ -63,6 +63,7 @@ typedef enum kcm_operation {
 } kcm_operation;
 
 #define _PATH_KCM_SOCKET      "/var/run/.kcm_socket"
+#define _PATH_KCM_DOOR      "/var/run/.kcm_door"
 
 #endif /* __KCM_H__ */
 
