@@ -272,12 +272,12 @@ struct {
     char *res;
 } cc_names[] = {
     { "foo", 0, "foo" },
-    { "${uid}", 0 },
-    { "foo${null}", 0, "foo" },
-    { "foo${null}bar", 0, "foobar" },
-    { "${", 1 },
-    { "${foo ${", 1 },
-    { "${{", 1 },
+    { "%{uid}", 0 },
+    { "foo%{null}", 0, "foo" },
+    { "foo%{null}bar", 0, "foobar" },
+    { "%{", 1 },
+    { "%{foo %{", 1 },
+    { "%{{", 1 },
 };
 
 static void
