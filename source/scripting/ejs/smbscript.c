@@ -43,11 +43,11 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
  int main(int argc, const char *argv[])
 {
 	EjsId eid;
-	EjsHandle primary, alternate;
+	EjsHandle handle;
 	MprVar result;
 	char *emsg;
 
-	if (ejsOpen(0, 0, 0) != 0) {
+	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
 			"EJ subsystem\n");
 		exit(1);
@@ -55,13 +55,13 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 
 	ejsDefineStringCFunction(-1, "write", writeProc, NULL, 0);
 
-	if ((eid = ejsOpenEngine(primary, alternate)) == (EjsId)-1) {
+	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
 		fprintf(stderr, "smbscript: ejsOpenEngine(): unable to "
 			"initialise an EJS engine\n");
 		exit(1);
 	}
 
-	if (ejsEvalScript(0, "write(\"hello\n\");", &result, &emsg) == -1) {
+	if (ejsEvalScript(eid, "write(\"hello\n\");", &result, &emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
 		exit(1);
 	}
