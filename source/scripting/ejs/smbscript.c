@@ -80,7 +80,7 @@ void ejs_exception(const char *reason)
 	/* run the script */
 	if (ejsEvalFile(eid, discard_const_p(char, argv[1]), &result,
 			&emsg) == -1) {
-		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
+		fprintf(stderr, "smbscript: ejsEvalFile(): %s\n", emsg);
 		exit(1);
 	}
 
