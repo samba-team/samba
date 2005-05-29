@@ -391,6 +391,13 @@ KRB_CAPABILITIES
 
 AC_CHECK_GETPWNAM_R_POSIX
 
+if test "$enable_pthread_support" != no; then
+   saved_LIBS="$LIBS"
+   LIBS="$LIBS $PTHREADS_LIBS"
+   AC_FIND_FUNC_NO_LIBS(door_create, door)
+   LIBS="$saved_LIBS"
+fi
+
 dnl Cray stuff
 AC_CHECK_FUNCS(getudbnam setlim)
 
