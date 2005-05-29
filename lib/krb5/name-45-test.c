@@ -153,7 +153,15 @@ main(int argc, char **argv)
     struct testcase *t;
     krb5_context context;
     krb5_error_code ret;
+    char hostname[1024];
     int val = 0;
+
+    setprogname(argv[0]);
+
+    gethostname(hostname, sizeof(hostname));
+    if (strstr(hostname, "kth.se") == NULL &&
+	strstr(hostname, "su.se") == NULL)
+	return 0;
 
     for (t = tests; t->v4_name; ++t) {
 	krb5_principal princ;
