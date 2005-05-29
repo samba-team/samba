@@ -363,7 +363,7 @@ do_request(void *buf, size_t len, struct descr *d)
 	len[2] = (reply.length >> 8) & 0xff;
 	len[3] = reply.length & 0xff;
 
-	iov[0].iov_base       = len;
+	iov[0].iov_base       = (void*)len;
 	iov[0].iov_len        = 4;
 	iov[1].iov_base       = reply.data;
 	iov[1].iov_len        = reply.length;
@@ -532,13 +532,14 @@ handle_stream(struct descr *d, int index, int min_free)
     }
 }
 
-#ifdef HAVE_DOORS
+#ifdef HAVE_DOOR_CREATE
 
 void
 kcm_door_server(void  *cookie, char *argp, size_t arg_size,
 		door_desc_t *dp, uint_t n_desc)
 {
     kcm_client peercred;
+    door_cred_t cred;
     krb5_error_code ret;
     krb5_data reply;
     size_t length;
@@ -549,16 +550,16 @@ kcm_door_server(void  *cookie, char *argp, size_t arg_size,
     p = NULL;
     length = 0;
 
-    if (door_cred(&info) != 0) {
+    if (door_cred(&cred) != 0) {
 	kcm_log(0, "door_cred failed with %s", strerror(errno));
 	goto out;
     }
 
-    peercred.uid = info.dc_euid;
-    peercred.gid = info.dc_egid;
-    peercred.pid = info.dc_pid;
+    peercred.uid = cred.dc_euid;
+    peercred.gid = cred.dc_egid;
+    peercred.pid = cred.dc_pid;
 
-    ret = process_request(buf, len, &reply, &peercred);
+    ret = process_request((unsigned char*)argp, arg_size, &reply, &peercred);
     if (reply.length != 0) {
 	p = alloca(reply.length); /* XXX don't use alloca */
 	if (p) {
@@ -569,10 +570,8 @@ kcm_door_server(void  *cookie, char *argp, size_t arg_size,
     }
 
  out:
-    return door_return(p, length, NULL, 0);
+    door_return(p, length, NULL, 0);
 }
-
-static char *door_path;
 
 static void
 kcm_setup_door(void)
@@ -600,7 +599,7 @@ kcm_setup_door(void)
 	krb5_err(kcm_context, 1, errno, "Failed to attach door");
 
 }
-#endif /* HAVE_DOORS */
+#endif /* HAVE_DOOR_CREATE */
 
 
 void
@@ -609,7 +608,7 @@ kcm_loop(void)
     struct descr *d;
     int ndescr;
 
-#ifdef HAVE_DOORS
+#ifdef HAVE_DOOR_CREATE
     kcm_setup_door();
 #endif
 
