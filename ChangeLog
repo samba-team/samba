@@ -1,3 +1,75 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/headers.h: Maybe include <door.h>.
+
+	* kcm/kcm_locl.h: add extern door_path;
+
+	* configure.in: detect doors using door_create
+	
+	* kcm/Makefile.am: add dependcy on kcm_protos.h add lib depency on
+	LIB_door_create
+
+	* lib/krb5/kcm.h: add _PATH_KCM_DOOR, default path to kcm door
+
+	* lib/krb5/kcm.c: use [libdefaults]kcm_door to find the door to
+	kcm
+
+	* lib/krb5/Makefile.am: libkrb5_la_LIBADD += LIB_door_create
+	
+	* lib/krb5/krb5_locl.h: Maybe include <sys/mman.h>, maybe include
+	<door.h>.
+
+	* lib/krb5/kcm.c (kcm_send_request): add support for doing a door
+	call to kcm
+
+	* lib/asn1: prefix Der_class with ASN1_C_ to avoid problems with
+	system headerfiles that pollute the name space
+
+	* kcm/kcm.8: change format for expantion variables in
+	default_cc_name to %{variable} to not confuse them with shell
+	ditto
+
+	* lib/krb5/krb5.conf.5: change format for expantion variables in
+	default_cc_name to %{variable} to not confuse them with shell
+	ditto
+
+	* lib/krb5/cache.c (_krb5_expand_default_cc_name): change format
+	for expantion variables to %{variable} to not confuse them with
+	shell ditto
+	
+	* kcm/connect.c: add LOCAL_PEERCRED and experimental doors support
+
+2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/kf/kfd.c: case uid_t to unsigned long in printf format
+
+2005-05-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_auth_context.3: remove trailing space
+
+2005-05-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/connect.c (do_request): use sendmsg to send the reply
+	
+	* fix-export: add make_proto for kcm/kcm_protos.h
+	
+	* kcm/kcm_locl.h: remove prototypes and add <kcm_protos.h>
+
+	* kcm/Makefile.am (kcm_SOURCES): add headerfiles
+	(kcm_protos.h): generate prototypes
+
+	* kcm/protocol.c: fix error in last commit, use right function
+
+	* kcm/headers.h: include <ucred.h> if we have getpeerucred
+
+	* configure.in: check for functions getpeerucred and getpeereid
+
+	* kcm/connect.c (update_client_creds): add support for
+	getpeerucred and getpeereid
+
+	* lib/krb5/kcm.c (kcm_alloc): allow kcm socket to be configured by
+	[libdefaults]kcm_socket=/path
+
 2005-05-24  David Love  <fx@gnu.org>
 
 	* kcm/kcm.8: KRB5CCNAME needs an literal uid, not ${uid}, spelling
