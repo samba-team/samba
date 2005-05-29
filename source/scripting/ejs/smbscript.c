@@ -47,6 +47,11 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 	MprVar result;
 	char *emsg;
 
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s <scriptfile>\n", argv[0]);
+		exit(1);
+	}
+
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
 			"EJ subsystem\n");
@@ -61,7 +66,8 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 		exit(1);
 	}
 
-	if (ejsEvalFile(eid, (char *)argv[1], &result, &emsg) == -1) {
+	if (ejsEvalFile(eid, discard_const_p(char, argv[1]), &result,
+			&emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
 		exit(1);
 	}
