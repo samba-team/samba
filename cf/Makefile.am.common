@@ -41,6 +41,7 @@ LIB_socket		= @LIB_socket@
 LIB_syslog		= @LIB_syslog@
 LIB_tgetent		= @LIB_tgetent@
 LIB_com_err		= @LIB_com_err@
+LIB_door_create		= @LIB_door_create@
 
 HESIODLIB = @HESIODLIB@
 HESIODINCLUDE = @HESIODINCLUDE@
