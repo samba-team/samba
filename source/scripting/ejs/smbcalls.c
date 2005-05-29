@@ -252,8 +252,8 @@ failed:
 */
 void smb_setup_ejs_functions(void)
 {
-	ejsDefineStringCFunction(-1, "lpGet", ejs_lpGet, NULL, 0);
-	ejsDefineStringCFunction(-1, "lpServices", ejs_lpServices, NULL, 0);
-	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, 0);
-	ejsDefineCFunction(-1, "ldbSearch", ejs_ldbSearch, NULL, 0);
+	ejsDefineStringCFunction(-1, "lpGet", ejs_lpGet, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "lpServices", ejs_lpServices, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "ldbSearch", ejs_ldbSearch, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
