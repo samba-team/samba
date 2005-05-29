@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd May 24, 2005
+.Dd May 29, 2005
 .Dt KCM 8
 .Os Heimdal
 .Sh NAME
@@ -95,7 +95,7 @@ enviroment variable to
 .Ql KCM: Ns Ar uid
 or add the stanza
 .br
-[libdefaults]default_cc_name KCM:${uid}
+[libdefaults]default_cc_name KCM:%{uid}
 .br
 to the
 .Pa /etc/krb5.conf
