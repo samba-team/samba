@@ -1,3 +1,7 @@
+2005-05-29  Love Hörquist Åstrand <lha@it.su.se>
+
+	* Makefile.am: add LIB_roken as a explit dependency
+	
 2003-09-03  Love Hörquist Åstrand <lha@it.su.se>
 
 	* otpprint.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
