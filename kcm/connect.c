@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -85,15 +85,14 @@ update_client_creds(int s, kcm_client *peer)
     /* Solaris 10 */
     {
 	ucred_t *peercred;
+	
 	if (getpeerucred(fd, &peercred) != 0) {
-	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
-	    return 1;
+	    peer->uid = ucred_geteuid(peercred);
+	    peer->gid = ucred_getegid(peercred);
+	    peer->pid = 0;
+	    ucred_free(peercred);
+	    return 0;
 	}
-	peer->uid = ucred_geteuid(peercred);
-	peer->gid = ucred_getegid(peercred);
-	peer->pid = 0;
-	ucred_free(peercred);
-	return 0;
     } 
 #endif
 #ifdef GETPEEREID
@@ -102,14 +101,12 @@ update_client_creds(int s, kcm_client *peer)
 	uid_t uid;
 	gid_t gid;
 
-	if (getpeereid(s, &uid, &gid) != 0) {
-	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
-	    return 1;
+	if (getpeereid(s, &uid, &gid) == 0) {
+	    peer->uid = uid;
+	    peer->gid = gid;
+	    peer->pid = 0;
+	    return 0;
 	}
-	peer->uid = uid;
-	peer->gid = gid;
-	peer->pid = 0;
-	return 0;
     }
 #endif
 #ifdef SO_PEERCRED
@@ -118,15 +115,28 @@ update_client_creds(int s, kcm_client *peer)
 	struct ucred pc;
 	socklen_t pclen = sizeof(pc);
 
-	if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
-		       &pclen) != 0) {
-	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
-	    return 1;
+	if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&pc, &pclen) == 0) {
+	    peer->uid = pc.uid;
+	    peer->gid = pc.gid;
+	    peer->pid = pc.pid;
+	    return 0;
 	}
-	peer->uid = pc.uid;
-	peer->gid = pc.gid;
-	peer->pid = pc.pid;
-	return 0;
+    }
+#endif
+#ifdef LOCAL_PEERCRED
+    {
+	struct xucred peercred;
+	socklen_t peercredlen = sizeof(peercred);
+
+	if (getsockopt(s, LOCAL_PEERCRED, 1,
+		       (void *)&peercred, &peercredlen) == 0
+	    && peercred.cr_version == XUCRED_VERSION)
+	{
+	    peer->uid = peercred.cr_uid;
+	    peer->gid = peercred.cr_gid;
+	    peer->pid = 0;
+	    return 0;
+	}
     }
 #endif
 #if defined(SOCKCREDSIZE) && defined(SCM_CREDS)
@@ -145,7 +155,7 @@ update_client_creds(int s, kcm_client *peer)
 
 	crmsg = malloc(crmsgsize);
 	if (crmsg == NULL)
-	    return 1;
+	    goto failed_scm_creds;
 
 	memset(crmsg, 0, crmsgsize);
 	
@@ -154,18 +164,18 @@ update_client_creds(int s, kcm_client *peer)
 	
 	if (recvmsg(s, &msg, 0) < 0) {
 	    free(crmsg);
-	    return 1;
+	    goto failed_scm_creds;
 	}	
 	
 	if (msg.msg_controllen == 0 || (msg.msg_flags & MSG_CTRUNC) != 0) {
 	    free(crmsg);
-	    return 1;
+	    goto failed_scm_creds;
 	}	
 	
 	cmp = CMSG_FIRSTHDR(&msg);
 	if (cmp->cmsg_level != SOL_SOCKET || cmp->cmsg_type != SCM_CREDS) {
 	    free(crmsg);
-	    return 1;
+	    goto failed_scm_creds;
 	}	
 	
 	sc = (struct sockcred *)(void *)CMSG_DATA(cmp);
@@ -175,9 +185,15 @@ update_client_creds(int s, kcm_client *peer)
 	peer->pid = 0;
 	
 	free(crmsg);
+	return 0;
+    } else {
+	/* we already got the cred, just return it */
+	return 0;
     }
+ failed_scm_creds:
 #endif
-    return 0;
+    krb5_warn(kcm_context, errno, "failed to determine peer identity");
+    return 1;
 }
 
 
@@ -287,7 +303,8 @@ process_request(unsigned char *buf,
     krb5_data request;
    
     if (len < 4) {
-	kcm_log(1, "malformed request from process %d (too short)", client->pid);
+	kcm_log(1, "malformed request from process %d (too short)", 
+		client->pid);
 	return -1;
     }
 
@@ -515,15 +532,94 @@ handle_stream(struct descr *d, int index, int min_free)
     }
 }
 
+#ifdef HAVE_DOORS
+
+void
+kcm_door_server(void  *cookie, char *argp, size_t arg_size,
+		door_desc_t *dp, uint_t n_desc)
+{
+    kcm_client peercred;
+    krb5_error_code ret;
+    krb5_data reply;
+    size_t length;
+    char *p;
+
+    reply.length = 0;
+
+    p = NULL;
+    length = 0;
+
+    if (door_cred(&info) != 0) {
+	kcm_log(0, "door_cred failed with %s", strerror(errno));
+	goto out;
+    }
+
+    peercred.uid = info.dc_euid;
+    peercred.gid = info.dc_egid;
+    peercred.pid = info.dc_pid;
+
+    ret = process_request(buf, len, &reply, &peercred);
+    if (reply.length != 0) {
+	p = alloca(reply.length); /* XXX don't use alloca */
+	if (p) {
+	    memcpy(p, reply.data, reply.length);
+	    length = reply.length;
+	}
+	krb5_data_free(&reply);
+    }
+
+ out:
+    return door_return(p, length, NULL, 0);
+}
+
+static char *door_path;
+
+static void
+kcm_setup_door(void)
+{
+    int fd, ret;
+    char *path;
+
+    fd = door_create(kcm_door_server, NULL, 0);
+    if (fd < 0)
+	krb5_err(kcm_context, 1, errno, "Failed to create door");
+
+    if (door_path != NULL)
+	path = door_path;
+    else
+	path = _PATH_KCM_DOOR;
+
+    unlink(path);
+    ret = open(path, O_RDWR | O_CREAT, 0666);
+    if (ret < 0)
+	krb5_err(kcm_context, 1, errno, "Failed to create/open door");
+    close(ret);
+
+    ret = fattach(fd, path);
+    if (ret < 0)
+	krb5_err(kcm_context, 1, errno, "Failed to attach door");
+
+}
+#endif /* HAVE_DOORS */
+
+
 void
 kcm_loop(void)
 {
     struct descr *d;
     int ndescr;
 
+#ifdef HAVE_DOORS
+    kcm_setup_door();
+#endif
+
     ndescr = init_sockets(&d);
-    if (ndescr <= 0)
-	krb5_errx(kcm_context, 1, "No sockets!");
+    if (ndescr <= 0) {
+	krb5_warnx(kcm_context, "No sockets!");
+#ifndef HAVE_DOORS
+	exit(1);
+#endif
+    }
     while (exit_flag == 0){
 	struct timeval tmout;
 	fd_set fds;
