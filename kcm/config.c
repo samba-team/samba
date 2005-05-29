@@ -40,6 +40,7 @@ static const char *config_file;	/* location of kcm config file */
 
 size_t max_request = 0;		/* maximal size of a request */
 char *socket_path = NULL;
+char *door_path = NULL;
 
 static char *max_request_str;	/* `max_request' as a string */
 
@@ -115,6 +116,12 @@ static struct getargs args[] = {
 	"socket-path",		's', arg_string, &socket_path,
     	"path to kcm domain socket", "path"
     },
+#ifdef HAVE_DOOR_CREATE
+    {
+	"door-path",		's', arg_string, &door_path,
+    	"path to kcm door", "path"
+    },
+#endif
     {
 	"server",		'S', arg_string, &system_server,
     	"server to get system ticket for", "principal"
