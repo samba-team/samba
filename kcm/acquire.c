@@ -291,7 +291,7 @@ get_salt_and_kvno(krb5_context context,
     memset(&reply, 0, sizeof(reply));
 
     s.password = NULL;
-    s.salt.salttype = ETYPE_NULL;
+    s.salt.salttype = (int)ETYPE_NULL;
     krb5_data_zero(&s.salt.saltvalue);
 
     *kvno = 0;
@@ -424,7 +424,7 @@ update_keytab_entries(krb5_context context,
 
 static void
 generate_random_pw(krb5_context context,
-		   unsigned char *buf,
+		   char *buf,
 		   size_t bufsiz)
 {
     unsigned char x[512], *p;
@@ -442,7 +442,7 @@ generate_random_pw(krb5_context context,
 	    krb5_generate_random_block(x, sizeof(x));
 	    p = x;
 	}
-	buf[i] = *p++;
+	buf[i] = (char)*p++;
     }
     buf[bufsiz - 1] = '\0';
     memset(x, 0, sizeof(x));
