@@ -60,5 +60,8 @@
 
 #include "extern.h"
 
+#ifndef _PATH_CP
 #define	_PATH_CP	"/bin/cp"
+#endif
+#undef _PATH_RSH
 #define	_PATH_RSH	BINDIR "/rsh"
