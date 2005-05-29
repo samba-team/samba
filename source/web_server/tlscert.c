@@ -89,7 +89,9 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	TLSCHECK(gnutls_x509_crt_set_activation_time(cacrt, activation));
 	TLSCHECK(gnutls_x509_crt_set_expiration_time(cacrt, expiry));
 	TLSCHECK(gnutls_x509_crt_set_ca_status(cacrt, 0));
+#ifdef GNUTLS_KP_TLS_WWW_SERVER
 	TLSCHECK(gnutls_x509_crt_set_key_purpose_oid(cacrt, GNUTLS_KP_TLS_WWW_SERVER, 0));
+#endif
 	TLSCHECK(gnutls_x509_crt_set_version(cacrt, 3));
 	TLSCHECK(gnutls_x509_crt_get_key_id(cacrt, 0, keyid, &keyidsize));
 	TLSCHECK(gnutls_x509_crt_set_subject_key_id(cacrt, keyid, keyidsize));
