@@ -223,7 +223,7 @@ s2k(char *password, const char *salt, char akey[8])
 
     DES_string_to_key(pw, &k);
     if (memcmp(akey, &k, 8) != 0)
-	errx(1, "key wrong for %s", pw);
+	errx(1, "key wrong for '%s'", pw);
     free(pw);
 }
 
@@ -542,6 +542,8 @@ main(int argc, char **argv)
 	"\x4f\xfb\x26\xba\xb0\xcd\x94\x13");
     s2k("NNNN6666", "FFFFAAAA",
 	"\xc4\xbf\x6b\x25\xad\xf7\xa4\xf8");
+    s2k("", "",
+	"\x01\x01\x01\x01\x01\x01\x01\xf1");
 
     if (1) {
 	cfb64_test("\x45\xc2\x0b\x01\x40\x08\x13\x8a",
