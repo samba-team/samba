@@ -1,3 +1,7 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pop_user.c: avoid 'unused variable' warnings
+
 2005-05-10  Dave Love  <fx@gnu.org>
 
 	* pop_pass.c: Include <crypt.h>.

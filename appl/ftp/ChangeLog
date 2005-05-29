@@ -1,3 +1,7 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/ftpd.c: avoid 'unused variable' warnings
+
 2005-05-10  David Love  <fx@gnu.org>
 
 	* ftpd/pathnames.h: #ifdef protect _PATH_ISSUE
