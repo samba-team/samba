@@ -559,7 +559,7 @@ DES_cbc_cksum(const unsigned char *input, DES_cblock *output,
 	      long length, DES_key_schedule *ks, DES_cblock *iv)
 {
     uint32_t uiv[2];
-    uint32_t u[2];
+    uint32_t u[2] = { 0, 0 };
 
     load(*iv, uiv);
 
