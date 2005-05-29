@@ -133,6 +133,15 @@ const char *mprToString(const struct MprVar *v)
 }
 
 /*
+  turn a MprVar integer variable into an int
+ */
+int mprToInt(const struct MprVar *v)
+{
+	if (v->type != MPR_TYPE_INT) return 0;
+	return v->integer;
+}
+
+/*
   turn a MprVar object variable into a string list
   this assumes the object variable consists only of strings
 */
