@@ -41,6 +41,7 @@ libkrb5_la_LIBADD = \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
+	$(LIB_door_create) \
 	$(LIB_dlopen)
 
 lib_LTLIBRARIES = libkrb5.la
