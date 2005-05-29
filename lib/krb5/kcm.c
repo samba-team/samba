@@ -55,6 +55,68 @@ typedef struct krb5_kcmcache {
 #define KCMCURSOR(C)	(*(u_int32_t *)(C))
 
 static krb5_error_code
+try_door(krb5_context context, const krb5_kcmcache *k,
+	 krb5_data *request_data,
+	 krb5_data *response_data)
+{
+#ifdef HAVE_DOOR_CREATE
+    door_arg_t arg;
+    int fd;
+    int ret;
+
+    memset(&arg, 0, sizeof(arg));
+	   
+    fd = open(_PATH_KCM_DOOR, O_RDWR);
+    if (fd < 0)
+	return KRB5_CC_IO;
+
+    arg.data_ptr = request_data->data;
+    arg.data_size = request_data->length;
+    arg.desc_ptr = NULL;
+    arg.desc_num = 0;
+    arg.rbuf = NULL;
+    arg.rsize = 0;
+
+    ret = door_call(fd, &arg);
+    close(fd);
+    if (ret != 0)
+	return KRB5_CC_IO;
+
+    ret = krb5_data_copy(response_data, arg.rbuf, arg.rsize);
+    munmap(arg.rbuf, arg.rsize);
+    if (ret)
+	return ret;
+
+    return 0;
+#else
+    return KRB5_CC_IO;
+#endif
+}
+
+static krb5_error_code
+try_unix_socket(krb5_context context, const krb5_kcmcache *k,
+		krb5_data *request_data,
+		krb5_data *response_data)
+{
+    krb5_error_code ret;
+    int fd;
+
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0)
+	return KRB5_CC_IO;
+    
+    if (connect(fd, (struct sockaddr *)&k->path, sizeof(k->path)) != 0) {
+	close(fd);
+	return KRB5_CC_IO;
+    }
+    
+    ret = _krb5_send_and_recv_tcp(fd, context->kdc_timeout,
+				  request_data, response_data);
+    close(fd);
+    return ret;
+}
+    
+static krb5_error_code
 kcm_send_request(krb5_context context,
 		 krb5_kcmcache *k,
 		 krb5_storage *request,
@@ -69,35 +131,27 @@ kcm_send_request(krb5_context context,
 
     ret = krb5_storage_to_data(request, &request_data);
     if (ret) {
+	krb5_clear_error_string(context);
 	return KRB5_CC_NOMEM;
     }
 
     ret = KRB5_CC_IO;
 
     for (i = 0; i < context->max_retries; i++) {
-	int fd;
-
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0)
-	    continue;
-
-	if (connect(fd, (struct sockaddr *)&k->path, sizeof(k->path)) != 0) {
-	    close(fd);
-	    continue;
-	}
-
-	ret = _krb5_send_and_recv_tcp(fd, context->kdc_timeout,
-				      &request_data, response_data);
-	close(fd);
-	if (ret == 0 && response_data->length != 0) {
+	ret = try_door(context, k, &request_data, response_data);
+	if (ret == 0 && response_data->length != 0)
 	    break;
-	}
+	ret = try_unix_socket(context, k, &request_data, response_data);
+	if (ret == 0 && response_data->length != 0)
+	    break;
     }
 
     krb5_data_free(&request_data);
 
-    if (ret)
+    if (ret) {
+	krb5_clear_error_string(context);
 	ret = KRB5_CC_IO;
+    }
 
     return ret;
 }
