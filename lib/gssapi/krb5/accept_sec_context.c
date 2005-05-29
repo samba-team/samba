@@ -606,7 +606,7 @@ code_NegTokenArg(OM_uint32 *minor_status,
 	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
 					 buf_size - buf_len,
 					 buf_len,
-					 CONTEXT,
+					 ASN1_C_CONTEXT,
 					 CONS,
 					 1,
 					 &tmp);
@@ -838,7 +838,7 @@ spnego_accept_sec_context
 	return ret;
 
     ret = der_match_tag_and_length(data.data, data.length,
-				   CONTEXT, CONS, 0, &len, &taglen);
+				   ASN1_C_CONTEXT, CONS, 0, &len, &taglen);
     if (ret)
 	return ret;
 

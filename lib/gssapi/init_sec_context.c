@@ -659,7 +659,7 @@ spnego_reply
 
     ret = der_match_tag_and_length((const char *)indata.data,
 				   indata.length,
-				   CONTEXT, CONS, 1, &len, &taglen);
+				   ASN1_C_CONTEXT, CONS, 1, &len, &taglen);
     if (ret)
 	return ret;
 
@@ -924,7 +924,7 @@ spnego_initial
 	ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
 				     buf_size - buf_len,
 				     buf_len,
-				     CONTEXT,
+				     ASN1_C_CONTEXT,
 				     CONS,
 				     0,
 				     &tmp);
