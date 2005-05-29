@@ -1,3 +1,12 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rcp_locl.h: undef _PATH_RSH to make sure our version is used
+	
+2005-05-11  David Love  <fx@gnu.org>
+
+	* rcp.c: MODEMASK is defined in sys/vnode.h on Solaris, so undef
+	it before we define our own.
+
 2005-04-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rcp_locl.h: use BINDIR instead of "/usr/bin/ with _PATH_RSH
