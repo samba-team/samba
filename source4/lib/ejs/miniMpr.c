@@ -29,7 +29,7 @@
  *	@end
  */
 
-#include	"web_server/ejs/miniMpr.h"
+#include	"lib/ejs/miniMpr.h"
 
 /************************************ Code ************************************/
 #if !BLD_APPWEB
