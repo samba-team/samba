@@ -37,8 +37,11 @@ void ejs_exception(const char *reason)
 	MprVar result;
 	char *emsg;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	const char **argv_list = NULL;
+	struct MprVar v;
+	int i;
 
-	if (argc != 2) {
+	if (argc < 2) {
 		fprintf(stderr, "Usage: %s <scriptfile>\n", argv[0]);
 		exit(1);
 	}
@@ -67,6 +70,14 @@ void ejs_exception(const char *reason)
 		exit(1);
 	}
 
+	/* setup ARGV[] in the ejs environment */
+	for (i=2;i<argc;i++) {
+		argv_list = str_list_add(argv_list, argv[i]);
+	}
+	v = mprList("ARGV", argv_list);
+	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
+
+	/* run the script */
 	if (ejsEvalFile(eid, discard_const_p(char, argv[1]), &result,
 			&emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
