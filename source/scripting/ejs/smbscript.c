@@ -33,7 +33,7 @@ void ejs_exception(const char *reason)
  int main(int argc, const char *argv[])
 {
 	EjsId eid;
-	EjsHandle handle;
+	EjsHandle handle = 0;
 	MprVar result;
 	char *emsg;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
