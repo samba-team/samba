@@ -38,7 +38,12 @@
 
 #include <time.h>
 
-typedef enum {UNIV = 0, APPL = 1, CONTEXT = 2 , PRIVATE = 3} Der_class;
+typedef enum {
+    ASN1_C_UNIV = 0,
+    ASN1_C_APPL = 1,
+    ASN1_C_CONTEXT = 2 ,
+    ASN1_C_PRIVATE = 3
+} Der_class;
 
 typedef enum {PRIM = 0, CONS = 1} Der_type;
 

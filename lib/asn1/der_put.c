@@ -252,7 +252,7 @@ encode_boolean (unsigned char *p, size_t len, const int *data,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Boolean, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_Boolean, &l);
     if (e)
 	return e;
     p -= l;
@@ -276,7 +276,7 @@ encode_integer (unsigned char *p, size_t len, const int *data, size_t *size)
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Integer, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_Integer, &l);
     if (e)
 	return e;
     p -= l;
@@ -310,7 +310,7 @@ encode_unsigned (unsigned char *p, size_t len, const unsigned *data,
 	ret++;
 	l++;
     }
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Integer, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_Integer, &l);
     if (e)
 	return e;
     p -= l;
@@ -335,7 +335,7 @@ encode_enumerated (unsigned char *p, size_t len, const unsigned *data,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Enumerated, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_Enumerated, &l);
     if (e)
 	return e;
     p -= l;
@@ -359,7 +359,7 @@ encode_general_string (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_GeneralString, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_GeneralString, &l);
     if (e)
 	return e;
     p -= l;
@@ -383,7 +383,7 @@ encode_octet_string (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_OctetString, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_OctetString, &l);
     if (e)
 	return e;
     p -= l;
@@ -407,7 +407,7 @@ encode_oid(unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_OID, &l);
+    e = der_put_length_and_tag (p, len, l, ASN1_C_UNIV, PRIM, UT_OID, &l);
     if (e)
 	return e;
     p -= l;
@@ -455,7 +455,7 @@ encode_generalized_time (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length_and_tag (p, len, k.length, UNIV, PRIM, 
+    e = der_put_length_and_tag (p, len, k.length, ASN1_C_UNIV, PRIM, 
 				UT_GeneralizedTime, &l);
     if (e)
 	return e;

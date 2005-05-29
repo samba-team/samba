@@ -256,7 +256,7 @@ decode_boolean (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_Boolean, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_Boolean, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -287,7 +287,7 @@ decode_integer (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_Integer, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_Integer, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -318,7 +318,7 @@ decode_unsigned (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_Integer, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_Integer, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -349,7 +349,7 @@ decode_enumerated (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_Enumerated, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_Enumerated, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -380,7 +380,7 @@ decode_general_string (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_GeneralString, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -411,7 +411,7 @@ decode_octet_string (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_OctetString, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_OctetString, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -442,7 +442,7 @@ decode_oid (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_OID, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_OID, &l);
     if (e) return e;
     p += l;
     len -= l;
@@ -489,7 +489,7 @@ decode_generalized_time (const unsigned char *p, size_t len,
     size_t l, reallen;
     int e;
 
-    e = der_match_tag (p, len, UNIV, PRIM, UT_GeneralizedTime, &l);
+    e = der_match_tag (p, len, ASN1_C_UNIV, PRIM, UT_GeneralizedTime, &l);
     if (e) return e;
     p += l;
     len -= l;

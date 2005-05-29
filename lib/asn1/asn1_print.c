@@ -116,10 +116,10 @@ loop (unsigned char *buf, size_t len, int indent)
 	buf += sz;
 	len -= sz;
 
-	if (class == CONTEXT) {
+	if (class == ASN1_C_CONTEXT) {
 	    printf ("[%d]\n", tag);
 	    loop (buf, length, indent);
-	} else if (class == UNIV) {
+	} else if (class == ASN1_C_UNIV) {
 	    switch (tag) {
 	    case UT_Sequence :
 		printf ("{\n");

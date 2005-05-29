@@ -88,7 +88,7 @@ decode_type (const char *name, const Type *t)
 	int pos;
 
 	fprintf (codefile,
-		 "e = der_match_tag_and_length (p, len, UNIV, PRIM, UT_BitString,"
+		 "e = der_match_tag_and_length (p, len, ASN1_C_UNIV, PRIM, UT_BitString,"
 		 "&reallen, &l);\n"
 		 "FORW;\n"
 		 "if(len < reallen)\n"
@@ -122,7 +122,7 @@ decode_type (const char *name, const Type *t)
 	    break;
 
 	fprintf (codefile,
-		 "e = der_match_tag_and_length (p, len, UNIV, CONS, UT_Sequence,"
+		 "e = der_match_tag_and_length (p, len, ASN1_C_UNIV, CONS, UT_Sequence,"
 		 "&reallen, &l);\n"
 		 "FORW;\n"
 		 "{\n"
@@ -159,7 +159,7 @@ decode_type (const char *name, const Type *t)
 	    }else{
 		fprintf (codefile, "{\n"
 			 "size_t newlen, oldlen;\n\n"
-			 "e = der_match_tag (p, len, CONTEXT, CONS, %d, &l);\n",
+			 "e = der_match_tag (p, len, ASN1_C_CONTEXT, CONS, %d, &l);\n",
 			 m->val);
 		fprintf (codefile,
 			 "if (e)\n");
@@ -219,7 +219,7 @@ decode_type (const char *name, const Type *t)
 	char *n;
 
 	fprintf (codefile,
-		 "e = der_match_tag_and_length (p, len, UNIV, CONS, UT_Sequence,"
+		 "e = der_match_tag_and_length (p, len, ASN1_C_UNIV, CONS, UT_Sequence,"
 		 "&reallen, &l);\n"
 		 "FORW;\n"
 		 "if(len < reallen)\n"
@@ -263,7 +263,7 @@ decode_type (const char *name, const Type *t)
 	break;
     case TApplication:
 	fprintf (codefile,
-		 "e = der_match_tag_and_length (p, len, APPL, CONS, %d, "
+		 "e = der_match_tag_and_length (p, len, ASN1_C_APPL, CONS, %d, "
 		 "&reallen, &l);\n"
 		 "FORW;\n"
 		 "{\n"
@@ -370,7 +370,7 @@ generate_seq_type_decode (const Symbol *s)
 	     "int dce_fix;\n");
     
     fprintf (codefile,
-	     "e = der_match_tag(p, len, CONTEXT, CONS, tag, &l);\n"
+	     "e = der_match_tag(p, len, ASN1_C_CONTEXT, CONS, tag, &l);\n"
 	     "if (e)\n"
 	     "return e;\n");
     fprintf (codefile, 

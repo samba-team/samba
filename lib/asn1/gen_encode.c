@@ -125,7 +125,7 @@ encode_type (const char *name, const Type *t)
 		 "len -= 2;\n"
 		 "ret += 2;\n"
 		 "}\n\n"
-		 "e = der_put_length_and_tag (p, len, ret, UNIV, PRIM,"
+		 "e = der_put_length_and_tag (p, len, ret, ASN1_C_UNIV, PRIM,"
 		 "UT_BitString, &l);\n"
 		 "BACK;\n",
 		 rest);
@@ -157,7 +157,7 @@ encode_type (const char *name, const Type *t)
 #endif
 	    encode_type (s, m->type);
 	    fprintf (codefile,
-		     "e = der_put_length_and_tag (p, len, ret, CONTEXT, CONS, "
+		     "e = der_put_length_and_tag (p, len, ret, ASN1_C_CONTEXT, CONS, "
 		     "%d, &l);\n"
 		     "BACK;\n",
 		     m->val);
@@ -171,7 +171,7 @@ encode_type (const char *name, const Type *t)
 	    free (s);
 	}
 	fprintf (codefile,
-		 "e = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence, &l);\n"
+		 "e = der_put_length_and_tag (p, len, ret, ASN1_C_UNIV, CONS, UT_Sequence, &l);\n"
 		 "BACK;\n");
 	break;
     }
@@ -194,7 +194,7 @@ encode_type (const char *name, const Type *t)
 		 "ret += oldret;\n"
 #endif
 		 "}\n"
-		 "e = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence, &l);\n"
+		 "e = der_put_length_and_tag (p, len, ret, ASN1_C_UNIV, CONS, UT_Sequence, &l);\n"
 		 "BACK;\n");
 	free (n);
 	break;
@@ -216,7 +216,7 @@ encode_type (const char *name, const Type *t)
     case TApplication:
 	encode_type (name, t->subtype);
 	fprintf (codefile,
-		 "e = der_put_length_and_tag (p, len, ret, APPL, CONS, %d, &l);\n"
+		 "e = der_put_length_and_tag (p, len, ret, ASN1_C_APPL, CONS, %d, &l);\n"
 		 "BACK;\n",
 		 t->application);
 	break;
