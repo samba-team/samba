@@ -1,3 +1,10 @@
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.c (DES_cbc_cksum): init u to make sure it have a value in
+	case of the empty in data
+
+	* destest.c: add test for the empty password ""
+
 2005-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2.c: use unsigned char to avoid signess warning
