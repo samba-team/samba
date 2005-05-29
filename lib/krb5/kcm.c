@@ -48,6 +48,7 @@ RCSID("$Id$");
 typedef struct krb5_kcmcache {
     char *name;
     struct sockaddr_un path;
+    char *door_path;
 } krb5_kcmcache;
 
 #define KCMCACHE(X)	((krb5_kcmcache *)(X)->data.data)
@@ -66,7 +67,7 @@ try_door(krb5_context context, const krb5_kcmcache *k,
 
     memset(&arg, 0, sizeof(arg));
 	   
-    fd = open(_PATH_KCM_DOOR, O_RDWR);
+    fd = open(k->door_path, O_RDWR);
     if (fd < 0)
 	return KRB5_CC_IO;
 
@@ -224,6 +225,13 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
     k->path.sun_family = AF_UNIX;
     strlcpy(k->path.sun_path, path, sizeof(k->path.sun_path));
 
+    path = krb5_config_get_string_default(context, NULL,
+					  _PATH_KCM_DOOR,
+					  "libdefaults", 
+					  "kcm_door",
+					  NULL);
+    k->door_path = strdup(path);
+
     (*id)->data.data = k;
     (*id)->data.length = sizeof(*k);
 
@@ -287,10 +295,10 @@ kcm_free(krb5_context context, krb5_ccache *id)
     krb5_kcmcache *k = KCMCACHE(*id);
 
     if (k != NULL) {
-	if (k->name != NULL) {
+	if (k->name != NULL)
 	    free(k->name);
-	    k->name = NULL;
-	}
+	if (k->door_path)
+	    free(k->door_path);
 	memset(k, 0, sizeof(*k));
 	krb5_data_free(&(*id)->data);
     }
