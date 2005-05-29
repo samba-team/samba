@@ -50,6 +50,9 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -118,6 +121,10 @@ struct sockaddr_dl;
 #define des_encrypt wingless_pigs_mostly_fail_to_fly
 #include <crypt.h>
 #undef des_encrypt
+#endif
+
+#ifdef HAVE_DOOR_CREATE
+#include <door.h>
 #endif
 
 #include <roken.h>
