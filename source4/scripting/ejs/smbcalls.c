@@ -24,6 +24,7 @@
 #include "lib/ejs/ejs.h"
 #include "param/loadparm.h"
 #include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /*
   return the type of a variable
@@ -246,6 +247,55 @@ failed:
 	return -1;
 }
 
+/*
+  look up a netbios name
+
+  syntax:
+    resolveName("frogurt");
+    resolveName("frogurt", 0x1c);
+*/
+
+static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct nbt_name name;
+	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());	
+	NTSTATUS result;
+	const char *reply_addr;
+
+	/* validate arguments */
+	if (argc == 1) {
+		if (argv[0]->type != MPR_TYPE_STRING) {
+			ejsSetErrorMsg(eid, "resolveName invalid arguments");
+			goto failed;
+		}
+		make_nbt_name_client(&name, mprToString(argv[0]));
+	} else if (argc == 2) {
+		if (argv[1]->type != MPR_TYPE_INT) {
+			ejsSetErrorMsg(eid, "resolveName invalid arguments");
+			goto failed;
+		}
+		make_nbt_name(&name, mprToString(argv[0]), mprToInt(argv[1]));
+	} else {
+		ejsSetErrorMsg(eid, "resolveName invalid arguments");
+		goto failed;
+	}
+
+	result = resolve_name(&name, tmp_ctx, &reply_addr);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		ejsSetErrorMsg(eid, "resolveName name not found");
+		goto failed;
+	}
+		
+	ejsSetReturnString(eid, reply_addr);
+
+	talloc_free(tmp_ctx);
+	return 0;
+
+ failed:
+	talloc_free(tmp_ctx);
+	return -1;
+}
 
 /*
   setup the C functions that be called from ejs
@@ -256,4 +306,5 @@ void smb_setup_ejs_functions(void)
 	ejsDefineStringCFunction(-1, "lpServices", ejs_lpServices, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "ldbSearch", ejs_ldbSearch, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "resolveName", ejs_resolve_name, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
