@@ -231,7 +231,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
     *res = NULL;
 
     while (str && *str) {
-	tmp = strstr(str, "${");
+	tmp = strstr(str, "%{");
 	if (tmp && tmp != str) {
 	    append = strndup(str, tmp - str);
 	    str = tmp;
