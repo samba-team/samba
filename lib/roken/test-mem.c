@@ -126,14 +126,14 @@ rk_test_mem_alloc(enum rk_test_mem_type type, const char *name,
 
     map.size = size + pagesize - (size % pagesize) + pagesize * 2;
 
-    p = (char *)mmap(0, map.size, PROT_READ | PROT_WRITE,
-		     flags, fd, 0);
+    p = (unsigned char *)mmap(0, map.size, PROT_READ | PROT_WRITE,
+			      flags, fd, 0);
     if (p == (unsigned char *)MAP_FAILED)
 	err (1, "mmap");
 
     map.start = p;
 
-    ret = mprotect (p, pagesize, 0);
+    ret = mprotect ((void *)p, pagesize, 0);
     if (ret < 0)
 	err (1, "mprotect");
 
