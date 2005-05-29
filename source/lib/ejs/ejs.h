@@ -44,8 +44,8 @@
 #ifndef _h_EJS
 #define _h_EJS 1
 
-#include	"web_server/ejs/miniMpr.h"
-#include	"web_server/ejs/var.h"
+#include	"lib/ejs/miniMpr.h"
+#include	"lib/ejs/var.h"
 
 #ifdef __cplusplus
 extern "C" {

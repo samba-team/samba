@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "web_server/ejs/ejs.h"
+#include "lib/ejs/ejs.h"
 
 void http_exception(const char *reason)
 {

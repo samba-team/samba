@@ -35,7 +35,7 @@
  */
 /********************************** Includes **********************************/
 
-#include "web_server/ejs/ejsInternal.h"
+#include "lib/ejs/ejsInternal.h"
 
 #if BLD_FEATURE_EJS
 

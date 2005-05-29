@@ -39,7 +39,7 @@
 #ifndef _h_EJS_INTERNAL
 #define _h_EJS_INTERNAL 1
 
-#include		"web_server/ejs/ejs.h"
+#include		"lib/ejs/ejs.h"
 
 /********************************** Defines ***********************************/
 

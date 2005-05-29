@@ -42,7 +42,7 @@ blah blah;
 #ifndef _h_MPR_OS_HDRS
 #define _h_MPR_OS_HDRS 1
 
-#include	"web_server/ejs/config.h"
+#include	"lib/ejs/config.h"
 
 ////////////////////////////////// CPU Families ////////////////////////////////
 //

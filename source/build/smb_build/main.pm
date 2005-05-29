@@ -37,6 +37,7 @@ sub smb_build_main($)
 		"lib/popt/config.mk",
 		"lib/cmdline/config.mk",
 		"lib/socket_wrapper/config.mk",
+		"lib/ejs/config.mk",
 		"param/config.mk",
 		"smb_server/config.mk",
 		"rpc_server/config.mk",
