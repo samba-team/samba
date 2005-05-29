@@ -243,9 +243,9 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 		krb5_set_error_string(context, "variable missing }");
 		return KRB5_CONFIG_BADFORMAT;
 	    }
-	    if (strncasecmp(tmp, "${uid}", 6) == 0)
+	    if (strncasecmp(tmp, "%{uid}", 6) == 0)
 		asprintf(&append, "%u", (unsigned)getuid());
-	    else if (strncasecmp(tmp, "${null}", 7) == 0)
+	    else if (strncasecmp(tmp, "%{null}", 7) == 0)
 		append = strdup("");
 	    else {
 		free(*res);
