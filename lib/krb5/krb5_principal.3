@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd October  3, 2003
+.Dd May 29, 2005
 .Dt KRB5_PRINCIPAL 3
 .Os HEIMDAL
 .Sh NAME
@@ -192,7 +192,7 @@ The copy needs to be freed with
 .Fn krb5_free_principal .
 .Pp
 .Fn krb5_principal_compare
-compares the two principals, including realm of the principal and returns
+compares the two principals, including realm of the principals and returns
 .Dv TRUE
 if they are the same and
 .Dv FALSE
@@ -269,7 +269,7 @@ The caller must not free realm unless
 .Fn krb5_princ_set_realm
 is called to set a new realm after freeing the realm.
 .Fn krb5_princ_set_realm
-sets the realm component of a principal. Old realm is not freed.
+sets the realm component of a principal. The old realm is not freed.
 .Pp
 .Fn krb5_sname_to_principal
 and
@@ -291,12 +291,15 @@ will be used instead.
 will use the passed
 .Fa hostname
 for the second component.
-If type
+If
+.Fa type
+is
 .Dv KRB5_NT_SRV_HST
 this name will be looked up with
 .Fn gethostbyname .
 If
-.Fa hostname is
+.Fa hostname
+is
 .Dv NULL ,
 the local hostname will be used.
 .Pp
@@ -311,12 +314,12 @@ or
 .Dv AF_INET6
 socket.
 There must be a mapping between the address and
-.Fq sockname .
+.Dq sockname .
 The function may try to resolve the name in DNS.
 .Pp
 .Fn krb5_get_default_principal
 tries to find out what's a reasonable default principal by looking at
-the enviroment its run in.
+the enviroment it is running in.
 .\" .Sh EXAMPLES
 .Sh SEE ALSO
 .Xr krb5_425_conv_principal 3 ,
