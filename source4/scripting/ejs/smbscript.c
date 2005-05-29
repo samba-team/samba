@@ -29,9 +29,6 @@ void http_exception(const char *reason)
 	exit(1);
 }
 
-extern void		ejsDefineStringCFunction(EjsId eid, const char *functionName, 
-					MprStringCFunction fn, void *thisPtr, int flags);
-
 static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 {
 	int i;
@@ -50,13 +47,26 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 	MprVar result;
 	char *emsg;
 
-	ejsOpen(0, 0, 0);
-	eid = ejsOpenEngine(primary, alternate);
-	ejsDefineStringCFunction(eid, "write", writeProc, NULL, 0);
-	ejsEvalScript(0, "write(\"hello\n\");", &result, &emsg);
-	ejsClose();
+	if (ejsOpen(0, 0, 0) != 0) {
+		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
+			"EJ subsystem\n");
+		exit(1);
+	}
 
-	printf("emsg = %s\n", emsg);
+	ejsDefineStringCFunction(-1, "write", writeProc, NULL, 0);
+
+	if ((eid = ejsOpenEngine(primary, alternate)) == (EjsId)-1) {
+		fprintf(stderr, "smbscript: ejsOpenEngine(): unable to "
+			"initialise an EJS engine\n");
+		exit(1);
+	}
+
+	if (ejsEvalScript(0, "write(\"hello\n\");", &result, &emsg) == -1) {
+		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
+		exit(1);
+	}
+
+	ejsClose();
 
 	return 0;
 }
