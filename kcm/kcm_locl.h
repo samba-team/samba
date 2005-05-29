@@ -154,6 +154,7 @@ struct kcm_op {
 
 extern krb5_context kcm_context;
 extern char *socket_path;
+extern char *door_path;
 extern size_t max_request;
 extern sig_atomic_t exit_flag;
 extern int name_constraints;
