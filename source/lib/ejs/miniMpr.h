@@ -270,6 +270,7 @@ extern int		mprStrcpy(char *dest, int destMax, const char *src);
 extern int 		mprMemcpy(char *dest, int destMax, const char *src, int nbytes);
 
 extern void mprSetCtx(void *ctx);
+extern void *mprMemCtx(void);
 
 #ifdef __cplusplus
 }
