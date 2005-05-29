@@ -37,9 +37,16 @@
 
 static void *mpr_ctx;
 
+/* set the memory context to be used for all ejs variables */
 void mprSetCtx(TALLOC_CTX *ctx)
 {
 	mpr_ctx = ctx;
+}
+
+/* return the memory context being used for all ejs variables */
+void *mprMemCtx(void)
+{
+	return mpr_ctx;
 }
 
 void mprFree(void *ptr)
