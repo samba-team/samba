@@ -69,6 +69,7 @@
 #endif
 #ifdef HAVE_DOOR_CREATE
 #include <door.h>
+#include <alloca.h>
 #endif
 #include <err.h>
 #include <roken.h>
