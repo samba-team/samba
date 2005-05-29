@@ -54,6 +54,8 @@ void ejs_exception(const char *reason)
 		exit(1);
 	}
 
+	load_interfaces();
+
 	mprSetCtx(mem_ctx);
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
