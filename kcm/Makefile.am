@@ -27,6 +27,8 @@ kcm_SOURCES =		\
 $(srcdir)/kcm_protos.h:
 	cd $(srcdir); perl ../cf/make-proto.pl -o kcm_protos.h -q -P comment $(kcm_SOURCES) || rm -f kcm_protos.h
 
+$(kcm_OBJECTS): $(srcdir)/kcm_protos.h
+
 man_MANS = kcm.8
 
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
@@ -36,6 +38,7 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
+	$(LIB_door_create) \
 	$(LIB_pidfile)
 
 
