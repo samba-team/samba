@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "lib/ejs/ejs.h"
 
 void ejs_exception(const char *reason)
@@ -29,28 +30,28 @@ void ejs_exception(const char *reason)
 	exit(1);
 }
 
-static int writeProc(MprVarHandle userHandle, int argc, char **argv)
-{
-	int i;
-
-	mprAssert(argv);
-	for (i = 0; i < argc; i++) {
-		printf("%s", argv[i]);
-	}
-	return 0;
-}
-
  int main(int argc, const char *argv[])
 {
 	EjsId eid;
 	EjsHandle handle;
 	MprVar result;
 	char *emsg;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <scriptfile>\n", argv[0]);
 		exit(1);
 	}
+
+	setup_logging(argv[0],DEBUG_STDOUT);
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			argv[0], dyn_CONFIGFILE);
+		exit(1);
+	}
+
+	mprSetCtx(mem_ctx);
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
@@ -58,7 +59,7 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 		exit(1);
 	}
 
-	ejsDefineStringCFunction(-1, "write", writeProc, NULL, 0);
+	smb_setup_ejs_functions();
 
 	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
 		fprintf(stderr, "smbscript: ejsOpenEngine(): unable to "
@@ -73,6 +74,8 @@ static int writeProc(MprVarHandle userHandle, int argc, char **argv)
 	}
 
 	ejsClose();
+
+	talloc_free(mem_ctx);
 
 	return 0;
 }

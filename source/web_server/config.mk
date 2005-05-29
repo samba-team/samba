@@ -24,6 +24,6 @@ ADD_OBJ_FILES = \
 		web_server/tls.o \
 		web_server/tlscert.o \
 		web_server/pam.o
-REQUIRED_SUBSYSTEMS = ESP EXT_LIB_GNUTLS EXT_LIB_PAM
+REQUIRED_SUBSYSTEMS = ESP EXT_LIB_GNUTLS EXT_LIB_PAM SMBCALLS
 # End SUBSYSTEM WEB
 #######################

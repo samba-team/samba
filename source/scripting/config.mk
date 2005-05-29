@@ -1,9 +1,19 @@
 #######################
+# Start LIBRARY SMBCALLS
+[SUBSYSTEM::SMBCALLS]
+OBJ_FILES = \
+		scripting/ejs/smbcalls.o \
+		scripting/ejs/mprutil.o
+REQUIRED_SUBSYSTEMS = EJS LIBBASIC
+# End SUBSYSTEM SMBCALLS
+#######################
+
+#######################
 # Start BINARY SMBSCRIPT
 [BINARY::smbscript]
 OBJ_FILES = \
 		scripting/ejs/smbscript.o
-REQUIRED_SUBSYSTEMS = EJS LIBBASIC
+REQUIRED_SUBSYSTEMS = EJS LIBBASIC SMBCALLS
 # End BINARY SMBSCRIPT
 #######################
 
