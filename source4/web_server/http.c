@@ -461,17 +461,17 @@ static void http_setup_arrays(struct esp_state *esp)
    report a internal server error via http
 */
 #include <setjmp.h>
-static jmp_buf http_exception_buf;
+static jmp_buf ejs_exception_buf;
 static const char *exception_reason;
 
-void http_exception(const char *reason)
+void ejs_exception(const char *reason)
 {
 	exception_reason = reason;
 	DEBUG(0,("%s", reason));
-	longjmp(http_exception_buf, -1);
+	longjmp(ejs_exception_buf, -1);
 }
 #else
-void http_exception(const char *reason)
+void ejs_exception(const char *reason)
 {
 	DEBUG(0,("%s", reason));
 	smb_panic(reason);
@@ -497,7 +497,7 @@ static void esp_request(struct esp_state *esp)
 	}
 
 #if HAVE_SETJMP_H
-	if (setjmp(http_exception_buf) != 0) {
+	if (setjmp(ejs_exception_buf) != 0) {
 		http_error(web, 500, exception_reason);
 		return;
 	}

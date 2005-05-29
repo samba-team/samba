@@ -163,7 +163,7 @@ void mprBreakpoint(const char *file, int line, const char *cond)
 	char *buf;
 	mprAllocSprintf(&buf, MPR_MAX_STRING, "esp exception - ASSERT at %s:%d, %s\n", 
 					file, line, cond);
-	http_exception(buf);
+	ejs_exception(buf);
 }
 
 #endif /* !BLD_GOAHEAD_WEBSERVER */
