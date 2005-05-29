@@ -244,6 +244,13 @@ find_dynamic_method (krb5_context context,
     if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+
     dl = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
     if (dl == NULL) {
 	krb5_warnx(context, "error trying to load dynamic module %s: %s\n",
