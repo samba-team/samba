@@ -86,7 +86,7 @@ update_client_creds(int s, kcm_client *peer)
     {
 	ucred_t *peercred;
 	
-	if (getpeerucred(fd, &peercred) != 0) {
+	if (getpeerucred(s, &peercred) != 0) {
 	    peer->uid = ucred_geteuid(peercred);
 	    peer->gid = ucred_getegid(peercred);
 	    peer->pid = 0;
