@@ -367,7 +367,7 @@ static int
 process_request(unsigned char *buf, 
 		size_t len, 
 		krb5_data *reply,
-		int *sendlength,
+		krb5_boolean *prependlength,
 		const char *from,
 		struct sockaddr *addr)
 {
@@ -390,7 +390,7 @@ process_request(unsigned char *buf,
 	free_Ticket(&ticket);
 	return ret;
     } else if(maybe_version4(buf, len)){
-	*sendlength = 0; /* elbitapmoc sdrawkcab XXX */
+	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
 	return 0;
     } else if (enable_kaserver) {
@@ -420,19 +420,19 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
  */
 
 static void
-do_request(void *buf, size_t len, int sendlength,
+do_request(void *buf, size_t len, krb5_boolean prependlength,
 	   struct descr *d)
 {
     krb5_error_code ret;
     krb5_data reply;
     
     reply.length = 0;
-    ret = process_request(buf, len, &reply, &sendlength,
+    ret = process_request(buf, len, &reply, &prependlength,
 			  d->addr_string, d->sa);
     if(reply.length){
 	kdc_log(5, "sending %lu bytes to %s", (unsigned long)reply.length,
 		d->addr_string);
-	if(sendlength){
+	if(prependlength){
 	    unsigned char len[4];
 	    len[0] = (reply.length >> 24) & 0xff;
 	    len[1] = (reply.length >> 16) & 0xff;
@@ -479,7 +479,7 @@ handle_udp(struct descr *d)
     else {
 	addr_to_string (d->sa, d->sock_len,
 			d->addr_string, sizeof(d->addr_string));
-	do_request(buf, n, 0, d);
+	do_request(buf, n, FALSE, d);
     }
     free (buf);
 }
@@ -766,7 +766,7 @@ handle_tcp(struct descr *d, int index, int min_free)
     if (ret < 0)
 	return;
     else if (ret == 1) {
-	do_request(d[index].buf, d[index].len, 1, &d[index]);
+	do_request(d[index].buf, d[index].len, TRUE, &d[index]);
 	clear_descr(d + index);
     }
 }
