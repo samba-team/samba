@@ -1,5 +1,10 @@
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kcm/protocol.c (kcm_op_retrieve): check server for krbtgt, not
+	client
+
+	* kcm/main.c: ignore SIGPIPE
+
 	* kcm/protocol.c: Add option to disallow getting krbtgt out from
 	from KCM. KCM will do the fetching part itself.
 	
