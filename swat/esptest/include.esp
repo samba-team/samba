@@ -11,8 +11,4 @@ calling a function from test.esp ...<p>
 <% res = testfn('foo'); %>
 result is: @@res
 
-<form name="Cancel" method="POST" action="/"> 
-    <input name="submit" type="submit" value="Cancel"><br>
-</form>
-
 <% page_footer(); %>
