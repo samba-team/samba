@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002, 2004-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,7 +46,7 @@ extern int detach_from_console;
 static RETSIGTYPE
 sigterm(int sig)
 {
-    exit_flag = 1;
+    exit_flag = sig;
 }
 
 int
@@ -96,6 +96,7 @@ main(int argc, char **argv)
 
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGXCPU, &sa, NULL);
 
 	sa.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sa, NULL);
@@ -103,6 +104,7 @@ main(int argc, char **argv)
 #else
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
+    signal(SIGXCPU, sigterm);
     signal(SIGPIPE, SIG_IGN);
 #endif
     if (detach_from_console)
