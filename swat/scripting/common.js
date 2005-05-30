@@ -8,6 +8,22 @@ global.page = new Object();
 /* fill in some defaults */
 global.page.title = "Samba Web Administration Tool";
 
+/* to cope with browsers that don't support cookies we append the sessionid
+   to the URI */
+global.SESSIONURI = "";
+if (request['COOKIE_SUPPORT'] != "True") {
+	global.SESSIONURI="?SwatSessionId=" + request['SESSION_ID'];
+}
+
+/*
+  possibly adjust a local URI to have the session id appended
+  used for browsers that don't support cookies
+*/
+function session_uri(uri) {
+	return uri + global.SESSIONURI;
+}
+
+
 
 /* if the browser was too dumb to set the HOST header, then
    set it now */
@@ -32,6 +48,7 @@ function page_footer() {
 	include("/scripting/footer_" + global.page.pagetype + ".esp");
 }
 
+
 /*
   check if a uri is one of the 'always allowed' pages, even when not logged in
   This allows the login page to use the same style sheets and images
@@ -40,6 +57,7 @@ function always_allowed(uri) {
 	var allowed = new Array("/images/favicon.ico", 
 				"/images/linkpad.gif",
 				"/images/logo.png",
+				"/images/logo.gif",
 				"/style/main.css",
 				"/style/common.css");
 	for (i in allowed) {
@@ -102,7 +120,7 @@ function Form(name, num_elements, num_submits)
 	f.name = name;
 	f.element = new Array(num_elements);
 	f.submit =  new Array(num_submits);
-	f.action = request.REQUEST_URI;
+	f.action = session_uri(request.REQUEST_URI);
 	f.class = "form";
 	for (i in f.element) {
 		f.element[i] = new Object();
@@ -160,3 +178,4 @@ function display_form(f) {
 	}
 	write("</form>\n");
 }
+

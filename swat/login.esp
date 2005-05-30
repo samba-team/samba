@@ -3,7 +3,9 @@
 <%
 var f = Form("login", 2, 1);
 f.element[0].label = "Username";
+f.element[0].value = form['Username'];
 f.element[1].label = "Password";
+f.element[1].value = form['Password'];
 f.element[1].type  = "password";
 f.submit[0] = "Login";
 
@@ -23,9 +25,9 @@ display_form(f);
 		   redirect them to the current page, which will now
 		   show its true content */
 		if (request.REQUEST_URI == "/login.esp") {
-		   redirect("/");
+		   redirect(session_uri("/"));
 		} else {
-		   redirect(request.REQUEST_URI);
+		   redirect(session_uri(request.REQUEST_URI));
 		}
 	}
 %>
