@@ -334,68 +334,75 @@ sub HeaderFunction($)
 sub HeaderFnProto($$)
 {
 	my $interface = shift;
-    my $fn = shift;
-    my $name = $fn->{NAME};
-	
-    pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
+	my $fn = shift;
+	my $name = $fn->{NAME};
 
-    pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
-   	pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+	pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
 
-    return unless util::has_property($fn, "public");
+	if (defined($fn->{OPNUM})) {
+		pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+   		pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+	}
+
+	return unless util::has_property($fn, "public");
 
 	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, struct $name *r);\n";
 	pidl "NTSTATUS ndr_pull_$name(struct ndr_pull *ndr, int flags, struct $name *r);\n";
 
-    pidl "\n";
+	pidl "\n";
 }
 
 #####################################################################
 # parse the interface definitions
 sub HeaderInterface($)
 {
-    my($interface) = shift;
+	my($interface) = shift;
 
-    my $count = 0;
+	my $count = 0;
 
-    pidl "#ifndef _HEADER_NDR_$interface->{NAME}\n";
-    pidl "#define _HEADER_NDR_$interface->{NAME}\n\n";
+	pidl "#ifndef _HEADER_NDR_$interface->{NAME}\n";
+	pidl "#define _HEADER_NDR_$interface->{NAME}\n\n";
 
-    if (defined $interface->{PROPERTIES}->{depends}) {
-	    my @d = split / /, $interface->{PROPERTIES}->{depends};
-	    foreach my $i (@d) {
-		    pidl "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
-	    }
-    }
+	if (defined $interface->{PROPERTIES}->{depends}) {
+		my @d = split / /, $interface->{PROPERTIES}->{depends};
+		foreach my $i (@d) {
+			pidl "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
+		}
+	}
 
-    if (defined $interface->{PROPERTIES}->{uuid}) {
-	    my $name = uc $interface->{NAME};
-	    pidl "#define DCERPC_$name\_UUID " . 
+	if (defined $interface->{PROPERTIES}->{uuid}) {
+		my $name = uc $interface->{NAME};
+		pidl "#define DCERPC_$name\_UUID " . 
 		util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
 
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
-	    pidl "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
+		pidl "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
 
-	    pidl "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
+		pidl "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
 
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
 		pidl "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
 
-	    pidl "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
-	    pidl "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
-    }
+		pidl "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
+		pidl "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
+	}
 
-    foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    my $u_name = uc $d->{NAME};
+	foreach my $d (@{$interface->{FUNCTIONS}}) {
+		next if not defined($d->{OPNUM});
+		my $u_name = uc $d->{NAME};
 		pidl "#define DCERPC_$u_name (";
 	
 		if (defined($interface->{BASE})) {
 			pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
 		}
-		
-	    pidl sprintf("0x%02x", $count) . ")\n";
-	    $count++;
-    }
+
+		if ($d->{OPNUM} != $count) {
+			die ("Function ".$d->{NAME}." has: wrong opnum [".$d->{OPNUM}."] should be [".$count."]");
+		}
+
+		pidl sprintf("0x%02x", $count) . ")\n";
+		$count++;
+	}
 
 	pidl "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
 	
@@ -406,21 +413,20 @@ sub HeaderInterface($)
 	pidl "$count)\n\n";
 
 	foreach my $d (@{$interface->{CONSTS}}) {
-	    HeaderConst($d);
-    }
-
-    foreach my $d (@{$interface->{TYPEDEFS}}) {
-	    HeaderTypedef($d);
-	    HeaderTypedefProto($d);
+		HeaderConst($d);
 	}
 
-    foreach my $d (@{$interface->{FUNCTIONS}}) {
-	    HeaderFunction($d);
-	    HeaderFnProto($interface, $d);
+	foreach my $d (@{$interface->{TYPEDEFS}}) {
+		HeaderTypedef($d);
+		HeaderTypedefProto($d);
 	}
 
-  
-    pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
+	foreach my $d (@{$interface->{FUNCTIONS}}) {
+		HeaderFunction($d);
+		HeaderFnProto($interface, $d);
+	}
+
+	pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 
 #####################################################################

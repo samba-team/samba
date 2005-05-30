@@ -220,22 +220,13 @@ sub process_file($)
 
 	if ($opt_client) {
 		my ($client) = util::ChangeExtension($output, "_c.c");
-		my $res = "";
 		my $h_filename = util::ChangeExtension($output, ".h");
 
-		$res .= "#include \"includes.h\"\n";
-		$res .= "#include \"$h_filename\"\n\n";
-
-		foreach my $x (@{$pidl}) {
-			$res .= NdrClient::ParseInterface($x);
-		}
-
-		util::FileSave($client, $res);
+		util::FileSave($client, NdrClient::Parse($ndr,$h_filename));
 	}
 
 	if ($opt_server) {
 		my $h_filename = util::ChangeExtension($output, ".h");
-		my $plain = "";
 		my $dcom = "";
 
 		foreach my $x (@{$pidl}) {
@@ -243,14 +234,10 @@ sub process_file($)
 
 			if (util::has_property($x, "object")) {
 				$dcom .= DCOMStub::ParseInterface($x);
-			} else {
-				$plain .= IdlServer::ParseInterface($x);
 			}
 		}
 
-		if ($plain ne "") {
-			util::FileSave(util::ChangeExtension($output, "_s.c"), $plain);
-		}
+		util::FileSave(util::ChangeExtension($output, "_s.c"), NdrServer::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
