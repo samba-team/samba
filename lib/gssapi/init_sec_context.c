@@ -331,6 +331,23 @@ init_auth
 	goto failure;
     }
     
+    /* 
+     * If the realm policy approves a delegation, lets check local
+     * policy if the credentials should be delegated, defafult to
+     * false.
+     */
+    if (cred->flags.b.ok_as_delegate) {
+	krb5_boolean delegate = FALSE;
+    
+	_gss_check_compat(NULL, target_name, "ok-as-delegate",
+			  &delegate, TRUE);
+	krb5_appdefault_boolean(gssapi_krb5_context,
+				"gssapi", target_name->realm,
+				"ok-as-delegate", delegate, &delegate);
+	if (delegate)
+	    req_flags |= GSS_C_DELEG_FLAG;
+    }
+
     flags = 0;
     ap_options = 0;
     if (req_flags & GSS_C_DELEG_FLAG)
