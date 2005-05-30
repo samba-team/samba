@@ -315,6 +315,15 @@ kcm_op_retrieve(krb5_context context,
 	return ret;
     }
 
+    if (disallow_getting_krbtgt &&
+	mcreds.client->name.name_string.len == 2 &&
+	strcmp(mcreds.client->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+    {
+	free(name);
+	krb5_free_creds_contents(context, &mcreds);
+	return KRB5_FCC_PERM;
+    }
+
     ret = kcm_ccache_resolve_client(context, client, opcode,
 				    name, &ccache);
     if (ret) {

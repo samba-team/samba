@@ -58,6 +58,7 @@ static const char *system_group = NULL;
 static const char *renew_life = NULL;
 static const char *ticket_life = NULL;
 
+int disallow_getting_krbtgt = -1;
 int name_constraints = -1;
 
 static int help_flag;
@@ -107,6 +108,10 @@ static struct getargs args[] = {
     {
 	"name-constraints",	'n', arg_negative_flag, &name_constraints,
 	"disable credentials cache name constraints"
+    },
+    {
+	"disallow-getting-krbtgt", 0, arg_flag, &disallow_getting_krbtgt,
+	"disable fetching krbtgt from the cache"
     },
     {
 	"renewable-life",	'r', arg_string, &renew_life,
@@ -294,6 +299,12 @@ ccache_init_system(void)
 	    return EINVAL;
 
 	ccache->mode = mode;
+    }
+
+    if (disallow_getting_krbtgt == -1) {
+	disallow_getting_krbtgt =
+	    krb5_config_get_bool_default(kcm_context, NULL, FALSE, "kcm",
+					 "disallow-getting-krbtgt", NULL);
     }
 
     /* enqueue default actions for credentials cache */
