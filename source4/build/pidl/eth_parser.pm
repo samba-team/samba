@@ -213,8 +213,7 @@ sub append_prefix($$)
 				return get_value_of($var_name) 
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
-			if ($l->{DATA_TYPE} eq "string" or
-			    $l->{DATA_TYPE} eq "nbt_string") {
+			if (typelist::scalar_is_reference($l->{DATA_TYPE})) {
 				return get_value_of($var_name) unless ($pointers);
 			}
 		}
@@ -576,17 +575,16 @@ sub ParseData($$$$$)
 	my $var_name = shift;
 	my $ndr_flags = shift;
 
-	$var_name = get_pointer_to($var_name);
-
 	#
 	#  ALAND! for packet-dcerpc-lsa.c, uncommenting this code
 	#  produces constructs like &(&r->string), to pass to another
 	#  function, which gives compiler errors.
 	#
-	if ($l->{DATA_TYPE} eq "string" or 
-	    $l->{DATA_TYPE} eq "nbt_string") {
+	if (typelist::scalar_is_reference($l->{DATA_TYPE})) {
 		$var_name = get_pointer_to($var_name);
 	}
+
+	$var_name = get_pointer_to($var_name);
 
 	pidl "offset += dissect_$l->{DATA_TYPE}(tvb, offset, pinfo, tree, drep, hf_FIXME, NULL);";
 

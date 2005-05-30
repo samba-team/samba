@@ -177,7 +177,7 @@ sub can_contain_deferred
 	my $e = shift;
 
 	return 1 if ($e->{POINTERS});
-	return 0 if (is_scalar_type($e->{TYPE}));
+	return 0 if (typelist::is_scalar($e->{TYPE}));
 	return 0 if (util::has_property($e, "subcontext"));
 	return 1 unless (typelist::hasType($e->{TYPE})); # assume the worst
 
@@ -188,19 +188,6 @@ sub can_contain_deferred
 	}
 	
 	return 0;
-}
-
-sub is_scalar_type($)
-{
-    my $type = shift;
-
-	return 0 unless(typelist::hasType($type));
-
-	if (my $dt = typelist::getType($type)->{DATA}->{TYPE}) {
-		return 1 if ($dt eq "SCALAR" or $dt eq "ENUM" or $dt eq "BITMAP");
-	}
-
-    return 0;
 }
 
 sub pointer_type($)
@@ -252,35 +239,6 @@ sub find_largest_alignment($)
 	return $align;
 }
 
-my %scalar_alignments = 
-(
-     "char"           => 1,
-     "int8"           => 1,
-     "uint8"          => 1,
-     "short"          => 2,
-     "wchar_t"        => 2,
-     "int16"          => 2,
-     "uint16"         => 2,
-     "long"           => 4,
-     "int32"          => 4,
-     "uint32"         => 4,
-     "dlong"          => 4,
-     "udlong"         => 4,
-     "udlongr"        => 4,
-     "NTTIME"         => 4,
-     "NTTIME_1sec"    => 4,
-     "time_t"         => 4,
-     "DATA_BLOB"      => 4,
-     "error_status_t" => 4,
-     "WERROR"         => 4,
-	 "NTSTATUS" 	  => 4,
-     "boolean32"      => 4,
-     "unsigned32"     => 4,
-     "ipv4address"    => 4,
-     "hyper"          => 8,
-     "NTTIME_hyper"   => 8
-);
-
 #####################################################################
 # align a type
 sub align_type
@@ -302,10 +260,10 @@ sub align_type
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
 		return find_largest_alignment($dt);
 	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return $scalar_alignments{$dt->{NAME}};
-	} else { 
-		die("Unknown data type type $dt->{TYPE}");
+		return typelist::getScalarAlignment($dt->{NAME});
 	}
+
+	die("Unknown data type type $dt->{TYPE}");
 }
 
 # determine if an element needs a reference pointer on the wire
