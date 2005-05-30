@@ -445,10 +445,16 @@ sub ParseFunction($$$)
 	my $opnum = shift;
 	my @elements = ();
 	my $rettype = undef;
+	my $thisopnum = undef;
 
 	CheckPointerTypes($d, 
 		$ndr->{PROPERTIES}->{pointer_default_top}
 	);
+
+	if (not defined($d->{PROPERTIES}{noid})) {
+		$thisopnum = ${$opnum};
+		${$opnum}++;
+	}
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
 		my $e = ParseElement($x);
@@ -470,7 +476,7 @@ sub ParseFunction($$$)
 	return {
 			NAME => $d->{NAME},
 			TYPE => "FUNCTION",
-			OPNUM => $opnum,
+			OPNUM => $thisopnum,
 			RETURN_TYPE => $rettype,
 			PROPERTIES => $d->{PROPERTIES},
 			ELEMENTS => \@elements
@@ -526,8 +532,7 @@ sub ParseInterface($)
 		}
 
 		if ($d->{TYPE} eq "FUNCTION") {
-			push (@functions, ParseFunction($idl, $d, $opnum));
-			$opnum+=1;
+			push (@functions, ParseFunction($idl, $d, \$opnum));
 		}
 
 		if ($d->{TYPE} eq "CONST") {
