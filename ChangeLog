@@ -1,3 +1,11 @@
+2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/protocol.c: Add option to disallow getting krbtgt out from
+	from KCM. KCM will do the fetching part itself.
+	
+	* kcm/config.c: Add option to disallow getting krbtgt out from
+	from KCM. KCM will do the fetching part itself.
+
 2005-05-39  Luke Howard <lukeh@padl.com>
 
 	* kcm/events.c: if credentials have expired when attempting
