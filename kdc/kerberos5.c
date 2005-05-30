@@ -1579,6 +1579,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
     et.flags.pre_authent = tgt->flags.pre_authent;
     et.flags.hw_authent  = tgt->flags.hw_authent;
     et.flags.anonymous   = tgt->flags.anonymous;
+    et.flags.ok_as_delegate = server->flags.ok_as_delegate;
 	    
     /* XXX Check enc-authorization-data */
     et.authorization_data = auth_data;
