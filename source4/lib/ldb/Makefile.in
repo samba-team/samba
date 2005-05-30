@@ -1,6 +1,6 @@
 CC = @CC@
 GCOV = @GCOV@
-YODL2MAN = @YODL2MAN@
+XSLTPROC = @XSLTPROC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
@@ -90,11 +90,16 @@ bin/ldbtest: tools/ldbtest.o $(LIBS)
 
 .SUFFIXES: .1 .2 .3 .yo
 
-.yo.3: 
-	echo Creating $@ from $<
-	-$(YODL2MAN) -o $@ `dirname $<`/`basename $< .yo` || rm -f $@
+%.3: %.3.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-manpages: $(patsubst %.yo,%.3,$(wildcard man/man3/*.yo))
+%.1: %.1.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+%.html: %.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+
+manpages: $(patsubst %.xml,%,$(wildcard man/*/*.xml))
 
 clean:
 	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
