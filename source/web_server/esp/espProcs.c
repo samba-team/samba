@@ -71,12 +71,14 @@ static int includeProc(EspRequest *ep, int argc, char **argv)
 {
 	const Esp		*esp;
 	char	path[MPR_MAX_FNAME], dir[MPR_MAX_FNAME];
-	char	*emsg, *buf;
+	char	*emsg=NULL, *buf;
 	int		size, i;
 
 	esp = ep->esp;
 	mprAssert(argv);
 	for (i = 0; i < argc; i++) {
+		const char *extension;
+
 		if (argv[i][0] != '/') {
 			mprGetDirName(dir, sizeof(dir), ep->docPath);
 			mprSprintf(path, sizeof(path), "%s/%s", dir, argv[i]);
@@ -90,10 +92,20 @@ static int includeProc(EspRequest *ep, int argc, char **argv)
 		}
 		buf[size] = '\0';
 
-		if (ejsEvalScript(espGetScriptHandle(ep), buf, 0, &emsg) < 0) {
-			espError(ep, "Cant evaluate script");
-			mprFree(buf);
-			return -1;
+		extension = strrchr(argv[i], '.');
+		/* this makes handling include files in esp scripts much more convenient */
+		if (extension && strcasecmp(extension, ".esp") == 0) {
+			if (espProcessRequest(ep, path, buf, &emsg) != 0) {
+				espError(ep, "Cant evaluate script - %s", emsg?emsg:"");
+				mprFree(buf);
+				return -1;
+			}
+		} else {
+			if (ejsEvalScript(espGetScriptHandle(ep), buf, 0, &emsg) < 0) {
+				espError(ep, "Cant evaluate script - %s", emsg?emsg:"");
+				mprFree(buf);
+				return -1;
+			}
 		}
 		mprFree(buf);
 	}
