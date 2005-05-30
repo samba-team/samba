@@ -334,6 +334,9 @@ kcm_fire_event(krb5_context context,
 	break;
     case KCM_EVENT_RENEW_CREDS:
 	ret = kcm_ccache_refresh(context, event->ccache, &credp);
+	if (ret == KRB5KRB_AP_ERR_TKT_EXPIRED) {
+	    ret = kcm_ccache_acquire(context, event->ccache, &credp);
+	}
 	oneshot = 0;
 	break;
     case KCM_EVENT_DESTROY_CREDS:
