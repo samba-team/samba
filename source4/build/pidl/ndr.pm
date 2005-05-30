@@ -452,7 +452,7 @@ sub ParseFunction($$$)
 		$ndr->{PROPERTIES}->{pointer_default_top}
 	);
 
-	if (not defined($d->{PROPERTIES}{noid})) {
+	if (not defined($d->{PROPERTIES}{noopnum})) {
 		$thisopnum = ${$opnum};
 		${$opnum}++;
 	}
