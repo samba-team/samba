@@ -77,6 +77,7 @@ kadm5_s_get_principal(void *server_handle,
 	out->attributes |= ent.flags.require_preauth ? KRB5_KDB_REQUIRES_PRE_AUTH : 0;
 	out->attributes |= ent.flags.server ? 0 : KRB5_KDB_DISALLOW_SVR;
 	out->attributes |= ent.flags.change_pw ? KRB5_KDB_PWCHANGE_SERVICE : 0;
+	out->attributes |= ent.flags.ok_as_delegate ? KRB5_KDB_OK_AS_DELEGATE : 0;
     }
     if(mask & KADM5_MAX_LIFE) {
 	if(ent.max_life)
