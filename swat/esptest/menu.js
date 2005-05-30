@@ -7,5 +7,5 @@ simple_menu(
 	"session variables",  "/esptest/session.esp",
 	"loadparm access",    "/esptest/loadparm.esp",
 	"exception handling", "/esptest/exception.esp",
-	);
+	"environment variables",  "/esptest/showvars.esp");
 
