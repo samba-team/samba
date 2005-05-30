@@ -1,3 +1,10 @@
+2005-05-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/connect.c: log signal causing exit
+	
+	* kdc/main.c (sigterm): set exit_flag to signal causing exit;
+	(main): trap SIGXCPU
+
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kcm/protocol.c (kcm_op_retrieve): check server for krbtgt, not
