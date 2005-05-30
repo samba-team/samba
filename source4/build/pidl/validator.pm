@@ -44,87 +44,144 @@ sub el_name($)
 
 my %property_list = (
 	# interface
-	"helpstring"		=> {},
-	"version"		=> {},
-	"uuid"			=> {},
-	"endpoint"		=> {},
-	"pointer_default"	=> {},
-	"pointer_default_top"	=> {},
-	"depends"		=> {},
-	"authservice"		=> {},
+	"helpstring"		=> {INTERFACE	=> 1,
+				    FUNCTION	=> 1,
+				    },
+	"version"		=> {INTERFACE	=> 1,
+				    },
+	"uuid"			=> {INTERFACE	=> 1,
+				    },
+	"endpoint"		=> {INTERFACE	=> 1,
+				    },
+	"pointer_default"	=> {INTERFACE	=> 1,
+				    },
+	"pointer_default_top"	=> {INTERFACE	=> 1,
+				    },
+	"depends"		=> {INTERFACE	=> 1,
+				    },
+	"authservice"		=> {INTERFACE	=> 1,
+				    },
 
 	# dcom
-	"object"		=> {},
-	"local"			=> {},
-	"iid_is"		=> {},
-	"call_as"		=> {},
-	"iid_is"		=> {},
-	"idempotent"		=> {},
+	"object"		=> {INTERFACE	=> 1,
+				    },
+	"local"			=> {INTERFACE	=> 1,
+				    FUNCTION	=> 1,
+				    },
+	"iid_is"		=> {ELEMENT	=> 1,
+				    },
+	"call_as"		=> {FUNCTION	=> 1,
+				    },
+	"idempotent"		=> {FUNCTION	=> 1,
+				    },
 
 	# function
-	"noopnum"		=> {},
-	"in"			=> {},
-	"out"			=> {},
+	"noopnum"		=> {FUNCTION	=> 1,
+				    },
+	"in"			=> {ELEMENT	=> 1,
+				    },
+	"out"			=> {ELEMENT	=> 1,
+				    },
 
 	# pointer
-	"ref"			=> {},
-	"ptr"			=> {},
-	"unique"		=> {},
-	"relative"		=> {},
+	"ref"			=> {ELEMENT	=> 1,
+				    },
+	"ptr"			=> {ELEMENT	=> 1,
+				    },
+	"unique"		=> {ELEMENT	=> 1,
+				    },
+	"relative"		=> {ELEMENT	=> 1,
+				    },
 
 	# ndr_size
-	"gensize"		=> {},
-	"value"			=> {},
-	"flag"			=> {},
+	"gensize"		=> {TYPEDEF	=> 1,
+				    },
+	"value"			=> {ELEMENT	=> 1,
+				    },
+	"flag"			=> {ELEMENT	=> 1,
+				    TYPEDEF	=> 1,
+				    },
 
 	# generic
-	"public"		=> {},
-	"nopush"		=> {},
-	"nopull"		=> {},
-	"noprint"		=> {},
+	"public"		=> {FUNCTION	=> 1,
+				    TYPEDEF	=> 1,
+				    },
+	"nopush"		=> {FUNCTION	=> 1,
+				    TYPEDEF	=> 1,
+				    },
+	"nopull"		=> {FUNCTION	=> 1,
+				    TYPEDEF	=> 1,
+				    },
+	"noprint"		=> {FUNCTION	=> 1,
+				    TYPEDEF	=> 1,
+				    },
 
 	# union
-	"switch_is"		=> {},
-	"switch_type"		=> {},
-	"nodiscriminant"	=> {},
-	"case"			=> {},
-	"default"		=> {},
+	"switch_is"		=> {ELEMENT	=> 1,
+				    },
+	"switch_type"		=> {ELEMENT	=> 1,
+				    TYPEDEF	=> 1,
+				    },
+	"nodiscriminant"	=> {TYPEDEF	=> 1,
+				    },
+	"case"			=> {ELEMENT	=> 1,
+				    },
+	"default"		=> {ELEMENT	=> 1,
+				    },
 
 	# subcontext
-	"subcontext"		=> {},
-	"subcontext_size"	=> {},
-	"compression"		=> {},
-	"obfuscation"		=> {},
+	"subcontext"		=> {ELEMENT	=> 1,
+				    },
+	"subcontext_size"	=> {ELEMENT	=> 1,
+				    },
+	"compression"		=> {ELEMENT	=> 1,
+				    },
+	"obfuscation"		=> {ELEMENT	=> 1,
+				    },
 
 	# enum
-	"enum8bit"		=> {},
-	"enum16bit"		=> {},
-	"v1_enum"		=> {},
+	"enum8bit"		=> {TYPEDEF	=> 1,
+				    },
+	"enum16bit"		=> {TYPEDEF	=> 1,
+				    },
+	"v1_enum"		=> {TYPEDEF	=> 1,
+				    },
 
 	# bitmap
-	"bitmap8bit"		=> {},
-	"bitmap16bit"		=> {},
-	"bitmap32bit"		=> {},
-	"bitmap64bit"		=> {},
+	"bitmap8bit"		=> {TYPEDEF	=> 1,
+				    },
+	"bitmap16bit"		=> {TYPEDEF	=> 1,
+				    },
+	"bitmap32bit"		=> {TYPEDEF	=> 1,
+				    },
+	"bitmap64bit"		=> {TYPEDEF	=> 1,
+				    },
 
 	# array
-	"range"			=> {},
-	"size_is"		=> {},
-	"length_is"		=> {},
+	"range"			=> {ELEMENT	=> 1,
+				    },
+	"size_is"		=> {ELEMENT	=> 1,
+				    },
+	"length_is"		=> {ELEMENT	=> 1,
+				    },
 );
 
 #####################################################################
 # check for unknown properties
-sub ValidProperties($)
+sub ValidProperties($$)
 {
 	my $e = shift;
+	my $t = shift;
 
 	return unless defined $e->{PROPERTIES};
 
 	foreach my $key (keys %{$e->{PROPERTIES}}) {
-		if (not defined $property_list{$key}) {
-			fatal($e, el_name($e) . ": unknown property '$key'\n");
-		}
+		fatal($e, el_name($e) . ": unknown property '$key'\n")
+			if not defined($property_list{$key});
+
+		next if defined($property_list{$key}{ANY});
+    		fatal($e, el_name($e) . ": property '$key' not allowed on '$t'\n")
+			if not defined($property_list{$key}{$t});
 	}
 }
 
@@ -134,7 +191,7 @@ sub ValidElement($)
 {
 	my $e = shift;
 
-	ValidProperties($e);
+	ValidProperties($e,"ELEMENT");
 
 	if (util::has_property($e, "ptr")) {
 		fatal($e, el_name($e) . " : pidl does not support full NDR pointers yet\n");
@@ -186,7 +243,7 @@ sub ValidStruct($)
 {
 	my($struct) = shift;
 
-	ValidProperties($struct);
+	ValidProperties($struct,"STRUCT");
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$e->{PARENT} = $struct;
@@ -200,7 +257,7 @@ sub ValidUnion($)
 {
 	my($union) = shift;
 
-	ValidProperties($union);
+	ValidProperties($union,"UNION");
 
 	if (util::has_property($union->{PARENT}, "nodiscriminant") and util::has_property($union->{PARENT}, "switch_type")) {
 		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
@@ -235,7 +292,7 @@ sub ValidTypedef($)
 	my($typedef) = shift;
 	my $data = $typedef->{DATA};
 
-	ValidProperties($typedef);
+	ValidProperties($typedef,"TYPEDEF");
 
 	$data->{PARENT} = $typedef;
 
@@ -256,7 +313,7 @@ sub ValidFunction($)
 {
 	my($fn) = shift;
 
-	ValidProperties($fn);
+	ValidProperties($fn,"FUNCTION");
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
@@ -274,7 +331,7 @@ sub ValidInterface($)
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
 
-	ValidProperties($interface);
+	ValidProperties($interface,"INTERFACE");
 
 	if (util::has_property($interface, "pointer_default") && 
 		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
