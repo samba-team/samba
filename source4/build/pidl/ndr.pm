@@ -179,7 +179,6 @@ sub can_contain_deferred
 
 	return 1 if ($e->{POINTERS});
 	return 0 if (typelist::is_scalar($e->{TYPE}));
-	return 1 if (defined(util::has_property($e, "subcontext")));
 	return 1 unless (typelist::hasType($e->{TYPE})); # assume the worst
 
 	my $type = typelist::getType($e->{TYPE});
