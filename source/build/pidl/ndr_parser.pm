@@ -489,8 +489,6 @@ sub ParseSubcontextPushStart($$$$$)
 	my $ndr_flags = shift;
 	my $retndr = "_ndr_$e->{NAME}";
 
-	return unless ($ndr_flags =~ /NDR_SCALARS/);
-
 	pidl "{";
 	indent;
 	pidl "struct ndr_push *$retndr;";
@@ -518,8 +516,6 @@ sub ParseSubcontextPushEnd($$$)
 	my $ndr_flags = shift;
 	my $ndr = "_ndr_$e->{NAME}";
 
-	return unless ($ndr_flags =~ /NDR_SCALARS/);
-
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPushEnd($e, $l, $ndr);
 	}
@@ -544,7 +540,7 @@ sub ParseSubcontextPullStart($$$$$$)
 	my $env = shift;
 	my $retndr = "_ndr_$e->{NAME}";
 
-	pidl "if (($ndr_flags) & NDR_SCALARS) {";
+	pidl "{";
 	indent;
 	pidl "struct ndr_pull *$retndr;";
 	pidl "NDR_ALLOC(ndr, $retndr);";
