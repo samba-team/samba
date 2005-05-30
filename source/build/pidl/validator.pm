@@ -62,8 +62,7 @@ my %property_list = (
 	"idempotent"		=> {},
 
 	# function
-	"id"			=> {},# what is that? --metze 
-	"noid"			=> {},
+	"noopnum"		=> {},
 	"in"			=> {},
 	"out"			=> {},
 
@@ -258,14 +257,6 @@ sub ValidFunction($)
 	my($fn) = shift;
 
 	ValidProperties($fn);
-
-	if (util::has_property($fn, "id")) {
-		nonfatal $fn, "[id()] is not correctly supported yet ($fn->{NAME})";
-	}
-
-	if (util::has_property($fn, "id") and util::has_property($fn, "noid")) {
-		fatal $fn, "function can't have [id()] and [noid] property ($fn->{NAME})";
-	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
