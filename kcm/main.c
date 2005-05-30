@@ -87,12 +87,16 @@ main(int argc, char **argv)
 
 	sa.sa_handler = sigusr2;
 	sigaction(SIGUSR2, &sa, NULL);
+
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
     }
 #else
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
     signal(SIGUSR1, sigusr1);
     signal(SIGUSR2, sigusr2);
+    signal(SIGPIPE, SIG_IGN);
 #endif
     if (detach_from_console)
 	daemon(0, 0);
