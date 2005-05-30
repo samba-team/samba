@@ -1,20 +1,7 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
-redirecting you to the test pages ...
-<%
-if (server['SERVER_PROTOCOL'] == "http" &&
-    server['TLS_SUPPORT'] == "True") {
-	if (headers['HOST']) {
-		redirect("https://" + headers['HOST'] + request['REQUEST_URI']);
-	} else {
-		redirect("https://" + server['SERVER_NAME'] + ":" + server['SERVER_PORT'] + request['REQUEST_URI']);
-	}
-} else {
-	redirect("esptest/index.esp");
-}
-%>
-</BODY>
-</HTML>
+<% page_header("columns", "Welcome to SWAT"); %>
+
+<h1>Welcome to SWAT!</h1>
+
+Please select a menu item from the selection on the left
+
+<% page_footer(); %>

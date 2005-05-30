@@ -1,8 +1,5 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
+<% page_header("columns", "ESP Authentication Test"); %>
+
 <h1>Samba4 unixAuth test</h1>
 
 <form name="AuthTest" method="POST" action="@@request['SCRIPT_NAME']"> 
@@ -22,7 +19,7 @@ Samba4 ESP test
 if (request['REQUEST_METHOD'] == "POST") {
 	/* if they cancelled then take them back to the list of tests */
 	if (form['submit'] == "Cancel") {
-		redirect("index.esp");
+		redirect("/");
 	}
 	
 	username  = form['Username'];
@@ -48,5 +45,4 @@ write ("<br>PRIVILEGE = " + session['PRIVILEGE'] + "\n");
 
 %>
 
-</BODY>
-</HTML>
+<% page_footer(); %>

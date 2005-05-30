@@ -1,8 +1,5 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
+<% page_header("columns", "ESP Include Test"); %>
+
 including /scripting/test.ejs<p>
 <% include("/scripting/test.ejs"); %>
 calling a function from test.ejs ...<p>
@@ -14,9 +11,8 @@ calling a function from test.esp ...<p>
 <% res = testfn('foo'); %>
 result is: @@res
 
-<form name="Cancel" method="POST" action="index.esp"> 
+<form name="Cancel" method="POST" action="/"> 
     <input name="submit" type="submit" value="Cancel"><br>
 </form>
 
-</BODY>
-</HTML>
+<% page_footer(); %>

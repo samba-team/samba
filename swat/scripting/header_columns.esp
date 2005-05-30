@@ -1,0 +1,68 @@
+<% include("/scripting/header.esp"); %>
+
+<title>@@global.page.title</title>
+
+<link rel="stylesheet" href="/style/common.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/main.css" type="text/css" media="all" />
+<link rel="shortcut icon" href="/images/favicon.ico" />
+
+<!--[if gte IE 5.5]>
+	<style type="text/css">
+	/*<![CDATA[*/
+	.logo_hack {
+filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png',sizingMethod='scale');
+	}
+	/*]]>*/ 
+	</style>
+<![endif]-->
+
+<!--[if lte IE 5]>
+	<style type="text/css">
+	/*<![CDATA[*/
+	.logo_hack {
+	background-image:url(/images/logo.gif);
+	background-position:center;
+	background-repeat:no-repeat;
+	top:23.5px;
+	left:-10px;
+	}
+	/*]]>*/
+        </style>
+<![endif]-->
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Language" content="en-us" />
+
+</head>
+
+
+<body>
+
+<div id="banner">
+  <div class="stripe"></div>
+  <div class="logout">
+  <b>logged in as @@session.authinfo.username</b>
+  <form method="post" action="/logout.esp">
+  <input type="submit" value="Logout" />
+  </form>
+  </div>
+</div>
+
+<div id="logo">
+  <div class="logo_hack"><a href="/"><img src="/images/linkpad.gif" alt="SWAT" /></a></div>
+</div>
+
+<div class="slogan">
+  <h4>Samba Web Administration Tool</h4>
+</div>
+
+<div class="nav">
+     <% 
+     include("/docs/menu.js"); 
+     include("/esptest/menu.js");
+     %>
+</div>
+
+ 
+<div id="content">
+  <div class="center">
