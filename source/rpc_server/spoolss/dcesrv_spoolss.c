@@ -36,7 +36,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct ldb_message **msgs;
 	int count;
 	int i;
-	union spoolss_PrinterInfo *info, **info_ptr;
+	union spoolss_PrinterInfo *info;
 
 	r->out.info = NULL;
 	*r->out.buf_size = 0;
@@ -52,13 +52,8 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	if (count == 0) return WERR_OK;
 	if (count < 0) return WERR_GENERAL_FAILURE;
 
-	info_ptr = talloc(mem_ctx, union spoolss_PrinterInfo *);
-	W_ERROR_HAVE_NO_MEMORY(info_ptr);
-
 	info = talloc_array(mem_ctx, union spoolss_PrinterInfo, count);
 	W_ERROR_HAVE_NO_MEMORY(info);
-
-	*info_ptr = info;
 
 	switch(r->in.level) {
 	case 1:
@@ -73,7 +68,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info1.comment		= samdb_result_string(msgs[i], "comment", NULL);
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	case 2:
@@ -120,7 +115,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info2.cjobs		= samdb_result_uint(msgs[i], "cjobs", 0);
 			info[i].info2.averageppm	= samdb_result_uint(msgs[i], "averageppm", 0);
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	case 4:
@@ -133,7 +128,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info4.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	case 5:
@@ -148,7 +143,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info5.device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
 			info[i].info5.transmission_retry_timeout  = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	}
@@ -536,7 +531,7 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPorts *r)
 {
-	union spoolss_PortInfo *info, **info_ptr;
+	union spoolss_PortInfo *info;
 	int count;
 	int i;
 
@@ -549,13 +544,8 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (count == 0) return WERR_OK;
 	if (count < 0) return WERR_GENERAL_FAILURE;
 
-	info_ptr = talloc(mem_ctx, union spoolss_PortInfo *);
-	W_ERROR_HAVE_NO_MEMORY(info_ptr);
-
 	info = talloc_array(mem_ctx, union spoolss_PortInfo, count);
 	W_ERROR_HAVE_NO_MEMORY(info);
-
-	*info_ptr = info;
 
 	switch (r->in.level) {
 	case 1:
@@ -563,7 +553,7 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info1.port_name	= talloc_strdup(mem_ctx, "Samba Printer Port");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.port_name);
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	case 2:
@@ -580,7 +570,7 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info2.port_type		= SPOOLSS_PORT_TYPE_WRITE;
 			info[i].info2.reserved		= 0;
 		}
-		r->out.info	= info_ptr;
+		r->out.info	= info;
 		r->out.count	= count;
 		return WERR_OK;
 	}

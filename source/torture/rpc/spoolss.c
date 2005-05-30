@@ -31,23 +31,23 @@ struct test_spoolss_context {
 
 	/* for EnumPorts */
 	uint32_t port_count[3];
-	union spoolss_PortInfo **ports[3];
+	union spoolss_PortInfo *ports[3];
 
 	/* for EnumPrinterDrivers */
 	uint32_t driver_count[7];
-	union spoolss_DriverInfo **drivers[7];
+	union spoolss_DriverInfo *drivers[7];
 
 	/* for EnumMonitors */
 	uint32_t monitor_count[3];
-	union spoolss_MonitorInfo **monitors[3];
+	union spoolss_MonitorInfo *monitors[3];
 
 	/* for EnumPrintProcessors */
 	uint32_t print_processor_count[2];
-	union spoolss_PrintProcessorInfo **print_processors[2];
+	union spoolss_PrintProcessorInfo *print_processors[2];
 
 	/* for EnumPrinters */
 	uint32_t printer_count[6];
-	union spoolss_PrinterInfo **printers[6];
+	union spoolss_PrinterInfo *printers[6];
 };
 
 #define COMPARE_STRING(c,r,e) do {\
@@ -194,8 +194,8 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		for (j=0;j<ctx->port_count[level];j++) {
-			union spoolss_PortInfo *cur = &ctx->ports[level][0][j];
-			union spoolss_PortInfo *ref = &ctx->ports[2][0][j];
+			union spoolss_PortInfo *cur = &ctx->ports[level][j];
+			union spoolss_PortInfo *ref = &ctx->ports[2][j];
 			switch (level) {
 			case 1:
 				COMPARE_STRING(cur->info1, ref->info2, port_name);
@@ -284,8 +284,8 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		for (j=0;j<ctx->driver_count[level];j++) {
-			union spoolss_DriverInfo *cur = &ctx->drivers[level][0][j];
-			union spoolss_DriverInfo *ref = &ctx->drivers[6][0][j];
+			union spoolss_DriverInfo *cur = &ctx->drivers[level][j];
+			union spoolss_DriverInfo *ref = &ctx->drivers[6][j];
 			switch (level) {
 			case 1:
 				COMPARE_STRING(cur->info1, ref->info6, driver_name);
@@ -417,8 +417,8 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		for (j=0;j<ctx->monitor_count[level];j++) {
-			union spoolss_MonitorInfo *cur = &ctx->monitors[level][0][j];
-			union spoolss_MonitorInfo *ref = &ctx->monitors[2][0][j];
+			union spoolss_MonitorInfo *cur = &ctx->monitors[level][j];
+			union spoolss_MonitorInfo *ref = &ctx->monitors[2][j];
 			switch (level) {
 			case 1:
 				COMPARE_STRING(cur->info1, ref->info2, monitor_name);
@@ -508,8 +508,8 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 		int level = levels[i];
 		for (j=0;j<ctx->print_processor_count[level];j++) {
 #if 0
-			union spoolss_PrintProcessorInfo *cur = &ctx->print_processors[level][0][j];
-			union spoolss_PrintProcessorInfo *ref = &ctx->print_processors[1][0][j];
+			union spoolss_PrintProcessorInfo *cur = &ctx->print_processors[level][j];
+			union spoolss_PrintProcessorInfo *ref = &ctx->print_processors[1][j];
 #endif
 			switch (level) {
 			case 1:
@@ -593,8 +593,8 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		for (j=0;j<ctx->printer_count[level];j++) {
-			union spoolss_PrinterInfo *cur = &ctx->printers[level][0][j];
-			union spoolss_PrinterInfo *ref = &ctx->printers[2][0][j];
+			union spoolss_PrinterInfo *cur = &ctx->printers[level][j];
+			union spoolss_PrinterInfo *ref = &ctx->printers[2][j];
 			switch (level) {
 			case 0:
 				COMPARE_STRING(cur->info0, ref->info2, printername);
@@ -809,7 +809,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return False;
 		}
 
-		info = *r.out.info;
+		info = r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
 			test_GetForm(p, mem_ctx, handle, info[j].info1.form_name);
@@ -1108,7 +1108,7 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return True;
 		}
 
-		info = *r.out.info;
+		info = r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
 			test_GetJob(p, mem_ctx, handle, info[j].info1.job_id);
@@ -1671,7 +1671,7 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		info = *r.out.info;
+		info = r.out.info;
 
 		for (j=0;j<r.out.count;j++) {
 			if (r.in.level == 1) {

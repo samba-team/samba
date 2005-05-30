@@ -249,13 +249,29 @@
 
 	/******************/
 	/* Function: 0x00 */
-	[noprint,nopull,nopush] WERROR spoolss_EnumPrinters(
+	/* we are using this as internal parsing code */
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrinters(
+		[in] spoolss_EnumPrinterFlags flags,
+		[in] unistr *server,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrinters(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_PrinterInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
 		[in] unistr *server,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info[count],*/
-		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo **info,
+		/* what we have here is a subcontext containing an array of no discriminant unions
+		 * and the array has no size in front
+		 */
+		[out,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
@@ -324,14 +340,27 @@
 
 	/******************/
 	/* Function: 0x04 */
-	[noprint,nopull,nopush] WERROR spoolss_EnumJobs(
+	[public,noopnum,noprint] WERROR _spoolss_EnumJobs(
+		[in,ref] policy_handle *handle,
+		[in]	 uint32 firstjob,
+		[in]	 uint32 numjobs,
+		[in]	 uint32 level,
+		[in,out]     DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out]	 uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumJobs(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_JobInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumJobs(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 firstjob,
 		[in]	 uint32 numjobs,
 		[in]	 uint32 level,
 		[in]     DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_JobInfo *info[count],*/
-		[out,subcontext(4),switch_is(level)] spoolss_JobInfo **info,
+		[out,switch_is(level),size_is(count)] spoolss_JobInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out]	 uint32 count
 	);
@@ -473,13 +502,25 @@
 
 	/******************/
 	/* Function: 0x0a */
-	[noprint,nopull,nopush] WERROR spoolss_EnumPrinterDrivers(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrinterDrivers(
+		[in] unistr *server,
+		[in] unistr *environment,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrinterDrivers(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_DriverInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrinterDrivers(
 		[in] unistr *server,
 		[in] unistr *environment,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_DriverInfo *info[count],*/
-		[out,subcontext(4),switch_is(level)] spoolss_DriverInfo **info,
+		[out,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
@@ -519,14 +560,25 @@
 		[default];
 	} spoolss_PrintProcessorInfo;
 
-	[noprint,nopull,nopush] WERROR spoolss_EnumPrintProcessors(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcessors(
+		[in] unistr *servername,
+		[in] unistr *environment,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrintProcessors(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_PrintProcessorInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrintProcessors(
 		[in] unistr *servername,
 		[in] unistr *environment,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_PrintProcessorInfo *info[count],*/
-		[out,subcontext(4),switch_is(level)]  spoolss_PrintProcessorInfo **info,
-		/* [out,subcontext(4),flag(NDR_REMAINING)] DATA_BLOB *info,*/
+		[out,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
@@ -718,12 +770,23 @@
 
 	/******************/
 	/* Function: 0x22 */
-	[noprint,nopull,nopush] WERROR spoolss_EnumForms(
+	[public,noopnum,noprint] WERROR _spoolss_EnumForms(
+		[in,ref] policy_handle *handle,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumForms(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_FormInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_FormInfo *info[count],*/
-		[out,subcontext(4),switch_is(level)] spoolss_FormInfo **info,
+		[out,switch_is(level),size_is(count)] spoolss_FormInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
@@ -756,12 +819,23 @@
 
 	/******************/
 	/* Function: 0x23 */
-	[noprint,nopull,nopush] WERROR spoolss_EnumPorts(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPorts(
+		[in] unistr *servername,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPorts(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_PortInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPorts(
 		[in] unistr *servername,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_PortInfo *info[count], */
-		[out,subcontext(4),switch_is(level)] spoolss_PortInfo **info,
+		[out,switch_is(level),size_is(count)] spoolss_PortInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
@@ -784,13 +858,23 @@
 		[default];
 	} spoolss_MonitorInfo;
 
-	[noprint,nopull,nopush] WERROR spoolss_EnumMonitors(
+	[public,noopnum,noprint] WERROR _spoolss_EnumMonitors(
+		[in] unistr *servername,
+		[in] uint32 level,
+		[in,out] DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size,
+		[out] uint32 count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumMonitors(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,subcontext(0),switch_is(level)] spoolss_MonitorInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumMonitors(
 		[in] unistr *servername,
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
-		/* [out,subcontext(4),switch_is(level)] spoolss_MonitorInfo *info[count], */
-		[out,subcontext(4),switch_is(level)] spoolss_MonitorInfo **info,
-		/* [out,subcontext(4),flag(NDR_REMAINING)] DATA_BLOB *info,*/
+		[out,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
 		[in,out,ref] uint32 *buf_size,
 		[out] uint32 count
 	);
