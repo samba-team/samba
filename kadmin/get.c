@@ -353,6 +353,7 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     data.table = NULL;
     data.chead = NULL;
     data.ctail = &data.chead;
+    data.mask = 0;
 
     if(opt->short_flag || opt->terse_flag) {
 	data.table = rtbl_create();
