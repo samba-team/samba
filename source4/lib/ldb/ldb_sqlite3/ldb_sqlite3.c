@@ -37,11 +37,21 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
 
+#undef SQL_EXEC                 /* just in case; not expected to be defined */
+#define SQL_EXEC(lsqlite3, query, reset)                        \
+    do {                                                        \
+        lsqlite3->last_rc =                                     \
+                sqlite3_step(lsqlite3->queries.query);          \
+        if (lsqlite3->last_rc == SQLITE_BUSY || reset)          \
+                (void) sqlite3_reset(lsqlite3->queries.query);  \
+    } while lsqlite3->last_rc == SQLITE_BUSY;
+
+
+
 #if 0
 /*
-  we don't need this right now, but will once we add some backend 
-  options
-*/
+ * we don't need this right now, but will once we add some backend options
+ */
 
 /*
   find an option in an option list (a null terminated list of strings)
@@ -68,8 +78,8 @@ static const char *lsqlite3_option_find(const struct lsqlite3_private *lsqlite3,
 #endif
 
 /*
-  rename a record
-*/
+ * rename a record
+ */
 static int lsqlite3_rename(struct ldb_module *module, const char *olddn, const char *newdn)
 {
         int column;
@@ -81,32 +91,32 @@ static int lsqlite3_rename(struct ldb_module *module, const char *olddn, const c
 	}
 
         /* Bind old distinguished names */
-        column = sqlite3_bind_parameter_index(lsqlite3->renameDN, ":oldDN");
-        if (sqlite3_bind_text(lsqlite3->renameDN, column,
+        column = sqlite3_bind_parameter_index(lsqlite3->queries.renameDN,
+                                              ":oldDN");
+        if (sqlite3_bind_text(lsqlite3->queries.renameDN, column,
                               olddn, strlen(olddn),
                               SQLITE_STATIC) != SQLITE_OK) {
                 return -1;
         }
 
         /* Bind new distinguished names */
-        column = sqlite3_bind_parameter_index(lsqlite3->renameDN, ":newDN");
-        if (sqlite3_bind_text(lsqlite3->renameDN, column,
+        column = sqlite3_bind_parameter_index(lsqlite3->queries.renameDN,
+                                              ":newDN");
+        if (sqlite3_bind_text(lsqlite3->queries.renameDN, column,
                               newdn, strlen(newdn),
                               SQLITE_STATIC) != SQLITE_OK) {
                 return -1;
         }
 
-        do {
-                lsqlite3->last_rc = sqlite3_step(lsqlite3->renameDN);
-                (void) sqlite3_reset(lsqlite3->renameDN);
-        } while lsqlite3->last_rc == SQLITE3_BUSY;
+        /* Execute the query.  This sets lsqlite3->last_rc */
+        SQL_EXEC(lsqlite3, renameDN, TRUE);
 
 	return lsqlite3->last_rc == 0 ? 0 : -1;
 }
 
 /*
-  delete a record
-*/
+ * delete a record
+ */
 static int lsqlite3_delete(struct ldb_module *module, const char *dn)
 {
 	int ret = 0;
@@ -118,25 +128,24 @@ static int lsqlite3_delete(struct ldb_module *module, const char *dn)
 		return 0;
 	}
 	
-        /* Bind new distinguished names */
-        column = sqlite3_bind_parameter_index(lsqlite3->renameDN, ":dn");
-        if (sqlite3_bind_text(lsqlite3->deleteDN, column,
+        /* Bind distinguished names */
+        column = sqlite3_bind_parameter_index(lsqlite3->queries.deleteDN,
+                                              ":dn");
+        if (sqlite3_bind_text(lsqlite3->queries.deleteDN, column,
                               dn, strlen(dn),
                               SQLITE_STATIC) != SQLITE_OK) {
                 return -1;
         }
 
-        do {
-                lsqlite3->last_rc = sqlite3_step(lsqlite3->deleteDN);
-                (void) sqlite3_reset(lsqlite3->deleteDN);
-        } while lsqlite3->last_rc == SQLITE3_BUSY;
+        /* Execute the query.  This sets lsqlite3->last_rc */
+        SQL_EXEC(lsqlite3, deleteDN, TRUE);
 
 	return lsqlite3->last_rc == 0 ? 0 : -1;
 }
 
 /*
-  free a search result
-*/
+ * free a search result
+ */
 static int lsqlite3_search_free(struct ldb_module *module, struct ldb_message **res)
 {
 	talloc_free(res);
@@ -145,8 +154,8 @@ static int lsqlite3_search_free(struct ldb_module *module, struct ldb_message **
 
 
 /*
-  add a single set of ldap message values to a ldb_message
-*/
+ * add a single set of ldap message values to a ldb_message
+ */
 static int lsqlite3_add_msg_attr(struct ldb_context *ldb,
 			     struct ldb_message *msg, 
 			     const char *attr, struct berval **bval)
@@ -200,8 +209,8 @@ static int lsqlite3_add_msg_attr(struct ldb_context *ldb,
 }
 
 /*
-  search for matching records
-*/
+ * search for matching records
+ */
 static int lsqlite3_search(struct ldb_module *module, const char *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
@@ -304,117 +313,175 @@ failed:
 
 
 /*
-  Issue a series of SQL statements to implement the requests in the ldb_message
-*/
+ * Issue a series of SQL statements to implement the ADD/MODIFY/DELETE
+ * requests in the ldb_message
+ */
 static int lsqlite3_msg_to_sql(struct ldb_context *ldb,
                                const struct ldb_message *msg,
-                               int modify_existing)
+                               long long dn_id,
+                               int use_flags)
 {
+        int flags;
 	unsigned int i, j;
 	struct ldb_context *ldb = module->ldb;
 	struct lsqlite3_private *lsqlite3 = module->private_data;
         sqlite3_stmt *stmt = NULL;
 
-	for (i=0;i<msg->num_elements;i++) {
+	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
 
-		if (! modify_existing) {
-                        /* This is a new DN.  Bind new distinguished name */
-                        column =
-                                sqlite3_bind_parameter_index(
-                                        lsqlite3->queries.newDN,
-                                        ":dn");
-                        if (sqlite3_bind_text(lsqlite3->queries.newDN, column,
-                                              msg->dn, strlen(msg->dn),
-                                              SQLITE_STATIC) != SQLITE_OK) {
-                                return -1;
-                        }
-
-                        /* Add this new DN */
-                        do {
-                                lsqlite3->last_rc =
-                                        sqlite3_step(lsqlite3->queries.newDN);
-                                (void) sqlite3_reset(lsqlite3->queries.newDN);
-                        } while lsqlite3->last_rc == SQLITE_BUSY;
-                        
-                        if (lsqlite3->last_rc != SQLITE_DONE) {
-                                return -1;
-                        }
-
-                        dn_id = last_insert_rowid(lsqlite3->sqlite3);
-
-                        stmt = lsqlite3->queries.newAttribute;
-
-		} else {
-                        /* Get the dn_id for the specified DN */
-                        xxx;
-
-			switch (el->flags & LDB_FLAG_MOD_MASK) {
-			case LDB_FLAG_MOD_ADD:
-                                stmt = lsqlite3->queries.addAttrValuePair;
-				break;
-			case LDB_FLAG_MOD_DELETE:
-                                stmt = lsqlite3->queries.deleteAttrValuePairs;
-				break;
-			case LDB_FLAG_MOD_REPLACE:
-                                stmt = lsqlite3->queries.replaceAttrValuePairs;
-				break;
-			}
-                        
+                if (! use_flags) {
+                        flags = LDB_FLAG_MOD_ADD;
+                } else {
+                        flags = el->flags & LDB_FLAG_MOD_MASK;
                 }
 
-		for (j=0;j<el->num_values;j++) {
-			mods[num_mods]->mod_vals.modv_bvals[j] = talloc(mods[num_mods]->mod_vals.modv_bvals,
-									  struct berval);
-			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
-				goto failed;
-			}
-			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val = el->values[j].data;
-			mods[num_mods]->mod_vals.modv_bvals[j]->bv_len = el->values[j].length;
+                /* Determine which query to use */
+                switch (flags) {
+                case LDB_FLAG_MOD_ADD:
+                        stmt = lsqlite3->queries.addAttrValuePair;
+                        break;
+                        
+                case LDB_FLAG_MOD_DELETE:
+                        stmt = lsqlite3->queries.deleteAttrValuePairs;
+                        break;
+
+                case LDB_FLAG_MOD_REPLACE:
+                        stmt = lsqlite3->queries.replaceAttrValuePairs;
+                        break;
+                }
+
+                /*
+                 * All queries use dn id and attribute name.  Bind them now.
+                 */
+
+                /* Bind distinguished name id */
+                column =
+                        sqlite3_bind_parameter_index(
+                                stmt,
+                                ":dn_id");
+                if (sqlite3_bind_int64(stmt,
+                                      column,
+                                      dn_id) != SQLITE_OK) {
+
+                        return -1;
+                }
+
+                /* Bind attribute name */
+                column =
+                        sqlite3_bind_parameter_index(
+                                stmt,
+                                ":attr_name");
+                if (sqlite3_bind_text(lsqlite3->queries.deleteDN, column,
+                                      el->name, strlen(el->name),
+                                      SQLITE_STATIC) != SQLITE_OK) {
+
+                        return -1;
+                }
+
+
+                /* For each value of the specified attribute name... */
+		for (j = 0; j < el->num_values; j++) {
+
+                        /* ... bind the attribute value, if necessary */
+                        switch (flags) {
+                        case LDB_FLAG_MOD_ADD:
+                        case LDB_FLAG_MOD_REPLACE:
+                                /* Bind attribute value */
+                                column =
+                                        sqlite3_bind_parameter_index(
+                                                stmt,
+                                                ":attr_value");
+                                if (sqlite3_bind_text(
+                                            stmt, column,
+                                            el->values[j].data,
+                                            el->values[j].length,
+                                            SQLITE_STATIC) != SQLITE_OK) {
+
+                                        return -1;
+                                }
+
+                                break;
+
+                        case LDB_FLAG_MOD_DELETE:
+                                /* No additional parameters to this query */
+                                break;
+                        }
+
+                        /* Execute the query */
+                        do {
+                                lsqlite3->last_rc = sqlite3_step(stmt);
+                                (void) sqlite3_reset(stmt);
+                        } while lsqlite3->last_rc == SQLITE_BUSY;
+
+                        /* Make sure we succeeded */
+                        if (lsqlite3->last_rc != SQLITE_OK) {
+                                return -1;
+                        }
 		}
-		mods[num_mods]->mod_vals.modv_bvals[j] = NULL;
-		num_mods++;
 	}
 
-	return mods;
-
-failed:
-	talloc_free(mods);
-	return NULL;
+	return 0;
 }
 
 
 /*
-  add a record
-*/
+ * add a record
+ */
 static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct lsqlite3_private *lsqlite3 = module->private_data;
-	LDAPMod **mods;
-	int ret = 0;
+	int ret;
 
 	/* ignore ltdb specials */
 	if (msg->dn[0] == '@') {
 		return 0;
 	}
 
-	mods = lsqlite3_msg_to_mods(ldb, msg, 0);
+        /* Begin a transaction */
+        SQL_EXEC(lsqlite3, begin, TRUE);
 
-	lsqlite3->last_rc = ldap_add_s(lsqlite3->ldap, msg->dn, mods);
-	if (lsqlite3->last_rc != LDAP_SUCCESS) {
-		ret = -1;
-	}
+        /* This is a new DN.  Bind new distinguished name */
+        column = sqlite3_bind_parameter_index(lsqlite3->queries.newDN, ":dn");
+        if (sqlite3_bind_text(lsqlite3->queries.newDN, column,
+                              msg->dn, strlen(msg->dn),
+                              SQLITE_STATIC) != SQLITE_OK) {
+                return -1;
+        }
+        
+        /* Add this new DN.  This sets lsqlite3->last_rc */
+        SQL_EXEC(lsqlite3, newDN, TRUE);
+        
+        if (lsqlite3->last_rc != SQLITE_DONE) {
+                return -1;
+        }
+        
+        /* Get the id of the just-added DN */
+        dn_id = sqlite3_last_insert_rowid(lsqlite3->sqlite3);
+        
+	ret = lsqlite3_msg_to_sql(ldb, msg, dn_id, FALSE);
 
-	talloc_free(mods);
+        /* Did the attribute additions (if any) succeeded? */
+        if (ret == 0)
+        {
+                /* Yup.  Commit the transaction */
+                SQL_EXEC(lsqlite3, commit, TRUE);
+        }
+        else
+        {
+                /* Attribute addition failed.  Rollback the transaction */
+                SQL_EXEC(lsqlite3, rollback, TRUE);
+        }
 
-	return ret;
+        /* If everything succeeded, return success */
+        return lsqlite3->last_rc == SQLITE_DONE && ret == 0 ? 0 : -1;
 }
 
 
 /*
-  modify a record
-*/
+ * modify a record
+ */
 static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = module->ldb;
@@ -427,16 +494,48 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 		return 0;
 	}
 
-	mods = lsqlite3_msg_to_mods(ldb, msg, 1);
+        /* Begin a transaction */
+        SQL_EXEC(lsqlite3, begin, TRUE);
 
-	lsqlite3->last_rc = ldap_modify_s(lsqlite3->ldap, msg->dn, mods);
-	if (lsqlite3->last_rc != LDAP_SUCCESS) {
-		ret = -1;
-	}
+        /* Get the dn_id for the specified DN */
+        column =
+                sqlite3_bind_parameter_index(
+                        lsqlite3->queries.getDNID,
+                        ":dn");
+        if (sqlite3_bind_text(lsqlite3->queries.getDNID,
+                              column,
+                              msg->dn, strlen(msg->dn),
+                              SQLITE_STATIC) != SQLITE_OK) {
+                return -1;
+        }
 
-	talloc_free(mods);
+        /* Get the id of this DN.  This sets lsqlite3->last_rc */
+        SQL_EXEC(lsqlite3, getDNID, FALSE);
+                        
+        if (lsqlite3->last_rc != SQLITE_ROW) {
+                return -1;
+        }
 
-	return ret;
+        dn_id = sqlite3_column_int64(lsqlite3->queries.getDNID,
+                                     column);
+        (void) sqlite3_reset(lsqlite3->queries.getDNID);
+
+	ret = lsqlite3_msg_to_sql(ldb, msg, dn_id, FALSE);
+
+        /* Did the attribute additions (if any) succeeded? */
+        if (ret == 0)
+        {
+                /* Yup.  Commit the transaction */
+                SQL_EXEC(lsqlite3, commit, TRUE);
+        }
+        else
+        {
+                /* Attribute addition failed.  Rollback the transaction */
+                SQL_EXEC(lsqlite3, rollback, TRUE);
+        }
+
+        /* If everything succeeded, return success */
+        return lsqlite3->last_rc == SQLITE_DONE && ret == 0 ? 0 : -1;
 }
 
 static int lsqlite3_lock(struct ldb_module *module, const char *lockname)
@@ -455,10 +554,7 @@ static int lsqlite3_lock(struct ldb_module *module, const char *lockname)
         }
             
         /* Write-lock (but not read-lock) the database */
-        lsqlite3->last_rc = sqlite3_step(lsqlite3->begin);
-
-        /* Ready the compiled statement for its next use */
-        (void ) sqlite_reset(lsqlite3->begin);
+        SQL_EXEC(lsqlite3, begin, TRUE);
 
 	return lsqlite3->last_rc == 0 ? 0 : -1;
 }
@@ -482,18 +578,15 @@ static int lsqlite3_unlock(struct ldb_module *module, const char *lockname)
         if (--lsqlite3->lock_count == 0) {
         
                 /* Final unlock.  Unlock the database */
-                lsqlite3->last_rc = sqlite3_step(lsqlite3->commit);
-
-                /* Ready the compiled statement for its next use */
-                (void ) sqlite_reset(lsqlite3->commit);
+                SQL_EXEC(lsqlite3, commit, TRUE);
         }
 
 	return lsqlite3->last_rc == 0 ? 0 : -1;
 }
 
 /*
-  return extended error information
-*/
+ * return extended error information
+ */
 static const char *lsqlite3_errstring(struct ldb_module *module)
 {
 	struct lsqlite3_private *lsqlite3 = module->private_data;
@@ -577,8 +670,10 @@ static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
                 CREATE TABLE ldb_attr_value_pairs 
                 (
                   dn_id         INTEGER REFERENCES ldb_distinguished_names, 
-                  attr_name     TEXT REFERENCES ldb_attributes,
-                  attr_value    TEXT 
+                  attr_name     TEXT, -- optionally REFERENCES ldb_attributes
+                  attr_value    TEXT,
+
+                  UNIQUE (dn_id, attr_name, attr_value)
                 );
 
                 -- ------------------------------------------------------
@@ -645,7 +740,7 @@ static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
                 INSERT INTO ldb_attributes (attr_name)
                   VALUES ('dn');
 
-                /* We need an implicit "top" level object class */
+                /* We need an implicit 'top' level object class */
                 INSERT INTO ldb_object_classes (class_name, tree_key)
                   SELECT 'top', /* next_tree_key(NULL) */ '0001';
 
@@ -867,6 +962,15 @@ static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
                      "  SELECT :child_class, next_tree_key(:parent_class);"
                      -1,
                      &lsqlite3->queries.insertSubclass,
+                     &pTail)) != SQLITE_SUCCESS ||
+
+            (lsqlite3->last_rc = sqlite3_prepare(
+                     lsqlite3->sqlite3,
+                     "SELECT dn_id "
+                     "  FROM ldb_distinguished_names "
+                     "  WHERE dn = :dn;"
+                     -1,
+                     &lsqlite3->queries.getDNID,
                      &pTail)) != SQLITE_SUCCESS) {
 
                 (void) sqlite3_close(lsqlite3->sqlite3);
@@ -877,11 +981,11 @@ static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
 }
 
 /*
-  connect to the database
-*/
+ * connect to the database
+ */
 struct ldb_context *lsqlite3_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[])
+                                     unsigned int flags, 
+                                     const char *options[])
 {
 	struct ldb_context *ldb = NULL;
 	struct lsqlite3_private *lsqlite3 = NULL;
@@ -921,8 +1025,10 @@ struct ldb_context *lsqlite3_connect(const char *url,
 	ldb->modules->ops = &lsqlite3_ops;
 
 	if (options) {
-		/* take a copy of the options array, so we don't have to rely
-		   on the caller keeping it around (it might be dynamic) */
+		/*
+                 * take a copy of the options array, so we don't have to rely
+                 * on the caller keeping it around (it might be dynamic)
+                 */
 		for (i=0;options[i];i++) ;
 
 		lsqlite3->options = talloc_array(lsqlite3, char *, i+1);
@@ -931,8 +1037,10 @@ struct ldb_context *lsqlite3_connect(const char *url,
 		}
 		
 		for (i=0;options[i];i++) {
+
 			lsqlite3->options[i+1] = NULL;
-			lsqlite3->options[i] = talloc_strdup(lsqlite3->options, options[i]);
+			lsqlite3->options[i] =
+                                talloc_strdup(lsqlite3->options, options[i]);
 			if (!lsqlite3->options[i]) {
 				goto failed;
 			}

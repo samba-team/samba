@@ -43,8 +43,10 @@
                 CREATE TABLE ldb_attr_value_pairs 
                 (
                   dn_id         INTEGER REFERENCES ldb_distinguished_names, 
-                  attr_name     TEXT REFERENCES ldb_attributes,
-                  attr_value    TEXT 
+                  attr_name     TEXT, -- optionally REFERENCES ldb_attributes
+                  attr_value    TEXT,
+
+                  UNIQUE (dn_id, attr_name, attr_value)
                 );
 
                 -- ------------------------------------------------------
