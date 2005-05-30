@@ -52,22 +52,24 @@ sub HeaderProperties($$)
 # parse a structure element
 sub HeaderElement($)
 {
-    my($element) = shift;
+	my($element) = shift;
 
-    if (defined $element->{PROPERTIES}) {
+	if (defined $element->{PROPERTIES}) {
 		HeaderProperties($element->{PROPERTIES}, {"in" => 1, "out" => 1});
 	}
-    pidl tabs();
-    HeaderType($element, $element->{TYPE}, "");
-    pidl " ";
+	pidl tabs();
+	HeaderType($element, $element->{TYPE}, "");
+	pidl " ";
 	my $prefix = "";
 	my $postfix = "";
 	foreach my $l (@{$element->{LEVELS}}) 
 	{
 		if (($l->{TYPE} eq "POINTER")) {
-			next if ($element->{TYPE} eq "string");
+			my $nl = Ndr::GetNextLevel($element, $l);
+			$nl = Ndr::GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
+			next if ($nl->{TYPE} eq "DATA" and typelist::scalar_is_reference($nl->{DATA_TYPE}));
 			$prefix .= "*";
-	    } elsif (($l->{TYPE} eq "ARRAY")) {
+		} elsif (($l->{TYPE} eq "ARRAY")) {
 			my $pl = Ndr::GetPrevLevel($element, $l);
 			next if ($pl and $pl->{TYPE} eq "POINTER");
 
@@ -76,15 +78,15 @@ sub HeaderElement($)
 			} else {
 				$prefix .= "*";
 			}
-	    } elsif ($l->{TYPE} eq "DATA") {
-    		pidl "$prefix$element->{NAME}$postfix";
+		} elsif ($l->{TYPE} eq "DATA") {
+    			pidl "$prefix$element->{NAME}$postfix";
 		}
 	}
-	
-    if (defined $element->{ARRAY_LEN}[0] && util::is_constant($element->{ARRAY_LEN}[0])) {
-	    pidl "[$element->{ARRAY_LEN}[0]]";
-    }
-    pidl ";\n";
+
+	if (defined $element->{ARRAY_LEN}[0] && util::is_constant($element->{ARRAY_LEN}[0])) {
+		pidl "[$element->{ARRAY_LEN}[0]]";
+	}
+	pidl ";\n";
 }
 
 #####################################################################

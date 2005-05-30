@@ -33,11 +33,10 @@ sub append_prefix($$)
 			if (($pointers == 0) and 
 			    (not $l->{IS_FIXED}) and
 			    (not $l->{IS_INLINE})) {
-				return get_value_of($var_name) 
+				return get_value_of($var_name); 
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
-			if ($l->{DATA_TYPE} eq "string" or
-			    $l->{DATA_TYPE} eq "nbt_string") {
+			if (typelist::scalar_is_reference($l->{DATA_TYPE})) {
 				return get_value_of($var_name) unless ($pointers);
 			}
 		}
@@ -63,7 +62,7 @@ sub is_scalar_array($$)
 
 	my $nl = Ndr::GetNextLevel($e,$l);
 	return (($nl->{TYPE} eq "DATA") and 
-	        (Ndr::is_scalar_type($nl->{DATA_TYPE})));
+	        (typelist::is_scalar($nl->{DATA_TYPE})));
 }
 
 sub get_pointer_to($)
@@ -776,7 +775,7 @@ sub ParseElementPrint($$$)
 			unless ($l->{NO_METADATA}){ $var_name = get_pointer_to($var_name); }
 
 		} elsif ($l->{TYPE} eq "DATA") {
-			if (not Ndr::is_scalar_type($l->{DATA_TYPE})) {
+			if (not typelist::is_scalar($l->{DATA_TYPE}) or typelist::scalar_is_reference($l->{DATA_TYPE})) {
 				$var_name = get_pointer_to($var_name);
 			}
 			pidl "ndr_print_$l->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name);";
@@ -849,12 +848,11 @@ sub ParseDataPull($$$$$)
 	my $var_name = shift;
 	my $ndr_flags = shift;
 
-	$var_name = get_pointer_to($var_name);
-
-	if ($l->{DATA_TYPE} eq "string" or 
-	    $l->{DATA_TYPE} eq "nbt_string") {
+	if (typelist::scalar_is_reference($l->{DATA_TYPE})) {
 		$var_name = get_pointer_to($var_name);
 	}
+
+	$var_name = get_pointer_to($var_name);
 
 	pidl "NDR_CHECK(ndr_pull_$l->{DATA_TYPE}($ndr, $ndr_flags, $var_name));";
 
@@ -876,7 +874,7 @@ sub ParseDataPush($$$$$)
 	my $ndr_flags = shift;
 
 	# strings are passed by value rather then reference
-	if (not Ndr::is_scalar_type($l->{DATA_TYPE})) {
+	if (not typelist::is_scalar($l->{DATA_TYPE}) or typelist::scalar_is_reference($l->{DATA_TYPE})) {
 		$var_name = get_pointer_to($var_name);
 	}
 

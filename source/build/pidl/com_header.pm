@@ -17,7 +17,7 @@ sub GetArgumentProtoList($)
 		$res .= ", " . typelist::mapType($a->{TYPE}) . " ";
 
 		my $l = $a->{POINTERS};
-		$l-- if ($a->{TYPE} eq "string");
+		$l-- if (typelist::scalar_is_reference($a->{TYPE}));
 		foreach my $i (1..$l) {
 			$res .= "*";
 		}
