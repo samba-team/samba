@@ -1,14 +1,21 @@
 <% page_header("columns", "ESP Form Test"); %>
 
 <%
-var f = Form("FormTest", 2, 2);
+var f = Form("FormTest", 3, 2);
 f.element[0].label = "First Name";
 f.element[0].name  = "firstName";
+f.element[0].value = form['firstName'];
 f.element[1].label = "Last Name";
 f.element[1].name  = "lastName";
+f.element[1].value = form['lastName'];
+f.element[2].label = "Color";
+f.element[2].type  = "select";
+f.element[2].list  = new Array("Red", "Green", "Blue", "Yellow");
+f.element[2].value = form['Color'];
 f.submit[0] = "OK";
 f.submit[1] = "Cancel";
 
+printVars(f);
 display_form(f);
 
 <%
