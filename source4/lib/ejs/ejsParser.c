@@ -2069,6 +2069,8 @@ static int evalFunction(Ejs *ep, MprVar *obj, int flags)
 		 */
 		for (i = 0; i < formalArgs->used; i++) {
 			mprCreateProperty(ep->local, argNames[i], argValues[i]);
+		}
+		for (i = 0; i < actualArgs->used; i++) {
 			mprItoa(i, buf, sizeof(buf));
 			mprCreateProperty(&arguments, buf, argValues[i]);
 		}
