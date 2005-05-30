@@ -675,6 +675,7 @@ static void http_setup_session(struct esp_state *esp)
 	const char *key = NULL;
 	struct esp_data *edata = talloc_get_type(esp->web->task->private, struct esp_data);
 	struct session_data *s;
+	BOOL generated_key = False;
 
 	/* look for our session key */
 	if (cookie && (p = strstr(cookie, session_key)) && 
@@ -687,6 +688,7 @@ static void http_setup_session(struct esp_state *esp)
 		key = esp->web->input.session_key;
 	} else if (key == NULL) {
 		key = generate_random_str_list(esp, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		generated_key = True;
 	}
 
 	/* try to find this session in the existing session list */
@@ -706,6 +708,10 @@ static void http_setup_session(struct esp_state *esp)
 		s->lifetime = lp_parm_int(-1, "web", "sessiontimeout", 300);
 		DLIST_ADD(edata->sessions, s);
 		talloc_set_destructor(s, session_destructor);
+		if (!generated_key) {
+			mprSetPropertyValue(&esp->variables[ESP_REQUEST_OBJ], 
+					    "SESSION_EXPIRED", mprCreateStringVar("True", 0));
+		}
 	}
 
 	http_setCookie(esp->web, session_key, key, s->lifetime, "/", 0);
