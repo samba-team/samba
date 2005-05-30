@@ -53,6 +53,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     flags->server =		!(attr & KRB5_KDB_DISALLOW_SVR);
     flags->change_pw = 	       !!(attr & KRB5_KDB_PWCHANGE_SERVICE);
     flags->client =	        1; /* XXX */
+    flags->ok_as_delegate =    !!(attr & KRB5_KDB_OK_AS_DELEGATE);
 }
 
 /*
