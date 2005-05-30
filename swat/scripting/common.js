@@ -121,7 +121,7 @@ function Form(name, num_elements, num_submits)
     f.submit        = an array of submit labels
     f.element[i].label = element label
     f.element[i].name  = element name (defaults to label)
-    f.element[i].type  = element type
+    f.element[i].type  = element type (defaults to text)
     f.element[i].value = current value (optional, defaults to "")
  */
 function display_form(f) {
@@ -139,13 +139,24 @@ function display_form(f) {
 		}
 		write("<tr>");
 		write("<td>" + e.label + "</td>");
-		write('<td><input name="' + e.name + '" type="' + 
-		      e.type + '" value="' + e.value + '"></td>\n');
+		if (e.type == "select") {
+			write('<td><select name="' + e.name + '">\n');
+			for (s in e.list) {
+				if (e.value == e.list[s]) {
+					write('<option selected=selected>' + e.list[s] + '</option>\n');
+				} else {
+					write('<option>' + e.list[s] + '</option>\n');
+				}
+			}
+			write('</select></td>\n');
+		} else {
+			write('<td><input name="' + e.name + '" type="' + 
+			      e.type + '" value="' + e.value + '"></td>\n');
+		}
 	}
 	write("</table>\n");
 	for (i in f.submit) {
-		write('<input name="' + f.submit[i] + 
-		      '" type="submit" value="' + f.submit[i] + '">\n');
+		write('<input name="submit" type="submit" value="' + f.submit[i] + '">\n');
 	}
 	write("</form>\n");
 }
