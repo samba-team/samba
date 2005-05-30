@@ -15,7 +15,7 @@ display_form(f);
   /* if its a post then the user has filled in the form, so
      report the values 
   */
-  if (form['OK']) {
+  if (form['submit'] == "OK") {
 %>
   You chose firstName=@@form['firstName'] lastName=@@form['lastName']<p>
   

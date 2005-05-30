@@ -2,17 +2,18 @@
 
 <h1>Samba4 session test</h1>
 
-<form name="SessionTest" method="POST" action="@@request['SCRIPT_NAME']"> 
-    Name:   <input name="Name"  type="text" value=""><br>
-    Value:  <input name="Value" type="text" value=""><br>
-    Timeout: <input name="Timeout" type="text" value=""><br>
-    <input name="submit" type="submit" value="Append">
-    <input name="submit" type="submit" value="Reset">
-    <input name="submit" type="submit" value="Destroy">
-    <input name="submit" type="submit" value="Cancel"><br>
-</form>
-
 <%
+var f = Form("SessionTest", 3, 4);
+f.element[0].label = "Name";
+f.element[1].label = "Value";
+f.element[2].label = "Timeout";
+f.submit[0] = "Append";
+f.submit[1] = "Reset";
+f.submit[2] = "Destroy";
+f.submit[3] = "Cancel";
+
+display_form(f);
+
   /* if its a post then the user has filled in the form, so
      report the values 
   */
