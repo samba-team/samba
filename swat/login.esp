@@ -1,11 +1,13 @@
 <% page_header("plain", "SWAT Login"); %>
 
-<form name="login" method="POST" action="@@request.SCRIPT_NAME"> 
-    Username:   <input name="Username"  type="text" value=""><br>
-    Password:  <input name="Password" type="password" value=""><br>
-    <br>
-    <input name="submit" type="submit" value="Login"><br>
-</form>
+<%
+var f = Form("login", 2, 1);
+f.element[0].label = "Username";
+f.element[1].label = "Password";
+f.submit[0] = "Login";
+
+display_form(f);
+%>
 
 <%
 	if (request.REQUEST_METHOD == "POST") {
