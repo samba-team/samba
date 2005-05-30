@@ -42,128 +42,93 @@ sub el_name($)
 	return $e->{NAME};
 }
 
+###################################
+# find a sibling var in a structure
+sub find_sibling($$)
+{
+	my($e) = shift;
+	my($name) = shift;
+	my($fn) = $e->{PARENT};
+
+	if ($name =~ /\*(.*)/) {
+		$name = $1;
+	}
+
+	for my $e2 (@{$fn->{ELEMENTS}}) {
+		return $e2 if ($e2->{NAME} eq $name);
+	}
+
+	return undef;
+}
+
+
 my %property_list = (
 	# interface
-	"helpstring"		=> {INTERFACE	=> 1,
-				    FUNCTION	=> 1,
-				    },
-	"version"		=> {INTERFACE	=> 1,
-				    },
-	"uuid"			=> {INTERFACE	=> 1,
-				    },
-	"endpoint"		=> {INTERFACE	=> 1,
-				    },
-	"pointer_default"	=> {INTERFACE	=> 1,
-				    },
-	"pointer_default_top"	=> {INTERFACE	=> 1,
-				    },
-	"depends"		=> {INTERFACE	=> 1,
-				    },
-	"authservice"		=> {INTERFACE	=> 1,
-				    },
+	"helpstring" => ["INTERFACE", "FUNCTION"],
+	"version" => ["INTERFACE"],
+	"uuid" => ["INTERFACE"],
+	"endpoint" => ["INTERFACE"],
+	"pointer_default" => ["INTERFACE"],
+	"pointer_default_top" => ["INTERFACE"],
+	"depends" => ["INTERFACE"],
+	"authservice" => ["INTERFACE"],
 
 	# dcom
-	"object"		=> {INTERFACE	=> 1,
-				    },
-	"local"			=> {INTERFACE	=> 1,
-				    FUNCTION	=> 1,
-				    },
-	"iid_is"		=> {ELEMENT	=> 1,
-				    },
-	"call_as"		=> {FUNCTION	=> 1,
-				    },
-	"idempotent"		=> {FUNCTION	=> 1,
-				    },
+	"object" => ["INTERFACE"],
+	"local"	 => ["INTERFACE", "FUNCTION"],
+	"iid_is" => ["ELEMENT"],
+	"call_as" => ["FUNCTION"],
+	"idempotent" => ["FUNCTION"],
 
 	# function
-	"noopnum"		=> {FUNCTION	=> 1,
-				    },
-	"in"			=> {ELEMENT	=> 1,
-				    },
-	"out"			=> {ELEMENT	=> 1,
-				    },
+	"noopnum" => ["FUNCTION"],
+	"in" => ["ELEMENT"],
+	"out" => ["ELEMENT"],
 
 	# pointer
-	"ref"			=> {ELEMENT	=> 1,
-				    },
-	"ptr"			=> {ELEMENT	=> 1,
-				    },
-	"unique"		=> {ELEMENT	=> 1,
-				    },
-	"relative"		=> {ELEMENT	=> 1,
-				    },
+	"ref" => ["ELEMENT"],
+	"ptr" => ["ELEMENT"],
+	"unique" => ["ELEMENT"],
+	"relative" => ["ELEMENT"],
 
-	# ndr_size
-	"gensize"		=> {TYPEDEF	=> 1,
-				    },
-	"value"			=> {ELEMENT	=> 1,
-				    },
-	"flag"			=> {ELEMENT	=> 1,
-				    TYPEDEF	=> 1,
-				    },
+	"gensize"	=> ["TYPEDEF"],
+	"value"		=> ["ELEMENT"],
+	"flag"		=> ["ELEMENT", "TYPEDEF"],
 
 	# generic
-	"public"		=> {FUNCTION	=> 1,
-				    TYPEDEF	=> 1,
-				    },
-	"nopush"		=> {FUNCTION	=> 1,
-				    TYPEDEF	=> 1,
-				    },
-	"nopull"		=> {FUNCTION	=> 1,
-				    TYPEDEF	=> 1,
-				    },
-	"noprint"		=> {FUNCTION	=> 1,
-				    TYPEDEF	=> 1,
-				    },
+	"public"	=> ["FUNCTION", "TYPEDEF"],
+	"nopush"	=> ["FUNCTION", "TYPEDEF"],
+	"nopull"	=> ["FUNCTION", "TYPEDEF"],
+	"noprint"	=> ["FUNCTION", "TYPEDEF"],
 
 	# union
-	"switch_is"		=> {ELEMENT	=> 1,
-				    },
-	"switch_type"		=> {ELEMENT	=> 1,
-				    TYPEDEF	=> 1,
-				    },
-	"nodiscriminant"	=> {TYPEDEF	=> 1,
-				    },
-	"case"			=> {ELEMENT	=> 1,
-				    },
-	"default"		=> {ELEMENT	=> 1,
-				    },
+	"switch_is"	 => ["ELEMENT"],
+	"switch_type"	=> ["ELEMENT", "TYPEDEF"],
+	"nodiscriminant" => ["TYPEDEF"],
+	"case"			=> ["ELEMENT"],
+	"default"		=> ["ELEMENT"],
 
 	# subcontext
-	"subcontext"		=> {ELEMENT	=> 1,
-				    },
-	"subcontext_size"	=> {ELEMENT	=> 1,
-				    },
-	"compression"		=> {ELEMENT	=> 1,
-				    },
-	"obfuscation"		=> {ELEMENT	=> 1,
-				    },
+	"subcontext" => ["ELEMENT"],
+	"subcontext_size"	=> ["ELEMENT"],
+	"compression"		=> ["ELEMENT"],
+	"obfuscation"		=> ["ELEMENT"],
 
 	# enum
-	"enum8bit"		=> {TYPEDEF	=> 1,
-				    },
-	"enum16bit"		=> {TYPEDEF	=> 1,
-				    },
-	"v1_enum"		=> {TYPEDEF	=> 1,
-				    },
+	"enum8bit"		=> ["TYPEDEF"],
+	"enum16bit"		=> ["TYPEDEF"],
+	"v1_enum"		=> ["TYPEDEF"],
 
 	# bitmap
-	"bitmap8bit"		=> {TYPEDEF	=> 1,
-				    },
-	"bitmap16bit"		=> {TYPEDEF	=> 1,
-				    },
-	"bitmap32bit"		=> {TYPEDEF	=> 1,
-				    },
-	"bitmap64bit"		=> {TYPEDEF	=> 1,
-				    },
+	"bitmap8bit"	=> ["TYPEDEF"],
+	"bitmap16bit"	=> ["TYPEDEF"],
+	"bitmap32bit"	=> ["TYPEDEF"],
+	"bitmap64bit"	=> ["TYPEDEF"],
 
 	# array
-	"range"			=> {ELEMENT	=> 1,
-				    },
-	"size_is"		=> {ELEMENT	=> 1,
-				    },
-	"length_is"		=> {ELEMENT	=> 1,
-				    },
+	"range"			=> ["ELEMENT"],
+	"size_is"		=> ["ELEMENT"],
+	"length_is"		=> ["ELEMENT"],
 );
 
 #####################################################################
@@ -177,11 +142,10 @@ sub ValidProperties($$)
 
 	foreach my $key (keys %{$e->{PROPERTIES}}) {
 		fatal($e, el_name($e) . ": unknown property '$key'\n")
-			if not defined($property_list{$key});
+			unless defined($property_list{$key});
 
-		next if defined($property_list{$key}{ANY});
-    		fatal($e, el_name($e) . ": property '$key' not allowed on '$t'\n")
-			if not defined($property_list{$key}{$t});
+   		fatal($e, el_name($e) . ": property '$key' not allowed on '$t'\n")
+			unless grep($t, @{$property_list{$key}});
 	}
 }
 
@@ -199,7 +163,7 @@ sub ValidElement($)
 
 	# Check whether switches are used correctly.
 	if (my $switch = util::has_property($e, "switch_is")) {
-		my $e2 = util::find_sibling($e, $switch);
+		my $e2 = find_sibling($e, $switch);
 		my $type = typelist::getType($e->{TYPE});
 
 		if (defined($type) and $type->{DATA}->{TYPE} ne "UNION") {

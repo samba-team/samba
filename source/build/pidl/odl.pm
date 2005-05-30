@@ -6,6 +6,20 @@ package ODL;
 
 use strict;
 
+#####################################################################
+# find an interface in an array of interfaces
+sub get_interface($$)
+{
+	my($if) = shift;
+	my($n) = shift;
+
+	foreach(@{$if}) {
+		if($_->{NAME} eq $n) { return $_; }
+	}
+	
+	return 0;
+}
+
 sub FunctionAddObjArgs($)
 {
 	my $e = shift;
@@ -60,7 +74,7 @@ sub ODL2IDL($)
 		}
 
 		if ($x->{BASE}) {
-			my $base = util::get_interface($odl, $x->{BASE});
+			my $base = get_interface($odl, $x->{BASE});
 
 			foreach my $fn (reverse @{$base->{DATA}}) {
 				next unless ($fn->{TYPE} eq "FUNCTION");
