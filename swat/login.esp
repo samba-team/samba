@@ -1,6 +1,11 @@
 <% page_header("plain", "SWAT Login"); %>
 
 <%
+
+if (request['SESSION_EXPIRED'] == "True") {
+   write("<b>Your session has expired - please authenticate again<br>\n");
+}
+
 var f = Form("login", 2, 1);
 f.element[0].label = "Username";
 f.element[0].value = form['Username'];
