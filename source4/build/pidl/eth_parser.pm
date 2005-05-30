@@ -62,6 +62,7 @@ sub NeededTypedef($$)
 
 	if (util::has_property($t, "public")) {
 		$needed->{"pull_$t->{NAME}"} = not util::has_property($t, "nopull");
+		$needed->{"decl_$t->{NAME}"} = not util::has_property($t, "nopull");
 	}
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT" or $t->{DATA}->{TYPE} eq "UNION") {
@@ -70,7 +71,7 @@ sub NeededTypedef($$)
 			$e->{PARENT} = $t->{DATA};
 			if ($needed->{"pull_$t->{NAME}"} and
 				not defined($needed->{"pull_$e->{TYPE}"})) {
-				$needed->{"pull_$e->{TYPE}"} = 1;
+				$needed->{"decl_$e->{TYPE}"} = $needed->{"pull_$e->{TYPE}"} = 1;
 			}
 
 	        $needed->{"hf_$t->{NAME}_$e->{NAME}"} = {
@@ -1182,19 +1183,20 @@ sub DeclInterface($$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPEDEFS}}) {
-		($needed->{"pull_$d->{NAME}"}) && DeclTypedef($d);
-
-		# Make sure we don't generate a function twice...
-		$needed->{"pull_$d->{NAME}"} = 0;
+		($needed->{"decl_$d->{NAME}"}) && DeclTypedef($d, $needed);
 	}
 }
 
-sub DeclTypedef($)
+sub DeclTypedef($$)
 {
 	my $e = shift;
+	my $needed = shift;
 
 	if (defined($typefamily{$e->{DATA}->{TYPE}}->{DECL})) {
 		$typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e->{DATA}, $e->{NAME});
+
+		# Make sure we don't generate a function twice...
+		$needed->{"decl_$e->{NAME}"} = 0;
 	}
 }
 
