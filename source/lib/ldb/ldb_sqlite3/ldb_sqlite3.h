@@ -21,6 +21,7 @@ struct lsqlite3_private {
                 sqlite3_stmt *replaceAttrValuePairs;
                 sqlite3_stmt *deleteAttrValuePairs;
                 sqlite3_stmt *insertSubclass;
+                sqlite3_stmt *getDNID;
         } queries;
 };
 
