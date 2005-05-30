@@ -241,6 +241,10 @@ _gss_DES3_get_mic_compat(OM_uint32 *, gss_ctx_id_t);
 OM_uint32
 _gss_spnego_require_mechlist_mic(OM_uint32 *, gss_ctx_id_t, krb5_boolean *);
 
+krb5_error_code
+_gss_check_compat(OM_uint32 *, gss_name_t, const char *,
+		  krb5_boolean *, krb5_boolean);
+
 OM_uint32
 gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
