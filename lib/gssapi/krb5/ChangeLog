@@ -1,3 +1,12 @@
+2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c (init_auth): honor ok-as-delegate if local
+	configuration approves
+
+	* gssapi_locl.h: prototype for _gss_check_compat
+
+	* compat.c: export check_compat as _gss_check_compat
+
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c: Prefix Der_class with ASN1_C_ to avoid
