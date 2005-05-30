@@ -1,3 +1,10 @@
+2005-05-30  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* util.c (kdb_attrs): add ok-as-delegate
+
+	* get.c (getit): init data.mask to 0.  Problem found by Andrew
+	Abartlet <abartlet@samba.org>
+
 2005-05-09  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmin.c (main): catch -2 as EOF
