@@ -54,7 +54,7 @@
 	
 	/******************/
 	/* Function: 0x02 */
-	[id(3)] NTSTATUS eventlog_CloseEventLog(
+	NTSTATUS eventlog_CloseEventLog(
 									[in,out,ref]     policy_handle *handle
 								   );
 
