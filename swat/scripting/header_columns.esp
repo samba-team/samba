@@ -42,14 +42,14 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
   <div class="stripe"></div>
   <div class="logout">
   <b>logged in as @@session.authinfo.username</b>
-  <form method="post" action="/logout.esp">
+  <form method="post" action="/logout.esp@@global.SESSIONURI">
   <input type="submit" value="Logout" />
   </form>
   </div>
 </div>
 
 <div id="logo">
-  <div class="logo_hack"><a href="/"><img src="/images/linkpad.gif" alt="SWAT" /></a></div>
+  <div class="logo_hack"><a href="/@@global.SESSIONURI"><img src="/images/linkpad.gif" alt="SWAT" /></a></div>
 </div>
 
 <div class="slogan">
