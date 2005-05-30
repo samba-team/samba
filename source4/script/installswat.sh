@@ -19,11 +19,11 @@ installdir() {
 }
 
 installdir . esp
-installdir . ico
 installdir esptest esp
 installdir esptest js
 installdir images png
 installdir images gif
+installdir images ico
 installdir scripting ejs
 installdir scripting esp
 installdir scripting js
