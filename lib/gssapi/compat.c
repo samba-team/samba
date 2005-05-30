@@ -36,10 +36,10 @@
 RCSID("$Id$");
 
 
-static krb5_error_code
-check_compat(OM_uint32 *minor_status, gss_name_t name, 
-	     const char *option, krb5_boolean *compat, 
-	     krb5_boolean match_val)
+krb5_error_code
+_gss_check_compat(OM_uint32 *minor_status, gss_name_t name, 
+		  const char *option, krb5_boolean *compat, 
+		  krb5_boolean match_val)
 {
     krb5_error_code ret = 0;
     char **p, **q;
@@ -70,7 +70,8 @@ check_compat(OM_uint32 *minor_status, gss_name_t name,
     krb5_config_free_strings(p);
 
     if (ret) {
-	*minor_status = ret;
+	if (minor_status)
+	    *minor_status = ret;
 	return GSS_S_FAILURE;
     }
 
@@ -88,12 +89,12 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
     OM_uint32 ret;
 
     if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
-	ret = check_compat(minor_status, ctx->target, 
-			   "broken_des3_mic", &use_compat, TRUE);
+	ret = _gss_check_compat(minor_status, ctx->target, 
+				"broken_des3_mic", &use_compat, TRUE);
 	if (ret)
 	    return ret;
-	ret = check_compat(minor_status, ctx->target, 
-			   "correct_des3_mic", &use_compat, FALSE);
+	ret = _gss_check_compat(minor_status, ctx->target, 
+				"correct_des3_mic", &use_compat, FALSE);
 	if (ret)
 	    return ret;
 
@@ -142,13 +143,12 @@ _gss_spnego_require_mechlist_mic(OM_uint32 *minor_status,
 	*require_mic = TRUE;
     } else {
 	*require_mic = FALSE;
-	ret = check_compat(minor_status, ctx->target, 
-			   "require_mechlist_mic",
-			   require_mic, TRUE);
+	ret = _gss_check_compat(minor_status, ctx->target, 
+				"require_mechlist_mic",
+				require_mic, TRUE);
 	if (ret)
 	    return ret;
     }
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
-
