@@ -50,6 +50,7 @@ is a process based credential cache for Kerberos tickets.
 .Xc
 .Oc
 .Op Fl -max-request= Ns Ar size
+.Op Fl -disallow-getting-krbtgt
 .Op Fl -detach
 .Op Fl h | Fl -help
 .Oo Fl k Ar principal \*(Ba Xo
@@ -71,6 +72,10 @@ is a process based credential cache for Kerberos tickets.
 .Oc
 .Oo Fl s Ar path \*(Ba Xo
 .Fl -socket-path= Ns Ar path
+.Xc
+.Oc
+.Oo Xo
+.Fl -door-path= Ns Ar path
 .Xc
 .Oc
 .Oo Fl S Ar principal \*(Ba Xo
@@ -138,6 +143,12 @@ system cache group
 .Xc
 max size for a kcm-request
 .It Xo
+.Fl -disallow-getting-krbtgt
+.Xc
+disallow extracting any krbtgt from the
+.Nm kcm
+daemon.
+.It Xo
 .Fl -detach
 .Xc
 detach from console
@@ -175,6 +186,10 @@ renewable lifetime of system tickets
 .Fl -socket-path= Ns Ar path
 .Xc
 path to kcm domain socket
+.It Xo
+.Fl -door-path= Ns Ar path
+.Xc
+path to kcm door socket
 .It Xo
 .Fl S Ar principal ,
 .Fl -server= Ns Ar principal
