@@ -216,7 +216,6 @@ sub is_surrounding_string($)
 		and $e->{PARENT}->{TYPE} ne "FUNCTION";
 }
 
-
 #####################################################################
 # work out the correct alignment for a structure or union
 sub find_largest_alignment($)
@@ -227,7 +226,7 @@ sub find_largest_alignment($)
 	for my $e (@{$s->{ELEMENTS}}) {
 		my $a = 1;
 
-		if (Ndr::need_wire_pointer($e)) {
+		if ($e->{POINTERS}) {
 			$a = 4; 
 		} else { 
 			$a = align_type($e->{TYPE}); 
@@ -264,26 +263,6 @@ sub align_type
 	}
 
 	die("Unknown data type type $dt->{TYPE}");
-}
-
-# determine if an element needs a reference pointer on the wire
-# in its NDR representation
-sub need_wire_pointer($)
-{
-	my $e = shift;
-
-	my $n = $e->{POINTERS};
-	my $pt = pointer_type($e);
-
-	# Top level "ref" pointers do not have a referrent identifier
-	if (	defined($pt) 
-		and $pt eq "ref" 
-		and $e->{PARENT}->{TYPE} eq "FUNCTION") 
-	{
-		$n--;
-	}
-
-	return $n;
 }
 
 sub ParseElement($)
@@ -387,13 +366,6 @@ sub ParseBitmap($)
 	};
 }
 
-sub ParseDeclare($$)
-{
-	my $ndr = shift;
-	my $d = shift;
-
-}
-
 sub ParseTypedef($$)
 {
 	my $ndr = shift;
@@ -458,14 +430,8 @@ sub ParseFunction($$$)
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
 		my $e = ParseElement($x);
-		if (util::has_property($x, "in")) {
-			push (@{$e->{DIRECTION}}, "in");
-		}
-
-		if (util::has_property($x, "out")) {
-			push (@{$e->{DIRECTION}}, "out");
-		}
-
+		push (@{$e->{DIRECTION}}, "in") if (util::has_property($x, "in"));
+		push (@{$e->{DIRECTION}}, "out") if (util::has_property($x, "out"));
 		push (@elements, $e);
 	}
 
@@ -489,14 +455,8 @@ sub CheckPointerTypes($$)
 	my $default = shift;
 
 	foreach my $e (@{$s->{ELEMENTS}}) {
-		if ($e->{POINTERS}) {
-			if (not defined(Ndr::pointer_type($e))) {
-				$e->{PROPERTIES}->{$default} = 1;
-			}
-
-			if (Ndr::pointer_type($e) eq "ptr") {
-				print "Warning: ptr is not supported by pidl yet\n";
-			}
+		if ($e->{POINTERS} and not defined(Ndr::pointer_type($e))) {
+			$e->{PROPERTIES}->{$default} = 1;
 		}
 	}
 }
@@ -528,7 +488,7 @@ sub ParseInterface($)
 		}
 
 		if ($d->{TYPE} eq "DECLARE") {
-			push (@declares, ParseDeclare($idl, $d));
+			push (@declares, $d);
 		}
 
 		if ($d->{TYPE} eq "FUNCTION") {
@@ -569,27 +529,7 @@ sub ParseInterface($)
 
 # Convert a IDL tree to a NDR tree
 # Gives a result tree describing all that's necessary for easily generating
-# NDR parsers
-# - list of interfaces
-#  - list with functions
-#   - list with in elements
-#   - list with out elements
-#  - list of typedefs
-#   - list with structs
-#    - alignment of structure
-#    - list with elements
-#   - list with unions
-#    - alignment of union
-#    - list with elements
-#   - list with enums
-#    - base type
-#   - list with bitmaps
-#    - base type
-# per element: 
-#  - alignment
-#  - "level" table
-# properties are saved
-# pointer types explicitly specified
+# NDR parsers / generators
 sub Parse($)
 {
 	my $idl = shift;
@@ -643,6 +583,5 @@ sub ContainsDeferred($$)
 	
 	return 0;
 }
-
 
 1;

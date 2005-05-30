@@ -58,7 +58,6 @@ sub FlattenHash($)
     return \%b;
 }
 
-
 #####################################################################
 # traverse a perl data structure removing any empty arrays or
 # hashes and any hash elements that map to undef
@@ -86,7 +85,6 @@ sub CleanData($)
 	return $v;
 }
 
-
 #####################################################################
 # return the modification time of a file
 sub FileModtime($)
@@ -94,7 +92,6 @@ sub FileModtime($)
     my($filename) = shift;
     return (stat($filename))[9];
 }
-
 
 #####################################################################
 # read a file into a string
@@ -155,20 +152,6 @@ sub SaveStructure($$)
 }
 
 #####################################################################
-# find an interface in an array of interfaces
-sub get_interface($$)
-{
-	my($if) = shift;
-	my($n) = shift;
-
-	foreach(@{$if}) {
-		if($_->{NAME} eq $n) { return $_; }
-	}
-	
-	return 0;
-}
-
-#####################################################################
 # see if a pidl property list contains a given property
 sub has_property($$)
 {
@@ -201,17 +184,6 @@ sub property_matches($$$)
 	return undef;
 }
 
-# determine if an element is a pass-by-reference structure
-sub is_ref_struct($)
-{
-	my $e = shift;
-	if (!is_scalar_type($e->{TYPE}) &&
-	    has_property($e, "ref")) {
-		return 1;
-	}
-	return 0;
-}
-
 # return 1 if the string is a C constant
 sub is_constant($)
 {
@@ -230,25 +202,6 @@ sub make_str($)
 		return $str;
 	}
 	return "\"" . $str . "\"";
-}
-
-###################################
-# find a sibling var in a structure
-sub find_sibling($$)
-{
-	my($e) = shift;
-	my($name) = shift;
-	my($fn) = $e->{PARENT};
-
-	if ($name =~ /\*(.*)/) {
-		$name = $1;
-	}
-
-	for my $e2 (@{$fn->{ELEMENTS}}) {
-		return $e2 if ($e2->{NAME} eq $name);
-	}
-
-	return undef;
 }
 
 1;
