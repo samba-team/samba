@@ -4,6 +4,7 @@
 var f = Form("login", 2, 1);
 f.element[0].label = "Username";
 f.element[1].label = "Password";
+f.element[1].type  = "password";
 f.submit[0] = "Login";
 
 display_form(f);
