@@ -8,9 +8,7 @@
       if (array == undefined) {
 	 write("undefined<br>\n");
       } else {
-            for (v in array) {
-	          write(name + "[" + v + "]=" + array[v] + "<br>\n");
-	    }
+	simple_table(array);
       }
    }
 
@@ -22,10 +20,6 @@
    showArray("server", server);
    showArray("session", session);
 %>
-
-<form name="Cancel" method="POST" action="/"> 
-    <input name="submit" type="submit" value="Cancel"><br>
-</form>
 
 </ul>
 

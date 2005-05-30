@@ -1,34 +1,26 @@
 <% page_header("columns", "ESP Form Test"); %>
 
-<form name="FormTest" method="POST" action="@@request['SCRIPT_NAME']"> 
-    firstName: <input name="firstName" type="text" value=""><br>
-    lastName:  <input name="lastName"  type="text" value=""><br>
-    <input name="submit" type="submit" value="OK">
-    <input name="submit" type="submit" value="Cancel"><br>
-</form>
+<%
+var f = Form("FormTest", 2, 2);
+f.element[0].label = "First Name";
+f.element[0].name  = "firstName";
+f.element[1].label = "Last Name";
+f.element[1].name  = "lastName";
+f.submit[0] = "OK";
+f.submit[1] = "Cancel";
+
+display_form(f);
 
 <%
   /* if its a post then the user has filled in the form, so
      report the values 
   */
-  if (request['REQUEST_METHOD'] == "POST") {
-
-  /* if they cancelled then take them back to the list of tests */
-  if (form['submit'] == "Cancel") {
-     redirect("/");
-  }
+  if (form['OK']) {
 %>
-  You chose firstName=@@form['firstName'] lastName=@@form['lastName']
+  You chose firstName=@@form['firstName'] lastName=@@form['lastName']<p>
+  
 <%
-
-   function showArray(name, array) {
-      write("<h3>Array: " + name + "</h3>\n");
-      for (v in array) {
-            write(name + "[" + v + "]=" + array[v] + "<br>\n");
-      }
-   }
-
-   showArray("form",    form);
+   simple_table(form);
   }
 %>
 
