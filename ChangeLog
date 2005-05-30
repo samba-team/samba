@@ -1,8 +1,8 @@
-2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
-
-	* kcm/kcm.8: document --disallow-getting-krbtgt and --door-path
-
 2005-05-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/connect.c: rename sendlength to prependlength (which
+	hopefully better represents its purpose), and change type to
+	krb5_boolean
 
 	* kdc/connect.c: log signal causing exit
 	
@@ -10,6 +10,8 @@
 	(main): trap SIGXCPU
 
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/kcm.8: document --disallow-getting-krbtgt and --door-path
 
 	* kcm/protocol.c (kcm_op_retrieve): check server for krbtgt, not
 	client
