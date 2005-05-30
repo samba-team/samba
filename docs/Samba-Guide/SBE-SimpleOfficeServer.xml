@@ -643,7 +643,7 @@ application/octet-stream
 			</procedure>
 
 <smbconfexample id="charity-smbconfnew">
-<title>Charity Administration Office &smb.conf; File</title>
+<title>Charity Administration Office &smb.conf; New-style File</title>
 <smbconfcomment>Global Parameters - Newer Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -681,7 +681,7 @@ application/octet-stream
 </smbconfexample>
 
 <smbconfexample id="charity-smbconf">
-<title>Charity Administration Office &smb.conf; File</title>
+<title>Charity Administration Office &smb.conf; Old-style File</title>
 <smbconfcomment>Global Parameters - Older Style Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
