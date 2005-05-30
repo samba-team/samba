@@ -601,9 +601,9 @@ sub ParseElementPushLevel
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
 	if (defined($ndr_flags)) {
-	    if ($l->{TYPE} eq "SUBCONTEXT") {
+		if ($l->{TYPE} eq "SUBCONTEXT") {
 			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
-			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
 			ParseSubcontextPushEnd($e, $l, $ndr_flags);
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPush($e, $l, $var_name);
@@ -923,9 +923,9 @@ sub ParseElementPullLevel
 	# Only pull something if there's actually something to be pulled
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
-				($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-				ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
-				ParseSubcontextPullEnd($e, $l);
+			($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
+			ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
+			ParseSubcontextPullEnd($e, $l);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
 
