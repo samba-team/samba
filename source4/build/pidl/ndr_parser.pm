@@ -2061,7 +2061,9 @@ sub FunctionTable($)
 	return if ($count == 0);
 
 	pidl "static const struct dcerpc_interface_call $interface->{NAME}\_calls[] = {";
+	$count = 0;
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
+		next if not defined($d->{OPNUM});
 		pidl "\t{";
 		pidl "\t\t\"$d->{NAME}\",";
 		pidl "\t\tsizeof(struct $d->{NAME}),";
@@ -2069,6 +2071,7 @@ sub FunctionTable($)
 		pidl "\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},";
 		pidl "\t\t(ndr_print_function_t) ndr_print_$d->{NAME}";
 		pidl "\t},";
+		$count++;
 	}
 	pidl "\t{ NULL, 0, NULL, NULL, NULL }";
 	pidl "};";
