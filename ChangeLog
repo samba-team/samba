@@ -1,3 +1,8 @@
+2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc/kerberos5.c (tgs_make_reply): copy ok-as-delegate flag from
+	server entry to encrypted ticket flags
+
 2005-05-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/connect.c: rename sendlength to prependlength (which
