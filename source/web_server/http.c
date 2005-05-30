@@ -31,7 +31,7 @@
 #include "web_server/esp/esp.h"
 #include "dlinklist.h"
 
-#define SWAT_SESSION_KEY "_swat_session_"
+#define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"
 
 /* state of the esp subsystem for a specific request */
@@ -434,6 +434,7 @@ static void http_setup_arrays(struct esp_state *esp)
 	if (web->session) {
 		SETVAR(ESP_REQUEST_OBJ, "SESSION_ID", web->session->id);
 	}
+	SETVAR(ESP_REQUEST_OBJ, "COOKIE_SUPPORT", web->input.cookie?"True":"False");
 
 	SETVAR(ESP_HEADERS_OBJ, "HTT_REFERER", web->input.referer);
 	SETVAR(ESP_HEADERS_OBJ, "HOST", web->input.host);
@@ -568,9 +569,15 @@ static const char *http_unescape(TALLOC_CTX *mem_ctx, const char *p)
 */
 static void esp_putvar(struct esp_state *esp, const char *var, const char *value)
 {
-	espSetStringVar(esp->req, ESP_FORM_OBJ, 
-			http_unescape(esp, var),
-			http_unescape(esp, value));
+	if (strcasecmp(var, SWAT_SESSION_KEY) == 0) {
+		/* special case support for browsers without cookie
+		 support */
+		esp->web->input.session_key = talloc_strdup(esp, value);
+	} else {
+		mprSetPropertyValue(&esp->variables[ESP_FORM_OBJ], 
+				    http_unescape(esp, var),
+				    mprCreateStringVar(http_unescape(esp, value), 0));
+	}
 }
 
 
@@ -676,13 +683,17 @@ static void http_setup_session(struct esp_state *esp)
 		key = talloc_strndup(esp, p, strcspn(p, ";"));
 	}
 
-	if (key == NULL) {
-		key = generate_random_str_list(esp, 64, "0123456789");
+	if (key == NULL && esp->web->input.session_key) {
+		key = esp->web->input.session_key;
+	} else if (key == NULL) {
+		key = generate_random_str_list(esp, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 	}
 
 	/* try to find this session in the existing session list */
 	for (s=edata->sessions;s;s=s->next) {
-		if (strcmp(key, s->id) == 0) break;
+		if (strcmp(key, s->id) == 0) {
+			break;
+		}
 	}
 
 	if (s == NULL) {
@@ -774,15 +785,10 @@ void http_process_input(struct websrv_context *web)
 			   edata->application_data, MPR_DEEP_COPY);
 	}
 
-	http_setup_session(esp);
-
 	talloc_set_destructor(esp, esp_destructor);
 
 	smb_setup_ejs_functions();
 	http_setup_ejs_functions();
-
-	esp->req = espCreateRequest(web, web->input.url, esp->variables);
-	if (esp->req == NULL) goto internal_error;
 
 	if (web->input.url == NULL) {
 		http_error(web, 400, "You must specify a GET or POST request");
@@ -796,13 +802,19 @@ void http_process_input(struct websrv_context *web)
 			http_error(web, 400, "Malformed POST data");
 			return;
 		}
-	} else if (strchr(web->input.url, '?')) {
+	} 
+	if (strchr(web->input.url, '?')) {
 		status = http_parse_get(esp);
 		if (!NT_STATUS_IS_OK(status)) {
 			http_error(web, 400, "Malformed GET data");
 			return;
 		}
 	}
+
+	http_setup_session(esp);
+
+	esp->req = espCreateRequest(web, web->input.url, esp->variables);
+	if (esp->req == NULL) goto internal_error;
 
 	/* work out the mime type */
 	p = strrchr(web->input.url, '.');
@@ -848,7 +860,8 @@ void http_process_input(struct websrv_context *web)
 	talloc_free(edata->application_data);
 	edata->application_data = talloc_zero(edata, struct MprVar);
 	mprSetCtx(edata->application_data);
-	mprCopyVar(edata->application_data, &esp->variables[ESP_APPLICATION_OBJ], MPR_DEEP_COPY);
+	mprCopyVar(edata->application_data, &esp->variables[ESP_APPLICATION_OBJ], 
+		   MPR_DEEP_COPY);
 
 	/* copy any session data */
 	if (web->session) {
