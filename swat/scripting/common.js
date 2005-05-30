@@ -61,3 +61,34 @@ function simple_menu() {
 	}
 	write("</ul>\n");
 }
+
+
+/*
+  display a ejs object as a table
+*/
+function simple_table(v) {
+	write("<table class=\"data\">\n");
+	for (r in v) {
+		write("<tr><td>" + r + "</td><td>" + v[r] + "</td></tr>\n");
+	}
+	write("</table>\n");
+}
+
+/*
+  display an array of objects, with the header for each element from the given 
+  attribute
+*/
+function multi_table(array, header) {
+	write("<table class=\"data\">\n");
+	for (i in array) {
+		var v = array[i];
+		write("<tr><th colspan=2>" + v[header] + "</th></tr>\n");
+		for (r in v) {
+			if (r != header) {
+				write("<tr><td align=left>" + r + 
+				      "</td><td align=left>" + v[r] + "</td></tr>\n");
+			}
+		}
+	}
+	write("</table>\n");
+}

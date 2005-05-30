@@ -105,3 +105,19 @@
     text-align:center;
     margin:10px 0 25px 0;
 }
+
+/*
+	styles for data tables
+*/
+table.data {
+	   border: 2px;
+}
+table.data th {
+	margin-top:20px;
+	text-align:left;
+        background-color: #F5C915;
+}
+table.data tr {
+        background-color: #E5C995;
+	text-align:left;
+}
