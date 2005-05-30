@@ -845,6 +845,6 @@ loop(void)
     else if(exit_flag == SIGINT || exit_flag == SIGTERM)
 	kdc_log(0, "Terminated");
     else
-	kdc_log(0, "Unexpected exit reason: %d", exit_flag)
+	kdc_log(0, "Unexpected exit reason: %d", exit_flag);
     free (d);
 }
