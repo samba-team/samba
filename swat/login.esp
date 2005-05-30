@@ -1,0 +1,29 @@
+<% page_header("plain", "SWAT Login"); %>
+
+<form name="login" method="POST" action="@@request.SCRIPT_NAME"> 
+    Username:   <input name="Username"  type="text" value=""><br>
+    Password:  <input name="Password" type="password" value=""><br>
+    <br>
+    <input name="submit" type="submit" value="Login"><br>
+</form>
+
+<%
+	if (request.REQUEST_METHOD == "POST") {
+		/* for now just authenticate everyone */
+		session.AUTHENTICATED = true;
+		session.authinfo = new Object();
+
+		session.authinfo.username = form.Username;
+
+		/* if the user was asking for the login page, then now
+		   redirect them to the main page. Otherwise just
+		   redirect them to the current page, which will now
+		   show its true content */
+		if (request.REQUEST_URI == "/login.esp") {
+		   redirect("/");
+		} else {
+		   redirect(request.REQUEST_URI);
+		}
+	}
+%>
+<% page_footer(); %>

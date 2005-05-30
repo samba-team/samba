@@ -1,0 +1,107 @@
+/* main.css */
+
+		/******* Links for right-hand side of the page ******/
+		/****************************************************/
+#links {
+	float:right;
+	margin:115px 1em 0 0;  
+	padding:0;
+    width:173px;
+}
+* html #links { 	/* Applies to IE5/6 only */
+	margin:115px .5% 0 0;
+}
+#links h4 {
+	margin-top:10px;
+	margin-left:1.5px;
+	font-size:small;
+}
+#links ul {
+	list-style-type:none;
+	padding:0;
+	padding-top:5px;
+	margin-left:20px;
+}
+#links a {
+	font-size:small;
+}
+#links p {
+	margin-top:25px;
+	margin-left:20px;
+}
+.releases {
+	padding:2px;
+	margin-top:35px;
+	border:1px solid #CCC;
+	background-color:#E5E9F5;
+}
+.beyond, .related, .intl {
+	padding:2px;
+	margin-top:25px;
+	border:1px solid #CCC;
+	background-color:#E5E9F5;
+}
+.beyond li {
+	margin-bottom:10px;
+}
+.contacts li{
+	list-style-type:disc;
+}
+		/****** Formats the page layout ********************/
+		/**************************************************/ 
+#content>.center {
+	min-height:800px;
+	z-index:0;
+}
+.center {
+	margin:0 22% 0 175px;
+	padding-top:130px;
+	padding-left:35px;
+	padding-bottom:50px;
+	padding-right:15px;
+	background-color:#FFF;
+	border-left:1px solid #FFFF64;
+	border-right:1px solid #FFFF64;
+	z-index:-1;
+}
+.center ul {
+	list-style-type:none;
+}
+.headline {
+        margin-left:20px;
+        font-style:italic;
+}
+		/*********T-shirts and mirror footnotes *************/
+		/****************************************************/
+.plugs {
+	font-style:italic;
+	text-align:center;
+	border-top:2px groove #3878CD;
+	border-bottom:2px groove #3878CD;
+	padding:10px;
+	margin-top:100px;
+}
+.plugs p {
+	padding:30px;
+}
+.plugs img {
+	float:left;
+}
+.request {
+	margin-top:50px;
+	font-style:italic;
+	font-size:small;
+}
+#noswp img {
+    border:1px solid #3868CD;
+    width:370px;
+    height:90px;
+}
+#noswp a:hover {
+    background-color:transparent;
+}
+#noswp {
+    width:auto;
+    text-align:center;
+    margin:10px 0 25px 0;
+}

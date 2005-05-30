@@ -1,8 +1,5 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
+<% page_header("columns", "ESP standard variables test"); %>
+
 <h1>Samba4 showvars test</h1>
 
 <%
@@ -26,10 +23,10 @@ Samba4 ESP test
    showArray("session", session);
 %>
 
-<form name="Cancel" method="POST" action="index.esp"> 
+<form name="Cancel" method="POST" action="/"> 
     <input name="submit" type="submit" value="Cancel"><br>
 </form>
 
 </ul>
-</BODY>
-</HTML>
+
+<% page_footer(); %>

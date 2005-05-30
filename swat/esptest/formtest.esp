@@ -1,9 +1,4 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
-<h1>Samba4 form test</h1>
+<% page_header("columns", "ESP Form Test"); %>
 
 <form name="FormTest" method="POST" action="@@request['SCRIPT_NAME']"> 
     firstName: <input name="firstName" type="text" value=""><br>
@@ -20,7 +15,7 @@ Samba4 ESP test
 
   /* if they cancelled then take them back to the list of tests */
   if (form['submit'] == "Cancel") {
-     redirect("index.esp");
+     redirect("/");
   }
 %>
   You chose firstName=@@form['firstName'] lastName=@@form['lastName']
@@ -37,5 +32,4 @@ Samba4 ESP test
   }
 %>
 
-</BODY>
-</HTML>
+<% page_footer(); %>

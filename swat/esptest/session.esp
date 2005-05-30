@@ -1,8 +1,5 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
+<% page_header("columns", "ESP session test"); %>
+
 <h1>Samba4 session test</h1>
 
 <form name="SessionTest" method="POST" action="@@request['SCRIPT_NAME']"> 
@@ -22,7 +19,7 @@ Samba4 ESP test
 if (request['REQUEST_METHOD'] == "POST") {
 	/* if they cancelled then take them back to the list of tests */
 	if (form['submit'] == "Cancel") {
-		redirect("index.esp");
+		redirect("/");
 	}
 	
 	name  = form['Name'];
@@ -61,5 +58,4 @@ showArray("session", session);
 write("SessionId=" + request['SESSION_ID'] + "<br>\n");
 %>
 
-</BODY>
-</HTML>
+<% page_footer(); %>

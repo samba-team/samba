@@ -1,8 +1,5 @@
-<HTML>
-<TITLE>
-Samba4 ESP test
-</TITLE>
-<BODY>
+<% page_header("columns", "ESP loadparm test"); %>
+
 <h1>Samba4 loadparm test</h1>
 
 <form name="LoadparmTest" method="POST" action="@@request['SCRIPT_NAME']"> 
@@ -37,7 +34,7 @@ function showValue(name, v) {
 if (request['REQUEST_METHOD'] == "POST") {
 	/* if they cancelled then take them back to the list of tests */
 	if (form['submit'] == "Cancel") {
-		redirect("index.esp");
+		redirect("/");
 	}
 	
 	var v;
@@ -73,5 +70,4 @@ showParameter("server signing");
 showParameter("interfaces");
 %>
 
-</BODY>
-</HTML>
+<% page_footer(); %>
