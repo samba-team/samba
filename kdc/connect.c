@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -840,5 +840,11 @@ loop(void)
 		}
 	}
     }
+    if(exit_flag == SIGXCPU)
+	kdc_log(0, "CPU time limit exceeded");
+    else if(exit_flag == SIGINT || exit_flag == SIGTERM)
+	kdc_log(0, "Terminated");
+    else
+	kdc_log(0, "Unexpected exit reason: %d", exit_flag)
     free (d);
 }
