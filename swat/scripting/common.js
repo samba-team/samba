@@ -8,6 +8,13 @@ global.page = new Object();
 /* fill in some defaults */
 global.page.title = "Samba Web Administration Tool";
 
+
+/* if the browser was too dumb to set the HOST header, then
+   set it now */
+if (headers['HOST'] == undefined) {
+	headers['HOST'] = server['SERVER_HOST'] + ":" + server['SERVER_PORT'];
+}
+
 /*
   show the page header. page types include "plain" and "column" 
 */
