@@ -132,7 +132,8 @@ sub GetElementLevelTable($)
 		}
 	}
 
-	if (my $hdr_size = util::has_property($e, "subcontext")) {
+	if (defined(util::has_property($e, "subcontext"))) {
+		my $hdr_size = util::has_property($e, "subcontext");
 		my $subsize = util::has_property($e, "subcontext_size");
 		if (not defined($subsize)) { 
 			$subsize = -1; 
@@ -178,7 +179,7 @@ sub can_contain_deferred
 
 	return 1 if ($e->{POINTERS});
 	return 0 if (typelist::is_scalar($e->{TYPE}));
-	return 0 if (util::has_property($e, "subcontext"));
+	return 0 if (defined(util::has_property($e, "subcontext")));
 	return 1 unless (typelist::hasType($e->{TYPE})); # assume the worst
 
 	my $type = typelist::getType($e->{TYPE});
