@@ -39,6 +39,9 @@ testit() {
 
 OPTIONS="-U$username%$password -W $domain --option realm=$realm"
 
+echo Testing RPC-SPOOLSS on ncacn_np
+testit bin/smbtorture ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*"
+
 for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate bigendian; do
    for transport in ncacn_ip_tcp ncacn_np; do
      case $transport in
