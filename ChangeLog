@@ -1,3 +1,7 @@
+2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/kcm.8: document --disallow-getting-krbtgt and --door-path
+
 2005-05-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/connect.c: log signal causing exit
