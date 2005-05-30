@@ -32,6 +32,7 @@
 #include "dlinklist.h"
 
 #define SWAT_SESSION_KEY "_swat_session_"
+#define HTTP_PREAUTH_URI "/scripting/preauth.esp"
 
 /* state of the esp subsystem for a specific request */
 struct esp_state {
@@ -121,7 +122,7 @@ static const char *http_local_path(struct websrv_context *web, const char *url)
 	if (url[0] != '/') return NULL;
 
 	for (i=0;url[i];i++) {
-		if ((!isalnum(url[i]) && !strchr("./", url[i])) ||
+		if ((!isalnum(url[i]) && !strchr("./_", url[i])) ||
 		    (url[i] == '.' && strchr("/.", url[i+1]))) {
 			return NULL;
 		}
@@ -164,6 +165,7 @@ static int http_readFile(EspHandle handle, char **buf, int *len, const char *pat
 	return 0;
 
 failed:
+	DEBUG(0,("Failed to read file %s - %s\n", path, strerror(errno)));
 	if (fd != -1) close(fd);
 	talloc_free(*buf);
 	*buf = NULL;
@@ -385,6 +387,7 @@ static void http_simple_request(struct websrv_context *web)
 	/* looks ok */
 	web->output.fd = open(path, O_RDONLY);
 	if (web->output.fd == -1) {
+		DEBUG(0,("Failed to read file %s - %s\n", path, strerror(errno)));
 		http_error_unix(web, path);
 		return;
 	}
@@ -394,9 +397,6 @@ static void http_simple_request(struct websrv_context *web)
 		goto invalid;
 	}
 
-	http_output_headers(web);
-	EVENT_FD_WRITEABLE(web->conn->event.fde);
-	web->output.output_pending = True;
 	return;
 
 invalid:
@@ -481,15 +481,12 @@ void ejs_exception(const char *reason)
 /*
   process a esp request
 */
-static void esp_request(struct esp_state *esp)
+static void esp_request(struct esp_state *esp, const char *url)
 {
 	struct websrv_context *web = esp->web;
-	const char *url = web->input.url;
 	size_t size;
 	int res;
 	char *emsg = NULL, *buf;
-
-	http_setup_arrays(esp);
 
 	if (http_readFile(web, &buf, &size, url) != 0) {
 		http_error_unix(web, url);
@@ -507,9 +504,40 @@ static void esp_request(struct esp_state *esp)
 		http_writeBlock(web, emsg, strlen(emsg));
 	}
 	talloc_free(buf);
-	http_output_headers(web);
-	EVENT_FD_WRITEABLE(web->conn->event.fde);
-	web->output.output_pending = True;
+}
+
+
+/*
+  perform pre-authentication on every page is /scripting/preauth.esp
+  exists.  If this script generates any non-whitepace output at all,
+  then we don't run the requested URL.
+
+  note that the preauth is run even for static pages such as images.
+*/
+static BOOL http_preauth(struct esp_state *esp)
+{
+	const char *path = http_local_path(esp->web, HTTP_PREAUTH_URI);
+	int i;
+	if (path == NULL) {
+		http_error(esp->web, 500, "Internal server error");
+		return False;
+	}
+	if (!file_exist(path)) {
+		/* if the preath script is not installed then allow access */
+		return True;
+	}
+	esp_request(esp, HTTP_PREAUTH_URI);
+	for (i=0;i<esp->web->output.content.length;i++) {
+		if (!isspace(esp->web->output.content.data[i])) {
+			/* if the preauth has generated content, then force it to be
+			   html, so that we can show the login page for failed
+			   access to images */
+			http_setHeader(esp->web, "Content-Type: text/html", 0);
+			return False;
+		}
+	}
+	data_blob_free(&esp->web->output.content);
+	return True;
 }
 
 
@@ -716,6 +744,7 @@ void http_process_input(struct websrv_context *web)
 		{"jpg",  "image/jpeg"},
 		{"txt",  "text/plain"},
 		{"ico",  "image/x-icon"},
+		{"css",  "text/css"},
 		{"esp",  "text/html", True}
 	};
 
@@ -798,10 +827,21 @@ void http_process_input(struct websrv_context *web)
 	http_setHeader(web, "Connection: close", 0);
 	http_setHeader(web, talloc_asprintf(esp, "Content-Type: %s", file_type), 0);
 
-	if (esp_enable) {
-		esp_request(esp);
-	} else {
-		http_simple_request(web);
+	http_setup_arrays(esp);
+
+	/* possibly do pre-authentication */
+	if (http_preauth(esp)) {
+		if (esp_enable) {
+			esp_request(esp, web->input.url);
+		} else {
+			http_simple_request(web);
+		}
+	}
+
+	if (!web->output.output_pending) {
+		http_output_headers(web);
+		EVENT_FD_WRITEABLE(web->conn->event.fde);
+		web->output.output_pending = True;
 	}
 
 	/* copy any application data to long term storage in edata */
