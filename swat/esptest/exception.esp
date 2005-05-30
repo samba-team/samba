@@ -5,16 +5,10 @@
 <form name="ExceptionTest" method="POST" action="@@request['SCRIPT_NAME']"> 
     <input name="submit" type="submit" value="Generate Exception">
     <input name="submit" type="submit" value="No Exception">
-    <input name="submit" type="submit" value="Cancel"><br>
 </form>
 
 <%
 if (request['REQUEST_METHOD'] == "POST") {
-	/* if they cancelled then take them back to the list of tests */
-	if (form['submit'] == "Cancel") {
-		redirect("/");
-	}
-
 	function TestFunction(arg1, arg2) {
 		 return "OK";
 	}

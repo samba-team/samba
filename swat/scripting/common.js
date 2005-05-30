@@ -92,3 +92,60 @@ function multi_table(array, header) {
 	}
 	write("</table>\n");
 }
+
+/*
+  create a Form object with the defaults filled in, ready for display_form()
+ */
+function Form(name, num_elements, num_submits)
+{
+	var f = new Object();
+	f.name = name;
+	f.element = new Array(num_elements);
+	f.submit =  new Array(num_submits);
+	f.action = request.REQUEST_URI;
+	f.class = "form";
+	for (i in f.element) {
+		f.element[i] = new Object();
+		f.element[i].type = "text";
+		f.element[i].value = "";
+	}
+	return f;
+}
+
+/*
+  display a simple form from a ejs Form object
+  caller should fill in
+    f.name          = form name
+    f.action        = action to be taken on submit (optional, defaults to current page)
+    f.class         = css class (optional, defaults to 'form')
+    f.submit        = an array of submit labels
+    f.element[i].label = element label
+    f.element[i].name  = element name (defaults to label)
+    f.element[i].type  = element type
+    f.element[i].value = current value (optional, defaults to "")
+ */
+function display_form(f) {
+	write('<form name="' + f.name +
+	      '" method="post" action="' + f.action + 
+	      '" class="' + f.class + '">\n');
+	write("<table>\n");
+	for (i in f.element) {
+		var e = f.element[i];
+		if (e.name == undefined) {
+			e.name = e.label;
+		}
+		if (e.value == undefined) {
+			e.value = '""';
+		}
+		write("<tr>");
+		write("<td>" + e.label + "</td>");
+		write('<td><input name="' + e.name + '" type="' + 
+		      e.type + '" value="' + e.value + '"></td>\n');
+	}
+	write("</table>\n");
+	for (i in f.submit) {
+		write('<input name="' + f.submit[i] + 
+		      '" type="submit" value="' + f.submit[i] + '">\n');
+	}
+	write("</form>\n");
+}
