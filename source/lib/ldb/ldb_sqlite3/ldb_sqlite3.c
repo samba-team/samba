@@ -1,22 +1,22 @@
 /* 
    ldb database library
-
+   
    Copyright (C) Andrew Tridgell  2004
-
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
+   
+   ** NOTE! The following LGPL license applies to the ldb
+   ** library. This does NOT imply that all of Samba is released
+   ** under the LGPL
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2 of the License, or (at your option) any later version.
-
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
-
+   
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -25,7 +25,7 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb sqlite backend
+ *  Component: ldb sqlite3 backend
  *
  *  Description: core files for SQLITE3 backend
  *
@@ -39,30 +39,30 @@
 
 #undef SQL_EXEC                 /* just in case; not expected to be defined */
 #define SQL_EXEC(lsqlite3, query, reset)                        \
-    do {                                                        \
-        lsqlite3->last_rc =                                     \
-                sqlite3_step(lsqlite3->queries.query);          \
-        if (lsqlite3->last_rc == SQLITE_BUSY || reset)          \
-                (void) sqlite3_reset(lsqlite3->queries.query);  \
-    } while lsqlite3->last_rc == SQLITE_BUSY;
+        do {                                                    \
+                lsqlite3->last_rc =                             \
+                        sqlite3_step(lsqlite3->queries.query);  \
+                if (lsqlite3->last_rc == SQLITE_BUSY || reset)  \
+                        (void) sqlite3_reset(lsqlite3->queries.query);  \
+        } while lsqlite3->last_rc == SQLITE_BUSY;
 
 
 
 #if 0
 /*
  * we don't need this right now, but will once we add some backend options
+ *
+ * find an option in an option list (a null terminated list of strings)
+ *
+ * this assumes the list is short. If it ever gets long then we really should
+ * do this in some smarter way
  */
-
-/*
-  find an option in an option list (a null terminated list of strings)
-
-  this assumes the list is short. If it ever gets long then we really
-  should do this in some smarter way
- */
-static const char *lsqlite3_option_find(const struct lsqlite3_private *lsqlite3, const char *name)
+static const char *
+lsqlite3_option_find(const struct lsqlite3_private *lsqlite3,
+                     const char *name)
 {
-	int i;
-	size_t len = strlen(name);
+	int                 i;
+	size_t              len = strlen(name);
 
 	if (!lsqlite3->options) return NULL;
 
@@ -80,10 +80,13 @@ static const char *lsqlite3_option_find(const struct lsqlite3_private *lsqlite3,
 /*
  * rename a record
  */
-static int lsqlite3_rename(struct ldb_module *module, const char *olddn, const char *newdn)
+static int
+lsqlite3_rename(struct ldb_module *module,
+                const char *olddn,
+                const char *newdn)
 {
-        int column;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
+        int                         column;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	/* ignore ltdb specials */
 	if (olddn[0] == '@' ||newdn[0] == '@') {
@@ -117,11 +120,13 @@ static int lsqlite3_rename(struct ldb_module *module, const char *olddn, const c
 /*
  * delete a record
  */
-static int lsqlite3_delete(struct ldb_module *module, const char *dn)
+static int
+lsqlite3_delete(struct ldb_module *module,
+                const char *dn)
 {
-	int ret = 0;
-        int column;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
+	int                         ret = 0;
+        int                         column;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	/* ignore ltdb specials */
 	if (dn[0] == '@') {
@@ -146,7 +151,9 @@ static int lsqlite3_delete(struct ldb_module *module, const char *dn)
 /*
  * free a search result
  */
-static int lsqlite3_search_free(struct ldb_module *module, struct ldb_message **res)
+static int
+lsqlite3_search_free(struct ldb_module *module,
+                     struct ldb_message **res)
 {
 	talloc_free(res);
 	return 0;
@@ -156,12 +163,15 @@ static int lsqlite3_search_free(struct ldb_module *module, struct ldb_message **
 /*
  * add a single set of ldap message values to a ldb_message
  */
-static int lsqlite3_add_msg_attr(struct ldb_context *ldb,
-			     struct ldb_message *msg, 
-			     const char *attr, struct berval **bval)
+static int
+lsqlite3_add_msg_attr(struct ldb_context *ldb,
+                      struct ldb_message *msg, 
+                      const char *attr,
+                      struct berval **bval)
 {
-	int count, i;
-	struct ldb_message_element *el;
+        int                          i;
+	int                          count;
+	struct ldb_message_element * el;
 
 	count = ldap_count_values_len(bval);
 
@@ -211,13 +221,18 @@ static int lsqlite3_add_msg_attr(struct ldb_context *ldb,
 /*
  * search for matching records
  */
-static int lsqlite3_search(struct ldb_module *module, const char *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
+static int
+lsqlite3_search(struct ldb_module *module,
+                const char *base,
+                enum ldb_scope scope,
+                const char *expression,
+                const char * const *attrs,
+                struct ldb_message ***res)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
-	int count, msg_count;
+	int                       count;
+        int                       msg_count;
+	struct ldb_context *      ldb = module->ldb;
+	struct lsqlite3_private * lsqlite3 = module->private_data;
 
 	if (base == NULL) {
 		base = "";
@@ -316,16 +331,18 @@ failed:
  * Issue a series of SQL statements to implement the ADD/MODIFY/DELETE
  * requests in the ldb_message
  */
-static int lsqlite3_msg_to_sql(struct ldb_context *ldb,
-                               const struct ldb_message *msg,
-                               long long dn_id,
-                               int use_flags)
+static int
+lsqlite3_msg_to_sql(struct ldb_context *ldb,
+                    const struct ldb_message *msg,
+                    long long dn_id,
+                    int use_flags)
 {
-        int flags;
-	unsigned int i, j;
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
-        sqlite3_stmt *stmt = NULL;
+        int                         flags;
+	unsigned int                i;
+        unsigned int                j;
+        sqlite3_stmt *              stmt = NULL;
+	struct ldb_context *        ldb = module->ldb;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
@@ -428,11 +445,13 @@ static int lsqlite3_msg_to_sql(struct ldb_context *ldb,
 /*
  * add a record
  */
-static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg)
+static int
+lsqlite3_add(struct ldb_module *module,
+             const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
-	int ret;
+	int                         ret;
+	struct ldb_context *        ldb = module->ldb;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	/* ignore ltdb specials */
 	if (msg->dn[0] == '@') {
@@ -482,12 +501,13 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 /*
  * modify a record
  */
-static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *msg)
+static int
+lsqlite3_modify(struct ldb_module *module,
+                const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
-	LDAPMod **mods;
-	int ret = 0;
+	int                         ret = 0;
+	struct ldb_context *        ldb = module->ldb;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	/* ignore ltdb specials */
 	if (msg->dn[0] == '@') {
@@ -538,11 +558,13 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
         return lsqlite3->last_rc == SQLITE_DONE && ret == 0 ? 0 : -1;
 }
 
-static int lsqlite3_lock(struct ldb_module *module, const char *lockname)
+static int
+lsqlite3_lock(struct ldb_module *module,
+              const char *lockname)
 {
-	int ret = 0;
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
+	int                         ret = 0;
+	struct ldb_context *        ldb = module->ldb;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	if (lockname == NULL) {
 		return -1;
@@ -559,11 +581,13 @@ static int lsqlite3_lock(struct ldb_module *module, const char *lockname)
 	return lsqlite3->last_rc == 0 ? 0 : -1;
 }
 
-static int lsqlite3_unlock(struct ldb_module *module, const char *lockname)
+static int
+lsqlite3_unlock(struct ldb_module *module,
+                const char *lockname)
 {
-	int ret = 0;
-	struct ldb_context *ldb = module->ldb;
-	struct lsqlite3_private *lsqlite3 = module->private_data;
+	int                         ret = 0;
+	struct ldb_context *        ldb = module->ldb;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	if (lockname == NULL) {
 		return -1;
@@ -587,9 +611,11 @@ static int lsqlite3_unlock(struct ldb_module *module, const char *lockname)
 /*
  * return extended error information
  */
-static const char *lsqlite3_errstring(struct ldb_module *module)
+static const char *
+lsqlite3_errstring(struct ldb_module *module)
 {
-	struct lsqlite3_private *lsqlite3 = module->private_data;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
+
 	return sqlite3_errmsg(lsqlite3->sqlite3);
 }
 
@@ -608,22 +634,25 @@ static const struct ldb_module_ops lsqlite3_ops = {
 };
 
 
-static int lsqlite3_destructor(void *p)
+static int
+lsqlite3_destructor(void *p)
 {
-	struct lsqlite3_private *lsqlite3 = p;
+	struct lsqlite3_private *   lsqlite3 = p;
+
         (void) sqlite3_close(lsqlite3->sqlite3);
 	return 0;
 }
 
-static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
-                               const char *url)
+static int
+lsqlite3_initialize(lsqlite3_private *lsqlite3,
+                    const char *url)
 {
-        int bNewDatabase = False;
-        char *p;
-        char *pTail;
-        struct stat statbuf;
-        sqlite3_stmt *stmt;
-        const char *schema =
+        int             bNewDatabase = False;
+        char *          p;
+        char *          pTail;
+        struct stat     statbuf;
+        sqlite3_stmt *  stmt;
+        const char *    schema =       
                 "
                 -- ------------------------------------------------------
 
@@ -983,13 +1012,14 @@ static int lsqlite3_initialize(lsqlite3_private *lsqlite3,
 /*
  * connect to the database
  */
-struct ldb_context *lsqlite3_connect(const char *url, 
-                                     unsigned int flags, 
-                                     const char *options[])
+struct ldb_context *
+lsqlite3_connect(const char *url, 
+                 unsigned int flags, 
+                 const char *options[])
 {
-	struct ldb_context *ldb = NULL;
-	struct lsqlite3_private *lsqlite3 = NULL;
-	int i;
+	int                         i;
+	struct ldb_context *        ldb = NULL;
+	struct lsqlite3_private *   lsqlite3 = NULL;
 
 	ldb = talloc(NULL, struct ldb_context);
 	if (!ldb) {
