@@ -82,7 +82,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     /* Get a few bytes so we can pass our return value to
        pam_sm_setcred(). */
-    ret_data = malloc(sizeof(int));
+    ret_data = SMB_MALLOC_P(int);
 
     /* get the username */
     retval = pam_get_user( pamh, &name, "Username: " );

@@ -238,7 +238,7 @@ char * smbpXstrDup( const char *x )
         register int i;
 
         for (i = 0; x[i]; ++i); /* length of string */
-        if ((new = malloc(++i)) == NULL) {
+        if ((new = SMB_MALLOC_ARRAY(char, ++i)) == NULL) {
             i = 0;
             _log_err( LOG_CRIT, "out of memory in smbpXstrDup" );
         } else {
@@ -344,7 +344,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
         }
     }
 
-    data_name = (char *) malloc( sizeof(FAIL_PREFIX) + strlen( name ));
+    data_name = SMB_MALLOC_ARRAY(char, sizeof(FAIL_PREFIX) + strlen( name ));
     if (data_name == NULL) {
         _log_err( LOG_CRIT, "no memory for data-name" );
     }
@@ -379,8 +379,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
 
             /* get a failure recorder */
 
-            new = (struct _pam_failed_auth *)
-                      malloc( sizeof(struct _pam_failed_auth) );
+            new = SMB_MALLOC_P( struct _pam_failed_auth );
 
             if (new != NULL) {
 
