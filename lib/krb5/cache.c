@@ -317,8 +317,10 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
     } else
 	p = strdup(name);
 
-    if (p == NULL)
+    if (p == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
 	return ENOMEM;
+    }
 
     if (context->default_cc_name)
 	free(context->default_cc_name);
@@ -353,8 +355,10 @@ krb5_cc_default(krb5_context context,
 {
     const char *p = krb5_cc_default_name(context);
 
-    if (p == NULL)
+    if (p == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
 	return ENOMEM;
+    }
     return krb5_cc_resolve(context, p, id);
 }
 
