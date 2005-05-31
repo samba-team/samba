@@ -10,12 +10,12 @@ int main(int argc, char * argv[])
 { 
     int             ret;
     int             debug = 0;
-    int             mode = 0666;
     char            buffer[16384]; 
     char            mtime[32];
     char            ctime[32];
     char            atime[32];
     char *          pSmbPath = NULL;
+    time_t          t = time(NULL);
     struct tm       tm;
     struct stat     st;
     struct utimbuf  utimbuf;
@@ -31,12 +31,12 @@ int main(int argc, char * argv[])
     else if (argc == 3)
     {
         pSmbPath = argv[1];
-        mode = (int) strtol(argv[2], NULL, 8);
+        t = (time_t) strtol(argv[2], NULL, 10);
     }
     else
     {
         printf("usage: "
-               "%s [ smb://path/to/file [ octal_mode ] ]\n",
+               "%s [ smb://path/to/file [ mtime ] ]\n",
                argv[0]);
         return 1;
     }
@@ -54,8 +54,8 @@ int main(int argc, char * argv[])
            st.st_ctime, ctime_r(&st.st_ctime, ctime),
            st.st_atime, ctime_r(&st.st_atime, atime)); 
     
-    utimbuf.actime = st.st_atime - 120;  /* unchangable (wont change) */
-    utimbuf.modtime = st.st_mtime - 120; /* this one should succeed */
+    utimbuf.actime = t;         /* unchangable (wont change) */
+    utimbuf.modtime = t;        /* this one should succeed */
     if (smbc_utime(pSmbPath, &utimbuf) < 0)
     {
         perror("smbc_utime");
