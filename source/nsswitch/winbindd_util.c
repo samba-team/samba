@@ -262,7 +262,14 @@ static void trustdom_recv(void *private, BOOL success)
 
 		if (find_domain_from_sid_noinit(&sid) == NULL) {
 			struct winbindd_domain *domain;
-			domain = add_trusted_domain(p, alt_name,
+			char *alternate_name = NULL;
+			
+			/* use the real alt_name if we have one, else pass in NULL */
+
+			if ( !strequal( alt_name, "(null)" ) )
+				alternate_name = alt_name;
+
+			domain = add_trusted_domain(p, alternate_name,
 						    &cache_methods,
 						    &sid);
 			setup_domain_child(domain, &domain->child);
