@@ -1,13 +1,13 @@
 <% page_header("columns", "ESP Include Test"); %>
 
-including /scripting/test.ejs<p>
+including /scripting/test.ejs<p/>
 <% include("/scripting/test.ejs"); %>
-calling a function from test.ejs ...<p>
+calling a function from test.ejs ...<p/>
 <% showArray("request", request); %>
 
-including /scripting/test.esp<p>
+including /scripting/test.esp<p/>
 <% include /scripting/test.esp %>
-calling a function from test.esp ...<p>
+calling a function from test.esp ...<p/>
 <% res = testfn('foo'); %>
 result is: @@res
 

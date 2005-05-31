@@ -45,7 +45,7 @@ if (request['REQUEST_METHOD'] == "POST") {
 }
 
 simple_table(session);
-write("SessionId=" + request['SESSION_ID'] + "<br>\n");
+write("SessionId=" + request['SESSION_ID'] + "<br/>\n");
 %>
 
 <% page_footer(); %>
