@@ -1,3 +1,16 @@
+2005-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/cache.c: When returning a new error code, set error
+	string.
+
+2005-05-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/keytab_file.c: Adapt to changed signature of
+	_krb5_xunlock, clear more error string where needed.
+
+	* lib/krb5/fcache.c (_krb5_xunlock): catch the error and turn it
+	into something sensable
+
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* kdc/kerberos5.c (tgs_make_reply): copy ok-as-delegate flag from
