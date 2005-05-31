@@ -786,7 +786,7 @@ BOOL nt_time_is_zero(NTTIME *nt)
  Return a timeval difference in usec.
 ****************************************************************************/
 
-SMB_BIG_INT usec_time_diff(struct timeval *larget, struct timeval *smallt)
+SMB_BIG_INT usec_time_diff(const struct timeval *larget, const struct timeval *smallt)
 {
 	SMB_BIG_INT sec_diff = larget->tv_sec - smallt->tv_sec;
 	return (sec_diff * 1000000) + (SMB_BIG_INT)(larget->tv_usec - smallt->tv_usec);

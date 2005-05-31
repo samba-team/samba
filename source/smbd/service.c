@@ -362,7 +362,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
-	conn->ipc = ((strncmp(dev,"IPC",3) == 0) || strequal(dev,"ADMIN$"));
+	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) || ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
 	conn->dirptr = NULL;
 
 	/* Case options for the share. */
@@ -783,7 +783,9 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	snum = find_service(service);
 
 	if (snum < 0) {
-		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
+		if (strequal(service,"IPC$") 
+			|| (lp_enable_asu_support() && strequal(service,"ADMIN$"))) 
+		{
 			DEBUG(3,("refusing IPC connection to %s\n", service));
 			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
