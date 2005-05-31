@@ -988,12 +988,7 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 			close(fd);
 		}
 
-	} else if ( winbind_create_group( unix_group, NULL ) ) {
-
-		DEBUG(3,("smb_create_group: winbindd created the group (%s)\n",
-			unix_group));
-		ret = 0;
-	}
+	} 
 	
 	if (*new_gid == 0) {
 		struct group *grp = getgrnam(unix_group);
@@ -1024,12 +1019,6 @@ int smb_delete_group(char *unix_group)
 		return ret;
 	}
 
-	if ( winbind_delete_group( unix_group ) ) {
-		DEBUG(3,("smb_delete_group: winbindd deleted the group (%s)\n",
-			unix_group));
-		return 0;
-	}
-		
 	return -1;
 }
 
@@ -1054,15 +1043,6 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 		return ret;
 	}
 
-	/* Try winbindd */
-	
-	if ( winbind_set_user_primary_group( unix_user, unix_group ) ) {
-		DEBUG(3,("smb_delete_group: winbindd set the group (%s) as the primary group for user (%s)\n",
-			unix_group, unix_user));
-		flush_pwnam_cache();
-		return 0;
-	}		
-	
 	return -1;
 }
 
@@ -1086,14 +1066,6 @@ int smb_add_user_group(char *unix_group, char *unix_user)
 		return ret;
 	}
 	
-	/* Try winbindd */
-
-	if ( winbind_add_user_to_group( unix_user, unix_group ) ) {
-		DEBUG(3,("smb_delete_group: winbindd added user (%s) to the group (%s)\n",
-			unix_user, unix_group));
-		return -1;
-	}	
-	
 	return -1;
 }
 
@@ -1115,14 +1087,6 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 		ret = smbrun(del_script,NULL);
 		DEBUG(ret ? 0 : 3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 		return ret;
-	}
-	
-	/* Try winbindd */
-
-	if ( winbind_remove_user_from_group( unix_user, unix_group ) ) {
-		DEBUG(3,("smb_delete_group: winbindd removed user (%s) from the group (%s)\n",
-			unix_user, unix_group));
-		return 0;
 	}
 	
 	return -1;

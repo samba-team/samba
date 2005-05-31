@@ -286,15 +286,6 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
 	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
 	
-	/* UNIX account management functions */
-	{ WINBINDD_CREATE_USER, 		winbindd_create_user, 		"CREATE_USER" 		},
-	{ WINBINDD_CREATE_GROUP,		winbindd_create_group, 		"CREATE_GROUP" 		},
-	{ WINBINDD_ADD_USER_TO_GROUP, 		winbindd_add_user_to_group, 	"ADD_USER_TO_GROUP" 	},
-	{ WINBINDD_REMOVE_USER_FROM_GROUP, 	winbindd_remove_user_from_group,"REMOVE_USER_FROM_GROUP"},
-	{ WINBINDD_SET_USER_PRIMARY_GROUP, 	winbindd_set_user_primary_group,"SET_USER_PRIMARY_GROUP"},
-	{ WINBINDD_DELETE_USER,	 		winbindd_delete_user,		"DELETE_USER"		},
-	{ WINBINDD_DELETE_GROUP, 		winbindd_delete_group,		"DELETE_GROUP"		},
-	
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

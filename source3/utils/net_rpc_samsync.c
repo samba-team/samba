@@ -523,13 +523,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-		} else {
-			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
-			
-			/* don't need a RID allocated since the user already has a SID */
-			if ( !winbind_create_user( account, NULL ) )
-				DEBUG(4,("fetch_account_info: winbind_create_user() failed\n"));
-		}
+		} 
 		
 		/* try and find the possible unix account again */
 		if ( !(passwd = Get_Pwnam(account)) ) {

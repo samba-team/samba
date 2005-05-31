@@ -111,7 +111,6 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) 
 {
 	WINBIND_USERINFO user_info;
-	WINBINDD_PW *pw;
 	DOM_SID user_sid;
 	NTSTATUS status;
 	fstring name_domain, name_user;
@@ -130,18 +129,6 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	parse_domain_user(state->request.data.username, 
 			  name_domain, name_user);
 	
-	/* if this is our local domain (or no domain), the do a local tdb search */
-	
-	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
-		if ( !(pw = wb_getpwnam(name_user)) ) {
-			DEBUG(5,("winbindd_getpwnam: lookup for %s\\%s failed\n",
-				name_domain, name_user));
-			return WINBINDD_ERROR;
-		}
-		memcpy( &state->response.data.pw, pw, sizeof(WINBINDD_PW) );
-		return WINBINDD_OK;
-	}
-
 	/* should we deal with users for our domain? */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
@@ -206,7 +193,6 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
-	WINBINDD_PW *pw;
 	fstring dom_name;
 	fstring user_name;
 	enum SID_NAME_USE name_type;
@@ -224,13 +210,6 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: getpwuid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
 
-	/* always try local tdb first */
-	
-	if ( (pw = wb_getpwuid(state->request.data.uid)) != NULL ) {
-		memcpy( &state->response.data.pw, pw, sizeof(WINBINDD_PW) );
-		return WINBINDD_OK;
-	}
-	
 	/* Get rid from uid */
 
 	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid))) {
