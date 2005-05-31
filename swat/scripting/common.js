@@ -82,12 +82,32 @@ function simple_menu() {
 
 
 /*
-  display a ejs object as a table
+  display a table element
+*/
+function table_element(i, o) {
+	write("<tr><td>" + i + "</td><td>");
+	if (typeof(o[i]) == "object") {
+		var first;
+		first = true;
+		for (j in o[i]) {
+			if (first == false) {
+				write("<br />");
+			}
+			write(o[i][j]);
+			first = false;
+		}
+	} else {
+		write(o[i]);
+	}
+	write("</td></tr>\n");
+}
+/*
+  display a ejs object as a table. The header is optional
 */
 function simple_table(v) {
 	write("<table class=\"data\">\n");
 	for (r in v) {
-		write("<tr><td>" + r + "</td><td>" + v[r] + "</td></tr>\n");
+		table_element(r, v);
 	}
 	write("</table>\n");
 }
@@ -103,8 +123,7 @@ function multi_table(array, header) {
 		write("<tr><th colspan=2>" + v[header] + "</th></tr>\n");
 		for (r in v) {
 			if (r != header) {
-				write("<tr><td align=left>" + r + 
-				      "</td><td align=left>" + v[r] + "</td></tr>\n");
+			    table_element(r, v);
 			}
 		}
 	}
