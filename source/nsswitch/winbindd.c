@@ -350,6 +350,15 @@ static struct fd_event *fd_events = NULL;
 
 void add_fd_event(struct fd_event *ev)
 {
+	struct fd_event *match;
+
+	/* only add unique fd_event structs */
+
+	for (match=fd_events; match; match=match->next ) {
+		if ( match == ev )
+			return;
+	}
+
 	DLIST_ADD(fd_events, ev);
 }
 
