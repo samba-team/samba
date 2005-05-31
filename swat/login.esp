@@ -3,7 +3,7 @@
 <%
 
 if (request['SESSION_EXPIRED'] == "True") {
-   write("<b>Your session has expired - please authenticate again<br>\n");
+   write("<b>Your session has expired - please authenticate again<br /></b>\n");
 }
 
 var f = FormObj("login", 2, 1);
