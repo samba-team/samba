@@ -1362,7 +1362,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	/* find the HBIN block which should contain the nk record */
 	
 	if ( !(hbin = lookup_hbin_block( file, nk->subkeys.hashes[nk->subkey_index].nk_off )) ) {
-		DEBUG(0,("regfio_fetch_subkey: Failed to find HBIN block containing offset [0x%x]\n", 
+		DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
 			nk->subkeys.hashes[nk->subkey_index].nk_off));
 		return NULL;
 	}

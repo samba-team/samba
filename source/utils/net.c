@@ -87,6 +87,7 @@ const char *opt_destination = NULL;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
+extern struct in_addr loopback_ip;
 extern BOOL AllowDebugChange;
 
 uint32 get_sec_channel_type(const char *param) 
@@ -321,7 +322,6 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		}
 		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
-		extern struct in_addr loopback_ip;
 		*server_ip = loopback_ip;
 		*server_name = SMB_STRDUP("127.0.0.1");
 	}
@@ -686,168 +686,6 @@ static int net_maxrid(int argc, const char **argv)
 	return 0;
 }
 
-static BOOL migrate_forms(void) 
-{
-	int in_forms = 0, out_forms = 0;
-	nt_forms_struct *list = NULL;
-
-	in_forms = tdb_get_forms(&list);
-
-	d_printf("got %d forms\n", in_forms);
-
-	out_forms = file_write_forms(&list,in_forms);
-
-	if (in_forms != out_forms)
-		return False;
-
-	d_printf("migrated %d forms\n", in_forms);
-
-	return True;
-}
-
-struct table_node {
-	const char *long_archi;
-	const char *short_archi;
-	int version;
-};
-
-static const struct table_node archi_table[]= {
-
-	{"Windows 4.0",          "WIN40",	0 },
-	{"Windows NT x86",       "W32X86",	2 },
-	{"Windows NT x86",       "W32X86",	3 },
-	{"Windows NT R4000",     "W32MIPS",	2 },
-	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
-	{"Windows NT PowerPC",   "W32PPC",	2 },
-	{"Windows IA64",         "IA64",	3 },
-	{"Windows x64",          "x64",		3 },
-	{NULL,                   "",		-1 }
-};
-
-
-static BOOL migrate_drivers(void)
-{
-	fstring *drivers = NULL;
-	int in_drivers = 0, i = 0, d = 0;
-	int out_ret = 0;
-
-	for (i=0; archi_table[i].long_archi!=NULL; i++) {
-
-		in_drivers = tdb_get_drivers(&drivers, 
-						 archi_table[i].short_archi, 
-						 archi_table[i].version);
-
-		d_printf("got %d drivers for architecture [%s] and version: %d\n", 
-			in_drivers, archi_table[i].long_archi, archi_table[i].version);
-
-		for (d=0; d<in_drivers; d++) {
-
-			/* add driver remote */
-			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
-
-			ZERO_STRUCT(driver);
-
-			tdb_get_driver(&driver, drivers[d], 
-				       archi_table[i].short_archi, 
-				       archi_table[i].version);
-
-			out_ret = file_add_driver(driver, archi_table[i].short_archi);
-		}
-	}
-
-	return True;
-}
-
-static BOOL migrate_printers(void)
-{
-	WERROR err;
-	fstring *printers = NULL;
-	int num_printers = 0, p;
-
-	TALLOC_CTX *mem_ctx = talloc_init("migrate_printers");
-
-	if (mem_ctx == NULL)
-		return False;
-
-	num_printers = tdb_get_printers(&printers);
-
-	d_printf("got %d printers\n", num_printers);
-
-	for (p=0; p<num_printers; p++) {
-
-		NT_PRINTER_INFO_LEVEL_2	*info = NULL;
-		SEC_DESC_BUF *secdesc_ctr = NULL;
-
-		d_printf("migrating PRINTER: %s\n", printers[p]);
-
-		ZERO_STRUCTP(info);
-
-		err = tdb_get_printer(&info, printers[p]);
-		if (!W_ERROR_IS_OK(err)) 
-			return False;
-		err = file_update_printer(info);
-		if (!W_ERROR_IS_OK(err)) 
-			return False;
-			
-		d_printf("migrating SECDESC: %s\n", printers[p]);
-
-		err = tdb_get_secdesc(mem_ctx, printers[p], &secdesc_ctr);
-		if (!W_ERROR_IS_OK(err)) 
-			return False;
-		err = file_set_secdesc(mem_ctx, printers[p], secdesc_ctr);
-		if (!W_ERROR_IS_OK(err)) 
-			return False;
-	}
-
-	if (mem_ctx != NULL)
-		talloc_destroy(mem_ctx);
-
-	return True;
-}
-
-static int net_printerdb(int argc, const char **argv)
-{
-
-	if (argc > 2) {
-	        DEBUG(0, ("usage: net printerdb [forms|drivers|printers]\n"));
-		return 1;
-	}
-
-	if (lp_printerdb_backend() == '\0') {
-		DEBUG(0,("no remote printerdb backend\n"));
-		return 1;
-	}
-
-	/* load all required modules */
-	if (!printerdb_init(lp_printerdb_backend())) {
-		DEBUG(0,("failed to initialize printerdb backend\n"));
-		return 1;
-	}
-
-	d_printf("moving tdbs to backend: [%s]\n", *lp_printerdb_backend());
-	
-	/* migrate forms */
-	if (!migrate_forms()) {
-		d_printf("failed to migrate forms\n");
-		return 1;
-	}
-
-	/* migrate drivers */
-	if (!migrate_drivers()) {
-		d_printf("failed to migrate drivers\n");
-		return 1;
-	}
-
-	/* migrate printers */
-	if (!migrate_printers()) {
-		d_printf("failed to migrate printers\n");
-		return 1;
-	}
-
-	return 0;
-
-}
-
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
@@ -879,7 +717,6 @@ static struct functable net_func[] = {
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
-	{"PRINTERDB", net_printerdb},
 	{"IDMAP", net_idmap},
 	{"STATUS", net_status},
 	{"USERSIDLIST", net_usersidlist},
