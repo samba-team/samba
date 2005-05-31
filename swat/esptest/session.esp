@@ -3,7 +3,7 @@
 <h1>Samba4 session test</h1>
 
 <%
-var f = Form("SessionTest", 3, 4);
+var f = FormObj("SessionTest", 3, 4);
 f.element[0].label = "Name";
 f.element[1].label = "Value";
 f.element[2].label = "Timeout";
