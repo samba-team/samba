@@ -171,7 +171,7 @@ static int arrayConsProc(EjsHandle eid, int argc, MprVar **argv)
 	mprAssert(obj);
 
 
-	if (argc == 1) {
+	if (argc == 1 && mprVarIsNumber(argv[0]->type)) {
 		/*
 		 *	x = new Array(size);
 		 */
@@ -181,7 +181,7 @@ static int arrayConsProc(EjsHandle eid, int argc, MprVar **argv)
 			mprItoa(i, idx, sizeof(idx));
 			mprCreateProperty(obj, idx, &undef);
 		}
-	} else if (argc > 1) {
+	} else {
 		/*
 		 *	x = new Array(element0, element1, ..., elementN):
 		 */
@@ -190,9 +190,6 @@ static int arrayConsProc(EjsHandle eid, int argc, MprVar **argv)
 			mprItoa(i, idx, sizeof(idx));
 			mprCreateProperty(obj, idx, argv[i]);
 		}
-
-	} else {
-		max = 0;
 	}
 
 	lp = mprCreatePropertyValue(obj, "length", mprCreateIntegerVar(max));
