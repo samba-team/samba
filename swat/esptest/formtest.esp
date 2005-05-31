@@ -1,7 +1,7 @@
 <% page_header("columns", "ESP Form Test"); %>
 
 <%
-var f = Form("FormTest", 3, 2);
+var f = FormObj("FormTest", 3, 2);
 f.element[0].label = "First Name";
 f.element[0].name  = "firstName";
 f.element[0].value = form['firstName'];

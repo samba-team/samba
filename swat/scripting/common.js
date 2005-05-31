@@ -69,17 +69,45 @@ function always_allowed(uri) {
 }
 
 /*
-  display a simple menu. First argument is menu title, followed by
-  pairs of menu item name and link
-*/
-function simple_menu() {
-	write("<i>" + arguments[0] + "</i><br /><ul>\n");
-	for (i = 1; i < arguments.length; i = i + 2) {
-		write("<li><a href=\"" + arguments[i+1] + "\">" + arguments[i] + "</a></li>\n");
+  create a menu object with the defaults filled in, ready for display_menu()
+ */
+function MenuObj(name, num_elements)
+{
+	var o = new Object();
+	o.name = name;
+	o.class = "menu";
+	o.style = "simple";
+	o.orientation = "vertical"
+	o.element = new Array(num_elements);
+	for (i in o.element) {
+		o.element[i] = new Object();
 	}
-	write("</ul>\n");
+	return o;
 }
 
+/*
+  display a menu object. Currently only the "simple", "vertical" menu style
+  is supported
+*/
+function display_menu(m) {
+	assert(m.style == "simple" && m.orientation == "vertical");
+	write('<div class="' + m.class + '">\n');
+	write("<i>" + m.name + "</i><br /><ul>\n");
+	for (i = 0; i < m.element.length; i++) {
+		var e = m.element[i];
+		write("<li><a href=\"" + e.link + "\">" + e.label + "</a></li>\n");
+	}
+	write("</ul></div>\n");
+}
+
+function simple_menu() {
+	var m = MenuObj(arguments[0], (arguments.length-1)/2);
+	for (i=0;i<m.element.length;i++) {
+		m.element[i].label = arguments[1+(i*2)];
+		m.element[i].link = arguments[2+(i*2)];
+	}
+	display_menu(m);
+}
 
 /*
   display a table element
@@ -133,7 +161,7 @@ function multi_table(array, header) {
 /*
   create a Form object with the defaults filled in, ready for display_form()
  */
-function Form(name, num_elements, num_submits)
+function FormObj(name, num_elements, num_submits)
 {
 	var f = new Object();
 	f.name = name;
