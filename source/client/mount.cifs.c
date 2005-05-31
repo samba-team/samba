@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "7"
+#define MOUNT_CIFS_VERSION_MINOR "8"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -83,7 +83,7 @@ static void mount_cifs_usage(void)
 	printf(" to a local directory.\n\nOptions:\n");
 	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
 	printf("\nLess commonly used options:");
-	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio");
+	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,\n\tdirectio,mapchars,nomapchars");
 	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions\n\t(e.g. most Samba versions):");
 	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>");
 	printf("\n\nRarely used options:");
@@ -185,13 +185,41 @@ static int open_cred_file(char * file_name)
 					} else
 						memset(mountpassword,0,64);
 					if(mountpassword) {
-						/* BB add handling for commas in password here */
 						strncpy(mountpassword,temp_val,length);
 						got_password = 1;
 					}
 				}
 			}
-		}
+                } else if (strncasecmp("domain",line_buf+i,6) == 0) {
+                        temp_val = strchr(line_buf+i,'=');
+                        if(temp_val) {
+                                /* go past equals sign */
+                                temp_val++;
+				if(verboseflag)
+					printf("\nDomain %s\n",temp_val);
+                                for(length = 0;length<65;length++) {
+                                        if(temp_val[length] == '\n')
+                                                break;
+                                }
+                                if(length > 64) {
+                                        printf("mount.cifs failed: domain in credentials file too long\n");
+                                        if(mountpassword) {
+                                                memset(mountpassword,0,64);
+                                        }
+                                        exit(1);
+                                } else {
+                                        if(domain_name == NULL) {
+                                                domain_name = calloc(65,1);
+                                        } else
+                                                memset(domain_name,0,64);
+                                        if(domain_name) {
+                                                strncpy(domain_name,temp_val,length);
+                                                got_domain = 1;
+                                        }
+                                }
+                        }
+                }
+
 	}
 	fclose(fs);
 	if(line_buf) {
@@ -494,6 +522,8 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
 			*filesys_flags &= ~MS_RDONLY;
+                } else if (strncmp(data, "remount", 7) == 0) {
+                        *filesys_flags |= MS_REMOUNT;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
 			if (value && *value) {
 				vol->port =
@@ -886,6 +916,7 @@ int main(int argc, char ** argv)
 			break;
 		case 'd':
 			domain_name = optarg; /* BB fix this - currently ignored */
+			got_domain = 1;
 			break;
 		case 'p':
 			if(mountpassword == NULL)
@@ -1015,7 +1046,8 @@ mount_retry:
 
 	if(user_name) {
 		/* check for syntax like user=domain\user */
-		domain_name = check_for_domain(&user_name);
+		if(got_domain == 0)
+			domain_name = check_for_domain(&user_name);
 		strncat(options,",user=",6);
 		strcat(options,user_name);
 	}

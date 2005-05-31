@@ -138,7 +138,8 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	fsp = file_find_fd(fd);
 	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
 	if (signals_received > 1)
-		memmove((void *)&fd_pending_array[0], (void *)&fd_pending_array[1],
+                memmove(CONST_DISCARD(void *, &fd_pending_array[0]),
+                        CONST_DISCARD(void *, &fd_pending_array[1]),
 			sizeof(SIG_ATOMIC_T)*(signals_received-1));
 	signals_received--;
 	/* now we can receive more signals */

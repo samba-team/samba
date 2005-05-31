@@ -23,6 +23,7 @@
 
 #include "includes.h"
 
+extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;
@@ -574,7 +575,6 @@ static int send_trans2_replies(char *outbuf,
 	 global struct. These different max_xmit variables should
 	 be merged as this is now too confusing */
 
-	extern int max_send;
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
 	int useable_space;

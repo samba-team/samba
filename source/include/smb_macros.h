@@ -83,6 +83,9 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
+/* you must add the following extern declaration to files using this macro
+ * extern struct current_user current_user;
+ */
 #define FSP_BELONGS_CONN(fsp,conn) do {\
 			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
@@ -91,6 +94,9 @@
 
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
+/* you must add the following extern declaration to files using this macro
+ * extern struct current_user current_user;
+ */
 #define CHECK_FSP(fsp,conn) do {\
 			extern struct current_user current_user;\
 			if (!FNUM_OK(fsp,conn)) \

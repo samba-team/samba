@@ -69,6 +69,9 @@
 #include "tdb.h"
 #include "tdbback.h"
 
+extern int optind;
+extern char *optarg;
+
 /*
   see if one file is newer than another
 */
@@ -100,8 +103,6 @@ static void usage(void)
 	int c;
 	int verify = 0;
 	const char *suffix = ".bak";
-	extern int optind;
-	extern char *optarg;
 
 	while ((c = getopt(argc, argv, "vhs:")) != -1) {
 		switch (c) {

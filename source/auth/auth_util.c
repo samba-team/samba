@@ -51,23 +51,6 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 }
 
 /****************************************************************************
- Add and Delete UNIX users on demand, based on NTSTATUS codes.
- We don't care about RID's here so ignore.
-****************************************************************************/
-
-void auth_add_user_script(const char *domain, const char *username)
-{
-	/*
-	 * User validated ok against Domain controller.
-	 * If the admin wants us to try and create a UNIX
-	 * user on the fly, do so.
-	 */
-	
-	if ( *lp_adduser_script() )
-		smb_create_user(domain, username, NULL);
-}
-
-/****************************************************************************
  Create a SAM_ACCOUNT - either by looking in the pdb, or by faking it up from
  unix info.
 ****************************************************************************/
@@ -1081,7 +1064,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 		if (username[strlen(username)-1] == '$')
 			return NULL;
 
-		auth_add_user_script(NULL, username);
+		smb_create_user(NULL, username, NULL);
 		pw = Get_Pwnam(username);
 	}
 	
@@ -1170,7 +1153,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		DEBUG(3,("User %s does not exist, trying to add it\n", internal_username));
-		auth_add_user_script( nt_domain, sent_nt_username );
+		smb_create_user( nt_domain, sent_nt_username, NULL);
 		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
 			&found_username, &uid, &gid, &sam_account );
 	}

@@ -867,8 +867,6 @@ extern int errno;
 
 #include "idmap.h"
 
-#include "printerdb.h"
-
 #include "client.h"
 
 #ifdef WITH_SMBWRAPPER

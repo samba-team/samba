@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
@@ -33,8 +35,6 @@ static int fake_perms_stat(vfs_handle_struct *handle, connection_struct *conn, c
 
 	ret = SMB_VFS_NEXT_STAT(handle, conn, fname, sbuf);
 	if (ret == 0) {
-		extern struct current_user current_user;
-		
 		if (S_ISDIR(sbuf->st_mode)) {
 			sbuf->st_mode = S_IFDIR | S_IRWXU;
 		} else {
@@ -53,8 +53,6 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, fd, sbuf);
 	if (ret == 0) {
-		extern struct current_user current_user;
-		
 		if (S_ISDIR(sbuf->st_mode)) {
 			sbuf->st_mode = S_IFDIR | S_IRWXU;
 		} else {
