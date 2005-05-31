@@ -129,10 +129,25 @@ function table_element(i, o) {
 	}
 	write("</td></tr>\n");
 }
+
+/*
+  return the number of elements in an object
+*/
+function elcount(o) {
+	var count = 0;
+	for (i in o) {
+		count++;
+	}
+	return count;
+}
+
 /*
   display a ejs object as a table. The header is optional
 */
 function simple_table(v) {
+	if (elcount(v) == 0) {
+		return;
+	}
 	write("<table class=\"data\">\n");
 	for (r in v) {
 		table_element(r, v);
@@ -145,10 +160,13 @@ function simple_table(v) {
   attribute
 */
 function multi_table(array, header) {
+	if (elcount(v) == 0) {
+		return;
+	}
 	write("<table class=\"data\">\n");
 	for (i in array) {
 		var v = array[i];
-		write("<tr><th colspan=2>" + v[header] + "</th></tr>\n");
+		write('<tr><th colspan="2">' + v[header] + "</th></tr>\n");
 		for (r in v) {
 			if (r != header) {
 			    table_element(r, v);
@@ -168,7 +186,7 @@ function FormObj(name, num_elements, num_submits)
 	f.element = new Array(num_elements);
 	f.submit =  new Array(num_submits);
 	f.action = session_uri(request.REQUEST_URI);
-	f.class = "form";
+	f.class = "defaultform";
 	for (i in f.element) {
 		f.element[i] = new Object();
 		f.element[i].type = "text";
@@ -193,14 +211,16 @@ function display_form(f) {
 	write('<form name="' + f.name +
 	      '" method="post" action="' + f.action + 
 	      '" class="' + f.class + '">\n');
-	write("<table>\n");
+	if (f.element.length > 0) {
+		write("<table>\n");
+	}
 	for (i in f.element) {
 		var e = f.element[i];
 		if (e.name == undefined) {
 			e.name = e.label;
 		}
 		if (e.value == undefined) {
-			e.value = '""';
+			e.value = "";
 		}
 		write("<tr>");
 		write("<td>" + e.label + "</td>");
@@ -216,12 +236,15 @@ function display_form(f) {
 			write('</select></td>\n');
 		} else {
 			write('<td><input name="' + e.name + '" type="' + 
-			      e.type + '" value="' + e.value + '"></td>\n');
+			      e.type + '" value="' + e.value + '" /></td>\n');
 		}
+		write("</tr>");
 	}
-	write("</table>\n");
+	if (f.element.length > 0) {
+		write("</table>\n");
+	}
 	for (i in f.submit) {
-		write('<input name="submit" type="submit" value="' + f.submit[i] + '">\n');
+		write('<input name="submit" type="submit" value="' + f.submit[i] + '" />\n');
 	}
 	write("</form>\n");
 }

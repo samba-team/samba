@@ -21,6 +21,4 @@
    showArray("session", session);
 %>
 
-</ul>
-
 <% page_footer(); %>
