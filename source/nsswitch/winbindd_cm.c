@@ -3,9 +3,10 @@
 
    Winbind daemon connection manager
 
-   Copyright (C) Tim Potter 2001
-   Copyright (C) Andrew Bartlett 2002
-   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Tim Potter                2001
+   Copyright (C) Andrew Bartlett           2002
+   Copyright (C) Gerald (Jerry) Carter     2003-2005.
+   Copyright (C) Volker Lendecke           2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,11 +89,11 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
-		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", 
+		DEBUG(3, ("cm_get_ipc_userpass: Retrieved auth-user from secrets.tdb [%s\\%s]\n", 
 			  *domain, *username));
 
 	} else {
-		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		DEBUG(3, ("cm_get_ipc_userpass: No auth-user defined\n"));
 		*username = smb_xstrdup("");
 		*domain = smb_xstrdup("");
 		*password = smb_xstrdup("");
@@ -522,163 +523,121 @@ static BOOL receive_getdc_response(struct in_addr dc_ip,
 	return True;
 }
 
-static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
-		       const struct winbindd_domain *domain,
-		       struct dc_name_ip **dcs, int *num_dcs)
-{
-	struct ip_service *iplist = NULL;
-	int i, num = 0;
-	struct bitmap *replied;
+/*******************************************************************
+ convert an ip to a name
+*******************************************************************/
 
-	if (!internal_resolve_name(domain->name, 0x1c, &iplist, &num,
-				   lp_name_resolve_order()))
-		return False;
-
-	replied = bitmap_talloc(mem_ctx, num);
-
-	if (replied == NULL)
-		return False;
-
-	for (i=0; i<num; i++) {
-		if (!send_getdc_request(iplist[i].ip, domain->name,
-					&domain->sid)) {
-			DEBUG(10, ("Defaulting to nbtstat method\n"));
-			goto nbtstat;
-		}
-	}
-
-	for (i=0; i<5; i++) {
-		int j;
-		BOOL retry = False;
-
-		for (j = 0; j<num; j++) {
-
-			fstring dcname;
-
-			if (bitmap_query(replied, j))
-				continue;
-
-			if (receive_getdc_response(iplist[j].ip,
-						   domain->name,
-						   dcname)) {
-				add_one_dc_unique(mem_ctx, domain->name,
-						  dcname, iplist[j].ip,
-						  dcs, num_dcs);
-				bitmap_set(replied, j);
-			} else {
-				retry = True;
-			}
-		}
-
-		if (!retry)
-			break;
-
-		smb_msleep(1000);
-	}
-
-	if (*num_dcs > 0)
-		return True;
-
- nbtstat:
-
-	/* Fall back to the old method with the name status request */
-
-	for (i=0; i<num; i++) {
-
-		fstring dcname;
-
-		if (!name_status_find(domain->name, 0x1c, 0x20, iplist[i].ip,
-				      dcname))
-			continue;
-
-		if (add_one_dc_unique(mem_ctx, domain->name, dcname,
-				      iplist[i].ip, dcs, num_dcs)) {
-			/* One DC responded, so we assume that he will also
-			   work on 139/445 */
-			break;
-		}
-	}
-
-	SAFE_FREE(iplist);
-
-	return True;
-}
-
-static BOOL get_one_dc_name(struct in_addr ip, const char *domain_name,
-			    const DOM_SID *sid, fstring dcname)
+static void dcip_to_name( const char *domainname, const char *realm, 
+                          const DOM_SID *sid, struct in_addr ip, fstring name )
 {
 	int i;
 
-	send_getdc_request(ip, domain_name, sid);
+	/* try GETDC requests first */
+	
+	send_getdc_request(ip, domainname, sid);
 	smb_msleep(100);
 
 	for (i=0; i<5; i++) {
-		if (receive_getdc_response(ip, domain_name, dcname))
-			return True;
+		if (receive_getdc_response(ip, domainname, name))
+			return;
 		smb_msleep(500);
 	}
 
-	return name_status_find(domain_name, 0x1c, 0x20, ip, dcname);
+	/* try node status request */
+
+	if ( name_status_find(domainname, 0x1c, 0x20, ip, name) )
+		return;
+
+	/* backup in case the netbios stuff fails */
+
+	fstrcpy( name, inet_ntoa(ip) );
+
+#ifdef WITH_ADS
+	/* for active directory servers, try to get the ldap server name.
+	   None of these failure should be considered critical for now */
+
+	if ( lp_security() == SEC_ADS ) 
+	{
+		ADS_STRUCT *ads;
+		ADS_STATUS status;
+
+		ads = ads_init( realm, domainname, NULL );
+		ads->auth.flags |= ADS_AUTH_NO_BIND;
+
+		if ( !ads_try_connect( ads, inet_ntoa(ip), LDAP_PORT ) )  {
+			ads_destroy( &ads );
+			return;
+		}
+
+		status = ads_server_info(ads);
+		if ( !ADS_ERR_OK(status) ) {
+			ads_destroy( &ads );
+			return;
+		}
+
+		fstrcpy(name, ads->config.ldap_server_name);
+
+		ads_destroy( &ads );
+	}
+#endif
+
+	return;
 }
+
+/*******************************************************************
+ Retreive a list of IP address for domain controllers.  Fill in 
+ the dcs[]  with results.
+*******************************************************************/
 
 static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
 	fstring dcname;
-	struct in_addr ip;
-	BOOL is_our_domain;
+	struct  in_addr ip;
+	struct  ip_service *ip_list = NULL;
+	int     iplist_size = 0;
+	int     i;
+	BOOL    is_our_domain;
 
-	const char *p;
 
 	is_our_domain = strequal(domain->name, lp_workgroup());
 
-	DEBUG(5, ("get_dcs: %s %s our domain\n", domain->name,
-		  is_our_domain ? "is" : "is not"));
-
-	if (!is_our_domain && get_dc_name_via_netlogon(domain, dcname, &ip) &&
-	    add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs))
-			return True;
-
-	if (!is_our_domain) {
-		/* NETLOGON to our own domain could not give us a DC name
-		 * (which is an error), fall back to looking up domain#1c */
-		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+	if ( !is_our_domain 
+		&& get_dc_name_via_netlogon(domain, dcname, &ip) 
+		&& add_one_dc_unique(mem_ctx, domain->name, dcname, ip, dcs, num_dcs) )
+	{
+		return True;
 	}
 
-	if (must_use_pdc(domain->name) && get_pdc_ip(domain->name, &ip)) {
-
-		if (!name_status_find(domain->name, 0x1b, 0x20, ip, dcname))
-			return False;
-
-		if (add_one_dc_unique(mem_ctx, domain->name,
-				      dcname, ip, dcs, num_dcs))
+	if ( is_our_domain 
+		&& must_use_pdc(domain->name) 
+		&& get_pdc_ip(domain->name, &ip)) 
+	{
+		if (add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip), ip, dcs, num_dcs)) 
 			return True;
 	}
 
-	p = lp_passwordserver();
+	/* try standard netbios queries first */
 
-	if (*p == 0)
-		return get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
+	get_sorted_dc_list(domain->name, &ip_list, &iplist_size, False);
 
-	while (next_token(&p, dcname, LIST_SEP, sizeof(dcname))) {
+	/* check for security = ads and use DNS if we can */
 
-		if (strequal(dcname, "*")) {
-			get_dcs_1c(mem_ctx, domain, dcs, num_dcs);
-			continue;
-		}
+	if ( iplist_size==0 && lp_security() == SEC_ADS ) 
+		get_sorted_dc_list(domain->alt_name, &ip_list, &iplist_size, True);
 
-		if (!resolve_name(dcname, &ip, 0x20))
-			continue;
+	/* FIXME!! this is where we should re-insert the GETDC requests --jerry */
 
-		/* Even if we got the dcname, double check the name to use for
-		 * the netlogon auth2 */
+	/* now add to the dc array.  We'll wait until the last minute 
+	   to look up the name of the DC.  But we fill in the char* for 
+	   the ip now in to make the failed connection cache work */
 
-		if (!get_one_dc_name(ip, domain->name, &domain->sid, dcname))
-			continue;
-
-		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,
-				  dcs, num_dcs);
+	for ( i=0; i<iplist_size; i++ ) {
+		add_one_dc_unique(mem_ctx, domain->name, inet_ntoa(ip_list[i].ip), 
+			ip_list[i].ip, dcs, num_dcs);
 	}
+
+	SAFE_FREE( ip_list );
 
 	return True;
 }
@@ -717,17 +676,24 @@ static BOOL find_new_dc(TALLOC_CTX *mem_ctx,
 	if ((num_dcnames == 0) || (num_dcnames != num_addrs))
 		return False;
 
-	if (!open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd)) {
+	if ( !open_any_socket_out(addrs, num_addrs, 10000, &fd_index, fd) ) 
+	{
 		for (i=0; i<num_dcs; i++) {
 			add_failed_connection_entry(domain->name,
-						    dcs[i].name,
-						    NT_STATUS_UNSUCCESSFUL);
+				dcs[i].name, NT_STATUS_UNSUCCESSFUL);
 		}
 		return False;
 	}
 
-	fstrcpy(dcname, dcnames[fd_index]);
 	*addr = addrs[fd_index];
+
+	/* if we have no name on the server or just an IP address for 
+	   the name, now try to get the name */
+
+	if ( is_ipaddress(dcnames[fd_index]) || *dcnames[fd_index] == '\0' )
+		dcip_to_name( domain->name, domain->alt_name, &domain->sid, addr->sin_addr, dcname );
+	else
+		fstrcpy(dcname, dcnames[fd_index]);
 
 	return True;
 }
@@ -753,23 +719,11 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		if ((strlen(domain->dcname) > 0) &&
 		    NT_STATUS_IS_OK(check_negative_conn_cache(domain->name,
 							      domain->dcname))) {
-			struct sockaddr_in addrs[2];
-			int num_addrs = 1;
-			int result_idx;
-
-			addrs[0] = domain->dcaddr;
-
-			if (domain->dcaddr.sin_port == 0) {
-				/* Never tried this one, try 139 and 445 */
-				addrs[0].sin_port = htons(445);
-				addrs[1] = domain->dcaddr;
-				addrs[1].sin_port = htons(139);
-				num_addrs = 2;
+			int dummy;
+			if (!open_any_socket_out(&domain->dcaddr, 1, 10000,
+						 &dummy, &fd)) {
+				fd = -1;
 			}
-
-			if (open_any_socket_out(addrs, num_addrs, 10000,
-						 &result_idx, &fd))
-				domain->dcaddr = addrs[result_idx];
 		}
 
 		if ((fd == -1) &&
@@ -780,10 +734,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		new_conn->cli = NULL;
 
 		result = cm_prepare_connection(domain, fd, domain->dcname,
-					       &new_conn->cli, &retry);
-
-		if (NT_STATUS_IS_OK(result))
-			break;
+			&new_conn->cli, &retry);
 
 		if (!retry)
 			break;

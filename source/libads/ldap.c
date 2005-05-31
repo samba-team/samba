@@ -112,7 +112,7 @@ static int ldap_search_with_timeout(LDAP *ld,
   TODO : add a negative connection cache in here leveraged off of the one
   found in the rpc code.  --jerry
  */
-static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
+BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 {
 	char *srv;
 
