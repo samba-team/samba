@@ -647,7 +647,7 @@ hosts:	files wins
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
 <smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
 <smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
-<smbconfoption name="add machine script"></smbconfoption>
+<smbconfoption name="add machine script"> </smbconfoption>
 <member><parameter>/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</parameter></member>
 <smbconfoption name="logon script">scripts\login.bat</smbconfoption>
 <smbconfoption name="logon path"> </smbconfoption>
