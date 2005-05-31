@@ -487,22 +487,24 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 #endif
      }
 
-     /* Retrieve membership-string here */
-     for ( i=0; i<argc; i++ ) {
+     if (ctrl & WINBIND_REQUIRED_MEMBERSHIP) {
+	     
+         for ( i=0; i<argc; i++ ) {
 
-	 if ((strncmp(argv[i], "require_membership_of", strlen("require_membership_of")) == 0) 
-	     || (strncmp(argv[i], "require-membership-of", strlen("require-membership-of")) == 0)) {
+	     if ((strncmp(argv[i], "require_membership_of", strlen("require_membership_of")) == 0) ||
+	         (strncmp(argv[i], "require-membership-of", strlen("require-membership-of")) == 0)) {
 
-	     char *p;
-	     char *parm = strdup(argv[i]);
+	        char *p;
+	        char *parm = strdup(argv[i]);
 
-	     if ( (p = strchr( parm, '=' )) == NULL) {
-	     	_pam_log(LOG_INFO, "no \"=\" delimiter for \"require_membership_of\" found\n");
-		break;
+	        if ( (p = strchr( parm, '=' )) == NULL) {
+	     	   _pam_log(LOG_INFO, "no \"=\" delimiter for \"require_membership_of\" found\n");
+		   break;
+	        }
+
+	        member = strdup(p+1);
 	     }
-
-	     member = strdup(p+1);
-	 }
+         }
      }
 
      /* Now use the username to look up password */
