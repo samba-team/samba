@@ -450,12 +450,12 @@ init_fcc (krb5_context context,
     krb5_error_code ret;
 
     ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY, 0);
-
     if(ret)
 	return ret;
     
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL) {
+	krb5_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
@@ -464,14 +464,18 @@ init_fcc (krb5_context context,
     if(ret != 0) {
 	if(ret == KRB5_CC_END)
 	    ret = ENOENT; /* empty file */
+	krb5_clear_error_string(context);
 	goto out;
     }
     if(pvno != 5) {
+	krb5_set_error_string(context, "Bad version number in credential "
+			      "cache file: %s", FILENAME(id));
 	ret = KRB5_CCACHE_BADVNO;
 	goto out;
     }
     ret = krb5_ret_int8(sp, &tag); /* should not be host byte order */
     if(ret != 0) {
+	krb5_clear_error_string(context);
 	ret = KRB5_CC_FORMAT;
 	goto out;
     }
@@ -484,6 +488,7 @@ init_fcc (krb5_context context,
 	ret = krb5_ret_int16 (sp, &length);
 	if(ret) {
 	    ret = KRB5_CC_FORMAT;
+	    krb5_clear_error_string(context);
 	    goto out;
 	}
 	while(length > 0) {
@@ -493,11 +498,13 @@ init_fcc (krb5_context context,
 
 	    ret = krb5_ret_int16 (sp, &tag);
 	    if(ret) {
+		krb5_clear_error_string(context);
 		ret = KRB5_CC_FORMAT;
 		goto out;
 	    }
 	    ret = krb5_ret_int16 (sp, &data_len);
 	    if(ret) {
+		krb5_clear_error_string(context);
 		ret = KRB5_CC_FORMAT;
 		goto out;
 	    }
@@ -505,11 +512,13 @@ init_fcc (krb5_context context,
 	    case FCC_TAG_DELTATIME :
 		ret = krb5_ret_int32 (sp, &context->kdc_sec_offset);
 		if(ret) {
+		    krb5_clear_error_string(context);
 		    ret = KRB5_CC_FORMAT;
 		    goto out;
 		}
 		ret = krb5_ret_int32 (sp, &context->kdc_usec_offset);
 		if(ret) {
+		    krb5_clear_error_string(context);
 		    ret = KRB5_CC_FORMAT;
 		    goto out;
 		}
@@ -518,6 +527,7 @@ init_fcc (krb5_context context,
 		for (i = 0; i < data_len; ++i) {
 		    ret = krb5_ret_int8 (sp, &dummy);
 		    if(ret) {
+			krb5_clear_error_string(context);
 			ret = KRB5_CC_FORMAT;
 			goto out;
 		    }
@@ -534,6 +544,9 @@ init_fcc (krb5_context context,
 	break;
     default :
 	ret = KRB5_CCACHE_BADVNO;
+	krb5_set_error_string(context, "Unknown version number (%d) in "
+			      "credential cache file: %s",
+			      (int)tag, FILENAME(id));
 	goto out;
     }
     *ret_sp = sp;
@@ -561,6 +574,8 @@ fcc_get_principal(krb5_context context,
     if (ret)
 	return ret;
     ret = krb5_ret_principal(sp, principal);
+    if (ret)
+	krb5_clear_error_string(context);
     krb5_storage_free(sp);
     fcc_unlock(context, fd);
     close(fd);
@@ -596,6 +611,7 @@ fcc_get_first (krb5_context context,
     }
     ret = krb5_ret_principal (FCC_CURSOR(*cursor)->sp, &principal);
     if(ret) {
+	krb5_clear_error_string(context);
 	fcc_end_get(context, id, cursor);
 	return ret;
     }
@@ -615,6 +631,8 @@ fcc_get_next (krb5_context context,
 	return ret;
 
     ret = krb5_ret_creds(FCC_CURSOR(*cursor)->sp, creds);
+    if (ret)
+	krb5_clear_error_string(context);
 
     fcc_unlock(context, FCC_CURSOR(*cursor)->fd);
     return ret;
