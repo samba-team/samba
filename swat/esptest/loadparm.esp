@@ -3,7 +3,7 @@
 <h1>Samba4 loadparm test</h1>
 
 <%
-var f = Form("LoadparmTest", 2, 1);
+var f = FormObj("LoadparmTest", 2, 1);
 f.element[0].label = "Share";
 f.element[1].label = "Parameter";
 f.submit[0] = "OK";

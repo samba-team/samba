@@ -4,7 +4,7 @@
 
 
 <%
-var f = Form("ExceptionTest", 0, 2);
+var f = FormObj("ExceptionTest", 0, 2);
 f.submit[0] = "Generate Exception";
 f.submit[1] = "No Exception";
 
