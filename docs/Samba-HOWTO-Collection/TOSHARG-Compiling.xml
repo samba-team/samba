@@ -393,7 +393,7 @@ example of what you would not want to see would be:
 </sect1>
 
 <sect1>
-	<title>Starting the &smbd; and &nmbd;</title>
+	<title>Starting the &smbd; &nmbd; and &winbindd;</title>
 
 
 	<para>
