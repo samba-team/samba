@@ -1128,6 +1128,13 @@ static int parseFunctionDec(Ejs *ep, int state, int flags)
 		mprDestroyVar(&v);
 		return EJS_STATE_ERR;
 	}
+
+	/* register the function name early to allow for recursive
+	   function calls (see note in ECMA standard, page 71) */
+	if (!(flags & EJS_FLAGS_ASSIGNMENT)) {
+		currentObj = ejsFindObj(ep, 0, procName, flags);
+		vp = mprSetProperty(currentObj, procName, &v);
+	}
 	
 	/*
 	 *	Parse the function body. Turn execute off.
