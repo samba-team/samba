@@ -160,7 +160,7 @@ function simple_table(v) {
   attribute
 */
 function multi_table(array, header) {
-	if (elcount(v) == 0) {
+	if (elcount(array) == 0) {
 		return;
 	}
 	write("<table class=\"data\">\n");
