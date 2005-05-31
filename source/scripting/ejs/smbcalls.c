@@ -35,20 +35,20 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 		MprType type;
 		const char *name;
 	} types[] = {
-		{ MPR_TYPE_UNDEFINED, "undefined" },
-		{ MPR_TYPE_NULL, "null" },
-		{ MPR_TYPE_BOOL, "boolean" },
-		{ MPR_TYPE_CFUNCTION, "function" },
-		{ MPR_TYPE_FLOAT, "float" },
-		{ MPR_TYPE_INT, "int" },
-		{ MPR_TYPE_INT64, "int64" },
-		{ MPR_TYPE_OBJECT, "object" },
-		{ MPR_TYPE_FUNCTION, "function" },
-		{ MPR_TYPE_STRING, "string" },
+		{ MPR_TYPE_UNDEFINED,        "undefined" },
+		{ MPR_TYPE_NULL,             "object" },
+		{ MPR_TYPE_BOOL,             "boolean" },
+		{ MPR_TYPE_CFUNCTION,        "function" },
+		{ MPR_TYPE_FLOAT,            "number" },
+		{ MPR_TYPE_INT,              "number" },
+		{ MPR_TYPE_INT64,            "number" },
+		{ MPR_TYPE_OBJECT,           "object" },
+		{ MPR_TYPE_FUNCTION,         "function" },
+		{ MPR_TYPE_STRING,           "string" },
 		{ MPR_TYPE_STRING_CFUNCTION, "function" }
 	};
 	int i;
-	const char *type = "unknown";
+	const char *type = NULL;
 
 	if (argc != 1) return -1;
 	
@@ -58,6 +58,7 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 			break;
 		}
 	}
+	if (type == NULL) return -1;
 
 	ejsSetReturnString(eid, type);
 	return 0;
