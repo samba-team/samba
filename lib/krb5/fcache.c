@@ -105,18 +105,33 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 }
 
 int
-_krb5_xunlock(int fd)
+_krb5_xunlock(krb5_context context, int fd)
 {
+    int ret;
 #ifdef HAVE_FCNTL_LOCK
     struct flock l;
     l.l_start = 0;
     l.l_len = 0;
     l.l_type = F_UNLCK;
     l.l_whence = SEEK_SET;
-    return fcntl(fd, F_SETLKW, &l);
+    ret = fcntl(fd, F_SETLKW, &l);
 #else
-    return flock(fd, LOCK_UN);
+    ret = flock(fd, LOCK_UN);
 #endif
+    if (ret < 0)
+	ret = errno;
+    switch (ret) {
+    case 0:
+	break;
+    case EINVAL: /* filesystem doesn't support locking, let the user have it */
+	ret = 0; 
+	break;
+    default:
+	krb5_set_error_string(context, 
+			      "Failed to unlock file: %s", strerror(ret));
+	break;
+    }
+    return ret;
 }
 
 static krb5_error_code
@@ -129,7 +144,7 @@ fcc_lock(krb5_context context, krb5_ccache id,
 static krb5_error_code
 fcc_unlock(krb5_context context, int fd)
 {
-    return _krb5_xunlock(fd);
+    return _krb5_xunlock(context, fd);
 }
 
 static krb5_error_code
