@@ -355,8 +355,12 @@ void add_fd_event(struct fd_event *ev)
 	/* only add unique fd_event structs */
 
 	for (match=fd_events; match; match=match->next ) {
+#ifdef DEVELOPER
+		SMB_ASSERT( match != ev );
+#else
 		if ( match == ev )
 			return;
+#endif
 	}
 
 	DLIST_ADD(fd_events, ev);
