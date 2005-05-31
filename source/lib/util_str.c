@@ -45,7 +45,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	if (!ptr)
 		return(False);
 
-	s = CONST_DISCARD(char *, *ptr);
+	s = (char *)*ptr;
 
 	/* default to simple separators */
 	if (!sep)
@@ -109,7 +109,7 @@ void set_first_token(char *ptr)
 
 char **toktocliplist(int *ctok, const char *sep)
 {
-        char *s = CONST_DISCARD(char *, last_ptr);
+	char *s=(char *)last_ptr;
 	int ictok=0;
 	char **ret, **iret;
 
@@ -132,7 +132,7 @@ char **toktocliplist(int *ctok, const char *sep)
 	} while(*s);
 	
 	*ctok=ictok;
-	s = CONST_DISCARD(char *, last_ptr);
+	s=(char *)last_ptr;
 	
 	if (!(ret=iret=SMB_MALLOC_ARRAY(char *,ictok+1)))
 		return NULL;
@@ -1221,7 +1221,7 @@ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return CONST_DISCARD(char *, s);
+			return (char *)s;
 	}
 
 	if (!*s)
@@ -1238,7 +1238,7 @@ char *strchr_m(const char *src, char c)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return CONST_DISCARD(char *, (s+strlen(s2)));
+	return (char *)(s+strlen(s2));
 }
 
 char *strrchr_m(const char *s, char c)
@@ -1275,7 +1275,7 @@ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-			       	return CONST_DISCARD(char *, cp);
+			       	return (char *)cp;
 			}
 		} while (cp-- != s);
 		if (!got_mb)
@@ -1294,7 +1294,7 @@ char *strrchr_m(const char *s, char c)
 			return NULL;
 		*p = 0;
 		pull_ucs2_pstring(s2, ws);
-		return CONST_DISCARD(char *, (s+strlen(s2)));
+		return (char *)(s+strlen(s2));
 	}
 }
 
@@ -1315,7 +1315,7 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return CONST_DISCARD(char *, (s+strlen(s2)));
+	return (char *)(s+strlen(s2));
 }
 
 /***********************************************************************
@@ -1334,7 +1334,7 @@ char *strstr_m(const char *src, const char *findstr)
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return CONST_DISCARD(char *, src);
+		return (char*)src;
 	}
 
 	/* Samba does single character findstr calls a *lot*. */
@@ -1351,7 +1351,7 @@ char *strstr_m(const char *src, const char *findstr)
 				findstr_len = strlen(findstr);
 
 			if (strncmp(s, findstr, findstr_len) == 0) {
-				return CONST_DISCARD(char *, s);
+				return (char *)s;
 			}
 		}
 	}
@@ -1392,7 +1392,7 @@ char *strstr_m(const char *src, const char *findstr)
 		DEBUG(0,("strstr_m: dest malloc fail\n"));
 		return NULL;
 	}
-	retp = CONST_DISCARD(char *, (s+strlen(s2)));
+	retp = (char *)(s+strlen(s2));
 	SAFE_FREE(src_w);
 	SAFE_FREE(find_w);
 	SAFE_FREE(s2);

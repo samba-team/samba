@@ -2355,7 +2355,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, *needed)) )
 			return WERR_NOMEM;
-		
+
 		SIVAL(*data, 0, *needed);	/* size */
 		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
 		SIVAL(*data, 8, 0);
@@ -7247,18 +7247,19 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
 	port->reserved=0x0;	
 }
 
+
 /****************************************************************************
  wrapper around the enumer ports command
 ****************************************************************************/
 
 WERROR enumports_hook( int *count, char ***lines )
 {
-		char *cmd = lp_enumports_cmd();
-		char **qlines;
-		pstring command;
-		int numlines;
-		int ret;
-		int fd;
+	char *cmd = lp_enumports_cmd();
+	char **qlines;
+	pstring command;
+	int numlines;
+	int ret;
+	int fd;
 
 
 	/* if no hook then just fill in the default port */
@@ -7310,24 +7311,24 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 
 	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
 		return result;
-
-		if(numlines) {
-			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
-				DEBUG(10,("Returning WERR_NOMEM [%s]\n", 
-					  dos_errstr(WERR_NOMEM)));
-				file_lines_free(qlines);
-				return WERR_NOMEM;
-			}
-
-			for (i=0; i<numlines; i++) {
-				DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-				fill_port_1(&ports[i], qlines[i]);
-			}
-
+	
+	if(numlines) {
+		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
+			DEBUG(10,("Returning WERR_NOMEM [%s]\n", 
+				  dos_errstr(WERR_NOMEM)));
 			file_lines_free(qlines);
+			return WERR_NOMEM;
 		}
 
-		*returned = numlines;
+		for (i=0; i<numlines; i++) {
+			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
+			fill_port_1(&ports[i], qlines[i]);
+		}
+
+		file_lines_free(qlines);
+	}
+
+	*returned = numlines;
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
@@ -7369,28 +7370,28 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	PORT_INFO_2 *ports=NULL;
 	int i=0;
 	WERROR result = WERR_OK;
-		char **qlines;
-		int numlines;
+	char **qlines;
+	int numlines;
 
 	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &qlines )) ) 
 		return result;
-
-
-		if(numlines) {
-			if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
-				file_lines_free(qlines);
-				return WERR_NOMEM;
-			}
-
-			for (i=0; i<numlines; i++) {
-				DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-				fill_port_2(&(ports[i]), qlines[i]);
-			}
-
+	
+	
+	if(numlines) {
+		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
 			file_lines_free(qlines);
+			return WERR_NOMEM;
 		}
 
-		*returned = numlines;
+		for (i=0; i<numlines; i++) {
+			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
+			fill_port_2(&(ports[i]), qlines[i]);
+		}
+
+		file_lines_free(qlines);
+	}
+
+	*returned = numlines;
 
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {

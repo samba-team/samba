@@ -20,7 +20,7 @@
 #endif
 
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if(x) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
 #endif
 
 #ifndef _WINBINDD_NTDOM_H
@@ -101,16 +101,6 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
-	/* account management commands */
-
-	WINBINDD_CREATE_USER,
-	WINBINDD_CREATE_GROUP,
-	WINBINDD_ADD_USER_TO_GROUP,
-	WINBINDD_REMOVE_USER_FROM_GROUP,
-	WINBINDD_SET_USER_PRIMARY_GROUP,
-	WINBINDD_DELETE_USER,
-	WINBINDD_DELETE_GROUP,
-	
 	/* this is like GETGRENT but gives an empty group list */
 	WINBINDD_GETGRLST,
 

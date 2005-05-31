@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
-   Copyright (C) Jean François Micouleau 2002
+   Copyright (C) Jean FranÃ§ois Micouleau 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -68,10 +68,21 @@
 #define SAM_DATABASE_BUILTIN   0x01 /* BUILTIN users and groups */
 #define SAM_DATABASE_PRIVS     0x02 /* Privileges */
 
+/* flags use when sending a NETLOGON_CONTROL request */
+
+#define NETLOGON_CONTROL_SYNC			0x2
 #define NETLOGON_CONTROL_REDISCOVER		0x5
 #define NETLOGON_CONTROL_TC_QUERY		0x6
 #define NETLOGON_CONTROL_TRANSPORT_NOTIFY	0x7
 #define NETLOGON_CONTROL_SET_DBFLAG		0xfffe
+
+/* Some flag values reverse engineered from NLTEST.EXE */
+/* used in the NETLOGON_CONTROL[2] reply */
+
+#define NL_CTRL_IN_SYNC          0x0000
+#define NL_CTRL_REPL_NEEDED      0x0001
+#define NL_CTRL_REPL_IN_PROGRESS 0x0002
+#define NL_CTRL_FULL_SYNC        0x0004
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */

@@ -43,7 +43,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 #endif
 
 /* zero a structure */
@@ -87,6 +87,7 @@
  * extern struct current_user current_user;
  */
 #define FSP_BELONGS_CONN(fsp,conn) do {\
+			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid));\
 			} while(0)
@@ -97,6 +98,7 @@
  * extern struct current_user current_user;
  */
 #define CHECK_FSP(fsp,conn) do {\
+			extern struct current_user current_user;\
 			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
@@ -288,6 +290,9 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
+
+/* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
+   the smbmount utils */
 
 #if defined(DEVELOPER) && !defined(SMBMOUNT_MALLOC)
 #  define PARANOID_MALLOC_CHECKER 1

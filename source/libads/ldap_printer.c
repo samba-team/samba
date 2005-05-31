@@ -61,10 +61,8 @@ ADS_STATUS ads_find_printers(ADS_STRUCT *ads, void **res)
 
 	/* For the moment only display all printers */
 
-	ldap_expr =
-                CONST_DISCARD(char *,
-                                "(&(!(showInAdvancedViewOnly=TRUE))(uncName=*)"
-                                "(objectCategory=printQueue))");
+	ldap_expr = "(&(!(showInAdvancedViewOnly=TRUE))(uncName=*)"
+		"(objectCategory=printQueue))";
 
 	return ads_search(ads, res, ldap_expr, attrs);
 }
