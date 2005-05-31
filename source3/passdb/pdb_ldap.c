@@ -198,7 +198,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	 * in the filter expression, replace %u with the real name
 	 * so in ldap filter, %u MUST exist :-)
 	 */
-	pstr_sprintf(filter, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf(filter, "(&%s%s)", "(uid=%u)", 
 		get_objclass_filter(ldap_state->schema_ver));
 
 	/* 
@@ -1210,7 +1210,7 @@ static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update,
 	const char **attr_list;
 	BOOL machine_mask = False, user_mask = False;
 
-	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf( filter, "(&%s%s)", "(uid=%u)", 
 		get_objclass_filter(ldap_state->schema_ver));
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
@@ -1806,7 +1806,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	   we need to return the samba attributes here */
 	   
 	escape_user = escape_ldap_string_alloc( username );
-	pstrcpy( filter, lp_ldap_filter() );
+	pstrcpy( filter, "(uid=%u)" );
 	all_string_sub( filter, "%u", escape_user, sizeof(filter) );
 	SAFE_FREE( escape_user );
 
@@ -3328,7 +3328,7 @@ char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	char *result = NULL;
 
 	asprintf(&filter, "(&%s(objectclass=sambaSamAccount))",
-		 lp_ldap_filter());
+		 "(uid=%u)");
 	if (filter == NULL) goto done;
 
 	escaped = escape_ldap_string_alloc(username);
