@@ -31,34 +31,6 @@ extern BOOL opt_nocache;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/*********************************************************************
-*********************************************************************/
-
-static int gr_mem_buffer( char **buffer, char **members, int num_members )
-{
-	int i;
-	int len = 0;
-	int idx = 0;
-
-	if ( num_members == 0 ) {
-		*buffer = NULL;
-		return 0;
-	}
-	
-	for ( i=0; i<num_members; i++ )
-		len += strlen(members[i])+1;
-
-	*buffer = SMB_XMALLOC_ARRAY(char, len);
-	for ( i=0; i<num_members; i++ ) {
-		snprintf( &(*buffer)[idx], len-idx, "%s,", members[i]);
-		idx += strlen(members[i])+1;
-	}
-	/* terminate with NULL */
-	(*buffer)[len-1] = '\0';
-	
-	return len;	
-}
-
 /***************************************************************
  Empty static struct for negative caching.
 ****************************************************************/
@@ -229,7 +201,6 @@ done:
 enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 {
 	DOM_SID group_sid;
-	WINBINDD_GR *grp;
 	struct winbindd_domain *domain;
 	enum SID_NAME_USE name_type;
 	fstring name_domain, name_group;
@@ -251,26 +222,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	
 	parse_domain_user(tmp, name_domain, name_group);
 
-	/* if no domain or our local domain, then do a local tdb search */
-	
-	if ( (!*name_domain || strequal(name_domain, get_global_sam_name())) &&
-	     ((grp = wb_getgrnam(name_group)) != NULL) ) {
-
-		char *buffer = NULL;
-		
-		memcpy( &state->response.data.gr, grp, sizeof(WINBINDD_GR) );
-
-		gr_mem_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
-		
-		state->response.data.gr.gr_mem_ofs = 0;
-		state->response.length += gr_mem_len;
-		state->response.extra_data = buffer;	/* give the memory away */
-		
-		return WINBINDD_OK;
-	}
-
-	/* if no domain or our local domain and no local tdb group, default to
-	 * our local domain for aliases */
+	/* if no domain or our local domain, default to our local domain for aliases */
 
 	if ( !*name_domain || strequal(name_domain, get_global_sam_name()) ) {
 		fstrcpy(name_domain, get_global_sam_name());
@@ -337,7 +289,6 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	WINBINDD_GR *grp;
 	DOM_SID group_sid;
 	enum SID_NAME_USE name_type;
 	fstring dom_name;
@@ -353,21 +304,6 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	if ((state->request.data.gid < server_state.gid_low) ||
 	    (state->request.data.gid > server_state.gid_high))
 		return WINBINDD_ERROR;
-
-	/* alway try local tdb lookup first */
-	if ( ( grp=wb_getgrgid(state->request.data.gid)) != NULL ) {
-		char *buffer = NULL;
-		
-		memcpy( &state->response.data.gr, grp, sizeof(WINBINDD_GR) );
-		
-		gr_mem_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
-		
-		state->response.data.gr.gr_mem_ofs = 0;
-		state->response.length += gr_mem_len;
-		state->response.extra_data = buffer;	/* give away the memory */
-		
-		return WINBINDD_OK;
-	}
 
 	/* Get rid from gid */
 	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&group_sid, state->request.data.gid))) {
