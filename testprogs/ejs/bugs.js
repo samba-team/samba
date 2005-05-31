@@ -69,8 +69,27 @@ function objbug() {
 }
 
 
+/****************************************
+demo lack of recursion
+fix in http://build.samba.org/build.pl?function=diff;tree=samba4;revision=7127
+*****************************************/
+function fibonacci(n) {
+	if (n < 3) {
+		return 1;
+	}
+	return fibonacci(n-1) + fibonacci(n-2);
+}
+
+function recursebug() {
+	 println("First 10 fibonacci numbers:");
+	 for (i=0;i<10;i++) {
+		 println("fibonacci(" + i + ")=" + fibonacci(i));
+	 }
+}
+
 
 /* run the tests */
 arraybug();
 argsbug("one", "two", "three");
+recursebug();
 objbug()
