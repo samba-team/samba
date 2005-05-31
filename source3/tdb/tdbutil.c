@@ -390,9 +390,8 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
  integers and strings.
 ****************************************************************************/
 
-size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
+size_t tdb_pack_va(char *buf, int bufsize, const char *fmt, va_list ap)
 {
-	va_list ap;
 	uint8 bt;
 	uint16 w;
 	uint32 d;
@@ -404,8 +403,6 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 	char *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-
-	va_start(ap, fmt);
 
 	while (*fmt) {
 		switch ((c = *fmt++)) {
@@ -471,12 +468,52 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 			bufsize = 0;
 	}
 
-	va_end(ap);
-
-	DEBUG(18,("tdb_pack(%s, %d) -> %d\n", 
+	DEBUG(18,("tdb_pack_va(%s, %d) -> %d\n", 
 		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
 	
 	return PTR_DIFF(buf, buf0);
+}
+
+size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
+{
+	va_list ap;
+	size_t result;
+
+	va_start(ap, fmt);
+	result = tdb_pack_va(buf, bufsize, fmt, ap);
+	va_end(ap);
+	return result;
+}
+
+BOOL tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
+		     const char *fmt, ...)
+{
+	va_list ap;
+	size_t len1, len2;
+
+	va_start(ap, fmt);
+	len1 = tdb_pack_va(NULL, 0, fmt, ap);
+	va_end(ap);
+
+	if (mem_ctx != NULL)
+		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8_t,
+					    (*len) + len1);
+	else
+		*buf = SMB_REALLOC_ARRAY(*buf, uint8_t, (*len) + len1);
+
+	if (*buf == NULL)
+		return False;
+
+	va_start(ap, fmt);
+	len2 = tdb_pack_va((*buf)+(*len), len1, fmt, ap);
+	va_end(ap);
+
+	if (len1 != len2)
+		return False;
+
+	*len += len2;
+
+	return True;
 }
 
 /****************************************************************************

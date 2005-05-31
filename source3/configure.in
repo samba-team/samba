@@ -2576,6 +2576,8 @@ AC_MSG_RESULT($with_ldap_support)
 
 SMBLDAP=""
 AC_SUBST(SMBLDAP)
+SMBLDAPUTIL=""
+AC_SUBST(SMBLDAPUTIL)
 if test x"$with_ldap_support" != x"no"; then
 
   ##################################################################
@@ -2632,6 +2634,7 @@ if test x"$with_ldap_support" != x"no"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
     SMBLDAP="lib/smbldap.o"
+    SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)

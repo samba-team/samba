@@ -135,7 +135,7 @@ static size_t sys_iconv(void *cd,
 {
 #ifdef HAVE_NATIVE_ICONV
 	size_t ret = iconv((iconv_t)cd, 
-			   CONST_DISCARD(char **, inbuf), inbytesleft, 
+			   (char **)inbuf, inbytesleft, 
 			   outbuf, outbytesleft);
 	if (ret == (size_t)-1) {
 		int saved_errno = errno;
