@@ -3,9 +3,9 @@
 ##############################
 # Start SUBSYSTEM LIBREPLACE
 [SUBSYSTEM::LIBREPLACE]
-INIT_OBJ_FILES = lib/replace.o
+INIT_OBJ_FILES = lib/replace/replace.o
 ADD_OBJ_FILES = \
-		lib/snprintf.o
+		lib/replace/snprintf.o
 # End SUBSYSTEM LIBREPLACE
 ##############################
 
@@ -49,11 +49,19 @@ INIT_OBJ_FILES = \
 # End SUBSYSTEM LIBSAMBA3
 ################################################
 
+[SUBSYSTEM::PAM_ERRORS]
+OBJ_FILES = lib/pam_errors.o
+
+[SUBSYSTEM::GENCACHE]
+OBJ_FILES = \
+		lib/gencache.o \
+
 ##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
 ADD_OBJ_FILES = \
+		lib/xfile.o \
 		lib/debug.o \
 		lib/fault.o \
 		lib/pidfile.o \
@@ -62,7 +70,6 @@ ADD_OBJ_FILES = \
 		lib/time.o \
 		lib/genrand.o \
 		lib/dprintf.o \
-		lib/xfile.o \
 		lib/util_str.o \
 		lib/util_strlist.o \
 		lib/util_unistr.o \
@@ -74,14 +81,11 @@ ADD_OBJ_FILES = \
 		lib/fsusage.o \
 		lib/ms_fnmatch.o \
 		lib/select.o \
-		lib/pam_errors.o \
-		intl/lang_tdb.o \
 		lib/mutex.o \
 		lib/server_mutex.o \
 		lib/idtree.o \
 		lib/unix_privs.o \
 		lib/db_wrap.o \
-		lib/gencache.o \
 		lib/gendb.o \
 		lib/credentials.o
 REQUIRED_SUBSYSTEMS = \
