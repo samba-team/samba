@@ -384,7 +384,7 @@ sub parse_idl($$)
 	if (! defined $cpp) {
 		$cpp = "cpp"
 	}
-	my $data = `$cpp -xc $filename`;
+	my $data = `$cpp -D__PIDL__ -xc $filename`;
 	$/ = $saved_delim;
 
     $self->YYData->{INPUT} = $data;
