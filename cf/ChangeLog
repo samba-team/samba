@@ -1,5 +1,7 @@
 2005-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* pthreads.m4: s/else if/elif/
+	
 	* check-symbols.sh: AIX have a diffrent nm, use -B to get bsd like
 	output
 	
