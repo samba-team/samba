@@ -294,7 +294,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 
       gtk_clist_append(GTK_CLIST(clist), rowdata);
 
-      (char *)dirp += dirlen;
+      dirp = (struct smbc_dirent *) ((char *) dirp + dirlen);
       err -= dirlen;
 
     }
@@ -429,7 +429,7 @@ static void cb_itemsignal( GtkWidget *item,
 
 	}
 
-	(char *)dirp += dirlen;
+        dirp = (struct smbc_dirent *) ((char *) dirp + dirlen);
 	err -= dirlen;
 
       }
@@ -564,7 +564,7 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 	gtk_signal_connect(GTK_OBJECT(subtree), "unselect_child",
 			   GTK_SIGNAL_FUNC(cb_unselect_child), real_tree);
 
-	(char *)dirp += dirlen;
+        dirp = (struct smbc_dirent *) ((char *) dirp + dirlen);
 	err -= dirlen;
 
       }
@@ -797,7 +797,7 @@ int main( int   argc,
       gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
 			  GTK_SIGNAL_FUNC(cb_unselect_child), tree);
 
-      (char *)dirp += dirlen;
+      dirp = (struct smbc_dirent *) ((char *) dirp + dirlen);
       err -= dirlen;
 
     }
