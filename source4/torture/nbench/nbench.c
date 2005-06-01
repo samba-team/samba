@@ -152,6 +152,9 @@ again:
 done:
 	fclose(f);
 
+	if (torture_nprocs == 1) {
+		smbcli_deltree(cli->tree, "\\clients");
+	}
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
@@ -200,7 +203,9 @@ BOOL torture_nbench(void)
 	torture_create_procs(run_netbench, &correct);
 	alarm(0);
 
-	smbcli_deltree(cli->tree, "\\clients");
+	if (torture_nprocs > 1) {
+		smbcli_deltree(cli->tree, "\\clients");
+	}
 
 	printf("\nThroughput %g MB/sec\n", nbio_result());
 	return correct;
