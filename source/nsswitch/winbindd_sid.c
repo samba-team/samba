@@ -133,7 +133,7 @@ static struct winbindd_child static_idmap_child;
 
 BOOL init_idmap_child(void)
 {
-	return setup_domain_child(NULL, &static_idmap_child);
+	return setup_domain_child(NULL, &static_idmap_child, "idmap");
 }
 
 struct winbindd_child *idmap_child(void)

@@ -260,7 +260,7 @@ static void trustdom_recv(void *private, BOOL success)
 			break;
 		}
 
-		if (find_domain_from_sid_noinit(&sid) == NULL) {
+		if (find_domain_from_name_noinit(p) == NULL) {
 			struct winbindd_domain *domain;
 			char *alternate_name = NULL;
 			
@@ -272,7 +272,7 @@ static void trustdom_recv(void *private, BOOL success)
 			domain = add_trusted_domain(p, alternate_name,
 						    &cache_methods,
 						    &sid);
-			setup_domain_child(domain, &domain->child);
+			setup_domain_child(domain, &domain->child, NULL);
 		}
 		p=q;
 		if (p != NULL)
@@ -519,19 +519,19 @@ void init_domain_list(void)
 	}
 
 	domain->primary = True;
-	setup_domain_child(domain, &domain->child);
+	setup_domain_child(domain, &domain->child, NULL);
 
 	/* Add our local SAM domains */
 
 	domain = add_trusted_domain("BUILTIN", NULL, &passdb_methods,
 				    &global_sid_Builtin);
-	setup_domain_child(domain, &domain->child);
+	setup_domain_child(domain, &domain->child, NULL);
 
 	if (!IS_DC) {
 		domain = add_trusted_domain(get_global_sam_name(), NULL,
 					    &passdb_methods,
 					    get_global_sam_sid());
-		setup_domain_child(domain, &domain->child);
+		setup_domain_child(domain, &domain->child, NULL);
 	}
 }
 

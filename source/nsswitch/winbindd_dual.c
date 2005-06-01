@@ -494,10 +494,25 @@ static void child_process_request(struct winbindd_domain *domain,
 }
 
 BOOL setup_domain_child(struct winbindd_domain *domain,
-			struct winbindd_child *child)
+			struct winbindd_child *child,
+			const char *explicit_logfile)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
+
+	extern BOOL override_logfile;
+	pstring logfilename;
+
+	if (explicit_logfile != NULL) {
+		pstr_sprintf(logfilename, "%s/log.winbindd-%s",
+			     dyn_LOGFILEBASE, explicit_logfile);
+	} else if (domain != NULL) {
+		pstr_sprintf(logfilename, "%s/log.wb-%s",
+			     dyn_LOGFILEBASE, domain->name);
+	} else {
+		smb_panic("Internal error: domain == NULL && "
+			  "explicit_logfile == NULL");
+	}
 
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
@@ -537,6 +552,11 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 	}
 
 	close_conns_after_fork();
+
+	if (!override_logfile) {
+		lp_set_logfile(logfilename);
+		reopen_logs();
+	}
 	
 	dual_daemon_pipe = -1;
 	opt_dual_daemon = False;
