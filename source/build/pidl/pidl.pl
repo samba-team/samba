@@ -31,6 +31,7 @@ use pidl::util;
 use pidl::template;
 use pidl::swig;
 use pidl::compat;
+use pidl::esp;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -47,6 +48,7 @@ my($opt_keep) = 0;
 my($opt_swig) = 0;
 my($opt_dcom_proxy) = 0;
 my($opt_com_header) = 0;
+my($opt_esp);
 my($opt_odl) = 0;
 my($opt_quiet) = 0;
 my($opt_output);
@@ -70,6 +72,7 @@ Options:
  --dump                dump a pidl file back to idl
  --header[=OUTFILE]    create a C NDR header file
  --parser[=OUTFILE]    create a C NDR parser
+ --esp[=OUTFILE]       create esp wrapper file
  --client              create a C NDR client
  --server              create server boilerplate
  --template            print a template for a pipe
@@ -100,6 +103,7 @@ GetOptions (
         'client' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
 		'eth-header:s' => \$opt_eth_header,
+		'esp:s' => \$opt_esp,
 	    'diff' => \$opt_diff,
 		'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
@@ -161,8 +165,8 @@ sub process_file($)
 	if ($opt_com_header) {
 		my $res = COMHeader::Parse($pidl);
 		if ($res) {
-			my $h_filename = dirname($output) . "/com_$basename.h";
-			util::FileSave($h_filename, 
+			my $comh_filename = dirname($output) . "/com_$basename.h";
+			util::FileSave($comh_filename, 
 			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
 			"#include \"librpc/gen_ndr/ndr_$basename.h\"\n" . 
 			$res);
@@ -190,7 +194,7 @@ sub process_file($)
 		$pidl = ODL::ODL2IDL($pidl);
 	}
 
-	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or $opt_client or $opt_server or defined($opt_parser)) {
+	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or $opt_client or $opt_server or defined($opt_parser) or defined($opt_esp)) {
 		$ndr = Ndr::Parse($pidl);
 #		print util::MyDumper($ndr);
 	}
@@ -209,6 +213,7 @@ sub process_file($)
 		}
 	}
 
+
 	if (defined($opt_eth_header)) {
 	  my($eparserhdr) = $opt_eth_header;
 	  if ($eparserhdr eq "") {
@@ -218,15 +223,20 @@ sub process_file($)
 	  util::FileSave($eparserhdr, EthHeader::Parse($ndr));
 	}
 
+	my $h_filename = util::ChangeExtension($output, ".h");
 	if ($opt_client) {
 		my ($client) = util::ChangeExtension($output, "_c.c");
-		my $h_filename = util::ChangeExtension($output, ".h");
 
 		util::FileSave($client, NdrClient::Parse($ndr,$h_filename));
 	}
 
+	if (defined($opt_esp)) {
+		my $esp = $opt_esp;
+		if ($esp eq "") { $esp = util::ChangeExtension($output, "_esp.c"); }
+		util::FileSave($esp, EspClient::Parse($ndr, $h_filename));
+	}
+
 	if ($opt_server) {
-		my $h_filename = util::ChangeExtension($output, ".h");
 		my $dcom = "";
 
 		foreach my $x (@{$pidl}) {
