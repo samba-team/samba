@@ -1,3 +1,12 @@
+2005-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* check-symbols.sh: AIX have a diffrent nm, use -B to get bsd like
+	output
+	
+	* pthreads.m4: aix case: assume gcc handles -pthread, in the
+	non-gcc case, use the compiler as hint (xlc vs xlc_r) if this
+	environment handles threads or not
+
 2005-05-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-symbols.sh: ignore weak symbols too
