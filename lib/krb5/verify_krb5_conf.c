@@ -496,6 +496,7 @@ struct entry kdc_entries[] = {
     { "pki-identity", krb5_config_string, NULL },
     { "pki-anchors", krb5_config_string, NULL },
     { "hdb-ldap-create-base", krb5_config_string, NULL },
+    { "v4-realm", krb5_config_string, NULL },
     { NULL }
 };
 
