@@ -1,5 +1,10 @@
 2005-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/store.c: If we are allocating 0 entires, avoid failing
+	if ALLOC returns NULL
+
+	* lib/krb5/verify_krb5_conf.c: Check for [kdc]v4-realm
+	
 	* lib/krb5/cache.c: When returning a new error code, set error
 	string.
 
