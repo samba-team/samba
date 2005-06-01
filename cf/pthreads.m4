@@ -42,7 +42,7 @@ case "$host" in
 *-*-aix*)
 	if test "$GCC" = yes; then
 		enable_pthread_support=yes
-	else if expr "$CC" : ".*_r" > /dev/null ; then
+	elif expr "$CC" : ".*_r" > /dev/null ; then
 		enable_pthread_support=yes
 		PTHREADS_CFLAGS=""
 		PTHREADS_LIBS=""
