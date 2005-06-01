@@ -303,14 +303,16 @@ int smbc_utimes(const char *fname, struct timeval *tbuf)
 #ifdef HAVE_UTIME_H
 int smbc_utime(const char *fname, struct utimbuf *utbuf)
 {
-        struct timeval tv;
+        struct timeval tv[2];
 
         if (utbuf == NULL)
                 return statcont->utimes(statcont, fname, NULL);
 
-        tv.tv_sec = utbuf->modtime;
-        tv.tv_usec = 0;
-        return statcont->utimes(statcont, fname, &tv);
+        tv[0].tv_sec = utbuf->actime;
+        tv[1].tv_sec = utbuf->modtime;
+        tv[0].tv_usec = tv[1].tv_usec = 0;
+
+        return statcont->utimes(statcont, fname, tv);
 }
 #endif
 
