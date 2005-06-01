@@ -564,7 +564,7 @@ krb5_ret_addrs(krb5_storage *sp, krb5_addresses *adr)
     if(ret) return ret;
     adr->len = tmp;
     ALLOC(adr->val, adr->len);
-    if (adr->val == NULL)
+    if (adr->val == NULL && adr->len != 0)
 	return ENOMEM;
     for(i = 0; i < adr->len; i++){
 	ret = krb5_ret_address(sp, &adr->val[i]);
@@ -599,7 +599,7 @@ krb5_ret_authdata(krb5_storage *sp, krb5_authdata *auth)
     ret = krb5_ret_int32(sp, &tmp);
     if(ret) return ret;
     ALLOC_SEQ(auth, tmp);
-    if (auth->val == NULL)
+    if (auth->val == NULL && tmp != 0)
 	return ENOMEM;
     for(i = 0; i < tmp; i++){
 	ret = krb5_ret_int16(sp, &tmp2);
