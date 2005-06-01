@@ -43,7 +43,6 @@ sub Template($)
 #include \"includes.h\"
 #include \"rpc_server/dcerpc_server.h\"
 #include \"librpc/gen_ndr/ndr_$name.h\"
-#include \"rpc_server/common/common.h\"
 
 ";
 

@@ -5,7 +5,7 @@ use strict;
 
 use FindBin qw($RealBin);
 use lib "$RealBin/../..";
-use test;
+use pidl::test;
 
 my %settings = Test::GetSettings(@ARGV);
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
