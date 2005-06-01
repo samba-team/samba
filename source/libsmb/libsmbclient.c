@@ -1265,7 +1265,10 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
  * Set file info on an SMB server.  Use setpathinfo call first.  If that
  * fails, use setattrE..
  *
- * Time parameters are always used and must be provided.
+ * Access and modification time parameters are always used and must be
+ * provided.  Create time, if zero, will be determined from the actual create
+ * time of the file.  If non-zero, the create time will be set as well.
+ *
  * "mode" (attributes) parameter may be set to -1 if it is not to be set.
  */
 static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
