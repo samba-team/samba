@@ -40,7 +40,15 @@ case "$host" in
 	esac
 	;;
 *-*-aix*)
-	enable_pthread_support=yes
+	if test "$GCC" = yes; then
+		enable_pthread_support=yes
+	else if expr "$CC" : ".*_r" > /dev/null ; then
+		enable_pthread_support=yes
+		PTHREADS_CFLAGS=""
+		PTHREADS_LIBS=""
+	else
+		enable_pthread_support=no
+	fi
 	;;
 mips-sgi-irix6.[[5-9]])  # maybe works for earlier versions too
 	enable_pthread_support=yes
