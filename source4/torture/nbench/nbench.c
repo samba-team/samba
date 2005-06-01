@@ -32,6 +32,7 @@ static const char *loadfile;
 /* run a test that simulates an approximate netbench client load */
 static BOOL run_netbench(struct smbcli_state *cli, int client)
 {
+	extern int torture_nprocs;
 	int i;
 	pstring line;
 	char *cname;
@@ -39,6 +40,12 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 	fstring params[20];
 	const char *p;
 	BOOL correct = True;
+
+	if (torture_nprocs == 1) {
+		if (!torture_setup_dir(cli, "\\clients")) {
+			return False;
+		}
+	}
 
 	nb_setup(cli, client);
 
@@ -173,12 +180,14 @@ BOOL torture_nbench(void)
 		loadfile = "client.txt";
 	}
 
-	if (!torture_open_connection(&cli)) {
-		return False;
-	}
+	if (torture_nprocs > 1) {
+		if (!torture_open_connection(&cli)) {
+			return False;
+		}
 
-	if (!torture_setup_dir(cli, "\\clients")) {
-		return False;
+		if (!torture_setup_dir(cli, "\\clients")) {
+			return False;
+		}
 	}
 
 	nbio_shmem(torture_nprocs, timelimit, warmup);
