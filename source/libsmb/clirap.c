@@ -457,6 +457,101 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	return True;
 }
 
+
+/****************************************************************************
+send a setpathinfo call
+****************************************************************************/
+BOOL cli_setpathinfo(struct cli_state *cli, const char *fname, 
+                     time_t c_time, time_t a_time, time_t m_time, uint16 mode)
+{
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	unsigned int rparam_len, rdata_len;
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	pstring param;
+        pstring data;
+	char *rparam=NULL, *rdata=NULL;
+	int count=8;
+	BOOL ret;
+        void (*date_fn)(char *buf,int offset,time_t unixdate);
+	char *p;
+
+	memset(param, 0, sizeof(param));
+	memset(data, 0, sizeof(data));
+
+        p = param;
+
+        /* Add the information level */
+	SSVAL(p, 0, SMB_INFO_STANDARD);
+
+        /* Skip reserved */
+	p += 6;
+
+        /* Add the file name */
+	p += clistr_push(cli, p, fname, sizeof(pstring)-6, STR_TERMINATE);
+
+	param_len = PTR_DIFF(p, param);
+
+        p = data;
+
+	if (cli->win95) {
+		date_fn = put_dos_date;
+	} else {
+		date_fn = put_dos_date2;
+	}
+
+        /* Add the create, last access, and modification times */
+        (*date_fn)(p, 0, c_time);
+        (*date_fn)(p, 4, a_time);
+        (*date_fn)(p, 8, m_time);
+        p += 12;
+
+        /* Skip DataSize and AllocationSize */
+        p += 8;
+
+        /* Add attributes */
+        SSVAL(p, 0, mode);
+        p += 2;
+
+        /* Add EA size (none) */
+        SIVAL(p, 0, 0);
+        p += 4;
+
+        data_len = PTR_DIFF(p, data);
+
+	do {
+		ret = (cli_send_trans(cli, SMBtrans2, 
+				      NULL,           /* Name */
+				      -1, 0,          /* fid, flags */
+				      &setup, 1, 0,   /* setup, length, max */
+				      param, param_len, 10, /* param, length, max */
+				      data, data_len, cli->max_xmit /* data, length, max */
+				      ) &&
+		       cli_receive_trans(cli, SMBtrans2, 
+					 &rparam, &rparam_len,
+					 &rdata, &rdata_len));
+		if (!cli_is_dos_error(cli)) break;
+		if (!ret) {
+			/* we need to work around a Win95 bug - sometimes
+			   it gives ERRSRV/ERRerror temprarily */
+			uint8 eclass;
+			uint32 ecode;
+			cli_dos_error(cli, &eclass, &ecode);
+			if (eclass != ERRSRV || ecode != ERRerror) break;
+			smb_msleep(100);
+		}
+	} while (count-- && ret==False);
+
+	if (!ret) {
+		return False;
+	}
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	return True;
+}
+
+
 /****************************************************************************
 send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
