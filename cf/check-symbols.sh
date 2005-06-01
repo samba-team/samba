@@ -8,6 +8,12 @@ export LANG
 esym=
 symbols=
 
+# AIX has different default output format
+nmargs=""
+if [ "`uname`" = AIX ]; then
+	nmargs="-B"
+fi
+
 while test $# != 0 ;do 
   case "$1" in
     -lib) lib="$2" ; shift;;
@@ -33,9 +39,9 @@ for a in "$@" $esym; do
     symbols="\$3 !~ /^_?${a}/ ${symbols:+&&} ${symbols}"
 done
 
-# F is filename, N for debugsymbols, W weak symbols
+# F filename, N debugsymbols, W weak symbols, U undefined
 
-(nm .libs/lib${lib}.a || nm .libs/lib${lib}.so*)  |
+(nm $nmargs .libs/lib${lib}.a || nm $nmargs .libs/lib${lib}.so*)  |
 awk "BEGIN { stat = 0 }
-NF == 3 && \$2 ~ /[A-EG-MO-VX-Z]/ && $symbols { printf \"%s should not be exported (type %s)\\n\", \$3, \$2; ++stat } END { exit stat }"
+NF == 3 && \$2 ~ /[A-EG-MO-TVX-Z]/ && $symbols { printf \"%s should not be exported (type %s)\\n\", \$3, \$2; ++stat } END { exit stat }"
 
