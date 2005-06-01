@@ -239,7 +239,7 @@ my $aliases = {
 	"char" => "uint8",
 	"long" => "int32",
 	"short" => "int16",
-	"hyper" => "HYPER_T"
+	"HYPER_T" => "hyper"
 };
 
 sub RegisterAliases()
