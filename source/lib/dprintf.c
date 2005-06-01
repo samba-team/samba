@@ -38,15 +38,9 @@ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 	char *msgstr;
 	va_list ap2;
 
-	/* do any message translations */
-	msgstr = lang_msg(format);
-	if (!msgstr) return -1;
-
 	VA_COPY(ap2, ap);
 
 	ret = vasprintf(&p, msgstr, ap2);
-
-	lang_msg_free(msgstr);
 
 	if (ret <= 0) return ret;
 

@@ -115,7 +115,7 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 ****************************************************************************/
-char *fgets_slash(char *s2,int maxlen,XFILE *f)
+char *fgets_slash(char *s2,int maxlen,FILE *f)
 {
   char *s=s2;
   int len = 0;
