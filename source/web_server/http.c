@@ -426,9 +426,10 @@ static void http_setup_arrays(struct esp_state *esp)
 	p = strrchr(web->input.url, '/');
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_NAME", p+1);
 	SETVAR(ESP_REQUEST_OBJ, "SCRIPT_FILENAME", web->input.url);
+	p = socket_get_peer_addr(web->conn->socket, esp);
+	SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", p);
 	p = socket_get_peer_name(web->conn->socket, esp);
 	SETVAR(ESP_REQUEST_OBJ, "REMOTE_HOST", p);
-	SETVAR(ESP_REQUEST_OBJ, "REMOTE_ADDR", p);
 	SETVAR(ESP_REQUEST_OBJ, "REMOTE_USER", "");
 	SETVAR(ESP_REQUEST_OBJ, "CONTENT_TYPE", web->input.content_type);
 	if (web->session) {
