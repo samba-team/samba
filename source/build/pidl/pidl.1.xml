@@ -19,15 +19,17 @@
 		<arg choice="opt">--output OUTNAME</arg>
 		<arg choice="opt">--parse</arg>
 		<arg choice="opt">--dump</arg>
-		<arg choice="opt">--header</arg>
-		<arg choice="opt">--parser</arg>
+		<arg choice="opt">--header[=OUTPUT]</arg>
+		<arg choice="opt">--parser[=OUTPUT]</arg>
 		<arg choice="opt">--server</arg>
 		<arg choice="opt">--template</arg>
-		<arg choice="opt">--eth-parser</arg>
-		<arg choice="opt">--eth-header</arg>
+		<arg choice="opt">--eth-parser[=OUTPUT]</arg>
+		<arg choice="opt">--eth-header[=OUTPUT]</arg>
 		<arg choice="opt">--diff</arg>
 		<arg choice="opt">--keep</arg>
 		<arg choice="req">idlfile</arg>
+		<arg choice="opt">idlfile2</arg>
+		<arg choice="opt">...</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -49,16 +51,17 @@
 		dissectors that can parse data sent over the 
 		wire by these interfaces. </para>
 
-	<para>pidl takes IDL files in the same format that is used by midl, 
+	<para>pidl takes IDL files in the same format as is used by midl, 
 		converts it to a .pidl file (which contains pidl's internal representation of the interface) and can then generate whatever output you need.
 		.pidl files should be used for debugging purposes only. Write your 
-		interface definitions in (midl) .idl format.
+		interface definitions in .idl format.
 	</para>
 
 	<para>
 		The goal of pidl is to implement a IDL compiler that can be used 
 		while developing the RPC subsystem in Samba (for 
-		both marshalling/un-marshalling and debugging purposes).</para>
+		both marshalling/unmarshalling and debugging purposes).
+	</para>
 
 </refsect1>
 
@@ -375,12 +378,6 @@ embedded structures in security descriptors and spoolss.
 
 		<para>Strings in pidl are a data type rather then an attribute.</para>
 		<!--FIXME-->
-	</refsect2>
-
-	<refsect2>
-		<title>Pointers</title>
-
-		<para>Pidl does not support "full" pointers in the DCE meaning of the word. However, its "unique" pointer is compatible with MIDL's full ("ptr") pointer support. </para>
 	</refsect2>
 
 	<refsect2>

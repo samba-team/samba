@@ -5,7 +5,6 @@
   uuid("60a15ec5-4de8-11d7-a637-005056a20182"),
   endpoint("ncacn_np:[\\pipe\\rpcecho]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
-  pointer_default_top(unique),
   version(1.0),
   helpstring("Simple echo pipe")
 ]
@@ -13,7 +12,8 @@ interface rpcecho
 {
 	/* Add one to an integer */
 	void echo_AddOne(
-		[in,out,ref] uint32 *v
+		[in] uint32 in_data,
+		[out] uint32 *out_data
 	);
 	/* Echo an array of bytes back at the caller */
 	void echo_EchoData(
@@ -24,14 +24,13 @@ interface rpcecho
 	/* Sink data to the server */
 	void echo_SinkData(
 		[in] uint32 len,
-		[in,ref,size_is(len)] uint8 *data
+		[in,size_is(len)] uint8 data[]
 	);
 	/* Source data from server */
 	void echo_SourceData(
 		[in] uint32 len,
-		[out,ref,size_is(len)] uint8 *data
+		[out,size_is(len)] uint8 data[]
 	);
-
 
 	/* test strings */
  	void echo_TestCall (
@@ -66,10 +65,6 @@ interface rpcecho
 		uint8 v1;
 		echo_info1 info1;
 	} echo_info6;
-
-	typedef union {
-		[case(1)]  echo_info1 info1;
-	} echo_XXX;
 
 	typedef struct {
 		uint8 v1;
@@ -110,7 +105,7 @@ interface rpcecho
 		echo_Enum1_32 e2;
 	} echo_Enum2;
 
-	typedef [switch_type(echo_Enum1)] union {
+	typedef [switch_type(uint16)] union {
 		[case(ECHO_ENUM1)] echo_Enum1 e1;
 		[case(ECHO_ENUM2)] echo_Enum2 e2;
 	} echo_Enum3;
@@ -130,5 +125,5 @@ interface rpcecho
 		[in,out,ref] echo_Surrounding *data
 	);
 
-	uint16 echo_TestDoublePointer([in,ref] uint16 ***data);
+	uint16 echo_TestDoublePointer([in] uint16 ***data);
 }

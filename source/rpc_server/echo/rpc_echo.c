@@ -30,7 +30,7 @@
 
 static NTSTATUS echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
 {
-	*r->out.v = *r->in.v + 1;
+	*r->out.out_data = r->in.in_data + 1;
 	return NT_STATUS_OK;
 }
 

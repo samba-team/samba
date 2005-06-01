@@ -39,8 +39,8 @@ static BOOL test_addone(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=0;i<10;i++) {
 		uint32_t n = i;
 		struct echo_AddOne r;
-		r.in.v = &n;
-		r.out.v = &n;
+		r.in.in_data = n;
+		r.out.out_data = &n;
 		status = dcerpc_echo_AddOne(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("AddOne(%d) failed - %s\n", i, nt_errstr(status));
