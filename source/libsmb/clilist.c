@@ -313,6 +313,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			}
 			p2 += interpret_long_filename(cli,info_level,p2,&finfo,
 							&resume_key,&last_name_raw,&last_name_raw_len);
+
+			if (!First && *mask && strcsequal(finfo.name, mask)) {
+				DEBUG(0,("Error: Looping in FIND_NEXT as name %s has already been seen?\n",
+					finfo.name));
+				ff_eos = 1;
+				break;
+			}
 		}
 
 		if (ff_lastname > 0) {
