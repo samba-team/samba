@@ -149,6 +149,25 @@ sub ValidProperties($$)
 	}
 }
 
+sub mapToScalar($)
+{
+	my $t = shift;
+	my $ti = typelist::getType($t);
+
+	if (not defined ($ti)) {
+		return undef;
+	} elsif ($ti->{DATA}->{TYPE} eq "ENUM") {
+		return typelist::enum_type_fn($ti->{DATA});
+	} elsif ($ti->{DATA}->{TYPE} eq "BITMAP") {
+		return typelist::enum_type_fn($ti->{DATA});
+	} elsif ($ti->{DATA}->{TYPE} eq "SCALAR") {
+		return $t;
+	}
+
+	return undef;
+}
+
+
 #####################################################################
 # parse a struct
 sub ValidElement($)
@@ -174,8 +193,19 @@ sub ValidElement($)
 			my $discriminator_type = util::has_property($type, "switch_type");
 			$discriminator_type = "uint32" unless defined ($discriminator_type);
 
-			if ($e2->{TYPE} ne $discriminator_type) {
-				print el_name($e) . ": Warning: switch_is() is of type $e2->{TYPE}, while discriminator type for union $type->{NAME} is $discriminator_type\n";
+			my $t1 = mapToScalar($discriminator_type);
+
+			if (not defined($t1)) {
+				fatal($e, el_name($e) . ": unable to map discriminator type '$discriminator_type' to scalar");
+			}
+
+			my $t2 = mapToScalar($e2->{TYPE});
+			if (not defined($t2)) {
+				fatal($e, el_name($e) . ": unable to map variable used for switch_is() to scalar");
+			}
+
+			if ($t1 ne $t2) {
+				nonfatal($e, el_name($e) . ": switch_is() is of type $e2->{TYPE} ($t2), while discriminator type for union $type->{NAME} is $discriminator_type ($t1)");
 			}
 		}
 	}
