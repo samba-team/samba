@@ -104,8 +104,7 @@ static void http_output_headers(struct websrv_context *web)
 	if (s == NULL) return;
 
 	b = web->output.content;
-	web->output.content.data = s;
-	web->output.content.length = strlen(s);
+	web->output.content = data_blob_string_const(s);
 	data_blob_append(web, &web->output.content, b.data, b.length);
 	data_blob_free(&b);
 }
@@ -486,7 +485,7 @@ void ejs_exception(const char *reason)
 static void esp_request(struct esp_state *esp, const char *url)
 {
 	struct websrv_context *web = esp->web;
-	size_t size;
+	ssize_t size;
 	int res;
 	char *emsg = NULL, *buf;
 
@@ -599,7 +598,7 @@ static NTSTATUS http_parse_post(struct esp_state *esp)
 		} else {
 			len = p - (char *)b.data;
 		}
-		line = talloc_strndup(esp, b.data, len);
+		line = talloc_strndup(esp, (char *)b.data, len);
 		NT_STATUS_HAVE_NO_MEMORY(line);
 				     
 		p = strchr(line,'=');
