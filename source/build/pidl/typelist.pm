@@ -153,7 +153,7 @@ sub mapScalarType($)
 
 	# it's a bug when a type is not in the list
 	# of known scalars or has no mapping
-	return $scalars->{$name}{C_TYPE} if defined($scalars->{$name}) and defined($scalars->{$name}{C_TYPE});
+	return $typedefs{$name}->{DATA}->{C_TYPE} if defined($typedefs{$name}) and defined($typedefs{$name}->{DATA}->{C_TYPE});
 
 	die("Unknown scalar type $name");
 }
@@ -225,11 +225,27 @@ sub RegisterScalars()
 		$typedefs{$k} = {
 			NAME => $k,
 			TYPE => "TYPEDEF",
-			DATA => {
-				TYPE => "SCALAR",
-				NAME => $k
-			}
+			DATA => $scalars->{$k}
 		};
+		$typedefs{$k}->{DATA}->{TYPE} = "SCALAR";
+		$typedefs{$k}->{DATA}->{NAME} = $k;
+	}
+}
+
+my $aliases = {
+	"DWORD" => "uint32",
+	"int" => "int32",
+	"WORD" => "uint16",
+	"char" => "uint8",
+	"long" => "int32",
+	"short" => "int16",
+	"hyper" => "HYPER_T"
+};
+
+sub RegisterAliases()
+{
+	foreach my $k (keys %{$aliases}) {
+		$typedefs{$k} = $typedefs{$aliases->{$k}};
 	}
 }
 
@@ -304,5 +320,6 @@ sub LoadIdl($)
 }
 
 RegisterScalars();
+RegisterAliases();
 
 1;

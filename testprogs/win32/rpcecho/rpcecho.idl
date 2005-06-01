@@ -18,6 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __PIDL__
+#define unistr [string] wchar_t *
+#endif
+
 [
 uuid(60a15ec5-4de8-11d7-a637-005056a20182),
 version(1.0)
@@ -45,13 +49,6 @@ interface rpcecho
 		[in] int len,
 		[out] [size_is(len)] char out_data[]
 	);
-
-#define unistr [string] wchar_t *
-#define uint8 char
-#define uint16 short
-#define uint32 long
-#define HYPER_T hyper
-
 	const long myconstant = 42;
 
 	/* test strings */
@@ -60,36 +57,35 @@ interface rpcecho
 		[out]  unistr *s2
  		);
 
-
 	/* test some alignment issues */
 	typedef struct {
-		uint8 v;
+		char v;
 	} echo_info1;
 
 	typedef struct {
-		uint16 v;
+		short v;
 	} echo_info2;
 
 	typedef struct {
-		uint32 v;
+		long v;
 	} echo_info3;
 
 	typedef struct {
-		HYPER_T v;
+		hyper v;
 	} echo_info4;
 
 	typedef struct {
-		uint8 v1;
-		HYPER_T v2;
+		char v1;
+		hyper v2;
 	} echo_info5;
 
 	typedef struct {
-		uint8 v1;
+		char v1;
 		echo_info1 info1;
 	} echo_info6;
 
 	typedef struct {
-		uint8 v1;
+		char v1;
 		echo_info4 info4;
 	} echo_info7;
 
@@ -139,13 +135,13 @@ interface rpcecho
 		);
 
 	typedef struct {
-		uint32 x;
-		[size_is(x)] uint16 surrounding[*];
+		long x;
+		[size_is(x)] short surrounding[*];
 	} echo_Surrounding;
 
 	void echo_TestSurrounding(
 		[in,out,ref] echo_Surrounding *data
 	);
 
-	uint16 echo_TestDoublePointer([in] uint16 ***data);
+	short echo_TestDoublePointer([in] short ***data);
 }
