@@ -1245,7 +1245,10 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         }
 
 	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
-		a_time = c_time = m_time;
+                if (m_time != NULL) {
+                        if (a_time != NULL) *a_time = *m_time;
+                        if (c_time != NULL) *c_time = *m_time;
+                }
 		srv->no_pathinfo2 = True;
 		return True;
 	}
@@ -1302,22 +1305,6 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 		return -1;  /* smbc_server sets errno */
 
 	}
-
-	/*  if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
-
-    int job = smbc_stat_printjob(srv, path, NULL, NULL);
-    if (job == -1) {
-
-      return -1;
-
-    }
-    if ((err = cli_printjob_del(&srv->cli, job)) != 0) {
-
-    
-      return -1;
-
-    }
-    } else */
 
 	if (!cli_unlink(&srv->cli, path)) {
 
@@ -2864,11 +2851,14 @@ int smbc_chmod_ctx(SMBCCTX *context, const char *fname, mode_t newmode)
 
 int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 {
+        int fd;
+        int ret;
         SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
-	uint16 mode;
-        time_t t = (tbuf == NULL ? time(NULL) : tbuf->tv_sec);
+        time_t c_time;
+        time_t a_time;
+        time_t m_time;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2885,7 +2875,22 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 
 	}
   
-	DEBUG(4, ("smbc_utimes(%s, [%s])\n", fname, ctime(&t)));
+        if (tbuf == NULL) {
+                a_time = m_time = time(NULL);
+        } else {
+                a_time = tbuf[0].tv_sec;
+                m_time = tbuf[1].tv_sec;
+        }
+
+        {
+                char atimebuf[32];
+                char mtimebuf[32];
+
+                DEBUG(4, ("smbc_utimes(%s, atime = %s mtime = %s)\n",
+                          fname,
+                          ctime_r(&a_time, atimebuf),
+                          ctime_r(&m_time, mtimebuf)));
+        }
 
 	if (smbc_parse_path(context, fname,
                             server, sizeof(server),
@@ -2908,22 +2913,46 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 		return -1;  /* errno set by smbc_server */
 	}
 
-	if (!smbc_getatr(context, srv, path,
-                         &mode, NULL,
-                         NULL, NULL, NULL,
-                         NULL)) {
+        /*
+         * cli_setatr() does not work on win98, and it also doesn't support
+         * setting the access time (only the modification time), so in all
+         * cases, we open the specified file and use cli_setattrE() which
+         * should work on all OS versions, and supports both times.
+         */
+        if ((fd = cli_open(&srv->cli, path, O_RDWR, DENY_NONE)) < 0) {
+
+                errno = smbc_errno(context, &srv->cli);
                 return -1;
-	}
+                
+        }
 
-	if (!cli_setatr(&srv->cli, path, mode, t)) {
-		/* some servers always refuse directory changes */
-		if (!(mode & aDIR)) {
-			errno = smbc_errno(context, &srv->cli);
-                        return -1;
-		}
-	}
+        /* Get the creat time of the file; we'll need it in the set call */
+        ret = cli_getattrE(&srv->cli, fd, NULL, NULL, &c_time, NULL, NULL);
 
-	return 0;
+        /* Some OS versions don't support create time */
+        if (c_time == 0) {
+                c_time = time(NULL);
+        }
+
+        /*
+         * For sanity sake, since there is no POSIX function to set the create
+         * time of a file, if the existing create time is greater than either
+         * of access time or modification time, set create time to the
+         * smallest of those.  This ensure that the create time of a file is
+         * never greater than its last access or modification time.
+         */
+        if (c_time > a_time) c_time = a_time;
+        if (c_time > m_time) c_time = m_time;
+
+        /* If we sucessfully retrieved the create time... */
+        if (ret) {
+                /* ... then set the new attributes */
+                ret = cli_setattrE(&srv->cli, fd, c_time, a_time, m_time);
+        }
+
+        cli_close(&srv->cli, fd);
+
+        return ret;
 }
 
 
