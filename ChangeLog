@@ -1,5 +1,8 @@
 2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/mit_dump.c (mit_prop_dump): cast argument to
+	krb5_parse_principal to avoid warning
+
 	* kdc/mit_dump.c: rename KRB5_TL_MOD_PRINC to
 	mit_KRB5_TL_MOD_PRINC to hint its a constant originating from mit
 	codebase
