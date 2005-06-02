@@ -791,7 +791,7 @@
 		[out] uint32 count
 	);
 
-	typedef [flag(RELATIVE_CURRENT)] struct {
+	typedef struct {
 		[relative] nstring *port_name;
 	} spoolss_PortInfo1;
 
