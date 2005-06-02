@@ -858,12 +858,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 	*pparams = params;
 
-	memset((char *)params,'\0',30);
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,fmode);
 	put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
 	SSVAL(params,12,rmode);
+	SSVAL(params,16,0); /* Padding. */
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
@@ -875,9 +875,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	 * WARNING - this may need to be changed if SMB_INO_T <> 4 bytes.
 	 */
 	SIVAL(params,20,inode);
+	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
 		uint32 ea_size = estimate_ea_size(conn, fsp, fname);
 		SIVAL(params, 26, ea_size);
+	} else {
+		SIVAL(params, 26, 0);
 	}
 
 	/* Send the required number of replies */
@@ -1164,13 +1167,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,l1_fdateCreation,cdate);
-			put_dos_date2(p,l1_fdateLastAccess,adate);
-			put_dos_date2(p,l1_fdateLastWrite,mdate);
-			SIVAL(p,l1_cbFile,(uint32)file_size);
-			SIVAL(p,l1_cbFileAlloc,(uint32)allocation_size);
-			SSVAL(p,l1_attrFile,mode);
-			p += l1_achName;
+			put_dos_date2(p,0,cdate);
+			put_dos_date2(p,4,adate);
+			put_dos_date2(p,8,mdate);
+			SIVAL(p,12,(uint32)file_size);
+			SIVAL(p,16,(uint32)allocation_size);
+			SSVAL(p,20,mode);
+			p += 23;
 			nameptr = p;
 			p += align_string(outbuf, p, 0);
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
@@ -1196,17 +1199,17 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,l2_fdateCreation,cdate);
-			put_dos_date2(p,l2_fdateLastAccess,adate);
-			put_dos_date2(p,l2_fdateLastWrite,mdate);
-			SIVAL(p,l2_cbFile,(uint32)file_size);
-			SIVAL(p,l2_cbFileAlloc,(uint32)allocation_size);
-			SSVAL(p,l2_attrFile,mode);
+			put_dos_date2(p,0,cdate);
+			put_dos_date2(p,4,adate);
+			put_dos_date2(p,8,mdate);
+			SIVAL(p,12,(uint32)file_size);
+			SIVAL(p,16,(uint32)allocation_size);
+			SSVAL(p,20,mode);
 			{
 				unsigned int ea_size = estimate_ea_size(conn, NULL, pathreal);
-				SIVAL(p,l2_cbList,ea_size); /* Extended attributes */
+				SIVAL(p,22,ea_size); /* Extended attributes */
 			}
-			p += l2_achName;
+			p += 27;
 			nameptr = p - 1;
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE | STR_NOALIGN);
 			if (SVAL(outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS) {
@@ -1240,13 +1243,13 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				SIVAL(p,0,reskey);
 				p += 4;
 			}
-			put_dos_date2(p,l2_fdateCreation,cdate);
-			put_dos_date2(p,l2_fdateLastAccess,adate);
-			put_dos_date2(p,l2_fdateLastWrite,mdate);
-			SIVAL(p,l2_cbFile,(uint32)file_size);
-			SIVAL(p,l2_cbFileAlloc,(uint32)allocation_size);
-			SSVAL(p,l2_attrFile,mode);
-			p += l2_cbList; /* p now points to the EA area. */
+			put_dos_date2(p,0,cdate);
+			put_dos_date2(p,4,adate);
+			put_dos_date2(p,8,mdate);
+			SIVAL(p,12,(uint32)file_size);
+			SIVAL(p,16,(uint32)allocation_size);
+			SSVAL(p,20,mode);
+			p += 22; /* p now points to the EA area. */
 
 			file_list = get_ea_list_from_file(ea_ctx, conn, NULL, pathreal, &ea_len);
 			name_list = ea_list_union(name_list, file_list, &ea_len);
@@ -1306,19 +1309,24 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * IMPORTANT as not doing so will trigger
 			 * a Win2k client bug. JRA.
 			 */
-			memset(p,'\0',26);
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
 				mangle_map(mangled_name,True,True,SNUM(conn));
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
+				if (len < 24) {
+					memset(p + 2 + len,'\0',24 - len);
+				}
 				SSVAL(p, 0, len);
+			} else {
+				memset(p,'\0',26);
 			}
 			p += 2 + 24;
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1339,6 +1347,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			len = srvstr_push(outbuf, p + 4, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p,0,len);
 			p += 4 + len;
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1366,6 +1375,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(q, 0, len);
 			p += len;
 
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1382,6 +1392,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, -4, len);
 			p += len;
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1411,6 +1422,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q, 0, len);
 			p += len; 
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1439,7 +1451,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			 * IMPORTANT as not doing so will trigger
 			 * a Win2k client bug. JRA.
 			 */
-			memset(p,'\0',26);
 			if (!was_8_3 && check_mangled_names) {
 				pstring mangled_name;
 				pstrcpy(mangled_name, fname);
@@ -1447,6 +1458,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
 				SSVAL(p, 0, len);
+				if (len < 24) {
+					memset(p + 2 + len,'\0',24 - len);
+				}
+				SSVAL(p, 0, len);
+			} else {
+				memset(p,'\0',26);
 			}
 			p += 26;
 			SSVAL(p,0,0); p += 2; /* Reserved ? */
@@ -1455,6 +1472,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(q,0,len);
 			p += len;
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -1512,6 +1530,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
 			p += len;
+			SIVAL(p,0,0); /* Ensure any padding is null. */
 
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
@@ -1683,7 +1702,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = SMB_REALLOC(*pparams, 10);
@@ -1938,7 +1956,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = SMB_REALLOC(*pparams, 6*SIZEOFWORD);
@@ -2841,7 +2858,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	*pparams = params;
-	memset((char *)params,'\0',2);
+	SSVAL(params,0,0);
 	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	pdata = SMB_REALLOC(*ppdata, data_size); 
 	if ( pdata == NULL ) {
