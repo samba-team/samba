@@ -64,52 +64,52 @@ sub find_sibling($$)
 
 my %property_list = (
 	# interface
-	"helpstring" => ["INTERFACE", "FUNCTION"],
-	"version" => ["INTERFACE"],
-	"uuid" => ["INTERFACE"],
-	"endpoint" => ["INTERFACE"],
-	"pointer_default" => ["INTERFACE"],
-	"pointer_default_top" => ["INTERFACE"],
-	"depends" => ["INTERFACE"],
-	"authservice" => ["INTERFACE"],
+	"helpstring"		=> ["INTERFACE", "FUNCTION"],
+	"version"		=> ["INTERFACE"],
+	"uuid"			=> ["INTERFACE"],
+	"endpoint"		=> ["INTERFACE"],
+	"pointer_default"	=> ["INTERFACE"],
+	"pointer_default_top"	=> ["INTERFACE"],
+	"depends"		=> ["INTERFACE"],
+	"authservice"		=> ["INTERFACE"],
 
 	# dcom
-	"object" => ["INTERFACE"],
-	"local"	 => ["INTERFACE", "FUNCTION"],
-	"iid_is" => ["ELEMENT"],
-	"call_as" => ["FUNCTION"],
-	"idempotent" => ["FUNCTION"],
+	"object"		=> ["INTERFACE"],
+	"local"			=> ["INTERFACE", "FUNCTION"],
+	"iid_is"		=> ["ELEMENT"],
+	"call_as"		=> ["FUNCTION"],
+	"idempotent"		=> ["FUNCTION"],
 
 	# function
-	"noopnum" => ["FUNCTION"],
-	"in" => ["ELEMENT"],
-	"out" => ["ELEMENT"],
+	"noopnum"		=> ["FUNCTION"],
+	"in"			=> ["ELEMENT"],
+	"out"			=> ["ELEMENT"],
 
 	# pointer
-	"ref" => ["ELEMENT"],
-	"ptr" => ["ELEMENT"],
-	"unique" => ["ELEMENT"],
-	"relative" => ["ELEMENT"],
+	"ref"			=> ["ELEMENT"],
+	"ptr"			=> ["ELEMENT"],
+	"unique"		=> ["ELEMENT"],
+	"relative"		=> ["ELEMENT"],
 
-	"gensize"	=> ["TYPEDEF"],
-	"value"		=> ["ELEMENT"],
-	"flag"		=> ["ELEMENT", "TYPEDEF"],
+	"gensize"		=> ["TYPEDEF"],
+	"value"			=> ["ELEMENT"],
+	"flag"			=> ["ELEMENT", "TYPEDEF"],
 
 	# generic
-	"public"	=> ["FUNCTION", "TYPEDEF"],
-	"nopush"	=> ["FUNCTION", "TYPEDEF"],
-	"nopull"	=> ["FUNCTION", "TYPEDEF"],
-	"noprint"	=> ["FUNCTION", "TYPEDEF"],
+	"public"		=> ["FUNCTION", "TYPEDEF"],
+	"nopush"		=> ["FUNCTION", "TYPEDEF"],
+	"nopull"		=> ["FUNCTION", "TYPEDEF"],
+	"noprint"		=> ["FUNCTION", "TYPEDEF"],
 
 	# union
-	"switch_is"	 => ["ELEMENT"],
-	"switch_type"	=> ["ELEMENT", "TYPEDEF"],
-	"nodiscriminant" => ["TYPEDEF"],
+	"switch_is"		=> ["ELEMENT"],
+	"switch_type"		=> ["ELEMENT", "TYPEDEF"],
+	"nodiscriminant"	=> ["TYPEDEF"],
 	"case"			=> ["ELEMENT"],
 	"default"		=> ["ELEMENT"],
 
 	# subcontext
-	"subcontext" => ["ELEMENT"],
+	"subcontext"		=> ["ELEMENT"],
 	"subcontext_size"	=> ["ELEMENT"],
 	"compression"		=> ["ELEMENT"],
 	"obfuscation"		=> ["ELEMENT"],
@@ -120,10 +120,10 @@ my %property_list = (
 	"v1_enum"		=> ["TYPEDEF"],
 
 	# bitmap
-	"bitmap8bit"	=> ["TYPEDEF"],
-	"bitmap16bit"	=> ["TYPEDEF"],
-	"bitmap32bit"	=> ["TYPEDEF"],
-	"bitmap64bit"	=> ["TYPEDEF"],
+	"bitmap8bit"		=> ["TYPEDEF"],
+	"bitmap16bit"		=> ["TYPEDEF"],
+	"bitmap32bit"		=> ["TYPEDEF"],
+	"bitmap64bit"		=> ["TYPEDEF"],
 
 	# array
 	"range"			=> ["ELEMENT"],
