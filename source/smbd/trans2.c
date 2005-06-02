@@ -2850,8 +2850,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	*ppdata = pdata;
 
-	memset((char *)pdata,'\0',data_size);
-
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
 	allocation_size = get_allocation_size(conn,fsp,&sbuf);
@@ -2906,13 +2904,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
-			put_dos_date2(pdata,l1_fdateCreation,c_time);
-			put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-			put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
-			SIVAL(pdata,l1_cbFile,(uint32)file_size);
-			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
-			SSVAL(pdata,l1_attrFile,mode);
-			SIVAL(pdata,l1_attrFile+2,ea_size);
+			put_dos_date2(pdata,0,c_time);
+			put_dos_date2(pdata,4,sbuf.st_atime);
+			put_dos_date2(pdata,8,sbuf.st_mtime); /* write time */
+			SIVAL(pdata,12,(uint32)file_size);
+			SIVAL(pdata,16,(uint32)allocation_size);
+			SSVAL(pdata,20,mode);
+			SIVAL(pdata,22,ea_size);
 			break;
 		}
 
@@ -2999,7 +2997,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
 			DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
 			DEBUG(5,("mode: %x\n", mode));
-
 			break;
 
 		case SMB_FILE_STANDARD_INFORMATION:
@@ -3015,6 +3012,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
+			SSVAL(pdata,22,0); /* Padding. */
 			break;
 
 		case SMB_FILE_EA_INFORMATION:
@@ -3088,6 +3086,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				SIVAL(pdata,16,sbuf.st_nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
+			SSVAL(pdata,22,0);
 			pdata += 24;
 			SIVAL(pdata,0,ea_size);
 			pdata += 4; /* EA info */
