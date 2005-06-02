@@ -333,8 +333,8 @@ NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, s
 NTSTATUS ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
 {
 	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrintProcessors,{
-		r->in.servername	= r->in.servername;
-		r->in.environment	= r->in.environment;
+		r->in.servername	= _r.in.servername;
+		r->in.environment	= _r.in.environment;
 	},{
 		_r.in.servername	= r->in.servername;
 		_r.in.environment	= r->in.environment;
