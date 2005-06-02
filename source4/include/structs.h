@@ -30,6 +30,13 @@ struct spoolss_EnumPrinterDrivers;
 struct spoolss_EnumPorts;
 struct spoolss_EnumMonitors;
 struct spoolss_EnumPrintProcessors;
+union spoolss_PrinterInfo;
+union spoolss_JobInfo;
+union spoolss_DriverInfo;
+union spoolss_FormInfo;
+union spoolss_PortInfo;
+union spoolss_MonitorInfo;
+union spoolss_PrintProcessorInfo;
 
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
