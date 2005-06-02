@@ -242,7 +242,7 @@ find_cells(const char *file, char ***cells, int *index)
  * Get tokens for all cells[]
  */
 static int
-afslog_cells(kafs_data *data, char **cells, int max, uid_t uid,
+afslog_cells(struct kafs_data *data, char **cells, int max, uid_t uid,
 	     const char *homedir)
 {
     int ret = 0;
@@ -256,7 +256,8 @@ afslog_cells(kafs_data *data, char **cells, int max, uid_t uid,
 }
 
 int
-_kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
+_kafs_afslog_all_local_cells(struct kafs_data *data,
+			     uid_t uid, const char *homedir)
 {
     int ret;
     char **cells = NULL;
@@ -291,7 +292,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
 
 
 static int
-file_find_cell(kafs_data *data, const char *cell, char **realm, int exact)
+file_find_cell(struct kafs_data *data, 
+	       const char *cell, char **realm, int exact)
 {
     FILE *F;
     char buf[1024];
@@ -351,7 +353,8 @@ file_find_cell(kafs_data *data, const char *cell, char **realm, int exact)
    */
 
 int
-_kafs_realm_of_cell(kafs_data *data, const char *cell, char **realm)
+_kafs_realm_of_cell(struct kafs_data *data,
+		    const char *cell, char **realm)
 {
     char buf[1024];
     int ret;
@@ -368,7 +371,7 @@ _kafs_realm_of_cell(kafs_data *data, const char *cell, char **realm)
 }
 
 static int
-_kafs_try_get_cred(kafs_data *data, const char *user, const char *cell,
+_kafs_try_get_cred(struct kafs_data *data, const char *user, const char *cell,
 		   const char *realm, uid_t uid, struct kafs_token *kt)
 {
     int ret;
@@ -388,7 +391,7 @@ _kafs_try_get_cred(kafs_data *data, const char *user, const char *cell,
 
 
 int
-_kafs_get_cred(kafs_data *data,
+_kafs_get_cred(struct kafs_data *data,
 	       const char *cell, 
 	       const char *realm_hint,
 	       const char *realm,
