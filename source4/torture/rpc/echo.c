@@ -107,15 +107,11 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	int len = 200000 + (random() % 5000);
-	uint8_t *data_out;
 	struct echo_SourceData r;
 
 	printf("\nTesting SourceData\n");
 
-	data_out = talloc_size(mem_ctx, len);
-
 	r.in.len = len;
-	r.out.data = data_out;
 
 	status = dcerpc_echo_SourceData(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -124,9 +120,9 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	for (i=0;i<len;i++) {
-		uint8_t *v = (uint8_t *)data_out;
+		uint8_t *v = (uint8_t *)r.out.data;
 		if (v[i] != (i & 0xFF)) {
-			printf("bad data 0x%x at %d\n", (uint8_t)data_out[i], i);
+			printf("bad data 0x%x at %d\n", (uint8_t)r.out.data[i], i);
 			return False;
 		}
 	}
@@ -199,6 +195,7 @@ static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	for (i=1;i<=7;i++) {
 		r.in.level = i;
+		r.out.info = talloc(mem_ctx, union echo_Info);
 
 		printf("\nTesting TestCall2 level %d\n", i);
 		status = dcerpc_echo_TestCall2(p, mem_ctx, &r);
