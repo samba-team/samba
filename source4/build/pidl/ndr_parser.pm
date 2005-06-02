@@ -1105,8 +1105,6 @@ sub ParseStructPush($$)
 	pidl "if (ndr_flags & NDR_SCALARS) {";
 	indent;
 
-	pidl "NDR_CHECK(ndr_push_struct_start(ndr));";
-
 	pidl "NDR_CHECK(ndr_push_align(ndr, $struct->{ALIGN}));";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1121,8 +1119,6 @@ sub ParseStructPush($$)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPush($e, "ndr", "r->", $env, 0, 1);
 	}
-
-	pidl "ndr_push_struct_end(ndr);";
 
 	deindent;
 	pidl "}";
@@ -1405,8 +1401,6 @@ sub ParseStructPull($$)
 	pidl "if (ndr_flags & NDR_SCALARS) {";
 	indent;
 
-	pidl "NDR_CHECK(ndr_pull_struct_start(ndr));";
-
 	if (defined $conform_e) {
 		ParseArrayPullPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}");
 	}
@@ -1424,8 +1418,6 @@ sub ParseStructPull($$)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
 	}
-
-	pidl "ndr_pull_struct_end(ndr);";
 
 	deindent;
 	pidl "}";
@@ -1517,8 +1509,6 @@ sub ParseUnionPush($$)
 		pidl "NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}(ndr, NDR_SCALARS, level));";
 	}
 
-	pidl "NDR_CHECK(ndr_push_struct_start(ndr));";
-
 #	my $align = union_alignment($e);
 #	pidl "NDR_CHECK(ndr_push_align(ndr, $align));";
 
@@ -1567,7 +1557,7 @@ sub ParseUnionPush($$)
 	}
 	deindent;
 	pidl "}";
-	pidl "ndr_push_struct_end(ndr);";
+
 	deindent;
 	pidl "}";
 	end_flags($e);
@@ -1646,8 +1636,6 @@ sub ParseUnionPull($$)
 		pidl "}";
 	}
 
-	pidl "NDR_CHECK(ndr_pull_struct_start(ndr));";
-
 #	my $align = union_alignment($e);
 #	pidl "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
 
@@ -1697,7 +1685,7 @@ sub ParseUnionPull($$)
 	}
 	deindent;
 	pidl "}";
-	pidl "ndr_pull_struct_end(ndr);";
+
 	deindent;
 	pidl "}";
 	end_flags($e);

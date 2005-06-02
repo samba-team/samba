@@ -407,36 +407,6 @@ NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 }
 
 /*
-  mark the start of a structure
-*/
-NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
-{
-	return NT_STATUS_OK;
-}
-
-/*
-  mark the end of a structure
-*/
-void ndr_pull_struct_end(struct ndr_pull *ndr)
-{
-}
-
-/*
-  mark the start of a structure
-*/
-NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
-{
-	return NT_STATUS_OK;
-}
-
-/*
-  mark the end of a structure
-*/
-void ndr_push_struct_end(struct ndr_push *ndr)
-{
-}
-
-/*
   store a token in the ndr context, for later retrieval
 */
 static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx, 
