@@ -112,6 +112,8 @@ try_aix(void)
  * there's a /etc/name_to_sysnum file.  
  */
 
+#if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
+
 #define _PATH_ETC_NAME_TO_SYSNUM "/etc/name_to_sysnum"
 
 static int
@@ -143,6 +145,7 @@ map_syscall_name_to_number (const char *str, int *res)
     fclose (f);
     return -1;
 }
+#endif
 
 static int 
 try_proc(const char *path)
