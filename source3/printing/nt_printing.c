@@ -1152,8 +1152,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	SMB_STRUCT_STAT stat_buf;
 	BOOL bad_path;
 
-	ZERO_STRUCT(st);
-	ZERO_STRUCT(stat_buf);
+	SET_STAT_INVALID(st);
+	SET_STAT_INVALID(stat_buf);
 	new_create_time = (time_t)0;
 	old_create_time = (time_t)0;
 
@@ -1265,7 +1265,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	SMB_STRUCT_STAT   st;
 	connection_struct *conn;
 
-	ZERO_STRUCT(st);
+	SET_STAT_INVALID(st);
 
 	*perr = WERR_INVALID_PARAM;
 
