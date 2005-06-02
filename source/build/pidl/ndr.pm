@@ -273,7 +273,8 @@ sub ParseElement($)
 		NAME => $e->{NAME},
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
-		LEVELS => GetElementLevelTable($e)
+		LEVELS => GetElementLevelTable($e),
+		ALIGN => align_type($e->{TYPE})
 	};
 }
 

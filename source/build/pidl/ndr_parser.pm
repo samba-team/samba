@@ -1542,14 +1542,6 @@ sub ParseUnionPush($$)
 		pidl "NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}(ndr, NDR_SCALARS, level));";
 	}
 
-	pidl "NDR_CHECK(ndr_push_align(ndr, $e->{ALIGN}));";
-
-	if (defined($e->{PROPERTIES}{relative_base})) {
-		# set the current offset as base for relative pointers
-		# and store it based on the toplevel struct/union
-		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));";
-	}
-
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1560,6 +1552,12 @@ sub ParseUnionPush($$)
 
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
+			if (defined($e->{PROPERTIES}{relative_base})) {
+				pidl "NDR_CHECK(ndr_push_align(ndr, $el->{ALIGN}));";
+				# set the current offset as base for relative pointers
+				# and store it based on the toplevel struct/union
+				pidl "NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));";
+			}
 			DeclareArrayVariables($el);
 			ParseElementPush($el, "ndr", "r->", {}, 1, 0);
 			deindent;
@@ -1683,14 +1681,6 @@ sub ParseUnionPull($$)
 		pidl "}";
 	}
 
-	pidl "NDR_CHECK(ndr_pull_align(ndr, $e->{ALIGN}));";
-
-	if (defined($e->{PROPERTIES}{relative_base})) {
-		# set the current offset as base for relative pointers
-		# and store it based on the toplevel struct/union
-		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));";
-	}
-
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1703,6 +1693,12 @@ sub ParseUnionPull($$)
 			indent;
 			DeclarePtrVariables($el);
 			DeclareArrayVariables($el);
+			if (defined($e->{PROPERTIES}{relative_base})) {
+				pidl "NDR_CHECK(ndr_pull_align(ndr, $el->{ALIGN}));";
+				# set the current offset as base for relative pointers
+				# and store it based on the toplevel struct/union
+				pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));";
+			}
 			ParseElementPull($el, "ndr", "r->", {}, 1, 0);
 			deindent;
 		}
