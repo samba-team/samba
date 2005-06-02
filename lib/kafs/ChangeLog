@@ -1,3 +1,13 @@
+2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* use struct kafs_data everywhere, don't mix with the typedef
+	kafs_data
+
+	* roken_rename.h: rename more resolve.c symbols
+	
+	* afssys.c: Don't building map_syscall_name_to_number where its
+	not used.
+
 2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: bump version to 4:1:4
