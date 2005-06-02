@@ -233,7 +233,7 @@
 		[relative] spoolss_DeviceMode *devmode;
 	} spoolss_DeviceModeInfo;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(0)] spoolss_PrinterInfo0 info0;
 		[case(1)] spoolss_PrinterInfo1 info1;
 		[case(2)] spoolss_PrinterInfo2 info2;
@@ -261,7 +261,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumPrinters(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_PrinterInfo info[count]
+		[out,switch_is(level)] spoolss_PrinterInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
@@ -331,7 +331,7 @@
 		spoolss_Time time;
 	} spoolss_JobInfo1;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_JobInfo1 info1;
 		[case(2)]; /* TODO */
 		[case(3)]; /* TODO */
@@ -352,7 +352,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumJobs(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_JobInfo info[count]
+		[out,switch_is(level)] spoolss_JobInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumJobs(
 		[in,ref] policy_handle *handle,
@@ -490,7 +490,7 @@
 		[relative] nstring *provider;
 	} spoolss_DriverInfo6;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_DriverInfo1 info1;
 		[case(2)] spoolss_DriverInfo2 info2;
 		[case(3)] spoolss_DriverInfo3 info3;
@@ -513,7 +513,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumPrinterDrivers(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_DriverInfo info[count]
+		[out,switch_is(level)] spoolss_DriverInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinterDrivers(
 		[in] unistr *server,
@@ -555,7 +555,7 @@
 		[relative] nstring *print_processor_name;
 	} spoolss_PrintProcessorInfo1;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_PrintProcessorInfo1 info1;
 		[default];
 	} spoolss_PrintProcessorInfo;
@@ -571,7 +571,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumPrintProcessors(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_PrintProcessorInfo info[count]
+		[out,switch_is(level)] spoolss_PrintProcessorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrintProcessors(
 		[in] unistr *servername,
@@ -763,7 +763,7 @@
 		[in,switch_is(level)] spoolss_SetFormInfo info
 	);
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_FormInfo1 info1;
 		[default];
 	} spoolss_FormInfo;
@@ -780,7 +780,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumForms(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_FormInfo info[count]
+		[out,switch_is(level)] spoolss_FormInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
@@ -810,7 +810,7 @@
 		uint32 reserved;
 	} spoolss_PortInfo2;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_PortInfo1 info1;
 		[case(2)] spoolss_PortInfo2 info2;
 		[case(3)]; /* TODO */
@@ -829,7 +829,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumPorts(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_PortInfo info[count]
+		[out,switch_is(level)] spoolss_PortInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPorts(
 		[in] unistr *servername,
@@ -852,7 +852,7 @@
 		[relative] nstring *dll_name;
 	} spoolss_MonitorInfo2;
 
-	typedef [nodiscriminant,public] union {
+	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_MonitorInfo1 info1;
 		[case(2)] spoolss_MonitorInfo2 info2;
 		[default];
@@ -868,7 +868,7 @@
 	[public,noopnum,noprint] void __spoolss_EnumMonitors(
 		[in] uint32 level,
 		[in] uint32 count,
-		[out,subcontext(0),switch_is(level)] spoolss_MonitorInfo info[count]
+		[out,switch_is(level)] spoolss_MonitorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumMonitors(
 		[in] unistr *servername,
