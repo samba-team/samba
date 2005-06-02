@@ -208,7 +208,21 @@ sub GenerateStructEnv($)
 	return \%env;
 }
 
-sub GenerateFunctionEnv($)
+sub GenerateFunctionInEnv($)
+{
+	my $fn = shift;
+	my %env;
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = "r->in.$e->{NAME}";
+		}
+	}
+
+	return \%env;
+}
+
+sub GenerateFunctionOutEnv($)
 {
 	my $fn = shift;
 	my %env;
@@ -216,8 +230,7 @@ sub GenerateFunctionEnv($)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep (/out/, @{$e->{DIRECTION}})) {
 			$env{$e->{NAME}} = "r->out.$e->{NAME}";
-		}
-		if (grep (/in/, @{$e->{DIRECTION}})) {
+		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
 			$env{$e->{NAME}} = "r->in.$e->{NAME}";
 		}
 	}
@@ -1031,13 +1044,15 @@ sub ParsePtrPull($$$$)
 
 	my $nl = Ndr::GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
+	my $next_is_string = (($nl->{TYPE} eq "DATA") and 
+						 ($nl->{DATA_TYPE} eq "string"));
 
 	if ($l->{POINTER_TYPE} eq "ref") {
 		unless ($l->{LEVEL} eq "TOP") {
 			pidl "NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));";
 		}
 
-		unless ($next_is_array) {
+		unless ($next_is_array or $next_is_string) {
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
 			pidl "\tNDR_ALLOC($ndr, $var_name);"; 
 			pidl "}";
@@ -1052,7 +1067,7 @@ sub ParsePtrPull($$$$)
 
 	# Don't do this for arrays, they're allocated at the actual level 
 	# of the array
-	unless ($next_is_array) { 
+	unless ($next_is_array or $next_is_string) { 
 		pidl "NDR_ALLOC($ndr, $var_name);"; 
 	} else {
 		pidl "NDR_ALLOC_SIZE($ndr, $var_name, 1);"; # FIXME: Yes, this is nasty. We allocate an array twice - once just to indicate that  it's there, then the real allocation...
@@ -1861,8 +1876,6 @@ sub ParseFunctionPrint($)
 
 	return if util::has_property($fn, "noprint");
 
-	my $env = GenerateFunctionEnv($fn);
-
 	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
@@ -1883,6 +1896,8 @@ sub ParseFunctionPrint($)
 	pidl "ndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");";
 	pidl "ndr->depth++;";
 
+	my $env = GenerateFunctionInEnv($fn);
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
 			ParseElementPrint($e, "r->in.$e->{NAME}", $env);
@@ -1896,6 +1911,8 @@ sub ParseFunctionPrint($)
 	indent;
 	pidl "ndr_print_struct(ndr, \"out\", \"$fn->{NAME}\");";
 	pidl "ndr->depth++;";
+
+	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			ParseElementPrint($e, "r->out.$e->{NAME}", $env);
@@ -1922,8 +1939,6 @@ sub ParseFunctionPush($)
 
 	return if util::has_property($fn, "nopush");
 
-	my $env = GenerateFunctionEnv($fn);
-
 	pidl fn_prefix($fn) . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
@@ -1934,6 +1949,8 @@ sub ParseFunctionPush($)
 
 	pidl "if (flags & NDR_IN) {";
 	indent;
+
+	my $env = GenerateFunctionInEnv($fn);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
@@ -1947,6 +1964,7 @@ sub ParseFunctionPush($)
 	pidl "if (flags & NDR_OUT) {";
 	indent;
 
+	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			ParseElementPush($e, "ndr", "r->out.", $env, 1, 1);
@@ -2001,8 +2019,6 @@ sub ParseFunctionPull($)
 
 	return if util::has_property($fn, "nopull");
 
-	my $env = GenerateFunctionEnv($fn);
-
 	# pull function args
 	pidl fn_prefix($fn) . "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)";
 	pidl "{";
@@ -2028,6 +2044,8 @@ sub ParseFunctionPull($)
 		last;
 	}
 
+	my $env = GenerateFunctionInEnv($fn);
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
 		ParseElementPull($e, "ndr", "r->in.", $env, 1, 1);
@@ -2040,7 +2058,8 @@ sub ParseFunctionPull($)
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and 
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
-
+		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and 
+				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
 			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);
@@ -2070,6 +2089,7 @@ sub ParseFunctionPull($)
 	pidl "if (flags & NDR_OUT) {";
 	indent;
 
+	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});
 		ParseElementPull($e, "ndr", "r->out.", $env, 1, 1);

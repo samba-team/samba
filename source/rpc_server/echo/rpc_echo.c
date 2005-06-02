@@ -56,6 +56,9 @@ static NTSTATUS echo_SinkData(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static NTSTATUS echo_SourceData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_SourceData *r)
 {
 	int i;
+
+	r->out.data = talloc_array(mem_ctx, uint8_t, r->in.len);
+	
 	for (i=0;i<r->in.len;i++) {
 		r->out.data[i] = i;
 	}
