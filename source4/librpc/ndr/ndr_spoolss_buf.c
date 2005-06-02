@@ -102,8 +102,9 @@
 #define NDR_SPOOLSS_PULL_ENUM(fn,in,out) do { \
 	struct _##fn _r;\
 	if (flags & NDR_IN) {\
-		in;\
+		out;\
 		NDR_SPOOLSS_PULL_ENUM_IN(fn);\
+		in;\
 	}\
 	if (flags & NDR_OUT) {\
 		out;\
