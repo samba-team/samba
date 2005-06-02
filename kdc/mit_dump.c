@@ -317,7 +317,7 @@ mit_prop_dump(void *arg, const char *file)
 		buf = malloc(tl_length);
 		getdata(&p, buf, tl_length); /* data itself */
 		val = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
-		ret = krb5_parse_name(pd->context, buf + 4, &princ);
+		ret = krb5_parse_name(pd->context, (char *)buf + 4, &princ);
 		free(buf);
 		ALLOC(ent.modified_by);
 		ent.modified_by->time = val;
