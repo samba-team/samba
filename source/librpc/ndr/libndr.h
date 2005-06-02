@@ -46,6 +46,9 @@ struct ndr_pull {
 	uint32_t data_size;
 	uint32_t offset;
 
+	uint32_t relative_base_offset;
+	struct ndr_token_list *relative_base_list;
+
 	struct ndr_token_list *relative_list;
 	struct ndr_token_list *array_size_list;
 	struct ndr_token_list *array_length_list;
@@ -68,6 +71,9 @@ struct ndr_push {
 	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
+
+	uint32_t relative_base_offset;
+	struct ndr_token_list *relative_base_list;
 
 	struct ndr_token_list *switch_list;
 	struct ndr_token_list *relative_list;

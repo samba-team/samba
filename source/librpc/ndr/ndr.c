@@ -563,59 +563,6 @@ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p)
 }
 
 /*
-  pull a relative object - stage1
-  called during SCALARS processing
-*/
-NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
-{
-	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
-}
-
-/*
-  pull a relative object - stage2
-  called during BUFFERS processing
-*/
-NTSTATUS ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p)
-{
-	uint32_t rel_offset;
-	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
-	return ndr_pull_set_offset(ndr, rel_offset);
-}
-
-/*
-  push a relative object - stage1
-  this is called during SCALARS processing
-*/
-NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
-{
-	if (p == NULL) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		return NT_STATUS_OK;
-	}
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
-	return ndr_push_uint32(ndr, NDR_SCALARS, 0xFFFFFFFF);
-}
-
-/*
-  push a relative object - stage2
-  this is called during buffers processing
-*/
-NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
-{
-	struct ndr_push_save save;
-	if (p == NULL) {
-		return NT_STATUS_OK;
-	}
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	ndr_push_save(ndr, &save);
-	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
-	ndr_push_restore(ndr, &save);
-	return NT_STATUS_OK;
-}
-
-/*
   pull a struct from a blob using NDR
 */
 NTSTATUS ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
@@ -764,4 +711,127 @@ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_f
 	ret = ndr->offset;
 	talloc_free(ndr);
 	return ret;
+}
+
+/*
+  get the current base for relative pointers for the push
+*/
+uint32_t ndr_push_get_relative_base_offset(struct ndr_push *ndr)
+{
+	return ndr->relative_base_offset;
+}
+
+/*
+  restore the old base for relative pointers for the push
+*/
+void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset)
+{
+	ndr->relative_base_offset = offset;
+}
+
+/*
+  setup the current base for relative pointers for the push
+  called in the NDR_SCALAR stage
+*/
+NTSTATUS ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset)
+{
+	ndr->relative_base_offset = offset;
+	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+}
+
+/*
+  setup the current base for relative pointers for the push
+  called in the NDR_BUFFERS stage
+*/
+NTSTATUS ndr_push_setup_relative_base_offset2(struct ndr_push *ndr, const void *p)
+{
+	return ndr_token_retrieve(&ndr->relative_base_list, p, &ndr->relative_base_offset);
+}
+
+/*
+  push a relative object - stage1
+  this is called during SCALARS processing
+*/
+NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
+{
+	if (p == NULL) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
+	return ndr_push_uint32(ndr, NDR_SCALARS, 0xFFFFFFFF);
+}
+
+/*
+  push a relative object - stage2
+  this is called during buffers processing
+*/
+NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
+{
+	struct ndr_push_save save;
+	if (p == NULL) {
+		return NT_STATUS_OK;
+	}
+	ndr_push_save(ndr, &save);
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
+	ndr_push_restore(ndr, &save);
+	return NT_STATUS_OK;
+}
+
+/*
+  get the current base for relative pointers for the pull
+*/
+uint32_t ndr_pull_get_relative_base_offset(struct ndr_pull *ndr)
+{
+	return ndr->relative_base_offset;
+}
+
+/*
+  restore the old base for relative pointers for the pull
+*/
+void ndr_pull_restore_relative_base_offset(struct ndr_pull *ndr, uint32_t offset)
+{
+	ndr->relative_base_offset = offset;
+}
+
+/*
+  setup the current base for relative pointers for the pull
+  called in the NDR_SCALAR stage
+*/
+NTSTATUS ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset)
+{
+	ndr->relative_base_offset = offset;
+	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+}
+
+/*
+  setup the current base for relative pointers for the pull
+  called in the NDR_BUFFERS stage
+*/
+NTSTATUS ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *p)
+{
+	return ndr_token_retrieve(&ndr->relative_base_list, p, &ndr->relative_base_offset);
+}
+
+/*
+  pull a relative object - stage1
+  called during SCALARS processing
+*/
+NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
+{
+	rel_offset += ndr->relative_base_offset;
+	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
+}
+
+/*
+  pull a relative object - stage2
+  called during BUFFERS processing
+*/
+NTSTATUS ndr_pull_relative_ptr2(struct ndr_pull *ndr, const void *p)
+{
+	uint32_t rel_offset;
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
+	return ndr_pull_set_offset(ndr, rel_offset);
 }

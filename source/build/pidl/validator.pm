@@ -90,6 +90,7 @@ my %property_list = (
 	"ptr"			=> ["ELEMENT"],
 	"unique"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
+	"relative_base"		=> ["TYPEDEF"],
 
 	"gensize"		=> ["TYPEDEF"],
 	"value"			=> ["ELEMENT"],
