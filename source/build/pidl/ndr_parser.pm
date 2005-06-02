@@ -961,7 +961,7 @@ sub ParseElementPullLevel
 		ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
-    		if ($l->{POINTER_TYPE} eq "relative") {
+    			if ($l->{POINTER_TYPE} eq "relative") {
 				pidl "ndr_pull_restore(ndr, &_relative_save);";
 			}
 			deindent;
@@ -1079,6 +1079,9 @@ sub ParseStructPush($$)
 
 	my $env = GenerateStructEnv($struct);
 
+	# save the old relative_base_offset
+	pidl "uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);" if defined($struct->{PROPERTIES}{relative_base});
+
 	foreach my $e (@{$struct->{ELEMENTS}}) { 
 		DeclareArrayVariables($e);
 	}
@@ -1107,6 +1110,12 @@ sub ParseStructPush($$)
 
 	pidl "NDR_CHECK(ndr_push_align(ndr, $struct->{ALIGN}));";
 
+	if (defined($struct->{PROPERTIES}{relative_base})) {
+		# set the current offset as base for relative pointers
+		# and store it based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));";
+	}
+
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPush($e, "ndr", "r->", $env, 1, 0);
 	}	
@@ -1116,6 +1125,11 @@ sub ParseStructPush($$)
 
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
 	indent;
+	if (defined($struct->{PROPERTIES}{relative_base})) {
+		# retrieve the current offset as base for relative pointers
+		# based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));";
+	}
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPush($e, "ndr", "r->", $env, 0, 1);
 	}
@@ -1124,6 +1138,8 @@ sub ParseStructPush($$)
 	pidl "}";
 
 	end_flags($struct);
+	# restore the old relative_base_offset
+	pidl "ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($struct->{PROPERTIES}{relative_base});
 }
 
 #####################################################################
@@ -1396,6 +1412,9 @@ sub ParseStructPull($$)
 		DeclareArrayVariables($e);
 	}
 
+	# save the old relative_base_offset
+	pidl "uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);" if defined($struct->{PROPERTIES}{relative_base});
+
 	start_flags($struct);
 
 	pidl "if (ndr_flags & NDR_SCALARS) {";
@@ -1407,6 +1426,12 @@ sub ParseStructPull($$)
 
 	pidl "NDR_CHECK(ndr_pull_align(ndr, $struct->{ALIGN}));";
 
+	if (defined($struct->{PROPERTIES}{relative_base})) {
+		# set the current offset as base for relative pointers
+		# and store it based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));";
+	}
+
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPull($e, "ndr", "r->", $env, 1, 0);
 	}	
@@ -1415,6 +1440,11 @@ sub ParseStructPull($$)
 	pidl "}";
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
 	indent;
+	if (defined($struct->{PROPERTIES}{relative_base})) {
+		# retrieve the current offset as base for relative pointers
+		# based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));";
+	}
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
 	}
@@ -1423,6 +1453,8 @@ sub ParseStructPull($$)
 	pidl "}";
 
 	end_flags($struct);
+	# restore the old relative_base_offset
+	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($struct->{PROPERTIES}{relative_base});
 }
 
 #####################################################################
@@ -1495,8 +1527,9 @@ sub ParseUnionPush($$)
 	my $name = shift;
 	my $have_default = 0;
 
+	# save the old relative_base_offset
+	pidl "uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);" if defined($e->{PROPERTIES}{relative_base});
 	pidl "int level;";
-
 
 	start_flags($e);
 
@@ -1509,8 +1542,13 @@ sub ParseUnionPush($$)
 		pidl "NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}(ndr, NDR_SCALARS, level));";
 	}
 
-#	my $align = union_alignment($e);
-#	pidl "NDR_CHECK(ndr_push_align(ndr, $align));";
+	pidl "NDR_CHECK(ndr_push_align(ndr, $e->{ALIGN}));";
+
+	if (defined($e->{PROPERTIES}{relative_base})) {
+		# set the current offset as base for relative pointers
+		# and store it based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));";
+	}
 
 	pidl "switch (level) {";
 	indent;
@@ -1539,6 +1577,11 @@ sub ParseUnionPush($$)
 	pidl "}";
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
 	indent;
+	if (defined($e->{PROPERTIES}{relative_base})) {
+		# retrieve the current offset as base for relative pointers
+		# based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));";
+	}
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1561,6 +1604,8 @@ sub ParseUnionPush($$)
 	deindent;
 	pidl "}";
 	end_flags($e);
+	# restore the old relative_base_offset
+	pidl "ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($e->{PROPERTIES}{relative_base});
 }
 
 #####################################################################
@@ -1614,6 +1659,8 @@ sub ParseUnionPull($$)
 	my $have_default = 0;
 	my $switch_type = $e->{SWITCH_TYPE};
 
+	# save the old relative_base_offset
+	pidl "uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);" if defined($e->{PROPERTIES}{relative_base});
 	pidl "int level;";
 	if (defined($switch_type)) {
 		if (typelist::typeIs($switch_type, "ENUM")) {
@@ -1636,8 +1683,13 @@ sub ParseUnionPull($$)
 		pidl "}";
 	}
 
-#	my $align = union_alignment($e);
-#	pidl "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
+	pidl "NDR_CHECK(ndr_pull_align(ndr, $e->{ALIGN}));";
+
+	if (defined($e->{PROPERTIES}{relative_base})) {
+		# set the current offset as base for relative pointers
+		# and store it based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));";
+	}
 
 	pidl "switch (level) {";
 	indent;
@@ -1667,6 +1719,11 @@ sub ParseUnionPull($$)
 	pidl "}";
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
 	indent;
+	if (defined($e->{PROPERTIES}{relative_base})) {
+		# retrieve the current offset as base for relative pointers
+		# based on the toplevel struct/union
+		pidl "NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));";
+	}
 	pidl "switch (level) {";
 	indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -1689,6 +1746,8 @@ sub ParseUnionPull($$)
 	deindent;
 	pidl "}";
 	end_flags($e);
+	# restore the old relative_base_offset
+	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($e->{PROPERTIES}{relative_base});
 }
 
 sub ArgsUnionPush($)
