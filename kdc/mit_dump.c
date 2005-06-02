@@ -310,10 +310,10 @@ mit_prop_dump(void *arg, const char *file)
 	    tl_type = getint(&p); /* data type */
 	    tl_length = getint(&p); /* data length */
 
-#define KRB5_TL_LAST_PWD_CHANGE	1
-#define KRB5_TL_MOD_PRINC	2
+#define mit_KRB5_TL_LAST_PWD_CHANGE	1
+#define mit_KRB5_TL_MOD_PRINC		2
 	    switch(tl_type) {
-	    case KRB5_TL_MOD_PRINC:
+	    case mit_KRB5_TL_MOD_PRINC:
 		buf = malloc(tl_length);
 		getdata(&p, buf, tl_length); /* data itself */
 		val = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
