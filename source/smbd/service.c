@@ -275,7 +275,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	*user = 0;
 	fstrcpy(dev, pdev);
-	ZERO_STRUCT(st);
+	SET_STAT_INVALD(st);
 
 	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, dev))) {
 		return NULL;

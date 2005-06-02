@@ -143,6 +143,7 @@
 
 #define VALID_STAT(st) ((st).st_nlink != 0)  
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
+#define SET_STAT_INVALID(st) ((st).st_nlink = 0)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))

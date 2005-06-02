@@ -560,7 +560,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 {
 	pstring pathreal;
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(pst);
 
 	if (dptr->has_wild) {
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
@@ -629,7 +629,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 
 BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
 {
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(pst);
 
 	if (!dptr->has_wild && (dptr->dir_hnd->offset == -1)) {
 		/* This is a singleton directory and we're already at the end. */
@@ -958,7 +958,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	BOOL hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	BOOL hide_special = lp_hide_special_files(SNUM(conn));
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(pst);
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
 		return True; /* . and .. are always visible. */
