@@ -1107,17 +1107,17 @@ done:
 int 
 filename_check(char *filename)
 {
-    unsigned char *p;
+    char *p;
 
-    p = (unsigned char *)strrchr(filename, '/');
+    p = strrchr(filename, '/');
     if(p)
 	filename = p + 1;
 
     p = filename;
 
-    if(isalnum(*p)){
+    if(isalnum((unsigned char)*p)){
 	p++;
-	while(*p && (isalnum(*p) || strchr(good_chars, *p)))
+	while(*p && (isalnum((unsigned char)*p) || strchr(good_chars, (unsigned char)*p)))
 	    p++;
 	if(*p == '\0')
 	    return 0;
