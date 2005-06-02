@@ -3,7 +3,7 @@
 	* util.c (kdb_attrs): add ok-as-delegate
 
 	* get.c (getit): init data.mask to 0.  Problem found by Andrew
-	Abartlet <abartlet@samba.org>
+	Bartlett <abartlet@samba.org>
 
 2005-05-09  Love Hörquist Åstrand  <lha@it.su.se>
 
