@@ -598,12 +598,7 @@ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p)
 */
 NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
-	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
-		return ndr_token_store(ndr, &ndr->relative_list, p, 
-				       rel_offset + ndr->offset - 4);
-	} else {
-		return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
-	}
+	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
 }
 
 /*
@@ -645,11 +640,7 @@ NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	ndr_push_save(ndr, &save);
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
-	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset - ndr->offset));
-	} else {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
-	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
 	ndr_push_restore(ndr, &save);
 	return NT_STATUS_OK;
 }

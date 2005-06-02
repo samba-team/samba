@@ -126,10 +126,6 @@ struct ndr_print {
 /* used to check if alignment padding is zero */
 #define LIBNDR_FLAG_PAD_CHECK     (1<<28)
 
-/* used to indicate spoolss style relative pointers (relative to current
-   offset, not base) */
-#define LIBNDR_FLAG_RELATIVE_CURRENT  (1<<29)
-
 /* set if an object uuid will be present */
 #define LIBNDR_FLAG_OBJECT_PRESENT    (1<<30)
 
