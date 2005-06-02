@@ -765,6 +765,15 @@ static int validate_reg_filename( pstring fname )
 /*******************************************************************
  ********************************************************************/
 
+static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
+{
+
+	return WERR_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_KEY *r_u)
 {
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
@@ -783,13 +792,14 @@ WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_
 	if ( (snum = validate_reg_filename( filename )) == -1 )
 		return WERR_OBJECT_PATH_INVALID;
 		
+	/* user must posses SeRestorePrivilege for this this proceed */
+	
+	if ( !user_has_privileges( p->pipe_user.nt_user_token, &se_restore ) )
+		return WERR_ACCESS_DENIED;
+		
 	DEBUG(2,("_reg_restore_key: Restoring [%s] from %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
 
-#if 0
 	return restore_registry_key( regkey, filename );
-#endif
-
-	return WERR_OK;
 }
 
 /********************************************************************
