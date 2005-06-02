@@ -770,12 +770,24 @@ NTSTATUS ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
 NTSTATUS ndr_push_relative_ptr2(struct ndr_push *ndr, const void *p)
 {
 	struct ndr_push_save save;
+	uint32_t ptr_offset = 0xFFFFFFFF;
 	if (p == NULL) {
 		return NT_STATUS_OK;
 	}
 	ndr_push_save(ndr, &save);
-	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ndr->offset));
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset));
+	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
+	if (ptr_offset > ndr->offset) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_push_relative_ptr2 ptr_offset(%u) > ndr->offset(%u)",
+				      ptr_offset, ndr->offset);
+	}
+	ndr->offset = ptr_offset;
+	if (save.offset < ndr->relative_base_offset) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_push_relative_ptr2 save.offset(%u) < ndr->relative_base_offset(%u)",
+				      save.offset, ndr->relative_base_offset);
+	}	
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save.offset - ndr->relative_base_offset));
 	ndr_push_restore(ndr, &save);
 	return NT_STATUS_OK;
 }
@@ -822,6 +834,11 @@ NTSTATUS ndr_pull_setup_relative_base_offset2(struct ndr_pull *ndr, const void *
 NTSTATUS ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
 	rel_offset += ndr->relative_base_offset;
+	if (rel_offset > ndr->data_size) {
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+				      "ndr_pull_relative_ptr1 rel_offset(%u) > ndr->data_size(%u)",
+				      rel_offset, ndr->data_size);
+	}
 	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
 }
 
