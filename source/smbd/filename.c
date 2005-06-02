@@ -92,7 +92,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	BOOL component_was_mangled = False;
 	BOOL name_has_wildcard = False;
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(pst);
 
 	*dirpath = 0;
 	*bad_path = False;
@@ -258,7 +258,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstring rest;
 
 			/* Stat failed - ensure we don't use it. */
-			ZERO_STRUCT(st);
+			SET_STAT_INVALID(st);
 			*rest = 0;
 
 			/*
@@ -346,7 +346,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				if (SMB_VFS_STAT(conn,name, &st) == 0) {
 					*pst = st;
 				} else {
-					ZERO_STRUCT(st);
+					SET_STAT_INVALID(st);
 				}
 			}
 		} /* end else */
