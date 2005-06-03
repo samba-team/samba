@@ -83,6 +83,17 @@ void ejs_exception(const char *reason)
 	/* load the script and advance past interpreter line*/
 	script = file_load(argv[1], &script_size);
 
+	if ((script_size > 2) && script[0] == '#' && script[1] == '!') {
+		script += 2;
+		script_size -= 2;
+		while (script_size) {
+			if (*script == '\r' || *script == '\n')
+				break;
+			script++;
+			script_size--;
+		}
+	}
+
 	/* run the script */
 	if (ejsEvalScript(eid, script, &result, &emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
