@@ -26,7 +26,6 @@
 #include "libcli/nbt/libnbt.h"
 #include "lib/socket/socket.h"
 
-#define NBT_MAX_PACKET_SIZE 2048
 #define NBT_MAX_REPLIES 1000
 
 /*
@@ -157,11 +156,17 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	const char *src_addr;
 	int src_port;
 	DATA_BLOB blob;
-	size_t nread;
+	size_t nread, dsize;
 	struct nbt_name_packet *packet;
 	struct nbt_name_request *req;
 
-	blob = data_blob_talloc(tmp_ctx, NULL, NBT_MAX_PACKET_SIZE);
+	status = socket_pending(nbtsock->sock, &dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
 	if (blob.data == NULL) {
 		talloc_free(tmp_ctx);
 		return;

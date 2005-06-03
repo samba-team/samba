@@ -27,8 +27,6 @@
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
 
-#define DGRAM_MAX_PACKET_SIZE 2048
-
 
 /*
   handle recv events on a nbt dgram socket
@@ -40,11 +38,17 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	const char *src_addr;
 	int src_port;
 	DATA_BLOB blob;
-	size_t nread;
+	size_t nread, dsize;
 	struct nbt_dgram_packet *packet;
 	const char *mailslot_name;
 
-	blob = data_blob_talloc(tmp_ctx, NULL, DGRAM_MAX_PACKET_SIZE);
+	status = socket_pending(dgmsock->sock, &dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
 	if (blob.data == NULL) {
 		talloc_free(tmp_ctx);
 		return;
