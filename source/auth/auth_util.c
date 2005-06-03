@@ -40,15 +40,16 @@ NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TAL
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
-static NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
+NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
                                const char *c_account_name,
                                const char *account_name,
                                const char *c_domain_name, 
                                const char *domain_name,
                                const char *workstation_name, 
+                               const char *remote_host, 
                                DATA_BLOB *lm_password, DATA_BLOB *nt_password,
                                DATA_BLOB *lm_interactive_password, DATA_BLOB *nt_interactive_password,
-                               DATA_BLOB *plaintext_password, BOOL encrypted,
+                               DATA_BLOB *plaintext_password, BOOL encrypted, uint32_t flags,
 			       struct auth_usersupplied_info **_user_info)
 {
 	struct auth_usersupplied_info *user_info;
@@ -177,9 +178,10 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 			      c_account_name, account_name, 
 			      c_domain_name, domain,
 			      workstation_name,
+			      workstation_name,
 			      lm_password, nt_password,
 			      lm_interactive_password, nt_interactive_password,
-			      plaintext, encrypted,
+			      plaintext, encrypted, 0x00,
 			      user_info);
 }
 
@@ -280,9 +282,9 @@ NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
 NTSTATUS make_user_info_anonymous(TALLOC_CTX *mem_ctx, struct auth_usersupplied_info **user_info) 
 {
 	return make_user_info(mem_ctx,
-			      "", "", "", "", "", 
+			      "", "", "", "", "", "",
 			      NULL, NULL, NULL, NULL, 
-			      NULL, True,
+			      NULL, True, 0x00,
 			      user_info);
 }
 

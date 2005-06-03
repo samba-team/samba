@@ -36,11 +36,16 @@
 /* version 4 - subsequent samba4 version - metze */
 #define AUTH_INTERFACE_VERSION 4
 
+#define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
+#define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
+#define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* dont check unix account status */
+
 struct auth_usersupplied_info
 {
 	const char *account_name;
 	const char *domain_name;
 	const char *workstation_name;
+	const char *remote_host;
 
 	/* the values the client gives us */
 	struct {
@@ -55,6 +60,8 @@ struct auth_usersupplied_info
 	DATA_BLOB lm_interactive_password;
 	DATA_BLOB nt_interactive_password;
  	DATA_BLOB plaintext_password;
+
+	uint32_t flags;
 };
 
 struct auth_serversupplied_info 
