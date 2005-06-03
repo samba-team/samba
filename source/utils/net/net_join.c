@@ -61,7 +61,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->credentials = ctx->credentials;
+	libnetctx->cred = ctx->credentials;
 
 	/* prepare password change */
 	r.generic.level			 = LIBNET_JOIN_GENERIC;
