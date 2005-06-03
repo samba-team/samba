@@ -92,7 +92,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	BOOL component_was_mangled = False;
 	BOOL name_has_wildcard = False;
 
-	SET_STAT_INVALID(pst);
+	SET_STAT_INVALID(*pst);
 
 	*dirpath = 0;
 	*bad_path = False;
