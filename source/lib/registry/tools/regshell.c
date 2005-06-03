@@ -408,7 +408,7 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 
 	if (h) {
-		enum reg_predefined_key try_hkeys[] = {
+		uint32_t try_hkeys[] = {
 			HKEY_CLASSES_ROOT,
 			HKEY_CURRENT_USER,
 			HKEY_LOCAL_MACHINE,
@@ -424,7 +424,7 @@ static char **reg_completion(const char *text, int start, int end)
 
 		for (i = 0; try_hkeys[i]; i++) {
 			WERROR err;
-			err = reg_get_predefined_key(h, HKEY_CLASSES_ROOT, &curkey);
+			err = reg_get_predefined_key(h, try_hkeys[i], &curkey);
 			if (W_ERROR_IS_OK(err)) {
 				break;
 			} else {
