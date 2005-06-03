@@ -52,6 +52,7 @@ extern struct current_user current_user;
  next. This is the way the netlogon schannel works.
 **************************************************************/
 struct dcinfo last_dcinfo;
+BOOL server_auth2_negotiated = False;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
@@ -974,6 +975,12 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 			RPC_AUTH_NETSEC_NEG neg;
 			struct netsec_auth_struct *a = &(p->netsec_auth);
+
+			if (!server_auth2_negotiated) {
+				DEBUG(0, ("Attempt to bind using schannel "
+					  "without successful serverauth2\n"));
+				return False;
+			}
 
 			if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
 				DEBUG(0,("api_pipe_bind_req: "
