@@ -35,7 +35,8 @@ void ejs_exception(const char *reason)
 	EjsId eid;
 	EjsHandle handle = 0;
 	MprVar result;
-	char *emsg;
+	char *emsg, *script;
+	size_t script_size;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char **argv_list = NULL;
 	struct MprVar v;
@@ -79,10 +80,12 @@ void ejs_exception(const char *reason)
 	v = mprList("ARGV", argv_list);
 	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
 
+	/* load the script and advance past interpreter line*/
+	script = file_load(argv[1], &script_size);
+
 	/* run the script */
-	if (ejsEvalFile(eid, discard_const_p(char, argv[1]), &result,
-			&emsg) == -1) {
-		fprintf(stderr, "smbscript: ejsEvalFile(): %s\n", emsg);
+	if (ejsEvalScript(eid, script, &result, &emsg) == -1) {
+		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
 		exit(1);
 	}
 
