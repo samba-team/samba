@@ -435,6 +435,16 @@ static int ipv4_get_fd(struct socket_context *sock)
 	return sock->fd;
 }
 
+static NTSTATUS ipv4_pending(struct socket_context *sock, size_t *npending)
+{
+	int value = 0;
+	if (ioctl(sock->fd, FIONREAD, &value) == 0) {
+		*npending = value;
+		return NT_STATUS_OK;
+	}
+	return map_nt_error_from_unix(errno);
+}
+
 static const struct socket_ops ipv4_ops = {
 	.name			= "ipv4",
 	.fn_init		= ipv4_init,
@@ -446,6 +456,7 @@ static const struct socket_ops ipv4_ops = {
 	.fn_recvfrom		= ipv4_recvfrom,
 	.fn_send		= ipv4_send,
 	.fn_sendto		= ipv4_sendto,
+	.fn_pending		= ipv4_pending,
 	.fn_close		= ipv4_close,
 
 	.fn_set_option		= ipv4_set_option,

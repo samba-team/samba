@@ -316,6 +316,16 @@ static int unixdom_get_fd(struct socket_context *sock)
 	return sock->fd;
 }
 
+static NTSTATUS unixdom_pending(struct socket_context *sock, size_t *npending)
+{
+	int value = 0;
+	if (ioctl(sock->fd, FIONREAD, &value) == 0) {
+		*npending = value;
+		return NT_STATUS_OK;
+	}
+	return map_nt_error_from_unix(errno);
+}
+
 static const struct socket_ops unixdom_ops = {
 	.name			= "unix",
 	.fn_init		= unixdom_init,
@@ -327,6 +337,7 @@ static const struct socket_ops unixdom_ops = {
 	.fn_send		= unixdom_send,
 	.fn_sendto		= unixdom_sendto,
 	.fn_close		= unixdom_close,
+	.fn_pending		= unixdom_pending,
 
 	.fn_set_option		= unixdom_set_option,
 
