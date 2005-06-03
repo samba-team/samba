@@ -220,3 +220,5 @@ struct arcfour_state;
 union libnet_SamDump;
 struct websrv_context;
 struct EspRequest;
+
+struct kdc_server;
