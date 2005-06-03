@@ -418,8 +418,10 @@ int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
 	endlessLoopTest = NULL;
 	ep->exitStatus = 0;
 
+	ejsParse(ep, EJS_STATE_BEGIN, EJS_FLAGS_EXE); /* Skip over #! */
+
 	do {
-		state = ejsParse(ep, EJS_STATE_BEGIN, EJS_FLAGS_EXE);
+		state = ejsParse(ep, EJS_STATE_STMT, EJS_FLAGS_EXE);
 
 		if (state == EJS_STATE_RET) {
 			state = EJS_STATE_EOF;

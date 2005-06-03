@@ -674,6 +674,26 @@ static int getLexicalToken(Ejs *ep, int state)
 			inputPutback(ep, c);
 			return EJS_TOK_NUMBER;
 
+		case '#':
+			if (ip->lineNumber == 1) {
+				if ((c = inputGetc(ep)) < 0) {
+					ejsError(ep, "Syntax Error");
+					return EJS_TOK_ERR;
+				}
+				if (c != '!') {
+					ejsError(ep, "Syntax Error");
+					return EJS_TOK_ERR;
+				}
+				while ((c = inputGetc(ep)) != -1) {
+					if (c == '\r' || c == '\n')
+						break;
+					tokenAddChar(ep, c);
+				}
+				return EJS_TOK_HASHBANG;
+			}
+
+			/* Fall through to default handling */
+
 		default:
 			/*
 			 *	Identifiers or a function names
