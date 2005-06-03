@@ -60,6 +60,7 @@ struct socket_ops {
 	NTSTATUS (*fn_recvfrom)(struct socket_context *sock, 
 				void *buf, size_t wantlen, size_t *nread, uint32_t flags,
 				const char **src_addr, int *src_port);
+	NTSTATUS (*fn_pending)(struct socket_context *sock, size_t *npending);      
 
 	void (*fn_close)(struct socket_context *sock);
 
@@ -124,6 +125,7 @@ NTSTATUS socket_send(struct socket_context *sock,
 NTSTATUS socket_sendto(struct socket_context *sock, 
 		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
 		       const char *dest_addr, int dest_port);
+NTSTATUS socket_pending(struct socket_context *sock, size_t *npending);
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val);
 char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx);
 char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx);

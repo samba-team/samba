@@ -235,6 +235,22 @@ NTSTATUS socket_sendto(struct socket_context *sock,
 	return sock->ops->fn_sendto(sock, blob, sendlen, flags, dest_addr, dest_port);
 }
 
+
+/*
+  ask for the number of bytes in a pending incoming datagram
+*/
+NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
+{
+	if (sock->type != SOCKET_TYPE_DGRAM) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!sock->ops->fn_pending) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return sock->ops->fn_pending(sock, npending);
+}
+
+
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
 	if (!sock->ops->fn_set_option) {
