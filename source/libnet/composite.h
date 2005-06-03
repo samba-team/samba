@@ -54,3 +54,13 @@ struct rpc_composite_userdel {
 		struct policy_handle user_handle;
 	} out;
 };
+
+
+struct rpc_composite_domain_open {
+	struct {
+		uint32_t access_mask;
+	} in;
+	struct {
+		struct policy_handle domain_handle;
+	} out;
+};
