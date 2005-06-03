@@ -394,4 +394,35 @@ BOOL winbind_ping( void )
 	return result == NSS_STATUS_SUCCESS;
 }
 
+/**********************************************************************
+ Is a domain trusted?
 
+ result == NSS_STATUS_UNAVAIL: winbind not around
+ result == NSS_STATUS_NOTFOUND: winbind around, but domain missing
+
+ Due to a bad API NSS_STATUS_NOTFOUND is returned both when winbind_off and
+ when winbind return WINBINDD_ERROR. So the semantics of this routine depends
+ on winbind_on. Grepping for winbind_off I just found 3 places where winbind
+ is turned off, and this does not conflict (as far as I have seen) with the
+ callers of is_trusted_domains.
+
+ I *hate* global variables....
+
+ Volker
+
+**********************************************************************/
+
+NSS_STATUS wb_is_trusted_domain(const char *domain)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* Call winbindd */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, domain);
+
+	return winbindd_request(WINBINDD_DOMAIN_INFO, &request, &response);
+}
