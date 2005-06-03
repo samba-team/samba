@@ -208,7 +208,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
 	OM_uint32 maj_stat, min_stat;
-	const char *ccache_name;
 
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -262,7 +261,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 					NULL);
 	if (maj_stat) {
 		DEBUG(1, ("GSS krb5 ccache set %s failed: %s\n",
-			  ccache_name,
+			  gensec_gssapi_state->ccache_name, 
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
