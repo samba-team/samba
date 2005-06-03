@@ -133,7 +133,7 @@ union libnet_find_pdc;
 union libnet_rpc_connect;
 union libnet_RemoteTOD;
 union libnet_JoinDomain;
-union libnet_CreateUser;
+struct libnet_CreateUser;
 struct libnet_ListShares;
 struct libnet_AddShare;
 struct libnet_DelShare;
@@ -176,6 +176,7 @@ struct smb_composite_fsinfo;
 struct rpc_composite_userinfo;
 struct rpc_composite_useradd;
 struct rpc_composite_userdel;
+struct rpc_composite_domain_open;
 
 struct nbt_name;
 struct nbt_name_packet;
