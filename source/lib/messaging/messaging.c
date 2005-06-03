@@ -31,9 +31,6 @@
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
 
-/* maximum message size */
-#define MESSAGING_MAX_SIZE 512
-
 struct messaging_context {
 	uint32_t server_id;
 	struct socket_context *sock;
@@ -63,15 +60,15 @@ struct messaging_rec {
 	struct messaging_context *msg;
 	const char *path;
 
-	struct {
+	struct messaging_header {
 		uint32_t version;
 		uint32_t msg_type;
 		uint32_t from;
 		uint32_t to;
 		uint32_t length;
-	} header;
+	} *header;
 
-	DATA_BLOB data;
+	DATA_BLOB packet;
 };
 
 
@@ -106,11 +103,14 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 	struct dispatch_fn *d, *next;
 	for (d=msg->dispatch;d;d=next) {
 		next = d->next;
-		if (d->msg_type == rec->header.msg_type) {
-			d->fn(msg, d->private, d->msg_type, rec->header.from, &rec->data);
+		if (d->msg_type == rec->header->msg_type) {
+			DATA_BLOB data;
+			data.data = rec->packet.data + sizeof(*rec->header);
+			data.length = rec->header->length;
+			d->fn(msg, d->private, d->msg_type, rec->header->from, &data);
 		}
 	}
-	rec->header.length = 0;
+	rec->header->length = 0;
 }
 
 
@@ -120,23 +120,14 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 static NTSTATUS try_send(struct messaging_rec *rec)
 {
 	struct messaging_context *msg = rec->msg;
-	DATA_BLOB blob;
 	size_t nsent;
 	void *priv;
 	NTSTATUS status;
 
-	blob = data_blob_talloc(rec, NULL, sizeof(rec->header) + rec->data.length);
-	NT_STATUS_HAVE_NO_MEMORY(blob.data);
-
-	memcpy(blob.data, &rec->header, sizeof(rec->header));
-	memcpy(blob.data + sizeof(rec->header), rec->data.data, rec->data.length);
-
 	/* we send with privileges so messages work from any context */
 	priv = root_privileges();
-	status = socket_sendto(msg->sock, &blob, &nsent, 0, rec->path, 0);
+	status = socket_sendto(msg->sock, &rec->packet, &nsent, 0, rec->path, 0);
 	talloc_free(priv);
-
-	data_blob_free(&blob);
 
 	return status;
 }
@@ -155,7 +146,7 @@ static void messaging_send_handler(struct messaging_context *msg)
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1,("messaging: Lost message from %u to %u of type %u - %s\n", 
-				 rec->header.from, rec->header.to, rec->header.msg_type, 
+				 rec->header->from, rec->header->to, rec->header->msg_type, 
 				 nt_errstr(status)));
 		}
 		DLIST_REMOVE(msg->pending, rec);
@@ -173,16 +164,31 @@ static void messaging_recv_handler(struct messaging_context *msg)
 {
 	struct messaging_rec *rec;
 	NTSTATUS status;
-	uint8_t data[MESSAGING_MAX_SIZE];
+	DATA_BLOB packet;
 	size_t msize;
+	int dsize=0;
 
-	status = socket_recv(msg->sock, data, sizeof(data), &msize, 0);
+	/* see how many bytes are in the next packet */
+	if (ioctl(socket_get_fd(msg->sock), FIONREAD, &dsize) != 0) {
+		DEBUG(0,("FIONREAD failed in messaging - %s\n", strerror(errno)));
+		return;
+	}
+	
+	packet = data_blob_talloc(msg, NULL, dsize);
+	if (packet.data == NULL) {
+		/* assume this is temporary and retry */
+		return;
+	}
+	    
+	status = socket_recv(msg->sock, packet.data, dsize, &msize, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(&packet);
 		return;
 	}
 
-	if (msize < sizeof(rec->header)) {
+	if (msize < sizeof(*rec->header)) {
 		DEBUG(0,("messaging: bad message of size %d\n", msize));
+		data_blob_free(&packet);
 		return;
 	}
 
@@ -191,19 +197,15 @@ static void messaging_recv_handler(struct messaging_context *msg)
 		smb_panic("Unable to allocate messaging_rec");
 	}
 
+	talloc_steal(rec, packet.data);
 	rec->msg           = msg;
 	rec->path          = msg->path;
+	rec->header        = (struct messaging_header *)packet.data;
+	rec->packet        = packet;
 
-	memcpy(&rec->header, data, sizeof(rec->header));
-	if (msize != sizeof(rec->header) + rec->header.length) {
+	if (msize != sizeof(*rec->header) + rec->header->length) {
 		DEBUG(0,("messaging: bad message header size %d should be %d\n", 
-			 rec->header.length, msize - sizeof(rec->header)));
-		talloc_free(rec);
-		return;
-	}
-
-	rec->data = data_blob_talloc(rec, data+sizeof(rec->header), rec->header.length);
-	if (rec->data.data == NULL) {
+			 rec->header->length, msize - sizeof(*rec->header)));
 		talloc_free(rec);
 		return;
 	}
@@ -272,22 +274,29 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server,
 {
 	struct messaging_rec *rec;
 	NTSTATUS status;
+	size_t dlength = data?data->length:0;
 
 	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rec->msg             = msg;
-	rec->header.version  = MESSAGING_VERSION;
-	rec->header.msg_type = msg_type;
-	rec->header.from     = msg->server_id;
-	rec->header.to       = server;
-	rec->header.length   = data?data->length:0;
-	if (rec->header.length != 0) {
-		rec->data = data_blob_talloc(rec, data->data, data->length);
-	} else {
-		rec->data = data_blob(NULL, 0);
+	rec->packet = data_blob_talloc(rec, NULL, sizeof(*rec->header) + dlength);
+	if (rec->packet.data == NULL) {
+		talloc_free(rec);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rec->msg              = msg;
+	rec->header           = (struct messaging_header *)rec->packet.data;
+	rec->header->version  = MESSAGING_VERSION;
+	rec->header->msg_type = msg_type;
+	rec->header->from     = msg->server_id;
+	rec->header->to       = server;
+	rec->header->length   = dlength;
+	if (dlength != 0) {
+		memcpy(rec->packet.data + sizeof(*rec->header), 
+		       data->data, dlength);
 	}
 
 	rec->path = messaging_path(rec, server);
