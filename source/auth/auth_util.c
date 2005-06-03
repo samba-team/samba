@@ -79,6 +79,9 @@ NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 	user_info->workstation_name = talloc_strdup(user_info, workstation_name);
 	NT_STATUS_HAVE_NO_MEMORY(user_info->workstation_name);
 
+	user_info->remote_host = talloc_strdup(user_info, remote_host);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->remote_host);
+
 	DEBUG(5,("making blobs for %s's user_info struct\n", account_name));
 
 	if (lm_password) {
