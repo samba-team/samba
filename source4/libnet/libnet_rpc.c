@@ -100,7 +100,8 @@ static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_C
 				     binding,
 				     r->standard.in.dcerpc_iface_uuid,
 				     r->standard.in.dcerpc_iface_version,
-				     ctx->credentials);
+				     ctx->cred);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		r->standard.out.error_string = talloc_asprintf(mem_ctx, 
 						"dcerpc_pipe_connect to pipe %s failed with %s\n",
