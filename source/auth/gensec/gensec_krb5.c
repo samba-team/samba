@@ -280,8 +280,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	ret = krb5_init_context(&gensec_krb5_state->context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 
-			 smb_get_krb5_error_message(gensec_krb5_state->context, 
-						    ret, gensec_krb5_state)));
+			 error_message(ret)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
