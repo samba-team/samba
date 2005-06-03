@@ -47,7 +47,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->credentials = ctx->credentials;
+	libnetctx->cred = ctx->credentials;
 
 	/* prepare to get the time */
 	r.generic.level			= LIBNET_REMOTE_TOD_GENERIC;

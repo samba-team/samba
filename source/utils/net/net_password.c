@@ -57,7 +57,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->credentials = ctx->credentials;
+	libnetctx->cred = ctx->credentials;
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_CHANGE_PASSWORD_GENERIC;
@@ -132,7 +132,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->credentials = ctx->credentials;
+	libnetctx->cred = ctx->credentials;
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_SET_PASSWORD_GENERIC;
