@@ -11,5 +11,5 @@
   helpstring("Terminal Services remote management")
 ] interface winstation
 {
-	void foo();
+	void winstation_foo();
 }
