@@ -359,6 +359,12 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
+	if (!ldb) {
+		r->generic.out.error_string
+			= talloc_asprintf(mem_ctx, 
+					  "Could not open secrets database\n");
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
 
 	/* join domain */
 	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
