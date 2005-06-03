@@ -67,7 +67,6 @@ static int 		parseId(Ejs *ep, int state, int flags, char **id,
 static int 		parseInc(Ejs *ep, int state, int flags);
 static int 		parseIf(Ejs *ep, int state, int flags, int *done);
 static int		parseStmt(Ejs *ep, int state, int flags);
-static int		parseHashBang(Ejs *ep, int state, int flags);
 static void 	removeNewlines(Ejs *ep, int state);
 static void 	updateResult(Ejs *ep, int state, int flags, MprVar *vp);
 
@@ -81,12 +80,6 @@ int ejsParse(Ejs *ep, int state, int flags)
 	mprAssert(ep);
 
 	switch (state) {
-	/*
-	 *	The very start of a script.
-	 */
-	case EJS_STATE_BEGIN:
-		state = parseHashBang(ep, state, flags);
-		break;
 	/*
 	 *	Any statement, function arguments or conditional expressions
 	 */
@@ -145,26 +138,6 @@ int ejsParse(Ejs *ep, int state, int flags)
 		ejsError(ep, "Syntax error");
 	}
 	return state;
-}
-
-/******************************************************************************/
-/*
- *	Parse a #!/path/to/interpreter line which we just throw away.
- */
-
-static int parseHashBang(Ejs *ep, int state, int flags)
-{
-	int tid;
-
-	/* Look for #! */
-
-	tid = ejsLexGetToken(ep, state);
-
-	if (tid != EJS_TOK_HASHBANG) {
-		ejsLexPutbackToken(ep, tid, ep->token);
-	}
-
-	return EJS_STATE_STMT;
 }
 
 /******************************************************************************/
