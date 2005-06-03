@@ -25,8 +25,9 @@ struct libnet_context {
 	 * a client env context
 	 * a user env context
 	 */
-	struct cli_credentials *credentials;
+	struct cli_credentials *cred;
 };
+
 
 #include "libnet/libnet_passwd.h"
 #include "libnet/libnet_time.h"
