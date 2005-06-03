@@ -22,8 +22,10 @@
 */
 
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 #include <kdc.h>
 
+krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg);
 
 /*
   top level context structure for the cldap server
@@ -31,6 +33,7 @@
 struct kdc_server {
 	struct task_server *task;
 	struct krb5_kdc_configuration *config;
+	krb5_context krb5_context;
 };
 
 struct kdc_socket {

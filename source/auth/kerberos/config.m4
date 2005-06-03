@@ -176,6 +176,8 @@ if test x$with_krb5_support != x"no"; then
 		with_krb5_support="no"
 	fi
 
+	AC_CHECK_HEADERS(kdc.h)
+
 	CFLAGS=$ac_save_CFLAGS
 	CPPFLAGS=$ac_save_CPPFLAGS
 	LDFLAGS=$ac_save_LDFLAGS
@@ -201,6 +203,8 @@ if test x"$with_krb5_support" != x"no"; then
 	# we might need the k5crypto and com_err libraries on some systems
  	AC_CHECK_LIB_EXT(com_err, KRB5_LIBS, _et_list)
 	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
+
+	AC_CHECK_LIB_EXT(kdc, KRB5_LIBS, krb5_kdc_default_config)
 
 	# Heimdal checks.
 	# But only if we didn't have a krb5-config to tell us this already
@@ -492,4 +496,5 @@ if test x"$with_krb5_support" != x"no"; then
 fi
 
 SMB_EXT_LIB(KRB5,[${KRB5_LIBS}],[${KRB5_CFLAGS}],[${KRB5_CPPFLAGS}],[${KRB5_LDFLAGS}])
+
 
