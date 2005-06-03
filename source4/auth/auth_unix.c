@@ -428,7 +428,7 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 
 static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
 {
-	return NT_STATUS_UNIMPLEMENTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 #endif /*(HAVE_SECURITY_PAM_APPL_H)*/
