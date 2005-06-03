@@ -166,21 +166,22 @@ static void messaging_recv_handler(struct messaging_context *msg)
 	NTSTATUS status;
 	DATA_BLOB packet;
 	size_t msize;
-	int dsize=0;
 
 	/* see how many bytes are in the next packet */
-	if (ioctl(socket_get_fd(msg->sock), FIONREAD, &dsize) != 0) {
-		DEBUG(0,("FIONREAD failed in messaging - %s\n", strerror(errno)));
+	status = socket_pending(msg->sock, &msize);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("socket_pending failed in messaging - %s\n", 
+			 nt_errstr(status)));
 		return;
 	}
 	
-	packet = data_blob_talloc(msg, NULL, dsize);
+	packet = data_blob_talloc(msg, NULL, msize);
 	if (packet.data == NULL) {
 		/* assume this is temporary and retry */
 		return;
 	}
 	    
-	status = socket_recv(msg->sock, packet.data, dsize, &msize, 0);
+	status = socket_recv(msg->sock, packet.data, msize, &msize, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(&packet);
 		return;
