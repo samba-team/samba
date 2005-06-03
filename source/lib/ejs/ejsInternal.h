@@ -100,7 +100,7 @@ extern "C" {
 #define EJS_TOK_IN					26		/* in */
 #define EJS_TOK_FUNCTION			27		/* function */
 #define EJS_TOK_NUMBER				28		/* Number */
-#define EJS_TOK_HASHBANG            29      /* #!/path/to/interpreter */
+
 /*
  *	Expression operators
  */
@@ -150,7 +150,8 @@ extern "C" {
 #define EJS_STATE_DEC				18		/* Declaration statement */
 #define EJS_STATE_DEC_DONE			19
 #define EJS_STATE_RET				20		/* Return statement */
-#define EJS_STATE_BEGIN             21      /* Start of script */
+
+#define EJS_STATE_BEGIN				EJS_STATE_STMT
 
 /*
  *	General parsing flags.
