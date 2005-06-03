@@ -1282,12 +1282,21 @@ static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
          * Get the create time of the file (if not provided); we'll need it in
          * the set call.
          */
-        if (! srv->no_pathinfo && c_time != 0) {
+        if (! srv->no_pathinfo && c_time == 0) {
                 if (! cli_qpathinfo(&srv->cli, path,
                                     &c_time, NULL, NULL, NULL, NULL)) {
                         /* qpathinfo not available */
                         srv->no_pathinfo = True;
                 } else {
+                        /*
+                         * We got a creation time.  Some OS versions don't
+                         * return a valid create time, though.  If we got an
+                         * invalid time, start with the current time instead.
+                         */
+                        if (c_time == 0 || c_time == (time_t) -1) {
+                                c_time = time(NULL);
+                        }
+
                         /*
                          * We got a creation time.  For sanity sake, since
                          * there is no POSIX function to set the create time
@@ -1346,7 +1355,7 @@ static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 /* If we got create time, set times */
                 if (ret) {
                         /* Some OS versions don't support create time */
-                        if (c_time == 0) {
+                        if (c_time == 0 || c_time == -1) {
                                 c_time = time(NULL);
                         }
 
