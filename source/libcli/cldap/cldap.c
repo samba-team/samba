@@ -40,8 +40,6 @@
 #include "lib/socket/socket.h"
 #include "include/asn_1.h"
 
-#define CLDAP_MAX_PACKET_SIZE 2048
-
 /*
   destroy a pending request
 */
@@ -68,12 +66,18 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	const char *src_addr;
 	int src_port;
 	DATA_BLOB blob;
-	size_t nread;
+	size_t nread, dsize;
 	struct asn1_data asn1;
 	struct ldap_message ldap_msg;
 	struct cldap_request *req;
 
-	blob = data_blob_talloc(tmp_ctx, NULL, CLDAP_MAX_PACKET_SIZE);
+	status = socket_pending(cldap->sock, &dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
 	if (blob.data == NULL) {
 		talloc_free(tmp_ctx);
 		return;
