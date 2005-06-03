@@ -49,6 +49,8 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 
 	if (bindings && bindings[0]) {
 		binding = bindings[0];
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!user_info->account_name) {
