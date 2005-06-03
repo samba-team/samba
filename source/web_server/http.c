@@ -794,7 +794,6 @@ void http_process_input(struct websrv_context *web)
 	talloc_set_destructor(esp, esp_destructor);
 
 	smb_setup_ejs_functions();
-	http_setup_ejs_functions();
 
 	if (web->input.url == NULL) {
 		http_error(web, 400, "You must specify a GET or POST request");
