@@ -249,6 +249,37 @@ static NTSTATUS unixdom_send(struct socket_context *sock,
 	return NT_STATUS_OK;
 }
 
+
+static NTSTATUS unixdom_sendto(struct socket_context *sock, 
+			       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
+			       const char *dest_addr, int dest_port)
+{
+	ssize_t len;
+	int flgs = 0;
+	struct sockaddr_un srv_addr;
+
+	if (strlen(dest_addr)+1 > sizeof(srv_addr.sun_path)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ZERO_STRUCT(srv_addr);
+	srv_addr.sun_family = AF_UNIX;
+	strncpy(srv_addr.sun_path, dest_addr, sizeof(srv_addr.sun_path));
+
+	*sendlen = 0;
+
+	len = sendto(sock->fd, blob->data, blob->length, flgs, 
+		     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
+	if (len == -1) {
+		return map_nt_error_from_unix(errno);
+	}	
+
+	*sendlen = len;
+
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS unixdom_set_option(struct socket_context *sock, 
 				   const char *option, const char *val)
 {
@@ -294,6 +325,7 @@ static const struct socket_ops unixdom_ops = {
 	.fn_accept		= unixdom_accept,
 	.fn_recv		= unixdom_recv,
 	.fn_send		= unixdom_send,
+	.fn_sendto		= unixdom_sendto,
 	.fn_close		= unixdom_close,
 
 	.fn_set_option		= unixdom_set_option,
