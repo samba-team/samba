@@ -1,3 +1,9 @@
+2005-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pthreads.m4: rework how pthreads support to turned on/off,
+	always run though the switch to figure out what the
+	linker/compiler flag are
+
 2005-06-01  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* pthreads.m4: s/else if/elif/
