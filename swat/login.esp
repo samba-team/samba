@@ -6,12 +6,15 @@ if (request['SESSION_EXPIRED'] == "True") {
    write("<b>Your session has expired - please authenticate again<br /></b>\n");
 }
 
-var f = FormObj("login", 2, 1);
+var f = FormObj("login", 3, 1);
 f.element[0].label = "Username";
 f.element[0].value = form['Username'];
 f.element[1].label = "Password";
 f.element[1].value = form['Password'];
 f.element[1].type  = "password";
+f.element[2].label = "Domain";
+f.element[2].type  = "select";
+f.element[2].list  = getDomainList();
 f.submit[0] = "Login";
 
 display_form(f);
@@ -19,20 +22,28 @@ display_form(f);
 
 <%
 	if (request.REQUEST_METHOD == "POST") {
-		/* for now just authenticate everyone */
-		session.AUTHENTICATED = true;
-		session.authinfo = new Object();
 
-		session.authinfo.username = form.Username;
+		auth = userAuth(form.Username, form.Password, form.Domain);
+		if (auth.result) {
 
-		/* if the user was asking for the login page, then now
-		   redirect them to the main page. Otherwise just
-		   redirect them to the current page, which will now
-		   show its true content */
-		if (request.REQUEST_URI == "/login.esp") {
-		   redirect(session_uri("/"));
+			/* for now just authenticate everyone */
+			session.AUTHENTICATED = true;
+			session.authinfo = new Object();
+
+			session.authinfo.username = auth.username;
+			session.authinfo.domain = auth.domain;
+
+			/* if the user was asking for the login page, then now
+			   redirect them to the main page. Otherwise just
+			   redirect them to the current page, which will now
+			   show its true content */
+			if (request.REQUEST_URI == "/login.esp") {
+			   redirect(session_uri("/"));
+			} else {
+			   redirect(session_uri(request.REQUEST_URI));
+			}
 		} else {
-		   redirect(session_uri(request.REQUEST_URI));
+			write("<b>Login failed - please try again<br /></b>\n");
 		}
 	}
 %>
