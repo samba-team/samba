@@ -1532,11 +1532,26 @@ BOOL is_trusted_domain(const char* dom_name)
 			return True;
 	}
 	else {
-		/* if winbindd is not up and we are a domain member) then we need to update the
-		   trustdom_cache ourselves */
+		NSS_STATUS result;
 
-		if ( !winbind_ping() )
-			update_trustdom_cache();
+		/* If winbind is around, ask it */
+
+		result = wb_is_trusted_domain(dom_name);
+
+		if (result == NSS_STATUS_SUCCESS) {
+			return True;
+		}
+
+		if (result == NSS_STATUS_NOTFOUND) {
+			/* winbind could not find the domain */
+			return False;
+		}
+
+		/* The only other possible result is that winbind is not up
+		   and running. We need to update the trustdom_cache
+		   ourselves */
+		
+		update_trustdom_cache();
 	}
 
 	/* now the trustdom cache should be available a DC could still
