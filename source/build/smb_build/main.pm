@@ -64,6 +64,7 @@ sub smb_build_main($)
 		"libcli/security/config.mk",
 		"lib/com/config.mk",
 		"scripting/config.mk",
+		"kdc/config.mk"
 	);
 
 	$| = 1;

@@ -70,6 +70,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE server_service_web
 ################################################
 
+################################################
+# Start MODULE server_service_web
+[MODULE::server_service_kdc]
+INIT_FUNCTION = server_service_kdc_init
+SUBSYSTEM = SERVER_SERVICE
+REQUIRED_SUBSYSTEMS = \
+		KDC
+# End MODULE server_service_web
+################################################
+
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
