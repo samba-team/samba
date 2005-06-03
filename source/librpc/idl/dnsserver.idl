@@ -11,5 +11,5 @@
   helpstring("DNS Server")
 ] interface dnsserver
 {
-	void foo();
+	void dnsserver_foo();
 }
