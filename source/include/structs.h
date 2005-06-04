@@ -133,7 +133,7 @@ union libnet_find_pdc;
 union libnet_rpc_connect;
 union libnet_RemoteTOD;
 union libnet_JoinDomain;
-struct libnet_CreateUser;
+union libnet_CreateUser;
 struct libnet_ListShares;
 struct libnet_AddShare;
 struct libnet_DelShare;
