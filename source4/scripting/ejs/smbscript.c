@@ -78,6 +78,7 @@ void ejs_exception(const char *reason)
 		argv_list = str_list_add(argv_list, argv[i]);
 	}
 	v = mprList("ARGV", argv_list);
+	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(argc - 2));
 	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
 
 	/* load the script and advance past interpreter line*/
