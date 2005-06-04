@@ -89,6 +89,7 @@ my %property_list = (
 	"ref"			=> ["ELEMENT"],
 	"ptr"			=> ["ELEMENT"],
 	"unique"		=> ["ELEMENT"],
+	"ignore"        => ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
 	"relative_base"		=> ["TYPEDEF"],
 
