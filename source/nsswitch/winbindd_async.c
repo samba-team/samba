@@ -785,6 +785,8 @@ static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		return;
 	}
 
+	SAFE_FREE(response->extra_data);
+
 	cont(private, True, sids, num_sids);
 }
 
@@ -990,6 +992,8 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
 		state->cont(state->private, False, NULL, 0);
 		return;
 	}
+
+	SAFE_FREE(response->extra_data);
 
 	if (state->alias_domain == NULL) {
 		DEBUG(10, ("Don't expand domain local groups\n"));

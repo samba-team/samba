@@ -773,8 +773,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 #endif /* HAVE_LDAP */
 
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
 
 	/* Query domain info */
 
