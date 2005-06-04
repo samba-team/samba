@@ -189,3 +189,27 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 
 	return res;
 }
+
+/*
+  turn a WERROR into a MprVar object with lots of funky properties
+*/
+struct MprVar mprWERROR(WERROR status)
+{
+	struct MprVar res, val;
+
+	res = mprCreateObjVar("werror", MPR_DEFAULT_HASH_SIZE);
+
+	val = mprCreateStringVar(win_errstr(status), 1);
+	mprCreateProperty(&res, "errstr", &val);
+
+	val = mprCreateIntegerVar(W_ERROR_V(status));
+	mprCreateProperty(&res, "v", &val);
+
+	val = mprCreateBoolVar(W_ERROR_IS_OK(status));
+	mprCreateProperty(&res, "is_ok", &val);
+
+	val = mprCreateBoolVar(True);
+	mprCreateProperty(&res, "is_err", &val);
+
+	return res;
+}
