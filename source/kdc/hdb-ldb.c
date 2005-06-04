@@ -1035,8 +1035,6 @@ krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char
 		}
 	}
 
-	krb5_warnx(context, "hdb_ldb_create: hdb_name '%s'\n", (*db)->hdb_name);
-
 	(*db)->hdb_openp = 0;
 	(*db)->hdb_open = LDB_open;
 	(*db)->hdb_close = LDB_close;

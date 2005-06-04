@@ -29,19 +29,17 @@
 #include "auth/auth.h"
 
 struct ccache_container {
-	krb5_context krb5_context;
+	struct smb_krb5_context *smb_krb5_context;
 	krb5_ccache ccache;
 } ccache_container;
 
-#if 0
 static int free_ccache(void *ptr) {
 	struct ccache_container *ccc = ptr;
 	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
-	krb5_cc_close(ccc->krb5_context, ccc->ccache);
+	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
 
 	return 0;
 }
-#endif
 
 /**
  * Return a freshly allocated ccache (destroyed by destructor on child
@@ -50,7 +48,7 @@ static int free_ccache(void *ptr) {
 
  NTSTATUS kinit_to_ccache(TALLOC_CTX *parent_ctx,
 			  struct cli_credentials *credentials,
-			  krb5_context context,
+			  struct smb_krb5_context *smb_krb5_context,
 			  krb5_ccache *ccache,
 			  const char **ccache_name) 
 {
@@ -71,7 +69,7 @@ static int free_ccache(void *ptr) {
 					cli_credentials_get_principal(credentials, mem_ctx), 
 					generate_random_str(mem_ctx, 16));
 	
-	ret = krb5_cc_resolve(context, ccache_string, ccache);
+	ret = krb5_cc_resolve(smb_krb5_context->krb5_context, ccache_string, ccache);
 	if (ret) {
 		DEBUG(1,("failed to generate a new krb5 keytab (%s): %s\n", 
 			 ccache_string,
@@ -80,13 +78,11 @@ static int free_ccache(void *ptr) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	mem_ctx->krb5_context = context;
+	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
 	mem_ctx->ccache = *ccache;
 
-#if 0
 	talloc_set_destructor(mem_ctx, free_ccache);
-#endif
-	ret = kerberos_kinit_password_cc(context, *ccache, 
+	ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, *ccache, 
 					 cli_credentials_get_principal(credentials, mem_ctx), 
 					 password, NULL, &kdc_time);
 	
@@ -95,13 +91,13 @@ static int free_ccache(void *ptr) {
 		time_t t = time(NULL);
 		int time_offset =(unsigned)kdc_time-t;
 		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
-		krb5_set_real_time(context, t + time_offset + 1, 0);
+		krb5_set_real_time(smb_krb5_context->krb5_context, t + time_offset + 1, 0);
 	}
 	
 	if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
 		DEBUG(1,("kinit for %s failed (%s)\n", 
 			 cli_credentials_get_principal(credentials, mem_ctx), 
-			 smb_get_krb5_error_message(context, 
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
@@ -109,7 +105,7 @@ static int free_ccache(void *ptr) {
 	if (ret) {
 		DEBUG(1,("kinit for %s failed (%s)\n", 
 			 cli_credentials_get_principal(credentials, mem_ctx), 
-			 smb_get_krb5_error_message(context, 
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
 		return NT_STATUS_WRONG_PASSWORD;

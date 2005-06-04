@@ -3,6 +3,7 @@
    simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -473,6 +474,105 @@ cleanup_princ:
 	ret = talloc_strdup(mem_ctx, error_message(code));
 #endif
 	return ret;
+}
+
+
+static int smb_krb5_context_destory_1(void *ptr) 
+{
+	struct smb_krb5_context *ctx = ptr;
+	krb5_free_context(ctx->krb5_context); 
+	return 0;
+}
+
+#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined(HAVE_KRB5_FREELOG)
+static int smb_krb5_context_destory_2(void *ptr) 
+{
+	struct smb_krb5_context *ctx = ptr;
+
+	/* Otherwise krb5_free_context will try and close what we have already free()ed */
+	krb5_set_warn_dest(ctx->krb5_context, NULL);
+	krb5_freelog(ctx->krb5_context, ctx->logf);
+	smb_krb5_context_destory_1(ptr);
+	return 0;
+}
+
+/* We never close down the DEBUG system, and no need to unreference the use */
+static void smb_krb5_debug_close(void *private) {
+	return;
+}
+
+static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private) 
+{
+	DEBUG(3, ("Kerberos: %s\n", msg));
+}
+
+#endif
+
+ krb5_error_code smb_krb5_init_context(TALLOC_CTX *parent_ctx, 
+				       struct smb_krb5_context **smb_krb5_context) 
+{
+	krb5_error_code ret;
+	TALLOC_CTX *tmp_ctx;
+	
+	*smb_krb5_context = talloc(parent_ctx, struct smb_krb5_context);
+	tmp_ctx = talloc_new(*smb_krb5_context);
+
+	if (!*smb_krb5_context || !tmp_ctx) {
+		talloc_free(*smb_krb5_context);
+		talloc_free(tmp_ctx);
+		return ENOMEM;
+	}
+
+	ret = krb5_init_context(&(*smb_krb5_context)->krb5_context);
+	if (ret) {
+		DEBUG(1,("krb5_init_context failed (%s)\n", 
+			 error_message(ret)));
+		return ret;
+	}
+
+	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destory_1);
+
+	if (lp_realm() && *lp_realm()) {
+		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm());
+		if (!upper_realm) {
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
+			return ENOMEM;
+		}
+		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, lp_realm());
+		if (ret) {
+			DEBUG(1,("krb5_set_default_realm failed (%s)\n", 
+				 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
+			talloc_free(*smb_krb5_context);
+			return ret;
+		}
+	}
+
+#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined(HAVE_KRB5_FREELOG)
+	/* TODO: Should we have a different name here? */
+	ret = krb5_initlog((*smb_krb5_context)->krb5_context, "Samba", &(*smb_krb5_context)->logf);
+	
+	if (ret) {
+		DEBUG(1,("krb5_initlog failed (%s)\n", 
+			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
+		talloc_free(*smb_krb5_context);
+		return ret;
+	}
+
+	talloc_set_destructor(*smb_krb5_context, smb_krb5_context_destory_2);
+
+	ret = krb5_addlog_func((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf, 0 /* min */, -1 /* max */, 
+			       smb_krb5_debug_wrapper, smb_krb5_debug_close, NULL);
+	if (ret) {
+		DEBUG(1,("krb5_addlog_func failed (%s)\n", 
+			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
+		talloc_free(*smb_krb5_context);
+		return ret;
+	}
+	krb5_set_warn_dest((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf);
+
+#endif	
+	talloc_free(tmp_ctx);
+	return 0;
 }
 
 #endif

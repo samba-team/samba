@@ -107,7 +107,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	src_sock_addr.sin_family      = PF_INET;
 	
 	/* Call krb5 */
-	if (krb5_kdc_process_krb5_request(kdc_socket->kdc->krb5_context, 
+	if (krb5_kdc_process_krb5_request(kdc_socket->kdc->smb_krb5_context->krb5_context, 
 					  kdc_socket->kdc->config,
 					  blob.data, blob.length, 
 					  &reply,
@@ -157,7 +157,7 @@ static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
 */
 static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 {
-	struct kdc_socket *kdc_socket;
+ 	struct kdc_socket *kdc_socket;
 	NTSTATUS status;
 
 	kdc_socket = talloc(kdc, struct kdc_socket);
@@ -251,7 +251,7 @@ static void kdc_task_init(struct task_server *task)
 
 	initialize_krb5_error_table();
 
-	ret = krb5_init_context(&kdc->krb5_context);
+	ret = smb_krb5_init_context(kdc, &kdc->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n", 
 			 error_message(ret)));
@@ -259,9 +259,7 @@ static void kdc_task_init(struct task_server *task)
 		return; 
 	}
 
-	/* TODO: Fill in the hdb and logging details */
-	kdc_openlog(kdc->krb5_context, kdc->config);
-	
+	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc->config, struct HDB *);
 	if (!kdc->config->db) {
 		task_terminate(task, "kdc: out of memory");
@@ -269,10 +267,11 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	ret = hdb_ldb_create(kdc->krb5_context, &kdc->config->db[0], lp_sam_url());
+	ret = hdb_ldb_create(kdc->smb_krb5_context->krb5_context, 
+			     &kdc->config->db[0], lp_sam_url());
 	if (ret != 0) {
 		DEBUG(1, ("kdc_task_init: hdb_ldb_create fails: %s\n", 
-			  smb_get_krb5_error_message(kdc->krb5_context, ret, kdc))); 
+			  smb_get_krb5_error_message(kdc->smb_krb5_context->krb5_context, ret, kdc))); 
 		task_terminate(task, "kdc: hdb_ldb_create failed");
 		return; 
 	}
