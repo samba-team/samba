@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Standalone client for ESP scripting.
+   Standalone client for ejs scripting.
 
    Copyright (C) Tim Potter <tpot@samba.org> 2005
 
@@ -27,7 +27,7 @@
 void ejs_exception(const char *reason)
 {
 	fprintf(stderr, "smbscript exception: %s", reason);
-	exit(1);
+	exit(127);
 }
 
  int main(int argc, const char *argv[])
@@ -39,12 +39,12 @@ void ejs_exception(const char *reason)
 	size_t script_size;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char **argv_list = NULL;
-	struct MprVar v;
-	int i;
+	struct MprVar v, *return_var;
+	int exit_status, i;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s <scriptfile>\n", argv[0]);
-		exit(1);
+		exit(127);
 	}
 
 	setup_logging(argv[0],DEBUG_STDOUT);
@@ -52,7 +52,7 @@ void ejs_exception(const char *reason)
 	if (!lp_load(dyn_CONFIGFILE, False, False, False)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], dyn_CONFIGFILE);
-		exit(1);
+		exit(127);
 	}
 
 	load_interfaces();
@@ -62,7 +62,7 @@ void ejs_exception(const char *reason)
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
 			"EJ subsystem\n");
-		exit(1);
+		exit(127);
 	}
 
 	smb_setup_ejs_functions();
@@ -70,7 +70,7 @@ void ejs_exception(const char *reason)
 	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
 		fprintf(stderr, "smbscript: ejsOpenEngine(): unable to "
 			"initialise an EJS engine\n");
-		exit(1);
+		exit(127);
 	}
 
 	/* setup ARGV[] in the ejs environment */
@@ -98,12 +98,15 @@ void ejs_exception(const char *reason)
 	/* run the script */
 	if (ejsEvalScript(eid, script, &result, &emsg) == -1) {
 		fprintf(stderr, "smbscript: ejsEvalScript(): %s\n", emsg);
-		exit(1);
+		exit(127);
 	}
+
+	return_var = ejsGetReturnValue(eid);
+	exit_status = return_var->integer;
 
 	ejsClose();
 
 	talloc_free(mem_ctx);
 
-	return 0;
+	return exit_status;
 }
