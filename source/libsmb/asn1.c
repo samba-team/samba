@@ -107,71 +107,15 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
-/* "i" is the one's complement representation, as is the normal result of an
- * implicit signed->unsigned conversion */
-
-static BOOL push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
-{
-	uint8 lowest = i & 0xFF;
-
-	i = i >> 8;
-	if (i != 0)
-		if (!push_int_bigendian(data, i, negative))
-			return False;
-
-	if (data->nesting->start+1 == data->ofs) {
-
-		/* We did not write anything yet, looking at the highest
-		 * valued byte */
-
-		if (negative) {
-			/* Don't write leading 0xff's */
-			if (lowest == 0xFF)
-				return True;
-
-			if ((lowest & 0x80) == 0) {
-				/* The only exception for a leading 0xff is if
-				 * the highest bit is 0, which would indicate
-				 * a positive value */
-				if (!asn1_write_uint8(data, 0xff))
-					return False;
-			}
-		} else {
-			if (lowest & 0x80) {
-				/* The highest bit of a positive integer is 1,
-				 * this would indicate a negative number. Push
-				 * a 0 to indicate a positive one */
-				if (!asn1_write_uint8(data, 0))
-					return False;
-			}
-		}
-	}
-
-	return asn1_write_uint8(data, lowest);
-}
-
-/* write an Integer without the tag framing. Needed for example for the LDAP
- * Abandon Operation */
-
-BOOL asn1_write_implicit_Integer(ASN1_DATA *data, int i)
-{
-	if (i == -1) {
-		/* -1 is special as it consists of all-0xff bytes. In
-                    push_int_bigendian this is the only case that is not
-                    properly handled, as all 0xff bytes would be handled as
-                    leading ones to be ignored. */
-		return asn1_write_uint8(data, 0xff);
-	} else {
-		return push_int_bigendian(data, i, i<0);
-	}
-}
-
 
 /* write an integer */
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-	if (!asn1_write_implicit_Integer(data, i)) return False;
+	do {
+		asn1_write_uint8(data, i);
+		i = i >> 8;
+	} while (i);
 	return asn1_pop_tag(data);
 }
 
@@ -222,39 +166,21 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 	return !data->has_error;
 }
 
-BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8 num, DATA_BLOB *blob)
-{
-	asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num));
-	asn1_write(data, blob->data, blob->length);
-	asn1_pop_tag(data);
-	return !data->has_error;
-}
-
 /* write a BOOLEAN */
 BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
-	asn1_push_tag(data, ASN1_BOOLEAN);
-	asn1_write_uint8(data, v ? 0xFF : 0);
-	asn1_pop_tag(data);
+	asn1_write_uint8(data, ASN1_BOOLEAN);
+	asn1_write_uint8(data, v);
 	return !data->has_error;
 }
 
-/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the
+/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the 
    above boolean is bogus. Need to check */
 BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
 {
 	asn1_push_tag(data, ASN1_BOOLEAN);
 	asn1_write_uint8(data, v);
 	asn1_pop_tag(data);
-	return !data->has_error;
-}
-
-
-BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
-{
-	asn1_start_tag(data, ASN1_BOOLEAN);
-	asn1_read_uint8(data, (uint8 *)v);
-	asn1_end_tag(data);
 	return !data->has_error;
 }
 
@@ -290,33 +216,22 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 	return True;
 }
 
-/* Peek into an ASN1 buffer, not advancing the pointer */
-BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
-{
-	if (data->has_error)
-		return False;
-
-	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
-		return False;
-
-	if (data->ofs + len > data->length)
-		return False;
-
-	memcpy(p, data->data + data->ofs, len);
-	return True;
-}
-
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
 	if (data->has_error)
 		return False;
 
-	if (!asn1_peek(data, p, len)) {
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
 		data->has_error = True;
 		return False;
 	}
 
+	if (data->ofs + len > data->length) {
+		data->has_error = True;
+		return False;
+	}
+	memcpy(p, data->data + data->ofs, len);
 	data->ofs += len;
 	return True;
 }
@@ -325,25 +240,6 @@ BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 BOOL asn1_read_uint8(ASN1_DATA *data, uint8 *v)
 {
 	return asn1_read(data, v, 1);
-}
-
-BOOL asn1_peek_uint8(ASN1_DATA *data, uint8 *v)
-{
-	return asn1_peek(data, v, 1);
-}
-
-BOOL asn1_peek_tag(ASN1_DATA *data, uint8 tag)
-{
-	uint8 b;
-
-	if (asn1_tag_remaining(data) <= 0) {
-		return False;
-	}
-
-	if (!asn1_peek(data, &b, sizeof(b)))
-		return False;
-
-	return (b == tag);
 }
 
 /* start reading a nested asn1 structure */
@@ -389,87 +285,6 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	return !data->has_error;
 }
 
-static BOOL read_one_uint8(int sock, uint8 *result, ASN1_DATA *data,
-			   const struct timeval *endtime)
-{
-	if (read_data_until(sock, result, 1, endtime) != 1)
-		return False;
-
-	return asn1_write(data, result, 1);
-}
-
-/* Read a complete ASN sequence (ie LDAP result) from a socket */
-BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
-			      const struct timeval *endtime)
-{
-	uint8 b;
-	size_t len;
-	char *buf;
-
-	ZERO_STRUCTP(data);
-
-	if (!read_one_uint8(sock, &b, data, endtime))
-		return False;
-
-	if (b != 0x30) {
-		data->has_error = True;
-		return False;
-	}
-
-	if (!read_one_uint8(sock, &b, data, endtime))
-		return False;
-
-	if (b & 0x80) {
-		int n = b & 0x7f;
-		if (!read_one_uint8(sock, &b, data, endtime))
-			return False;
-		len = b;
-		while (n > 1) {
-			if (!read_one_uint8(sock, &b, data, endtime))
-				return False;
-			len = (len<<8) | b;
-			n--;
-		}
-	} else {
-		len = b;
-	}
-
-	buf = SMB_MALLOC(len);
-	if (buf == NULL)
-		return False;
-
-	if (read_data_until(sock, buf, len, endtime) != len)
-		return False;
-
-	if (!asn1_write(data, buf, len))
-		return False;
-
-	free(buf);
-
-	data->ofs = 0;
-	
-	return True;
-}
-
-/* Get the length to be expected in buf */
-BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
-			uint8 tag, size_t *result)
-{
-	ASN1_DATA data;
-
-	/* Fake the asn1_load to avoid the memdup, this is just to be able to
-	 * re-use the length-reading in asn1_start_tag */
-	ZERO_STRUCT(data);
-	data.data = buf;
-	data.length = buf_length;
-	if (!asn1_start_tag(&data, tag))
-		return False;
-	*result = asn1_tag_remaining(&data)+data.ofs;
-	/* We can't use asn1_end_tag here, as we did not consume the complete
-	 * tag, so asn1_end_tag would flag an error and not free nesting */
-	free(data.nesting);
-	return True;
-}
 
 /* stop reading a tag */
 BOOL asn1_end_tag(ASN1_DATA *data)
@@ -523,7 +338,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	fstr_sprintf(el, " %u",  b%40);
 	pstrcat(oid_str, el);
 
-	while (!data->has_error && asn1_tag_remaining(data) > 0) {
+	while (asn1_tag_remaining(data) > 0) {
 		unsigned v = 0;
 		do {
 			asn1_read_uint8(data, &b);
@@ -537,7 +352,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 
 	*OID = SMB_STRDUP(oid_str);
 
-	return (*OID && !data->has_error);
+	return !data->has_error;
 }
 
 /* check that the next object ID is correct */
@@ -593,22 +408,6 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	return !data->has_error;
 }
 
-BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8 num, DATA_BLOB *blob)
-{
-	int len;
-	ZERO_STRUCTP(blob);
-	if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(num))) return False;
-	len = asn1_tag_remaining(data);
-	if (len < 0) {
-		data->has_error = True;
-		return False;
-	}
-	*blob = data_blob(NULL, len);
-	asn1_read(data, blob->data, len);
-	asn1_end_tag(data);
-	return !data->has_error;
-}
-
 /* read an interger */
 BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 {
@@ -616,29 +415,12 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	*i = 0;
 	
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
-	if (!asn1_peek_uint8(data, &b)) return False;
-	if (b & 0x80)
-		*i = -1;
 	while (asn1_tag_remaining(data)>0) {
 		asn1_read_uint8(data, &b);
 		*i = (*i << 8) + b;
 	}
 	return asn1_end_tag(data);	
 	
-}
-
-/* read an interger */
-BOOL asn1_read_enumerated(ASN1_DATA *data, int *v)
-{
-	*v = 0;
-	
-	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
-	while (asn1_tag_remaining(data)>0) {
-		uint8 b;
-		asn1_read_uint8(data, &b);
-		*v = (*v << 8) + b;
-	}
-	return asn1_end_tag(data);	
 }
 
 /* check a enumarted value is correct */

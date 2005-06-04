@@ -161,7 +161,7 @@ TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
 
-SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@ lib/smb_ldap.o
+SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
 VERSION_OBJ = lib/version.o
 
@@ -665,7 +665,6 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_ads.o \
 		nsswitch/winbindd_passdb.o \
 		nsswitch/winbindd_dual.o \
-		nsswitch/winbindd_ldap.o \
 		nsswitch/winbindd_async.o
 
 WINBINDD_OBJ = \
