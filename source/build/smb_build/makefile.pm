@@ -103,6 +103,24 @@ __EOD__
 	return $output;
 }
 
+
+#############################
+# return makefile fragment for 
+# target specific rules
+sub add_target_flags($$)
+{
+	my $ctx = shift;
+	my $name = shift;
+	my $output = "";
+	if ($ctx->{TARGET_CFLAGS}) {
+$output .= << "__EOD__";
+$name: TARGET_CFLAGS = $ctx->{TARGET_CFLAGS}
+__EOD__
+}
+        return $output;
+}
+
+
 sub _prepare_default_rule($)
 {
 	my $ctx = shift;
@@ -215,7 +233,7 @@ sub _prepare_std_CC_rule($$$$$)
 # Start $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
-	\@\$(CC) \$(CC_FLAGS) $flags -c \$< -o \$\@
+	\@\$(CC) \$(TARGET_CFLAGS) \$(CC_FLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 #End $comment
 ###################################
@@ -400,10 +418,13 @@ __EOD__
 
 $output .= << "__EOD__";
 library_$ctx->{NAME}: basics bin/lib$ctx->{LIBRARY_NAME}
+
 # End Library $ctx->{NAME}
 ###################################
 
 __EOD__
+
+$output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
 
 	return $output;
 }
@@ -461,6 +482,8 @@ library_$ctx->{NAME}: basics $ctx->{TARGET}
 
 __EOD__
 
+$output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
+
 	return $output;
 }
 
@@ -513,6 +536,8 @@ binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 ###################################
 
 __EOD__
+
+$output .= add_target_flags($ctx, "binary_" . $ctx->{BINARY});
 
 	return $output;
 }
