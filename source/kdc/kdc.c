@@ -27,35 +27,63 @@
 #include "lib/socket/socket.h"
 #include "kdc/kdc.h"
 #include "system/network.h"
+#include "dlinklist.h"
 
-/* 
- */
-
-static void kdc_recv_handler(struct event_context *ev, struct fd_event *fde,
-			     struct kdc_socket *kdc_socket)
+/*
+  handle fd send events on a KDC socket
+*/
+static void kdc_send_handler(struct kdc_socket *kdc_socket)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
+	while (kdc_socket->send_queue) {
+		struct kdc_reply *rep = kdc_socket->send_queue;
+		NTSTATUS status;
+		size_t sendlen;
+
+		status = socket_sendto(kdc_socket->sock, &rep->packet, &sendlen, 0,
+				       rep->dest_address, rep->dest_port);
+		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			break;
+		}
+		
+		DLIST_REMOVE(kdc_socket->send_queue, rep);
+		talloc_free(rep);
+	}
+
+	if (kdc_socket->send_queue == NULL) {
+		EVENT_FD_NOT_WRITEABLE(kdc_socket->fde);
+	}
+}
+
+
+/*
+  handle fd recv events on a KDC socket
+*/
+static void kdc_recv_handler(struct kdc_socket *kdc_socket)
+{
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
 	DATA_BLOB blob;
+	struct kdc_reply *rep;
 	krb5_data reply;
 	size_t nread, dsize;
 	const char *src_addr;
 	int src_port;
 	struct sockaddr_in src_sock_addr;
 	struct ipv4_addr addr;
-	
+
 	status = socket_pending(kdc_socket->sock, &dsize);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return;
 	}
-	
-	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
+
+	blob = data_blob_talloc(kdc_socket, NULL, dsize);
 	if (blob.data == NULL) {
+		/* hope this is a temporary low memory condition */
 		talloc_free(tmp_ctx);
 		return;
 	}
-	
+
 	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread, 0,
 				 &src_addr, &src_port);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -84,18 +112,28 @@ static void kdc_recv_handler(struct event_context *ev, struct fd_event *fde,
 					  blob.data, blob.length, 
 					  &reply,
 					  src_addr,
-					  &src_sock_addr) != -1) {
-		size_t sendlen = reply.length;
-		DATA_BLOB reply_blob;
-		reply_blob.data = reply.data;
-		reply_blob.length = reply.length;
-
-		/* Send the reply on it's way */
-		socket_sendto(kdc_socket->sock, &reply_blob, &sendlen, 0,
-			      src_addr, src_port);
-
-		krb5_data_free(&reply);
+					  (struct sockaddr *)&src_sock_addr) == -1) {
+		talloc_free(tmp_ctx);
+		return;
 	}
+
+	/* queue a pending reply */
+	rep = talloc(kdc_socket, struct kdc_reply);
+	if (rep == NULL) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	rep->dest_address = talloc_steal(rep, src_addr);
+	rep->dest_port    = src_port;
+	rep->packet       = data_blob_talloc(rep, reply.data, reply.length);
+	if (rep->packet.data == NULL) {
+		talloc_free(rep);
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	DLIST_ADD_END(kdc_socket->send_queue, rep, struct kdc_reply *);
+	EVENT_FD_WRITEABLE(kdc_socket->fde);
 	talloc_free(tmp_ctx);
 }
 
@@ -107,11 +145,12 @@ static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
 {
 	struct kdc_socket *kdc_socket = talloc_get_type(private, struct kdc_socket);
 	if (flags & EVENT_FD_WRITE) {
-		/* not sure on write events yet */
+		kdc_send_handler(kdc_socket);
 	} else if (flags & EVENT_FD_READ) {
-		kdc_recv_handler(ev, fde, kdc_socket);
+		kdc_recv_handler(kdc_socket);
 	}
 }
+
 
 /*
   start listening on the given address
@@ -131,14 +170,13 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address)
 	}
 
 	kdc_socket->kdc = kdc;
+	kdc_socket->send_queue = NULL;
 
 	talloc_steal(kdc_socket, kdc_socket->sock);
 
 	kdc_socket->fde = event_add_fd(kdc->task->event_ctx, kdc, 
-				       socket_get_fd(kdc_socket->sock), 0,
+				       socket_get_fd(kdc_socket->sock), EVENT_FD_READ,
 				       kdc_socket_handler, kdc_socket);
-
-	EVENT_FD_READABLE(kdc_socket->fde);
 
 	status = socket_listen(kdc_socket->sock, address, lp_krb5_port(), 0, 0);
 	if (!NT_STATUS_IS_OK(status)) {
