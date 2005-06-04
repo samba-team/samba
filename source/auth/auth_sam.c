@@ -431,9 +431,9 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	server_info->n_domain_groups = group_ret;
 	server_info->domain_groups = groupSIDs;
 
-	server_info->account_name = talloc_reference(server_info, samdb_result_string(msgs[0], "sAMAccountName", NULL));
+	server_info->account_name = talloc_steal(server_info, samdb_result_string(msgs[0], "sAMAccountName", NULL));
 
-	server_info->domain_name = talloc_reference(server_info, samdb_result_string(msgs_domain[0], "nETBIOSName", NULL));
+	server_info->domain_name = talloc_steal(server_info, samdb_result_string(msgs_domain[0], "nETBIOSName", NULL));
 
 	str = samdb_result_string(msgs[0], "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
