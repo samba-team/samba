@@ -35,16 +35,9 @@
 #include "includes.h"
 #include "kdc.h"
 #include "ads.h"
-#include <hdb.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-#include <ldb.h>
-#include <talloc.h>
-
-#include <ctype.h>
+#include "hdb.h"
+#include "lib/ldb/include/ldb.h"
+#include "system/iconv.h"
 
 
 static const char * const krb5_attrs[] = {
