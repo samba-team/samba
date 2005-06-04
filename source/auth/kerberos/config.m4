@@ -205,6 +205,7 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
 
 	AC_CHECK_LIB_EXT(kdc, KRB5_LIBS, krb5_kdc_default_config)
+	AC_CHECK_LIB_EXT(hdb, KRB5_LIBS, hdb_generate_key_set_password)
 
 	# Heimdal checks.
 	# But only if we didn't have a krb5-config to tell us this already
