@@ -26,6 +26,9 @@ AC_CONFIG_HEADER(include/config.h)
 sinclude(ldap.m4)
 WITH_LDAP=$with_ldap_support
 AC_SUBST(WITH_LDAP)
+sinclude(sqlite3.m4)
+WITH_SQLITE3=$with_sqlite3_support
+AC_SUBST(WITH_SQLITE3)
 sinclude(config.m4)
 sinclude(../talloc/config.m4)
 AC_OUTPUT(Makefile ldb.pc)

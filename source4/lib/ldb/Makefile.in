@@ -8,12 +8,20 @@ libdir = @libdir@
 bindir = @bindir@
 WITH_GCOV = @WITH_GCOV@
 WITH_LDAP = @WITH_LDAP@
+WITH_SQLITE3 = @WITH_LDAP@
 
 ifeq ($(WITH_LDAP),yes)
 OPENLDAP_PREFIX=/usr
 LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
 LDAP_FLAGS=-DHAVE_LDAP=1
 LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
+endif
+
+ifeq ($(WITH_SQLITE3),yes)
+SQLITE3_PREFIX=/usr
+SQLITE3_LIBS=-L$(SQLITE3_PREFIX)/lib -lsqlite3
+SQLITE3_FLAGS=-DHAVE_SQLITE3=1
+LDB_SQLITE3_OBJ=ldb_sqlite3/ldb_sqlite3.o
 endif
 
 TDBDIR=../tdb
@@ -31,7 +39,7 @@ endif
 
 CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
 
-LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(GCOV_LIBS)
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS)
 
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
 TALLOC_OBJ=$(TALLOCDIR)/talloc.o
@@ -47,7 +55,7 @@ COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
 
 MODULES_OBJ=modules/timestamps.o modules/schema.o
 
-OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ)
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ)
 
 LDB_LIB = lib/libldb.a
 
@@ -128,6 +136,7 @@ install: all
 	cp ldb.pc $(libdir)/pkgconfig
 
 gcov:
+	$(GCOV) -po ldb_sqlite3 ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
 	$(GCOV) -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
 	$(GCOV) -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
 	$(GCOV) -po common common/*.c 2| tee common.report.gcov

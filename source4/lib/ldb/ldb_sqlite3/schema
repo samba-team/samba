@@ -20,7 +20,7 @@
                  * table is used to obtain the EID of the entry and to support
                  * scope="one" and scope="base".  The parent and child table
                  * is included in the entry table since all the other
-                 * attributes on EID.
+                 * attributes are dependent on EID.
                  */
                 CREATE TABLE ldb_entry
                 (
@@ -126,7 +126,7 @@
                 -- ------------------------------------------------------
                 -- Table initialization
 
-                /* We need an implicit "top" level object class */
+                /* We need an implicit 'top' level object class */
                 INSERT INTO ldb_attributes (attr_name,
                                             parent_tree_key)
                   SELECT 'top', '';
