@@ -3,6 +3,9 @@
 [SUBSYSTEM::SMBCALLS]
 OBJ_FILES = \
 		scripting/ejs/smbcalls.o \
+		scripting/ejs/smbcalls_config.o \
+		scripting/ejs/smbcalls_ldb.o \
+		scripting/ejs/smbcalls_nbt.o \
 		scripting/ejs/mprutil.o
 REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC
 # End SUBSYSTEM SMBCALLS
