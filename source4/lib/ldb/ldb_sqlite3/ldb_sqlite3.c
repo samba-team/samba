@@ -2,6 +2,7 @@
    ldb database library
    
    Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Derrell Lipman  2005
    
    ** NOTE! The following LGPL license applies to the ldb
    ** library. This does NOT imply that all of Samba is released
@@ -32,6 +33,7 @@
  *  Author: Derrell Lipman (based on Andrew Tridgell's LDAP backend)
  */
 
+#include <stdarg.h>
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
@@ -67,19 +69,62 @@ lsqlite3_query(const struct lsqlite3_private *lsqlite3,
                const char *pSql,
                ...)
 {
+//        int             i;
+//        int             retval;
+        int             numRows;
+//        int             numColumns;
+        int             bFreeTable = False;
+//        char            errorBuf[4096];
+        char *          p;
+//        char *          pError = NULL;
+        char **         ppValues;
+        va_list         args;
         
+        /* Begin access to variable argument list */
+        va_start(args, pSql);
+
+        /*
+         * If they didn't give us a place to put returned values, use our own
+         */
+        if (pppValues == NULL)
+        {
+                pppValues = &ppValues;
+                bFreeTable = True;
+        }
+        
+        /* Similarly for number of rows in result set */
+        if (pNumRows == NULL)
+        {
+                pNumRows = &numRows;
+        }
+
+        /* Format the query */
+        if ((p = sqlite3_vmprintf(pSql, args)) == NULL) {
+                return -1;
+        }
+
+
+#warning "*** FINISH QUERY FUNCTION.  Catch timeouts, schema changed, etc. ***"
+
+
+        /* All done with variable argument list */
+        va_end(args);
+
+        /* Success! */
+        return 0;
 }
 
 static int
 lsqlite3_create_attr_table(struct ldb_module *module,
                            char * pAttr)
 {
-
+#warning "*** lsqlite3_create_attr_table() not yet written ***"
+        return -1;
 }
 
 
 #if 0
-p/*
+/*
  * we don't need this right now, but will once we add some backend options
  *
  * find an option in an option list (a null terminated list of strings)
@@ -151,7 +196,7 @@ lsqlite3_delete(struct ldb_module *module,
         return -1;
 }
 
-#if 0 /* not currently used * /
+#if 0 /* not currently used */
 /*
  * free a search result
  */
@@ -342,7 +387,7 @@ failed:
 	if (*res) lsqlite3_search_free(module, *res);
 	return -1;
 #else
-        return 0;
+        return -1;
 #endif
 }
 
@@ -453,7 +498,8 @@ lsqlite3_insert_dn(struct lsqlite3_private * lsqlite3,
                    char * pDN,
                    long long * pEID)
 {
-
+#warning "*** lsqlite3_insert_dn() not yet implemented ***"
+        return -1;
 }
 
 
@@ -877,7 +923,7 @@ lsqlite3_connect(const char *url,
 	lsqlite3->options = NULL;
         lsqlite3->lock_count = 0;
 
-	ret = lsqlite3_initialize(&lsqlite3, url);
+	ret = lsqlite3_initialize(lsqlite3, url);
 	if (ret != SQLITE_OK) {
 		goto failed;
 	}
