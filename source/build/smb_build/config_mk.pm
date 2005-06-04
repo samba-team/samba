@@ -23,7 +23,8 @@ my %attribute_types = (
 	"MAJOR_VERSION" => "string",
 	"MINOR_VERSION" => "string",
 	"RELEASE_VERSION" => "string",
-	"ENABLE" => "bool"
+	"ENABLE" => "bool",
+	"TARGET_CFLAGS" => "string"
 );
 
 ###########################################################
