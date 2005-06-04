@@ -37,7 +37,7 @@ INIT_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_SQLITE3
 NOPROTO = YES
-# End MODULE libldb_tdb
+# End MODULE libldb_sqlite3
 ################################################
 
 ################################################
