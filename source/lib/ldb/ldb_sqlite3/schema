@@ -30,7 +30,7 @@
                   tree_key        TEXT PRIMARY KEY,
 
                   parent_tree_key TEXT,
-                  full_path       TEXT,
+                  dn              TEXT,
 
                   attr_name       TEXT REFERENCES ldb_attributes,
                   attr_value      TEXT,
@@ -85,8 +85,8 @@
 
                 -- ------------------------------------------------------
 
-                CREATE INDEX ldb_object_full_path_idx
-                  ON ldb_object (full_path);
+                CREATE INDEX ldb_object_dn_idx
+                  ON ldb_object (dn);
 
                 CREATE INDEX ldb_attributes_tree_key_ids
                   ON ldb_attributes (tree_key);
@@ -159,7 +159,7 @@
                 /* Create root object */
                 INSERT INTO ldb_object
                     (tree_key, parent_tree_key,
-                     full_path,
+                     dn,
                      object_type, max_child_num)
                   VALUES ('', NULL,
                           '',
@@ -186,7 +186,7 @@ BEGIN;
 
 INSERT OR IGNORE INTO ldb_object
     (parent_tree_key
-     full_path,
+     dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('',
           'c=US',
@@ -194,7 +194,7 @@ INSERT OR IGNORE INTO ldb_object
 
 INSERT INTO ldb_object
     (parent_tree_key,
-     full_path,
+     dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('0001',
           'o=University of Michigan,c=US',
@@ -208,7 +208,7 @@ INSERT OR IGNORE INTO ldb_attributes
 
 INSERT INTO ldb_object
     (parent_tree_key,
-     full_path,
+     dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001',
           NULL,
@@ -221,7 +221,7 @@ INSERT OR IGNORE INTO ldb_attributes
 
 INSERT INTO ldb_object
     (parent_tree_key,
-     full_path,
+     dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001',
           NULL,
@@ -243,37 +243,37 @@ COMMIT;
 BEGIN;
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'l', 'Ann Arbor, Michigan', 2, 0);
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'st', 'Michigan', 2, 0);
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'o', 'University of Michigan', 2, 0);
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'o', 'UMICH', 2, 0);
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'seeAlso', '', 2, 0);
 
 INSERT INTO ldb_object
-    (parent_tree_key, full_path,
+    (parent_tree_key, dn,
      attr_name, attr_value, object_type, max_child_num)
   VALUES ('00010001', NULL,
           'telephonenumber', '+1 313 764-1817', 2, 0);
