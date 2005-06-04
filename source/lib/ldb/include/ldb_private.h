@@ -109,6 +109,9 @@ struct ldb_context *ltdb_connect(const char *url,
 struct ldb_context *lldb_connect(const char *url, 
 				 unsigned int flags, 
 				 const char *options[]);
+struct ldb_context *lsqlite3_connect(const char *url, 
+                                     unsigned int flags, 
+                                     const char *options[]);
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
 
