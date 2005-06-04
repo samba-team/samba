@@ -43,7 +43,7 @@ struct gensec_gssapi_state {
 	DATA_BLOB session_key;
 	DATA_BLOB pac;
 
-	krb5_context krb5_context;
+	struct smb_krb5_context *smb_krb5_context;
 	krb5_ccache ccache;
 	const char *ccache_name;
 
@@ -98,9 +98,6 @@ static int gensec_gssapi_destory(void *ptr)
 	if (gensec_gssapi_state->client_name != GSS_C_NO_NAME) {
 		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->client_name);
 	}
-	if (gensec_gssapi_state->krb5_context) {
-		krb5_free_context(gensec_gssapi_state->krb5_context);
-	}
 	return 0;
 }
 
@@ -128,8 +125,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->session_key = data_blob(NULL, 0);
 	gensec_gssapi_state->pac = data_blob(NULL, 0);
-
-	gensec_gssapi_state->krb5_context = NULL;
 
 	gensec_gssapi_state->cred = GSS_C_NO_CREDENTIAL;
 
@@ -161,29 +156,13 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 	
-	ret = krb5_init_context(&gensec_gssapi_state->krb5_context);
+	ret = smb_krb5_init_context(gensec_gssapi_state, 
+				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 					
-			 smb_get_krb5_error_message(gensec_gssapi_state->krb5_context, 
-						    ret, gensec_gssapi_state)));
+			 error_message(ret)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	
-	if (lp_realm() && *lp_realm()) {
-		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm());
-		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
-			return NT_STATUS_NO_MEMORY;
-		}
-		ret = krb5_set_default_realm(gensec_gssapi_state->krb5_context, upper_realm);
-		if (ret) {
-			DEBUG(1,("gensec_krb5_start: krb5_set_default_realm failed (%s)\n", 
-				 smb_get_krb5_error_message(gensec_gssapi_state->krb5_context, 
-							    ret, gensec_gssapi_state)));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -216,7 +195,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = gensec_security->private_data;
 
-	name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", gensec_get_target_service(gensec_security), 
+	name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
+					   gensec_get_target_service(gensec_security), 
 					   gensec_get_target_hostname(gensec_security));
 	name_token.length = strlen(name_token.value);
 
@@ -231,7 +211,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	name_token.value = cli_credentials_get_principal(gensec_get_credentials(gensec_security), gensec_gssapi_state),
+	name_token.value = cli_credentials_get_principal(gensec_get_credentials(gensec_security), 
+							 gensec_gssapi_state),
 	name_token.length = strlen(name_token.value);
 
 	maj_stat = gss_import_name (&min_stat,
@@ -249,7 +230,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	
 	nt_status = kinit_to_ccache(gensec_gssapi_state, 
 				    gensec_get_credentials(gensec_security),
-				    gensec_gssapi_state->krb5_context, 
+				    gensec_gssapi_state->smb_krb5_context, 
 				    &gensec_gssapi_state->ccache, &gensec_gssapi_state->ccache_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
