@@ -29,6 +29,18 @@ NOPROTO = YES
 ################################################
 
 ################################################
+# Start MODULE libldb_sqlite3
+[MODULE::libldb_sqlite3]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		lib/ldb/ldb_sqlite3/ldb_sqlite3.o
+REQUIRED_SUBSYSTEMS = \
+		EXT_LIB_SQLITE3
+NOPROTO = YES
+# End MODULE libldb_tdb
+################################################
+
+################################################
 # Start MODULE libldb_tdb
 [MODULE::libldb_tdb]
 SUBSYSTEM = LIBLDB

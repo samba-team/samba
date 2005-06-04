@@ -105,9 +105,18 @@
 #define MAP_FAILED ((void *)-1)
 #endif
 
+#ifndef discard_const_p
+# if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+#  define discard_const(ptr) ((void *)((intptr_t)(ptr)))
+# else
+#  define discard_const(ptr) ((void *)(ptr))
+# endif
+# define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+#endif
+
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
 #endif
 
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
