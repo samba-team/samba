@@ -253,50 +253,53 @@ failed:
   look up a netbios name
 
   syntax:
-    resolveName("frogurt");
-    resolveName("frogurt", 0x1c);
+    resolveName(result, "frogurt");
+    resolveName(result, "frogurt", 0x1c);
 */
 
 static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 {
+	int result = -1;
 	struct nbt_name name;
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());	
-	NTSTATUS result;
+	NTSTATUS nt_status;
 	const char *reply_addr;
 
 	/* validate arguments */
-	if (argc == 1) {
-		if (argv[0]->type != MPR_TYPE_STRING) {
-			ejsSetErrorMsg(eid, "resolveName invalid arguments");
-			goto failed;
-		}
-		make_nbt_name_client(&name, mprToString(argv[0]));
-	} else if (argc == 2) {
+	if (argc < 2 || argc > 3) {
+		ejsSetErrorMsg(eid, "resolveName invalid arguments");
+		goto done;
+	}
+
+	if (argv[1]->type != MPR_TYPE_STRING) {
+		ejsSetErrorMsg(eid, "resolveName invalid arguments");
+		goto done;
+	}
+	
+	if (argc == 2) {
+		make_nbt_name_client(&name, mprToString(argv[1]));
+	} else {
 		if (argv[1]->type != MPR_TYPE_INT) {
 			ejsSetErrorMsg(eid, "resolveName invalid arguments");
-			goto failed;
+			goto done;
 		}
-		make_nbt_name(&name, mprToString(argv[0]), mprToInt(argv[1]));
-	} else {
-		ejsSetErrorMsg(eid, "resolveName invalid arguments");
-		goto failed;
+		make_nbt_name(&name, mprToString(argv[1]), mprToInt(argv[2]));
 	}
 
-	result = resolve_name(&name, tmp_ctx, &reply_addr);
+	result = 0;
 
-	if (!NT_STATUS_IS_OK(result)) {
-		ejsSetErrorMsg(eid, "resolveName name not found");
-		goto failed;
+	nt_status = resolve_name(&name, tmp_ctx, &reply_addr);
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		mprDestroyAllVars(argv[0]);
+		*argv[0] = mprCreateStringVar(reply_addr, True);
 	}
-		
-	ejsSetReturnString(eid, reply_addr);
 
-	talloc_free(tmp_ctx);
-	return 0;
+	ejsSetReturnValue(eid, mprNTSTATUS(nt_status));
 
- failed:
+ done:
 	talloc_free(tmp_ctx);
-	return -1;
+	return result;
 }
 
 static int ejs_userAuth(MprVarHandle eid, int argc, char **argv)
@@ -308,7 +311,6 @@ static int ejs_userAuth(MprVarHandle eid, int argc, char **argv)
 	struct MprVar auth;
 	NTSTATUS nt_status;
 	DATA_BLOB pw_blob;
-	int ret;
 
 	if (argc != 3 || *argv[0] == 0 || *argv[2] == 0) {
 		ejsSetErrorMsg(eid, "userAuth invalid arguments");
