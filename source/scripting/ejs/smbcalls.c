@@ -71,54 +71,85 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 	ejsSetReturnValue(eid, mprList(name, list));
 }
 
-static int ejs_userAuth(MprVarHandle eid, int argc, char **argv)
+static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, const char *password, const char *domain, const char *remote_host)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context;
-	TALLOC_CTX *tmp_ctx;
-	struct MprVar auth;
+	const char *auth_unix[] = { "unix", NULL };
 	NTSTATUS nt_status;
 	DATA_BLOB pw_blob;
 
-	if (argc != 3 || *argv[0] == 0 || *argv[2] == 0) {
-		ejsSetErrorMsg(eid, "userAuth invalid arguments");
+	nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "report", mprCreateStringVar("Auth System Failure", 0));
+		goto done;
+	}
+
+	pw_blob = data_blob(password, strlen(password)),
+	make_user_info(tmp_ctx, username, username,
+				domain, domain,
+				remote_host, remote_host,
+				NULL, NULL,
+				NULL, NULL,
+				&pw_blob, False,
+				USER_INFO_CASE_INSENSITIVE_USERNAME |
+				USER_INFO_DONT_CHECK_UNIX_ACCOUNT,
+				&user_info);
+	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "report", mprCreateStringVar("Login Failed", 0));
+		goto done;
+	}
+
+	mprSetPropertyValue(auth, "result", mprCreateBoolVar(server_info->authenticated));
+	mprSetPropertyValue(auth, "username", mprCreateStringVar(server_info->account_name, 0));
+	mprSetPropertyValue(auth, "domain", mprCreateStringVar(server_info->domain_name, 0));
+
+done:
+	return 0;
+}
+
+/*
+  perform user authentication, returning an array of results
+
+  syntax:
+    var authinfo = new Object();
+    authinfo.username = myname;
+    authinfo.password = mypass;
+    authinfo.domain = mydom;
+    authinfo.rhost = request['REMOTE_HOST'];
+    auth = userAuth(authinfo);
+*/
+static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *username;
+	const char *password;
+	const char *domain;
+	const char *remote_host;
+	struct MprVar auth;
+
+	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
+		ejsSetErrorMsg(eid, "userAuth invalid arguments, this function requires an object.");
 		return -1;
 	}
+
+	username = mprToString(mprGetProperty(argv[0], "username", NULL));
+	password = mprToString(mprGetProperty(argv[0], "password", NULL));
+	domain = mprToString(mprGetProperty(argv[0], "domain", NULL));
+	remote_host = mprToString(mprGetProperty(argv[0], "rhost", NULL));
 
  	tmp_ctx = talloc_new(mprMemCtx());	
 	auth = mprCreateObjVar("auth", MPR_DEFAULT_HASH_SIZE);
 
-	if (strcmp("System User", argv[2]) == 0) {
-		const char *auth_unix[] = { "unix", NULL };
+	if (strcmp("System User", domain) == 0) {
 
-		nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			mprSetPropertyValue(&auth, "result", mprCreateBoolVar(False));
-			mprSetPropertyValue(&auth, "report", mprCreateStringVar("Auth System Failure", 0));
-			goto done;
-		}
-
-		pw_blob = data_blob(argv[1], strlen(argv[1])),
-		make_user_info(tmp_ctx, argv[0], argv[0],
-					argv[2], argv[2],
-					"foowks", "fooip",
-					NULL, NULL,
-					NULL, NULL,
-					&pw_blob, False,
-					0x05, &user_info);
-		nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			mprSetPropertyValue(&auth, "result", mprCreateBoolVar(False));
-			mprSetPropertyValue(&auth, "report", mprCreateStringVar("Login Failed", 0));
-			goto done;
-		}
-
-		mprSetPropertyValue(&auth, "result", mprCreateBoolVar(server_info->authenticated));
-		mprSetPropertyValue(&auth, "username", mprCreateStringVar(server_info->account_name, 0));
-		mprSetPropertyValue(&auth, "domain", mprCreateStringVar(server_info->domain_name, 0));
-
+		ejs_systemAuth(tmp_ctx, &auth, username, password, domain, remote_host);
 	}  else {
+
 		mprSetPropertyValue(&auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(&auth, "report", mprCreateStringVar("Unknown Domain", 0));
 	}
@@ -160,5 +191,5 @@ void smb_setup_ejs_functions(void)
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "getDomainList", ejs_domain_list, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "userAuth", ejs_userAuth, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "userAuth", ejs_userAuth, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
