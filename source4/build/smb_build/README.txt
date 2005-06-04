@@ -2,6 +2,11 @@ The Samba Build System
 ----------------------
 ----------------------
 
+The build system basically has two main parts: the autoconf-generated 
+shell scripts which check for availability of functions and libraries 
+which is stored in the .m4 files and the information about the various 
+subsystems which is stored in the .mk files.
+
 Object Types
 ------------
 the build system knows about the following object types
@@ -36,11 +41,16 @@ LIBRARY:
 	a LIBRARY typicly has only glue code in it and depends on
 	SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
 
-
-Macrodescriptions
-----------------
-On top of build/smb_build/public.m4 is a list of all public macros of the build system.
-
+File summary:
+-------------
+public.m4 - public M4 macros of the build system
+config_mk.pm - Support for reading .mk files 
+dot.pm - Support for generating .dot files for analysis of dependencies
+input.pm - Input validation
+main.pm - Main
+makefile.pm - Makefile generation
+output.pm - Dependency calculation
+smb_build_h.pm - smb_build.h generation
 
 Layout
 -------
@@ -54,16 +64,16 @@ Toplevel file: configure.in
   (mostly compiler and basic C type and function
    checks)
 
-- subsystem specific stuff should be included by 'SMB_INLUDE_M4()'
+- subsystem specific stuff should be included by 'SMB_INCLUDE_M4()'
 
 
-Generating of 'configure'
+Generating the configure file
 -------------------------
 you need to rerun ./autogen.sh when 'configure.in' or any
 '.m4' file was modified, then you need to rerun configure.
 
 
-Generating of 'config.status'
+Generating config.status
 -----------------------------
 you need to run ./config.status (or 'configure') after a '.mk'
 file was changed.
@@ -73,10 +83,3 @@ Examples
 --------
 for now please take a look at the .m4 and .mk files
 you find in the source tree, they should be a good reference to start.
-
-
-README-TODO
-------------
-SMB_XYZ() vs. SMB_XYZ_MK()
-meaning of the macros parameters and the .mk file handling
-examples
