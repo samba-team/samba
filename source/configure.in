@@ -7,8 +7,7 @@ dnl AC_PREREQ(2.53)
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 
-sinclude(build/smb_build/env.m4)
-
+SMB_INCLUDE_M4(build/m4/env.m4)
 SMB_INCLUDE_M4(build/m4/rewrite.m4)
 
 SMB_INCLUDE_M4(lib/popt/config.m4)

@@ -499,3 +499,20 @@ Test::test_idl("refptr-top-push-double-fstnull", \%settings,
 	/* Windows gives [client runtime error 0x6f4] */
 
 ');
+
+Test::test_idl("ignore-ptr", \%settings,
+'
+	[public] void echo_TestRef([in,ignore] uint16 *foo, [in] uint16 *bar);
+',
+'	struct ndr_push *ndr = ndr_push_init();
+	struct echo_TestRef r;
+	uint16_t v = 10;
+	r.in.foo = &v; 
+	r.in.bar = &v;
+
+	if (NT_STATUS_IS_OK(ndr_push_echo_TestRef(ndr, NDR_IN, &r)))
+		return 1;
+
+	if (ndr->offset != 4)
+		return 2;
+');

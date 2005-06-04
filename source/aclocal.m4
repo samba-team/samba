@@ -289,5 +289,5 @@ if test "$2" != "/usr/lib" ; then
 fi
 ])
 
-sinclude(build/smb_build/public.m4)
-sinclude(build/smb_build/core.m4)
+sinclude(build/m4/public.m4)
+sinclude(build/m4/core.m4)
