@@ -225,6 +225,9 @@ int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif 
 int ldb_dn_cmp(const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
 
+/* case-fold a DN */
+char *ldb_dn_fold(struct ldb_module *module, const char *dn, int (*case_fold_attr_fn)(struct ldb_module * module, char * attr));
+
 /* create an empty message */
 struct ldb_message *ldb_msg_new(void *mem_ctx);
 
