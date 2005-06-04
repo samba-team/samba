@@ -271,6 +271,11 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto done;
 	}
 
+	if (argv[0]->type != MPR_TYPE_OBJECT) {
+		ejsSetErrorMsg(eid, "resolvename invalid arguments");
+		goto done;
+	}
+
 	if (argv[1]->type != MPR_TYPE_STRING) {
 		ejsSetErrorMsg(eid, "resolveName invalid arguments");
 		goto done;
@@ -291,8 +296,8 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 	nt_status = resolve_name(&name, tmp_ctx, &reply_addr);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		mprDestroyAllVars(argv[0]);
-		*argv[0] = mprCreateStringVar(reply_addr, True);
+		mprSetPropertyValue(argv[0], "value", 
+				    mprCreateStringVar(reply_addr, 1));
 	}
 
 	ejsSetReturnValue(eid, mprNTSTATUS(nt_status));
