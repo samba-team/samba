@@ -263,9 +263,22 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_FUNC_EXT(krb5_initlog, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_freelog, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_addlog_func, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_set_warn_dest, $KRB5_LIBS)
 
 	LIBS="$LIBS $KRB5_LIBS"
   
+	AC_CACHE_CHECK([for krb5_log_facility type],
+                samba_cv_HAVE_KRB5_LOG_FACILITY,[
+	AC_TRY_COMPILE([#include <krb5.h>],
+		[krb5_log_facility block;],
+		samba_cv_HAVE_KRB5_LOG_FACILITY=yes,
+		samba_cv_HAVE_KRB5_LOG_FACILITY=no)])
+
+	if test x"$samba_cv_HAVE_KRB5_LOG_FACILITY" = x"yes"; then
+		AC_DEFINE(HAVE_KRB5_LOG_FACILITY,1,
+		[Whether the type krb5_log_facility exists])
+	fi
+
 	AC_CACHE_CHECK([for krb5_encrypt_block type],
                 samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
 	AC_TRY_COMPILE([#include <krb5.h>],
