@@ -23,7 +23,13 @@ display_form(f);
 <%
 	if (request.REQUEST_METHOD == "POST") {
 
-		auth = userAuth(form.Username, form.Password, form.Domain);
+		var authinfo = new Object();
+		authinfo.username = form.Username;
+		authinfo.password = form.Password;
+		authinfo.domain = form.Domain;
+		authinfo.rhost = request['REMOTE_HOST'];
+
+		auth = userAuth(authinfo);
 		if (auth.result) {
 
 			/* for now just authenticate everyone */
