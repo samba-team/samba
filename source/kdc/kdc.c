@@ -28,65 +28,88 @@
 #include "kdc/kdc.h"
 #include "system/network.h"
 
+/* 
+ */
+
+static void kdc_recv_handler(struct event_context *ev, struct fd_event *fde,
+			     struct kdc_socket *kdc_socket)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
+	NTSTATUS status;
+	DATA_BLOB blob;
+	krb5_data reply;
+	size_t nread, dsize;
+	const char *src_addr;
+	int src_port;
+	struct sockaddr_in src_sock_addr;
+	struct ipv4_addr addr;
+	
+	status = socket_pending(kdc_socket->sock, &dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
+	if (blob.data == NULL) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+	status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread, 0,
+				 &src_addr, &src_port);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+	talloc_steal(tmp_ctx, src_addr);
+	blob.length = nread;
+	
+	DEBUG(2,("Received krb5 packet of length %d from %s:%d\n", 
+		 blob.length, src_addr, src_port));
+	
+	/* TODO:  This really should be in a utility function somewhere */
+	ZERO_STRUCT(src_sock_addr);
+#ifdef HAVE_SOCK_SIN_LEN
+	src_sock_addr.sin_len         = sizeof(src_sock_addr);
+#endif
+	addr                     = interpret_addr2(src_addr);
+	src_sock_addr.sin_addr.s_addr = addr.addr;
+	src_sock_addr.sin_port        = htons(src_port);
+	src_sock_addr.sin_family      = PF_INET;
+	
+	/* Call krb5 */
+	if (krb5_kdc_process_krb5_request(kdc_socket->kdc->krb5_context, 
+					  kdc_socket->kdc->config,
+					  blob.data, blob.length, 
+					  &reply,
+					  src_addr,
+					  &src_sock_addr) != -1) {
+		size_t sendlen = reply.length;
+		DATA_BLOB reply_blob;
+		reply_blob.data = reply.data;
+		reply_blob.length = reply.length;
+
+		/* Send the reply on it's way */
+		socket_sendto(kdc_socket->sock, &reply_blob, &sendlen, 0,
+			      src_addr, src_port);
+
+		krb5_data_free(&reply);
+	}
+	talloc_free(tmp_ctx);
+}
+
 /*
   handle fd events on a KDC socket
 */
 static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
 			       uint16_t flags, void *private)
 {
-	NTSTATUS status;
 	struct kdc_socket *kdc_socket = talloc_get_type(private, struct kdc_socket);
 	if (flags & EVENT_FD_WRITE) {
 		/* not sure on write events yet */
 	} else if (flags & EVENT_FD_READ) {
-		TALLOC_CTX *tmp_ctx = talloc_new(kdc_socket);
-		DATA_BLOB blob = data_blob_talloc(tmp_ctx, NULL, 64 * 1024);
-		krb5_data reply;
-		size_t nread;
-		const char *src_addr;
-		int src_port;
-		struct sockaddr_in src_sock_addr;
-		struct ipv4_addr addr;
-
-
-		status = socket_recvfrom(kdc_socket->sock, blob.data, blob.length, &nread, 0,
-					 &src_addr, &src_port);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(tmp_ctx);
-			return;
-		}
-		talloc_steal(tmp_ctx, src_addr);
-		blob.length = nread;
-		
-		DEBUG(2,("Received krb5 packet of length %d from %s:%d\n", 
-			 blob.length, src_addr, src_port));
-
-		/* TODO:  This really should be in a utility function somewhere */
-		ZERO_STRUCT(src_sock_addr);
-#ifdef HAVE_SOCK_SIN_LEN
-		src_sock_addr.sin_len         = sizeof(src_sock_addr);
-#endif
-		addr                     = interpret_addr2(src_addr);
-		src_sock_addr.sin_addr.s_addr = addr.addr;
-		src_sock_addr.sin_port        = htons(src_port);
-		src_sock_addr.sin_family      = PF_INET;
-
-		/* Call krb5 */
-		if (krb5_kdc_process_krb5_request(kdc_socket->kdc->krb5_context, 
-						  kdc_socket->kdc->config,
-						  blob.data, blob.length, 
-						  &reply,
-						  src_addr,
-						  &src_sock_addr) != -1) {
-			size_t sendlen = reply.length;
-			DATA_BLOB reply_blob;
-			reply_blob.data = reply.data;
-			reply_blob.length = reply.length;
-			socket_sendto(kdc_socket->sock, &reply_blob, &sendlen, 0,
-				      src_addr, src_port);
-			krb5_data_free(&reply);
-		}
-		talloc_free(tmp_ctx);
+		kdc_recv_handler(ev, fde, kdc_socket);
 	}
 }
 
@@ -222,8 +245,6 @@ static void kdc_task_init(struct task_server *task)
 		task_terminate(task, "kdc failed to setup interfaces");
 		return;
 	}
-
-	DEBUG(0, ("When I grow up, I want to be a KDC!\n"));
 }
 
 
