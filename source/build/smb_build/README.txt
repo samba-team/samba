@@ -31,7 +31,7 @@ BINARY:
 	(e.g. 'smbtorture' or 'ldbedit')
 	a BINARY typicly has only commandline handling and basic 
 	functionality code in it and depends on the functions of
-	SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
+	SUBSYSTEM's (REQUIRED_SUBSYSTEMS).
 
 LIBRARY:
 	a LIBRARY means a static and/or shared library,
@@ -39,7 +39,7 @@ LIBRARY:
 	(e.g. for libldb 'libldb.so', 'libldb.so.0' 'libldb.so.0.0.1'
 	      and libldb.a are created on linux)
 	a LIBRARY typicly has only glue code in it and depends on
-	SUBSYSTEM's (required_subsystems/REQUIRED_SUBSYSTEMS).
+	SUBSYSTEM's (REQUIRED_SUBSYSTEMS).
 
 File summary:
 -------------

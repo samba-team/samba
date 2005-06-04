@@ -15,9 +15,9 @@ fi
 
 SMB_INFO_BUILD_ENV=""
 
-sinclude(build/smb_build/check_path.m4)
-sinclude(build/smb_build/check_perl.m4)
-sinclude(build/smb_build/check_cc.m4)
-sinclude(build/smb_build/check_ld.m4)
-sinclude(build/smb_build/check_shld.m4)
-sinclude(build/smb_build/check_types.m4)
+sinclude(build/m4/check_path.m4)
+sinclude(build/m4/check_perl.m4)
+sinclude(build/m4/check_cc.m4)
+sinclude(build/m4/check_ld.m4)
+sinclude(build/m4/check_shld.m4)
+sinclude(build/m4/check_types.m4)
