@@ -48,6 +48,7 @@ static void usage(void)
 	printf("  -s base|sub|one  choose search scope\n");
 	printf("  -b basedn        choose baseDN\n");
 	printf("  -i               read search expressions from stdin\n");
+        printf("  -S               sort returned attributes\n");
 	printf("  -o options       pass options like modules to activate\n");
 	printf("              e.g: -o modules:timestamps\n");
 	exit(1);
@@ -56,6 +57,7 @@ static void usage(void)
 static int do_search(struct ldb_context *ldb,
 		     const char *basedn,
 		     int scope,
+                     int sort_attribs,
 		     const char *expression,
 		     const char * const *attrs)
 {
@@ -77,6 +79,15 @@ static int do_search(struct ldb_context *ldb,
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = msgs[i];
 
+                if (sort_attribs) {
+                        /*
+                         * Ensure attributes are always returned in the same
+                         * order.  For testing, this makes comparison of old
+                         * vs. new much easier.
+                         */
+                        ldb_msg_sort_elements(ldif.msg);
+                }
+                
 		ldb_ldif_write_file(ldb, stdout, &ldif);
 	}
 
@@ -100,7 +111,7 @@ static int do_search(struct ldb_context *ldb,
 	const char **options = NULL;
 	int opt, ldbopts;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	int interactive = 0, ret=0;
+	int interactive = 0, sort_attribs=0, ret=0;
 
 	ldb_url = getenv("LDB_URL");
 
@@ -128,6 +139,10 @@ static int do_search(struct ldb_context *ldb,
 		case 'i':
 			interactive = 1;
 			break;
+
+                case 'S':
+                        sort_attribs = 1;
+                        break;
 
 		case 'o':
 			options = ldb_options_parse(options, &ldbopts, optarg);
@@ -168,12 +183,12 @@ static int do_search(struct ldb_context *ldb,
 	if (interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {
-			if (do_search(ldb, basedn, scope, line, attrs) == -1) {
+			if (do_search(ldb, basedn, scope, sort_attribs, line, attrs) == -1) {
 				ret = -1;
 			}
 		}
 	} else {
-		ret = do_search(ldb, basedn, scope, argv[0], attrs);
+		ret = do_search(ldb, basedn, scope, sort_attribs, argv[0], attrs);
 	}
 
 	talloc_free(ldb);

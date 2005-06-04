@@ -62,6 +62,12 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 	}
 #endif
 
+#if HAVE_SQLITE3
+	if (strncmp(url, "sqlite:", 7) == 0) {
+		ldb_ctx = lsqlite3_connect(url, flags, options);
+	}
+#endif
+
 
 	if (!ldb_ctx) {
 		errno = EINVAL;
