@@ -484,7 +484,7 @@ static int smb_krb5_context_destory_1(void *ptr)
 	return 0;
 }
 
-#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined(HAVE_KRB5_FREELOG)
+#ifdef HAVE_KRB5_LOGGING_CONTROL
 static int smb_krb5_context_destory_2(void *ptr) 
 {
 	struct smb_krb5_context *ctx = ptr;
@@ -547,7 +547,7 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 		}
 	}
 
-#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined(HAVE_KRB5_FREELOG)
+#ifdef HAVE_KRB5_LOGGING_CONTROL
 	/* TODO: Should we have a different name here? */
 	ret = krb5_initlog((*smb_krb5_context)->krb5_context, "Samba", &(*smb_krb5_context)->logf);
 	
