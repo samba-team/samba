@@ -35,12 +35,12 @@ int d_vfprintf(FILE *f, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p, *p2;
 	int ret, maxlen, clen;
-	char *msgstr;
 	va_list ap2;
 
+	/* do any message translations */
 	VA_COPY(ap2, ap);
 
-	ret = vasprintf(&p, msgstr, ap2);
+	ret = vasprintf(&p, format, ap2);
 
 	if (ret <= 0) return ret;
 
