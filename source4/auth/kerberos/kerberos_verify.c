@@ -132,6 +132,7 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 			  last_error_message));
 	} else {
 		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN; /* Pick an error... */
+		last_error_message = "No principals in Keytab";
 		while (ret && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
 			krb5_error_code upn_ret;
 			upn_ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
