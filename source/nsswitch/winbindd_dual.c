@@ -4,7 +4,7 @@
    Winbind background daemon
 
    Copyright (C) Andrew Tridgell 2002
-   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Volker Lendecke 2004,2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -64,7 +64,9 @@ static void dual_client_read(struct winbindd_cli_state *state)
 		 (char *)&state->request, 
 		 sizeof(state->request) - state->read_buf_len);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full request.\n", n, (unsigned long)(sizeof(state->request) - n - state->read_buf_len) ));
+	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full "
+		  "request.\n", n, (unsigned long)(sizeof(state->request) - n -
+						   state->read_buf_len) ));
 
 	/* Read failed, kill client */
 	
@@ -273,6 +275,8 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 {
 	struct winbindd_async_request *state, *tmp;
 
+	SMB_ASSERT(continuation != NULL);
+
 	state = TALLOC_P(mem_ctx, struct winbindd_async_request);
 
 	if (state == NULL) {
@@ -338,8 +342,7 @@ static void async_reply_recv(void *private, BOOL success)
 
 	schedule_async_request(child);
 
-	if (state->continuation != NULL)
-		state->continuation(state->private, True);
+	state->continuation(state->private, True);
 }
 
 static void schedule_async_request(struct winbindd_child *child)

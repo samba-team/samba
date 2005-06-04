@@ -327,7 +327,6 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	struct winbindd_request *request;
 	struct winbindd_response *response;
 	struct init_child_state *state;
-	struct winbindd_domain *our_domain;
 
 	mem_ctx = talloc_init("init_child_connection");
 	if (mem_ctx == NULL) {
@@ -372,13 +371,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	request->cmd = WINBINDD_GETDCNAME;
 	fstrcpy(request->domain_name, domain->name);
 
-	our_domain = find_our_domain();
-	if (our_domain == NULL) {
-		DEBUG(5, ("Could not find our domain\n"));
-		return WINBINDD_ERROR;
-	}
-
-	async_domain_request(mem_ctx, our_domain, request, response,
+	async_domain_request(mem_ctx, find_our_domain(), request, response,
 			     init_child_getdc_recv, state);
 	return WINBINDD_PENDING;
 }

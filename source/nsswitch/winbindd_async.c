@@ -66,7 +66,7 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 {
 	struct do_async_state *state;
 
-	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
+	state = TALLOC_P(mem_ctx, struct do_async_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(mem_ctx, False, NULL, c, private);
@@ -93,7 +93,7 @@ static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 {
 	struct do_async_state *state;
 
-	state = TALLOC_ZERO_P(mem_ctx, struct do_async_state);
+	state = TALLOC_P(mem_ctx, struct do_async_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		cont(mem_ctx, False, NULL, c, private);
