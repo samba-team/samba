@@ -2,11 +2,12 @@
   Demonstrate use of resolveName() js function
 */
 
-var result;
-res = resolveName(result, "frogurt");
+var result = new Object();
 
-if (!res.is_ok) {
-	println(res.errstr);
+res = resolveName(result, ARGV[0]);
+
+if (res.is_ok) {
+	println(result.value);
 } else {
-	println(result);
+	println(res.errstr);
 }
