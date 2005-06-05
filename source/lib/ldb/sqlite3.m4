@@ -39,11 +39,24 @@ if test x"$with_sqlite3_support" != x"no"; then
   # now see if we can find the sqlite3 libs in standard paths
   AC_CHECK_LIB_EXT(sqlite3, SQLITE3_LIBS, sqlite3_open)
 
-  LIBS="$LIBS $SQLITE3_LIBS"
-  
-  AC_DEFINE(HAVE_SQLITE3,1,[Whether sqlite3 is available])
-  AC_MSG_CHECKING(whether SQLITE3 support is used)
-  AC_MSG_RESULT(yes)
+  if test x"$ac_cv_lib_ext_sqlite3_sqlite3_open" = x"yes"; then
+    AC_DEFINE(HAVE_SQLITE3,1,[Whether sqlite3 is available])
+    AC_MSG_CHECKING(whether SQLITE3 support is used)
+    AC_MSG_RESULT(yes)
+    with_sqlite3_support=yes
+    SMB_EXT_LIB_ENABLE(SQLITE3,YES)
+  else
+    if test x"$with_sqlite3_support" = x"yes"; then
+	AC_MSG_ERROR(libsqlite3 is needed for SQLITE3 support)
+    else
+	AC_MSG_WARN(libsqlite3 is needed for SQLITE3 support)
+    fi
+
+    SQLITE3_LIBS=""
+    with_sqlite3_support=no
+  fi
+
+  LIBS=$ac_save_LIBS;
 fi
 
 SMB_EXT_LIB(SQLITE3,[${SQLITE3_LIBS}],[${SQLITE3_CFLAGS}],[${SQLITE3_CPPFLAGS}],[${SQLITE3_LDFLAGS}])
