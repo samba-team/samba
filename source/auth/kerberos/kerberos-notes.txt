@@ -67,7 +67,7 @@ For example, this is how HTTP/, DNS/ and CIFS/ can use HOST/ without
 any explicit entry.
 
 
-Jean-Baptiste.Marchand@hsc.fr remainds me:
+Jean-Baptiste.Marchand@hsc.fr reminds me:
 
 > This is the SPNMappings attribute in Active Directory:
 
@@ -219,6 +219,41 @@ We currently define 3 classes:
 I also now specify the kerberos principal as an explict parameter, not
 an in/out value on the entry itself.
 
+libkdc
+------
+
+Samba4 needs to be built as a single binary (design requirement), and
+this should include the KDC.  Samba also (and perhaps more
+importantly) needs to control the configuration environment of the
+KDC.  
+
+The interface we have defined for libkdc allow for packet injection
+into the post-socket layer, with a defined krb5_context and
+kdb5_kdc_configuration structure.  These effectively redirect the
+kerberos warnings, logging and database calls as we require.
+
+Using our socket lib
+--------------------
+
+An important detail in the use of libkdc is that we use our own socket
+lib.  This allows the KDC code to be as portable as the rest of samba
+(this cuts both ways), but far more importantly it ensures a
+consistancy in the handling of requests, binding to sockets etc.
+
+To handle TCP, we will use of our socket layer in much the same way as
+we deal with TCP for CIFS.
+
+Kerberos logging support
+------------------------
+
+Samba now (optionally in the main code, required for the KDC) uses the
+krb5_log_facility from Heimdal.  This allows us to redirect the
+warnings and status from the KDC (and client/server kerberos code) to
+Samba's DEBUG() system.
+
+We have added krb5_freelog() to be the opposite of krb5_initlog(), and
+ensure we do not leak memeory in this operation. (krb5_closelog() does
+not free everything that krb5_initlog creates).
 
 
 
