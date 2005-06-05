@@ -138,7 +138,12 @@ struct winbindd_async_request;
 /* Async child */
 
 struct winbindd_child {
+	struct winbindd_child *next, *prev;
+
 	pid_t pid;
+	struct winbindd_domain *domain;
+	pstring logfilename;
+
 	struct fd_event event;
 	struct winbindd_async_request *requests;
 };

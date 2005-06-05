@@ -202,14 +202,11 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
+static BOOL do_sigchld;
+
 static void sigchld_handler(int signum)
 {
-	pid_t pid;
-	int status;
-
-	while ((pid = wait(&status)) != -1 || errno == EINTR) {
-		continue; /* Reap children */
-	}
+	do_sigchld = True;
 	sys_select_signal();
 }
 
@@ -878,6 +875,16 @@ static void process_loop(void)
 		print_winbindd_status();
 		do_sigusr2 = False;
 	}
+
+	if (do_sigchld) {
+		pid_t pid;
+
+		do_sigchld = False;
+
+		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
+			winbind_child_died(pid);
+		}
+	}
 }
 
 /* Main function */
@@ -1047,11 +1054,7 @@ int main(int argc, char **argv)
 	
 	init_domain_list();
 
-	if (!init_idmap_child()) {
-		DEBUG(1, ("Could not init idmap child -- "
-			  "netlogon proxy only\n"));
-		idmap_set_proxyonly();
-	}
+	init_idmap_child();
 
 	/* Loop waiting for requests */
 

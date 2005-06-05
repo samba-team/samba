@@ -305,7 +305,7 @@ static void async_request_sent(void *private, BOOL success)
 		talloc_get_type_abort(private, struct winbindd_async_request);
 
 	if (!success) {
-		DEBUG(5, ("Could not send async request"));
+		DEBUG(5, ("Could not send async request\n"));
 
 		state->response->length = sizeof(struct winbindd_response);
 		state->response->result = WINBINDD_ERROR;
@@ -345,19 +345,36 @@ static void async_reply_recv(void *private, BOOL success)
 	state->continuation(state->private, True);
 }
 
+static BOOL fork_domain_child(struct winbindd_child *child);
+
 static void schedule_async_request(struct winbindd_child *child)
 {
 	struct winbindd_async_request *request = child->requests;
 
-	if (request == NULL)
+	if (request == NULL) {
 		return;
+	}
 
-	if (child->event.flags != 0)
+	if (child->event.flags != 0) {
 		return;		/* Busy */
+	}
+
+	if ((child->pid == 0) && (!fork_domain_child(child))) {
+		/* Cancel all outstanding requests */
+
+		while (request != NULL) {
+			/* request might be free'd in the continuation */
+			struct winbindd_async_request *next = request->next;
+			request->continuation(request->private, False);
+			request = next;
+		}
+		return;
+	}
 
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
 			  async_request_sent, request);
+	return;
 }
 
 struct domain_request_state {
@@ -496,26 +513,55 @@ static void child_process_request(struct winbindd_domain *domain,
 	talloc_destroy(state->mem_ctx);
 }
 
-BOOL setup_domain_child(struct winbindd_domain *domain,
+void setup_domain_child(struct winbindd_domain *domain,
 			struct winbindd_child *child,
 			const char *explicit_logfile)
 {
-	int fdpair[2];
-	struct winbindd_cli_state state;
-
-	extern BOOL override_logfile;
-	pstring logfilename;
-
 	if (explicit_logfile != NULL) {
-		pstr_sprintf(logfilename, "%s/log.winbindd-%s",
+		pstr_sprintf(child->logfilename, "%s/log.winbindd-%s",
 			     dyn_LOGFILEBASE, explicit_logfile);
 	} else if (domain != NULL) {
-		pstr_sprintf(logfilename, "%s/log.wb-%s",
+		pstr_sprintf(child->logfilename, "%s/log.wb-%s",
 			     dyn_LOGFILEBASE, domain->name);
 	} else {
 		smb_panic("Internal error: domain == NULL && "
 			  "explicit_logfile == NULL");
 	}
+
+	child->domain = domain;
+}
+
+struct winbindd_child *children = NULL;
+
+void winbind_child_died(pid_t pid)
+{
+	struct winbindd_child *child;
+
+	for (child = children; child != NULL; child = child->next) {
+		if (child->pid == pid) {
+			break;
+		}
+	}
+
+	if (child == NULL) {
+		DEBUG(0, ("Unknown child %d died!\n", pid));
+		return;
+	}
+
+	remove_fd_event(&child->event);
+	close(child->event.fd);
+	child->event.fd = 0;
+	child->event.flags = 0;
+	child->pid = 0;
+
+	schedule_async_request(child);
+}
+
+static BOOL fork_domain_child(struct winbindd_child *child)
+{
+	int fdpair[2];
+	struct winbindd_cli_state state;
+	extern BOOL override_logfile;
 
 	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
@@ -536,6 +582,8 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 	if (child->pid != 0) {
 		/* Parent */
 		close(fdpair[0]);
+		child->next = child->prev = NULL;
+		DLIST_ADD(children, child);
 		child->event.fd = fdpair[1];
 		child->event.flags = 0;
 		child->requests = NULL;
@@ -557,7 +605,7 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 	close_conns_after_fork();
 
 	if (!override_logfile) {
-		lp_set_logfile(logfilename);
+		lp_set_logfile(child->logfilename);
 		reopen_logs();
 	}
 	
@@ -583,7 +631,7 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 				 (int)state.request.cmd));
 
 			state.request.null_term = '\0';
-			child_process_request(domain, &state);
+			child_process_request(child->domain, &state);
 
 			if (state.response.result == WINBINDD_OK)
 				cache_store_response(sys_getpid(),
