@@ -14,7 +14,7 @@ use smb_build::output;
 use smb_build::dot;
 use strict;
 
-my $config_list = "build/smb_build/config.list";
+my $config_list = "config.list";
 
 sub smb_build_main($)
 {
