@@ -251,6 +251,9 @@ static void kdc_task_init(struct task_server *task)
 	}
 	krb5_kdc_default_config(kdc->config);
 
+	/* NAT and the like make this pointless, and painful */
+	kdc->config->check_ticket_addresses = FALSE;
+
 	initialize_krb5_error_table();
 
 	ret = smb_krb5_init_context(kdc, &kdc->smb_krb5_context);
