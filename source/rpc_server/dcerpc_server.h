@@ -71,7 +71,7 @@ struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
 	struct dcesrv_connection *conn;
 	struct dcesrv_connection_context *context;
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 
 	/* the backend can mark the call
 	 * with DCESRV_CALL_STATE_FLAG_ASYNC

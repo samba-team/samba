@@ -31,7 +31,7 @@
 */
 BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 {
-	struct dcerpc_packet *pkt = &call->pkt;
+	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = &dce_conn->auth_state;
 	NTSTATUS status;
@@ -77,7 +77,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
   add any auth information needed in a bind ack, and process the authentication
   information found in the bind.
 */
-BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *pkt)
+BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
@@ -118,7 +118,7 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 */
 BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 {
-	struct dcerpc_packet *pkt = &call->pkt;
+	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
@@ -168,7 +168,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 */
 BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
 {
-	struct dcerpc_packet *pkt = &call->pkt;
+	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
@@ -202,7 +202,7 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
   add any auth information needed in a alter ack, and process the authentication
   information found in the alter.
 */
-BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct dcerpc_packet *pkt)
+BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
@@ -275,7 +275,7 @@ static NTSTATUS dcesrv_check_connect_verifier(DATA_BLOB *blob)
 */
 BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 {
-	struct dcerpc_packet *pkt = &call->pkt;
+	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	DATA_BLOB auth_blob;
 	struct dcerpc_auth auth;
@@ -365,7 +365,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
    push a signed or sealed dcerpc request packet into a blob
 */
 BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
-			  DATA_BLOB *blob, struct dcerpc_packet *pkt)
+			  DATA_BLOB *blob, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
@@ -387,7 +387,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

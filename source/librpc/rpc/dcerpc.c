@@ -182,11 +182,11 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c,
 }
 
 /* 
-   parse a data blob into a dcerpc_packet structure. This handles both
+   parse a data blob into a ncacn_packet structure. This handles both
    input and output packets
 */
 static NTSTATUS dcerpc_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			    struct dcerpc_packet *pkt)
+			    struct ncacn_packet *pkt)
 {
 	struct ndr_pull *ndr;
 
@@ -199,7 +199,7 @@ static NTSTATUS dcerpc_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	return ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	return ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 }
 
 /*
@@ -233,7 +233,7 @@ static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
 */
 static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-					 struct dcerpc_packet *pkt)
+					 struct ncacn_packet *pkt)
 {
 	struct ndr_pull *ndr;
 	NTSTATUS status;
@@ -256,7 +256,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c,
 	}
 
 	/* pull the basic packet */
-	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	status = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -350,7 +350,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c,
 */
 static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-					 struct dcerpc_packet *pkt)
+					 struct ncacn_packet *pkt)
 {
 	NTSTATUS status;
 	struct ndr_push *ndr;
@@ -375,7 +375,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c,
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
-	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -482,7 +482,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c,
 /* 
    fill in the fixed values in a dcerpc header 
 */
-static void init_dcerpc_hdr(struct dcerpc_connection *c, struct dcerpc_packet *pkt)
+static void init_dcerpc_hdr(struct dcerpc_connection *c, struct ncacn_packet *pkt)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
@@ -581,7 +581,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		     const struct dcerpc_syntax_id *syntax,
 		     const struct dcerpc_syntax_id *transfer_syntax)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -652,14 +652,13 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	return status;	
 }
 
-
 /* 
    perform a continued bind (and auth3)
 */
 NTSTATUS dcerpc_auth3(struct dcerpc_connection *c, 
 		      TALLOC_CTX *mem_ctx)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -721,7 +720,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 				     DATA_BLOB *data,
 				     NTSTATUS status)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	struct rpc_request *req;
 	uint_t length;
 	
@@ -851,7 +850,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 					DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	DATA_BLOB blob;
 	uint32_t remaining, chunk_size;
 	BOOL first_packet = True;
@@ -1355,7 +1354,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 			      const struct dcerpc_syntax_id *syntax,
 			      const struct dcerpc_syntax_id *transfer_syntax)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
