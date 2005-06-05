@@ -736,9 +736,6 @@ esac
 AC_SUBST(SMBD_EXTRA_OBJS)
 AC_SUBST(SMBD_EXTRA_LIBS)
 
-sinclude(lib/ldb/ldap.m4)
-sinclude(lib/ldb/sqlite3.m4)
-
 ###############################################
 # test for where we get crypt() from
 AC_SEARCH_LIBS(crypt, [crypt],
