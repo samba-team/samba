@@ -315,7 +315,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server,
 		if (msg->pending == NULL) {
 			EVENT_FD_WRITEABLE(msg->event.fde);
 		}
-		DLIST_ADD(msg->pending, rec);
+		DLIST_ADD_END(msg->pending, rec, struct messaging_rec *);
 		return NT_STATUS_OK;
 	}
 
@@ -426,19 +426,26 @@ struct irpc_list {
 */
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct dcerpc_interface_table *table, 
-		       int call, irpc_function_t fn)
+		       int callnum, irpc_function_t fn)
 {
 	struct irpc_list *irpc;
 
-	irpc = talloc(msg_ctx, struct irpc_list);
-	NT_STATUS_HAVE_NO_MEMORY(irpc);
+	/* override an existing handler, if any */
+	for (irpc=msg_ctx->irpc; irpc; irpc=irpc->next) {
+		if (irpc->table == table && irpc->callnum == callnum) {
+			break;
+		}
+	}
+	if (irpc == NULL) {
+		irpc = talloc(msg_ctx, struct irpc_list);
+		NT_STATUS_HAVE_NO_MEMORY(irpc);
+		DLIST_ADD(msg_ctx->irpc, irpc);
+	}
 
 	irpc->table   = table;
-	irpc->callnum = call;
+	irpc->callnum = callnum;
 	irpc->fn      = fn;
 	GUID_from_string(irpc->table->uuid, &irpc->uuid);
-
-	DLIST_ADD(msg_ctx->irpc, irpc);
 
 	return NT_STATUS_OK;
 }
