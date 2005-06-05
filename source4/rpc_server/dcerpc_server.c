@@ -363,7 +363,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 }
 
 
-static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
+static void dcesrv_init_hdr(struct ncacn_packet *pkt)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
@@ -382,7 +382,7 @@ static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
 */
 static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 
@@ -421,7 +421,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 */
 static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 
@@ -460,7 +460,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
 	const char *uuid, *transfer_syntax;
 	uint32_t if_version, transfer_syntax_version;
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
@@ -660,7 +660,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 */
 static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
-	struct dcerpc_packet pkt;
+	struct ncacn_packet pkt;
 	struct dcesrv_call_reply *rep;
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
@@ -837,7 +837,7 @@ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	do {
 		uint32_t length;
 		struct dcesrv_call_reply *rep;
-		struct dcerpc_packet pkt;
+		struct ncacn_packet pkt;
 
 		rep = talloc(call, struct dcesrv_call_reply);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
@@ -959,7 +959,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
+	status = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(dce_conn->partial_input.data);
 		talloc_free(call);
