@@ -22,7 +22,7 @@ sub generate_shared_library($)
 {
 	my $lib = shift;
 
-	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{DEPEND_LIST}} = ();
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".so";
 	$lib->{TARGET} = "bin/lib$lib->{LIBRARY_NAME}";
@@ -39,7 +39,7 @@ sub generate_static_library($)
 {
 	my $lib = shift;
 
-	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
+	@{$lib->{DEPEND_LIST}} = ();
 
 	$lib->{LIBRARY_NAME} = lc($lib->{NAME}).".a";
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
@@ -53,7 +53,7 @@ sub generate_binary($)
 {
 	my $bin = shift;
 
-	@{$bin->{DEPEND_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
+	@{$bin->{DEPEND_LIST}} = ();
 	@{$bin->{LINK_LIST}} = ("\$($bin->{TYPE}_$bin->{NAME}\_OBJS)");
 	@{$bin->{LINK_FLAGS}} = ();
 
@@ -64,13 +64,12 @@ sub generate_binary($)
 sub create_output($)
 {
 	my $depend = shift;
-	my %output = ();
 	my $part;
 
 	$depend->{PROTO}{OUTPUT_TYPE} = "OBJLIST";
 	$depend->{PROTO}{TYPE} = "PROTO";
 	$depend->{PROTO}{NAME} = "PROTO";
-	
+
 	foreach $part (values %{$depend}) {
 		next if not defined($part->{OUTPUT_TYPE});
 
@@ -90,13 +89,17 @@ sub create_output($)
 	foreach $part (values %{$depend}) {
 		next if not defined($part->{OUTPUT_TYPE});
 
+		foreach (@{$part->{DEPENDENCIES}}) {
+			my $elem = $$_;
+			push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
+		}
+
 		# Always import the CFLAGS and CPPFLAGS of the unique dependencies
 		foreach my $elem (values %{$part->{UNIQUE_DEPENDENCIES}}) {
 			next if $elem == $part;
 
 			push(@{$part->{CPPFLAGS}}, @{$elem->{CPPFLAGS}}) if defined(@{$elem->{CPPFLAGS}});
 			push(@{$part->{CFLAGS}}, @{$elem->{CFLAGS}}) if defined(@{$elem->{CFLAGS}});
-			push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
 			push(@{$part->{LINK_LIST}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});

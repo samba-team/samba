@@ -12,15 +12,12 @@ use strict;
 sub _prepare_command_interpreters($)
 {
 	my $ctx = shift;
-	my $output;
 
-	$output = << '__EOD__';
+	return << '__EOD__';
 SHELL=/bin/sh
 PERL=@PERL@
 
 __EOD__
-
-	return $output;
 }
 
 sub _prepare_path_vars($)
@@ -83,9 +80,8 @@ __EOD__
 sub _prepare_compiler_linker($)
 {
 	my $ctx = shift;
-	my $output;
 
-	$output = << '__EOD__';
+	return << '__EOD__';
 CC=@CC@
 CFLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
 
@@ -99,8 +95,6 @@ SHLD=@CC@
 SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
 
 __EOD__
-
-	return $output;
 }
 
 
@@ -111,13 +105,9 @@ sub add_target_flags($$)
 {
 	my $ctx = shift;
 	my $name = shift;
-	my $output = "";
-	if ($ctx->{TARGET_CFLAGS}) {
-$output .= << "__EOD__";
-$name: TARGET_CFLAGS = $ctx->{TARGET_CFLAGS}
-__EOD__
-}
-        return $output;
+
+	return "" unless ($ctx->{TARGET_CFLAGS});
+	return "$name: TARGET_CFLAGS = $ctx->{TARGET_CFLAGS}\n";
 }
 
 
@@ -151,9 +141,8 @@ __EOD__
 sub _prepare_IDL($)
 {
 	my $ctx = shift;
-	my $output;
 
-	$output = << '__EOD__';
+	return << '__EOD__';
 idl_full: build/pidl/idl.pm
 	CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh FULL
 
@@ -179,16 +168,13 @@ test-noswrap: all
 	./script/tests/selftest.sh `pwd`/prefix-test
 
 __EOD__
-
-	return $output;
 }
 
 sub _prepare_dummy_MAKEDIR()
 {
 	my $ctx = shift;
-	my $output;
 
-	$output =  << '__EOD__';
+	return  << '__EOD__';
 bin/.dummy:
 	@: >> $@ || : > $@
 
@@ -198,8 +184,6 @@ dynconfig.o: dynconfig.c Makefile
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 __EOD__
-
-	return $output;
 }
 
 ###########################################################
@@ -229,14 +213,11 @@ sub _prepare_std_CC_rule($$$$$)
 	my $output;
 
 	$output = << "__EOD__";
-###################################
-# Start $comment
+# $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
 	\@\$(CC) \$(TARGET_CFLAGS) \$(CFLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
-#End $comment
-###################################
 
 __EOD__
 
@@ -298,11 +279,8 @@ sub _prepare_obj_list($$)
 	my $tmplist = array2oneperline($ctx->{OBJ_LIST});
 
 	return << "__EOD__";
-###################################
-# Start $var $ctx->{NAME} OBJ LIST
+# $var $ctx->{NAME} OBJ LIST
 $var\_$ctx->{NAME}_OBJS =$tmplist
-# End $var $ctx->{NAME} OBJ LIST
-###################################
 
 __EOD__
 }
@@ -315,11 +293,7 @@ sub _prepare_cflags($$)
 	my $tmplist = array2oneperline($ctx->{CFLAGS});
 
 	return << "__EOD__";
-###################################
-# Start $var $ctx->{NAME} CFLAGS
 $var\_$ctx->{NAME}_CFLAGS =$tmplist
-# End $var $ctx->{NAME} CFLAGS
-###################################
 
 __EOD__
 }
@@ -360,17 +334,13 @@ sub _prepare_shared_library_rule($)
 	$tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = << "__EOD__";
-###################################
-# Start Library $ctx->{NAME}
-#
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 #
 LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
 LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 
-# Shared $ctx->{LIBRARY_NAME}
-$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
@@ -395,9 +365,6 @@ __EOD__
 $output .= << "__EOD__";
 library_$ctx->{NAME}: basics bin/lib$ctx->{LIBRARY_NAME}
 
-# End Library $ctx->{NAME}
-###################################
-
 __EOD__
 
 $output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
@@ -407,8 +374,11 @@ $output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
 
 sub _prepare_objlist_rule($)
 {
-	my $t = shift;
-	return "$t->{TYPE}_$t->{NAME}: \$($t->{TYPE}_$t->{NAME}_OBJS)\n";
+	my $ctx = shift;
+	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+	return "
+$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n
+$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST)\n";
 }
 
 ###########################################################
@@ -445,22 +415,16 @@ sub _prepare_static_library_rule($)
 	$tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = << "__EOD__";
-###################################
-# Start Library $ctx->{NAME}
-#
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 #
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 #
-# Static $ctx->{LIBRARY_NAME}
-$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{TARGET}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) \$(LIBRARY_$ctx->{NAME}_OBJS) bin/.dummy
 	\@echo Linking \$@
 	\@\$(STLD) \$(STLD_FLAGS) \$@ \\
 		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
 
 library_$ctx->{NAME}: basics $ctx->{TARGET}
-# End Library $ctx->{NAME}
-###################################
 
 __EOD__
 
@@ -498,22 +462,18 @@ sub _prepare_binary_rule($)
 	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = << "__EOD__";
-###################################
-# Start Binary $ctx->{BINARY}
 #
 BINARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 BINARY_$ctx->{NAME}_LINK_LIST =$tmplink
 BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
-bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST)
+bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ctx->{NAME}_OBJS)
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
-# End Binary $ctx->{BINARY}
-###################################
 
 __EOD__
 
@@ -587,16 +547,10 @@ sub _prepare_make_target($)
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
-	$output = << "__EOD__";
-###################################
-# Start Target $ctx->{TARGET}
+	return << "__EOD__";
 $ctx->{TARGET}: basics $tmpdepend
-# End Target $ctx->{TARGET}
-###################################
 
 __EOD__
-
-	return $output;
 }
 
 sub _prepare_target_settings($)
