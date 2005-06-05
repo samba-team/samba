@@ -87,7 +87,7 @@ sub _prepare_compiler_linker($)
 
 	$output = << '__EOD__';
 CC=@CC@
-CC_FLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
+CFLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
 
 LD=@CC@
 LD_FLAGS=@LDFLAGS@ @CFLAGS@ -Lbin
@@ -194,7 +194,7 @@ bin/.dummy:
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(CC_FLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 __EOD__
@@ -233,7 +233,7 @@ sub _prepare_std_CC_rule($$$$$)
 # Start $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
-	\@\$(CC) \$(TARGET_CFLAGS) \$(CC_FLAGS) $flags -c \$< -o \$\@
+	\@\$(CC) \$(TARGET_CFLAGS) \$(CFLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 #End $comment
 ###################################
@@ -403,6 +403,12 @@ __EOD__
 $output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
 
 	return $output;
+}
+
+sub _prepare_objlist_rule($)
+{
+	my $t = shift;
+	return "$t->{TYPE}_$t->{NAME}: \$($t->{TYPE}_$t->{NAME}_OBJS)\n";
 }
 
 ###########################################################
@@ -632,7 +638,7 @@ showlayout:
 
 showflags:
 	@echo "Samba will be compiled with flags:"
-	@echo "  CC_FLAGS = $(CC_FLAGS)"
+	@echo "  CFLAGS = $(CFLAGS)"
 	@echo "  LD_FLAGS = $(LD_FLAGS)"
 	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
@@ -752,6 +758,7 @@ sub _prepare_rule_lists($)
 
 	foreach my $key (values %{$depend}) {
 		next if not defined $key->{OUTPUT_TYPE};
+		($output .= _prepare_objlist_rule($key)) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 		($output .= _prepare_shared_library_rule($key)) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		($output .= _prepare_binary_rule($key)) if $key->{OUTPUT_TYPE} eq "BINARY";

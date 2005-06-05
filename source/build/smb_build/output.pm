@@ -14,7 +14,8 @@ sub generate_objlist($)
 {
 	my $subsys = shift;
 
-	$subsys->{TARGET} = $subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
+	$subsys->{TARGET} = "$subsys->{TYPE}_$subsys->{NAME}";
+	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
 }
 
 sub generate_shared_library($)
