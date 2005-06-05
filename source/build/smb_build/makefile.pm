@@ -97,20 +97,6 @@ SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
 __EOD__
 }
 
-
-#############################
-# return makefile fragment for 
-# target specific rules
-sub add_target_flags($$)
-{
-	my $ctx = shift;
-	my $name = shift;
-
-	return "" unless ($ctx->{TARGET_CFLAGS});
-	return "$name: TARGET_CFLAGS = $ctx->{TARGET_CFLAGS}\n";
-}
-
-
 sub _prepare_default_rule($)
 {
 	my $ctx = shift;
@@ -367,8 +353,6 @@ library_$ctx->{NAME}: basics bin/lib$ctx->{LIBRARY_NAME}
 
 __EOD__
 
-$output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
-
 	return $output;
 }
 
@@ -376,9 +360,19 @@ sub _prepare_objlist_rule($)
 {
 	my $ctx = shift;
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	return "
-$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n
-$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST)\n";
+	my $output;
+
+	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
+
+	$output .= "$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST)";
+
+	if (defined ($ctx->{TARGET_CFLAGS})) {
+		$output .= "\n\t@\$(MAKE) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) TARGET_CFLAGS=\"" . join(' ', @{$ctx->{TARGET_CFLAGS}}) . "\"\n";
+	} else {
+		$output .=" \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
+	}
+
+	return $output;
 }
 
 ###########################################################
@@ -428,8 +422,6 @@ library_$ctx->{NAME}: basics $ctx->{TARGET}
 
 __EOD__
 
-$output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
-
 	return $output;
 }
 
@@ -476,8 +468,6 @@ bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ct
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 
 __EOD__
-
-$output .= add_target_flags($ctx, "binary_" . $ctx->{BINARY});
 
 	return $output;
 }
