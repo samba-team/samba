@@ -663,8 +663,6 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 				p++;
 			}
 			if (strcasecmp(str, alias_from) == 0) {
-				krb5_warnx(context, "LDB_lookup_spn_alias: got alias %s for service %s", 
-					   mapping, alias_from);
 				*alias_to = mapping;
 				return 0;
 			}
@@ -676,34 +674,17 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 
 static krb5_error_code LDB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
-	struct ldb_context *sam_db;
-
 	if (db->hdb_master_key_set) {
 		krb5_warnx(context, "LDB_open: use of a master key incompatible with LDB\n");
 		krb5_set_error_string(context, "LDB_open: use of a master key incompatible with LDB\n");
 		return HDB_ERR_NOENTRY;
 	}		
 
-	/* in future, we could cache the connect here, but for now KISS */
-
-	sam_db = ldb_connect(db->hdb_name, 0, NULL);
-	if (sam_db == NULL) {
-		krb5_warnx(context, "LDB_open: hdb_name '%s' failed\n",db->hdb_name);
-		krb5_set_error_string(context, "ldb_connect(%s, 0, NULL) failed!", db->hdb_name);
-		return HDB_ERR_NOENTRY;
-	}
-
-	db->hdb_db = talloc_steal(db, sam_db);
-
-	krb5_warnx(context, "LDB_open: hdb_name '%s' ok\n",db->hdb_name);
-
 	return 0;
 }
 
 static krb5_error_code LDB_close(krb5_context context, HDB *db)
 {
-	talloc_free(db->hdb_db);
-	db->hdb_db = NULL;
 	return 0;
 }
 
@@ -830,12 +811,6 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 					realm_msg[0], msg[0], entry);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed\n");	
-#if 0 /* master key support removed */
-		} else {
-			if (db->hdb_master_key_set && (!(flags & HDB_F_DECRYPT))) {
-				ret = hdb_seal_keys(context, db, entry);
-			}
-#endif
 		}
 	}
 
@@ -888,15 +863,6 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	if (ret != 0) {
 		talloc_free(priv);
 		db->hdb_openp = NULL;
-#if 0 /* master key support removed */
-	} else {
-		if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
-			ret = hdb_unseal_keys(context, db, entry);
-			if (ret != 0) {
-				hdb_free_entry(context,entry);
-			}
-		}
-#endif
 	} else {
 		talloc_free(mem_ctx);
 	}
@@ -993,15 +959,6 @@ static krb5_error_code LDB_nextkey(krb5_context context, HDB *db, unsigned flags
 	return LDB_seq(context, db, flags, entry);
 }
 
-#if 0 /* no way to easily get context here, and we don't want to use master keys anyway */
-static int LDB_db_destructor(void *ptr) 
-{
-	HDB *db = talloc_get_type(ptr, HDB);
-	hdb_clear_master_key(context, db);
-	return 0;
-}
-#endif
-
 static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
 {
 	talloc_free(db);
@@ -1018,21 +975,14 @@ krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char
 
 	(*db)->hdb_master_key_set = 0;
 	(*db)->hdb_db = NULL;
-#if 0
-	talloc_set_destructor(*db, LDB_db_destructor);
-#endif
-	if (!arg || arg[0] == '\0') {
+	/* in future, we could cache the connect here, but for now KISS */
+
+	(*db)->hdb_db = samdb_connect(db);
+	if ((*db)->hdb_db == NULL) {
+		krb5_warnx(context, "hdb_ldb_create: samdb_connect failed!");
+		krb5_set_error_string(context, "samdb_connect failed!");
 		talloc_free(*db);
-		krb5_set_error_string(context, "hdb_ldb_create: no db name specified");
-		return EINVAL;
-	} else {
-		(*db)->hdb_name = talloc_strdup(*db, arg); 
-		if ((*db)->hdb_name == NULL) {
-			krb5_set_error_string(context, "strdup: out of memory");
-			talloc_free(*db);
-			*db = NULL;
-			return ENOMEM;
-		}
+		return HDB_ERR_NOENTRY;
 	}
 
 	(*db)->hdb_openp = 0;
