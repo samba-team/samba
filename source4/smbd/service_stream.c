@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "smbd/service_stream.h"
+#include "lib/messaging/irpc.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */
 #define SERVER_TCP_LOW_PORT  1024

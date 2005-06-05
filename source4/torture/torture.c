@@ -2315,6 +2315,7 @@ static struct {
 	{"LOCAL-ICONV", torture_local_iconv, 0},
 	{"LOCAL-TALLOC", torture_local_talloc, 0},
 	{"LOCAL-MESSAGING", torture_local_messaging, 0},
+	{"LOCAL-IRPC",  torture_local_irpc, 0},
 	{"LOCAL-BINDING", torture_local_binding_string, 0},
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
 	{"LOCAL-SOCKET", torture_local_socket, 0},
