@@ -736,8 +736,8 @@ esac
 AC_SUBST(SMBD_EXTRA_OBJS)
 AC_SUBST(SMBD_EXTRA_LIBS)
 
-SMB_INCLUDE_M4(lib/ldb/ldap.m4)
-SMB_INCLUDE_M4(lib/ldb/sqlite3.m4)
+sinclude(lib/ldb/ldap.m4)
+sinclude(lib/ldb/sqlite3.m4)
 
 ###############################################
 # test for where we get crypt() from

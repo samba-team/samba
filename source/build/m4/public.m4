@@ -55,11 +55,6 @@ dnl		1:name
 dnl		2:calledname
 dnl		)
 dnl
-dnl SMB_INCLUDE_M4(
-dnl		1: inputfile
-dnl		2: comment
-dnl		)
-dnl
 dnl SMB_ENV_CHECK(
 dnl		1:dummy
 dnl		)
@@ -262,20 +257,6 @@ dnl		)
 AC_DEFUN([SMB_MAKE_TARGET],
 [
 	echo "#SMB_MAKE_TARGET TOTO"
-])
-
-dnl SMB_INCLUDE_M4(
-dnl		1: inputfile
-dnl		2: comment
-dnl		)
-AC_DEFUN([SMB_INCLUDE_M4],
-[
-###################################
-# Start Include $1
-# $2
-sinclude($1)
-# End Include $1
-###################################
 ])
 
 dnl SMB_ENV_CHECK(
