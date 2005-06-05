@@ -45,4 +45,4 @@ libcli/security/config.mk
 lib/com/config.mk
 scripting/config.mk
 kdc/config.mk
-heimdal/config.mk
+#heimdal/config.mk
