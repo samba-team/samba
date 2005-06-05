@@ -36,6 +36,7 @@
 struct messaging_context {
 	uint32_t server_id;
 	struct socket_context *sock;
+	const char *base_path;
 	const char *path;
 	struct dispatch_fn *dispatch;
 	struct messaging_rec *pending;
@@ -94,13 +95,9 @@ static void ping_message(struct messaging_context *msg, void *private,
 /* 
    return the path to a messaging socket
 */
-static char *messaging_path(TALLOC_CTX *mem_ctx, uint32_t server_id)
+static char *messaging_path(struct messaging_context *msg, uint32_t server_id)
 {
-	char *name = talloc_asprintf(mem_ctx, "messaging/msg.%u", (unsigned)server_id);
-	char *ret;
-	ret = smbd_tmp_path(mem_ctx, name);
-	talloc_free(name);
-	return ret;
+	return talloc_asprintf(msg, "%s/msg.%u", msg->base_path, (unsigned)server_id);
 }
 
 /*
@@ -308,7 +305,8 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server,
 		       data->data, dlength);
 	}
 
-	rec->path = messaging_path(rec, server);
+	rec->path = messaging_path(msg, server);
+	talloc_steal(rec, rec->path);
 
 	status = try_send(rec);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -369,7 +367,8 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	mkdir(path, 0700);
 	talloc_free(path);
 
-	msg->path = messaging_path(msg, server_id);
+	msg->base_path = smbd_tmp_path(msg, "messaging");
+	msg->path      = messaging_path(msg, server_id);
 	msg->server_id = server_id;
 	msg->dispatch  = NULL;
 	msg->pending   = NULL;
