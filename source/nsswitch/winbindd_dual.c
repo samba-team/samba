@@ -579,21 +579,8 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 
 		/* process full rquests */
 		if (state.read_buf_len == sizeof(state.request)) {
-			DEBUG(4,("dual daemon request %d\n", (int)state.request.cmd));
-
-			/* special handling for the stateful requests */
-			switch (state.request.cmd) {
-			case WINBINDD_GETPWENT:
-				winbindd_setpwent(&state);
-				break;
-				
-			case WINBINDD_GETGRENT:
-			case WINBINDD_GETGRLST:
-				winbindd_setgrent(&state);
-				break;
-			default:
-				break;
-			}
+			DEBUG(4,("child daemon request %d\n",
+				 (int)state.request.cmd));
 
 			state.request.null_term = '\0';
 			child_process_request(domain, &state);
@@ -603,10 +590,6 @@ BOOL setup_domain_child(struct winbindd_domain *domain,
 						     &state.response);
 
 			SAFE_FREE(state.response.extra_data);
-			free_getent_state(state.getpwent_state);
-			free_getent_state(state.getgrent_state);
-			state.getpwent_state = NULL;
-			state.getgrent_state = NULL;
 
 			/* We just send the result code back, the result
 			 * structure needs to be fetched via the
