@@ -173,7 +173,7 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
  Look for the specified user in the sam, return ldb result structures
 ****************************************************************************/
 
-static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
+static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 				       const char *account_name,
 				       const char *domain_name,
 				       struct ldb_message ***ret_msgs,
@@ -312,7 +312,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, void *sam_ctx,
 }
 
 static NTSTATUS authsam_authenticate(const struct auth_context *auth_context, 
-				     TALLOC_CTX *mem_ctx, void *sam_ctx, 
+				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
 				     struct ldb_message **msgs,
 				     struct ldb_message **msgs_domain,
 				     const struct auth_usersupplied_info *user_info, 
@@ -362,7 +362,7 @@ static NTSTATUS authsam_authenticate(const struct auth_context *auth_context,
 	return nt_status;
 }
 
-static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
+static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					 struct ldb_message **msgs,
 					 struct ldb_message **msgs_domain,
 					 DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
@@ -521,7 +521,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	const char *account_name = user_info->account_name;
 	struct ldb_message **msgs;
 	struct ldb_message **domain_msgs;
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 	DATA_BLOB user_sess_key, lm_sess_key;
 
 	if (!account_name || !*account_name) {
