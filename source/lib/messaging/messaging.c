@@ -308,7 +308,12 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server,
 	rec->path = messaging_path(msg, server);
 	talloc_steal(rec, rec->path);
 
-	status = try_send(rec);
+	if (msg->pending != NULL) {
+		status = STATUS_MORE_ENTRIES;
+	} else {
+		status = try_send(rec);
+	}
+
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		if (msg->pending == NULL) {
 			EVENT_FD_WRITEABLE(msg->event.fde);
