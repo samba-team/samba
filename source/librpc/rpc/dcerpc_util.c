@@ -87,10 +87,10 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 
 
 /* 
-   push a dcerpc_packet into a blob, potentially with auth info
+   push a ncacn_packet into a blob, potentially with auth info
 */
 NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			  struct dcerpc_packet *pkt,
+			  struct ncacn_packet *pkt,
 			  struct dcerpc_auth *auth_info)
 {
 	NTSTATUS status;
@@ -115,7 +115,7 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		pkt->auth_length = 0;
 	}
 
-	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	status = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

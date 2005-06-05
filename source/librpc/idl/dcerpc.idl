@@ -148,6 +148,50 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_auth3;
 
+	typedef [public] struct {
+		uint32 _pad;
+		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
+	} dcerpc_orphaned;
+
+	typedef [public] struct {
+		uint32 _pad;
+		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
+	} dcerpc_co_cancel;
+
+	typedef [public] struct {
+		uint32 version;
+		uint32 id;
+	} dcerpc_cl_cancel;
+
+	typedef [public] struct {
+		uint32 version; 
+		uint32 id;
+		boolean32 server_is_accepting;
+	} dcerpc_cancel_ack;
+
+	typedef [public] struct {
+		uint32 version;
+		uint8 _pad1;
+		uint16 window_size;
+		uint32 max_tdsu;
+		uint32 max_frag_size;
+		uint16 serial_no;
+		uint16 selack_size;
+		uint32 selack[selack_size];
+	} dcerpc_fack;
+
+	typedef [public] struct {
+	} dcerpc_ack;
+
+	typedef [public] struct {
+	} dcerpc_ping;
+
+	typedef [public] struct {
+	} dcerpc_shutdown;
+	
+	typedef [public] struct {
+	} dcerpc_working;
+
 	typedef [enum8bit] enum {
 		DCERPC_PKT_REQUEST     =  0,
 		DCERPC_PKT_PING        =  1,
@@ -181,8 +225,24 @@ interface dcerpc
 		[case(DCERPC_PKT_FAULT)]      dcerpc_fault    fault;
 		[case(DCERPC_PKT_AUTH3)]      dcerpc_auth3    auth3;
 		[case(DCERPC_PKT_BIND_NAK)]   dcerpc_bind_nak bind_nak;
-	} dcerpc_payload;
+		[case(DCERPC_PKT_CO_CANCEL)] dcerpc_co_cancel cancel;
+		[case(DCERPC_PKT_ORPHANED)]  dcerpc_orphaned orphaned;
+		[case(DCERPC_PKT_SHUTDOWN)]  dcerpc_shutdown shutdown;
+	} ncacn_payload;
 
+	typedef [nodiscriminant] union {
+		[case(DCERPC_PKT_REQUEST)]   dcerpc_request request;
+		[case(DCERPC_PKT_PING)] 	 dcerpc_ping ping;
+		[case(DCERPC_PKT_RESPONSE)]  dcerpc_response response;
+		[case(DCERPC_PKT_FAULT)]	 dcerpc_fault fault;
+		[case(DCERPC_PKT_WORKING)]	 dcerpc_working working;
+		[case(DCERPC_PKT_NOCALL)]    dcerpc_fack nocall;
+		[case(DCERPC_PKT_REJECT)]    dcerpc_fault reject;
+		[case(DCERPC_PKT_ACK)]       dcerpc_ack ack;
+		[case(DCERPC_PKT_CANCEL_ACK)] dcerpc_cancel_ack cancel_ack;
+		[case(DCERPC_PKT_FACK)]      dcerpc_fack fack;
+		[case(DCERPC_PKT_CL_CANCEL)] dcerpc_cl_cancel cancel;
+	} ncadg_payload;
 
 	/* pfc_flags values */
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
@@ -207,6 +267,29 @@ interface dcerpc
 		uint16 frag_length;     /* Total length of fragment */
 		uint16 auth_length;     /* authenticator length */
 		uint32 call_id;	        /* Call identifier */
-		[switch_is(ptype)] dcerpc_payload u;
-	} dcerpc_packet;
+		[switch_is(ptype)] ncacn_payload u;
+	} ncacn_packet;
+
+	typedef [public] struct {
+		uint8 rpc_vers;		/* RPC version (4) */
+		uint8 ptype;
+		uint8 pfc_flags;
+		uint8 ncadg_flags;
+		uint8 drep[3];
+		uint8 serial_high;
+		GUID object;
+		GUID iface;
+		GUID activity;
+		uint32 server_boot; /* Server boot time */
+		uint32 iface_version;
+		uint32 seq_num;
+		uint16 opnum;
+		uint16 ihint;
+		uint16 ahint;
+		uint16 len;
+		uint16 fragnum;
+		uint8 auth_proto;
+		uint8 serial_low;
+		[switch_is(ptype)] ncadg_payload u;
+	} ncadg_packet;
 }
