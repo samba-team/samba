@@ -70,6 +70,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	int src_port;
 	struct sockaddr_in src_sock_addr;
 	struct ipv4_addr addr;
+	int ret;
 
 	status = socket_pending(kdc_socket->sock, &dsize);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -107,12 +108,13 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	src_sock_addr.sin_family      = PF_INET;
 	
 	/* Call krb5 */
-	if (krb5_kdc_process_krb5_request(kdc_socket->kdc->smb_krb5_context->krb5_context, 
-					  kdc_socket->kdc->config,
-					  blob.data, blob.length, 
-					  &reply,
-					  src_addr,
-					  (struct sockaddr *)&src_sock_addr) == -1) {
+	ret = krb5_kdc_process_krb5_request(kdc_socket->kdc->smb_krb5_context->krb5_context, 
+					    kdc_socket->kdc->config,
+					    blob.data, blob.length, 
+					    &reply,
+					    src_addr,
+					    (struct sockaddr *)&src_sock_addr);
+	if (ret == -1) {
 		talloc_free(tmp_ctx);
 		return;
 	}
