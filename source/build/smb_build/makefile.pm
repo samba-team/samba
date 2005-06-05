@@ -294,58 +294,34 @@ sub _prepare_obj_list($$)
 {
 	my $var = shift;
 	my $ctx = shift;
-	my $tmpobjlist;
-	my $output;
 
-	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
+	my $tmplist = array2oneperline($ctx->{OBJ_LIST});
 
-	$output = << "__EOD__";
+	return << "__EOD__";
 ###################################
 # Start $var $ctx->{NAME} OBJ LIST
-$var\_$ctx->{NAME}_OBJS =$tmpobjlist
+$var\_$ctx->{NAME}_OBJS =$tmplist
 # End $var $ctx->{NAME} OBJ LIST
 ###################################
 
 __EOD__
-
-	return $output;
 }
 
-###########################################################
-# This function creates a object file list for a subsystem
-#
-# $output = _prepare_subsystem_obj_list($subsystem_ctx)
-#
-# $subsystem_ctx -		the subsystem context
-#
-# $subsystem_ctx->{NAME} -	the subsystem name
-# $subsystem_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this subsystem
-#
-# $output -		the resulting output buffer
-sub _prepare_subsystem_obj_list($)
+sub _prepare_cflags($$)
 {
+	my $var = shift;
 	my $ctx = shift;
 
-	return _prepare_var_obj_list("SUBSYSTEM",$ctx);
-}
+	my $tmplist = array2oneperline($ctx->{CFLAGS});
 
-###########################################################
-# This function creates a object file list for a module
-#
-# $output = _prepare_module_obj_and_lib_list($module_ctx)
-#
-# $module_ctx -		the module context
-#
-# $module_ctx->{NAME} -		the module binary name
-# $module_ctx->{OBJ_LIST} -	the list of objectfiles which sould be linked to this module
-#
-# $output -		the resulting output buffer
-sub _prepare_module_obj_list($)
-{
-	my $ctx = shift;
+	return << "__EOD__";
+###################################
+# Start $var $ctx->{NAME} CFLAGS
+$var\_$ctx->{NAME}_CFLAGS =$tmplist
+# End $var $ctx->{NAME} CFLAGS
+###################################
 
-	return _prepare_var_obj_list("MODULE",$ctx);
-
+__EOD__
 }
 
 ###########################################################
@@ -487,8 +463,6 @@ $output .= add_target_flags($ctx, "library_" . $ctx->{NAME});
 	return $output;
 }
 
-
-
 ###########################################################
 # This function creates a make rule for linking a binary
 #
@@ -619,14 +593,19 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_obj_lists($)
+sub _prepare_target_settings($)
 {
 	my $CTX = shift;
 	my $output = "";
 
 	foreach my $key (values %$CTX) {
-		next if not defined($key->{OBJ_LIST});
-		$output .= _prepare_obj_list($key->{TYPE}, $key);
+		if (defined($key->{OBJ_LIST})) {
+			$output .= _prepare_obj_list($key->{TYPE}, $key);
+		}
+
+		if (defined($key->{OBJ_LIST})) {
+			$output .= _prepare_cflags($key->{TYPE}, $key);
+		}
 	}
 
 	return $output;
@@ -826,7 +805,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
 
-	$output .= _prepare_obj_lists($CTX);
+	$output .= _prepare_target_settings($CTX);
 
 	$output .= _prepare_rule_lists($CTX);
 
