@@ -3,10 +3,11 @@
 /*
   definitions for irpc primitives
 */
-[
-pointer_default(unique)
-]
-interface irpc
+[ uuid("e770c620-0b06-4b5e-8d87-a26e20f28340"),
+  version(1.0),
+  pointer_default(unique),
+  pointer_default_top(unique)
+] interface irpc
 {
 	typedef bitmap {
 		IRPC_FLAG_REPLY    = 0x0001
@@ -20,4 +21,31 @@ interface irpc
 		irpc_flags flags;
 		NTSTATUS status;
 	} irpc_header;
+
+
+	/******************************************************
+         management calls for the nbt server
+	******************************************************/
+	typedef [v1_enum] enum {
+		NBTD_INFO_STATISTICS
+	} nbtd_info_level;
+
+	typedef struct {
+		hyper total_received;
+		hyper total_sent;
+		hyper query_count;
+		hyper register_count;
+		hyper release_count;
+		hyper refresh_count;
+	} nbtd_statistics;
+
+	typedef union {
+		[case(NBTD_INFO_STATISTICS)] nbtd_statistics *stats;
+	} nbtd_info;
+
+	void nbtd_information(
+		[in]  nbtd_info_level level,
+		[out,switch_is(level)] nbtd_info info
+		);
+
 }
