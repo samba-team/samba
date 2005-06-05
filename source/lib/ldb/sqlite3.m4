@@ -6,7 +6,7 @@ with_sqlite3_support=auto
 AC_MSG_CHECKING([for SQLITE3 support])
 
 AC_ARG_WITH(sqlite3,
-[  --with-sqlite3          SQLITE3 support (default yes)],
+[  --with-sqlite3          SQLITE3 support (default no)],
 [ case "$withval" in
     yes|no)
 	with_sqlite3_support=$withval
@@ -15,8 +15,9 @@ AC_ARG_WITH(sqlite3,
 
 AC_MSG_RESULT($with_sqlite3_support)
 
-if test x"$with_sqlite3_support" != x"no"; then
-
+if test x"$with_sqlite3_support" != x"yes"; then
+	with_sqlite3_support=no
+else
   ##################################################################
   # first test for sqlite3.h
   AC_CHECK_HEADERS(sqlite3.h)
