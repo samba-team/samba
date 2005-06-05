@@ -30,5 +30,6 @@ struct messaging_context;
 #define MSG_PONG		3
 #define MSG_BRL_RETRY		4
 #define MSG_PVFS_RETRY_OPEN	5
+#define MSG_IRPC                6
 
 #endif

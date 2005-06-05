@@ -30,6 +30,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "messages.h"
 #include "db_wrap.h"
+#include "lib/messaging/irpc.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies

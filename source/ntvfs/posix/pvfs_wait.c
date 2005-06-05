@@ -25,6 +25,7 @@
 #include "dlinklist.h"
 #include "vfs_posix.h"
 #include "smbd/service_stream.h"
+#include "lib/messaging/irpc.h"
 
 /* the context for a single wait instance */
 struct pvfs_wait {

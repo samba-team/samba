@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/events/events.h"
+#include "lib/messaging/irpc.h"
 
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 

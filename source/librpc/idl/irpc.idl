@@ -1,0 +1,23 @@
+#include "idl_types.h"
+
+/*
+  definitions for irpc primitives
+*/
+[
+pointer_default(unique)
+]
+interface irpc
+{
+	typedef bitmap {
+		IRPC_FLAG_REPLY    = 0x0001
+	} irpc_flags;
+
+	typedef [public] struct {
+		GUID uuid;
+		uint32 if_version;
+		uint32 callnum;
+		uint32 callid;
+		irpc_flags flags;
+		NTSTATUS status;
+	} irpc_header;
+}

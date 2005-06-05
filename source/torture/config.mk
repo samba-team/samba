@@ -143,7 +143,8 @@ ADD_OBJ_FILES = \
 		torture/local/messaging.o \
 		torture/local/binding_string.o \
 		torture/local/idtree.o \
-		torture/local/socket.o
+		torture/local/socket.o \
+		torture/local/irpc.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING

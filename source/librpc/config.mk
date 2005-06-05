@@ -55,6 +55,12 @@ INIT_OBJ_FILES = librpc/gen_ndr/ndr_echo.o
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = NDR_RAW
 
+[SUBSYSTEM::NDR_IRPC]
+INIT_FUNCTION = dcerpc_irpc_init
+INIT_OBJ_FILES = librpc/gen_ndr/ndr_irpc.o
+NOPROTO = YES
+REQUIRED_SUBSYSTEMS = NDR_RAW
+
 [SUBSYSTEM::NDR_EXCHANGE]
 INIT_FUNCTION = dcerpc_exchange_init
 INIT_OBJ_FILES = librpc/gen_ndr/ndr_exchange.o
