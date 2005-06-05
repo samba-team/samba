@@ -46,9 +46,6 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx, struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	uint32_t res;
 
-	/* register the server side function */
-	IRPC_REGISTER(msg_ctx, rpcecho, ECHO_ADDONE, irpc_AddOne);
-
 	/* make the call */
 	r.in.in_data = random();
 	r.out.out_data = &res;
@@ -71,6 +68,75 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx, struct messaging_context *msg_ctx)
 	return True;	
 }
 
+
+static void irpc_callback(struct irpc_request *irpc)
+{
+	int *pong_count = (int *)irpc->async.private;
+	NTSTATUS status = irpc_call_recv(irpc);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("irpc call failed - %s\n", nt_errstr(status));
+	}
+	(*pong_count)++;
+}
+
+/*
+  test echo speed
+*/
+static BOOL test_speed(TALLOC_CTX *mem_ctx, 
+		       struct messaging_context *msg_ctx,
+		       struct event_context *ev)
+{
+	int ping_count = 0;
+	int pong_count = 0;
+	BOOL ret = True;
+	struct timeval tv;
+	struct echo_AddOne r;
+	uint32_t res;
+
+	tv = timeval_current();
+
+	r.in.in_data = 0;
+	r.out.out_data = &res;
+
+	printf("Sending echo for 10 seconds\n");
+	while (timeval_elapsed(&tv) < 10.0) {
+		struct irpc_request *irpc;
+
+		irpc = IRPC_CALL_SEND(msg_ctx, MSG_ID, rpcecho, ECHO_ADDONE, &r);
+		if (irpc == NULL) {
+			printf("AddOne send failed\n");
+			return False;
+		}
+
+		irpc->async.fn = irpc_callback;
+		irpc->async.private = &pong_count;
+
+		ping_count++;
+
+		while (ping_count > pong_count + 20) {
+			event_loop_once(ev);
+		}
+	}
+
+	printf("waiting for %d remaining replies (done %d)\n", 
+	       ping_count - pong_count, pong_count);
+	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
+		event_loop_once(ev);
+	}
+
+	if (ping_count != pong_count) {
+		printf("ping test failed! received %d, sent %d\n", 
+		       pong_count, ping_count);
+		ret = False;
+	}
+
+	printf("echo rate of %.0f messages/sec\n", 
+	       (ping_count+pong_count)/timeval_elapsed(&tv));
+
+	return ret;
+}
+
+
 BOOL torture_local_irpc(void) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_irpc");
@@ -83,7 +149,11 @@ BOOL torture_local_irpc(void)
 	ev = event_context_init(mem_ctx);
 	msg_ctx = messaging_init(mem_ctx, MSG_ID, ev);
 
+	/* register the server side function */
+	IRPC_REGISTER(msg_ctx, rpcecho, ECHO_ADDONE, irpc_AddOne);
+
 	ret &= test_addone(mem_ctx, msg_ctx);
+	ret &= test_speed(mem_ctx, msg_ctx, ev);
 
 	talloc_free(mem_ctx);
 

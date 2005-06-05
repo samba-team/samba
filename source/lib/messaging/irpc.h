@@ -28,7 +28,7 @@ struct irpc_message {
 };
 
 /* don't allow calls to take too long */
-#define IRPC_CALL_TIMEOUT 10
+#define IRPC_CALL_TIMEOUT 20
 
 
 /* the server function type */
@@ -43,6 +43,9 @@ typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 /* make a irpc call */
 #define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr) \
    irpc_call(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr)
+
+#define IRPC_CALL_SEND(msg_ctx, server_id, pipename, funcname, ptr) \
+   irpc_call_send(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr)
 
 
 /*
