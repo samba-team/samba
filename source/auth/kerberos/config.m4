@@ -176,8 +176,6 @@ if test x$with_krb5_support != x"no"; then
 		with_krb5_support="no"
 	fi
 
-	AC_CHECK_HEADERS(kdc.h)
-
 	CFLAGS=$ac_save_CFLAGS
 	CPPFLAGS=$ac_save_CPPFLAGS
 	LDFLAGS=$ac_save_LDFLAGS
@@ -203,9 +201,6 @@ if test x"$with_krb5_support" != x"no"; then
 	# we might need the k5crypto and com_err libraries on some systems
  	AC_CHECK_LIB_EXT(com_err, KRB5_LIBS, _et_list)
 	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
-
-	AC_CHECK_LIB_EXT(kdc, KRB5_LIBS, krb5_kdc_default_config)
-	AC_CHECK_LIB_EXT(hdb, KRB5_LIBS, hdb_generate_key_set_password)
 
 	# Heimdal checks.
 	# But only if we didn't have a krb5-config to tell us this already
@@ -499,6 +494,33 @@ if test x"$with_krb5_support" != x"no"; then
 		with_krb5_support=no 
 	fi
 
+	# checks if we have access to a libkdc
+	# and can use it for our builtin kdc server_service
+	KDC_CFLAGS=""
+	KDC_CPPFLAGS=""
+	KDC_DLFLAGS=""
+	KDC_LIBS=""
+	AC_CHECK_HEADERS(kdc.h)
+	AC_CHECK_LIB_EXT(kdc, KDC_LIBS, krb5_kdc_default_config)
+	AC_CHECK_LIB_EXT(hdb, KDC_LIBS, hdb_generate_key_set_password)
+
+	AC_MSG_CHECKING(whether libkdc is used)
+	if test x"$ac_cv_header_kdc_h" = x"yes"; then
+		if test x"$ac_cv_lib_ext_kdc_krb5_kdc_default_config" = x"yes"; then
+	   		if test x"$ac_cv_lib_ext_hdb_hdb_generate_key_set_password" = x"yes"; then
+				SMB_EXT_LIB_ENABLE(KDC,YES)
+				AC_MSG_RESULT(yes)
+				echo "KDC_LIBS:     ${KDC_LIBS}"
+			else
+				AC_MSG_RESULT(no)
+			fi
+		else
+			AC_MSG_RESULT(no)
+		fi
+	else
+		AC_MSG_RESULT(no)
+	fi
+
 	CFLAGS=$ac_save_CFLAGS
 	CPPFLAGS=$ac_save_CPPFLAGS
 	LDFLAGS=$ac_save_LDFLAGS
@@ -513,5 +535,4 @@ if test x"$with_krb5_support" != x"no"; then
 fi
 
 SMB_EXT_LIB(KRB5,[${KRB5_LIBS}],[${KRB5_CFLAGS}],[${KRB5_CPPFLAGS}],[${KRB5_LDFLAGS}])
-
-
+SMB_EXT_LIB(KDC,[${KDC_LIBS}],[${KDC_CFLAGS}],[${KDC_CPPFLAGS}],[${KDC_LDFLAGS}])

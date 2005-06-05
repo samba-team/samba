@@ -31,7 +31,7 @@ sinclude(ntvfs/posix/config.m4)
 sinclude(lib/socket_wrapper/config.m4)
 sinclude(web_server/config.m4)
 sinclude(auth/config.m4)
-sinclude(smbd/config.m4)
+sinclude(kdc/config.m4)
 
 ALLLIBS_LIBS="$LIBS"
 ALLLIBS_CFLAGS="$CFLAGS"
