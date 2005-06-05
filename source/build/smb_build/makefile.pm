@@ -364,13 +364,13 @@ sub _prepare_objlist_rule($)
 
 	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 
-	$output .= "$ctx->{TYPE}_$ctx->{NAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST)";
+	$output .= "$ctx->{TYPE}_$ctx->{NAME}: ";
 
 	if (defined ($ctx->{TARGET_CFLAGS})) {
-		$output .= "\n\t@\$(MAKE) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) TARGET_CFLAGS=\"" . join(' ', @{$ctx->{TARGET_CFLAGS}}) . "\"\n";
-	} else {
-		$output .=" \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
-	}
+		$output .= "\n\t@\$(MAKE) TARGET_CFLAGS=\"" . join(' ', @{$ctx->{TARGET_CFLAGS}}) . "\" ";
+	} 
+
+	$output .= "\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 
 	return $output;
 }
