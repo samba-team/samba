@@ -89,7 +89,7 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 /* 
    push a ncacn_packet into a blob, potentially with auth info
 */
-NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			  struct ncacn_packet *pkt,
 			  struct dcerpc_auth *auth_info)
 {

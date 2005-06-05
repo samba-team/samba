@@ -4,7 +4,7 @@
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Andrew Tridgell 2003-2005
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -185,7 +185,7 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c,
    parse a data blob into a ncacn_packet structure. This handles both
    input and output packets
 */
-static NTSTATUS dcerpc_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+static NTSTATUS ncacn_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			    struct ncacn_packet *pkt)
 {
 	struct ndr_pull *ndr;
@@ -231,7 +231,7 @@ static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
 /* 
    parse a possibly signed blob into a dcerpc request packet structure
 */
-static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c, 
+static NTSTATUS ncacn_pull_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 					 struct ncacn_packet *pkt)
 {
@@ -243,7 +243,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c,
 	/* non-signed packets are simpler */
 	if (!c->security_state.auth_info || 
 	    !c->security_state.generic_state) {
-		return dcerpc_pull(c, blob, mem_ctx, pkt);
+		return ncacn_pull(c, blob, mem_ctx, pkt);
 	}
 
 	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
@@ -348,7 +348,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c,
 /* 
    push a dcerpc request packet into a blob, possibly signing it.
 */
-static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c, 
+static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 					 struct ncacn_packet *pkt)
 {
@@ -359,7 +359,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c,
 	/* non-signed packets are simpler */
 	if (!c->security_state.auth_info || 
 	    !c->security_state.generic_state) {
-		return dcerpc_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
+		return ncacn_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -482,7 +482,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c,
 /* 
    fill in the fixed values in a dcerpc header 
 */
-static void init_dcerpc_hdr(struct dcerpc_connection *c, struct ncacn_packet *pkt)
+static void init_ncacn_hdr(struct dcerpc_connection *c, struct ncacn_packet *pkt)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
@@ -588,7 +588,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
-	init_dcerpc_hdr(p->conn, &pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_BIND;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -610,7 +610,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -622,7 +622,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 
 	/* unmarshall the NDR */
-	status = dcerpc_pull(p->conn, &blob, mem_ctx, &pkt);
+	status = ncacn_pull(p->conn, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -662,7 +662,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 	NTSTATUS status;
 	DATA_BLOB blob;
 
-	init_dcerpc_hdr(c, &pkt);
+	init_ncacn_hdr(c, &pkt);
 
 	pkt.ptype = DCERPC_PKT_AUTH3;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -672,7 +672,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, c->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx, &pkt, c->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -740,7 +740,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	pkt.call_id = 0;
 
-	status = dcerpc_pull_request_sign(c, data, (TALLOC_CTX *)data->data, &pkt);
+	status = ncacn_pull_request_sign(c, data, (TALLOC_CTX *)data->data, &pkt);
 
 	/* find the matching request. Notice we match before we check
 	   the status.  this is ok as a pending call_id can never be
@@ -871,7 +871,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->fault_code = 0;
 	req->async.callback = NULL;
 
-	init_dcerpc_hdr(p->conn, &pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
 	remaining = stub_data->length;
 
@@ -915,7 +915,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
 
-		req->status = dcerpc_push_request_sign(p->conn, &blob, req, &pkt);
+		req->status = ncacn_push_request_sign(p->conn, &blob, req, &pkt);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
@@ -1361,7 +1361,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
-	init_dcerpc_hdr(p->conn, &pkt);
+	init_ncacn_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_ALTER;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
@@ -1383,7 +1383,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1395,7 +1395,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 	}
 
 	/* unmarshall the NDR */
-	status = dcerpc_pull(p->conn, &blob, mem_ctx, &pkt);
+	status = ncacn_pull(p->conn, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

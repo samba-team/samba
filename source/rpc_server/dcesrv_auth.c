@@ -374,7 +374,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* non-signed packets are simple */
 	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
-		status = dcerpc_push_auth(blob, call, pkt, NULL);
+		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
 
