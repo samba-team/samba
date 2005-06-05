@@ -35,6 +35,7 @@
 
 #include <stdarg.h>
 #include "includes.h"
+#include "system/filesys.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
