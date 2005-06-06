@@ -116,6 +116,7 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 			DEBUG(0,("push_message: malloc fail (3)\n"));
 			data_blob_free(&msg->buf);
 			SAFE_FREE(msg);
+			return False;
 		}
 	}
 
