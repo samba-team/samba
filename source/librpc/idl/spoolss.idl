@@ -627,7 +627,7 @@
 	} spoolss_DocumentInfo1;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] spoolss_DocumentInfo1 info1;	
+		[case(1)] spoolss_DocumentInfo1 *info1;	
 	} spoolss_DocumentInfo;
 
 	WERROR spoolss_StartDocPrinter(
