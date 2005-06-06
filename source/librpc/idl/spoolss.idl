@@ -293,24 +293,6 @@
 
 	/******************/
 	/* Function: 0x02 */
-	WERROR spoolss_SetJob(
-		[in,ref] policy_handle *handle,
-		[in] uint32 job_id,
-		[in] uint32 level,
-		[in] uint32 command
-	);
-
-	/******************/
-	/* Function: 0x03 */
-	WERROR spoolss_GetJob(
-		[in,ref] policy_handle *handle,
-		[in] uint32 job_id,
-		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
-		[out,subcontext(4),switch_is(level)] spoolss_JobInfo *info,
-		[in,out,ref] uint32 *buf_size
-	);
-
 	typedef struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
@@ -333,6 +315,39 @@
 		[case(3)]; /* TODO */
 		[default];
 	} spoolss_JobInfo;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_JobInfo info;
+	} spoolss_JobInfoContainer;
+
+	typedef [v1_enum] enum {
+		SPOOLSS_JOB_CONTROL_PAUSE		= 1,
+		SPOOLSS_JOB_CONTROL_RESUME		= 2,
+		SPOOLSS_JOB_CONTROL_CANCEL		= 3,
+		SPOOLSS_JOB_CONTROL_RESTART		= 4,
+		SPOOLSS_JOB_CONTROL_DELETE		= 5,
+		SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER	= 6,
+		SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED	= 7
+	} spoolss_JobControl;
+
+	WERROR spoolss_SetJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 job_id,
+		[in] spoolss_JobInfoContainer *ctr,
+		[in] spoolss_JobControl command
+	);
+
+	/******************/
+	/* Function: 0x03 */
+	WERROR spoolss_GetJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 job_id,
+		[in] uint32 level,
+		[in] DATA_BLOB *buffer,
+		[out,subcontext(4),switch_is(level)] spoolss_JobInfo *info,
+		[in,out,ref] uint32 *buf_size
+	);
 
 	/******************/
 	/* Function: 0x04 */
@@ -373,6 +388,8 @@
 	WERROR spoolss_DeletePrinter(
 	);
 
+	/******************/
+	/* Function: 0x07 */
 	typedef [v1_enum] enum {
 		SPOOLSS_PRINTER_CONTROL_UNPAUSE    = 0,
 		SPOOLSS_PRINTER_CONTROL_PAUSE      = 1,
@@ -381,8 +398,6 @@
 		SPOOLSS_PRINTER_CONTROL_SET_STATUS = 4
 	} spoolss_PrinterControl;
 
-	/******************/
-	/* Function: 0x07 */
 	typedef [switch_type(uint32)] union {
 		[case(0)] spoolss_PrinterInfo0 *info0;
 		[case(1)] spoolss_PrinterInfo1 *info1;
@@ -605,13 +620,27 @@
 
 	/******************/
 	/* Function: 0x11 */
+	typedef struct {
+		unistr *document_name;
+		unistr *output_file;
+		unistr *datatype;
+	} spoolss_DocumentInfo1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] spoolss_DocumentInfo1 info1;	
+	} spoolss_DocumentInfo;
+
 	WERROR spoolss_StartDocPrinter(
+		[in,ref] policy_handle *handle,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_DocumentInfo info,
+		[out] uint32 job_id
 	);
 
 	/******************/
 	/* Function: 0x12 */
 	WERROR spoolss_StartPagePrinter(
-		[in,ref] policy_handle *handle		
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -622,7 +651,7 @@
 	/******************/
 	/* Function: 0x14 */
 	WERROR spoolss_EndPagePrinter(
-		[in,ref] policy_handle *handle		
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -638,6 +667,7 @@
 	/******************/
 	/* Function: 0x17 */
 	WERROR spoolss_EndDocPrinter(
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
