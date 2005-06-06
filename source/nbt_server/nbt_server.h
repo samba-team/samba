@@ -22,6 +22,8 @@
 
 #include "libcli/nbt/libnbt.h"
 #include "libcli/dgram/libdgram.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
+#include "lib/messaging/irpc.h"
 
 /* 
    a list of our registered names on each interface
@@ -70,6 +72,8 @@ struct nbtd_server {
 	struct nbtd_interface *wins_interface;
 
 	struct wins_server *winssrv;
+
+	struct nbtd_statistics stats;
 };
 
 

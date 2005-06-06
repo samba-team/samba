@@ -150,7 +150,7 @@ BOOL torture_local_irpc(void)
 	msg_ctx = messaging_init(mem_ctx, MSG_ID, ev);
 
 	/* register the server side function */
-	IRPC_REGISTER(msg_ctx, rpcecho, ECHO_ADDONE, irpc_AddOne);
+	IRPC_REGISTER(msg_ctx, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 
 	ret &= test_addone(mem_ctx, msg_ctx);
 	ret &= test_speed(mem_ctx, msg_ctx, ev);

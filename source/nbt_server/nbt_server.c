@@ -27,6 +27,25 @@
 
 
 /*
+  serve out the nbt statistics
+*/
+static NTSTATUS nbtd_information(struct irpc_message *msg, 
+				 struct nbtd_information *r)
+{
+	struct nbtd_server *server = talloc_get_type(msg->private, struct nbtd_server);
+
+	switch (r->in.level) {
+	case NBTD_INFO_STATISTICS:
+		r->out.info.stats = &server->stats;
+		break;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+
+/*
   startup the nbtd task
 */
 static void nbtd_task_init(struct task_server *task)
@@ -61,6 +80,14 @@ static void nbtd_task_init(struct task_server *task)
 	status = nbtd_winsserver_init(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_terminate(task, "nbtd failed to start WINS server");
+		return;
+	}
+
+	/* setup monitoring */
+	status = IRPC_REGISTER(task->msg_ctx, irpc, NBTD_INFORMATION, 
+			       nbtd_information, nbtsrv);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_terminate(task, "nbtd failed to setup monitoring");
 		return;
 	}
 
