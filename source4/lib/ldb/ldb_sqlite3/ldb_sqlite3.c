@@ -912,6 +912,7 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
         /*
          * See if we'll be creating a new database, or opening an existing one
          */
+#warning "eliminate stat() here; concurrent processes could conflict"
         if ((stat(p, &statbuf) < 0 && errno == ENOENT) ||
             statbuf.st_size == 0) {
 
