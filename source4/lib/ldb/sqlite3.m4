@@ -2,22 +2,20 @@
 # Compile with SQLITE3 support?
 
 SQLITE3_LIBS=""
-with_sqlite3_support=auto
+with_sqlite3_support=no
 AC_MSG_CHECKING([for SQLITE3 support])
 
 AC_ARG_WITH(sqlite3,
-[  --with-sqlite3          SQLITE3 support (default no)],
+[  --with-sqlite3          SQLITE3 support (default=no)],
 [ case "$withval" in
-    yes|no)
+    yes|no|auto)
 	with_sqlite3_support=$withval
 	;;
   esac ])
 
 AC_MSG_RESULT($with_sqlite3_support)
 
-if test x"$with_sqlite3_support" != x"yes"; then
-	with_sqlite3_support=no
-else
+if test x"$with_sqlite3_support" != x"no"; then
   ##################################################################
   # first test for sqlite3.h
   AC_CHECK_HEADERS(sqlite3.h)
