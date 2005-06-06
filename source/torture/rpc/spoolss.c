@@ -1123,6 +1123,70 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_PausePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinter r;
+
+	r.in.handle		= handle;
+	r.in.level		= 0;
+	r.in.info.info1		= NULL;
+	r.in.devmode_ctr.size	= 0;
+	r.in.devmode_ctr.devmode= NULL;
+	r.in.secdesc_ctr.size	= 0;
+	r.in.secdesc_ctr.sd	= NULL;
+	r.in.command		= SPOOLSS_PRINTER_CONTROL_PAUSE;
+
+	printf("Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_PAUSE\n");
+
+	status = dcerpc_spoolss_SetPrinter(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetPrinter failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("SetPrinter failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_ResumePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinter r;
+
+	r.in.handle		= handle;
+	r.in.level		= 0;
+	r.in.info.info1		= NULL;
+	r.in.devmode_ctr.size	= 0;
+	r.in.devmode_ctr.devmode= NULL;
+	r.in.secdesc_ctr.size	= 0;
+	r.in.secdesc_ctr.sd	= NULL;
+	r.in.command		= SPOOLSS_PRINTER_CONTROL_RESUME;
+
+	printf("Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_RESUME\n");
+
+	status = dcerpc_spoolss_SetPrinter(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetPrinter failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("SetPrinter failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle, 
 				const char *value_name)
@@ -1602,7 +1666,15 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_PausePrinter(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
 	if (!test_EnumJobs(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_ResumePrinter(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
