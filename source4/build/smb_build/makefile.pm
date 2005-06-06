@@ -472,6 +472,12 @@ __EOD__
 	return $output;
 }
 
+sub _prepare_custom_rule($)
+{
+	my $ctx = shift;
+	return "$ctx->{NAME}:\n\t$ctx->{CMD}\n";
+}
+
 sub _prepare_proto_rules()
 {
 	my $output = "";
@@ -702,10 +708,12 @@ sub _prepare_rule_lists($)
 
 	foreach my $key (values %{$depend}) {
 		next if not defined $key->{OUTPUT_TYPE};
+
 		($output .= _prepare_objlist_rule($key)) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 		($output .= _prepare_shared_library_rule($key)) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
 		($output .= _prepare_binary_rule($key)) if $key->{OUTPUT_TYPE} eq "BINARY";
+		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
 	my $idl_ctx;
