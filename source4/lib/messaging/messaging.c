@@ -422,6 +422,7 @@ struct irpc_list {
 	const struct dcerpc_interface_table *table;
 	int callnum;
 	irpc_function_t fn;
+	void *private;
 };
 
 
@@ -430,7 +431,7 @@ struct irpc_list {
 */
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct dcerpc_interface_table *table, 
-		       int callnum, irpc_function_t fn)
+		       int callnum, irpc_function_t fn, void *private)
 {
 	struct irpc_list *irpc;
 
@@ -449,6 +450,7 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 	irpc->table   = table;
 	irpc->callnum = callnum;
 	irpc->fn      = fn;
+	irpc->private = private;
 	GUID_from_string(irpc->table->uuid, &irpc->uuid);
 
 	return NT_STATUS_OK;
@@ -514,7 +516,8 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* make the call */
-	m.from = src;
+	m.from    = src;
+	m.private = i->private;
 	header->status = i->fn(&m, r);
 
 	/* setup the reply */
