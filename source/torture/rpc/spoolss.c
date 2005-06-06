@@ -1134,7 +1134,11 @@ static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
 	struct spoolss_DocumentInfo1 info1;
+	struct spoolss_StartPagePrinter sp;
+	struct spoolss_WritePrinter w;
+	struct spoolss_EndPagePrinter ep;
 	struct spoolss_EndDocPrinter e;
+	int i;
 	uint32_t job_id;
 
 	printf("Testing StartDocPrinter\n");
@@ -1157,6 +1161,51 @@ static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	job_id = s.out.job_id;
+
+	for (i=1; i < 4; i++) {
+		printf("Testing StartPagePrinter: Page[%d]\n", i);
+
+		sp.in.handle		= handle;
+
+		status = dcerpc_spoolss_StartPagePrinter(p, mem_ctx, &sp);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_StartPagePrinter failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		if (!W_ERROR_IS_OK(sp.out.result)) {
+			printf("StartPagePrinter failed - %s\n", win_errstr(sp.out.result));
+			return False;
+		}
+
+		printf("Testing WritePrinter: Page[%d]\n", i);
+
+		w.in.handle		= handle;
+		w.in.data		= data_blob_string_const(talloc_asprintf(mem_ctx,"TortureTestPage: %d\nData\n",i));
+
+		status = dcerpc_spoolss_WritePrinter(p, mem_ctx, &w);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_WritePrinter failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		if (!W_ERROR_IS_OK(w.out.result)) {
+			printf("WritePrinter failed - %s\n", win_errstr(w.out.result));
+			return False;
+		}
+
+		printf("Testing EndPagePrinter: Page[%d]\n", i);
+
+		ep.in.handle		= handle;
+
+		status = dcerpc_spoolss_EndPagePrinter(p, mem_ctx, &ep);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_EndPagePrinter failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		if (!W_ERROR_IS_OK(ep.out.result)) {
+			printf("EndPagePrinter failed - %s\n", win_errstr(ep.out.result));
+			return False;
+		}
+	}
 
 	printf("Testing EndDocPrinter\n");
 
