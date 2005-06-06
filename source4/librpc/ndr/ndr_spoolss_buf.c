@@ -46,6 +46,7 @@
 		DATA_BLOB _data_blob_info;\
 		_ndr_info = ndr_push_init_ctx(ndr);\
 		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
+		_ndr_info->flags= ndr->flags;\
 		__r.in.level	= r->in.level;\
 		__r.in.count	= r->out.count;\
 		__r.out.info	= r->out.info;\
@@ -91,6 +92,7 @@
 		struct __##fn __r;\
 		_ndr_info = ndr_pull_init_blob(_r.out.buffer, ndr);\
 		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
+		_ndr_info->flags= ndr->flags;\
 		__r.in.level	= r->in.level;\
 		__r.in.count	= r->out.count;\
 		__r.out.info	= NULL;\
@@ -118,11 +120,13 @@
                                 return 0; \
                         } while (0)
 
+/* TODO: set _ndr_info->flags correct */
 #define NDR_SPOOLSS_SIZE_ENUM(fn) do { \
 	struct __##fn __r;\
 	DATA_BLOB _data_blob_info;\
 	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx);\
 	if (!_ndr_info) return 0;\
+	_ndr_info->flags|=0;\
 	__r.in.level	= level;\
 	__r.in.count	= count;\
 	__r.out.info	= info;\
