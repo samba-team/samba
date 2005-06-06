@@ -1059,7 +1059,6 @@ static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing SetJob\n");
 
 	status = dcerpc_spoolss_SetJob(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetJob failed - %s\n", nt_errstr(status));
 		return False;
@@ -1116,7 +1115,8 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		for (j = 0; j < r.out.count; j++) {
 			test_GetJob(p, mem_ctx, handle, info[j].info1.job_id);
-			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, 1);
+			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
+			test_SetJob(p, mem_ctx, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
 		}
 
 	} else if (!W_ERROR_IS_OK(r.out.result)) {
@@ -1125,6 +1125,58 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	return True;
+}
+
+static BOOL test_DoPrintTest(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		   struct policy_handle *handle)
+{
+	BOOL ret = True;
+	NTSTATUS status;
+	struct spoolss_StartDocPrinter s;
+	struct spoolss_DocumentInfo1 info1;
+	struct spoolss_EndDocPrinter e;
+	uint32_t job_id;
+
+	printf("Testing StartDocPrinter\n");
+
+	s.in.handle		= handle;
+	s.in.level		= 1;
+	s.in.info.info1		= &info1;
+	info1.document_name	= "TorturePrintJob";
+	info1.output_file	= NULL;
+	info1.datatype		= "RAW";
+
+	status = dcerpc_spoolss_StartDocPrinter(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_spoolss_StartDocPrinter failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	if (!W_ERROR_IS_OK(s.out.result)) {
+		printf("StartDocPrinter failed - %s\n", win_errstr(s.out.result));
+		return False;
+	}
+
+	job_id = s.out.job_id;
+
+	printf("Testing EndDocPrinter\n");
+
+	e.in.handle = handle;
+
+	status = dcerpc_spoolss_EndDocPrinter(p, mem_ctx, &e);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_spoolss_EndDocPrinter failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	if (!W_ERROR_IS_OK(e.out.result)) {
+		printf("EndDocPrinter failed - %s\n", win_errstr(e.out.result));
+		return False;
+	}
+
+	ret &= test_EnumJobs(p, mem_ctx, handle);
+
+	ret &= test_SetJob(p, mem_ctx, handle, job_id, SPOOLSS_JOB_CONTROL_DELETE);
+
+	return ret;
 }
 
 static BOOL test_PausePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
@@ -1674,7 +1726,7 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_EnumJobs(p, mem_ctx, &handle)) {
+	if (!test_DoPrintTest(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
