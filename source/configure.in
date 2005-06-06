@@ -544,7 +544,7 @@ case "$host_os" in
 	*irix*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
-	*freebsd*|*DragonFly*)
+	*freebsd*|*dragonfly*)
 		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
 		;;
 #
@@ -1180,7 +1180,7 @@ AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
 AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
 # Check if we have extattr
 case "$host_os" in
-  *freebsd4* | *DragonFly* )
+  *freebsd4* | *dragonfly* )
     AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
     ;;
   *)
@@ -1251,7 +1251,7 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
-		*netbsd* | *freebsd* | *DragonFly* )  
+		*netbsd* | *freebsd* | *dragonfly* )  
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,--export-dynamic"
@@ -4116,7 +4116,7 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 	fi
 
 	;;
-	*freebsd* | *DragonFly* )
+	*freebsd* | *dragonfly* )
 		AC_CACHE_CHECK([for freebsd sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/types.h>
