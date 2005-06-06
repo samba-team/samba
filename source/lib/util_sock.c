@@ -241,6 +241,99 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 	return(ret);
 }
 
+#if 0
+
+Socket routines from HEAD - maybe re-enable in future. JRA.
+
+/****************************************************************************
+ Work out if we've timed out.
+****************************************************************************/
+
+static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime)
+{
+	struct timeval now;
+	SMB_BIG_INT t_dif;
+
+	GetTimeOfDay(&now);
+
+	t_dif = usec_time_diff(endtime, &now);
+	if (t_dif <= 0) {
+		return False;
+	}
+
+	timeout->tv_sec = (t_dif / (SMB_BIG_INT)1000000);
+	timeout->tv_usec = (t_dif % (SMB_BIG_INT)1000000);
+	return True;
+}
+
+/****************************************************************************
+ Read data from the client, reading exactly N bytes, or until endtime timeout.
+ Use with a non-blocking socket if endtime != NULL.
+****************************************************************************/
+
+ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endtime)
+{
+	ssize_t ret;
+	size_t total=0;
+
+	smb_read_error = 0;
+
+	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set r_fds;
+			struct timeval timeout;
+			int selrtn;
+
+			if (!timeout_until(&timeout, endtime)) {
+				DEBUG(10,("read_data_until: read timed out\n"));
+				smb_read_error = READ_TIMEOUT;
+				return -1;
+			}
+
+			FD_ZERO(&r_fds);
+			FD_SET(fd, &r_fds);
+
+			/* Select but ignore EINTR. */
+			selrtn = sys_select_intr(fd+1, &r_fds, NULL, NULL, &timeout);
+			if (selrtn == -1) {
+				/* something is wrong. Maybe the socket is dead? */
+				DEBUG(0,("read_data_until: select error = %s.\n", strerror(errno) ));
+				smb_read_error = READ_ERROR;
+				return -1;
+			}
+
+			/* Did we timeout ? */
+			if (selrtn == 0) {
+				DEBUG(10,("read_data_until: select timed out.\n"));
+				smb_read_error = READ_TIMEOUT;
+				return -1;
+			}
+		}
+
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_data_until: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			if (errno == EAGAIN) {
+				/* Non-blocking socket with no data available. Try select again. */
+				continue;
+			}
+			DEBUG(0,("read_data_until: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+#endif
+
 /****************************************************************************
  Read data from a socket with a timout in msec.
  mincount = if timeout, minimum to read before returning
