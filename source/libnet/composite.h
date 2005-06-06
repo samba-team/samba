@@ -58,6 +58,7 @@ struct rpc_composite_userdel {
 
 struct rpc_composite_domain_open {
 	struct {
+		const char *domain_name;
 		uint32_t access_mask;
 	} in;
 	struct {
