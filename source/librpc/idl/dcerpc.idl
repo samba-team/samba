@@ -217,32 +217,26 @@ interface dcerpc
 
 	typedef [nodiscriminant] union {
 		[case(DCERPC_PKT_REQUEST)]    dcerpc_request  request;
+		[case(DCERPC_PKT_PING)] 	  dcerpc_ping ping;
 		[case(DCERPC_PKT_RESPONSE)]   dcerpc_response response;
+		[case(DCERPC_PKT_FAULT)]	  dcerpc_fault fault;
+		[case(DCERPC_PKT_WORKING)]	  dcerpc_working working;
+		[case(DCERPC_PKT_NOCALL)]     dcerpc_fack nocall;
+		[case(DCERPC_PKT_REJECT)]     dcerpc_fault reject;
+		[case(DCERPC_PKT_ACK)]        dcerpc_ack ack;
+		[case(DCERPC_PKT_CL_CANCEL)]  dcerpc_cl_cancel cl_cancel;
+		[case(DCERPC_PKT_FACK)]       dcerpc_fack fack;
+		[case(DCERPC_PKT_CANCEL_ACK)] dcerpc_cancel_ack cancel_ack;
 		[case(DCERPC_PKT_BIND)]       dcerpc_bind     bind;
 		[case(DCERPC_PKT_BIND_ACK)]   dcerpc_bind_ack bind_ack;
+		[case(DCERPC_PKT_BIND_NAK)]   dcerpc_bind_nak bind_nak;
 		[case(DCERPC_PKT_ALTER)]      dcerpc_bind     alter;
 		[case(DCERPC_PKT_ALTER_RESP)] dcerpc_bind_ack alter_resp;
-		[case(DCERPC_PKT_FAULT)]      dcerpc_fault    fault;
+		[case(DCERPC_PKT_SHUTDOWN)]   dcerpc_shutdown shutdown;
+		[case(DCERPC_PKT_CO_CANCEL)]  dcerpc_co_cancel co_cancel;
+		[case(DCERPC_PKT_ORPHANED)]   dcerpc_orphaned orphaned;
 		[case(DCERPC_PKT_AUTH3)]      dcerpc_auth3    auth3;
-		[case(DCERPC_PKT_BIND_NAK)]   dcerpc_bind_nak bind_nak;
-		[case(DCERPC_PKT_CO_CANCEL)] dcerpc_co_cancel cancel;
-		[case(DCERPC_PKT_ORPHANED)]  dcerpc_orphaned orphaned;
-		[case(DCERPC_PKT_SHUTDOWN)]  dcerpc_shutdown shutdown;
-	} ncacn_payload;
-
-	typedef [nodiscriminant] union {
-		[case(DCERPC_PKT_REQUEST)]   dcerpc_request request;
-		[case(DCERPC_PKT_PING)] 	 dcerpc_ping ping;
-		[case(DCERPC_PKT_RESPONSE)]  dcerpc_response response;
-		[case(DCERPC_PKT_FAULT)]	 dcerpc_fault fault;
-		[case(DCERPC_PKT_WORKING)]	 dcerpc_working working;
-		[case(DCERPC_PKT_NOCALL)]    dcerpc_fack nocall;
-		[case(DCERPC_PKT_REJECT)]    dcerpc_fault reject;
-		[case(DCERPC_PKT_ACK)]       dcerpc_ack ack;
-		[case(DCERPC_PKT_CANCEL_ACK)] dcerpc_cancel_ack cancel_ack;
-		[case(DCERPC_PKT_FACK)]      dcerpc_fack fack;
-		[case(DCERPC_PKT_CL_CANCEL)] dcerpc_cl_cancel cancel;
-	} ncadg_payload;
+	} dcerpc_payload;
 
 	/* pfc_flags values */
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
@@ -267,7 +261,7 @@ interface dcerpc
 		uint16 frag_length;     /* Total length of fragment */
 		uint16 auth_length;     /* authenticator length */
 		uint32 call_id;	        /* Call identifier */
-		[switch_is(ptype)] ncacn_payload u;
+		[switch_is(ptype)] dcerpc_payload u;
 	} ncacn_packet;
 
 	typedef [public] struct {
@@ -290,6 +284,6 @@ interface dcerpc
 		uint16 fragnum;
 		uint8 auth_proto;
 		uint8 serial_low;
-		[switch_is(ptype)] ncadg_payload u;
+		[switch_is(ptype)] dcerpc_payload u;
 	} ncadg_packet;
 }
