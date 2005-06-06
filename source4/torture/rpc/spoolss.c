@@ -1046,15 +1046,15 @@ static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		 struct policy_handle *handle, uint32_t job_id, uint32_t command)
+		 struct policy_handle *handle, uint32_t job_id, enum spoolss_JobControl command)
 {
 	NTSTATUS status;
 	struct spoolss_SetJob r;
 
-	r.in.handle = handle;
-	r.in.job_id = job_id;
-	r.in.level = 0;
-	r.in.command = command;
+	r.in.handle	= handle;
+	r.in.job_id	= job_id;
+	r.in.ctr	= NULL;
+	r.in.command	= command;
 
 	printf("Testing SetJob\n");
 
@@ -1062,6 +1062,10 @@ static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetJob failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("SetJob failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
