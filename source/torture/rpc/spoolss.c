@@ -1829,9 +1829,16 @@ BOOL torture_rpc_spoolss(void)
 
 	ret &= test_OpenPrinter_server(ctx);
 
-	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
-
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "W3SvcInstalled");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "BeepEnabled");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "EventLog");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "NetPopup");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "NetPopupToComputer");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "MajorVersion");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "MinorVersion");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
 
 	ret &= test_EnumPorts(ctx);
 
