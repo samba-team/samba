@@ -646,6 +646,10 @@
 	/******************/
 	/* Function: 0x13 */
 	WERROR spoolss_WritePrinter(
+		[in,ref] policy_handle *handle,
+		[in] DATA_BLOB data,
+		[in,value(r->in.data.length)] uint32 _data_size,
+		[out] uint32 num_written
 	);
 
 	/******************/
@@ -657,11 +661,16 @@
 	/******************/
 	/* Function: 0x15 */
 	WERROR spoolss_AbortPrinter(
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x16 */
 	WERROR spoolss_ReadPrinter(
+		[in,ref] policy_handle *handle,
+		[in] uint32 data_size,
+		[out] DATA_BLOB data,
+		[out,value(r->out.data.length)] uint32 _data_size
 	);
 
 	/******************/
