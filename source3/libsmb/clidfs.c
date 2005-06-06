@@ -161,7 +161,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	   here before trying to connect to the original share.
 	   check_dfs_proxy() will fail if it is a normal share. */
 
-	if ( cli_check_msdfs_proxy( c, sharename, newserver, newshare ) ) {
+	if ( (c->capabilities & CAP_DFS) && cli_check_msdfs_proxy( c, sharename, newserver, newshare ) ) {
 		cli_shutdown(c);
 		return do_connect( newserver, newshare, False );
 	}
