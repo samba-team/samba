@@ -242,129 +242,6 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 }
 
 /****************************************************************************
- Work out if we've timed out.
-****************************************************************************/
-
-static BOOL timeout_until(struct timeval *timeout, const struct timeval *endtime)
-{
-	struct timeval now;
-	SMB_BIG_INT t_dif;
-
-	GetTimeOfDay(&now);
-
-	t_dif = usec_time_diff(endtime, &now);
-	if (t_dif <= 0) {
-		return False;
-	}
-
-	timeout->tv_sec = (t_dif / (SMB_BIG_INT)1000000);
-	timeout->tv_usec = (t_dif % (SMB_BIG_INT)1000000);
-	return True;
-}
-
-/****************************************************************************
- Read data from the client, reading exactly N bytes, or until endtime timeout.
- Use with a non-blocking socket if endtime != NULL.
-****************************************************************************/
-
-ssize_t read_data_until(int fd,char *buffer,size_t N, const struct timeval *endtime)
-{
-	ssize_t ret;
-	size_t total=0;  
- 
-	smb_read_error = 0;
-
-	while (total < N) {
-
-		if (endtime != NULL) {
-			fd_set r_fds;
-			struct timeval timeout;
-			int selrtn;
-
-			if (!timeout_until(&timeout, endtime)) {
-				DEBUG(10,("read_data_until: read timed out\n"));
-				smb_read_error = READ_TIMEOUT;
-				return -1;
-			}
-
-			FD_ZERO(&r_fds);
-			FD_SET(fd, &r_fds);
-
-			/* Select but ignore EINTR. */
-			selrtn = sys_select_intr(fd+1, &r_fds, NULL, NULL, &timeout);
-			if (selrtn == -1) {
-				/* something is wrong. Maybe the socket is dead? */
-				DEBUG(0,("read_data_until: select error = %s.\n", strerror(errno) ));
-				smb_read_error = READ_ERROR;
-				return -1;
-			}
-		
-			/* Did we timeout ? */
-			if (selrtn == 0) {
-				DEBUG(10,("read_data_until: select timed out.\n"));
-				smb_read_error = READ_TIMEOUT;
-				return -1;
-			}
-		}
-
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_data_until: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
-			return 0;
-		}
-
-		if (ret == -1) {
-			if (errno == EAGAIN) {
-				/* Non-blocking socket with no data available. Try select again. */
-				continue;
-			}
-			DEBUG(0,("read_data_until: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
-}
-
-ssize_t read_data(int fd,char *buffer,size_t N)
-{
-	return read_data_until(fd, buffer, N, NULL);
-}
-
-/****************************************************************************
- Read data from a socket, reading exactly N bytes. 
-****************************************************************************/
-
-static ssize_t read_socket_data(int fd,char *buffer,size_t N)
-{
-	ssize_t ret;
-	size_t total=0;  
- 
-	smb_read_error = 0;
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_EOF;
-			return 0;
-		}
-
-		if (ret == -1) {
-			DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
-			smb_read_error = READ_ERROR;
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
-}
-
-/****************************************************************************
  Read data from a socket with a timout in msec.
  mincount = if timeout, minimum to read before returning
  maxcount = number to be read.
@@ -379,14 +256,33 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 	size_t nread = 0;
 	struct timeval timeout;
 	
+	/* just checking .... */
+	if (maxcnt <= 0)
+		return(0);
+	
 	smb_read_error = 0;
 	
+	/* Blocking read */
 	if (time_out <= 0) {
-		/* Blocking read */
-		if (mincnt == 0) {
-			mincnt = maxcnt;
+		if (mincnt == 0) mincnt = maxcnt;
+		
+		while (nread < mincnt) {
+			readret = sys_read(fd, buf + nread, maxcnt - nread);
+			
+			if (readret == 0) {
+				DEBUG(5,("read_socket_with_timeout: blocking read. EOF from client.\n"));
+				smb_read_error = READ_EOF;
+				return -1;
+			}
+			
+			if (readret == -1) {
+				DEBUG(0,("read_socket_with_timeout: read error = %s.\n", strerror(errno) ));
+				smb_read_error = READ_ERROR;
+				return -1;
+			}
+			nread += readret;
 		}
-		return read_socket_data(fd, buf, mincnt);
+		return((ssize_t)nread);
 	}
 	
 	/* Most difficult - timeout read */
@@ -430,11 +326,6 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 		}
 		
 		if (readret == -1) {
-			if (errno == EAGAIN) {
-				/* Non-blocking socket with no data available. Try select again. */
-				continue;
-			}
-
 			/* the descriptor is probably dead */
 			DEBUG(0,("read_socket_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
 			smb_read_error = READ_ERROR;
@@ -448,39 +339,80 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 	return (ssize_t)nread;
 }
 
-/***************************************************************************
+/****************************************************************************
+ Read data from the client, reading exactly N bytes. 
+****************************************************************************/
+
+ssize_t read_data(int fd,char *buffer,size_t N)
+{
+	ssize_t ret;
+	size_t total=0;  
+ 
+	smb_read_error = 0;
+
+	while (total < N) {
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+/****************************************************************************
+ Read data from a socket, reading exactly N bytes. 
+****************************************************************************/
+
+static ssize_t read_socket_data(int fd,char *buffer,size_t N)
+{
+	ssize_t ret;
+	size_t total=0;  
+ 
+	smb_read_error = 0;
+
+	while (total < N) {
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_EOF;
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_socket_data: recv failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			smb_read_error = READ_ERROR;
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+/****************************************************************************
  Write data to a fd.
 ****************************************************************************/
 
-ssize_t write_data_until(int fd,const char *buffer,size_t N,
-			 const struct timeval *endtime)
+ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
 
 	while (total < N) {
-
-		if (endtime != NULL) {
-			fd_set w_fds;
-			struct timeval timeout;
-			int res;
-
-			if (!timeout_until(&timeout, endtime))
-				return -1;
-
-			FD_ZERO(&w_fds);
-			FD_SET(fd, &w_fds);
-
-			/* select but ignore EINTR. */
-			res = sys_select_intr(fd+1, NULL, &w_fds, NULL, &timeout);
-			if (res <= 0)
-				return -1;
-		}
-
 		ret = sys_write(fd,buffer + total,N - total);
 
 		if (ret == -1) {
-			DEBUG(0,("write_data_until: write failure. Error = %s\n", strerror(errno) ));
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
 			return -1;
 		}
 		if (ret == 0)
@@ -489,11 +421,6 @@ ssize_t write_data_until(int fd,const char *buffer,size_t N,
 		total += ret;
 	}
 	return (ssize_t)total;
-}
-
-ssize_t write_data(int fd,const char *buffer,size_t N)
-{
-	return write_data_until(fd, buffer, N, NULL);
 }
 
 /****************************************************************************
@@ -830,9 +757,6 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
 	putip((char *)&sock_out.sin_addr,(char *)addr);
   
-#ifdef HAVE_SOCK_SIN_LEN
-	sock_out.sin_len = sizeof(sock_out);
-#endif
 	sock_out.sin_port = htons( port );
 	sock_out.sin_family = PF_INET;
 
