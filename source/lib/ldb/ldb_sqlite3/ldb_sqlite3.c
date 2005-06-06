@@ -903,11 +903,16 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
                 ;
         
         /* Skip protocol indicator of url  */
-        if ((p = strchr(url, ':')) == NULL) {
-                return SQLITE_MISUSE;
-        } else {
-                ++p;
-        }
+	if (strchr(url, ':')) {
+		if (strncmp(url, "sqlite://", 9) != 0) {
+			errno = EINVAL;
+			return SQLITE_MISUSE;
+		}
+		p = url + 9;
+	} else {
+		p = url;
+	}
+
                 
         /*
          * See if we'll be creating a new database, or opening an existing one
