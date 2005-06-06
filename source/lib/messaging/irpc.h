@@ -25,6 +25,7 @@
 */
 struct irpc_message {
 	uint32_t from;
+	void *private;
 };
 
 /* don't allow calls to take too long */
@@ -35,10 +36,10 @@ struct irpc_message {
 typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 
 /* register a server function with the irpc messaging system */
-#define IRPC_REGISTER(msg_ctx, pipename, funcname, function) \
+#define IRPC_REGISTER(msg_ctx, pipename, funcname, function, private) \
    irpc_register(msg_ctx, &dcerpc_table_ ## pipename, \
                           DCERPC_ ## funcname, \
-			  (irpc_function_t)function)
+			  (irpc_function_t)function, private)
 
 /* make a irpc call */
 #define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr) \
@@ -84,7 +85,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct dcerpc_interface_table *table, 
-		       int call, irpc_function_t fn);
+		       int call, irpc_function_t fn, void *private);
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    uint32_t server_id, 
 				    const struct dcerpc_interface_table *table, 
