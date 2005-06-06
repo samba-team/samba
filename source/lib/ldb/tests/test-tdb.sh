@@ -1,9 +1,9 @@
 #!/bin/sh
 
 
-export LDB_URL="tdb://test.ldb"
+export LDB_URL="tdb://tdbtest.ldb"
 
-rm -f test.ldb
+rm -f tdbtest.ldb
 
 . tests/test-generic.sh
 
