@@ -8,7 +8,7 @@ libdir = @libdir@
 bindir = @bindir@
 WITH_GCOV = @WITH_GCOV@
 WITH_LDAP = @WITH_LDAP@
-WITH_SQLITE3 = @WITH_LDAP@
+WITH_SQLITE3 = @WITH_SQLITE3@
 
 ifeq ($(WITH_LDAP),yes)
 OPENLDAP_PREFIX=/usr
