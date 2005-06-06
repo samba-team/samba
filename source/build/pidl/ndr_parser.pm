@@ -522,12 +522,14 @@ sub ParseSubcontextPushStart($$$$$)
 	return $retndr;
 }
 
-sub ParseSubcontextPushEnd($$$)
+sub ParseSubcontextPushEnd($$$$)
 {
 	my $e = shift;
 	my $l = shift;
 	my $ndr_flags = shift;
+	my $env = shift;
 	my $ndr = "_ndr_$e->{NAME}";
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPushEnd($e, $l, $ndr);
@@ -537,7 +539,7 @@ sub ParseSubcontextPushEnd($$$)
 		ParseObfuscationPushEnd($e, $ndr);
 	}
 
-	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $l->{HEADER_SIZE}, $l->{SUBCONTEXT_SIZE}, $ndr));";
+	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $l->{HEADER_SIZE}, $subcontext_size, $ndr));";
 	pidl "NDR_CHECK(ndr_push_bytes(ndr, $ndr->data, $ndr->offset));";
 	deindent;
 	pidl "}";
@@ -552,12 +554,13 @@ sub ParseSubcontextPullStart($$$$$$)
 	my $ndr_flags = shift;	
 	my $env = shift;
 	my $retndr = "_ndr_$e->{NAME}";
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	pidl "{";
 	indent;
 	pidl "struct ndr_pull *$retndr;";
 	pidl "NDR_ALLOC(ndr, $retndr);";
-	pidl "NDR_CHECK(ndr_pull_subcontext_header($ndr, $l->{HEADER_SIZE}, $l->{SUBCONTEXT_SIZE}, $retndr));"; 
+	pidl "NDR_CHECK(ndr_pull_subcontext_header($ndr, $l->{HEADER_SIZE}, $subcontext_size, $retndr));"; 
 
 	if (defined $l->{COMPRESSION}) {
 		$retndr = ParseCompressionPullStart($e, $l, $retndr, $env);
@@ -570,10 +573,11 @@ sub ParseSubcontextPullStart($$$$$$)
 	return ($retndr,$var_name);
 }
 
-sub ParseSubcontextPullEnd($$)
+sub ParseSubcontextPullEnd($$$)
 {
 	my $e = shift;
 	my $l = shift;
+	my $env = shift;
 	my $ndr = "_ndr_$e->{NAME}";
 
 	if (defined $l->{COMPRESSION}) {
@@ -586,7 +590,7 @@ sub ParseSubcontextPullEnd($$)
 
 	my $advance;
 	if (defined($l->{SUBCONTEXT_SIZE}) and ($l->{SUBCONTEXT_SIZE} ne "-1")) {
-		$advance = $l->{SUBCONTEXT_SIZE};
+		$advance = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 	} elsif ($l->{HEADER_SIZE}) {
 		$advance = "$ndr->data_size";
 	} else {
@@ -613,7 +617,7 @@ sub ParseElementPushLevel
 		if ($l->{TYPE} eq "SUBCONTEXT") {
 			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
 			ParseElementPushLevel($e, Ndr::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
-			ParseSubcontextPushEnd($e, $l, $ndr_flags);
+			ParseSubcontextPushEnd($e, $l, $ndr_flags, $env);
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPush($e, $l, $var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -934,7 +938,7 @@ sub ParseElementPullLevel
 		if ($l->{TYPE} eq "SUBCONTEXT") {
 			($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
 			ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
-			ParseSubcontextPullEnd($e, $l);
+			ParseSubcontextPullEnd($e, $l, $env);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
 
