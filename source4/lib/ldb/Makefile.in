@@ -119,15 +119,29 @@ test-tdb:
 	@echo "STARTING TDB BACKEND TEST"
 	tests/test-tdb.sh
 
+ifeq ($(WITH_LDAP),yes)
 test-ldap:
 	@echo "STARTING LDAP BACKEND TEST"
 	tests/test-ldap.sh
+else
+test-ldap:
+	@echo "SKIP LDAP TEST - NO LDAP SUPPORT"
+endif
+
+ifeq ($(WITH_SQLITE3),yes)
+test-sqlite3:
+	@echo "STARTING SQLITE3 BACKEND TEST"
+	tests/test-sqlite3.sh
+else
+test-sqlite3:
+	@echo "SKIP SQLITE3 TEST - NO SQLITE3 SUPPORT"
+endif
 
 test-schema:
 	@echo "STARTING SCHEMA MODULE TEST"
 	tests/test-schema.sh
 
-test: test-tdb test-ldap test-schema
+test: test-tdb test-ldap test-sqlite3 test-schema
 
 install: all
 	cp include/ldb.h $(includedir)
