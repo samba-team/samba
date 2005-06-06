@@ -279,12 +279,8 @@
 	/******************/
 	/* Function: 0x01 */
 	typedef struct {
-		uint32 foo;
-	} spoolss_Devmode;
-
-	typedef struct {
 		uint32 size;
-		spoolss_Devmode *devmode;
+		[subcontext(4),subcontext_size(size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
 	WERROR spoolss_OpenPrinter(
@@ -387,13 +383,32 @@
 
 	/******************/
 	/* Function: 0x07 */
+	typedef [switch_type(uint32)] union {
+		[case(0)] spoolss_PrinterInfo0 *info0;
+		[case(1)] spoolss_PrinterInfo1 *info1;
+		[case(2)] spoolss_PrinterInfo2 *info2;
+		[case(3)] spoolss_PrinterInfo3 *info3;
+		[case(4)] spoolss_PrinterInfo4 *info4;
+		[case(5)] spoolss_PrinterInfo5 *info5;
+		[case(6)] spoolss_PrinterInfo6 *info6;
+		[case(7)] spoolss_PrinterInfo7 *info7;
+		[case(8)] spoolss_DeviceModeInfo *info8;
+		[case(9)] spoolss_DeviceModeInfo *info9;
+		[default];
+	} spoolss_SetPrinterInfo;
+
+	typedef struct {
+		uint32 size;
+		[subcontext(4),subcontext_size(size)] security_descriptor *sd;
+	} spoolss_SecDescContainer;
+
 	WERROR spoolss_SetPrinter(
 		[in,ref] policy_handle *handle,
-		[in]     uint32 level,
-		[in,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
-		[in]     spoolss_DevmodeContainer devmode_ctr,
-		[in,relative,subcontext(0)] security_descriptor *secdesc,
-		[in]     spoolss_PrinterControl command
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_SetPrinterInfo info,
+		[in] spoolss_DevmodeContainer devmode_ctr,
+		[in] spoolss_SecDescContainer secdesc_ctr,
+		[in] spoolss_PrinterControl command
 	);
 
 	/******************/
