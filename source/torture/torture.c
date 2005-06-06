@@ -2337,6 +2337,7 @@ static struct {
 	{"NET-USERINFO", torture_userinfo, 0},
 	{"NET-USERADD", torture_useradd, 0},
 	{"NET-USERDEL", torture_userdel, 0},
+	{"NET-DOMOPEN", torture_domainopen, 0},
 
 	{NULL, NULL, 0}};
 
