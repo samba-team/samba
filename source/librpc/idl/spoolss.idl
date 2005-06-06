@@ -230,7 +230,7 @@
 	} spoolss_PrinterInfo7;
 
 	typedef struct {
-		[relative] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0)] spoolss_DeviceMode *devmode;
 	} spoolss_DeviceModeInfo;
 
 	typedef [nodiscriminant,relative_base,public] union {
