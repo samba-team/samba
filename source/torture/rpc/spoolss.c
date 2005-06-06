@@ -1324,9 +1324,8 @@ static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	r.in.handle = handle;
 	r.in.value_name = value_name;
-	r.in.type = 0;
-	r.in.buffer = data_blob_talloc(mem_ctx, "dog", 4);
-	r.in.real_len = 4;
+	r.in.type = SPOOLSS_PRINTER_DATA_TYPE_STRING;
+	r.in.data.string = "dog";
 
 	printf("Testing SetPrinterData\n");
 
@@ -1334,6 +1333,10 @@ static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetPrinterData failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_GetPrinterData(p, mem_ctx, handle, value_name)) {
 		return False;
 	}
 
@@ -1828,7 +1831,7 @@ BOOL torture_rpc_spoolss(void)
 
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
 
-	/*ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");*/
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
 
 	ret &= test_EnumPorts(ctx);
 

@@ -37,6 +37,8 @@ union spoolss_FormInfo;
 union spoolss_PortInfo;
 union spoolss_MonitorInfo;
 union spoolss_PrintProcessorInfo;
+struct spoolss_GetPrinterData;
+struct spoolss_SetPrinterData;
 
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;

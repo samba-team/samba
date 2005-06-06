@@ -350,3 +350,94 @@ uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, uint32
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrintProcessors);
 }
+
+/*
+  spoolss_GetPrinterData
+*/
+NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r)
+{
+	struct _spoolss_GetPrinterData _r;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		_r.in.handle	= r->in.handle;
+		_r.in.value_name= r->in.value_name;
+		_r.in.buf_size	= r->in.buf_size;
+		_r.out.type	= r->out.type;
+		_r.out.data	= data_blob(NULL,0),
+		_r.out.buf_size	= r->out.buf_size;
+		NDR_CHECK(ndr_pull__spoolss_GetPrinterData(ndr, flags, &_r));
+		r->in.handle	= _r.in.handle;
+		r->in.value_name= _r.in.value_name;
+		r->in.buf_size	= _r.in.buf_size;
+	}
+	if (flags & NDR_OUT) {
+		_r.in.handle	= r->in.handle;
+		_r.in.value_name= r->in.value_name;
+		_r.in.buf_size	= r->in.buf_size;
+		_r.out.type	= r->out.type;
+		_r.out.data	= data_blob(NULL,0),
+		_r.out.buf_size	= r->out.buf_size;
+		_r.out.result	= r->out.result;
+		NDR_CHECK(ndr_pull__spoolss_GetPrinterData(ndr, flags, &_r));
+		r->out.type	= _r.out.type;
+		ZERO_STRUCT(r->out.data);
+		r->out.buf_size	= _r.out.buf_size;
+		r->out.result	= _r.out.result;
+		if (_r.out.data.length > 0) {
+			struct __spoolss_GetPrinterData __r;
+			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);\
+			if (!_ndr_data) return NT_STATUS_NO_MEMORY;\
+			_ndr_data->flags= ndr->flags;\
+			__r.in.type	= r->out.type;
+			__r.out.data	= r->out.data;
+			NDR_CHECK(ndr_pull___spoolss_GetPrinterData(_ndr_data, flags, &__r));
+			r->out.data	= __r.out.data;
+		} else {
+			r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  spoolss_SetPrinterData
+*/
+NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, struct spoolss_SetPrinterData *r)
+{
+	struct _spoolss_SetPrinterData _r;
+	if (flags & NDR_IN) {
+		struct ndr_push *_ndr_data;
+		struct __spoolss_SetPrinterData __r;
+		DATA_BLOB _data_blob_data;
+
+		_ndr_data = ndr_push_init_ctx(ndr);\
+		if (!_ndr_data) return NT_STATUS_NO_MEMORY;\
+		_ndr_data->flags= ndr->flags;\
+
+		__r.in.type	= r->in.type;
+		__r.out.data	= r->in.data;
+		NDR_CHECK(ndr_push___spoolss_SetPrinterData(_ndr_data, NDR_OUT, &__r));
+		_data_blob_data = ndr_push_blob(_ndr_data);
+
+		r->in._buf_size	= _data_blob_data.length;
+
+		_r.in.handle	= r->in.handle;
+		_r.in.value_name= r->in.value_name;
+		_r.in.type	= r->in.type;
+		_r.in.data	= _data_blob_data;
+		_r.in._buf_size	= r->in._buf_size;
+		_r.out.result	= r->out.result;
+		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
+	}
+	if (flags & NDR_OUT) {
+		_r.in.handle	= r->in.handle;
+		_r.in.value_name= r->in.value_name;
+		_r.in.type	= r->in.type;
+		_r.in.data	= data_blob(NULL,0),
+		_r.in._buf_size	= r->in._buf_size;
+		_r.out.result	= r->out.result;
+		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
+	}
+	return NT_STATUS_OK;
+}
