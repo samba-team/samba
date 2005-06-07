@@ -9,7 +9,7 @@ AC_CONFIG_HEADER(include/config.h)
 
 sinclude(build/m4/env.m4)
 sinclude(build/m4/rewrite.m4)
-
+sinclude(heimdal_build/config.m4)
 sinclude(lib/popt/config.m4)
 sinclude(lib/iconv.m4)
 sinclude(lib/socket/config.m4)
@@ -20,7 +20,10 @@ sinclude(lib/ldb/sqlite3.m4)
 sinclude(lib/ldb/config.m4)
 sinclude(lib/events/config.m4)
 sinclude(lib/cmdline/config.m4)
-sinclude(auth/kerberos/config.m4)
+
+dnl disabled until we support external heimdal again
+dnl sinclude(auth/kerberos/config.m4)
+
 sinclude(auth/gensec/config.m4)
 sinclude(libcli/config.m4)
 sinclude(smbd/process_model.m4)

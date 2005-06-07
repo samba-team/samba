@@ -14,8 +14,7 @@ REQUIRED_SUBSYSTEMS = \
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_krb5_init
 INIT_OBJ_FILES = auth/gensec/gensec_krb5.o 
-REQUIRED_SUBSYSTEMS = NDR_KRB5PAC KERBEROS EXT_LIB_KRB5 AUTH
-
+REQUIRED_SUBSYSTEMS = NDR_KRB5PAC KERBEROS KERBEROS_LIB AUTH
 # End MODULE gensec_krb5
 ################################################
 
@@ -25,7 +24,7 @@ REQUIRED_SUBSYSTEMS = NDR_KRB5PAC KERBEROS EXT_LIB_KRB5 AUTH
 SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_gssapi_init
 INIT_OBJ_FILES = auth/gensec/gensec_gssapi.o 
-REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5 AUTH
+REQUIRED_SUBSYSTEMS = KERBEROS_LIB AUTH
 # End MODULE gensec_gssapi
 ################################################
 

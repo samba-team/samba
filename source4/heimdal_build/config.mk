@@ -311,15 +311,13 @@ ADD_OBJ_FILES = \
 	heimdal/lib/asn1/hash.o \
 	heimdal/lib/asn1/lex.o \
 	heimdal/lib/asn1/parse.o \
-	heimdal/lib/roken/strlcat.o \
-	heimdal/lib/roken/strlcpy.o \
 	heimdal/lib/roken/emalloc.o \
 	heimdal/lib/roken/getarg.o \
 	heimdal/lib/roken/print_version.o \
 	heimdal/lib/roken/setprogname.o \
 	heimdal/lib/asn1/symbol.o
-TARGET_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/kdc -Iheimdal/lib/asn1 -Iheimdal/lib/des -Iheimdal/lib/com_err -Iheimdal/include 
 REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN
+TARGET_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
 NOPROTO = YES
 # End SUBSYSTEM ASN1_COMPILER
 #######################
@@ -327,9 +325,34 @@ NOPROTO = YES
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-REQUIRED_SUBSYSTEMS = ASN1_COMPILER
-TARGET_CFLAGS = -Iheimdal/lib/krb5 -Iheimdal/kdc -Iheimdal/lib/asn1 -Iheimdal/lib/des -Iheimdal/lib/com_err -Iheimdal_build -Iheimdal/include 
+REQUIRED_SUBSYSTEMS = ASN1_COMPILER LIBREPLACE
 # End BINARY asn1_compile
+#######################
+
+
+#######################
+# Start SUBSYSTEM COMPILE_ET
+[SUBSYSTEM::COMPILE_ET]
+ADD_OBJ_FILES = \
+	heimdal/lib/com_err/lex.o \
+	heimdal/lib/com_err/parse.o \
+	heimdal/lib/com_err/compile_et.o \
+	heimdal/lib/roken/getarg.o \
+	heimdal/lib/roken/get_window_size.o \
+	heimdal/lib/roken/getprogname.o \
+	heimdal/lib/roken/strupr.o \
+	heimdal/lib/roken/print_version.o \
+	heimdal/lib/roken/setprogname.o
+TARGET_CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
+NOPROTO = YES
+# End SUBSYSTEM COMPILE_ET
+#######################
+
+#######################
+# Start BINARY compile_et
+[BINARY::compile_et]
+REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE
+# End BINARY compile_et
 #######################
 
 
@@ -346,7 +369,7 @@ REQUIRED_SUBSYSTEMS = ASN1_COMPILER
 # Start SUBSYSTEM HEIMDAL
 [SUBSYSTEM::HEIMDAL]
 NOPROTO = YES
-TARGET_CFLAGS = -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/hdb -Iheimdal/lib/gssapi -Iheimdal/kdc -Iheimdal/lib/asn1 -Iheimdal/lib/des -Iheimdal/lib/com_err -Iheimdal/include 
+TARGET_CFLAGS = -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include 
 REQUIRED_SUBSYSTEMS = \
 		HEIMDAL_KDC HEIMDAL_HDB HEIMDAL_GSSAPI HEIMDAL_KRB5 \
 		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR
@@ -357,6 +380,6 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM KERBEROS_LIB
 [SUBSYSTEM::KERBEROS_LIB]
 #REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
-REQUIRED_SUBSYSTEMS = HEIMDAL
+REQUIRED_SUBSYSTEMS = HEIMDAL LIBREPLACE
 # End SUBSYSTEM KERBEROS_LIB
 #######################
