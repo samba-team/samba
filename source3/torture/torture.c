@@ -4481,6 +4481,10 @@ static BOOL run_dirtest1(int dummy)
 
 	cli_sockopt(cli, sockops);
 
+	/* This is for a particular *slow* machine, lets see whether this then
+	 * shows up in the build farm. */
+	cli->timeout *= 10;
+
 	cli_list(cli, "\\LISTDIR\\*", 0, del_fn, cli);
 	cli_list(cli, "\\LISTDIR\\*", aDIR, del_fn, cli);
 	cli_rmdir(cli, "\\LISTDIR");
