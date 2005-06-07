@@ -26,6 +26,13 @@ struct libnet_context {
 	 * a user env context
 	 */
 	struct cli_credentials *cred;
+
+	/* dcerpc pipes */
+	struct dcerpc_pipe *samr;
+
+	/* opened handles */
+	struct policy_handle domain_handle;
+	struct policy_handle user_handle;
 };
 
 
