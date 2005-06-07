@@ -75,6 +75,7 @@
 	r->in.level	= _r.in.level;\
 	r->in.buffer	= _r.in.buffer;\
 	r->in.buf_size	= _r.in.buf_size;\
+	r->out.buf_size = _r.out.buf_size;\
 } while(0)
 
 #define NDR_SPOOLSS_PULL_ENUM_OUT(fn) do { \
@@ -370,6 +371,7 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 		r->in.handle	= _r.in.handle;
 		r->in.value_name= _r.in.value_name;
 		r->in.buf_size	= _r.in.buf_size;
+		r->out.buf_size	= _r.out.buf_size;
 	}
 	if (flags & NDR_OUT) {
 		_r.in.handle	= r->in.handle;
@@ -386,9 +388,9 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 		r->out.result	= _r.out.result;
 		if (_r.out.data.length > 0) {
 			struct __spoolss_GetPrinterData __r;
-			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);\
-			if (!_ndr_data) return NT_STATUS_NO_MEMORY;\
-			_ndr_data->flags= ndr->flags;\
+			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);
+			if (!_ndr_data) return NT_STATUS_NO_MEMORY;
+			_ndr_data->flags= ndr->flags;
 			__r.in.type	= r->out.type;
 			__r.out.data	= r->out.data;
 			NDR_CHECK(ndr_pull___spoolss_GetPrinterData(_ndr_data, flags, &__r));
