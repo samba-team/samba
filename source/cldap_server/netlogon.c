@@ -83,11 +83,12 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
 		NBT_SERVER_GOOD_TIMESERV;
 
-	if (lp_parm_bool(-1, "krb5", "kdc", True)) {
-		server_type |= NBT_SERVER_KDC;
-	}
 	if (str_list_check(services, "ldap")) {
 		server_type |= NBT_SERVER_LDAP;
+	}
+
+	if (str_list_check(services, "kdc")) {
+		server_type |= NBT_SERVER_KDC;
 	}
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
@@ -95,7 +96,8 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	realm            = samdb_result_string(res[0], "realm", lp_realm());
 	dns_domain       = samdb_result_string(res[0], "dnsDomain", lp_realm());
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
-					   lp_netbios_name(), dns_domain);
+					   strlower_talloc(mem_ctx, lp_netbios_name()), 
+					   dns_domain);
 	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
 	site_name        = "Default-First-Site-Name";
 	site_name2       = "";
