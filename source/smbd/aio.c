@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#define HAVE_POSIX_ASYNC_IO 1
-
 #if HAVE_POSIX_ASYNC_IO
 
 #include <aio.h>
