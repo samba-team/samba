@@ -21,10 +21,16 @@
 
 #include "includes.h"
 
+#define HAVE_POSIX_ASYNC_IO 1
+
 #if HAVE_POSIX_ASYNC_IO
 
+#include <aio.h>
+
 /* The signal we'll use to signify aio done. */
+#ifndef RT_SIGNAL_AIO
 #define RT_SIGNAL_AIO (SIGRTMIN+3)
+#endif
 
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
@@ -37,7 +43,7 @@ struct aio_extra {
 	int fnum;
 };
 
-struct aio_extra aio_list_head;
+struct aio_extra *aio_list_head;
 
 /****************************************************************************
  Create the extended aio struct we must keep around for the lifetime
@@ -55,7 +61,7 @@ static struct aio_extra *create_aio_ex(size_t buflen)
 	/* The buf stored in the aio_ex is the start of
 	   the smb return buffer. The buffer used in the acb
 	   is the start of the reply data portion of that buffer. */
-	aio_ex->buf = SMB_MALLOC_ARRAY(char *, buflen);
+	aio_ex->buf = SMB_MALLOC_ARRAY(char, buflen);
 	if (!aio_ex->buf) {
 		SAFE_FREE(aio_ex);
 		return NULL;
@@ -84,7 +90,7 @@ static struct aio_extra *find_aio_ex(struct aiocb *pacb)
 	struct aio_extra *p;
 
 	for( p = aio_list_head; p; p = p->next) {
-		if (pacb == p->acb) {
+		if (pacb == &p->acb) {
 			return p;
 		}
 	}
@@ -108,7 +114,8 @@ static struct aiocb aio_pending_array[AIO_PENDING_SIZE];
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < AIO_PENDING_SIZE - 1) {
-		aio_pending_array[signals_received] = *(struct aiocb *)(info->si_value.sival_ptr);
+		aio_pending_array[signals_received] =
+			*(struct aiocb *)(info->si_value.sival_ptr);
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal();
@@ -118,27 +125,33 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
  Set up an aio request from a SMBreadX call.
 *****************************************************************************/
 
-BOOL schedule_aio_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
-				files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
+BOOL schedule_aio_read_and_X(connection_struct *conn,
+			     char *inbuf, char *outbuf,
+			     int length, int len_outbuf,
+			     files_struct *fsp, SMB_OFF_T startpos,
+			     size_t smb_maxcnt)
 {
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 
 	if (min_aio_read_size && (smb_maxcnt < min_aio_read_size)) {
 		/* Too small a read for aio request. */
-		DEBUG(10,("schedule_aio_read_and_X: read size (%u) too small for minimum aio_read of %u\n",
-			(unsigned int)smb_maxcnt, (unsigned int)min_aio_read_size ));
+		DEBUG(10,("schedule_aio_read_and_X: read size (%u) too small "
+			  "for minimum aio_read of %u\n",
+			  (unsigned int)smb_maxcnt,
+			  (unsigned int)min_aio_read_size ));
 		return False;
 	}
 
 	if (outstanding_aio_reads >= AIO_PENDING_SIZE) {
-		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio activities outstanding.\n",
-			outstanding_aio_reads ));
+		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio "
+			  "activities outstanding.\n",
+			  outstanding_aio_reads ));
 		return False;
 	}
 
 	/* Allocate and set up the aio record here... */
 
-	srv_defer_sign_response(mid);
+	srv_defer_sign_response(SVAL(inbuf,smb_mid));
 	return True;
 }
 
@@ -150,33 +163,38 @@ void process_aio_queue(void)
 		return;
 	}
 
-	BlockSignals(True, RT_SIGNAL_NOTIFY);
+	BlockSignals(True, RT_SIGNAL_AIO);
 
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
 		struct aiocb *acb = &aio_pending_array[i];
-		struct aio_extra aio_ex = find_aio_ex(acp);
+		struct aio_extra *aio_ex = find_aio_ex(acb);
+		int outsize;
 		char *outbuf = aio_ex->buf;
 		char *data = smb_buf(outbuf);
 		ssize_t nread = aio_return(&aio_ex->acb);
 
 		if (nread < 0) {
-			/* We're relying here on the fact that if the fd is closed then
-			   the aio will complete and aio_return will return an error. Hopefully
-			   this is true.... JRA. */
-			DEBUG( 3,( "process_aio_queue fnum=%d nread == -1. Error = %s\n",
-				aio_ex->fnum, strerror(errno) ));
+			/* We're relying here on the fact that if the fd is
+			   closed then the aio will complete and aio_return
+			   will return an error. Hopefully this is
+			   true.... JRA. */
+			DEBUG( 3,( "process_aio_queue fnum=%d nread == -1. "
+				   "Error = %s\n",
+				   aio_ex->fnum, strerror(errno) ));
 			outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 		} else {
 			outsize = set_message(outbuf,12,nread,False);
-			SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
+			SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be
+							* -1. */
 			SSVAL(outbuf,smb_vwv5,nread);
 			SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 			SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 			SSVAL(smb_buf(outbuf),-2,nread);
 
-			DEBUG( 3, ( "process_aio_queue fnum=%d max=%d nread=%d\n",
-				aio_ex->fnum, (int)smb_maxcnt, (int)nread ) );
+			DEBUG( 3, ( "process_aio_queue fnum=%d max=%d "
+				    "nread=%d\n", aio_ex->fnum,
+				    acb->aio_nbytes, (int)nread ) );
 
 		}
 		smb_setlen(outbuf,outsize - 4);
@@ -188,8 +206,7 @@ void process_aio_queue(void)
 	}
 	outstanding_aio_reads -= signals_received;
 	signals_received = 0;
-	BlockSignals(False, RT_SIGNAL_NOTIFY);
-
+	BlockSignals(False, RT_SIGNAL_AIO);
 }
 
 void initialize_async_io_handler(void)
@@ -202,7 +219,7 @@ void initialize_async_io_handler(void)
 	sigemptyset( &act.sa_mask );
 	if (sigaction(RT_SIGNAL_AIO, &act, NULL) != 0) {
                 DEBUG(0,("Failed to setup RT_SIGNAL_AIO handler\n"));
-                return NULL;
+                return;
         }
 
 	/* the signal can start off blocked due to a bug in bash */
@@ -217,8 +234,11 @@ void process_aio_queue(void)
 {
 }
 
-BOOL schedule_aio_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
-				files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
+BOOL schedule_aio_read_and_X(connection_struct *conn,
+			     char *inbuf, char *outbuf,
+			     int length, int len_outbuf,
+			     files_struct *fsp, SMB_OFF_T startpos,
+			     size_t smb_maxcnt)
 {
 	return False;
 }
