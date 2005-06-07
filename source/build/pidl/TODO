@@ -1,0 +1,27 @@
+- Fix string support.
+ This would make strings a special kind of arrays flagged by the 
+ [string] attribute. Pidl itself would support a couple of extra 
+ attributes for it's own use while being compatible with other IDL 
+ compilers. 
+ Proposed extensions for pidl:
+   [convert(t)] attribute for forcing conversions from CH_UCS2, etc to UTF8
+   [noterm] attribute
+   [nullterm] attribute
+
+The various flags for strings would change as follows:
+ 
+LIBNDR_FLAG_STR_ASCII               -> [convert(CH_ASCII)]
+LIBNDR_FLAG_STR_LEN4			    -> optionally [length_is()]
+LIBNDR_FLAG_STR_SIZE4	            -> [size_is()] or if needed [conformant]
+LIBNDR_FLAG_STR_NOTERM	            -> [noterm]
+LIBNDR_FLAG_STR_NULLTERM            -> [nullterm]
+LIBNDR_FLAG_STR_SIZE2	            -> uint16 length; [string] char data[length]
+LIBNDR_FLAG_STR_BYTESIZE            -> ???
+LIBNDR_FLAG_STR_FIXLEN32            -> [32]
+LIBNDR_FLAG_STR_CONFORMANT          -> no longer needed
+LIBNDR_FLAG_STR_CHARLEN	            -> ???
+LIBNDR_FLAG_STR_UTF8                -> Nothing (but UCS2 has [convert(CH_UCS2)]
+LIBNDR_FLAG_STR_FIXLEN15            -> [15]
+
+- True multiple dimension array / strings in arrays support (closely related to 
+	things specified above)

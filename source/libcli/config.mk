@@ -43,7 +43,8 @@ ADD_OBJ_FILES = \
 	libcli/dgram/dgramsocket.o \
 	libcli/dgram/mailslot.o \
 	libcli/dgram/netlogon.o \
-	libcli/dgram/ntlogon.o
+	libcli/dgram/ntlogon.o \
+	libcli/dgram/browse.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
