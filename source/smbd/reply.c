@@ -2892,9 +2892,12 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
 
+	set_message(outbuf,6,0,True);
+  
 	/* Deal with possible LARGE_WRITEX */
-	if (large_writeX)
+	if (large_writeX) {
 		numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+	}
 
 	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
 		END_PROFILE(SMBwriteX);
@@ -2936,18 +2939,24 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	done, just a write of zero. To truncate a file,
 	use SMBwrite. */
 
-	if(numtowrite == 0)
+	if(numtowrite == 0) {
 		nwritten = 0;
-	else
+	} else {
+
+		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
+					fsp,data,startpos,numtowrite)) {
+			END_PROFILE(SMBwriteX);
+			return -1;
+		}
+
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteX);
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
-	set_message(outbuf,6,0,True);
-  
 	SSVAL(outbuf,smb_vwv2,nwritten);
 	if (large_writeX)
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);

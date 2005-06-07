@@ -444,6 +444,7 @@ typedef struct
 	BOOL bAclCheckPermissions;
 	int iallocation_roundup_size;
 	int iAioReadSize;
+	int iAioWriteSize;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -573,6 +574,7 @@ static service sDefault = {
 	True,			/* bAclCheckPermissions */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	0,			/* iAioReadSize */
+	0,			/* iAioWriteSize */
 	
 	NULL,			/* Parametric options */
 
@@ -923,6 +925,7 @@ static struct parm_struct parm_table[] = {
 
 	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
 	{"aio read size", P_INTEGER, P_LOCAL, &sDefault.iAioReadSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write size", P_INTEGER, P_LOCAL, &sDefault.iAioWriteSize, NULL, NULL, FLAG_ADVANCED}, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -2013,6 +2016,7 @@ FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
 FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize);
+FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
