@@ -121,6 +121,11 @@ recv_conn (int sock, kx_context *kc,
      int len;
      u_int32_t tmp32;
 
+     memset(kc, 0, sizeof(*kc));
+     *nsockets = 0;
+     *sockets = NULL;
+     *dispnr = 0;
+
      addrlen = sizeof(kc->__ss_this);
      kc->thisaddr = (struct sockaddr*)&kc->__ss_this;
      if (getsockname (sock, kc->thisaddr, &addrlen) < 0) {
