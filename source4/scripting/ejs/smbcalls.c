@@ -187,6 +187,7 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_config();
 	smb_setup_ejs_ldb();
 	smb_setup_ejs_nbt();
+	smb_setup_ejs_cli();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "getDomainList", ejs_domain_list, NULL, MPR_VAR_SCRIPT_HANDLE);
