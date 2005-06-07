@@ -178,7 +178,7 @@
 		[relative] nstring *drivername;
 		[relative] nstring *comment;
 		[relative] nstring *location;
-		[relative] spoolss_DeviceMode *devmode;
+		[relative,subcontext(0)] spoolss_DeviceMode *devmode;
 		[relative] nstring *sepfile;
 		[relative] nstring *printprocessor;
 		[relative] nstring *datatype;
@@ -627,7 +627,10 @@
 	} spoolss_DocumentInfo1;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] spoolss_DocumentInfo1 *info1;	
+		[case(1)] spoolss_DocumentInfo1 *info1;
+		[case(2)]; /* TODO */
+		[case(3)]; /* TODO */
+		[default];
 	} spoolss_DocumentInfo;
 
 	WERROR spoolss_StartDocPrinter(
@@ -784,7 +787,7 @@
 		spoolss_FormArea area;
 	} spoolss_AddFormInfo1;
 
-	typedef union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] spoolss_AddFormInfo1 *info1;
 	} spoolss_AddFormInfo;
 
@@ -826,7 +829,7 @@
 		spoolss_FormArea area;
 	} spoolss_SetFormInfo1;
 
-	typedef union {
+	typedef [switch_type(uint32)] union {
 		[case(1)] spoolss_SetFormInfo1 *info1;
 	} spoolss_SetFormInfo;
 
