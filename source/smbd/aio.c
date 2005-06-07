@@ -23,10 +23,12 @@
 
 #if HAVE_POSIX_ASYNC_IO
 
+/* The signal we'll use to signify aio done. */
 #define RT_SIGNAL_AIO (SIGRTMIN+3)
-#define AIO_PENDING_SIZE 10
-static sig_atomic_t signals_received;
-static int outstanding_aio_reads;
+
+/****************************************************************************
+ The buffer we keep around whilst an aio request is in process.
+*****************************************************************************/
 
 struct aio_extra {
 	struct aio_extra *next, *prev;
@@ -37,16 +39,44 @@ struct aio_extra {
 
 struct aio_extra aio_list_head;
 
-static struct aio_extra *create_aio_ex(void)
+/****************************************************************************
+ Create the extended aio struct we must keep around for the lifetime
+ of the aio call.
+*****************************************************************************/
+
+static struct aio_extra *create_aio_ex(size_t buflen)
 {
-	struct aio_extra *aio_ex = MALLOC_P();
+	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
+
+	if (!aio_ex) {
+		return NULL;
+	}
+	ZERO_STRUCTP(aio_ex);
+	/* The buf stored in the aio_ex is the start of
+	   the smb return buffer. The buffer used in the acb
+	   is the start of the reply data portion of that buffer. */
+	aio_ex->buf = SMB_MALLOC_ARRAY(char *, buflen);
+	if (!aio_ex->buf) {
+		SAFE_FREE(aio_ex);
+		return NULL;
+	}
+	DLIST_ADD(aio_list_head, aio_ex);
+	return aio_ex;
 }
+
+/****************************************************************************
+ Delete the extended aio struct.
+*****************************************************************************/
 
 static void delete_aio_ex(struct aio_extra *aio_ex)
 {
 	DLIST_REMOVE(aio_list_head, aio_ex);
 	SAFE_FREE(aio_ex->buf);
 }
+
+/****************************************************************************
+ Given the aiocb struct find the extended aio struct containing it.
+*****************************************************************************/
 
 static struct aio_extra *find_aio_ex(struct aiocb *pacb)
 {
@@ -60,7 +90,19 @@ static struct aio_extra *find_aio_ex(struct aiocb *pacb)
 	return NULL;
 }
 
+/****************************************************************************
+ We can have these many aio buffers in flight.
+*****************************************************************************/
+
+#define AIO_PENDING_SIZE 10
+static sig_atomic_t signals_received;
+static int outstanding_aio_reads;
+
 static struct aiocb aio_pending_array[AIO_PENDING_SIZE];
+
+/****************************************************************************
+ Signal handler when an aio request completes.
+*****************************************************************************/
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
@@ -71,16 +113,32 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 	sys_select_signal();
 }
 
+/****************************************************************************
+ Set up an aio request from a SMBreadX call.
+*****************************************************************************/
+
 BOOL schedule_aio_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
 				files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
 {
+	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
+
+	if (min_aio_read_size && (smb_maxcnt < min_aio_read_size)) {
+		/* Too small a read for aio request. */
+		DEBUG(10,("schedule_aio_read_and_X: read size (%u) too small for minimum aio_read of %u\n",
+			(unsigned int)smb_maxcnt, (unsigned int)min_aio_read_size ));
+		return False;
+	}
+
 	if (outstanding_aio_reads >= AIO_PENDING_SIZE) {
 		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio activities outstanding.\n",
 			outstanding_aio_reads ));
 		return False;
 	}
+
+	/* Allocate and set up the aio record here... */
+
 	srv_defer_sign_response(mid);
-	return False;
+	return True;
 }
 
 void process_aio_queue(void)
