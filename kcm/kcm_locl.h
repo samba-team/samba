@@ -159,6 +159,7 @@ extern size_t max_request;
 extern sig_atomic_t exit_flag;
 extern int name_constraints;
 extern int detach_from_console;
+extern int disallow_getting_krbtgt;
 
 #if 0
 extern const krb5_cc_ops krb5_kcmss_ops;
