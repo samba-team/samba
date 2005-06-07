@@ -267,8 +267,10 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
 		data_blob_free(&session_key);
+		passwd_free(&pw);
 		return ERROR_NT(ret);
 	}
+	passwd_free(&pw);
 
         /* make_server_info_pw does not set the domain. Without this we end up
 	 * with the local netbios name in substitutions for %D. */
