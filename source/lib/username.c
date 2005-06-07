@@ -250,6 +250,45 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 done:
 	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ? "did":"didn't", user));
 
+	return ret;
+}
+
+/****************************************************************************
+ Get_Pwnam wrapper without modification.
+  NOTE: This with NOT modify 'user'! 
+  This will return an allocated structure
+****************************************************************************/
+
+struct passwd *Get_Pwnam_alloc(const char *user)
+{
+	fstring user2;
+	struct passwd *ret;
+
+	if ( *user == '\0' ) {
+		DEBUG(10,("Get_Pwnam: empty username!\n"));
+		return NULL;
+	}
+
+	fstrcpy(user2, user);
+
+	DEBUG(5,("Finding user %s\n", user));
+
+	ret = Get_Pwnam_internals(user, user2);
+	
+	return ret;  
+}
+
+/****************************************************************************
+ Get_Pwnam wrapper without modification.
+  NOTE: This with NOT modify 'user'! 
+****************************************************************************/
+
+struct passwd *Get_Pwnam(const char *user)
+{
+	struct passwd *ret;
+
+	ret = Get_Pwnam_alloc(user);
+	
 	/* This call used to just return the 'passwd' static buffer.
 	   This could then have accidental reuse implications, so 
 	   we now malloc a copy, and free it in the next use.
@@ -270,30 +309,6 @@ done:
 	
 	Get_Pwnam_ret = ret;
 
-	return ret;
-}
-
-/****************************************************************************
- Get_Pwnam wrapper without modification.
-  NOTE: This with NOT modify 'user'! 
-****************************************************************************/
-
-struct passwd *Get_Pwnam(const char *user)
-{
-	fstring user2;
-	struct passwd *ret;
-
-	if ( *user == '\0' ) {
-		DEBUG(10,("Get_Pwnam: empty username!\n"));
-		return NULL;
-	}
-
-	fstrcpy(user2, user);
-
-	DEBUG(5,("Finding user %s\n", user));
-
-	ret = Get_Pwnam_internals(user, user2);
-	
 	return ret;  
 }
 
