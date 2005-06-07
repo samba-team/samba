@@ -23,7 +23,7 @@
 
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include <kdc.h>
+#include "heimdal/kdc/kdc.h"
 
 krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg);
 
