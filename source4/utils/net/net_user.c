@@ -28,7 +28,7 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct libnet_context *lnet_ctx;
-	union libnet_CreateUser r;
+	struct libnet_CreateUser r;
 	char *user_name;
 
 	/* command line argument preparation */
@@ -50,14 +50,14 @@ static int net_user_add(struct net_context *ctx, int argc, const char **argv)
 	lnet_ctx->cred = ctx->credentials;
 
 	/* calling CreateUser function */
-	r.generic.level              = LIBNET_CREATE_USER_GENERIC;
-	r.generic.in.user_name       = user_name;
-	r.generic.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
+	r.level              = LIBNET_CREATE_USER_GENERIC;
+	r.in.user_name       = user_name;
+	r.in.domain_name     = cli_credentials_get_domain(lnet_ctx->cred);
 
 	status = libnet_CreateUser(lnet_ctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to add user account: %s\n",
-			  r.generic.out.error_string));
+			  r.out.error_string));
 		return -1;
 	}
 	
