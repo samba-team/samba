@@ -1,8 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   packet handling for mailslot requests
-
+   packet handling for mailslot requests. 
+   
    Copyright (C) Andrew Tridgell 2005
    
    This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,18 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/*
+   This implements "Class 2 mailslots", i.e. the communication mechanism 
+   used for all mailslot packets smaller then 425 bytes. 
+
+   "Class 1 mailslots" (which use SMB) are used for messages larger 
+   then 426 bytes and are supported on some systems. These are not implemented
+   in Samba4 yet, as there don't appear to be any core services that use
+   them.
+
+   425 and 426-byte sized messages are not supported at all.
 */
 
 #include "includes.h"
