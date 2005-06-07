@@ -534,7 +534,7 @@ handle_stream(struct descr *d, int index, int min_free)
 
 #ifdef HAVE_DOOR_CREATE
 
-void
+static void
 kcm_door_server(void  *cookie, char *argp, size_t arg_size,
 		door_desc_t *dp, uint_t n_desc)
 {
