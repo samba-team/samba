@@ -213,8 +213,11 @@ static int binary_smbd_main(int argc, const char *argv[])
 	   should hang off that */
 	event_ctx = event_context_init(NULL);
 
-	/* catch EOF on stdin */
-	event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, server_stdin_handler, NULL);
+	if (interactive) {
+		/* catch EOF on stdin */
+		event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, 
+			     server_stdin_handler, NULL);
+	}
 
 	DEBUG(0,("Using %s process model\n", model));
 	status = server_service_startup(event_ctx, model, lp_server_services());
