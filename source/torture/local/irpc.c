@@ -25,7 +25,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 
-const uint32_t MSG_ID = 1;
+const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
 /*
   serve up AddOne over the irpc system
@@ -40,7 +40,9 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 /*
   test a addone call over the internal messaging system
 */
-static BOOL test_addone(TALLOC_CTX *mem_ctx, struct messaging_context *msg_ctx)
+static BOOL test_addone(TALLOC_CTX *mem_ctx, 
+			struct messaging_context *msg_ctx1,
+			struct messaging_context *msg_ctx2)
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
@@ -50,7 +52,7 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx, struct messaging_context *msg_ctx)
 	r.in.in_data = random();
 	r.out.out_data = &res;
 
-	status = IRPC_CALL(msg_ctx, MSG_ID, rpcecho, ECHO_ADDONE, &r);
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AddOne failed - %s\n", nt_errstr(status));
 		return False;
@@ -83,7 +85,8 @@ static void irpc_callback(struct irpc_request *irpc)
   test echo speed
 */
 static BOOL test_speed(TALLOC_CTX *mem_ctx, 
-		       struct messaging_context *msg_ctx,
+		       struct messaging_context *msg_ctx1,
+		       struct messaging_context *msg_ctx2,
 		       struct event_context *ev)
 {
 	int ping_count = 0;
@@ -102,7 +105,7 @@ static BOOL test_speed(TALLOC_CTX *mem_ctx,
 	while (timeval_elapsed(&tv) < 10.0) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(msg_ctx, MSG_ID, rpcecho, ECHO_ADDONE, &r);
+		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
 		if (irpc == NULL) {
 			printf("AddOne send failed\n");
 			return False;
@@ -141,19 +144,21 @@ BOOL torture_local_irpc(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_irpc");
 	BOOL ret = True;
-	struct messaging_context *msg_ctx;
+	struct messaging_context *msg_ctx1, *msg_ctx2;
 	struct event_context *ev;
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
 	ev = event_context_init(mem_ctx);
-	msg_ctx = messaging_init(mem_ctx, MSG_ID, ev);
+	msg_ctx1 = messaging_init(mem_ctx, MSG_ID1, ev);
+	msg_ctx2 = messaging_init(mem_ctx, MSG_ID2, ev);
 
 	/* register the server side function */
-	IRPC_REGISTER(msg_ctx, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
+	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
+	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 
-	ret &= test_addone(mem_ctx, msg_ctx);
-	ret &= test_speed(mem_ctx, msg_ctx, ev);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2);
+	ret &= test_speed(mem_ctx, msg_ctx1, msg_ctx2, ev);
 
 	talloc_free(mem_ctx);
 
