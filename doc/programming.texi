@@ -283,17 +283,17 @@ See the manual page for @manpage{krb5_verify_user,3}.
 @node API diffrences to MIT Kerberos, , Validating a password in a server application, Programming with Kerberos
 @section API diffrences to MIT Kerberos
 
-This section is somewhat unorganised, but so far there is no overall
-structure to the diffrecies, though some of the have their root in
-that heimdal uses a ASN.1 compiler and MIT doesn't.
+This section is somewhat disorganised, but so far there is no overall
+structure to the differences, though some of the have their root in
+that Heimdal uses an ASN.1 compiler and MIT doesn't.
 
 @subsection Principal and realms
 
-Heimdal store the realm as a @code{krb5_realm} that is a @code{char *}.
-MIT Kerberos uses a @code{krb5_data} to store a realm. See
+Heimdal stores the realm as a @code{krb5_realm}, that is a @code{char *}.
+MIT Kerberos uses a @code{krb5_data} to store a realm.
 
 In Heimdal @code{krb5_principal} doesn't contain the component
-@code{name_type}, its instead stored in component
+@code{name_type}; it's instead stored in component
 @code{name.name_type}. To get and set the nametype in Heimdal, use
 @manpage{krb5_principal_get_type,3} and
 @manpage{krb5_principal_set_type,3}.
@@ -303,16 +303,17 @@ For more information about principal and realms, see
 
 @subsection Error messages
 
-To get the error string, Heimdal users uses
-@manpage{krb5_get_error_string,3} or if @code{NULL} is returned,
+To get the error string, Heimdal uses
+@manpage{krb5_get_error_string,3} or, if @code{NULL} is returned,
 @manpage{krb5_get_err_text,3}. This is to return custom error messages
-(like ''Can't find host/datan.example.com@@EXAMPLE.COM in
+(like ``Can't find host/datan.example.com@@EXAMPLE.COM in
 /etc/krb5.conf.'' instead of a ``Key table entry not found'' that
 @manpage{error_message,3} returns.
 
-Heimdal uses a threadsafe(er) version of the com_err interface, the
-global com_err table isn't initialised, then @manpage{error_message,3}
-returns quite boring error string (just the error code itself).
+Heimdal uses a threadsafe(r) version of the com_err interface; the
+global @code{com_err} table isn't initialised.  Then
+@manpage{error_message,3} returns quite a boring error string (just
+the error code itself).
 
 
 @c @node Why you should use GSS-API for new applications, Walkthru a sample GSS-API client, Validating a password in a server application, Programming with Kerberos

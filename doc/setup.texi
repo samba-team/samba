@@ -461,6 +461,12 @@ A sample policy external program is included in
 If no password quality checking function is configured, it is only
 verified that it is at least six characters long.
 
+The program @command{test_pw_quality}, which is built in
+@file{lib/kadm5}, but not installed, can be used to check password
+policy settings.  It may be convenient to set the environment variable
+@samp{KRB5_CONFIG} to point to a test version of @file{krb5.conf}
+while you're testing the @samp{[password_quality]} stanza that way.
+
 @node Testing clients and servers, Slave Servers, Password changing, Setting up a realm
 @section Testing clients and servers
 
@@ -537,7 +543,7 @@ tell it the latest version that they have (@samp{IHAVE} message).  The
 master then responds by sending all the changes between that version and
 the current version at the master (a series of @samp{FORYOU} messages)
 or the whole database in a @samp{TELLYOUEVERYTHING} message.  There is
-also a keep alive protocol that make sure all slaves are upp and running.
+also a keep-alive protocol that makes sure all slaves are up and running.
 
 @subsection Configuring incremental propagation
 
