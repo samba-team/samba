@@ -693,7 +693,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
+AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 ## These fail to compile on IRIX so just check for their presence
@@ -1034,6 +1034,8 @@ AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl sym
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
+AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
+AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
 AC_CHECK_HEADERS(libexc.h)

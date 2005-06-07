@@ -2569,6 +2569,11 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
+	if (schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
+		END_PROFILE(SMBreadX);
+		return -1;
+	}
+
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
@@ -2642,6 +2647,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(outbuf,smb_com,SMBwritebraw);
 	SSVALS(outbuf,smb_vwv0,-1);
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server("reply_writebraw: send_smb failed.");
   
@@ -3375,6 +3381,7 @@ int reply_echo(connection_struct *conn,
 
 		smb_setlen(outbuf,outsize - 4);
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_echo: send_smb failed.");
 	}
@@ -5173,6 +5180,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		SSVAL(outbuf,smb_vwv6,nread);
 		SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_readbmpx: send_smb failed.");
 
@@ -5333,6 +5341,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	if (write_through && tcount==nwritten) {
 		/* We need to send both a primary and a secondary response */
 		smb_setlen(outbuf,outsize - 4);
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_writebmpx: send_smb failed.");
 

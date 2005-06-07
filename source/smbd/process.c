@@ -287,6 +287,10 @@ static void async_processing(char *buffer, int buffer_len)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
+	if (process_aio_queue()) {
+		return;
+	}
+
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(buffer, buffer_len, 1)) {
 		process_local_message(buffer, buffer_len);
@@ -298,10 +302,6 @@ static void async_processing(char *buffer, int buffer_len)
 
 	/* check for async change notify events */
 	process_pending_change_notify_queue(0);
-
-#if 0 /* JRA - this is where the aio read/write checks will go... */
-	process_aio_queue();
-#endif
 
 	/* check for sighup processing */
 	if (reload_after_sighup) {

@@ -492,6 +492,10 @@
 #include <langinfo.h>
 #endif
 
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H

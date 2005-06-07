@@ -21,14 +21,16 @@
 
 #include "includes.h"
 
+/* #define HAVE_POSIX_ASYNC_IO 1 */
 #if HAVE_POSIX_ASYNC_IO
-
-#include <aio.h>
 
 /* The signal we'll use to signify aio done. */
 #ifndef RT_SIGNAL_AIO
 #define RT_SIGNAL_AIO (SIGRTMIN+3)
 #endif
+
+/* Until we have detection of 64-bit aio structs... */
+#define SMB_STRUCT_AIOCB struct aiocb
 
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
@@ -36,19 +38,20 @@
 
 struct aio_extra {
 	struct aio_extra *next, *prev;
-	struct aiocb acb;
+	SMB_STRUCT_AIOCB acb;
+	files_struct *fsp;
+	uint16 mid;
 	char *buf;
-	int fnum;
 };
 
-struct aio_extra *aio_list_head;
+static struct aio_extra *aio_list_head;
 
 /****************************************************************************
  Create the extended aio struct we must keep around for the lifetime
  of the aio call.
 *****************************************************************************/
 
-static struct aio_extra *create_aio_ex(size_t buflen)
+static struct aio_extra *create_aio_ex(files_struct *fsp, size_t buflen, uint16 mid)
 {
 	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
 
@@ -65,6 +68,7 @@ static struct aio_extra *create_aio_ex(size_t buflen)
 		return NULL;
 	}
 	DLIST_ADD(aio_list_head, aio_ex);
+	aio_ex->fsp = fsp;
 	return aio_ex;
 }
 
@@ -83,12 +87,12 @@ static void delete_aio_ex(struct aio_extra *aio_ex)
  Given the aiocb struct find the extended aio struct containing it.
 *****************************************************************************/
 
-static struct aio_extra *find_aio_ex(struct aiocb *pacb)
+static struct aio_extra *find_aio_ex(uint16 mid)
 {
 	struct aio_extra *p;
 
 	for( p = aio_list_head; p; p = p->next) {
-		if (pacb == &p->acb) {
+		if (mid == p->mid) {
 			return p;
 		}
 	}
@@ -102,8 +106,7 @@ static struct aio_extra *find_aio_ex(struct aiocb *pacb)
 #define AIO_PENDING_SIZE 10
 static sig_atomic_t signals_received;
 static int outstanding_aio_reads;
-
-static struct aiocb aio_pending_array[AIO_PENDING_SIZE];
+static uint16 aio_pending_array[AIO_PENDING_SIZE];
 
 /****************************************************************************
  Signal handler when an aio request completes.
@@ -112,11 +115,31 @@ static struct aiocb aio_pending_array[AIO_PENDING_SIZE];
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < AIO_PENDING_SIZE - 1) {
-		aio_pending_array[signals_received] =
-			*(struct aiocb *)(info->si_value.sival_ptr);
+		aio_pending_array[signals_received] = *(uint16 *)(info->si_value.sival_ptr);
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal();
+}
+
+
+/****************************************************************************
+ Set up an aio request from a SMBreadX call.
+*****************************************************************************/
+
+void initialize_async_io_handler(void)
+{
+	struct sigaction act;
+
+	ZERO_STRUCT(act);
+	act.sa_sigaction = signal_handler;
+	act.sa_flags = SA_SIGINFO;
+	sigemptyset( &act.sa_mask );
+	if (sigaction(RT_SIGNAL_AIO, &act, NULL) != 0) {
+                DEBUG(0,("Failed to setup RT_SIGNAL_AIO handler\n"));
+        }
+
+	/* the signal can start off blocked due to a bug in bash */
+	BlockSignals(False, RT_SIGNAL_AIO);
 }
 
 /****************************************************************************
@@ -129,6 +152,9 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 			     files_struct *fsp, SMB_OFF_T startpos,
 			     size_t smb_maxcnt)
 {
+	struct aio_extra *aio_ex;
+	SMB_STRUCT_AIOCB *a;
+	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 
 	if (min_aio_read_size && (smb_maxcnt < min_aio_read_size)) {
@@ -147,89 +173,122 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
-	/* Allocate and set up the aio record here... */
+	/* The following is safe from integer wrap as we've already
+	   checked smb_maxcnt is 128k or less. */
+	bufsize = PTR_DIFF(smb_buf(outbuf),outbuf) + smb_maxcnt;
 
-	srv_defer_sign_response(SVAL(inbuf,smb_mid));
+	if ((aio_ex = create_aio_ex(fsp, bufsize, SVAL(inbuf,smb_mid))) == NULL) {
+		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
+		return False;
+	}
+
+	/* Copy the SMB header already setup in outbuf. */
+	memcpy(aio_ex->buf, outbuf, smb_size);
+
+	a = &aio_ex->acb;
+
+	/* Now set up the aio record. */
+	
+	a->aio_fildes = fsp->fd;
+	a->aio_buf = smb_buf(aio_ex->buf);
+	a->aio_nbytes = smb_maxcnt;
+	a->aio_offset = startpos;
+	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
+	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
+
+	if (aio_read(a) == -1) {
+		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. Error %s\n",
+			strerror(errno) ));
+		delete_aio_ex(aio_ex);
+		return False;
+	}
+
+	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, offset %.0f, len = %u (mid = %u)\n",
+		fsp->fsp_name, (double)startpos, (unsigned int)smb_maxcnt, (unsigned int)aio_ex->mid ));
+
+	srv_defer_sign_response(aio_ex->mid);
 	return True;
 }
 
-void process_aio_queue(void)
+BOOL process_aio_queue(void)
 {
 	int i;
 
 	if (!signals_received) {
-		return;
+		return False;
 	}
 
 	BlockSignals(True, RT_SIGNAL_AIO);
 
+	DEBUG(10,("process_aio_queue: signals_received = %d\n", (int)signals_received));
+
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
-		struct aiocb *acb = &aio_pending_array[i];
-		struct aio_extra *aio_ex = find_aio_ex(acb);
 		int outsize;
-		char *outbuf = aio_ex->buf;
-		char *data = smb_buf(outbuf);
-		ssize_t nread = aio_return(&aio_ex->acb);
+		char *outbuf;
+		char *data;
+		ssize_t nread;
+		uint16 mid = aio_pending_array[i];
+		struct aio_extra *aio_ex = find_aio_ex(mid);
+
+		if (!aio_ex) {
+			DEBUG(0,("process_aio_queue: Can't find record to match mid %u.\n",
+				(unsigned int)mid));
+			continue;
+		}
+
+		outbuf = aio_ex->buf;
+		data = smb_buf(outbuf);
+
+		nread = aio_return(&aio_ex->acb);
 
 		if (nread < 0) {
 			/* We're relying here on the fact that if the fd is
 			   closed then the aio will complete and aio_return
 			   will return an error. Hopefully this is
 			   true.... JRA. */
-			DEBUG( 3,( "process_aio_queue fnum=%d nread == -1. "
-				   "Error = %s\n",
-				   aio_ex->fnum, strerror(errno) ));
+			DEBUG( 3,( "process_aio_queue: file %s nread == -1. Error = %s\n",
+				   aio_ex->fsp->fsp_name, strerror(errno) ));
 			outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 		} else {
 			outsize = set_message(outbuf,12,nread,False);
-			SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be
-							* -1. */
+			SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 			SSVAL(outbuf,smb_vwv5,nread);
 			SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 			SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 			SSVAL(smb_buf(outbuf),-2,nread);
 
-			DEBUG( 3, ( "process_aio_queue fnum=%d max=%d "
-				    "nread=%d\n", aio_ex->fnum,
-				    acb->aio_nbytes, (int)nread ) );
+			DEBUG( 3, ( "process_aio_queue file %s max=%d nread=%d\n",
+				aio_ex->fsp->fsp_name,
+				aio_ex->acb.aio_nbytes, (int)nread ) );
 
 		}
 		smb_setlen(outbuf,outsize - 4);
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server("process_smb: send_smb failed.");
 		}
+
+		DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read completed for file %s, offset %.0f, len = %u\n",
+			aio_ex->fsp->fsp_name, (double)aio_ex->acb.aio_offset, (unsigned int)nread ));
 
 		delete_aio_ex(aio_ex);
 	}
 	outstanding_aio_reads -= signals_received;
 	signals_received = 0;
 	BlockSignals(False, RT_SIGNAL_AIO);
+	return True;
 }
 
-void initialize_async_io_handler(void)
-{
-	struct sigaction act;
-
-	ZERO_STRUCT(act);
-	act.sa_sigaction = signal_handler;
-	act.sa_flags = SA_SIGINFO;
-	sigemptyset( &act.sa_mask );
-	if (sigaction(RT_SIGNAL_AIO, &act, NULL) != 0) {
-                DEBUG(0,("Failed to setup RT_SIGNAL_AIO handler\n"));
-                return;
-        }
-
-	/* the signal can start off blocked due to a bug in bash */
-	BlockSignals(False, RT_SIGNAL_AIO);
-}
 #else
 void initialize_async_io_handler(void)
 {
 }
 
-void process_aio_queue(void)
+BOOL process_aio_queue(void)
 {
+	return False;
 }
 
 BOOL schedule_aio_read_and_X(connection_struct *conn,

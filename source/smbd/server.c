@@ -946,6 +946,9 @@ void build_options(BOOL screen);
 	if (!init_change_notify())
 		exit(1);
 
+	/* Setup aio signal handler. */
+	initialize_async_io_handler();
+
 	/* re-initialise the timezone */
 	TimeInit();
 

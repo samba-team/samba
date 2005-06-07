@@ -634,6 +634,7 @@ static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 		/* Save the server smb signing state. */
 		sign_state = srv_oplock_set_signing(False);
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(), outbuf))
 			exit_server("oplock_break_level2: send_smb failed.");
 
@@ -778,6 +779,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Save the server smb signing state. */
 	sign_state = srv_oplock_set_signing(False);
 
+	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(), outbuf)) {
 		srv_oplock_set_signing(sign_state);
 		exit_server("oplock_break: send_smb failed.");
