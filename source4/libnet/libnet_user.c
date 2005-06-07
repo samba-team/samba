@@ -21,35 +21,22 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "libnet/composite.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
 
-static NTSTATUS libnet_CreateUser_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_CreateUser *r)
-{
-	NTSTATUS status;
-	union libnet_CreateUser r2;
-	
-	r2.samr.level             = LIBNET_CREATE_USER_SAMR;
-	r2.samr.in.user_name      = r->generic.in.user_name;
-	r2.samr.in.domain_name    = r->generic.in.domain_name;
-	
-	status = libnet_CreateUser(ctx, mem_ctx, &r2);
-	
-	r->generic.out.error_string   = r2.samr.out.error_string;
-
-	return status;
-}
-
-
-static NTSTATUS libnet_CreateUser_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_CreateUser *r)
+NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)
 {
 	NTSTATUS status;
 	union libnet_rpc_connect cn;
 	union libnet_find_pdc fp;
+	struct dcerpc_pipe *pipe;
+	struct rpc_composite_domain_open dom_io;
+	struct rpc_composite_useradd user_io;
 	
 	/* find domain pdc */
 	fp.generic.level             = LIBNET_FIND_PDC_GENERIC;
-	fp.generic.in.domain_name    = r->samr.in.domain_name;
+	fp.generic.in.domain_name    = r->in.domain_name;
 
 	status = libnet_find_pdc(ctx, mem_ctx, &fp);
 	if (!NT_STATUS_IS_OK(status)) return status;
@@ -63,25 +50,41 @@ static NTSTATUS libnet_CreateUser_samr(struct libnet_context *ctx, TALLOC_CTX *m
 
 	status = libnet_rpc_connect(ctx, mem_ctx, &cn);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-							   "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
-							   r->samr.in.domain_name, nt_errstr(status));
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
+						      r->in.domain_name, nt_errstr(status));
 		return status;
 	}
 
-	/* create user via samr call (to be continued) */
-	return status;
-}
+	ctx->samr = cn.pdc.out.dcerpc_pipe;
 
-
-NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_CreateUser *r)
-{
-	switch (r->generic.level) {
-	case LIBNET_CREATE_USER_GENERIC:
-		return libnet_CreateUser_generic(ctx, mem_ctx, r);
-	case LIBNET_CREATE_USER_SAMR:
-		return libnet_CreateUser_samr(ctx, mem_ctx, r);
+	/* open connected domain */
+	dom_io.in.domain_name   = r->in.domain_name;
+	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
+	
+	status = rpc_composite_domain_open(ctx->samr, mem_ctx, &dom_io);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Creating user account failed: %s\n",
+						      nt_errstr(status));
+		return status;
 	}
 
-	return NT_STATUS_INVALID_LEVEL;
+	ctx->domain_handle = dom_io.out.domain_handle;
+
+	/* create user */
+	user_io.in.username       = r->in.user_name;
+	user_io.in.domain_handle  = dom_io.out.domain_handle;
+
+	status = rpc_composite_useradd(ctx->samr, mem_ctx, &user_io);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "Creating user account failed: %s\n",
+						      nt_errstr(status));
+		return status;
+	}
+
+	ctx->user_handle = user_io.out.user_handle;
+
+	return status;
 }
