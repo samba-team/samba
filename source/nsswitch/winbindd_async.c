@@ -714,11 +714,16 @@ static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	ssize_t len = 0;
 
 	*result = NULL;
-	for (i=0; i<num_sids; i++)
+	for (i=0; i<num_sids; i++) {
 		sprintf_append(mem_ctx, result, &len, &buflen,
 			       "%s\n", sid_string_static(&sids[i]));
+	}
 
-	return (num_sids == 0) || (*result != NULL);
+	if ((num_sids != 0) && (*result == NULL)) {
+		return False;
+	}
+
+	return True;
 }
 
 static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
