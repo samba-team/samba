@@ -958,6 +958,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 uid_t *uid, gid_t *gid,
 				 SAM_ACCOUNT **sam_account)
 {
+	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
 	fstring real_username;
 	struct passwd *passwd;
@@ -992,7 +993,9 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	DEBUG(5,("fill_sam_account: located username was [%s]\n",
 		*found_username));
 
-	return pdb_init_sam_pw(sam_account, passwd);
+	nt_status = pdb_init_sam_pw(sam_account, passwd);
+	passwd_free(&passwd);
+	return nt_status;
 }
 
 /****************************************************************************
@@ -1024,7 +1027,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 	if ( p ) {
 		fstring strip_username;
 
-		pw = Get_Pwnam( domuser );
+		pw = Get_Pwnam_alloc( domuser );
 		if ( pw ) {	
 			/* make sure we get the case of the username correct */
 			/* work around 'winbind use default domain = yes' */
@@ -1055,7 +1058,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 	
 	/* just lookup a plain username */
 	
-	pw = Get_Pwnam(username);
+	pw = Get_Pwnam_alloc(username);
 		
 	/* Create local user if requested. */
 	
@@ -1065,7 +1068,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 			return NULL;
 
 		smb_create_user(NULL, username, NULL);
-		pw = Get_Pwnam(username);
+		pw = Get_Pwnam_alloc(username);
 	}
 	
 	/* one last check for a valid passwd struct */
