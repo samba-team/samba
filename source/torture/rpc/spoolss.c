@@ -149,7 +149,10 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 			ret = False;
 			continue;
 		}
-
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			printf("EnumPorts unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
 				win_errstr(r.out.result));
@@ -239,7 +242,10 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 			ret = False;
 			continue;
 		}
-
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			printf("EnumPrinterDrivers unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
 				win_errstr(r.out.result));
@@ -372,7 +378,10 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 			ret = False;
 			continue;
 		}
-
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			printf("EnumMonitors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
 				win_errstr(r.out.result));
@@ -462,7 +471,10 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 			ret = False;
 			continue;
 		}
-
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			printf("EnumPrintProcessors unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
 				win_errstr(r.out.result));
@@ -550,7 +562,10 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 			ret = False;
 			continue;
 		}
-
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			printf("EnumPrinters unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
 				win_errstr(r.out.result));
