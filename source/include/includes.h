@@ -87,12 +87,6 @@
  * Define VOLATILE if needed.
  */
 
-#if defined(HAVE_VOLATILE)
-#define VOLATILE volatile
-#else
-#define VOLATILE
-#endif
-
 #define False (0)
 #define True (1)
 #define Auto (2)
@@ -143,13 +137,12 @@ extern int errno;
 #include "lib/com/com.h"
 #include "credentials.h"
 
+#include "lib/replace/replace.h"
+
+
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
 #define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
-
-#ifndef HAVE_COMPARISON_FN_T
-typedef int (*comparison_fn_t)(const void *, const void *);
-#endif
 
 /***** automatically generated prototypes *****/
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
@@ -161,85 +154,11 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 
 #include "safe_string.h"
 
-#ifdef __COMPAR_FN_T
-#define QSORT_CAST (__compar_fn_t)
-#endif
-
-#ifndef QSORT_CAST
-#define QSORT_CAST (int (*)(const void *, const void *))
-#endif
-
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
 #endif
 
-#ifndef HAVE_STRDUP
-char *strdup(const char *s);
-#endif
-
-#ifndef HAVE_MEMMOVE
-void *memmove(void *dest,const void *src,int size);
-#endif
-
-#ifndef HAVE_MKTIME
-time_t mktime(struct tm *t);
-#endif
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_STRLCAT
-size_t strlcat(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRNLEN
-size_t strnlen(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRTOUL
-unsigned long strtoul(const char *nptr, char **endptr, int base);
-#endif
-
-#ifndef HAVE_SETENV
-int setenv(const char *name, const char *value, int overwrite); 
-#endif
-
-#ifndef HAVE_VASPRINTF_DECL
-int vasprintf(char **ptr, const char *format, va_list ap);
-#endif
-
-#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
-#define bzero(a,b) memset((a),'\0',(b))
-#endif
-
 extern int DEBUGLEVEL;
-
-/* add varargs prototypes with printf checking */
-#ifndef HAVE_SNPRINTF_DECL
-int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
-#endif
-#ifndef HAVE_ASPRINTF_DECL
-int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
-#endif
-
-
-/* we used to use these fns, but now we have good replacements
-   for snprintf and vsnprintf */
-#define slprintf snprintf
-
-
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) va_copy(dest, src)
-#elif defined(HAVE___VA_COPY)
-#define VA_COPY(dest, src) __va_copy(dest, src)
-#else
-#define VA_COPY(dest, src) (dest) = (src)
-#endif
 
 #if defined(VALGRIND)
 #define strlen(x) valgrind_strlen(x)
@@ -274,10 +193,6 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define discard_const(ptr) ((void *)(ptr))
 #endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
-
-#ifndef UINT16_MAX
-#define UINT16_MAX 65535
-#endif
 
 /*
   type safe varient of smb_xmalloc()

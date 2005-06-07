@@ -1,3 +1,5 @@
+# NOTE! this whole m4 file is disabled in configure.in for now
+
 #################################################
 # KRB5 support
 KRB5_CFLAGS=""

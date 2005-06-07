@@ -91,6 +91,10 @@ NTSTATUS server_service_startup(struct event_context *event_ctx,
 		NTSTATUS status;
 
 		status = server_service_init(server_services[i], event_ctx, model_ops);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to start service '%s' - %s\n", 
+				 server_services[i], nt_errstr(status)));
+		}
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 

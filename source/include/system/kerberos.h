@@ -20,30 +20,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "heimdal_build/config.h"
 
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#else
-#undef HAVE_KRB5
-#endif
-
-#if defined(HAVE_GSSAPI_H)
-# include <gssapi.h>
-# ifdef HAVE_GSSAPI_KRB5_H
-#  include <gssapi_krb5.h>
-# endif
-#elif defined(HAVE_GSSAPI_GSSAPI_H)
-# include <gssapi/gssapi.h>
-# if defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
-#  include <gssapi/gssapi_krb5.h>
-# endif
-#elif defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
-# include <gssapi/gssapi_generic.h>
-# if defined(HAVE_GSSAPI_GSSAPI_KRB5_H)
-#  include <gssapi/gssapi_krb5.h>
-# endif
-#endif
-
-#ifdef HAVE_COM_ERR_H
-#include <com_err.h>
+#ifdef HAVE_KRB5
+#include "heimdal/lib/krb5/krb5.h"
+#include "heimdal/lib/gssapi/gssapi.h"
+#include "heimdal/lib/com_err/com_err.h"
 #endif
