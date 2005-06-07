@@ -1122,7 +1122,7 @@ static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call,
 					    const char *server_name,
 					    const char *printer_name)
 {
-	DEBUG(0, ("looking for printer [%s] (server[%s])\n", printer_name, server_name));
+	DEBUG(1, ("looking for printer [%s] (server[%s])\n", printer_name, server_name));
 
 	return WERR_INVALID_PRINTER_NAME;
 }
@@ -1172,18 +1172,18 @@ static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_C
 
 		/* just "" as server is invalid */
 		if (strequal(server, "")) {
-			DEBUG(0,("ivalid server: [%s][%s][%s]\n", r->in.printername, server, printer));
+			DEBUG(2,("ivalid server: [%s][%s][%s]\n", r->in.printername, server, printer));
 			return WERR_INVALID_PRINTER_NAME;
 		}
 	}
 
 	/* just "" is invalid */
 	if (strequal(printer, "")) {
-		DEBUG(0,("invalid printer: [%s][%s][%s]\n", r->in.printername, server, printer));
+		DEBUG(2,("invalid printer: [%s][%s][%s]\n", r->in.printername, server, printer));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	DEBUG(0,("printer: [%s][%s][%s]\n", r->in.printername, server, printer));
+	DEBUG(3,("printer: [%s][%s][%s]\n", r->in.printername, server, printer));
 	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r, server, printer);
 }
 
