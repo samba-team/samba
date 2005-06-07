@@ -154,7 +154,6 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 		mprSetPropertyValue(&auth, "report", mprCreateStringVar("Unknown Domain", 1));
 	}
 
-done:
 	ejsSetReturnValue(eid, auth);
 	talloc_free(tmp_ctx);
 	return 0;
