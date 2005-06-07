@@ -299,6 +299,10 @@ static void async_processing(char *buffer, int buffer_len)
 	/* check for async change notify events */
 	process_pending_change_notify_queue(0);
 
+#if 0 /* JRA - this is where the aio read/write checks will go... */
+	process_aio_queue();
+#endif
+
 	/* check for sighup processing */
 	if (reload_after_sighup) {
 		change_to_root_user();
