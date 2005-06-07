@@ -1,3 +1,15 @@
+2005-06-07  Dave Love  <fx@gnu.org>
+
+	* doc/setup.texi: Spelling.
+	
+	* doc/programming.texi: Spelling.
+
+2005-06-02  Dave Love  <fx@gnu.org>
+
+	* kcm/connect.c (kcm_door_server): Make static.
+
+	* kcm/kcm_locl.h (disallow_getting_krbtgt): Declare.
+
 2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/mit_dump.c (mit_prop_dump): cast argument to
