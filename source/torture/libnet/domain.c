@@ -78,8 +78,6 @@ BOOL torture_domainopen(void)
 	BOOL ret = True;
 	struct policy_handle h;
 	struct samr_String name;
-	struct dom_sid2 sid;
-	uint32_t rid;
 
 	mem_ctx = talloc_init("test_domain_open");
 	binding = lp_parm_string(-1, "torture", "binding");
