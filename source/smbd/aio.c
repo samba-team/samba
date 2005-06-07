@@ -72,6 +72,7 @@ static void delete_aio_ex(struct aio_extra *aio_ex)
 {
 	DLIST_REMOVE(aio_list_head, aio_ex);
 	SAFE_FREE(aio_ex->buf);
+	SAFE_FREE(aio_ex);
 }
 
 /****************************************************************************
