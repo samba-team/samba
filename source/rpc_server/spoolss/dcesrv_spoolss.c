@@ -4,6 +4,7 @@
    endpoint server for the spoolss pipe
 
    Copyright (C) Tim Potter 2004
+   Copyright (C) Stefan Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +26,13 @@
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/spoolss/dcesrv_spoolss.h"
+#include "lib/socket/socket.h"
+#include "smbd/service_stream.h"
+
+#define SPOOLSS_BUFFER_SIZE(fn,level,count,info) \
+	ndr_size_##fn##_info(dce_call, level, count, info)
+
+#define SPOOLSS_BUFFER_OK(val_true,val_false) ((*r->in.buf_size >= *r->out.buf_size)?val_true:val_false)
 
 /* 
   spoolss_EnumPrinters 
@@ -38,9 +46,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	int i;
 	union spoolss_PrinterInfo *info;
 
-	r->out.info = NULL;
 	*r->out.buf_size = 0;
-	r->out.count = 0;
 
 	spoolss_ctx = spoolssdb_connect();
 	W_ERROR_HAVE_NO_MEMORY(spoolss_ctx);
@@ -68,9 +74,10 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info1.comment		= samdb_result_string(msgs[i], "comment", NULL);
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 2:
 		for (i = 0; i < count; i++) {
 			info[i].info2.servername	= samdb_result_string(msgs[i], "servername", "");
@@ -115,9 +122,10 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info2.cjobs		= samdb_result_uint(msgs[i], "cjobs", 0);
 			info[i].info2.averageppm	= samdb_result_uint(msgs[i], "averageppm", 0);
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 4:
 		for (i = 0; i < count; i++) {
 			info[i].info4.printername	= samdb_result_string(msgs[i], "printername", "");
@@ -128,9 +136,10 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info4.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 5:
 		for (i = 0; i < count; i++) {
 			info[i].info5.printername	= samdb_result_string(msgs[i], "name", "");
@@ -143,9 +152,10 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info5.device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
 			info[i].info5.transmission_retry_timeout  = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	}
 
 	return WERR_UNKNOWN_LEVEL;
@@ -271,7 +281,66 @@ static WERROR spoolss_AddPrinterDriver(struct dcesrv_call_state *dce_call, TALLO
 static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinterDrivers *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	union spoolss_DriverInfo *info;
+	int count;
+	int i;
+
+	*r->out.buf_size	= 0;
+
+	count = 0;
+
+	if (count == 0) return WERR_OK;
+	if (count < 0) return WERR_GENERAL_FAILURE;
+
+	info = talloc_array(mem_ctx, union spoolss_DriverInfo, count);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	switch (r->in.level) {
+	case 1:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 2:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 3:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 4:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 5:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 6:
+		for (i=0; i < count; i++) {
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -431,7 +500,67 @@ static WERROR spoolss_ScheduleJob(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrinterData *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	WERROR status = WERR_INVALID_PARAM;
+	enum spoolss_PrinterDataType type = SPOOLSS_PRINTER_DATA_TYPE_NULL;
+	union spoolss_PrinterData data;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+
+	if (h->wire_handle.handle_type == SPOOLSS_HANDLE_SERVER) {
+		/* TODO: do access check here */
+
+		if (strcmp("W3SvcInstalled", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("BeepEnabled", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("EventLog", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("NetPopup", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("NetPopupToComputer", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("MajorVersion", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 3;
+			status		= WERR_OK;
+		} else if (strcmp("MinorVersion", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 0;
+			status		= WERR_OK;
+		} else if (strcmp("DefaultSpoolDirectory", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+			data.string	= "C:\\PRINTERS";
+			status		= WERR_OK;
+		} else if (strcmp("Architecture", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+			data.string	= SPOOLSS_ARCHITECTURE_NT_X86;
+			status		= WERR_OK;
+		} else if (strcmp("DsPresent", r->in.value_name) == 0) {
+			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+			data.value	= 1;
+			status		= WERR_OK;
+		}
+	}
+
+	if (W_ERROR_IS_OK(status)) {
+		*r->out.buf_size = ndr_size_spoolss_PrinterData(&data, type, 0);
+		r->out.type	= SPOOLSS_BUFFER_OK(type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
+		r->out.data	= SPOOLSS_BUFFER_OK(data, data);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
+	}
+
+	return status;
 }
 
 
@@ -521,7 +650,46 @@ static WERROR spoolss_SetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumForms *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	union spoolss_FormInfo *info;
+	int count;
+	int i;
+	struct dcesrv_handle *h;
+
+	*r->out.buf_size	= 0;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+
+	count = 1;
+
+	if (count == 0) return WERR_OK;
+	if (count < 0) return WERR_GENERAL_FAILURE;
+
+	info = talloc_array(mem_ctx, union spoolss_FormInfo, count);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	switch (r->in.level) {
+	case 1:
+		for (i=0; i < count; i++) {
+			info[i].info1.flags		= SPOOLSS_FORM_PRINTER;
+
+			info[i].info1.form_name		= talloc_strdup(mem_ctx, "Samba Printer Form");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info1.form_name);
+
+			info[i].info1.size.width	= 30;
+			info[i].info1.size.height	= 40;
+
+			info[i].info1.area.left		= 0;
+			info[i].info1.area.top		= 0;
+			info[i].info1.area.right	= 30;
+			info[i].info1.area.bottom	= 40;
+		}
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumForms, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -535,9 +703,7 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	int count;
 	int i;
 
-	r->out.info		= NULL;
 	*r->out.buf_size	= 0;
-	r->out.count		= 0;
 
 	count = 1;
 
@@ -553,9 +719,10 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info1.port_name	= talloc_strdup(mem_ctx, "Samba Printer Port");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.port_name);
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 2:
 		for (i=0; i < count; i++) {
 			info[i].info2.port_name		= talloc_strdup(mem_ctx, "Samba Printer Port");
@@ -570,9 +737,10 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info2.port_type		= SPOOLSS_PORT_TYPE_WRITE;
 			info[i].info2.reserved		= 0;
 		}
-		r->out.info	= info;
-		r->out.count	= count;
-		return WERR_OK;
+		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	}
 
 	return WERR_UNKNOWN_LEVEL;
@@ -875,7 +1043,7 @@ static WERROR spoolss_ResetPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_NOT_SUPPORTED;
 }
 
 
@@ -922,12 +1090,16 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 	 */
 	ret = strequal(server_name, lp_netbios_name());
 	if (!ret) {
-		/* TODO:
-		ret = strequal(server_name, ...our_ip...);*/
+		const char *ip = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(ip);
+
+		ret = strequal(server_name, ip);
 		if (!ret) {
 			return WERR_INVALID_PRINTER_NAME;
 		}
 	}
+
+	/* TODO: do access check here */
 
 	handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_SERVER);
 	W_ERROR_HAVE_NO_MEMORY(handle);
