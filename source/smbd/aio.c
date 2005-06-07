@@ -28,18 +28,44 @@
 static sig_atomic_t signals_received;
 static int outstanding_aio_reads;
 
-struct aio_read_extra {
+struct aio_extra {
+	struct aio_extra *next, *prev;
 	struct aiocb acb;
 	char *buf;
 	int fnum;
 };
 
-static struct aio_read_extra aio_pending_array[AIO_PENDING_SIZE];
+struct aio_extra aio_list_head;
+
+static struct aio_extra *create_aio_ex(void)
+{
+	struct aio_extra *aio_ex = MALLOC_P();
+}
+
+static void delete_aio_ex(struct aio_extra *aio_ex)
+{
+	DLIST_REMOVE(aio_list_head, aio_ex);
+	SAFE_FREE(aio_ex->buf);
+}
+
+static struct aio_extra *find_aio_ex(struct aiocb *pacb)
+{
+	struct aio_extra *p;
+
+	for( p = aio_list_head; p; p = p->next) {
+		if (pacb == p->acb) {
+			return p;
+		}
+	}
+	return NULL;
+}
+
+static struct aiocb aio_pending_array[AIO_PENDING_SIZE];
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
 	if (signals_received < AIO_PENDING_SIZE - 1) {
-		aio_pending_array[signals_received] = *(struct aio_read_extra *)(info->si_value.sival_ptr);
+		aio_pending_array[signals_received] = *(struct aiocb *)(info->si_value.sival_ptr);
 		signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal();
@@ -69,14 +95,16 @@ void process_aio_queue(void)
 
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
-		struct aio_read_extra *aio_ex = &aio_pending_array[i];
+		struct aiocb *acb = &aio_pending_array[i];
+		struct aio_extra aio_ex = find_aio_ex(acp);
 		char *outbuf = aio_ex->buf;
 		char *data = smb_buf(outbuf);
 		ssize_t nread = aio_return(&aio_ex->acb);
 
 		if (nread < 0) {
 			/* We're relying here on the fact that if the fd is closed then
-			   the aio will complete and aio_return will return an error. */
+			   the aio will complete and aio_return will return an error. Hopefully
+			   this is true.... JRA. */
 			DEBUG( 3,( "process_aio_queue fnum=%d nread == -1. Error = %s\n",
 				aio_ex->fnum, strerror(errno) ));
 			outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
@@ -96,6 +124,8 @@ void process_aio_queue(void)
 		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server("process_smb: send_smb failed.");
 		}
+
+		delete_aio_ex(aio_ex);
 	}
 	outstanding_aio_reads -= signals_received;
 	signals_received = 0;
