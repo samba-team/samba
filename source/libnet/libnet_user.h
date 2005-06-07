@@ -25,23 +25,14 @@ enum libnet_CreateUser_level {
 };
 
 
-union libnet_CreateUser {
-	struct {
-		enum libnet_CreateUser_level level;
-
-		struct _libnet_CreateUser_in {
-			const char *user_name;
-			const char *domain_name;
-		} in;
-		
-		struct _libnet_CreateUser_out {
-			const char *error_string;
-		} out;
-	} generic;
+struct libnet_CreateUser {
+	enum libnet_CreateUser_level level;
 
 	struct {
-		enum libnet_CreateUser_level level;
-		struct _libnet_CreateUser_in in;
-		struct _libnet_CreateUser_out out;
-	} samr;
+		const char *user_name;
+		const char *domain_name;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
