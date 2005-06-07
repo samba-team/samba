@@ -118,11 +118,12 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		NBT_SERVER_GOOD_TIMESERV;
 
 	/* hmm, probably a better way to do this */
-	if (lp_parm_bool(-1, "krb5", "kdc", True)) {
-		pdc->server_type |= NBT_SERVER_KDC;
-	}
 	if (str_list_check(services, "ldap")) {
 		pdc->server_type |= NBT_SERVER_LDAP;
+	}
+
+	if (str_list_check(services, "kdc")) {
+		pdc->server_type |= NBT_SERVER_KDC;
 	}
 
 	pdc->domain_uuid      = samdb_result_guid(res[0], "objectGUID");
@@ -131,7 +132,8 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	/* TODO: get our full DNS name from somewhere else */
 	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
-						lp_netbios_name(), pdc->dns_domain);
+						strlower_talloc(packet, lp_netbios_name()), 
+						pdc->dns_domain);
 	pdc->domain           = name->name;
 	pdc->pdc_name         = lp_netbios_name();
 	pdc->user_name        = netlogon->req.pdc2.user_name;
