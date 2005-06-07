@@ -1,3 +1,7 @@
+2005-06-07  David Love  <fx@gnu.org>
+
+	* dump-format.txt: Clarify, spelling and add examples.
+	
 2005-05-30  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* util.c (kdb_attrs): add ok-as-delegate
