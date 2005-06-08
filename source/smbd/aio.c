@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-//#define HAVE_POSIX_ASYNC_IO 1
+/*#define HAVE_POSIX_ASYNC_IO 1 */
 #if HAVE_POSIX_ASYNC_IO
 
 /* The signal we'll use to signify aio done. */
