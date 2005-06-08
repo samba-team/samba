@@ -20,8 +20,8 @@ PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
 
+rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
-rm -f $PRIVATEDIR/*
 ./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM --adminpass $PASSWORD
 
 cat >$CONFFILE<<EOF
@@ -46,10 +46,25 @@ rm -f $PREFIX/smbd_test.fifo
 mkfifo $PREFIX/smbd_test.fifo
 $SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < $PREFIX/smbd_test.fifo || exit 1 &
 sleep 2
+START=`date`
 (
- $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
- $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
- $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
- $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || exit 1
- $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || exit 1
+ failed=0
+ $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || failed=`expr $failed + $?`
+ $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || failed=`expr $failed + 1`
+ exit $failed
 ) 9>$PREFIX/smbd_test.fifo
+failed=$?
+
+END=`date`
+echo "START: $START ($0)";
+echo "END:   $END ($0)";
+
+if [ x"$failed" = x"0" ];then
+	echo "ALL OK ($0)";
+else
+	echo "$failed TESTS FAILED ($0)";
+fi
+exit $failed
