@@ -156,6 +156,8 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	remove_pending_lock_requests_by_fid(fsp);
 
+	cancel_aio_by_fsp(fsp);
+ 
 	/*
 	 * If we're flushing on a close we can get a write
 	 * error here, we must remember this.

@@ -28,8 +28,7 @@ extern int smb_echo_count;
 struct timeval smb_last_time;
 
 static char *InBuffer = NULL;
-char *OutBuffer = NULL;
-char *last_inbuf = NULL;
+static char *OutBuffer = NULL;
 
 /* 
  * Size of data we can send to client. Set
@@ -979,8 +978,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
-		last_inbuf = inbuf;
-
 		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
 	}
 
@@ -1499,24 +1496,84 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 }
 
 /****************************************************************************
-  process commands from the client
+ Accessor functions for InBuffer, OutBuffer.
+****************************************************************************/
+
+char *get_InBuffer(void)
+{
+	return InBuffer;
+}
+
+void set_InBuffer(char *new_inbuf)
+{
+	InBuffer = new_inbuf;
+}
+
+char *get_OutBuffer(void)
+{
+	return OutBuffer;
+}
+
+void set_OutBuffer(char *new_outbuf)
+{
+	InBuffer = new_outbuf;
+}
+
+const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+
+/****************************************************************************
+ Allocate a new InBuffer. Returns the new and old ones.
+****************************************************************************/
+
+char *NewInBuffer(char **old_inbuf)
+{
+	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_inbuf) {
+		return NULL;
+	}
+	if (old_inbuf) {
+		*old_inbuf = InBuffer;
+	}
+	InBuffer = new_inbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, new_inbuf, total_buffer_size);
+#endif
+	return InBuffer;
+}
+
+/****************************************************************************
+ Allocate a new OutBuffer. Returns the new and old ones.
+****************************************************************************/
+
+char *NewOutBuffer(char **old_outbuf)
+{
+	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_outbuf) {
+		return NULL;
+	}
+	if (old_outbuf) {
+		*old_outbuf = OutBuffer;
+	}
+	OutBuffer = new_outbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
+#endif
+	return OutBuffer;
+}
+
+/****************************************************************************
+ Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
-	const size_t total_buffer_size = BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN;
+	char *inbuf = NewInBuffer(NULL);
+	char *outbuf = NewOutBuffer(NULL);
 
-	InBuffer = (char *)SMB_MALLOC(total_buffer_size);
-	OutBuffer = (char *)SMB_MALLOC(total_buffer_size);
-	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
+	if ((inbuf == NULL) || (outbuf == NULL)) 
 		return;
-
-#if defined(DEVELOPER)
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
-#endif
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
