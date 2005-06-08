@@ -62,7 +62,8 @@ static uint32 get_rpc_call_id(void)
  Use SMBreadX to get rest of one fragment's worth of rpc data.
  ********************************************************************/
 
-static BOOL rpc_read(struct cli_state *cli, int pipe_idx, prs_struct *rdata, uint32 data_to_read, uint32 *rdata_offset)
+static BOOL rpc_read(struct rpc_pipe_client *cli, prs_struct *rdata,
+		     uint32 data_to_read, uint32 *rdata_offset)
 {
 	size_t size = (size_t)cli->max_recv_frag;
 	int stream_offset = 0;
@@ -95,13 +96,14 @@ static BOOL rpc_read(struct cli_state *cli, int pipe_idx, prs_struct *rdata, uin
 		if (size > (size_t)data_to_read)
 			size = (size_t)data_to_read;
 
-		num_read = (int)cli_read(cli, cli->nt_pipe_fnum[pipe_idx], pdata, (off_t)stream_offset, size);
+		num_read = (int)cli_read(cli->cli, cli->fnum, pdata,
+					 (off_t)stream_offset, size);
 
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
 
-		if (cli_is_dos_error(cli)) {
-                        cli_dos_error(cli, &eclass, &ecode);
+		if (cli_is_dos_error(cli->cli)) {
+                        cli_dos_error(cli->cli, &eclass, &ecode);
                         if (eclass != ERRDOS && ecode != ERRmoredata) {
                                 DEBUG(0,("rpc_read: Error %d/%u in cli_read\n",
                                          eclass, (unsigned int)ecode));
@@ -168,7 +170,7 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
  Never on bind requests/responses.
  ****************************************************************************/
 
-static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
+static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 			  uint32 fragment_start, int len, int auth_len, uint8 pkt_type,
 			  int *pauth_padding_len)
 {
@@ -219,7 +221,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 	DEBUG(10,("rpc_auth_pipe: packet:\n"));
 	dump_data(100, dp, auth_len);
 
-	prs_init(&auth_verf, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&auth_verf, 0, cli->cli->mem_ctx, UNMARSHALL);
 	
 	/* The endinness must be preserved. JRA. */
 	prs_set_endian_data( &auth_verf, rdata->bigendian_data);
@@ -394,7 +396,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 
  ****************************************************************************/
 
-static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, prs_struct *rdata,
+static BOOL rpc_api_pipe(struct rpc_pipe_client *cli, prs_struct *data, prs_struct *rdata,
 			 uint8 expected_pkt_type)
 {
 	uint32 len;
@@ -416,23 +418,24 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	/* Create setup parameters - must be in native byte order. */
 
 	setup[0] = TRANSACT_DCERPCCMD; 
-	setup[1] = cli->nt_pipe_fnum[pipe_idx]; /* Pipe file handle. */
+	setup[1] = cli->fnum; /* Pipe file handle. */
 
-	DEBUG(5,("rpc_api_pipe: fnum:%x\n", (int)cli->nt_pipe_fnum[pipe_idx]));
+	DEBUG(5,("rpc_api_pipe: fnum:%x\n", (int)cli->fnum));
 
 	/* Send the RPC request and receive a response.  For short RPC
 	   calls (about 1024 bytes or so) the RPC request and response
 	   appears in a SMBtrans request and response.  Larger RPC
 	   responses are received further on. */
 
-	if (!cli_api_pipe(cli, "\\PIPE\\",
+	if (!cli_api_pipe(cli->cli, "\\PIPE\\",
 	          setup, 2, 0,                     /* Setup, length, max */
 	          NULL, 0, 0,                      /* Params, length, max */
 	          pdata, data_len, max_data,   	   /* data, length, max */
 	          &rparam, &rparam_len,            /* return params, len */
 	          &prdata, &rdata_len))            /* return data, len */
 	{
-		DEBUG(0, ("cli_pipe: return critical error. Error was %s\n", cli_errstr(cli)));
+		DEBUG(0, ("cli_pipe: return critical error. Error was %s\n",
+			  cli_errstr(cli->cli)));
 		return False;
 	}
 
@@ -442,7 +445,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 
 	if (prdata == NULL) {
 		DEBUG(0,("rpc_api_pipe: pipe %x failed to return data.\n",
-			(int)cli->nt_pipe_fnum[pipe_idx]));
+			(int)cli->fnum));
 		return False;
 	}
 
@@ -470,7 +473,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	}
 
 	if (rhdr.pkt_type == RPC_BINDNACK) {
-		DEBUG(3, ("Bind NACK received on pipe %x!\n", (int)cli->nt_pipe_fnum[pipe_idx]));
+		DEBUG(3, ("Bind NACK received on pipe %x!\n", (int)cli->fnum));
 		prs_mem_free(rdata);
 		return False;
 	}
@@ -485,7 +488,9 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	}
 
 	if (rhdr.pkt_type != expected_pkt_type) {
-		DEBUG(3, ("Connection to pipe %x got an unexpected RPC packet type - %d, not %d\n", (int)cli->nt_pipe_fnum[pipe_idx], rhdr.pkt_type, expected_pkt_type));
+		DEBUG(3, ("Connection to pipe %x got an unexpected RPC packet "
+			  "type - %d, not %d\n", (int)cli->fnum,
+			  rhdr.pkt_type, expected_pkt_type));
 		prs_mem_free(rdata);
 		return False;
 	}
@@ -502,7 +507,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 
 		/* Read the remaining part of the first response fragment */
 
-		if (!rpc_read(cli, pipe_idx, rdata, len, &current_offset)) {
+		if (!rpc_read(cli, rdata, len, &current_offset)) {
 			prs_mem_free(rdata);
 			return False;
 		}
@@ -554,12 +559,13 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 		 * First read the header of the next PDU.
 		 */
 
-		prs_init(&hps, 0, cli->mem_ctx, UNMARSHALL);
+		prs_init(&hps, 0, cli->cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
-		num_read = cli_read(cli, cli->nt_pipe_fnum[pipe_idx], hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
-		if (cli_is_dos_error(cli)) {
-                        cli_dos_error(cli, &eclass, &ecode);
+		num_read = cli_read(cli->cli, cli->fnum, hdr_data, 0,
+				    RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
+		if (cli_is_dos_error(cli->cli)) {
+                        cli_dos_error(cli->cli, &eclass, &ecode);
                         if (eclass != ERRDOS && ecode != ERRmoredata) {
                                 DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", eclass, ecode));
                                 return False;
@@ -602,7 +608,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 		 * Now read the rest of the PDU.
 		 */
 
-		if (!rpc_read(cli, pipe_idx, rdata, len, &current_offset)) {
+		if (!rpc_read(cli, rdata, len, &current_offset)) {
 			prs_mem_free(rdata);
 			return False;
 		}
@@ -644,7 +650,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 
  ********************************************************************/
 
-static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out, 
+static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
+				    prs_struct *rpc_out, 
 				    uint32 rpc_call_id,
 				    RPC_IFACE *abstract, RPC_IFACE *transfer,
 				    const char *my_name, const char *domain)
@@ -783,7 +790,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
  the authentication handshake.
  ********************************************************************/
 
-static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
+static NTSTATUS create_rpc_bind_resp(struct rpc_pipe_client *cli,
 				 uint32 rpc_call_id,
 				 prs_struct *rpc_out)
 {
@@ -916,8 +923,8 @@ static BOOL create_auth_hdr(prs_struct *outgoing_packet,
  * @param rdata Unparsed NDR response data.
 **/
 
-BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
-                      prs_struct *data, prs_struct *rdata)
+BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
+			  prs_struct *data, prs_struct *rdata)
 {
 	uint32 auth_len, real_auth_len, auth_hdr_len, max_data, data_left, data_sent;
 	NTSTATUS nt_status;
@@ -959,7 +966,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
 		send_size = MIN(data_left, max_data);
 
 		if (!prs_init(&sec_blob, send_size, /* will need at least this much */
-			      cli->mem_ctx, MARSHALL)) {
+			      cli->cli->mem_ctx, MARSHALL)) {
 			DEBUG(0,("Could not malloc %u bytes",
 				 send_size+auth_padding));
 			return False;
@@ -1066,7 +1073,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
 		 * Malloc parse struct to hold it (and enough for alignments).
 		 */
 		if(!prs_init(&outgoing_packet, data_len + 8, 
-			     cli->mem_ctx, MARSHALL)) {
+			     cli->cli->mem_ctx, MARSHALL)) {
 			DEBUG(0,("rpc_api_pipe_req: Failed to malloc %u bytes.\n", (unsigned int)data_len ));
 			return False;
 		}
@@ -1095,10 +1102,10 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
 			   prs_offset(&outgoing_packet)));
 		
 		if (flags & RPC_FLG_LAST)
-			ret = rpc_api_pipe(cli, pipe_idx, &outgoing_packet, 
+			ret = rpc_api_pipe(cli, &outgoing_packet, 
 					   rdata, RPC_RESPONSE);
 		else {
-			cli_write(cli, cli->nt_pipe_fnum[pipe_idx], 0x0008,
+			cli_write(cli->cli, cli->fnum, 0x0008,
 				   prs_data_p(&outgoing_packet),
 				   data_sent, data_len);
 		}
@@ -1108,17 +1115,26 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
 	}
 	/* Also capture received data */
 	slprintf(dump_name, sizeof(dump_name) - 1, "reply_%s",
-		 cli_pipe_get_name(cli));
+		 cli_pipe_get_name(cli->cli));
 	prs_dump(dump_name, op_num, rdata);
 
 	return ret;
 }
 
+BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
+                      prs_struct *data, prs_struct *rdata)
+{
+	return rpc_api_pipe_req_int(&cli->pipes[pipe_idx], op_num,
+				    data, rdata);
+}
+
+
 /****************************************************************************
  Set the handle state.
 ****************************************************************************/
 
-static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, int pipe_idx, const char *pipe_name, uint16 device_state)
+static BOOL rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
+				   const char *pipe_name, uint16 device_state)
 {
 	BOOL state_set = False;
 	char param[2];
@@ -1131,17 +1147,17 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, int pipe_idx, const ch
 		return False;
 
 	DEBUG(5,("Set Handle state Pipe[%x]: %s - device state:%x\n",
-	cli->nt_pipe_fnum[pipe_idx], pipe_name, device_state));
+		 cli->fnum, pipe_name, device_state));
 
 	/* create parameters: device state */
 	SSVAL(param, 0, device_state);
 
 	/* create setup parameters. */
 	setup[0] = 0x0001; 
-	setup[1] = cli->nt_pipe_fnum[pipe_idx]; /* pipe file handle.  got this from an SMBOpenX. */
+	setup[1] = cli->fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
 	/* send the data on \PIPE\ */
-	if (cli_api_pipe(cli, "\\PIPE\\",
+	if (cli_api_pipe(cli->cli, "\\PIPE\\",
 	            setup, 2, 0,                /* setup, length, max */
 	            param, 2, 0,                /* param, length, max */
 	            NULL, 0, 1024,              /* data, length, max */
@@ -1281,20 +1297,21 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
  Create and send the third packet in an RPC auth.
 ****************************************************************************/
 
-static BOOL rpc_send_auth_reply(struct cli_state *cli, int pipe_idx, prs_struct *rdata, uint32 rpc_call_id)
+static BOOL rpc_send_auth_reply(struct rpc_pipe_client *cli,
+				prs_struct *rdata, uint32 rpc_call_id)
 {
 	prs_struct rpc_out;
 	ssize_t ret;
 
 	prs_init(&rpc_out, RPC_HEADER_LEN + RPC_HDR_AUTHA_LEN, /* need at least this much */ 
-		 cli->mem_ctx, MARSHALL);
+		 cli->cli->mem_ctx, MARSHALL);
 
 	if (!NT_STATUS_IS_OK(create_rpc_bind_resp(cli, rpc_call_id,
 						  &rpc_out))) {
 		return False;
 	}
 
-	if ((ret = cli_write(cli, cli->nt_pipe_fnum[pipe_idx], 0x8, prs_data_p(&rpc_out), 
+	if ((ret = cli_write(cli->cli, cli->fnum, 0x8, prs_data_p(&rpc_out), 
 			0, (size_t)prs_offset(&rpc_out))) != (ssize_t)prs_offset(&rpc_out)) {
 		DEBUG(0,("rpc_send_auth_reply: cli_write failed. Return was %d\n", (int)ret));
 		prs_mem_free(&rpc_out);
@@ -1309,7 +1326,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, int pipe_idx, prs_struct 
  Do an rpc bind.
 ****************************************************************************/
 
-static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_name)
+static BOOL rpc_pipe_bind(struct rpc_pipe_client *cli)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1318,15 +1335,16 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 	uint32 rpc_call_id;
 	char buffer[MAX_PDU_FRAG_LEN];
 
-	if ( (pipe_idx < 0) || (pipe_idx >= PI_MAX_PIPES) )
+	if ( (cli->pipe_idx < 0) || (cli->pipe_idx >= PI_MAX_PIPES) )
 		return False;
 
-	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum[pipe_idx], pipe_names[pipe_idx].client_pipe));
+	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->fnum,
+		 pipe_names[cli->pipe_idx].client_pipe));
 
-	if (!valid_pipe_name(pipe_idx, &abstract, &transfer))
+	if (!valid_pipe_name(cli->pipe_idx, &abstract, &transfer))
 		return False;
 
-	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
+	prs_init(&rpc_out, 0, cli->cli->mem_ctx, MARSHALL);
 
 	/*
 	 * Use the MAX_PDU_FRAG_LEN buffer to store the bind request.
@@ -1391,10 +1409,10 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 	                    global_myname(), cli->domain);
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
+	prs_init(&rdata, 0, cli->cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
-	if (rpc_api_pipe(cli, pipe_idx, &rpc_out, &rdata, RPC_BINDACK)) {
+	if (rpc_api_pipe(cli, &rpc_out, &rdata, RPC_BINDACK)) {
 		RPC_HDR_BA   hdr_ba;
 
 		DEBUG(5, ("rpc_pipe_bind: rpc_api_pipe returned OK.\n"));
@@ -1405,7 +1423,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 			return False;
 		}
 
-		if(!check_bind_response(&hdr_ba, pipe_idx, &transfer)) {
+		if(!check_bind_response(&hdr_ba, cli->pipe_idx, &transfer)) {
 			DEBUG(2,("rpc_pipe_bind: check_bind_response failed.\n"));
 			prs_mem_free(&rdata);
 			return False;
@@ -1421,7 +1439,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 		 */
 
 		if ((cli->pipe_auth_flags & AUTH_PIPE_NTLMSSP) 
-		    && !rpc_send_auth_reply(cli, pipe_idx, &rdata, rpc_call_id)) {
+		    && !rpc_send_auth_reply(cli, &rdata, rpc_call_id)) {
 			DEBUG(0,("rpc_pipe_bind: rpc_send_auth_reply failed.\n"));
 			prs_mem_free(&rdata);
 			return False;
@@ -1440,11 +1458,9 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 {
 	int fnum;
+	struct rpc_pipe_client *cli_pipe;
 
-	/* At the moment we can't have more than one pipe open over
-           a cli connection. )-: */
-
-	SMB_ASSERT(cli->nt_pipe_fnum[pipe_idx] == 0);
+	SMB_ASSERT(cli->pipes[pipe_idx].fnum == 0);
 	
 	/* The pipe index must fall within our array */
 
@@ -1457,7 +1473,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 			return False;
 		}
 
-		cli->nt_pipe_fnum[pipe_idx] = (uint16)fnum;
+		cli->pipes[pipe_idx].fnum = (uint16)fnum;
 	} else {
 		if ((fnum = cli_open(cli, pipe_names[pipe_idx].client_pipe, O_CREAT|O_RDWR, DENY_NONE)) == -1) {
 			DEBUG(1,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
@@ -1465,25 +1481,32 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 			return False;
 		}
 
-		cli->nt_pipe_fnum[pipe_idx] = (uint16)fnum;
+		cli->pipes[pipe_idx].fnum = (uint16)fnum;
 
 		/**************** Set Named Pipe State ***************/
-		if (!rpc_pipe_set_hnd_state(cli, pipe_idx, pipe_names[pipe_idx].client_pipe, 0x4300)) {
+		if (!rpc_pipe_set_hnd_state(&cli->pipes[pipe_idx], pipe_names[pipe_idx].client_pipe, 0x4300)) {
 			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
-			cli_close(cli, cli->nt_pipe_fnum[pipe_idx]);
-			cli->nt_pipe_fnum[pipe_idx] = 0;
+			cli_close(cli, cli->pipes[pipe_idx].fnum);
+			cli->pipes[pipe_idx].fnum = 0;
 			return False;
 		}
 	}
 
+	cli_pipe = &cli->pipes[pipe_idx];
+	cli_pipe->pipe_idx = pipe_idx;
+	cli_pipe->cli = cli;
+	cli_pipe->pipe_auth_flags = cli->pipe_auth_flags;
+	memcpy(&cli_pipe->auth_info.sess_key,
+	       cli->sess_key, sizeof(cli->sess_key));
+
 	/******************* bind request on pipe *****************/
 
-	if (!rpc_pipe_bind(cli, pipe_idx, global_myname())) {
+	if (!rpc_pipe_bind(&cli->pipes[pipe_idx])) {
 		DEBUG(2,("cli_nt_session_open: rpc bind to %s failed\n",
 			 get_pipe_name_from_index(pipe_idx)));
-		cli_close(cli, cli->nt_pipe_fnum[pipe_idx]);
-		cli->nt_pipe_fnum[pipe_idx] = 0;
+		cli_close(cli, cli->pipes[pipe_idx].fnum);
+		cli->pipes[pipe_idx].fnum = 0;
 		return False;
 	}
 
@@ -1523,7 +1546,6 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 {
 	NTSTATUS result;	
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
-	int fnum;
 
 	cli_nt_netlogon_netsec_session_close(cli);
 
@@ -1554,60 +1576,20 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 
 	}
 
+	cli->netlogon_pipe = cli->pipes[PI_NETLOGON];
+	ZERO_STRUCT(cli->pipes[PI_NETLOGON]);
+
 	/* Server offered schannel, so try it. */
 
-	memcpy(cli->auth_info.sess_key, cli->sess_key,
-	       sizeof(cli->auth_info.sess_key));
-
-	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum[PI_NETLOGON];
+	memcpy(cli->pipes[PI_NETLOGON].auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->pipes[PI_NETLOGON].auth_info.sess_key));
 
 	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
 	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
 	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
 
-	if (cli->capabilities & CAP_NT_SMBS) {
-
-		/* The secure channel connection must be opened on the same 
-                   session (TCP connection) as the one the challenge was
-                   requested from. */
-		if ((fnum = cli_nt_create(cli, PIPE_NETLOGON_PLAIN,
-					  DESIRED_ACCESS_PIPE)) == -1) {
-			DEBUG(0,("cli_nt_create failed to %s machine %s. "
-				 "Error was %s\n",
-				 PIPE_NETLOGON, cli->desthost,
-				 cli_errstr(cli)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		
-		cli->nt_pipe_fnum[PI_NETLOGON] = (uint16)fnum;
-	} else {
-		if ((fnum = cli_open(cli, PIPE_NETLOGON,
-				     O_CREAT|O_RDWR, DENY_NONE)) == -1) {
-			DEBUG(0,("cli_open failed on pipe %s to machine %s. "
-				 "Error was %s\n",
-				 PIPE_NETLOGON, cli->desthost,
-				 cli_errstr(cli)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		cli->nt_pipe_fnum[PI_NETLOGON] = (uint16)fnum;
-
-		/**************** Set Named Pipe State ***************/
-		if (!rpc_pipe_set_hnd_state(cli, PI_NETLOGON, PIPE_NETLOGON, 0x4300)) {
-			DEBUG(0,("Pipe hnd state failed.  Error was %s\n",
-				  cli_errstr(cli)));
-			cli_close(cli, cli->nt_pipe_fnum[PI_NETLOGON]);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-	
-	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname())) {
-		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
-		cli_close(cli, cli->nt_pipe_fnum[PI_NETLOGON]);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
+	return cli_nt_session_open(cli, PI_NETLOGON) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -1640,19 +1622,20 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
-		ZERO_STRUCT(cli->auth_info.sess_key);
+		ZERO_STRUCT(cli->pipes[cli->pipe_idx].auth_info.sess_key);
 		ZERO_STRUCT(cli->sess_key);
 		cli->pipe_auth_flags = 0;
 		cli_nt_session_close(cli);
 		return result;
 	}
 
-	memcpy(cli->auth_info.sess_key, cli->sess_key,
-	       sizeof(cli->auth_info.sess_key));
+	memcpy(cli->pipes[PI_NETLOGON].auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->pipes[PI_NETLOGON].auth_info.sess_key));
 
-	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum[PI_NETLOGON];
-	cli->nt_pipe_fnum[PI_NETLOGON] = 0;
-
+	cli_close(cli, cli->pipes[PI_NETLOGON].fnum);
+	cli->pipes[PI_NETLOGON].fnum = 0;
+	cli->pipe_idx = -1;
+	
 	/* doing schannel, not per-user auth */
 	cli->pipe_auth_flags = auth_flags;
 
@@ -1664,4 +1647,124 @@ const char *cli_pipe_get_name(struct cli_state *cli)
 	return cli->pipe_name;
 }
 
+static struct rpc_pipe_client *cli_rpc_open(struct cli_state *cli,
+					    int pipe_idx)
+{
+	TALLOC_CTX *mem_ctx;
+	struct rpc_pipe_client *result;
+	int fnum;
+
+	/* The pipe index must fall within our array */
+	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
+
+	mem_ctx = talloc_init("struct rpc_pipe_client");
+	if (mem_ctx == NULL) return NULL;
+
+	result = TALLOC_P(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) return NULL;
+
+	result->mem_ctx = mem_ctx;
+
+	fnum = cli_nt_create(cli, &pipe_names[pipe_idx].client_pipe[5],
+			     DESIRED_ACCESS_PIPE);
+
+	if (fnum == -1) {
+		DEBUG(0,("cli_rpc_open failed on pipe %s "
+			 "to machine %s.  Error was %s\n",
+			 &pipe_names[pipe_idx].client_pipe[5], cli->desthost,
+			 cli_errstr(cli)));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	result->fnum = fnum;
+	result->cli = cli;
+	result->pipe_idx = pipe_idx;
+
+	return result;
+}
+
+struct rpc_pipe_client *cli_rpc_open_noauth(struct cli_state *cli,
+					    int pipe_idx)
+{
+	struct rpc_pipe_client *result;
+
+	result = cli_rpc_open(cli, pipe_idx);
+	if (result == NULL) return NULL;
+
+	result->max_xmit_frag = 0;
+	result->pipe_auth_flags = 0;
+
+	if (!rpc_pipe_bind(result)) {
+		DEBUG(0, ("rpc_pipe_bind failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	return result;
+}
+
+struct rpc_pipe_client *cli_rpc_open_ntlmssp(struct cli_state *cli,
+					     int pipe_idx,
+					     const char *domain,
+					     const char *username,
+					     const char *password)
+{
+	struct rpc_pipe_client *result;
+
+	result = cli_rpc_open(cli, pipe_idx);
+	if (result == NULL) return NULL;
+	
+	result->max_xmit_frag = 0;
+	result->pipe_auth_flags =
+		AUTH_PIPE_NTLMSSP|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL;
+	result->domain = domain;
+	result->user_name = username;
+	pwd_set_cleartext(&result->pwd, password);
+
+	if (!rpc_pipe_bind(result)) {
+		DEBUG(0, ("cli_rpc_pipe_bind failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	return result;
+}
+
+struct rpc_pipe_client *cli_rpc_open_schannel(struct cli_state *cli,
+					      int pipe_idx,
+					      const uchar session_key[16],
+					      const char *domain)
+{
+	struct rpc_pipe_client *result;
+
+	result = cli_rpc_open(cli, pipe_idx);
+	if (result == NULL) return NULL;
+	
+	result->max_xmit_frag = 0;
+	result->pipe_auth_flags =
+		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+	result->domain = domain;
+	memcpy(result->auth_info.sess_key, session_key, 16);
+
+	if (!rpc_pipe_bind(result)) {
+		DEBUG(0, ("cli_rpc_pipe_bind failed\n"));
+		talloc_destroy(result->mem_ctx);
+		return NULL;
+	}
+
+	return result;
+}
+
+void cli_rpc_close(struct rpc_pipe_client *cli_pipe)
+{
+	if (!cli_close(cli_pipe->cli, cli_pipe->fnum))
+		DEBUG(0,("cli_rpc_open failed on pipe %s "
+			 "to machine %s.  Error was %s\n",
+			 &pipe_names[cli_pipe->pipe_idx].client_pipe[5],
+			 cli_pipe->cli->desthost,
+			 cli_errstr(cli_pipe->cli)));
+
+	talloc_destroy(cli_pipe->mem_ctx);	
+}
 

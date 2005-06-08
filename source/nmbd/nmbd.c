@@ -323,6 +323,56 @@ static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t 
 	}
 }
 
+static void msg_nmbd_send_packet(int msg_type, pid_t src,
+				 void *buf, size_t len)
+{
+	struct packet_struct *p = (struct packet_struct *)buf;
+	struct subnet_record *subrec;
+	struct in_addr *local_ip;
+
+	DEBUG(10, ("Received send_packet from %d\n", src));
+
+	if (len != sizeof(struct packet_struct)) {
+		DEBUG(2, ("Discarding invalid packet length from %d\n", src));
+		return;
+	}
+
+	if ((p->packet_type != NMB_PACKET) &&
+	    (p->packet_type != DGRAM_PACKET)) {
+		DEBUG(2, ("Discarding invalid packet type from %d: %d\n",
+			  src, p->packet_type));
+		return;
+	}
+
+	local_ip = iface_ip(p->ip);
+
+	if (local_ip == NULL) {
+		DEBUG(2, ("Could not find ip for packet from %d\n", src));
+		return;
+	}
+
+	subrec = FIRST_SUBNET;
+
+	p->fd = (p->packet_type == NMB_PACKET) ?
+		subrec->nmb_sock : subrec->dgram_sock;
+
+	for (subrec = FIRST_SUBNET; subrec != NULL;
+	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		if (ip_equal(*local_ip, subrec->myip)) {
+			p->fd = (p->packet_type == NMB_PACKET) ?
+				subrec->nmb_sock : subrec->dgram_sock;
+			break;
+		}
+	}
+
+	if (p->packet_type == DGRAM_PACKET) {
+		p->port = 138;
+		p->packet.dgram.header.source_ip.s_addr = local_ip->s_addr;
+		p->packet.dgram.header.source_port = 138;
+	}
+
+	send_packet(p);
+}
 
 /**************************************************************************** **
  The main select loop.
@@ -720,6 +770,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
 	message_register(MSG_SHUTDOWN, nmbd_terminate);
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
+	message_register(MSG_SEND_PACKET, msg_nmbd_send_packet);
 
 	DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

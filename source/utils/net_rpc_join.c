@@ -77,7 +77,7 @@ static int net_rpc_join_ok(const char *domain)
 	
 done:
 	/* Close down pipe - this will clean up open policy handles */
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 
 	cli_shutdown(cli);
@@ -346,7 +346,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 done:
 	/* Close down pipe - this will clean up open policy handles */
 
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 
 	/* Display success or failure */

@@ -505,7 +505,7 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 	 */
 	if (cli_is_dos_error(cli)) {
                 cli_dos_error(cli, &eclass, &ecode);
-		if (cli->nt_pipe_fnum[cli->pipe_idx] == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
+		if (cli->pipes[cli->pipe_idx].fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
 			cli_signing_trans_stop(cli);
 			return(False);
 		}
@@ -639,7 +639,7 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 		}
 		if (cli_is_dos_error(cli)) {
                         cli_dos_error(cli, &eclass, &ecode);
-			if(cli->nt_pipe_fnum[cli->pipe_idx] == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
+			if(cli->pipes[cli->pipe_idx].fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
 				cli_signing_trans_stop(cli);
 				return(False);
 			}

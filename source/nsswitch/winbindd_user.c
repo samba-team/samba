@@ -106,100 +106,274 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	return True;
 }
 
+/* Wrapper for domain->methods->query_user, only on the parent->child pipe */
+
+enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
+					    struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+	WINBIND_USERINFO user_info;
+	NTSTATUS status;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	status = domain->methods->query_user(domain, state->mem_ctx,
+					     &sid, &user_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("error getting user info for sid %s\n",
+			  sid_string_static(&sid)));
+		return WINBINDD_ERROR;
+	}
+
+	fstrcpy(state->response.data.user_info.acct_name, user_info.acct_name);
+	fstrcpy(state->response.data.user_info.full_name, user_info.full_name);
+	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
+				&state->response.data.user_info.group_rid)) {
+		DEBUG(1, ("Could not extract group rid out of %s\n",
+			  sid_string_static(&sid)));
+		return WINBINDD_ERROR;
+	}
+
+	return WINBINDD_OK;
+}
+
+struct getpwsid_state {
+	struct winbindd_cli_state *state;
+	struct winbindd_domain *domain;
+	char *username;
+	char *fullname;
+	DOM_SID user_sid;
+	uid_t uid;
+	DOM_SID group_sid;
+	gid_t gid;
+};
+
+static void getpwsid_queryuser_recv(void *private, BOOL success,
+				    const char *acct_name,
+				    const char *full_name, uint32 group_rid);
+static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid);
+static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid);
+
+static void winbindd_getpwsid(struct winbindd_cli_state *state,
+			      const DOM_SID *sid)
+{
+	struct getpwsid_state *s;
+
+	s = TALLOC_P(state->mem_ctx, struct getpwsid_state);
+	if (s == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto error;
+	}
+
+	s->state = state;
+	s->domain = find_domain_from_sid_noinit(sid);
+	if (s->domain == NULL) {
+		DEBUG(3, ("Could not find domain for sid %s\n",
+			  sid_string_static(sid)));
+		goto error;
+	}
+
+	sid_copy(&s->user_sid, sid);
+
+	query_user_async(s->state->mem_ctx, s->domain, sid,
+			 getpwsid_queryuser_recv, s);
+	return;
+
+ error:
+	s->state->response.result = WINBINDD_ERROR;
+	request_finished(state);
+}
+	
+static void getpwsid_queryuser_recv(void *private, BOOL success,
+				    const char *acct_name,
+				    const char *full_name, uint32 group_rid)
+{
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not query user %s\\%s\n", s->domain->name,
+			  s->username));
+		s->state->response.result = WINBINDD_ERROR;
+		request_finished(s->state);
+		return;
+	}
+
+	s->username = talloc_strdup(s->state->mem_ctx, acct_name);
+	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
+	sid_copy(&s->group_sid, &s->domain->sid);
+	sid_append_rid(&s->group_sid, group_rid);
+
+	winbindd_sid2uid_async(s->state->mem_ctx, &s->user_sid,
+			       getpwsid_sid2uid_recv, s);
+}
+
+static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid)
+{
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
+
+	if (!success) {
+		DEBUG(5, ("Could not query user's %s\\%s uid\n",
+			  s->domain->name, s->username));
+		s->state->response.result = WINBINDD_ERROR;
+		request_finished(s->state);
+		return;
+	}
+
+	s->uid = uid;
+	winbindd_sid2gid_async(s->state->mem_ctx, &s->group_sid,
+			       getpwsid_sid2gid_recv, s);
+}
+
+static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid)
+{
+	struct getpwsid_state *s =
+		talloc_get_type_abort(private, struct getpwsid_state);
+	struct winbindd_pw *pw;
+	fstring output_username;
+	char *homedir;
+	char *shell;
+
+	s->state->response.result = WINBINDD_ERROR;
+
+	if (!success) {
+		DEBUG(5, ("Could not query user's %s\\%s\n gid",
+			  s->domain->name, s->username));
+		goto done;
+	}
+
+	s->gid = gid;
+
+	pw = &s->state->response.data.pw;
+	pw->pw_uid = s->uid;
+	pw->pw_gid = s->gid;
+	fill_domain_username(output_username, s->domain->name, s->username); 
+	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
+	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
+
+	/* Home directory and shell - use template config parameters.  The
+	   defaults are /tmp for the home directory and /bin/false for
+	   shell. */
+	
+	/* The substitution of %U and %D in the 'template homedir' is done
+	   by alloc_sub_specified() below. */
+
+	fstrcpy(current_user_info.domain, s->domain->name);
+
+	homedir = alloc_sub_specified(lp_template_homedir(), s->username,
+				      s->domain->name, pw->pw_uid, pw->pw_gid);
+	if (homedir == NULL) {
+		DEBUG(5, ("Could not compose homedir\n"));
+		goto done;
+	}
+	safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
+	SAFE_FREE(homedir);
+	
+	shell = alloc_sub_specified(lp_template_shell(), s->username,
+				    s->domain->name, pw->pw_uid, pw->pw_gid);
+	if (shell == NULL) {
+		DEBUG(5, ("Could not compose shell\n"));
+		goto done;
+	}
+	safe_strcpy(pw->pw_shell, shell, sizeof(pw->pw_shell) - 1);
+	SAFE_FREE(shell);
+
+	/* Password - set to "x" as we can't generate anything useful here.
+	   Authentication can be done using the pam_winbind module. */
+
+	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
+
+	s->state->response.result = WINBINDD_OK;
+
+ done:
+	request_finished(s->state);
+}
+
 /* Return a password structure from a username.  */
 
-enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) 
+static void getpwnam_name2sid_recv(void *private, BOOL success,
+				   const DOM_SID *sid, enum SID_NAME_USE type);
+
+enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 {
-	WINBIND_USERINFO user_info;
-	DOM_SID user_sid;
-	NTSTATUS status;
-	fstring name_domain, name_user;
-	enum SID_NAME_USE name_type;
 	struct winbindd_domain *domain;
-	TALLOC_CTX *mem_ctx;
-	
+	fstring domname, username;
+
 	/* Ensure null termination */
 	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
-	
-	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.username, 
-			  name_domain, name_user);
-	
-	/* should we deal with users for our domain? */
-	
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
-		DEBUG(5, ("no such domain: %s\n", name_domain));
+	if (!parse_domain_user(state->request.data.username, domname,
+			       username)) {
+		DEBUG(0, ("Could not parse domain user: %s\n",
+			  state->request.data.username));
 		return WINBINDD_ERROR;
 	}
 	
+	/* Get info for the domain */
+
+	domain = find_lookup_domain_from_name(domname);
+
+	if (domain == NULL) {
+		DEBUG(7, ("could not find domain entry for domain %s\n",
+			  domname));
+		return WINBINDD_ERROR;
+	}
+
 	if ( domain->primary && lp_winbind_trusted_domains_only()) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
-			name_domain, name_user));
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting "
+			 "getgroups() for %s\\%s.\n", domname, username));
 		return WINBINDD_ERROR;
 	}	
-	
-	/* Get rid and name type from name */
 
-	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, &name_type)) {
-		DEBUG(1, ("user '%s' does not exist\n", name_user));
-		return WINBINDD_ERROR;
+	/* Get rid and name type from name.  The following costs 1 packet */
+
+	winbindd_lookupname_async(state->mem_ctx, domname, username,
+				  getpwnam_name2sid_recv, state);
+	return WINBINDD_PENDING;
+}
+
+static void getpwnam_name2sid_recv(void *private, BOOL success,
+				   const DOM_SID *sid, enum SID_NAME_USE type)
+{
+	struct winbindd_cli_state *state = private;
+
+	if (!success) {
+		DEBUG(5, ("Could not lookup name for user %s\n",
+			  state->request.data.username));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
 	}
 
-	if (name_type != SID_NAME_USER && name_type != SID_NAME_COMPUTER) {
-		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
-			  name_type));
-		return WINBINDD_ERROR;
-	}
-	
-	/* Get some user info. */
-    
-	if (!(mem_ctx = talloc_init("winbindd_getpwnam([%s]\\[%s])", 
-					  name_domain, name_user))) {
-		DEBUG(1, ("out of memory\n"));
-		return WINBINDD_ERROR;
+	if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER)) {
+		DEBUG(5, ("%s is not a user\n", state->request.data.username));
+		state->response.result = WINBINDD_ERROR;
+		request_finished(state);
+		return;
 	}
 
-	status = domain->methods->query_user(domain, mem_ctx, &user_sid, 
-					     &user_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("error getting user info for user '[%s]\\[%s]'\n", 
-			  name_domain, name_user));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
-	}
-    
-	/* Now take all this information and fill in a passwd structure */	
-	if (!winbindd_fill_pwent(name_domain, user_info.acct_name, 
-				 user_info.user_sid, user_info.group_sid, 
-				 user_info.full_name,
-				 &state->response.data.pw)) {
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
-	}
-
-	talloc_destroy(mem_ctx);
-	
-	return WINBINDD_OK;
-}       
+	winbindd_getpwsid(state, sid);
+}
 
 /* Return a password structure given a uid number */
 
 enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
-	struct winbindd_domain *domain;
-	fstring dom_name;
-	fstring user_name;
-	enum SID_NAME_USE name_type;
-	WINBIND_USERINFO user_info;
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	gid_t gid;
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -210,70 +384,17 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: getpwuid %lu\n", (unsigned long)state->pid, 
 		  (unsigned long)state->request.data.uid));
 
-	/* Get rid from uid */
+	status = idmap_uid_to_sid(&user_sid, state->request.data.uid,
+				  ID_QUERY_ONLY | ID_CACHE_ONLY);
 
-	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid))) {
-		DEBUG(1, ("could not convert uid %lu to SID\n", 
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Could not find SID for uid %lu\n",
 			  (unsigned long)state->request.data.uid));
 		return WINBINDD_ERROR;
 	}
-	
-	/* Get name and name type from rid */
 
-	if (!winbindd_lookup_name_by_sid(&user_sid, dom_name, user_name, &name_type)) {
-		fstring temp;
-		
-		sid_to_string(temp, &user_sid);
-		DEBUG(1, ("could not lookup sid %s\n", temp));
-		return WINBINDD_ERROR;
-	}
-	
-	domain = find_domain_from_sid(&user_sid);
-
-	if (!domain) {
-		DEBUG(1,("Can't find domain from sid\n"));
-		return WINBINDD_ERROR;
-	}
-
-	/* Get some user info */
-	
-	if (!(mem_ctx = talloc_init("winbind_getpwuid(%lu)",
-				    (unsigned long)state->request.data.uid))) {
-
-		DEBUG(1, ("out of memory\n"));
-		return WINBINDD_ERROR;
-	}
-
-	status = domain->methods->query_user(domain, mem_ctx, &user_sid, 
-					     &user_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("error getting user info for user '%s'\n", 
-			  user_name));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
-	}
-	
-	/* Check group has a gid number */
-
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(user_info.group_sid, &gid, 0))) {
-		DEBUG(1, ("error getting group id for user %s\n", user_name));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
-	}
-
-	/* Fill in password structure */
-
-	if (!winbindd_fill_pwent(domain->name, user_info.acct_name, user_info.user_sid, 
-				 user_info.group_sid,
-				 user_info.full_name, &state->response.data.pw)) {
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
-	}
-	
-	talloc_destroy(mem_ctx);
-
-	return WINBINDD_OK;
+	winbindd_getpwsid(state, &user_sid);
+	return WINBINDD_PENDING;
 }
 
 /*
@@ -365,23 +486,18 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
    field is incremented to the index of the next user to fetch.  Return True if
    some users were returned, False otherwise. */
 
-static BOOL get_sam_user_entries(struct getent_state *ent)
+static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	uint32 num_entries;
 	WINBIND_USERINFO *info;
 	struct getpwent_user *name_list = NULL;
 	BOOL result = False;
-	TALLOC_CTX *mem_ctx;
 	struct winbindd_domain *domain;
 	struct winbindd_methods *methods;
 	unsigned int i;
 
 	if (ent->num_sam_entries)
-		return False;
-
-	if (!(mem_ctx = talloc_init("get_sam_user_entries(%s)",
-				    ent->domain_name)))
 		return False;
 
 	if (!(domain = find_domain_from_name(ent->domain_name))) {
@@ -433,8 +549,10 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		}
 		
 		/* User and group ids */
-		sid_copy(&name_list[ent->num_sam_entries+i].user_sid, info[i].user_sid);
-		sid_copy(&name_list[ent->num_sam_entries+i].group_sid, info[i].group_sid);
+		sid_copy(&name_list[ent->num_sam_entries+i].user_sid,
+			 &info[i].user_sid);
+		sid_copy(&name_list[ent->num_sam_entries+i].group_sid,
+			 &info[i].group_sid);
 	}
 		
 	ent->num_sam_entries += num_entries;
@@ -446,8 +564,6 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	result = ent->num_sam_entries > 0;
 
  done:
-
-	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -497,7 +613,8 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 		if (ent->num_sam_entries == ent->sam_entry_index) {
 
-			while(ent && !get_sam_user_entries(ent)) {
+			while(ent &&
+			      !get_sam_user_entries(ent, state->mem_ctx)) {
 				struct getent_state *next_ent;
 
 				/* Free state information for this domain */
@@ -560,13 +677,9 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
-	TALLOC_CTX *mem_ctx;
 	enum winbindd_result rv = WINBINDD_ERROR;
 
 	DEBUG(3, ("[%5lu]: list users\n", (unsigned long)state->pid));
-
-	if (!(mem_ctx = talloc_init("winbindd_list_users")))
-		return WINBINDD_ERROR;
 
 	/* Ensure null termination */
 	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
@@ -585,14 +698,11 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		   
 		if ( *which_domain && !strequal(which_domain, domain->name) )
 			continue;
-
-		if ( !domain->initialized )
-			set_dc_type_and_flags( domain );
 			
 		methods = domain->methods;
 
 		/* Query display info */
-		status = methods->query_user_list(domain, mem_ctx, 
+		status = methods->query_user_list(domain, state->mem_ctx, 
 						  &num_entries, &info);
 
 		if (num_entries == 0)
@@ -645,8 +755,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	rv = WINBINDD_OK;
 
  done:
-
-	talloc_destroy(mem_ctx);
 
 	return rv;
 }

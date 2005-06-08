@@ -32,11 +32,25 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Client state structure */
+/* bits for fd_event.flags */
+#define EVENT_FD_READ 1
+#define EVENT_FD_WRITE 2
+
+struct fd_event {
+	struct fd_event *next, *prev;
+	int fd;
+	int flags; /* see EVENT_FD_* flags */
+	void (*handler)(struct fd_event *fde, int flags);
+	void *data;
+	size_t length, done;
+	void (*finished)(void *private, BOOL success);
+	void *private;
+};
 
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
+	struct fd_event fd_event;
 	pid_t pid;                                /* pid of client */
 	int read_buf_len, write_buf_len;          /* Indexes in request/response */
 	BOOL finished;                            /* Can delete from list */
@@ -44,10 +58,13 @@ struct winbindd_cli_state {
 	time_t last_access;                       /* Time of last access (read or write) */
 	BOOL privileged;                           /* Is the client 'privileged' */
 
+	TALLOC_CTX *mem_ctx;			  /* memory per request */
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
-	BOOL getpwent_initialized;                /* Has getpwent_state been initialized? */
-	BOOL getgrent_initialized;                /* Has getgrent_state been initialized? */
+	BOOL getpwent_initialized;                /* Has getpwent_state been
+						   * initialized? */
+	BOOL getgrent_initialized;                /* Has getgrent_state been
+						   * initialized? */
 	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
 };
@@ -81,14 +98,55 @@ struct winbindd_state {
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 };
 
+struct winbindd_dispatch_table {
+	enum winbindd_cmd cmd;
+	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
+	const char *winbindd_cmd_name;
+};
+
 extern struct winbindd_state server_state;  /* Server information */
 
 typedef struct {
 	char *acct_name;
 	char *full_name;
-	DOM_SID *user_sid;                    /* NT user and primary group SIDs */
-	DOM_SID *group_sid;
+	DOM_SID user_sid;                    /* NT user and primary group SIDs */
+	DOM_SID group_sid;
 } WINBIND_USERINFO;
+
+/* Our connection to the DC */
+
+struct winbindd_cm_conn {
+	struct cli_state *cli;
+
+	struct rpc_pipe_client *samr_pipe;
+	POLICY_HND sam_connect_handle, sam_domain_handle;
+
+	struct rpc_pipe_client *lsa_pipe;
+	POLICY_HND lsa_policy;
+
+	/* Auth2 pipe is the pipe used to setup the netlogon schannel key
+	 * using rpccli_net_auth2. It needs to be kept open. */
+
+	struct rpc_pipe_client *netlogon_auth2_pipe;
+	unsigned char sess_key[16];        /* Current session key. */
+	DOM_CRED clnt_cred;                /* Client NETLOGON credential. */
+	struct rpc_pipe_client *netlogon_pipe;
+};
+
+struct winbindd_async_request;
+
+/* Async child */
+
+struct winbindd_child {
+	struct winbindd_child *next, *prev;
+
+	pid_t pid;
+	struct winbindd_domain *domain;
+	pstring logfilename;
+
+	struct fd_event event;
+	struct winbindd_async_request *requests;
+};
 
 /* Structures to hold per domain information */
 
@@ -122,6 +180,14 @@ struct winbindd_domain {
 	time_t last_seq_check;
 	uint32 sequence_number;
 	NTSTATUS last_status;
+
+	/* The smb connection */
+
+	struct winbindd_cm_conn conn;
+
+	/* The child pid we're talking to */
+
+	struct winbindd_child child;
 
 	/* Linked list info */
 
@@ -181,13 +247,14 @@ struct winbindd_methods {
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      const DOM_SID *user_sid,
-				      uint32 *num_groups, DOM_SID ***user_gids);
+				      uint32 *num_groups, DOM_SID **user_gids);
 
 	/* Lookup all aliases that the sids delivered are member of. This is
 	 * to implement 'domain local groups' correctly */
 	NTSTATUS (*lookup_useraliases)(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
-				       uint32 num_sids, DOM_SID **sids,
+				       uint32 num_sids,
+				       const DOM_SID *sids,
 				       uint32 *num_aliases,
 				       uint32 **alias_rids);
 
@@ -196,7 +263,7 @@ struct winbindd_methods {
 				    TALLOC_CTX *mem_ctx,
 				    const DOM_SID *group_sid,
 				    uint32 *num_names, 
-				    DOM_SID ***sid_mem, char ***names, 
+				    DOM_SID **sid_mem, char ***names, 
 				    uint32 **name_types);
 
 	/* return the current global sequence number */

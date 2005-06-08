@@ -100,14 +100,13 @@ BOOL idmap_check_sid_is_in_free_range(const DOM_SID *sid)
  Returns SID pointer.
 *****************************************************************/  
 
-NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
+NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid, int flags)
 {
 	unid_t id;
-	int flags;
 
 	DEBUG(10,("idmap_uid_to_sid: uid = [%lu]\n", (unsigned long)uid));
 
-	flags = ID_USERID;
+	flags |= ID_USERID;
 	id.uid = uid;
 	
 	return idmap_get_sid_from_id(sid, id, flags);
@@ -118,20 +117,15 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
  Returns SID pointer.
 *****************************************************************/  
 
-NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
+NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid, int flags)
 {
 	unid_t id;
-	int flags;
 
 	DEBUG(10,("idmap_gid_to_sid: gid = [%lu]\n", (unsigned long)gid));
 
-	flags = ID_GROUPID;
-#if 0	/* JERRY */
-	if (!idmap_check_ugid_is_in_free_range(gid)) {
-		flags |= ID_QUERY_ONLY;
-	}
-#endif
+	flags |= ID_GROUPID;
 	id.gid = gid;
+
 	return idmap_get_sid_from_id(sid, id, flags);
 }
 

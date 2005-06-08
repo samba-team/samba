@@ -26,12 +26,6 @@
 #include "includes.h"
 #include "winbindd.h"
 
-extern BOOL opt_nocache;
-extern struct winbindd_methods msrpc_methods;
-extern struct winbindd_methods ads_methods;
-extern BOOL opt_dual_daemon;
-extern BOOL background_process;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -53,6 +47,8 @@ static struct winbind_cache *wcache;
 /* flush the cache */
 void wcache_flush_cache(void)
 {
+	extern BOOL opt_nocache;
+
 	if (!wcache)
 		return;
 	if (wcache->tdb) {
@@ -106,9 +102,11 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	struct winbind_cache *ret = wcache;
 
 	if (!domain->backend) {
+		extern struct winbindd_methods reconnect_methods;
 		switch (lp_security()) {
 #ifdef HAVE_ADS
 		case SEC_ADS: {
+			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
 			if (domain->primary) {
 				domain->backend = &ads_methods;
@@ -132,7 +130,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		default:
 			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n",
 				domain->name));
-			domain->backend = &msrpc_methods;
+			domain->backend = &reconnect_methods;
 		}
 	}
 
@@ -212,7 +210,10 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		smb_panic("centry_string");
 	}
 
-	ret = TALLOC(mem_ctx, len+1);
+	if (mem_ctx != NULL)
+		ret = TALLOC(mem_ctx, len+1);
+	else
+		ret = SMB_MALLOC(len+1);
 	if (!ret) {
 		smb_panic("centry_string out of memory\n");
 	}
@@ -225,20 +226,15 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 /* pull a string from a cache entry, using the supplied
    talloc context 
 */
-static DOM_SID *centry_sid(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
+static BOOL centry_sid(struct cache_entry *centry, DOM_SID *sid)
 {
-	DOM_SID *sid;
 	char *sid_string;
-
-	sid = TALLOC_P(mem_ctx, DOM_SID);
-	if (!sid)
-		return NULL;
-	
-	sid_string = centry_string(centry, mem_ctx);
+	sid_string = centry_string(centry, NULL);
 	if (!string_to_sid(sid, sid_string)) {
-		return NULL;
+		return False;
 	}
-	return sid;
+	SAFE_FREE(sid_string);
+	return True;
 }
 
 /* the server is considered down if it can't give us a sequence number */
@@ -471,11 +467,13 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
+		extern BOOL opt_dual_daemon;
 
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
 			 kstr, domain->name ));
 
 		if (opt_dual_daemon) {
+			extern BOOL background_process;
 			background_process = True;
 			DEBUG(10,("wcache_fetch: background processing expired entry %s for domain %s\n",
 				 kstr, domain->name ));
@@ -654,9 +652,9 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 		return;
 	centry_put_string(centry, info->acct_name);
 	centry_put_string(centry, info->full_name);
-	centry_put_sid(centry, info->user_sid);
-	centry_put_sid(centry, info->group_sid);
-	centry_end(centry, "U/%s", sid_to_string(sid_string, info->user_sid));
+	centry_put_sid(centry, &info->user_sid);
+	centry_put_sid(centry, &info->group_sid);
+	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
 	DEBUG(10,("wcache_save_user: %s (acct_name %s)\n", sid_string, info->acct_name));
 	centry_free(centry);
 }
@@ -691,8 +689,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	for (i=0; i<(*num_entries); i++) {
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
-		(*info)[i].user_sid = centry_sid(centry, mem_ctx);
-		(*info)[i].group_sid = centry_sid(centry, mem_ctx);
+		centry_sid(centry, &(*info)[i].user_sid);
+		centry_sid(centry, &(*info)[i].group_sid);
 	}
 
 do_cached:	
@@ -729,10 +727,12 @@ do_query:
 
 		status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
 		if (!NT_STATUS_IS_OK(status))
-			DEBUG(3, ("query_user_list: returned 0x%08x, retrying\n", NT_STATUS_V(status)));
-			if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL)) {
-				DEBUG(3, ("query_user_list: flushing connection cache\n"));
-				winbindd_cm_flush();
+			DEBUG(3, ("query_user_list: returned 0x%08x, "
+				  "retrying\n", NT_STATUS_V(status)));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
+				DEBUG(3, ("query_user_list: flushing "
+					  "connection cache\n"));
+				invalidate_cm_connection(&domain->conn);
 			}
 
 	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
@@ -747,17 +747,17 @@ do_query:
 	for (i=0; i<(*num_entries); i++) {
 		centry_put_string(centry, (*info)[i].acct_name);
 		centry_put_string(centry, (*info)[i].full_name);
-		centry_put_sid(centry, (*info)[i].user_sid);
-		centry_put_sid(centry, (*info)[i].group_sid);
+		centry_put_sid(centry, &(*info)[i].user_sid);
+		centry_put_sid(centry, &(*info)[i].group_sid);
 		if (domain->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
 						domain->name,
 						(*info)[i].acct_name, 
-						(*info)[i].user_sid,
+						&(*info)[i].user_sid,
 						SID_NAME_USER);
 			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
-						(*info)[i].user_sid,
+						&(*info)[i].user_sid,
 						domain->name,
 						(*info)[i].acct_name, 
 						SID_NAME_USER);
@@ -939,7 +939,6 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	fstring uname;
-	DOM_SID *sid2;
 
 	if (!cache->tdb)
 		goto do_query;
@@ -950,13 +949,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!centry)
 		goto do_query;
 	*type = (enum SID_NAME_USE)centry_uint32(centry);
-	sid2 = centry_sid(centry, mem_ctx);
-	if (!sid2) {
-		ZERO_STRUCTP(sid);
-	} else {
-		sid_copy(sid, sid2);
-	}
-
+	centry_sid(centry, sid);
 	status = centry->status;
 
 	DEBUG(10,("name_to_sid: [Cached] - cached name for domain %s status %s\n",
@@ -1089,8 +1082,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = centry_string(centry, mem_ctx);
 	info->full_name = centry_string(centry, mem_ctx);
-	info->user_sid = centry_sid(centry, mem_ctx);
-	info->group_sid = centry_sid(centry, mem_ctx);
+	centry_sid(centry, &info->user_sid);
+	centry_sid(centry, &info->group_sid);
 	status = centry->status;
 
 	DEBUG(10,("query_user: [Cached] - cached info for domain %s status %s\n",
@@ -1124,7 +1117,7 @@ do_query:
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid, 
-				  uint32 *num_groups, DOM_SID ***user_gids)
+				  uint32 *num_groups, DOM_SID **user_gids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1157,11 +1150,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (*num_groups == 0)
 		goto do_cached;
 
-	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_groups);
+	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
 	if (! (*user_gids))
 		smb_panic("lookup_usergroups out of memory");
 	for (i=0; i<(*num_groups); i++) {
-		(*user_gids)[i] = centry_sid(centry, mem_ctx);
+		centry_sid(centry, &(*user_gids)[i]);
 	}
 
 do_cached:	
@@ -1194,7 +1187,7 @@ do_query:
 		goto skip_save;
 	centry_put_uint32(centry, *num_groups);
 	for (i=0; i<(*num_groups); i++) {
-		centry_put_sid(centry, (*user_gids)[i]);
+		centry_put_sid(centry, &(*user_gids)[i]);
 	}	
 	centry_end(centry, "UG/%s", sid_to_string(sid_string, user_sid));
 	centry_free(centry);
@@ -1205,7 +1198,7 @@ skip_save:
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, DOM_SID **sids,
+				   uint32 num_sids, const DOM_SID *sids,
 				   uint32 *num_aliases, uint32 **alias_rids)
 {
 	struct winbind_cache *cache = get_cache(domain);
@@ -1228,7 +1221,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	for (i=0; i<num_sids; i++) {
 		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
-					  sid_string_static(sids[i]));
+					  sid_string_static(&sids[i]));
 		if (sidlist == NULL)
 			return NT_STATUS_NO_MEMORY;
 	}
@@ -1265,7 +1258,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	DEBUG(10,("lookup_useraliases: [Cached] - doing backend query for info "
+	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info "
 		  "for domain %s\n", domain->name ));
 
 	status = domain->backend->lookup_useraliases(domain, mem_ctx,
@@ -1291,7 +1284,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *group_sid, uint32 *num_names, 
-				DOM_SID ***sid_mem, char ***names, 
+				DOM_SID **sid_mem, char ***names, 
 				uint32 **name_types)
 {
 	struct winbind_cache *cache = get_cache(domain);
@@ -1312,7 +1305,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (*num_names == 0)
 		goto do_cached;
 
-	(*sid_mem) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_names);
+	(*sid_mem) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_names);
 	(*names) = TALLOC_ARRAY(mem_ctx, char *, *num_names);
 	(*name_types) = TALLOC_ARRAY(mem_ctx, uint32, *num_names);
 
@@ -1321,7 +1314,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	for (i=0; i<(*num_names); i++) {
-		(*sid_mem)[i] = centry_sid(centry, mem_ctx);
+		centry_sid(centry, &(*sid_mem)[i]);
 		(*names)[i] = centry_string(centry, mem_ctx);
 		(*name_types)[i] = centry_uint32(centry);
 	}
@@ -1359,7 +1352,7 @@ do_query:
 		goto skip_save;
 	centry_put_uint32(centry, *num_names);
 	for (i=0; i<(*num_names); i++) {
-		centry_put_sid(centry, (*sid_mem)[i]);
+		centry_put_sid(centry, &(*sid_mem)[i]);
 		centry_put_string(centry, (*names)[i]);
 		centry_put_uint32(centry, (*name_types)[i]);
 	}	
@@ -1466,3 +1459,166 @@ struct winbindd_methods cache_methods = {
 	trusted_domains,
 	alternate_name
 };
+
+static BOOL init_wcache(void)
+{
+	if (wcache == NULL) {
+		wcache = SMB_XMALLOC_P(struct winbind_cache);
+		ZERO_STRUCTP(wcache);
+	}
+
+	if (wcache->tdb != NULL)
+		return True;
+
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
+				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
+
+	if (wcache->tdb == NULL) {
+		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+		return False;
+	}
+
+	return True;
+}
+
+void cache_store_response(pid_t pid, struct winbindd_response *response)
+{
+	fstring key_str;
+
+	if (!init_wcache())
+		return;
+
+	DEBUG(10, ("Storing response for pid %d, len %d\n",
+		   pid, response->length));
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
+		      make_tdb_data((void *)response, sizeof(*response)),
+		      TDB_REPLACE) == -1)
+		return;
+
+	if (response->length == sizeof(*response))
+		return;
+
+	/* There's extra data */
+
+	DEBUG(10, ("Storing extra data: len=%d\n",
+		   response->length - sizeof(*response)));
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
+		      make_tdb_data(response->extra_data,
+				    response->length - sizeof(*response)),
+		      TDB_REPLACE) == 0)
+		return;
+
+	/* We could not store the extra data, make sure the tdb does not
+	 * contain a main record with wrong dangling extra data */
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	tdb_delete(wcache->tdb, string_tdb_data(key_str));
+
+	return;
+}
+
+BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
+{
+	TDB_DATA data;
+	fstring key_str;
+
+	if (!init_wcache())
+		return False;
+
+	DEBUG(10, ("Retrieving response for pid %d\n", pid));
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
+
+	if (data.dptr == NULL)
+		return False;
+
+	if (data.dsize != sizeof(*response))
+		return False;
+
+	memcpy(response, data.dptr, data.dsize);
+	SAFE_FREE(data.dptr);
+
+	if (response->length == sizeof(*response)) {
+		response->extra_data = NULL;
+		return True;
+	}
+
+	/* There's extra data */
+
+	DEBUG(10, ("Retrieving extra data length=%d\n",
+		   response->length - sizeof(*response)));
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
+
+	if (data.dptr == NULL) {
+		DEBUG(0, ("Did not find extra data\n"));
+		return False;
+	}
+
+	if (data.dsize != (response->length - sizeof(*response))) {
+		DEBUG(0, ("Invalid extra data length: %d\n", data.dsize));
+		SAFE_FREE(data.dptr);
+		return False;
+	}
+
+	response->extra_data = data.dptr;
+	return True;
+}
+
+char *cache_store_request_data(TALLOC_CTX *mem_ctx, char *request_string)
+{
+	int i;
+
+	if (!init_wcache())
+		return NULL;
+
+	for (i=0; i<2; i++) {
+		char *key = talloc_strdup(mem_ctx, generate_random_str(16));
+		if (key == NULL)
+			return NULL;
+		DEBUG(10, ("Storing request key %s\n", key));
+		if (tdb_store_bystring(wcache->tdb, key,
+			      	       string_tdb_data(request_string),
+			      	       TDB_INSERT) == 0)
+			return key;
+	}
+	return NULL;
+}
+
+char *cache_retrieve_request_data(TALLOC_CTX *mem_ctx, char *key)
+{
+	TDB_DATA data;
+	char *result = NULL;
+
+	if (!init_wcache())
+		return NULL;
+
+	DEBUG(10, ("Retrieving key %s\n", key));
+
+	data = tdb_fetch_bystring(wcache->tdb, key);
+	if (data.dptr == NULL)
+		return NULL;
+
+	if (strnlen(data.dptr, data.dsize) != (data.dsize)) {
+		DEBUG(0, ("Received invalid request string\n"));
+		goto done;
+	}
+	result = TALLOC_ARRAY(mem_ctx, char, data.dsize+1);
+	if (result != NULL) {
+		memcpy(result, data.dptr, data.dsize);
+		result[data.dsize] = '\0';
+	}
+	if (tdb_delete_bystring(wcache->tdb, key) != 0) {
+		DEBUG(0, ("Could not delete key %s\n", key));
+		result = NULL;
+	}
+  done:
+	SAFE_FREE(data.dptr);
+	return result;
+}

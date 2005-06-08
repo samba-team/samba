@@ -225,6 +225,7 @@ typedef struct
 	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
+	int winbind_max_idle_children;
 	int iLockSpinCount;
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
@@ -1223,6 +1224,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1567,6 +1569,7 @@ static void init_globals(void)
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = False;
+	Globals.winbind_max_idle_children = 3;
 
 	Globals.bEnableRidAlgorithm = True;
 
@@ -1986,6 +1989,7 @@ FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)

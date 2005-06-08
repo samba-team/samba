@@ -141,7 +141,7 @@ int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flag
 	}
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		if (cli->nt_pipe_fnum[cli->pipe_idx])
+		if (cli->pipes[cli->pipe_idx].fnum)
 			cli_nt_session_close(cli);
 	}
 
@@ -663,11 +663,11 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Display results */
-	if (!NT_STATUS_IS_OK(result)) {
+    if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to delete user account - %s\n", nt_errstr(result));
-	} else {
-		d_printf("Deleted user account\n");
-	}
+    } else {
+        d_printf("Deleted user account\n");
+    }
 
  done:
 	return result;
@@ -4452,6 +4452,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 	}
 }
 
+
 /**
  * Remove interdomain trust account from the RPC server.
  * All parameters (except for argc and argv) are passed by run_rpc_command
@@ -4582,6 +4583,7 @@ static int rpc_trustdom_del(int argc, const char **argv)
 		return -1;
 	}
 }
+ 
 
 /**
  * Establish trust relationship to a trusting domain.
@@ -4676,7 +4678,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		cli_shutdown(cli);
 		return -1;
 	}
-	
+
 	/*
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
@@ -4739,7 +4741,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 
 	cli_shutdown(cli);
