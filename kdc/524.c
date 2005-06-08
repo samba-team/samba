@@ -283,7 +283,7 @@ do_524(const Ticket *t, krb5_data *reply,
     char *spn = NULL;
     unsigned char buf[MAX_KTXT_LEN + 4 * 4];
     size_t len;
-    int kvno;
+    int kvno = 0;
     
     if(!enable_524) {
 	ret = KRB5KDC_ERR_POLICY;
