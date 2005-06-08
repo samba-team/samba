@@ -569,23 +569,52 @@ lsqlite3_search(struct ldb_module * module,
                         "SELECT entry.entry_data\n"
                         "  FROM ldb_entry AS entry\n"
                         "  WHERE entry.eid IN\n"
-                        "    (SELECT ldb_entry.eid\n"
+                        "    (SELECT DISTINCT ldb_entry.eid\n"
                         "       FROM ldb_entry,\n"
                         "            ldb_descendants,\n"
                         "            %q\n"
                         "       WHERE ldb_descendants.aeid = %lld\n"
                         "         AND ldb_entry.eid = ldb_descendants.deid\n"
                         "         AND ldap_entry.eid IN\n"
-                        "%s);",
+                        "%s"
+                        ");",
                         table_list,
+                        eid,
                         sql_constraints);
                 break;
 
-#warning "scope BASE and ONLEVEL not yet implemented"
         case LDB_SCOPE_BASE:
+                sql = sqlite3_mprintf(
+                        "SELECT entry.entry_data\n"
+                        "  FROM ldb_entry AS entry\n"
+                        "  WHERE entry.eid IN\n"
+                        "    (SELECT DISTINCT ldb_entry.eid\n"
+                        "       FROM %q\n"
+                        "       WHERE ldb_entry.eid = %lld\n"
+                        "         AND ldb_entry.eid IN\n"
+                        "%s"
+                        ");",
+                        table_list,
+                        eid,
+                        sql_constraints);
                 break;
 
         case LDB_SCOPE_ONELEVEL:
+                sql = sqlite3_mprintf(
+                        "SELECT entry.entry_data\n"
+                        "  FROM ldb_entry AS entry\n"
+                        "  WHERE entry.eid IN\n"
+                        "    (SELECT DISTINCT ldb_entry.eid\n"
+                        "       FROM ldb_entry AS pchild, "
+                        "            %q\n"
+                        "       WHERE ldb_entry.eid = pchild.eid "
+                        "         AND pchild.peid = %lld "
+                        "         AND ldb_entry.eid IN\n"
+                        "%s"
+                        ");",
+                        table_list,
+                        eid,
+                        sql_constraints);
                 break;
         }
 
@@ -599,9 +628,7 @@ lsqlite3_new_attr(struct ldb_module * module,
 {
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-        /* Get a case-folded copy of the attribute name */
-        pAttrName = ldb_casefold((struct ldb_context *) module, pAttrName);
-
+        /* NOTE: pAttrName is assumed to already be case-folded here! */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
                      "CREATE TABLE ldb_attr_%q "
@@ -639,19 +666,19 @@ lsqlite3_msg_to_sql(struct ldb_module * module,
                         flags = el->flags & LDB_FLAG_MOD_MASK;
                 }
 
+                /* Get a case-folded copy of the attribute name */
+                pAttrName = ldb_casefold((struct ldb_context *) module,
+                                         el->name);
+
                 if (flags == LDB_FLAG_MOD_ADD) {
                         /* Create the attribute table if it doesn't exist */
-                        if (lsqlite3_new_attr(module, el->name) != 0) {
+                        if (lsqlite3_new_attr(module, pAttrName) != 0) {
                                 return -1;
                         }
                 }
 
                 /* For each value of the specified attribute name... */
 		for (j = 0; j < el->num_values; j++) {
-
-                        /* Get a case-folded copy of the attribute name */
-                        pAttrName = ldb_casefold((struct ldb_context *) module,
-                                                 el->name);
 
                         /* ... bind the attribute value, if necessary */
                         switch (flags) {
@@ -725,7 +752,7 @@ lsqlite3_msg_to_sql(struct ldb_module * module,
 
 
 static int
-lsqlite3_new_dn(struct ldb_module *module,
+lsqlite3_new_dn(struct ldb_module * module,
                 char * pDN,
                 long long * pEID)
 {
@@ -738,10 +765,10 @@ lsqlite3_new_dn(struct ldb_module *module,
         /* Parse the DN into its constituent components */
 #warning "this simple parse of DN ignores escaped '=' and ','.  fix it."
         while (pDN != NULL) {
-                pName = strsep(&pDN, ",");
+                pName = strsep(&pValue, "=");
 
                 if (pDN == NULL) {
-                        /* Attribute name with value?  Should not occur. */
+                        /* Attribute name without value?  Should not occur. */
                         return -1;
                 }
 
