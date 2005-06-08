@@ -75,6 +75,55 @@ NTSTATUS cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         return result;
 }
 
+NTSTATUS rpccli_net_req_chal(struct rpc_pipe_client *cli,
+			     const char *server_name,
+			     const char *computer_name,
+			     DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal)
+{
+        prs_struct qbuf, rbuf;
+        NET_Q_REQ_CHAL q;
+        NET_R_REQ_CHAL r;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->cli->mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
+        
+        /* create and send a MSRPC command with api NET_REQCHAL */
+
+        DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s\n",
+                 computer_name, server_name));
+        
+        /* store the parameters */
+        init_q_req_chal(&q, server_name, computer_name, clnt_chal);
+        
+        /* Marshall data and send request */
+
+        if (!net_io_q_req_chal("", &q,  &qbuf, 0) ||
+            !rpc_api_pipe_req_int(cli, NET_REQCHAL, &qbuf, &rbuf)) {
+                goto done;
+        }
+
+        /* Unmarhall response */
+
+        if (!net_io_r_req_chal("", &r, &rbuf, 0)) {
+                goto done;
+        }
+
+        result = r.status;
+
+        /* Return result */
+
+        if (NT_STATUS_IS_OK(result)) {
+                memcpy(srv_chal, r.srv_chal.data, sizeof(srv_chal->data));
+        }
+        
+ done:
+        prs_mem_free(&qbuf);
+        prs_mem_free(&rbuf);
+        
+        return result;
+}
+
 /****************************************************************************
 LSA Authenticate 2
 
@@ -148,6 +197,61 @@ password ?).\n", cli->desthost ));
                         result = NT_STATUS_ACCESS_DENIED;
                         goto done;
                 }
+		*neg_flags = r.srv_flgs.neg_flags;
+        }
+
+ done:
+        prs_mem_free(&qbuf);
+        prs_mem_free(&rbuf);
+        
+        return result;
+}
+
+NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
+			  const char *server_name,
+			  const char *account_name,
+			  uint16 sec_chan_type,
+			  const char *computer_name,
+			  const DOM_CHAL *credentials,
+			  uint32 *neg_flags,
+			  DOM_CHAL *srv_chal)
+{
+        prs_struct qbuf, rbuf;
+        NET_Q_AUTH_2 q;
+        NET_R_AUTH_2 r;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+        /* create and send a MSRPC command with api NET_AUTH2 */
+
+        DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s neg: %x\n",
+                 server_name, account_name, sec_chan_type, computer_name,
+                 *neg_flags));
+
+        /* store the parameters */
+
+        init_q_auth_2(&q, server_name, account_name, sec_chan_type,
+		      computer_name, credentials, *neg_flags);
+
+        /* turn parameters into data stream */
+
+        if (!net_io_q_auth_2("", &q,  &qbuf, 0) ||
+            !rpc_api_pipe_req_int(cli, NET_AUTH2, &qbuf, &rbuf)) {
+                goto done;
+        }
+        
+        /* Unmarshall response */
+        
+        if (!net_io_r_auth_2("", &r, &rbuf, 0)) {
+                goto done;
+        }
+
+        result = r.status;
+
+        if (NT_STATUS_IS_OK(result)) {
+		*srv_chal = r.srv_chal;
 		*neg_flags = r.srv_flgs.neg_flags;
         }
 
@@ -340,8 +444,9 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* GetDCName */
 
-NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				const char *domainname, fstring dcname)
+NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx, const char *mydcname,
+				   const char *domainname, fstring newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
@@ -358,12 +463,12 @@ NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_net_q_getdcname(&q, cli->srv_name_slash, domainname);
+	init_net_q_getdcname(&q, mydcname, domainname);
 
 	/* Marshall data and send request */
 
 	if (!net_io_q_getdcname("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_GETDCNAME, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, NET_GETDCNAME, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -378,13 +483,21 @@ NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r.status;
 
 	if (NT_STATUS_IS_OK(result))
-		rpcstr_pull_unistr2_fstring(dcname, &r.uni_dcname);
+		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
 
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				const char *domainname, fstring dcname)
+{
+	return rpccli_netlogon_getdcname(&cli->pipes[PI_NETLOGON], mem_ctx,
+					 cli->srv_name_slash, domainname,
+					 dcname);
 }
 
 /****************************************************************************
@@ -636,19 +749,25 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * @param info3 Pointer to a NET_USER_INFO_3 already allocated by the caller.
  **/
 
-NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					DOM_CRED *ret_creds,
-					const char *username, const char *domain, const char *workstation, 
-					const uint8 chal[8], 
-					DATA_BLOB lm_response, DATA_BLOB nt_response,
-					NET_USER_INFO_3 *info3)
-
+NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   const char *server_name_slash,
+					   DOM_CRED *clnt_creds,
+					   DOM_CRED *ret_creds,
+					   const char *username,
+					   const char *domain,
+					   const char *workstation, 
+					   const uint8 chal[8], 
+					   DATA_BLOB lm_response,
+					   DATA_BLOB nt_response,
+					   NET_USER_INFO_3 *info3,
+					   const uint8 *session_key)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_SAM_LOGON q;
 	NET_R_SAM_LOGON r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        DOM_CRED clnt_creds, dummy_rtn_creds;
+        DOM_CRED dummy_rtn_creds;
 	NET_ID_INFO_CTR ctr;
 	int validation_level = 3;
 	char *workstation_name_slash;
@@ -661,7 +780,6 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	ZERO_STRUCT(dummy_rtn_creds);
 
 	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
-	
 	if (!workstation_name_slash) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -673,8 +791,6 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
-
-	gen_next_creds(cli, &clnt_creds);
 
 	q.validation_level = validation_level;
 
@@ -689,14 +805,14 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
-        init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname(),
-                      &clnt_creds, ret_creds, NET_LOGON_TYPE,
+        init_sam_info(&q.sam_id, server_name_slash, global_myname(),
+                      clnt_creds, ret_creds, NET_LOGON_TYPE,
                       &ctr);
 
         /* Marshall data and send request */
 
 	if (!net_io_q_sam_logon("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETLOGON, NET_SAMLOGON, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, NET_SAMLOGON, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -709,7 +825,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	}
 
 	ZERO_STRUCT(netlogon_sess_key);
-	memcpy(netlogon_sess_key, cli->sess_key, 8);
+	memcpy(netlogon_sess_key, session_key, 8);
 	
 	if (memcmp(zeros, info3->user_sess_key, 16) != 0) {
 		SamOEMhash(info3->user_sess_key, netlogon_sess_key, 16);
@@ -738,6 +854,30 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	prs_mem_free(&rbuf);
 
         return result;
+}
+
+NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli,
+					TALLOC_CTX *mem_ctx,
+					DOM_CRED *ret_creds,
+					const char *username,
+					const char *domain,
+					const char *workstation, 
+					const uint8 chal[8], 
+					DATA_BLOB lm_response,
+					DATA_BLOB nt_response,
+					NET_USER_INFO_3 *info3)
+{
+	DOM_CRED clnt_creds;
+
+	gen_next_creds(cli, &clnt_creds);
+
+	return rpccli_netlogon_sam_network_logon(&cli->pipes[PI_NETLOGON],
+						 mem_ctx, cli->srv_name_slash,
+						 &clnt_creds,
+						 ret_creds, username,
+						 domain, workstation, chal, 
+						 lm_response, nt_response,
+						 info3, cli->sess_key);
 }
 
 /***************************************************************************

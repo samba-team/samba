@@ -428,8 +428,7 @@ static BOOL do_printnotify(const pid_t pid, const int argc, const char **argv)
 			return False;
 		}
 
-		notify_printer_byname(argv[2], attribute,
-                                      CONST_DISCARD(char *, argv[4]));
+		notify_printer_byname(argv[2], attribute, argv[4]);
 
 		goto send;
 	}
@@ -573,6 +572,53 @@ static BOOL do_reload_config(const pid_t pid, const int argc, const char **argv)
 	return send_message(pid, MSG_SMB_CONF_UPDATED, NULL, 0, False);
 }
 
+static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
+{
+	fstring unix_name;
+	memset( (char *)n, '\0', sizeof(struct nmb_name) );
+	fstrcpy(unix_name, name);
+	strupper_m(unix_name);
+	push_ascii(n->name, unix_name, sizeof(n->name), STR_TERMINATE);
+	n->name_type = (unsigned int)type & 0xFF;
+	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
+}
+
+static BOOL do_nodestatus(const pid_t pid, const int argc,
+			  const char **argv)
+{
+	struct packet_struct p;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol nmbd nodestatus <ip>\n");
+		return False;
+	}
+
+	ZERO_STRUCT(p);
+
+	p.ip = *interpret_addr2(argv[1]);
+	p.port = 137;
+	p.packet_type = NMB_PACKET;
+
+	p.packet.nmb.header.name_trn_id = 10;
+	p.packet.nmb.header.opcode = 0;
+	p.packet.nmb.header.response = False;
+	p.packet.nmb.header.nm_flags.bcast = False;
+	p.packet.nmb.header.nm_flags.recursion_available = False;
+	p.packet.nmb.header.nm_flags.recursion_desired = False;
+	p.packet.nmb.header.nm_flags.trunc = False;
+	p.packet.nmb.header.nm_flags.authoritative = False;
+	p.packet.nmb.header.rcode = 0;
+	p.packet.nmb.header.qdcount = 1;
+	p.packet.nmb.header.ancount = 0;
+	p.packet.nmb.header.nscount = 0;
+	p.packet.nmb.header.arcount = 0;
+	my_make_nmb_name(&p.packet.nmb.question.question_name, "*", 0x00);
+	p.packet.nmb.question.question_type = 0x21;
+	p.packet.nmb.question.question_class = 0x1;
+
+	return send_message(pid, MSG_SEND_PACKET, &p, sizeof(p), False);
+}
+
 /* A list of message type supported */
 
 static const struct {
@@ -597,6 +643,7 @@ static const struct {
 	{ "shutdown", do_shutdown, "Shut down daemon" },
 	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
 	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
+	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };

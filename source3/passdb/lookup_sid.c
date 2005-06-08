@@ -112,6 +112,44 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 	return True;
 }
 
+BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
+{
+	fstring dom_name;
+	fstring name;
+	enum SID_NAME_USE type;
+
+	if (!sid_check_is_in_our_domain(sid))
+		return False;
+
+	if (!lookup_sid(sid, dom_name, name, &type))
+		return False;
+ 
+	if (type != SID_NAME_USER)
+		return False;
+ 
+	fstrcpy(username, name);
+ 	return True;
+}
+
+BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
+{
+	fstring dom_name;
+	fstring name;
+	enum SID_NAME_USE type;
+
+	if (!sid_check_is_in_our_domain(sid))
+		return False;
+
+	if (!lookup_sid(sid, dom_name, name, &type))
+		return False;
+
+	if (type != SID_NAME_DOM_GRP)
+		return False;
+
+	fstrcpy(groupname, name);
+	return True;
+}
+ 
 
 /*****************************************************************
  Id mapping cache.  This is to avoid Winbind mappings already
@@ -250,8 +288,8 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 		if (sid_compare(&pc->sid, psid) == 0) {
 			fstring sid;
 			*pgid = pc->gid;
-			DEBUG(3,("fetch uid from cache %u -> %s\n",
-				(unsigned int)*pgid, sid_to_string(sid, psid)));
+			DEBUG(3,("fetch gid from cache %u -> %s\n",
+				 (unsigned int)*pgid, sid_to_string(sid, psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return True;
 		}

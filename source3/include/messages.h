@@ -46,6 +46,7 @@
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
 #define MSG_WINS_NEW_ENTRY 1002
+#define MSG_SEND_PACKET    1003
 
 /* printing messages */
 /* #define MSG_PRINTER_NOTIFY  2001*/ /* Obsolete */
@@ -62,6 +63,10 @@
 #define MSG_SMB_SAM_SYNC     3003
 #define MSG_SMB_SAM_REPL     3004
 #define MSG_SMB_UNLOCK       3005
+
+/* winbind messages */
+#define MSG_WINBIND_FINISHED     4001
+#define MSG_WINBIND_FORGET_STATE 4002
 
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */

@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int smb_read_error;
-
 /****************************************************************************
  Change the timeout (in milliseconds).
 ****************************************************************************/
@@ -83,6 +81,7 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 
 BOOL cli_receive_smb(struct cli_state *cli)
 {
+	extern int smb_read_error;
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
@@ -321,9 +320,9 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli_null_set_signing(cli);
 
 	for (i=0; i<PI_MAX_PIPES; i++)
-		cli->nt_pipe_fnum[i] = 0;
+		cli->pipes[i].fnum = 0;
 
-	cli->saved_netlogon_pipe_fnum = 0;
+	cli->netlogon_pipe.fnum = 0;
 
 	cli->initialised = 1;
 	cli->allocated = alloced_cli;
@@ -353,14 +352,14 @@ void cli_nt_session_close(struct cli_state *cli)
 {
 	int i;
 
-	if (cli->ntlmssp_pipe_state) {
-		ntlmssp_end(&cli->ntlmssp_pipe_state);
-	}
-
 	for (i=0; i<PI_MAX_PIPES; i++) {
-		if (cli->nt_pipe_fnum[i] != 0)
-			cli_close(cli, cli->nt_pipe_fnum[i]);
-		cli->nt_pipe_fnum[i] = 0;
+		if (cli->pipes[i].pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
+			ntlmssp_end(&cli->pipes[i].ntlmssp_pipe_state);
+		}
+
+		if (cli->pipes[i].fnum != 0)
+			cli_close(cli, cli->pipes[i].fnum);
+		cli->pipes[i].fnum = 0;
 	}
 	cli->pipe_idx = -1;
 }
@@ -371,9 +370,9 @@ close the NETLOGON session holding the session key for NETSEC
 
 void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 {
-	if (cli->saved_netlogon_pipe_fnum != 0) {
-		cli_close(cli, cli->saved_netlogon_pipe_fnum);
-		cli->saved_netlogon_pipe_fnum = 0;
+	if (cli->netlogon_pipe.fnum != 0) {
+		cli_close(cli, cli->netlogon_pipe.fnum);
+		cli->netlogon_pipe.fnum = 0;
 	}
 }
 
@@ -408,8 +407,8 @@ void cli_close_connection(struct cli_state *cli)
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
-	if (cli->ntlmssp_pipe_state) 
-		ntlmssp_end(&cli->ntlmssp_pipe_state);
+	if (cli->pipes[cli->pipe_idx].pipe_auth_flags & AUTH_PIPE_NTLMSSP) 
+		ntlmssp_end(&cli->pipes[cli->pipe_idx].ntlmssp_pipe_state);
 
 	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);

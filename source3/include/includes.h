@@ -804,7 +804,12 @@ extern int errno;
 #include "tdb/tdb.h"
 #include "tdb/spinlock.h"
 #include "tdb/tdbutil.h"
+
 #include "talloc.h"
+/* And a little extension. Abort on type mismatch */
+#define talloc_get_type_abort(ptr, type) \
+	(type *)talloc_check_name_abort(ptr, #type)
+
 #include "nt_status.h"
 #include "ads.h"
 #include "interfaces.h"
