@@ -267,6 +267,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 {
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
+	size_t outbufsize;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
 	if (min_aio_write_size && (numtowrite < min_aio_write_size)) {
@@ -284,7 +285,8 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
-	if ((aio_ex = create_aio_ex_write(fsp, smb_len(outbuf) + 4, SVAL(inbuf,smb_mid))) == NULL) {
+	outbufsize = smb_len(outbuf) + 4;
+	if ((aio_ex = create_aio_ex_write(fsp, outbufsize, SVAL(inbuf,smb_mid))) == NULL) {
 		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
 		return False;
 	}
@@ -293,7 +295,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	SMB_ASSERT(aio_ex->inbuf == inbuf);
 
 	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->outbuf, outbuf, smb_buf(outbuf) - outbuf);
+	memcpy(aio_ex->outbuf, outbuf, outbufsize);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
@@ -390,7 +392,6 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 
 static void handle_aio_write_complete(struct aio_extra *aio_ex)
 {
-	int outsize;
 	char *outbuf = aio_ex->outbuf;
 	ssize_t nwritten = aio_return(&aio_ex->acb);
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
@@ -401,6 +402,9 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 		srv_cancel_sign_response(aio_ex->mid);
 		return;
 	}
+
+	/* We don't need outsize or set_message here as we've already set the
+	   fixed size length when we set up the aio call. */
 
 	if(nwritten == -1) {
 		DEBUG( 3,( "handle_aio_write: file %s wanted %u bytes. nwritten == %d. Error = %s\n",
@@ -413,7 +417,7 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 			return;
 		}
 
-                outsize = (UNIXERROR(ERRHRD,ERRdiskfull));
+		UNIXERROR(ERRHRD,ERRdiskfull);
         } else {
 		BOOL write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
 
@@ -430,7 +434,6 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 		}
 	}
 
-	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server("handle_aio_write: send_smb failed.");
