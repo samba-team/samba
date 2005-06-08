@@ -413,9 +413,9 @@ do_authenticate (struct rx_header *hdr,
 	
     krb5_data_zero (&request);
 
-    unparse_auth_args (sp, &name, &instance, &start_time, &end_time,
-		       &request, &max_seq_len);
-    if (request.length < 8) {
+    ret = unparse_auth_args (sp, &name, &instance, &start_time, &end_time,
+			     &request, &max_seq_len);
+    if (ret != 0 || request.length < 8) {
 	make_error_reply (hdr, KABADREQUEST, reply);
 	goto out;
     }
