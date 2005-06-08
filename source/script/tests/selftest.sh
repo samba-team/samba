@@ -20,6 +20,17 @@ PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
 
+testok() {
+    name=`basename $1`
+    failed=$2
+    if [ x"$failed" = x"0" ];then
+	echo "ALL OK ($name)";
+    else
+	echo "$failed TESTS FAILED ($name)";
+    fi
+    exit $failed
+}
+
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
 ./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM --adminpass $PASSWORD
@@ -62,9 +73,4 @@ END=`date`
 echo "START: $START ($0)";
 echo "END:   $END ($0)";
 
-if [ x"$failed" = x"0" ];then
-	echo "ALL OK ($0)";
-else
-	echo "$failed TESTS FAILED ($0)";
-fi
-exit $failed
+testok $0 $failed
