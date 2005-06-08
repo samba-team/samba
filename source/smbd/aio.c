@@ -224,7 +224,8 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	}
 
 	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->outbuf, outbuf, smb_size);
+	memcpy(aio_ex->outbuf, outbuf, smb_buf(outbuf) - outbuf);
+	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
 
@@ -292,7 +293,8 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	SMB_ASSERT(aio_ex->inbuf == inbuf);
 
 	/* Copy the SMB header already setup in outbuf. */
-	memcpy(aio_ex->outbuf, outbuf, smb_size);
+	memcpy(aio_ex->outbuf, outbuf, smb_buf(outbuf) - outbuf);
+	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
 
@@ -322,7 +324,6 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	srv_defer_sign_response(aio_ex->mid);
 	outstanding_aio_calls++;
 	return True;
-	return False;
 }
 
 
@@ -361,7 +362,7 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 
 		outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 	} else {
-		outsize = set_message(outbuf,12,nread,True);
+		outsize = set_message(outbuf,12,nread,False);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 		SSVAL(outbuf,smb_vwv5,nread);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
