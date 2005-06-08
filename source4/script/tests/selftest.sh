@@ -37,18 +37,19 @@ cat >$CONFFILE<<EOF
 [tmp]
 	path = $TMPDIR
 	read only = no
+	ntvfs handler = posix
 EOF
 
 ADDARG="-s $CONFFILE"
 
-rm -f smbd_test.fifo
-mkfifo smbd_test.fifo
-$SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < smbd_test.fifo || exit 1 &
+rm -f $PREFIX/smbd_test.fifo
+mkfifo $PREFIX/smbd_test.fifo
+$SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < $PREFIX/smbd_test.fifo || exit 1 &
 sleep 2
 (
  $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
  $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
  $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || exit 1
- $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD $ADDARG || exit 1
+ $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || exit 1
  $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || exit 1
-) 9>smbd_test.fifo
+) 9>$PREFIX/smbd_test.fifo
