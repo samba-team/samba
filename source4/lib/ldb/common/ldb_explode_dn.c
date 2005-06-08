@@ -386,10 +386,9 @@ ldb_explode_dn(void *mem_ctx,
 				dest++;
 			}
 			src = component->attributes[i]->rdn;
-			do {
-				*(dest++) = *(src++);
-			} while(*src);
-			*dest = '\0';
+
+                        /* we are guaranteed to have enough space in dest */
+                        strcpy(dest, src);
 		}
 
 		ldb_debug(mem_ctx,
@@ -434,15 +433,17 @@ ldb_explode_dn(void *mem_ctx,
 
         /* copy the normalized components into the DN */
 	for (i = 0; i < dn->comp_num; i++) {
+
+                /* add a separator between DN components */
 		if (i != 0) {
-			*dest = ',';
-			dest++;
+			*dest++ = ',';
 		}
+
+                /* point to this component of the DN */
 		src = dn->components[i]->component;
-		do {
-			*(dest++) = *(src++);
-		} while(*src);
-		*dest = '\0';
+
+                /* we are guaranteed to have enough space in dest */
+                strcpy(dest, src);
 	}
 
 	ldb_debug(mem_ctx, LDB_DEBUG_TRACE, "dn: [%s]\n", dn->dn);
