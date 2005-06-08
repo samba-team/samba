@@ -4795,6 +4795,7 @@ static int rpc_trustdom_usage(int argc, const char **argv)
 	d_printf("  net rpc trustdom establish \t establish relationship to trusted domain\n");
 	d_printf("  net rpc trustdom revoke \t abandon relationship to trusted domain\n");
 	d_printf("  net rpc trustdom list \t show current interdomain trust relationships\n");
+	d_printf("  net rpc trustdom vampire \t vampire interdomain trust relationships from remote server\n");
 	return -1;
 }
 
@@ -4810,6 +4811,201 @@ static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
+static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
+{
+	fstring ascii_sid, padding;
+	int pad_len, col_len = 20;
+
+	/* convert sid into ascii string */
+	sid_to_string(ascii_sid, dom_sid);
+
+	/* calculate padding space for d_printf to look nicer */
+	pad_len = col_len - strlen(trusted_dom_name);
+	padding[pad_len] = 0;
+	do padding[--pad_len] = ' '; while (pad_len);
+			
+	d_printf("%s%s%s\n", trusted_dom_name, padding, ascii_sid);
+}
+
+static NTSTATUS vampire_trusted_domain(struct cli_state *cli, 
+				      TALLOC_CTX *mem_ctx, 
+				      POLICY_HND *pol, 
+				      DOM_SID dom_sid, 
+				      const char *trusted_dom_name)
+{
+	NTSTATUS nt_status;
+	LSA_TRUSTED_DOMAIN_INFO *info;
+	char *cleartextpwd;
+	DATA_BLOB data;
+	smb_ucs2_t *uni_dom_name;
+
+	nt_status = cli_lsa_query_trusted_domain_info_by_sid(cli, mem_ctx, pol, 4, &dom_sid, &info);
+	
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0,("Could not query trusted domain info. Error was %s\n",
+		nt_errstr(nt_status)));
+		goto done;
+	}
+
+	data = data_blob(NULL, info->password.password.length);
+
+	memcpy(data.data, info->password.password.data, info->password.password.length);
+	data.length 	= info->password.password.length;
+				
+	cleartextpwd = decrypt_trustdom_secret(cli->pwd.password, &data);
+
+	if (cleartextpwd == NULL) {
+		DEBUG(0,("retrieved NULL password\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+	
+	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) < 0) {
+		DEBUG(0, ("Could not convert domain name %s to unicode\n",
+			  trusted_dom_name));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!secrets_store_trusted_domain_password(trusted_dom_name,
+						   uni_dom_name,
+						   strlen_w(uni_dom_name)+1,
+						   cleartextpwd,
+						   dom_sid)) {
+		DEBUG(0, ("Storing password for trusted domain failed.\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	DEBUG(100,("sucessfully vampired trusted domain [%s], sid: [%s], password: [%s]\n",  
+		trusted_dom_name, sid_string_static(&dom_sid), cleartextpwd));
+
+done:
+	SAFE_FREE(cleartextpwd);
+	data_blob_free(&data);
+
+	return nt_status;
+}
+
+static int rpc_trustdom_vampire(int argc, const char **argv)
+{
+	/* common variables */
+	TALLOC_CTX* mem_ctx;
+	struct cli_state *cli;
+	NTSTATUS nt_status;
+	const char *domain_name = NULL;
+	DOM_SID *queried_dom_sid;
+	POLICY_HND connect_hnd;
+
+	/* trusted domains listing variables */
+	unsigned int num_domains, enum_ctx = 0;
+	int i;
+	DOM_SID *domain_sids;
+	char **trusted_dom_names;
+	fstring pdc_name;
+	char *dummy;
+
+	/*
+	 * Listing trusted domains (stored in secrets.tdb, if local)
+	 */
+
+	mem_ctx = talloc_init("trust relationships vampire");
+
+	/*
+	 * set domain and pdc name to local samba server (default)
+	 * or to remote one given in command line
+	 */
+
+	if (StrCaseCmp(opt_workgroup, lp_workgroup())) {
+		domain_name = opt_workgroup;
+		opt_target_workgroup = opt_workgroup;
+	} else {
+		fstrcpy(pdc_name, global_myname());
+		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
+		opt_target_workgroup = domain_name;
+	};
+
+	/* open \PIPE\lsarpc and open policy handle */
+	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
+		DEBUG(0, ("Couldn't connect to domain controller\n"));
+		return -1;
+	};
+
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+		DEBUG(0, ("Could not initialise lsa pipe\n"));
+		return -1;
+	};
+
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
+					&connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
+ 			nt_errstr(nt_status)));
+		return -1;
+	};
+
+	/* query info level 5 to obtain sid of a domain being queried */
+	nt_status = cli_lsa_query_info_policy(
+		cli, mem_ctx, &connect_hnd, 5 /* info level */, 
+		&dummy, &queried_dom_sid);
+
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			nt_errstr(nt_status)));
+		return -1;
+	}
+
+	/*
+	 * Keep calling LsaEnumTrustdom over opened pipe until
+	 * the end of enumeration is reached
+	 */
+
+	d_printf("Vampire trusted domains:\n\n");
+
+	do {
+		nt_status = cli_lsa_enum_trust_dom(cli, mem_ctx, &connect_hnd, &enum_ctx,
+						   &num_domains,
+						   &trusted_dom_names, &domain_sids);
+		
+		if (NT_STATUS_IS_ERR(nt_status)) {
+			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
+				nt_errstr(nt_status)));
+			return -1;
+		};
+		
+		for (i = 0; i < num_domains; i++) {
+
+			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+
+			nt_status = vampire_trusted_domain(cli, mem_ctx, &connect_hnd, 
+							   domain_sids[i], trusted_dom_names[i]);
+			if (!NT_STATUS_IS_OK(nt_status))
+				return -1;
+		};
+
+		/*
+		 * in case of no trusted domains say something rather
+		 * than just display blank line
+		 */
+		if (!num_domains) d_printf("none\n");
+
+	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+
+	/* close this connection before doing next one */
+	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
+			nt_errstr(nt_status)));
+		return -1;
+	};
+
+	/* close lsarpc pipe and connection to IPC$ */
+	cli_nt_session_close(cli);
+	cli_shutdown(cli);
+
+	talloc_destroy(mem_ctx);	 
+	return 0;
+}
 
 static int rpc_trustdom_list(int argc, const char **argv)
 {
@@ -4819,7 +5015,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
-	fstring ascii_sid, padding;
+	fstring padding;
 	int ascii_dom_name_len;
 	POLICY_HND connect_hnd;
 	
@@ -4905,15 +5101,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		};
 		
 		for (i = 0; i < num_domains; i++) {
-			/* convert sid into ascii string */
-			sid_to_string(ascii_sid, &(domain_sids[i]));
-		
-			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(trusted_dom_names[i]);
-			padding[pad_len] = 0;
-			do padding[--pad_len] = ' '; while (pad_len);
-			
-			d_printf("%s%s%s\n", trusted_dom_names[i], padding, ascii_sid);
+			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
 		};
 		
 		/*
@@ -5065,6 +5253,7 @@ static int rpc_trustdom(int argc, const char **argv)
 		{"revoke", rpc_trustdom_revoke},
 		{"help", rpc_trustdom_usage},
 		{"list", rpc_trustdom_list},
+		{"vampire", rpc_trustdom_vampire},
 		{NULL, NULL}
 	};
 

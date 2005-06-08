@@ -746,6 +746,191 @@ static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli,
 	return result;
 }
 
+static void display_trust_dom_info_1(TRUSTED_DOMAIN_INFO_NAME *n)
+{
+	printf("NetBIOS Name:\t%s\n", unistr2_static(&n->netbios_name.unistring));
+}
+
+static void display_trust_dom_info_3(TRUSTED_DOMAIN_INFO_POSIX_OFFSET *p)
+{
+	printf("Posix Offset:\t%d\n", p->posix_offset);
+}
+
+static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char *password)
+{
+	char *pwd, *pwd_old;
+	
+	DATA_BLOB data 	   = data_blob(NULL, p->password.length);
+	DATA_BLOB data_old = data_blob(NULL, p->old_password.length);
+
+	memcpy(data.data, p->password.data, p->password.length);
+	data.length 	= p->password.length;
+				
+	memcpy(data_old.data, p->old_password.data, p->old_password.length);
+	data_old.length = p->old_password.length;
+	
+	pwd 	= decrypt_trustdom_secret(password, &data);
+	pwd_old = decrypt_trustdom_secret(password, &data_old);
+	
+	printf("Password:\t%s\n", pwd);
+	printf("Old Password:\t%s\n", pwd_old);
+
+	SAFE_FREE(pwd);
+	SAFE_FREE(pwd_old);
+	
+	data_blob_free(&data);
+	data_blob_free(&data_old);
+}
+
+static void display_trust_dom_info(LSA_TRUSTED_DOMAIN_INFO *info, uint32 info_class, const char *pass)
+{
+	switch (info_class) {
+	case 1:
+		display_trust_dom_info_1(&info->name);
+		break;
+	case 3:
+		display_trust_dom_info_3(&info->posix_offset);
+		break;
+	case 4:
+		display_trust_dom_info_4(&info->password, pass);
+		break;
+	default:
+		printf("unsupported info-class: %d\n", info_class);
+		break;
+	}
+}
+
+static NTSTATUS cmd_lsa_query_trustdominfobysid(struct cli_state *cli,
+						TALLOC_CTX *mem_ctx, int argc, 
+						const char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	DOM_SID dom_sid;
+	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	LSA_TRUSTED_DOMAIN_INFO *info;
+
+	uint32 info_class = 1; 
+
+	if (argc > 3 || argc < 2) {
+		printf("Usage: %s [sid] [info_class]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (!string_to_sid(&dom_sid, argv[1]))
+		return NT_STATUS_NO_MEMORY;
+
+	if (argc == 3)
+		info_class = atoi(argv[2]);
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_query_trusted_domain_info_by_sid(cli, mem_ctx, &pol,
+							  info_class, &dom_sid, &info);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	display_trust_dom_info(info, info_class, cli->pwd.password);
+
+ done:
+	if (&pol)
+		cli_lsa_close(cli, mem_ctx, &pol);
+
+	return result;
+}
+
+static NTSTATUS cmd_lsa_query_trustdominfobyname(struct cli_state *cli,
+						 TALLOC_CTX *mem_ctx, int argc,
+						 const char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	LSA_TRUSTED_DOMAIN_INFO *info;
+	uint32 info_class = 1; 
+
+	if (argc > 3 || argc < 2) {
+		printf("Usage: %s [name] [info_class]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 3)
+		info_class = atoi(argv[2]);
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_query_trusted_domain_info_by_name(cli, mem_ctx, &pol, 
+							   info_class, argv[1], &info);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	display_trust_dom_info(info, info_class, cli->pwd.password);
+
+ done:
+	if (&pol)
+		cli_lsa_close(cli, mem_ctx, &pol);
+
+	return result;
+}
+
+static NTSTATUS cmd_lsa_query_trustdominfo(struct cli_state *cli,
+					   TALLOC_CTX *mem_ctx, int argc,
+					   const char **argv) 
+{
+	POLICY_HND pol, trustdom_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	LSA_TRUSTED_DOMAIN_INFO *info;
+	DOM_SID dom_sid;
+	uint32 info_class = 1; 
+
+	if (argc > 3 || argc < 2) {
+		printf("Usage: %s [sid] [info_class]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (!string_to_sid(&dom_sid, argv[1]))
+		return NT_STATUS_NO_MEMORY;
+
+
+	if (argc == 3)
+		info_class = atoi(argv[2]);
+
+	result = cli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+	
+	result = cli_lsa_open_trusted_domain(cli, mem_ctx, &pol,
+					     &dom_sid, access_mask, &trustdom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_query_trusted_domain_info(cli, mem_ctx, &trustdom_pol, 
+						   info_class, &dom_sid, &info);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	display_trust_dom_info(info, info_class, cli->pwd.password);
+
+ done:
+	if (&pol)
+		cli_lsa_close(cli, mem_ctx, &pol);
+
+	return result;
+}
+
+
 
 /* List of commands exported by this module */
 
@@ -771,6 +956,9 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_priv_value,  NULL, PI_LSARPC, "Get a privilege value given its name", "" },
 	{ "lsaquerysecobj",      RPC_RTYPE_NTSTATUS, cmd_lsa_query_secobj,       NULL, PI_LSARPC, "Query LSA security object", "" },
+	{ "lsaquerytrustdominfo",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfo, NULL, PI_LSARPC, "Query LSA trusted domains info (given a SID)", "" },
+	{ "lsaquerytrustdominfobyname",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobyname, NULL, PI_LSARPC, "Query LSA trusted domains info (given a name), only works for Windows > 2k", "" },
+	{ "lsaquerytrustdominfobysid",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobysid, NULL, PI_LSARPC, "Query LSA trusted domains info (given a SID)", "" },
 
 	{ NULL }
 };

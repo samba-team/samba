@@ -1452,4 +1452,199 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
 #endif
 
+NTSTATUS cli_lsa_open_trusted_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *pol, DOM_SID *dom_sid, uint32 access_mask,
+				     POLICY_HND *trustdom_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_TRUSTED_DOMAIN q;
+	LSA_R_OPEN_TRUSTED_DOMAIN r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_trusted_domain(&q, pol, dom_sid, access_mask);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_trusted_domain("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENTRUSTDOM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_trusted_domain("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+	
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*trustdom_pol = r.handle;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+NTSTATUS cli_lsa_query_trusted_domain_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					   POLICY_HND *pol, 
+					   uint16 info_class, DOM_SID *dom_sid, 
+					   LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info(&q, pol, info_class); 
+
+	if (!lsa_io_q_query_trusted_domain_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFO, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+		
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+
+NTSTATUS cli_lsa_query_trusted_domain_info_by_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+						  POLICY_HND *pol, 
+						  uint16 info_class, DOM_SID *dom_sid, 
+						  LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info_by_sid(&q, pol, info_class, dom_sid); 
+
+	if (!lsa_io_q_query_trusted_domain_info_by_sid("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYSID, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+NTSTATUS cli_lsa_query_trusted_domain_info_by_name(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+						   POLICY_HND *pol, 
+						   uint16 info_class, const char *domain_name, 
+						   LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info_by_name(&q, pol, info_class, domain_name); 
+
+	if (!lsa_io_q_query_trusted_domain_info_by_name("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYNAME, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+	
+	return result;
+}
+
 /** @} **/
+
