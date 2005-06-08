@@ -35,12 +35,26 @@ testit() {
        exit 1;
    fi
    rm -f test.$$;
+   return 0;
+}
+
+testok() {
+    name=`basename $1`
+    failed=$2
+    if [ x"$failed" = x"0" ];then
+	echo "ALL OK ($name)";
+    else
+	echo "$failed TESTS FAILED ($name)";
+    fi
+    exit $failed
 }
 
 OPTIONS="-U$username%$password -W $domain --option realm=$realm"
 
+failed=0
+
 echo Testing RPC-SPOOLSS on ncacn_np
-testit bin/smbtorture ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*"
+testit bin/smbtorture ncacn_np:"$server" $OPTIONS RPC-SPOOLSS "$*" || failed=`expr $failed + 1`
 
 for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate bigendian; do
    for transport in ncacn_ip_tcp ncacn_np; do
@@ -50,14 +64,14 @@ for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate b
      esac
    for t in $tests; do
     echo Testing $t on $transport with $bindoptions
-    testit bin/smbtorture $transport:"$server[$bindoptions]" $OPTIONS $t "$*"
+    testit bin/smbtorture $transport:"$server[$bindoptions]" $OPTIONS $t "$*" || failed=`expr $failed + 1`
    done
  done
 done
 
 echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal
-testit bin/smbtorture ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*" || failed=`expr $failed + 1`
 echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian
-testit bin/smbtorture ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*" || failed=`expr $failed + 1`
 
-echo "ALL OK";
+testok $0 $failed
