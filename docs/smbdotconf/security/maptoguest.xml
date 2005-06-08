@@ -43,6 +43,13 @@
 	    <emphasis>hate</emphasis> you if you set the <parameter moreinfo="none">map to 
 	    guest</parameter> parameter this way :-).</para>
 	</listitem>
+	<listitem>
+	    <para><constant>Bad Uid</constant> - Is only applicable when Samba is configured
+	    in some type of domain mode security (security = {domain|ads}) and means that
+	    user logins which are successfully authenticated but which have no valid 
+	    user account (and smbd is unable to create one) should be mapped to the defined
+	    guest account.  This was the default behavior of Samba 2.x releases.</para>
+	</listitem>
     </itemizedlist>
 
     <para>Note that this parameter is needed to set up &quot;Guest&quot; 
