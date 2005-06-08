@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-/*#define HAVE_POSIX_ASYNC_IO 1 */
+/* #define HAVE_POSIX_ASYNC_IO 1 */
 #if HAVE_POSIX_ASYNC_IO
 
 /* The signal we'll use to signify aio done. */
@@ -72,6 +72,7 @@ static struct aio_extra *create_aio_ex_read(files_struct *fsp, size_t buflen, ui
 	DLIST_ADD(aio_list_head, aio_ex);
 	aio_ex->fsp = fsp;
 	aio_ex->read_req = True;
+	aio_ex->mid = mid;
 	return aio_ex;
 }
 
@@ -108,6 +109,7 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp, size_t outbuflen
 	DLIST_ADD(aio_list_head, aio_ex);
 	aio_ex->fsp = fsp;
 	aio_ex->read_req = False;
+	aio_ex->mid = mid;
 	return aio_ex;
 }
 
