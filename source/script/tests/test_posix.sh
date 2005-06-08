@@ -29,11 +29,22 @@ testit() {
        cat test.$$;
        rm -f test.$$;
        echo "TEST FAILED - $cmdline";
-       exit 1;
+       return 1;
    fi
    rm -f test.$$;
+   return 0;
 }
 
+testok() {
+    name=`basename $1`
+    failed=$2
+    if [ x"$failed" = x"0" ];then
+	echo "ALL OK ($name)";
+    else
+	echo "$failed TESTS FAILED ($name)";
+    fi
+    exit $failed
+}
 
 tests="BASE-FDPASS BASE-LOCK1 BASE-LOCK2 BASE-LOCK3 BASE-LOCK4"
 tests="$tests BASE-LOCK5 BASE-LOCK6 BASE-LOCK7 BASE-UNLINK BASE-ATTR"
@@ -50,11 +61,14 @@ tests="$tests RAW-EAS RAW-STREAMS RAW-ACLS"
 
 soon="BASE-CHARSET RAW-OPLOCK RAW-NOTIFY BASE-DELAYWRITE"
 
+failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then
 	continue;
     fi
     start=""
     echo Testing $t
-    testit $VALGRIND bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t
+    testit $VALGRIND bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
 done
+
+testok $0 $failed
