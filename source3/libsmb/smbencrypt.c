@@ -583,3 +583,69 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessi
 		memcpy(&out->data[i], bout, MIN(8, in->length-i));
         }
 }
+
+/* Decrypts password-blob with session-key
+ * @param pass		password for session-key
+ * @param data_in 	DATA_BLOB encrypted password
+ *
+ * Returns cleartext password in CH_UNIX 
+ * Caller must free the returned string
+ */
+
+char *decrypt_trustdom_secret(const char *pass, DATA_BLOB *data_in)
+{
+	DATA_BLOB data_out, sess_key;
+	uchar nt_hash[16];
+	uint32_t length;
+	uint32_t version;
+	fstring cleartextpwd;
+
+	if (!data_in || !pass)
+		return NULL;
+
+	/* generate md4 password-hash derived from the NT UNICODE password */
+	E_md4hash(pass, nt_hash);
+
+	/* hashed twice with md4 */
+	mdfour(nt_hash, nt_hash, 16);
+
+	/* 16-Byte session-key */
+	sess_key = data_blob(nt_hash, 16);
+	if (sess_key.data == NULL)
+		return NULL;
+	
+	data_out = data_blob(NULL, data_in->length);
+	if (data_out.data == NULL)
+		return NULL;
+	
+	/* decrypt with des3 */
+	sess_crypt_blob(&data_out, data_in, &sess_key, 0);
+
+	/* 4 Byte length, 4 Byte version */
+	length  = IVAL(data_out.data, 0);
+	version = IVAL(data_out.data, 4);
+
+	if (length > data_in->length - 8) {
+		DEBUG(0,("decrypt_trustdom_secret: invalid length (%d)\n", length));
+		return NULL;
+	}
+	
+	if (version != 1) {
+		DEBUG(0,("decrypt_trustdom_secret: unknown version number (%d)\n", version));
+		return NULL;
+	}
+	
+	rpcstr_pull(cleartextpwd, data_out.data + 8, sizeof(fstring), length, 0 );
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("decrypt_trustdom_secret: length is: %d, version is: %d, password is: %s\n", 
+				length, version, cleartextpwd));
+#endif
+
+	data_blob_free(&data_out);
+	data_blob_free(&sess_key);
+	
+	return SMB_STRDUP(cleartextpwd);
+
+}
+
