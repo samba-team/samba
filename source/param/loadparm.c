@@ -169,7 +169,6 @@ typedef struct
 	char *szIdmapGID;
 	BOOL bEnableRidAlgorithm;
 	int AlgorithmicRidBase;
-	char *szTemplatePrimaryGroup;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
@@ -1215,7 +1214,6 @@ static struct parm_struct parm_table[] = {
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
 	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_HIDE}, 
-	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED}, 
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED}, 
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED}, 
@@ -1553,7 +1551,6 @@ static void init_globals(void)
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
-	string_set(&Globals.szTemplatePrimaryGroup, "nobody");
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
@@ -1747,7 +1744,6 @@ FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
-FN_GLOBAL_STRING(lp_template_primary_group, &Globals.szTemplatePrimaryGroup)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
