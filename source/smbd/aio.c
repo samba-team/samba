@@ -307,7 +307,7 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 			   aio_ex->fsp->fsp_name, strerror(errno) ));
 		outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 	} else {
-		outsize = set_message(outbuf,12,nread,False);
+		outsize = set_message(outbuf,12,nread,True);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 		SSVAL(outbuf,smb_vwv5,nread);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
