@@ -652,6 +652,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 	RPC_HDR hdr;
 	RPC_HDR_RB hdr_rb;
 	RPC_HDR_AUTH hdr_auth;
+	RPC_CONTEXT rpc_ctx;
 	int auth_len = 0;
 	int auth_type, auth_level;
 	size_t saved_hdr_offset = 0;
@@ -734,20 +735,24 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 		auth_len = prs_offset(&auth_info) - saved_hdr_offset;
 	}
 
+	/* create the RPC context. */
+	init_rpc_context(&rpc_ctx, 0 /* context id */,
+			abstract, transfer);
+
+	/* create the bind request RPC_HDR_RB */
+	init_rpc_hdr_rb(&hdr_rb, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
+
 	/* Create the request RPC_HDR */
 	init_rpc_hdr(&hdr, RPC_BIND, 0x3, rpc_call_id, 
-		RPC_HEADER_LEN + RPC_HDR_RB_LEN + prs_offset(&auth_info),
+		RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb) + prs_offset(&auth_info),
 		auth_len);
 
+	/* Marshall the RPC header */
 	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
 		DEBUG(0,("create_rpc_bind_req: failed to marshall RPC_HDR.\n"));
 		prs_mem_free(&auth_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* create the bind request RPC_HDR_RB */
-	init_rpc_hdr_rb(&hdr_rb, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN, 0x0,
-			0x1, 0x0, 0x1, abstract, transfer);
 
 	/* Marshall the bind request data */
 	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_out, 0)) {
