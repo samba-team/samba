@@ -444,16 +444,16 @@
 	} lsa_DATA_BUF2;
 
 	typedef enum {
-		LSA_TRUSTED_DOMAIN_INFO_NAME         = 1,
-		LSA_TRUSTED_DOMAIN_INFO_2            = 2,
-		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET = 3,
-		LSA_TRUSTED_DOMAIN_INFO_PASSWORD     = 4,
-		LSA_TRUSTED_DOMAIN_INFO_5            = 5,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_EX      = 6,
-		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO    = 7,
-		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO    = 8,
-		LSA_TRUSTED_DOMAIN_INFO_11           = 11,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL     = 12
+		LSA_TRUSTED_DOMAIN_INFO_NAME             = 1,
+		LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO = 2,
+		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET     = 3,
+		LSA_TRUSTED_DOMAIN_INFO_PASSWORD         = 4,
+		LSA_TRUSTED_DOMAIN_INFO_BASIC            = 5,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_EX          = 6,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO        = 7,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO        = 8,
+		LSA_TRUSTED_DOMAIN_INFO_11               = 11,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL         = 12
 	} lsa_TrustDomInfoEnum;
 
 	typedef struct {
@@ -472,7 +472,7 @@
 	typedef struct {
 		lsa_String     netbios_name;
 		dom_sid2      *sid;
-	} lsa_TrustDomainInfo5;
+	} lsa_TrustDomainInfoBasic;
 
 	typedef struct {
 		lsa_String     domain_name;
@@ -520,7 +520,7 @@
 		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]         lsa_TrustDomainInfoName        name;
 		[case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)] lsa_TrustDomainInfoPosixOffset posix_offset;
 		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]     lsa_TrustDomainInfoPassword    password;
-		[case(LSA_TRUSTED_DOMAIN_INFO_5)]            lsa_TrustDomainInfo5           info5;
+		[case(LSA_TRUSTED_DOMAIN_INFO_BASIC)]        lsa_TrustDomainInfoBasic       info_basic;
 		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]      lsa_TrustDomainInfoInfoEx      info_ex;
 		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)]    lsa_TrustDomainInfoAuthInfo    auth_info;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]    lsa_TrustDomainInfoFullInfo    full_info;
