@@ -664,7 +664,7 @@ doit (void)
     socklen_t thisaddr_len, thataddr_len;
     int port;
     int errsock = -1;
-    char *client_user, *server_user, *cmd;
+    char *client_user = NULL, *server_user = NULL, *cmd = NULL;
     struct passwd *pwd;
     int s = STDIN_FILENO;
     char **env;
@@ -770,6 +770,9 @@ doit (void)
 	} else
 	    syslog_and_die("recv_bsd_auth failed");
     }
+
+    if (client_user == NULL || server_user == NULL || cmd == NULL)
+	syslog_and_die("mising client/server/cmd");
 
 #if defined(DCE) && defined(_AIX)
     esetenv("AUTHSTATE", "DCE", 1);
