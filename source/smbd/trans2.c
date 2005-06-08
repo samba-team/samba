@@ -3094,6 +3094,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
 			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
 			SIVAL(pdata,32,mode);
+			SIVAL(pdata,36,0); /* padding. */
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
