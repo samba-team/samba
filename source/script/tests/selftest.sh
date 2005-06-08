@@ -49,6 +49,7 @@ cat >$CONFFILE<<EOF
 	path = $TMPDIR
 	read only = no
 	ntvfs handler = posix
+	posix:sharedelay = 5000
 EOF
 
 ADDARG="-s $CONFFILE"
