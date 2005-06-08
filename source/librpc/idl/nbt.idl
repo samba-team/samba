@@ -284,9 +284,7 @@
 		[switch_is(smb_command)]   smb_body body;
 	} dgram_smb_packet;
 
-	typedef [v1_enum] enum {
-		DGRAM_SMB = 0xff534d42 /* 0xffSMB */
-	} dgram_body_type;
+    	const uint32 DGRAM_SMB = 0xff534d42; /* 0xffSMB */
 
 	typedef [nodiscriminant] union {
 		[case(DGRAM_SMB)] dgram_smb_packet smb;
@@ -297,7 +295,7 @@
 		uint16          offset;
 		nbt_name        source_name;
 		nbt_name        dest_name;
-		dgram_body_type dgram_body_type;
+		uint32		dgram_body_type;
 		[switch_is(dgram_body_type)] dgram_message_body body;
 	} dgram_message;
 
