@@ -132,7 +132,7 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 {
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("EOF on stdin - terminating\n"));
+		DEBUG(0,("smbd: EOF on stdin - terminating\n"));
 		exit(0);
 	}
 }
