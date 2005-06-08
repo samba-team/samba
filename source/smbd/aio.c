@@ -29,9 +29,6 @@
 #define RT_SIGNAL_AIO (SIGRTMIN+3)
 #endif
 
-/* Until we have detection of 64-bit aio structs... */
-#define SMB_STRUCT_AIOCB struct aiocb
-
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
@@ -208,6 +205,11 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
+	/* Only do this on non-chained and non-chaining reads not using the write cache. */
+        if (chain_size !=0 || (CVAL(inbuf,smb_vwv0) != 0xFF) || (lp_write_cache_size(SNUM(conn)) != 0) ) {
+		return False;
+	}
+
 	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
 		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio activities outstanding.\n",
 			  outstanding_aio_calls ));
@@ -276,6 +278,11 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 			  "for minimum aio_write of %u\n",
 			  (unsigned int)numtowrite,
 			  (unsigned int)min_aio_write_size ));
+		return False;
+	}
+
+	/* Only do this on non-chained and non-chaining reads not using the write cache. */
+        if (chain_size !=0 || (CVAL(inbuf,smb_vwv0) != 0xFF) || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
 

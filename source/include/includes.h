@@ -765,6 +765,18 @@ typedef int socklen_t;
 #  endif
 #endif
 
+/*
+ * Type for aiocb structure.
+ */
+
+#ifndef SMB_STRUCT_AIOCB
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64)
+#    define SMB_STRUCT_AIOCB struct aiocb64
+#  else
+#    define SMB_STRUCT_AIOCB struct aiocb
+#  endif
+#endif
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
