@@ -144,7 +144,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
 	struct passwd *pw;
-	char *user;
+	fstring user;
 	int sess_vuid;
 	NTSTATUS ret;
 	DATA_BLOB auth_data;
@@ -154,6 +154,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob(NULL, 0);
 	fstring real_username;
+	BOOL map_domainuser_to_guest = False;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(auth_data);
@@ -238,37 +239,52 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		}
 	}
 
-	asprintf(&user, "%s%c%s", domain, *lp_winbind_separator(), client);
+	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
 	
 	/* lookup the passwd struct, create a new user if necessary */
 
 	map_username( user );
 
 	pw = smb_getpwnam( user, real_username, True );
-	
 	if (!pw) {
-		DEBUG(1,("Username %s is invalid on this system\n",user));
-		SAFE_FREE(user);
-		SAFE_FREE(client);
-		data_blob_free(&ap_rep);
-		data_blob_free(&session_key);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+
+		/* this was originally the behavior of Samba 2.2, if a user
+		   did not have a local uid but has been authenticated, then 
+		   map them to a guest account */
+
+		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){ 
+			map_domainuser_to_guest = True;
+			fstrcpy(user,lp_guestaccount());
+			pw = smb_getpwnam( user, real_username, True );
+		} 
+
+		/* extra sanity check that the guest account is valid */
+
+		if ( !pw ) {
+			DEBUG(1,("Username %s is invalid on this system\n", user));
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		}
 	}
 
 	/* setup the string used by %U */
 	
 	sub_set_smb_name( real_username );
 	reload_services(True);
-	
-	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info, real_username, pw))) 
-	{
-		DEBUG(1,("make_server_info_from_pw failed!\n"));
-		SAFE_FREE(user);
-		SAFE_FREE(client);
-		data_blob_free(&ap_rep);
-		data_blob_free(&session_key);
-		passwd_free(&pw);
-		return ERROR_NT(ret);
+	if ( map_domainuser_to_guest ) {
+		make_server_info_guest(&server_info);
+	} else {
+		ret = make_server_info_pw(&server_info, real_username, pw);
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(1,("make_server_info_from_pw failed!\n"));
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			passwd_free(&pw);
+			return ERROR_NT(ret);
+		}
 	}
 	passwd_free(&pw);
 
@@ -284,7 +300,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
  	   A better interface would copy it.... */
 	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
 
-	SAFE_FREE(user);
 	SAFE_FREE(client);
 
 	if (sess_vuid == -1) {

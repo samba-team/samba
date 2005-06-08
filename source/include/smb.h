@@ -1649,12 +1649,6 @@ struct unix_error_map {
 };
 
 /*
-#include "ntdomain.h"
-
-#include "client.h"
-*/
-
-/*
  * Size of new password account encoding string.  This is enough space to
  * hold 11 ACB characters, plus the surrounding [] and a terminating null.
  * Do not change unless you are adding new ACB bits!
@@ -1683,9 +1677,10 @@ struct unix_error_map {
    level security.
 */
 
-#define NEVER_MAP_TO_GUEST 0
-#define MAP_TO_GUEST_ON_BAD_USER 1
-#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
+#define NEVER_MAP_TO_GUEST 		0
+#define MAP_TO_GUEST_ON_BAD_USER 	1
+#define MAP_TO_GUEST_ON_BAD_PASSWORD 	2
+#define MAP_TO_GUEST_ON_BAD_UID 	3
 
 #define SAFE_NETBIOS_CHARS ". -_"
 
