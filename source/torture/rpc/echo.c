@@ -226,7 +226,11 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int total_done = 0;
 	BOOL ret = True;
 
-	printf("\nTesting TestSleep\n");
+	if (!lp_parm_bool(-1, "torture", "echo_TestSleep", True)) {
+		printf("TestSleep disabled - use \"torture:echo_TestSleep=yes\" to enable\n");
+		return True;
+	}
+	printf("Testing TestSleep - use \"torture:echo_TestSleep=no\" to disable\n");
 
 	for (i=0;i<ASYNC_COUNT;i++) {
 		done[i]		= False;
