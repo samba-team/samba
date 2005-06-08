@@ -60,7 +60,7 @@
 #define LSA_GETSYSTEMACCOUNT   0x17
 #define LSA_SETSYSTEMACCOUNT   0x18
 #define LSA_OPENTRUSTDOM       0x19	/* TODO: implement this one  -- jerry */
-#define LSA_QUERYTRUSTDOM      0x1a
+#define LSA_QUERYTRUSTDOMINFO  0x1a
 #define LSA_SETINFOTRUSTDOM    0x1b
 #define LSA_OPENSECRET         0x1c	/* TODO: implement this one  -- jerry */
 #define LSA_SETSECRET          0x1d	/* TODO: implement this one  -- jerry */
@@ -73,7 +73,7 @@
 #define LSA_ENUMACCTRIGHTS     0x24
 #define LSA_ADDACCTRIGHTS      0x25
 #define LSA_REMOVEACCTRIGHTS   0x26
-#define LSA_QUERYTRUSTDOMINFO  0x27
+#define LSA_QUERYTRUSTDOMINFOBYSID  0x27
 #define LSA_SETTRUSTDOMINFO    0x28
 #define LSA_DELETETRUSTDOM     0x29
 #define LSA_STOREPRIVDATA      0x2a
@@ -81,6 +81,8 @@
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_GET_CONNUSER   0x2d /* LsaGetConnectedCredentials ? */
 #define LSA_QUERYINFO2         0x2e
+#define LSA_QUERYTRUSTDOMINFOBYNAME 0x30
+#define LSA_OPENTRUSTDOMBYNAME 0x37
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
@@ -724,16 +726,27 @@ typedef struct lsa_r_removeprivs
 } LSA_R_REMOVEPRIVS;
 
 /*******************************************************/
-
+#if 0 /* jerry, I think this not correct - gd */
 typedef struct {
 	POLICY_HND	handle;
 	uint32		count;	/* ??? this is what ethereal calls it */
 	DOM_SID		sid;
 } LSA_Q_OPEN_TRUSTED_DOMAIN;
+#endif
 
+/* LSA_Q_OPEN_TRUSTED_DOMAIN - LSA Query Open Trusted Domain */
+typedef struct lsa_q_open_trusted_domain
+{
+	POLICY_HND 	pol; 	/* policy handle */
+	DOM_SID2 	sid;	/* domain sid */
+	uint32 	access_mask;	/* access mask */
+	
+} LSA_Q_OPEN_TRUSTED_DOMAIN;
+
+/* LSA_R_OPEN_TRUSTED_DOMAIN - response to LSA Query Open Trusted Domain */
 typedef struct {
-	POLICY_HND	handle;
-	NTSTATUS	status;
+	POLICY_HND	handle;	/* trustdom policy handle */
+	NTSTATUS	status; /* return code */
 } LSA_R_OPEN_TRUSTED_DOMAIN;
 
 
@@ -810,5 +823,138 @@ typedef struct {
 	NTSTATUS	status;
 } LSA_R_SET_SECRET;
 
+/* LSA_Q_QUERY_TRUSTED_DOMAIN_INFO - LSA query trusted domain info */
+typedef struct lsa_query_trusted_domain_info
+{
+	POLICY_HND	pol; 		/* policy handle */
+	uint16		info_class; 	/* info class */
+
+} LSA_Q_QUERY_TRUSTED_DOMAIN_INFO;
+
+/* LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID - LSA query trusted domain info */
+typedef struct lsa_query_trusted_domain_info_by_sid
+{
+	POLICY_HND 	pol; 		/* policy handle */
+	DOM_SID2 	dom_sid;	/* domain sid */
+	uint16		info_class; 	/* info class */
+	
+} LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID;
+
+/* LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME - LSA query trusted domain info */
+typedef struct lsa_query_trusted_domain_info_by_name
+{
+	POLICY_HND 	pol; 		/* policy handle */
+	LSA_STRING 	domain_name;	/* domain name */
+	uint16 		info_class; 	/* info class */
+	
+} LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME;
+
+typedef struct trusted_domain_info_name {
+	LSA_STRING 	netbios_name; 
+} TRUSTED_DOMAIN_INFO_NAME;
+
+typedef struct trusted_domain_info_posix_offset {
+	uint32 		posix_offset;
+} TRUSTED_DOMAIN_INFO_POSIX_OFFSET;
+
+typedef struct lsa_data_buf {
+	uint32 size;
+	uint32 offset;
+	uint32 length;
+	uint8 *data;
+} LSA_DATA_BUF;
+
+typedef struct lsa_data_buf_hdr {
+	uint32 length;
+	uint32 size;
+	uint32 data_ptr;
+} LSA_DATA_BUF_HDR;
+
+
+typedef struct lsa_data_buf2 {
+	uint32 size;
+	uint8 *data;
+} LSA_DATA_BUF2;
+
+typedef struct trusted_domain_info_password {
+	uint32 ptr_password;
+	uint32 ptr_old_password;
+	LSA_DATA_BUF_HDR password_hdr;
+	LSA_DATA_BUF_HDR old_password_hdr;
+	LSA_DATA_BUF password;
+	LSA_DATA_BUF old_password;
+} TRUSTED_DOMAIN_INFO_PASSWORD;
+
+typedef struct trusted_domain_info_basic {
+	LSA_STRING 	netbios_name;
+	DOM_SID2 	sid;
+} TRUSTED_DOMAIN_INFO_BASIC;
+
+typedef struct trusted_domain_info_ex {
+	LSA_STRING 	domain_name;
+	LSA_STRING 	netbios_name;
+	DOM_SID2 	sid;
+	uint32 		trust_direction;
+	uint32 		trust_type;
+	uint32 		trust_attributes;
+} TRUSTED_DOMAIN_INFO_EX;
+
+typedef struct trust_domain_info_buffer {
+	NTTIME 		last_update_time;
+	uint32 		secret_type;
+	LSA_DATA_BUF2 	data;
+} LSA_TRUSTED_DOMAIN_INFO_BUFFER;
+
+typedef struct trusted_domain_info_auth_info {
+	uint32 incoming_count;
+	LSA_TRUSTED_DOMAIN_INFO_BUFFER incoming_current_auth_info;
+	LSA_TRUSTED_DOMAIN_INFO_BUFFER incoming_previous_auth_info;
+	uint32 outgoing_count;
+	LSA_TRUSTED_DOMAIN_INFO_BUFFER outgoing_current_auth_info;
+	LSA_TRUSTED_DOMAIN_INFO_BUFFER outgoing_previous_auth_info;
+} TRUSTED_DOMAIN_INFO_AUTH_INFO;
+
+typedef struct trusted_domain_info_full_info {
+	TRUSTED_DOMAIN_INFO_EX 		info_ex;
+	TRUSTED_DOMAIN_INFO_POSIX_OFFSET posix_offset;
+	TRUSTED_DOMAIN_INFO_AUTH_INFO 	auth_info;
+} TRUSTED_DOMAIN_INFO_FULL_INFO;
+
+typedef struct trusted_domain_info_11 {
+	TRUSTED_DOMAIN_INFO_EX 		info_ex;
+	LSA_DATA_BUF2 			data1;
+} TRUSTED_DOMAIN_INFO_11;
+
+typedef struct trusted_domain_info_all {
+	TRUSTED_DOMAIN_INFO_EX 		info_ex;
+	LSA_DATA_BUF2 			data1;
+	TRUSTED_DOMAIN_INFO_POSIX_OFFSET posix_offset;
+	TRUSTED_DOMAIN_INFO_AUTH_INFO 	auth_info;
+} TRUSTED_DOMAIN_INFO_ALL;
+
+/* LSA_TRUSTED_DOMAIN_INFO */
+typedef union lsa_trusted_domain_info
+{
+	uint16 					info_class;
+	TRUSTED_DOMAIN_INFO_NAME		name;
+	/* deprecated - gd
+	TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO	controllers; */
+	TRUSTED_DOMAIN_INFO_POSIX_OFFSET	posix_offset;
+	TRUSTED_DOMAIN_INFO_PASSWORD		password;
+	TRUSTED_DOMAIN_INFO_BASIC		basic;
+	TRUSTED_DOMAIN_INFO_EX			info_ex;
+	TRUSTED_DOMAIN_INFO_AUTH_INFO		auth_info;
+	TRUSTED_DOMAIN_INFO_FULL_INFO		full_info;
+	TRUSTED_DOMAIN_INFO_11			info11;
+	TRUSTED_DOMAIN_INFO_ALL			info_all;
+
+} LSA_TRUSTED_DOMAIN_INFO;
+
+/* LSA_R_QUERY_TRUSTED_DOMAIN_INFO - LSA query trusted domain info */
+typedef struct r_lsa_query_trusted_domain_info
+{
+	LSA_TRUSTED_DOMAIN_INFO *info;
+	NTSTATUS status;
+} LSA_R_QUERY_TRUSTED_DOMAIN_INFO;
 
 #endif /* _RPC_LSA_H */
