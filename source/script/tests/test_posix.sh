@@ -5,7 +5,7 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_posix.sh UNC USERNAME PASSWORD <first>
+Usage: test_posix.sh UNC USERNAME PASSWORD <first> <smbtorture args>
 EOF
 exit 1;
 fi
@@ -18,7 +18,8 @@ unc="$1"
 username="$2"
 password="$3"
 start="$4"
-shift 3
+shift 4
+ADDARGS="$*"
 
 testit() {
    trap "rm -f test.$$" EXIT
@@ -46,8 +47,6 @@ tests="$tests RAW-QFSINFO RAW-QFILEINFO RAW-SFILEINFO-BUG RAW-SFILEINFO"
 tests="$tests RAW-LOCK RAW-MKDIR RAW-SEEK RAW-CONTEXT RAW-MUX RAW-OPEN RAW-WRITE"
 tests="$tests RAW-UNLINK RAW-READ RAW-CLOSE RAW-IOCTL RAW-SEARCH RAW-CHKPATH RAW-RENAME"
 tests="$tests RAW-EAS RAW-STREAMS RAW-ACLS"
-tests="$tests LOCAL-ICONV LOCAL-TALLOC LOCAL-MESSAGING LOCAL-BINDING LOCAL-IDTREE"
-tests="$tests LOCAL-SOCKET"
 
 soon="BASE-CHARSET RAW-OPLOCK RAW-NOTIFY BASE-DELAYWRITE"
 
@@ -57,5 +56,5 @@ for t in $tests; do
     fi
     start=""
     echo Testing $t
-    testit $VALGRIND bin/smbtorture $unc -U"$username"%"$password" $t
+    testit $VALGRIND bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t
 done
