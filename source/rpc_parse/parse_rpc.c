@@ -377,26 +377,74 @@ static BOOL smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
 }
 
 /*******************************************************************
+ Inits an RPC_CONTEXT structure.
+ Note the transfer pointer must remain valid until this is marshalled.
+********************************************************************/
+
+void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id, RPC_IFACE *abstract, RPC_IFACE *transfer)
+{
+	rpc_ctx->context_id   = context_id   ; /* presentation context identifier (0x0) */
+	rpc_ctx->num_transfer_syntaxes = 1 ; /* the number of syntaxes (has always been 1?)(0x1) */
+
+	/* num and vers. of interface client is using */
+	rpc_ctx->abstract = *abstract;
+
+	/* vers. of interface to use for replies */
+	rpc_ctx->transfer = transfer;
+}
+
+/*******************************************************************
  Inits an RPC_HDR_RB structure.
+ Note the context pointer must remain valid until this is marshalled.
 ********************************************************************/
 
 void init_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
-				RPC_IFACE *abstract, RPC_IFACE *transfer)
+				RPC_CONTEXT *context)
 {
 	init_rpc_hdr_bba(&rpc->bba, max_tsize, max_rsize, assoc_gid);
 
-	rpc->num_elements = num_elements ; /* the number of elements (0x1) */
-	rpc->context_id   = context_id   ; /* presentation context identifier (0x0) */
-	rpc->num_syntaxes = num_syntaxes ; /* the number of syntaxes (has always been 1?)(0x1) */
-
-	/* num and vers. of interface client is using */
-	rpc->abstract = *abstract;
-
-	/* num and vers. of interface to use for replies */
-	rpc->transfer = *transfer;
+	rpc->num_contexts = 1;
+	rpc->rpc_context = context;
 }
+
+/*******************************************************************
+ Reads or writes an RPC_CONTEXT structure.
+********************************************************************/
+
+BOOL smb_io_rpc_context(const char *desc, RPC_CONTEXT *rpc_ctx, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (rpc_ctx == NULL)
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint16("context_id  ", ps, depth, &rpc_ctx->context_id ))
+		return False;
+	if(!prs_uint8 ("num_transfer_syntaxes", ps, depth, &rpc_ctx->num_transfer_syntaxes))
+		return False;
+
+	/* num_transfer_syntaxes must not be zero. */
+	if (rpc_ctx->num_transfer_syntaxes == 0)
+		return False;
+
+	if(!smb_io_rpc_iface("", &rpc_ctx->abstract, ps, depth))
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (!(rpc_ctx->transfer = PRS_ALLOC_MEM(ps, RPC_IFACE, rpc_ctx->num_transfer_syntaxes))) {
+			return False;
+		}
+	}
+
+	for (i = 0; i < rpc_ctx->num_transfer_syntaxes; i++ ) {
+		if (!smb_io_rpc_iface("", &rpc_ctx->transfer[i], ps, depth))
+			return False;
+	}
+	return True;
+} 
 
 /*******************************************************************
  Reads or writes an RPC_HDR_RB structure.
@@ -404,7 +452,6 @@ void init_rpc_hdr_rb(RPC_HDR_RB *rpc,
 
 BOOL smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth)
 {
-	RPC_HDR_RB rpc2;
 	int i;
 	
 	if (rpc == NULL)
@@ -416,31 +463,25 @@ BOOL smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int de
 	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
 		return False;
 
-	if(!prs_uint32("num_elements", ps, depth, &rpc->num_elements))
-		return False;
-	if(!prs_uint16("context_id  ", ps, depth, &rpc->context_id ))
-		return False;
-	if(!prs_uint8 ("num_syntaxes", ps, depth, &rpc->num_syntaxes))
+	if(!prs_uint32("num_contexts", ps, depth, &rpc->num_contexts))
 		return False;
 
-	if(!smb_io_rpc_iface("", &rpc->abstract, ps, depth))
-		return False;
-	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
-		return False;
-		
-	/* just chew through extra context id's for now */
-	
-	for ( i=1; i<rpc->num_elements; i++ ) {
-		if(!prs_uint16("context_id  ", ps, depth, &rpc2.context_id ))
-			return False;
-		if(!prs_uint8 ("num_syntaxes", ps, depth, &rpc2.num_syntaxes))
-			return False;
+	rpc->num_contexts &= 0xff; /* Actually a 1 byte field.. */
 
-		if(!smb_io_rpc_iface("", &rpc2.abstract, ps, depth))
+	/* num_contexts must not be zero. */
+	if (rpc->num_contexts == 0)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (!(rpc->rpc_context = PRS_ALLOC_MEM(ps, RPC_CONTEXT, rpc->num_contexts))) {
 			return False;
-		if(!smb_io_rpc_iface("", &rpc2.transfer, ps, depth))
+		}
+	}
+
+	for (i = 0; i < rpc->num_contexts; i++ ) {
+		if (!smb_io_rpc_context("", &rpc->rpc_context[i], ps, depth))
 			return False;
-	}	
+	}
 
 	return True;
 }

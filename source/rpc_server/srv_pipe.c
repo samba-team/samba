@@ -1068,15 +1068,15 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
-	if(check_bind_req(p, &hdr_rb.abstract, &hdr_rb.transfer, hdr_rb.context_id )) 
-	{
+	if(check_bind_req(p, &hdr_rb.rpc_context[0].abstract, &hdr_rb.rpc_context[0].transfer[0],
+				hdr_rb.rpc_context[0].context_id )) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                MAX_PDU_FRAG_LEN,
 	                MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.transfer);
+	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
 		RPC_IFACE null_interface;
 		ZERO_STRUCT(null_interface);
