@@ -468,7 +468,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos_mechanism && (SEC_ADS == lp_security())) {
+	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
