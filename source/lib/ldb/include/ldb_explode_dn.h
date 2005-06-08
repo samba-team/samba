@@ -32,7 +32,12 @@ struct ldb_dn_component {
 };
 
 struct ldb_dn {
-	char *dn;
-	int comp_num;
+	char *                      dn;
+	int                         comp_num;
 	struct ldb_dn_component **  components;
 };
+
+
+extern struct ldb_dn *
+ldb_explode_dn(void *mem_ctx,
+               const char *orig_dn);
