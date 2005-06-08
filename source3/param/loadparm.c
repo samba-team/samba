@@ -763,6 +763,7 @@ static const struct enum_list enum_map_to_guest[] = {
 	{NEVER_MAP_TO_GUEST, "Never"},
 	{MAP_TO_GUEST_ON_BAD_USER, "Bad User"},
 	{MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"},
+        {MAP_TO_GUEST_ON_BAD_UID, "Bad Uid"},
 	{-1, NULL}
 };
 

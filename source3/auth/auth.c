@@ -279,6 +279,8 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		}
 	}
 
+	/* successful authentication */
+	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		unix_username = (*server_info)->unix_name;
 		if (!(*server_info)->guest) {
@@ -304,14 +306,22 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 			       user_info->internal_username.str, 
 			       unix_username));
 		}
+		
+		return nt_status;
 	}
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	
+	/* failed authentication; check for guest lapping */
+	
+	if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
+	 	make_server_info_guest(server_info); 
+		nt_status = NT_STATUS_OK;
+	 } else {
 		DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n", 
-			  user_info->smb_name.str, user_info->internal_username.str, 
-			  nt_errstr(nt_status)));
-		ZERO_STRUCTP(server_info);
+	  	user_info->smb_name.str, user_info->internal_username.str, 
+	  	nt_errstr(nt_status)));
+		ZERO_STRUCTP(server_info); 
 	}
+	
 	return nt_status;
 }
 
