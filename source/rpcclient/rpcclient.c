@@ -204,10 +204,10 @@ static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			i = 0;
 			tmp_set++;
 			while(tmp_set->name) {
-				printf("%20s", tmp_set->name);
+				printf("%30s", tmp_set->name);
                                 tmp_set++;
 				i++;
-				if (i%4 == 0)
+				if (i%3 == 0)
 					printf("\n");
 			}
 			
