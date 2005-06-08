@@ -88,8 +88,7 @@ int kerberos_kinit_password(const char *principal,
 		return code;
 	}
 	
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me,
-                                                 CONST_DISCARD(char *, password), 
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
 						 kerb_prompter, 
 						 NULL, 0, NULL, NULL))) {
 		krb5_free_principal(ctx, me);

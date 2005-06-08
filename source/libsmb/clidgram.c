@@ -26,105 +26,101 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-int cli_send_mailslot(int dgram_sock, BOOL unique, const char *mailslot, 
-		      char *buf, int len,
-		      const char *srcname, int src_type, 
-		      const char *dstname, int dest_type,
-		      struct in_addr dest_ip, struct in_addr src_ip,
-		      int dest_port, int src_port)
+BOOL cli_send_mailslot(BOOL unique, const char *mailslot,
+		       uint16 priority,
+		       char *buf, int len,
+		       const char *srcname, int src_type, 
+		       const char *dstname, int dest_type,
+		       struct in_addr dest_ip)
 {
-  struct packet_struct p;
-  struct dgram_packet *dgram = &p.packet.dgram;
-  char *ptr, *p2;
-  char tmp[4];
+	struct packet_struct p;
+	struct dgram_packet *dgram = &p.packet.dgram;
+	char *ptr, *p2;
+	char tmp[4];
+	pid_t nmbd_pid;
 
-  memset((char *)&p, '\0', sizeof(p));
+	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
+		DEBUG(3, ("No nmbd found\n"));
+		return False;
+	}
 
-  /*
-   * Next, build the DGRAM ...
-   */
+	if (!message_init())
+		return False;
 
-  /* DIRECT GROUP or UNIQUE datagram. */
-  dgram->header.msg_type = unique ? 0x10 : 0x11; 
-  dgram->header.flags.node_type = M_NODE;
-  dgram->header.flags.first = True;
-  dgram->header.flags.more = False;
-  dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)sys_getpid()%(unsigned)100);
-  dgram->header.source_ip.s_addr = src_ip.s_addr;
-  dgram->header.source_port = ntohs(src_port);
-  dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
-  dgram->header.packet_offset = 0;
+	memset((char *)&p, '\0', sizeof(p));
+
+	/*
+	 * Next, build the DGRAM ...
+	 */
+
+	/* DIRECT GROUP or UNIQUE datagram. */
+	dgram->header.msg_type = unique ? 0x10 : 0x11; 
+	dgram->header.flags.node_type = M_NODE;
+	dgram->header.flags.first = True;
+	dgram->header.flags.more = False;
+	dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) +
+		((unsigned)sys_getpid()%(unsigned)100);
+	/* source ip is filled by nmbd */
+	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
+	dgram->header.packet_offset = 0;
   
-  make_nmb_name(&dgram->source_name,srcname,src_type);
-  make_nmb_name(&dgram->dest_name,dstname,dest_type);
+	make_nmb_name(&dgram->source_name,srcname,src_type);
+	make_nmb_name(&dgram->dest_name,dstname,dest_type);
 
-  ptr = &dgram->data[0];
+	ptr = &dgram->data[0];
 
-  /* Setup the smb part. */
-  ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
-  memcpy(tmp,ptr,4);
-  set_message(ptr,17,strlen(mailslot) + 1 + len,True);
-  memcpy(ptr,tmp,4);
+	/* Setup the smb part. */
+	ptr -= 4; /* XXX Ugliness because of handling of tcp SMB length. */
+	memcpy(tmp,ptr,4);
+	set_message(ptr,17,strlen(mailslot) + 1 + len,True);
+	memcpy(ptr,tmp,4);
 
-  SCVAL(ptr,smb_com,SMBtrans);
-  SSVAL(ptr,smb_vwv1,len);
-  SSVAL(ptr,smb_vwv11,len);
-  SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
-  SSVAL(ptr,smb_vwv13,3);
-  SSVAL(ptr,smb_vwv14,1);
-  SSVAL(ptr,smb_vwv15,1);
-  SSVAL(ptr,smb_vwv16,2);
-  p2 = smb_buf(ptr);
-  fstrcpy(p2,mailslot);
-  p2 = skip_string(p2,1);
+	SCVAL(ptr,smb_com,SMBtrans);
+	SSVAL(ptr,smb_vwv1,len);
+	SSVAL(ptr,smb_vwv11,len);
+	SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
+	SSVAL(ptr,smb_vwv13,3);
+	SSVAL(ptr,smb_vwv14,1);
+	SSVAL(ptr,smb_vwv15,priority);
+	SSVAL(ptr,smb_vwv16,2);
+	p2 = smb_buf(ptr);
+	fstrcpy(p2,mailslot);
+	p2 = skip_string(p2,1);
 
-  memcpy(p2,buf,len);
-  p2 += len;
+	memcpy(p2,buf,len);
+	p2 += len;
 
-  dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
+	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 
-  p.ip = dest_ip;
-  p.port = dest_port;
-  p.fd = dgram_sock;
-  p.timestamp = time(NULL);
-  p.packet_type = DGRAM_PACKET;
+	p.packet_type = DGRAM_PACKET;
+	p.ip = dest_ip;
+	p.timestamp = time(NULL);
 
-  DEBUG(4,("send_mailslot: Sending to mailslot %s from %s IP %s ", mailslot,
-                    nmb_namestr(&dgram->source_name), inet_ntoa(src_ip)));
-  DEBUG(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), inet_ntoa(dest_ip)));
+	DEBUG(4,("send_mailslot: Sending to mailslot %s from %s ",
+		 mailslot, nmb_namestr(&dgram->source_name)));
+	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name),
+		    inet_ntoa(dest_ip)));
 
-  return send_packet(&p);
-
+	return message_send_pid(nmbd_pid, MSG_SEND_PACKET, &p, sizeof(p),
+				False);
 }
 
 /*
  * cli_get_response: Get a response ...
  */
-int cli_get_response(int dgram_sock, BOOL unique, const char *mailslot, char *buf, int bufsiz)
+BOOL cli_get_response(const char *mailslot, char *buf, int bufsiz)
 {
-  struct packet_struct *packet;
+	struct packet_struct *p;
 
-  packet = receive_dgram_packet(dgram_sock, 5, mailslot);
+	p = receive_unexpected(DGRAM_PACKET, 0, mailslot);
 
-  if (packet) { /* We got one, pull what we want out of the SMB data ... */
+	if (p == NULL)
+		return False;
 
-    struct dgram_packet *dgram = &packet->packet.dgram;
+	memcpy(buf, &p->packet.dgram.data[92],
+	       MIN(bufsiz, p->packet.dgram.datasize-92));
 
-    /*
-     * We should probably parse the SMB, but for now, we will pull what
-     * from fixed, known locations ...
-     */
-
-    /* Copy the data to buffer, respecting sizes ... */
-
-    memcpy(buf, &dgram->data[92], MIN(bufsiz, (dgram->datasize - 92)));
-
-  }
-  else 
-    return -1;
-
-  return 0;
-
+	return True;
 }
 
 /*
@@ -135,108 +131,43 @@ static char cli_backup_list[1024];
 
 int cli_get_backup_list(const char *myname, const char *send_to_name)
 {
-  pstring outbuf;
-  char *p;
-  struct in_addr sendto_ip, my_ip;
-  int dgram_sock;
-  struct sockaddr_in sock_out;
-  socklen_t name_size;
+	pstring outbuf;
+	char *p;
+	struct in_addr sendto_ip;
 
-  if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
+	if (!resolve_name(send_to_name, &sendto_ip, 0x1d)) {
 
-    DEBUG(0, ("Could not resolve name: %s<1D>\n", send_to_name));
-    return False;
+		DEBUG(0, ("Could not resolve name: %s<1D>\n", send_to_name));
+		return False;
 
-  }
+	}
 
-  my_ip.s_addr = inet_addr("0.0.0.0");
- 
-  if (!resolve_name(myname, &my_ip, 0x00)) { /* FIXME: Call others here */
+	memset(cli_backup_list, '\0', sizeof(cli_backup_list));
+	memset(outbuf, '\0', sizeof(outbuf));
 
-    DEBUG(0, ("Could not resolve name: %s<00>\n", myname));
+	p = outbuf;
 
-  }
+	SCVAL(p, 0, ANN_GetBackupListReq);
+	p++;
 
-  if ((dgram_sock = open_socket_out(SOCK_DGRAM, &sendto_ip, 138, LONG_CONNECT_TIMEOUT)) < 0) {
+	SCVAL(p, 0, 1); /* Count pointer ... */
+	p++;
 
-    DEBUG(4, ("open_sock_out failed ..."));
-    return False;
+	SIVAL(p, 0, 1); /* The sender's token ... */
+	p += 4;
 
-  }
+	cli_send_mailslot(True, "\\MAILSLOT\\BROWSE", 1, outbuf, 
+			  PTR_DIFF(p, outbuf), myname, 0, send_to_name, 
+			  0x1d, sendto_ip);
 
-  /* Make it a broadcast socket ... */
+	/* We should check the error and return if we got one */
 
-  set_socket_options(dgram_sock, "SO_BROADCAST");
+	/* Now, get the response ... */
 
-  /* Make it non-blocking??? */
+	cli_get_response("\\MAILSLOT\\BROWSE",
+			 cli_backup_list, sizeof(cli_backup_list));
 
-  if (fcntl(dgram_sock, F_SETFL, O_NONBLOCK) < 0) {
-
-    DEBUG(0, ("Unable to set non blocking on dgram sock\n"));
-
-  }
-
-  /* Now, bind a local addr to it ... Try port 138 first ... */
-
-  memset((char *)&sock_out, '\0', sizeof(sock_out));
-  sock_out.sin_addr.s_addr = INADDR_ANY;
-  sock_out.sin_port = htons(138);
-  sock_out.sin_family = AF_INET;
-
-  if (bind(dgram_sock, (struct sockaddr *)&sock_out, sizeof(sock_out)) < 0) {
-
-    /* Try again on any port ... */
-
-    sock_out.sin_port = INADDR_ANY;
-
-    if (bind(dgram_sock, (struct sockaddr *)&sock_out, sizeof(sock_out)) < 0) {
-
-      DEBUG(4, ("failed to bind socket to address ...\n"));
-      return False;
-	
-    }
-
-  }
-
-  /* Now, figure out what socket name we were bound to. We want the port */
-
-  name_size = sizeof(sock_out);
-
-  getsockname(dgram_sock, (struct sockaddr *)&sock_out, &name_size);
-
-  DEBUG(5, ("Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port)));
-
-  /* Now, build the request */
-
-  memset(cli_backup_list, '\0', sizeof(cli_backup_list));
-  memset(outbuf, '\0', sizeof(outbuf));
-
-  p = outbuf;
-
-  SCVAL(p, 0, ANN_GetBackupListReq);
-  p++;
-
-  SCVAL(p, 0, 1); /* Count pointer ... */
-  p++;
-
-  SIVAL(p, 0, 1); /* The sender's token ... */
-  p += 4;
-
-  cli_send_mailslot(dgram_sock, True, "\\MAILSLOT\\BROWSE", outbuf, 
-		    PTR_DIFF(p, outbuf), myname, 0, send_to_name, 
-		    0x1d, sendto_ip, my_ip, 138, sock_out.sin_port);
-
-  /* We should check the error and return if we got one */
-
-  /* Now, get the response ... */
-
-  cli_get_response(dgram_sock, True, "\\MAILSLOT\\BROWSE", cli_backup_list, sizeof(cli_backup_list));
-
-  /* Should check the response here ... FIXME */
-
-  close(dgram_sock);
-
-  return True;
+	return True;
 
 }
 

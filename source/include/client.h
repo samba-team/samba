@@ -57,6 +57,27 @@ struct print_job_info
 	time_t t;
 };
 
+struct rpc_pipe_client {
+	TALLOC_CTX *mem_ctx;
+
+	struct cli_state *cli;
+
+	int pipe_idx;
+	uint16 fnum;
+
+	int pipe_auth_flags;
+
+	NTLMSSP_STATE *ntlmssp_pipe_state;
+	const char *user_name;
+	const char *domain;
+	struct pwd_info pwd;
+
+	struct netsec_auth_struct auth_info;
+
+	uint16 max_xmit_frag;
+	uint16 max_recv_frag;
+};
+
 struct cli_state {
 	int port;
 	int fd;
@@ -124,25 +145,19 @@ struct cli_state {
 					      of the pipe we're talking to, 
 					      if any */
 
-	uint16 nt_pipe_fnum[PI_MAX_PIPES]; /* Pipe handle. */
+	struct rpc_pipe_client pipes[PI_MAX_PIPES];
 
 	/* Secure pipe parameters */
 	int pipe_auth_flags;
 
-	uint16 saved_netlogon_pipe_fnum;   /* The "first" pipe to get
-                                              the session key for the
-                                              schannel. */
-	struct netsec_auth_struct auth_info;
-
-	NTLMSSP_STATE *ntlmssp_pipe_state;
-
+	struct rpc_pipe_client netlogon_pipe;  /* The "first" pipe to get
+						  the session key for the
+						  schannel. */
 	unsigned char sess_key[16];        /* Current session key. */
 	DOM_CRED clnt_cred;                /* Client credential. */
 	fstring mach_acct;                 /* MYNAME$. */
 	fstring srv_name_slash;            /* \\remote server. */
 	fstring clnt_name_slash;           /* \\local client. */
-	uint16 max_xmit_frag;
-	uint16 max_recv_frag;
 
 	BOOL use_kerberos;
 	BOOL fallback_after_kerberos;

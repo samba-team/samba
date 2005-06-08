@@ -328,7 +328,6 @@ GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o
-EDITREG_OBJ = utils/editreg.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
@@ -655,9 +654,11 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_cm.o \
 		nsswitch/winbindd_wins.o \
 		nsswitch/winbindd_rpc.o \
+		nsswitch/winbindd_reconnect.o \
 		nsswitch/winbindd_ads.o \
 		nsswitch/winbindd_passdb.o \
-		nsswitch/winbindd_dual.o 
+		nsswitch/winbindd_dual.o \
+		nsswitch/winbindd_async.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -689,8 +690,8 @@ NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
-		libads/authdata.o $(RPC_PARSE_OBJ0) \
-		$(DOSERR_OBJ)
+		libads/authdata.o $(RPC_PARSE_OBJ0) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(SMBLDAP_OBJ) $(DOSERR_OBJ)
 
 ######################################################################
 # now the rules...
@@ -851,10 +852,6 @@ bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ @SOCKWRAP@
-
-bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(EDITREG_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1054,6 +1051,11 @@ bin/librpc_lsa_ds.@SHLIBEXT@: $(RPC_LSA_DS_OBJ)
 bin/librpc_spoolss.@SHLIBEXT@: $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_eventlog.@SHLIBEXT@: $(RPC_EVENTLOG_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EVENTLOG_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
@@ -1496,7 +1498,8 @@ headers:
 	$(MAKE) nsswitch/winbindd_proto.h; \
 	$(MAKE) web/swat_proto.h; \
 	$(MAKE) client/client_proto.h; \
-	$(MAKE) utils/net_proto.h
+	$(MAKE) utils/ntlm_auth_proto.h; \
+	$(MAKE) utils/net_proto.h;
 
 proto: headers 
 

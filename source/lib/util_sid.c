@@ -342,6 +342,12 @@ BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
 	return False;
 }
 
+BOOL sid_compose(DOM_SID *dst, const DOM_SID *domain_sid, uint32 rid)
+{
+	sid_copy(dst, domain_sid);
+	return sid_append_rid(dst, rid);
+}
+
 /*****************************************************************
  Removes the last rid from the end of a sid
 *****************************************************************/  
@@ -630,7 +636,7 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+void add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
 		      DOM_SID **sids, int *num)
 {
 	if (mem_ctx != NULL)

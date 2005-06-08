@@ -35,6 +35,7 @@
 #define ID_TYPEMASK	0x0f
 
 #define ID_QUERY_ONLY	0x10
+#define ID_CACHE_ONLY   0x20
 
 /* Filled out by IDMAP backends */
 struct idmap_methods {

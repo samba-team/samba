@@ -167,6 +167,32 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	return True;
 }
 
+static BOOL wbinfo_get_userdomgroups(const char *user_sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	fstrcpy(request.data.sid, user_sid);
+
+	result = winbindd_request(WINBINDD_GETUSERDOMGROUPS, &request,
+				  &response);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	if (response.data.num_entries != 0)
+		printf("%s", (char *)response.extra_data);
+	
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
+
+
 /* Convert NetBIOS name to IP */
 
 static BOOL wbinfo_wins_byname(char *name)
@@ -224,7 +250,6 @@ static BOOL wbinfo_wins_byip(char *ip)
 static BOOL wbinfo_list_domains(void)
 {
 	struct winbindd_response response;
-	fstring name;
 
 	ZERO_STRUCT(response);
 
@@ -238,9 +263,19 @@ static BOOL wbinfo_list_domains(void)
 
 	if (response.extra_data) {
 		const char *extra_data = (char *)response.extra_data;
+		fstring name;
+		char *p;
 
-		while(next_token(&extra_data, name, ",", sizeof(fstring)))
+		while(next_token(&extra_data, name, "\n", sizeof(fstring))) {
+			p = strchr(name, '\\');
+			if (p == 0) {
+				d_printf("Got invalid response: %s\n",
+					 extra_data);
+				return False;
+			}
+			*p = 0;
 			d_printf("%s\n", name);
+		}
 
 		SAFE_FREE(response.extra_data);
 	}
@@ -312,6 +347,32 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 		 response.data.domain_info.primary ? "Yes" : "No");
 
 	d_printf("Sequence          : %d\n", response.data.domain_info.sequence_number);
+
+	return True;
+}
+
+/* Get a foreign DC's name */
+static BOOL wbinfo_getdcname(const char *domain_name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, domain_name);
+
+	/* Send request */
+
+	if (winbindd_request(WINBINDD_GETDCNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("Could not get dc name for %s\n", domain_name);
+		return False;
+	}
+
+	/* Display response */
+
+	d_printf("%s\n", response.data.dc_name);
 
 	return True;
 }
@@ -889,6 +950,8 @@ enum {
 	OPT_GET_AUTH_USER,
 	OPT_DOMAIN_NAME,
 	OPT_SEQUENCE,
+	OPT_GETDCNAME,
+	OPT_USERDOMGROUPS,
 	OPT_USERSIDS
 };
 
@@ -924,9 +987,13 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
+		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
+		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
+		  "Get a DC name for a foreign domain", "domainname" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
@@ -1079,6 +1146,13 @@ int main(int argc, char **argv)
 				goto done;
 			}
 			break;
+		case OPT_USERDOMGROUPS:
+			if (!wbinfo_get_userdomgroups(string_arg)) {
+				d_printf("Could not get user's domain groups "
+					 "for user SID %s\n", string_arg);
+				goto done;
+			}
+			break;
 		case 'a': {
 				BOOL got_error = False;
 
@@ -1115,6 +1189,9 @@ int main(int argc, char **argv)
 			break;
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
+			break;
+		case OPT_GETDCNAME:
+			wbinfo_getdcname(string_arg);
 			break;
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:

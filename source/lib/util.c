@@ -2668,6 +2668,29 @@ void name_to_fqdn(fstring fqdn, const char *name)
 	}
 }
 
+/**********************************************************************
+ Extension to talloc_get_type: Abort on type mismatch
+***********************************************************************/
+
+void *talloc_check_name_abort(const void *ptr, const char *name)
+{
+	void *result;
+
+	if (ptr == NULL)
+		return NULL;
+
+	result = talloc_check_name(ptr, name);
+	if (result != NULL)
+		return result;
+
+	DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
+		  name, talloc_get_name(ptr)));
+	smb_panic("aborting");
+	/* Keep the compiler happy */
+	return NULL;
+}
+
+
 #ifdef __INSURE__
 
 /*******************************************************************

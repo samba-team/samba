@@ -26,8 +26,9 @@
  Get information about the server and directory services
 ********************************************************************/
 
-NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				  uint16 level, DS_DOMINFO_CTR *ctr)
+NTSTATUS rpccli_ds_getprimarydominfo(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, 
+				     uint16 level, DS_DOMINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	DS_Q_GETPRIMDOMINFO q;
@@ -50,7 +51,7 @@ NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	q.level = level;
 	
 	if (!ds_io_q_getprimdominfo("", &qbuf, 0, &q) 
-	    || !rpc_api_pipe_req(cli, PI_LSARPC_DS, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) {
+	    || !rpc_api_pipe_req_int(cli, DS_GETPRIMDOMINFO, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -81,13 +82,23 @@ done:
 	return result;
 }
 
+NTSTATUS cli_ds_getprimarydominfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				  uint16 level, DS_DOMINFO_CTR *ctr)
+{
+	return rpccli_ds_getprimarydominfo(&cli->pipes[PI_LSARPC_DS], mem_ctx,
+					   level, ctr);
+}
+
+
 /********************************************************************
  Enumerate trusted domains in an AD forest
 ********************************************************************/
 
-NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				  const char *server, uint32 flags, 
-				  struct ds_domain_trust **trusts, uint32 *num_domains)
+NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx, 
+				      const char *server, uint32 flags, 
+				      struct ds_domain_trust **trusts,
+				      uint32 *num_domains)
 {
 	prs_struct qbuf, rbuf;
 	DS_Q_ENUM_DOM_TRUSTS q;
@@ -110,7 +121,7 @@ NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_ds_enum_domain_trusts( &q, server, flags );
 		
 	if (!ds_io_q_enum_domain_trusts("", &qbuf, 0, &q) 
-	    || !rpc_api_pipe_req(cli, PI_NETLOGON, DS_ENUM_DOM_TRUSTS, &qbuf, &rbuf)) {
+	    || !rpc_api_pipe_req_int(cli, DS_ENUM_DOM_TRUSTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -162,4 +173,14 @@ done:
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_ds_enum_domain_trusts(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				   const char *server, uint32 flags, 
+				   struct ds_domain_trust **trusts,
+				   uint32 *num_domains)
+{
+	return rpccli_ds_enum_domain_trusts(&cli->pipes[PI_NETLOGON], mem_ctx,
+					    server, flags, trusts,
+					    num_domains);
 }

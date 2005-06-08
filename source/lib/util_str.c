@@ -2128,3 +2128,69 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 	*num += 1;
 	return True;
 }
+
+/* Append an sprintf'ed string. Double buffer size on demand. Usable without
+ * error checking in between. The indiation that something weird happened is
+ * string==NULL */
+
+void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
+		    size_t *bufsize, const char *fmt, ...)
+{
+	va_list ap;
+	char *newstr;
+	int ret;
+	BOOL increased;
+
+	/* len<0 is an internal marker that something failed */
+	if (*len < 0)
+		goto error;
+
+	if (*string == NULL) {
+		if (*bufsize == 0)
+			*bufsize = 128;
+
+		if (mem_ctx != NULL)
+			*string = TALLOC_ARRAY(mem_ctx, char, *bufsize);
+		else
+			*string = SMB_MALLOC_ARRAY(char, *bufsize);
+
+		if (*string == NULL)
+			goto error;
+	}
+
+	va_start(ap, fmt);
+	ret = vasprintf(&newstr, fmt, ap);
+	va_end(ap);
+
+	if (ret < 0)
+		goto error;
+
+	increased = False;
+
+	while ((*len)+ret >= *bufsize) {
+		increased = True;
+		*bufsize *= 2;
+		if (*bufsize >= (1024*1024*256))
+			goto error;
+	}
+
+	if (increased) {
+		if (mem_ctx != NULL)
+			*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
+						       *bufsize);
+		else
+			*string = SMB_REALLOC_ARRAY(*string, char, *bufsize);
+
+		if (*string == NULL)
+			goto error;
+	}
+
+	StrnCpy((*string)+(*len), newstr, ret);
+	(*len) += ret;
+	free(newstr);
+	return;
+
+ error:
+	*len = -1;
+	*string = NULL;
+}
