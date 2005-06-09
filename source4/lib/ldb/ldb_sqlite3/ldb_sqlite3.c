@@ -143,10 +143,6 @@ parsetree_to_tablelist(struct ldb_module *module,
                        const struct ldb_parse_tree *t);
 
 static int
-new_attr(struct ldb_module * module,
-         char * pAttrName);
-
-static int
 msg_to_sql(struct ldb_module * module,
            const struct ldb_message * msg,
            long long eid,
@@ -156,6 +152,10 @@ static int
 new_dn(struct ldb_module * module,
        char * pDN,
        long long * pEID);
+
+static int
+new_attr(struct ldb_module * module,
+         char * pAttrName);
 
 
 /*
@@ -1172,25 +1172,6 @@ parsetree_to_tablelist(struct ldb_module *module,
 }
 
 
-static int
-new_attr(struct ldb_module * module,
-                  char * pAttrName)
-{
-	struct lsqlite3_private *   lsqlite3 = module->private_data;
-
-        /* NOTE: pAttrName is assumed to already be case-folded here! */
-        QUERY_NOROWS(lsqlite3,
-                     FALSE,
-                     "CREATE TABLE ldb_attr_%q "
-                     "("
-                     "  eid        INTEGER REFERENCES ldb_entry, "
-                     "  attr_value TEXT"
-                     ");",
-                     pAttrName);
-
-        return 0;
-}
-
 /*
  * Issue a series of SQL statements to implement the ADD/MODIFY/DELETE
  * requests in the ldb_message
@@ -1301,6 +1282,7 @@ msg_to_sql(struct ldb_module * module,
 }
 
 
+
 static int
 new_dn(struct ldb_module * module,
        char * pDN,
@@ -1323,4 +1305,23 @@ new_dn(struct ldb_module * module,
         return -1;
 }
 
+
+static int
+new_attr(struct ldb_module * module,
+                  char * pAttrName)
+{
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
+
+        /* NOTE: pAttrName is assumed to already be case-folded here! */
+        QUERY_NOROWS(lsqlite3,
+                     FALSE,
+                     "CREATE TABLE ldb_attr_%q "
+                     "("
+                     "  eid        INTEGER REFERENCES ldb_entry, "
+                     "  attr_value TEXT"
+                     ");",
+                     pAttrName);
+
+        return 0;
+}
 
