@@ -23,29 +23,8 @@ password="$3"
 domain="$4"
 shift 4
 
-testit() {
-   trap "rm -f test.$$" EXIT
-   cmdline="$*"
-   if ! $cmdline > test.$$ 2>&1; then
-       cat test.$$;
-       rm -f test.$$;
-       echo "TEST FAILED - $cmdline";
-       return 1;
-   fi
-   rm -f test.$$;
-   return 0;
-}
-
-testok() {
-    name=`basename $1`
-    failed=$2
-    if [ x"$failed" = x"0" ];then
-	echo "ALL OK ($name)";
-    else
-	echo "$failed TESTS FAILED ($name)";
-    fi
-    exit $failed
-}
+incdir=`dirname $0`
+. $incdir/test_functions.sh
 
 failed=0
 for bindoptions in connect sign seal sign,seal spnego spnego,sign spnego,seal validate padcheck bigendian bigendian,seal; do
@@ -56,8 +35,8 @@ for bindoptions in connect sign seal sign,seal spnego spnego,sign spnego,seal va
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    echo Testing $t on $transport with $bindoptions
-    testit $VALGRIND bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
+    name="$t on $transport with $bindoptions"
+    testit "$name" $VALGRIND bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
    done
  done
 done
