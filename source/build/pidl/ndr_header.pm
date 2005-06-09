@@ -120,17 +120,44 @@ sub HeaderEnum($$)
     my($name) = shift;
     my $first = 1;
 
-    pidl "\nenum $name {\n";
-    $tab_depth++;
-    foreach my $e (@{$enum->{ELEMENTS}}) {
+    if (not util::useUintEnums()) {
+    	pidl "\nenum $name {\n";
+	$tab_depth++;
+	foreach my $e (@{$enum->{ELEMENTS}}) {
  	    unless ($first) { pidl ",\n"; }
 	    $first = 0;
 	    tabs();
 	    pidl $e;
+	}
+	pidl "\n";
+	$tab_depth--;
+	pidl "}";
+    } else {
+        my $count = 0;
+	pidl "\nenum $name { __donnot_use_enum_$name=0x7FFFFFFF};\n";
+	my $with_val = 0;
+	my $without_val = 0;
+	foreach my $e (@{$enum->{ELEMENTS}}) {
+	    my $t = "$e";
+	    my $name;
+	    my $value;
+	    if ($t =~ /(.*)=(.*)/) {
+	    	$name = $1;
+	    	$value = $2;
+		$with_val = 1;
+		die ("you can't mix enum member with values and without values when using --uint-enums!")
+			unless ($without_val == 0);
+	    } else {
+	    	$name = $t;
+	    	$value = $count++;
+		$without_val = 1;
+		die ("you can't mix enum member with values and without values when using --uint-enums!")
+			unless ($with_val == 0);
+	    }
+	    pidl "#define $name ( $value )\n";
+	}
+	pidl "\n";
     }
-    pidl "\n";
-    $tab_depth--;
-    pidl "}";
 }
 
 #####################################################################
