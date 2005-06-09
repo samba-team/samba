@@ -54,6 +54,12 @@ static void usage(void)
 	exit(1);
 }
 
+static int do_compare_msg(struct ldb_message **el1,
+		struct ldb_message **el2)
+{
+	return ldb_dn_cmp((*el1)->dn, (*el2)->dn);
+}
+
 static int do_search(struct ldb_context *ldb,
 		     const char *basedn,
 		     int scope,
@@ -71,6 +77,11 @@ static int do_search(struct ldb_context *ldb,
 	}
 
 	printf("# returned %d records\n", ret);
+
+	if (sort_attribs) {
+		qsort(msgs, ret, sizeof(struct ldb_message *),
+				(comparison_fn_t)do_compare_msg);
+	}
 
 	for (i=0;i<ret;i++) {
 		struct ldb_ldif ldif;
@@ -116,7 +127,7 @@ static int do_search(struct ldb_context *ldb,
 	ldb_url = getenv("LDB_URL");
 
 	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "b:H:s:o:hi")) != EOF) {
+	while ((opt = getopt(argc, argv, "b:H:s:o:hiS")) != EOF) {
 		switch (opt) {
 		case 'b':
 			basedn = optarg;
