@@ -1900,7 +1900,7 @@ ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
 /*******************************************************************
  An aio_cancel wrapper that will deal with 64-bit sizes.
 ********************************************************************/
-                                                                                                                                           
+
 int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_CANCEL64)
@@ -1913,7 +1913,40 @@ int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
 #endif
 }
 
+/*******************************************************************
+ An aio_error wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_ERROR64)
+        return aio_error64(aiocb);
+#elif defined(HAVE_AIO_ERROR)
+        return aio_error(aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_fsync wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_FSYNC64)
+        return aio_fsync64(op, aiocb);
+#elif defined(HAVE_AIO_FSYNC)
+        return aio_fsync64(op, aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
 #else /* !WITH_AIO */
+
 int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
 {
 	errno = ENOSYS;
@@ -1933,6 +1966,18 @@ ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
 }
 
 int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
 {
 	errno = ENOSYS;
 	return -1;

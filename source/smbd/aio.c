@@ -248,7 +248,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
 
-	if (sys_aio_read(a) == -1) {
+	if (SMB_VFS_AIO_READ(fsp,a) == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. Error %s\n",
 			strerror(errno) ));
 		delete_aio_ex(aio_ex);
@@ -326,8 +326,8 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
 
-	if (sys_aio_write(a) == -1) {
-		DEBUG(3,("schedule_aio_read_and_X: aio_write failed. Error %s\n",
+	if (SMB_VFS_AIO_WRITE(fsp,a) == -1) {
+		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. Error %s\n",
 			strerror(errno) ));
 		/* Replace global InBuf as we're going to do a normal write. */
 		set_InBuffer(aio_ex->inbuf);
@@ -356,7 +356,7 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
 	char *data = smb_buf(outbuf);
-	ssize_t nread = sys_aio_return(&aio_ex->acb);
+	ssize_t nread;
 
 	if (aio_ex->fsp == NULL) {
 		/* file was closed whilst I/O was outstanding. Just ignore. */
@@ -365,6 +365,7 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 		return;
 	}
 
+	nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 	if (nread < 0) {
 		/* We're relying here on the fact that if the fd is
 		   closed then the aio will complete and aio_return
@@ -411,8 +412,8 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 static void handle_aio_write_complete(struct aio_extra *aio_ex)
 {
 	char *outbuf = aio_ex->outbuf;
-	ssize_t nwritten = sys_aio_return(&aio_ex->acb);
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	ssize_t nwritten;
 
 	if (aio_ex->fsp == NULL) {
 		/* file was closed whilst I/O was outstanding. Just ignore. */
@@ -420,6 +421,8 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 		srv_cancel_sign_response(aio_ex->mid);
 		return;
 	}
+
+	nwritten = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
 	/* We don't need outsize or set_message here as we've already set the
 	   fixed size length when we set up the aio call. */
@@ -516,7 +519,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 		if (aio_ex->fsp == fsp) {
 			/* Don't delete the aio_extra record as we may have completed
 			   and don't yet know it. Just do the aio_cancel call and return. */
-			sys_aio_cancel(fsp->fd, &aio_ex->acb);
+			SMB_VFS_AIO_CANCEL(fsp,fsp->fd, &aio_ex->acb);
 			aio_ex->fsp = NULL; /* fsp will be closed when we return. */
 		}
 	}
