@@ -49,9 +49,19 @@ if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	ADDARGS="$ADDARGS --option=\"torture:progress=no\""
 fi
 
-rm -f $PREFIX/smbd_test.fifo
-mkfifo $PREFIX/smbd_test.fifo
-$SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < $PREFIX/smbd_test.fifo || exit 1 &
+SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
+export SMBD_TEST_FIFO
+
+rm -f $SMBD_TEST_FIFO
+mkfifo $SMBD_TEST_FIFO
+
+($SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < $SMBD_TEST_FIFO;
+ ret=$?;
+ rm -f $SMBD_TEST_FIFO;
+ echo "smbd exists with status $ret";
+ exit $ret;
+)||exit $? &
+
 sleep 2
 START=`date`
 (
@@ -62,7 +72,7 @@ START=`date`
  $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || failed=`expr $failed + 1`
  exit $failed
-) 9>$PREFIX/smbd_test.fifo
+) 9>$SMBD_TEST_FIFO
 failed=$?
 
 END=`date`
