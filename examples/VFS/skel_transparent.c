@@ -456,6 +456,36 @@ static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,in
         return SMB_VFS_NEXT_FSETXATTR(handle, fsp, fd, name, value, size, flags);
 }
 
+static int skel_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_READ(handle, fsp, aiocb);
+}
+
+static int skel_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_WRITE(handle, fsp, aiocb);
+}
+
+static ssize_t skel_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
+}
+
+static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, fd, aiocb);
+}
+
+static int skel_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_ERROR(handle, fsp, aiocb);
+}
+
+static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	return SMB_VFS_NEXT_AIO_FSYNC(handle, fsp, op, aiocb);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] = {
@@ -556,6 +586,14 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
+
+	/* AIO operations. */
+	{SMB_VFS_OP(skel_aio_read),			SMB_VFS_OP_AIO_READ,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_aio_write),			SMB_VFS_OP_AIO_WRITE,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_aio_return),			SMB_VFS_OP_AIO_RETURN,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_aio_cancel),			SMB_VFS_OP_AIO_CANCEL,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_aio_error),			SMB_VFS_OP_AIO_ERROR,			SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(skel_aio_fsync),			SMB_VFS_OP_AIO_FSYNC,			SMB_VFS_LAYER_TRANSPARENT},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
