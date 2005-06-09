@@ -183,7 +183,7 @@ static BOOL do_sigterm;
 static void termination_handler(int signum)
 {
 	do_sigterm = True;
-	sys_select_signal();
+	sys_select_signal(signum);
 }
 
 static BOOL do_sigusr2;
@@ -191,7 +191,7 @@ static BOOL do_sigusr2;
 static void sigusr2_handler(int signum)
 {
 	do_sigusr2 = True;
-	sys_select_signal();
+	sys_select_signal(SIGUSR2);
 }
 
 static BOOL do_sighup;
@@ -199,7 +199,7 @@ static BOOL do_sighup;
 static void sighup_handler(int signum)
 {
 	do_sighup = True;
-	sys_select_signal();
+	sys_select_signal(SIGHUP);
 }
 
 static BOOL do_sigchld;
@@ -207,7 +207,7 @@ static BOOL do_sigchld;
 static void sigchld_handler(int signum)
 {
 	do_sigchld = True;
-	sys_select_signal();
+	sys_select_signal(SIGCHLD);
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/

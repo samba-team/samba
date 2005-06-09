@@ -156,9 +156,17 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 		aio_pending_array[signals_received] = *(uint16 *)(info->si_value.sival_ptr);
 		signals_received++;
 	} /* Else signal is lost. */
-	sys_select_signal();
+	sys_select_signal(RT_SIGNAL_AIO);
 }
 
+/****************************************************************************
+ Is there a signal waiting ?
+*****************************************************************************/
+
+BOOL aio_finished(void)
+{
+	return (signals_received != 0);
+}
 
 /****************************************************************************
  Initialize the signal handler for aio read/write.
@@ -288,12 +296,14 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
 		DEBUG(10,("schedule_aio_write_and_X: Already have %d aio activities outstanding.\n",
 			  outstanding_aio_calls ));
+		DEBUG(10,("schedule_aio_write_and_X: failed to schedule aio_write for file %s, offset %.0f, len = %u (mid = %u)\n",
+			fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)aio_ex->mid ));
 		return False;
 	}
 
 	outbufsize = smb_len(outbuf) + 4;
 	if ((aio_ex = create_aio_ex_write(fsp, outbufsize, SVAL(inbuf,smb_mid))) == NULL) {
-		DEBUG(10,("schedule_aio_read_and_X: malloc fail.\n"));
+		DEBUG(0,("schedule_aio_write_and_X: malloc fail.\n"));
 		return False;
 	}
 
@@ -317,7 +327,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_value.sival_ptr = (void *)&aio_ex->mid;
 
 	if (sys_aio_write(a) == -1) {
-		DEBUG(0,("schedule_aio_read_and_X: aio_write failed. Error %s\n",
+		DEBUG(3,("schedule_aio_read_and_X: aio_write failed. Error %s\n",
 			strerror(errno) ));
 		/* Replace global InBuf as we're going to do a normal write. */
 		set_InBuffer(aio_ex->inbuf);
@@ -326,11 +336,13 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
-	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file %s, offset %.0f, len = %u (mid = %u)\n",
-		fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)aio_ex->mid ));
-
 	srv_defer_sign_response(aio_ex->mid);
 	outstanding_aio_calls++;
+
+	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file %s, \
+offset %.0f, len = %u (mid = %u) outstanding_aio_calls = %d\n",
+		fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)aio_ex->mid, outstanding_aio_calls ));
+
 	return True;
 }
 
@@ -457,13 +469,15 @@ BOOL process_aio_queue(void)
 {
 	int i;
 
-	if (!signals_received) {
-		return False;
-	}
-
 	BlockSignals(True, RT_SIGNAL_AIO);
 
 	DEBUG(10,("process_aio_queue: signals_received = %d\n", (int)signals_received));
+	DEBUG(10,("process_aio_queue: outstanding_aio_calls = %d\n", outstanding_aio_calls));
+
+	if (!signals_received) {
+		BlockSignals(False, RT_SIGNAL_AIO);
+		return False;
+	}
 
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
@@ -508,6 +522,11 @@ void cancel_aio_by_fsp(files_struct *fsp)
 	}
 }
 #else
+BOOL aio_finished(void)
+{
+	return False;
+}
+
 void initialize_async_io_handler(void)
 {
 }
