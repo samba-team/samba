@@ -45,6 +45,9 @@ cat >$CONFFILE<<EOF
 EOF
 
 ADDARG="-s $CONFFILE"
+if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
+	ADDARGS="$ADDARGS --option=\"torture:progress=no\""
+fi
 
 rm -f $PREFIX/smbd_test.fifo
 mkfifo $PREFIX/smbd_test.fifo
