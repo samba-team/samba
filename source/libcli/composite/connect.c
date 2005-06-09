@@ -308,7 +308,7 @@ static void request_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						     struct composite_context);
-	return state_handler(c);
+	state_handler(c);
 }
 
 /*
@@ -318,7 +318,7 @@ static void composite_handler(struct composite_context *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						     struct composite_context);
-	return state_handler(c);
+	state_handler(c);
 }
 
 /*
