@@ -39,5 +39,8 @@ struct ldb_dn {
 
 
 extern struct ldb_dn *
-ldb_explode_dn(void *mem_ctx,
-               const char *orig_dn);
+ldb_explode_dn(void * mem_ctx,
+               const char * orig_dn,
+               void * hUserData,
+               int (*case_fold_attr_fn)(void * hUserData,
+                                        char * attr));

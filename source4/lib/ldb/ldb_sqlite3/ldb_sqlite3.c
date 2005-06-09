@@ -37,6 +37,7 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/include/ldb_parse.h"
+#include "ldb/include/ldb_explode_dn.h"
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
 
 #ifndef FALSE
@@ -172,9 +173,11 @@ lsqlite3_option_find(const struct lsqlite3_private *lsqlite3,
   callback function used in call to ldb_dn_fold() for determining whether an
   attribute type requires case folding.
 */
-static int lsqlite3_case_fold_attr_required(struct ldb_module *module,
-                                           char *attr)
+static int lsqlite3_case_fold_attr_required(void * hUserData,
+                                            char *attr)
 {
+//        struct ldb_module * module = hUserData;
+        
 #warning "currently, all attributes require case folding"
         return TRUE;
 }
@@ -184,9 +187,9 @@ static int lsqlite3_case_fold_attr_required(struct ldb_module *module,
  * rename a record
  */
 static int
-lsqlite3_rename(struct ldb_module *module,
-                const char *olddn,
-                const char *newdn)
+lsqlite3_rename(struct ldb_module * module,
+                const char * olddn,
+                const char * newdn)
 {
 	/* ignore ltdb specials */
 	if (olddn[0] == '@' ||newdn[0] == '@') {
@@ -478,7 +481,7 @@ lsqlite3_search(struct ldb_module * module,
 {
 	int                         ret;
         int                         bLoop;
-        long long                   eid;
+        long long                   eid = 0;
         char *                      sql;
 	char *                      sql_constraints;
         char *                      table_list;
@@ -509,7 +512,7 @@ lsqlite3_search(struct ldb_module * module,
                                            pTail,
                                            -1,
                                            &pStmt,
-                                           &pTail)) != SQLITE_OK) {
+                                           NULL)) != SQLITE_OK) {
                         ret = -1;
                         break;
                 }
@@ -541,17 +544,24 @@ lsqlite3_search(struct ldb_module * module,
                  * Normal condition is only one time through loop.  Loop is
                  * rerun in error conditions, via "continue", above.
                  */
+                sqlite3_free(discard_const_p(char, pTail));
                 ret = 0;
                 bLoop = FALSE;
         }
 
+        if (ret != 0) {
+                sqlite3_free(discard_const_p(char, pTail));
+                return -1;
+        }
+
         /* Parse the filter expression into a tree we can work with */
 	if ((pTree = ldb_parse_tree(module->ldb, pExpression)) == NULL) {
+                sqlite3_free(discard_const_p(char, pTail));
 		return -1;
 	}
 	
         /* Allocate a temporary talloc context */
-	hTalloc = talloc_new(module);
+	hTalloc = talloc_new(module->ldb);
 
         /* Move the parse tree to our temporary context */
 	talloc_steal(hTalloc, pTree);
@@ -756,28 +766,20 @@ lsqlite3_new_dn(struct ldb_module * module,
                 char * pDN,
                 long long * pEID)
 {
-        char *          pName;
-        char *          pValue;
+        struct ldb_dn *             pExplodedDN;
+	struct ldb_context *        ldb = module->ldb;
+//	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-        /* Normalize the distinguished name */
-        pDN = ldb_dn_fold(module, pDN, lsqlite3_case_fold_attr_required);
-
-        /* Parse the DN into its constituent components */
-#warning "this simple parse of DN ignores escaped '=' and ','.  fix it."
-        while (pDN != NULL) {
-                pName = strsep(&pValue, "=");
-
-                if (pDN == NULL) {
-                        /* Attribute name without value?  Should not occur. */
-                        return -1;
-                }
-
-                pValue = pName;
-                strsep(&pValue, "=");
-
-#warning "*** lsqlite3_new_dn() not yet fully implemented ***"
+        /* Explode and normalize the DN */
+        if ((pExplodedDN =
+             ldb_explode_dn(ldb,
+                            pDN,
+                            ldb,
+                            lsqlite3_case_fold_attr_required)) == NULL) {
+                return -1;
         }
 
+#warning "*** lsqlite3_new_dn() not yet fully implemented ***"
         return -1;
 }
 
