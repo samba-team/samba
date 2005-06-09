@@ -203,7 +203,7 @@ const char *ldb_errstring(struct ldb_context *ldb);
 /*
   casefold a string (should be UTF8, but at the moment it isn't)
 */
-char *ldb_casefold(struct ldb_context *ldb, const char *s);
+char *ldb_casefold(void *mem_ctx, const char *s);
 
 /*
   ldif manipulation functions
