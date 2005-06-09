@@ -76,7 +76,7 @@ static struct dispatch_fns {
 static void sig_usr1(void)
 {
 	received_signal = 1;
-	sys_select_signal();
+	sys_select_signal(SIGUSR1);
 }
 
 /****************************************************************************
