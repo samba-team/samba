@@ -8,6 +8,7 @@ testit() {
 		echo "Running test $name (level 0 stdout)"
 		echo "--==--==--==--==--==--==--==--==--==--==--"
 		date
+		echo "Testing $name"
 	else
 		echo "Testing $name"
 	fi
@@ -27,6 +28,7 @@ testit() {
 	fi
 	rm -f test.$$;
 	if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
+		echo "ALL OK: $cmdline"
 		echo "=========================================="
 		echo "TEST PASSED: $name"
 		echo "=========================================="
