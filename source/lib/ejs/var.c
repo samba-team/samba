@@ -376,7 +376,7 @@ MprVar *mprCreateProperty(MprVar *obj, const char *propertyName, MprVar *newValu
 	}
 
 	if (prop) {
-		//	FUTURE -- remove. Just for debug.
+		/* 	FUTURE -- remove. Just for debug. */
 		mprAssert(prop == 0);
 		mprLog(0, "Attempting to create property %s in object %s\n",
 			propertyName, obj->name);
@@ -1589,7 +1589,7 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 
 	switch (obj->type) {
 	case MPR_TYPE_UNDEFINED:
-		//	FUTURE -- spec says convert to "undefined"
+		/*	FUTURE -- spec says convert to "undefined" */
 		*out = mprStrdup("");
 		break;
 
@@ -1650,7 +1650,7 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 		break;
 
 	case MPR_TYPE_OBJECT:
-		//	FUTURE -- really want: [object class: name] 
+		/*	FUTURE -- really want: [object class: name] */
 		mprAllocSprintf(out, size, "[object %s]", obj->name);
 		break;
 
@@ -2127,7 +2127,7 @@ bool mprIsNan(double f)
 #if WIN
 	return _isnan(f);
 #elif VXWORKS
-	//	FUTURE
+	/*	FUTURE */
 	return (0);
 #else
 	return (f == FP_NAN);
@@ -2140,14 +2140,14 @@ bool mprIsInfinite(double f)
 #if WIN
 	return !_finite(f);
 #elif VXWORKS
-	//	FUTURE
+	/*	FUTURE */
 	return (0);
 #else
 	return (f == FP_INFINITE);
 #endif
 }
 
-#endif // BLD_FEATURE_FLOATING_POINT
+#endif /* BLD_FEATURE_FLOATING_POINT */
 /******************************************************************************/
 
 /*

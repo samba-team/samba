@@ -81,17 +81,17 @@ struct MprVar;
  *	do compile time conditional compilation on BLD_FEATURE_NUM_TYPE_ID.
  */
 typedef int MprType;
-#define MPR_TYPE_UNDEFINED 			0 	///< Undefined. No value has been set.
-#define MPR_TYPE_NULL 				1	///< Value defined to be null.
-#define MPR_TYPE_BOOL 				2	///< Boolean type.
-#define MPR_TYPE_CFUNCTION 			3	///< C function or C++ method
-#define MPR_TYPE_FLOAT 				4	///< Floating point number
-#define MPR_TYPE_INT 				5	///< Integer number
-#define MPR_TYPE_INT64 				6	///< 64-bit Integer number
-#define MPR_TYPE_OBJECT 			7	///< Object reference
-#define MPR_TYPE_FUNCTION 			8	///< JavaScript function
-#define MPR_TYPE_STRING 			9	///< String (immutable)
-#define MPR_TYPE_STRING_CFUNCTION 	10	///< C/C++ function with string args
+#define MPR_TYPE_UNDEFINED 			0 	/* Undefined. No value has been set. */
+#define MPR_TYPE_NULL 				1	/* Value defined to be null. */
+#define MPR_TYPE_BOOL 				2	/* Boolean type. */
+#define MPR_TYPE_CFUNCTION 			3	/* C function or C++ method */
+#define MPR_TYPE_FLOAT 				4	/* Floating point number */
+#define MPR_TYPE_INT 				5	/* Integer number */
+#define MPR_TYPE_INT64 				6	/* 64-bit Integer number */
+#define MPR_TYPE_OBJECT 			7	/* Object reference */
+#define MPR_TYPE_FUNCTION 			8	/* JavaScript function */
+#define MPR_TYPE_STRING 			9	/* String (immutable) */
+#define MPR_TYPE_STRING_CFUNCTION 	10	/* C/C++ function with string args */
 
 /*
  *	Create a type for the default number type
@@ -324,15 +324,15 @@ typedef struct MprVar {
  *	Define a field macro so code an use numbers in a "generic" fashion.
  */
 #if MPR_NUM_VAR == MPR_TYPE_INT || DOXYGEN
-//*	Default numeric type */
+/*	Default numeric type */
 #define mprNumber integer
 #endif
 #if MPR_NUM_VAR == MPR_TYPE_INT64
-//*	Default numeric type */
+/*	Default numeric type */
 #define mprNumber integer64
 #endif
 #if MPR_NUM_VAR == MPR_TYPE_FLOAT
-//*	Default numeric type */
+/*	Default numeric type */
 #define mprNumber floating
 #endif
 

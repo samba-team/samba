@@ -150,10 +150,10 @@ EspRequest *espCreateRequest(EspHandle webServerRequestHandle, char *uri,
 	mprCreateProperty(global, "headers", &variables[ESP_HEADERS_OBJ]);
 	mprCreateProperty(global, "request", &variables[ESP_REQUEST_OBJ]);
 
-	//
-	//	FUTURE -- could server be shared across all requests for a given host
-	//	and be made read-only.
-	//
+	/*
+	 *	FUTURE -- could server be shared across all requests for a given host
+	 *	and be made read-only.
+	 */
 	mprCreateProperty(global, "server", &variables[ESP_SERVER_OBJ]);
 
 #if BLD_FEATURE_SESSION
