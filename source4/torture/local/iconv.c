@@ -322,7 +322,9 @@ BOOL torture_local_iconv(void)
 		}
 
 		if (codepoint % 1000 == 0) {
-			printf("codepoint=%u   \r", codepoint);
+			if (!lp_parm_bool(-1, "torture", "progress", True)) {
+				printf("codepoint=%u   \r", codepoint);
+			}
 		}
 
 		ok = test_buffer(inbuf, size, "UTF-8");
@@ -332,7 +334,9 @@ BOOL torture_local_iconv(void)
 	printf("Testing 5M random UTF-16LE sequences\n");
 	for (i=0;ok && i<500000;i++) {
 		if (i % 1000 == 0) {
-			printf("i=%u              \r", i);
+			if (!lp_parm_bool(-1, "torture", "progress", True)) {
+				printf("i=%u              \r", i);
+			}
 		}
 
 		size = random() % 100;
