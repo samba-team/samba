@@ -36,7 +36,7 @@
 */
 void ndr_print_nbt_string(struct ndr_print *ndr, const char *name, const char *s)
 {
-	return ndr_print_string(ndr, name, s);
+	ndr_print_string(ndr, name, s);
 }
 
 /*
