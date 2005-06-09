@@ -2569,6 +2569,14 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
+#if 0
+	/* Enable when the AIO code is moved over. JRA. */
+	if (schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
+		END_PROFILE(SMBreadX);
+		return -1;
+	}
+#endif
+
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
@@ -2642,6 +2650,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(outbuf,smb_com,SMBwritebraw);
 	SSVALS(outbuf,smb_vwv0,-1);
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server("reply_writebraw: send_smb failed.");
   
@@ -2886,9 +2895,12 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
 
+	set_message(outbuf,6,0,True);
+  
 	/* Deal with possible LARGE_WRITEX */
-	if (large_writeX)
+	if (large_writeX) {
 		numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+	}
 
 	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
 		END_PROFILE(SMBwriteX);
@@ -2930,18 +2942,28 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	done, just a write of zero. To truncate a file,
 	use SMBwrite. */
 
-	if(numtowrite == 0)
+	if(numtowrite == 0) {
 		nwritten = 0;
-	else
+	} else {
+
+#if 0
+		/* Enable when AIO code is moved over. JRA. */
+
+		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
+					fsp,data,startpos,numtowrite)) {
+			END_PROFILE(SMBwriteX);
+			return -1;
+		}
+#endif
+
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteX);
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
-	set_message(outbuf,6,0,True);
-  
 	SSVAL(outbuf,smb_vwv2,nwritten);
 	if (large_writeX)
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
@@ -3375,6 +3397,7 @@ int reply_echo(connection_struct *conn,
 
 		smb_setlen(outbuf,outsize - 4);
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_echo: send_smb failed.");
 	}
@@ -5173,6 +5196,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		SSVAL(outbuf,smb_vwv6,nread);
 		SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_readbmpx: send_smb failed.");
 
@@ -5333,6 +5357,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	if (write_through && tcount==nwritten) {
 		/* We need to send both a primary and a secondary response */
 		smb_setlen(outbuf,outsize - 4);
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_writebmpx: send_smb failed.");
 
