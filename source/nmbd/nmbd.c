@@ -90,7 +90,7 @@ static SIG_ATOMIC_T got_sig_term;
 static void sig_term(int sig)
 {
 	got_sig_term = 1;
-	sys_select_signal();
+	sys_select_signal(SIGTERM);
 }
 
 /**************************************************************************** **
@@ -102,7 +102,7 @@ static SIG_ATOMIC_T reload_after_sighup;
 static void sig_hup(int sig)
 {
 	reload_after_sighup = 1;
-	sys_select_signal();
+	sys_select_signal(SIGHUP);
 }
 
 #if DUMP_CORE

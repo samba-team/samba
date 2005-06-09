@@ -67,7 +67,7 @@ BOOL reghook_cache_add( REGISTRY_HOOK *hook )
  Initialize the cache tree
  *********************************************************************/
 
-REGISTRY_HOOK* reghook_cache_find( char *keyname )
+REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 {
 	char *key;
 	int len;
