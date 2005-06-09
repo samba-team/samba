@@ -563,7 +563,7 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	struct winbindd_cli_state state;
 	extern BOOL override_logfile;
 
-	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, fdpair) != 0) {
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
 		DEBUG(0, ("Could not open child pipe: %s\n",
 			  strerror(errno)));
 		return False;
