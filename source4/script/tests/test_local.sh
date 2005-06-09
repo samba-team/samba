@@ -16,6 +16,10 @@ fi
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
+# the local tests doesn't need smbd
+SMBD_TEST_FIFO=""
+export SMBD_TEST_FIFO
+
 failed=0
 for t in $local_tests; do
 	name="$t"
