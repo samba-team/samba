@@ -1130,7 +1130,7 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
                 ;
         
         /* Skip protocol indicator of url  */
-        if ((p = strchr(url, ':')) == NULL) {
+        if (strncmp(url, "sqlite://", 9) != 0) {
                 return SQLITE_MISUSE;
         } else {
                 ++p;
