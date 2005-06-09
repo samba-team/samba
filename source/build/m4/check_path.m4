@@ -130,22 +130,23 @@ AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(swatdir)
 
-debug=no
-AC_ARG_ENABLE(debug, 
-[  --enable-debug          Turn on compiler debugging information (default=no)],
-    [if eval "test x$enable_debug = xyes"; then
-        debug=yes
-	CFLAGS="${CFLAGS} -g"
-    fi])
-
 developer=no
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
-    [if eval "test x$enable_developer = xyes"; then
+    [if test x$enable_developer = xyes; then
 	debug=yes
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
     	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -Wmissing-format-attribute -Wformat=2 -Wno-format-y2k -DDEBUG_PASSWORD -DDEVELOPER"
     fi])
+
+debug=no
+AC_ARG_ENABLE(debug, 
+[  --enable-debug          Turn on compiler debugging information (default=no)],
+    [if test x$enable_debug = xyes -a test x$enable_developer != xyes; then
+        debug=yes
+	CFLAGS="${CFLAGS} -g"
+    fi])
+
 
 experimental=no
 AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental features (default=no)],
