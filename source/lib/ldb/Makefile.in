@@ -113,6 +113,12 @@ manpages: $(patsubst %.xml,%,$(wildcard man/*/*.xml))
 clean:
 	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
 
+distclean:	clean
+	rm -rf autom4te.cache bin lib
+	rm -f configure config.log config.status ldb.pc \
+	    Makefile.ldb include/config.h include/config.h.in
+	rm -f Makefile
+
 etags:
 	etags */*.[ch]
 
