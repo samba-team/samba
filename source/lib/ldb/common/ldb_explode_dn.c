@@ -30,82 +30,67 @@
 } while(0)
 
 
+/*
+ * Forward declarations
+ */
 
 static char
 octet_from_hex(char * p,
-               char * ret)
-{
-        unsigned char   low_char;
-        unsigned char   high_char;
-        
-	unsigned char   low_binary;
-        unsigned char   high_binary;
-
-        if (p[0] == '\0' || p[1] == '\0') {
-                return -1;
-        }
-
-        high_char = p[0];
-        low_char = p[1];
-
-	if (high_char >= '0'  && high_char <= '9') {
-		high_binary = high_char - '0';
-	} else if (high_char >= 'A'  && high_char <= 'F') {
-		high_binary = 10 + (high_char - 'A');
-	} else if (high_char >= 'a' && high_char <= 'f') {
-		high_binary = 10 + (high_char - 'a');
-	} else {
-		return -1;
-	}
-
-	if (low_char >= '0' && low_char <= '9') {
-		low_binary = low_char - '0';
-	} else if (low_char >= 'A' && low_char <= 'F') {
-		low_binary = 10 + (low_char - 'A');
-	} else if (low_char >= 'a' && low_char <= 'f') {
-		low_binary = 10 + (low_char - 'a');
-	} else {
-		return -1;
-	}
-
-	*ret = (char) ((high_binary << 4) | low_binary);
-        return 0;
-}
+               char * ret);
 
 static char *
 parse_slash(char *p,
-            char *end)
-{
-	switch (*(p + 1)) {
-	case ',':
-	case '=':
-	case '\n':
-	case '+':
-	case '<':
-	case '>':
-	case '#':
-	case ';':
-	case '\\':
-	case '"':
-		memmove(p, p + 1, end - (p + 1));
-		return (end - 1);
+            char *end);
 
-	default:
-                if (*(p + 1) != '\0' && *(p + 2) != '\0') {
-                        if (octet_from_hex(p + 1, p) < 0) {
-                                return NULL;
-                        }
-                        memmove(p + 1, p + 3, end - (p + 3));
-                        return (end - 2);
-                } else {
-                        return NULL;
-                }
-	}
-}
 
+
+/*
+ * Public functions
+ */
+
+/*
+ * ldb_explode_dn()
+ *
+ * Explode, normalize, and optionally case-fold a DN string.  The result is a
+ * structure containing arrays of the constituent RDNs.
+ *
+ * Parameters:
+ *   mem_ctx -
+ *     talloc context on which all allocated memory is hung
+ *
+ *   orig_dn -
+ *     The distinguished name, in string format, to be exploded
+ *
+ *   hUserData -
+ *     Data handle provided by the caller, and passed back to the caller in
+ *     the case_fold_attr_fn callback function.  This handle is not otherwise
+ *     used within this function.
+ *
+ *   case_fold_attr_fn -
+ *     Pointer to a callback function which will be called to determine if a
+ *     particular attribute type (name) requires case-folding of its values.
+ *     If this function pointer is non-null, then attribute names will always
+ *     be case-folded.  Additionally, the function pointed to by
+ *     case_fold_attr_fn will be called with the data handle (hUserData) and
+ *     an attribute name as its parameters, and should return TRUE or FALSE to
+ *     indicate whether values of that attribute type should be case-folded.
+ *
+ *     If case_fold_attr_fn is null, then neither attribute names nor
+ *     attribute values will be case-folded.
+ *
+ * Returns:
+ *   Upon success, an ldb_dn structure pointer is returned, containing the
+ *   exploded DN.
+ *
+ *   If memory could not be allocated or if the DN was improperly formatted,
+ *   NULL is returned.
+ */
 struct ldb_dn *
-ldb_explode_dn(void *mem_ctx,
-               const char *orig_dn)
+ldb_explode_dn(void * mem_ctx,
+               const char * orig_dn,
+               void * hUserData,
+               int (*case_fold_attr_fn)(void * hUserData,
+                                        char * attr))
 {
 	struct ldb_dn *             dn;
 	struct ldb_dn_component *   component;
@@ -222,6 +207,14 @@ ldb_explode_dn(void *mem_ctx,
                                 goto failed;
                         }
 
+                        /* attribute names are always case-folded */
+                        p = attribute->name;
+                        if ((attribute->name =
+                             ldb_casefold(attribute, p)) == NULL) {
+                                goto failed;
+                        }
+                        talloc_free(p);
+
 			ldb_debug(mem_ctx,
                                   LDB_DEBUG_TRACE,
                                   "attribute name: [%s]\n", attribute->name);
@@ -312,6 +305,19 @@ ldb_explode_dn(void *mem_ctx,
                                             start,
                                             p - start)) == NULL) {
                                 goto failed;
+                        }
+
+                        /* see if this attribute value needs case folding */
+                        if (case_fold_attr_fn != NULL &&
+                            (* case_fold_attr_fn)(hUserData,
+                                                  attribute->name)) {
+                                /* yup, case-fold it. */
+                                p = attribute->value;
+                                if ((attribute->value =
+                                     ldb_casefold(attribute, p)) == NULL) {
+                                        goto failed;
+                                }
+                                talloc_free(p);
                         }
 
                         ldb_debug(mem_ctx,
@@ -460,3 +466,77 @@ failed:
         ldb_debug(mem_ctx, LDB_DEBUG_TRACE, "Failed to parse %s\n", orig_dn);
         return NULL;
 }
+
+
+static char
+octet_from_hex(char * p,
+               char * ret)
+{
+        unsigned char   low_char;
+        unsigned char   high_char;
+        
+	unsigned char   low_binary;
+        unsigned char   high_binary;
+
+        if (p[0] == '\0' || p[1] == '\0') {
+                return -1;
+        }
+
+        high_char = p[0];
+        low_char = p[1];
+
+	if (high_char >= '0'  && high_char <= '9') {
+		high_binary = high_char - '0';
+	} else if (high_char >= 'A'  && high_char <= 'F') {
+		high_binary = 10 + (high_char - 'A');
+	} else if (high_char >= 'a' && high_char <= 'f') {
+		high_binary = 10 + (high_char - 'a');
+	} else {
+		return -1;
+	}
+
+	if (low_char >= '0' && low_char <= '9') {
+		low_binary = low_char - '0';
+	} else if (low_char >= 'A' && low_char <= 'F') {
+		low_binary = 10 + (low_char - 'A');
+	} else if (low_char >= 'a' && low_char <= 'f') {
+		low_binary = 10 + (low_char - 'a');
+	} else {
+		return -1;
+	}
+
+	*ret = (char) ((high_binary << 4) | low_binary);
+        return 0;
+}
+
+static char *
+parse_slash(char *p,
+            char *end)
+{
+	switch (*(p + 1)) {
+	case ',':
+	case '=':
+	case '\n':
+	case '+':
+	case '<':
+	case '>':
+	case '#':
+	case ';':
+	case '\\':
+	case '"':
+		memmove(p, p + 1, end - (p + 1));
+		return (end - 1);
+
+	default:
+                if (*(p + 1) != '\0' && *(p + 2) != '\0') {
+                        if (octet_from_hex(p + 1, p) < 0) {
+                                return NULL;
+                        }
+                        memmove(p + 1, p + 3, end - (p + 3));
+                        return (end - 2);
+                } else {
+                        return NULL;
+                }
+	}
+}
+
