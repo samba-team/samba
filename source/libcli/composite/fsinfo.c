@@ -111,14 +111,14 @@ static void fsinfo_raw_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						      struct composite_context);
-	return fsinfo_state_handler(c);
+	fsinfo_state_handler(c);
 }
 
 static void fsinfo_composite_handler(struct composite_context *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						      struct composite_context);
-	return fsinfo_state_handler(c);
+	fsinfo_state_handler(c);
 }
 
 /*
