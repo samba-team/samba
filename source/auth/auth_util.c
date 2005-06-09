@@ -1161,7 +1161,15 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			&found_username, &uid, &gid, &sam_account );
 	}
 	
+	/* if we still don't have a valid unix account check for 
+	  'map to gues = bad uid' */
+	  
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
+		 	make_server_info_guest(server_info); 
+			return NT_STATUS_OK;
+		}
+		
 		DEBUG(0, ("make_server_info_info3: pdb_init_sam failed!\n"));
 		return nt_status;
 	}
