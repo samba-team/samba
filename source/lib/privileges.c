@@ -39,6 +39,7 @@ const SE_PRIV se_print_operator  = SE_PRINT_OPERATOR;
 const SE_PRIV se_add_users       = SE_ADD_USERS;
 const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
 const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
+const SE_PRIV se_restore         = SE_RESTORE;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
@@ -91,6 +92,9 @@ PRIVS privs[] = {
 	{SE_ADD_USERS,			"SeAddUsersPrivilege",			"Add users and groups to the domain"},
 	{SE_REMOTE_SHUTDOWN,		"SeRemoteShutdownPrivilege",		"Force shutdown from a remote system"},
 	{SE_DISK_OPERATOR,		"SeDiskOperatorPrivilege",		"Manage disk shares"},
+        {SE_BACKUP,                     "SeBackupPrivilege",                    "Back up files and directories"},
+        {SE_RESTORE,                    "SeRestorePrivilege",                   "Restore files and directories"},
+	{SE_TAKE_OWNERSHIP,             "SeTakeOwnershipPrivilege",             "Take ownership of files or other objects"},
 
 	{SE_END,			"",					""}
 };
@@ -636,6 +640,7 @@ NTSTATUS privilege_create_account(const DOM_SID *sid )
 /****************************************************************************
  initialise a privilege list and set the talloc context 
  ****************************************************************************/
+ 
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set)
 {
 	TALLOC_CTX *mem_ctx;

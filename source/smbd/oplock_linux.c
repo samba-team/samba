@@ -72,7 +72,7 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
 		signals_received++;
 	} /* Else signal is lost. */
-	sys_select_signal();
+	sys_select_signal(RT_SIGNAL_LEASE);
 }
 
 /****************************************************************************

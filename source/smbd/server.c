@@ -66,7 +66,7 @@ static void smbd_set_server_fd(int fd)
 static void sig_term(void)
 {
 	got_sig_term = 1;
-	sys_select_signal();
+	sys_select_signal(SIGTERM);
 }
 
 /****************************************************************************
@@ -76,7 +76,7 @@ static void sig_term(void)
 static void sig_hup(int sig)
 {
 	reload_after_sighup = 1;
-	sys_select_signal();
+	sys_select_signal(SIGHUP);
 }
 
 /****************************************************************************

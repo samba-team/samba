@@ -38,9 +38,8 @@ static VOLATILE unsigned pipe_written, pipe_read;
  nasty signal race condition.
 ********************************************************************/
 
-void sys_select_signal(void)
+void sys_select_signal(char c)
 {
-	char c = 1;
 	if (!initialised) return;
 
 	if (pipe_written > pipe_read+256) return;
@@ -111,6 +110,10 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 			   byte in the pipe and lose the signal. JRA.
 			*/
 			ret = -1;
+#if 0
+			/* JRA - we can use this to debug the signal messaging... */
+			DEBUG(0,("select got %u signal\n", (unsigned int)c));
+#endif
 			errno = EINTR;
 		} else {
 			FD_CLR(select_pipe[0], readfds2);

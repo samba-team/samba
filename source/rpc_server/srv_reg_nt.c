@@ -763,6 +763,113 @@ static int validate_reg_filename( pstring fname )
 }
 
 /*******************************************************************
+ Note: topkeypaty is the *full* path that this *key will be 
+ loaded into (including the name of the key)
+ ********************************************************************/
+
+static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
+                             REGF_NK_REC *key )
+{
+	REGF_NK_REC *subkey;
+	REGISTRY_KEY registry_key;
+	REGVAL_CTR values;
+	REGSUBKEY_CTR subkeys;
+	int i;
+	pstring path;
+	WERROR result = WERR_OK;
+	
+	/* initialize the REGISTRY_KEY structure */
+	
+	if ( !(registry_key.hook = reghook_cache_find(topkeypath)) ) {
+		DEBUG(0,("reg_load_tree: Failed to assigned a REGISTRY_HOOK to [%s]\n",
+			topkeypath ));
+		return WERR_BADFILE;
+	}
+	pstrcpy( registry_key.name, topkeypath );
+	
+	/* now start parsing the values and subkeys */
+
+	ZERO_STRUCT( values );
+	ZERO_STRUCT( subkeys );
+
+	regsubkey_ctr_init( &subkeys );
+	regval_ctr_init( &values );
+	
+	/* copy values into the REGVAL_CTR */
+	
+	for ( i=0; i<key->num_values; i++ ) {
+		regval_ctr_addvalue( &values, key->values[i].valuename, key->values[i].type,
+			key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
+	}
+
+	/* copy subkeys into the REGSUBKEY_CTR */
+	
+	key->subkey_index = 0;
+	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
+		regsubkey_ctr_addkey( &subkeys, subkey->keyname );
+	}
+	
+	/* write this key and values out */
+	
+	if ( !store_reg_values( &registry_key, &values ) 
+		|| !store_reg_keys( &registry_key, &subkeys ) )
+	{
+		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
+		result = WERR_REG_IO_FAILURE;
+	}
+	
+	regval_ctr_destroy( &values );
+	regsubkey_ctr_destroy( &subkeys );
+	
+	if ( !W_ERROR_IS_OK(result) )
+		return result;
+	
+	/* now continue to load each subkey registry tree */
+
+	key->subkey_index = 0;
+	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
+		pstr_sprintf( path, "%s%s%s", topkeypath, "\\", subkey->keyname );
+		result = reg_load_tree( regfile, path, subkey );
+		if ( !W_ERROR_IS_OK(result) )
+			break;
+	}
+
+	return result;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
+{
+	REGF_FILE *regfile;
+	REGF_NK_REC *rootkey;
+	WERROR result;
+		
+	/* open the registry file....fail if the file already exists */
+	
+	if ( !(regfile = regfio_open( fname, (O_RDONLY), 0 )) ) {
+                DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n", 
+			fname, strerror(errno) ));
+		return ( ntstatus_to_werror(map_nt_error_from_unix( errno )) );
+        }
+	
+	/* get the rootkey from the regf file and then load the tree
+	   via recursive calls */
+	   
+	if ( !(rootkey = regfio_rootkey( regfile )) )
+		return WERR_REG_FILE_INVALID;
+	
+	result = reg_load_tree( regfile, krecord->name, rootkey );
+		
+	/* cleanup */
+	
+	regfio_close( regfile );
+	
+	return result;
+}
+
+/*******************************************************************
  ********************************************************************/
 
 WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_KEY *r_u)
@@ -783,13 +890,14 @@ WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_
 	if ( (snum = validate_reg_filename( filename )) == -1 )
 		return WERR_OBJECT_PATH_INVALID;
 		
+	/* user must posses SeRestorePrivilege for this this proceed */
+	
+	if ( !user_has_privileges( p->pipe_user.nt_user_token, &se_restore ) )
+		return WERR_ACCESS_DENIED;
+		
 	DEBUG(2,("_reg_restore_key: Restoring [%s] from %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
 
-#if 0
 	return restore_registry_key( regkey, filename );
-#endif
-
-	return WERR_OK;
 }
 
 /********************************************************************

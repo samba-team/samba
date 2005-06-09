@@ -57,6 +57,9 @@ typedef struct {
 #define SE_ADD_USERS			{ { 0x00000040, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_DISK_OPERATOR		{ { 0x00000080, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_REMOTE_SHUTDOWN		{ { 0x00000100, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_BACKUP			{ { 0x00000200, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_RESTORE			{ { 0x00000400, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_TAKE_OWNERSHIP		{ { 0x00000800, 0x00000000, 0x00000000, 0x00000000 } }
 
 /* defined in lib/privilegs.c */
 
@@ -66,6 +69,7 @@ extern const SE_PRIV se_print_operator;
 extern const SE_PRIV se_add_users;
 extern const SE_PRIV se_disk_operators;
 extern const SE_PRIV se_remote_shutdown;
+extern const SE_PRIV se_restore;
 
 
 /*

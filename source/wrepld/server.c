@@ -89,7 +89,7 @@ static void sig_hup(int sig)
 	BlockSignals(True,SIGHUP);
 	DEBUG(0,("Got SIGHUP\n"));
 
-	sys_select_signal();
+	sys_select_signal(SIGHUP);
 	reload_after_sighup = True;
 	BlockSignals(False,SIGHUP);
 }
