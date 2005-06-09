@@ -36,6 +36,7 @@ use pidl::esp;
 my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
+my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
 my($opt_header);
 my($opt_template) = 0;
@@ -70,6 +71,7 @@ Options:
  --output=OUTNAME      put output in OUTNAME.*
  --parse               parse a idl file to a .pidl file
  --dump                dump a pidl file back to idl
+ --uint-enums          don't use C enums, instead use uint* types
  --header[=OUTFILE]    create a C NDR header file
  --parser[=OUTFILE]    create a C NDR parser
  --esp[=OUTFILE]       create esp wrapper file
@@ -96,22 +98,23 @@ GetOptions (
 	    'output=s' => \$opt_output,
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
+	    'uint-enums' => \$opt_uint_enums,
 	    'header:s' => \$opt_header,
 	    'server' => \$opt_server,
 	    'template' => \$opt_template,
 	    'parser:s' => \$opt_parser,
-        'client' => \$opt_client,
+	    'client' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
-		'eth-header:s' => \$opt_eth_header,
-		'esp:s' => \$opt_esp,
+	    'eth-header:s' => \$opt_eth_header,
+	    'esp:s' => \$opt_esp,
 	    'diff' => \$opt_diff,
-		'odl' => \$opt_odl,
+	    'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
 	    'swig' => \$opt_swig,
-		'dcom-proxy' => \$opt_dcom_proxy,
-		'com-header' => \$opt_com_header,
-		'quiet' => \$opt_quiet,
-		'warn-compat' => \$opt_warn_compat
+	    'dcom-proxy' => \$opt_dcom_proxy,
+	    'com-header' => \$opt_com_header,
+	    'quiet' => \$opt_quiet,
+	    'warn-compat' => \$opt_warn_compat
 	    );
 
 if ($opt_help) {
@@ -149,6 +152,10 @@ sub process_file($)
 	} else {
 		$pidl = util::LoadStructure($pidl_file);
 		defined $pidl || die "Failed to load $pidl_file - maybe you need --parse\n";
+	}
+
+	if ($opt_uint_enums) {
+		util::setUseUintEnums(1);
 	}
 
 	if ($opt_dump) {

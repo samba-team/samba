@@ -204,4 +204,15 @@ sub make_str($)
 	return "\"" . $str . "\"";
 }
 
+# a hack to build on platforms that don't like negative enum values
+my $useUintEnums = 0;
+sub setUseUintEnums($)
+{
+	$useUintEnums = shift;
+}
+sub useUintEnums()
+{
+	return $useUintEnums;
+}
+
 1;
