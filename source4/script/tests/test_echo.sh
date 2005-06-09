@@ -40,7 +40,7 @@ for transport in $transports; do
 done
 
 # separately test the print option - its v slow
-name="[print] option"
+name="print option"
 testit bin/smbtorture "$name" ncacn_np:"$server[print]" -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
 
 testok $0 $failed
