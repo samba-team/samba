@@ -494,27 +494,27 @@ static int skel_aio_read(struct vfs_handle_struct *handle, struct files_struct *
 
 static int skel_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return vfswrap_aio_read(NULL, fsp, aiocb);
+	return vfswrap_aio_write(NULL, fsp, aiocb);
 }
 
 static ssize_t skel_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return vfswrap_aio_read(NULL, fsp, aiocb);
+	return vfswrap_aio_return(NULL, fsp, aiocb);
 }
 
 static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
 {
-	return vfswrap_aio_read(NULL, fsp, fd, aiocb);
+	return vfswrap_aio_cancel(NULL, fsp, fd, aiocb);
 }
 
 static int skel_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return vfswrap_aio_read(NULL, fsp, aiocb);
+	return vfswrap_aio_error(NULL, fsp, aiocb);
 }
 
 static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
 {
-	return vfswrap_aio_read(NULL, fsp, op, aiocb);
+	return vfswrap_aio_fsync(NULL, fsp, op, aiocb);
 }
 
 /* VFS operations structure */
