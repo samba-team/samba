@@ -20,16 +20,8 @@ PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
 
-testok() {
-    name=`basename $1`
-    failed=$2
-    if [ x"$failed" = x"0" ];then
-	echo "ALL OK ($name)";
-    else
-	echo "$failed TESTS FAILED ($name)";
-    fi
-    exit $failed
-}
+incdir=`dirname $0`
+. $incdir/test_functions.sh
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
@@ -74,4 +66,4 @@ END=`date`
 echo "START: $START ($0)";
 echo "END:   $END ($0)";
 
-testok $0 $failed
+teststatus $0 $failed
