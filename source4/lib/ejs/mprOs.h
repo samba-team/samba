@@ -1,39 +1,39 @@
-///
-///	@file 	mprOs.h
-/// @brief 	Include O/S headers and smooth out per-O/S differences
-//	@copy	default
-//	
-//	Copyright (c) Mbedthis Software LLC, 2003-2005. All Rights Reserved.
-//	
-//	This software is distributed under commercial and open source licenses.
-//	You may use the GPL open source license described below or you may acquire 
-//	a commercial license from Mbedthis Software. You agree to be fully bound 
-//	by the terms of either license. Consult the LICENSE.TXT distributed with 
-//	this software for full details.
-//	
-//	This software is open source; you can redistribute it and/or modify it 
-//	under the terms of the GNU General Public License as published by the 
-//	Free Software Foundation; either version 2 of the License, or (at your 
-//	option) any later version. See the GNU General Public License for more 
-//	details at: http://www.mbedthis.com/downloads/gplLicense.html
-//	
-//	This program is distributed WITHOUT ANY WARRANTY; without even the 
-//	implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
-//	
-//	This GPL license does NOT permit incorporating this software into 
-//	proprietary programs. If you are unable to comply with the GPL, you must
-//	acquire a commercial license to use this software. Commercial licenses 
-//	for this software and support services are available from Mbedthis 
-//	Software at http://www.mbedthis.com 
-//	
-//	@end
-//////////////////////////////// Documentation /////////////////////////////////
-///
-///	This header is part of the Mbedthis Portable Runtime and aims to include
-///	all necessary O/S headers and to unify the constants and declarations 
-///	required by Mbedthis products. It can be included by C or C++ programs.
-///
-////////////////////////////////////////////////////////////////////////////////
+/*
+ *	@file 	mprOs.h
+ *  @brief 	Include O/S headers and smooth out per-O/S differences
+ *	@copy	default
+ *	
+ *	Copyright (c) Mbedthis Software LLC, 2003-2005. All Rights Reserved.
+ *	
+ *	This software is distributed under commercial and open source licenses.
+ *	You may use the GPL open source license described below or you may acquire 
+ *	a commercial license from Mbedthis Software. You agree to be fully bound 
+ *	by the terms of either license. Consult the LICENSE.TXT distributed with 
+ *	this software for full details.
+ *	
+ *	This software is open source; you can redistribute it and/or modify it 
+ *	under the terms of the GNU General Public License as published by the 
+ *	Free Software Foundation; either version 2 of the License, or (at your 
+ *	option) any later version. See the GNU General Public License for more 
+ *	details at: http://www.mbedthis.com/downloads/gplLicense.html
+ *	
+ *	This program is distributed WITHOUT ANY WARRANTY; without even the 
+ *	implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ *	
+ *	This GPL license does NOT permit incorporating this software into 
+ *	proprietary programs. If you are unable to comply with the GPL, you must
+ *	acquire a commercial license to use this software. Commercial licenses 
+ *	for this software and support services are available from Mbedthis 
+ *	Software at http://www.mbedthis.com 
+ *	
+ *	@end
+ ******************************* Documentation *********************************
+ *
+ *	This header is part of the Mbedthis Portable Runtime and aims to include
+ *	all necessary O/S headers and to unify the constants and declarations
+ *	required by Mbedthis products. It can be included by C or C++ programs.
+ *
+ ********************************************************************************/
 
 #error foo
 
@@ -44,10 +44,10 @@ blah blah;
 
 #include	"lib/ejs/config.h"
 
-////////////////////////////////// CPU Families ////////////////////////////////
-//
-//	Porters, add your CPU families here and update configure code. 
-//
+/********************************* CPU Families *********************************/
+/*
+ *	Porters, add your CPU families here and update configure code.
+ */
 #define MPR_CPU_UNKNOWN		0
 #define MPR_CPU_IX86		1
 #define MPR_CPU_PPC 		2
@@ -56,10 +56,10 @@ blah blah;
 #define MPR_CPU_ARM 		5
 #define MPR_CPU_MIPS 		6
 #define MPR_CPU_68K 		7
-#define MPR_CPU_SIMNT 		8			//	VxWorks NT simulator
-#define MPR_CPU_SIMSPARC 	9			//	VxWorks sparc simulator
+#define MPR_CPU_SIMNT 		8			/*	VxWorks NT simulator */
+#define MPR_CPU_SIMSPARC 	9			/*	VxWorks sparc simulator */
 
-////////////////////////////////// O/S Includes ////////////////////////////////
+/********************************* O/S Includes *********************************/
 
 #if LINUX || SOLARIS
 	#include	<sys/types.h>
@@ -114,7 +114,7 @@ blah blah;
 	#include	<values.h>
 #endif
 
-#endif // LINUX || SOLARIS
+#endif /* LINUX || SOLARIS */
 
 #if VXWORKS
 	#include	<vxWorks.h>
@@ -162,7 +162,7 @@ blah blah;
 	#include	<tickLib.h>
 	#include	<taskHookLib.h>
 
-#endif // VXWORKS
+#endif /* VXWORKS */
 
 #if MACOSX
 	#include	<time.h>
@@ -205,7 +205,7 @@ blah blah;
 	#include	<sys/utsname.h>
 	#include	<sys/wait.h>
 	#include	<unistd.h>
-#endif // MACOSX
+#endif /* MACOSX */
 
 #if WIN
 	#include	<ctype.h>
@@ -235,15 +235,15 @@ blah blah;
 	#include	<shlobj.h>
 	#include	<shellapi.h>
 	#include	<wincrypt.h>
-#endif // WIN 
+#endif /* WIN  */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////// General Defines ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/******************************* General Defines ********************************/
+/********************************************************************************/
 
 #define	MAXINT			INT_MAX
 #define BITS(type)		(BITSPERBYTE * (int) sizeof(type))
@@ -256,21 +256,21 @@ extern "C" {
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
 #endif
 
-//
-//	Set FD_SETSIZE to the maximum number of files (sockets) that you want to
-//	support. It is used in select.cpp.
-//
-//	#ifdef FD_SETSIZE
-//		#undef FD_SETSIZE
-//	#endif
-//	#define FD_SETSIZE		128
-//
+/*
+ *	Set FD_SETSIZE to the maximum number of files (sockets) that you want to
+ *	support. It is used in select.cpp.
+ *
+ *	#ifdef FD_SETSIZE
+ *		#undef FD_SETSIZE
+ *	#endif
+ *	#define FD_SETSIZE		128
+ */
 
-typedef char	*MprStr;					// Used for dynamic strings
+typedef char	*MprStr;					/* Used for dynamic strings */
 
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////// Linux Defines ////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/*******************************/ Linux Defines *********************************/
+/********************************************************************************/
 
 #if LINUX
 	typedef unsigned char uchar;
@@ -294,10 +294,10 @@ typedef char	*MprStr;					// Used for dynamic strings
 #endif
 
 	#if BLD_FEATURE_MALLOC
-		//
-		//	PORTERS: You will need add assembler code for your architecture here
-		//	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
-		//
+	/*
+	 *	PORTERS: You will need add assembler code for your architecture here
+	 *	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
+	 */
 		#if UNUSED
 			#define MPR_GET_RETURN(ip)	__builtin_return_address(0)
 		#else
@@ -307,16 +307,16 @@ typedef char	*MprStr;					// Used for dynamic strings
 						"=g" (ip) : \
 						: "eax")
 			#endif
-		#endif // UNUSED
-	#endif // BLD_FEATURE_MALLOC
+#endif /* UNUSED */
+#endif /* BLD_FEATURE_MALLOC */
 
 #if FUTURE
-//	#define mprGetHiResTime(x) __asm__ __volatile__ ("rdtsc" : "=A" (x))
-//	extern char *inet_ntoa_r(const struct in_addr in, char *buffer, int buflen);
+/*	#define mprGetHiResTime(x) __asm__ __volatile__ ("rdtsc" : "=A" (x)) */
+/*	extern char *inet_ntoa_r(const struct in_addr in, char *buffer, int buflen); */
 
-	//
-	//	Atomic functions
-	//
+	/* */
+	/*	Atomic functions */
+	/* */
 	typedef struct { volatile int counter; } mprAtomic_t;
 
 	#if BLD_FEATURE_MULTITHREAD
@@ -338,13 +338,13 @@ typedef char	*MprStr;					// Used for dynamic strings
 			:"=m" (v->counter)
 			:"m" (v->counter));
 	}
-#endif	// FUTURE
+#endif	/* FUTURE */
 
-#endif 	// LINUX 
+#endif 	/* LINUX  */
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////// VxWorks Defines ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/******************************* VxWorks Defines ********************************/
+/********************************************************************************/
 
 #if VXWORKS
 
@@ -389,10 +389,10 @@ typedef char	*MprStr;					// Used for dynamic strings
 	extern int sysClkRateGet();
 
 	#if BLD_FEATURE_MALLOC
-		//
-		//	PORTERS: You will need add assembler code for your architecture here
-		//	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
-		//
+	/*
+	 *	PORTERS: You will need add assembler code for your architecture here
+	 *	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
+	 */
 		#if UNUSED
 			#define MPR_GET_RETURN(ip)	__builtin_return_address(0)
 		#else
@@ -402,13 +402,13 @@ typedef char	*MprStr;					// Used for dynamic strings
 						"=g" (ip) : \
 						: "eax")
 			#endif
-		#endif // UNUSED
-	#endif // BLD_FEATURE_MALLOC
-#endif 	// VXWORKS 
+#endif /* UNUSED */
+#endif /* BLD_FEATURE_MALLOC */
+#endif 	/* VXWORKS  */
 
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////// MacOsx Defines ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/******************************** MacOsx Defines ********************************/
+/********************************************************************************/
 #if MACOSX
 	typedef unsigned long ulong;
 	typedef unsigned char uchar;
@@ -434,20 +434,20 @@ typedef char	*MprStr;					// Used for dynamic strings
 #endif
 
 	#if MPR_FEATURE_MALLOC
-	//
-	//	PORTERS: You will need add assembler code for your architecture here
-	//	only if you want to use the fast malloc (MPR_FEATURE_MALLOC)
-	//
+	/*
+	 *	PORTERS: You will need add assembler code for your architecture here
+	 *	only if you want to use the fast malloc (MPR_FEATURE_MALLOC)
+	 */
 	#define MPR_GET_RETURN(ip)	__builtin_return_address
 	#endif
 
 #if FUTURE
-//	#define mprGetHiResTime(x) __asm__ __volatile__ ("rdtsc" : "=A" (x))
-//	extern char *inet_ntoa_r(const struct in_addr in, char *buffer, int buflen);
+/*	#define mprGetHiResTime(x) __asm__ __volatile__ ("rdtsc" : "=A" (x)) */
+/*	extern char *inet_ntoa_r(const struct in_addr in, char *buffer, int buflen); */
 
-	//
-	//	Atomic functions
-	//
+	/* */
+	/*	Atomic functions */
+	/* */
 	typedef struct { volatile int counter; } mprAtomic_t;
 
 	#if MPR_FEATURE_MULTITHREAD
@@ -470,11 +470,11 @@ typedef char	*MprStr;					// Used for dynamic strings
 			:"m" (v->counter));
 	}
 #endif
-#endif // MACOSX
+#endif /* MACOSX */
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////// Windows Defines ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/******************************* Windows Defines ********************************/
+/********************************************************************************/
 
 #if WIN
 	typedef unsigned char uchar;
@@ -555,10 +555,10 @@ typedef char	*MprStr;					// Used for dynamic strings
 	#define rmdir(a) 	_rmdir(a)
 
 	#if BLD_FEATURE_MALLOC
-	//
-	//	PORTERS: You will need add assembler code for your architecture here
-	//	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
-	//
+	/*
+	 *	PORTERS: You will need add assembler code for your architecture here
+	 *	only if you want to use the fast malloc (BLD_FEATURE_MALLOC)
+	 */
 	#if MPR_CPU_IX86
 	#define MPR_GET_RETURN(ip) \
 		__asm {	mov	eax, 4[ebp] } \
@@ -576,11 +576,11 @@ typedef char	*MprStr;					// Used for dynamic strings
 	extern uid_t 	getuid(void);
 	extern uid_t 	geteuid(void);
 
-#endif // WIN 
+#endif /* WIN  */
 
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////// Solaris Defines ////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
+/*****************************/ Solaris Defines *********************************/
+/********************************************************************************/
 
 #if SOLARIS
 	typedef unsigned char uchar;
@@ -607,21 +607,21 @@ typedef char	*MprStr;					// Used for dynamic strings
 	#define MAX_FLOAT		MAXFLOAT
 #endif
 
-#endif // SOLARIS 
+#endif /* SOLARIS  */
 
-////////////////////////////////////////////////////////////////////////////////
+/********************************************************************************/
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _h_MPR_OS_HDRS 
+#endif /* _h_MPR_OS_HDRS  */
 
-//
-// Local variables:
-// tab-width: 4
-// c-basic-offset: 4
-// End:
-// vim:tw=78
-// vim600: sw=4 ts=4 fdm=marker
-// vim<600: sw=4 ts=4
-//
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim:tw=78
+ * vim600: sw=4 ts=4 fdm=marker
+ * vim<600: sw=4 ts=4
+ */
