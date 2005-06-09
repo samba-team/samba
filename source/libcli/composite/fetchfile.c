@@ -117,7 +117,7 @@ static void fetchfile_composite_handler(struct composite_context *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						     struct composite_context);
-	return fetchfile_state_handler(c);
+	fetchfile_state_handler(c);
 }
 
 struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
