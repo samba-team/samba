@@ -67,6 +67,20 @@ if test x"$samba_cv_immediate_structures" = x"yes"; then
    AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
 fi
 
+############################################
+# check if the compiler can handle negative enum values
+AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_CC_NEGATIVE_ENUM_VALUES, [
+    AC_TRY_COMPILE([
+#include <stdio.h>],
+[
+	enum negative_values { NEGATIVE_VALUE = 0xFFFFFFFF };
+],
+	SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=yes,SMB_BUILD_CC_NEGATIVE_ENUM_VALUES=no)])
+if test x"$SMB_BUILD_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
+	AC_MSG_WARN([using --unit-enums for pidl])
+	PIDL_ARGS="$PIDL_ARGS --uint-enums"
+fi
+
 AC_MSG_CHECKING([for test routines])
 AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 	    AC_MSG_RESULT(yes),

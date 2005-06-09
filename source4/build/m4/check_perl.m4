@@ -13,3 +13,6 @@ fi
 if test x"$debug" = x"yes";then
 	PERL="$PERL -W"
 fi
+
+PIDL_ARGS=""
+AC_SUBST(PIDL_ARGS)
