@@ -25,7 +25,7 @@ INIT_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_LDAP
 NOPROTO = YES
-# End MODULE libldb_tdb
+# End MODULE libldb_ldap
 ################################################
 
 ################################################
@@ -70,7 +70,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/util.o \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_debug.o \
-		lib/ldb/common/ldb_modules.o
+		lib/ldb/common/ldb_modules.o \
+		lib/ldb/common/ldb_explode_dn.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC
 NOPROTO = YES
