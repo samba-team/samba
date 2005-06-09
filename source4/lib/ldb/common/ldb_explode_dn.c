@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/include/ldb_explode_dn.h"
 
 #define LDB_PARSE_DN_INVALID(x) do {            \
@@ -33,10 +34,6 @@
 /*
  * Forward declarations
  */
-
-static char
-octet_from_hex(char * p,
-               char * ret);
 
 static char *
 parse_slash(char *p,
@@ -388,13 +385,14 @@ ldb_explode_dn(void * mem_ctx,
                 /* copy each of the attributes to the normalized component */
 		for (i = 0; i < component->attr_num; i++) {
 			if (i != 0) {
-				*dest = '+';
-				dest++;
+				*dest++ = '+';
 			}
 			src = component->attributes[i]->rdn;
 
                         /* we are guaranteed to have enough space in dest */
-                        strcpy(dest, src);
+                        size = strlen(src);
+                        strncpy(dest, src, size + 1);
+                        dest += size;
 		}
 
 		ldb_debug(mem_ctx,
@@ -449,7 +447,9 @@ ldb_explode_dn(void * mem_ctx,
 		src = dn->components[i]->component;
 
                 /* we are guaranteed to have enough space in dest */
-                strcpy(dest, src);
+                size = strlen(src);
+                strncpy(dest, src, size + 1);
+                dest += size;
 	}
 
 	ldb_debug(mem_ctx, LDB_DEBUG_TRACE, "dn: [%s]\n", dn->dn);
@@ -467,47 +467,6 @@ failed:
         return NULL;
 }
 
-
-static char
-octet_from_hex(char * p,
-               char * ret)
-{
-        unsigned char   low_char;
-        unsigned char   high_char;
-        
-	unsigned char   low_binary;
-        unsigned char   high_binary;
-
-        if (p[0] == '\0' || p[1] == '\0') {
-                return -1;
-        }
-
-        high_char = p[0];
-        low_char = p[1];
-
-	if (high_char >= '0'  && high_char <= '9') {
-		high_binary = high_char - '0';
-	} else if (high_char >= 'A'  && high_char <= 'F') {
-		high_binary = 10 + (high_char - 'A');
-	} else if (high_char >= 'a' && high_char <= 'f') {
-		high_binary = 10 + (high_char - 'a');
-	} else {
-		return -1;
-	}
-
-	if (low_char >= '0' && low_char <= '9') {
-		low_binary = low_char - '0';
-	} else if (low_char >= 'A' && low_char <= 'F') {
-		low_binary = 10 + (low_char - 'A');
-	} else if (low_char >= 'a' && low_char <= 'f') {
-		low_binary = 10 + (low_char - 'a');
-	} else {
-		return -1;
-	}
-
-	*ret = (char) ((high_binary << 4) | low_binary);
-        return 0;
-}
 
 static char *
 parse_slash(char *p,
@@ -528,10 +487,11 @@ parse_slash(char *p,
 		return (end - 1);
 
 	default:
-                if (*(p + 1) != '\0' && *(p + 2) != '\0') {
-                        if (octet_from_hex(p + 1, p) < 0) {
-                                return NULL;
-                        }
+                if (isxdigit(p[1]) && isxdigit(p[2])) {
+                        int             x;
+
+                        sscanf(p + 1, "%02x", &x);
+                        *p = (char) x;
                         memmove(p + 1, p + 3, end - (p + 3));
                         return (end - 2);
                 } else {

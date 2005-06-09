@@ -56,6 +56,16 @@
         }                                                       \
     } while (0)
 
+#define QUERY_INT(lsqlite3, result_var, bRollbackOnError, sql...)       \
+    do {                                                                \
+            if (lsqlite3_query_int(lsqlite3, &result_var, sql) != 0) {  \
+                    if (bRollbackOnError) {                             \
+                            lsqlite3_query_norows(lsqlite3,             \
+                                                  "ROLLBACK;");         \
+                    }                                                   \
+                    return -1;                                          \
+            }                                                           \
+    } while (0)
 
 /*
  * lsqlite3_query_norows()
@@ -111,6 +121,94 @@ lsqlite3_query_norows(const struct lsqlite3_private *lsqlite3,
                         ret = -1;
                         break;
                 }
+
+                /* Free the virtual machine */
+                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+
+                /*
+                 * Normal condition is only one time through loop.  Loop is
+                 * rerun in error conditions, via "continue", above.
+                 */
+                ret = 0;
+                bLoop = FALSE;
+        }
+
+        /* All done with variable argument list */
+        va_end(args);
+
+        /* Free the memory we allocated for our query string */
+        sqlite3_free(p);
+
+        return ret;
+}
+
+
+/*
+ * lsqlite3_query_int()
+ *
+ * This function is used for the common case of queries that return a single
+ * integer value.
+ *
+ * NOTE: If more than one value is returned by the query, all but the first
+ * one will be ignored.
+ */
+static int
+lsqlite3_query_int(const struct lsqlite3_private * lsqlite3,
+                   long long * pRet,
+                   const char * pSql,
+                   ...)
+{
+        int             ret;
+        int             bLoop;
+        char *          p;
+        const char *    pTail;
+        sqlite3_stmt *  pStmt;
+        va_list         args;
+        
+        /* Begin access to variable argument list */
+        va_start(args, pSql);
+
+        /* Format the query */
+        if ((p = sqlite3_vmprintf(pSql, args)) == NULL) {
+                return -1;
+        }
+
+        /*
+         * Prepare and execute the SQL statement.  Loop allows retrying on
+         * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
+         * requiring retrying the operation.
+         */
+        for (bLoop = TRUE; bLoop; ) {
+
+                /* Compile the SQL statement into sqlite virtual machine */
+                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
+                                           pTail,
+                                           -1,
+                                           &pStmt,
+                                           &pTail)) != SQLITE_OK) {
+                        ret = -1;
+                        break;
+                }
+                
+                /* No rows expected, so just step through machine code once */
+                if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_ROW) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+
+                /* Get the value to be returned */
+                *pRet = sqlite3_column_int64(pStmt, 0);
 
                 /* Free the virtual machine */
                 if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
@@ -479,15 +577,11 @@ lsqlite3_search(struct ldb_module * module,
                 const char * const attrs[],
                 struct ldb_message *** res)
 {
-	int                         ret;
-        int                         bLoop;
         long long                   eid = 0;
         char *                      sql;
 	char *                      sql_constraints;
         char *                      table_list;
         char *                      hTalloc;
-        const char *                pTail;
-        sqlite3_stmt *              pStmt;
 	struct ldb_parse_tree *     pTree;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 	
@@ -495,68 +589,22 @@ lsqlite3_search(struct ldb_module * module,
 		pBaseDN = "";
 	}
 
+        /* Begin a transaction */
+        QUERY_NOROWS(lsqlite3, FALSE, "BEGIN IMMEDIATE;");
+
         /*
          * Obtain the eid of the base DN
          */
-        if ((pTail = sqlite3_mprintf("SELECT eid "
-                                     "  FROM ldb_attr_dn "
-                                     "  WHERE attr_value = %Q;",
-                                     pBaseDN)) == NULL) {
-                return -1;
-        }
-
-        for (bLoop = TRUE; bLoop; ) {
-
-                /* Compile the SQL statement into sqlite virtual machine */
-                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
-                                           pTail,
-                                           -1,
-                                           &pStmt,
-                                           NULL)) != SQLITE_OK) {
-                        ret = -1;
-                        break;
-                }
-                
-                /* One row expected */
-                if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
-                        continue;
-                } else if (ret != SQLITE_ROW) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-
-                /* Retrieve the EID */
-                eid = sqlite3_column_int64(pStmt, 0);
-
-                /* Free the virtual machine */
-                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
-                        continue;
-                } else if (ret != SQLITE_OK) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-
-                /*
-                 * Normal condition is only one time through loop.  Loop is
-                 * rerun in error conditions, via "continue", above.
-                 */
-                sqlite3_free(discard_const_p(char, pTail));
-                ret = 0;
-                bLoop = FALSE;
-        }
-
-        if (ret != 0) {
-                sqlite3_free(discard_const_p(char, pTail));
-                return -1;
-        }
+        QUERY_INT(lsqlite3,
+                  eid,
+                  TRUE,
+                  "SELECT eid "
+                  "  FROM ldb_attr_dn "
+                  "  WHERE attr_value = %Q;",
+                  pBaseDN);
 
         /* Parse the filter expression into a tree we can work with */
 	if ((pTree = ldb_parse_tree(module->ldb, pExpression)) == NULL) {
-                sqlite3_free(discard_const_p(char, pTail));
 		return -1;
 	}
 	
@@ -628,7 +676,12 @@ lsqlite3_search(struct ldb_module * module,
                 break;
         }
 
-	return ret;
+#warning "retrieve and return the result set of the search here"
+
+        /* End the transaction */
+        QUERY_NOROWS(lsqlite3, FALSE, "END TRANSACTION;");
+
+	return 0;
 }
 
 
@@ -830,12 +883,6 @@ static int
 lsqlite3_modify(struct ldb_module *module,
                 const struct ldb_message *msg)
 {
-        int                         ret;
-        int                         bLoop;
-        char *                      p;
-        const char *                pTail;
-        long long                   eid;
-        sqlite3_stmt *              pStmt;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
 	/* ignore ltdb specials */
@@ -845,72 +892,6 @@ lsqlite3_modify(struct ldb_module *module,
 
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
-
-        /* Format the query */
-        if ((p = sqlite3_mprintf(
-                     "SELECT eid "
-                     "  FROM ldb_entry "
-                     "  WHERE dn = %Q;",
-                     ldb_dn_fold(module,
-                                 msg->dn,
-                                 lsqlite3_case_fold_attr_required))) == NULL) {
-                return -1;
-        }
-
-        /* Get the id of this DN. */
-        for (bLoop = TRUE; bLoop; ) {
-
-                /* Compile the SQL statement into sqlite virtual machine */
-                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
-                                           pTail,
-                                           -1,
-                                           &pStmt,
-                                           &pTail)) != SQLITE_OK) {
-                        ret = -1;
-                        break;
-                }
-                
-                /* One row expected */
-                if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
-                        continue;
-                } else if (ret != SQLITE_ROW) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-
-                /* Retrieve the EID */
-                eid = sqlite3_column_int64(pStmt, 0);
-
-                /* Free the virtual machine */
-                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
-                        continue;
-                } else if (ret != SQLITE_OK) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-
-                /* Modify attributes as specified */
-                if (lsqlite3_msg_to_sql(module, msg, eid, FALSE) != 0) {
-                        QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
-                        return -1;
-                }
-
-                /*
-                 * Normal condition is only one time through loop.  Loop is
-                 * rerun in error conditions, via "continue", above.
-                 */
-                ret = 0;
-                bLoop = FALSE;
-        }
-
-        if (ret != 0) {
-                QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
-                return -1;
-        }
 
         /* Everything worked.  Commit it! */
         QUERY_NOROWS(lsqlite3, TRUE, "COMMIT;");
@@ -982,10 +963,9 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
                     const char *url)
 {
         int             ret;
-        int             bNewDatabase = FALSE;
-        char *          p;
+        const char *    p;
+        long long       queryInt;
         const char *    pTail;
-        struct stat     statbuf;
         sqlite3_stmt *  stmt;
         const char *    schema =       
                 "-- ------------------------------------------------------"
@@ -1133,25 +1113,29 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
         if (strncmp(url, "sqlite://", 9) != 0) {
                 return SQLITE_MISUSE;
         } else {
-                ++p;
+                p = url + 9;
         }
                 
         /*
          * See if we'll be creating a new database, or opening an existing one
          */
-#warning "eliminate stat() here; concurrent processes could conflict"
-        if ((stat(p, &statbuf) < 0 && errno == ENOENT) ||
-            statbuf.st_size == 0) {
-
-                bNewDatabase = TRUE;
-        }
-
         /* Try to open the (possibly empty/non-existent) database */
         if ((ret = sqlite3_open(p, &lsqlite3->sqlite)) != SQLITE_OK) {
                 return ret;
         }
 
-        if (bNewDatabase) {
+        /* Begin a transaction */
+        QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
+
+        /* Determine if this is a new database */
+        QUERY_INT(lsqlite3,
+                  queryInt,
+                  TRUE,
+                  "SELECT COUNT(*) "
+                  "  FROM sqlite_master "
+                  "  WHERE type = 'table';");
+
+        if (queryInt == 0) {
                 /*
                  * Create the database schema
                  */
@@ -1174,35 +1158,26 @@ lsqlite3_initialize(struct lsqlite3_private *lsqlite3,
                 /*
                  * Ensure that the database we opened is one of ours
                  */
-                if ((ret = sqlite3_prepare(
-                             lsqlite3->sqlite,
-                             "SELECT COUNT(*) "
-                             "  FROM sqlite_master "
-                             "  WHERE type = 'table' "
-                             "    AND name IN "
-                             "      ("
-                             "        'ldb_entry', "
-                             "        'ldb_descendants', "
-                             "        'ldb_object_classes' "
-                             "      );",
-                             -1,
-                             &stmt,
-                             &pTail)) != SQLITE_OK ||
-                    (ret = sqlite3_step(stmt)) != SQLITE_ROW ||
-                    sqlite3_column_int(stmt, 0) != 3 ||
-                    (ret = sqlite3_finalize(stmt)) != SQLITE_OK ||
-
-                    (ret = sqlite3_prepare(
-                             lsqlite3->sqlite,
-                             "SELECT 1 "
-                             "  FROM ldb_info "
-                             "  WHERE database_type = 'LDB' "
-                             "    AND version = '1.0';",
-                             -1,
-                             &stmt,
-                             &pTail)) != SQLITE_OK ||
-                    (ret = sqlite3_step(stmt)) != SQLITE_ROW ||
-                    (ret = sqlite3_finalize(stmt)) != SQLITE_OK) {
+                if (lsqlite3_query_int(lsqlite3,
+                                       &queryInt,
+                                       "SELECT "
+                                       "  (SELECT COUNT(*) = 3"
+                                       "     FROM sqlite_master "
+                                       "     WHERE type = 'table' "
+                                       "       AND name IN "
+                                       "         ("
+                                       "           'ldb_entry', "
+                                       "           'ldb_descendants', "
+                                       "           'ldb_object_classes' "
+                                       "         ) "
+                                       "  ) "
+                                       "  AND "
+                                       "  (SELECT 1 "
+                                       "     FROM ldb_info "
+                                       "     WHERE database_type = 'LDB' "
+                                       "       AND version = '1.0'"
+                                       "  );") != 0 ||
+                    queryInt != 1) {
                 
                         /* It's not one that we created.  See ya! */
                         (void) sqlite3_close(lsqlite3->sqlite);
