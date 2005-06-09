@@ -82,18 +82,18 @@ extern "C" {
 #endif
 
 #if BLD_FEATURE_SQUEEZE
-///
-///	Reasonable length of a file path name to use in most cases where you know
-///	the expected file name and it is certain to be less than this limit.
-///
+/*
+ *	Reasonable length of a file path name to use in most cases where you know
+ *	the expected file name and it is certain to be less than this limit.
+ */
 #define MPR_MAX_FNAME			128
 #define MPR_MAX_STRING			512
-#define MPR_DEFAULT_HASH_SIZE	23			// Default size of hash table index 
+#define MPR_DEFAULT_HASH_SIZE	23			/* Default size of hash table index  */
 #define MPR_MAX_HEAP_SIZE 		(32 * 1024)
 #else
 #define MPR_MAX_FNAME			256
 #define MPR_MAX_STRING			4096
-#define MPR_DEFAULT_HASH_SIZE	43			// Default size of hash table index 
+#define MPR_DEFAULT_HASH_SIZE	43			/* Default size of hash table index  */
 #define MPR_MAX_HEAP_SIZE 		(64 * 1024)
 #endif
 
@@ -109,74 +109,74 @@ extern "C" {
 	#define mprAssert(C)	if (1) ; else
 #endif
 
-///
-///	Standard MPR return and error codes 
-///
-#define MPR_ERR_BASE					(-200) 				///< Error code
-#define MPR_ERR_GENERAL					(MPR_ERR_BASE - 1)	///< Error code
-#define MPR_ERR_ABORTED					(MPR_ERR_BASE - 2)	///< Error code
-#define MPR_ERR_ALREADY_EXISTS			(MPR_ERR_BASE - 3)	///< Error code
-#define MPR_ERR_BAD_ARGS				(MPR_ERR_BASE - 4)	///< Error code
-#define MPR_ERR_BAD_FORMAT				(MPR_ERR_BASE - 5)	///< Error code
-#define MPR_ERR_BAD_HANDLE				(MPR_ERR_BASE - 6)	///< Error code
-#define MPR_ERR_BAD_STATE				(MPR_ERR_BASE - 7)	///< Error code
-#define MPR_ERR_BAD_SYNTAX				(MPR_ERR_BASE - 8)	///< Error code
-#define MPR_ERR_BAD_TYPE				(MPR_ERR_BASE - 9)	///< Error code
-#define MPR_ERR_BAD_VALUE				(MPR_ERR_BASE - 10)	///< Error code
-#define MPR_ERR_BUSY					(MPR_ERR_BASE - 11)	///< Error code
-#define MPR_ERR_CANT_ACCESS				(MPR_ERR_BASE - 12)	///< Error code
-#define MPR_ERR_CANT_COMPLETE			(MPR_ERR_BASE - 13)	///< Error code
-#define MPR_ERR_CANT_CREATE				(MPR_ERR_BASE - 14)	///< Error code
-#define MPR_ERR_CANT_INITIALIZE			(MPR_ERR_BASE - 15)	///< Error code
-#define MPR_ERR_CANT_OPEN				(MPR_ERR_BASE - 16)	///< Error code
-#define MPR_ERR_CANT_READ				(MPR_ERR_BASE - 17)	///< Error code
-#define MPR_ERR_CANT_WRITE				(MPR_ERR_BASE - 18)	///< Error code
-#define MPR_ERR_DELETED					(MPR_ERR_BASE - 19)	///< Error code
-#define MPR_ERR_NETWORK					(MPR_ERR_BASE - 20)	///< Error code
-#define MPR_ERR_NOT_FOUND				(MPR_ERR_BASE - 21)	///< Error code
-#define MPR_ERR_NOT_INITIALIZED			(MPR_ERR_BASE - 22)	///< Error code
-#define MPR_ERR_NOT_READY				(MPR_ERR_BASE - 23)	///< Error code
-#define MPR_ERR_READ_ONLY				(MPR_ERR_BASE - 24)	///< Error code
-#define MPR_ERR_TIMEOUT					(MPR_ERR_BASE - 25)	///< Error code
-#define MPR_ERR_TOO_MANY				(MPR_ERR_BASE - 26)	///< Error code
-#define MPR_ERR_WONT_FIT				(MPR_ERR_BASE - 27)	///< Error code
-#define MPR_ERR_WOULD_BLOCK				(MPR_ERR_BASE - 28)	///< Error code
-#define MPR_ERR_CANT_ALLOCATE			(MPR_ERR_BASE - 29)	///< Error code
-#define MPR_ERR_MAX						(MPR_ERR_BASE - 30)	///< Error code
+/*
+ *	Standard MPR return and error codes
+ */
+#define MPR_ERR_BASE					(-200) 				/* Error code */
+#define MPR_ERR_GENERAL					(MPR_ERR_BASE - 1)	/* Error code */
+#define MPR_ERR_ABORTED					(MPR_ERR_BASE - 2)	/* Error code */
+#define MPR_ERR_ALREADY_EXISTS			(MPR_ERR_BASE - 3)	/* Error code */
+#define MPR_ERR_BAD_ARGS				(MPR_ERR_BASE - 4)	/* Error code */
+#define MPR_ERR_BAD_FORMAT				(MPR_ERR_BASE - 5)	/* Error code */
+#define MPR_ERR_BAD_HANDLE				(MPR_ERR_BASE - 6)	/* Error code */
+#define MPR_ERR_BAD_STATE				(MPR_ERR_BASE - 7)	/* Error code */
+#define MPR_ERR_BAD_SYNTAX				(MPR_ERR_BASE - 8)	/* Error code */
+#define MPR_ERR_BAD_TYPE				(MPR_ERR_BASE - 9)	/* Error code */
+#define MPR_ERR_BAD_VALUE				(MPR_ERR_BASE - 10)	/* Error code */
+#define MPR_ERR_BUSY					(MPR_ERR_BASE - 11)	/* Error code */
+#define MPR_ERR_CANT_ACCESS				(MPR_ERR_BASE - 12)	/* Error code */
+#define MPR_ERR_CANT_COMPLETE			(MPR_ERR_BASE - 13)	/* Error code */
+#define MPR_ERR_CANT_CREATE				(MPR_ERR_BASE - 14)	/* Error code */
+#define MPR_ERR_CANT_INITIALIZE			(MPR_ERR_BASE - 15)	/* Error code */
+#define MPR_ERR_CANT_OPEN				(MPR_ERR_BASE - 16)	/* Error code */
+#define MPR_ERR_CANT_READ				(MPR_ERR_BASE - 17)	/* Error code */
+#define MPR_ERR_CANT_WRITE				(MPR_ERR_BASE - 18)	/* Error code */
+#define MPR_ERR_DELETED					(MPR_ERR_BASE - 19)	/* Error code */
+#define MPR_ERR_NETWORK					(MPR_ERR_BASE - 20)	/* Error code */
+#define MPR_ERR_NOT_FOUND				(MPR_ERR_BASE - 21)	/* Error code */
+#define MPR_ERR_NOT_INITIALIZED			(MPR_ERR_BASE - 22)	/* Error code */
+#define MPR_ERR_NOT_READY				(MPR_ERR_BASE - 23)	/* Error code */
+#define MPR_ERR_READ_ONLY				(MPR_ERR_BASE - 24)	/* Error code */
+#define MPR_ERR_TIMEOUT					(MPR_ERR_BASE - 25)	/* Error code */
+#define MPR_ERR_TOO_MANY				(MPR_ERR_BASE - 26)	/* Error code */
+#define MPR_ERR_WONT_FIT				(MPR_ERR_BASE - 27)	/* Error code */
+#define MPR_ERR_WOULD_BLOCK				(MPR_ERR_BASE - 28)	/* Error code */
+#define MPR_ERR_CANT_ALLOCATE			(MPR_ERR_BASE - 29)	/* Error code */
+#define MPR_ERR_MAX						(MPR_ERR_BASE - 30)	/* Error code */
 
-//
-//	Standard error severity and trace levels. These are ored with the error 
-//	severities below. The MPR_LOG_MASK is used to extract the trace level 
-//	from a flags word. We expect most apps to run with level 2 trace.
-//
-#define	MPR_FATAL		0				///< Fatal error. Cant continue.
-#define	MPR_ERROR		1				///< Hard error
-#define MPR_WARN		2				///< Soft warning
-#define	MPR_CONFIG		2				///< Essential configuration settings 
-#define MPR_INFO		3				///< Informational only 
-#define MPR_DEBUG		4				///< Debug information 
-#define MPR_VERBOSE		9				///< Highest level of trace 
-#define MPR_LOG_MASK	0xf				///< Level mask 
+/*
+ *	Standard error severity and trace levels. These are ored with the error
+ *	severities below. The MPR_LOG_MASK is used to extract the trace level
+ *	from a flags word. We expect most apps to run with level 2 trace.
+ */
+#define	MPR_FATAL		0				/* Fatal error. Cant continue. */
+#define	MPR_ERROR		1				/* Hard error */
+#define MPR_WARN		2				/* Soft warning */
+#define	MPR_CONFIG		2				/* Essential configuration settings  */
+#define MPR_INFO		3				/* Informational only  */
+#define MPR_DEBUG		4				/* Debug information  */
+#define MPR_VERBOSE		9				/* Highest level of trace  */
+#define MPR_LOG_MASK	0xf				/* Level mask  */
 
-//
-//	Error flags. Specify where the error should be sent to. Note that the 
-//	product.xml setting "headless" will modify how errors are reported.
-//	Assert errors are trapped when in DEV mode. Otherwise ignored.
-//
-#define	MPR_TRAP		0x10			///< Assert error -- trap in debugger 
-#define	MPR_LOG			0x20			///< Log the error in the O/S event log
-#define	MPR_USER		0x40			///< Display to the user 
-#define	MPR_ALERT		0x80			///< Send a management alert 
-#define	MPR_TRACE		0x100			///< Trace
+/*
+ *	Error flags. Specify where the error should be sent to. Note that the
+ *	product.xml setting "headless" will modify how errors are reported.
+ *	Assert errors are trapped when in DEV mode. Otherwise ignored.
+ */
+#define	MPR_TRAP		0x10			/* Assert error -- trap in debugger  */
+#define	MPR_LOG			0x20			/* Log the error in the O/S event log */
+#define	MPR_USER		0x40			/* Display to the user  */
+#define	MPR_ALERT		0x80			/* Send a management alert  */
+#define	MPR_TRACE		0x100			/* Trace */
 
-//
-//	Error format flags
-//
-#define MPR_RAW			0x200			// Raw trace output
+/*
+ *	Error format flags
+ */
+#define MPR_RAW			0x200			/* Raw trace output */
 
-//
-//	Error line number information
-//
+/*
+ *	Error line number information
+ */
 #define MPR_L		__FILE__, __LINE__
 
 typedef char*			MprStr;
@@ -242,7 +242,7 @@ typedef struct {
 	error(file, line, E_BLD_FEATURE_ASSERT, T("%s"), cond)
 
 #else /* !BLD_GOAHEAD_WEBSERVER */
-//#define mprMalloc malloc
+/* #define mprMalloc malloc */
 #define mprSprintf snprintf
 #define mtVsprintf vsnprintf
 extern void		*mprMalloc(uint size);
