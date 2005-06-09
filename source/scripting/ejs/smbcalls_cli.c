@@ -24,6 +24,20 @@
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
+static struct MprVar mprTransport(struct smbcli_transport *transport)
+{
+	struct MprVar res, val;
+
+	res = mprCreateObjVar("transport", MPR_DEFAULT_HASH_SIZE);
+
+	val = mprCreateStringVar(talloc_get_name(transport), 1);
+	mprCreateProperty(&res, "name", &val);
+
+	/* TODO: Create a C pointer "value" property */
+
+	return res;
+}
+
 /* Connect to a server */
 
 static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
@@ -76,6 +90,10 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 		ejsSetReturnValue(eid, mprNTSTATUS(result));
 		return 0;
 	}
+
+	/* Return a socket object */
+
+	ejsSetReturnValue(eid, mprTransport(transport));
 
 	return 0;
 }
