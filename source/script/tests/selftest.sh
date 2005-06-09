@@ -46,7 +46,7 @@ EOF
 
 ADDARG="-s $CONFFILE"
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	ADDARGS="$ADDARGS --option=\"torture:progress=no\""
+	ADDARG="$ADDARG --option=\"torture:progress=no\""
 fi
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
@@ -70,7 +70,7 @@ START=`date`
  $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/bin/smbtorture $ADDARG ncalrpc: LOCAL-* || failed=`expr $failed + 1`
+ $SRCDIR/script/tests/test_local.sh $ADDARG || failed=`expr $failed + $?`
  exit $failed
 ) 9>$SMBD_TEST_FIFO
 failed=$?
