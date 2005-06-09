@@ -27,15 +27,15 @@
  * sertup the \PIPE\svcctl db API
  */
  
-
 #define SCVCTL_DATABASE_VERSION_V1 1
 
 /********************************************************************
 ********************************************************************/
 
-/* Seems unused -- jerry? */
-#if 0 
+#if 0 /* unused static function and static variable*/
+
 static TDB_CONTEXT *svcctl_tdb; /* used for share security descriptors */
+
 static BOOL init_svcctl_db( void )
 {
 	static pid_t local_pid;
@@ -70,6 +70,7 @@ static BOOL init_svcctl_db( void )
 
 	return True;
 }
+
 #endif
 
 /********************************************************************

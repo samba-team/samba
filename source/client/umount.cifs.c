@@ -37,7 +37,7 @@
 #include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "4"
+#define UNMOUNT_CIFS_VERSION_MINOR "5"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
 #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
@@ -93,7 +93,8 @@ static void umount_cifs_usage(void)
 	printf("\n\tman 8 umount.cifs\n");
 	printf("\nTo display the version number of the cifs umount utility:");
 	printf("\n\t%s -V\n",thisprogram);
-	printf("\nNote that invoking the umount utility on cifs mounts, can execute /sbin/umount.cifs (if it is present and -i is not specified to umount).\n");
+	printf("\nInvoking the umount utility on cifs mounts, can execute");
+	printf(" /sbin/umount.cifs (if present and umount -i is not specified.\n");
 }
 
 static int umount_check_perm(char * dir)
@@ -118,18 +119,39 @@ static int umount_check_perm(char * dir)
 	if(verboseflg)
 		printf("ioctl returned %d with errno %d %s\n",rc,errno,strerror(errno));
 
-	if(rc == ENOTTY)
-		printf("user unmounting via %s is an optional feature of the cifs filesystem driver (cifs.ko)\n\tand requires cifs.ko version 1.32 or later\n",thisprogram);
-	else if (rc > 0)
+	if(rc == ENOTTY) {
+		printf("user unmounting via %s is an optional feature of",thisprogram);
+		printf(" the cifs filesystem driver (cifs.ko)");
+		printf("\n\tand requires cifs.ko version 1.32 or later\n");
+	} else if (rc > 0)
 		printf("user unmount of %s failed with %d %s\n",dir,errno,strerror(errno));
 	close(fileid);
 
 	return rc;
 }
 
+int lock_mtab(void)
+{
+	int rc;
+	
+	rc = mknod(MOUNTED_LOCK , 0600, 0);
+	if(rc == -1)
+		printf("\ngetting lock file %s failed with %s\n",MOUNTED_LOCK,
+				strerror(errno));
+		
+	return rc;	
+	
+}
+
+void unlock_mtab(void)
+{
+	unlink(MOUNTED_LOCK);	
+}
+
 int remove_from_mtab(char * mountpoint)
 {
-	int rc = 0;
+	int rc;
+	int num_matches;
 	FILE * org_fd;
 	FILE * new_fd;
 	struct mntent * mount_entry;
@@ -139,11 +161,11 @@ int remove_from_mtab(char * mountpoint)
 
 	/* Do we first need to check if it is writable? */ 
 
-	/* BB lock_mtab - the smbumount and mount-utils package appear to lock 
-	in a different incompat. way, and it seems that mount-utils have
-	changed the way they lock a few times. We should fix this someday
-	or at least find out how the mount-utils are supposed to handle this */
-
+	if (lock_mtab()) {
+		printf("Mount table locked\n");
+		return -EACCES;
+	}
+	
 	if(verboseflg)
 		printf("attempting to remove from mtab\n");
 
@@ -151,6 +173,7 @@ int remove_from_mtab(char * mountpoint)
 
 	if(org_fd == NULL) {
 		printf("Can not open %s\n",MOUNTED);
+		unlock_mtab();
 		return -EIO;
 	}
 
@@ -158,18 +181,40 @@ int remove_from_mtab(char * mountpoint)
 	if(new_fd == NULL) {
 		printf("Can not open temp file %s", MOUNTED_TEMP);
 		endmntent(org_fd);
+		unlock_mtab();
 		return -EIO;
 	}
 
 	/* BB fix so we only remove the last entry that matches BB */
+	num_matches = 0;
+	while((mount_entry = getmntent(org_fd)) != NULL) {
+		if(strcmp(mount_entry->mnt_dir, mountpoint) == 0) {
+			num_matches++;
+		}
+	}	
+	if(verboseflg)
+		printf("%d matching entries in mount table\n", num_matches);
+		
+	/* Is there a better way to seek back to the first entry in mtab? */
+	endmntent(org_fd);
+	org_fd = setmntent(MOUNTED, "r");
+
+	if(org_fd == NULL) {
+		printf("Can not open %s\n",MOUNTED);
+		unlock_mtab();
+		return -EIO;
+	}
+	
 	while((mount_entry = getmntent(org_fd)) != NULL) {
 		if(strcmp(mount_entry->mnt_dir, mountpoint) != 0) {
 			addmntent(new_fd, mount_entry);
 		} else {
-			if(verboseflg)
-				printf("entry not copied (removed)\n");
+			if(num_matches != 1) {
+				addmntent(new_fd, mount_entry);
+				num_matches--;
+			} else if(verboseflg)
+				printf("entry not copied (ie entry is removed)\n");
 		}
-
 	}
 
 	if(verboseflg)
@@ -186,10 +231,11 @@ int remove_from_mtab(char * mountpoint)
 	if(rc < 0) {
 		printf("failure %s renaming %s to %s\n",strerror(errno),
 			MOUNTED_TEMP, MOUNTED);
+		unlock_mtab();
 		return -EIO;
 	}
 
-	/* BB unlock_mtab - unlink(MOUNTED_LOCK) */
+	unlock_mtab();
 	
 	return rc;
 }
@@ -292,7 +338,7 @@ int main(int argc, char ** argv)
 	rc = statfs(mountpoint, &statbuf);
 	
 	if(rc || (statbuf.f_type != CIFS_MAGIC_NUMBER)) {
-		printf("Wrong filesystem. This utility only unmounts cifs filesystems.\n");
+		printf("This utility only unmounts cifs filesystems.\n");
 		return -EINVAL;
 	}
 
@@ -312,7 +358,7 @@ int main(int argc, char ** argv)
 		default:
 			printf("unmount error %d = %s\n",errno,strerror(errno));
 		}
-		printf("Refer to the umount.cifs(8) manual page (e.g.man 8 umount.cifs)\n");
+		printf("Refer to the umount.cifs(8) manual page (man 8 umount.cifs)\n");
 		return -1;
 	} else {
 		if(verboseflg)
