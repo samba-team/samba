@@ -198,6 +198,14 @@ BOOL torture_nbench(void)
 	printf("Running for %d seconds with load '%s' and warmup %d secs\n", 
 	       timelimit, loadfile, warmup);
 
+	/* we need to reset SIGCHLD here as the name resolution
+	   library may have changed it. We rely on correct signals
+	   from childs in the main torture code which reaps
+	   children. This is why smbtorture BENCH-NBENCH was sometimes
+	   failing */
+	signal(SIGCHLD, SIG_DFL);
+
+
 	signal(SIGALRM, nb_alarm);
 	alarm(1);
 	torture_create_procs(run_netbench, &correct);
