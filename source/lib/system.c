@@ -1847,6 +1847,8 @@ uint32 unix_dev_minor(SMB_DEV_T dev)
 #endif
 }
 
+#if defined(WITH_AIO)
+
 /*******************************************************************
  An aio_read wrapper that will deal with 64-bit sizes.
 ********************************************************************/
@@ -1902,11 +1904,37 @@ ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
 int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_CANCEL64)
-        return aio_cancel64(aiocb);
+        return aio_cancel64(fd, aiocb);
 #elif defined(HAVE_AIO_CANCEL)
-        return aio_cancel(aiocb);
+        return aio_cancel(fd, aiocb);
 #else
 	errno = ENOSYS;
 	return -1;
 #endif
 }
+
+#else /* !WITH_AIO */
+int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_write(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif /* WITH_AIO */

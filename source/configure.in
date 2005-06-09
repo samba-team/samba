@@ -1034,8 +1034,6 @@ AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl sym
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
-AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
-AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
 AC_CHECK_HEADERS(libexc.h)
@@ -4046,6 +4044,57 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
   AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
   AC_MSG_RESULT(no)
 )
+
+#################################################
+# check for AIO support
+
+AC_MSG_CHECKING(whether to support asynchronous io)
+AC_ARG_WITH(aio-support,
+[  --with-aio-support      Include asynchronous io support (default=no)],
+[ case "$withval" in
+  yes)
+
+	case "$host_os" in
+	*)
+		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
+		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
+		aio_LIBS=$LIBS
+		LIBS="$LIBS -lrt"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <aio.h>],
+[ struct aiocb a; return aio_read(&a);],
+samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
+		LIBS=$aio_LIBS])
+		AC_CACHE_CHECK([for 64-bit asynchronous io support],samba_cv_HAVE_AIO64,[
+		aio_LIBS=$LIBS
+		LIBS="$LIBS -lrt"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <aio.h>],
+[ struct aiocb64 a; return aio_read64(&a);],
+samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
+		LIBS=$aio_LIBS])
+		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
+			AC_DEFINE(HAVE_AIOCB64,1,[Whether 64 bit aio is available])
+			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			LIBS="$LIBS -lrt"
+		elif test x"$samba_cv_HAVE_AIO" = x"yes"; then
+			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			LIBS="$LIBS -lrt"
+		fi
+            ;;
+        esac
+        ;;
+  *)
+    AC_MSG_RESULT(no)
+    AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support is available])
+    ;;
+  esac ],
+  AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
+  AC_MSG_RESULT(no)
+)
+
+AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
+AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 
 #################################################
 # check for sendfile support

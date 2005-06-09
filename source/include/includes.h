@@ -770,10 +770,14 @@ typedef int socklen_t;
  */
 
 #ifndef SMB_STRUCT_AIOCB
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64)
-#    define SMB_STRUCT_AIOCB struct aiocb64
+#  if defined(WITH_AIO)
+#    if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64)
+#      define SMB_STRUCT_AIOCB struct aiocb64
+#    else
+#      define SMB_STRUCT_AIOCB struct aiocb
+#    endif
 #  else
-#    define SMB_STRUCT_AIOCB struct aiocb
+#    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */
 #  endif
 #endif
 
