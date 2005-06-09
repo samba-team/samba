@@ -21,30 +21,8 @@ start="$4"
 shift 4
 ADDARGS="$*"
 
-testit() {
-   trap "rm -f test.$$" EXIT
-
-   cmdline="$*"
-   if ! $cmdline > test.$$; then
-       cat test.$$;
-       rm -f test.$$;
-       echo "TEST FAILED - $cmdline";
-       return 1;
-   fi
-   rm -f test.$$;
-   return 0;
-}
-
-testok() {
-    name=`basename $1`
-    failed=$2
-    if [ x"$failed" = x"0" ];then
-	echo "ALL OK ($name)";
-    else
-	echo "$failed TESTS FAILED ($name)";
-    fi
-    exit $failed
-}
+incdir=`dirname $0`
+. $incdir/test_functions.sh
 
 tests="BASE-FDPASS BASE-LOCK1 BASE-LOCK2 BASE-LOCK3 BASE-LOCK4"
 tests="$tests BASE-LOCK5 BASE-LOCK6 BASE-LOCK7 BASE-UNLINK BASE-ATTR"
@@ -67,8 +45,8 @@ for t in $tests; do
 	continue;
     fi
     start=""
-    echo Testing $t
-    testit $VALGRIND bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    name="$t"
+    testit "$name" $VALGRIND bin/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed
