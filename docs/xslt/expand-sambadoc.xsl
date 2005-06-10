@@ -444,13 +444,4 @@
 			</xsl:element>
 		</xsl:element>
 	</xsl:template>
-
-	<xsl:template match="quote">
-		<xsl:element name="quote">
-			<xsl:element name="emphasis">
-				<xsl:apply-templates/>
-			</xsl:element>
-		</xsl:element>
-	</xsl:template>
-
 </xsl:stylesheet>

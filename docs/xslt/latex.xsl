@@ -26,10 +26,21 @@
 	set       toc,title
 </xsl:param>
 
+<!-- Show real name of the link rather then user specified description -->
 <xsl:template name="link">
 	<xsl:element name="link">
 		<xsl:copy-of select="@*"/>
 	</xsl:element>
+</xsl:template>
+
+<!-- LaTeX doesn't accept verbatim stuff in titles -->
+<xsl:template match="//title/filename|//title/command|//title/parameter|//title/constant">
+  <xsl:variable name="content">
+    <xsl:apply-templates/>
+  </xsl:variable>
+  <xsl:if test="$content != ''">
+    <xsl:value-of select="$content" />
+  </xsl:if>
 </xsl:template>
 
 <xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
@@ -43,38 +54,12 @@
 <xsl:variable name="latex.use.parskip">1</xsl:variable>
 <!--<xsl:variable name="latex.use.ltxtable">1</xsl:variable>-->
 <xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
-<xsl:variable name="latex.book.varsets"></xsl:variable>
 <xsl:variable name="latex.titlepage.file"></xsl:variable>
-<!--<xsl:variable name="formal.title.placement">
-	figure not_before
-	example not_before
-	equation not_before
-	table not_before
-	procedure before
-</xsl:variable>-->
-<!--<xsl:variable name="latex.procedure.title.style"><xsl:text>\subsubsection</xsl:text></xsl:variable>-->
 <xsl:template name="latex.thead.row.entry">
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
-<xsl:variable name="latex.book.preamblestart">
-\documentclass[twoside,openright,<xsl:value-of select="$fontsize"/>pt]{xslt/latex/sambadoc}
-
-\usepackage{amsmath}%
-\usepackage{amsfonts}%
-\usepackage{amssymb}
-
-\makeindex           
-
-</xsl:variable>
+<xsl:param name="latex.documentclass">xslt/latex/sambadoc</xsl:param>
+<xsl:param name="latex.documentclass.book"><xsl:value-of select="$fontsize"/>pt,openright,twoside</xsl:param>
 <xsl:param name="latex.babel.language">english</xsl:param>
-
-<xsl:template match="//title/filename|//title/command|//title/parameter|//title/constant">
-  <xsl:variable name="content">
-    <xsl:apply-templates/>
-  </xsl:variable>
-  <xsl:if test="$content != ''">
-    <xsl:value-of select="$content" />
-  </xsl:if>
-</xsl:template>
 
 </xsl:stylesheet>
