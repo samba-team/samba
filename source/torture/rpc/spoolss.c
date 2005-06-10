@@ -778,7 +778,7 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
 
 		if (!r.out.info) {
-			printf("No form info returned");
+			printf("No form info returned\n");
 			return False;
 		}
 	}
@@ -820,7 +820,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
 
 		if (!r.out.info) {
-			printf("No forms returned");
+			printf("No forms returned\n");
 			return False;
 		}
 
@@ -979,7 +979,7 @@ static BOOL test_EnumPorts_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 
 		if (!r.out.info) {
-			printf("No ports returned");
+			printf("No ports returned\n");
 			return False;
 		}
 	}
@@ -1052,7 +1052,7 @@ static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
 
 		if (!r.out.info) {
-			printf("No job info returned");
+			printf("No job info returned\n");
 			return False;
 		}
 	}
@@ -1122,7 +1122,7 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
 
 		if (!r.out.info) {
-			printf("No jobs returned");
+			printf("No jobs returned\n");
 			return True;
 		}
 
@@ -1862,7 +1862,7 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 
 		if (!r.out.info) {
-			printf("No printers returned");
+			printf("No printers returned\n");
 			continue;
 		}
 
@@ -1988,7 +1988,7 @@ static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 		}
 
 		if (!r.out.info) {
-			printf("No printer drivers returned");
+			printf("No printer drivers returned\n");
 			break;
 		}
 	}
