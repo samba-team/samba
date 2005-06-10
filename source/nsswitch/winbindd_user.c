@@ -324,7 +324,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	
 	/* Get info for the domain */
 
-	domain = find_lookup_domain_from_name(domname);
+	domain = find_domain_from_name(domname);
 
 	if (domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s\n",
@@ -332,9 +332,9 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if ( domain->primary && lp_winbind_trusted_domains_only()) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting "
-			 "getgroups() for %s\\%s.\n", domname, username));
+	if ( strequal(domname, lp_workgroup()) && lp_winbind_trusted_domains_only() ) {
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
+			domname, username));
 		return WINBINDD_ERROR;
 	}	
 
