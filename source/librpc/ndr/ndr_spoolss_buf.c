@@ -51,6 +51,10 @@
 		__r.in.count	= r->out.count;\
 		__r.out.info	= r->out.info;\
 		NDR_CHECK(ndr_push___##fn(_ndr_info, flags, &__r)); \
+		if (*r->in.buf_size > _ndr_info->offset) {\
+			uint32_t _padding_len = *r->in.buf_size - _ndr_info->offset;\
+			NDR_CHECK(ndr_push_zero(_ndr_info, _padding_len));\
+		}\
 		_data_blob_info = ndr_push_blob(_ndr_info);\
 		_r.out.buffer	= &_data_blob_info;\
 	}\
@@ -94,6 +98,11 @@
 		_ndr_info = ndr_pull_init_blob(_r.out.buffer, ndr);\
 		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
 		_ndr_info->flags= ndr->flags;\
+		if (*r->out.buf_size != _ndr_info->data_size) {\
+			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
+				"SPOOLSS Buffer: buf_size[%u] doesn't match length of buffer[%u]",\
+				*r->out.buf_size, _ndr_info->data_size);\
+		}\
 		__r.in.level	= r->in.level;\
 		__r.in.count	= r->out.count;\
 		__r.out.info	= NULL;\
