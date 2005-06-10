@@ -23,20 +23,8 @@
 #include "includes.h"
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
-
-static struct MprVar mprTransport(struct smbcli_transport *transport)
-{
-	struct MprVar res, val;
-
-	res = mprCreateObjVar("transport", MPR_DEFAULT_HASH_SIZE);
-
-	val = mprCreateStringVar(talloc_get_name(transport), 1);
-	mprCreateProperty(&res, "name", &val);
-
-	/* TODO: Create a C pointer "value" property */
-
-	return res;
-}
+#include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 
 /* Connect to a server */
 
@@ -93,7 +81,64 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 
 	/* Return a socket object */
 
-	ejsSetReturnValue(eid, mprTransport(transport));
+	ejsSetReturnValue(eid, mprCreatePtrVar(transport, talloc_get_name(transport)));
+
+	return 0;
+}
+
+/* Perform a session setup:
+   
+     session_setup(conn, "DOMAIN\USERNAME%PASSWORD");
+     session_setup(conn, USERNAME, PASSWORD);
+     session_setup(conn, DOMAIN, USERNAME, PASSWORD);
+
+ */
+
+static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_transport *transport;
+	struct smbcli_session *session;
+	struct smb_composite_sesssetup setup;
+	struct cli_credentials *creds;
+	NTSTATUS status;
+
+	/* Argument parsing */
+
+	if (argc < 1 || argc > 3) {
+		ejsSetErrorMsg(eid, "session_setup invalid arguments");
+		return -1;
+	}
+
+	if (argv[0]->type != MPR_TYPE_PTR) {
+		ejsSetErrorMsg(eid, "first arg is not a connect handle");
+		return -1;
+	}
+
+	transport = argv[0]->ptr;
+
+	/* Do session setup */
+
+	session = smbcli_session_init(transport, transport, True);
+	if (!session) {
+		ejsSetErrorMsg(eid, "session init failed");
+		return -1;
+	}
+
+	creds = cli_credentials_init(session);
+	cli_credentials_set_anonymous(creds);
+
+	setup.in.sesskey = transport->negotiate.sesskey;
+	setup.in.capabilities = transport->negotiate.capabilities;
+	setup.in.credentials = creds;
+	setup.in.workgroup = lp_workgroup();
+
+	status = smb_composite_sesssetup(session, &setup);
+
+	session->vuid = setup.out.vuid;	
+
+	/* Return a session object */
+
+	ejsSetReturnValue(eid, mprCreatePtrVar(session, talloc_get_name(session)));
 
 	return 0;
 }
@@ -103,5 +148,6 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 */
 void smb_setup_ejs_cli(void)
 {
-	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);				
+	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "session_setup", ejs_cli_ssetup, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
