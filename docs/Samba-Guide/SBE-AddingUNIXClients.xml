@@ -768,7 +768,7 @@ aliases:        files
 		</para></listitem>
 
 		<listitem><para>
-		The Samba domain member server must be part of a Windows NT4 Domain.
+		The Samba domain member server must be part of a Windows NT4 Domain, or a Samba Domain.
 		</para></listitem>
 	</itemizedlist>
 
@@ -840,12 +840,13 @@ aliases:        files
 net rpc join -U root%not2g4et
 Joined domain MEGANET2.
 </screen>
-                This indicates that the domain join succeed.
+		This indicates that the domain join succeed.
 
 		</para></step>
 
 		<step><para>
-		<indexterm><primary>winbind</primary></indexterm><indexterm><primary>wbinfo</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>wbinfo</primary></indexterm>
 		Validate operation of <command>winbind</command> using the <command>wbinfo</command>
 		tool as follows:
 <screen>
@@ -873,13 +874,10 @@ MEGANET2+PIOps
 		This shows that domain groups have been correctly obtained also.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>NSS</primary>
-	      </indexterm><indexterm>
-		<primary>getent</primary>
-	      </indexterm><indexterm>
-		<primary>winbind</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>NSS</primary></indexterm>
+		<indexterm><primary>getent</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
 		The next step verifies that NSS is able to obtain this information
 		correctly from <command>winbind</command> also.
 <screen>
