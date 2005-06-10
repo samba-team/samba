@@ -42,6 +42,7 @@ mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
 
 cat >$CONFFILE<<EOF
 [global]
+	netbios name = LOCALHOST
 	workgroup = $DOMAIN
 	realm = $REALM
 	private dir = $PRIVATEDIR
