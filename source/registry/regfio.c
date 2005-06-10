@@ -1504,7 +1504,7 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 
 		/* allocate in multiples of REGF_ALLOC_BLOCK; make sure (size + hbin_header) fits */
 
-		alloc_size = ((size+HBIN_HEADER_REC_SIZE) / REGF_ALLOC_BLOCK ) + REGF_ALLOC_BLOCK;
+		alloc_size = (((size+HBIN_HEADER_REC_SIZE) / REGF_ALLOC_BLOCK ) + 1 ) * REGF_ALLOC_BLOCK;
 
 		if ( !(hbin = regf_hbin_allocate( file, alloc_size )) ) {
 			DEBUG(0,("find_free_space: regf_hbin_allocate() failed!\n"));
