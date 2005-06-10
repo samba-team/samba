@@ -12,6 +12,7 @@ then
 fi
 
 PREFIX=$1
+export PREFIX
 TMPDIR=$PREFIX/tmp
 LIBDIR=$PREFIX/lib
 PIDDIR=$PREFIX/pid
@@ -19,6 +20,18 @@ CONFFILE=$LIBDIR/smb.conf
 PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
+
+SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
+export SMBD_TEST_FIFO
+SMBD_TEST_LOG="$PREFIX/smbd_test.log"
+export SMBD_TEST_LOG
+
+DO_SOCKET_WRAPPER=$2
+if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
+	SOCKET_WRAPPER_DIR="$PREFIX/socket_wrapper_dir"
+	export SOCKET_WRAPPER_DIR
+	echo "SOCKET_WRAPPER_DIR=$SOCKET_WRAPPER_DIR"
+fi
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
@@ -41,7 +54,7 @@ cat >$CONFFILE<<EOF
 	path = $TMPDIR
 	read only = no
 	ntvfs handler = posix
-	posix:sharedelay = 5000
+	posix:sharedelay = 100000
 EOF
 
 ADDARG="-s $CONFFILE"
@@ -49,20 +62,8 @@ if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	ADDARG="$ADDARG --option=\"torture:progress=no\""
 fi
 
-SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
-export SMBD_TEST_FIFO
+smbd_check_or_start
 
-rm -f $SMBD_TEST_FIFO
-mkfifo $SMBD_TEST_FIFO
-
-($SRCDIR/bin/smbd -d1 -s $CONFFILE -M single -i < $SMBD_TEST_FIFO;
- ret=$?;
- rm -f $SMBD_TEST_FIFO;
- echo "smbd exists with status $ret";
- exit $ret;
-)||exit $? &
-
-sleep 2
 START=`date`
 (
  failed=0

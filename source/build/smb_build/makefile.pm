@@ -148,7 +148,7 @@ basics: idl proto_exists
 test: @DEFAULT_TEST_TARGET@
 
 test-swrap: all
-	SOCKET_WRAPPER_DIR=`pwd`/prefix-test ./script/tests/selftest.sh `pwd`/prefix-test
+	./script/tests/selftest.sh `pwd`/prefix-test SOCKET_WRAPPER
 
 test-noswrap: all
 	./script/tests/selftest.sh `pwd`/prefix-test
