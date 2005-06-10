@@ -67,13 +67,9 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
 
 	cli->session = smbcli_session_init(cli->transport, cli, True);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
-
-	mem_ctx = talloc_init("smbcli_session_setup");
-	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
@@ -83,8 +79,6 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	status = smb_composite_sesssetup(cli->session, &setup);
 
 	cli->session->vuid = setup.out.vuid;
-
-	talloc_free(mem_ctx);
 
 	return status;
 }
@@ -144,9 +138,6 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("smbcli_full_connection");
 
 	*ret_cli = NULL;
 
@@ -164,8 +155,6 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	(*ret_cli)->transport = tree->session->transport;
 	
 done:
-	talloc_free(mem_ctx);
-
 	return status;
 }
 
