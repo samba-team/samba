@@ -1,0 +1,9 @@
+<?xml version='1.0'?>
+<!DOCTYPE latexbindings SYSTEM "http://db2latex.sourceforge.net/xsl/latex.mapping.dtd">
+<latexbindings>
+	<latexmapping role="begin">
+	</latexmapping>
+	<latexmapping role="end">
+		<mapping key="glossary" text=""/>
+	</latexmapping>
+</latexbindings>

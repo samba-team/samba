@@ -40,9 +40,9 @@ help:
 	@echo " samples - Extract examples"
 	@echo " files - Extract other files"
 
-$(DOCBOOKDIR)/Samba-Guide.xml: $(filter-out Samba-Guide/index.xml,$(wildcard Samba-Guide/*.xml))
-$(DOCBOOKDIR)/Samba-HOWTO-Collection.xml: $(filter-out Samba-HOWTO-Collection/index.xml,$(wildcard Samba-HOWTO-Collection/*.xml)) Samba-HOWTO-Collection-attributions.xml
-Samba-HOWTO-Collection/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
+$(DOCBOOKDIR)/Samba3-ByExample.xml: $(filter-out Samba3-ByExample/index.xml,$(wildcard Samba3-ByExample/*.xml))
+$(DOCBOOKDIR)/Samba3-HOWTO.xml: $(filter-out Samba3-HOWTO/index.xml,$(wildcard Samba3-HOWTO/*.xml)) Samba3-HOWTO-attributions.xml
+Samba3-HOWTO/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
 $(DOCBOOKDIR)/Samba3-Developers-Guide.xml: $(filter-out Samba3-Developers-Guide/index.xml,$(wildcard Samba3-Developers-Guide/*.xml)) Samba3-Developers-Guide-attributions.xml
 $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
 
@@ -64,8 +64,8 @@ texi: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages3: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
 manpages4: $(patsubst $(MANPAGEDIR4)/%.xml,$(OUTPUTDIR)/manpages-4/%,$(MANPAGES4))
-pearson: $(PEARSONDIR)/Samba-HOWTO-Collection.xml
-pearson-verify: $(PEARSONDIR)/Samba-HOWTO-Collection.report.html
+pearson: $(PEARSONDIR)/Samba3-HOWTO.xml
+pearson-verify: $(PEARSONDIR)/Samba3-HOWTO.report.html
 plucker: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
 htmlman3: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/manpages-3/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages-3/index.html
 htmlman4: $(patsubst $(MANPAGEDIR4)/%.xml,$(HTMLDIR)/manpages-4/%.html,$(MANPAGES4)) $(HTMLDIR)/manpages-4/index.html
@@ -279,10 +279,10 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl sc
 	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 # Examples and the like
-files: Samba-HOWTO-Collection/index.xml xslt/extract-smbfiles.xsl
+files: Samba3-HOWTO/index.xml xslt/extract-smbfiles.xsl
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
-samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
+samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	mkdir -p $(EXAMPLESDIR)
 	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
@@ -290,8 +290,8 @@ samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scri
 # Archiving
 archive: pdf
 	mkdir -p $(ARCHIVEDIR)
-	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-$(DATETIME).pdf
-	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
+	cp $(PDFDIR)/Samba3-HOWTO.pdf $(ARCHIVEDIR)/TOSHARG-$(DATETIME).pdf
+	cp $(PDFDIR)/Samba3-ByExample.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
 
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl settings.xsl
