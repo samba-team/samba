@@ -20,6 +20,16 @@
 
 #include "includes.h"
 
+static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
+{
+#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
+		return FILE_ATTRIBUTE_SPARSE;
+	}
+#endif
+	return 0;
+}
+
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
@@ -140,11 +150,7 @@ uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_
 	if (S_ISDIR(sbuf->st_mode))
 		result = aDIR | (result & aRONLY);
 
-#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
-		result |= FILE_ATTRIBUTE_SPARSE;
-	}
-#endif
+	result |= set_sparse_flag(sbuf);
  
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
@@ -293,6 +299,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 
 	/* Get the DOS attributes from an EA by preference. */
 	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
+		result |= set_sparse_flag(sbuf);
 		return result;
 	}
 
