@@ -75,7 +75,7 @@ testit() {
 	smbd_check_only && SMBD_IS_UP="yes"
 	if [ x"$SMBD_IS_UP" = x"no" ];then
 		if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-			echo "SMBD is down! skipping: $name"
+			echo "SMBD is down! Skipping: $cmdline"
 			echo "=========================================="
 			echo "TEST SKIPPED: $name (reason SMBD is down)"
 			echo "=========================================="
