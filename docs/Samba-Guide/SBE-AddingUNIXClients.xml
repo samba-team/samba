@@ -465,10 +465,16 @@
 		If your implementation of <constant>nss_ldap</constant> is consistent with
 		the defaults suggested by PADL (the authors), it will be located in the
 		<filename>/etc</filename> directory. On some systems, the default location is
-		the <filename>/etc/openldap</filename> directory. Change the parameters inside
-		the file that is located on your OS so it matches <link linkend="ch9-sdmlcnf"/>.
-		To find the correct location of this file, you can obtain this from the
-		library that will be used by executing the following:
+		the <filename>/etc/openldap</filename> directory, however this file is intended
+		for use by the OpenLDAP utilities and should not really be used by the nss_ldap
+		utility since its content and structure serves the specific purpose of enabling
+		the resolution of user and group IDs via NSS.
+		</para>
+
+		<para>
+		Change the parameters inside the file that is located on your OS so it matches
+		<link linkend="ch9-sdmlcnf"/>.  To find the correct location of this file, you
+		can obtain this from the library that will be used by executing the following:
 <screen>
 &rootprompt; strings /lib/libnss_ldap* | grep ldap.conf
 /etc/ldap.conf
@@ -476,8 +482,8 @@
 		</para></step>
 
 		<step><para>
-		Configure the NSS control file so it matches the one shown
-		in <link linkend="ch9-sdmnss"/>.
+		Configure the NSS control file so it matches the one shown in
+		<link linkend="ch9-sdmnss"/>.
 		</para></step>
 
 		<step><para>
@@ -525,7 +531,9 @@ sammy:x:4321:
 		necessary to add secondary group memberships (in the group database) if the
 		user is already a member via primary group membership in the password database.
 		When using winbind, it is in fact undesirable to do this because it results in
-		doubling up of group memberships and may break winbind under certain conditions.
+		doubling up of group memberships and may cause problems with winbind under certain 
+		conditions. It is intended that these limitations with winbind will be resolved soon
+		after Samba-3.0.20 has been released.
 		</para></step>
 
 		<step><para>
@@ -546,7 +554,15 @@ ou: idmap
 &rootprompt; ldapadd -x -D "cn=Manager,dc=abmas,dc=biz" \
 		-w not24get &lt; /etc/openldap/idmap.LDIF
 </screen>
-		Samba automatically populates this LDAP directory container when it needs to.
+		</para></step>
+
+		<step><para>
+		Samba automatically populates the LDAP directory container when it needs to. To permit Samba
+		write access to the LDAP directory it is necessary to set the LDAP administrative password
+		in the <filename>secrets.tdb</filename> file as shown here:
+<screen>
+&rootprompt; smbpasswd -w not24get
+</screen>
 		</para></step>
 
 		<step><para>
@@ -616,12 +632,12 @@ Join to 'MEGANET2' failed.
 		<step><para>
 		<indexterm><primary>wbinfo</primary></indexterm>
 		Just joining the domain is not quite enough; you must now provide a privileged set
-		of credentials through which <command>winbindd</command> can interact with the ADS
+		of credentials through which <command>winbindd</command> can interact with the 
 		domain servers. Execute the following to implant the necessary credentials:
 <screen>
 &rootprompt; wbinfo --set-auth-user=Administrator%not24get
 </screen>
-		The configuration is now ready to obtain ADS domain user and group information.
+		The configuration is now ready to obtain the Samba domain user and group information.
 		</para></step>
 
 		<step><para>
@@ -735,7 +751,7 @@ aliases:        files
 	</sect2>
 
 	<sect2 id="wdcsdm">
-		<title>NT4/Samba Domain with Samba Domain Member Server: Using Winbind</title>
+		<title>NT4/Samba Domain with Samba Domain Member Server: Using NSS and Winbind</title>
 
 	<para>
 	You need to use this method for creating a Samba domain member server if any of the following conditions
@@ -756,13 +772,10 @@ aliases:        files
 		</para></listitem>
 	</itemizedlist>
 
-	<para><indexterm>
-	    <primary>Windows ADS Domain</primary>
-	  </indexterm><indexterm>
-	    <primary>Samba Domain</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Windows ADS Domain</primary></indexterm>
+	<indexterm><primary>Samba Domain</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
 	Later in the chapter, you can see how to configure a Samba domain member server for a Windows ADS domain.
 	Right now your objective is to configure a Samba server that can be a member of a Windows NT4-style
 	domain and/or does not use LDAP.
