@@ -1,7 +1,8 @@
 AC_INIT(settings.xsl.in)
 
 PAPERSIZE=""
-DUPLICATE_ULINKS=""
+ULINK_IN_FOOTNOTE="0"
+ULINK_SHOW="1"
 
 DOCROP="0"
 
@@ -11,7 +12,7 @@ AC_ARG_WITH(samba-sources,
 
 AC_ARG_ENABLE(crop,
 [ --enable-crop            Whether to use a crop template],
-[ test "$withval" && DOCROP="1" ])
+[ test "$enableval" && DOCROP="1" ])
 
 PAPERSIZE="a4paper"
 
@@ -27,13 +28,17 @@ AC_ARG_WITH(fontsize,
 
 AC_ARG_ENABLE(printable,
 [ --enable-printable       Printable output (expand ulinks, etc)],
-[ test "$withval" && DUPLICATE_ULINKS="footnote" ])
+[ if test "$enableval"; then
+ ULINK_IN_FOOTNOTE="1"
+ ULINK_SHOW="0"
+ fi ])
 
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
 AC_SUBST(PAPERSIZE)
-AC_SUBST(DUPLICATE_ULINKS)
+AC_SUBST(ULINK_IN_FOOTNOTE)
+AC_SUBST(ULINK_SHOW)
 AC_SUBST(FONTSIZE)
 AC_SUBST(DOCROP)
 AC_SUBST(SAMBASOURCEDIR)

@@ -464,3 +464,32 @@ page \thepage \space undefined}}%
 \renewcommand\listfigurename{\uppercase{List Of Figures}}
 \renewcommand\listtablename{\uppercase{List Of Tables}}
 
+\setlength{\emergencystretch}{0cm}
+\cleardoublepage
+\pagenumbering{roman}
+
+\setcounter{page}{2}
+\setcounter{totalnumber}{8}
+\setcounter{bottomnumber}{3}
+\setcounter{topnumber}{3}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+
+\usepackage[twoside,dvips]{geometry}
+
+\geometry{%
+paperwidth=7in,
+paperheight=9.25in,
+lmargin=.75in,
+rmargin=.75in,
+bmargin=.625in,
+tmargin=.625in,
+width=5.5in,
+height=7.525in, %7.3
+marginparwidth=0.35in,
+headheight=0.2in,
+headsep=.25in,
+footskip=.025in}
+
+\setlength{\headwidth}{\textwidth}
