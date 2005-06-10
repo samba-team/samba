@@ -392,12 +392,14 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 			memmove(&components[i], &components[i+1], 
 				sizeof(char *)*(num_components-i));
 			i--;
+			continue;
 		}
 		if (strcmp(components[i], "..") == 0) {
 			if (i < 1) return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			memmove(&components[i-1], &components[i+1], 
 				sizeof(char *)*(num_components-(i+1)));
 			i -= 2;
+			continue;
 		}
 	}
 
