@@ -92,6 +92,7 @@ typedef int MprType;
 #define MPR_TYPE_FUNCTION 			8	/* JavaScript function */
 #define MPR_TYPE_STRING 			9	/* String (immutable) */
 #define MPR_TYPE_STRING_CFUNCTION 	10	/* C/C++ function with string args */
+#define MPR_TYPE_PTR            	11	/* C pointer */
 
 /*
  *	Create a type for the default number type
@@ -315,6 +316,7 @@ typedef struct MprVar {
 			void		*thisPtr;
 		} cFunctionWithStrings;
 		MprStr			string;					/* Allocated string */
+		void *ptr;                              /* C pointer */
 #if !BLD_DEBUG && !LINUX && !VXWORKS
 	};
 #endif
@@ -351,6 +353,7 @@ extern MprVar	mprCreateObjVar(const char *name, int hashSize);
 extern MprVar 	mprCreateBoolVar(bool value);
 extern MprVar 	mprCreateCFunctionVar(MprCFunction fn, void *thisPtr, 
 					int flags);
+extern MprVar   mprCreatePtrVar(void *ptr, const char *name);
 #if BLD_FEATURE_FLOATING_POINT
 extern MprVar 	mprCreateFloatVar(double value);
 #endif
