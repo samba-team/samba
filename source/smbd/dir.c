@@ -42,6 +42,7 @@ struct smb_Dir {
 	char *dir_path;
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
+	unsigned int file_number;
 };
 
 struct dptr_struct {
@@ -1074,15 +1075,35 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	const char *n;
 	connection_struct *conn = dirp->conn;
 
-	SeekDir(dirp, *poffset);
+	/* Cheat to allow . and .. to be the first entries returned. */
+	if ((*poffset == 0) && (dirp->file_number < 2)) {
+		if (dirp->file_number == 0) {
+			n = ".";
+		} else {
+			n = "..";
+		}
+		dirp->file_number++;
+		return n;
+	} else {
+		/* A real offset, seek to it. */
+		SeekDir(dirp, *poffset);
+	}
+
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
 		struct name_cache_entry *e;
+		/* Ignore . and .. - we've already returned them. */
+		if (*n == '.') {
+			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				continue;
+			}
+		}
 		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
 		dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
 		e = &dirp->name_cache[dirp->name_cache_index];
 		SAFE_FREE(e->name);
 		e->name = SMB_STRDUP(n);
 		*poffset = e->offset= dirp->offset;
+		dirp->file_number++;
 		return e->name;
 	}
 	dirp->offset = -1;
@@ -1141,6 +1162,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 
 	/* Not found in the name cache. Rewind directory and start from scratch. */
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
+	dirp->file_number = 0;
 	*poffset = 0;
 	while ((entry = ReadDirName(dirp, poffset))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
