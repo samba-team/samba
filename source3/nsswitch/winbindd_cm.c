@@ -1158,9 +1158,17 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	generate_random_buffer(clnt_chal.data, 8);
 
 	server_name = talloc_asprintf(mem_ctx, "\\\\%s", domain->dcname);
-	account_name = talloc_asprintf(mem_ctx, "%s$",
-				       domain->primary ?
-				       global_myname() : domain->name);
+
+	/* if we are a DC and this is a trusted domain, then we need to use our
+	   domain name in the net_req_auth2() request */
+
+	if ( IS_DC ) {
+		account_name = talloc_asprintf( mem_ctx, "%s$", lp_workgroup() );
+	}
+	else {
+		account_name = talloc_asprintf(mem_ctx, "%s$", 
+			domain->primary ?  global_myname() : domain->name);
+	}
 
 	if ((server_name == NULL) || (account_name == NULL))
 		return NT_STATUS_NO_MEMORY;

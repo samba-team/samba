@@ -500,7 +500,7 @@ done:
  Challenge Response Authentication Protocol 
 **********************************************************************/
 
-enum winbindd_result winbindd_crap_auth(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain = NULL;
 	const char *domain_name = NULL;
