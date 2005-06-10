@@ -88,7 +88,7 @@
 	<command>groupdel</command>, and <command>groupmod</command>), the resulting UNIX/Linux group names will be subject
 	to any limits imposed by these tools. If the tool does not allow upper case characters
 	or space characters, then the creation of an MS Windows NT4/200x style group of
-	<ntgroup>Engineering Managers</ntgroup> will attempt to create an identically named
+	<literal>Engineering Managers</literal> will attempt to create an identically named
 	UNIX/Linux group, an attempt that will of course fail.
 	</para>
 
@@ -655,8 +655,8 @@ exit 0
 	<title>Script to Configure Group Mapping</title>
 
 	<para>
-		In our example we have created a UNIX/Linux group called <ntgroup>ntadmin</ntgroup>.
-		Our script will create the additional groups <ntgroup>Orks</ntgroup>, <ntgroup>Elves</ntgroup>, and <ntgroup>Gnomes</ntgroup>.
+		In our example we have created a UNIX/Linux group called <literal>ntadmin</literal>.
+		Our script will create the additional groups <literal>Orks</literal>, <literal>Elves</literal>, and <literal>Gnomes</literal>.
 		It is a good idea to save this shell script for later re-use just in case you ever need to rebuild your mapping database.
 		For the sake of convenience we elect to save this script as a file called <filename>initGroups.sh</filename>.
 		This script is given in <link linkend="set-group-map">intGroups.sh</link>.
