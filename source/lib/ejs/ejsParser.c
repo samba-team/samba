@@ -1659,6 +1659,7 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 	case MPR_TYPE_CFUNCTION:
 	case MPR_TYPE_FUNCTION:
 	case MPR_TYPE_OBJECT:
+	case MPR_TYPE_PTR:
 		mprCopyVarValue(&ep->result, mprCreateBoolVar(0), 0);
 		return 0;
 

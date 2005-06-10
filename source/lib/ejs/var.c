@@ -1182,6 +1182,21 @@ MprVar mprCreateStringCFunctionVar(MprStringCFunction fn, void *thisPtr, int fla
 	return v;
 }
 
+/*
+ * Initialize an opaque pointer.
+ */
+
+MprVar mprCreatePtrVar(void *ptr, const char *name)
+{
+	MprVar v;
+
+	memset(&v, 0x0, sizeof(v));
+	v.type = MPR_TYPE_PTR;
+	v.ptr = ptr;
+
+	return v;
+}
+
 /******************************************************************************/
 #if BLD_FEATURE_FLOATING_POINT
 /*
@@ -1396,6 +1411,10 @@ static void copyVarCore(MprVar *dest, MprVar *src, int copyDepth)
 
 	case MPR_TYPE_STRING_CFUNCTION:
 		dest->cFunctionWithStrings = src->cFunctionWithStrings;
+		break;
+
+	case MPR_TYPE_PTR:
+		dest->ptr = src->ptr;
 		break;
 
 	case MPR_TYPE_CFUNCTION:
@@ -1645,6 +1664,10 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 		mprAllocSprintf(out, size, "[C StringFunction]");
 		break;
 
+	case MPR_TYPE_PTR:
+		mprAllocSprintf(out, size, "[C Pointer: %p]", obj->ptr);
+		break;
+
 	case MPR_TYPE_FUNCTION:
 		mprAllocSprintf(out, size, "[JavaScript Function]");
 		break;
@@ -1779,6 +1802,9 @@ bool mprVarToBool(MprVar *vp)
 	case MPR_TYPE_OBJECT:
 		return 0;
 
+	case MPR_TYPE_PTR:
+		return (vp->ptr != NULL);
+
 	case MPR_TYPE_BOOL:
 		return vp->boolean;
 
@@ -1821,6 +1847,7 @@ double mprVarToFloat(MprVar *vp)
 	case MPR_TYPE_CFUNCTION:
 	case MPR_TYPE_FUNCTION:
 	case MPR_TYPE_OBJECT:
+	case MPR_TYPE_PTR:
 		return 0;
 
 	case MPR_TYPE_BOOL:
@@ -1896,6 +1923,7 @@ int64 mprVarToInteger64(MprVar *vp)
 	case MPR_TYPE_CFUNCTION:
 	case MPR_TYPE_FUNCTION:
 	case MPR_TYPE_OBJECT:
+	case MPR_TYPE_PTR:
 		return 0;
 
 	case MPR_TYPE_BOOL:
@@ -2010,6 +2038,7 @@ int mprVarToInteger(MprVar *vp)
 	case MPR_TYPE_CFUNCTION:
 	case MPR_TYPE_FUNCTION:
 	case MPR_TYPE_OBJECT:
+	case MPR_TYPE_PTR:
 		return 0;
 
 	case MPR_TYPE_BOOL:

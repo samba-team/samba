@@ -310,6 +310,7 @@ static int valueOfProc(EjsHandle eid, int argc, MprVar **argv)
 	case MPR_TYPE_OBJECT:
 	case MPR_TYPE_FUNCTION:
 	case MPR_TYPE_STRING_CFUNCTION:
+	case MPR_TYPE_PTR:
 		mprCopyVar(&ep->result, obj, MPR_SHALLOW_COPY);
 		break;
 
