@@ -27,17 +27,6 @@
 		</xsl:if>
 	</xsl:template>
 
-	<xsl:template match="translator">
-		<xsl:element name="othercredit">
-			<xsl:element name="author">
-				<xsl:apply-templates/>
-				<xsl:element name="contrib">
-					<xsl:text>Translation to </xsl:text><xsl:value-of select="@lang"/>
-				</xsl:element>
-			</xsl:element>
-		</xsl:element>
-	</xsl:template>
-
 	<xsl:template match="reference/refentry">
 		<xsl:element name="section">
 			<xsl:attribute name="id">
@@ -45,9 +34,6 @@
 			</xsl:attribute>
 			<xsl:element name="title">
 				<xsl:value-of select="refmeta/refentrytitle"/>
-				<!--			<xsl:text> (</xsl:text>
-				<xsl:value-of select="refnamediv/refpurpose"/>
-				<xsl:text>)</xsl:text>-->
 			</xsl:element>
 			<xsl:apply-templates/>
 		</xsl:element>
@@ -155,13 +141,6 @@
 				</xsl:element>
 			</xsl:otherwise>
 		</xsl:choose>
-	</xsl:template>
-
-	<!-- FIXME: Needs extension sometime -->
-	<xsl:template match="ntgroup|ntuser">
-		<xsl:element name="emphasis">
-			<xsl:apply-templates/>
-		</xsl:element>
 	</xsl:template>
 
 	<xsl:template match="smbconfexample">
@@ -464,35 +443,6 @@
 				<xsl:copy-of select="$examples"/> <xsl:text>&#10;</xsl:text>     
 			</xsl:element>
 		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="ulink">
-		<xsl:element name="ulink">
-			<xsl:attribute name="url">
-				<xsl:value-of select="@url"/>
-			</xsl:attribute>
-
-			<xsl:apply-templates/>
-			<xsl:if test="contains(@url,'http://') or contains(@url,'ftp://')">
-				<xsl:if test="$duplicate_ulinks='brackets'">
-					<xsl:text> (</xsl:text>
-					<xsl:value-of select="@url"/>
-					<xsl:text>)</xsl:text>
-				</xsl:if>
-				<xsl:if test="$duplicate_ulinks='footnote'">
-					<xsl:element name="footnote">
-						<xsl:element name="para">
-							<xsl:value-of select="@url"/>
-						</xsl:element>
-					</xsl:element>
-				</xsl:if>
-			</xsl:if>
-		</xsl:element>
-	</xsl:template>
-
-	<!-- Just ignore these -->
-	<xsl:template match="smbfile">
-		<xsl:apply-templates/>
 	</xsl:template>
 
 	<xsl:template match="quote">

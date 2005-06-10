@@ -4,6 +4,7 @@
 
 <xsl:param name="papersize"><xsl:text>@PAPERSIZE@</xsl:text></xsl:param>
 <xsl:param name="docrop"><xsl:text>@DOCROP@</xsl:text></xsl:param>
-<xsl:param name="duplicate_ulinks"><xsl:text>@DUPLICATE_ULINKS@</xsl:text></xsl:param>
+<xsl:param name="ulink.footnotes"><xsl:text>@ULINK_IN_FOOTNOTE@</xsl:text></xsl:param>
+<xsl:param name="ulink.show"><xsl:text>@ULINK_SHOW@</xsl:text></xsl:param>
 <xsl:param name="fontsize"><xsl:text>@FONTSIZE@</xsl:text></xsl:param>
 </xsl:stylesheet>
