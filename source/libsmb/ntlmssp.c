@@ -138,7 +138,7 @@ static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *ch
 
 NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user) 
 {
-	ntlmssp_state->user = talloc_strdup(ntlmssp_state->mem_ctx, user);
+	ntlmssp_state->user = talloc_strdup(ntlmssp_state->mem_ctx, user ? user : "" );
 	if (!ntlmssp_state->user) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -168,7 +168,7 @@ NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password
  */
 NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) 
 {
-	ntlmssp_state->domain = talloc_strdup(ntlmssp_state->mem_ctx, domain);
+	ntlmssp_state->domain = talloc_strdup(ntlmssp_state->mem_ctx, domain ? domain : "" );
 	if (!ntlmssp_state->domain) {
 		return NT_STATUS_NO_MEMORY;
 	}
