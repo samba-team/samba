@@ -118,7 +118,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 
 	/* we don't retry on a cancel */
 	if (reason == PVFS_WAIT_CANCEL) {
-		status = NT_STATUS_CANCELLED;
+		status = NT_STATUS_FILE_LOCK_CONFLICT;
 	} else {
 		status = brl_lock(pvfs->brl_context,
 				  &f->handle->brl_locking_key,
