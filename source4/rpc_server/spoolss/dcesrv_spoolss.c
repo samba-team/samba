@@ -221,7 +221,9 @@ static WERROR spoolss_GetJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static WERROR spoolss_EnumJobs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumJobs *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	*r->out.buf_size	= 0;
+
+	return WERR_OK;
 }
 
 
@@ -390,7 +392,9 @@ static WERROR spoolss_AddPrintProcessor(struct dcesrv_call_state *dce_call, TALL
 static WERROR spoolss_EnumPrintProcessors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrintProcessors *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	*r->out.buf_size	= 0;
+
+	return WERR_OK;
 }
 
 
@@ -753,7 +757,9 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumMonitors *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	*r->out.buf_size	= 0;
+
+	return WERR_OK;
 }
 
 
@@ -763,7 +769,7 @@ static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CT
 static WERROR spoolss_AddPort(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_AddPort *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_NOT_SUPPORTED;
 }
 
 
