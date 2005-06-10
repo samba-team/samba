@@ -113,7 +113,7 @@
 			<indexterm><primary>accounts</primary><secondary>authoritative</secondary></indexterm>
 			<indexterm><primary>PDC</primary></indexterm>
 			<indexterm><primary>BDC</primary></indexterm>
-			A domain controller (PDC or BDC) is always authoritative for all accounts in its Domain.
+			A domain controller (PDC or BDC) is always authoritative for all accounts in its domain.
 			This means that a BDC must (of necessity) be able to resolve all account UIDs and GIDs
 			to the same values that the PDC resolved them to.
 			</para></listitem>
@@ -339,7 +339,7 @@
 	</indexterm><indexterm>
 	  <primary>Domain Controller</primary>
 	</indexterm>
-	The domain Member server and the domain member client are at the center of focus in this chapter.
+	The domain member server and the domain member client are at the center of focus in this chapter.
 	Configuration of Samba-3 domain controller is covered in earlier chapters, so if your 
 	interest is in domain controller configuration, you will not find that here. You will find good
 	oil that helps you to add domain member servers and clients.
@@ -632,9 +632,9 @@ Joined domain MEGANET2.
 		<indexterm><primary>failed join</primary></indexterm>
 		<indexterm><primary>rejected</primary></indexterm>
 		<indexterm><primary>restrict anonymous</primary></indexterm>
-		Note: Use "root" for UNIX/Linux and Samba, use "Administrator"for Windows NT4/200X. If the cause of
+		Note: Use "root" for UNIX/Linux and Samba, use "Administrator" for Windows NT4/200X. If the cause of
 		the failure appears to be related to a rejected or failed NT_SESSION_SETUP*  or an error message that
-		says NT_STATUS_ACCESS_DENIED  immediately check the Windows registry setting that controls the
+		says NT_STATUS_ACCESS_DENIED immediately check the Windows registry setting that controls the
 		<constant>restrict anonymous</constant> setting. Set this to the value 0 so that an anonymous connection
 		can be sustained, then try again.
 		</para>
@@ -2011,7 +2011,7 @@ ssl     no
                 </para></step>
 
                 <step><para>
-                Configure an LDAP server and initialize the directory with the top level entries needed by IDMAP
+                Configure an LDAP server and initialize the directory with the top-level entries needed by IDMAP
                 as shown in the following LDIF file:
 <screen>
 dn: dc=snowshow,dc=com
@@ -2223,8 +2223,8 @@ hosts:  files wins
         </itemizedlist>
 
 	<para>
-	The following guidelines are pertinent the deployment of winbind-based authentication
-	and identity resolution with the express purpose of allowing users to log onto UNIX/Linux desktops
+	The following guidelines are pertinent to the deployment of winbind-based authentication
+	and identity resolution with the express purpose of allowing users to log on to UNIX/Linux desktops
 	using Windows network domain user credentials (username and password).
 	</para>
 
@@ -2247,7 +2247,7 @@ hosts:  files wins
 	<indexterm><primary>PAM</primary></indexterm>
 	<indexterm><primary>Identity resolution</primary></indexterm>
 	<indexterm><primary>NSS</primary></indexterm>
-	To permit users to log onto a Linux system using Windows network credentials, you need to
+	To permit users to log on to a Linux system using Windows network credentials, you need to
 	configure identity resolution (NSS) and PAM. This means that the basic steps include those
 	outlined above with the addition of PAM configuration. Given that most workstations (desktop/client)
 	usually do not need to provide file and print services to a group of users, the configuration
@@ -2429,7 +2429,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 		The addition of UNIX/Linux Samba servers and clients is a common requirement. In this chapter, you
 		learned how to integrate such servers so that the UID/GID mappings they use can be consistent
 		across all domain member servers. You also discovered how to implement the ability to use Samba
-		or Windows domain account credentials to log onto a UNIX/Linux client.
+		or Windows domain account credentials to log on to a UNIX/Linux client.
 		</para>
 
 		<para>
@@ -2610,7 +2610,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 	<question>
 
 		<para>
-		Are you suggesting that users should not log onto a domain member server? If so, why?
+		Are you suggesting that users should not log on to a domain member server? If so, why?
 		</para>
 
 	</question>
