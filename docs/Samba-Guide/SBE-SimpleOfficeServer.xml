@@ -10,7 +10,7 @@
 	is the end of the road because their needs will have been adequately met. For others, this chapter is
 	the beginning of a journey that will take them well past the contents of this book. This book provides
 	example configurations of, for the greater part, complete networking solutions. The intent of this book
-	is to help you to get your Samba installation working with least amount of pain and aggravation.
+	is to help you to get your Samba installation working with the least amount of pain and aggravation.
 	</para>
 
 <sect1>
@@ -568,12 +568,12 @@ Password changed
 				<step><para>
 				Install the &smb.conf; file shown in <link linkend="charity-smbconfnew"/> in the
 				<filename>/etc/samba</filename> directory. This newer &smb.conf; file uses user-mode security
-				and is more suited to the mode of operation of Samba-3 that the older share-mode security
+				and is more suited to the mode of operation of Samba-3 than the older share-mode security
 				configuration that was shown in the first edition of this book.
 				</para>
 
 				<para>
-				Note: If you want to use the older style configuration that uses share-mode security, you
+				Note: If you want to use the older-style configuration that uses share-mode security, you
 				can install the file shown in <link linkend="charity-smbconf"/> in the
 				<filename>/etc/samba</filename> directory.
 				</para></step>

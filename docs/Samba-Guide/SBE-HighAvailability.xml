@@ -253,10 +253,10 @@
 		<indexterm><primary>DNS</primary><secondary>name lookup</secondary></indexterm>
 		<indexterm><primary>resolve</primary></indexterm>
 		A Samba server called <constant>FRED</constant> in a NetBIOS domain called <constant>COLLISION</constant>
-		in a network environment that is part of the fully qualified Internet domain namespace known
-		as <constant>parrots.com</constant> results in DNS name lookups for <constant>fred.parrots.com</constant>
+		in a network environment that is part of the fully-qualified Internet domain namespace known
+		as <constant>parrots.com</constant>, results in DNS name lookups for <constant>fred.parrots.com</constant>
 		and <constant>collision.parrots.com</constant>. It is therefore a mistake to name the domain
-		(workgroup) <constant>collision.parrots.com,</constant> since this results in DNS lookup
+		(workgroup) <constant>collision.parrots.com</constant>, since this results in DNS lookup
 		attempts to resolve <constant>fred.parrots.com.parrots.com</constant>, which most likely
 		fails given that you probably do not have this in your DNS namespace.
 		</para>
@@ -375,7 +375,7 @@
 	</para>
 
 	<para>
-	As the size of the &smb.conf; file grows, the risk of introduction of parsing errors increases also.
+	As the size of the &smb.conf; file grows, the risk of introducing parsing errors also increases.
 	It is recommended to keep a fully documented &smb.conf; file on hand, and then to operate Samba only
 	with an optimized file.
 	</para>
@@ -479,7 +479,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<indexterm><primary>Domain Controller</primary></indexterm>
 	As a general guide, instead of adding domain member servers to a network, you would be better advised
 	to add BDCs until there are fewer than 30 Windows clients per BDC. Beyond that ratio, you should add
-	domain member servers. This practice ensures that there is always sufficient domain controllers
+	domain member servers. This practice ensures that there are always sufficient domain controllers
 	to handle logon requests and authentication traffic.
 	</para>
 
@@ -617,33 +617,33 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 
 	<para>
 	There exist applications that create or manage directories containing many thousands of files. Such
-	applications typically generate many small files (less than 100 KB). At the best of times under UNIX
-	listing of the files in a directory that contains many files is slow. By default Windows NT, 200x, 
+	applications typically generate many small files (less than 100 KB). At the best of times, under UNIX,
+	listing of the files in a directory that contains many files is slow. By default, Windows NT, 200x, 
 	and XP Pro cause network file system directory lookups on a Samba server to be performed for both 
 	the case preserving file name as well as for the mangled (8.3) file name. This incurs a huge overhead
 	on the Samba server that may slow down the system dramatically.
 	</para>
 
 	<para>
-	In an extreme case the performance impact was dramatic. File transfer from the Samba server to a Windows
+	In an extreme case, the performance impact was dramatic. File transfer from the Samba server to a Windows
 	XP Professional workstation over 1 Gigabit Ethernet for 250-500 KB files was measured at approximately
-	30 MB/sec. But when tranfering a directory containng 120,000 files, all from 50KB to 60KB in size, the
+	30 MB/sec. But when tranferring a directory containing 120,000 files, all from 50KB to 60KB in size, the
 	transfer rate to the same workstation was measured at approximately 1.5 KB/sec. The net transfer was
-	of the order of a factor of 20-fold slower.
+	on the order of a factor of 20-fold slower.
 	</para>
 
 	<para>
 	The symptoms that will be observed on the Samba server when a large directory is accessed will be that
-	aggregate I/O (typically blocks read) will be relatively low, yet the wait I/O times will be incredably
+	aggregate I/O (typically blocks read) will be relatively low, yet the wait I/O times will be incredibly
 	long while at the same time the read queue is large. Close observation will show that the hard drive
 	that the file system is on will be thrashing wildly.
 	</para>
 
 	<para>
-	Samba-3.0.12, and later, includes new code that radically improves Samba perfomance. The secret to this is
+	Samba-3.0.12 and later, includes new code that radically improves Samba perfomance. The secret to this is
 	really in the <smbconfoption name="case sensitive">True</smbconfoption> line. This tells smbd never to scan
 	for case-insensitive versions of names. So if an application asks for a file called <filename>FOO</filename>,
-	and it can not be found by a simple stat call, then smbd will return file not found immediately without
+	and it can not be found by a simple stat call, then smbd will return "file not found" immediately without
 	scanning the containing directory for a version of a different case.
 	</para>
 

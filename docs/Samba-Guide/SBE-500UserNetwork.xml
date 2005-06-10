@@ -642,10 +642,10 @@ root = Administrator
 			<indexterm><primary>/etc/mime.convs</primary></indexterm>
 			<indexterm><primary>application/octet-stream</primary></indexterm>
 			This step, as well as the next one, may be omitted where CUPS version 1.1.18
-			or later is in use.  Although it does no harm to follow it anyhow, and may
-			help to avoid later time spent trying to figure out why print jobs may be
-			disappearing without trace. Look at these two steps as <emphasis>insurance</emphasis>
-			against lost time. Edit  file <filename>/etc/cups/mime.convs</filename> to 
+			or later is in use.  Although it does no harm to follow it anyway, and may
+			help to avoid time spent later trying to figure out why print jobs may be
+			disappearing without a trace. Look at these two steps as <emphasis>insurance</emphasis>
+			against lost time. Edit file <filename>/etc/cups/mime.convs</filename> to 
 			uncomment the line:
 <screen>
 application/octet-stream     application/vnd.cups-raw      0     -
@@ -694,7 +694,7 @@ application/octet-stream
 	<para>
 	There are some steps that apply to particular server functionality only. Each step is critical
 	to correct server operation. The following step-by-step installation guidance will assist you 
-	to work through the process of configuring the PDC and then both BDC's.
+	in working through the process of configuring the PDC and then both BDC's.
 	</para>
 
 		<sect3>
@@ -893,7 +893,7 @@ Added user <parameter>username</parameter>.
 		<title>Configuration Specific to Domain Member Servers: <constant>BLDG1, BLDG2</constant></title>
 
 		<para>
-		The following steps will guide you trough the nuances of imlplementing BDC's for the broadcast
+		The following steps will guide you through the nuances of implementing BDCs for the broadcast
 		isolated network segments. Remember that if the target installation platform is not Linux, it may
 		be necessary to adapt some commands to the equivalent on the target platform.
 		</para>
