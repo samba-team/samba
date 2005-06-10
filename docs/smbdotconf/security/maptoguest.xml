@@ -9,7 +9,7 @@
     - i.e. <constant>user</constant>, <constant>server</constant>, 
     and <constant>domain</constant>.</para>
 
-    <para>This parameter can take three different values, which tell
+    <para>This parameter can take four different values, which tell
     <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> what to do with user 
     login requests that don't match a valid UNIX user in some way.</para>
