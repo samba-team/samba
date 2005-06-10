@@ -751,7 +751,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	if((outbuf = NewOutBuffer(&saved_outbuf))==NULL) {
 		DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
 		set_InBuffer(saved_inbuf);
-		SAFE_FREE(inbuf);
+		free_InBuffer(inbuf);
 		return False;
 	}
 
@@ -911,11 +911,11 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 
 	/* Restore the global In/Out buffers. */
 	set_InBuffer(saved_inbuf);
-	set_InBuffer(saved_outbuf);
+	set_OutBuffer(saved_outbuf);
 
 	/* Free the buffers we've been using to recurse. */
-	SAFE_FREE(inbuf);
-	SAFE_FREE(outbuf);
+	free_InBuffer(inbuf);
+	free_OutBuffer(outbuf);
 
 	/* We need this in case a readraw crossed on the wire. */
 	if(global_oplock_break)

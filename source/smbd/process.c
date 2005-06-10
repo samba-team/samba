@@ -1516,7 +1516,29 @@ char *get_OutBuffer(void)
 
 void set_OutBuffer(char *new_outbuf)
 {
-	InBuffer = new_outbuf;
+	OutBuffer = new_outbuf;
+}
+
+/****************************************************************************
+ Free an InBuffer. Checks if not in use by aio system.
+ Must have been allocated by NewInBuffer.
+****************************************************************************/
+
+void free_InBuffer(char *inbuf)
+{
+	if (!aio_inbuffer_in_use(inbuf)) {
+		SAFE_FREE(inbuf);
+	}
+}
+
+/****************************************************************************
+ Free an OutBuffer. No outbuffers currently stolen by aio system.
+ Must have been allocated by NewInBuffer.
+****************************************************************************/
+
+void free_OutBuffer(char *outbuf)
+{
+	SAFE_FREE(outbuf);
 }
 
 const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
@@ -1536,7 +1558,7 @@ char *NewInBuffer(char **old_inbuf)
 	}
 	InBuffer = new_inbuf;
 #if defined(DEVELOPER)
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, new_inbuf, total_buffer_size);
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 #endif
 	return InBuffer;
 }
@@ -1569,10 +1591,10 @@ void smbd_process(void)
 {
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
-	char *inbuf = NewInBuffer(NULL);
-	char *outbuf = NewOutBuffer(NULL);
 
-	if ((inbuf == NULL) || (outbuf == NULL)) 
+	/* Allocate the primary Inbut/Output buffers. */
+
+	if ((NewInBuffer(NULL) == NULL) || (NewOutBuffer(NULL) == NULL)) 
 		return;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);

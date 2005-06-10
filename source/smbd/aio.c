@@ -116,7 +116,9 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp, size_t outbuflen
 static void delete_aio_ex(struct aio_extra *aio_ex)
 {
 	DLIST_REMOVE(aio_list_head, aio_ex);
-	SAFE_FREE(aio_ex->inbuf);
+	/* Safe to do as we've removed ourselves from the in use list first. */
+	free_InBuffer(aio_ex->inbuf);
+
 	SAFE_FREE(aio_ex->outbuf);
 	SAFE_FREE(aio_ex);
 }
@@ -524,6 +526,22 @@ void cancel_aio_by_fsp(files_struct *fsp)
 		}
 	}
 }
+
+/****************************************************************************
+ Check if a buffer was stolen for aio use.
+*****************************************************************************/
+
+BOOL aio_inbuffer_in_use(char *inbuf)
+{
+	struct aio_extra *aio_ex;
+
+	for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
+		if (aio_ex->inbuf == inbuf) {
+			return True;
+		}
+	}
+	return False;
+}
 #else
 BOOL aio_finished(void)
 {
@@ -560,5 +578,10 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 
 void cancel_aio_by_fsp(files_struct *fsp)
 {
+}
+
+BOOL aio_inbuffer_in_use(char *ptr)
+{
+	return False;
 }
 #endif
