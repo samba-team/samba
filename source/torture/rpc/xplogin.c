@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/composite/composite.h"
 
+#if 0
 static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 			      const char *dest_host, uint16_t port,
 			      const char *my_name)
@@ -973,7 +974,6 @@ static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
 	return status;
 }
 
-#if 0
 static BOOL xp_login(const char *dcname, const char *wksname,
 		     const char *domain, const char *wkspwd,
 		     const char *user1name, const char *user1pw,
@@ -1111,8 +1111,10 @@ static const struct user_pw machines[] = {
 
 BOOL torture_rpc_login(void)
 {
+#if 0
 	const char *pdcname = "pdcname";
 	const char *domainname = "domain";
+#endif
 
 	int useridx1 = rand() % ARRAY_SIZE(users);
 	int useridx2 = rand() % ARRAY_SIZE(users);
