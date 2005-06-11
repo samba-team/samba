@@ -173,8 +173,8 @@ static void userinfo_handler(struct rpc_request *req)
  * @param p dce/rpc call pipe 
  * @param io arguments and results of the call
  */
-struct composite_context *rpc_composite_userinfo_send(struct dcerpc_pipe *p,
-						      struct rpc_composite_userinfo *io,
+struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
+						      struct libnet_rpc_userinfo *io,
 						      void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
@@ -228,8 +228,8 @@ failure:
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				     struct rpc_composite_userinfo *io)
+NTSTATUS libnet_rpc_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct libnet_rpc_userinfo *io)
 {
 	NTSTATUS status;
 	struct userinfo_state *s;
@@ -258,10 +258,10 @@ NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *me
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_userinfo(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_userinfo(struct dcerpc_pipe *pipe,
 				TALLOC_CTX *mem_ctx,
-				struct rpc_composite_userinfo *io)
+				struct libnet_rpc_userinfo *io)
 {
-	struct composite_context *c = rpc_composite_userinfo_send(pipe, io, NULL);
-	return rpc_composite_userinfo_recv(c, mem_ctx, io);
+	struct composite_context *c = libnet_rpc_userinfo_send(pipe, io, NULL);
+	return libnet_rpc_userinfo_recv(c, mem_ctx, io);
 }

@@ -19,7 +19,7 @@
 */
 
 /*
-  a composite function for getting user information via samr pipe
+  a composite function for domain handling
 */
 
 #include "includes.h"
@@ -142,9 +142,9 @@ static void domain_open_handler(struct rpc_request *req)
 }
 
 
-struct composite_context *rpc_composite_domain_open_send(struct dcerpc_pipe *p,
-							 struct rpc_composite_domain_open *io,
-							 void (*monitor)(struct monitor_msg*))
+struct composite_context *libnet_rpc_domain_open_send(struct dcerpc_pipe *p,
+						      struct libnet_rpc_domain_open *io,
+						      void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct domain_open_state *s;
@@ -185,8 +185,8 @@ failure:
 }
 
 
-NTSTATUS rpc_composite_domain_open_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-					struct rpc_composite_domain_open *io)
+NTSTATUS libnet_rpc_domain_open_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct libnet_rpc_domain_open *io)
 {
 	NTSTATUS status;
 	struct domain_open_state *s;
@@ -203,10 +203,10 @@ NTSTATUS rpc_composite_domain_open_recv(struct composite_context *c, TALLOC_CTX 
 }
 
 
-NTSTATUS rpc_composite_domain_open(struct dcerpc_pipe *p,
-				   TALLOC_CTX *mem_ctx,
-				   struct rpc_composite_domain_open *io)
+NTSTATUS libnet_rpc_domain_open(struct dcerpc_pipe *p,
+				TALLOC_CTX *mem_ctx,
+				struct libnet_rpc_domain_open *io)
 {
-	struct composite_context *c = rpc_composite_domain_open_send(p, io, NULL);
-	return rpc_composite_domain_open_recv(c, mem_ctx, io);
+	struct composite_context *c = libnet_rpc_domain_open_send(p, io, NULL);
+	return libnet_rpc_domain_open_recv(c, mem_ctx, io);
 }
