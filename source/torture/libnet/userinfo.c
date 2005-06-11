@@ -184,7 +184,7 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  uint32_t *rid)
 {
 	NTSTATUS status;
-	struct rpc_composite_userinfo user;
+	struct libnet_rpc_userinfo user;
 	struct dom_sid *user_sid;
 	
 	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
@@ -193,10 +193,10 @@ static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = 5;       /* this should be extended */
 
-	printf("Testing sync rpc_composite_userinfo\n");
-	status = rpc_composite_userinfo(p, mem_ctx, &user);
+	printf("Testing sync libnet_rpc_userinfo\n");
+	status = libnet_rpc_userinfo(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync rpc_composite_userinfo - %s\n", nt_errstr(status));
+		printf("Failed to call sync libnet_rpc_userinfo - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -228,7 +228,7 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct composite_context *c;
-	struct rpc_composite_userinfo user;
+	struct libnet_rpc_userinfo user;
 	struct dom_sid *user_sid;
 
 	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
@@ -237,17 +237,17 @@ static BOOL test_userinfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	user.in.sid           = dom_sid_string(mem_ctx, user_sid);
 	user.in.level         = 10;       /* this should be extended */
 
-	printf("Testing async rpc_composite_userinfo\n");
+	printf("Testing async libnet_rpc_userinfo\n");
 
-	c = rpc_composite_userinfo_send(p, &user, msg_handler);
+	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
 	if (!c) {
-		printf("Failed to call sync rpc_composite_userinfo_send\n");
+		printf("Failed to call sync libnet_rpc_userinfo_send\n");
 		return False;
 	}
 
-	status = rpc_composite_userinfo_recv(c, mem_ctx, &user);
+	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Calling async rpc_composite_userinfo failed - %s\n", nt_errstr(status));
+		printf("Calling async libnet_rpc_userinfo failed - %s\n", nt_errstr(status));
 		return False;
 	}
 

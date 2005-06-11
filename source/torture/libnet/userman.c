@@ -84,14 +84,14 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	struct rpc_composite_useradd user;
+	struct libnet_rpc_useradd user;
 	
 	user.in.domain_handle = *domain_handle;
 	user.in.username      = name;
 
-	printf("Testing rpc_composite_useradd\n");
+	printf("Testing libnet_rpc_useradd\n");
 
-	status = rpc_composite_useradd(p, mem_ctx, &user);
+	status = libnet_rpc_useradd(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to call sync rpc_composite_userinfo - %s\n", nt_errstr(status));
 		return False;
@@ -116,22 +116,22 @@ static BOOL test_useradd_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct composite_context *c;
-	struct rpc_composite_useradd user;
+	struct libnet_rpc_useradd user;
 
 	user.in.domain_handle = *handle;
 	user.in.username      = username;
 	
-	printf("Testing async rpc_composite_useradd\n");
+	printf("Testing async libnet_rpc_useradd\n");
 	
-	c = rpc_composite_useradd_send(p, &user, msg_handler);
+	c = libnet_rpc_useradd_send(p, &user, msg_handler);
 	if (!c) {
-		printf("Failed to call async rpc_composite_useradd\n");
+		printf("Failed to call async libnet_rpc_useradd\n");
 		return False;
 	}
 
-	status = rpc_composite_useradd_recv(c, mem_ctx, &user);
+	status = libnet_rpc_useradd_recv(c, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Calling async rpc_composite_useradd failed - %s\n", nt_errstr(status));
+		printf("Calling async libnet_rpc_useradd failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -256,14 +256,14 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, const char *username)
 {
 	NTSTATUS status;
-	struct rpc_composite_userdel user;
+	struct libnet_rpc_userdel user;
 	
 	user.in.domain_handle = *handle;
 	user.in.username = username;
 	
-	status = rpc_composite_userdel(p, mem_ctx, &user);
+	status = libnet_rpc_userdel(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to call sync rpc_composite_userdel - %s\n", nt_errstr(status));
+		printf("Failed to call sync libnet_rpc_userdel - %s\n", nt_errstr(status));
 		return False;
 	}
 
