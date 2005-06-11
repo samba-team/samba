@@ -29,7 +29,6 @@ smbd_check_or_start() {
 			echo "smbd exists with status $ret" >>$SMBD_TEST_LOG;
 			exit $ret;
 		) || exit $? &) 2>/dev/null || exit $?
-		sleep 2
 		echo  "DONE"
 	fi
 	return 0;
@@ -55,7 +54,11 @@ smbd_have_test_log() {
 }
 
 testit() {
-        name=$1
+	if [ -z "$PREFIX" ]; then
+	    PREFIX=test_prefix
+	    mkdir -p $PREFIX
+	fi
+	name=$1
 	shift 1
 	SMBD_IS_UP="no"
 	TEST_LOG="$PREFIX/test_log.$$"
