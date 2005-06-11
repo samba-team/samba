@@ -149,7 +149,8 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 		unlink(name2->full_name);
 		return status;
 	}
-	
+
+	name2->st.st_mode = mode;
 	name2->dos = name1->dos;
 
 	status = pvfs_dosattrib_save(pvfs, name2, fd2);
