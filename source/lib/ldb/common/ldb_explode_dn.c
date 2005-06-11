@@ -377,8 +377,7 @@ ldb_explode_dn(void * mem_ctx,
                  */
 
                 /* allocate space for the normalized component */
-		if ((component->component =
-                     dest = talloc_size(component, size)) == NULL) {
+		if ((dest = talloc_size(component, size)) == NULL) {
 
                         goto failed;
                 }
@@ -395,6 +394,9 @@ ldb_explode_dn(void * mem_ctx,
                         strncpy(dest, src, size + 1);
                         dest += size;
 		}
+
+                /* Save the just-generated string */
+                component->component = dest;
 
 		ldb_debug(mem_ctx,
                           LDB_DEBUG_TRACE,
@@ -432,7 +434,7 @@ ldb_explode_dn(void * mem_ctx,
 	}
 
 	/* rebuild the normalized DN */
-	if ((dn->dn = dest = talloc_size(dn, size)) == NULL) {
+	if ((dest = talloc_size(dn, size)) == NULL) {
                 goto failed;
         }
 
@@ -452,6 +454,9 @@ ldb_explode_dn(void * mem_ctx,
                 strncpy(dest, src, size + 1);
                 dest += size;
 	}
+
+        /* Save the just-generated string */
+        dn->dn = dest;
 
 	ldb_debug(mem_ctx, LDB_DEBUG_TRACE, "dn: [%s]\n", dn->dn);
 
