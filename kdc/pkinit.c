@@ -1419,8 +1419,10 @@ pk_principal_from_X509(krb5_context context,
 	}
 
 	*principal = malloc(sizeof(**principal));
-	if (*principal == NULL)
+	if (*principal == NULL) {
+	    free_KRB5PrincipalName(&kn);
 	    return 1;
+	}
 
 	(*principal)->name = kn.principalName;
 	(*principal)->realm = kn.realm;
