@@ -285,6 +285,13 @@ static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
 	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.fname = fname2;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
+
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
