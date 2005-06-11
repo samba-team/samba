@@ -228,8 +228,7 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: session setup ok\n", sys_getpid()));
 
-	if (!smbcli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
+	if (!smbcli_tconX(c, share, "?????", password, strlen(password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
 			 sys_getpid(), smbcli_errstr(c)));
 		smbcli_shutdown(c);
