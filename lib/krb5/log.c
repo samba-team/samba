@@ -367,6 +367,12 @@ krb5_closelog(krb5_context context,
     int i;
     for(i = 0; i < fac->len; i++)
 	(*fac->val[i].close)(fac->val[i].data);
+    free(fac->val);
+    free(fac->program);
+    fac->val = NULL;
+    fac->len = 0;
+    fac->program = NULL;
+    free(fac);
     return 0;
 }
 
