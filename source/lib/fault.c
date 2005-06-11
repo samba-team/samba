@@ -140,10 +140,10 @@ static void fault_report(int sig)
 	
 	if (counter) _exit(1);
 
-	DEBUG(0,("===============================================================\n"));
+	DEBUG(0,("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"));
 	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),SAMBA_VERSION_STRING));
 	DEBUG(0,("\nPlease read the file BUGS.txt in the distribution\n"));
-	DEBUG(0,("===============================================================\n"));
+	DEBUG(0,("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"));
 
 	smb_panic("internal error");
 
