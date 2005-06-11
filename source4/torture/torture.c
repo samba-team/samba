@@ -486,7 +486,7 @@ static BOOL run_tcon_test(void)
 	}
 
 	tree1 = cli->tree;	/* save old tree connection */
-	if (NT_STATUS_IS_ERR(smbcli_send_tconX(cli, share, "?????", password))) {
+	if (NT_STATUS_IS_ERR(smbcli_tconX(cli, share, "?????", password))) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		           smbcli_errstr(cli->tree));
 		smbcli_shutdown(cli);
@@ -564,7 +564,7 @@ static BOOL tcon_devtest(struct smbcli_state *cli,
 	BOOL ret;
 	const char *password = lp_parm_string(-1, "torture", "password");
 
-	status = NT_STATUS_IS_OK(smbcli_send_tconX(cli, myshare, devtype, 
+	status = NT_STATUS_IS_OK(smbcli_tconX(cli, myshare, devtype, 
 						password));
 
 	printf("Trying share %s with devtype %s\n", myshare, devtype);
