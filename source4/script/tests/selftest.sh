@@ -50,12 +50,15 @@ cat >$CONFFILE<<EOF
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
 	sam database = tdb://$PRIVATEDIR/sam.ldb
+	name resolve order = bcast
+	interfaces = lo
 
 [tmp]
 	path = $TMPDIR
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
+	posix:eadb = $LOCKDIR/eadb.tdb
 EOF
 
 ADDARG="-s $CONFFILE"
@@ -67,6 +70,10 @@ smbd_check_or_start
 
 START=`date`
 (
+ # give time for nbt server to register its names
+ echo delaying for nbt name registration
+ sleep 4
+
  failed=0
  $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
