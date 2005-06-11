@@ -146,7 +146,8 @@ static void dgm_socket_handler(struct event_context *ev, struct fd_event *fde,
 							   struct nbt_dgram_socket);
 	if (flags & EVENT_FD_WRITE) {
 		dgm_socket_send(dgmsock);
-	} else if (flags & EVENT_FD_READ) {
+	} 
+	if (flags & EVENT_FD_READ) {
 		dgm_socket_recv(dgmsock);
 	}
 }

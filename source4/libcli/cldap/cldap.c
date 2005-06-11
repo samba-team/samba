@@ -222,7 +222,8 @@ static void cldap_socket_handler(struct event_context *ev, struct fd_event *fde,
 	struct cldap_socket *cldap = talloc_get_type(private, struct cldap_socket);
 	if (flags & EVENT_FD_WRITE) {
 		cldap_socket_send(cldap);
-	} else if (flags & EVENT_FD_READ) {
+	} 
+	if (flags & EVENT_FD_READ) {
 		cldap_socket_recv(cldap);
 	}
 }

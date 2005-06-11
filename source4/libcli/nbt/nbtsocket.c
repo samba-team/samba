@@ -292,7 +292,8 @@ static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *f
 							  struct nbt_name_socket);
 	if (flags & EVENT_FD_WRITE) {
 		nbt_name_socket_send(nbtsock);
-	} else if (flags & EVENT_FD_READ) {
+	} 
+	if (flags & EVENT_FD_READ) {
 		nbt_name_socket_recv(nbtsock);
 	}
 }
