@@ -584,7 +584,7 @@ typedef void (*krb5_log_log_func_t)(const char*, const char*, void*);
 typedef void (*krb5_log_close_func_t)(void*);
 
 typedef struct krb5_log_facility {
-    const char *program;
+    char *program;
     int len;
     struct facility *val;
 } krb5_log_facility;
