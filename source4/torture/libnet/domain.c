@@ -29,14 +29,14 @@ static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
-	struct rpc_composite_domain_open io;
+	struct libnet_rpc_domain_open io;
 	
 	printf("opening domain\n");
 	
 	io.in.domain_name  = talloc_strdup(mem_ctx, domname->string);
 	io.in.access_mask  = SEC_FLAG_MAXIMUM_ALLOWED;
 
-	status = rpc_composite_domain_open(p, mem_ctx, &io);
+	status = libnet_rpc_domain_open(p, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Composite domain open failed - %s\n", nt_errstr(status));
 		return False;
