@@ -139,6 +139,8 @@ typedef BLD_FEATURE_NUM_TYPE MprNum;
 	(type == MPR_TYPE_OBJECT)
 #define mprVarIsFloating(type) \
 	(type == MPR_TYPE_FLOAT)
+#define mprVarIsPtr(type) \
+    (type == MPR_TYPE_PTR)
 #define mprVarIsUndefined(var) \
 	((var)->type == MPR_TYPE_UNDEFINED)
 #define mprVarIsNull(var) \
