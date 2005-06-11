@@ -84,8 +84,8 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 }
 
 /* wrapper around smb_tree_connect() */
-NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename, 
-			   const char *devtype, const char *password)
+NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename, 
+		      const char *devtype, const char *password)
 {
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
