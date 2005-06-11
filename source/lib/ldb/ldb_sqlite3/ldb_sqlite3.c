@@ -1288,9 +1288,15 @@ new_dn(struct ldb_module * module,
        char * pDN,
        long long * pEID)
 {
+        int                         nComponent;
+        int                         bFirst;
+        char *                      p;
+        char *                      pPartialDN;
+        long long                   eid;
         struct ldb_dn *             pExplodedDN;
+        struct ldb_dn_component *   pComponent;
 	struct ldb_context *        ldb = module->ldb;
-//	struct lsqlite3_private *   lsqlite3 = module->private_data;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
         /* Explode and normalize the DN */
         if ((pExplodedDN =
@@ -1301,8 +1307,71 @@ new_dn(struct ldb_module * module,
                 return -1;
         }
 
-#warning "*** new_dn() not yet fully implemented ***"
-        return -1;
+        /* Allocate a string to hold the partial DN of each component */
+        if ((pPartialDN = talloc_strdup(ldb, "")) == NULL) {
+                return -1;
+        }
+
+        /* For each component of the DN (starting with the last one)... */
+        eid = 0;
+        for (nComponent = pExplodedDN->comp_num - 1, bFirst = TRUE;
+             nComponent >= 0;
+             nComponent--, bFirst = FALSE) {
+                
+                /* Point to the component */
+                pComponent = pExplodedDN->components[nComponent];
+
+                /* Add this component on to the partial DN to date */
+                if ((p = talloc_asprintf(ldb,
+                                         "%s%s%s",
+                                         pComponent->component,
+                                         bFirst ? "" : ",",
+                                         pPartialDN)) == NULL) {
+                        return -1;
+                }
+
+                /* No need for the old partial DN any more */
+                talloc_free(pPartialDN);
+
+                /* Save the new partial DN */
+                pPartialDN = p;
+
+                /*
+                 * Ensure that an entry is in the ldb_entry table for this
+                 * component.  Any component other than the last one
+                 * (component 0) may already exist.  It is an error if
+                 * component 0 (the full DN requested to be be inserted)
+                 * already exists.
+                 */
+                if (bFirst) {
+                        /* This is a top-level entry.  Parent EID is null. */
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT %s INTO ldb_entry "
+                                     "    (peid, dn) "
+                                     "  VALUES "
+                                     "    (NULL, %q);",
+                                     nComponent == 0 ? "" : "OR IGNORE",
+                                     pPartialDN);
+                } else {
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT %s INTO ldb_entry "
+                                     "    (peid, dn) "
+                                     "  VALUES "
+                                     "    (%lld, %q);",
+                                     nComponent == 0 ? "" : "OR IGNORE",
+                                     eid, pPartialDN);
+                }
+
+                /* Get the EID of the just inserted row (the next parent) */
+                eid = sqlite3_last_insert_rowid(lsqlite3->sqlite);
+        }
+
+        /* Give 'em what they came for! */
+        *pEID = eid;
+
+        return 0;
 }
 
 
@@ -1310,18 +1379,38 @@ static int
 new_attr(struct ldb_module * module,
                   char * pAttrName)
 {
+        long long                   bExists;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-        /* NOTE: pAttrName is assumed to already be case-folded here! */
-        QUERY_NOROWS(lsqlite3,
-                     FALSE,
-                     "CREATE TABLE ldb_attr_%q "
-                     "("
-                     "  eid        INTEGER REFERENCES ldb_entry, "
-                     "  attr_value TEXT"
-                     ");",
-                     pAttrName);
+        /*
+         * NOTE:
+         *   pAttrName is assumed to already be case-folded here!
+         */
+
+        /* See if the table already exists */
+        QUERY_INT(lsqlite3,
+                  bExists,
+                  FALSE,
+                  "SELECT COUNT(*) <> 0"
+                  "  FROM sqlite_master "
+                  "  WHERE type = 'table' "
+                  "    AND tbl_name = %Q;",
+                  pAttrName);
+
+        /* Did it exist? */
+        if (! bExists) {
+                /* Nope.  Create the table */
+                QUERY_NOROWS(lsqlite3,
+                             FALSE,
+                             "CREATE TABLE ldb_attr_%q "
+                             "("
+                             "  eid        INTEGER REFERENCES ldb_entry, "
+                             "  attr_value TEXT"
+                             ");",
+                             pAttrName);
+        }
 
         return 0;
 }
+
 
