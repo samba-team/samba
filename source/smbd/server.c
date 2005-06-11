@@ -215,6 +215,9 @@ static int binary_smbd_main(int argc, const char *argv[])
 
 	if (interactive) {
 		/* catch EOF on stdin */
+#ifdef SIGTTIN
+		signal(SIGTTIN, SIG_IGN);
+#endif
 		event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, 
 			     server_stdin_handler, NULL);
 	}
