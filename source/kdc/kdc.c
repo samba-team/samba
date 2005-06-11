@@ -148,7 +148,8 @@ static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
 	struct kdc_socket *kdc_socket = talloc_get_type(private, struct kdc_socket);
 	if (flags & EVENT_FD_WRITE) {
 		kdc_send_handler(kdc_socket);
-	} else if (flags & EVENT_FD_READ) {
+	} 
+	if (flags & EVENT_FD_READ) {
 		kdc_recv_handler(kdc_socket);
 	}
 }
