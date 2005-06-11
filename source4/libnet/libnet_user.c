@@ -31,8 +31,8 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	union libnet_rpc_connect cn;
 	union libnet_find_pdc fp;
 	struct dcerpc_pipe *pipe;
-	struct rpc_composite_domain_open dom_io;
-	struct rpc_composite_useradd user_io;
+	struct libnet_rpc_domain_open dom_io;
+	struct libnet_rpc_useradd user_io;
 	
 	/* find domain pdc */
 	fp.generic.level             = LIBNET_FIND_PDC_GENERIC;
@@ -62,7 +62,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	dom_io.in.domain_name   = r->in.domain_name;
 	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	
-	status = rpc_composite_domain_open(ctx->samr, mem_ctx, &dom_io);
+	status = libnet_rpc_domain_open(ctx->samr, mem_ctx, &dom_io);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Creating user account failed: %s\n",
@@ -76,7 +76,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	user_io.in.username       = r->in.user_name;
 	user_io.in.domain_handle  = dom_io.out.domain_handle;
 
-	status = rpc_composite_useradd(ctx->samr, mem_ctx, &user_io);
+	status = libnet_rpc_useradd(ctx->samr, mem_ctx, &user_io);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Creating user account failed: %s\n",
