@@ -200,7 +200,6 @@ static void wrepl_handler(struct event_context *ev, struct fd_event *fde,
 							    struct wrepl_socket);
 	if (flags & EVENT_FD_WRITE) {
 		wrepl_handler_send(wrepl_socket);
-		return;
 	}
 	if (flags & EVENT_FD_READ) {
 		wrepl_handler_recv(wrepl_socket);
