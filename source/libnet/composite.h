@@ -22,7 +22,7 @@
   composite function io definitions
 */
 
-struct rpc_composite_userinfo {
+struct libnet_rpc_userinfo {
 	struct {
 		struct policy_handle domain_handle;
 		const char *sid;
@@ -34,7 +34,7 @@ struct rpc_composite_userinfo {
 };
 
 
-struct rpc_composite_useradd {
+struct libnet_rpc_useradd {
 	struct {
 		struct policy_handle domain_handle;
 		const char *username;
@@ -45,7 +45,7 @@ struct rpc_composite_useradd {
 };
 
 
-struct rpc_composite_userdel {
+struct libnet_rpc_userdel {
 	struct {
 		struct policy_handle domain_handle;
 		const char *username;
@@ -56,7 +56,7 @@ struct rpc_composite_userdel {
 };
 
 
-struct rpc_composite_domain_open {
+struct libnet_rpc_domain_open {
 	struct {
 		const char *domain_name;
 		uint32_t access_mask;

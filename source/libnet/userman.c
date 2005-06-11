@@ -104,8 +104,8 @@ static void useradd_handler(struct rpc_request *req)
  * @param io arguments and results of the call
  */
 
-struct composite_context *rpc_composite_useradd_send(struct dcerpc_pipe *p,
-						     struct rpc_composite_useradd *io,
+struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
+						     struct libnet_rpc_useradd *io,
 						     void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
@@ -157,8 +157,8 @@ failure:
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				    struct rpc_composite_useradd *io)
+NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				    struct libnet_rpc_useradd *io)
 {
 	NTSTATUS status;
 	struct useradd_state *s;
@@ -185,12 +185,12 @@ NTSTATUS rpc_composite_useradd_recv(struct composite_context *c, TALLOC_CTX *mem
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_useradd(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *pipe,
 			       TALLOC_CTX *mem_ctx,
-			       struct rpc_composite_useradd *io)
+			       struct libnet_rpc_useradd *io)
 {
-	struct composite_context *c = rpc_composite_useradd_send(pipe, io, NULL);
-	return rpc_composite_useradd_recv(c, mem_ctx, io);
+	struct composite_context *c = libnet_rpc_useradd_send(pipe, io, NULL);
+	return libnet_rpc_useradd_recv(c, mem_ctx, io);
 }
 
 
@@ -327,8 +327,8 @@ static void userdel_handler(struct rpc_request *req)
  * @param io arguments and results of the call
  */
 
-struct composite_context *rpc_composite_userdel_send(struct dcerpc_pipe *p,
-						     struct rpc_composite_userdel *io)
+struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
+						     struct libnet_rpc_userdel *io)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
@@ -377,8 +377,8 @@ failure:
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				    struct rpc_composite_userdel *io)
+NTSTATUS libnet_rpc_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				    struct libnet_rpc_userdel *io)
 {
 	NTSTATUS status;
 	struct userdel_state *s;
@@ -404,10 +404,10 @@ NTSTATUS rpc_composite_userdel_recv(struct composite_context *c, TALLOC_CTX *mem
  * @return nt status code of execution
  */
 
-NTSTATUS rpc_composite_userdel(struct dcerpc_pipe *pipe,
+NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *pipe,
 			       TALLOC_CTX *mem_ctx,
-			       struct rpc_composite_userdel *io)
+			       struct libnet_rpc_userdel *io)
 {
-	struct composite_context *c = rpc_composite_userdel_send(pipe, io);
-	return rpc_composite_userdel_recv(c, mem_ctx, io);
+	struct composite_context *c = libnet_rpc_userdel_send(pipe, io);
+	return libnet_rpc_userdel_recv(c, mem_ctx, io);
 }

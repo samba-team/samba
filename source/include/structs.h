@@ -175,10 +175,10 @@ struct smb_composite_sesssetup;
 struct smb_composite_fetchfile;
 struct smb_composite_appendacl;
 struct smb_composite_fsinfo;
-struct rpc_composite_userinfo;
-struct rpc_composite_useradd;
-struct rpc_composite_userdel;
-struct rpc_composite_domain_open;
+struct libnet_rpc_userinfo;
+struct libnet_rpc_useradd;
+struct libnet_rpc_userdel;
+struct libnet_rpc_domain_open;
 
 struct nbt_name;
 struct nbt_name_packet;
