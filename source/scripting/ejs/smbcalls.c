@@ -44,7 +44,8 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 		{ MPR_TYPE_OBJECT,           "object" },
 		{ MPR_TYPE_FUNCTION,         "function" },
 		{ MPR_TYPE_STRING,           "string" },
-		{ MPR_TYPE_STRING_CFUNCTION, "function" }
+		{ MPR_TYPE_STRING_CFUNCTION, "function" },
+		{ MPR_TYPE_PTR,              "C pointer" }
 	};
 	int i;
 	const char *type = NULL;
