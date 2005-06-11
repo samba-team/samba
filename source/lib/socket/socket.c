@@ -69,6 +69,12 @@ static NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_
 		(*new_sock)->flags |= SOCKET_FLAG_TESTNONBLOCK;
 	}
 
+	/* we don't do a connect() on dgram sockets, so need to set
+	   non-blocking at socket create time */
+	if (!(flags & SOCKET_FLAG_BLOCK) && type == SOCKET_TYPE_DGRAM) {
+		set_blocking(socket_get_fd(*new_sock), False);
+	}
+
 	talloc_set_destructor(*new_sock, socket_destructor);
 
 	return NT_STATUS_OK;
