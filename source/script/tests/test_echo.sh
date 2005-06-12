@@ -25,12 +25,12 @@ failed=0
 for transport in $transports; do
  for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
-        "--option=socket:testnonblock=True" \
-        "--option=ntlmssp_client:ntlm2=yes" \
+        "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no" \
+        "--option=ntlmssp_client:ntlm2=yes --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no" \
-        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no       --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no" \
+        "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
+        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
     ; do
    name="$transport with $bindoptions and $ntlmoptions"
