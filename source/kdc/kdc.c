@@ -122,12 +122,15 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	/* queue a pending reply */
 	rep = talloc(kdc_socket, struct kdc_reply);
 	if (rep == NULL) {
+		krb5_data_free(&reply);
 		talloc_free(tmp_ctx);
 		return;
 	}
 	rep->dest_address = talloc_steal(rep, src_addr);
 	rep->dest_port    = src_port;
 	rep->packet       = data_blob_talloc(rep, reply.data, reply.length);
+	krb5_data_free(&reply);
+
 	if (rep->packet.data == NULL) {
 		talloc_free(rep);
 		talloc_free(tmp_ctx);
