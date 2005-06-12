@@ -40,7 +40,6 @@ struct sock_private {
 	struct fd_event *fde;
 	struct socket_context *sock;
 	char *server_name;
-	uint32_t port;
 
 	struct sock_blob *pending_send;
 
