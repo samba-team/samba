@@ -3,8 +3,11 @@ DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=$DOMAIN
 PASSWORD=penguin
-ROOT=$USER
 SRCDIR=`pwd`
+ROOT=$USER
+if test -z "$ROOT"; then
+    ROOT=`whoami`
+fi
 
 if [ $# -lt 1 ]
 then
