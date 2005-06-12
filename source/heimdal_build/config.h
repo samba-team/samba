@@ -83,8 +83,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 /* #undef HAVE_KRB5_ENCRYPT_DATA */
 /* Define to 1 if you have the `krb5_enctypes_compatible_keys' function. */
 #define HAVE_KRB5_ENCTYPES_COMPATIBLE_KEYS 1
-/* Define to 1 if you have the `krb5_freelog' function. */
-#define HAVE_KRB5_FREELOG 1
 /* Define to 1 if you have the `krb5_free_data_contents' function. */
 #define HAVE_KRB5_FREE_DATA_CONTENTS 1
 /* Define to 1 if you have the `krb5_free_error_string' function. */
