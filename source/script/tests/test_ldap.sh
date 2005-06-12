@@ -19,5 +19,5 @@ echo "Listing Groups"
 ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || exit 1
 
 echo "CLDAP test"
-bin/smbtorture //$SERVER/_none_ LDAP-CLDAP || exit 1
+bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || exit 1
 

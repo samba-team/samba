@@ -36,7 +36,7 @@ for bindoptions in connect sign seal sign,seal spnego spnego,sign spnego,seal va
      esac
    for t in $tests; do
     name="$t on $transport with $bindoptions"
-    testit "$name" $VALGRIND bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
+    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*" || failed=`expr $failed + 1`
    done
  done
 done

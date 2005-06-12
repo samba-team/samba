@@ -23,7 +23,7 @@ export SMBD_TEST_FIFO
 failed=0
 for t in $local_tests; do
 	name="$t"
-	testit "$name" $VALGRIND bin/smbtorture ncalrpc: $t "$*" || failed=`expr $failed + 1`
+	testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS ncalrpc: $t "$*" || failed=`expr $failed + 1`
 done
 
 testok $0 $failed
