@@ -2965,7 +2965,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 
 		switch(r->in.level) {
 		case 1:
-			entriesGeneral[count].idx = count;
+			entriesGeneral[count].idx = count + 1;
 			entriesGeneral[count].rid = 
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesGeneral[count].acct_flags =
@@ -2981,7 +2981,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 			break;
 		case 2:
 		case 3:
-			entriesFull[count].idx = count;
+			entriesFull[count].idx = count + 1;
 			entriesFull[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesFull[count].acct_flags =
@@ -2999,7 +2999,7 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 			break;
 		case 4:
 		case 5:
-			entriesAscii[count].idx = count;
+			entriesAscii[count].idx = count + 1;
 			entriesAscii[count].account_name.string =
 				samdb_result_string(res[i], "sAMAccountName",
 						    "");
