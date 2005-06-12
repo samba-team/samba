@@ -68,6 +68,11 @@ fi
 
 smbd_check_or_start
 
+# ensure any one smbtorture call doesn't run too long
+TORTURE_OPTIONS="--maximum-runtime=300"
+export TORTURE_OPTIONS
+
+
 START=`date`
 (
  # give time for nbt server to register its names
