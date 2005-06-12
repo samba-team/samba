@@ -28,7 +28,7 @@ for transport in $transports; do
         "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=torture:echo_TestSleep=no" \
-        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no" \
+        "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
