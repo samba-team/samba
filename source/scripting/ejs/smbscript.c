@@ -57,6 +57,8 @@ void ejs_exception(const char *reason)
 
 	load_interfaces();
 
+	smbscript_init_subsystems;
+
 	mprSetCtx(mem_ctx);
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
