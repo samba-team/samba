@@ -479,7 +479,8 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		fnum_src = cli_nt_create(cli_share_src, src_name, READ_CONTROL_ACCESS);
 
 	if (fnum_src == -1) {
-		DEBUGADD(0,("cannot open file %s on originating server %s\n", 
+		DEBUGADD(0,("cannot open %s %s on originating server %s\n",
+			is_file ? "file":"dir",
 			src_name, cli_errstr(cli_share_src)));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;

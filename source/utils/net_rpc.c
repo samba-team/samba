@@ -2779,14 +2779,6 @@ static int rpc_share_migrate_shares(int argc, const char **argv)
 			       argc, argv);
 }
 
-typedef struct copy_clistate {
-	TALLOC_CTX *mem_ctx;
-	struct cli_state *cli_share_src;
-	struct cli_state *cli_share_dst;
-	const char *cwd;
-} copy_clistate;
-
-
 /**
  * Copy a file/dir 
  *
@@ -2797,11 +2789,22 @@ typedef struct copy_clistate {
  **/
 static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct copy_clistate *local_state = (struct copy_clistate *)state;
-	fstring filename, new_mask, dir;
+	static NTSTATUS nt_status;
+	static struct copy_clistate *local_state;
+	static fstring filename, new_mask;
+	fstring dir;
+	char *old_dir;
 
-	if (strequal(f->name, ".") || strequal(f->name, "..")) 
+	local_state = (struct copy_clistate *)state;
+	nt_status = NT_STATUS_UNSUCCESSFUL;
+
+	if (strequal(f->name, ".")) {
+		if (local_state->top_level_dir)
+			f->name[0] = '\0';
+		else
+			return;
+	}
+	if (strequal(f->name, ".."))
 		return;
 
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
@@ -2815,30 +2818,40 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 		fstrcat(dir, "\\");
 		fstrcat(dir, f->name);
 
-		/* create that directory */
-		nt_status = net_copy_file(local_state->mem_ctx, 
-					  local_state->cli_share_src, 
-					  local_state->cli_share_dst, 
-					  dir, dir, 
-					  opt_acls? True : False, 
-					  opt_attrs? True : False,
-					  opt_timestamps? True : False,
-					  False);
+		switch (local_state->mode)
+		{
+		case NET_MODE_SHARE_MIGRATE:
+			/* create that directory */
+			nt_status = net_copy_file(local_state->mem_ctx,
+						  local_state->cli_share_src,
+						  local_state->cli_share_dst,
+						  dir, dir,
+						  opt_acls? True : False,
+						  opt_attrs? True : False,
+						  opt_timestamps? True : False,
+						  False);
+			break;
+		default:
+			DEBUG(0,( "Unsupported mode %d", local_state->mode));
+			return;
+		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) 
-			printf("could not copy dir %s: %s\n", 
+			printf("could not handle dir %s: %s\n", 
 				dir, nt_errstr(nt_status));
 
-		/* search below that directory */
-		fstrcpy(new_mask, dir);
-		fstrcat(new_mask, "\\*");
+		if (!local_state->top_level_dir) {
+			/* search below that directory */
+			fstrcpy(new_mask, dir);
+			fstrcat(new_mask, "\\*");
 
-		if (!sync_files(local_state->mem_ctx, 
-				local_state->cli_share_src, 
-				local_state->cli_share_dst, 
-				new_mask, dir))
-
-			printf("could not sync files\n");
+			old_dir = local_state->cwd;
+                        local_state->cwd = dir;
+			if (!sync_files(local_state, new_mask))
+				printf("could not handle files\n");
+			local_state->cwd = old_dir;
+		} else
+			local_state->top_level_dir = False;
 			
 		return;
 	}
@@ -2851,17 +2864,25 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 
 	DEBUG(3,("got file: %s\n", filename));
 
-	nt_status = net_copy_file(local_state->mem_ctx, 
-				  local_state->cli_share_src, 
-				  local_state->cli_share_dst, 
-				  filename, filename, 
-				  opt_acls? True : False, 
-				  opt_attrs? True : False,
-				  opt_timestamps? True: False,
-				  True);
+	switch (local_state->mode)
+	{
+	case NET_MODE_SHARE_MIGRATE:
+		nt_status = net_copy_file(local_state->mem_ctx, 
+					  local_state->cli_share_src, 
+					  local_state->cli_share_dst, 
+					  filename, filename, 
+					  opt_acls? True : False, 
+					  opt_attrs? True : False,
+					  opt_timestamps? True: False,
+					  True);
+		break;
+	default:
+		DEBUG(0,( "Unsupported file mode %d", local_state->mode));
+		return;
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) 
-		printf("could not copy file %s: %s\n", 
+		printf("could not handle file %s: %s\n", 
 			filename, nt_errstr(nt_status));
 
 }
@@ -2870,34 +2891,19 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
  * sync files, can be called recursivly to list files 
  * and then call copy_fn for each file 
  *
- * @param mem_ctx	TALLOC_CTX
- * @param cli_share_src	a connected share on the originating server
- * @param cli_share_dst	a connected share on the destination server
+ * @param cp_clistate	pointer to the copy_clistate we work with
  * @param mask		the current search mask
- * @param cwd		the current path
  *
  * @return 		Boolean result
  **/
-BOOL sync_files(TALLOC_CTX *mem_ctx, 
-		struct cli_state *cli_share_src, 
-		struct cli_state *cli_share_dst,
-		pstring mask, fstring cwd)
-
+BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 {
-
-	uint16 attribute = aSYSTEM | aHIDDEN | aDIR;
-	struct copy_clistate clistate;
-
-	clistate.mem_ctx 	= mem_ctx;
-	clistate.cli_share_src 	= cli_share_src;
-	clistate.cli_share_dst 	= cli_share_dst;
-	clistate.cwd 		= cwd;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if (cli_list(cli_share_src, mask, attribute, copy_fn, &clistate) == -1) {
+	if (cli_list(cp_clistate->cli_share_src, mask, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
 		d_printf("listing %s failed with error: %s\n", 
-			mask, cli_errstr(cli_share_src));
+			mask, cli_errstr(cp_clistate->cli_share_src));
 		return False;
 	}
 
@@ -2931,12 +2937,14 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	ENUM_HND hnd;
 	uint32 preferred_len = 0xffffffff, i;
 	uint32 level = 2;
-	struct cli_state *cli_share_src = NULL;
-	struct cli_state *cli_share_dst = NULL;
+	struct copy_clistate cp_clistate;
 	BOOL got_src_share = False;
 	BOOL got_dst_share = False;
 	pstring mask;
 	char *dst = NULL;
+
+	/* decrese argc and safe mode */
+	cp_clistate.mode = argv[--argc][0];
 
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
@@ -2991,40 +2999,57 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 		if (!cli_tdis(cli))
 			return NT_STATUS_UNSUCCESSFUL;
 
-		printf("syncing    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
+		switch (cp_clistate.mode)
+		{
+		case NET_MODE_SHARE_MIGRATE:
+			printf("syncing");
+			break;
+		default:
+			DEBUG(0,("Unsupported mode %s", cp_clistate.mode));
+			break;
+		}
+		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
 			netname, 
 			opt_acls ? "including" : "without", 
 			opt_attrs ? "including" : "without",
 			opt_timestamps ? "(preserving timestamps)" : "");
 
+		cp_clistate.mem_ctx = mem_ctx;
+		cp_clistate.cli_share_src = NULL;
+		cp_clistate.cli_share_dst = NULL;
+		cp_clistate.cwd = NULL;
+		cp_clistate.top_level_dir = True;
+		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
 
 	        /* open share source */
-		nt_status = connect_to_service(&cli_share_src, &cli->dest_ip, 
-					       cli->desthost, netname, "A:");
+		nt_status = connect_to_service(&cp_clistate.cli_share_src,
+					       &cli->dest_ip, cli->desthost,
+					       netname, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
 
 		got_src_share = True;
 
+		if (cp_clistate.mode == NET_MODE_SHARE_MIGRATE) {
+			/* open share destination */
+			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
+						       NULL, dst, netname, "A:");
+			if (!NT_STATUS_IS_OK(nt_status))
+				goto done;
 
-	        /* open share destination */
-		nt_status = connect_to_service(&cli_share_dst, NULL, 
-					       dst, netname, "A:");
-		if (!NT_STATUS_IS_OK(nt_status))
-			goto done;
-
-		got_dst_share = True;
+			got_dst_share = True;
+		}
 
 
 		/* now call the filesync */
 		pstrcpy(mask, "\\*");
 
-		if (!sync_files(mem_ctx, cli_share_src, cli_share_dst, mask, NULL)) {
-			d_printf("could not sync files for share: %s\n", netname);
+
+		if (!sync_files(&cp_clistate, mask)) {
+			d_printf("could not handle files for share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
-		
 	}
 
 	nt_status = NT_STATUS_OK;
@@ -3032,11 +3057,11 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 done:
 
 	if (got_src_share)
-		cli_shutdown(cli_share_src);
+		cli_shutdown(cp_clistate.cli_share_src);
 
 	if (got_dst_share)
-		cli_shutdown(cli_share_dst);
-		
+		cli_shutdown(cp_clistate.cli_share_dst);
+
 	return nt_status;
 
 }
@@ -3103,6 +3128,9 @@ static int rpc_share_migrate(int argc, const char **argv)
 		{"shares", 	rpc_share_migrate_shares},
 		{NULL, NULL}
 	};
+
+	char mode = NET_MODE_SHARE_MIGRATE;
+	argv[argc++] = &mode;
 
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
