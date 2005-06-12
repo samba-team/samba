@@ -37,11 +37,7 @@
                   create_timestamp      INTEGER,
 
                   -- Time when the entry was last modified
-                  modify_timestamp      INTEGER,
-
-                  -- Attributes of this entry, in the form
-                  --   attr\1value\0[attr\1value\0]*\0
-                  entry_data            TEXT
+                  modify_timestamp      INTEGER
                 );
 
 
@@ -79,6 +75,19 @@
                   -- the hierarchy 
                   tree_key              TEXT UNIQUE
                 );
+
+                /*
+                 * We keep a full listing of attribute/value pairs here
+                 */
+                CREATE TABLE ldb_attribute_values
+                (
+                  eid                   INTEGER REFERENCES ldb_entry,
+
+                  attr_name             TEXT, -- see ldb_attr_ATTRIBUTE_NAME
+
+                  attr_value            TEXT
+                );
+
 
                 /*
                  * There is one attribute table per searchable attribute.
