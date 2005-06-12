@@ -33,10 +33,10 @@ network environment. Workstations A, B and C are representative of many physical
 network clients.
 </para>
 
-<image id="domain-example">
-	<imagedescription>An Example Domain.</imagedescription>
+<figure id="domain-example">
+	<title>An Example Domain.</title>
 	<imagefile scale="50">domain</imagefile>
-</image>
+</figure>
 
 <?latex \newpage ?>
 

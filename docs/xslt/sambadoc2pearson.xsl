@@ -13,10 +13,6 @@
 
 	<xsl:strip-space elements="smbconfoption smbconfsection"/>
 
-	<xsl:template match="smbfile">
-		<xsl:apply-templates/>
-	</xsl:template>
-
 	<xsl:template match="smbconfexample/smbconfsection|smbconfblock/smbconfsection">
 		<xsl:text>&#10;</xsl:text>
 		<xsl:value-of select="."/><xsl:text>&#10;</xsl:text>

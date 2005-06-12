@@ -495,14 +495,12 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 	like this one, perhaps calling it <filename>startsmb</filename>.
 	</para>
 
-<smbfile name="startsmb.sh">
 <para><programlisting>
 #!/bin/sh
 /usr/local/samba/bin/smbd -D 
 /usr/local/samba/bin/winbindd
 /usr/local/samba/bin/nmbd -D 
 </programlisting></para>
-</smbfile>
 
 	<para>
 	Make it executable with <command>chmod +x startsmb</command>

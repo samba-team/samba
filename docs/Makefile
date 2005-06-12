@@ -38,7 +38,6 @@ help:
 	@echo " htmlman3,htmlman4 - Build HTML version of manpages"
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
-	@echo " files - Extract other files"
 
 $(DOCBOOKDIR)/Samba3-ByExample.xml: $(filter-out Samba3-ByExample/index.xml,$(wildcard Samba3-ByExample/*.xml))
 $(DOCBOOKDIR)/Samba3-HOWTO.xml: $(filter-out Samba3-HOWTO/index.xml,$(wildcard Samba3-HOWTO/*.xml)) Samba3-HOWTO-attributions.xml
@@ -277,10 +276,6 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
 	@$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
 	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
-
-# Examples and the like
-files: Samba3-HOWTO/index.xml xslt/extract-smbfiles.xsl
-	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	mkdir -p $(EXAMPLESDIR)
