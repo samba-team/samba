@@ -21,7 +21,7 @@
 
 #if defined(HAVE_KRB5)
 
-#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined(HAVE_KRB5_FREELOG) && defined (HAVE_KRB5_SET_WARN_DEST) && defined(HAVE_KRB5_LOG_FACILITY)
+#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined (HAVE_KRB5_SET_WARN_DEST) && defined(HAVE_KRB5_LOG_FACILITY)
 #define HAVE_KRB5_LOG_CONTROL
 #else
 #undef HAVE_KRB5_LOG_CONTROL

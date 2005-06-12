@@ -491,7 +491,7 @@ static int smb_krb5_context_destory_2(void *ptr)
 
 	/* Otherwise krb5_free_context will try and close what we have already free()ed */
 	krb5_set_warn_dest(ctx->krb5_context, NULL);
-	krb5_freelog(ctx->krb5_context, ctx->logf);
+	krb5_closelog(ctx->krb5_context, ctx->logf);
 	smb_krb5_context_destory_1(ptr);
 	return 0;
 }
