@@ -3,6 +3,7 @@ DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=$DOMAIN
 PASSWORD=penguin
+ROOT=$USER
 SRCDIR=`pwd`
 
 if [ $# -lt 1 ]
@@ -38,7 +39,8 @@ incdir=`dirname $0`
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
-./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM --adminpass $PASSWORD
+./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM \
+    --adminpass $PASSWORD --root=$ROOT
 
 cat >$CONFFILE<<EOF
 [global]

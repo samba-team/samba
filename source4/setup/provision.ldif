@@ -298,7 +298,7 @@ sAMAccountType: 0x30000000
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 unicodePwd: ${ADMINPASS}
-unixName: root
+unixName: ${ROOT}
 
 dn: CN=Guest,CN=Users,${BASEDN}
 objectClass: top
