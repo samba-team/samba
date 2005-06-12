@@ -4,41 +4,32 @@
 <title>About the Cover Artwork</title>
 
 	<para>
-	The cover artwork of this book continues the freedom theme of the first
-	edition of <quote>Samba-3 by Example</quote>. The history of civilization
-	demonstrates the fragile nature of freedom. It can be lost in a moment,
-	and once lost, the cost of recovering liberty can be incredible. The last
-	edition cover featured Alfred the Great who liberated England from the
-	constant assault of Vikings and Norsemen. Events in England that
-	that finally liberated the common people came about in small steps, but
-	the result should not be under-estimated. Today, as always, freedom and
-	liberty are seldom appreciated until they are lost. If we can not quantify
-	what is the value of freedom, we shall be little motivated to protect it.
+	The cover artwork of this book continues a theme chosen for the book, 
+	<emphasis>The Official Samba-3 HOWTO and Reference Guide,</emphasis>
+	the cover of which features a Confederate scene. Samba has had a major 
+	impact on the network deployment of Microsoft Windows desktop systems. 
+	The cover artwork of the two official Samba books tells of events that 
+	likewise had a major impact on the future.
 	</para>
 
 	<para>
-	<emphasis>Samba-3 by Example Cover Artwork:</emphasis> The British houses
-	of parliament are a symbol of the Westminster system of government. This form
-	of government permits the people to govern themselves at the lowest level, yet
-	it provides for courts of appeal that are designed to protect freedom and to
-	hold back all forces of tyranny. The clock is a pertinent symbol of the
-	importance of time and place.
+	<emphasis>Samba-3 by Example Cover Artwork:</emphasis> King Alfred the Great 
+	(born 849, ruled 871-899) was one of the most amazing kings ever to 
+	rule England. He defended Anglo-Saxon England from Viking raids, formulated 
+	a code of laws, and fostered a rebirth of religious and scholarly activity. 
+	His reign exhibits military skill and innovation, sound governance and the 
+	ability to inspire men to plan for the future. Alfred liberated England
+	at a time when all resistence seemed futile.
 	</para>
 
 	<para>
-	The information technology industry is being challenged by the imposition of
-	new laws, hostile litigation, and the imposition of significant constraint 
-	of practice that threatens to remove the freedom to develop and deploy open 
-	source software solutions. Samba is a software solution that epitomizes freedom
-	of choice in network interoperability for Microsoft Windows clients.
-	</para>
-
-	<para>
-	I hope you will take the time needed to deploy it well, and that you may realize
-	the greatest benefits may be obtained. You are free to use it in ways never
-	considered, but in doing so there may be some obstacles. Every obstacle that is
-	overcome adds to the freedom you can enjoy. Use Samba well, and it will serve
-	you well.
+	Samba is a network interoperability solution that provides real choice for network
+	administrators. It is an adjunct to Microsoft Windows networks that provides 
+	interoperability of UNIX systems with Microsoft Windows desktop and server systems.
+	You may use Samba to realize the freedom it provides for your network environment 
+	thanks to a dedicated team who work behind the scenes to give you a better choice. 
+	The efforts of these few dedicated developers continues to shape the future of 
+	the Windows interoperability landscape. Enjoy!
 	</para>
 
 </preface>

@@ -288,10 +288,10 @@
 	by setting the sticky bit (set UID/GID) on the top-level directories.
 	</para>
 
-	<image id="acct2net">
-		<imagedescription>Abmas Accounting &smbmdash; 52-User Network Topology</imagedescription>
+	<figure id="acct2net">
+		<title>Abmas Accounting &smbmdash; 52-User Network Topology</title>
 		<imagefile scale="100">acct2net</imagefile>
-	</image>
+	</figure>
 
 	<procedure>
 	<title>Server Installation Steps</title>

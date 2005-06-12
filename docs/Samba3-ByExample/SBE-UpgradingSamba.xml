@@ -83,7 +83,7 @@ to perform a major upgrade. Many administrators have experienced the consequence
 of failure to take adequate precautions. So what is adequate? That is simple!
 If data is lost during an upgrade or update and it can not be restored,
 the precautions taken were inadequate. If a backup was not needed, but was available,
-caution was on the side of the victor.
+precaution was on the side of the victor.
 </para>
 
 	<sect2>
@@ -127,7 +127,7 @@ caution was on the side of the victor.
 	There is an old axiom that says, <quote>The greater the volume of the documentation,
 	the greater the risk that noone will read it, but where there is no documentation,
 	noone can read it!</quote> While true, some documentation is an evil necessity.
-	It is hoped that this update to the documentation will avoid both extremes.
+	It is to be hoped that this update to the documentation will avoid both extremes.
 	</para>
 
 	<sect3>
@@ -965,7 +965,7 @@ that are compatible with the original OS vendor's practices.
 <para>
 <indexterm><primary>binary package</primary></indexterm>
 <indexterm><primary>binary files</primary></indexterm>
-If you are not sure whether a binary package complies with the OS
+If you are not sure whether or a binary package complies with the OS
 vendor's practices, it is better to ask the package maintainer via
 email than to waste much time dealing with the nuances.
 Alternately, just diagnose the paths specified by the binary files following
@@ -1116,8 +1116,8 @@ back to searching the 'ldap suffix' in some cases.
 	is stored in the <constant>smbpasswd</constant> or in the
 	<constant>tdbsam</constant> format, the user and group account information
 	for UNIX accounts that match the Samba accounts will reside in the system
-	<filename>/etc/passwd</filename>, <filename>/etc/shadow</filename>, and
-	<filename>/etc/group</filename> files. In this case, be sure to copy these
+	<filename>/etc/passwd, /etc/shadow</filename>, and
+	<filename>/etc/group</filename> files. In this case be sure to copy these
 	account entries to the new target server.
 	</para>
 
@@ -1152,7 +1152,7 @@ back to searching the 'ldap suffix' in some cases.
 	<itemizedlist>
 		<listitem><para>
 		Where UNIX (POSIX) user and group accounts are stored in the system
-		<filename>/etc/passwd</filename>, <filename>/etc/shadow</filename>, and 
+		<filename>/etc/passwd, /etc/shadow</filename>, and 
 		<filename>/etc/group</filename> files, be sure to add the same accounts
 		with identical UID and GID values for each user.
 		</para>
