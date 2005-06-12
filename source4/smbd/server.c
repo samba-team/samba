@@ -137,6 +137,18 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 	}
 }
 
+
+/*
+  die if the user selected maximum runtime is exceeded
+*/
+static void max_runtime_handler(struct event_context *ev, struct timed_event *te, 
+				struct timeval t, void *private)
+{
+	DEBUG(0,("smbd maximum runtime exceeded - terminating\n"));
+	exit(0);
+}
+
+
 /*
  main server.
 */
@@ -148,6 +160,7 @@ static int binary_smbd_main(int argc, const char *argv[])
 	struct event_context *event_ctx;
 	NTSTATUS status;
 	const char *model = "standard";
+	int max_runtime = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
@@ -155,6 +168,8 @@ static int binary_smbd_main(int argc, const char *argv[])
 		 "Run interactive (not a daemon)", NULL},
 		{"model", 'M', POPT_ARG_STRING, &model, True, 
 		 "Select process model", "MODEL"},
+		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, True, 
+		 "set maximum time for smbd to live", "seconds"},
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -220,6 +235,13 @@ static int binary_smbd_main(int argc, const char *argv[])
 #endif
 		event_add_fd(event_ctx, event_ctx, 0, EVENT_FD_READ, 
 			     server_stdin_handler, NULL);
+	}
+
+
+	if (max_runtime) {
+		event_add_timed(event_ctx, event_ctx, 
+				timeval_current_ofs(max_runtime, 0), 
+				max_runtime_handler, NULL);
 	}
 
 	DEBUG(0,("Using %s process model\n", model));
