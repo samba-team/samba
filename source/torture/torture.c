@@ -2515,6 +2515,12 @@ static BOOL is_binding_string(const char *binding_string)
 	return NT_STATUS_IS_OK(status);
 }
 
+static void max_runtime_handler(int sig)
+{
+	DEBUG(0,("maximum runtime exceeded for smbtorture - terminating\n"));
+	exit(1);
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -2523,6 +2529,7 @@ static BOOL is_binding_string(const char *binding_string)
 	int opt, i;
 	char *p;
 	BOOL correct = True;
+	int max_runtime=0;
 	int argc_new;
 	char **argv_new;
 	poptContext pc;
@@ -2542,6 +2549,8 @@ static BOOL is_binding_string(const char *binding_string)
 		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
 		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 	OPT_DNS,	"parse-dns", 	NULL},
 		{"dangerous",	'X', POPT_ARG_NONE,	NULL,   OPT_DANGEROUS,	"dangerous", 	NULL},
+		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, 0, 
+		 "set maximum time for smbtorture to live", "seconds"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -2583,6 +2592,16 @@ static BOOL is_binding_string(const char *binding_string)
 			usage(pc);
 			exit(1);
 		}
+	}
+
+	if (max_runtime) {
+		/* this will only work if nobody else uses alarm(),
+		   which means it won't work for some tests, but we
+		   can't use the event context method we use for smbd
+		   as so many tests create their own event
+		   context. This will at least catch most cases. */
+		signal(SIGALRM, max_runtime_handler);
+		alarm(max_runtime);
 	}
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
