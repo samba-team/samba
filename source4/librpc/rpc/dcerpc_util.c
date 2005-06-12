@@ -1343,6 +1343,7 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 	p2->conn = talloc_reference(p2, p->conn);
+	p2->request_timeout = p->request_timeout;
 
 	p2->context_id = ++p->conn->next_context_id;
 
