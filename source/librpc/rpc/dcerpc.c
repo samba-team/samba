@@ -110,6 +110,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx)
 
 	p->last_fault_code = 0;
 	p->context_id = 0;
+	p->request_timeout = DCERPC_REQUEST_TIMEOUT;
 
 	ZERO_STRUCT(p->syntax);
 	ZERO_STRUCT(p->transfer_syntax);
@@ -521,6 +522,17 @@ static void full_request_recv(struct dcerpc_connection *c, DATA_BLOB *blob,
 }
 
 /*
+  handle timeouts of full dcerpc requests
+*/
+static void dcerpc_full_timeout_handler(struct event_context *ev, struct timed_event *te, 
+					struct timeval t, void *private)
+{
+	struct full_request_state *state = talloc_get_type(private, 
+							   struct full_request_state);
+	state->status = NT_STATUS_IO_TIMEOUT;
+}
+
+/*
   perform a single pdu synchronous request - used for the bind code
   this cannot be mixed with normal async requests
 */
@@ -546,6 +558,10 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	event_add_timed(c->transport.event_context(c), state, 
+			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0), 
+			dcerpc_full_timeout_handler, state);
 
 	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
 		struct event_context *ctx = c->transport.event_context(c);
@@ -830,6 +846,26 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 	}
 }
 
+/*
+  handle timeouts of individual dcerpc requests
+*/
+static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *private)
+{
+	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
+
+	if (req->state != RPC_REQUEST_PENDING) {
+		return;
+	}
+
+	req->status = NT_STATUS_IO_TIMEOUT;
+	req->state = RPC_REQUEST_DONE;
+	DLIST_REMOVE(req->p->conn->pending, req);
+	if (req->async.callback) {
+		req->async.callback(req);
+	}
+}
+
 
 /*
   make sure requests are cleaned up 
@@ -930,6 +966,12 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 		}		
 
 		remaining -= chunk;
+	}
+
+	if (p->request_timeout) {
+		event_add_timed(dcerpc_event_context(p), req, 
+				timeval_current_ofs(p->request_timeout, 0), 
+				dcerpc_timeout_handler, req);
 	}
 
 	talloc_set_destructor(req, dcerpc_req_destructor);
