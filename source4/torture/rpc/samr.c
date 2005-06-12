@@ -2479,6 +2479,50 @@ static BOOL test_QueryDisplayInfo3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;	
 }
 
+
+static BOOL test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDisplayInfo r;
+	BOOL ret = True;
+	uint16_t levels[] = {1, 2, 3, 4, 5};
+	int i;
+
+	printf("Testing QueryDisplayInfo continuation\n");
+
+	r.in.domain_handle = handle;
+	r.in.level = 1;
+	r.in.start_idx = 0;
+	r.in.max_entries = 1;
+	r.in.buf_size = (uint32_t)-1;
+
+	do {
+		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
+		if (NT_STATUS_IS_OK(status) && r.out.returned_size != 0) {
+			if (r.out.info.info1.entries[0].idx != r.in.start_idx + 1) {
+				printf("failed: expected idx %d but got %d\n",
+				       r.in.start_idx + 1,
+				       r.out.info.info1.entries[0].idx);
+				ret = False;
+				break;
+			}
+		}
+		if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
+		    !NT_STATUS_IS_OK(status)) {
+			printf("QueryDisplayInfo level %u failed - %s\n", 
+			       r.in.level, nt_errstr(status));
+			ret = False;
+			break;
+		}
+		r.in.start_idx++;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
+		 NT_STATUS_IS_OK(status) &&
+		 r.out.returned_size != 0);
+	
+	return ret;	
+}
+
 static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
 {
@@ -2958,6 +3002,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
 	ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
 	ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
+	ret &= test_QueryDisplayInfo_continue(p, mem_ctx, &domain_handle);
 	ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
 	ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
 	ret &= test_GroupList(p, mem_ctx, &domain_handle);
