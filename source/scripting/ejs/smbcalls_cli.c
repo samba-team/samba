@@ -81,7 +81,8 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 
 	/* Return a socket object */
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(transport, talloc_get_name(transport)));
+	ejsSetReturnValue(eid, mprCreatePtrVar(transport, 
+					       talloc_get_name(transport)));
 
 	return 0;
 }
@@ -91,6 +92,7 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
      session_setup(conn, "DOMAIN\USERNAME%PASSWORD");
      session_setup(conn, USERNAME, PASSWORD);
      session_setup(conn, DOMAIN, USERNAME, PASSWORD);
+     session_setup(conn);  // anonymous
 
  */
 
@@ -101,31 +103,67 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 	struct smb_composite_sesssetup setup;
 	struct cli_credentials *creds;
 	NTSTATUS status;
+	int result = -1;
 
 	/* Argument parsing */
 
-	if (argc < 1 || argc > 3) {
+	if (argc < 1 || argc > 4) {
 		ejsSetErrorMsg(eid, "session_setup invalid arguments");
 		return -1;
 	}
 
-	if (argv[0]->type != MPR_TYPE_PTR) {
+	if (!mprVarIsPtr(argv[0]->type)) {
 		ejsSetErrorMsg(eid, "first arg is not a connect handle");
 		return -1;
 	}
 
 	transport = argv[0]->ptr;
+	creds = cli_credentials_init(transport);
+	cli_credentials_set_conf(creds);
+
+	if (argc == 4) {
+
+		/* DOMAIN, USERNAME, PASSWORD form */
+
+		if (!mprVarIsString(argv[1]->type)) {
+			ejsSetErrorMsg(eid, "arg 1 must be a string");
+			goto done;
+		}
+
+		cli_credentials_set_domain(creds, argv[1]->string, 
+					   CRED_SPECIFIED);
+
+		if (!mprVarIsString(argv[2]->type)) {
+			ejsSetErrorMsg(eid, "arg 2 must be a string");
+			goto done;
+		}
+
+		cli_credentials_set_username(creds, argv[2]->string, 
+					     CRED_SPECIFIED);
+
+		if (!mprVarIsString(argv[3]->type)) {
+			ejsSetErrorMsg(eid, "arg 3 must be a string");
+			goto done;
+		}
+
+		cli_credentials_set_password(creds, argv[3]->string,
+					     CRED_SPECIFIED);
+
+	} else {
+
+		/* Anonymous connection */
+
+		cli_credentials_set_anonymous(creds);
+	}
 
 	/* Do session setup */
 
 	session = smbcli_session_init(transport, transport, True);
+
 	if (!session) {
 		ejsSetErrorMsg(eid, "session init failed");
 		return -1;
 	}
-
-	creds = cli_credentials_init(session);
-	cli_credentials_set_anonymous(creds);
 
 	setup.in.sesskey = transport->negotiate.sesskey;
 	setup.in.capabilities = transport->negotiate.capabilities;
@@ -134,11 +172,92 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 	status = smb_composite_sesssetup(session, &setup);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "session setup: %s", nt_errstr(status));
+		return -1;
+	}
+
 	session->vuid = setup.out.vuid;	
 
 	/* Return a session object */
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(session, talloc_get_name(session)));
+	ejsSetReturnValue(eid, mprCreatePtrVar(session, 
+					       talloc_get_name(session)));
+
+	result = 0;
+
+ done:
+	talloc_free(creds);
+	return result;
+}
+
+/* Perform a tree connect
+   
+     session_setup(session, SHARE);
+
+ */
+
+static int ejs_cli_tcon(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_session *session;
+	struct smbcli_tree *tree;
+	union smb_tcon tcon;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	char *password = "";
+
+	/* Argument parsing */
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "tree_connect invalid arguments");
+		return -1;
+	}
+
+	if (!mprVarIsPtr(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "first arg is not a session handle");
+		return -1;
+	}
+
+	session = argv[0]->ptr;
+	tree = smbcli_tree_init(session, session, True);
+
+	if (!tree) {
+		ejsSetErrorMsg(eid, "tree init failed");
+		return -1;
+	}
+
+	mem_ctx = talloc_init("tcon");
+	if (!mem_ctx) {
+		ejsSetErrorMsg(eid, "talloc_init failed");
+		return -1;
+	}
+
+	/* Do tree connect */
+
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+
+	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
+		tcon.tconx.in.password = data_blob(NULL, 0);
+	} else if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		tcon.tconx.in.password = data_blob_talloc(mem_ctx, NULL, 24);
+		if (session->transport->negotiate.secblob.length < 8) {
+			ejsSetErrorMsg(eid, "invalid security blob");
+			return -1;
+		}
+		SMBencrypt(password, session->transport->negotiate.secblob.data, tcon.tconx.in.password.data);
+	} else {
+		tcon.tconx.in.password = data_blob_talloc(mem_ctx, password, strlen(password)+1);
+	}
+
+	tcon.tconx.in.path = argv[1]->string;
+	tcon.tconx.in.device = "?????";
+	
+	status = smb_tree_connect(tree, mem_ctx, &tcon);
+
+	tree->tid = tcon.tconx.out.tid;
+
+	talloc_free(mem_ctx);	
 
 	return 0;
 }
@@ -150,4 +269,5 @@ void smb_setup_ejs_cli(void)
 {
 	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "session_setup", ejs_cli_ssetup, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "tree_connect", ejs_cli_tcon, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
