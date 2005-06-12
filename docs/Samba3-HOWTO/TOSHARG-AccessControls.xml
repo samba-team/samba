@@ -352,8 +352,10 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	An overview of the permissions field can be found in <link linkend="access1">Overview of UNIX permissions field</link>.
 	</para>
 
-	<image id="access1"><imagedescription>Overview of UNIX permissions field.</imagedescription>
-		<imagefile scale="40">access1</imagefile></image>
+	<figure id="access1">
+		<title>Overview of UNIX permissions field.</title>
+		<imagefile scale="40">access1</imagefile>
+	</figure>
 
 	<para>
 		Any bit flag may be unset. An unset bit flag is the equivalent of <quote>cannot</quote> and is represented

@@ -1423,10 +1423,10 @@ Samba is capable of cross-subnet browsing when configured correctly.
 Consider a network set up as in <link linkend="browsing1">Cross-Subnet Browsing Example</link>.
 </para>
 
-<image id="browsing1">
-	<imagedescription>Cross-Subnet Browsing Example.</imagedescription>
+<figure id="browsing1">
+	<title>Cross-Subnet Browsing Example.</title>
 	<imagefile scale="40">browsing1</imagefile>
-</image>
+</figure>
 	
 <para>
 This consists of 3 subnets (1, 2, 3) connected by two routers

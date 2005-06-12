@@ -56,15 +56,15 @@
 	parameters in the &smb.conf; file.
 	</para>
 
-	<image id="idmap-sid2gid">
-		<imagedescription>IDMAP: group SID to GID resolution.</imagedescription>
+	<figure id="idmap-sid2gid">
+		<title>IDMAP: group SID to GID resolution.</title>
 		<imagefile scale="50">idmap-sid2gid</imagefile>
-	</image>
+	</figure>
 
-	<image id="idmap-gid2sid">
-		<imagedescription>IDMAP: GID resolution to matching SID.</imagedescription>
+	<figure id="idmap-gid2sid">
+		<title>IDMAP: GID resolution to matching SID.</title>
 	<imagefile scale="50">idmap-gid2sid</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>IDMAP</primary></indexterm>
@@ -75,10 +75,10 @@
 	used to establish UNIX group to NT SID mappings as shown in <link linkend="idmap-store-gid2sid">IDMAP: storing group mappings</link>.
 	</para>
 
-	<image id="idmap-store-gid2sid">
-		<imagedescription>IDMAP storing group mappings.</imagedescription>
+	<figure id="idmap-store-gid2sid">
+		<title>IDMAP storing group mappings.</title>
 		<imagefile scale="50">idmap-store-gid2sid</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>groupadd</primary></indexterm>
