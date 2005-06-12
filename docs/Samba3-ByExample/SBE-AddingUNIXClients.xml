@@ -191,14 +191,14 @@
 			</para></listitem>
 
 			<listitem><para>
-			<indexterm><primary>winbind enable local accounts</primary></indexterm>
-			<indexterm><primary>Domain Member</primary><secondary>servers</secondary></indexterm>
-			<indexterm><primary>Domain Controllers</primary></indexterm>
+			<indexterm><primary>winbind trusted domains only</primary></indexterm>
+			<indexterm><primary>domain member</primary><secondary>servers</secondary></indexterm>
+			<indexterm><primary>domain controllers</primary></indexterm>
 			If you wish to make use of accounts (users and/or groups) that are local to (i.e., capable
-			of being resolved using) the NSS facility, it is imperative to use the 
-			<smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
-			in the &smb.conf; file. This parameter specifically applies only to domain controllers, 
-			not to domain member servers.
+			of being resolved using) the NSS facility, it is possible to use the 
+			<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
+			in the &smb.conf; file. This parameter specifically applies to domain controllers, 
+			and to domain member servers.
 			</para></listitem>
 
 		</itemizedlist>
