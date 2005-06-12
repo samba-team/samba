@@ -89,7 +89,7 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 
 /* Perform a session setup:
    
-     session_setup(conn, "DOMAIN\USERNAME%PASSWORD");
+     session_setup(conn, "DOMAIN\\USERNAME%PASSWORD");
      session_setup(conn, USERNAME, PASSWORD);
      session_setup(conn, DOMAIN, USERNAME, PASSWORD);
      session_setup(conn);  // anonymous
@@ -147,6 +147,34 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 		}
 
 		cli_credentials_set_password(creds, argv[3]->string,
+					     CRED_SPECIFIED);
+
+	} else if (argc == 3) {
+
+		/* USERNAME, PASSWORD form */
+
+		if (!mprVarIsString(argv[1]->type)) {
+			ejsSetErrorMsg(eid, "arg1 must be a string");
+			goto done;
+		}
+
+		cli_credentials_set_username(creds, argv[1]->string,
+					     CRED_SPECIFIED);
+
+		if (!mprVarIsString(argv[2]->type)) {
+
+			ejsSetErrorMsg(eid, "arg2 must be a string");
+			goto done;
+		}
+
+		cli_credentials_set_password(creds, argv[2]->string,
+					     CRED_SPECIFIED);
+
+	} else if (argc == 2) {
+
+		/* DOMAIN/USERNAME%PASSWORD form */
+
+		cli_credentials_parse_string(creds, argv[1]->string,
 					     CRED_SPECIFIED);
 
 	} else {
@@ -254,6 +282,11 @@ static int ejs_cli_tcon(MprVarHandle eid, int argc, MprVar **argv)
 	tcon.tconx.in.device = "?????";
 	
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "session setup: %s", nt_errstr(status));
+		return -1;
+	}
 
 	tree->tid = tcon.tconx.out.tid;
 
