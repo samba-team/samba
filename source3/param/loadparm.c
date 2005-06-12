@@ -2520,6 +2520,59 @@ static int map_parameter(const char *pszParmName)
 }
 
 /***************************************************************************
+ Show all parameter's name, type, [values,] and flags.
+***************************************************************************/
+
+void show_parameter_list(void)
+{
+	int classIndex, parmIndex, enumIndex, flagIndex;
+	BOOL hadFlag;
+	char *section_names[] = { "local", "global", NULL};
+	char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
+		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
+		"P_UGSTRING", "P_ENUM", "P_SEP"};
+	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
+		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
+		FLAG_HIDE, FLAG_DOS_STRING};
+	char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
+		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
+		"FLAG_DEPRECATED", "FLAG_HIDE", "FLAG_DOS_STRING", NULL};
+
+	for ( classIndex=0; section_names[classIndex]; classIndex++) {
+		printf("[%s]\n", section_names[classIndex]);
+		for (parmIndex = 0; parm_table[parmIndex].label; parmIndex++) {
+			if (parm_table[parmIndex].class == classIndex) {
+				printf("%s=%s", 
+					parm_table[parmIndex].label,
+					type[parm_table[parmIndex].type]);
+				switch (parm_table[parmIndex].type) {
+				case P_ENUM:
+					printf(",");
+					for (enumIndex=0; parm_table[parmIndex].enum_list[enumIndex].name; enumIndex++)
+						printf("%s%s",
+							enumIndex ? "|" : "",
+							parm_table[parmIndex].enum_list[enumIndex].name);
+					break;
+				default:
+					break;
+				}
+				printf(",");
+				hadFlag = False;
+				for ( flagIndex=0; flag_names[flagIndex]; flagIndex++ ) {
+					if (parm_table[parmIndex].flags & flags[flagIndex]) {
+						printf("%s%s",
+							hadFlag ? "|" : "",
+							flag_names[flagIndex]);
+						hadFlag = True;
+					}
+				}
+				printf("\n");
+			}
+		}
+	}
+}
+
+/***************************************************************************
  Set a boolean variable from the text value stored in the passed string.
  Returns True in success, False if the passed string does not correctly 
  represent a boolean.
@@ -3542,7 +3595,7 @@ static void dump_globals(FILE *f)
 	int i;
 	param_opt_struct *data;
 	
-	fprintf(f, "# Global parameters\n[global]\n");
+	fprintf(f, "[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].class == P_GLOBAL &&
@@ -3587,7 +3640,7 @@ static void dump_a_service(service * pService, FILE * f)
 	param_opt_struct *data;
 	
 	if (pService != &sDefault)
-		fprintf(f, "\n[%s]\n", pService->szService);
+		fprintf(f, "[%s]\n", pService->szService);
 
 	for (i = 0; parm_table[i].label; i++) {
 
@@ -3627,6 +3680,49 @@ static void dump_a_service(service * pService, FILE * f)
 	}
 }
 
+/***************************************************************************
+ Display the contents of a parameter of a single services record.
+***************************************************************************/
+
+BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
+{
+	service * pService = ServicePtrs[snum];
+	int i, result = False;
+	parm_class class;
+	unsigned flag = 0;
+	void *ptr;
+
+	if (isGlobal) {
+		class = P_GLOBAL;
+		flag = FLAG_GLOBAL;
+	} else
+		class = P_LOCAL;
+	
+	for (i = 0; parm_table[i].label; i++) {
+		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
+		    (parm_table[i].class == class || parm_table[i].flags & flag) &&
+		    parm_table[i].ptr &&
+		    (*parm_table[i].label != '-') &&
+		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
+		{
+			void *ptr;
+
+			if (isGlobal)
+				ptr = parm_table[i].ptr;
+			else
+				ptr = ((char *)pService) +
+					PTR_DIFF(parm_table[i].ptr, &sDefault);
+
+			print_parameter(&parm_table[i],
+					ptr, f);
+			fprintf(f, "\n");
+			result = True;
+			break;
+		}
+	}
+
+	return result;
+}
 
 /***************************************************************************
  Return info about the next service  in a service. snum==GLOBAL_SECTION_SNUM gives the globals.
@@ -4059,8 +4155,10 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 
 	dump_a_service(&sDefault, f);
 
-	for (iService = 0; iService < maxtoprint; iService++)
+	for (iService = 0; iService < maxtoprint; iService++) {
+		fprintf(f,"\n");
 		lp_dump_one(f, show_defaults, iService);
+	}
 }
 
 /***************************************************************************
