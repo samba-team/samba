@@ -10,6 +10,7 @@ my $opt_hostip;
 my $opt_realm;
 my $opt_domain;
 my $opt_adminpass;
+my $opt_root;
 my $opt_nobody;
 my $opt_nogroup;
 my $opt_wheel;
@@ -171,6 +172,10 @@ sub substitute($)
 		return $opt_nobody;
 	}
 
+	if ($var eq "ROOT") {
+		return $opt_root;
+	}
+
 	if ($var eq "NOGROUP") {
 		return $opt_nogroup;
 	}
@@ -278,6 +283,7 @@ provision.pl [options]
  --invocationid	GUID		set invocationid (otherwise random)
  --outputdir	OUTPUTDIR	set output directory
  --adminpass	PASSWORD	choose admin password (otherwise random)
+ --root         USERNAME	choose 'root' unix username
  --nobody	USERNAME	choose 'nobody' user
  --nogroup	GROUPNAME	choose 'nogroup' group
  --wheel	GROUPNAME	choose 'wheel' privileged group
@@ -303,6 +309,7 @@ GetOptions(
 	    'host-guid=s' => \$opt_hostguid,
 	    'invocationid=s' => \$opt_invocationid,
 	    'adminpass=s' => \$opt_adminpass,
+	    'root=s' => \$opt_root,
 	    'nobody=s' => \$opt_nobody,
 	    'nogroup=s' => \$opt_nogroup,
 	    'wheel=s' => \$opt_wheel,
@@ -333,6 +340,10 @@ if (!$opt_hostip) {
 }
 
 $opt_quiet or print "Provisioning host '$opt_hostname'[$opt_hostip] for domain '$opt_domain' in realm '$opt_realm'\n"; 
+
+if (!$opt_root) {
+	$opt_root = "root";
+}
 
 if (!$opt_nobody) {
 	if (defined getpwnam("nobody")) {
@@ -380,7 +391,7 @@ my $data = FileLoad("setup/provision.ldif") || die "Unable to load provision.ldi
 $data .= add_foreign("S-1-5-7", "Anonymous", "\${NOBODY}");
 $data .= add_foreign("S-1-1-0", "World", "\${NOGROUP}");
 $data .= add_foreign("S-1-5-2", "Network", "\${NOGROUP}");
-$data .= add_foreign("S-1-5-18", "System", "root");
+$data .= add_foreign("S-1-5-18", "System", "\${ROOT}");
 $data .= add_foreign("S-1-5-11", "Authenticated Users", "\${USERS}");
 
 if (!$opt_adminpass) {
