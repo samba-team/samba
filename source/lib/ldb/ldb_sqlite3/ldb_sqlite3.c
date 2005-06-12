@@ -290,6 +290,7 @@ lsqlite3_delete(struct ldb_module *module,
 		return 0;
 	}
 	
+#warning "lsqlite3_delete() is not yet supported"
         return -1;
 }
 
@@ -302,11 +303,18 @@ lsqlite3_search(struct ldb_module * module,
                 const char * const attrs[],
                 struct ldb_message *** res)
 {
+        int                         ret;
+        int                         bLoop;
         long long                   eid = 0;
-        char *                      sql;
-	char *                      sql_constraints;
-        char *                      table_list;
+        long long                   prevEID;
+        char *                      pSql = NULL;
+	char *                      pSqlConstraints;
+        char *                      pTableList;
         char *                      hTalloc;
+        const char *                pDN;
+        const char *                pAttrName;
+        const char *                pAttrValue;
+        sqlite3_stmt *              pStmt;
 	struct ldb_parse_tree *     pTree;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 	
@@ -340,17 +348,21 @@ lsqlite3_search(struct ldb_module * module,
 	talloc_steal(hTalloc, pTree);
 	
         /* Convert filter into a series of SQL statements (constraints) */
-	sql_constraints = parsetree_to_sql(module, hTalloc, pTree);
+	pSqlConstraints = parsetree_to_sql(module, hTalloc, pTree);
 	
         /* Get the list of attribute names to use as our extra table list */
-        table_list = parsetree_to_tablelist(module, hTalloc, pTree);
+        pTableList = parsetree_to_tablelist(module, hTalloc, pTree);
 
         switch(scope) {
         case LDB_SCOPE_DEFAULT:
         case LDB_SCOPE_SUBTREE:
-                sql = sqlite3_mprintf(
-                        "SELECT entry.entry_data\n"
-                        "  FROM ldb_entry AS entry\n"
+                pSql = sqlite3_mprintf(
+                        "SELECT entry.eid,\n"
+                        "       entry.dn,\n"
+                        "       av.attr_name,\n"
+                        "       av.attr_value\n"
+                        "  FROM ldb_entry AS entry,\n"
+                        "       ldb_attribute_values AS av\n"
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
                         "       FROM ldb_entry,\n"
@@ -358,55 +370,133 @@ lsqlite3_search(struct ldb_module * module,
                         "            %q\n"
                         "       WHERE ldb_descendants.aeid = %lld\n"
                         "         AND ldb_entry.eid = ldb_descendants.deid\n"
-                        "         AND ldap_entry.eid IN\n"
-                        "%s"
-                        ");",
-                        table_list,
+                        "         AND ldap_entry.eid IN\n%s\n"
+                        "    ) "
+                        "    AND av.eid = entry.eid "
+                        "  ORDER BY av.eid, av.attr_name;",
+                        pTableList,
                         eid,
-                        sql_constraints);
+                        pSqlConstraints);
                 break;
 
         case LDB_SCOPE_BASE:
-                sql = sqlite3_mprintf(
-                        "SELECT entry.entry_data\n"
-                        "  FROM ldb_entry AS entry\n"
+                pSql = sqlite3_mprintf(
+                        "SELECT entry.eid,\n"
+                        "       entry.dn,\n"
+                        "       av.attr_name,\n"
+                        "       av.attr_value\n"
+                        "  FROM ldb_entry AS entry,\n"
+                        "       ldb_attribute_values AS av\n"
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
                         "       FROM %q\n"
                         "       WHERE ldb_entry.eid = %lld\n"
-                        "         AND ldb_entry.eid IN\n"
-                        "%s"
-                        ");",
-                        table_list,
+                        "         AND ldb_entry.eid IN\n%s\n"
+                        "    ) "
+                        "    AND av.eid = entry.eid "
+                        "  ORDER BY av.eid, av.attr_name;",
+                        pTableList,
                         eid,
-                        sql_constraints);
+                        pSqlConstraints);
                 break;
 
         case LDB_SCOPE_ONELEVEL:
-                sql = sqlite3_mprintf(
-                        "SELECT entry.entry_data\n"
-                        "  FROM ldb_entry AS entry\n"
+                pSql = sqlite3_mprintf(
+                        "SELECT entry.eid,\n"
+                        "       entry.dn,\n"
+                        "       av.attr_name,\n"
+                        "       av.attr_value\n"
+                        "  FROM ldb_entry AS entry,\n"
+                        "       ldb_attribute_values AS av\n"
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
                         "       FROM ldb_entry AS pchild, "
                         "            %q\n"
                         "       WHERE ldb_entry.eid = pchild.eid "
                         "         AND pchild.peid = %lld "
-                        "         AND ldb_entry.eid IN\n"
-                        "%s"
-                        ");",
-                        table_list,
+                        "         AND ldb_entry.eid IN\n%s\n"
+                        "    ) "
+                        "    AND av.eid = entry.eid "
+                        "  ORDER BY av.eid, av.attr_name;",
+                        pTableList,
                         eid,
-                        sql_constraints);
+                        pSqlConstraints);
                 break;
         }
 
-#warning "retrieve and return the result set of the search here"
+        /* Initially, we have no old eid */
+        prevEID = -1;
+
+        /*
+         * Prepare and execute the SQL statement.  Loop allows retrying on
+         * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
+         * requiring retrying the operation.
+         */
+        for (bLoop = TRUE; bLoop; ) {
+
+                /* Compile the SQL statement into sqlite virtual machine */
+                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
+                                           pSql,
+                                           -1,
+                                           &pStmt,
+                                           NULL)) == SQLITE_SCHEMA) {
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        ret = -1;
+                        break;
+                }
+                
+                /* Loop through the returned rows */
+                do {
+                        /* Get the next row */
+                        if ((ret = sqlite3_step(pStmt)) == SQLITE_ROW) {
+
+                                /* Get the values from this row */
+                                eid = sqlite3_column_int64(pStmt, 0);
+                                pDN = sqlite3_column_text(pStmt, 1);
+                                pAttrName = sqlite3_column_text(pStmt, 2);
+                                pAttrValue = sqlite3_column_text(pStmt, 3);
+                                
+                                /* Add this row data to the return results */
+#warning "finish returning the result set of the search here"
+                        }
+                } while (ret == SQLITE_ROW);
+
+                if (ret == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_DONE) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+
+                /* Free the virtual machine */
+                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+
+                /*
+                 * Normal condition is only one time through loop.  Loop is
+                 * rerun in error conditions, via "continue", above.
+                 */
+                ret = 0;
+                bLoop = FALSE;
+        }
+
 
         /* End the transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "END TRANSACTION;");
 
-	return 0;
+        /* We're alll done with this query */
+        sqlite3_free(pSql);
+
+	return ret;
 }
 
 
@@ -559,11 +649,7 @@ initialize(struct lsqlite3_private *lsqlite3,
                 "  create_timestamp      INTEGER,"
 
                 "  -- Time when the entry was last modified"
-                "  modify_timestamp      INTEGER,"
-
-                "  -- Attributes of this entry, in the form"
-                "  --   attr\1value\0[attr\1value\0]*\0"
-                "  entry_data            TEXT"
+                "  modify_timestamp      INTEGER"
                 ");"
 
 
@@ -601,6 +687,16 @@ initialize(struct lsqlite3_private *lsqlite3,
                 "  -- tree_key tracks the position of the class in"
                 "  -- the hierarchy"
                 "  tree_key              TEXT UNIQUE"
+                ");"
+
+                "/*"
+                " * We keep a full listing of attribute/value pairs here"
+                " */"
+                "CREATE TABLE ldb_attribute_values"
+                "("
+                "  eid                   INTEGER REFERENCES ldb_entry,"
+                "  attr_name             TEXT, -- see ldb_attr_ATTRIBUTE_NAME"
+                "  attr_value            TEXT"
                 ");"
 
                 "/*"
@@ -793,7 +889,9 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                                            pTail,
                                            -1,
                                            &pStmt,
-                                           &pTail)) != SQLITE_OK) {
+                                           &pTail)) == SQLITE_SCHEMA) {
+                        continue;
+                } else if (ret != SQLITE_OK) {
                         ret = -1;
                         break;
                 }
@@ -878,12 +976,14 @@ query_int(const struct lsqlite3_private * lsqlite3,
                                            pTail,
                                            -1,
                                            &pStmt,
-                                           &pTail)) != SQLITE_OK) {
+                                           &pTail)) == SQLITE_SCHEMA) {
+                        continue;
+                } else if (ret != SQLITE_OK) {
                         ret = -1;
                         break;
                 }
                 
-                /* No rows expected, so just step through machine code once */
+                /* One row expected */
                 if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
                         (void) sqlite3_finalize(pStmt);
                         continue;
