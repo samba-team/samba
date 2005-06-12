@@ -26,6 +26,16 @@
 typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
 				   struct cli_state *, TALLOC_CTX *, int, const char **);
 				   
+typedef struct copy_clistate {
+	TALLOC_CTX *mem_ctx;
+	struct cli_state *cli_share_src;
+	struct cli_state *cli_share_dst;
+	char *cwd;
+	BOOL top_level_dir;
+	uint16 attribute;
+	int mode;
+}copy_clistate; 
+
 /* INCLUDE FILES */
 
 #include "utils/net_proto.h"
@@ -50,6 +60,9 @@ typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *,
 
 /* don't open an RPC pipe */
 #define NET_FLAGS_NO_PIPE 32
+
+/* net share operation modes */
+#define NET_MODE_SHARE_MIGRATE 1
 
 extern int opt_maxusers;
 extern const char *opt_comment;
