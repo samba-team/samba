@@ -9,7 +9,6 @@ include Makefile.settings
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
-MANPAGES4 = $(wildcard $(MANPAGEDIR4)/*.?.xml)
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
@@ -32,10 +31,10 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,dvi,ps,manpages{3,4},txt,pearson,fo,htmlhelp - Build specific output format"
+	@echo " pdf,tex,dvi,ps,manpages3,txt,pearson,fo,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
-	@echo " htmlman3,htmlman4 - Build HTML version of manpages"
+	@echo " htmlman3 - Build HTML version of manpages"
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 
@@ -47,7 +46,7 @@ $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard S
 
 # Pseudo targets 
 all: $(TARGETS)
-everything: manpages3 manpages4 pdf html-single html htmlman3 htmlman4 txt ps fo htmlhelp pearson 
+everything: manpages3 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
 release: manpages3 htmlman3 html pdf 
 
 # Output format targets
@@ -62,12 +61,10 @@ tex: $(addsuffix .tex,$(MAIN_DOCS))
 texi: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
 manpages3: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
-manpages4: $(patsubst $(MANPAGEDIR4)/%.xml,$(OUTPUTDIR)/manpages-4/%,$(MANPAGES4))
 pearson: $(PEARSONDIR)/Samba3-HOWTO.xml
 pearson-verify: $(PEARSONDIR)/Samba3-HOWTO.report.html
 plucker: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
 htmlman3: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/manpages-3/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages-3/index.html
-htmlman4: $(patsubst $(MANPAGEDIR4)/%.xml,$(HTMLDIR)/manpages-4/%.html,$(MANPAGES4)) $(HTMLDIR)/manpages-4/index.html
 html-single: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
@@ -83,22 +80,11 @@ $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages-4/%.xml: $(MANPAGEDIR4)/%.xml xslt/expand-sambadoc.xsl
-	mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
-
 $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
 	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES3) >> $@
 	echo "</variablelist></article>" >> $@
-
-$(DOCBOOKDIR)/manpages-4/index.xml: $(MANPAGES4) xslt/manpage-summary.xsl
-	mkdir -p $(@D)
-	echo "<article><variablelist>" > $@
-	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES4) >> $@
-	echo "</variablelist></article>" >> $@
-
 
 # HTML docs
 
