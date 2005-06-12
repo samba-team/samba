@@ -144,10 +144,10 @@
 			</tgroup>
 		</table>
 
-		<image id="ch04net">
-			<imagedescription>Abmas Network Topology &smbmdash; 130 Users</imagedescription>
+		<figure id="ch04net">
+			<title>Abmas Network Topology &smbmdash; 130 Users</title>
 			<imagefile scale="65">chap4-net</imagefile>
-		</image>
+		</figure>
 
 		<para>
 		Christine recommended that desktop systems should be installed from a single cloned
@@ -1511,9 +1511,9 @@ hosts:      files dns wins
 	<title>Printer Configuration</title>
 
 	<para>
-	Network administrators who are new to CUPS based-printing typically experience some difficulty mastering
+	Network administrators who are new to CUPS based printing typically experience some difficulty mastering
 	its powerful features. The steps outlined in this section are designed to navigate around the distractions
-	of learning CUPS. Instead of implementing smart features and capabilities, our approach is to use it as a
+	of learning CUPS. Instead of implementing smart features and capabilties our approach is to use it as a
 	transparent print queue that performs no filtering, and only minimal handling of each print job that is
 	submitted to it. In other words, our configuration turns CUPS into a raw-mode print queue. This means that
 	the correct printer driver must be installed on all clients.
@@ -1604,7 +1604,7 @@ application/octet-stream
 
 	<para>
 	Note: If the parameter <parameter>cups options = Raw</parameter> is specified in the &smb.conf; file,
-	the last two steps can be omitted with CUPS version 1.1.18, or later.
+	the last two steps can be omitted where CUPS version 1.1.18, or later.
 	</para>
 
 	<para>
@@ -1821,7 +1821,7 @@ hosts:       files dns wins
 <screen>
 &rootprompt; testparm -s
 Load smb config files from smb.conf
-Processing section "[homes]"
+rocessing section "[homes]"
 Processing section "[printers]"
 Processing section "[netlogon]"
 Processing section "[profiles]"
@@ -2293,14 +2293,14 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		</para></step>
 
 		<step><para>
-		Log on to the machine as the local Administrator (the only option), and join the machine to
+		Log onto the machine as the local Administrator (the only option), and join the machine to
 		the Domain, following the procedure set out in Appendix A, <link linkend="domjoin"/>. The system is now 
 		ready for the user to log on, provided you have created a network logon account for that 
 		user, of course.
 		</para></step>
 
 		<step><para>
-		Instruct all users to log on to the workstation using their assigned username and password.
+		Instruct all users to log onto the workstation using their assigned username and password.
 		</para></step>
 	</procedure>
 

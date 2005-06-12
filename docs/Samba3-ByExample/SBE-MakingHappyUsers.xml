@@ -542,10 +542,10 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	of the UNIX username to the UID. The relationships are demonstrated in <link linkend="sbehap-LDAPdiag"/>.
 	</para>
 
-	<image id="sbehap-LDAPdiag">
-		<imagedescription>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</imagedescription>
+	<figure id="sbehap-LDAPdiag">
+		<title>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</title>
 		<imagefile scale="50">UNIX-Samba-and-LDAP</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>security</primary></indexterm>
@@ -1293,10 +1293,10 @@ slapd[12164]: conn=1 fd=10 closed
 	that you will install additional file servers and possibly additional BDCs.
 	</para>
 
-	<image id="chap6net">
-		<imagedescription>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend</imagedescription>
+	<figure id="chap6net">
+		<title>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend</title>
 		<imagefile scale="50">chap6-net</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>SUSE Linux</primary></indexterm>
@@ -2131,7 +2131,7 @@ Let's start configuring the smbldap-tools scripts ...
 
 . workgroup name: name of the domain Samba act as a PDC
   workgroup name [MEGANET2] > 
-. netbios name: netbios name of the samba controller
+. netbios name: netbios name of the samba controler
   netbios name [MASSIVE] > 
 . logon drive: local path to which the home directory will 
                                 be connected (for NT Workstations). Ex: 'H:'
@@ -3730,8 +3730,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</procedure>
 
 	<para>
-	Before punching out new desktop images for the client workstations, it is perhaps a good idea that
-	desktop behavior should be returned to the original Microsoft settings. The following steps achieve
+	Before puching out new desktop images for the client workstations, it is perhaps a good idea that
+	desktop behavior should be returned to the original Microsoft settings. The followin steps achieve
 	that ojective:
 	</para>
 
@@ -3753,10 +3753,10 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 
 	</procedure>
 
-	<image id="XP-screen001">
-		<imagedescription>Windows XP Professional &smbmdash; User Shared Folders</imagedescription>
+	<figure id="XP-screen001">
+		<title>Windows XP Professional &smbmdash; User Shared Folders</title>
 		<imagefile scale="65">XP-screen001</imagefile>
-	</image>
+	</figure>
 
 <table id="proffold">
 	<title>Default Profile Redirections</title>

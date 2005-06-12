@@ -292,7 +292,7 @@
 		<para>
 		You agreed with Stan's recommendations and hired a consultant to help defuse the powder
 		keg. The consultant's task is to provide a tractable answer to each of the issues raised. The consultant must be able
-		to support his or her claims, keep emotions to the side, and answer technically.
+		to support his or her claims, keep emotions to a side, and answer technically.
 		</para>
 
 	</sect2>
@@ -464,7 +464,7 @@
 		</indexterm>
 				Windows network administrators may be dismayed to find that <command>winbind</command> 
 				exposes all domain users so that they may use their domain account credentials to 
-				log on to a UNIX/Linux system. The fact that all users in the domain can see the 
+				log onto a UNIX/Linux system. The fact that all users in the domain can see the 
 				UNIX/Linux server in their Network Neighborhood and can browse the shares on the 
 				server seems to excite them further.
 				</para>
@@ -676,9 +676,9 @@
 		</indexterm>
 				The release of Samba-4 is expected around late 2004 to early 2005 and involves a near 
 				complete rewrite to permit extensive modularization and to prepare Samba for new 
-				functionality planned for addition during the next-generation series. The Samba Team 
+				functionality planned for addition  during the next-generation series. The Samba Team 
 				is responsible and can be depended upon; the history to date suggests a high 
-				degree of dependability and on charter development consistent with published 
+				degree of dependability as well on charter development consistent with published 
 				roadmap projections.
 				</para>
 
@@ -877,7 +877,7 @@
 	    </indexterm>
 	Kerberos is a network authentication protocol that provides secure authentication for 
 	client-server applications by using secret-key cryptography. Firewalls are an insufficient 
-	barrier mechanism in today's networking world; at best they only restrict incoming network 
+	barrier mechanism in todays networking world; at best they only restrict incoming network 
 	traffic but cannot prevent network traffic that comes from authorized locations from 
 	performing unauthorized activities.
 	</para>
@@ -924,7 +924,7 @@
 	    </indexterm>
 	Kerberos was, until recently, a technology that was restricted from being exported from the United States.
 	For many years that hindered global adoption of more secure networking technologies both within the United States
-	and abroad. A free and unencumbered implementation of MIT Kerberos has been produced in Europe
+	and abroad. A free an unencumbered implementation of MIT Kerberos has been produced in Europe
 	and is available from the University of Paderborn, Sweden. It is known as the Heimdal Kerberos project.
 	In recent times the U.S. government has removed sanctions affecting the global distribution of MIT Kerberos.
 	It is likely that there will be a significant surge forward in the development of Kerberos-enabled applications
@@ -966,7 +966,7 @@
 	    </indexterm>
 	It so happens that Microsoft Windows clients depend on and expect the contents of the <emphasis>unspecified
 	fields</emphasis> in the Kerberos 5 communications data stream for their Windows interoperability,
-	particularly when Samba is expected to emulate a Windows Server 200x domain controller. But the interoperability
+	particularly when Samba is being expected to emulate a Windows Server 200x domain controller. But the interoperability
 	issue goes far deeper than this. In the domain control protocols that are used by MS Windows XP Professional,
 	there is a tight interdependency between the Kerberos protocols and the Microsoft distributed computing environment
 	(DCE) RPCs that themselves are an integral part of the SMB/CIFS protocols as used by
@@ -1027,7 +1027,7 @@
 	      </indexterm><indexterm>
 		<primary>account</primary>
 	      </indexterm>
-		From a Windows 200x/XP Professional workstation, log on to the domain using the Domain Administrator 
+		From a Windows 200x/XP Professional workstation, log onto the domain using the Domain Administrator 
 		account (on Samba domains, this is usually the account called <constant>root</constant>).
 		</para></step>
 
@@ -1142,7 +1142,7 @@
 	  </indexterm><indexterm>
 	    <primary>hierarchy of control</primary>
 	  </indexterm>
-	It must be emphasized that the controls discussed here can act as a filter or give rights of passage
+	It must be emphasized that the controls here discussed can act as a filter or give rights of passage
 	that act as a superstructure over normal directory and file access controls. However, share-level
 	ACLs act at a higher level than do share definition controls because the user must filter through the
 	share-level controls to get to the share-definition controls. The proper hierarchy of controls implemented
@@ -1525,7 +1525,7 @@
 
 	<procedure>
 		<step><para>
-		From a Windows 200x/XP Professional workstation, log on to the domain using the Domain Administrator 
+		From a Windows 200x/XP Professional workstation, log onto the domain using the Domain Administrator 
 		account (on Samba domains, this is usually the account called <constant>root</constant>).
 		</para></step>
 
@@ -1728,7 +1728,7 @@ other::r-x
 		</indexterm><indexterm>
 		  <primary>inheritance</primary>
 		</indexterm>
-		It is highly recommended that you read the online manual page for the <command>setfacl</command>
+		It is highly recommend that you read the online manual page for the <command>setfacl</command>
 		and <command>getfacl</command> commands. This provides information regarding how to set/read the default
 		ACLs and how that may be propagated through the directory tree. In Windows ACLs terms, this is the equivalent
 		of setting <constant>inheritance</constant> properties.
