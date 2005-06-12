@@ -94,10 +94,10 @@
 	</para></note>
 
 
-	<image id="winbind_idmap">
-	<imagedescription>Winbind Idmap</imagedescription>
+	<figure id="winbind_idmap">
+	<title>Winbind Idmap</title>
 	<imagefile scale="50">idmap_winbind_no_loop</imagefile>
-	</image>
+	</figure>
 
 </sect1>
 
@@ -895,7 +895,6 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 </para>
 
 <para>
-	<smbfile name="samba.server.sh">
 	<programlisting>
 	##
 	## samba.server
@@ -943,7 +942,7 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 	   echo "Usage: /etc/init.d/samba.server { start | stop }"
 	   ;;
 	esac
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 Again, if you would like to run Samba in dual daemon mode, replace:
@@ -1057,7 +1056,7 @@ samba file. My <filename>/etc/pam.d/ftp</filename> file was
 changed to look like this:
 </para>
 
-<para><smbfile name="pam.ftp.winbind"><programlisting>
+<para><programlisting>
 auth       required     /lib/security/pam_listfile.so item=user sense=deny \
 	 file=/etc/ftpusers onerr=succeed
 auth       sufficient   /lib/security/pam_winbind.so
@@ -1066,14 +1065,14 @@ auth       required     /lib/security/pam_shells.so
 account    sufficient   /lib/security/pam_winbind.so
 account    required     /lib/security/pam_stack.so service=system-auth
 session    required     /lib/security/pam_stack.so service=system-auth
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 The <filename>/etc/pam.d/login</filename> file can be changed nearly the 
 same way. It now looks like this:
 </para>
 
-<para><smbfile name="pam.login.winbind"><programlisting>
+<para><programlisting>
 auth       required     /lib/security/pam_securetty.so
 auth       sufficient   /lib/security/pam_winbind.so
 auth       sufficient   /lib/security/pam_unix.so use_first_pass
@@ -1084,7 +1083,7 @@ account    required     /lib/security/pam_stack.so service=system-auth
 password   required     /lib/security/pam_stack.so service=system-auth
 session    required     /lib/security/pam_stack.so service=system-auth
 session    optional     /lib/security/pam_console.so
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 In this case, I added the <programlisting>auth sufficient /lib/security/pam_winbind.so</programlisting> 

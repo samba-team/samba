@@ -122,7 +122,6 @@ a simple DHCP server that matches the DNS configuration.
 	determines the location of all further configuration files used.
 	The location and name of this file is specified in the start-up script
 	that is part of the operating system.
-	<smbfile name="named.conf">
 <programlisting>
 # Quenya.Org configuration file
 
@@ -197,13 +196,11 @@ zone "1.168.192.in-addr.arpa" {
 	};
 };
 </programlisting>
-</smbfile>
 	</para>
 
 	<para>
 	The following files are all located in the directory <filename>/var/named</filename>.
 	This is the <filename>/var/named/localhost.zone</filename> file:
-	<smbfile name="localhost.zone">
 <programlisting>
 $TTL 1W
 @               IN SOA  @   root (
@@ -216,12 +213,10 @@ $TTL 1W
 		IN NS           @
 		IN A            127.0.0.1
 	</programlisting>
-</smbfile>
 	</para>
 
 	<para>
 	The <filename>/var/named/127.0.0.zone</filename> file:
-	<smbfile name="127.0.0.0.zone">
 <programlisting>
 $TTL 1W
 @               IN SOA          localhost.  root.localhost. (
@@ -234,12 +229,10 @@ $TTL 1W
 				IN NS           localhost.
 1               IN PTR          localhost.
 </programlisting>
-</smbfile>
 	</para>
 
 	<para>
 		The <filename>/var/named/quenya.org.host</filename> file:
-			<smbfile name="quenya.org.host">
 <programlisting>
 $ORIGIN .
 $TTL 38400      ; 10 hours 40 minutes
@@ -259,12 +252,10 @@ marvel                  A       192.168.1.2
 mail                    CNAME   marvel
 www                     CNAME   marvel
 </programlisting>
-</smbfile>
 </para>
 
 <para>
 	The <filename>/var/named/192.168.1.0.rev</filename> file:
-	<smbfile name="192.168.1.0.rev">
 <programlisting>
 $ORIGIN .
 $TTL 38400      ; 10 hours 40 minutes
@@ -280,7 +271,6 @@ $ORIGIN 1.168.192.in-addr.arpa.
 1                       PTR     frodo.quenya.org.
 2                       PTR     marvel.quenya.org.
 </programlisting>
-</smbfile>
 	</para>
 
 	<para>
@@ -302,7 +292,6 @@ $ORIGIN 1.168.192.in-addr.arpa.
 	</para>
 
 	<para>
-		<smbfile name="dhcpd.conf">
 	<programlisting>
 ddns-updates on;
 ddns-domainname "quenya.org";
@@ -325,7 +314,6 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
 	allow unknown-clients;
 }
 </programlisting>
-</smbfile>
 	</para>
 
 	<para>

@@ -4,7 +4,6 @@
 	Published under the GNU GPL
 
 	(C) Jelmer Vernooij 					2002-2004
-	(C) Alexander Bokovoy 					2002-2004
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
@@ -152,101 +151,64 @@
 		<xsl:apply-templates/>
 	</xsl:template>
 
-	<xsl:template match="smbfile">
-		<xsl:apply-templates/>
-	</xsl:template>
+	<xsl:template match="imagefile">
+		<xsl:element name="mediaobject">
+			<xsl:element name="imageobject">
+				<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
+				<xsl:element name="imagedata">
+					<xsl:attribute name="fileref">
+						<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text><xsl:value-of select="text()"/></xsl:attribute>
+					<xsl:attribute name="scale">
+						<xsl:choose>
+							<xsl:when test="@scale != ''">
+								<xsl:value-of select="@scale"/>
+							</xsl:when>
 
-	<xsl:template match="image">
-		<xsl:element name="figure">
-			<xsl:attribute name="id">
-				<xsl:choose>
-					<xsl:when test="@id != ''">
-						<xsl:value-of select="@id"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="imagefile"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:attribute>
-
-			<xsl:element name="title">
-				<xsl:if test="imagedescription = ''">
-					<xsl:message><xsl:text>imagedescription of image with id </xsl:text><xsl:value-of select="@id"/><xsl:text> is empty.</xsl:text></xsl:message>
-				</xsl:if>
-				<xsl:value-of select="imagedescription"/>
+							<xsl:otherwise>
+								<xsl:text>50</xsl:text>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:attribute>
+					<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
+				</xsl:element>
 			</xsl:element>
-			<xsl:element name="mediaobject">
-				<xsl:element name="imageobject">
-					<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
-					<xsl:element name="imagedata">
-						<xsl:attribute name="fileref">
-							<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/></xsl:attribute>
-						<xsl:attribute name="scale">
-							<xsl:choose>
-								<xsl:when test="@scale != ''">
-									<xsl:value-of select="@scale"/>
-								</xsl:when>
+			<xsl:element name="imageobject">
+				<xsl:attribute name="role"><xsl:text>html</xsl:text></xsl:attribute>
+				<xsl:element name="imagedata">
+					<xsl:attribute name="fileref">
+						<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+					<xsl:attribute name="scale">
+						<xsl:choose>
+							<xsl:when test="@scale != ''">
+								<xsl:value-of select="@scale"/>
+							</xsl:when>
 
-								<xsl:when test="imagefile/@scale != ''">
-									<xsl:value-of select="imagefile/@scale"/>
-								</xsl:when>
-
-								<xsl:otherwise>
-									<xsl:text>50</xsl:text>
-								</xsl:otherwise>
-							</xsl:choose>
-						</xsl:attribute>
-						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
-					</xsl:element>
+							<xsl:otherwise>
+								<xsl:text>100</xsl:text>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:attribute>
+					<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 				</xsl:element>
-				<xsl:element name="imageobject">
-					<xsl:attribute name="role"><xsl:text>html</xsl:text></xsl:attribute>
-					<xsl:element name="imagedata">
-						<xsl:attribute name="fileref">
-							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
-						<xsl:attribute name="scale">
-							<xsl:choose>
-								<xsl:when test="@scale != ''">
-									<xsl:value-of select="@scale"/>
-								</xsl:when>
+			</xsl:element>
+			<xsl:element name="imageobject">
+				<xsl:element name="imagedata">
+					<xsl:attribute name="fileref">
+						<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+					<xsl:attribute name="scale">
+						<xsl:choose>
+							<xsl:when test="@scale != ''">
+								<xsl:value-of select="@scale"/>
+							</xsl:when>
 
-								<xsl:when test="imagefile/@scale != ''">
-									<xsl:value-of select="imagefile/@scale"/>
-								</xsl:when>
-
-								<xsl:otherwise>
-									<xsl:text>100</xsl:text>
-								</xsl:otherwise>
-							</xsl:choose>
-						</xsl:attribute>
-						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
-					</xsl:element>
+							<xsl:otherwise>
+								<xsl:text>50</xsl:text>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:attribute>
+					<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 				</xsl:element>
-				<xsl:element name="imageobject">
-					<xsl:element name="imagedata">
-						<xsl:attribute name="fileref">
-							<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
-						<xsl:attribute name="scale">
-							<xsl:choose>
-								<xsl:when test="@scale != ''">
-									<xsl:value-of select="@scale"/>
-								</xsl:when>
-
-								<xsl:when test="imagefile/@scale != ''">
-									<xsl:value-of select="imagefile/@scale"/>
-								</xsl:when>
-
-								<xsl:otherwise>
-									<xsl:text>50</xsl:text>
-								</xsl:otherwise>
-							</xsl:choose>
-						</xsl:attribute>
-						<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
-					</xsl:element>
-				</xsl:element>
-
 			</xsl:element>
 		</xsl:element>
 	</xsl:template>
-
 </xsl:stylesheet>

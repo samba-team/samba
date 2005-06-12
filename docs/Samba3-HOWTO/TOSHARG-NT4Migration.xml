@@ -261,7 +261,6 @@ to function as a BDC, i.e., <parameter>domain master = No</parameter>.
 <indexterm><primary>initGroups.sh</primary></indexterm>
 	Now assign each of the UNIX groups to NT groups:
 	(It may be useful to copy this text to a script called <filename>initGroups.sh</filename>)
-	<smbfile name="initGroups.sh">
 	<programlisting>
 #!/bin/bash
 #### Keep this as a shell script for future re-use
@@ -276,7 +275,6 @@ net groupmap add ntgroup="Designers" unixgroup=designers type=d rid=3200
 net groupmap add ntgroup="Engineers" unixgroup=engineers type=d rid=3210
 net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d rid=3220
 </programlisting>
-</smbfile>
 	</para></step>
 
 	<step><para><userinput>net groupmap list</userinput></para>

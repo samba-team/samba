@@ -991,7 +991,6 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 			Assign each of the UNIX groups to NT groups:
 			(It may be useful to copy this text to a shell script called
 			<filename>initGroups.sh</filename>.)
-			<smbfile name="initGroups.sh">
 				<title>Shell script for initializing group mappings</title>
 			<programlisting>
 #!/bin/bash
@@ -1007,7 +1006,6 @@ net groupmap add ntgroup="Designers" unixgroup=designers type=d
 net groupmap add ntgroup="Engineers" unixgroup=engineers type=d
 net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 </programlisting>
-</smbfile>
 			</para></step>
 
 			<step><para>
@@ -1067,7 +1065,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 				Set up the LDAP server. This example is suitable for OpenLDAP 2.1.x.
 				The <filename>/etc/openldap/slapd.conf</filename> file:
 <indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
-<smbfile name="slapd.conf"><title>Example slapd.conf file</title>
+<title>Example slapd.conf file</title>
 <programlisting>
 # Note commented out lines have been removed
 include         /etc/openldap/schema/core.schema
@@ -1100,13 +1098,11 @@ index   sambaPrimaryGroupSID  eq
 index   sambaDomainName       eq
 index   default               sub
 </programlisting>
-</smbfile>
 				</para></step>
 
 				<step><para>
 				Create the following file <filename>samba-ldap-init.ldif</filename>:
 				<indexterm><primary>samba-ldap-init.ldif</primary></indexterm>
-				<smbfile name="samba-ldap-init.ldif">
 <programlisting>
 # Organization for SambaXP Demo
 dn: dc=quenya,dc=org
@@ -1137,7 +1133,6 @@ objectclass: simpleSecurityObject
 userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 # The password for above is 'mordonL8'
 </programlisting>
-</smbfile>
 				</para></step>
 
 				<step><para>

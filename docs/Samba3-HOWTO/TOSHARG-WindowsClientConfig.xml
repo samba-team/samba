@@ -92,7 +92,7 @@ that are in common use today. These are:
 			On some installations the interface will be called <guimenu>Local Area Connection</guimenu> and
 			on others it will be called <guimenu>Network Bridge</guimenu>. On our system it is called <guimenu>Network Bridge</guimenu>.
 			Right click on <guimenu>Network Bridge -> Properties</guimenu>. See <link linkend="WXPP002"/>.
-			<image id="WXPP002"><imagedescription>Network Bridge Configuration.</imagedescription><imagefile>WXPP002</imagefile></image>
+			<figure id="WXPP002"><title>Network Bridge Configuration.</title><imagefile>WXPP002</imagefile></figure>
 			</para>
 			</step>
 
@@ -105,10 +105,10 @@ that are in common use today. These are:
 			<para>
 			The default setting is DHCP enabled operation.
 			(i.e., <quote>Obtain an IP address automatically</quote>). See <link linkend="WXPP003"/>.
-			<image id="WXPP003">
-				<imagedescription>Internet Protocol (TCP/IP) Properties.</imagedescription>
+			<figure id="WXPP003">
+				<title>Internet Protocol (TCP/IP) Properties.</title>
 				<imagefile>WXPP003</imagefile>
-			</image>
+			</figure>
 			</para>
 
 			<para>
@@ -128,7 +128,7 @@ that are in common use today. These are:
 			The technical name for the additional addresses is <emphasis>IP Aliases</emphasis>, and additionally this
 			panel permits the setting of more default gateways (routers). In most cases where DHCP is used, it will not be
 			necessary to create additional settings. See <link linkend="WXPP005"></link> to see the appearance of this panel.
-			<image id="WXPP005"><imagedescription>Advanced Network Settings</imagedescription><imagefile>WXPP005</imagefile></image>
+			<figure id="WXPP005"><title>Advanced Network Settings</title><imagefile>WXPP005</imagefile></figure>
 			</para>
 
 			<para>
@@ -139,7 +139,7 @@ that are in common use today. These are:
 			Click the <guimenu>DNS</guimenu> tab to add DNS server settings. 
 			The example system uses manually configured DNS settings. When finished making changes, click the <guibutton>OK</guibutton> to commit
 			the settings. See <link linkend="WXPP014"/>.
-			<image id="WXPP014"><imagedescription>DNS Configuration.</imagedescription><imagefile>WXPP014</imagefile></image>
+			<figure id="WXPP014"><title>DNS Configuration.</title><imagefile>WXPP014</imagefile></figure>
 			</para></step>
 
 			<step><para>
@@ -147,7 +147,7 @@ that are in common use today. These are:
 			This step demonstrates an example system that uses manually configured WINS settings. 
 			When finished making, changes click the <guibutton>OK</guibutton> to commit
                         the settings. See <link linkend="WXPP009"></link>.
-						<image id="WXPP009"><imagedescription>WINS Configuration</imagedescription><imagefile>WXPP009</imagefile></image>
+						<figure id="WXPP009"><title>WINS Configuration</title><imagefile>WXPP009</imagefile></figure>
 			</para></step>
 		</procedure>
 
@@ -177,7 +177,7 @@ that are in common use today. These are:
 			<step><para>
 			Right click on <guimenu>Local Area Connection</guimenu>, now click the
 			<guimenuitem>Properties</guimenuitem>. See <link linkend="w2kp001"></link>.
-			<image id="w2kp001"><imagedescription>Local Area Connection Properties.</imagedescription><imagefile>w2kp001</imagefile></image>
+			<figure id="w2kp001"><title>Local Area Connection Properties.</title><imagefile>w2kp001</imagefile></figure>
 			</para></step>
 
 			<step><para>
@@ -188,7 +188,7 @@ that are in common use today. These are:
 			<step><para>
 			The default setting is DHCP enabled operation.
 			(i.e., <quote>Obtain an IP address automatically</quote>). See <link linkend="w2kp002"/>.
-			<image id="w2kp002"><imagedescription>Internet Protocol (TCP/IP) Properties.</imagedescription><imagefile>w2kp002</imagefile></image>
+			<figure id="w2kp002"><title>Internet Protocol (TCP/IP) Properties.</title><imagefile>w2kp002</imagefile></figure>
 			</para>
 
 			<para>
@@ -206,7 +206,7 @@ that are in common use today. These are:
 			<step><para>
 			Click the <guimenu>Advanced</guimenu> button to proceed with TCP/IP configuration.
 			Refer to <link linkend="w2kp003"></link>.
-			<image id="w2kp003"><imagedescription>Advanced Network Settings.</imagedescription><imagefile>w2kp003</imagefile></image>
+			<figure id="w2kp003"><title>Advanced Network Settings.</title><imagefile>w2kp003</imagefile></figure>
 			</para>
 
 			<para>
@@ -217,7 +217,7 @@ that are in common use today. These are:
 			Click the <guimenu>DNS</guimenu> tab to add DNS server settings. 
 			The example system uses manually configured DNS settings. When finished making changes,
 			click on <guibutton>OK</guibutton> to commit the settings. See <link linkend="w2kp004"></link>.
-			<image id="w2kp004"><imagedescription>DNS Configuration.</imagedescription><imagefile>w2kp004</imagefile></image>
+			<figure id="w2kp004"><title>DNS Configuration.</title><imagefile>w2kp004</imagefile></figure>
 			</para></step>
 
 			<step><para>
@@ -225,7 +225,7 @@ that are in common use today. These are:
 			This step demonstrates an example system that uses manually configured WINS settings. 
 			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
 			See <link linkend="w2kp005"></link>.
-			<image id="w2kp005"><imagedescription>WINS Configuration.</imagedescription><imagefile>w2kp005</imagefile></image>
+			<figure id="w2kp005"><title>WINS Configuration.</title><imagefile>w2kp005</imagefile></figure>
 			</para></step>
 
 		</procedure>
@@ -256,7 +256,7 @@ that are in common use today. These are:
 			<step><para>
 			In the box labeled <guimenuitem>The following network components are installed:</guimenuitem>,
 			click on <guimenu>Internet Protocol TCP/IP</guimenu>, now click on the <guibutton>Properties</guibutton> button. See <link linkend="WME001"></link>.
-			<image id="WME001"><imagedescription>The Windows Me Network Configuration Panel.</imagedescription><imagefile>WME001</imagefile></image>
+			<figure id="WME001"><title>The Windows Me Network Configuration Panel.</title><imagefile>WME001</imagefile></figure>
 			</para></step>
 
 			<step><para>
@@ -265,7 +265,7 @@ that are in common use today. These are:
 			for Microsoft Windows client support see, <link linkend="DHCP"></link>.
 			The default setting on Microsoft Windows Me workstations is for DHCP enabled operation,
 			i.e., <guimenu>Obtain IP address automatically</guimenu> is enabled. See <link linkend="WME002"></link>.
-			<image id="WME002"><imagedescription>IP Address.</imagedescription><imagefile>WME002</imagefile></image>
+			<figure id="WME002"><title>IP Address.</title><imagefile>WME002</imagefile></figure>
 			</para>
 
 			<para>
@@ -288,14 +288,14 @@ that are in common use today. These are:
 			<step><para>
 			The following example uses manually configured WINS settings. See <link linkend="WME005"></link>.
 			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
-			<image id="WME005"><imagedescription>DNS Configuration.</imagedescription><imagefile>WME005</imagefile></image>
+			<figure id="WME005"><title>DNS Configuration.</title><imagefile>WME005</imagefile></figure>
 			</para>
 
 			<para>
 			This is an example of a system that uses manually configured WINS settings. One situation where
 			this might apply is on a network that has a single DHCP server that provides settings for multiple
 			Windows workgroups or domains. See <link linkend="WME003"></link>.
-			<image id="WME003"><imagedescription>WINS Configuration.</imagedescription><imagefile>WME003</imagefile></image>
+			<figure id="WME003"><title>WINS Configuration.</title><imagefile>WME003</imagefile></figure>
 			</para></step>
 		</procedure>
 
@@ -326,7 +326,7 @@ that are in common use today. These are:
 		<step><para>
 		The opening panel is the same one that can be reached by clicking <guimenu>System</guimenu> on the Control Panel.
 		See <link linkend="wxpp001"></link>.
-		<image id="wxpp001"><imagedescription>The General Panel.</imagedescription><imagefile>wxpp001</imagefile></image>
+		<figure id="wxpp001"><title>The General Panel.</title><imagefile>wxpp001</imagefile></figure>
 		</para></step>
 
 		<step><para>
@@ -339,13 +339,13 @@ that are in common use today. These are:
 		Clicking the <guimenu>Network ID</guimenu> button will launch the configuration wizard. Do not use this with
 		Samba-3. If you wish to change the computer name, join or leave the domain, click the <guimenu>Change</guimenu> button.
 		See <link linkend="wxpp004"></link>.
-		<image id="wxpp004"><imagedescription>The Computer Name Panel.</imagedescription><imagefile>wxpp004</imagefile></image>
+		<figure id="wxpp004"><title>The Computer Name Panel.</title><imagefile>wxpp004</imagefile></figure>
                 </para></step>
 
 		<step><para>
 		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
 		We will join the domain called MIDEARTH. See <link linkend="wxpp006"></link>.
-		<image id="wxpp006"><imagedescription>The Computer Name Changes Panel.</imagedescription><imagefile>wxpp006</imagefile></image>
+		<figure id="wxpp006"><title>The Computer Name Changes Panel.</title><imagefile>wxpp006</imagefile></figure>
                 </para></step>
 
 		<step><para>
@@ -354,7 +354,7 @@ that are in common use today. These are:
 
                 <para>
 		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="wxpp007"></link>.
-		<image id="wxpp007"><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH.</imagedescription><imagefile>wxpp007</imagefile></image>
+		<figure id="wxpp007"><title>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH.</title><imagefile>wxpp007</imagefile></figure>
                 </para></step>
 
 		<step><para>
@@ -364,7 +364,7 @@ that are in common use today. These are:
 
                 <para>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
-		<image id="wxpp008"><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel.</imagedescription><imagefile>wxpp008</imagefile></image>
+		<figure id="wxpp008"><title>Computer Name Changes &smbmdash; User name and Password Panel.</title><imagefile>wxpp008</imagefile></figure>
                 </para></step>
 
 		<step><para>
@@ -400,7 +400,7 @@ that are in common use today. These are:
 		<step><para>
 		The Network Configuration Panel allows all common network settings to be changed.
                 See <link linkend="WME009"></link>.
-		<image id="WME009"><imagedescription>The Network Panel.</imagedescription><imagefile>WME009</imagefile></image>
+		<figure id="WME009"><title>The Network Panel.</title><imagefile>WME009</imagefile></figure>
                 </para>
 
 		<para>
@@ -412,7 +412,7 @@ that are in common use today. These are:
 		<step><para>
 		The Client for Microsoft Networks Properties panel is the correct location to configure network logon
 		settings. See <link linkend="WME010"></link>.
-		<image id="WME010"><imagedescription>Client for Microsoft Networks Properties Panel.</imagedescription><imagefile>WME010</imagefile></image>
+		<figure id="WME010"><title>Client for Microsoft Networks Properties Panel.</title><imagefile>WME010</imagefile></figure>
                 </para>
 
 		<para>
@@ -423,14 +423,14 @@ that are in common use today. These are:
 		<step><para>
 		Click on the <guimenu>Identification</guimenu> button. This is the location at which the workgroup
 		(domain) name and the machine name (computer name) need to be set. See <link linkend="WME013"></link>.
-		<image id="WME013"><imagedescription>Identification Panel.</imagedescription><imagefile>WME013</imagefile></image>
+		<figure id="WME013"><title>Identification Panel.</title><imagefile>WME013</imagefile></figure>
                 </para></step>
 
 		<step><para>
 		Now click the <guimenu>Access Control</guimenu> button. If you want to be able to assign share access
 		permissions using domain user and group accounts, it is necessary to enable
 		<guimenu>User-level access control</guimenu> as shown in this panel.  See <link linkend="WME014"></link>.
-		<image id="WME014"><imagedescription>Identification Panel.</imagedescription><imagefile>WME014</imagefile></image>
+		<figure id="WME014"><title>Identification Panel.</title><imagefile>WME014</imagefile></figure>
                 </para></step>
 
 	</procedure>
