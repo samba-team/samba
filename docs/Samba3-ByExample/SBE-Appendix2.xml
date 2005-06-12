@@ -276,15 +276,15 @@
 		A screenshot of a later stage of the same capture is shown in <link linkend="pktcap02"/>.
 		</para>
 
-		<image id="pktcap01">
-			<imagedescription>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</imagedescription>
+		<figure id="pktcap01">
+			<title>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</title>
 			<imagefile scale="40">WINREPRESSME-Capture</imagefile>
-		</image>
+		</figure>
 
-		<image id="pktcap02">
-			<imagedescription>Windows Me &smbmdash; Later Broadcast Sample</imagedescription>
+		<figure id="pktcap02">
+			<title>Windows Me &smbmdash; Later Broadcast Sample</title>
 			<imagefile scale="42">WINREPRESSME-Capture2</imagefile>
-		</image>
+		</figure>
 
 	  <para><indexterm>
 	      <primary>Local Master Browser</primary>
@@ -589,10 +589,10 @@
 		</para>
 
 
-		<image id="hostannounce">
-			<imagedescription>Typical Windows 9x/Me Host Announcement</imagedescription>
+		<figure id="hostannounce">
+			<title>Typical Windows 9x/Me Host Announcement</title>
 			<imagefile scale="41">HostAnnouncment</imagefile>
-		</image>
+		</figure>
 		</sect3>
 
 	</sect2>
@@ -716,11 +716,11 @@
 		<link linkend="nullconnect"/>.
 		</para>
 
-		<image id="nullconnect">
-			<imagedescription>Typical Windows 9x/Me NULL SessionSetUp AndX Request</imagedescription>
+		<figure id="nullconnect">
+			<title>Typical Windows 9x/Me NULL SessionSetUp AndX Request</title>
 
 			<imagefile scale="41">NullConnect</imagefile>
-		</image>
+		</figure>
 
 		<para>
 	    	<indexterm><primary>nobody</primary></indexterm>
@@ -734,10 +734,10 @@
 		is shown in <link linkend="userconnect"/>.
 		</para>
 
-		<image id="userconnect">
-			<imagedescription>Typical Windows 9x/Me User SessionSetUp AndX Request</imagedescription>
+		<figure id="userconnect">
+			<title>Typical Windows 9x/Me User SessionSetUp AndX Request</title>
 			<imagefile scale="41">UserConnect</imagefile>
-		</image>
+		</figure>
 
 	 	<para>
 		<indexterm><primary>encrypted</primary></indexterm>
@@ -890,15 +890,15 @@
 
 	</procedure>
 
-	<image id="XPCap01">
-        <imagedescription>Typical Windows XP NULL Session Setup AndX Request</imagedescription>
+	<figure id="XPCap01">
+        <title>Typical Windows XP NULL Session Setup AndX Request</title>
 		<imagefile scale="50">WindowsXP-NullConnection</imagefile>
-	</image>
+	</figure>
 
-	<image id="XPCap02">
-        <imagedescription>Typical Windows XP User Session Setup AndX Request</imagedescription>
+	<figure id="XPCap02">
+        <title>Typical Windows XP User Session Setup AndX Request</title>
 		<imagefile scale="50">WindowsXP-UserConnection</imagefile>
-	</image>
+	</figure>
 
 		<sect3>
 		<title>Discussion</title>

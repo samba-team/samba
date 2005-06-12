@@ -39,7 +39,7 @@
 		<step><para>
 		The opening panel is the same one that can be reached by clicking <guimenu>System</guimenu> on the Control Panel.
 		See <link linkend="swxpp001"></link>.
-		<image id="swxpp001"><imagefile>wxpp001</imagefile><imagedescription>The General Panel.</imagedescription></image>
+		<figure id="swxpp001"><imagefile>wxpp001</imagefile><title>The General Panel.</title></figure>
 		</para></step>
 
 		<step><para>
@@ -52,13 +52,13 @@
 		Clicking the <guimenu>Network ID</guimenu> button launches the configuration wizard. Do not use this with
 		Samba-3. If you wish to change the computer name, or join or leave the domain, click the <guimenu>Change</guimenu> button.
 		See <link linkend="swxpp004"></link>.
-		<image id="swxpp004"><imagefile>wxpp004</imagefile><imagedescription>The Computer Name Panel.</imagedescription></image>
+		<figure id="swxpp004"><imagefile>wxpp004</imagefile><title>The Computer Name Panel.</title></figure>
 		</para></step>
 
 		<step><para>
 		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
 		We join the domain called MIDEARTH. See <link linkend="swxpp006"></link>.
-		<image id="swxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel</imagedescription></image>
+		<figure id="swxpp006"><imagefile>wxpp006</imagefile><title>The Computer Name Changes Panel</title></figure>
 		</para></step>
 
 		<step><para>
@@ -67,7 +67,7 @@
 
 		<para>
 		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="swxpp007"></link>.
-		<image id="swxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</imagedescription></image>
+		<figure id="swxpp007"><imagefile>wxpp007</imagefile><title>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</title></figure>
 		</para></step>
 
 		<step><para>
@@ -77,7 +77,7 @@
 
 		<para>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="swxpp008"></link>.
-		<image id="swxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel</imagedescription></image>
+		<figure id="swxpp008"><imagefile>wxpp008</imagefile><title>Computer Name Changes &smbmdash; User name and Password Panel</title></figure>
 		</para></step>
 
 		<step><para>
@@ -1139,10 +1139,10 @@ to LAM using only SSL.
 	An example of the LAM login screen is provided in <link linkend="lam-login"/>.
 	</para>
 
-	<image id="lam-login">
-		<imagedescription>The LDAP Account Manager Login Screen</imagedescription>
+	<figure id="lam-login">
+		<title>The LDAP Account Manager Login Screen</title>
 		<imagefile scale="50">lam-login</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>LAM</primary><secondary>configuration editor</secondary></indexterm>
@@ -1156,10 +1156,10 @@ to LAM using only SSL.
 	using LAM to add additional users and groups.
 	</para>
 
-	<image id="lam-config">
-		<imagedescription>The LDAP Account Manager Configuration Screen</imagedescription>
+	<figure id="lam-config">
+		<title>The LDAP Account Manager Configuration Screen</title>
 		<imagefile scale="50">lam-config</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>PDF</primary></indexterm>
@@ -1180,10 +1180,10 @@ to LAM using only SSL.
 	finished editing simply press the <guimenu>Final</guimenu> button.
 	</para>
 
-	<image id="lam-user">
-		<imagedescription>The LDAP Account Manager User Edit Screen</imagedescription>
+	<figure id="lam-user">
+		<title>The LDAP Account Manager User Edit Screen</title>
 		<imagefile scale="50">lam-users</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	The edit screen for groups is shown in <link linkend="lam-group"/>. As with the edit screen
@@ -1192,15 +1192,15 @@ to LAM using only SSL.
 	memberships. 
 	</para>
 
-	<image id="lam-group">
-		<imagedescription>The LDAP Account Manager Group Edit Screen</imagedescription>
+	<figure id="lam-group">
+		<title>The LDAP Account Manager Group Edit Screen</title>
 		<imagefile scale="50">lam-groups</imagefile>
-	</image>
+	</figure>
 
-	<image id="lam-group-mem">
-		<imagedescription>The LDAP Account Manager Group Membership Edit Screen</imagedescription>
+	<figure id="lam-group-mem">
+		<title>The LDAP Account Manager Group Membership Edit Screen</title>
 		<imagefile scale="50">lam-group-members</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	<indexterm><primary>smbldap-tools</primary></indexterm><indexterm><primary>scripts</primary></indexterm>
@@ -1209,10 +1209,10 @@ to LAM using only SSL.
 	will, in most cases, not be used.
 	</para>
 
-	<image id="lam-host">
-		<imagedescription>The LDAP Account Manager Host Edit Screen</imagedescription>
+	<figure id="lam-host">
+		<title>The LDAP Account Manager Host Edit Screen</title>
 		<imagefile scale="50">lam-hosts</imagefile>
-	</image>
+	</figure>
 
 	<para>
 	One aspect of LAM that may annoy some users is the way it forces certain conventions on
@@ -1224,10 +1224,10 @@ to LAM using only SSL.
 	</para>
 	
 	<para>
-	The next major release, LAM 0.5, will have fewer restrictions and support the latest Samba features
-	(e.g., logon hours). The new plugin-based architecture also allows management of much more different
-	account types like plain UNIX accounts. The upload can now handle groups and hosts, too. Another
-	important point is the tree view which allows browsing and editing LDAP objects directly.
+	The next major release, LAM 0.5, will have less restrictions and support the latest Samba features
+	(e.g. logon hours). The new plugin based architecture also allows to manage much more different
+	account types like plain Unix accounts. The upload can now handle groups and hosts, too. Another
+	important point is the tree view which allows to browse and edit LDAP objects directly.
 	</para>
 
 <example id="lamcfg">
@@ -1419,7 +1419,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	<title>Microsoft Access</title>
 
 	<para>
-	The best advice that can be given is to carefully read the Microsoft knowledgebase articles that
+	The best advice that can be given is to carefully read the Microsoft knowledge base articles that
 	cover this area. Examples of relevant documents include:
 	</para>
 
