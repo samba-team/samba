@@ -639,10 +639,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para>
 
-		<image>
-			<imagedescription>Windows printing to a local printer.</imagedescription>
+		<figure>
+			<title>Windows printing to a local printer.</title>
 			<imagefile>1small</imagefile>
-		</image>
+		</figure>
 	</para>
 	</sect2>
 
@@ -735,10 +735,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</note>
 
 	<para>
-		<image>
-			<imagedescription>Printing to a PostScript printer.</imagedescription>
+		<figure>
+			<title>Printing to a PostScript printer.</title>
 			<imagefile>2small</imagefile>
-		</image>
+		</figure>
 	</para>
 
 
@@ -770,9 +770,10 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</para>
 
 	<para>
-	<image><imagedescription>Ghostscript as a RIP for non-postscript printers.</imagedescription>
-		<imagefile>3small</imagefile>
-	</image>
+		<figure>
+			<title>Ghostscript as a RIP for non-postscript printers.</title>
+			<imagefile>3small</imagefile>
+	</figure>
 	</para>
 
 	<tip><para>
@@ -1177,10 +1178,10 @@ print options already embedded into the file.
 </para>
 
 <para>
-	<image>
-		<imagedescription>Pre-filtering in CUPS to form PostScript.</imagedescription>
+	<figure>
+		<title>Pre-filtering in CUPS to form PostScript.</title>
 		<imagefile scale="25">4small</imagefile>
-	</image>
+	</figure>
 </para>
 </sect2>
 
@@ -1197,9 +1198,10 @@ stapling and punching it, and so on) into the PostScript file.
 </para>
 
 <para>
-	<image><imagedescription>Adding device-specific print options.</imagedescription>
+	<figure>
+		<title>Adding device-specific print options.</title>
 		<imagefile scale="25">5small</imagefile>
-	</image>
+	</figure>
 </para>
 
 <para>
@@ -1238,10 +1240,10 @@ that are able to generate device-specific printer data.
 </para>
 
 <para>
-	<image>
-		<imagedescription>PostScript to intermediate raster format.</imagedescription>
+	<figure>
+		<title>PostScript to intermediate raster format.</title>
 		<imagefile scale="25">6small</imagefile>
-	</image>
+	</figure>
 </para>
 
 <para>
@@ -1258,10 +1260,10 @@ than one vendor financing the development of CUPS raster drivers).
 </para>
 
 <para>
-	<image>
-		<imagedescription>CUPS-raster production using Ghostscript.</imagedescription>
+	<figure>
+		<title>CUPS-raster production using Ghostscript.</title>
 		<imagefile>7small</imagefile>
-	</image>
+	</figure>
 </para>
 
 <para>
@@ -1295,10 +1297,10 @@ filtering on <link linkend="small8">next picture</link>.
 </para>
 
 <para>
-	<image id="small8">
-		<imagedescription>Image format to CUPS-raster format conversion.</imagedescription>
+	<figure id="small8">
+		<title>Image format to CUPS-raster format conversion.</title>
 		<imagefile>8small</imagefile>
-	</image>
+	</figure>
 </para>
 
 </sect2>
@@ -1321,10 +1323,10 @@ closely as possible with CUPS.
 </para>
 
 <para>
-	<image id="small9">
-		<imagedescription>Raster to printer-specific formats.</imagedescription>
+	<figure id="small9">
+		<title>Raster to printer-specific formats.</title>
 		<imagefile>9small</imagefile>
-	</image>
+	</figure>
 </para>
 </sect2>
 
@@ -1788,10 +1790,10 @@ advantages) than other methods.
 </para>
 
 <para>
-	<image id="cupsomatic-dia">
-		<imagedescription>cupsomatic/foomatic Processing versus Native CUPS.</imagedescription>
+	<figure id="cupsomatic-dia">
+		<title>cupsomatic/foomatic Processing versus Native CUPS.</title>
 		<imagefile>10small</imagefile>
-	</image>
+	</figure>
 </para>
 
 <para>
@@ -1880,10 +1882,10 @@ backend, which transfers the job to the printers.</para></listitem>
 
 <para>
 	The resulting filter chain, therefore, is as drawn in <link linkend="pdftosocket">PDF to socket chain</link>.
-	<image id="pdftosocket">
-		<imagedescription>PDF to socket chain.</imagedescription>
+	<figure id="pdftosocket">
+		<title>PDF to socket chain.</title>
 		<imagefile>pdftosocket</imagefile>
-	</image>
+	</figure>
 </para>
 
 
@@ -1934,10 +1936,10 @@ which transfers the job to the printers.</para></listitem>
 The resulting filter chain therefore is as drawn in <link linkend="pdftoepsonusb">this figure</link>.
 </para>
 
-<image id="pdftoepsonusb">
-	<imagedescription>PDF to USB chain.</imagedescription>
+<figure id="pdftoepsonusb">
+	<title>PDF to USB chain.</title>
 	<imagefile>pdftoepsonusb</imagefile>
-</image>
+</figure>
 </sect2>
 
 <sect2>
@@ -2080,10 +2082,10 @@ clients.
 </para>
 
 <para>
-	<image id="small11">
-		<imagedescription>Print driver execution on the client.</imagedescription>
+	<figure id="small11">
+		<title>Print driver execution on the client.</title>
 		<imagefile>11small</imagefile>
-	</image>
+	</figure>
 </para>
 </sect2>
 
@@ -2107,10 +2109,10 @@ understand.
 </para>
 
 <para>
-	<image id="small12">
-		<imagedescription>Print driver execution on the server.</imagedescription>
+	<figure id="small12">
+		<title>Print driver execution on the server.</title>
 		<imagefile>12small</imagefile>
-	</image>
+	</figure>
 </para>
 
 <para>
@@ -2180,10 +2182,10 @@ simply use <smbconfoption name="printing">sysv</smbconfoption>).
 </para>
 
 <para>
-	<image>
-		<imagedescription>Printing via CUPS/Samba server.</imagedescription>
+	<figure>
+		<title>Printing via CUPS/Samba server.</title>
 		<imagefile>13small</imagefile>
-	</image>
+	</figure>
 </para>
 </sect2>
 
@@ -3107,9 +3109,9 @@ not intended to, and does not work with, raw queues!
 </para>
 
 <para>
-	<image id="small14">
-		<imagedescription>cupsaddsmb flowchart.</imagedescription>
-		<imagefile>14small</imagefile></image>
+	<figure id="small14">
+		<title>cupsaddsmb flowchart.</title>
+		<imagefile>14small</imagefile></figure>
 </para>
 </sect2>
 
@@ -5131,15 +5133,15 @@ feature of CUPS and you do not necessarily need to have smbd running.
 The following diagrams reveal how CUPS handles print jobs.
 </para>
 
-<image id="cups1">
-	<imagedescription>Filtering chain 1.</imagedescription>
+<figure id="cups1">
+	<title>Filtering chain 1.</title>
 	<imagefile>cups1</imagefile>
-</image>
+</figure>
 
-<image id="cups2">
-	<imagedescription>Filtering chain with cupsomatic</imagedescription>
+<figure id="cups2">
+	<title>Filtering chain with cupsomatic</title>
 	<imagefile>cups2</imagefile>
-</image>
+</figure>
 
 </sect1>
 
@@ -5482,10 +5484,10 @@ files from the Adobe Web site.</para></sect2>
 
 <para>A complete overview of the CUPS printing processes can be found in <link linkend="a_small">the next flowchart</link>.</para>
 
-<image id="a_small">
-	<imagedescription>CUPS printing overview.</imagedescription>
+<figure id="a_small">
+	<title>CUPS printing overview.</title>
 	<imagefile>a_small</imagefile>
-</image>
+</figure>
 </sect1>
 
 </chapter>

@@ -171,10 +171,10 @@ Where a one-way trust has been established between two MS Windows NT4 domains (l
 DomA and DomB), the following facilities are created:
 </para>
 
-<image id="trusts1">
-	<imagedescription>Trusts overview.</imagedescription>
+<figure id="trusts1">
+	<title>Trusts overview.</title>
 	<imagefile>trusts1</imagefile>
-</image>
+</figure>
 
 <itemizedlist>
 	<listitem><para>

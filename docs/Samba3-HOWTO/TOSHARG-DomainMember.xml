@@ -781,7 +781,6 @@ When manually configuring <filename>krb5.conf</filename>, the minimal configurat
 </para>
 
 <para>
-	<smbfile name="krb5.conf">
 	<programlisting>
 [libdefaults]
 	default_realm = YOUR.KERBEROS.REALM
@@ -793,7 +792,7 @@ When manually configuring <filename>krb5.conf</filename>, the minimal configurat
 
 [domain_realms]
 	.kerberos.server = YOUR.KERBEROS.REALM
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 When using Heimdal versions before 0.6 use the following configuration settings:

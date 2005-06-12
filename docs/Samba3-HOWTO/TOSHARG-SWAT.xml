@@ -251,7 +251,6 @@ A control file for the newer style xinetd could be:
 </para>
 
 <para>
-	<smbfile name="xinetd.swat">
 <programlisting>
 # default: off
 # description: SWAT is the Samba Web Admin Tool. Use swat \
@@ -269,7 +268,6 @@ service swat
 	disable = no
 }
 </programlisting>
-</smbfile>
 In the above, the default setting for <parameter>disable</parameter> is <constant>yes</constant>.
 This means that SWAT is disabled. To enable use of SWAT, set this parameter to <constant>no</constant>
 as shown.

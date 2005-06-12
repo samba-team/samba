@@ -487,7 +487,6 @@ by commenting them out, except the calls to <filename>pam_pwdb.so</filename>.
 <title>PAM: Original Login Config</title>
 
 <para>
-	<smbfile name="pam-login-default">
 	<programlisting>
 #%PAM-1.0
 # The PAM configuration file for the <quote>login</quote> service
@@ -504,7 +503,7 @@ session      required    pam_pwdb.so
 # password   required    pam_cracklib.so retry=3
 password     required    pam_pwdb.so shadow md5
 </programlisting>
-</smbfile></para>
+</para>
 
 </sect3>
 
@@ -553,7 +552,6 @@ source distribution.
 </para>
 
 <para>
-	<smbfile name="pam-login-smbpass">
 	<programlisting>
 #%PAM-1.0
 # The PAM configuration file for the <quote>login</quote> service
@@ -562,7 +560,7 @@ auth        required    pam_smbpass.so nodelay
 account     required    pam_smbpass.so nodelay
 session     required    pam_smbpass.so nodelay
 password    required    pam_smbpass.so nodelay
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 The following is the PAM configuration file for a particular 
@@ -570,7 +568,6 @@ Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 </para>
 
 <para>
-	<smbfile name="pam-samba-default">
 	<programlisting>
 #%PAM-1.0
 # The PAM configuration file for the <quote>samba</quote> service
@@ -579,7 +576,7 @@ auth       required     pam_pwdb.so nullok nodelay shadow audit
 account    required     pam_pwdb.so audit nodelay
 session    required     pam_pwdb.so nodelay
 password   required     pam_pwdb.so shadow md5
-</programlisting></smbfile></para>
+</programlisting></para>
 
 <para>
 In the following example, the decision has been made to use the 
@@ -589,7 +586,7 @@ thus allow the <command>smbpasswd</command> passwords to be changed using the
 <command>passwd</command> program:
 </para>
 
-<para><smbfile name="pam-samba-smbpass">
+<para>
 		<programlisting>
 #%PAM-1.0
 # The PAM configuration file for the <quote>samba</quote> service
@@ -599,7 +596,7 @@ account    required     pam_pwdb.so audit nodelay
 session    required     pam_pwdb.so nodelay
 password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
 </programlisting>
-</smbfile></para>
+</para>
 
 <note><para>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
@@ -741,7 +738,6 @@ application (such as <command>ssh</command>).
 </para>
 
 <para>
-	<smbfile name="pam-synchronised-password">
 	<programlisting>
 #%PAM-1.0
 # password-sync
@@ -753,7 +749,7 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so nullok use_authtok try_first_pass
 session    required     pam_unix.so
-</programlisting></smbfile></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -767,7 +763,7 @@ password migration takes place when users <command>ftp</command> in, login using
 their mail, and so on.
 </para>
 
-<para><smbfile name="pam-password-migration">
+<para>
 	<programlisting>
 #%PAM-1.0
 # password-migration
@@ -781,7 +777,7 @@ password   requisite   pam_cracklib.so retry=3
 password   requisite   pam_unix.so shadow md5 use_authtok try_first_pass
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 session    required    pam_unix.so
-</programlisting></smbfile></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -793,7 +789,7 @@ A sample PAM configuration for a mature <filename>smbpasswd</filename> installat
 the SMB password does not exist or does not match the UNIX password.
 </para>
 
-<para><smbfile name="pam-fallback">
+<para>
 <programlisting>
 #%PAM-1.0
 # password-mature
@@ -805,7 +801,7 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so use_authtok use_first_pass
 session    required     pam_unix.so
-</programlisting></smbfile></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -817,7 +813,7 @@ A sample PAM configuration that shows <parameter>pam_smbpass</parameter> used to
 a Kerberos realm.
 </para>
 
-<para><smbfile name="pam-krb">
+<para>
 		<programlisting>
 #%PAM-1.0
 # kdc-pdc
@@ -830,7 +826,7 @@ password   requisite   pam_cracklib.so retry=3
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 password   required    pam_krb5.so use_authtok try_first_pass
 session    required    pam_krb5.so
-</programlisting></smbfile></para>
+</programlisting></para>
 
 </sect3>
 
@@ -855,7 +851,6 @@ the Samba mailing list.
 	</para>
 
 <para>
-	<smbfile name="pam-winbind-erratic">
 <programlisting>
 auth required /lib/security/pam_securetty.so
 auth sufficient /lib/security/pam_winbind.so
@@ -865,7 +860,7 @@ auth required /lib/security/pam_nologin.so
 account required /lib/security/pam_stack.so service=system-auth
 account required /lib/security/pam_winbind.so
 password required /lib/security/pam_stack.so service=system-auth
-</programlisting></smbfile>
+</programlisting>
 </para>
 
 	<para>
