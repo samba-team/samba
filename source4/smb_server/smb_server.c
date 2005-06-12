@@ -511,7 +511,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
-		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
+		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRinvnid));
 		return;
 	}
 
