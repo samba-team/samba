@@ -94,7 +94,13 @@ struct dcerpc_pipe {
 
 	/* the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
+
+	/* timeout for individual rpc requests, in seconds */
+	uint_t request_timeout;
 };
+
+/* default timeout for all rpc requests, in seconds */
+#define DCERPC_REQUEST_TIMEOUT 60
 
 
 /* dcerpc pipe flags */
