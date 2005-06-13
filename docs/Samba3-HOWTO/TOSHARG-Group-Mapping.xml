@@ -642,11 +642,13 @@ exit 0
 
 		<para>
 		The &smb.conf; entry for the above script would be something like that in <link linkend="smbgrpadd">the following example</link>.
-<smbconfexample id="smbgrpadd" fragment="1">
+<example id="smbgrpadd">
 <title>Configuration of &smb.conf; for the add group script.</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="add group script">/path_to_tool/smbgrpadd.sh &quot;%g&quot;</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 		</para>
 
 	</sect2>

@@ -624,16 +624,16 @@ options in the <smbconfsection name="[global]"/> section of the &smb.conf;
 file as shown in <link linkend="dmbexample">the following example</link>:
 </para>
 
-<para>
-<smbconfexample id="dmbexample">
+<example id="dmbexample">
 <title>Domain Master Browser smb.conf</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">yes</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
 <smbconfoption name="os level">65</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 The Domain Master Browser may be the same machine as the WINS server, if necessary.
@@ -649,16 +649,16 @@ server a Local Master Browser set the following options in the
 shown in <link linkend="lmbexample">following example</link>:
 </para>
 
-<para>
-<smbconfexample id="lmbexample">
+<example id="lmbexample">
 <title>Local master browser smb.conf</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
 <smbconfoption name="os level">65</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 Do not do this for more than one Samba server on each subnet, or they will war with
@@ -678,16 +678,16 @@ becoming a Local Master Browser by setting the following options in the <smbconf
 &smb.conf; file as shown in <link linkend="nombexample">following example</link>:
 </para>
 
-<para>
-<smbconfexample id="nombexample">
+<example id="nombexample">
 <title>smb.conf for not being a Master Browser</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">no</smbconfoption>
 <smbconfoption name="preferred master">no</smbconfoption>
 <smbconfoption name="os level">0</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 </sect2>
 
@@ -707,16 +707,16 @@ described. To make a Samba server a Local Master Browser, set the following opti
 of the &smb.conf; file as shown in <link linkend="remsmb">following example</link>:
 </para>
 
-<para>
-<smbconfexample id="remsmb">
+<example id="remsmb">
 <title>Local Master Browser smb.conf</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
 <smbconfoption name="os level">65</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 If you wish to have a Samba server fight the election with machines on the same subnet you
@@ -732,16 +732,16 @@ and ever becoming a Local Master Browser by setting the following options in the
 <smbconfsection name="[global]"/> section of the &smb.conf; file as shown in <link linkend="xremmb">next example</link>:
 </para>
 
-<para>
-<smbconfexample id="xremmb">
+<example id="xremmb">
 <title>&smb.conf; for not being a master browser</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">no</smbconfoption>
 <smbconfoption name="preferred master">no</smbconfoption>
 <smbconfoption name="os level">0</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 </sect2>
 

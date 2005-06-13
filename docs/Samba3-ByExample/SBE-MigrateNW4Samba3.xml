@@ -669,8 +669,9 @@ session: none
 	The Samba &smb.conf; file was configured as shown in <link linkend="ch8smbconf"/>.
 	</para>
 
-<smbconfexample id="ch8smbconf">
+<example id="ch8smbconf">
 <title>Samba Configuration File &smbmdash; smb.conf Part A</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET2</smbconfoption>
@@ -712,10 +713,12 @@ session: none
 <smbconfoption name="admin users">root, "@Domain Admins"</smbconfoption>
 <smbconfoption name="printer admin">"@Domain Admins"</smbconfoption>
 <smbconfoption name="force printername">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch8smbconf2">
+<example id="ch8smbconf2">
 <title>Samba Configuration File &smbmdash; smb.conf Part B</title>
+<smbconfblock>
 <smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network logon service</smbconfoption>
 <smbconfoption name="path">/data/samba/netlogon</smbconfoption>
@@ -754,10 +757,12 @@ session: none
 <smbconfoption name="comment">Location of documents printed to PDFCreator printer</smbconfoption>
 <smbconfoption name="path">/data/samba/shares/pdf</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch8smbconf3">
+<example id="ch8smbconf3">
 <title>Samba Configuration File &smbmdash; smb.conf Part C</title>
+<smbconfblock>
 <smbconfsection name="[EVERYTHING]"/>
 <smbconfoption name="comment">All shares</smbconfoption>
 <smbconfoption name="path">/data/samba</smbconfoption>
@@ -798,10 +803,12 @@ session: none
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="copy">printers</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch8smbconf4">
+<example id="ch8smbconf4">
 <title>Samba Configuration File &smbmdash; smb.conf Part D</title>
+<smbconfblock>
 <smbconfsection name="[APPS]"/>
 <smbconfoption name="path">/data/samba/shares/Apps</smbconfoption>
 <smbconfoption name="force group">"Domain Users"</smbconfoption>
@@ -839,10 +846,12 @@ session: none
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="create mask">0770</smbconfoption>
 <smbconfoption name="copy">engr</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch8smbconf5">
+<example id="ch8smbconf5">
 <title>Samba Configuration File &smbmdash; smb.conf Part E</title>
+<smbconfblock>
 <smbconfsection name="[X]"/>
 <smbconfoption name="path">/data/samba/shares/X</smbconfoption>
 <smbconfoption name="valid users">@engr, @acct</smbconfoption>
@@ -867,7 +876,8 @@ session: none
 <smbconfoption name="valid users">chad</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>Qbasic</primary></indexterm>

@@ -224,7 +224,7 @@ that are in common use today. These are:
 			Click the <guibutton>WINS</guibutton> tab to add manual WINS server entries. 
 			This step demonstrates an example system that uses manually configured WINS settings. 
 			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
-			See <link linkend="w2kp005"></link>.
+			See <link linkend="w2kp005"/>.
 			<figure id="w2kp005"><title>WINS Configuration.</title><imagefile>w2kp005</imagefile></figure>
 			</para></step>
 
@@ -255,16 +255,16 @@ that are in common use today. These are:
 		<procedure>
 			<step><para>
 			In the box labeled <guimenuitem>The following network components are installed:</guimenuitem>,
-			click on <guimenu>Internet Protocol TCP/IP</guimenu>, now click on the <guibutton>Properties</guibutton> button. See <link linkend="WME001"></link>.
+			click on <guimenu>Internet Protocol TCP/IP</guimenu>, now click on the <guibutton>Properties</guibutton> button. See <link linkend="WME001"/>.
 			<figure id="WME001"><title>The Windows Me Network Configuration Panel.</title><imagefile>WME001</imagefile></figure>
 			</para></step>
 
 			<step><para>
 			Many network administrators will want to use DHCP to configure all client TCP/IP
 			protocol stack settings. (For information on how to configure the ISC DHCP server
-			for Microsoft Windows client support see, <link linkend="DHCP"></link>.
+			for Microsoft Windows client support see, <link linkend="DHCP"/>.
 			The default setting on Microsoft Windows Me workstations is for DHCP enabled operation,
-			i.e., <guimenu>Obtain IP address automatically</guimenu> is enabled. See <link linkend="WME002"></link>.
+			i.e., <guimenu>Obtain IP address automatically</guimenu> is enabled. See <link linkend="WME002"/>.
 			<figure id="WME002"><title>IP Address.</title><imagefile>WME002</imagefile></figure>
 			</para>
 
@@ -286,7 +286,7 @@ that are in common use today. These are:
 			</para></step>
 
 			<step><para>
-			The following example uses manually configured WINS settings. See <link linkend="WME005"></link>.
+					The following example uses manually configured WINS settings. See <link linkend="WME005"/>.
 			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
 			<figure id="WME005"><title>DNS Configuration.</title><imagefile>WME005</imagefile></figure>
 			</para>

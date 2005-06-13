@@ -1049,8 +1049,9 @@ index default               sub
 </screen>
 </example>
 
-<smbconfexample id="ch7-massmbconfA">
+<example id="ch7-massmbconfA">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part A</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1096,10 +1097,12 @@ index default               sub
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
 <smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch7-massmbconfB">
+<example id="ch7-massmbconfB">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part B</title>
+<smbconfblock>
 <smbconfsection name="[IPC$]"/>
 <smbconfoption name="path">/tmp</smbconfoption>
 
@@ -1130,10 +1133,12 @@ index default               sub
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch7-massmbconfC">
+<example id="ch7-massmbconfC">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part C</title>
+<smbconfblock>
 <smbconfsection name="[apps]"/>
 <smbconfoption name="comment">Application Files</smbconfoption>
 <smbconfoption name="path">/apps</smbconfoption>
@@ -1164,10 +1169,12 @@ index default               sub
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch7-slvsmbocnfA">
+<example id="ch7-slvsmbocnfA">
 <title>Backup Domain Controller &smb.conf; File &smbmdash; Part A</title>
+<smbconfblock>
 <smbconfcomment># Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1211,10 +1218,12 @@ index default               sub
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="ch7-slvsmbocnfB">
+<example id="ch7-slvsmbocnfB">
 <title>Backup Domain Controller &smb.conf; File &smbmdash; Part B</title>
+<smbconfblock>
 <smbconfsection name="[pidata]"/>
 <smbconfoption name="comment">Property Insurance Files</smbconfoption>
 <smbconfoption name="path">/data/pidata</smbconfoption>
@@ -1256,7 +1265,8 @@ index default               sub
 <smbconfoption name="path">/var/lib/samba/profdata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 	<sect2>
 		<title>Key Points Learned</title>

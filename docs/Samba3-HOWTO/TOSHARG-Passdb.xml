@@ -418,13 +418,15 @@ Samba-3 introduces a number of new password backend capabilities.
 
 	<para>
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
-<smbconfexample id="idmapbackendexample">
+<example id="idmapbackendexample">
 <title>Example configuration with the LDAP idmap backend</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="idmap backend">ldap:ldap://ldap-server.quenya.org:636</smbconfoption>
 <smbconfcomment>Alternately, this could be specified as:</smbconfcomment>
 <smbconfoption name="idmap backend">ldap:ldaps://ldap-server.quenya.org</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 	</para>
 
 	<para>
@@ -1148,9 +1150,9 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			use with an LDAP directory could appear as shown below.
 			</para>
 
-<para>
-<smbconfexample id="confldapex">
+<example id="confldapex">
 <title>Configuration with LDAP</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="security">user</smbconfoption>
 <smbconfoption name="encrypt passwords">yes</smbconfoption>
@@ -1190,8 +1192,8 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 
 <smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
 <smbconfoption name="ldap filter">(uid=%u)</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 		</sect3>
 
@@ -1634,8 +1636,9 @@ access to attrs=SambaLMPassword,SambaNTPassword
 			<para><link linkend="mysqlsam">An example configuration</link> looks like:
 			</para>
 
-			<smbconfexample id="mysqlsam">
+			<example id="mysqlsam">
 				<title>Example configuration for the MySQL passdb backend</title>
+				<smbconfblock>
 			<smbconfsection name="[global]"/>
 			<smbconfoption name="passdb backend">mysql:foo</smbconfoption>
 			<smbconfoption name="foo:mysql user">samba</smbconfoption>
@@ -1650,7 +1653,8 @@ access to attrs=SambaLMPassword,SambaNTPassword
 			<smbconfoption name="foo:nt pass column">nt_pass:</smbconfoption>
 			<smbconfcomment>The unknown 3 column is not stored</smbconfcomment>
 			<smbconfoption name="foo:unknown 3 column">NULL</smbconfoption>
-			</smbconfexample>
+		</smbconfblock>
+	</example>
 		</sect3>
 
 		<sect3>

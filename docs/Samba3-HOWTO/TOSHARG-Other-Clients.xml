@@ -308,15 +308,17 @@ releases prior to Samba 2.2.2.
 <link linkend="minimalprofile">Following example</link> provides a minimal profile share.
 </para>
 
-<para><smbconfexample id="minimalprofile">
+<example id="minimalprofile">
 <title>Minimal profile share</title>
+<smbconfblock>
 <smbconfsection name="[profile]"/>
 <smbconfoption name="path">/export/profile</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="directory mask">0700</smbconfoption>
 <smbconfoption name="nt acl support">no</smbconfoption>
 <smbconfoption name="read only">no</smbconfoption>
-</smbconfexample></para>
+</smbconfblock>
+</example>
 
 <para>
 The reason for this bug is that the Windows 200x SP2 client copies

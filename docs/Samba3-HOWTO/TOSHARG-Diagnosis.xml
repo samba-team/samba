@@ -55,14 +55,15 @@ You can add a <smbconfsection name="tmp"/> share like this by adding the
 lines shown in <link linkend="tmpshare">the next example</link>.
 </para>
 
-<para><smbconfexample id="tmpshare">
-<title>smb.conf with [tmp] share</title>
+<example id="tmpshare">
+	<title>smb.conf with [tmp] share</title>
+	<smbconfblock>
 <smbconfsection name="[tmp]"/>
 <smbconfoption name="comment">temporary files </smbconfoption>
 <smbconfoption name="path">/tmp</smbconfoption>
 <smbconfoption name="read only">yes</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <note><para>
 These tests assume version 3.0.0 or later of the Samba suite.
@@ -239,18 +240,16 @@ the &smb.conf; file entries as shown in <link linkend="modif1">the next example<
 </para>
 
 
-<para>
-<smbconfexample id="modif1">
+<example id="modif1">
 	<title>Configuration for only allowing connections from a certain subnet</title>
+	<smbconfblock>
 <smbconfsection name="[globals]"/>
-<member>...</member>
 <smbconfoption name="hosts deny">ALL</smbconfoption>
 <smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy</smbconfoption>
 <smbconfoption name="interfaces">eth0</smbconfoption>
 <smbconfoption name="bind interfaces only">Yes</smbconfoption>
-<member>...</member>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 In the above, no allowance has been made for any session requests that
@@ -258,17 +257,15 @@ will automatically translate to the loopback adapter address 127.0.0.1.
 To solve this problem, change these lines as shown in <link linkend="modif2">the following example</link>.
 </para>
 
-<para>
-<smbconfexample id="modif2">
+<example id="modif2">
 	<title>Configuration for allowing connections from a certain subnet and localhost</title>
+	<smbconfblock>
 <smbconfsection name="[globals]"/>
-<member>...</member>
 <smbconfoption name="hosts deny">ALL</smbconfoption>
 <smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy 127.</smbconfoption>
 <smbconfoption name="interfaces">eth0 lo</smbconfoption>
-<member>...</member>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 <indexterm><primary>inetd</primary></indexterm>

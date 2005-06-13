@@ -619,9 +619,9 @@ are described in more detail in the <citerefentry><refentrytitle>winbindd</refen
 linkend="winbindcfg">the next example</link>, was modified to include the necessary entries in the [global] section.
 </para>
 
-<para>
-<smbconfexample id="winbindcfg" fragment="1">
+<example id="winbindcfg" fragment="1">
 		<title>smb.conf for Winbind set-up</title>
+		<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfcomment> separate domain and username with '\', like DOMAIN\username</smbconfcomment>
 <smbconfoption name="winbind separator">\</smbconfoption>
@@ -635,7 +635,8 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 <smbconfcomment> give winbind users a real shell (only needed if they have telnet access)</smbconfcomment>
 <smbconfoption name="template homedir">/home/winnt/%D/%U</smbconfoption>
 <smbconfoption name="template shell">/bin/bash</smbconfoption>
-</smbconfexample></para>
+</smbconfblock>
+</example>
 
 </sect3>
 
