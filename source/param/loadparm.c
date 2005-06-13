@@ -381,7 +381,6 @@ static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
 static BOOL bInGlobalSection = True;
-static BOOL bGlobalOnly = False;
 static int server_role;
 static int default_server_announce;
 
@@ -2429,7 +2428,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 {
-	if (!bInGlobalSection && bGlobalOnly)
+	if (!bInGlobalSection)
 		return (True);
 
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
@@ -2632,7 +2631,7 @@ static BOOL do_section(const char *pszSectionName)
 		return (True);
 	}
 
-	if (!bInGlobalSection && bGlobalOnly)
+	if (!bInGlobalSection)
 		return (True);
 
 	/* if we have a current service, tidy it up before moving on */
@@ -2907,47 +2906,6 @@ void lp_killservice(int iServiceIn)
 	}
 }
 
-/***************************************************************************
- Save the curent values of all global and sDefault parameters into the 
- defaults union. This allows swat and testparm to show only the
- changed (ie. non-default) parameters.
-***************************************************************************/
-
-static void lp_save_defaults(void)
-{
-	int i;
-	for (i = 0; parm_table[i].label; i++) {
-		if (i > 0 && parm_table[i].ptr == parm_table[i - 1].ptr)
-			continue;
-		switch (parm_table[i].type) {
-			case P_LIST:
-				parm_table[i].def.lvalue = str_list_copy(talloc_autofree_context(), 
-									 *(const char ***)parm_table[i].ptr);
-				break;
-			case P_STRING:
-			case P_USTRING:
-				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = strdup(*(char **)parm_table[i].ptr);
-				} else {
-					parm_table[i].def.svalue = NULL;
-				}
-				break;
-			case P_BOOL:
-				parm_table[i].def.bvalue =
-					*(BOOL *)parm_table[i].ptr;
-				break;
-			case P_INTEGER:
-			case P_ENUM:
-				parm_table[i].def.ivalue =
-					*(int *)parm_table[i].ptr;
-				break;
-			case P_SEP:
-				break;
-		}
-	}
-	defaults_saved = True;
-}
-
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
@@ -3010,8 +2968,7 @@ static void set_server_role(void)
  False on failure.
 ***************************************************************************/
 
-BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
-	     BOOL add_ipc)
+BOOL lp_load(const char *pszFname)
 {
 	pstring n2;
 	BOOL bRetval;
@@ -3027,7 +2984,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", pszFname));
 	
 	bInGlobalSection = True;
-	bGlobalOnly = global_only;
 
 	if (Globals.param_opt != NULL) {
 		struct param_opt *next;
@@ -3043,11 +2999,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	
 	init_globals();
 
-	if (save_defaults)
-	{
-		lp_save_defaults();
-	}
-
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
 	bRetval = pm_process(n2, do_section, do_parameter);
@@ -3060,12 +3011,10 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 
 	lp_add_auto_services(lp_auto_services());
 
-	if (add_ipc) {
-		/* When 'restrict anonymous = 2' guest connections to ipc$
-		   are denied */
-		lp_add_hidden("IPC$", "IPC", (lp_restrict_anonymous() < 2));
-		lp_add_hidden("ADMIN$", "DISK", False);
-	}
+	/* When 'restrict anonymous = 2' guest connections to ipc$
+	   are denied */
+	lp_add_hidden("IPC$", "IPC", (lp_restrict_anonymous() < 2));
+	lp_add_hidden("ADMIN$", "DISK", False);
 
 	set_server_role();
 	set_default_server_announce_type();

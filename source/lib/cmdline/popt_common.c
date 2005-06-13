@@ -52,7 +52,7 @@ static void popt_common_callback(poptContext con,
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
-		lp_load(dyn_CONFIGFILE,True,False,False);
+		lp_load(dyn_CONFIGFILE);
 		load_interfaces();
 		return;
 	}

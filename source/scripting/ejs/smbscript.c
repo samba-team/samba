@@ -49,7 +49,7 @@ void ejs_exception(const char *reason)
 
 	setup_logging(argv[0],DEBUG_STDOUT);
 
-	if (!lp_load(dyn_CONFIGFILE, False, False, False)) {
+	if (!lp_load(dyn_CONFIGFILE)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], dyn_CONFIGFILE);
 		exit(127);
