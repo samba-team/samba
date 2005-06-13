@@ -18,14 +18,12 @@
 %================================================================================
 % 1. Page layout dimensions
 % 3. Define new fonts for headings
-% 4. Define LaTeX logos (usually not needed)
-% 5. Redefines the way "figure" amd "table" are formated in a \caption
-% 6. Defines a \capt macro which defines (1) \captwidth, (2) \captsize
+% 4. Redefines the way "figure" amd "table" are formated in a \caption
+% 5. Defines a \capt macro which defines (1) \captwidth, (2) \captsize
 %    and \beforetableskip.
-% 7. New Environemnts:  Eqnarray, reflist, exerlist
-% 8. Defines and modifies FANCYHDS.STY for headers and foots
-% 9. Change sectioning headings to bold sans serif fonts
-%10. Turn off leader dots in Table of Contents
+% 6. Defines and modifies FANCYHDS.STY for headers and foots
+% 7. Change sectioning headings to bold sans serif fonts
+% 8. Turn off leader dots in Table of Contents
 %======================================================================
 
 %====================== Page Layout
@@ -115,43 +113,6 @@
 \def\theequation{\thechapter.\arabic{equation}}
 \@addtoreset{equation}{chapter}
 
-
-%===================== New Environments
-
-%------ Reference List Macro
-\newenvironment{reflist}{\begin{list}{}{\leftmargin 1em \labelwidth 0in
-\labelsep 0in \itemsep 0ex  \rightmargin 0in}}{\end{list}}
-\newcommand{\refitem}{\item \hspace*{-1em}}   %--- item for ref list
-\newcommand{\SC}{\scriptsize}  %--- small capitals for reference lists
-
-
-%------ New environment for better spacing in Eqnarray
-\def\eqnarray{%
-   \stepcounter{equation}%
-   \def\@currentlabel{\p@equation\theequation}%
-   \global\@eqnswtrue
-   \m@th
-   \global\@eqcnt\z@
-   \tabskip\@centering
-   \let\\\@eqncr
-   $$\everycr{}\halign to\displaywidth\bgroup
-       \hskip\@centering$\displaystyle\tabskip\z@skip{##}$\@eqnsel
-      &\global\@eqcnt\@ne\hskip \arraycolsep \hfil${##}$\hfil
-      &\global\@eqcnt\tw@ \hskip \arraycolsep
-         $\displaystyle{##}$\hfil\tabskip\@centering
-      &\global\@eqcnt\thr@@ \hb@xt@\z@\bgroup\hss##\egroup
-         \tabskip\z@skip
-      \cr
-}
-
-% The hangitem environment -- like description, but text lines up with 
-%    the item descriptor.  You give an additional argument containing text
-%    of the width that you want indentations.
-%
-\def\hangitem#1{\list{}{\settowidth\labelwidth{#1}
-        \leftmargin\labelwidth\advance\leftmargin\labelsep }}
-\let\endhangitem\endlist
-
 \RequirePackage{fancyhdr}
 
 %------------------- Modify Headers for Prentice-Hall Book Style
@@ -182,8 +143,6 @@
 %
 \def\chaptermark#1{\markboth{#1 \quad \@chapapp{}~\thechapter}{}}
 \def\chaptersmark#1{\markboth{#1}{#1}}
-
-
 
 
 %===================== Change Section Heads to Bold Sans Serif
@@ -380,5 +339,3 @@ page \thepage \space undefined}}%
 \renewcommand{\textfraction}{0.1}
 \renewcommand{\topfraction}{1.0}
 \renewcommand{\bottomfraction}{1.0}
-
-%

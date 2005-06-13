@@ -149,6 +149,14 @@
 					<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
 				</xsl:element>
 			</xsl:element>
+			<xsl:element name="imageobject">
+				<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
+				<xsl:element name="imagedata">
+					<xsl:attribute name="fileref">
+						<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text><xsl:value-of select="text()"/></xsl:attribute>
+				</xsl:element>
+			</xsl:element>
+
 		</xsl:element>
 	</xsl:template>
 </xsl:stylesheet>
