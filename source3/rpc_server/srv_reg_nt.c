@@ -43,9 +43,6 @@
 
 struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
-static REGISTRY_KEY *regkeys_list;
-
-
 /******************************************************************
  free() function for REGISTRY_KEY
  *****************************************************************/
@@ -54,8 +51,6 @@ static void free_regkey_info(void *ptr)
 {
 	REGISTRY_KEY *info = (REGISTRY_KEY*)ptr;
 	
-	DLIST_REMOVE(regkeys_list, info);
-
 	SAFE_FREE(info);
 }
 
@@ -162,9 +157,6 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 	
 	if ( ! NT_STATUS_IS_OK(result) )
 		SAFE_FREE( regkey );
-	else
-		DLIST_ADD( regkeys_list, regkey );
-
 	
 	DEBUG(7,("open_registry_key: exit\n"));
 
