@@ -772,8 +772,8 @@ static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char
 	pwd 	= decrypt_trustdom_secret(password, &data);
 	pwd_old = decrypt_trustdom_secret(password, &data_old);
 	
-	printf("Password:\t%s\n", pwd);
-	printf("Old Password:\t%s\n", pwd_old);
+	d_printf("Password:\t%s\n", pwd);
+	d_printf("Old Password:\t%s\n", pwd_old);
 
 	SAFE_FREE(pwd);
 	SAFE_FREE(pwd_old);
