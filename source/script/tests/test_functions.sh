@@ -96,8 +96,6 @@ testit() {
 		return 1
 	fi
 	
-	smbd_have_test_log && echo "" >$SMBD_TEST_LOG
-
 	( $cmdline > $TEST_LOG 2>&1 )
 	status=$?
 	if [ x"$status" != x"0" ]; then
