@@ -296,7 +296,7 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE);
 	load_interfaces();
 
 	credentials = cli_credentials_init(talloc_autofree_context());

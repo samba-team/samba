@@ -476,7 +476,7 @@ static void usage(void)
 	argc -= NSERVERS;
 	argv += NSERVERS;
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
+	lp_load(dyn_CONFIGFILE);
 	load_interfaces();
 
 	servers[0] = cli_credentials_init(talloc_autofree_context());
