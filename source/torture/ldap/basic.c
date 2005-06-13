@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/ldb/include/ldb.h"
 #include "libcli/ldap/ldap.h"
 #include "lib/cmdline/popt_common.h"
 
@@ -96,7 +97,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = False;
-	msg->r.SearchRequest.filter = talloc_strdup(msg->mem_ctx, "(objectclass=*)");
+	msg->r.SearchRequest.tree = ldb_parse_tree(msg->mem_ctx, "(objectclass=*)");
 	msg->r.SearchRequest.num_attributes = 0;
 	msg->r.SearchRequest.attributes = NULL;
 

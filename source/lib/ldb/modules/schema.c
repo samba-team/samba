@@ -306,6 +306,13 @@ static int schema_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res); 
 }
 
+static int schema_search_bytree(struct ldb_module *module, const char *base,
+				enum ldb_scope scope, struct ldb_parse_tree *tree,
+				const char * const *attrs, struct ldb_message ***res)
+{
+	return ldb_next_search_bytree(module, base, scope, tree, attrs, res); 
+}
+
 /* add_record */
 static int schema_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
@@ -541,15 +548,16 @@ static int schema_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops schema_ops = {
-	"schema",
-	schema_search,
-	schema_add_record,
-	schema_modify_record,
-	schema_delete_record,
-	schema_rename_record,
-	schema_named_lock,
-	schema_named_unlock,
-	schema_errstring,
+	.name          = "schema",
+	.search        = schema_search,
+	.search_bytree = schema_search_bytree,
+	.add_record    = schema_add_record,
+	.modify_record = schema_modify_record,
+	.delete_record = schema_delete_record,
+	.rename_record = schema_rename_record,
+	.named_lock    = schema_named_lock,
+	.named_unlock  = schema_named_unlock,
+	.errstring     = schema_errstring,
 };
 
 #ifdef HAVE_DLOPEN_DISABLED

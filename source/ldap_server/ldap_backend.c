@@ -89,7 +89,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
-	DEBUGADD(10, (" filter: %s\n", req->filter));
+	DEBUGADD(10, (" filter: %s\n", ldb_filter_from_tree(call, req->tree)));
 
 	part = ldapsrv_get_partition(call->conn, req->basedn, req->scope);
 

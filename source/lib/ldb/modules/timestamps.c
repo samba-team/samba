@@ -49,6 +49,14 @@ static int timestamps_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
+static int timestamps_search_bytree(struct ldb_module *module, const char *base,
+				    enum ldb_scope scope, struct ldb_parse_tree *tree,
+				    const char * const *attrs, struct ldb_message ***res)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_search\n");
+	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
+}
+
 static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
@@ -247,15 +255,16 @@ static int timestamps_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops timestamps_ops = {
-	"timestamps",
-	timestamps_search,
-	timestamps_add_record,
-	timestamps_modify_record,
-	timestamps_delete_record,
-	timestamps_rename_record,
-	timestamps_lock,
-	timestamps_unlock,
-	timestamps_errstring
+	.name          = "timestamps",
+	.search        = timestamps_search,
+	.search_bytree = timestamps_search_bytree,
+	.add_record    = timestamps_add_record,
+	.modify_record = timestamps_modify_record,
+	.delete_record = timestamps_delete_record,
+	.rename_record = timestamps_rename_record,
+	.named_lock    = timestamps_lock,
+	.named_unlock  = timestamps_unlock,
+	.errstring     = timestamps_errstring
 };
 
 

@@ -23,7 +23,6 @@
 #define _SMB_LDAP_H
 
 #include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_parse.h"
 
 enum ldap_request_tag {
 	LDAP_TAG_BindRequest = 0,
@@ -152,7 +151,7 @@ struct ldap_SearchRequest {
 	uint32_t timelimit;
 	uint32_t sizelimit;
 	BOOL attributesonly;
-	const char *filter;
+	struct ldb_parse_tree *tree;
 	int num_attributes;
 	const char **attributes;
 };

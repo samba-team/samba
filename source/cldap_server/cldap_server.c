@@ -46,10 +46,11 @@ static void cldapd_request_handler(struct cldap_socket *cldap,
 	if (search->num_attributes == 1 &&
 	    strcasecmp(search->attributes[0], "netlogon") == 0) {
 		cldapd_netlogon_request(cldap, ldap_msg->messageid,
-					search->filter, src_address, src_port);
+					search->tree, src_address, src_port);
 	} else {
 		DEBUG(0,("Unknown CLDAP search for '%s'\n", 
-			 ldap_msg->r.SearchRequest.filter));
+			 ldb_filter_from_tree(ldap_msg, 
+					      ldap_msg->r.SearchRequest.tree)));
 		cldap_empty_reply(cldap, ldap_msg->messageid, src_address, src_port);
 	}
 }

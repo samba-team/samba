@@ -36,7 +36,6 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
-#include "ldb/include/ldb_parse.h"
 
 /*
   add one element to a message
@@ -463,13 +462,11 @@ static int ltdb_search_full(struct ldb_module *module,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ltdb_search(struct ldb_module *module, const char *base,
-		enum ldb_scope scope, const char *expression,
-		const char * const attrs[], struct ldb_message ***res)
+int ltdb_search_bytree(struct ldb_module *module, const char *base,
+		       enum ldb_scope scope, struct ldb_parse_tree *tree,
+		       const char * const attrs[], struct ldb_message ***res)
 {
-	struct ldb_context *ldb = module->ldb;
 	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_parse_tree *tree;
 	int ret;
 
 	if (ltdb_lock_read(module) != 0) {
@@ -485,14 +482,6 @@ int ltdb_search(struct ldb_module *module, const char *base,
 
 	*res = NULL;
 
-	/* form a parse tree for the expression */
-	tree = ldb_parse_tree(ldb, expression);
-	if (!tree) {
-		ltdb->last_err_string = "expression parse failed";
-		ltdb_unlock_read(module);
-		return -1;
-	}
-
 	if (tree->operation == LDB_OP_SIMPLE && 
 	    (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 ||
 	     ldb_attr_cmp(tree->u.simple.attr, "distinguishedName") == 0) &&
@@ -506,9 +495,32 @@ int ltdb_search(struct ldb_module *module, const char *base,
 		}
 	}
 
-	talloc_free(tree);
 	ltdb_unlock_read(module);
 
+	return ret;
+}
+
+
+/*
+  search the database with a LDAP-like expression.
+  choses a search method
+*/
+int ltdb_search(struct ldb_module *module, const char *base,
+		enum ldb_scope scope, const char *expression,
+		const char * const attrs[], struct ldb_message ***res)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_parse_tree *tree;
+	int ret;
+
+	tree = ldb_parse_tree(ltdb, expression);
+	if (tree == NULL) {
+		ltdb->last_err_string = "expression parse failed";
+		return -1;
+	}
+
+	ret = ltdb_search_bytree(module, base, scope, tree, attrs, res);
+	talloc_free(tree);
 	return ret;
 }
 

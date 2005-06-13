@@ -213,15 +213,27 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 */
 
 int ldb_next_search(struct ldb_module *module, 
-	       const char *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_message ***res)
+		    const char *base,
+		    enum ldb_scope scope,
+		    const char *expression,
+		    const char * const *attrs, struct ldb_message ***res)
 {
 	if (!module->next) {
 		return -1;
 	}
 	return module->next->ops->search(module->next, base, scope, expression, attrs, res);
+}
+
+int ldb_next_search_bytree(struct ldb_module *module, 
+			   const char *base,
+			   enum ldb_scope scope,
+			   struct ldb_parse_tree *tree,
+			   const char * const *attrs, struct ldb_message ***res)
+{
+	if (!module->next) {
+		return -1;
+	}
+	return module->next->ops->search_bytree(module->next, base, scope, tree, attrs, res);
 }
 
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)

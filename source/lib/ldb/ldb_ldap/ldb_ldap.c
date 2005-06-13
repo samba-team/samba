@@ -286,6 +286,27 @@ failed:
 
 
 /*
+  search for matching records using a ldb_parse_tree
+*/
+static int lldb_search_bytree(struct ldb_module *module, const char *base,
+			      enum ldb_scope scope, struct ldb_parse_tree *tree,
+			      const char * const *attrs, struct ldb_message ***res)
+{
+	struct lldb_private *lldb = module->private_data;
+	char *expression;
+	int ret;
+
+	expression = ldb_filter_from_tree(lldb, tree);
+	if (expression == NULL) {
+		return -1;
+	}
+	ret = lldb_search(module, base, scope, expression, attrs, res);
+	talloc_free(expression);
+	return ret;
+}
+
+
+/*
   convert a ldb_message structure to a list of LDAPMod structures
   ready for ldap_add() or ldap_modify()
 */
@@ -447,15 +468,16 @@ static const char *lldb_errstring(struct ldb_module *module)
 
 
 static const struct ldb_module_ops lldb_ops = {
-	"ldap",
-	lldb_search,
-	lldb_add,
-	lldb_modify,
-	lldb_delete,
-	lldb_rename,
-	lldb_lock,
-	lldb_unlock,
-	lldb_errstring
+	.name          = "ldap",
+	.search        = lldb_search,
+	.search_bytree = lldb_search_bytree,
+	.add_record    = lldb_add,
+	.modify_record = lldb_modify,
+	.delete_record = lldb_delete,
+	.rename_record = lldb_rename,
+	.named_lock    = lldb_lock,
+	.named_unlock  = lldb_unlock,
+	.errstring     = lldb_errstring
 };
 
 

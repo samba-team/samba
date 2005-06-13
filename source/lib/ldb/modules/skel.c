@@ -103,6 +103,7 @@ static int skel_destructor(void *module_ctx)
 static const struct ldb_module_ops skel_ops = {
 	.name		= "skel",
 	.search		= skel_search,
+	.search_bytree	= skel_search_bytree,
 	.add_record	= skel_add_record,
 	.modify_record	= skel_modify_record,
 	.delete_record	= skel_delete_record,

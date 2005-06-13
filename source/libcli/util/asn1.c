@@ -509,9 +509,11 @@ BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
 		data->has_error = True;
 		return False;
 	}
-	*blob = data_blob(NULL, len);
+	*blob = data_blob(NULL, len+1);
 	asn1_read(data, blob->data, len);
 	asn1_end_tag(data);
+	blob->length--;
+	blob->data[len] = 0;
 	
 	if (data->has_error) {
 		data_blob_free(blob);
