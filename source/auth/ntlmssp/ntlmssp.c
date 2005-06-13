@@ -144,7 +144,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	}
 
 	if (ntlmssp_command != gensec_ntlmssp_state->expected_state) {
-		DEBUG(1, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, gensec_ntlmssp_state->expected_state));
+		DEBUG(2, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, gensec_ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
