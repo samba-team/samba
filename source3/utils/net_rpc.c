@@ -3005,7 +3005,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			printf("syncing");
 			break;
 		default:
-			DEBUG(0,("Unsupported mode %s", cp_clistate.mode));
+			DEBUG(0,("Unsupported mode %d", cp_clistate.mode));
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
