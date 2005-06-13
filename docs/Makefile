@@ -276,16 +276,16 @@ archive: pdf
 	cp $(PDFDIR)/Samba3-ByExample.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
 
 # XSL scripts
-xslt/html.xsl: xslt/html-common.xsl settings.xsl
-xslt/html-chunk.xsl: xslt/html-common.xsl settings.xsl
-xslt/latex.xsl: settings.xsl
-xslt/expand-sambadoc.xsl: settings.xsl
+xslt/html.xsl: xslt/html-common.xsl 
+xslt/html-chunk.xsl: xslt/html-common.xsl 
+xslt/latex.xsl: 
+xslt/expand-sambadoc.xsl: 
 xslt/generate-attributions.xsl: 
 xslt/man.xsl:
 xslt/pearson.xsl:
 
 clobber: clean
-	rm Makefile.settings settings.xsl config.status config.log configure
+	rm Makefile.settings config.status config.log configure
 
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)

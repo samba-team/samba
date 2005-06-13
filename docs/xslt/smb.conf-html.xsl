@@ -11,7 +11,6 @@
 	version="1.1"
 	extension-element-prefixes="exsl">
 
-	<xsl:import href="../settings.xsl"/>
 	<xsl:import href="html-common.xsl"/>
 
 	<xsl:output method="xml" encoding="UTF-8" doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN" indent="yes" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>

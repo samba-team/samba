@@ -1030,7 +1030,7 @@ hosts:      files dns wins
 <!-- Three -->
 <example id="ch5-commonsmb">
 <title>Common Samba Configuration File: <filename>/etc/samba/common.conf</filename></title>
-<smbconfblock
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>
