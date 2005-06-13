@@ -36,7 +36,6 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
-#include "ldb/include/ldb_parse.h"
 
 /*
   find an element in a list, using the given comparison function and

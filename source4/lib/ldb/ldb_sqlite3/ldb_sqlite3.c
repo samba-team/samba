@@ -36,7 +36,6 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_parse.h"
 #include "ldb/include/ldb_explode_dn.h"
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
 
@@ -162,15 +161,16 @@ new_attr(struct ldb_module * module,
  * Table of operations for the sqlite3 backend
  */
 static const struct ldb_module_ops lsqlite3_ops = {
-	"sqlite",
-	lsqlite3_search,
-	lsqlite3_add,
-	lsqlite3_modify,
-	lsqlite3_delete,
-	lsqlite3_rename,
-	lsqlite3_lock,
-	lsqlite3_unlock,
-	lsqlite3_errstring
+	.name          = "sqlite",
+	.search        = lsqlite3_search,
+	.search_bytree = lsqlite3_search_bytree,
+	.add_record    = lsqlite3_add,
+	.modify_record = lsqlite3_modify,
+	.delete_record = lsqlite3_delete,
+	.rename_record = lsqlite3_rename,
+	.named_lock    = lsqlite3_lock,
+	.named_unlock  = lsqlite3_unlock,
+	.errstring     = lsqlite3_errstring
 };
 
 

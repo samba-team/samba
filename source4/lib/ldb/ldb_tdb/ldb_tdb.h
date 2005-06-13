@@ -100,6 +100,10 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 int ltdb_search(struct ldb_module *module, const char *base,
 		enum ldb_scope scope, const char *expression,
 		const char * const attrs[], struct ldb_message ***res);
+int ltdb_search_bytree(struct ldb_module *module, const char *base,
+		       enum ldb_scope scope, struct ldb_parse_tree *tree,
+		       const char * const attrs[], struct ldb_message ***res);
+
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn);

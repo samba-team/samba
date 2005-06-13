@@ -800,15 +800,16 @@ static const char *ltdb_errstring(struct ldb_module *module)
 
 
 static const struct ldb_module_ops ltdb_ops = {
-	"tdb",
-	ltdb_search,
-	ltdb_add,
-	ltdb_modify,
-	ltdb_delete,
-	ltdb_rename,
-	ltdb_lock,
-	ltdb_unlock,
-	ltdb_errstring
+	.name          = "tdb",
+	.search        = ltdb_search,
+	.search_bytree = ltdb_search_bytree,
+	.add_record    = ltdb_add,
+	.modify_record = ltdb_modify,
+	.delete_record = ltdb_delete,
+	.rename_record = ltdb_rename,
+	.named_lock    = ltdb_lock,
+	.named_unlock  = ltdb_unlock,
+	.errstring     = ltdb_errstring
 };
 
 

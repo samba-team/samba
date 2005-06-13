@@ -145,6 +145,31 @@ struct ldb_debug_ops {
 #endif
 
 
+/* structues for ldb_parse_tree handling code */
+enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_AND='&', LDB_OP_OR='|', LDB_OP_NOT='!'};
+
+struct ldb_parse_tree {
+	enum ldb_parse_op operation;
+	union {
+		struct {
+			char *attr;
+			struct ldb_val value;
+		} simple;
+		struct {
+			unsigned int num_elements;
+			struct ldb_parse_tree **elements;
+		} list;
+		struct {
+			struct ldb_parse_tree *child;
+		} not;
+	} u;
+};
+
+struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
+char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
+char *ldb_binary_encode(void *ctx, struct ldb_val val);
+
+
 /* 
  connect to a database. The URL can either be one of the following forms
    ldb://path
@@ -170,6 +195,15 @@ int ldb_search(struct ldb_context *ldb,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res);
+
+/*
+  like ldb_search() but takes a parse tree
+*/
+int ldb_search_bytree(struct ldb_context *ldb, 
+		      const char *base,
+		      enum ldb_scope scope,
+		      struct ldb_parse_tree *tree,
+		      const char * const *attrs, struct ldb_message ***res);
 
 /*
   add a record to the database. Will fail if a record with the given class and key
