@@ -1224,10 +1224,10 @@ to LAM using only SSL.
 	</para>
 	
 	<para>
-	The next major release, LAM 0.5, will have less restrictions and support the latest Samba features
-	(e.g. logon hours). The new plugin based architecture also allows to manage much more different
-	account types like plain Unix accounts. The upload can now handle groups and hosts, too. Another
-	important point is the tree view which allows to browse and edit LDAP objects directly.
+	The next major release, LAM 0.5, will have fewer restrictions and support the latest Samba features
+	(e.g., logon hours). The new plugin-based architecture also allows management of much more different
+	account types like plain UNIX accounts. The upload can now handle groups and hosts, too. Another
+	important point is the tree view which allows browsing and editing LDAP objects directly.
 	</para>
 
 <example id="lamcfg">
@@ -1419,7 +1419,7 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	<title>Microsoft Access</title>
 
 	<para>
-	The best advice that can be given is to carefully read the Microsoft knowledge base articles that
+	The best advice that can be given is to carefully read the Microsoft knowledgebase articles that
 	cover this area. Examples of relevant documents include:
 	</para>
 
