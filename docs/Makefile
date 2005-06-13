@@ -75,7 +75,7 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 #
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
@@ -140,9 +140,11 @@ $(PDFDIR)/%.pdf: %.pdf
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
 		-o $@ xslt/generate-dependencies.xsl $<
-	@echo "$*-images-latex-png: \$$(addsuffix .png, \$$($*-images-latex))" >> $@
-	@echo >> $@
+	@echo "$*-images-latex-dia = \$$(wildcard \$$(addsuffix .dia, \$$($*-images-latex)))" >> $@
 	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
+	@echo "$*-images-latex-pdf: \$$(patsubst %.dia, %.pdf, \$$($*-images-latex-dia))" >> $@
+	@echo "$*-images-latex-png: \$$(filter-out \$$(patsubst %.dia,%.png,\$$($*-images-latex-dia)), \$$(addsuffix .png, \$$($*-images-latex)))" >> $@
+
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
 	@echo "	mkdir -p \$$(@D)" >> $@
@@ -167,7 +169,7 @@ endif
 endif
 
 # Adobe PDF files
-%.pdf: %.tex %.ind latexfigures %-images-latex-png
+%.pdf: %.tex %.ind latexfigures %-images-latex-png %-images-latex-pdf
 	-$(PDFLATEX) $<
 	$(THUMBPDF) --quiet $*.pdf
 	-$(PDFLATEX) $<
@@ -180,8 +182,11 @@ $(DVIDIR)/%.dvi: %.dvi
 %.dvi: %.tex %.idx %-images-latex-eps
 	-$(LATEX) $< 
 
-%.png: %.dia
-	$(DIA) -e $@ $<
+%.eps: %.dia
+	$(DIA) -t eps-builtin -e $@ $<
+
+%.pdf: %.eps
+	$(EPSTOPDF) $<
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
@@ -190,9 +195,6 @@ $(DVIDIR)/%.dvi: %.dvi
 $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 	mkdir -p $(@D)
 	$(DVIPS) -o $@ $<
-
-xslt/figures/%.pdf: xslt/figures/%.eps
-	$(EPSTOPDF) $<
 
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
@@ -289,6 +291,9 @@ clobber: clean
 
 clean: 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
 	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
 	rm -f *-images-latex-* latexfigures
