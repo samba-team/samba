@@ -61,8 +61,9 @@
 	<indexterm><primary>minimal configuration</primary></indexterm>
 </para>
 
-	<smbconfexample id="smbconfminimal">
+	<example id="smbconfminimal">
 		<title>A minimal smb.conf</title>
+		<smbconfblock>
 
 		<smbconfsection name="[global]"/>
 		<smbconfoption name="workgroup">WKG</smbconfoption>
@@ -73,7 +74,8 @@
 		<smbconfsection name="[share2]"/>
 		<smbconfoption name="path">/my_shared_folder</smbconfoption>
 		<smbconfoption name="comment">Some random files</smbconfoption>
-	</smbconfexample>
+	</smbconfblock>
+	</example>
 
 </sect2>
 
@@ -149,15 +151,17 @@
 
 	<para>
 	<indexterm><primary>simple configuration</primary></indexterm>
-	<smbconfexample id="simple-example">
+	<example id="simple-example">
 		<title>Another simple smb.conf File</title>
+		<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 
 <smbconfsection name="[homes]"/>
 <smbconfoption name="guest ok">no</smbconfoption>
 <smbconfoption name="read only">no</smbconfoption>
-	</smbconfexample>
+	</smbconfblock>
+</example>
 	</para>
 	
 	<para>

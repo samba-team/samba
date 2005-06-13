@@ -630,8 +630,9 @@ hosts:	files wins
 
 	</procedure>
 
-<smbconfexample id="acct2conf">
+<example id="acct2conf">
 <title>Accounting Office Network &smb.conf; File &smbmdash; [globals] Section</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
@@ -656,10 +657,12 @@ hosts:	files wins
 <smbconfoption name="preferred master">Yes</smbconfoption>
 <smbconfoption name="wins support">Yes</smbconfoption>
 <smbconfoption name="printing">CUPS</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="acct3conf">
+<example id="acct3conf">
 <title>Accounting Office Network &smb.conf; File &smbmdash; Services and Shares Section</title>
+<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -691,7 +694,8 @@ hosts:	files wins
 <smbconfoption name="path">/data/finsvcs</smbconfoption>
 <smbconfoption name="valid users">%G</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 		<sect2>
 		<title>Validation</title>

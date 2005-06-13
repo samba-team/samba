@@ -680,8 +680,9 @@ Join to 'MEGANET2' failed.
 
 	</procedure>
 
-<smbconfexample id="ch9-sdmsdc">
+<example id="ch9-sdmsdc">
 <title>Samba Domain Member in Samba Domain Using LDAP &smbmdash; &smb.conf; File</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -727,7 +728,8 @@ Join to 'MEGANET2' failed.
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <example id="ch9-ldifadd">
 <title>LDIF IDMAP Add-On Load File &smbmdash; File: /etc/openldap/idmap.LDIF</title>
@@ -979,8 +981,9 @@ MEGANET2+PIOps:x:10005:
 		</para></step>
 	</procedure>
 
-<smbconfexample id="ch0-NT4DSDM">
+<example id="ch0-NT4DSDM">
 <title>Samba Domain Member Server Using Winbind &smb.conf; File for NT4 Domain</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1022,7 +1025,8 @@ MEGANET2+PIOps:x:10005:
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 	</sect2>
 
@@ -1071,8 +1075,9 @@ Joined domain MEGANET2.
 		</para></step>
 	</procedure>
 
-<smbconfexample id="ch0-NT4DSCM">
+<example id="ch0-NT4DSCM">
 <title>Samba Domain Member Server Using Local Accounts &smb.conf; File for NT4 Domain</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1114,7 +1119,8 @@ Joined domain MEGANET2.
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 	</sect2>
 
 	<sect2 id="adssdm">
@@ -1672,8 +1678,9 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 	May this server serve well all who happen upon it.
 	</para>
 
-<smbconfexample id="ch9-adssdm">
+<example id="ch9-adssdm">
 <title>Samba Domain Member &smb.conf; File for Active Directory Membership</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1713,7 +1720,8 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
         <sect3>
         <title>IDMAP_RID with Winbind</title>
@@ -1755,8 +1763,9 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
         An example &smb.conf; file for an ADS domain environment is shown in <link linkend="sbe-idmapridex"/>.
         </para>
 
-<smbconfexample id="sbe-idmapridex">
+<example id="sbe-idmapridex">
 <title>Example &smb.conf; File Using <constant>idmap_rid</constant></title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">KPAK</smbconfoption>
@@ -1774,7 +1783,8 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="winbind enum groups">No</smbconfoption>
 <smbconfoption name="winbind nested groups">Yes</smbconfoption>
 <smbconfoption name="printer admin">"KPAK\Domain Admins"</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
         <para>
         <indexterm><primary>large domain</primary></indexterm>
@@ -1876,8 +1886,9 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         The example in <link linkend="sbeunxa"/> is for an ADS-style domain.
         </para>
 
-<smbconfexample id="sbeunxa">
+<example id="sbeunxa">
 <title>Typical ADS Style Domain &smb.conf; File</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">SNOWSHOW</smbconfoption>
@@ -1894,7 +1905,8 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 <smbconfoption name="idmap gid">150000-550000</smbconfoption>
 <smbconfoption name="template shell">/bin/bash</smbconfoption>
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
         <para>
         <indexterm><primary>realm</primary></indexterm>
@@ -2078,8 +2090,9 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
         An example &smb.conf; file is shown in <link linkend="sbewinbindex"/>.
         </para>
 
-<smbconfexample id="sbewinbindex">
+<example id="sbewinbindex">
 <title>ADS Membership Using RFC2307bis Identity Resolution &smb.conf; File</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BUBBAH</smbconfoption>
@@ -2093,7 +2106,8 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
 <smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
 <smbconfoption name="winbind nested groups">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
         <para>
         <indexterm><primary>nss_ldap</primary></indexterm>

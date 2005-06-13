@@ -666,16 +666,16 @@ enabled on a per-share basis, or globally for the entire server, in the
 &smb.conf; file as shown in <link linkend="far1"/>.
 </para>
 
-<para>
-<smbconfexample id="far1">
+<example id="far1">
 <title>Share with some files oplocked</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="veto oplock files">/filename.htm/*.txt/</smbconfoption>
 
 <smbconfsection name="[share_name]"/>
 <smbconfoption name="veto oplock files">/*.exe/filename.ext/</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 <smbconfoption name="oplock break wait time"/> is an &smb.conf; parameter
@@ -699,16 +699,16 @@ Oplock break Contention Limit can be enable on a per-share basis, or globally fo
 the entire server, in the &smb.conf; file as shown in <link linkend="far3"/>.
 </para>
 
-<para>
-<smbconfexample id="far3">
+<example id="far3">
 	<title>Configuration with oplock break contention limit</title>
+	<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
 
 <smbconfsection name="[share_name]"/>
 <smbconfoption name="oplock break contention limit"> 2 (default)</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 </sect3>
 </sect2>

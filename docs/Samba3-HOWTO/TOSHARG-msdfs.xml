@@ -61,9 +61,9 @@
 </screen>
 </para>
 
-<para>
-<smbconfexample id="dfscfg">
+<example id="dfscfg">
 <title>smb.conf with DFS configured</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="netbios name">&example.server.samba;</smbconfoption>
 <smbconfoption name="host msdfs  ">yes</smbconfoption>
@@ -71,8 +71,8 @@
 <smbconfsection name="[dfs]"/>
 <smbconfoption name="path">/export/dfsroot</smbconfoption>
 <smbconfoption name="msdfs root">yes</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 	<para>You should set up the permissions and ownership of 
 	the directory acting as the DFS root so that only designated 

@@ -139,8 +139,9 @@ of the packages that are provided by the operating system vendor, or through oth
 
 		<para>The configuration file is:</para>
 
-		<para><smbconfexample id="anon-example">
+		<example id="anon-example">
 				<title>Anonymous Read-Only Server Configuration</title>
+		<smbconfblock>
 		<smbconfcomment>Global parameters</smbconfcomment>
 		<smbconfsection name="[global]"/>
 		<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -152,8 +153,8 @@ of the packages that are provided by the operating system vendor, or through oth
 		<smbconfoption name="path">/export</smbconfoption>
 		<smbconfoption name="read only">Yes</smbconfoption>
 		<smbconfoption name="guest ok">Yes</smbconfoption>
-		</smbconfexample>
-		</para>
+		</smbconfblock>
+		</example>
 
 		<itemizedlist>
 			<listitem><para>
@@ -274,8 +275,8 @@ Added user jackb.
 		The complete, modified &smb.conf; file is as shown in <link linkend="anon-rw"/>.
 		</para>
 
-		<para>
-<smbconfexample id="anon-rw"><title>Modified Anonymous Read-Write smb.conf</title>
+<example id="anon-rw"><title>Modified Anonymous Read-Write smb.conf</title>
+	<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -289,8 +290,8 @@ Added user jackb.
 <smbconfoption name="force group">users</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
-</smbconfexample>
-		</para>
+</smbconfblock>
+</example>
 
 		</sect3>
 
@@ -327,8 +328,8 @@ Added user jackb.
 		configuration. <link linkend="anon-print"></link> is the resulting &smb.conf; file.
 		</para>
 
-		<para>
-<smbconfexample id="anon-print"><title>Anonymous Print Server smb.conf</title>
+<example id="anon-print"><title>Anonymous Print Server smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -346,8 +347,8 @@ Added user jackb.
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
-		</para>
+</smbconfblock>
+</example>
 
 		<para>
 		The above configuration is not ideal. It uses no smart features, and it deliberately
@@ -449,8 +450,10 @@ Added user jackb.
 
 			<step><para>
 			Configure the Samba &smb.conf; file as shown in <link linkend="OfficeServer"/>.
-<smbconfexample id="OfficeServer">
-<title>Secure Office Server smb.conf</title>
+		</para>
+<example id="OfficeServer">
+	<title>Secure Office Server smb.conf</title>
+	<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -483,8 +486,8 @@ Added user jackb.
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-			</smbconfexample>
-			</para></step>
+			</smbconfblock>
+			</example></step>
 
 			<step><para>
 			Initialize the Microsoft Windows password database with the new users:
@@ -663,9 +666,9 @@ smb: \> <userinput>q</userinput>
 			and <link linkend="fast-memberserver-shares"></link>.
 			</para>
 
-			<para>
-			<smbconfexample id="fast-member-server">
+			<example id="fast-member-server">
 			<title>Member server smb.conf (globals)</title>
+			<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -678,11 +681,11 @@ smb: \> <userinput>q</userinput>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-			</smbconfexample></para>
+			</smbconfblock></example>
 
-			<para>
-			<smbconfexample id="fast-memberserver-shares">
+			<example id="fast-memberserver-shares">
 			<title>Member server smb.conf (shares and services)</title>
+			<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -710,8 +713,8 @@ smb: \> <userinput>q</userinput>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-			</smbconfexample>
-			</para></step>
+			</smbconfblock>
+			</example></step>
 
 
 			<step><para>
@@ -892,8 +895,9 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 			
 			<para>
 <indexterm><primary>pdbedit</primary></indexterm>
-			<smbconfexample id="fast-engoffice-global">
+			<example id="fast-engoffice-global">
 			<title>Engineering Office smb.conf (globals)</title>
+			<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="netbios name">FRODO</smbconfoption>
@@ -920,10 +924,13 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-			</smbconfexample>
+			</smbconfblock>
+		</example>
+		</para>
 
-			<smbconfexample id="fast-engoffice-shares">
+			<example id="fast-engoffice-shares">
 			<title>Engineering Office smb.conf (shares and services)</title>
+			<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -963,8 +970,8 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
 <smbconfcomment>Other resource (share/printer) definitions would follow below.</smbconfcomment>
-			</smbconfexample>
-			</para></step>
+			</smbconfblock>
+			</example></step>
 
 			<step><para>
 			Create UNIX group accounts as needed using a suitable operating system tool:
@@ -1156,9 +1163,9 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 				The &smb.conf; file that drives this backend can be found in example <link linkend="fast-ldap"/>.
 				</para>
 
-				<para>
-<smbconfexample id="fast-ldap">
+<example id="fast-ldap">
 <title>LDAP backend smb.conf for PDC</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -1193,8 +1200,8 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-</smbconfexample>
-				</para></step>
+</smbconfblock>
+				</example></step>
 
 				<step><para>
 				Add the LDAP password to the <filename>secrets.tdb</filename> file so Samba can update
@@ -1226,8 +1233,10 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 				Decide if the BDC should have its own LDAP server or not. If the BDC is to be
 				the LDAP server change the following &smb.conf; as indicated. The default
 				configuration in <link linkend="fast-bdc"/> uses a central LDAP server.
-<smbconfexample id="fast-bdc">
+			</para>
+<example id="fast-bdc">
 <title>Remote LDAP BDC smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -1254,8 +1263,8 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-</smbconfexample>
-				</para></step>
+</smbconfblock>
+				</example></step>
 
 				<step><para>
 				Configure the NETLOGON and PROFILES directory as for the PDC in <link linkend="fast-bdc"/>.
