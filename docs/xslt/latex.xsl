@@ -44,23 +44,23 @@
 </xsl:template>
 
 <xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
-<xsl:param name="l10n.gentext.default.language" select="'en'"/>
-<xsl:param name="latex.example.caption.style"></xsl:param>
+<xsl:variable name="l10n.gentext.default.language" select="'en'"/>
+<xsl:variable name="latex.document.font">default</xsl:variable>
+<xsl:variable name="latex.example.caption.style"></xsl:variable>
 <xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=black,urlcolor=black,filecolor=black,linkcolor=black,menucolor=red,pagecolor=black</xsl:variable>
 <xsl:variable name="admon.graphics.path">xslt/figures</xsl:variable>
 <xsl:variable name="latex.use.tabularx">1</xsl:variable>
 <xsl:variable name="latex.fancyhdr.lh"></xsl:variable>
 <xsl:variable name="latex.use.fancyhdr"></xsl:variable>
 <xsl:variable name="latex.use.parskip">1</xsl:variable>
-<!--<xsl:variable name="latex.use.ltxtable">1</xsl:variable>-->
+<xsl:variable name="latex.book.varsets" select="''"/>
 <xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
 <xsl:variable name="latex.titlepage.file"></xsl:variable>
 <xsl:template name="latex.thead.row.entry">
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
-<xsl:param name="latex.documentclass">sambadoc</xsl:param>
-<xsl:param name="latex.documentclass.book">letterpaper,10.5pt,openright,twoside</xsl:param>
-<xsl:param name="latex.babel.language">english</xsl:param>
+<xsl:variable name="latex.documentclass">sambadoc</xsl:variable>
+<xsl:variable name="latex.babel.language">english</xsl:variable>
 <xsl:variable name="ulink.footnotes" select="1"/>
 <xsl:variable name="ulink.show" select="0"/>
 
