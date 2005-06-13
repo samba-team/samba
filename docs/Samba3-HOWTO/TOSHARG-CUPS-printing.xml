@@ -227,10 +227,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="path">/var/spool/samba-special</smbconfoption>
 	<smbconfoption name="printing">sysv</smbconfoption>
 	<smbconfoption name="printcap">lpstat</smbconfoption>
-	<smbconfoption name="print command">echo "NEW: `date`: printfile %f" \</smbconfoption>
-	<member><parameter> >> /tmp/smbprn.log ; \</parameter></member>
-	<member><parameter>echo "     `date`: p-%p s-%s f-%f" >> /tmp/smbprn.log ; \</parameter></member>
-	<member><parameter>echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log ; rm %f</parameter></member>
+	<smbconfoption name="print command">echo "NEW: `date`: printfile %f" >> /tmp/smbprn.log ; echo "     `date`: p-%p s-%s f-%f" >> /tmp/smbprn.log ; echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log ; rm %f </smbconfoption>
 	<smbconfoption name="public">no</smbconfoption>
 	<smbconfoption name="guest ok">no</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
