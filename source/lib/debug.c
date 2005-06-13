@@ -74,8 +74,6 @@ void reopen_logs(void)
 	char *fname = NULL;
 	int old_fd = state.fd;
 
-	state.fd = 0;
-
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
 		state.fd = 1;
@@ -89,12 +87,20 @@ void reopen_logs(void)
 		if ((*logfile) == '/') {
 			fname = strdup(logfile);
 		} else {
-			asprintf(&fname, "%s/%s.log", dyn_LOGFILEBASE, logfile);
+			asprintf(&fname, "%s/%s.log", dyn_LOGFILEBASE, state.prog_name);
 		}
 		if (fname) {
-			state.fd = open(fname, O_CREAT|O_APPEND|O_WRONLY, 0644);
+			int newfd = open(fname, O_CREAT|O_APPEND|O_WRONLY, 0600);
+			if (newfd == -1) {
+				DEBUG(1, ("Failed to open new logfile: %s\n", fname));
+			} else {
+				state.fd = newfd;
+			}
 			free(fname);
+		} else {
+			DEBUG(1, ("Failed to find name for file-based logfile!\n"));
 		}
+
 		break;
 	}
 
@@ -109,8 +115,12 @@ void reopen_logs(void)
 */
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {
-	state.logtype = new_logtype;
-	state.prog_name = prog_name;
+	if (state.logtype < new_logtype) {
+		state.logtype = new_logtype;
+	}
+	if (prog_name) {
+		state.prog_name = prog_name;
+	}
 	reopen_logs();
 }
 

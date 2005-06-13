@@ -865,13 +865,7 @@ enum {
 
 	/* Samba client initialisation */
 
-	setup_logging("ntlm_auth", DEBUG_STDERR);
-
-	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
-		d_fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
-			dyn_CONFIGFILE, strerror(errno));
-		exit(1);
-	}
+	setup_logging(NULL, DEBUG_STDERR);
 
 	/* Parse options */
 

@@ -195,10 +195,6 @@ int main(int argc, char *argv[])
 	
 	while(poptGetNextOpt(pc) != -1);
 
-	/* the following functions are part of the Samba debugging
-	   facilities.  See lib/debug.c */
-	setup_logging("smbiconv", DEBUG_STDOUT);
-
 	if (preload_modules[0]) smb_load_modules(preload_modules);
 
 	if(output) {

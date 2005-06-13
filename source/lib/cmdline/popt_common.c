@@ -38,7 +38,7 @@
  *		-i,--scope
  */
 
-enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL};
+enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL, OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
 
@@ -49,6 +49,14 @@ static void popt_common_callback(poptContext con,
 {
 	const char *pname;
 	
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		/* Hook any 'every Samba program must do this, after
+		 * the smb.conf is setup' functions here */
+		lp_load(dyn_CONFIGFILE,True,False,False);
+		load_interfaces();
+		return;
+	}
+
 	/* Find out basename of current program */
 	pname = strrchr_m(poptGetInvocationName(con),'/');
 
@@ -58,15 +66,17 @@ static void popt_common_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		char *logfile = talloc_asprintf(NULL, "%s/log.%s", dyn_LOGFILEBASE, pname);
-		lp_set_cmdline("log file", logfile);
-		talloc_free(logfile);
+		setup_logging(pname, DEBUG_STDOUT);
 		return;
 	}
 
 	switch(opt->val) {
 	case 'd':
 		lp_set_cmdline("log level", arg);
+		break;
+
+	case OPT_DEBUG_STDERR:
+		setup_logging(pname, DEBUG_STDERR);
 		break;
 
 	case 'V':
@@ -128,6 +138,7 @@ static void popt_common_callback(poptContext con,
 	case OPT_LEAK_REPORT_FULL:
 		talloc_enable_leak_report_full();
 		break;
+
 	}
 }
 
@@ -143,8 +154,9 @@ struct poptOption popt_common_connection[] = {
 };
 
 struct poptOption popt_common_samba[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_callback },
 	{ "debuglevel",   'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
+	{ "debug-stderr", 0, POPT_ARG_NONE, NULL, OPT_DEBUG_STDERR, "Send debug output to STDERR", NULL },
 	{ "configfile",   's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
 	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },

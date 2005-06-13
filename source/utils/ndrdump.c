@@ -121,8 +121,6 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		POPT_TABLEEND
 	};
 
-	setup_logging("ndrdump", DEBUG_STDOUT);
-
 	ndrdump_init_subsystems;
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
