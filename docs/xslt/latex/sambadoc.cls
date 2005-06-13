@@ -478,6 +478,7 @@ page \thepage \space undefined}}%
 
 \usepackage[twoside]{geometry}
 
+
 \geometry{%
 paperwidth=7in,
 paperheight=9.25in,
@@ -507,7 +508,7 @@ footskip=.025in}
 \lstdefinestyle{smbconfblock}
 {
 	breaklines=true,
-	backgroundcolor=\color{lightgray},
+	backgroundcolor=\color[gray]{0.93},
 	frame=single,
 	frameround=tttt,
 	prebreak={\space\linebreaksign}
