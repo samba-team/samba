@@ -704,7 +704,7 @@ sub ParseElementPush($$$$$$)
 	start_flags($e);
 
 	if (my $value = util::has_property($e, "value")) {
-		pidl "$var_name = $value;";
+		pidl "$var_name = " . ParseExpr($value, $env) . ";";
 	}
 
 	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
@@ -748,7 +748,7 @@ sub ParseElementPrint($$$)
 
 	if (my $value = util::has_property($e, "value")) {
 		pidl "if (ndr->flags & LIBNDR_PRINT_SET_VALUES) {";
-		pidl "\t$var_name = $value;";
+		pidl "\t$var_name = " . ParseExpr($value,$env) . ";";
 		pidl "}";
 	}
 

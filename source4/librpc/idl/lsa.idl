@@ -31,8 +31,8 @@
 	/* Function: 0x02 */
 
 	typedef struct {
-		[value(2*strlen_m(r->string))] uint16 length;
-		[value(r->length)] uint16 size;
+		[value(2*strlen_m(string))] uint16 length;
+		[value(length)] uint16 size;
 		unistr_noterm *string;
 	} lsa_String;
 

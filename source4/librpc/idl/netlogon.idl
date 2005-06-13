@@ -20,8 +20,8 @@ interface netlogon
 	declare bitmap samr_AcctFlags;
 
 	typedef [public] struct {
-		[value(strlen_m(r->string)*2)]  uint16 size;
-		[value(r->size)]                uint16 length;
+		[value(strlen_m(string)*2)]  uint16 size;
+		[value(size)]                uint16 length;
 		unistr_noterm *string;
 	} netr_String;
 	
@@ -108,7 +108,7 @@ interface netlogon
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
-		[value(r->length)] uint16 size;
+		[value(length)] uint16 size;
 		[size_is(size),length_is(length)] uint8 *data;
 	} netr_ChallengeResponse;
 
@@ -314,7 +314,7 @@ interface netlogon
 
 	typedef struct {
 		uint16 length;
-		[value(r->length)] uint16 size;
+		[value(length)] uint16 size;
 		uint32 flags;
 		samr_Password pwd;
 	} netr_USER_KEY16;
