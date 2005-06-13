@@ -68,6 +68,10 @@ DIRS = lib bin
 
 all: $(DIRS) $(BINS) $(LIBS) manpages
 
+.c.o:
+	@echo Compiling $*.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+
 lib:
 	mkdir -p lib
 
