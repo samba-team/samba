@@ -165,7 +165,7 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *ctx, const char *str)
    encode a blob as a RFC2254 binary string, escaping any
    non-printable or '\' characters
 */
-const char *ldb_binary_encode(TALLOC_CTX *ctx, struct ldb_val val)
+char *ldb_binary_encode(TALLOC_CTX *ctx, struct ldb_val val)
 {
 	int i;
 	char *ret;
@@ -402,4 +402,57 @@ struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
 	}
 
 	return ldb_parse_simple(mem_ctx, s);
+}
+
+
+/*
+  construct a ldap parse filter given a parse tree
+*/
+char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, struct ldb_parse_tree *tree)
+{
+	char *s, *s2, *ret;
+	int i;
+
+	switch (tree->operation) {
+	case LDB_OP_SIMPLE:
+		s = ldb_binary_encode(mem_ctx, tree->u.simple.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s=%s)", 
+				      tree->u.simple.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+		ret = talloc_asprintf(mem_ctx, "(%c", (char)tree->operation);
+		if (ret == NULL) return NULL;
+		for (i=0;i<tree->u.list.num_elements;i++) {
+			s = ldb_filter_from_tree(mem_ctx, tree->u.list.elements[i]);
+			if (s == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			s2 = talloc_asprintf_append(ret, "%s", s);
+			talloc_free(s);
+			if (s2 == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			ret = s2;
+		}
+		s = talloc_asprintf_append(ret, ")");
+		if (s == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+		return s;
+	case LDB_OP_NOT:
+		s = ldb_filter_from_tree(mem_ctx, tree->u.not.child);
+		if (s == NULL) return NULL;
+
+		ret = talloc_asprintf(mem_ctx, "(!%s)", s);
+		talloc_free(s);
+		return ret;
+	}
+	
+	return NULL;
 }
