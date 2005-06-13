@@ -1150,9 +1150,7 @@ site). See <link linkend="prtdollar">next example</link>.
 <smbconfcomment>members of the ntadmin group should be able to add drivers and set</smbconfcomment>
 <smbconfcomment>printer properties. root is implicitly always a 'printer admin'.</smbconfcomment>
 <smbconfoption name="printer admin">@ntadmin</smbconfoption>
-<member>...</member>
 <smbconfsection name="[printers]"/>
-<member>...</member>
 <smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Driver Download Area</smbconfoption>
 <smbconfoption name="path">/etc/samba/drivers</smbconfoption>
