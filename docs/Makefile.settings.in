@@ -44,5 +44,6 @@ PEARSONDIR = $(OUTPUTDIR)/pearson
 TXTDIR = $(OUTPUTDIR)/textdocs
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
+DB2LATEX_ARGS = --stringparam latex.documentclass.book @LATEX_DOCUMENTCLASS_OPTIONS@
 
 TARGETS = @TARGETS@
