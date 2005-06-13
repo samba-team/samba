@@ -120,7 +120,7 @@
 	Do not forget to validate the security descriptors in the profiles share as well as network logon
 	scripts. Feedback from sites that are migrating to Samba-3 suggests that many are using this
 	as a good time to update desktop systems also. In all, the extra effort should constitute no
-	real disruption to users, but rather, with due diligence and care should make their network experience
+	real disruption to users, but rather, with due diligence and care, should make their network experience
 	a much happier one.
 	</para>
 
@@ -683,7 +683,7 @@ Storing SID S-1-5-21-1385457007-882775198-1210191635 \
 		Install the Idealx <command>smbldap-tools</command> software package, following
 		the instructions given in <link linkend="sbeidealx"/>. The resulting perl scripts
 		should be located in the <filename>/opt/IDEALX/sbin</filename> directory.
-		Change into that location, or whereever the scripts have been installed. Execute the
+		Change into that location, or wherever the scripts have been installed. Execute the
 		<filename>configure.pl</filename> script to configure the Idealx package for use.
 		Note: Use the domain SID obtained from the step above. The following is
 		an example configuration session:
@@ -1525,7 +1525,7 @@ Users                 Ordinary users
 		<para>
 		When migrating a <filename>smbpasswd</filename> file to an LDAP backend, the
 		UID of each account is taken together with the account information in the 
-		<filename>/etc/passwd,</filename> and both sets of data are used to create the account
+		<filename>/etc/passwd</filename>, and both sets of data are used to create the account
 		entry in the LDAP database. 
 		</para>
 

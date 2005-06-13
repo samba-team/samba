@@ -36,7 +36,7 @@
 	With this acquisition comes new challenges for you and your team. Abmas Snack 
 	Foods is a well-developed business with a huge and heterogeneous network. It 
 	already has Windows, NetWare, and Proprietary UNIX, but as yet no Samba or Linux. 
-	The network is mature and well established, and there is no question of its chosen 
+	The network is mature and well-established, and there is no question of its chosen 
 	user authentication scheme being changed for now. You need to take a wise new 
 	approach.
 	</para>
@@ -792,7 +792,7 @@ group: files winbind
 	</para></blockquote>
 
 	<para>
-	You would be well advised to recognize that all cache-intensive proxying solutions demand a lot of memory.
+	You would be well-advised to recognize that all cache-intensive proxying solutions demand a lot of memory.
 	Make certain that your Squid proxy server is equipped with sufficient memory to permit all proxy operations to run 
 	out of memory without invoking the overheads involved in the use of memory that has to be swapped to disk.
 	</para>
