@@ -791,12 +791,15 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 			krb5_set_error_string(context, "LDB_fetch: strdup() failed");
 			ret = ENOMEM;
 			talloc_free(mem_ctx);
+			free_Principal(&alias_principal);
 			return ret;
 		}
 
 		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 					   mem_ctx, 
 					   &alias_principal, ent_type, realm_dn, &msg);
+		free_Principal(&alias_principal);
+
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: could not find alias principal in DB");
 			krb5_set_error_string(context, "LDB_fetch: could not find alias principal in DB");
