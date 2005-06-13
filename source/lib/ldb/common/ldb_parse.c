@@ -126,6 +126,73 @@ static const char *match_brace(const char *s)
 	return s;
 }
 
+/*
+   decode a RFC2254 binary string representation of a buffer.
+   Used in LDAP filters.
+*/
+struct ldb_val ldb_binary_decode(TALLOC_CTX *ctx, const char *str)
+{
+	int i, j;
+	struct ldb_val ret;
+	int slen = strlen(str);
+
+	ret.data = talloc_size(ctx, slen);
+	ret.length = 0;
+	if (ret.data == NULL) return ret;
+
+	for (i=j=0;i<slen;i++) {
+		if (str[i] == '\\') {
+			unsigned c;
+			if (sscanf(&str[i+1], "%02X", &c) != 1) {
+				talloc_free(ret.data);
+				memset(&ret, 0, sizeof(ret));
+				return ret;
+			}
+			((uint8_t *)ret.data)[j++] = c;
+			i += 2;
+		} else {
+			((uint8_t *)ret.data)[j++] = str[i];
+		}
+	}
+	ret.length = j;
+
+	return ret;
+}
+
+
+/*
+   encode a blob as a RFC2254 binary string, escaping any
+   non-printable or '\' characters
+*/
+const char *ldb_binary_encode(TALLOC_CTX *ctx, struct ldb_val val)
+{
+	int i;
+	char *ret;
+	int len = val.length;
+	unsigned char *buf = val.data;
+
+	for (i=0;i<val.length;i++) {
+		if (!isprint(buf[i]) || strchr(" *()\\&|!", buf[i])) {
+			len += 2;
+		}
+	}
+	ret = talloc_array(ctx, char, len+1);
+	if (ret == NULL) return NULL;
+
+	len = 0;
+	for (i=0;i<val.length;i++) {
+		if (!isprint(buf[i]) || strchr(" *()\\&|!", buf[i])) {
+			snprintf(ret+len, 4, "\\%02X", buf[i]);
+			len += 3;
+		} else {
+			ret[len++] = buf[i];
+		}
+	}
+
+	ret[len] = 0;
+
+	return ret;	
+}
 
 static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *ctx, const char **s);
 
@@ -169,8 +236,7 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *ctx, const char *s)
 	
 	ret->operation = LDB_OP_SIMPLE;
 	ret->u.simple.attr = l;
-	ret->u.simple.value.data = val?val:discard_const_p(char, "");
-	ret->u.simple.value.length = val?strlen(val):0;
+	ret->u.simple.value = ldb_binary_decode(ret, val);
 
 	return ret;
 }

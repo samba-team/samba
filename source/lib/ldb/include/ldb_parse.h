@@ -55,5 +55,6 @@ struct ldb_parse_tree {
 };
 
 struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s);
+const char *ldb_binary_encode(TALLOC_CTX *ctx, struct ldb_val val);
 
 #endif
