@@ -29,7 +29,7 @@
 	<indexterm><primary>migration</primary></indexterm>
 	Contributions to this chapter were made by Misty Stanley-Jones, a UNIX administrator of many
 	years who surfaced on the Samba mailing list with a barrage of questions and who
-	regularly now helps other administrators to solve thorny Samba migration questions.
+	regularly helps other administrators to solve thorny Samba migration questions.
 	</para>
 
 	<para>
@@ -52,7 +52,7 @@
 
 	<para>
 	The priority that Misty faced was one of migration of the data files off the NetWare 4.11
-	server and onto a Samba-ased Windows file and print server. This chapter does not pretend
+	server and onto a Samba-based Windows file and print server. This chapter does not pretend
 	to document all the different methods that could be used to migrate user and group accounts
 	off a NetWare server. Its focus is on migration of data files.
 	</para>
@@ -232,7 +232,7 @@
 	entering everything from the printed company directory. This used only the inetOrgPerson
 	object class from the OpenLDAP schemas. The next step was to write a shell script that
 	would look at the <filename>/etc/passwd</filename> and <filename>/etc/shadow</filename>
-	files on our mail server and create a LDIF file from which the information could be
+	files on our mail server and create an LDIF file from which the information could be
 	imported into LDAP. This would allow use of LDAP for Linux authentication, IMAP, POP3,
 	and SMTP.
 	</para>
@@ -971,7 +971,7 @@ The Idealx smbldap-tools package can be configured using a script called
 <command>configure.pl</command> that is provided as part of the tool. See <link linkend="happy"/>
 for an example of its use. Many administrators, like Misty, choose to do this manually
 so as to maintain greater awareness of how the tool-chain works and possibly to avoid
-undesirable actions from occurring un-noticed.
+undesirable actions from occurring unnoticed.
 </para></note>
 
 	<para>
@@ -1203,7 +1203,7 @@ masterPw="verysecret"
 	The next step was to run the <command>smbldap-populate</command> command, which populates
 	the LDAP tree with the appropriate default users, groups, and UID and GID pools.
 	It creates a user called Administrator with UID=0 and GID=0 matching the
-	Domain Admins group. This is fine because you can still log on a root to a Windows system,
+	Domain Admins group. This is fine because you can still log on as root to a Windows system,
 	but it will break cached credentials if you need to log on as the administrator
 	to a system that is not on the network.
 	</para>
@@ -1384,7 +1384,7 @@ sambaAcctFlags: [W          ]
 
 	<para>
 	<indexterm><primary>netlogon</primary></indexterm>
-	So now I could log on with a test user from the machine w2kengrspare. It was all fine and
+	So now I could log on with a test user from the machine w2kengrspare. It was all well and
 	good, but that user was in no groups yet and so had pretty boring access.  I fixed that
 	by writing the login script! To write the login script, I used
 	<ulink url="http://www.kixtart.org">Kixtart</ulink> because it will work
@@ -1619,7 +1619,7 @@ ENDIF
 	One option is to check the OS as part of the Kixtart script, and if it
 	is Win9x and is the first login, copy a premade
 	<filename>autoexec.bat</filename> to the <filename>C:</filename> drive. I
-	have onlythree such machines, and one is going away in the very near future,
+	have only three such machines, and one is going away in the very near future,
 	so it was easier to do it by hand.
 	</para>
 
