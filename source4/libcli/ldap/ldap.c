@@ -413,121 +413,151 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	}
 }
 
-static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-			       const char **filterp)
+static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx, 
+						      struct asn1_data *data)
 {
 	uint8_t filter_tag, tag_desc;
-	char *filter = NULL;
+	struct ldb_parse_tree *ret;
 
-	*filterp = NULL;
-
-	if (!asn1_peek_uint8(data, &filter_tag))
-		return False;
+	if (!asn1_peek_uint8(data, &filter_tag)) {
+		return NULL;
+	}
 
 	tag_desc = filter_tag;
 	filter_tag &= 0x1f;	/* strip off the asn1 stuff */
 	tag_desc &= 0xe0;
 
+	ret = talloc(mem_ctx, struct ldb_parse_tree);
+	if (ret == NULL) return NULL;
+
 	switch(filter_tag) {
-	case 0: {
-		/* AND of one or more filters */
-		if (tag_desc != 0xa0) /* context compount */
-			return False;
+	case 0:
+	case 1:
+		/* AND or OR of one or more filters */
+		ret->operation = (filter_tag == 0)?LDB_OP_AND:LDB_OP_OR;
+		ret->u.list.num_elements = 0;
+		ret->u.list.elements = NULL;
 
-		asn1_start_tag(data, ASN1_CONTEXT(0));
-
-		filter = talloc_strdup(mem_ctx, "(&");
-		if (filter == NULL)
-			return False;
-
-		while (asn1_tag_remaining(data) > 0) {
-			const char *subfilter;
-			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
-				return False;
-			filter = talloc_asprintf_append(filter, "%s", subfilter);
-			if (filter == NULL)
-				return False;
-		}
-		asn1_end_tag(data);
-
-		filter = talloc_asprintf_append(filter, ")");
-		break;
-	}
-	case 1: {
-		/* OR of one or more filters */
-		if (tag_desc != 0xa0) /* context compount */
-			return False;
-
-		asn1_start_tag(data, ASN1_CONTEXT(1));
-
-		filter = talloc_strdup(mem_ctx, "(|");
-		if (filter == NULL)
-			return False;
-
-		while (asn1_tag_remaining(data) > 0) {
-			const char *subfilter;
-			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
-				return False;
-			filter = talloc_asprintf_append(filter, "%s", subfilter);
-			if (filter == NULL)
-				return False;
+		if (tag_desc != 0xa0) {
+			/* context compount */
+			goto failed;
 		}
 
-		asn1_end_tag(data);
+		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
+			goto failed;
+		}
 
-		filter = talloc_asprintf_append(filter, ")");
+		while (asn1_tag_remaining(data) > 0) {
+			struct ldb_parse_tree *subtree;
+			subtree = ldap_decode_filter_tree(ret, data);
+			if (subtree == NULL) {
+				goto failed;
+			}
+			ret->u.list.elements = 
+				talloc_realloc(ret, ret->u.list.elements, 
+					       struct ldb_parse_tree *, 
+					       ret->u.list.num_elements+1);
+			if (ret->u.list.elements == NULL) {
+				goto failed;
+			}
+			talloc_steal(ret->u.list.elements, subtree);
+			ret->u.list.elements[ret->u.list.num_elements] = subtree;
+			ret->u.list.num_elements++;
+		}
+		if (!asn1_end_tag(data)) {
+			goto failed;
+		}
 		break;
-	}
+
 	case 3: {
 		/* equalityMatch */
 		const char *attrib;
 		DATA_BLOB value;
-		struct ldb_val val;
 
-		if (tag_desc != 0xa0) /* context compound */
-			return False;
+		ret->operation = LDB_OP_SIMPLE;
+
+		if (tag_desc != 0xa0) {
+			/* context compound */
+			goto failed;
+		}
+
 		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
 		asn1_read_OctetString(data, &value);
 		asn1_end_tag(data);
-		if ((data->has_error) || (attrib == NULL) || (value.data == NULL))
-			return False;
-		val.data = value.data;
-		val.length = value.length;
-		filter = talloc_asprintf(mem_ctx, "(%s=%s)", 
-					 attrib, ldb_binary_encode(mem_ctx, val));
-		data_blob_free(&value);
+		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+			goto failed;
+		}
+		ret->u.simple.attr = talloc_steal(ret, attrib);
+		ret->u.simple.value.data = talloc_steal(ret, value.data);
+		ret->u.simple.value.length = value.length;
 		break;
 	}
 	case 7: {
 		/* Normal presence, "attribute=*" */
 		int attr_len;
-		char *attr_name;
-		if (tag_desc != 0x80) /* context simple */
-			return False;
-		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(7)))
-			return False;
+		if (tag_desc != 0x80) {
+			/* context simple */
+			goto failed;
+		}
+		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_SIMPLE;
+
 		attr_len = asn1_tag_remaining(data);
-		attr_name = malloc(attr_len+1);
-		if (attr_name == NULL)
-			return False;
-		asn1_read(data, attr_name, attr_len);
-		attr_name[attr_len] = '\0';
-		filter = talloc_asprintf(mem_ctx, "(%s=*)", attr_name);
-		SAFE_FREE(attr_name);
-		asn1_end_tag(data);
+
+		ret->u.simple.attr = talloc_size(ret, attr_len+1);
+		if (ret->u.simple.attr == NULL) {
+			goto failed;
+		}
+		if (!asn1_read(data, ret->u.simple.attr, attr_len)) {
+			goto failed;
+		}
+		ret->u.simple.attr[attr_len] = 0;
+		ret->u.simple.value.data = talloc_strdup(ret, "*");
+		if (ret->u.simple.value.data == NULL) {
+			goto failed;
+		}
+		ret->u.simple.value.length = 1;
+		if (!asn1_end_tag(data)) {
+			goto failed;
+		}
 		break;
 	}
 	default:
+		DEBUG(0,("Unsupported LDAP filter operation 0x%x\n", filter_tag));
+		goto failed;
+	}
+	
+	return ret;
+
+failed:
+	talloc_free(ret);
+	DEBUG(0,("Failed to parse ASN.1 LDAP filter\n"));
+	return NULL;	
+}
+
+
+static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+			       const char **filterp)
+{
+	struct ldb_parse_tree *tree;
+
+	tree = ldap_decode_filter_tree(mem_ctx, data);
+	if (tree == NULL) {
 		return False;
 	}
-	if (filter == NULL)
+	*filterp = ldb_filter_from_tree(mem_ctx, tree);
+	talloc_free(tree);
+	if (*filterp == NULL) {
 		return False;
-
-	*filterp = filter;
-
+	}
 	return True;
 }
+
+
 
 static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       struct ldap_attribute *attrib)
