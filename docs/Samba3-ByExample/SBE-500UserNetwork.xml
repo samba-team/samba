@@ -948,8 +948,9 @@ hosts:      files dns wins
 	</sect2>
 
 <!-- One -->
-<smbconfexample id="ch5-massivesmb">
+<example id="ch5-massivesmb">
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/smb.conf</filename></title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
@@ -987,11 +988,13 @@ hosts:      files dns wins
 <smbconfoption name="comment">Property Insurance Files</smbconfoption>
 <smbconfoption name="path">/data/pidata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Two -->
-<smbconfexample id="ch5-dc-common">
+<example id="ch5-dc-common">
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/dc-common.conf</filename></title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
@@ -1021,11 +1024,13 @@ hosts:      files dns wins
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Three -->
-<smbconfexample id="ch5-commonsmb">
+<example id="ch5-commonsmb">
 <title>Common Samba Configuration File: <filename>/etc/samba/common.conf</filename></title>
+<smbconfblock
 <smbconfsection name="[global]"/>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>
@@ -1061,31 +1066,37 @@ hosts:      files dns wins
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="admin users">bjordan</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Four -->
-<smbconfexample id="ch5-bldg1-smb">
+<example id="ch5-bldg1-smb">
 <title>Server: BLDG1 (Member), File: smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
 <smbconfoption name="netbios name">BLDG1</smbconfoption>
 <smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Five -->
-<smbconfexample id="ch5-bldg2-smb">
+<example id="ch5-bldg2-smb">
 <title>Server: BLDG2 (Member), File: smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
 <smbconfoption name="netbios name">BLDG2</smbconfoption>
 <smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Six -->
-<smbconfexample id="ch5-dommem-smb">
+<example id="ch5-dommem-smb">
 <title>Common Domain Member Include File: dom-mem.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
@@ -1095,7 +1106,8 @@ hosts:      files dns wins
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="include">/etc/samba/common.conf</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <!-- Seven -->
 <example id="massive-dhcp">

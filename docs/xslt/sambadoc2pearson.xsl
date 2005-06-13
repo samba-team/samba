@@ -13,27 +13,13 @@
 
 	<xsl:strip-space elements="smbconfoption smbconfsection"/>
 
-	<xsl:template match="smbconfexample/smbconfsection|smbconfblock/smbconfsection">
+	<xsl:template match="smbconfblock/smbconfsection">
 		<xsl:text>&#10;</xsl:text>
 		<xsl:value-of select="."/><xsl:text>&#10;</xsl:text>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/smbconfoption|smbconfblock/smbconfoption">
+	<xsl:template match="smbconfblock/smbconfoption">
 		<xsl:text>	</xsl:text><xsl:value-of select="@name"/><xsl:text> = </xsl:text><xsl:value-of select="text()"/><xsl:text>&#10;</xsl:text>
-	</xsl:template>
-
-	<xsl:template match="smbconfexample">
-	   <listing>
-		   <xsl:call-template name="transform.id.attribute"/>
-		   <xsl:if test="title != ''">
-			   <description><xsl:value-of select="title"/></description>
-		   </xsl:if>
-		   <listingcode>
-			   <xsl:for-each select="smbconfoption|smbconfsection|smbconfcomment">
-			   	<xsl:apply-templates select="."/>
-			   </xsl:for-each>
-		   </listingcode>
-		</listing>
 	</xsl:template>
 
 	<xsl:template match="smbconfblock">
@@ -60,13 +46,13 @@
 		</figure>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/smbconfcomment|smbconfblock/smbconfcomment">
+	<xsl:template match="smbconfblock/smbconfcomment">
 		<xsl:text># </xsl:text><xsl:value-of select="text()"/><xsl:text>&#10;</xsl:text>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/member|smbconfblock/member">
+	<xsl:template match="smbconfblock/member">
 		<xsl:value-of select="text()"/><xsl:text>&#10;</xsl:text>
-		<xsl:message><xsl:text>Encountered &lt;member&gt; element inside of smbconfexample/smbconfblock!</xsl:text></xsl:message>
+		<xsl:message><xsl:text>Encountered &lt;member&gt; element inside of smbconfblock!</xsl:text></xsl:message>
 	</xsl:template>
 
 	<xsl:template match="filterline">

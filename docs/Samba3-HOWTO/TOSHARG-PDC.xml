@@ -426,9 +426,9 @@ The first step in creating a working Samba PDC is to understand the parameters n
 in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link linkend="pdc-example">the next example</link>. 
 </para>
 
-<para>
-<smbconfexample id="pdc-example">
+<example id="pdc-example">
 <title>smb.conf for being a PDC</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="netbios name"><replaceable>BELERIAND</replaceable></smbconfoption>
 <smbconfoption name="workgroup"><replaceable>&example.workgroup;</replaceable></smbconfoption>
@@ -454,8 +454,8 @@ in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link l
 <smbconfoption name="read only">no</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="directory mask">0700</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 The basic options shown in <link linkend="pdc-example">this example</link> are explained as follows:
@@ -582,8 +582,9 @@ must be set.
 <sect3>
 <title>Example Configuration</title>
 
-<smbconfexample id="PDC-config">
+<example id="PDC-config">
 <title>smb.conf for being a PDC</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain logons">Yes</smbconfoption>
 <smbconfoption name="domain master">(Yes on PDC, No on BDCs)</smbconfoption>
@@ -593,7 +594,8 @@ must be set.
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 </sect3>
 <sect3>

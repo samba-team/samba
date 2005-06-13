@@ -399,8 +399,9 @@
 		no account information can be deleted.
 		</para></step>
 
-<smbconfexample id="sbent4smb">
+<example id="sbent4smb">
 <title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: A</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
         <smbconfoption name="workgroup">DAMNATION</smbconfoption>
         <smbconfoption name="netbios name">MERLIN</smbconfoption>
@@ -446,10 +447,12 @@
         <smbconfoption name="winbind nested groups">Yes</smbconfoption>
         <smbconfoption name="ea support">Yes</smbconfoption>
         <smbconfoption name="map acl inherit">Yes</smbconfoption>
-</smbconfexample>
+	</smbconfblock>
+</example>
 
-<smbconfexample id="sbent4smb2">
+<example id="sbent4smb2">
 <title>NT4 Migration Samba-3 Server <filename>smb.conf</filename> &smbmdash; Part: B</title>
+<smbconfblock>
 <smbconfsection name="[apps]"/>
         <smbconfoption name="comment">Application Data</smbconfoption>
         <smbconfoption name="path">/data/home/apps</smbconfoption>
@@ -491,7 +494,8 @@
 <smbconfsection name="[print$]"/>
         <smbconfoption name="comment">Printer Drivers</smbconfoption>
         <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
-</smbconfexample>
+	</smbconfblock>
+</example>
 
 		<step><para>
 		<indexterm><primary>slapd.conf</primary></indexterm>

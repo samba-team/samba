@@ -268,6 +268,19 @@
 \plainfootrulewidth 0pt             %---- no foot rule for chapter page
 \footrulewidth 0pt                  %---- no rule for foot
 
+
+%10.5pt fonts
+\usepackage{type1cm}
+\renewcommand\normalsize{%
+   \@setfontsize\normalsize{10.5pt}{12pt}
+   \abovedisplayskip 10\p@ \@plus2\p@ \@minus5\p@
+   \abovedisplayshortskip \z@ \@plus3\p@
+   \belowdisplayshortskip 6\p@ \@plus3\p@ \@minus3\p@
+   \belowdisplayskip \abovedisplayskip
+\let\@listi\@listI}
+\normalsize   
+%
+
 %--- Redefine Headers
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
 %
@@ -476,7 +489,7 @@ page \thepage \space undefined}}%
 \renewcommand{\topfraction}{1.0}
 \renewcommand{\bottomfraction}{1.0}
 
-\usepackage[twoside,dvips]{geometry}
+\usepackage[twoside]{geometry}
 
 \geometry{%
 paperwidth=7in,
@@ -493,3 +506,15 @@ headsep=.25in,
 footskip=.025in}
 
 \setlength{\headwidth}{\textwidth}
+
+% smb.conf syntax highlighting
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstdefinelanguage{smbconf}{
+	morecomment=[l]{\#},
+}
+
+\lstset{backgroundcolor=\color{lightgray},frame=single,}
+\newcommand{\smbconfsection}[1]{\emph{#1}}
+\newcommand{\smbconfoption}[1]{\index{#1}\emph{#1}}

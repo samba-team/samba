@@ -22,7 +22,7 @@
 		</xsl:copy>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/smbconfoption|smbconfblock/smbconfoption">
+	<xsl:template match="smbconfblock/smbconfoption">
 
 		<xsl:element name="member">
 			<xsl:element name="indexterm">
@@ -31,9 +31,6 @@
 				</xsl:element>
 			</xsl:element>
 			<xsl:element name="parameter">
-				<xsl:text disable-output-escaping="yes">
-					&lt;?latex \hspace{1cm} ?&gt;
-				</xsl:text>
 				<xsl:value-of select="@name"/>
 				<xsl:choose>
 					<xsl:when test="text() != ''">
@@ -45,17 +42,14 @@
 		</xsl:element>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/smbconfcomment|smbconfblock/smbconfcomment">
-		<xsl:text disable-output-escaping="yes">
-			&lt;?latex \hspace{1cm} ?&gt;
-		</xsl:text>
+	<xsl:template match="smbconfblock/smbconfcomment">
 		<xsl:element name="member">
 			<xsl:text># </xsl:text>
 			<xsl:apply-templates/>
 		</xsl:element>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample/smbconfsection|smbconfblock/smbconfsection">
+	<xsl:template match="smbconfblock/smbconfsection">
 		<xsl:element name="member">
 			<xsl:text> </xsl:text>
 		</xsl:element>
@@ -105,35 +99,6 @@
 		</xsl:choose>
 	</xsl:template>
 
-	<xsl:template match="smbconfexample">
-		<xsl:choose>
-			<xsl:when test="title = ''">
-				<xsl:message>
-					<xsl:text>Warning: smbconfexample does not have title!</xsl:text>
-				</xsl:message>
-			</xsl:when>
-		</xsl:choose>
-		<xsl:element name="example">
-			<xsl:choose>
-				<xsl:when test="@id != ''">
-					<xsl:attribute name="id">
-						<xsl:value-of select="@id"/>
-					</xsl:attribute>
-				</xsl:when>
-			</xsl:choose>
-
-			<xsl:element name="title">
-				<xsl:value-of select="title"/>
-			</xsl:element>
-			<xsl:element name="simplelist">
-				<xsl:apply-templates/>
-			</xsl:element>
-		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="smbconfexample/title">
-	</xsl:template>
-
 	<xsl:template match="smbconfblock">
 		<xsl:element name="simplelist">
 			<xsl:apply-templates/>
@@ -146,32 +111,8 @@
 		</xsl:element>
 	</xsl:template>
 
-	<xsl:template match="smbconfcomment">
-		<xsl:text># </xsl:text>
-		<xsl:apply-templates/>
-	</xsl:template>
-
 	<xsl:template match="imagefile">
 		<xsl:element name="mediaobject">
-			<xsl:element name="imageobject">
-				<xsl:attribute name="role"><xsl:text>latex</xsl:text></xsl:attribute>
-				<xsl:element name="imagedata">
-					<xsl:attribute name="fileref">
-						<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text><xsl:value-of select="text()"/></xsl:attribute>
-					<xsl:attribute name="scale">
-						<xsl:choose>
-							<xsl:when test="@scale != ''">
-								<xsl:value-of select="@scale"/>
-							</xsl:when>
-
-							<xsl:otherwise>
-								<xsl:text>50</xsl:text>
-							</xsl:otherwise>
-						</xsl:choose>
-					</xsl:attribute>
-					<xsl:attribute name="scalefit"><xsl:text>1</xsl:text></xsl:attribute>
-				</xsl:element>
-			</xsl:element>
 			<xsl:element name="imageobject">
 				<xsl:attribute name="role"><xsl:text>html</xsl:text></xsl:attribute>
 				<xsl:element name="imagedata">

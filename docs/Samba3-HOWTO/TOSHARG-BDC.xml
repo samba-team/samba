@@ -251,13 +251,15 @@ parameters in the <smbconfsection name="[global]"/>-section of the &smb.conf; ha
 Refer to <link linkend="minimalPDC">following configuration</link> for an example of the minimum required settings.
 </para>
 
-<para><smbconfexample id="minimalPDC">
+<example id="minimalPDC">
 <title>Minimal smb.conf for a PDC in Use With a BDC &smbmdash; LDAP Server on PDC.</title>
+<smbconfblock>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 <smbconfoption name="passdb backend">ldapsam://localhost:389</smbconfoption>
 <smbconfoption name="domain master">yes</smbconfoption>
 <smbconfoption name="domain logons">yes</smbconfoption>
-</smbconfexample></para>
+</smbconfblock>
+</example>
 
 <para>
 Several other things like a <smbconfsection name="[homes]"/> and a
@@ -341,15 +343,15 @@ In order to have a fall-back configuration (secondary) LDAP server one would spe
 the secondary LDAP server in the &smb.conf; file as shown in <link linkend="mulitldapcfg">following example</link>.
 </para>
 
-<para>
-<smbconfexample id="mulitldapcfg">
+<example id="mulitldapcfg">
 <title>Multiple LDAP Servers in &smb.conf;</title>
+<smbconfblock>
 <member>...</member>
 <smbconfoption name="passdb backend"> </smbconfoption>
 <member><parameter>ldapsam:"ldap://master.quenya.org ldap://slave.quenya.org"</parameter></member>
 <member>...</member>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 </sect2>
 
@@ -509,14 +511,16 @@ The creation of a BDC requires some steps to prepare the Samba server before
 done by setting Samba as shown in <link linkend="minim-bdc">the next example</link>.
 </para>
 
-<para><smbconfexample id="minim-bdc">
+<example id="minim-bdc">
 <title>Minimal setup for being a BDC</title>
+<smbconfblock>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 <smbconfoption name="passdb backend">ldapsam:ldap://slave-ldap.quenya.org</smbconfoption>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="domain logons">yes</smbconfoption>
 <smbconfoption name="idmap backend">ldap:ldap://slave-ldap.quenya.org</smbconfoption>
-</smbconfexample></para>
+</smbconfblock>
+</example>
 
 <para>
 In the <smbconfsection name="[global]"/>-section of the &smb.conf; of the BDC. This makes the BDC

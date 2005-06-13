@@ -9,6 +9,7 @@ include Makefile.settings
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
+export TEXINPUTS=xslt/latex:.:
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
@@ -74,11 +75,11 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 #
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
+	$(XSLTPROC) --xinclude --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
@@ -116,9 +117,9 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
 # Tex files
-%.tex: $(DOCBOOKDIR)/%.xml xslt/latex.xsl
+%.tex: %/index.xml xslt/latex.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --output $@ xslt/latex.xsl $<
+	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
 

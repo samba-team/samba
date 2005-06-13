@@ -40,15 +40,17 @@ important parameter is the <smbconfoption name="vfs objects"/> parameter where
 you can list one or more VFS modules by name. For example, to log all access 
 to files and put deleted files in a recycle bin, see <link linkend="vfsrecyc">next configuration</link>:
 
-<smbconfexample id="vfsrecyc">
+<example id="vfsrecyc">
 	<title>smb.conf with VFS modules</title>
+	<smbconfblock>
 	<smbconfsection name="[audit]"/>
 <smbconfoption name="comment">Audited /data directory</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
 <smbconfoption name="vfs objects">audit recycle</smbconfoption>
 <smbconfoption name="writeable">yes</smbconfoption>
 <smbconfoption name="browseable">yes</smbconfoption>
-	</smbconfexample>
+	</smbconfblock>
+</example>
 </para>
 
 <para>
@@ -70,8 +72,9 @@ Samba installation (usually <filename>/usr/lib/samba/vfs</filename> or <filename
 Some modules can be used twice for the same share.
 This can be done using a configuration similar to the one shown in <link linkend="multimodule">the following example</link>.
 
-<smbconfexample id="multimodule">
+<example id="multimodule">
 	<title>smb.conf with multiple VFS modules</title>
+	<smbconfblock>
 <smbconfsection name="[test]"/>
 <smbconfoption name="comment">VFS TEST</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
@@ -81,7 +84,8 @@ This can be done using a configuration similar to the one shown in <link linkend
 <smbconfoption name="example1: parameter">1</smbconfoption>
 <smbconfoption name="example:  parameter">5</smbconfoption>
 <smbconfoption name="test:	  parameter">7</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 </para>
 
 </sect1>
@@ -502,17 +506,17 @@ This can be done using a configuration similar to the one shown in <link linkend
 		standard.  Here is our example of a share configured
 		with the shadow_copy VFS module:</para>
 	    </formalpara>
-	    <para>
-	      <smbconfexample id="vfsshadow">
+	      <example id="vfsshadow">
 		<title>Share With shadow_copy VFS</title>
+		<smbconfblock>
 		<smbconfsection name="[shadow_share]"/>
 		<smbconfoption name="comment">Shadow Copy Enabled Share</smbconfoption>
 		<smbconfoption name="path">/data/shadow_share</smbconfoption>
 		<smbconfoption name="vfs objects">shadow_copy</smbconfoption>
 		<smbconfoption name="writeable">yes</smbconfoption>
 		<smbconfoption name="browseable">yes</smbconfoption>
-	      </smbconfexample>
-	    </para>
+	      </smbconfblock>
+	    </example>
 	  </listitem>
 	  <listitem>
 	    <formalpara>

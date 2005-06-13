@@ -102,8 +102,9 @@ nobody. No home directories are shared, and there are no users in the <filename>
 UNIX system database. This is a simple system to administer.
 </para>
 
-<smbconfexample id="simplynice">
+<example id="simplynice">
 <title>smb.conf for Reference Documentation Server</title>
+<smbconfblock>
 <smbconfcomment> Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
@@ -115,7 +116,8 @@ UNIX system database. This is a simple system to administer.
 <smbconfoption name="comment">Data</smbconfoption>
 <smbconfoption name="path">/export</smbconfoption>
 <smbconfoption name="guest only">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <para>
 In <link linkend="simplynice">the example</link> above, the machine name is set to &example.server.samba;, the workgroup is set to the name
@@ -193,9 +195,9 @@ the anonymous (guest) user, two things will be required:
 The contents of the &smb.conf; file is shown in <link linkend="AnonPtrSvr">the next example</link>.
 </para>
 
-<para>
-<smbconfexample id="AnonPtrSvr">
+<example id="AnonPtrSvr">
 <title>&smb.conf; for Anonymous Printing</title>
+<smbconfblock>
 <smbconfcomment> Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
@@ -213,8 +215,8 @@ The contents of the &smb.conf; file is shown in <link linkend="AnonPtrSvr">the n
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 
 <note><para>
