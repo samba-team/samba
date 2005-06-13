@@ -110,7 +110,7 @@ typedef struct _RegistryKey {
 
 	struct _RegistryKey *prev, *next;
 
-	POLICY_HND	hnd;
+	/* POLICY_HND	hnd; */
 	pstring 	name; 	/* full name of registry key */
 	REGISTRY_HOOK	*hook;
 	
