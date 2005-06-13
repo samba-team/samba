@@ -113,7 +113,7 @@ interface dcerpc
 		uint32 status;
 	} dcerpc_fault;
 
-	/* the auth types we know about
+	/* the auth types we know about */
 	const uint8 DCERPC_AUTH_TYPE_NONE     = 0;
 	/* this seems to be not krb5! */
 	const uint8 DCERPC_AUTH_TYPE_KRB5_1   = 1;
