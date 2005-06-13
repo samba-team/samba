@@ -1128,7 +1128,7 @@ static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call,
 					    const char *server_name,
 					    const char *printer_name)
 {
-	DEBUG(1, ("looking for printer [%s] (server[%s])\n", printer_name, server_name));
+	DEBUG(3, ("looking for printer [%s] (server[%s])\n", printer_name, server_name));
 
 	return WERR_INVALID_PRINTER_NAME;
 }
