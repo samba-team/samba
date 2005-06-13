@@ -9,7 +9,6 @@
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
 	version="1.1">
 
-	<xsl:import href="../settings.xsl"/>
 	<xsl:import href="strip-references.xsl"/>
 	<xsl:import href="expand-smbconfdoc.xsl"/>
 
@@ -117,7 +116,7 @@
 				<xsl:attribute name="role"><xsl:text>html</xsl:text></xsl:attribute>
 				<xsl:element name="imagedata">
 					<xsl:attribute name="fileref">
-						<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+						<xsl:text>images/</xsl:text><xsl:value-of select="text()"/><xsl:text>.png</xsl:text></xsl:attribute>
 					<xsl:attribute name="scale">
 						<xsl:choose>
 							<xsl:when test="@scale != ''">
@@ -135,7 +134,7 @@
 			<xsl:element name="imageobject">
 				<xsl:element name="imagedata">
 					<xsl:attribute name="fileref">
-						<xsl:text>images/</xsl:text><xsl:value-of select="imagefile"/><xsl:text>.png</xsl:text></xsl:attribute>
+						<xsl:text>images/</xsl:text><xsl:value-of select="text()"/><xsl:text>.png</xsl:text></xsl:attribute>
 					<xsl:attribute name="scale">
 						<xsl:choose>
 							<xsl:when test="@scale != ''">

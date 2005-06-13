@@ -1,9 +1,0 @@
-<?xml version='1.0'?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-				version="1.1">
-
-<xsl:param name="papersize"><xsl:text>@PAPERSIZE@</xsl:text></xsl:param>
-<xsl:param name="docrop"><xsl:text>@DOCROP@</xsl:text></xsl:param>
-<xsl:param name="ulink.footnotes"><xsl:text>@ULINK_IN_FOOTNOTE@</xsl:text></xsl:param>
-<xsl:param name="ulink.show"><xsl:text>@ULINK_SHOW@</xsl:text></xsl:param>
-</xsl:stylesheet>

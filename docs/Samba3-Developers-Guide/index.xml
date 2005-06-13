@@ -26,8 +26,6 @@ It's nothing more than a collection of documents written by samba developers abo
 the internals of various parts of samba and the SMB protocol. It's still (and will always be) incomplete.
 The most recent version of this document
 can be found at <ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>.
-Please send updates to <ulink 
-url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>.
 </para>
 
 <para>
@@ -36,6 +34,11 @@ version 2.  A copy of the license is included with the Samba source
 distribution.  A copy can be found on-line at <ulink 
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
+
+<warning>
+	<para>This document is incomplete and unmaintained. It is merely a 
+	collection of development-related notes.</para>
+</warning>
 
 </abstract>
 
@@ -54,7 +57,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 <part>
 	<title>The protocol</title>
 
-	<xi:include href="NetBIOS.xml"/>
 	<xi:include href="unix-smb.xml"/>
 	<xi:include href="cifsntdomain.xml"/>
 
@@ -76,7 +78,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 	
 	<xi:include href="rpc_plugin.xml"/>
 	<xi:include href="vfs.xml"/>
-	<xi:include href="registry.xml"/>
 	<xi:include href="parsing.xml"/>
 	<xi:include href="wins.xml"/>
 	<xi:include href="encryption.xml"/>
@@ -87,7 +88,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 	<title>Debugging and tracing</title>
 
 	<xi:include href="Tracing.xml"/>
-	<xi:include href="windows-debug.xml"/>
 	<xi:include href="printing.xml"/>
 </part>
 
