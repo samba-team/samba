@@ -1,14 +1,15 @@
 %
-% $Id: sambadoc.cls,v 1.4 2003/12/11 19:30:50 jelmer Exp $
+% $Id$
 %
 
 % phstyle.cls -- Macros for formatting Prentice-Hall Books
 %               -- Compiled by J.K. Shultis, Dec. 1993
 % 		-- Modified and enhanced for LaTeX2e mdh/rlm 1997/02
 %       -- Style Modifications Lori Hughes June 2002 
+%       -- Modifications for Samba by Jelmer Vernooij 2003-2005
 
 \NeedsTeXFormat{LaTeX2e}%
-\ProvidesClass{sambadoc}[1997/02/20 Prentice Hall Book Class, February 1997]
+\ProvidesClass{sambadoc}[2005/06/13 Samba Documentation class]
 
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{report}}
 
@@ -458,46 +459,12 @@ page \thepage \space undefined}}%
 
 \def\l@example{\noindent\@dottedtocline{1}{0em}{3.5em}}
 
-\parskip 1.5ex
-\parindent 0pt
-
 \renewcommand\listfigurename{\uppercase{List Of Figures}}
 \renewcommand\listtablename{\uppercase{List Of Tables}}
 
-\setlength{\emergencystretch}{0cm}
-\cleardoublepage
-\pagenumbering{roman}
-
-\setcounter{page}{2}
-\setcounter{totalnumber}{8}
-\setcounter{bottomnumber}{3}
-\setcounter{topnumber}{3}
-\renewcommand{\textfraction}{0.1}
-\renewcommand{\topfraction}{1.0}
-\renewcommand{\bottomfraction}{1.0}
-
-\usepackage[twoside]{geometry}
-
-
-\geometry{%
-paperwidth=7in,
-paperheight=9.25in,
-lmargin=.75in,
-rmargin=.75in,
-bmargin=.625in,
-tmargin=.625in,
-width=5.5in,
-height=7.525in, %7.3
-marginparwidth=0.35in,
-headheight=0.2in,
-headsep=.25in,
-footskip=.025in}
-
-\setlength{\headwidth}{\textwidth}
-
 % smb.conf syntax highlighting
-\usepackage{listings}
-\usepackage{xcolor}
+\RequirePackage{listings}
+\RequirePackage{xcolor}
 
 \lstdefinelanguage{smbconf}{
 	morecomment=[l]{\#},
@@ -516,3 +483,37 @@ footskip=.025in}
 
 \newcommand{\smbconfsection}[1]{\emph{#1}}
 \newcommand{\smbconfoption}[1]{\index{#1}\emph{#1}}
+
+\setlength{\emergencystretch}{0cm}
+
+\ifStr@ph
+	\PassOptionsToPackage{%
+	twoside,dvips,
+	paperwidth=7in,
+	paperheight=9.25in,
+	lmargin=.75in,
+	rmargin=.75in,
+	bmargin=.625in,
+	tmargin=.625in,
+	width=5.5in,
+	height=7.525in, %7.3
+	marginparwidth=0.35in,
+	headheight=0.2in,
+	headsep=.25in,
+	footskip=.025in}{geometry}
+\fi
+
+\setlength{\headwidth}{\textwidth}
+
+\cleardoublepage
+\pagenumbering{roman}
+
+\setcounter{page}{2}
+\setcounter{totalnumber}{8}
+\setcounter{bottomnumber}{3}
+\setcounter{topnumber}{3}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+
+%

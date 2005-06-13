@@ -119,7 +119,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 # Tex files
 %.tex: %/index.xml xslt/latex.xsl
 	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
+	$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
 
