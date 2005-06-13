@@ -301,7 +301,57 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 		info502_str->sd = dup_sec_desc(mem_ctx, info502_str->sd);
 		break;
 	}
+	default:
+		DEBUG(0,("unimplemented info-level: %d\n", info_level));
+		break;
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_srvsvc_net_share_set_info(struct cli_state *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *sharename,
+				     uint32 info_level,
+				     SRV_SHARE_INFO *info)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_SET_INFO q;
+	SRV_R_NET_SHARE_SET_INFO r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_share_set_info(&q, cli->srv_name_slash, sharename,
+				      info_level, info);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_share_set_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_SET_INFO, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_share_set_info("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
 
  done:
 	prs_mem_free(&qbuf);
