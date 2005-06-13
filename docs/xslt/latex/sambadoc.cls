@@ -268,19 +268,6 @@
 \plainfootrulewidth 0pt             %---- no foot rule for chapter page
 \footrulewidth 0pt                  %---- no rule for foot
 
-
-%10.5pt fonts
-\usepackage{type1cm}
-\renewcommand\normalsize{%
-   \@setfontsize\normalsize{10.5pt}{12pt}
-   \abovedisplayskip 10\p@ \@plus2\p@ \@minus5\p@
-   \abovedisplayshortskip \z@ \@plus3\p@
-   \belowdisplayshortskip 6\p@ \@plus3\p@ \@minus3\p@
-   \belowdisplayskip \abovedisplayskip
-\let\@listi\@listI}
-\normalsize   
-%
-
 %--- Redefine Headers
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
 %

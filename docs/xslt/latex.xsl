@@ -59,7 +59,7 @@
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
 <xsl:param name="latex.documentclass">sambadoc</xsl:param>
-<xsl:param name="latex.documentclass.book">letterpaper,openright,twoside</xsl:param>
+<xsl:param name="latex.documentclass.book">letterpaper,10.5pt,openright,twoside</xsl:param>
 <xsl:param name="latex.babel.language">english</xsl:param>
 <xsl:variable name="ulink.footnotes" select="1"/>
 <xsl:variable name="ulink.show" select="0"/>
