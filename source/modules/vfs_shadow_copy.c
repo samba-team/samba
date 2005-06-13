@@ -133,6 +133,27 @@ SMB_STRUCT_DIRENT *shadow_copy_readdir(vfs_handle_struct *handle, connection_str
 	return NULL;
 }
 
+static void shadow_copy_seekdir(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *_dirp, long offset)
+{
+	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
+
+	if (offset < dirp->num) {
+		dirp->pos = offset ;
+	}
+}
+
+static long shadow_copy_telldir(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *_dirp)
+{
+	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
+	return( dirp->pos ) ;
+}
+
+static void shadow_copy_rewinddir(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *_dirp)
+{
+	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
+	dirp->pos = 0 ;
+}
+
 int shadow_copy_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR *_dirp)
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
@@ -200,6 +221,9 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 static vfs_op_tuple shadow_copy_ops[] = {
 	{SMB_VFS_OP(shadow_copy_opendir),		SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(shadow_copy_readdir),		SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(shadow_copy_seekdir),		SMB_VFS_OP_SEEKDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(shadow_copy_telldir),		SMB_VFS_OP_TELLDIR,		SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(shadow_copy_rewinddir),		SMB_VFS_OP_REWINDDIR,		SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(shadow_copy_closedir),		SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_TRANSPARENT},
 
 	{SMB_VFS_OP(shadow_copy_get_shadow_copy_data),	SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_OPAQUE},
