@@ -22,6 +22,9 @@
 #ifndef _SMB_LDAP_H
 #define _SMB_LDAP_H
 
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_parse.h"
+
 enum ldap_request_tag {
 	LDAP_TAG_BindRequest = 0,
 	LDAP_TAG_BindResponse = 1,
@@ -288,33 +291,6 @@ struct ldap_connection {
 	struct gensec_security *gensec;
 };
 
-/* Hmm. A blob might be more appropriate here :-) */
-
-struct ldap_val {
-	unsigned int length;
-	void *data;
-};
-
-enum ldap_parse_op {LDAP_OP_SIMPLE, LDAP_OP_AND, LDAP_OP_OR, LDAP_OP_NOT};
-
-struct ldap_parse_tree {
-	enum ldap_parse_op operation;
-	union {
-		struct {
-			char *attr;
-			struct ldap_val value;
-		} simple;
-		struct {
-			unsigned int num_elements;
-			struct ldap_parse_tree **elements;
-		} list;
-		struct {
-			struct ldap_parse_tree *child;
-		} not;
-	} u;
-};
-
-#define LDAP_ALL_SEP "()&|=!"
 #define LDAP_CONNECTION_TIMEOUT 10000
 
 /* The following definitions come from libcli/ldap/ldap.c  */
@@ -323,10 +299,6 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result);
 BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg);
 BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 			  char **host, uint16_t *port, BOOL *ldaps);
-struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
-						 const char *s);
-const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob);
-struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 
 /* The following definitions come from libcli/ldap/ldap_client.c  */
 
@@ -368,7 +340,7 @@ NTSTATUS ldap2nterror(int ldaperror);
 
 /* The following definitions come from libcli/ldap/ldap_ldif.c  */
 
-BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
+BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 			 struct ldap_attribute *attrib);
 BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       const struct ldap_attribute *attrib,
@@ -385,6 +357,6 @@ struct ldap_message *ldap_ldif2msg(TALLOC_CTX *mem_ctx, const char *s);
 const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value);
 const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid);
 const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid);
-NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldap_val val, struct GUID *guid);
+NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldb_val val, struct GUID *guid);
 
 #endif
