@@ -43,7 +43,6 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
 #include "ldb/include/ldb_parse.h"
 #include <ctype.h>
 
@@ -327,22 +326,13 @@ static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *ctx, const char **s)
 
   expression ::= <simple> | <filter>
 */
-struct ldb_parse_tree *ldb_parse_tree(struct ldb_context *ldb, const char *s)
+struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
 {
 	while (isspace(*s)) s++;
 
 	if (*s == '(') {
-		return ldb_parse_filter(ldb, &s);
+		return ldb_parse_filter(mem_ctx, &s);
 	}
 
-	return ldb_parse_simple(ldb, s);
+	return ldb_parse_simple(mem_ctx, s);
 }
-
-/*
-  free a parse tree returned from ldb_parse_tree()
-*/
-void ldb_parse_tree_free(struct ldb_context *ldb, struct ldb_parse_tree *tree)
-{
-	talloc_free(tree);
-}
-

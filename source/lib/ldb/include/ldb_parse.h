@@ -54,7 +54,6 @@ struct ldb_parse_tree {
 	} u;
 };
 
-struct ldb_parse_tree *ldb_parse_tree(struct ldb_context *ldb, const char *s);
-void ldb_parse_tree_free(struct ldb_context *ldb, struct ldb_parse_tree *tree);
+struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s);
 
 #endif
