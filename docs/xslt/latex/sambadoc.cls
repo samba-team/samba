@@ -52,7 +52,7 @@
 	textwidth=5in,
 	headsep=.25in,
 	footskip=.025in}
-	\usepackage[letter,cam,cross,frame,center]{crop}
+	\usepackage[letter,cam,cross,center]{crop}
 \fi
 
 %====================== Define special fonts
@@ -74,13 +74,6 @@
 \newfont{\sfbpara}{cmssbx10}
 %---------------------------------------------------
 
-
-%===================== LaTeX and TeX type logos
-\newcount\TestCount
-\def\La{\TestCount=\the\fam \leavevmode L\raise.42ex
-         \hbox{$\fam\TestCount\scriptstyle\kern-.3em A$}}
-\def\LaTeX{\La\kern-.15em\TeX}
-\def\AllTeX{{(\La)\TeX}}
 
 %
 % Theorem hack
@@ -151,12 +144,6 @@
       \cr
 }
 
-
-
-
-
-%\newenvironment{Eqnarray}{\arraycolsep 0.14em\begin{eqnarray}}{\end{eqnarray}}
-
 % The hangitem environment -- like description, but text lines up with 
 %    the item descriptor.  You give an additional argument containing text
 %    of the width that you want indentations.
@@ -165,122 +152,11 @@
         \leftmargin\labelwidth\advance\leftmargin\labelsep }}
 \let\endhangitem\endlist
 
-%------ Problem List Macro
-\newcounter{probnum}
-\newenvironment{exerlist}%
-  {\begin{list}{\bf \theprobnum.}%
-  {\usecounter{probnum} \itemsep 1ex  \leftmargin 2.0em \labelsep 0.5em
-   \rightmargin 0in}}{\end{list}}
+\RequirePackage{fancyhdr}
 
-
-
-
-%===================== Define FANCYHDS.STY
-% fancyheadings.sty version 1.1
-% Fancy headers and footers.
-% Piet van Oostrum, Dept of Computer Science, University of Utrecht
-% Padualaan 14, P.O. Box 80.089, 3508 TB Utrecht, The Netherlands
-% Telephone: +31-30-531806. piet@cs.ruu.nl (mcvax!hp4nl!ruuinf!piet)
-% Sep 23, 1992.
-
-\def\lhead{\@ifnextchar[{\@xlhead}{\@ylhead}}
-\def\@xlhead[#1]#2{\gdef\@elhead{#1}\gdef\@olhead{#2}}
-\def\@ylhead#1{\gdef\@elhead{#1}\gdef\@olhead{#1}}
-
-\def\chead{\@ifnextchar[{\@xchead}{\@ychead}}
-\def\@xchead[#1]#2{\gdef\@echead{#1}\gdef\@ochead{#2}}
-\def\@ychead#1{\gdef\@echead{#1}\gdef\@ochead{#1}}
-
-\def\rhead{\@ifnextchar[{\@xrhead}{\@yrhead}}
-\def\@xrhead[#1]#2{\gdef\@erhead{#1}\gdef\@orhead{#2}}
-\def\@yrhead#1{\gdef\@erhead{#1}\gdef\@orhead{#1}}
-
-\def\lfoot{\@ifnextchar[{\@xlfoot}{\@ylfoot}}
-\def\@xlfoot[#1]#2{\gdef\@elfoot{#1}\gdef\@olfoot{#2}}
-\def\@ylfoot#1{\gdef\@elfoot{#1}\gdef\@olfoot{#1}}
-
-\def\cfoot{\@ifnextchar[{\@xcfoot}{\@ycfoot}}
-\def\@xcfoot[#1]#2{\gdef\@ecfoot{#1}\gdef\@ocfoot{#2}}
-\def\@ycfoot#1{\gdef\@ecfoot{#1}\gdef\@ocfoot{#1}}
-
-\def\rfoot{\@ifnextchar[{\@xrfoot}{\@yrfoot}}
-\def\@xrfoot[#1]#2{\gdef\@erfoot{#1}\gdef\@orfoot{#2}}
-\def\@yrfoot#1{\gdef\@erfoot{#1}\gdef\@orfoot{#1}}
-
-\newdimen\headrulewidth
-\newdimen\footrulewidth
-\newdimen\plainheadrulewidth
-\newdimen\plainfootrulewidth
-\newdimen\headwidth
-\newif\if@fancyplain \@fancyplainfalse
-\def\fancyplain#1#2{\if@fancyplain#1\else#2\fi}
-
-% Initialization of the head and foot text.
-
-\headrulewidth 0.4pt
-\footrulewidth\z@
-\plainheadrulewidth\z@
-\plainfootrulewidth\z@
-
-\lhead[\fancyplain{}{\sl\rightmark}]{\fancyplain{}{\sl\leftmark}}
-%  i.e. empty on ``plain'' pages \rightmark on even, \leftmark on odd pages
-\chead{}
-\rhead[\fancyplain{}{\sl\leftmark}]{\fancyplain{}{\sl\rightmark}}
-%  i.e. empty on ``plain'' pages \leftmark on even, \rightmark on odd pages
-\lfoot{}
-\cfoot{\rm\thepage} % page number
-\rfoot{}
-
-% Put together a header or footer given the left, center and
-% right text, fillers at left and right and a rule.
-% The \lap commands put the text into an hbox of zero size,
-% so overlapping text does not generate an errormessage.
-
-\def\@fancyhead#1#2#3#4#5{#1\hbox to\headwidth{\vbox{\hbox
-{\rlap{\parbox[b]{\headwidth}{\raggedright#2\strut}}\hfill
-\parbox[b]{\headwidth}{\centering#3\strut}\hfill
-\llap{\parbox[b]{\headwidth}{\raggedleft#4\strut}}}\headrule}}#5}
-
-
-\def\@fancyfoot#1#2#3#4#5{#1\hbox to\headwidth{\vbox{\footrule
-\hbox{\rlap{\parbox[t]{\headwidth}{\raggedright#2\strut}}\hfill
-\parbox[t]{\headwidth}{\centering#3\strut}\hfill
-\llap{\parbox[t]{\headwidth}{\raggedleft#4\strut}}}}}#5}
-
-\def\headrule{{\if@fancyplain\headrulewidth\plainheadrulewidth\fi
-\hrule\@height\headrulewidth\@width\headwidth \vskip-\headrulewidth}}
-
-\def\footrule{{\if@fancyplain\footrulewidth\plainfootrulewidth\fi
-\vskip-0.3\normalbaselineskip\vskip-\footrulewidth
-\hrule\@width\headwidth\@height\footrulewidth\vskip-0.3\normalbaselineskip}}
-
-\def\ps@fancy{
-\let\@mkboth\markboth
-\@ifundefined{chapter}{\def\sectionmark##1{\markboth
-{{\ifnum \c@secnumdepth>\z@ %MEUH
- \thesection\hskip 1em\relax \fi ##1}}{}}
-\def\subsectionmark##1{\markright {\ifnum \c@secnumdepth >\@ne
- \thesubsection\hskip 1em\relax \fi ##1}}}
-%
-{\def\chaptermark##1{\markboth {{\ifnum \c@secnumdepth>\m@ne %MEUH
- \@chapapp\ \thechapter. \ \fi ##1}}{}}
-\def\sectionmark##1{\markright{{\ifnum \c@secnumdepth >\z@ %MEUH
- \thesection. \ \fi ##1}}}}
-\ps@@fancy
-\headwidth\textwidth}
-\def\ps@fancyplain{\ps@fancy \let\ps@plain\ps@plain@fancy}
-\def\ps@plain@fancy{\@fancyplaintrue\ps@@fancy}
-\def\ps@@fancy{
-\def\@oddhead{\@fancyhead\relax\@olhead\@ochead\@orhead\hss}
-\def\@oddfoot{\@fancyfoot\relax\@olfoot\@ocfoot\@orfoot\hss}
-\def\@evenhead{\@fancyhead\hss\@elhead\@echead\@erhead\relax}
-\def\@evenfoot{\@fancyfoot\hss\@elfoot\@ecfoot\@erfoot\relax}
-}
 %------------------- Modify Headers for Prentice-Hall Book Style
 %---------- Setup headers and footers
 \pagestyle{fancyplain}
-\plainfootrulewidth 0pt             %---- no foot rule for chapter page
-\footrulewidth 0pt                  %---- no rule for foot
 
 %--- Redefine Headers
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
@@ -441,13 +317,6 @@ page \thepage \space undefined}}%
 
 %% index
 
-%\def\theindex{\@restonecoltrue\if@twocolumn\@restonecolfalse\fi
-%\columnseprule \z@
-%\columnsep 35pt\twocolumn[\@makeschapterhead{Subject Index}]
-% \addcontentsline{toc}{chapter}{SUBJECT INDEX}
-% \thispagestyle{plain}\parindent\z@
-% \parskip\z@ plus .3pt\relax\let\item\@idxitem}
-
 \def\theindex{\cleardoublepage\@restonecoltrue\if@twocolumn\@restonecolfalse\fi
 \columnseprule \z@
 \columnsep 35pt\twocolumn[\@makeschapterhead{Subject Index}]
@@ -464,6 +333,7 @@ page \thepage \space undefined}}%
 	                \ifdim\wd\@tempboxa>\@tempdima \else \wd\@tempboxa\@tempdima\fi
 						                           \box\@tempboxa}
 
+% Custom list of examples
 \def\listofexamples{\@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
   \fi\chapter*{List of Examples}
   \renewcommand\@pnumwidth{0em}
