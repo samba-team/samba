@@ -148,7 +148,7 @@ test-schema:
 	@echo "STARTING SCHEMA MODULE TEST"
 	tests/test-schema.sh
 
-test: test-tdb test-ldap test-sqlite3 test-schema
+test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
 
 install: all
 	cp include/ldb.h $(includedir)
