@@ -25,17 +25,25 @@
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
+struct ldb_val ldb_blob(DATA_BLOB blob)
+{
+	struct ldb_val val;
+	val.data = blob.data;
+	val.length = blob.length;
+	return val;
+}
+
 /*
   encode a NDR uint32 as a ldap filter element
 */
 const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
 {
 	uint8_t buf[4];
-	DATA_BLOB blob;
+	struct ldb_val val;
 	SIVAL(buf, 0, value);
-	blob.data = buf;
-	blob.length = 4;
-	return ldap_binary_encode(mem_ctx, blob);
+	val.data = buf;
+	val.length = 4;
+	return ldb_binary_encode(mem_ctx, val);
 }
 
 /*
@@ -51,7 +59,7 @@ const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid)
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	ret = ldap_binary_encode(mem_ctx, blob);
+	ret = ldb_binary_encode(mem_ctx, ldb_blob(blob));
 	data_blob_free(&blob);
 	return ret;
 }
@@ -70,7 +78,7 @@ const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	ret = ldap_binary_encode(mem_ctx, blob);
+	ret = ldb_binary_encode(mem_ctx, ldb_blob(blob));
 	data_blob_free(&blob);
 	return ret;
 }
@@ -78,7 +86,7 @@ const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 /*
   decode a NDR GUID from a ldap filter element
 */
-NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldap_val val, struct GUID *guid)
+NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldb_val val, struct GUID *guid)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
