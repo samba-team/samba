@@ -2428,9 +2428,6 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 {
-	if (!bInGlobalSection)
-		return (True);
-
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
 				pszParmName, pszParmValue));
 }
@@ -2630,9 +2627,6 @@ static BOOL do_section(const char *pszSectionName)
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
 		return (True);
 	}
-
-	if (!bInGlobalSection)
-		return (True);
 
 	/* if we have a current service, tidy it up before moving on */
 	bRetval = True;
