@@ -2527,14 +2527,14 @@ void show_parameter_list(void)
 {
 	int classIndex, parmIndex, enumIndex, flagIndex;
 	BOOL hadFlag;
-	char *section_names[] = { "local", "global", NULL};
-	char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
+	const char *section_names[] = { "local", "global", NULL};
+	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
 		"P_UGSTRING", "P_ENUM", "P_SEP"};
 	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
 		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
 		FLAG_HIDE, FLAG_DOS_STRING};
-	char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
+	const char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
 		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
 		"FLAG_DEPRECATED", "FLAG_HIDE", "FLAG_DOS_STRING", NULL};
 
@@ -3690,7 +3690,6 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 	int i, result = False;
 	parm_class class;
 	unsigned flag = 0;
-	void *ptr;
 
 	if (isGlobal) {
 		class = P_GLOBAL;
