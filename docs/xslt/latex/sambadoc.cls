@@ -515,6 +515,16 @@ footskip=.025in}
 	morecomment=[l]{\#},
 }
 
-\lstset{backgroundcolor=\color{lightgray},frame=single,}
+\newcommand{\linebreaksign}{\hbox{\ensuremath\hookleftarrow}}
+
+\lstdefinestyle{smbconfblock}
+{
+	breaklines=true,
+	backgroundcolor=\color{lightgray},
+	frame=single,
+	frameround=tttt,
+	prebreak={\space\linebreaksign}
+}
+
 \newcommand{\smbconfsection}[1]{\emph{#1}}
 \newcommand{\smbconfoption}[1]{\index{#1}\emph{#1}}

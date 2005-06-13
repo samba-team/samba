@@ -102,7 +102,7 @@
 </xsl:template>
 
 <xsl:template match="smbconfblock">
-	<xsl:text>&#10;\begin{lstlisting}[language=smbconf]&#10;</xsl:text>
+	<xsl:text>&#10;\begin{lstlisting}[language=smbconf,style=smbconfblock]&#10;</xsl:text>
 	<xsl:apply-templates/>
 	<xsl:text>\end{lstlisting}&#10;</xsl:text>
 </xsl:template>
