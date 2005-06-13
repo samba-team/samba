@@ -804,8 +804,9 @@ echo -e "\nNAT firewall done.\n"
 		and <link linkend="promisnetsvcb"/>. Concatenate (join) all three files to make a single &smb.conf;
 		file. The final, fully qualified path for this file should be <filename>/etc/samba/smb.conf</filename>.
 
-<smbconfexample id="promisnet">
+<example id="promisnet">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; [globals] Section</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">PROMISES</smbconfoption>
@@ -849,10 +850,12 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="cups options">Raw</smbconfoption>
 <smbconfoption name="veto files">/*.eml/*.nws/*.{*}/</smbconfoption>
 <smbconfoption name="veto oplock files">/*.doc/*.xls/*.mdb/</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="promisnetsvca">
+<example id="promisnetsvca">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part A</title>
+<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -884,10 +887,12 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="promisnetsvcb">
+<example id="promisnetsvcb">
 <title>130 User Network with <emphasis>tdbsam</emphasis> &smbmdash; Services Section Part B</title>
+<smbconfblock>
 <smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
@@ -903,7 +908,8 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="read only">Yes</smbconfoption>
 <smbconfoption name="admin users">bjordan</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 		</para></step>
 
 		<step><para>

@@ -1852,8 +1852,9 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	configuration of the LDAP server.
 	</para>
 
-<smbconfexample id="sbehap-massive-smbconfa">
+<example id="sbehap-massive-smbconfa">
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part A</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 	<smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -1884,10 +1885,12 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption name="set primary group script">/opt/IDEALX/sbin/</smbconfoption>
 <member><parameter>smbldap-usermod -g "%g" "%u"</parameter></member>
 	<smbconfoption name="add machine script">/opt/IDEALX/sbin/smbldap-useradd -w "%u"</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="sbehap-massive-smbconfb">
+<example id="sbehap-massive-smbconfb">
 <title>LDAP Based &smb.conf; File, Server: MASSIVE &smbmdash; global Section: Part B</title>
+<smbconfblock>
 	<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
 	<smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
 	<smbconfoption name="logon drive">X:</smbconfoption>
@@ -1906,7 +1909,8 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption name="map acl inherit">Yes</smbconfoption>
 	<smbconfoption name="printing">cups</smbconfoption>
 	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 	</sect2>
 
@@ -3185,8 +3189,9 @@ smb: \> q
 
 	</procedure>
 
-<smbconfexample id="sbehap-bldg1-smbconf">
+<example id="sbehap-bldg1-smbconf">
 <title>LDAP Based &smb.conf; File, Server: BLDG1</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 	<smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -3220,11 +3225,13 @@ smb: \> q
 	<smbconfoption name="idmap gid">10000-20000</smbconfoption>
 	<smbconfoption name="printing">cups</smbconfoption>
 	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 
-<smbconfexample id="sbehap-bldg2-smbconf">
+<example id="sbehap-bldg2-smbconf">
 <title>LDAP Based &smb.conf; File, Server: BLDG2</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 	<smbconfoption name="unix charset">LOCALE</smbconfoption>
@@ -3258,11 +3265,13 @@ smb: \> q
 	<smbconfoption name="idmap gid">10000-20000</smbconfoption>
 	<smbconfoption name="printing">cups</smbconfoption>
 	<smbconfoption name="printer admin">root, chrisr</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 
-<smbconfexample id="sbehap-shareconfa">
+<example id="sbehap-shareconfa">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part A</title>
+<smbconfblock>
 <smbconfsection name="[accounts]"/>
 	<smbconfoption name="comment">Accounting Files</smbconfoption>
 	<smbconfoption name="path">/data/accounts</smbconfoption>
@@ -3290,10 +3299,12 @@ smb: \> q
 	<smbconfoption name="guest ok">Yes</smbconfoption>
 	<smbconfoption name="printable">Yes</smbconfoption>
 	<smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="sbehap-shareconfb">
+<example id="sbehap-shareconfb">
 <title>LDAP Based &smb.conf; File, Shares Section &smbmdash; Part B</title>
+<smbconfblock>
 <smbconfsection name="[apps]"/>
 	<smbconfoption name="comment">Application Files</smbconfoption>
 	<smbconfoption name="path">/apps</smbconfoption>
@@ -3325,7 +3336,8 @@ smb: \> q
 	<smbconfoption name="guest ok">no</smbconfoption>
 	<smbconfoption name="read only">yes</smbconfoption>
 	<smbconfoption name="write list">root, chrisr</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <example id="sbehap-ldifadd">
 <title>LDIF IDMAP Add-On Load File &smbmdash; File: /etc/openldap/idmap.LDIF</title>

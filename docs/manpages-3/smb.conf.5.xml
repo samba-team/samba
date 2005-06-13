@@ -103,11 +103,11 @@
 	The user has write access to the path <filename moreinfo="none">/home/bar</filename>. 
 	The share is accessed via the share name <quote>foo</quote>:</para>
 
-<smbconfexample>
+<smbconfblock>
 	<smbconfsection name="[foo]"/>
 	<smbconfoption name="path">/home/bar</smbconfoption>
 	<smbconfoption name="read only">read only = no</smbconfoption>
-</smbconfexample>
+</smbconfblock>
 
 	<para>The following sample section defines a printable share. 
 	The share is read-only, but printable. That is, the only write 
@@ -116,13 +116,13 @@
 	access will be permitted as the default guest user (specified 
 	elsewhere):</para>
 
-<smbconfexample>
+<smbconfblock>
 	<smbconfsection name="[aprinter]"/>
 	<smbconfoption name="path">/usr/spool/public</smbconfoption>
 	<smbconfoption name="read only">yes</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
 	<smbconfoption name="guest ok">yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
 </refsect1>
 
 <refsect1>
@@ -186,10 +186,10 @@
 		than others. The following is a typical and suitable [homes]
 		section:</para>
 
-	<smbconfexample>
+	<smbconfblock>
 		<smbconfsection name="[homes]"/>
 		<smbconfoption name="read only">no</smbconfoption>
-	</smbconfexample>
+	</smbconfblock>
 	
 		<para>An important point is that if guest access is specified 
 		in the [homes] section, all home directories will be 
@@ -248,12 +248,12 @@
 		it. A typical [printers] entry looks like 
 		this:</para>
 
-	<smbconfexample>
+	<smbconfblock>
 		<smbconfsection name="[printers]"/>
 		<smbconfoption name="path">/usr/spool/public</smbconfoption>
 		<smbconfoption name="guest ok">yes</smbconfoption>
 		<smbconfoption name="printable">yes</smbconfoption>
-	</smbconfexample>
+	</smbconfblock>
 
 		<para>All aliases given for a printer in the printcap file 
 		are legitimate printer names as far as the server is concerned. 

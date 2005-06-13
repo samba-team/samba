@@ -59,8 +59,66 @@
 <xsl:template name="latex.thead.row.entry">
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
-<xsl:param name="latex.documentclass">xslt/latex/sambadoc</xsl:param>
-<xsl:param name="latex.documentclass.book"><xsl:value-of select="$fontsize"/>pt,openright,twoside</xsl:param>
+<xsl:param name="latex.documentclass">sambadoc</xsl:param>
+<xsl:param name="latex.documentclass.book">openright,twoside</xsl:param>
 <xsl:param name="latex.babel.language">english</xsl:param>
+
+<xsl:template match="smbconfblock/smbconfoption">
+	<xsl:value-of select="@name"/>
+	<xsl:if test="text() != ''">
+		<xsl:text> = </xsl:text>
+		<xsl:value-of select="text()"/>
+	</xsl:if>
+	<xsl:text>&#10;</xsl:text>
+</xsl:template>
+
+<xsl:template match="smbconfblock/smbconfcomment">
+	<xsl:text># </xsl:text>
+	<xsl:apply-templates/>
+	<xsl:text>&#10;</xsl:text>
+</xsl:template>
+
+<xsl:template match="smbconfblock/smbconfsection">
+	<xsl:value-of select="@name"/>
+	<xsl:text>&#10;</xsl:text>
+</xsl:template>
+
+<xsl:template match="smbconfoption">
+	<xsl:text>\smbconfoption{</xsl:text>
+	<xsl:value-of select="@name"/>
+	<xsl:text>}</xsl:text>
+
+	<xsl:choose>
+		<xsl:when test="text() != ''">
+			<xsl:text> = </xsl:text>
+			<xsl:value-of select="text()"/>
+		</xsl:when>
+	</xsl:choose>
+</xsl:template>
+
+<xsl:template match="smbconfblock">
+	<xsl:text>&#10;\begin{lstlisting}[language=smbconf]&#10;</xsl:text>
+	<xsl:apply-templates/>
+	<xsl:text>\end{lstlisting}&#10;</xsl:text>
+</xsl:template>
+
+<xsl:template match="smbconfsection">
+	<xsl:text>\smbconfsection{</xsl:text>
+		<xsl:value-of select="translate(@name, '$','x')"/>
+	<xsl:text>}</xsl:text>
+</xsl:template>
+
+<xsl:template match="imagefile">
+	<xsl:text>\includegraphics[scale=.</xsl:text>
+	<xsl:choose>
+		<xsl:when test="@scale != ''"><xsl:value-of select="@scale"/></xsl:when>
+
+		<xsl:otherwise><xsl:text>50</xsl:text></xsl:otherwise>
+	</xsl:choose>
+	<xsl:text>]{</xsl:text>
+	<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text>
+	<xsl:value-of select="text()"/>
+	<xsl:text>}&#10;</xsl:text>
+</xsl:template>
 
 </xsl:stylesheet>

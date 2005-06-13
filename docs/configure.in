@@ -20,12 +20,6 @@ AC_ARG_WITH(papersize,
 [ --with-papersize         Specify papersize (a4paper,letter) ],
 [ test "$withval" && PAPERSIZE="$withval" ])
 
-FONTSIZE="10.5"
-
-AC_ARG_WITH(fontsize,
-[ --with-fontsize          Specify the fontsize in points (default: 10.5) ],
-[ test "$withval" && FONTSIZE="$withval" ])
-
 AC_ARG_ENABLE(printable,
 [ --enable-printable       Printable output (expand ulinks, etc)],
 [ if test "$enableval"; then
@@ -39,7 +33,6 @@ AC_SUBST(DOC_BUILD_DATE)
 AC_SUBST(PAPERSIZE)
 AC_SUBST(ULINK_IN_FOOTNOTE)
 AC_SUBST(ULINK_SHOW)
-AC_SUBST(FONTSIZE)
 AC_SUBST(DOCROP)
 AC_SUBST(SAMBASOURCEDIR)
 

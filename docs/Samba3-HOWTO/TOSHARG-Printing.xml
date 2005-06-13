@@ -186,9 +186,9 @@ However, in many environments these are enough to provide a valid
 &smb.conf; file that enables all clients to print.
 </para>
 
-<para>
-<smbconfexample id="simpleprc">
+<example id="simpleprc">
 <title>Simple configuration with BSD printing</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="printing">bsd</smbconfoption>
 <smbconfoption name="load printers">yes</smbconfoption>
@@ -198,7 +198,8 @@ However, in many environments these are enough to provide a valid
 <smbconfoption name="printable">yes</smbconfoption>
 <smbconfoption name="public">yes</smbconfoption>
 <smbconfoption name="writable">no</smbconfoption>
-</smbconfexample></para>
+</smbconfblock>
+</example>
 
 <para>
 This is only an example configuration. Samba assigns default values to
@@ -446,8 +447,9 @@ by default. You could use a much leaner &smb.conf; file. Alternately, you can us
 file to remove all parameters that are set at default.
 </para>
 
-<para><smbconfexample id="extbsdpr">
+<example id="extbsdpr">
 	<title>Extended BSD Printing Configuration</title>
+	<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="printing">bsd</smbconfoption>
 <smbconfoption name="load printers">yes</smbconfoption>
@@ -478,7 +480,7 @@ file to remove all parameters that are set at default.
 <smbconfoption name="hosts allow">0.0.0.0</smbconfoption>
 <smbconfoption name="hosts deny">turbo_xp, 10.160.50.23, 10.160.51.60</smbconfoption>
 <smbconfoption name="guest ok">no</smbconfoption>
-</smbconfexample></para>
+</smbconfblock></example>
 
 <para>
 This is an example configuration. You may not find all the settings that are in 
@@ -1141,9 +1143,9 @@ as <smbconfoption name="path"/> are arbitrary and should be replaced with approp
 site). See <link linkend="prtdollar">next example</link>.
 </para>
 
-<para>
-<smbconfexample id="prtdollar">
+<example id="prtdollar">
 <title>[print\$] example</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfcomment>members of the ntadmin group should be able to add drivers and set</smbconfcomment>
 <smbconfcomment>printer properties. root is implicitly always a 'printer admin'.</smbconfcomment>
@@ -1158,8 +1160,8 @@ site). See <link linkend="prtdollar">next example</link>.
 <smbconfoption name="guest ok">yes</smbconfoption>
 <smbconfoption name="read only">yes</smbconfoption>
 <smbconfoption name="write list">@ntadmin, root</smbconfoption>
-</smbconfexample>
-</para>
+</smbconfblock>
+</example>
 
 <para>
 Of course, you also need to ensure that the directory named by the

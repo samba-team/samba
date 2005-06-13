@@ -581,8 +581,9 @@ password: XXXXXXXX
 	in <link linkend="ch10-etcnsscfg"/>.
 	</para>
 
-<smbconfexample id="ch10-smbconf">
+<example id="ch10-smbconf">
 <title>Samba Configuration &smbmdash; File: <filename>/etc/samba/smb.conf</filename></title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">LONDON</smbconfoption>
 <smbconfoption name="netbios name">W2K3S</smbconfoption>
@@ -603,7 +604,8 @@ password: XXXXXXXX
 <smbconfoption name="winbind enum users">yes</smbconfoption>
 <smbconfoption name="winbind enum groups">yes</smbconfoption>
 <smbconfoption name="winbind user default domain">yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 <example id="ch10-etcnsscfg">
 <title>NSS Configuration File Extract &smbmdash; File: <filename>/etc/nsswitch.conf</filename></title>

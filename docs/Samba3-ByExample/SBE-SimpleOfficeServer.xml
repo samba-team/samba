@@ -186,8 +186,9 @@
 			Install the &smb.conf; file shown in <link linkend="draft-smbconf"/> in the
 			<filename>/etc/samba</filename> directory.
 
-<smbconfexample id="draft-smbconf">
+<example id="draft-smbconf">
 <title>Drafting Office &smb.conf; File</title>
+<smbconfblock>
 <smbconfcomment>Global Parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -197,7 +198,8 @@
 <smbconfoption name="path">/plans</smbconfoption>
 <smbconfoption name="read only">Yes</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 			</para></step>
 
 			<step><para>
@@ -642,8 +644,9 @@ application/octet-stream
 
 			</procedure>
 
-<smbconfexample id="charity-smbconfnew">
+<example id="charity-smbconfnew">
 <title>Charity Administration Office &smb.conf; New-style File</title>
+<smbconfblock>
 <smbconfcomment>Global Parameters - Newer Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -678,10 +681,12 @@ application/octet-stream
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
-<smbconfexample id="charity-smbconf">
+<example id="charity-smbconf">
 <title>Charity Administration Office &smb.conf; Old-style File</title>
+<smbconfblock>
 <smbconfcomment>Global Parameters - Older Style Configuration</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -717,7 +722,8 @@ application/octet-stream
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 			<procedure>
 			<title>Windows Client Configuration</title>
@@ -1278,8 +1284,9 @@ application/octet-stream
 
 		</procedure>
 
-<smbconfexample id="acctconf">
+<example id="acctconf">
 <title>Accounting Office Network &smb.conf; Old Style Configuration File</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
@@ -1306,7 +1313,8 @@ application/octet-stream
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 
 		</sect3>
 	</sect2>
