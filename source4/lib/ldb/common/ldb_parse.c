@@ -136,7 +136,7 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *ctx, const char *str)
 	struct ldb_val ret;
 	int slen = strlen(str);
 
-	ret.data = talloc_size(ctx, slen);
+	ret.data = talloc_size(ctx, slen+1);
 	ret.length = 0;
 	if (ret.data == NULL) return ret;
 
@@ -155,6 +155,7 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *ctx, const char *str)
 		}
 	}
 	ret.length = j;
+	((uint8_t *)ret.data)[j] = 0;
 
 	return ret;
 }
