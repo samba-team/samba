@@ -154,14 +154,12 @@ static int binary_net(int argc, const char **argv)
 		POPT_TABLEEND
 	};
 
-	setup_logging("net", DEBUG_STDOUT);
-
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
 #endif
 
 	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
-				POPT_CONTEXT_KEEP_FIRST);
+			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -172,9 +170,6 @@ static int binary_net(int argc, const char **argv)
 			exit(1);
 		}
 	}
-
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	load_interfaces();
 
 	argv_new = (const char **)poptGetArgs(pc);
 

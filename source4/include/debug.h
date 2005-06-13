@@ -46,7 +46,7 @@ extern int DEBUGLEVEL;
 #define DEBUGADDC(class, level, body) DEBUG(level, body)
 #define DEBUGTAB(n) do_debug_tab(n)
 
-enum debug_logtype {DEBUG_FILE, DEBUG_STDOUT, DEBUG_STDERR};
+enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
 
 /* keep some debug class defines for now to avoid changing old code too much */
 #define DBGC_AUTH 0

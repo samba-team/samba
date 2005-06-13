@@ -163,13 +163,13 @@ static int binary_smbd_main(int argc, const char *argv[])
 	int max_runtime = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
 		{"interactive", 'i', POPT_ARG_VAL, &interactive, True, 
 		 "Run interactive (not a daemon)", NULL},
 		{"model", 'M', POPT_ARG_STRING, &model, True, 
 		 "Select process model", "MODEL"},
 		{"maximum-runtime", 0, POPT_ARG_INT, &max_runtime, True, 
 		 "set maximum time for smbd to live", "seconds"},
+		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
@@ -180,14 +180,12 @@ static int binary_smbd_main(int argc, const char *argv[])
 
 	poptFreeContext(pc);
 
-	setup_logging(argv[0], interactive?DEBUG_STDOUT:DEBUG_FILE);
+	setup_logging(NULL, interactive?DEBUG_STDOUT:DEBUG_FILE);
 	setup_signals();
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);
-
-	reopen_logs();
 
 	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
 	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2005\n"));
@@ -196,11 +194,6 @@ static int binary_smbd_main(int argc, const char *argv[])
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		exit(1);
 	}
-
-	lp_load(dyn_CONFIGFILE, False, False, True);
-
-	reopen_logs();
-	load_interfaces();
 
 	if (!interactive) {
 		DEBUG(3,("Becoming a daemon.\n"));

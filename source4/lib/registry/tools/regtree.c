@@ -82,27 +82,21 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	int fullpath = 0, no_values = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_CREDENTIALS	
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
 		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL },
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
+		POPT_COMMON_SAMBA	
+		POPT_COMMON_CREDENTIALS	
 		POPT_TABLEEND
 	};
 
 	regtree_init_subsystems;
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-	}
-
-
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
-
-	setup_logging("regtree", DEBUG_STDOUT);
 
 	if (remote) {
 		error = reg_open_remote(&h, cmdline_credentials, remote);

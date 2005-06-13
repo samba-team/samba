@@ -271,8 +271,6 @@ int main(int argc,char *argv[])
 		{ 0, 0, 0, 0 }
 	};
 	
-	setup_logging(argv[0], DEBUG_STDOUT);
-
 	pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 	
@@ -287,9 +285,6 @@ int main(int argc,char *argv[])
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
-	
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	load_interfaces();
 	
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);

@@ -121,20 +121,17 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 	WERROR error, error2;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_CREDENTIALS
 		{"output", 'o', POPT_ARG_STRING, &outputfile, 'o', "output file to use", NULL },
 		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL", NULL },
 		{"remote", 'R', POPT_ARG_STRING, NULL, 0, "Connect to remote server" , NULL },
 		{"local", 'L', POPT_ARG_NONE, NULL, 0, "Open local registry", NULL },
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
 	regdiff_init_subsystems;
-
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-	}
-
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
@@ -157,7 +154,6 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 			return 1;
 		}
 	}
-	setup_logging(argv[0], DEBUG_STDOUT);
 
 	poptFreeContext(pc);
 
