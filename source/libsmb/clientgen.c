@@ -127,6 +127,21 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	return True;
 }
 
+static ssize_t write_socket(int fd, const char *buf, size_t len)
+{
+        ssize_t ret=0;
+                                                                                                                                            
+        DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
+        ret = write_data(fd,buf,len);
+                                                                                                                                            
+        DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,(int)len,(int)ret));
+        if(ret <= 0)
+                DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n",
+                        (int)len, fd, strerror(errno) ));
+                                                                                                                                            
+        return(ret);
+}
+
 /****************************************************************************
  Send an smb to a fd.
 ****************************************************************************/
