@@ -1083,3 +1083,7 @@ int vfswrap_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp
 	return sys_aio_fsync(op, aiocb);
 }
 
+int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout)
+{
+	return sys_aio_suspend(aiocb, n, timeout);
+}

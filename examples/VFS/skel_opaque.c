@@ -517,6 +517,11 @@ static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct 
 	return vfswrap_aio_fsync(NULL, fsp, op, aiocb);
 }
 
+static int skel_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
+{
+	return vfswrap_aioi_suspend(NULL, fsp, aiocb, n, ts);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] = {
@@ -627,6 +632,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_aio_cancel),			SMB_VFS_OP_AIO_CANCEL,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_aio_error),			SMB_VFS_OP_AIO_ERROR,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_aio_fsync),			SMB_VFS_OP_AIO_FSYNC,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_suspend),			SMB_VFS_OP_AIO_SUSPEND,			SMB_VFS_LAYER_OPAQUE},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };

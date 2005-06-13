@@ -198,6 +198,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_AIO_CANCEL,
 	SMB_VFS_OP_AIO_ERROR,
 	SMB_VFS_OP_AIO_FSYNC,
+	SMB_VFS_OP_AIO_SUSPEND,
 
 	/* This should always be last enum value */
 	
@@ -317,6 +318,7 @@ struct vfs_ops {
 		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_error)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
 
 	} ops;
 
@@ -428,6 +430,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *aio_cancel;
 		struct vfs_handle_struct *aio_error;
 		struct vfs_handle_struct *aio_fsync;
+		struct vfs_handle_struct *aio_suspend;
 	} handles;
 };
 

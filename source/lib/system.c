@@ -1945,6 +1945,21 @@ int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
 #endif
 }
 
+/*******************************************************************
+ An aio_fsync wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_SUSPEND64)
+        return aio_suspend64(cblist, n, timeout);
+#elif defined(HAVE_AIO_FSYNC)
+        return aio_suspend(cblist, n, timeout);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
 #else /* !WITH_AIO */
 
 int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
@@ -1978,6 +1993,12 @@ int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
 }
 
 int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout)
 {
 	errno = ENOSYS;
 	return -1;

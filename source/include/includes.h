@@ -781,6 +781,13 @@ typedef int socklen_t;
 #  endif
 #endif
 
+#ifndef HAVE_STRUCT_TIMESPEC
+struct timespec {
+	time_t tv_sec;            /* Seconds.  */
+	long tv_nsec;           /* Nanoseconds.  */
+};
+#endif
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif

@@ -153,7 +153,8 @@ static struct vfs_ops default_vfs = {
 		vfswrap_aio_return,
 		vfswrap_aio_cancel,
 		vfswrap_aio_error,
-		vfswrap_aio_fsync
+		vfswrap_aio_fsync,
+		vfswrap_aio_suspend
 	}
 };
 

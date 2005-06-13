@@ -874,6 +874,20 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
 fi
 
+AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <time.h>
+#include <aio.h>],[struct timespec ts;],
+	samba_cv_struct_timespec=yes,samba_cv_struct_timespec=no)])
+if test x"$samba_cv_struct_timespec" = x"yes"; then
+   AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
+fi
+
 # stupid headers have the functions but no declaration. grrrr.
 AC_HAVE_DECL(errno, [#include <errno.h>])
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
