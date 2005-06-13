@@ -689,12 +689,9 @@ session: none
 <smbconfoption name="cups options">Raw</smbconfoption>
 <smbconfoption name="add user script">/opt/IDEALX/sbin/smbldap-useradd -m "%u"</smbconfoption>
 <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</smbconfoption>
-<smbconfoption name="add user to group script"></smbconfoption>
-<member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</parameter></member>
-<smbconfoption name="delete user from group script"></smbconfoption>
-<member><parameter>/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</parameter></member>
-<smbconfoption name="set primary group script"></smbconfoption>
-<member><parameter>/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</parameter></member>
+<smbconfoption name="add user to group script">/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</smbconfoption>
+<smbconfoption name="delete user from group script">/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</smbconfoption>
+<smbconfoption name="set primary group script">/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</smbconfoption>
 <smbconfoption name="add machine script">/usr/local/sbin/smbldap-useradd -w "%m"</smbconfoption>
 <smbconfoption name="logon script">logon.bat</smbconfoption>
 <smbconfoption name="logon path">\\%L\profiles\%U\%a</smbconfoption>
@@ -790,8 +787,7 @@ session: none
 <smbconfsection name="[acct_hp8500]"/>
 <smbconfoption name="comment">"Accounting Color Laser Printer"</smbconfoption>
 <smbconfoption name="path">/data/samba/spool/private</smbconfoption>
-<smbconfoption name="valid users">@acct, @acct_admin, @hr, "@Domain Admins",\</smbconfoption>
-<member><parameter>@Receptionist, dwayne, terri, danae, jerry</parameter></member>
+<smbconfoption name="valid users">@acct, @acct_admin, @hr, "@Domain Admins",@Receptionist, dwayne, terri, danae, jerry</smbconfoption>
 <smbconfoption name="create mask">0644</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="copy">printers</smbconfoption>

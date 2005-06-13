@@ -963,8 +963,7 @@ hosts:      files dns wins
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
 <smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
 <smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
-<smbconfoption name="add machine script">/usr/sbin/</smbconfoption>
-<member><parameter>useradd -s /bin/false -d /var/lib/nobody '%u'</parameter></member>
+<smbconfoption name="add machine script">/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</smbconfoption>
 <smbconfoption name="preferred master">Yes</smbconfoption>
 <smbconfoption name="wins support">Yes</smbconfoption>
 <smbconfoption name="include">/etc/samba/dc-common.conf</smbconfoption>

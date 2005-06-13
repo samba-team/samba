@@ -59,13 +59,13 @@
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
 <xsl:param name="latex.documentclass">sambadoc</xsl:param>
-<xsl:param name="latex.documentclass.book">openright,twoside</xsl:param>
+<xsl:param name="latex.documentclass.book">letterpaper,openright,twoside</xsl:param>
 <xsl:param name="latex.babel.language">english</xsl:param>
 <xsl:variable name="ulink.footnotes" select="1"/>
 <xsl:variable name="ulink.show" select="0"/>
 
 <xsl:template match="smbconfblock/smbconfoption">
-	<xsl:value-of select="@name"/>
+	<xsl:text>	</xsl:text><xsl:value-of select="@name"/>
 	<xsl:if test="text() != ''">
 		<xsl:text> = </xsl:text>
 		<xsl:value-of select="text()"/>
