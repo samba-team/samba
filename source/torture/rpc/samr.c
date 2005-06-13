@@ -2486,8 +2486,6 @@ static BOOL test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
 	BOOL ret = True;
-	uint16_t levels[] = {1, 2, 3, 4, 5};
-	int i;
 
 	printf("Testing QueryDisplayInfo continuation\n");
 
@@ -2516,8 +2514,8 @@ static BOOL test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 			break;
 		}
 		r.in.start_idx++;
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
-		 NT_STATUS_IS_OK(status) &&
+	} while ((NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
+		  NT_STATUS_IS_OK(status)) &&
 		 r.out.returned_size != 0);
 	
 	return ret;	
