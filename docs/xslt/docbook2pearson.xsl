@@ -10,8 +10,6 @@
 	exclude-result-prefixes="doc"
 	version="1.1">
 
-	<xsl:import href="../settings.xsl"/>
-
 	<!-- TODO <entry></entry> -> <entry><p/></entry> -->
 
 	<xsl:output method="xml"

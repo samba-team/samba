@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'>
-<xsl:import href="../settings.xsl"/>
 <xsl:import href="http://db2latex.sourceforge.net/xsl/docbook.xsl"/>
 <xsl:import href="strip-references.xsl"/>
 
@@ -62,6 +61,8 @@
 <xsl:param name="latex.documentclass">sambadoc</xsl:param>
 <xsl:param name="latex.documentclass.book">openright,twoside</xsl:param>
 <xsl:param name="latex.babel.language">english</xsl:param>
+<xsl:variable name="ulink.footnotes" select="1"/>
+<xsl:variable name="ulink.show" select="0"/>
 
 <xsl:template match="smbconfblock/smbconfoption">
 	<xsl:value-of select="@name"/>
@@ -85,13 +86,17 @@
 
 <xsl:template match="smbconfoption">
 	<xsl:text>\smbconfoption{</xsl:text>
-	<xsl:value-of select="@name"/>
+	<xsl:call-template name="scape">
+		<xsl:with-param name="string" select="@name"/>
+	</xsl:call-template>
 	<xsl:text>}</xsl:text>
 
 	<xsl:choose>
 		<xsl:when test="text() != ''">
 			<xsl:text> = </xsl:text>
-			<xsl:value-of select="text()"/>
+			<xsl:call-template name="scape">
+				<xsl:with-param name="string" select="text()"/>
+			</xsl:call-template>
 		</xsl:when>
 	</xsl:choose>
 </xsl:template>
@@ -104,7 +109,9 @@
 
 <xsl:template match="smbconfsection">
 	<xsl:text>\smbconfsection{</xsl:text>
-		<xsl:value-of select="translate(@name, '$','x')"/>
+	<xsl:call-template name="scape">
+		<xsl:with-param name="string" select="@name"/>
+	</xsl:call-template>
 	<xsl:text>}</xsl:text>
 </xsl:template>
 
