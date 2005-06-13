@@ -315,6 +315,87 @@ static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_get_info(struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	uint32 info_level = 502;
+	SRV_SHARE_INFO info;
+	WERROR result;
+
+	if (argc > 3) {
+		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc == 3)
+		info_level = atoi(argv[2]);
+
+	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Display results */
+
+	switch (info_level) {
+	case 1:
+		display_share_info_1(&info.share.info1);
+		break;
+	case 2:
+		display_share_info_2(&info.share.info2);
+		break;
+	case 502:
+		display_share_info_502(&info.share.info502);
+		break;
+	default:
+		printf("unsupported info level %d\n", info_level);
+		break;
+	}
+
+ done:
+	return result;
+}
+
+static WERROR cmd_srvsvc_net_share_set_info(struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	uint32 info_level = 502;
+	SRV_SHARE_INFO info_get;
+	WERROR result;
+
+	if (argc > 3) {
+		printf("Usage: %s [sharename] [comment]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	/* retrieve share info */
+	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	info_get.switch_value = info_level;
+	info_get.ptr_share_ctr = 1;
+	init_unistr2(&(info_get.share.info502.info_502_str.uni_remark), argv[2], UNI_STR_TERMINATE);
+	
+	/* set share info */
+	result = cli_srvsvc_net_share_set_info(cli, mem_ctx, argv[1], info_level, &info_get);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* re-retrieve share info and display */
+	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	display_share_info_502(&info_get.share.info502);
+	
+ done:
+	return result;
+}
+
 static WERROR cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
@@ -377,6 +458,8 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, "Server query info", "" },
 	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, "Enumerate shares", "" },
+	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, PI_SRVSVC, "Get Share Info", "" },
+	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, "Set Share Info", "" },
 	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, "Enumerate open files", "" },
 	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, "Fetch remote time of day", "" },
 
