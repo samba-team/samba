@@ -2558,8 +2558,6 @@ static void max_runtime_handler(int sig)
 		POPT_TABLEEND
 	};
 
-	setup_logging("smbtorture", DEBUG_STDOUT);
-
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
 #endif
@@ -2603,9 +2601,6 @@ static void max_runtime_handler(int sig)
 		signal(SIGALRM, max_runtime_handler);
 		alarm(max_runtime);
 	}
-
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	load_interfaces();
 
 	smbtorture_init_subsystems;
 

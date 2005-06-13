@@ -749,24 +749,18 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		POPT_COMMON_CREDENTIALS
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
 	};
 
 	regpatch_init_subsystems;
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
-	}
-
-
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
-
-	setup_logging(argv[0], DEBUG_STDOUT);
 
 	if (remote) {
 		error = reg_open_remote (&h, cmdline_credentials, remote);

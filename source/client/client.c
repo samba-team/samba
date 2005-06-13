@@ -3361,18 +3361,12 @@ static void remember_query_host(const char *arg,
 	*query_host = 0;
 	*base_directory = 0;
 
-	setup_logging(argv[0],DEBUG_STDOUT);
 	mem_ctx = talloc_init("client.c/main");
 	if (!mem_ctx) {
 		d_printf("\nclient.c: Not enough memory\n");
 		exit(1);
 	}
 
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-	}
-	
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
@@ -3393,10 +3387,6 @@ static void remember_query_host(const char *arg,
 		case 'I':
 			dest_ip = poptGetOptArg(pc);
 			break;
-		case 'E':
-			setup_logging("client", DEBUG_STDERR);
-			break;
-
 		case 'L':
 			remember_query_host(poptGetOptArg(pc), query_host);
 			break;
@@ -3411,8 +3401,6 @@ static void remember_query_host(const char *arg,
 			break;
 		}
 	}
-
-	load_interfaces();
 
 	smbclient_init_subsystems;
 
