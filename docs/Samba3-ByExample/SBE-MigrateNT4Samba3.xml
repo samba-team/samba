@@ -416,14 +416,10 @@
         <smbconfoption name="#delete user script">/opt/IDEALX/sbin/smbldap-userdel '%u'</smbconfoption>
         <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd '%g'</smbconfoption>
         <smbconfoption name="#delete group script">/opt/IDEALX/sbin/smbldap-groupdel '%g'</smbconfoption>
-        <smbconfoption name="add user to group script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-groupmod -m '%u' '%g'</parameter></member>
-        <smbconfoption name="#delete user from group script">/opt/IDEALX/</smbconfoption>
-<member><parameter>sbin/smbldap-groupmod -x '%u' '%g'</parameter></member>
-        <smbconfoption name="set primary group script">/opt/IDEALX/</smbconfoption>
-<member><parameter>sbin/smbldap-usermod -g '%g' '%u'</parameter></member>
-        <smbconfoption name="add machine script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-useradd -w '%u'</parameter></member>
+		<smbconfoption name="add user to group script">/opt/IDEALX/sbin/ smbldap-groupmod -m '%u' '%g'</smbconfoption>
+		<smbconfoption name="#delete user from group script">/opt/IDEALX/sbin/smbldap-groupmod -x '%u' '%g'</smbconfoption>
+		<smbconfoption name="set primary group script">/opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'</smbconfoption>
+		<smbconfoption name="add machine script">/opt/IDEALX/sbin/smbldap-useradd -w '%u'</smbconfoption>
         <smbconfoption name="logon script">scripts\logon.cmd</smbconfoption>
         <smbconfoption name="logon path">\\%L\profiles\%U</smbconfoption>
         <smbconfoption name="logon home">\\%L\%U</smbconfoption>

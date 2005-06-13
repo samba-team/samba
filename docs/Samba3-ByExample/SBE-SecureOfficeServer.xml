@@ -816,8 +816,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
 <smbconfoption name="pam password change">Yes</smbconfoption>
 <smbconfoption name="passwd program">/usr/bin/passwd %u</smbconfoption>
-<smbconfoption name="passwd chat"> </smbconfoption>
-<member><parameter>*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</parameter></member>
+<smbconfoption name="passwd chat">*New*Password* %n\n *Re-enter*new*password*%n\n *Password*changed*</smbconfoption>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="unix password sync">Yes</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>

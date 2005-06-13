@@ -1070,14 +1070,10 @@ index default               sub
 <smbconfoption name="delete user script">/opt/IDEALX/sbin/smbldap-userdel '%u'</smbconfoption>
 <smbconfoption name="add group script">/opt/IDEALX/sbin/smbldap-groupadd -p '%g'</smbconfoption>
 <smbconfoption name="delete group script">/opt/IDEALX/sbin/smbldap-groupdel '%g'</smbconfoption>
-<smbconfoption name="add user to group script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-groupmod -m '%g' '%u'</parameter></member>
-<smbconfoption name="delete user from group script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-groupmod -x '%g' '%u'</parameter></member>
-<smbconfoption name="set primary group script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-usermod -g '%g' '%u'</parameter></member>
-<smbconfoption name="add machine script">/opt/IDEALX/sbin/</smbconfoption>
-<member><parameter>smbldap-useradd -w '%u'</parameter></member>
+<smbconfoption name="add user to group script">/opt/IDEALX/sbin/smbldap-groupmod -m '%g' '%u'</smbconfoption>
+<smbconfoption name="delete user from group script">/opt/IDEALX/sbin/smbldap-groupmod -x '%g' '%u'</smbconfoption>
+<smbconfoption name="set primary group script">/opt/IDEALX/sbin/smbldap-usermod -g '%g' '%u'</smbconfoption>
+<smbconfoption name="add machine script">/opt/IDEALX/sbin/smbldap-useradd -w '%u'</smbconfoption>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
 <smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
 <smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
