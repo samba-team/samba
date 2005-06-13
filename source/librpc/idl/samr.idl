@@ -78,8 +78,8 @@
 	/******************/
 	/* Function: 0x05 */
 	typedef struct {
-		[value(2*strlen_m(r->string))] uint16 length;
-		[value(r->length)] uint16 size;
+		[value(2*strlen_m(string))] uint16 length;
+		[value(length)] uint16 size;
 		unistr_noterm *string;
 	} samr_String;	
 
@@ -860,8 +860,8 @@
 	} samr_DispInfoFull;
 
 	typedef struct {
-		[value(strlen_m(r->string))] uint16 length;
-		[value(strlen_m(r->string))] uint16 size;
+		[value(strlen_m(string))] uint16 length;
+		[value(strlen_m(string))] uint16 size;
 		ascstr_noterm *string;
 	} samr_AsciiName;	
 

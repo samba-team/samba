@@ -130,6 +130,7 @@ my %property_list = (
 	# array
 	"range"			=> ["ELEMENT"],
 	"size_is"		=> ["ELEMENT"],
+	"string"        => ["ELEMENT"],
 	"length_is"		=> ["ELEMENT"],
 );
 

@@ -3,10 +3,10 @@
  [string] attribute. Pidl itself would support a couple of extra 
  attributes for it's own use while being compatible with other IDL 
  compilers. 
- Proposed extensions for pidl:
+ Proposed extensions for pidl (to arrays):
    [convert(t)] attribute for forcing conversions from CH_UCS2, etc to UTF8
-   [noterm] attribute
-   [nullterm] attribute
+   [noterm] attribute -> Indicating there is no terminating character
+   [nullterm] attribute -> Indicating the string is null terminated
 
 The various flags for strings would change as follows:
  
@@ -16,7 +16,7 @@ LIBNDR_FLAG_STR_SIZE4	            -> [size_is()] or if needed [conformant]
 LIBNDR_FLAG_STR_NOTERM	            -> [noterm]
 LIBNDR_FLAG_STR_NULLTERM            -> [nullterm]
 LIBNDR_FLAG_STR_SIZE2	            -> uint16 length; [string] char data[length]
-LIBNDR_FLAG_STR_BYTESIZE            -> ???
+LIBNDR_FLAG_STR_BYTESIZE            -> uint16 length; [string] char data[length]
 LIBNDR_FLAG_STR_FIXLEN32            -> [32]
 LIBNDR_FLAG_STR_CONFORMANT          -> no longer needed
 LIBNDR_FLAG_STR_CHARLEN	            -> ???
