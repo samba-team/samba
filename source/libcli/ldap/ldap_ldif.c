@@ -104,7 +104,7 @@ static char *next_chunk(TALLOC_CTX *mem_ctx,
 }
 
 /* simple ldif attribute parser */
-static int next_attr(char **s, const char **attr, struct ldap_val *value)
+static int next_attr(char **s, const char **attr, struct ldb_val *value)
 {
 	char *p;
 	int base64_encoded = 0;
@@ -157,7 +157,7 @@ static int next_attr(char **s, const char **attr, struct ldap_val *value)
 	return 0;
 }
 
-BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
+BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 			 struct ldap_attribute *attrib)
 {
 	attrib->values = talloc_realloc(mem_ctx, 
@@ -195,7 +195,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 {
 	struct ldap_AddRequest *r = &msg->r.AddRequest;
 	const char *attr_name;
-	struct ldap_val value;
+	struct ldb_val value;
 
 	r->num_attributes = 0;
 	r->attributes = NULL;
@@ -251,7 +251,7 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 {
 	struct ldap_ModifyRequest *r = &msg->r.ModifyRequest;
 	const char *attr_name;
-	struct ldap_val value;
+	struct ldb_val value;
 
 	r->num_mods = 0;
 	r->mods = NULL;
@@ -309,7 +309,7 @@ static BOOL fill_modrdn(struct ldap_message *msg, char **chunk)
 {
 	struct ldap_ModifyDNRequest *r = &msg->r.ModifyDNRequest;
 	const char *attr_name;
-	struct ldap_val value;
+	struct ldb_val value;
 
 	r->newrdn	= NULL;
 	r->deleteolddn	= False;
@@ -362,7 +362,7 @@ static struct ldap_message *ldif_read(TALLOC_CTX *mem_ctx, int (*fgetc_fn)(void 
 	const char *attr=NULL;
 	const char *dn;
 	char *chunk=NULL, *s;
-	struct ldap_val value;
+	struct ldb_val value;
 
 	value.data = NULL;
 

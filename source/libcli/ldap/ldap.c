@@ -28,350 +28,11 @@
 #include "asn_1.h"
 #include "libcli/ldap/ldap.h"
 
-/****************************************************************************
- *
- * LDAP filter parser -- main routine is ldap_parse_filter
- *
- * Shamelessly stolen and adapted from ldb.
- *
- ***************************************************************************/
 
-/*
-  return next token element. Caller frees
-*/
-static char *ldap_parse_lex(TALLOC_CTX *mem_ctx, const char **s,
-			   const char *sep)
-{
-	const char *p = *s;
-	char *ret;
-
-	while (isspace(*p)) {
-		p++;
-	}
-	*s = p;
-
-	if (*p == 0) {
-		return NULL;
-	}
-
-	if (strchr(sep, *p)) {
-		(*s) = p+1;
-		ret = talloc_strndup(mem_ctx, p, 1);
-		if (!ret) {
-			errno = ENOMEM;
-		}
-		return ret;
-	}
-
-	while (*p && (isalnum(*p) || !strchr(sep, *p))) {
-		p++;
-	}
-
-	if (p == *s) {
-		return NULL;
-	}
-
-	ret = talloc_strndup(mem_ctx, *s, p - *s);
-	if (!ret) {
-		errno = ENOMEM;
-	}
-
-	*s = p;
-
-	return ret;
-}
-
-
-/*
-  find a matching close brace in a string
-*/
-static const char *match_brace(const char *s)
-{
-	unsigned int count = 0;
-	while (*s && (count != 0 || *s != ')')) {
-		if (*s == '(') {
-			count++;
-		}
-		if (*s == ')') {
-			count--;
-		}
-		s++;
-	}
-	if (! *s) {
-		return NULL;
-	}
-	return s;
-}
-
-static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
-					       const char **s);
-
-/*
-   decode a RFC2254 binary string representation of a buffer.
-   Used in LDAP filters.
-*/
-struct ldap_val ldap_binary_decode(TALLOC_CTX *mem_ctx, const char *str)
-{
-	int i, j;
-	struct ldap_val ret;
-	int slen = strlen(str);
-
-	ret.data = talloc_size(mem_ctx, slen);
-	ret.length = 0;
-	if (ret.data == NULL) return ret;
-
-	for (i=j=0;i<slen;i++) {
-		if (str[i] == '\\') {
-			unsigned c;
-			if (sscanf(&str[i+1], "%02X", &c) != 1) {
-				talloc_free(ret.data);
-				ZERO_STRUCT(ret);
-				return ret;
-			}
-			((uint8_t *)ret.data)[j++] = c;
-			i += 2;
-		} else {
-			((uint8_t *)ret.data)[j++] = str[i];
-		}
-	}
-	ret.length = j;
-
-	return ret;
-}
-
-
-/*
-   encode a blob as a RFC2254 binary string, escaping any
-   non-printable or '\' characters
-*/
-const char *ldap_binary_encode(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
-{
-	int i;
-	char *ret;
-	int len = blob.length;
-	for (i=0;i<blob.length;i++) {
-		if (!isprint(blob.data[i]) || strchr(" *()\\&|!", blob.data[i])) {
-			len += 2;
-		}
-	}
-	ret = talloc_array(mem_ctx, char, len+1);
-	if (ret == NULL) return NULL;
-
-	len = 0;
-	for (i=0;i<blob.length;i++) {
-		if (!isprint(blob.data[i]) || strchr(" *()\\&|!", blob.data[i])) {
-			snprintf(ret+len, 4, "\\%02X", blob.data[i]);
-			len += 3;
-		} else {
-			ret[len++] = blob.data[i];
-		}
-	}
-
-	ret[len] = 0;
-
-	return ret;	
-}
-
-
-/*
-  <simple> ::= <attributetype> <filtertype> <attributevalue>
-*/
-static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
-					       const char *s)
-{
-	char *eq, *val, *l;
-	struct ldap_parse_tree *ret;
-
-	l = ldap_parse_lex(mem_ctx, &s, LDAP_ALL_SEP);
-	if (!l) {
-		return NULL;
-	}
-
-	if (strchr("()&|=", *l))
-		return NULL;
-
-	eq = ldap_parse_lex(mem_ctx, &s, LDAP_ALL_SEP);
-	if (!eq || strcmp(eq, "=") != 0)
-		return NULL;
-
-	val = ldap_parse_lex(mem_ctx, &s, ")");
-	if (val && strchr("()&|", *val))
-		return NULL;
-	
-	ret = talloc(mem_ctx, struct ldap_parse_tree);
-	if (!ret) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret->operation = LDAP_OP_SIMPLE;
-	ret->u.simple.attr = l;
-	ret->u.simple.value = ldap_binary_decode(ret, val);
-
-	return ret;
-}
-
-
-/*
-  parse a filterlist
-  <and> ::= '&' <filterlist>
-  <or> ::= '|' <filterlist>
-  <filterlist> ::= <filter> | <filter> <filterlist>
-*/
-static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
-						   enum ldap_parse_op op,
-						   const char *s)
-{
-	struct ldap_parse_tree *ret, *next;
-
-	ret = talloc(mem_ctx, struct ldap_parse_tree);
-	if (!ret) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret->operation = op;
-	ret->u.list.num_elements = 1;
-	ret->u.list.elements = talloc(mem_ctx, struct ldap_parse_tree *);
-	if (!ret->u.list.elements) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret->u.list.elements[0] = ldap_parse_filter(mem_ctx, &s);
-	if (!ret->u.list.elements[0]) {
-		return NULL;
-	}
-
-	while (isspace(*s)) s++;
-
-	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
-		struct ldap_parse_tree **e;
-		e = talloc_realloc(ret,
-				     ret->u.list.elements,
-				     struct ldap_parse_tree *,
-				     ret->u.list.num_elements+1);
-		if (!e) {
-			errno = ENOMEM;
-			return NULL;
-		}
-		ret->u.list.elements = e;
-		ret->u.list.elements[ret->u.list.num_elements] = next;
-		ret->u.list.num_elements++;
-		while (isspace(*s)) s++;
-	}
-
-	return ret;
-}
-
-
-/*
-  <not> ::= '!' <filter>
-*/
-static struct ldap_parse_tree *ldap_parse_not(TALLOC_CTX *mem_ctx, const char *s)
-{
-	struct ldap_parse_tree *ret;
-
-	ret = talloc(mem_ctx, struct ldap_parse_tree);
-	if (!ret) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret->operation = LDAP_OP_NOT;
-	ret->u.not.child = ldap_parse_filter(mem_ctx, &s);
-	if (!ret->u.not.child)
-		return NULL;
-
-	return ret;
-}
-
-/*
-  parse a filtercomp
-  <filtercomp> ::= <and> | <or> | <not> | <simple>
-*/
-static struct ldap_parse_tree *ldap_parse_filtercomp(TALLOC_CTX *mem_ctx,
-						   const char *s)
-{
-	while (isspace(*s)) s++;
-
-	switch (*s) {
-	case '&':
-		return ldap_parse_filterlist(mem_ctx, LDAP_OP_AND, s+1);
-
-	case '|':
-		return ldap_parse_filterlist(mem_ctx, LDAP_OP_OR, s+1);
-
-	case '!':
-		return ldap_parse_not(mem_ctx, s+1);
-
-	case '(':
-	case ')':
-		return NULL;
-	}
-
-	return ldap_parse_simple(mem_ctx, s);
-}
-
-
-/*
-  <filter> ::= '(' <filtercomp> ')'
-*/
-static struct ldap_parse_tree *ldap_parse_filter(TALLOC_CTX *mem_ctx,
-						 const char **s)
-{
-	char *l, *s2;
-	const char *p, *p2;
-	struct ldap_parse_tree *ret;
-
-	l = ldap_parse_lex(mem_ctx, s, LDAP_ALL_SEP);
-	if (!l) {
-		return NULL;
-	}
-
-	if (strcmp(l, "(") != 0) {
-		return NULL;
-	}
-
-	p = match_brace(*s);
-	if (!p) {
-		return NULL;
-	}
-	p2 = p + 1;
-
-	s2 = talloc_strndup(mem_ctx, *s, p - *s);
-	if (!s2) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret = ldap_parse_filtercomp(mem_ctx, s2);
-
-	*s = p2;
-
-	return ret;
-}
-
-/*
-  main parser entry point. Takes a search string and returns a parse tree
-
-  expression ::= <simple> | <filter>
-*/
-static struct ldap_parse_tree *ldap_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
-{
-	while (isspace(*s)) s++;
-
-	if (*s == '(') {
-		return ldap_parse_filter(mem_ctx, &s);
-	}
-
-	return ldap_parse_simple(mem_ctx, s);
-}
-
-static BOOL ldap_push_filter(struct asn1_data *data, struct ldap_parse_tree *tree)
+static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
 {
 	switch (tree->operation) {
-	case LDAP_OP_SIMPLE: {
+	case LDB_OP_SIMPLE: {
 		if ((tree->u.simple.value.length == 1) &&
 		    (((char *)(tree->u.simple.value.data))[0] == '*')) {
 			/* Just a presence test */
@@ -392,7 +53,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldap_parse_tree *tre
 		break;
 	}
 
-	case LDAP_OP_AND: {
+	case LDB_OP_AND: {
 		int i;
 
 		asn1_push_tag(data, 0xa0);
@@ -403,7 +64,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldap_parse_tree *tre
 		break;
 	}
 
-	case LDAP_OP_OR: {
+	case LDB_OP_OR: {
 		int i;
 
 		asn1_push_tag(data, 0xa1);
@@ -481,9 +142,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		struct ldap_BindResponse *r = &msg->r.BindResponse;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		ldap_encode_response(&data, &r->response);
-		if (r->SASL.secblob.length > 0) {
-			asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
-		}
+		asn1_write_ContextSimple(&data, 7, &r->SASL.secblob);
 		asn1_pop_tag(&data);
 		break;
 	}
@@ -493,6 +152,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_SearchRequest: {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
+		struct ldb_parse_tree *tree;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->basedn, strlen(r->basedn));
 		asn1_write_enumerated(&data, r->scope);
@@ -501,22 +161,14 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_Integer(&data, r->timelimit);
 		asn1_write_BOOLEAN(&data, r->attributesonly);
 
-		{
-			TALLOC_CTX *mem_ctx = talloc_init("ldap_parse_tree");
-			struct ldap_parse_tree *tree;
+		tree = ldb_parse_tree(NULL, r->filter);
 
-			if (mem_ctx == NULL)
-				return False;
+		if (tree == NULL)
+			return False;
 
-			tree = ldap_parse_tree(mem_ctx, r->filter);
+		ldap_push_filter(&data, tree);
 
-			if (tree == NULL)
-				return False;
-
-			ldap_push_filter(&data, tree);
-
-			talloc_free(mem_ctx);
-		}
+		talloc_free(tree);
 
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		for (i=0; i<r->num_attributes; i++) {
@@ -830,6 +482,8 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		/* equalityMatch */
 		const char *attrib;
 		DATA_BLOB value;
+		struct ldb_val val;
+
 		if (tag_desc != 0xa0) /* context compound */
 			return False;
 		asn1_start_tag(data, ASN1_CONTEXT(3));
@@ -838,8 +492,10 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		asn1_end_tag(data);
 		if ((data->has_error) || (attrib == NULL) || (value.data == NULL))
 			return False;
+		val.data = value.data;
+		val.length = value.length;
 		filter = talloc_asprintf(mem_ctx, "(%s=%s)", 
-					 attrib, ldap_binary_encode(mem_ctx, value));
+					 attrib, ldb_binary_encode(mem_ctx, val));
 		data_blob_free(&value);
 		break;
 	}
@@ -881,7 +537,7 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 	asn1_start_tag(data, ASN1_SET);
 	while (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
 		DATA_BLOB blob;
-		struct ldap_val value;
+		struct ldb_val value;
 		asn1_read_OctetString(data, &blob);
 		value.data = blob.data;
 		value.length = blob.length;
@@ -1333,18 +989,4 @@ BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
 
 	return (*host != NULL);
 }
-
-
-
-/* 
-   externally callable version of filter string parsing - used in the
-   cldap server
-*/
-struct ldap_parse_tree *ldap_parse_filter_string(TALLOC_CTX *mem_ctx,
-						 const char *s)
-{
-	return ldap_parse_filter(mem_ctx, &s);
-}
-
-
 

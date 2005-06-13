@@ -181,7 +181,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			     const char *src_address, int src_port)
 {
 	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private, struct cldapd_server);
-	struct ldap_parse_tree *tree;
+	struct ldb_parse_tree *tree;
 	int i;
 	const char *domain = NULL;
 	const char *host = NULL;
@@ -197,15 +197,15 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 
 	DEBUG(5,("cldap filter='%s'\n", filter));
 
-	tree = ldap_parse_filter_string(tmp_ctx, filter);
+	tree = ldb_parse_tree(tmp_ctx, filter);
 	if (tree == NULL) goto failed;
 
-	if (tree->operation != LDAP_OP_AND) goto failed;
+	if (tree->operation != LDB_OP_AND) goto failed;
 
 	/* extract the query elements */
 	for (i=0;i<tree->u.list.num_elements;i++) {
-		struct ldap_parse_tree *t = tree->u.list.elements[i];
-		if (t->operation != LDAP_OP_SIMPLE) goto failed;
+		struct ldb_parse_tree *t = tree->u.list.elements[i];
+		if (t->operation != LDB_OP_SIMPLE) goto failed;
 		if (strcasecmp(t->u.simple.attr, "DnsDomain") == 0) {
 			domain = talloc_strndup(tmp_ctx, 
 						t->u.simple.value.data,
