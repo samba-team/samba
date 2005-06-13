@@ -157,6 +157,7 @@ struct netr_LMSessionKey;
 struct ldb_val;
 struct ldb_message;
 struct ldb_context;
+struct ldb_parse_tree;
 
 struct dom_sid;
 struct security_token;

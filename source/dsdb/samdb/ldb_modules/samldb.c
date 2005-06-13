@@ -51,6 +51,14 @@ static int samldb_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
+static int samldb_search_bytree(struct ldb_module *module, const char *base,
+				enum ldb_scope scope, struct ldb_parse_tree *tree,
+				const char * const *attrs, struct ldb_message ***res)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search\n");
+	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
+}
+
 /*
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
@@ -599,15 +607,16 @@ static int samldb_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops samldb_ops = {
-	"samldb",
-	samldb_search,
-	samldb_add_record,
-	samldb_modify_record,
-	samldb_delete_record,
-	samldb_rename_record,
-	samldb_lock,
-	samldb_unlock,
-	samldb_errstring
+	.name          = "samldb",
+	.search        = samldb_search,
+	.search_bytree = samldb_search_bytree,
+	.add_record    = samldb_add_record,
+	.modify_record = samldb_modify_record,
+	.delete_record = samldb_delete_record,
+	.rename_record = samldb_rename_record,
+	.named_lock    = samldb_lock,
+	.named_unlock  = samldb_unlock,
+	.errstring     = samldb_errstring
 };
 
 

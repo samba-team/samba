@@ -95,8 +95,7 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 /*
   duplicate a ldb_val structure
 */
-struct ldb_val ldb_val_dup(TALLOC_CTX *mem_ctx, 
-			   const struct ldb_val *v)
+struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 {
 	struct ldb_val v2;
 	v2.length = v->length;

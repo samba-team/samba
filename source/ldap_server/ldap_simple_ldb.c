@@ -62,7 +62,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	VALID_DN_SYNTAX(basedn,0);
 
 	DEBUG(10, ("sldb_Search: basedn: [%s]\n", basedn->dn));
-	DEBUG(10, ("sldb_Search: filter: [%s]\n", r->filter));
+	DEBUG(10, ("sldb_Search: filter: [%s]\n", ldb_filter_from_tree(call, r->tree)));
 
 	switch (r->scope) {
 		case LDAP_SEARCH_SCOPE_BASE:
@@ -90,7 +90,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	count = ldb_search(samdb, basedn->dn, scope, r->filter, attrs, &res);
+	count = ldb_search_bytree(samdb, basedn->dn, scope, r->tree, attrs, &res);
 	talloc_steal(samdb, res);
 
 	for (i=0; i < count; i++) {

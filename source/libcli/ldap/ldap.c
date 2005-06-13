@@ -152,7 +152,6 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 	case LDAP_TAG_SearchRequest: {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
-		struct ldb_parse_tree *tree;
 		asn1_push_tag(&data, ASN1_APPLICATION(msg->type));
 		asn1_write_OctetString(&data, r->basedn, strlen(r->basedn));
 		asn1_write_enumerated(&data, r->scope);
@@ -161,14 +160,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_Integer(&data, r->timelimit);
 		asn1_write_BOOLEAN(&data, r->attributesonly);
 
-		tree = ldb_parse_tree(NULL, r->filter);
-
-		if (tree == NULL)
-			return False;
-
-		ldap_push_filter(&data, tree);
-
-		talloc_free(tree);
+		ldap_push_filter(&data, r->tree);
 
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		for (i=0; i<r->num_attributes; i++) {
@@ -176,7 +168,6 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 					       strlen(r->attributes[i]));
 		}
 		asn1_pop_tag(&data);
-
 		asn1_pop_tag(&data);
 		break;
 	}
@@ -413,6 +404,10 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	}
 }
 
+
+/*
+  parse the ASN.1 formatted search string into a ldb_parse_tree
+*/
 static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx, 
 						      struct asn1_data *data)
 {
@@ -540,25 +535,6 @@ failed:
 }
 
 
-static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-			       const char **filterp)
-{
-	struct ldb_parse_tree *tree;
-
-	tree = ldap_decode_filter_tree(mem_ctx, data);
-	if (tree == NULL) {
-		return False;
-	}
-	*filterp = ldb_filter_from_tree(mem_ctx, tree);
-	talloc_free(tree);
-	if (*filterp == NULL) {
-		return False;
-	}
-	return True;
-}
-
-
-
 static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       struct ldap_attribute *attrib)
 {
@@ -674,9 +650,10 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		asn1_read_Integer(data, &r->timelimit);
 		asn1_read_BOOLEAN(data, &r->attributesonly);
 
-		/* Maybe create a TALLOC_CTX for the filter? This can waste
-		 * quite a bit of memory recursing down. */
-		ldap_decode_filter(msg->mem_ctx, data, &r->filter);
+		r->tree = ldap_decode_filter_tree(msg->mem_ctx, data);
+		if (r->tree == NULL) {
+			return False;
+		}
 
 		asn1_start_tag(data, ASN1_SEQUENCE(0));
 

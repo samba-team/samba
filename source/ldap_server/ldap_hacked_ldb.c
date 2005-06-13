@@ -99,7 +99,7 @@ static NTSTATUS convert_values(TALLOC_CTX *mem_ctx,
 
 	if (strcasecmp(attrs->name, "ncname") == 0)
 	{
-		char *filter = talloc_strdup(mem_ctx, r->filter);
+		char *filter = ldb_filter_from_tree(mem_ctx, r->tree);
 		struct ldb_message **res = NULL;
 		int count;
 		const char *dom_dn;
@@ -333,8 +333,8 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 		attrs[j] = NULL;
 	}
 DEBUG(0,("hacked basedn: %s\n", basedn_str));
-DEBUGADD(0,("hacked filter: %s\n", r->filter));
-	count = ldb_search(samdb, basedn_str, scope, r->filter, attrs, &res);
+DEBUGADD(0,("hacked filter: %s\n", ldb_filter_from_tree(r, r->tree)));
+	count = ldb_search_bytree(samdb, basedn_str, scope, r->tree, attrs, &res);
 	talloc_steal(samdb, res);
 
 	if (count < 1) {

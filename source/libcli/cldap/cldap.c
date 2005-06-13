@@ -328,7 +328,10 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 	search->attributesonly = False;
 	search->num_attributes = str_list_length(io->in.attributes);
 	search->attributes     = io->in.attributes;
-	search->filter         = io->in.filter;
+	search->tree           = ldb_parse_tree(req, io->in.filter);
+	if (search->tree == NULL) {
+		goto failed;
+	}
 
 	if (!ldap_encode(&msg, &req->encoded)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",

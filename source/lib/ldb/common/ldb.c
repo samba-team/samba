@@ -101,6 +101,23 @@ int ldb_search(struct ldb_context *ldb,
 }
 
 /*
+  search the database given a LDAP-like search expression
+
+  return the number of records found, or -1 on error
+
+  Use talloc_free to free the ldb_message returned in 'res'
+
+*/
+int ldb_search_bytree(struct ldb_context *ldb, 
+		      const char *base,
+		      enum ldb_scope scope,
+		      struct ldb_parse_tree *tree,
+		      const char * const *attrs, struct ldb_message ***res)
+{
+	return ldb->modules->ops->search_bytree(ldb->modules, base, scope, tree, attrs, res);
+}
+
+/*
   add a record to the database. Will fail if a record with the given class and key
   already exists
 */
