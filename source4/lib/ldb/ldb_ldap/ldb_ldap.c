@@ -483,6 +483,8 @@ struct ldb_context *lldb_connect(const char *url,
 		goto failed;
 	}
 
+	ldb->debug_ops.debug = NULL;
+
 	lldb = talloc(ldb, struct lldb_private);
 	if (!lldb) {
 		errno = ENOMEM;
