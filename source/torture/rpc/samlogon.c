@@ -1377,6 +1377,7 @@ BOOL torture_rpc_samlogon(void)
 		goto failed;
 	}
 
+	/* Try all the tests for different username forms */
 	for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
 		
 		if (!test_InteractiveLogon(p, mem_ctx, creds,
@@ -1397,25 +1398,25 @@ BOOL torture_rpc_samlogon(void)
 		}
 	}
 
+	/* Using the first username form, try the different
+	 * credentials flag setups, on only one of the tests (checks
+	 * session key encryption) */
+
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
+		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   usercreds[0].domain,
+					   usercreds[0].username,
+					   usercreds[0].password)) {
+			ret = False;
+		}
 		
-		for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
-			
-			if (!test_InteractiveLogon(p, mem_ctx, creds,
-						   usercreds[ci].domain,
-						   usercreds[ci].username,
-						   usercreds[ci].password)) {
+		if (usercreds[ci].network_login) {
+			if (!test_SamLogon(p, mem_ctx, creds, 
+					   usercreds[0].domain,
+					   usercreds[0].username,
+					   usercreds[0].password,
+					   1)) {
 				ret = False;
-			}
-			
-			if (usercreds[ci].network_login) {
-				if (!test_SamLogon(p, mem_ctx, creds, 
-						   usercreds[ci].domain,
-						   usercreds[ci].username,
-						   usercreds[ci].password,
-						   1)) {
-					ret = False;
-				}
 			}
 		}
 	}
