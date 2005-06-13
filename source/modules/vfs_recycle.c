@@ -222,7 +222,7 @@ static SMB_OFF_T recycle_get_file_size(vfs_handle_struct *handle, const char *fn
  **/
 static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 {
-	int len;
+	size_t len;
 	mode_t mode;
 	char *new_dir = NULL;
 	char *tmp_str = NULL;
@@ -240,6 +240,10 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	new_dir = (char *)SMB_MALLOC(len + 1);
 	ALLOC_CHECK(new_dir, done);
 	*new_dir = '\0';
+	if (dname[0] == '/') {
+		/* Absolute path. */
+		safe_strcat(new_dir,"/",len);
+	}
 
 	/* Create directory tree if neccessary */
 	for(token = strtok(tok_str, "/"); token; token = strtok(NULL, "/")) {
@@ -353,7 +357,8 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	repository = alloc_sub_conn(conn, recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
-	trim_char(repository, '/', '/');
+	/* Yes :-). JRA. */
+	trim_char(repository, '\0', '/');
 	
 	if(!repository || *(repository) == '\0') {
 		DEBUG(3, ("recycle: repository path not set, purging %s...\n", file_name));
@@ -379,7 +384,7 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	}
 	 */
 
-	/* FIXME: this is wrong, we should check the hole size of the recycle bin is
+	/* FIXME: this is wrong, we should check the whole size of the recycle bin is
 	 * not greater then maxsize, not the size of the single file, also it is better
 	 * to remove older files
 	 */
