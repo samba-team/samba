@@ -116,11 +116,11 @@
 </xsl:template>
 
 <xsl:template match="imagefile">
-	<xsl:text>\includegraphics[scale=.</xsl:text>
+	<xsl:text>\includegraphics[scale=</xsl:text>
 	<xsl:choose>
-		<xsl:when test="@scale != ''"><xsl:value-of select="@scale"/></xsl:when>
+		<xsl:when test="@scale != ''"><xsl:value-of select="@scale div 100"/></xsl:when>
 
-		<xsl:otherwise><xsl:text>50</xsl:text></xsl:otherwise>
+		<xsl:otherwise><xsl:text>.50</xsl:text></xsl:otherwise>
 	</xsl:choose>
 	<xsl:text>]{</xsl:text>
 	<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text>
