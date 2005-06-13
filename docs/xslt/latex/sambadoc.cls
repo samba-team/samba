@@ -1,7 +1,4 @@
-%
 % $Id$
-%
-
 % phstyle.cls -- Macros for formatting Prentice-Hall Books
 %               -- Compiled by J.K. Shultis, Dec. 1993
 % 		-- Modified and enhanced for LaTeX2e mdh/rlm 1997/02
@@ -10,19 +7,18 @@
 
 \NeedsTeXFormat{LaTeX2e}%
 \ProvidesClass{sambadoc}[2005/06/13 Samba Documentation class]
-
+\newif\if@ph
+\@phfalse
+\DeclareOption{ph}{ \@phtrue }
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{report}}
-
 \ProcessOptions%
 
-%  Base everything on the default class 'article'.
+%  Base everything on the default class 'report'.
 \LoadClass{report}%
-
-
 %================================================================================
 % 1. Page layout dimensions
 % 3. Define new fonts for headings
-% 4. Define LaTeX logos (usually ot needed)
+% 4. Define LaTeX logos (usually not needed)
 % 5. Redefines the way "figure" amd "table" are formated in a \caption
 % 6. Defines a \capt macro which defines (1) \captwidth, (2) \captsize
 %    and \beforetableskip.
@@ -40,7 +36,24 @@
 % \parskip       0ex       \marginparwidth 1.00in  \marginparsep 0.5in
 %\setlength\arraycolsep{1pt}
 
-\textwidth 5.00in
+\if@ph
+	\RequirePackage{geometry}
+	\geometry{
+	twoside,
+	papersize={7in,9.25in},
+	lmargin=.75in,
+	rmargin=.75in,
+	bmargin=.625in,
+	tmargin=.625in,
+	width=5.5in,
+	height=7.525in, 
+	marginparwidth=0.35in,
+	headheight=0.2in,
+	textwidth=5in,
+	headsep=.25in,
+	footskip=.025in}
+	\usepackage[letter,cam,cross,frame,center]{crop}
+\fi
 
 %====================== Define special fonts
 \newfont{\BIG}{cminch}                             %--- One-inch font
@@ -486,24 +499,6 @@ page \thepage \space undefined}}%
 
 \setlength{\emergencystretch}{0cm}
 
-\ifStr@ph
-	\PassOptionsToPackage{%
-	twoside,dvips,
-	paperwidth=7in,
-	paperheight=9.25in,
-	lmargin=.75in,
-	rmargin=.75in,
-	bmargin=.625in,
-	tmargin=.625in,
-	width=5.5in,
-	height=7.525in, %7.3
-	marginparwidth=0.35in,
-	headheight=0.2in,
-	headsep=.25in,
-	footskip=.025in}{geometry}
-\fi
-
-\setlength{\headwidth}{\textwidth}
 
 \cleardoublepage
 \pagenumbering{roman}
