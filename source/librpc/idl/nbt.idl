@@ -148,7 +148,7 @@
 	} nbt_status_name;
 
 	typedef struct {
-		[value(r->num_names * 18 + 47)] uint16 length;
+		[value(num_names * 18 + 47)] uint16 length;
 		uint8 num_names;
 		nbt_status_name names[num_names];
 		nbt_statistics  statistics;
@@ -256,7 +256,7 @@
 		uint16                      opcode;
 		uint16                      priority;
 		uint16                      class;
-		[value(strlen(r->mailslot_name)+1+r->data.length)] 
+		[value(strlen(mailslot_name)+1+r->data.length)] 
 		      uint16                byte_count;
 		astring                     mailslot_name;
 		[flag(NDR_REMAINING)]       DATA_BLOB data;
@@ -425,7 +425,7 @@
 		nstring          unicode_domain;
 		uint32           db_count;
 		nbt_db_change    dbchange[db_count];
-		[value(ndr_size_dom_sid(&r->sid))] uint32 sid_size;
+		[value(ndr_size_dom_sid(&sid))] uint32 sid_size;
 		[flag(NDR_ALIGN4)] DATA_BLOB _pad2;
 		dom_sid          sid;
 		uint32           nt_version;
@@ -544,7 +544,7 @@
 		nstring              user_name;
 		astring              mailslot_name;
 		uint32               acct_control;
-		[value(ndr_size_dom_sid(&r->sid))] uint32 sid_size;
+		[value(ndr_size_dom_sid(&sid))] uint32 sid_size;
 		[flag(NDR_ALIGN4)]   DATA_BLOB _pad;
 		dom_sid              sid;
 		uint32               nt_version;
@@ -586,28 +586,6 @@
 		ResetBrowserState			= 14,
 		LocalMasterAnnouncement		= 15
 	} nbt_browse_opcode;
-
-	typedef bitmap {
-		SV_TYPE_WORKSTATION		= 0x00000001,
-		SV_TYPE_SERVER			= 0x00000002,
-		SV_TYPE_SQLSERVER		= 0x00000004,
-		SV_TYPE_DOMAIN_CTRL		= 0x00000008,
-		SV_TYPE_DOMAIN_BAKCTRL		= 0x00000010,
-		SV_TYPE_TIME_SOURCE		= 0x00000020,
-		SV_TYPE_AFP			= 0x00000040,
-		SV_TYPE_NOVELL			= 0x00000080,
-		SV_TYPE_DOMAIN_MEMBER		= 0x00000100,
-		SV_TYPE_PRINTQ_SERVER		= 0x00000200,
-		SV_TYPE_DIALIN_SERVER		= 0x00000400,
-		SV_TYPE_XENIX_SERVER		= 0x00000800,
-		SV_TYPE_NT			= 0x00001000,
-		SV_TYPE_POTENTIAL_BROWSER	= 0x00010000,
-		SV_TYPE_BACKUP_BROWSER		= 0x00020000,
-		SV_TYPE_MASTER_BROWSER		= 0x00040000,
-		SV_TYPE_DOMAIN_MASTER		= 0x00080000,
-		SV_TYPE_LOCAL_LIST_ONLY		= 0x40000000,
-		SV_TYPE_DOMAIN_ENUM		= 0x80000000
-	} nbt_browse_server_type;
 
 	typedef struct {
 		uint8 update_count;

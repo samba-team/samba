@@ -14,7 +14,7 @@
 ] interface initshutdown
 {
 	typedef struct {
-		[value(strlen_m_term(r->name))] uint32 name_size;
+		[value(strlen_m_term(name))] uint32 name_size;
 		[flag(STR_LEN4|STR_NOTERM)] string name;
 	} initshutdown_String_sub;
 

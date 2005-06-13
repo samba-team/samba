@@ -91,7 +91,7 @@
 		uint32 reserved2;
 		uint32 panningwidth;
 		uint32 panningheight;
-		[subcontext_size(r->__driverextra_length),subcontext(0),flag(NDR_REMAINING)] DATA_BLOB driverextra_data;
+		[subcontext_size(__driverextra_length),subcontext(0),flag(NDR_REMAINING)] DATA_BLOB driverextra_data;
 	} spoolss_DeviceMode;
 
 	typedef [public] bitmap {
@@ -746,7 +746,7 @@
 		[in] unistr value_name,
 		[in] spoolss_PrinterDataType type,
 		[in,subcontext(4),switch_is(type)] spoolss_PrinterData data,
-		[in,value(ndr_size_spoolss_PrinterData(&r->in.data,r->in.type,flags))] uint32 _buf_size
+		[in,value(ndr_size_spoolss_PrinterData(&data,type,flags))] uint32 _buf_size
 	);
 
 	/******************/
