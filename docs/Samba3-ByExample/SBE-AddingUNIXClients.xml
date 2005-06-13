@@ -113,7 +113,7 @@
 			<indexterm><primary>accounts</primary><secondary>authoritative</secondary></indexterm>
 			<indexterm><primary>PDC</primary></indexterm>
 			<indexterm><primary>BDC</primary></indexterm>
-			A domain controller (PDC or BDC) is always authoritative for all accounts in its Domain.
+			A domain controller (PDC or BDC) is always authoritative for all accounts in its domain.
 			This means that a BDC must (of necessity) be able to resolve all account UIDs and GIDs
 			to the same values that the PDC resolved them to.
 			</para></listitem>
@@ -190,41 +190,32 @@
 			casual user.
 			</para></listitem>
 
-	  <listitem><para><indexterm>
-		<primary>winbind enable local accounts</primary>
-	      </indexterm><indexterm>
-		<primary>Domain Member</primary>
-		<secondary>servers</secondary>
-	      </indexterm><indexterm>
-		<primary>Domain Controllers</primary>
-	      </indexterm>
+			<listitem><para>
+			<indexterm><primary>winbind trusted domains only</primary></indexterm>
+			<indexterm><primary>domain member</primary><secondary>servers</secondary></indexterm>
+			<indexterm><primary>domain controllers</primary></indexterm>
 			If you wish to make use of accounts (users and/or groups) that are local to (i.e., capable
-			of being resolved using) the NSS facility, it is imperative to use the 
-			<smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
-			in the &smb.conf; file. This parameter specifically applies only to domain controllers, 
-			not to domain member servers.
+			of being resolved using) the NSS facility, it is possible to use the 
+			<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
+			in the &smb.conf; file. This parameter specifically applies to domain controllers, 
+			and to domain member servers.
 			</para></listitem>
+
 		</itemizedlist>
 
-	<para><indexterm>
-	    <primary>Posix accounts</primary>
-	  </indexterm><indexterm>
-	    <primary>Samba accounts</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>Posix accounts</primary></indexterm>
+		<indexterm><primary>Samba accounts</primary></indexterm>
+		<indexterm><primary>LDAP</primary></indexterm>
 		For many administrators, it should be plain that the use of an LDAP-based repository for all network
 		accounts (both for POSIX accounts and for Samba accounts) provides the most elegant and
 		controllable facility. You eventually appreciate the decision to use LDAP.
 		</para>
 
-	<para><indexterm>
-	    <primary>nss_ldap</primary>
-	  </indexterm><indexterm>
-	    <primary>identifiers</primary>
-	  </indexterm><indexterm>
-	    <primary>resolve</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>nss_ldap</primary></indexterm>
+		<indexterm><primary>identifiers</primary></indexterm>
+		<indexterm><primary>resolve</primary></indexterm>
 		If your network account information resides in an LDAP repository, you should use it ahead of any
 		alternative method. This means that if it is humanly possible to use the <command>nss_ldap</command>
 		tools to resolve UNIX account UIDs/GIDs via LDAP, this is the preferred solution, because it provides
@@ -232,20 +223,13 @@
 		throughout the network.
 		</para>
 
-		<para><indexterm>
-	    <primary>Domain Member</primary>
-	    <secondary>server</secondary>
-	  </indexterm><indexterm>
-	    <primary>winbind trusted domains only</primary>
-	  </indexterm><indexterm>
-	    <primary>getpwnam</primary>
-	  </indexterm><indexterm>
-	    <primary>smbd</primary>
-	  </indexterm><indexterm>
-	    <primary>Trusted Domains</primary>
-	  </indexterm><indexterm>
-	    <primary>External Domains</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>Domain Member</primary><secondary>server</secondary></indexterm>
+		<indexterm><primary>winbind trusted domains only</primary></indexterm>
+		<indexterm><primary>getpwnam</primary></indexterm>
+		<indexterm><primary>smbd</primary></indexterm>
+		<indexterm><primary>Trusted Domains</primary></indexterm>
+		<indexterm><primary>External Domains</primary></indexterm>
 		In the situation where UNIX accounts are held on the domain member server itself, the only effective
 		way to use them involves the &smb.conf; entry 
 		<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>. This forces 
@@ -254,17 +238,12 @@
 		disables the use of Samba with trusted domains (i.e., external domains).
 		</para>
 
-	<para><indexterm>
-	    <primary>appliance mode</primary>
-	  </indexterm><indexterm>
-	    <primary>Domain Member</primary>
-	    <secondary>server</secondary>
-	  </indexterm><indexterm>
-	    <primary>winbindd</primary>
-	  </indexterm><indexterm>
-	    <primary>automatically allocate</primary>
-	  </indexterm>
-	        Winbind can be used to create an appliance mode domain member server. In this capacity, <command>winbindd</command>
+		<para>
+		<indexterm><primary>appliance mode</primary></indexterm>
+		<indexterm><primary>Domain Member</primary><secondary>server</secondary></indexterm>
+		<indexterm><primary>winbindd</primary></indexterm>
+		<indexterm><primary>automatically allocate</primary></indexterm>
+		Winbind can be used to create an appliance mode domain member server. In this capacity, <command>winbindd</command>
 		is configured to automatically allocate UIDs/GIDs from numeric ranges set in the &smb.conf; file. The allocation
 		is made for all accounts that connect to that domain member server, whether within its own domain or from
 		trusted domains. If not stored in an LDAP backend, each domain member maintains its own unique mapping database.
@@ -273,9 +252,8 @@
 		is stored in the <filename>winbindd_idmap.tdb</filename> and <filename>winbindd_cache.tdb</filename> files.
 		</para>
 	
-	<para><indexterm>
-	    <primary>mapping</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>mapping</primary></indexterm>
 		The use of an LDAP backend for the Winbind IDMAP facility permits Windows domain SIDs
 		mappings to UIDs/GIDs to be stored centrally. The result is a consistent mapping across all domain member
 		servers so configured. This solves one of the major headaches for network administrators who need to copy
@@ -287,16 +265,11 @@
 	<sect2>
 		<title>Political Issues</title>
 
-	<para><indexterm>
-	    <primary>OpenLDAP</primary>
-	  </indexterm><indexterm>
-	    <primary>NIS</primary>
-	  </indexterm><indexterm>
-	    <primary>yellow pages</primary>
-	    <see>NIS</see>
-	  </indexterm><indexterm>
-	    <primary>identity management</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>OpenLDAP</primary></indexterm>
+		<indexterm><primary>NIS</primary></indexterm>
+		<indexterm><primary>yellow pages</primary><see>NIS</see></indexterm>
+		<indexterm><primary>identity management</primary></indexterm>
 		One of the most fierce conflicts recently being waged is resistance to the adoption of LDAP, in
 		particular OpenLDAP, as a replacement for UNIX NIS (previously called Yellow Pages). Let's face it, LDAP
 		is different and requires a new approach to the need for a better identity management solution. The more
@@ -311,11 +284,9 @@
 		commercial integration products. But it's not what Active Directory was designed for.
 		</para>
 
-	<para><indexterm>
-	    <primary>directory</primary>
-	  </indexterm><indexterm>
-	    <primary>management</primary>
-	  </indexterm>
+		<para>
+		<indexterm><primary>directory</primary></indexterm>
+		<indexterm><primary>management</primary></indexterm>
 		A number of long-term UNIX devotees have recently commented in various communications that the Samba Team
 		is the first application group to almost force network administrators to use LDAP. It should be pointed
 		out that we resisted this for as long as we could. It is not out of laziness or malice that LDAP has
@@ -330,25 +301,18 @@
 <sect1>
 	<title>Implementation</title>
 
-      <para><indexterm>
-	  <primary>Domain Member</primary>
-	  <secondary>server</secondary>
-	</indexterm><indexterm>
-	  <primary>Domain Member</primary>
-	  <secondary>client</secondary>
-	</indexterm><indexterm>
-	  <primary>Domain Controller</primary>
-	</indexterm>
-	The domain Member server and the domain member client are at the center of focus in this chapter.
+	<para>
+	<indexterm><primary>Domain Member</primary><secondary>server</secondary></indexterm>
+	<indexterm><primary>Domain Member</primary><secondary>client</secondary></indexterm>
+	<indexterm><primary>Domain Controller</primary></indexterm>
+	The domain member server and the domain member client are at the center of focus in this chapter.
 	Configuration of Samba-3 domain controller is covered in earlier chapters, so if your 
 	interest is in domain controller configuration, you will not find that here. You will find good
 	oil that helps you to add domain member servers and clients.
 	</para>
 
-      <para><indexterm>
-	  <primary>Domain Member</primary>
-	  <secondary>workstations</secondary>
-	</indexterm>
+	<para>
+	<indexterm><primary>Domain Member</primary><secondary>workstations</secondary></indexterm>
 	In practice, domain member servers and domain member workstations are very different entities, but in
 	terms of technology they share similar core infrastructure. A technologist would argue that servers
 	and workstations are identical. Many users would argue otherwise, given that in a well-disciplined
@@ -357,22 +321,18 @@
 	but a server is viewed as a core component of the business.
 	</para>
 
-      <para><indexterm>
-	  <primary>workstation</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>workstation</primary></indexterm>
 	We can look at this another way. If a workstation breaks down, one user is affected, but if a
 	server breaks down, hundreds of users may not be able to work. The services that a workstation
 	must provide are document- and file-production oriented; a server provides information storage
 	and is distribution oriented.
 	</para>
 
-      <para><indexterm>
-	  <primary>authentication process</primary>
-	</indexterm><indexterm>
-	  <primary>logon process</primary>
-	</indexterm><indexterm>
-	  <primary>user identities</primary>
-	</indexterm>
+	<para>
+	<indexterm><primary>authentication process</primary></indexterm>
+	<indexterm><primary>logon process</primary></indexterm>
+	<indexterm><primary>user identities</primary></indexterm>
 	<emphasis>Why is this important?</emphasis> For starters, we must identify what
 	components of the operating system and its environment must be configured. Also, it is necessary
 	to recognize where the interdependencies between the various services to be used are.
@@ -388,52 +348,52 @@
 	</para>
 
 	<sect2 id="sdcsdmldap">
-		<title>Samba Domain with Samba Domain Member Server &smbmdash; Using LDAP</title>
+	<title>Samba Domain with Samba Domain Member Server &smbmdash; Using NSS LDAP</title>
 
-	<para><indexterm>
-	    <primary>ldapsam</primary>
-	  </indexterm><indexterm>
-	    <primary>ldapsam backend</primary>
-	  </indexterm><indexterm>
-	    <primary>IDMAP</primary>
-	  </indexterm><indexterm>
-	    <primary>mapping</primary>
-	    <secondary>consistent</secondary>
-	  </indexterm><indexterm>
-	    <primary>winbindd</primary>
-	  </indexterm><indexterm>
-	    <primary>foreign SID</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>ldapsam backend</primary></indexterm>
+	<indexterm><primary>IDMAP</primary></indexterm>
+	<indexterm><primary>mapping</primary><secondary>consistent</secondary></indexterm>
+	<indexterm><primary>winbindd</primary></indexterm>
+	<indexterm><primary>foreign SID</primary></indexterm>
 	In this example, it is assumed that you have Samba PDC/BDC servers. This means you are using
 	an LDAP ldapsam backend. We are adding to the LDAP backend database (directory)
 	containers for use by the IDMAP facility. This makes it possible to have globally consistent
-	mapping of SIDs to and from UIDs and GIDs. This means that you are running <command>winbindd</command>
-	as part of your configuration. The primary purpose of running <command>winbindd</command> (within
-	this operational context) is to permit mapping of foreign SIDs (those not originating from our 
-	own domain). Foreign SIDs can come from any external domain or from Windows clients that do not 
-	belong to a domain.
+	mapping of SIDs to and from UIDs and GIDs. This means that it is necessary to run 
+	<command>winbindd</command> as part of your configuration. The primary purpose of running
+	<command>winbindd</command> (within this operational context) is to permit mapping of foreign
+	SIDs (those not originating from the the local Samba server). Foreign SIDs can come from any
+	domain member client or server, or from Windows clients that do not belong to a domain. Another
+	way to explain the necessity to run <command>winbindd</command> is that Samba can locally
+	resolve only accounts that belong to the security context of its own machine SID. Winbind
+	handles all non-local SIDs and maps them to a local UID/GID value. The UID and GID are allocated
+	from the parameter values set in the &smb.conf; file for the <parameter>idmap uid</parameter> and
+	<parameter>idmap gid</parameter> ranges. Where LDAP is used, the mappings can be stored in LDAP
+	so that all domain member servers can use a consistent mapping.
 	</para>
 
-	<para><indexterm>
-	    <primary>winbindd</primary>
-	  </indexterm><indexterm>
-	    <primary>getpwnam</primary>
-	  </indexterm><indexterm>
-	    <primary>NSS</primary>
-	  </indexterm>
-	If your installation is accessed only from clients that are members of your own domain, then
-	it is not necessary to run <command>winbindd</command> as long as all users can be resolved
-	locally via the <command>getpwnam()</command> system call. On NSS-enabled systems, this condition
-	is met by having
+	<para>
+	<indexterm><primary>winbindd</primary></indexterm>
+	<indexterm><primary>getpwnam</primary></indexterm>
+	<indexterm><primary>NSS</primary></indexterm>
+	If your installation is accessed only from clients that are members of your own domain, and all 
+	user accounts are present in a local passdb backend then it is not necessary to run
+	<command>winbindd</command>. The local passdb backend can be in smbpasswd, tdbsam, or in ldapsam.
+	</para>
+
+	<para>
+	It is possible to use a local passdb backend with any convenient means of resolving the POSIX
+	user and group account information. The POSIX information is usually obtained using the
+	<command>getpwnam()</command> system call. On NSS-enabled systems, the actual POSIX account
+	source can be provided from
 	</para>
 
 	<itemizedlist>
-	  <listitem><para><indexterm>
-		<primary>/etc/passwd</primary>
-	      </indexterm><indexterm>
-		<primary>/etc/group</primary>
-	      </indexterm>
-		All accounts in <filename>/etc/passwd</filename> or in <filename>/etc/group</filename>.
+		<listitem><para>
+		<indexterm><primary>/etc/passwd</primary></indexterm>
+		<indexterm><primary>/etc/group</primary></indexterm>
+		Accounts in <filename>/etc/passwd</filename> or in <filename>/etc/group</filename>.
 		</para></listitem>
 
 		<listitem><para>
@@ -455,6 +415,12 @@
 		</para></listitem>
 	</itemizedlist>
 
+	<note><para>
+	To advoid confusion the use of the term <literal>local passdb backend</literal> means that
+	the user account backend is not shared by any other Samba server &smbmdash; instead, it is
+	used only locally on the Samba domain member server under discussion.
+	</para></note>
+
 	<para>
 	<indexterm><primary>Identity resolution</primary></indexterm>
 	The diagram in <link linkend="ch9-sambadc"/> demonstrates the relationship of Samba and system 
@@ -467,11 +433,9 @@
 	<imagefile scale="60">chap9-SambaDC</imagefile>
 </figure>
 
-	<para><indexterm>
-	    <primary>IDMAP</primary>
-	  </indexterm><indexterm>
-	    <primary>foreign</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>IDMAP</primary></indexterm>
+	<indexterm><primary>foreign</primary></indexterm>
 	In this example configuration, Samba will directly search the LDAP-based passwd backend ldapsam
 	to obtain authentication and user identity information. The IDMAP information is stored in the LDAP
 	backend so that it can be shared by all domain member servers so that every user will have a
@@ -487,25 +451,30 @@
 	</para>
 
 	<procedure>
-	<title>Configuration of LDAP-Based Identity Resolution</title>
+	<title>Configuration of NSS_LDAP-Based Identity Resolution</title>
 
 		<step><para>
 		Create the &smb.conf; file as shown in <link linkend="ch9-sdmsdc"/>. Locate
 		this file in the directory <filename>/etc/samba</filename>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>ldap.conf</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>ldap.conf</primary></indexterm>
 		Configure the file that will be used by <constant>nss_ldap</constant> to
 		locate and communicate with the LDAP server. This file is called <filename>ldap.conf</filename>.
 		If your implementation of <constant>nss_ldap</constant> is consistent with
 		the defaults suggested by PADL (the authors), it will be located in the
 		<filename>/etc</filename> directory. On some systems, the default location is
-		the <filename>/etc/openldap</filename> directory. Change the parameters inside
-		the file that is located on your OS so it matches <link linkend="ch9-sdmlcnf"/>.
-		To find the correct location of this file, you can obtain this from the
-		library that will be used by executing the following:
+		the <filename>/etc/openldap</filename> directory, however this file is intended
+		for use by the OpenLDAP utilities and should not really be used by the nss_ldap
+		utility since its content and structure serves the specific purpose of enabling
+		the resolution of user and group IDs via NSS.
+		</para>
+
+		<para>
+		Change the parameters inside the file that is located on your OS so it matches
+		<link linkend="ch9-sdmlcnf"/>.  To find the correct location of this file, you
+		can obtain this from the library that will be used by executing the following:
 <screen>
 &rootprompt; strings /lib/libnss_ldap* | grep ldap.conf
 /etc/ldap.conf
@@ -513,15 +482,13 @@
 		</para></step>
 
 		<step><para>
-		Configure the NSS control file so it matches the one shown
-		in <link linkend="ch9-sdmnss"/>.
+		Configure the NSS control file so it matches the one shown in
+		<link linkend="ch9-sdmnss"/>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>Identity resolution</primary>
-	      </indexterm><indexterm>
-		<primary>getent</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>Identity resolution</primary></indexterm>
+		<indexterm><primary>getent</primary></indexterm>
 		Before proceeding to configure Samba, validate the operation of the NSS identity 
 		resolution via LDAP by executing:
 <screen>
@@ -556,24 +523,21 @@ Finances:x:1001:
 PIOps:x:1002:
 sammy:x:4321:
 </screen>
-	      <indexterm>
-		<primary>secondary group</primary>
-	      </indexterm><indexterm>
-		<primary>primary group</primary>
-	      </indexterm><indexterm>
-		<primary>group membership</primary>
-	      </indexterm>
+		<indexterm><primary>secondary group</primary></indexterm>
+		<indexterm><primary>primary group</primary></indexterm>
+		<indexterm><primary>group membership</primary></indexterm>
 		This shows that all is working as it should be. Notice that in the LDAP database
 		the users' primary and secondary group memberships are identical. It is not
 		necessary to add secondary group memberships (in the group database) if the
 		user is already a member via primary group membership in the password database.
 		When using winbind, it is in fact undesirable to do this because it results in
-		doubling up of group memberships and may break winbind under certain conditions.
+		doubling up of group memberships and may cause problems with winbind under certain 
+		conditions. It is intended that these limitations with winbind will be resolved soon
+		after Samba-3.0.20 has been released.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>slapcat</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>slapcat</primary></indexterm>
 		The LDAP directory must have a container object for IDMAP data. There are several ways you can
 		check that your LDAP database is able to receive IDMAP information. One of the simplest is to
 		execute:
@@ -582,25 +546,28 @@ sammy:x:4321:
 dn: ou=Idmap,dc=abmas,dc=biz
 ou: idmap
 </screen>
-	      <indexterm>
-		<primary>ldapadd</primary>
-	      </indexterm>
-	        If the execution of this command does not return IDMAP entries, you need to create an LDIF
-		template file (see <link linkend="ch9-ldifadd"/>). You can add the required entries using the following command:
+		<indexterm><primary>ldapadd</primary></indexterm>
+		If the execution of this command does not return IDMAP entries, you need to create an LDIF
+		template file (see <link linkend="ch9-ldifadd"/>). You can add the required entries using
+		the following command:
 <screen>
 &rootprompt; ldapadd -x -D "cn=Manager,dc=abmas,dc=biz" \
 		-w not24get &lt; /etc/openldap/idmap.LDIF
 </screen>
-		Samba automatically populates this LDAP directory container when it needs to.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>join</tertiary>
-	      </indexterm><indexterm>
-		<primary>Domain join</primary>
-	      </indexterm>
+		<step><para>
+		Samba automatically populates the LDAP directory container when it needs to. To permit Samba
+		write access to the LDAP directory it is necessary to set the LDAP administrative password
+		in the <filename>secrets.tdb</filename> file as shown here:
+<screen>
+&rootprompt; smbpasswd -w not24get
+</screen>
+		</para></step>
+
+		<step><para>
+		<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
+		<indexterm><primary>Domain join</primary></indexterm>
 		The system is ready to join the domain. Execute the following:
 <screen>
 &rootprompt; net rpc join -U root%not24get
@@ -632,9 +599,9 @@ Joined domain MEGANET2.
 		<indexterm><primary>failed join</primary></indexterm>
 		<indexterm><primary>rejected</primary></indexterm>
 		<indexterm><primary>restrict anonymous</primary></indexterm>
-		Note: Use "root" for UNIX/Linux and Samba, use "Administrator"for Windows NT4/200X. If the cause of
+		Note: Use "root" for UNIX/Linux and Samba, use "Administrator" for Windows NT4/200X. If the cause of
 		the failure appears to be related to a rejected or failed NT_SESSION_SETUP*  or an error message that
-		says NT_STATUS_ACCESS_DENIED  immediately check the Windows registry setting that controls the
+		says NT_STATUS_ACCESS_DENIED immediately check the Windows registry setting that controls the
 		<constant>restrict anonymous</constant> setting. Set this to the value 0 so that an anonymous connection
 		can be sustained, then try again.
 		</para>
@@ -665,12 +632,12 @@ Join to 'MEGANET2' failed.
 		<step><para>
 		<indexterm><primary>wbinfo</primary></indexterm>
 		Just joining the domain is not quite enough; you must now provide a privileged set
-		of credentials through which <command>winbindd</command> can interact with the ADS
+		of credentials through which <command>winbindd</command> can interact with the 
 		domain servers. Execute the following to implant the necessary credentials:
 <screen>
 &rootprompt; wbinfo --set-auth-user=Administrator%not24get
 </screen>
-		The configuration is now ready to obtain ADS domain user and group information.
+		The configuration is now ready to obtain the Samba domain user and group information.
 		</para></step>
 
 		<step><para>
@@ -786,7 +753,7 @@ aliases:        files
 	</sect2>
 
 	<sect2 id="wdcsdm">
-		<title>NT4/Samba Domain with Samba Domain Member Server: Using Winbind</title>
+		<title>NT4/Samba Domain with Samba Domain Member Server: Using NSS and Winbind</title>
 
 	<para>
 	You need to use this method for creating a Samba domain member server if any of the following conditions
@@ -803,32 +770,27 @@ aliases:        files
 		</para></listitem>
 
 		<listitem><para>
-		The Samba domain member server must be part of a Windows NT4 Domain.
+		The Samba domain member server must be part of a Windows NT4 Domain, or a Samba Domain.
 		</para></listitem>
 	</itemizedlist>
 
-	<para><indexterm>
-	    <primary>Windows ADS Domain</primary>
-	  </indexterm><indexterm>
-	    <primary>Samba Domain</primary>
-	  </indexterm><indexterm>
-	    <primary>LDAP</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>Windows ADS Domain</primary></indexterm>
+	<indexterm><primary>Samba Domain</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
 	Later in the chapter, you can see how to configure a Samba domain member server for a Windows ADS domain.
 	Right now your objective is to configure a Samba server that can be a member of a Windows NT4-style
 	domain and/or does not use LDAP.
 	</para>
 
-	<note><para><indexterm>
-	      <primary>duplicate accounts</primary>
-	    </indexterm>
+	<note><para>
+	<indexterm><primary>duplicate accounts</primary></indexterm>
 	If you use <command>winbind</command> for identity resolution, make sure that there are no
 	duplicate accounts.
 	</para>
 
-	  <para><indexterm>
-	      <primary>/etc/passwd</primary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>/etc/passwd</primary></indexterm>
 	For example, do not have more than one account that has UID=0 in the password database. If there 
 	is an account called <constant>root</constant> in the <filename>/etc/passwd</filename> database, 
 	it is okay to have an account called <constant>root</constant> in the LDAP ldapsam or in the 
@@ -837,29 +799,20 @@ aliases:        files
 	<constant>root</constant>.
 	</para>
 
-	  <para><indexterm>
-	      <primary>/etc/passwd</primary>
-	    </indexterm><indexterm>
-	      <primary>ldapsam</primary>
-	    </indexterm><indexterm>
-	      <primary>tdbsam</primary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>/etc/passwd</primary></indexterm>
+	<indexterm><primary>ldapsam</primary></indexterm>
+	<indexterm><primary>tdbsam</primary></indexterm>
 	Winbind will break if there is an account in <filename>/etc/passwd</filename> that has 
 	the same UID as an account that is in LDAP ldapsam (or in tdbsam) but that differs in name only.
 	</para></note>
 
-	<para><indexterm>
-	    <primary>credentials</primary>
-	  </indexterm><indexterm>
-	    <primary>traverse</primary>
-	  </indexterm><indexterm>
-	    <primary>wide-area</primary>
-	  </indexterm><indexterm>
-	    <primary>network</primary>
-	    <secondary>wide-area</secondary>
-	  </indexterm><indexterm>
-	    <primary>tdbdump</primary>
-	  </indexterm>
+	<para>
+	<indexterm><primary>credentials</primary></indexterm>
+	<indexterm><primary>traverse</primary></indexterm>
+	<indexterm><primary>wide-area</primary></indexterm>
+	<indexterm><primary>network</primary><secondary>wide-area</secondary></indexterm>
+	<indexterm><primary>tdbdump</primary></indexterm>
 	The following configuration uses CIFS/SMB protocols alone to obtain user and group credentials.
 	The winbind information is locally cached in the <filename>winbindd_cache.tdb winbindd_idmap.tdb</filename>
 	files. This provides considerable performance benefits compared with the LDAP solution, particularly
@@ -876,32 +829,26 @@ aliases:        files
 		shown in <link linkend="ch0-NT4DSDM"/>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>/etc/nsswitch.conf</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 		Edit the <filename>/etc/nsswitch.conf</filename> so it has the entries shown in
 		<link linkend="ch9-sdmnss"/>.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>rpc</secondary>
-		<tertiary>join</tertiary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
 		The system is ready to join the domain. Execute the following:
 <screen>
 net rpc join -U root%not2g4et
 Joined domain MEGANET2.
 </screen>
-                This indicates that the domain join succeed.
+		This indicates that the domain join succeed.
 
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>winbind</primary>
-	      </indexterm><indexterm>
-		<primary>wbinfo</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>wbinfo</primary></indexterm>
 		Validate operation of <command>winbind</command> using the <command>wbinfo</command>
 		tool as follows:
 <screen>
@@ -929,13 +876,10 @@ MEGANET2+PIOps
 		This shows that domain groups have been correctly obtained also.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>NSS</primary>
-	      </indexterm><indexterm>
-		<primary>getent</primary>
-	      </indexterm><indexterm>
-		<primary>winbind</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>NSS</primary></indexterm>
+		<indexterm><primary>getent</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
 		The next step verifies that NSS is able to obtain this information
 		correctly from <command>winbind</command> also.
 <screen>
@@ -979,6 +923,7 @@ MEGANET2+PIOps:x:10005:
 		<step><para>
 		The Samba member server of a Windows NT4 domain is ready for use.
 		</para></step>
+
 	</procedure>
 
 <example id="ch0-NT4DSDM">
@@ -1063,7 +1008,7 @@ MEGANET2+PIOps:x:10005:
 net rpc join -U root%not24get
 Joined domain MEGANET2.
 </screen>
-                This indicates that the domain join succeed.
+		This indicates that the domain join succeed.
 		</para></step>
 
 		<step><para>
@@ -1180,9 +1125,8 @@ Joined domain MEGANET2.
 	<procedure>
 	<title>Joining a Samba Server as an ADS Domain Member</title>
 
-	  <step><para><indexterm>
-		<primary>smbd</primary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>smbd</primary></indexterm>
 		Before you try to use Samba-3, you want to know for certain that your executables have
 		support for Kerberos and for LDAP. Execute the following to identify whether or
 		not this build is perhaps suitable for use:
@@ -1498,11 +1442,8 @@ Server time offset: 2
 		In any case, the output we obtained confirms that all systems are operational.
 		</para></step>
 
-	  <step><para><indexterm>
-		<primary>net</primary>
-		<secondary>ads</secondary>
-		<tertiary>status</tertiary>
-	      </indexterm>
+		<step><para>
+		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>status</tertiary></indexterm>
 		There is one more action you elect to take, just because you are paranoid and disbelieving,
 		so you execute the following command:
 <programlisting>
@@ -1583,6 +1524,7 @@ Permissions:
 		called <constant>FRAN</constant> is able to communicate fully with the ADS
 		domain controllers.
 		</para></step>
+
 	</procedure>
 
 
@@ -2023,7 +1965,7 @@ ssl     no
                 </para></step>
 
                 <step><para>
-                Configure an LDAP server and initialize the directory with the top level entries needed by IDMAP
+                Configure an LDAP server and initialize the directory with the top-level entries needed by IDMAP
                 as shown in the following LDIF file:
 <screen>
 dn: dc=snowshow,dc=com
@@ -2237,8 +2179,8 @@ hosts:  files wins
         </itemizedlist>
 
 	<para>
-	The following guidelines are pertinent the deployment of winbind-based authentication
-	and identity resolution with the express purpose of allowing users to log onto UNIX/Linux desktops
+	The following guidelines are pertinent to the deployment of winbind-based authentication
+	and identity resolution with the express purpose of allowing users to log on to UNIX/Linux desktops
 	using Windows network domain user credentials (username and password).
 	</para>
 
@@ -2261,7 +2203,7 @@ hosts:  files wins
 	<indexterm><primary>PAM</primary></indexterm>
 	<indexterm><primary>Identity resolution</primary></indexterm>
 	<indexterm><primary>NSS</primary></indexterm>
-	To permit users to log onto a Linux system using Windows network credentials, you need to
+	To permit users to log on to a Linux system using Windows network credentials, you need to
 	configure identity resolution (NSS) and PAM. This means that the basic steps include those
 	outlined above with the addition of PAM configuration. Given that most workstations (desktop/client)
 	usually do not need to provide file and print services to a group of users, the configuration
@@ -2443,7 +2385,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 		The addition of UNIX/Linux Samba servers and clients is a common requirement. In this chapter, you
 		learned how to integrate such servers so that the UID/GID mappings they use can be consistent
 		across all domain member servers. You also discovered how to implement the ability to use Samba
-		or Windows domain account credentials to log onto a UNIX/Linux client.
+		or Windows domain account credentials to log on to a UNIX/Linux client.
 		</para>
 
 		<para>
@@ -2624,7 +2566,7 @@ session     sufficient    /lib/security/$ISA/pam_winbind.so use_first_pass
 	<question>
 
 		<para>
-		Are you suggesting that users should not log onto a domain member server? If so, why?
+		Are you suggesting that users should not log on to a domain member server? If so, why?
 		</para>
 
 	</question>
