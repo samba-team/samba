@@ -506,7 +506,7 @@ int ltdb_search(struct ldb_module *module, const char *base,
 		}
 	}
 
-	ldb_parse_tree_free(ldb, tree);
+	talloc_free(tree);
 	ltdb_unlock_read(module);
 
 	return ret;
