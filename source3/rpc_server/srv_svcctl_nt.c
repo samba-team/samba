@@ -443,6 +443,91 @@ BOOL init_svcctl_db(void)
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
+                                     uint32 access_desired, uint32 *access_granted )
+{
+	NTSTATUS result;
+	
+	/* maybe add privilege checks in here later */
+	
+	se_access_check( sec_desc, token, access_desired, access_granted, &result );
+	
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
+{
+	SEC_ACE ace[2];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	uint32 sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, SC_MANAGER_READ_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* Full Access 'BUILTIN\Administrators' */
+	
+	init_sec_access(&mask,SC_MANAGER_ALL_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
+{
+	SEC_ACE ace[4];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	uint32 sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, SERVICE_READ_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		
+	init_sec_access(&mask,SERVICE_EXECUTE_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Power_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	init_sec_access(&mask,SERVICE_ALL_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Server_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
+
+/********************************************************************
+********************************************************************/
+
 static BOOL read_service_tdb_to_si(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
 
@@ -546,12 +631,15 @@ static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 /******************************************************************
  *****************************************************************/
  
-WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, const char *service )
+static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, 
+                                          const char *service, uint32 access_granted )
 {
 	SERVICE_INFO *info = NULL;
 	
 	if ( !(info = SMB_MALLOC_P( SERVICE_INFO )) )
 		return WERR_NOMEM;
+
+	ZERO_STRUCTP( info );
 		
 	/* the Service Manager has a NULL name */
 	
@@ -574,6 +662,8 @@ WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, const ch
 #endif
 	}
 
+	info->access_granted = access_granted;	
+	
 	/* store the SERVICE_INFO and create an open handle */
 	
 	if ( !create_policy_hnd( p, handle, free_service_handle_info, info ) ) {
@@ -589,13 +679,20 @@ WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, const ch
 
 WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVCCTL_R_OPEN_SCMANAGER *r_u)
 {
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
+	
 	/* perform access checks */
 	
-
-	/* open the handle and return */
-	
-	return create_open_service_handle( p, &r_u->handle, NULL );
-
+	if ( !(sec_desc = construct_scm_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+	return create_open_service_handle( p, &r_u->handle, NULL, access_granted );
 }
 
 /********************************************************************
@@ -603,6 +700,9 @@ WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVC
 
 WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_R_OPEN_SERVICE *r_u)
 {
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
 	pstring service;
 
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
@@ -614,17 +714,21 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 		return WERR_ACCESS_DENIED;
 	}
 	
-	/* check the access granted on the SCM handle */
+	/* perform access checks */
 	
-	/* check the access requested on this service */
-	
-       
+	if ( !(sec_desc = construct_service_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
 #if 0	/* FIXME!!! */
 	if ( ! read_service_tdb_to_si(service_tdb,service, info) ) {
 		return WERR_NO_SUCH_SERVICE;
 #endif
 	
-	return create_open_service_handle( p, &r_u->handle, service );
+	return create_open_service_handle( p, &r_u->handle, service, access_granted );
 }
 
 /********************************************************************
