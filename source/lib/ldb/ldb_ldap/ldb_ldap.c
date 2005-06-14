@@ -196,6 +196,10 @@ static int lldb_search(struct ldb_module *module, const char *base,
 		base = "";
 	}
 
+	if (expression == NULL || expression[0] == '\0') {
+		expression = "objectClass=*";
+	}
+
 	lldb->last_rc = ldap_search_s(lldb->ldap, base, (int)scope, 
 				      expression, 
 				      discard_const_p(char *, attrs), 

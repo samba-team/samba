@@ -343,8 +343,8 @@ static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
 	int ret;
 	struct ldb_message **res;
 
-	ret = gendb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
-			   "dn=%s", state->domain_dn);
+	ret = gendb_search_dn(state->sam_ctx, mem_ctx,
+			      state->domain_dn , &res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -373,8 +373,8 @@ static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *
 	int ret;
 	struct ldb_message **res;
 
-	ret = gendb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
-			   "dn=%s", state->domain_dn);
+	ret = gendb_search_dn(state->sam_ctx, mem_ctx,
+			      state->domain_dn , &res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -527,10 +527,8 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
 	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
-				   "objectSid",
-				   "dn=%s",
-				   msg->dn);
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
+				     msg->dn, "objectSid", NULL);
 	if (sidstr == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -759,10 +757,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
 	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
-				   "objectSid",
-				   "dn=%s",
-				   msg->dn);
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
+				   msg->dn, "objectSid", NULL);
 	if (sidstr == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -965,10 +961,8 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
 	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
-				   "objectSid",
-				   "dn=%s",
-				   msg->dn);
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
+				   msg->dn, "objectSid", NULL);
 	if (sidstr == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1490,8 +1484,8 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 
 	/* pull all the group attributes */
-	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn, &res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1750,8 +1744,8 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 	a_state = h->data;
 
 	/* pull the member attribute */
-	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn, &res, attrs);
 
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1784,9 +1778,9 @@ static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC
 		for (i=0; i<el->num_values; i++) {
 			struct ldb_message **res2;
 			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL,
-					   &res2, attrs2, "dn=%s",
-					   (char *)el->values[i].data);
+			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+					   (char *)el->values[i].data,
+					   &res2, attrs2);
 			if (ret != 1)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
@@ -1916,8 +1910,8 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 
 	/* pull all the alias attributes */
-	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn ,&res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -2229,8 +2223,8 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL, &msgs, attrs,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(d_state->sam_ctx, mem_ctx,
+			      a_state->account_dn, &msgs, attrs);
 
 	if (ret != 1)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2252,9 +2246,9 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 		for (i=0; i<el->num_values; i++) {
 			struct ldb_message **msgs2;
 			const char * const attrs2[2] = { "objectSid", NULL };
-			ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL,
-					   &msgs2, attrs2, "dn=%s",
-					   (char *)el->values[i].data);
+			ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+					   (char *)el->values[i].data,
+					   &msgs2, attrs2);
 			if (ret != 1)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
@@ -2391,8 +2385,8 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	a_state = h->data;
 
 	/* pull all the user attributes */
-	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, NULL,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn ,&res, NULL);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -3117,10 +3111,10 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	a_state = h->data;
 
-	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
-							    "dn=%s", a_state->domain_state->domain_dn);
-	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
-							    "dn=%s", a_state->account_dn);
+	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							    a_state->domain_state->domain_dn, "minPwdLength", NULL);
+	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							    a_state->account_dn, "pwdProperties", NULL);
 	return NT_STATUS_OK;
 }
 

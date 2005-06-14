@@ -272,7 +272,7 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 /*
   search the database for a single simple dn
 */
-int ltdb_search_dn(struct ldb_module *module, char *dn,
+int ltdb_search_dn(struct ldb_module *module, const char *dn,
 		   const char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
@@ -482,17 +482,9 @@ int ltdb_search_bytree(struct ldb_module *module, const char *base,
 
 	*res = NULL;
 
-	if (tree->operation == LDB_OP_SIMPLE && 
-	    (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0 ||
-	     ldb_attr_cmp(tree->u.simple.attr, "distinguishedName") == 0) &&
-	    !ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
-		/* yay! its a nice simple one */
-		ret = ltdb_search_dn(module, tree->u.simple.value.data, attrs, res);
-	} else {
-		ret = ltdb_search_indexed(module, base, scope, tree, attrs, res);
-		if (ret == -1) {
-			ret = ltdb_search_full(module, base, scope, tree, attrs, res);
-		}
+	ret = ltdb_search_indexed(module, base, scope, tree, attrs, res);
+	if (ret == -1) {
+		ret = ltdb_search_full(module, base, scope, tree, attrs, res);
 	}
 
 	ltdb_unlock_read(module);
@@ -512,6 +504,13 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_parse_tree *tree;
 	int ret;
+
+	/* check if we are looking for a simple dn */
+	if (scope == LDB_SCOPE_BASE && (expression == NULL || expression[0] == '\0')) {
+		ret = ltdb_search_dn(module, base, attrs, res);
+		ltdb_unlock_read(module);
+		return ret;
+	}
 
 	tree = ldb_parse_tree(ltdb, expression);
 	if (tree == NULL) {

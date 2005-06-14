@@ -61,7 +61,7 @@ int gendb_search_v(struct ldb_context *ldb,
 /*
   search the LDB for the specified attributes - varargs variant
 */
-int gendb_search(struct ldb_context *sam_ldb,
+int gendb_search(struct ldb_context *ldb,
 		 TALLOC_CTX *mem_ctx, 
 		 const char *basedn,
 		 struct ldb_message ***res,
@@ -72,11 +72,38 @@ int gendb_search(struct ldb_context *sam_ldb,
 	int count;
 
 	va_start(ap, format);
-	count = gendb_search_v(sam_ldb, mem_ctx, basedn, res, attrs, format, ap);
+	count = gendb_search_v(ldb, mem_ctx, basedn, res, attrs, format, ap);
 	va_end(ap);
 
 	return count;
 }
+
+int gendb_search_dn(struct ldb_context *ldb,
+		    TALLOC_CTX *mem_ctx,
+		    const char *dn,
+		    struct ldb_message ***res,
+		    const char * const *attrs)
+{
+	va_list ap;
+	int count;
+
+	*res = NULL;
+
+	count = ldb_search(ldb, dn, LDB_SCOPE_BASE, "", attrs, res);
+
+	if (count > 1) {
+		DEBUG(1, ("DB Corruption ? - Found more then one entry for dn: %s", dn));
+		return -1;
+	}
+
+	if (*res) talloc_steal(mem_ctx, *res);
+
+	DEBUG(4,("gendb_search_dn: %s -> %d (%s)\n",
+		 dn, count, count==-1?ldb_errstring(ldb):"OK"));
+
+	return count;
+}
+		    
 
 /*
   setup some initial ldif in a ldb
