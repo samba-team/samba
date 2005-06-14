@@ -723,25 +723,25 @@
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} spoolss_PrinterData;
 
-	[noopnum,nopush,noprint,public] WERROR _spoolss_GetPrinterData(
+	[noopnum,noprint,public] WERROR _spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
-		[in] unistr value_name,
-		[in] uint32 offered,
-		[out] spoolss_PrinterDataType type,
-		[out] DATA_BLOB data,
-		[out] uint32 needed
+		[in] 	 unistr value_name,
+		[in] 	 uint32 offered,
+		[out] 	 spoolss_PrinterDataType type,
+		[out] 	 DATA_BLOB data,
+		[out] 	 uint32 needed
 	);
-	[noopnum,nopush,noprint,public] void __spoolss_GetPrinterData(
+	[noopnum,noprint,public] void __spoolss_GetPrinterData(
 		[in] spoolss_PrinterDataType type,
 		[out,switch_is(type)] spoolss_PrinterData data
 	);
-	[nopull] WERROR spoolss_GetPrinterData(
+	[nopull,nopush] WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
-		[in] unistr value_name,
-		[in] uint32 offered,
-		[out] spoolss_PrinterDataType type,
+		[in] 	 unistr value_name,
+		[in] 	 uint32 offered,
+		[out] 	 spoolss_PrinterDataType type,
 		[out,subcontext(4),switch_is(type)] spoolss_PrinterData data,
-		[out] uint32 needed
+		[out] 	 uint32 needed
 	);
 
 	/******************/
