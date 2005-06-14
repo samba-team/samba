@@ -483,7 +483,7 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 	case LDB_OP_EXTENDED:
 		s = ldb_binary_encode(mem_ctx, tree->u.extended.value);
 		if (s == NULL) return NULL;
-		ret = talloc_asprintf(mem_ctx, "(%s%s%s%s=%s)", 
+		ret = talloc_asprintf(mem_ctx, "(%s%s%s%s:=%s)", 
 				      tree->u.extended.attr?tree->u.extended.attr:"", 
 				      tree->u.extended.dnAttributes?":dn":"",
 				      tree->u.extended.rule_id?":":"", 
