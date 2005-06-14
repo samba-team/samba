@@ -1,5 +1,15 @@
 2005-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/kinit.c (main): catch KRB5_CONFIG_BADFORMAT from
+	krb5_init_context
+
+	* kdc/main.c (main): catch KRB5_CONFIG_BADFORMAT from
+	krb5_init_context
+
+	* lib/krb5/verify_krb5_conf.c (main): catch KRB5_CONFIG_BADFORMAT
+	from krb5_init_context From: Mathias Feiler
+	<feiler@uni-hohenheim.de>
+
 	* lib/krb5/verify_krb5_conf.c: Add more missig entires, from
 	Mathias Feiler <feiler@uni-hohenheim.de>
 
