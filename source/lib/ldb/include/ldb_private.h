@@ -82,6 +82,10 @@ struct ldb_context {
 /* the modules init function */
 typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, const char *options[]);
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+#endif
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);

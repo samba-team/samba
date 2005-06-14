@@ -146,7 +146,8 @@ struct ldb_debug_ops {
 
 
 /* structues for ldb_parse_tree handling code */
-enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_AND='&', LDB_OP_OR='|', LDB_OP_NOT='!'};
+enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_EXTENDED=2, 
+		   LDB_OP_AND='&', LDB_OP_OR='|', LDB_OP_NOT='!'};
 
 struct ldb_parse_tree {
 	enum ldb_parse_op operation;
@@ -155,6 +156,12 @@ struct ldb_parse_tree {
 			char *attr;
 			struct ldb_val value;
 		} simple;
+		struct {
+			char *attr;
+			int dnAttributes;
+			char *rule_id;
+			struct ldb_val value;
+		} extended;
 		struct {
 			unsigned int num_elements;
 			struct ldb_parse_tree **elements;

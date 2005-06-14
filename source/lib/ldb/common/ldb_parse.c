@@ -196,6 +196,61 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 
 static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s);
 
+
+/*
+  parse an extended match
+
+  possible forms:
+        (attr:oid:=value)
+        (attr:dn:oid:=value)
+        (attr:dn:=value)
+        (:dn:oid:=value)
+
+  the ':dn' part sets the dnAttributes boolean if present
+  the oid sets the rule_id string
+  
+*/
+static struct ldb_parse_tree *ldb_parse_extended(struct ldb_parse_tree *ret, 
+						 char *attr, char *value)
+{
+	char *p1, *p2, *p3;
+	ret->operation = LDB_OP_EXTENDED;
+	ret->u.extended.value = ldb_binary_decode(ret, value);
+	p1 = strchr(attr, ':');
+	if (p1 == NULL) goto failed;
+	p2 = strchr(p1+1, ':');
+	if (p2 == NULL) goto failed;
+	p3 = strchr(p2+1, ':');
+
+	*p1 = 0;
+	*p2 = 0;
+	if (p3) *p3 = 0;
+
+	ret->u.extended.attr = talloc_strdup(ret, attr);
+	if (ret->u.extended.attr == NULL) goto failed;
+	if (strcmp(p1+1, "dn") == 0) {
+		ret->u.extended.dnAttributes = 1;
+		if (p3) {
+			ret->u.extended.rule_id = talloc_strdup(ret, p2+1);
+			if (ret->u.extended.rule_id == NULL) goto failed;
+		} else {
+			ret->u.extended.rule_id = NULL;
+		}
+	} else {
+		ret->u.extended.dnAttributes = 0;
+		ret->u.extended.rule_id = talloc_strdup(ret, p1+1);
+		if (ret->u.extended.rule_id == NULL) goto failed;
+	}
+	ret->u.extended.value = ldb_binary_decode(ret, value);
+
+	return ret;
+
+failed:
+	talloc_free(ret);
+	return NULL;
+}
+
+
 /*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
@@ -232,6 +287,11 @@ static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char *s)
 	if (val && strchr("()&|", *val)) {
 		talloc_free(ret);
 		return NULL;
+	}
+
+	if (l[strlen(l)-1] == ':') {
+		/* its an extended match */
+		return ldb_parse_extended(ret, l, val);
 	}
 	
 	ret->operation = LDB_OP_SIMPLE;
@@ -418,6 +478,17 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		if (s == NULL) return NULL;
 		ret = talloc_asprintf(mem_ctx, "(%s=%s)", 
 				      tree->u.simple.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_EXTENDED:
+		s = ldb_binary_encode(mem_ctx, tree->u.extended.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s%s%s%s=%s)", 
+				      tree->u.extended.attr?tree->u.extended.attr:"", 
+				      tree->u.extended.dnAttributes?":dn":"",
+				      tree->u.extended.rule_id?":":"", 
+				      tree->u.extended.rule_id?tree->u.extended.rule_id:"", 
+				      s);
 		talloc_free(s);
 		return ret;
 	case LDB_OP_AND:

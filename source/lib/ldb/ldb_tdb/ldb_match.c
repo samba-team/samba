@@ -262,7 +262,8 @@ static int match_leaf(struct ldb_module *module,
 		      const char *base,
 		      enum ldb_scope scope)
 {
-	unsigned int i, j;
+	unsigned int i;
+	struct ldb_message_element *el;
 
 	if (!scope_match(msg->dn, base, scope)) {
 		return 0;
@@ -275,19 +276,103 @@ static int match_leaf(struct ldb_module *module,
 		return ldb_dn_cmp(msg->dn, tree->u.simple.value.data) == 0;
 	}
 
-	for (i=0;i<msg->num_elements;i++) {
-		if (ldb_attr_cmp(msg->elements[i].name, tree->u.simple.attr) == 0) {
-			if (strcmp(tree->u.simple.value.data, "*") == 0) {
-				return 1;
-			}
-			for (j=0;j<msg->elements[i].num_values;j++) {
-				if (ltdb_val_equal(module, msg->elements[i].name,
-						  &msg->elements[i].values[j], 
-						  &tree->u.simple.value)) {
-					return 1;
-				}
-			}
+	el = ldb_msg_find_element(msg, tree->u.simple.attr);
+	if (el == NULL) {
+		return 0;
+	}
+
+	if (strcmp(tree->u.simple.value.data, "*") == 0) {
+		return 1;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		if (ltdb_val_equal(module, el->name, &el->values[i], 
+				   &tree->u.simple.value)) {
+			return 1;
 		}
+	}
+
+	return 0;
+}
+
+
+/*
+  bitwise-and comparator
+*/
+static int comparator_and(struct ldb_val *v1, struct ldb_val *v2)
+{
+	unsigned i1, i2;
+	i1 = strtoul(v1->data, NULL, 0);
+	i2 = strtoul(v2->data, NULL, 0);
+	return ((i1 & i2) == i2);
+}
+
+/*
+  bitwise-or comparator
+*/
+static int comparator_or(struct ldb_val *v1, struct ldb_val *v2)
+{
+	unsigned i1, i2;
+	i1 = strtoul(v1->data, NULL, 0);
+	i2 = strtoul(v2->data, NULL, 0);
+	return ((i1 & i2) != 0);
+}
+
+
+/*
+  extended match, handles things like bitops
+*/
+static int ltdb_extended_match(struct ldb_module *module, 
+			       struct ldb_message *msg,
+			       struct ldb_parse_tree *tree,
+			       const char *base,
+			       enum ldb_scope scope)
+{
+	int i;
+	const struct {
+		const char *oid;
+		int (*comparator)(struct ldb_val *, struct ldb_val *);
+	} rules[] = {
+		{ "1.2.840.113556.1.4.803", comparator_and},
+		{ "1.2.840.113556.1.4.804", comparator_or}
+	};
+	int (*comp)(struct ldb_val *, struct ldb_val *) = NULL;
+	struct ldb_message_element *el;
+
+	if (tree->u.extended.dnAttributes) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb: dnAttributes extended match not supported yet");
+		return -1;
+	}
+	if (tree->u.extended.rule_id == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb: no-rule extended matches not supported yet");
+		return -1;
+	}
+	if (tree->u.extended.attr == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb: no-attribute extended matches not supported yet");
+		return -1;
+	}
+
+	for (i=0;i<ARRAY_SIZE(rules);i++) {
+		if (strcmp(rules[i].oid, tree->u.extended.rule_id) == 0) {
+			comp = rules[i].comparator;
+			break;
+		}
+	}
+	if (comp == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb: unknown extended rule_id %s\n",
+			  tree->u.extended.rule_id);
+		return -1;
+	}
+
+	/* find the message element */
+	el = ldb_msg_find_element(msg, tree->u.extended.attr);
+	if (el == NULL) {
+		return 0;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		int ret = comp(&el->values[i], &tree->u.extended.value);
+		if (ret == -1 || ret == 1) return ret;
 	}
 
 	return 0;
@@ -313,6 +398,9 @@ int ltdb_message_match(struct ldb_module *module,
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
 		break;
+
+	case LDB_OP_EXTENDED:
+		return ltdb_extended_match(module, msg, tree, base, scope);
 
 	case LDB_OP_NOT:
 		return ! ltdb_message_match(module, msg, tree->u.not.child, base, scope);
