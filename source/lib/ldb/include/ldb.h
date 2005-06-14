@@ -72,6 +72,12 @@ struct ldb_val {
 
 
 /*
+  well known object IDs
+*/
+#define LDB_OID_COMPARATOR_AND  "1.2.840.113556.1.4.803"
+#define LDB_OID_COMPARATOR_OR   "1.2.840.113556.1.4.804"
+
+/*
   results are given back as arrays of ldb_message_element
 */
 struct ldb_message_element {
