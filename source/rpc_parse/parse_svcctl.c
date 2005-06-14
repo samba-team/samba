@@ -100,6 +100,21 @@ static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, 
 
 	return True;
 }
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_service_description( const char *desc, UNISTR2 *svcdesc, prs_struct *ps, int depth )
+{
+
+	prs_debug(ps, depth, desc, "svcctl_io_service_description");
+	depth++;
+
+	//DEBUG(10, ("_svcctl_io_service_description: descrption is [%s]\n",svcdesc));
+	if (!prs_io_unistr2("", ps, depth, svcdesc))
+		return False;
+
+	return True;
+}
 
 
 /*******************************************************************
@@ -142,6 +157,7 @@ uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
 
 BOOL svcctl_io_q_close_service(const char *desc, SVCCTL_Q_CLOSE_SERVICE *q_u, prs_struct *ps, int depth)
 {
+        
 	if (q_u == NULL)
 		return False;
 
@@ -170,7 +186,10 @@ BOOL svcctl_io_r_close_service(const char *desc, SVCCTL_R_CLOSE_SERVICE *r_u, pr
 	depth++;
 
 	if(!prs_align(ps))
-		return False;
+	    return False;
+
+	if(!smb_io_pol_hnd("pol_handle", &r_u->handle, ps, depth))
+	   return False; 
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
@@ -642,6 +661,7 @@ BOOL svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_C
 	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_config");
 	depth++;
 
+
 	if(!prs_align(ps))
 		return False;
 
@@ -649,6 +669,158 @@ BOOL svcctl_io_r_query_service_config(const char *desc, SVCCTL_R_QUERY_SERVICE_C
 		return False;
 
 	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+
+ 	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_query_service_config2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("info_level", ps, depth, &q_u->info_level))
+		return False;
+
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ Creates a service description response buffer.
+ The format seems to be DWORD:length of buffer
+                        DWORD:offset (fixed as four)
+                        UNISTR: unicode description in the rest of the buffer
+********************************************************************/
+
+void init_service_description_buffer(RPC_DATA_BLOB *str,  const char *service_desc, int blob_length)
+{
+	uint32 offset;
+	char *bp;
+
+	ZERO_STRUCTP(str);
+
+	offset = 4;
+
+	/* set up string lengths. */
+
+	str->buf_len = create_rpc_blob(str, blob_length);
+	DEBUG(10, ("init_service_description buffer: Allocated a blob of [%d] \n",str->buf_len));
+
+	if ( str && str->buffer && str->buf_len) {
+		memset(str->buffer,0,str->buf_len);
+		memcpy(str->buffer, &offset, sizeof(uint32));
+		bp = &str->buffer[4];
+		if (service_desc) {
+			rpcstr_push(bp, service_desc,str->buf_len-4,0);
+		}
+	}
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_query_service_status_ex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("info_level", ps, depth, &q_u->info_level))
+		return False;
+
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_status_ex");
+		depth++;
+
+	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_config2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("returned", ps, depth, &r_u->returned))
+		return False;
+
+	if (r_u->returned > 4) {
+		if (!prs_uint32("offset", ps, depth, &r_u->offset))
+			return False;
+		if(!prs_unistr2(True, "description     ", ps, depth, r_u->description))
+			return False;
+		if(!prs_align(ps))
+			return False;
+	} else {
+		/* offset does double duty here */
+		r_u->offset = 0;
+		if (!prs_uint32("offset", ps, depth, &r_u->offset))
+			return False;
+	}
+
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
