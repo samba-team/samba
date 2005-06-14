@@ -1,7 +1,8 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Gerald (Jerry) Carter             2005
+ *  Copyright (C) Gerald (Jerry) Carter             2005,
+ *  Copyright (C) Marcin Krzysztof Porwit           2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,7 +42,6 @@
  */
  
 #define SCVCTL_DATABASE_VERSION_V1 1
-TALLOC_CTX    *svcdb=NULL;
 static TDB_CONTEXT *service_tdb; /* used for services tdb file */
 
 /* there are two types of services -- internal, and external.
@@ -90,16 +90,48 @@ static const Internal_service_description ISD[] = {
  (d) check access control masks with se_access_check()
 ********************************************************************/
 
-/* parse a LSB init.d type file for things it provides, dependencies, descriptions, etc. */
- 
+#if 0 
+/*********************************************************************
+ given a service nice name, find the underlying service name
+*********************************************************************/
+
+static BOOL convert_service_displayname(TDB_CONTEXT *stdb,pstring service_nicename, pstring servicename,int szsvcname) 
+{
+	pstring keystring;
+	TDB_DATA key_data;
+
+	if ((stdb == NULL) || (service_nicename==NULL) || (servicename == NULL)) 
+		return False;
+
+	pstr_sprintf(keystring,"SERVICE_NICENAME/%s", servicename);
+
+	DEBUG(5, ("convert_service_displayname: Looking for service name [%s], key [%s]\n", 
+		service_nicename, keystring));
+
+	key_data = tdb_fetch_bystring(stdb,keystring);
+
+	if (key_data.dsize == 0) {
+		DEBUG(5, ("convert_service_displayname: [%s] Not found, tried key [%s]\n",service_nicename,keystring));
+		return False; 
+	}
+
+	strncpy(servicename,key_data.dptr,szsvcname);
+	servicename[(key_data.dsize > szsvcname ? szsvcname : key_data.dsize)] = 0;
+	DEBUG(5, ("convert_service_displayname: Found service name [%s], name is  [%s]\n",
+		service_nicename,servicename));
+
+	return True;
+}
+#endif
 
 /*******************************************************************************
  Get the INTERNAL services information for the given service name. 
 *******************************************************************************/
 
-static BOOL _svcctl_get_internal_service_data(const Internal_service_description *isd, Service_info *si)
+static BOOL get_internal_service_data(const Internal_service_description *isd, Service_info *si)
 {
 	ZERO_STRUCTP( si );
+#if 0
 	
 	pstrcpy( si->servicename, isd->displayname);
 	pstrcpy( si->servicetype, "INTERNAL");
@@ -107,6 +139,7 @@ static BOOL _svcctl_get_internal_service_data(const Internal_service_description
 	pstrcpy( si->provides, isd->displayname);
 	pstrcpy( si->description, isd->description);
 	pstrcpy( si->shortdescription, isd->description);
+#endif
 	
 	return True;
 }
@@ -119,7 +152,7 @@ static BOOL _svcctl_get_internal_service_data(const Internal_service_description
  Get the names of the services/scripts to read from the smb.conf file.
 *******************************************************************************/
 
-static BOOL _svcctl_get_LSB_data(char *fname,Service_info *si )
+static BOOL get_LSB_data(char *fname,Service_info *si )
 {
 	pstring initdfile;
 	char mybuffer[256];
@@ -257,8 +290,10 @@ static BOOL _svcctl_get_LSB_data(char *fname,Service_info *si )
 	return False;
 }
 
+/********************************************************************
+********************************************************************/
 
-BOOL _svcctl_read_service_tdb_to_si(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
+static BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
 
 	pstring keystring;
@@ -331,41 +366,9 @@ BOOL _svcctl_read_service_tdb_to_si(TDB_CONTEXT *stdb,char *service_name, Servic
 }
 
 /*********************************************************************
- given a service nice name, find the underlying service name
 *********************************************************************/
 
-BOOL  _svcctl_service_nicename_to_servicename(TDB_CONTEXT *stdb,pstring service_nicename, pstring servicename,int szsvcname) 
-{
-	pstring keystring;
-	TDB_DATA key_data;
-
-	if ((stdb == NULL) || (service_nicename==NULL) || (servicename == NULL)) 
-		return False;
-
-	pstr_sprintf(keystring,"SERVICE_NICENAME/%s", servicename);
-
-	DEBUG(5, ("_svcctl_service_nicename_to_servicename: Looking for service name [%s], key [%s]\n", 
-		service_nicename, keystring));
-
-	key_data = tdb_fetch_bystring(stdb,keystring);
-
-	if (key_data.dsize == 0) {
-		DEBUG(5, ("_svcctl_service_nicename_to_servicename: [%s] Not found, tried key [%s]\n",service_nicename,keystring));
-		return False; 
-	}
-
-	strncpy(servicename,key_data.dptr,szsvcname);
-	servicename[(key_data.dsize > szsvcname ? szsvcname : key_data.dsize)] = 0;
-	DEBUG(5, ("_svcctl_service_nicename_to_servicename: Found service name [%s], name is  [%s]\n",
-		service_nicename,servicename));
-
-	return True;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-BOOL  _svcctl_write_si_to_service_tdb(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
+static BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
 	pstring keystring;
 
@@ -423,6 +426,223 @@ BOOL  _svcctl_write_si_to_service_tdb(TDB_CONTEXT *stdb,char *service_name, Serv
 	return True;
 }
 
+/********************************************************************
+ allocate an array of external services and return them. Null return 
+ is okay, make sure &added is also zero! 
+********************************************************************/
+
+static int num_external_services(void)
+{
+	int num_services;
+	char **svc_list;
+	pstring keystring, external_services_string;
+	TDB_DATA key_data;
+
+
+	if (!service_tdb) {
+		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
+		num_services = 0;
+	} else {
+		pstrcpy(keystring,"EXTERNAL_SERVICES");
+		tdb_lock_bystring(service_tdb, keystring, 0);
+		key_data = tdb_fetch_bystring(service_tdb, keystring);
+
+		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
+			strncpy(external_services_string,key_data.dptr,key_data.dsize);
+			external_services_string[key_data.dsize] = 0;
+			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
+		}
+		tdb_unlock_bystring(service_tdb, keystring);
+	} 
+	svc_list = str_list_make(external_services_string,NULL);
+ 
+	num_services = str_list_count( (const char **)svc_list);
+
+	return num_services;
+}
+
+
+
+/********************************************************************
+  Gather information on the "external services". These are services 
+  listed in the smb.conf file, and found to exist through checks in 
+  this code. Note that added will be incremented on the basis of the 
+  number of services added.  svc_ptr should have enough memory allocated 
+  to accommodate all of the services that exist. 
+
+  Typically num_external_services is used to "size" the amount of
+  memory allocated, but does little/no work. 
+
+  enum_external_services() actually examines each of the specified 
+  external services, populates the memory structures, and returns.
+
+  ** note that 'added' may end up with less than the number of services 
+  found in _num_external_services, such as the case when a service is
+  called out, but the actual service doesn't exist or the file can't be 
+  read for the service information.
+********************************************************************/
+
+static WERROR enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services,int *added) 
+{
+	/* *svc_ptr must have pre-allocated memory */
+	int num_services = 0;
+	int i = 0;
+	ENUM_SERVICES_STATUS *services=NULL;
+	char **svc_list,**svcname;
+	pstring command, keystring, external_services_string;
+	int ret;
+	int fd = -1;
+	Service_info *si;
+	TDB_DATA key_data;
+
+	*added = num_services;
+
+	if (!service_tdb) {
+		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
+	} else {
+		pstrcpy(keystring,"EXTERNAL_SERVICES");
+		tdb_lock_bystring(service_tdb, keystring, 0);
+		key_data = tdb_fetch_bystring(service_tdb, keystring);
+		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
+			strncpy(external_services_string,key_data.dptr,key_data.dsize);
+			external_services_string[key_data.dsize] = 0;
+			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
+		}
+		tdb_unlock_bystring(service_tdb, keystring);
+	} 
+	svc_list = str_list_make(external_services_string,NULL);
+ 
+	num_services = str_list_count( (const char **)svc_list);
+
+	if (0 == num_services) {
+		DEBUG(8,("enum_external_services: there are no external services\n"));
+		*added = num_services;
+		return WERR_OK;
+	}
+	DEBUG(8,("enum_external_services: there are [%d] external services\n",num_services));
+	si=TALLOC_ARRAY( tcx, Service_info, 1 );
+	if (si == NULL) { 
+		DEBUG(8,("enum_external_services: Failed to alloc si\n"));
+		return WERR_NOMEM;
+	}
+
+#if 0
+/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
+	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
+		DEBUG(8,("enum_external_services: REALLOCing %x to %d services\n", *svc_ptr, existing_services+num_services));
+
+		services=TALLOC_REALLOC_ARRAY(tcx,*svc_ptr,ENUM_SERVICES_STATUS,existing_services+num_services);
+		DEBUG(8,("enum_external_services: REALLOCed to %x services\n", services));
+
+		if (!services) return WERR_NOMEM;
+			*svc_ptr = services;
+	} else {
+		if ( !(services = TALLOC_ARRAY( tcx, ENUM_SERVICES_STATUS, num_services )) )
+			return WERR_NOMEM;
+	}
+#endif
+
+	if (!svc_ptr || !(*svc_ptr)) 
+		return WERR_NOMEM;
+	services = *svc_ptr;
+	if (existing_services > 0) {
+		i+=existing_services;
+	}
+
+	svcname = svc_list;
+	DEBUG(8,("enum_external_services: enumerating %d external services starting at index %d\n", num_services,existing_services));
+
+	while (*svcname) {
+		DEBUG(10,("enum_external_services: Reading information on service %s, index %d\n",*svcname,i));
+		/* get_LSB_data(*svcname,si);  */
+		if (!get_service_info(service_tdb,*svcname, si)) {
+			DEBUG(1,("enum_external_services: CAN'T FIND INFO FOR SERVICE %s in the services DB\n",*svcname));
+		}
+
+		if ((si->filename == NULL) || (*si->filename == 0)) {
+			init_unistr(&services[i].servicename, *svcname );
+		} else {
+			init_unistr( &services[i].servicename, si->filename );    
+			/* init_unistr( &services[i].servicename, si->servicename ); */
+		}
+
+		if ((si->provides == NULL) || (*si->provides == 0)) {
+			init_unistr(&services[i].displayname, *svcname );
+		} else {
+			init_unistr( &services[i].displayname, si->provides );
+		}
+
+		/* TODO - we could keep the following info in the DB, too... */
+
+		DEBUG(8,("enum_external_services: Service name [%s] displayname [%s]\n",
+		si->filename, si->provides)); 
+		services[i].status.type               = SVCCTL_WIN32_OWN_PROC; 
+		services[i].status.win32_exit_code    = 0x0;
+		services[i].status.service_exit_code  = 0x0;
+		services[i].status.check_point        = 0x0;
+		services[i].status.wait_hint          = 0x0;
+
+		/* TODO - do callout here to get the status */
+
+		memset(command, 0, sizeof(command));
+		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, *svcname, "status");
+
+		DEBUG(10, ("enum_external_services: status command is [%s]\n", command));
+
+		/* TODO  - wrap in privilege check */
+
+		ret = smbrun(command, &fd);
+		DEBUGADD(10, ("returned [%d]\n", ret));
+		close(fd);
+		if(ret != 0)
+			DEBUG(10, ("enum_external_services: Command returned  [%d]\n", ret));
+		services[i].status.state              = SVCCTL_STOPPED;
+		if (ret == 0) {
+			services[i].status.state              = SVCCTL_RUNNING;
+			services[i].status.controls_accepted  = SVCCTL_CONTROL_SHUTDOWN | SVCCTL_CONTROL_STOP;
+		} else {
+			services[i].status.state              = SVCCTL_STOPPED;
+			services[i].status.controls_accepted  = 0;
+		}
+		svcname++; 
+		i++;
+	} 
+
+	DEBUG(10,("enum_external_services: Read services %d\n",num_services));
+	*added = num_services;
+
+	return WERR_OK;
+}
+
+int num_internal_services(void)
+{
+	int num_services;
+	char **svc_list;
+	pstring keystring, internal_services_string;
+	TDB_DATA key_data;
+
+	if (!service_tdb) {
+		DEBUG(8,("enum_internal_services: service database is not open!!!\n"));
+		num_services = 0;
+	} else {
+		pstrcpy(keystring,"INTERNAL_SERVICES");
+		tdb_lock_bystring(service_tdb, keystring, 0);
+		key_data = tdb_fetch_bystring(service_tdb, keystring);
+
+		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
+			strncpy(internal_services_string,key_data.dptr,key_data.dsize);
+			internal_services_string[key_data.dsize] = 0;
+			DEBUG(8,("enum_internal_services: services list is %s, size is %d\n",internal_services_string,key_data.dsize));
+		}
+		tdb_unlock_bystring(service_tdb, keystring);
+	} 
+	svc_list = str_list_make(internal_services_string,NULL);
+ 
+	num_services = str_list_count( (const char **)svc_list);
+
+	return num_services;
+}
+
 /****************************************************************************
  Create/Open the service control manager tdb. This code a clone of init_group_mapping.
 ****************************************************************************/
@@ -469,9 +689,9 @@ BOOL init_svcctl_db(void)
 
 	while (*svcname) {
 		DEBUG(10,("Reading information on service %s\n",*svcname));
-		if (_svcctl_get_LSB_data(*svcname,&si));{
+		if (get_LSB_data(*svcname,&si));{
 			/* write the information to the TDB */
-			_svcctl_write_si_to_service_tdb(service_tdb,*svcname,&si);
+			store_service_info(service_tdb,*svcname,&si);
 			/* definitely not efficient to do it this way. */
 			pstrcat(external_service_list,"\"");
 			pstrcat(external_service_list,*svcname);
@@ -492,9 +712,9 @@ BOOL init_svcctl_db(void)
 
 	while (isd_ptr && (isd_ptr->filename)) {
 		DEBUG(10,("Reading information on service %s\n",isd_ptr->filename));
-		if (_svcctl_get_internal_service_data(isd_ptr,&si)){
+		if (get_internal_service_data(isd_ptr,&si)){
 			/* write the information to the TDB */
-			_svcctl_write_si_to_service_tdb(service_tdb,(char *)isd_ptr->filename,&si);
+			store_service_info(service_tdb,(char *)isd_ptr->filename,&si);
 			/* definitely not efficient to do it this way. */
 			pstrcat(internal_service_list,"\"");
 			pstrcat(internal_service_list,isd_ptr->filename);
@@ -512,52 +732,162 @@ BOOL init_svcctl_db(void)
 	return True;
 }
 
-/* Service_info related functions */
-static Service_info *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *handle)
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
+                                     uint32 access_desired, uint32 *access_granted )
 {
-	Service_info *info = NULL;
-
-	if(!(find_policy_by_hnd(p,handle,(void **)&info)))
-		DEBUG(2,("find_service_info_by_hnd: service not found.\n"));
-
-	return info;
+	NTSTATUS result;
+	
+	/* maybe add privilege checks in here later */
+	
+	se_access_check( sec_desc, token, access_desired, access_granted, &result );
+	
+	return result;
 }
 
-static void free_service_info(void *ptr)
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 {
-	Service_info *info = (Service_info *)ptr;
-	memset(info,'0',sizeof(Service_info));
+	SEC_ACE ace[2];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	uint32 sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, SC_MANAGER_READ_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* Full Access 'BUILTIN\Administrators' */
+	
+	init_sec_access(&mask,SC_MANAGER_ALL_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
+{
+	SEC_ACE ace[4];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	uint32 sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, SERVICE_READ_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		
+	init_sec_access(&mask,SERVICE_EXECUTE_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Power_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	init_sec_access(&mask,SERVICE_ALL_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Server_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
+/******************************************************************
+ free() function for REGISTRY_KEY
+ *****************************************************************/
+ 
+static void free_service_handle_info(void *ptr)
+{
+	SERVICE_INFO *info = (SERVICE_INFO*)ptr;
+	
+	SAFE_FREE(info->name);
 	SAFE_FREE(info);
 }
 
-/* SCM_info related functions */
-static void free_SCM_info(void *ptr)
+/******************************************************************
+ Find a registry key handle and return a SERVICE_INFO
+ *****************************************************************/
+
+static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 {
-	SCM_info *info = (SCM_info *)ptr;
-	memset(info->target_server_name, '0', sizeof(*(info->target_server_name)));
-	memset(info->target_db_name, '0', sizeof(*(info->target_db_name)));
-	memset(info, 0, sizeof(*(info)));
-	SAFE_FREE(info);
+	SERVICE_INFO *service_info = NULL;
+
+	if( !find_policy_by_hnd( p, hnd, (void **)&service_info) ) {
+		DEBUG(2,("find_service_info_by_hnd: handle not found"));
+		return NULL;
+	}
+
+	return service_info;
 }
 
-static SCM_info *find_SCManager_info_by_hnd(pipes_struct *p, POLICY_HND *handle)
+/******************************************************************
+ *****************************************************************/
+ 
+static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, 
+                                          const char *service, uint32 access_granted )
 {
-	SCM_info *info = NULL;
-    
-	if ( !(find_policy_by_hnd(p,handle,(void **)&info)) ) 
-		DEBUG(2,("svcctl_find_SCManager_info_by_hnd: service not found.\n"));
+	SERVICE_INFO *info = NULL;
+	
+	if ( !(info = SMB_MALLOC_P( SERVICE_INFO )) )
+		return WERR_NOMEM;
 
-	return info;
-}
+	ZERO_STRUCTP( info );
+		
+	/* the Service Manager has a NULL name */
+	
+	if ( !service ) {
+		info->type = SVC_HANDLE_IS_SCM;
+	} else {
+		info->type = SVC_HANDLE_IS_SERVICE;
+		
+		if ( !(info->name  = SMB_STRDUP( service )) ) {
+			free_service_handle_info( info );
+			WERR_NOMEM;
+		}
+		
+#if 0
+		/* lookup the SERVICE_CONTROL_OPS */
 
-static BOOL _svcctl_open_SCManager_hook(SCM_info *info)
-{
-	return True;
-}
+		for ( i=0; svcctl_ops[i].name; i++ ) {
+			;;
+		}
+#endif
+	}
 
-static BOOL _svcctl_close_SCManager_hook(SCM_info *info)
-{
-	return True;
+	info->access_granted = access_granted;	
+	
+	/* store the SERVICE_INFO and create an open handle */
+	
+	if ( !create_policy_hnd( p, handle, free_service_handle_info, info ) ) {
+		free_service_handle_info( info );
+		return WERR_ACCESS_DENIED;
+	}
+		
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -565,48 +895,20 @@ static BOOL _svcctl_close_SCManager_hook(SCM_info *info)
 
 WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVCCTL_R_OPEN_SCMANAGER *r_u)
 {
-	/* create the DB of the services that we have  */
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
 	
-	/* associate the information from the service opened in the create_policy_hnd string */
-
-	SCM_info *info = NULL;
-	fstring fhandle_string;
-
-	if(!q_u || !r_u)
+	/* perform access checks */
+	
+	if ( !(sec_desc = construct_scm_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
-    
-	if((info = SMB_MALLOC_P(SCM_info)) == NULL)
-		return WERR_NOMEM;
-    
-	ZERO_STRUCTP(info);
-
-	info->type = SVC_HANDLE_IS_SCM;
-
-	if(q_u->servername != 0)
-		unistr2_to_ascii(info->target_server_name, q_u->servername, sizeof(info->target_server_name));
-	else {
-		/* if servername == NULL, use the local computer */
-		pstrcpy(info->target_server_name, global_myname());
-	}
-	DEBUG(10, ("_svcctl_open_scmanager: Using [%s] as the server name.\n", info->target_server_name));
-
-	if(q_u->database != 0)
-		unistr2_to_ascii(info->target_db_name, q_u->database, sizeof(info->target_db_name));
-	else
-		pstrcpy(info->target_db_name, "ServicesActive");
-
-	if(!create_policy_hnd(p, &(r_u->handle), free_SCM_info, (void *)info))
-		return WERR_NOMEM;
-
-	policy_handle_to_string(&r_u->handle, &fhandle_string);
-	DEBUG(10, ("_svcctl_open_scmanager: Opening [%s] as the target services db, handle [%s]\n", info->target_db_name,fhandle_string));
-
-	if(!(_svcctl_open_SCManager_hook(info))) {
-		/* TODO - should we free the memory that may have been allocated with the policy handle? */
-		return WERR_BADFILE;
-	}
-	return WERR_OK;
-
+		
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+	return create_open_service_handle( p, &r_u->handle, NULL, access_granted );
 }
 
 /********************************************************************
@@ -614,117 +916,45 @@ WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVC
 
 WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_R_OPEN_SERVICE *r_u)
 {
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
 	pstring service;
-	pstring service_filename;
-	fstring fhandle_string;
-	Service_info *info;
-
-	if(!q_u || !r_u)
-	  return WERR_NOMEM;
-    
-	if((info = SMB_MALLOC_P(Service_info)) == NULL)
-	  return WERR_NOMEM;
-    
-	ZERO_STRUCTP(info);
-
-	info->type = SVC_HANDLE_IS_SERVICE;
+	SERVICE_INFO *scm_info;
 
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
 	
-	if (service_tdb == NULL) {
-   	  DEBUG(1, ("_svcctl_open_service: Cannot open Service [%s], the service database is not open; handle [%s]\n", service,fhandle_string));
-	  return WERR_ACCESS_DENIED;
-	}
-  	DEBUG(1, ("_svcctl_open_service: Attempting to open Service [%s], \n", service));
-       
-#if 0
-	if ( !_svcctl_service_nicename_to_servicename(service_tdb, service, service_filename, sizeof(pstring)) ) {
-		DEBUG(1, ("_svcctl_open_service: Cannot open Service [%s], the service can't be found\n", service));
-		return WERR_NO_SUCH_SERVICE;
-	}
-#else
-	pstrcpy(service_filename,service);
-#endif
+  	DEBUG(5, ("_svcctl_open_service: Attempting to open Service [%s], \n", service));
 
-	if (_svcctl_read_service_tdb_to_si(service_tdb,service, info)) 
-     		DEBUG(1, ("_svcctl_open_service: Found service [%s], servicename [%s], \n", service, info->servicename));
-	else 
-		return WERR_NO_SUCH_SERVICE;
 	
-#if 0
-	if ( !(strequal( service, "NETLOGON") || strequal(service, "Spooler")) )
+	/* based on my tests you can open a service if you have a valid scm handle */
+	
+	if ( !(scm_info = find_service_info_by_hnd( p, &q_u->handle )) )
+		return WERR_BADFID;
+			
+	/* perform access checks */
+	
+	if ( !(sec_desc = construct_service_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+#if 0	/* FIXME!!! */
+	if ( ! get_service_info(service_tdb, service, info) ) {
 		return WERR_NO_SUCH_SERVICE;
 #endif
-	if ( !create_policy_hnd( p, &(r_u->handle), free_service_info, (void *)info ) )
-		return WERR_ACCESS_DENIED;
-
-	policy_handle_to_string(&r_u->handle, &fhandle_string);
-	DEBUG(10, ("_svcctl_open_service: Opening Service [%s], handle [%s]\n", service,fhandle_string));
-
-	return WERR_OK;
+	
+	return create_open_service_handle( p, &r_u->handle, service, access_granted );
 }
 
 /********************************************************************
 ********************************************************************/
 
-/* Note that this can be called to close an individual service, ** OR ** the Service Control Manager */
-
 WERROR _svcctl_close_service(pipes_struct *p, SVCCTL_Q_CLOSE_SERVICE *q_u, SVCCTL_R_CLOSE_SERVICE *r_u)
 {
-	SCM_info *scminfo;
-	Service_info *svcinfo;
-	POLICY_HND *handle;
-	fstring   fhandle_string;
-	POLICY_HND null_policy_handle;
-
-
-	handle = &(q_u->handle);
-
-	/* a handle is returned  in the close when it's for a service */
-
-	policy_handle_to_string(handle, &fhandle_string);
-	DEBUG(10, ("_svcctl_close_service: Closing handle [%s]\n",fhandle_string));
-
-	ZERO_STRUCT(null_policy_handle);
-
-	policy_handle_to_string(handle, &fhandle_string);
-	DEBUG(10, ("_svcctl_close_service: Closing handle [%s]\n",fhandle_string));
-
-	scminfo = find_SCManager_info_by_hnd(p, handle);
- 
-	if ((NULL != scminfo) && (scminfo->type == SVC_HANDLE_IS_SCM)) {
-		DEBUG(3,("_svcctl_close_service: Closing SERVICE DATABASE [%s]\n", scminfo->target_db_name));
-
-		if(!(_svcctl_close_SCManager_hook(scminfo)))
-			return WERR_BADFILE;
-
-		if(!(close_policy_hnd(p, handle)))
-		{
-			/* WERR_NOMEM is probably not the correct error, but until I figure out a better
-			   one it will have to do */
-			DEBUG(3,("_svcctl_close_service: Can't close SCM \n"));
-			return WERR_NOMEM;
-		}
-		memcpy(&(r_u->handle),&null_policy_handle, sizeof(POLICY_HND));
-		return WERR_OK;
-	} 
-
-	if ((NULL != scminfo) && (scminfo->type == SVC_HANDLE_IS_SERVICE)) {
-		svcinfo = (Service_info *)scminfo;
-		DEBUG(3,("_svcctl_close_service: Handle is a SERVICE not SCM \n"));
-		DEBUG(3,("_svcctl_close_service: Closing SERVICE [%s]\n", svcinfo->servicename));
-		if(!(close_policy_hnd(p, handle)))
-		{
-			/* WERR_NOMEM is probably not the correct error, but until I figure out a better
-			   one it will have to do */
-			DEBUG(3,("_svcctl_close_service: Can't close SERVICE [%s]\n", svcinfo->servicename));
-			return WERR_NOMEM;
-		}
-	}
-
-	memcpy(&(r_u->handle),&null_policy_handle, sizeof(POLICY_HND));
-
-	return WERR_OK;
+	return close_policy_hnd( p, &q_u->handle ) ? WERR_OK : WERR_BADFID;
 }
 
 /********************************************************************
@@ -734,33 +964,18 @@ WERROR _svcctl_get_display_name(pipes_struct *p, SVCCTL_Q_GET_DISPLAY_NAME *q_u,
 {
 	fstring service;
 	fstring displayname;
-	fstring fhandle_string;
-
-	Service_info *service_info;
-	POLICY_HND *handle;
-
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* can only use an SCM handle here */
+	
+	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
+		return WERR_BADFID;
+		
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
 
-	handle = &(q_u->handle);
-	policy_handle_to_string(&q_u->handle, &fhandle_string);
-
-	DEBUG(10, ("_svcctl_get_display_name: Looking for handle [%s]\n",(char *)&fhandle_string));
-
-	service_info = find_service_info_by_hnd(p, handle);
-
-	if (!service_info) {
- 		DEBUG(10, ("_svcctl_get_display_name : Can't find the service for the handle\n"));
-		return WERR_ACCESS_DENIED;
-	}
-
-	DEBUG(10, ("_svcctl_get_display_name: Found service [%s], [%s]\n",service_info->servicename,service_info->filename));
-	/* no dependent services...basically a stub function */
-
-#if 0
-	if ( !strequal( service, "NETLOGON" ) )
-		return WERR_ACCESS_DENIED;
-#endif
-	fstrcpy( displayname, service_info->servicename) ; 
+	/* need a tdb lookup here or something */
+	
+	fstrcpy( displayname, "FIX ME!" );
 
 	init_svcctl_r_get_display_name( r_u, displayname );
 
@@ -772,7 +987,16 @@ WERROR _svcctl_get_display_name(pipes_struct *p, SVCCTL_Q_GET_DISPLAY_NAME *q_u,
 
 WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_R_QUERY_STATUS *r_u)
 {
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
 
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;
+		
+	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
+		return WERR_ACCESS_DENIED;
+		
 	r_u->svc_status.type = 0x0020;
 	r_u->svc_status.state = 0x0004;
 	r_u->svc_status.controls_accepted = 0x0005;
@@ -780,228 +1004,13 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 	return WERR_OK;
 }
 
-/* allocate an array of external services and return them. Null return is okay, make sure &added is also zero! */
 
-int _svcctl_num_external_services(void)
-{
-	int num_services;
-	char **svc_list;
-	pstring keystring, external_services_string;
-	TDB_DATA key_data;
+/*********************************************************************
+ TODO - for internal services, do similar to external services, except 
+ we have to call the right status routine...
+**********************************************************************/
 
-
-	if (!service_tdb) {
-		DEBUG(8,("_svcctl_enum_external_services: service database is not open!!!\n"));
-		num_services = 0;
-	} else {
-		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(external_services_string,key_data.dptr,key_data.dsize);
-			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("_svcctl_enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
-		}
-		tdb_unlock_bystring(service_tdb, keystring);
-	} 
-	svc_list = str_list_make(external_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	return num_services;
-}
-
-
-
-/*
-
-  Gather information on the "external services". These are services listed in the smb.conf file, and found to exist through
-  checks in this code. Note that added will be incremented on the basis of the number of services added.  svc_ptr should have enough
-  memory allocated to accommodate all of the services that exist. 
-
-  Typically _svcctl_num_external_services is used to "size" the amount of memory allocated, but does little/no work. 
-
-  _svcctl_enum_external_services actually examines each of the specified external services, populates the memory structures, and returns.
-
-  ** note that 'added' may end up with less than the number of services found in _num_external_services, such as the case when a service is
-  called out, but the actual service doesn't exist or the file can't be read for the service information.
-
-
- */
-
-WERROR _svcctl_enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services,int *added) 
-{
-	/* *svc_ptr must have pre-allocated memory */
-	int num_services = 0;
-	int i = 0;
-	ENUM_SERVICES_STATUS *services=NULL;
-	char **svc_list,**svcname;
-	pstring command, keystring, external_services_string;
-	int ret;
-	int fd = -1;
-	Service_info *si;
-	TDB_DATA key_data;
-
-	*added = num_services;
-
-	if (!service_tdb) {
-		DEBUG(8,("_svcctl_enum_external_services: service database is not open!!!\n"));
-	} else {
-		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(external_services_string,key_data.dptr,key_data.dsize);
-			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("_svcctl_enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
-		}
-		tdb_unlock_bystring(service_tdb, keystring);
-	} 
-	svc_list = str_list_make(external_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	if (0 == num_services) {
-		DEBUG(8,("_svcctl_enum_external_services: there are no external services\n"));
-		*added = num_services;
-		return WERR_OK;
-	}
-	DEBUG(8,("_svcctl_enum_external_services: there are [%d] external services\n",num_services));
-	si=TALLOC_ARRAY( tcx, Service_info, 1 );
-	if (si == NULL) { 
-		DEBUG(8,("_svcctl_enum_external_services: Failed to alloc si\n"));
-		return WERR_NOMEM;
-	}
-
-#if 0
-/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
-	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
-		DEBUG(8,("_svcctl_enum_external_services: REALLOCing %x to %d services\n", *svc_ptr, existing_services+num_services));
-
-		services=TALLOC_REALLOC_ARRAY(tcx,*svc_ptr,ENUM_SERVICES_STATUS,existing_services+num_services);
-		DEBUG(8,("_svcctl_enum_external_services: REALLOCed to %x services\n", services));
-
-		if (!services) return WERR_NOMEM;
-			*svc_ptr = services;
-	} else {
-		if ( !(services = TALLOC_ARRAY( tcx, ENUM_SERVICES_STATUS, num_services )) )
-			return WERR_NOMEM;
-	}
-#endif
-
-	if (!svc_ptr || !(*svc_ptr)) 
-		return WERR_NOMEM;
-	services = *svc_ptr;
-	if (existing_services > 0) {
-		i+=existing_services;
-	}
-
-	svcname = svc_list;
-	DEBUG(8,("_svcctl_enum_external_services: enumerating %d external services starting at index %d\n", num_services,existing_services));
-
-	while (*svcname) {
-		DEBUG(10,("_svcctl_enum_external_services: Reading information on service %s, index %d\n",*svcname,i));
-		/* _svcctl_get_LSB_data(*svcname,si);  */
-		if (!_svcctl_read_service_tdb_to_si(service_tdb,*svcname, si)) {
-			DEBUG(1,("_svcctl_enum_external_services: CAN'T FIND INFO FOR SERVICE %s in the services DB\n",*svcname));
-		}
-
-		if ((si->filename == NULL) || (*si->filename == 0)) {
-			init_unistr(&services[i].servicename, *svcname );
-		} else {
-			init_unistr( &services[i].servicename, si->filename );    
-			/* init_unistr( &services[i].servicename, si->servicename ); */
-		}
-
-		if ((si->provides == NULL) || (*si->provides == 0)) {
-			init_unistr(&services[i].displayname, *svcname );
-		} else {
-			init_unistr( &services[i].displayname, si->provides );
-		}
-
-		/* TODO - we could keep the following info in the DB, too... */
-
-		DEBUG(8,("_svcctl_enum_external_services: Service name [%s] displayname [%s]\n",
-		si->filename, si->provides)); 
-		services[i].status.type               = SVCCTL_WIN32_OWN_PROC; 
-		services[i].status.win32_exit_code    = 0x0;
-		services[i].status.service_exit_code  = 0x0;
-		services[i].status.check_point        = 0x0;
-		services[i].status.wait_hint          = 0x0;
-
-		/* TODO - do callout here to get the status */
-
-		memset(command, 0, sizeof(command));
-		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, *svcname, "status");
-
-		DEBUG(10, ("_svcctl_enum_external_services: status command is [%s]\n", command));
-
-		/* TODO  - wrap in privilege check */
-
-		ret = smbrun(command, &fd);
-		DEBUGADD(10, ("returned [%d]\n", ret));
-		close(fd);
-		if(ret != 0)
-			DEBUG(10, ("_svcctl_enum_external_services: Command returned  [%d]\n", ret));
-		services[i].status.state              = SVCCTL_STOPPED;
-		if (ret == 0) {
-			services[i].status.state              = SVCCTL_RUNNING;
-			services[i].status.controls_accepted  = SVCCTL_CONTROL_SHUTDOWN | SVCCTL_CONTROL_STOP;
-		} else {
-			services[i].status.state              = SVCCTL_STOPPED;
-			services[i].status.controls_accepted  = 0;
-		}
-		svcname++; 
-		i++;
-	} 
-
-	DEBUG(10,("_svcctl_enum_external_services: Read services %d\n",num_services));
-	*added = num_services;
-
-	return WERR_OK;
-}
-
-int _svcctl_num_internal_services(void)
-{
-	int num_services;
-	char **svc_list;
-	pstring keystring, internal_services_string;
-	TDB_DATA key_data;
-
-	if (!service_tdb) {
-		DEBUG(8,("_svcctl_enum_internal_services: service database is not open!!!\n"));
-		num_services = 0;
-	} else {
-		pstrcpy(keystring,"INTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(internal_services_string,key_data.dptr,key_data.dsize);
-			internal_services_string[key_data.dsize] = 0;
-			DEBUG(8,("_svcctl_enum_internal_services: services list is %s, size is %d\n",internal_services_string,key_data.dsize));
-		}
-		tdb_unlock_bystring(service_tdb, keystring);
-	} 
-	svc_list = str_list_make(internal_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	return num_services;
-}
-
-#if 0
-
-int _svcctl_num_internal_services(void)
-{
-	return 2;
-}
-#endif
-
-/* TODO - for internal services, do similar to external services, except we have to call the right status routine... */
-
-WERROR _svcctl_enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, int *added) 
+static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, int *added) 
 {
 	int num_services = 2;
 	int i = 0;
@@ -1015,7 +1024,7 @@ WERROR _svcctl_enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc
 #if 0
 	/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
 	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
-		DEBUG(8,("_svcctl_enum_internal_services: REALLOCing %d services\n", num_services));
+		DEBUG(8,("enum_internal_services: REALLOCing %d services\n", num_services));
 		services = TALLOC_REALLOC_ARRAY(tcx,*svc_ptr,ENUM_SERVICES_STATUS,existing_services+num_services);
 		if (!rsvcs) 
 			return WERR_NOMEM;
@@ -1029,7 +1038,7 @@ WERROR _svcctl_enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc
 	if (existing_services > 0) {
 		i += existing_services;
 	}
-	DEBUG(8,("_svcctl_enum_internal_services: Creating %d services, starting index %d\n", num_services,existing_services));
+	DEBUG(8,("enum_internal_services: Creating %d services, starting index %d\n", num_services,existing_services));
 				
 	init_unistr( &services[i].servicename, "Spooler" );
 	init_unistr( &services[i].displayname, "Print Spooler" );
@@ -1066,29 +1075,27 @@ WERROR _svcctl_enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc
 	return WERR_OK;
 }
 
-WERROR _init_svcdb(void) 
-{
-	if (svcdb) {
-		talloc_destroy(svcdb);
-	}
-	svcdb = talloc_init("services DB");
-
-	return WERR_OK;
-}
-
 /********************************************************************
 ********************************************************************/
 
 WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
 {
 	ENUM_SERVICES_STATUS *services = NULL;
- 
 	uint32 num_int_services = 0;
 	uint32 num_ext_services = 0;
 	int i = 0;
 	size_t buffer_size;
 	WERROR result = WERR_OK;
-	WERROR ext_result = WERR_OK;		
+	WERROR ext_result = WERR_OK;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
+		return WERR_BADFID;
+		
+	if ( !(info->access_granted & SC_RIGHT_MGR_ENUMERATE_SERVICE) )
+		return WERR_ACCESS_DENIED;
 
 	/* num_services = str_list_count( lp_enable_svcctl() ); */
 
@@ -1098,20 +1105,20 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	
 	num_int_services = 0;
 
-	num_int_services = _svcctl_num_internal_services();
+	num_int_services = num_internal_services();
 
-	num_ext_services =  _svcctl_num_external_services();
+	num_ext_services =  num_external_services();
 
 	if ( !(services = TALLOC_ARRAY(p->mem_ctx, ENUM_SERVICES_STATUS, num_int_services+num_ext_services )) )
           return WERR_NOMEM;
 
-        result = _svcctl_enum_internal_services(p->mem_ctx, &services, 0, &num_int_services);
+        result = enum_internal_services(p->mem_ctx, &services, 0, &num_int_services);
 
 	if (W_ERROR_IS_OK(result)) {
 		DEBUG(8,("_svcctl_enum_services_status: Got %d internal services\n", num_int_services));
 	} 
 
-	ext_result=_svcctl_enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services);
+	ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services);
 
 	if (W_ERROR_IS_OK(ext_result)) {
 		DEBUG(8,("_svcctl_enum_services_status: Got %d external services\n", num_ext_services));
@@ -1158,7 +1165,17 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 
 WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCTL_R_START_SERVICE *r_u)
 {
-	return WERR_ACCESS_DENIED;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;
+	
+	if ( !(info->access_granted & SC_RIGHT_SVC_START) )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -1166,18 +1183,29 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 
 WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, SVCCTL_R_CONTROL_SERVICE *r_u)
 {
-	Service_info *service_info;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+	/* we only support stop so don't get complicated */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;	
+	
+	if ( q_u->control != SVCCTL_CONTROL_STOP )
+		return WERR_ACCESS_DENIED;
+		
+	if ( !(info->access_granted & SC_RIGHT_SVC_STOP) )
+		return WERR_ACCESS_DENIED;
+		
+#if 0
+	SERVICE_INFO *service_info;
 	POLICY_HND   *handle;
 	pstring      command;
-	fstring      fhandle_string;
 	SERVICE_STATUS *service_status;
 	int          ret,fd;
 
 	/* need to find the service name by the handle that is open */
 	handle = &(q_u->handle);
-		policy_handle_to_string(&q_u->handle, &fhandle_string);
-
-	DEBUG(10, ("_svcctl_control_service: Looking for handle [%s]\n",fhandle_string));
 
 	service_info = find_service_info_by_hnd(p, handle);
 
@@ -1219,7 +1247,7 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
         close(fd);
 
 	if(ret != 0)
-        	DEBUG(10, ("_svcctl_enum_external_services: Command returned  [%d]\n", ret));
+        	DEBUG(10, ("enum_external_services: Command returned  [%d]\n", ret));
 
 	/* SET all service_stats bits here...*/
 	if (ret == 0) {
@@ -1232,7 +1260,7 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 
 	DEBUG(10, ("_svcctl_query_service_config: Should call the commFound service [%s], [%s]\n",service_info->servicename,service_info->filename));
 
-	/* no dependent services...basically a stub function */
+#endif
 
 	return WERR_OK;
 }
@@ -1242,7 +1270,16 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 
 WERROR _svcctl_enum_dependent_services( pipes_struct *p, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u )
 {
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
 	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;	
+	
+	if ( !(info->access_granted & SC_RIGHT_SVC_ENUMERATE_DEPENDENTS) )
+		return WERR_ACCESS_DENIED;
+			
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
 
@@ -1262,11 +1299,18 @@ WERROR _svcctl_enum_dependent_services( pipes_struct *p, SVCCTL_Q_ENUM_DEPENDENT
 WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u )
 {
         SERVICE_STATUS_PROCESS ssp;
-	fstring fhandle_string;
 	POLICY_HND *handle;
-	Service_info *service_info;
+	SERVICE_INFO *service_info;
 	pstring     command;
-	int         ret,fd;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;	
+	
+	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
+		return WERR_ACCESS_DENIED;
 
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
@@ -1275,9 +1319,7 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 
         /* need to find the service name by the handle that is open */
 	handle = &(q_u->handle);
-	policy_handle_to_string(&q_u->handle, &fhandle_string);
 
-	DEBUG(10, ("_svcctl_query_service_status_ex Looking for handle [%s]\n",fhandle_string));
 
 	/* get rid of the easy errors */
 
@@ -1300,19 +1342,19 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 
   	ZERO_STRUCT(ssp); 
 	    
+#if 0
         if (!strwicmp(service_info->servicetype,"EXTERNAL")) 
 		ssp.type = SVCCTL_WIN32_OWN_PROC;
 	else 
 		ssp.type = SVCCTL_WIN32_SHARED_PROC;
+#endif
 
 	/* Get the status of the service.. */
 
-	DEBUG(10, ("_svcctl_query_service_status_ex: Found service [%s], [%s]\n",service_info->servicename,service_info->filename));
-       
         memset(command, 0, sizeof(command));
 
-	slprintf(command, sizeof(command)-1, "%s%s%s %s",
-		dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service_info->filename, "status");
+#if 0
+	slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, service_info->filename, "status");
 
         DEBUG(10, ("_svcctl_query_service_status_ex: status command is [%s]\n", command));
 
@@ -1332,6 +1374,7 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 		ssp.state              = SVCCTL_STOPPED;
 		ssp.controls_accepted  = 0;
 	}
+#endif
 
 	return WERR_OK;
 }
@@ -1341,12 +1384,18 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 
 WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u )
 {
-	/* SERVICE_CONFIG *service_config = NULL; */
-	fstring fhandle_string;
 	POLICY_HND *handle;
-	Service_info *service_info;
-	pstring     fullpathinfo;
+	SERVICE_INFO *service_info;
         uint32      needed_size;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;	
+	
+	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
+		return WERR_ACCESS_DENIED;
 
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
@@ -1355,9 +1404,6 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 
         /* need to find the service name by the handle that is open */
 	handle = &(q_u->handle);
-	policy_handle_to_string(&q_u->handle, &fhandle_string);
-
-	DEBUG(10, ("_svcctl_query_service_config: Looking for handle [%s]\n",fhandle_string));
 
 	service_info = find_service_info_by_hnd(p, handle);
 
@@ -1395,12 +1441,10 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 	r_u->config.startname = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
 	r_u->config.displayname = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
 
-	DEBUG(10, ("_svcctl_query_service_config: Found service [%s], [%s]\n",service_info->servicename,service_info->filename));
-
+#if 0
 	pstrcpy(fullpathinfo,dyn_LIBDIR);
 	pstrcat(fullpathinfo,SVCCTL_SCRIPT_DIR);
 	pstrcat(fullpathinfo,service_info->filename);
-
 	/* Get and calculate the size of the fields. Note that we're still building the fields in the "too-small buffer case"
 	   even though we throw it away. */
 	
@@ -1413,6 +1457,7 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 
 	init_unistr2(r_u->config.startname,"LocalSystem",UNI_STR_TERMINATE);
 	init_unistr2(r_u->config.displayname,service_info->servicename,UNI_STR_TERMINATE);
+#endif
 
 	needed_size = 0x04 + sizeof(SERVICE_CONFIG)+ 2*(
 	              r_u->config.executablepath->uni_str_len +
@@ -1447,10 +1492,18 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u )
 {
-	fstring fhandle_string;
 	POLICY_HND *handle;
-	Service_info *service_info;
-        uint32   level, string_buffer_size;
+	SERVICE_INFO *service_info;
+        uint32   level;
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
+		return WERR_BADFID;	
+	
+	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
+		return WERR_ACCESS_DENIED;
  
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
@@ -1461,9 +1514,6 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	r_u->offset = 4;                       
 
 	handle = &(q_u->handle);
-	policy_handle_to_string(&(q_u->handle), &fhandle_string);
-
-	DEBUG(10, ("_svcctl_query_service_config2: Looking for handle [%s]\n",fhandle_string));
 
 	service_info = find_service_info_by_hnd(p, handle);
 
@@ -1478,9 +1528,8 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	*/
 
 	level = q_u->info_level;
-	DEBUG(10, ("_svcctl_query_service_config2: Found service [%s], [%s]\n",service_info->servicename,service_info->filename));
-	DEBUG(10, ("_svcctl_query_service_config2: Looking for level [%x], buffer size is [%x]\n",level,q_u->buffer_size));
 
+#if 0
 	if (SERVICE_CONFIG_DESCRIPTION == level) {
 		if (service_info && service_info->shortdescription) {
 			/* length of the string, plus the terminator... */
@@ -1509,6 +1558,7 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 
 	   	return WERR_OK;    
 	} 
+#endif
 
 	return WERR_ACCESS_DENIED;
 }
