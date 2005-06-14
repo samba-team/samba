@@ -4996,37 +4996,13 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
-	DOM_SID owner_sid;
+	DOM_SID adm_sid;
 	size_t sd_size;
 
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
-
-	/* Make the security descriptor owned by the Administrators group
-	   on the PDC of the domain. */
-
-	if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
-	} else {
-
-		/* Backup plan - make printer owned by admins.
- 		   This should emulate a lanman printer as security
- 		   settings can't be changed. */
-
-		sid_copy(&owner_sid, get_global_sam_sid());
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
-	}
-
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
-		     SEC_ACE_FLAG_INHERIT_ONLY);
-
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 	/* Add the domain admins group if we are a DC */
@@ -5038,15 +5014,35 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
 		
 		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		init_sec_ace(&ace[i++], &domadmins_sid, 
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
 		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
-			     SEC_ACE_FLAG_INHERIT_ONLY);
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
+		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
 
 		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+		init_sec_ace(&ace[i++], &adm_sid, 
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 	}
-		     
+
+	/* add BUILTIN\Administrators as FULL CONTROL */
+
+	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the BUILTIN\Administrators */
+
 	/* The ACL revision number in rpc_secdesc.h differs from the one
 	   created by NT when setting ACE entries in printer
 	   descriptors.  NT4 complains about the property being edited by a
@@ -5054,8 +5050,9 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
 		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-				    &owner_sid, NULL,
-				    NULL, psa, &sd_size);
+			&global_sid_Builtin_Administrators, 
+			&global_sid_Builtin_Administrators,
+			NULL, psa, &sd_size);
 	}
 
 	if (!psd) {
