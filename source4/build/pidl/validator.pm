@@ -131,6 +131,7 @@ my %property_list = (
 	"range"			=> ["ELEMENT"],
 	"size_is"		=> ["ELEMENT"],
 	"string"        => ["ELEMENT"],
+	"charset"       => ["ELEMENT"],
 	"length_is"		=> ["ELEMENT"],
 );
 

@@ -239,23 +239,6 @@ sub GenerateFunctionOutEnv($)
 }
 
 #####################################################################
-# parse array preceding data - push side
-sub ParseArrayPushPreceding($$$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $var_name = shift;
-	my $env = shift;
-
-	return if ($l->{NO_METADATA});
-
-	my $size = ParseExpr($l->{SIZE_IS}, $env);
-
-	# we need to emit the array size
-	pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
-}
-
-#####################################################################
 # parse the data of an array - push side
 sub ParseArrayPushHeader($$$$$)
 {
@@ -265,16 +248,15 @@ sub ParseArrayPushHeader($$$$$)
 	my $var_name = shift;
 	my $env = shift;
 
-	if (!$l->{NO_METADATA}) {
+	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 		$var_name = get_pointer_to($var_name);
 	}
 
 	my $size = ParseExpr($l->{SIZE_IS}, $env);
 	my $length = ParseExpr($l->{LENGTH_IS}, $env);
 
-	# See whether the array size has been pushed yet
-	if (!$l->{IS_SURROUNDING}) {
-		ParseArrayPushPreceding($e, $l, $var_name, $env);
+	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
+		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $size));";
 	}
 	
 	if ($l->{IS_VARYING}) {
@@ -283,18 +265,6 @@ sub ParseArrayPushHeader($$$$$)
 	} 
 
 	return $length;
-}
-
-sub ParseArrayPullPreceding($$$)
-{
-	my $e = shift;
-	my $l = shift;
-	my $var_name = shift;
-
-	return if ($l->{NO_METADATA});
-	
-	# non fixed arrays encode the size just before the array
-	pidl "NDR_CHECK(ndr_pull_array_size(ndr, " . get_pointer_to($var_name) . "));";
 }
 
 #####################################################################
@@ -307,7 +277,7 @@ sub ParseArrayPullHeader($$$$$)
 	my $var_name = shift;
 	my $env = shift;
 
-	unless ($l->{NO_METADATA}) {
+	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 		$var_name = get_pointer_to($var_name);
 	}
 
@@ -322,8 +292,8 @@ sub ParseArrayPullHeader($$$$$)
 
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
-	if (!$l->{IS_SURROUNDING}) {
-		ParseArrayPullPreceding($e, $l, $var_name);
+	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
+		pidl "NDR_CHECK(ndr_pull_array_size(ndr, " . get_pointer_to($var_name) . "));";
 	}
 
 
@@ -624,7 +594,7 @@ sub ParseElementPushLevel
 			my $length = ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
 			# Allow speedups for arrays of scalar types
 			if (is_scalar_array($e,$l)) {
-				unless ($l->{NO_METADATA}) {
+				if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 					$var_name = get_pointer_to($var_name);
 				}
 
@@ -659,10 +629,10 @@ sub ParseElementPushLevel
 
 		$var_name = $var_name . "[$counter]";
 
-		unless ($l->{NO_METADATA}) {
+		if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
 			$var_name = get_pointer_to($var_name);
 		}
-		
+
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
@@ -765,7 +735,7 @@ sub ParseElementPrint($$$)
 			my $length = ParseExpr($l->{LENGTH_IS}, $env);
 
 			if (is_scalar_array($e, $l)) {
-				unless ($l->{NO_METADATA}){ 
+				if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}){ 
 					$var_name = get_pointer_to($var_name); 
 				}
 				pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
@@ -785,7 +755,7 @@ sub ParseElementPrint($$$)
 
 			$var_name = $var_name . "[$counter]";
 
-			unless ($l->{NO_METADATA}){ $var_name = get_pointer_to($var_name); }
+			if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}){ $var_name = get_pointer_to($var_name); }
 
 		} elsif ($l->{TYPE} eq "DATA") {
 			if (not typelist::is_scalar($l->{DATA_TYPE}) or typelist::scalar_is_reference($l->{DATA_TYPE})) {
@@ -945,7 +915,7 @@ sub ParseElementPullLevel
 			# Speed things up a little - special array pull functions
 			# for scalars
 			if (is_scalar_array($e, $l)) {
-				unless ($l->{NO_METADATA}) {
+				if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
 					$var_name = get_pointer_to($var_name);
 				}
 
@@ -989,7 +959,7 @@ sub ParseElementPullLevel
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
-		unless ($l->{NO_METADATA}) {
+		if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
 			$var_name = get_pointer_to($var_name);
 		}
 
@@ -1118,7 +1088,9 @@ sub ParseStructPush($$)
 
 		if (defined($e->{LEVELS}[0]) and 
 			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
-			ParseArrayPushPreceding($e, $e->{LEVELS}[0], "r->$e->{NAME}", $env);
+			my $size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env);
+
+			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
 		} else {
 			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_string_array_size(ndr, r->$e->{NAME})));";
 		}
@@ -1412,18 +1384,10 @@ sub ParseStructPull($$)
 {
 	my($struct) = shift;
 	my $name = shift;
-	my $conform_e;
 
 	return unless defined $struct->{ELEMENTS};
 
 	my $env = GenerateStructEnv($struct);
-
-	# see if the structure contains a conformant array. If it
-	# does, then it must be the last element of the structure, and
-	# we need to pull the conformant length early, as it fits on
-	# the wire before the structure (and even before the structure
-	# alignment)
-	$conform_e = $struct->{SURROUNDING_ELEMENT};
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1439,8 +1403,8 @@ sub ParseStructPull($$)
 	pidl "if (ndr_flags & NDR_SCALARS) {";
 	indent;
 
-	if (defined $conform_e) {
-		ParseArrayPullPreceding($conform_e, $conform_e->{LEVELS}[0], "r->$conform_e->{NAME}");
+	if (defined $struct->{SURROUNDING_ELEMENT}) {
+		pidl "NDR_CHECK(ndr_pull_array_size(ndr, &r->$struct->{SURROUNDING_ELEMENT}->{NAME}));";
 	}
 
 	pidl "NDR_CHECK(ndr_pull_align(ndr, $struct->{ALIGN}));";
