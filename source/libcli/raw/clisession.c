@@ -231,7 +231,7 @@ NTSTATUS smb_raw_session_setup(struct smbcli_session *session, TALLOC_CTX *mem_c
 
 
 /****************************************************************************
- Send a uloggoff (async send)
+ Send a ulogoff (async send)
 *****************************************************************************/
 struct smbcli_request *smb_raw_ulogoff_send(struct smbcli_session *session)
 {
@@ -251,7 +251,7 @@ struct smbcli_request *smb_raw_ulogoff_send(struct smbcli_session *session)
 }
 
 /****************************************************************************
- Send a uloggoff (sync interface)
+ Send a ulogoff (sync interface)
 *****************************************************************************/
 NTSTATUS smb_raw_ulogoff(struct smbcli_session *session)
 {
