@@ -333,8 +333,8 @@ static int ltdb_extended_match(struct ldb_module *module,
 		const char *oid;
 		int (*comparator)(struct ldb_val *, struct ldb_val *);
 	} rules[] = {
-		{ "1.2.840.113556.1.4.803", comparator_and},
-		{ "1.2.840.113556.1.4.804", comparator_or}
+		{ LDB_OID_COMPARATOR_AND, comparator_and},
+		{ LDB_OID_COMPARATOR_OR, comparator_or}
 	};
 	int (*comp)(struct ldb_val *, struct ldb_val *) = NULL;
 	struct ldb_message_element *el;
