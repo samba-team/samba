@@ -223,7 +223,8 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 	if (!conn->session_info) {
 		return write_from_buf(sock, &conn->out_buffer);
 	}
-	if (!(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	if (conn->sasl_out_buffer.length == 0 &&
+	    !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
 	      gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
 		return write_from_buf(sock, &conn->out_buffer);
 	}
