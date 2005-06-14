@@ -80,23 +80,12 @@ static DOM_SID *pdb_generate_sam_sid(void)
 {
 	DOM_SID domain_sid;
 	char *fname = NULL;
-	BOOL is_dc = False;
 	DOM_SID *sam_sid;
 	
 	if(!(sam_sid=SMB_MALLOC_P(DOM_SID)))
 		return NULL;
-			
-	switch (lp_server_role()) {
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
-		is_dc = True;
-		break;
-	default:
-		is_dc = False;
-		break;
-	}
 
-	if (is_dc) {
+	if ( IS_DC ) {
 		if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 			sid_copy(sam_sid, &domain_sid);
 			return sam_sid;
@@ -106,7 +95,7 @@ static DOM_SID *pdb_generate_sam_sid(void)
 	if (secrets_fetch_domain_sid(global_myname(), sam_sid)) {
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
-		if (!is_dc)
+		if ( !IS_DC )
 			return sam_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
@@ -150,7 +139,7 @@ static DOM_SID *pdb_generate_sam_sid(void)
 			return NULL;
 		}
 		unlink(fname);
-		if (is_dc) {
+		if ( !IS_DC ) {
 			if (!secrets_store_domain_sid(lp_workgroup(), sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
 				SAFE_FREE(fname);
@@ -175,7 +164,7 @@ static DOM_SID *pdb_generate_sam_sid(void)
 		SAFE_FREE(sam_sid);
 		return NULL;
 	}
-	if (is_dc) {
+	if ( IS_DC ) {
 		if (!secrets_store_domain_sid(lp_workgroup(), sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
 			SAFE_FREE(sam_sid);
