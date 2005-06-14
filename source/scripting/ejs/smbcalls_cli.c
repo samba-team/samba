@@ -54,7 +54,7 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	transport = smbcli_transport_init(sock, sock, True);
+	transport = smbcli_transport_init(sock, sock, False);
 
 	if (!transport) {
 		ejsSetErrorMsg(eid, "transport init failed");
@@ -186,7 +186,7 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 	/* Do session setup */
 
-	session = smbcli_session_init(transport, transport, True);
+	session = smbcli_session_init(transport, transport, False);
 
 	if (!session) {
 		ejsSetErrorMsg(eid, "session init failed");
@@ -201,7 +201,7 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 	status = smb_composite_sesssetup(session, &setup);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		ejsSetErrorMsg(eid, "session setup: %s", nt_errstr(status));
+		ejsSetErrorMsg(eid, "session_setup: %s", nt_errstr(status));
 		return -1;
 	}
 
@@ -221,11 +221,11 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 /* Perform a tree connect
    
-     session_setup(session, SHARE);
+     tree_connect(session, SHARE);
 
  */
 
-static int ejs_cli_tcon(MprVarHandle eid, int argc, MprVar **argv)
+static int ejs_cli_tree_connect(MprVarHandle eid, int argc, MprVar **argv)
 {
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;
@@ -247,7 +247,7 @@ static int ejs_cli_tcon(MprVarHandle eid, int argc, MprVar **argv)
 	}
 
 	session = argv[0]->ptr;
-	tree = smbcli_tree_init(session, session, True);
+	tree = smbcli_tree_init(session, session, False);
 
 	if (!tree) {
 		ejsSetErrorMsg(eid, "tree init failed");
@@ -284,13 +284,116 @@ static int ejs_cli_tcon(MprVarHandle eid, int argc, MprVar **argv)
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		ejsSetErrorMsg(eid, "session setup: %s", nt_errstr(status));
+		ejsSetErrorMsg(eid, "tree_connect: %s", nt_errstr(status));
 		return -1;
 	}
 
 	tree->tid = tcon.tconx.out.tid;
 
 	talloc_free(mem_ctx);	
+
+	ejsSetReturnValue(eid, mprCreatePtrVar(tree, 
+					       talloc_get_name(tree)));
+
+	return 0;
+}
+
+/* Perform a tree disconnect
+   
+     tree_disconnect(tree);
+
+ */
+static int ejs_cli_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS status;
+
+	/* Argument parsing */
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "tree_disconnect invalid arguments");
+		return -1;
+	}
+
+	if (!mprVarIsPtr(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}	
+
+	tree = argv[0]->ptr;
+
+	status = smb_tree_disconnect(tree);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "tree_disconnect: %s", nt_errstr(status));
+		return -1;
+	}
+
+	talloc_free(tree);
+
+	return 0;
+}
+
+/* Perform a ulogoff
+   
+     session_logoff(session);
+
+ */
+static int ejs_cli_session_logoff(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_session *session;
+	NTSTATUS status;
+
+	/* Argument parsing */
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "session_logoff invalid arguments");
+		return -1;
+	}
+
+	if (!mprVarIsPtr(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "first arg is not a session handle");
+		return -1;
+	}	
+
+	session = argv[0]->ptr;
+
+	status = smb_raw_ulogoff(session);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ejsSetErrorMsg(eid, "session_logoff: %s", nt_errstr(status));
+		return -1;
+	}
+
+	talloc_free(session);
+
+	return 0;
+}
+
+/* Perform a connection close
+   
+     disconnect(conn);
+
+ */
+static int ejs_cli_disconnect(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_sock *sock;
+
+	/* Argument parsing */
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "disconnect invalid arguments");
+		return -1;
+	}
+
+	if (!mprVarIsPtr(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "first arg is not a connect handle");
+		return -1;
+	}	
+
+	sock = argv[0]->ptr;
+
+	talloc_free(sock);
 
 	return 0;
 }
@@ -302,5 +405,8 @@ void smb_setup_ejs_cli(void)
 {
 	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "session_setup", ejs_cli_ssetup, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "tree_connect", ejs_cli_tcon, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "tree_connect", ejs_cli_tree_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "tree_disconnect", ejs_cli_tree_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "session_logoff", ejs_cli_session_logoff, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "disconnect", ejs_cli_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
