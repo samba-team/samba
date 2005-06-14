@@ -573,7 +573,26 @@
 
 	/******************/
 	/* Function: 0x0c */
+	typedef struct {
+		nstring directory_name;
+	} spoolss_DriverDirectoryInfo1;
+
+	/* NOTE: it's seems that w2k3 completly ignores the level
+	         in its server code
+	 */
+	typedef [nodiscriminant,relative_base,gensize,public] union {
+		[case(1)] spoolss_DriverDirectoryInfo1 info1;
+		[default] spoolss_DriverDirectoryInfo1 info1;
+	} spoolss_DriverDirectoryInfo;
+
 	WERROR spoolss_GetPrinterDriverDirectory(
+		[in] unistr *server,
+		[in] unistr *environment,
+		[in] uint32 level,
+		[in] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,subcontext(4),switch_is(level)] spoolss_DriverDirectoryInfo *info,
+		[out] uint32 needed
 	);
 
 	/******************/

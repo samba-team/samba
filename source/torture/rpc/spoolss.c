@@ -211,6 +211,78 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 	return True;
 }
 
+static BOOL test_GetPrinterDriverDirectory(struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_GetPrinterDriverDirectory r;
+	struct {
+		uint16_t level;
+		const char *server;
+	} levels[] = {{
+			.level	= 1,
+			.server	= ""
+		},{
+			.level	= 78,
+			.server	= ""
+		},{
+			.level	= 1,
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p))
+		},{
+			.level	= 1024,
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p))
+		}
+	};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i].level;
+		DATA_BLOB blob;
+
+		r.in.server		= levels[i].server;
+		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
+		r.in.level		= level;
+		r.in.buffer		= NULL;
+		r.in.offered		= 0;
+
+		printf("Testing GetPrinterDriverDirectory level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_GetPrinterDriverDirectory(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_GetPrinterDriverDirectory failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			printf("GetPrinterDriverDirectory unexspected return code %s, should be WERR_INSUFFICIENT_BUFFER\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
+
+		status = dcerpc_spoolss_GetPrinterDriverDirectory(ctx->p, ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("dcerpc_spoolss_GetPrinterDriverDirectory failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinterDriverDirectory failed - %s\n",
+				win_errstr(r.out.result));
+			ret = False;
+			continue;
+		}
+	}
+
+	return True;
+}
+
 static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
@@ -223,11 +295,11 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 		int level = levels[i];
 		DATA_BLOB blob;
 
-		r.in.server = "";
-		r.in.environment = "Windows NT x86";
-		r.in.level = level;
-		r.in.buffer = NULL;
-		r.in.offered = 0;
+		r.in.server		= "";
+		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
+		r.in.level		= level;
+		r.in.buffer		= NULL;
+		r.in.offered		= 0;
 
 		printf("Testing EnumPrinterDrivers level %u\n", r.in.level);
 
@@ -1993,6 +2065,8 @@ BOOL torture_rpc_spoolss(void)
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
 
 	ret &= test_EnumPorts(ctx);
+
+	ret &= test_GetPrinterDriverDirectory(ctx);
 
 	ret &= test_EnumPrinterDrivers(ctx);
 
