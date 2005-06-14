@@ -7,3 +7,4 @@ rm -f tdbtest.ldb
 
 . tests/test-generic.sh
 
+. tests/test-extended.sh
