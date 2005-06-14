@@ -1,5 +1,8 @@
 2005-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/Makefile.am: TESTS += test_mem libkrb5_la_SOURCES +=
+	kcm.h
+	
 	* kuser/kinit.c (main): catch KRB5_CONFIG_BADFORMAT from
 	krb5_init_context
 
