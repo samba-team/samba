@@ -75,6 +75,12 @@
 
 
 /*
+ * Static variables
+ */
+static int      lsqlite3_debug = TRUE;
+
+
+/*
  * Forward declarations
  */
 static int
@@ -298,6 +304,7 @@ lsqlite3_rename(struct ldb_module * module,
 	}
         
 #warning "lsqlite3_rename() is not yet supported"
+
         return -1;
 }
 
@@ -306,13 +313,23 @@ static int
 lsqlite3_delete(struct ldb_module *module,
                 const char *dn)
 {
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
+
 	/* ignore ltdb specials */
 	if (dn[0] == '@') {
 		return 0;
 	}
         
+        /* Begin a transaction */
+        QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
+
+
 #warning "lsqlite3_delete() is not yet supported"
-        return -1;
+
+        /* Commit the transaction */
+        QUERY_NOROWS(lsqlite3, TRUE, "COMMIT;");
+        
+        return 0;
 }
 
 /* search for matching records, by tree */
@@ -324,7 +341,6 @@ lsqlite3_search_bytree(struct ldb_module * module,
                        const char * const * attrs,
                        struct ldb_message *** pppRes)
 {
-        int                         i;
         int                         ret;
         int                         allocated;
         int                         bLoop;
@@ -337,6 +353,7 @@ lsqlite3_search_bytree(struct ldb_module * module,
         const char *                pDN;
         const char *                pAttrName;
         const char *                pAttrValue;
+        const char *                pResultAttrList;
         const char * const *        pRequestedAttrs;
         sqlite3_stmt *              pStmt;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
@@ -351,13 +368,18 @@ lsqlite3_search_bytree(struct ldb_module * module,
         /*
          * Obtain the eid of the base DN
          */
-        QUERY_INT(lsqlite3,
-                  eid,
-                  TRUE,
-                  "SELECT eid "
-                  "  FROM ldb_attr_dn "
-                  "  WHERE attr_value = %Q;",
-                  pBaseDN);
+        if ((ret = query_int(lsqlite3,
+                             &eid,
+                             "SELECT eid\n"
+                             "  FROM ldb_attr_DN\n"
+                             "  WHERE attr_value = %Q;",
+                             pBaseDN)) == SQLITE_DONE) {
+                QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
+                return 0;
+        } else if (ret != SQLITE_OK) {
+                QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
+                return -1;
+        }
         
         /* Allocate a temporary talloc context */
 	if ((hTalloc = talloc_new(module->ldb)) == NULL) {
@@ -372,33 +394,61 @@ lsqlite3_search_bytree(struct ldb_module * module,
         /* Ensure we're starting with an empty result attribute table */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "DELETE FROM " RESULT_ATTR_TABLE " "
+                     "DELETE FROM " RESULT_ATTR_TABLE "\n"
                      "  WHERE 1;");/* avoid a schema change with WHERE 1 */
         
+        /* Initially, we don't know what the requested attributes are */
+        if (attrs == NULL) {
+                /* but they didn't give us any so we'll retrieve all of 'em */
+                pResultAttrList = "";
+        } else {
+                /* Discover the list of attributes */
+                pResultAttrList = NULL;
+        }
+
         /* Insert the list of requested attributes into this table */
         for (pRequestedAttrs = (const char * const *) attrs;
-             pRequestedAttrs != NULL;
+             pRequestedAttrs != NULL && *pRequestedAttrs != NULL;
              pRequestedAttrs++) {
                 
-                QUERY_NOROWS(lsqlite3,
-                             FALSE,
-                             "INSERT OR IGNORE INTO " RESULT_ATTR_TABLE " "
-                             "    (attr_name) "
-                             "  VALUES "
-                             "    (%Q);",
-                             *pRequestedAttrs);
+                /* If any attribute in the list is "*" then... */
+                if (strcmp(*pRequestedAttrs, "*") == 0) {
+                        /* we want all attribute types */
+                        pResultAttrList = "";
+                        break;
+                        
+                } else {
+                        /* otherwise, add this name to the resuult list */
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT OR IGNORE\n"
+                                     "  INTO " RESULT_ATTR_TABLE "\n"
+                                     "    (attr_name)\n"
+                                     "  VALUES\n"
+                                     "    (%Q);",
+                                     *pRequestedAttrs);
+                }
         }
         
+        /* If we didn't get a "*" for all attributes in the result list... */
+        if (pResultAttrList == NULL) {
+                /* ... then we'll use the result attribute table */
+                pResultAttrList =
+                        "    AND av.attr_name IN\n"
+                        "          (SELECT attr_name\n"
+                        "             FROM " RESULT_ATTR_TABLE ") ";
+        }
+
         /* Ensure we're starting with an empty filter attribute table */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "DELETE FROM " FILTER_ATTR_TABLE " "
+                     "DELETE FROM " FILTER_ATTR_TABLE "\n"
                      "  WHERE 1;");/* avoid a schema change with WHERE 1 */
         
         /*
          * Create a table of unique attribute names for our extra table list
          */
-        if (parsetree_to_attrlist(lsqlite3, pTree) != 0) {
+        if ((ret = parsetree_to_attrlist(lsqlite3, pTree)) != 0) {
                 ret = -1;
                 goto cleanup;
         }
@@ -425,20 +475,17 @@ lsqlite3_search_bytree(struct ldb_module * module,
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
                         "       FROM ldb_entry,\n"
-                        "            ldb_descendants,\n"
-                        "            %q\n"
+                        "            ldb_descendants\n"
                         "       WHERE ldb_descendants.aeid = %lld\n"
                         "         AND ldb_entry.eid = ldb_descendants.deid\n"
-                        "         AND ldap_entry.eid IN\n%s\n"
-                        "    ) "
-                        "    AND av.eid = entry.eid "
-                        "    AND av.attr_name IN "
-                        "          (SELECT attr_name "
-                        "             FROM " RESULT_ATTR_TABLE ") "
+                        "         AND ldb_entry.eid IN\n%s\n"
+                        "    )\n"
+                        "    AND av.eid = entry.eid\n"
+                        "    %s\n"
                         "  ORDER BY av.eid, av.attr_name;",
-                        pTableList,
                         eid,
-                        pSqlConstraints);
+                        pSqlConstraints,
+                        pResultAttrList);
                 break;
                 
         case LDB_SCOPE_BASE:
@@ -451,18 +498,16 @@ lsqlite3_search_bytree(struct ldb_module * module,
                         "       ldb_attribute_values AS av\n"
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
-                        "       FROM %q\n"
+                        "       FROM ldb_entry\n"
                         "       WHERE ldb_entry.eid = %lld\n"
                         "         AND ldb_entry.eid IN\n%s\n"
-                        "    ) "
-                        "    AND av.eid = entry.eid "
-                        "    AND av.attr_name IN "
-                        "          (SELECT attr_name "
-                        "             FROM " RESULT_ATTR_TABLE ") "
+                        "    )\n"
+                        "    AND av.eid = entry.eid\n"
+                        "    %s\n"
                         "  ORDER BY av.eid, av.attr_name;",
-                        pTableList,
                         eid,
-                        pSqlConstraints);
+                        pSqlConstraints,
+                        pResultAttrList);
                 break;
                 
         case LDB_SCOPE_ONELEVEL:
@@ -475,23 +520,24 @@ lsqlite3_search_bytree(struct ldb_module * module,
                         "       ldb_attribute_values AS av\n"
                         "  WHERE entry.eid IN\n"
                         "    (SELECT DISTINCT ldb_entry.eid\n"
-                        "       FROM ldb_entry AS pchild, "
-                        "            %q\n"
-                        "       WHERE ldb_entry.eid = pchild.eid "
-                        "         AND pchild.peid = %lld "
+                        "       FROM ldb_entry AS pchild\n"
+                        "       WHERE ldb_entry.eid = pchild.eid\n"
+                        "         AND pchild.peid = %lld\n"
                         "         AND ldb_entry.eid IN\n%s\n"
-                        "    ) "
-                        "    AND av.eid = entry.eid "
-                        "    AND av.attr_name IN "
-                        "          (SELECT attr_name "
-                        "             FROM " RESULT_ATTR_TABLE ") "
-                        "  ORDER BY av.eid, av.attr_name;",
-                        pTableList,
+                        "    )\n"
+                        "    AND av.eid = entry.eid\n"
+                        "    %s\n"
+                        "  ORDER BY av.eid, av.attr_name;\n",
                         eid,
-                        pSqlConstraints);
+                        pSqlConstraints,
+                        pResultAttrList);
                 break;
         }
         
+        if (lsqlite3_debug) {
+                printf("%s\n", pSql);
+        }
+
         /*
          * Prepare and execute the SQL statement.  Loop allows retrying on
          * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
@@ -500,9 +546,8 @@ lsqlite3_search_bytree(struct ldb_module * module,
         for (bLoop = TRUE; bLoop; ) {
                 /* There are no allocate message structures yet */
                 allocated = 0;
-                
-                for (i = 0; i < allocated; i++) {
-                        (*pppRes)[i] = NULL;
+                if (pppRes != NULL) {
+                        *pppRes = NULL;
                 }
                 
                 /* Compile the SQL statement into sqlite virtual machine */
@@ -511,7 +556,9 @@ lsqlite3_search_bytree(struct ldb_module * module,
                                            -1,
                                            &pStmt,
                                            NULL)) == SQLITE_SCHEMA) {
-                        talloc_free(*pppRes);
+                        if (pppRes != NULL && *pppRes != NULL) {
+                                talloc_free(*pppRes);
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         ret = -1;
@@ -548,12 +595,13 @@ lsqlite3_search_bytree(struct ldb_module * module,
                                         break;
                                 }
                         }
-#warning "finish returning the result set of the search here"
                 }
                 
                 if (ret == SQLITE_SCHEMA) {
                         (void) sqlite3_finalize(pStmt);
-                        talloc_free(*pppRes);
+                        if (pppRes != NULL && *pppRes != NULL) {
+                                talloc_free(*pppRes);
+                        }
                         continue;
                 } else if (ret != SQLITE_DONE) {
                         (void) sqlite3_finalize(pStmt);
@@ -564,7 +612,9 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 /* Free the virtual machine */
                 if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
                         (void) sqlite3_finalize(pStmt);
-                        talloc_free(*pppRes);
+                        if (pppRes != NULL && *pppRes != NULL) {
+                                talloc_free(*pppRes);
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         (void) sqlite3_finalize(pStmt);
@@ -589,19 +639,21 @@ lsqlite3_search_bytree(struct ldb_module * module,
         /* Were there any results? */
         if (ret != 0 || allocated == 0) {
                 /* Nope.  We can free the results. */
-                talloc_free(pppRes);
+                if (pppRes != NULL && *pppRes != NULL) {
+                        talloc_free(*pppRes);
+                }
         }
         
 cleanup:
         /* Clean up our temporary tables */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "DELETE FROM " RESULT_ATTR_TABLE " "
+                     "DELETE FROM " RESULT_ATTR_TABLE "\n"
                      "  WHERE 1;");/* avoid a schema change with WHERE 1 */
         
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "DELETE FROM " FILTER_ATTR_TABLE " "
+                     "DELETE FROM " FILTER_ATTR_TABLE "\n"
                      "  WHERE 1;");/* avoid a schema change with WHERE 1 */
         
         
@@ -694,6 +746,8 @@ lsqlite3_modify(struct ldb_module *module,
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
         
+#warning "modify() not yet implemented"
+
         /* Everything worked.  Commit it! */
         QUERY_NOROWS(lsqlite3, TRUE, "COMMIT;");
         return 0 ;
@@ -752,116 +806,105 @@ initialize(struct lsqlite3_private *lsqlite3,
         const char *    pTail;
         sqlite3_stmt *  stmt;
         const char *    schema =       
-                "-- ------------------------------------------------------"
                 
-                "PRAGMA auto_vacuum=1;"
                 
-                "-- ------------------------------------------------------"
-                
-                "BEGIN EXCLUSIVE;"
-                
-                "-- ------------------------------------------------------"
-                
-                "CREATE TABLE ldb_info AS"
+                "CREATE TABLE ldb_info AS "
                 "  SELECT 'LDB' AS database_type,"
                 "         '1.0' AS version;"
                 
-                "-- ------------------------------------------------------"
-                "-- Schema"
-                
-                "/*"
-                " * The entry table holds the information about an entry. "
-                " * This table is used to obtain the EID of the entry and to "
-                " * support scope=one and scope=base.  The parent and child"
-                " * table is included in the entry table since all the other"
-                " * attributes are dependent on EID."
-                " */"
-                "CREATE TABLE ldb_entry"
+                /*
+                 * The entry table holds the information about an entry. 
+                 * This table is used to obtain the EID of the entry and to 
+                 * support scope=one and scope=base.  The parent and child
+                 * table is included in the entry table since all the other
+                 * attributes are dependent on EID.
+                 */
+                "CREATE TABLE ldb_entry "
                 "("
-                "  -- Unique identifier of this LDB entry"
                 "  eid                   INTEGER PRIMARY KEY,"
-                
-                "  -- Unique identifier of the parent LDB entry"
                 "  peid                  INTEGER REFERENCES ldb_entry,"
-                
-                "  -- Distinguished name of this entry"
-                "  dn                    TEXT,"
-                
-                "  -- Time when the entry was created"
+                "  dn                    TEXT UNIQUE,"
                 "  create_timestamp      INTEGER,"
-                
-                "  -- Time when the entry was last modified"
                 "  modify_timestamp      INTEGER"
                 ");"
                 
-                
-                "/*"
-                " * The purpose of the descendant table is to support the"
-                " * subtree search feature.  For each LDB entry with a unique"
-                " * ID (AEID), this table contains the unique identifiers"
-                " * (DEID) of the descendant entries."
-                " *"
-                " * For evern entry in the directory, a row exists in this"
-                " * table for each of its ancestors including itself.  The "
-                " * size of the table depends on the depth of each entry.  In "
-                " * the worst case, if all the entries were at the same "
-                " * depth, the number of rows in the table is O(nm) where "
-                " * n is the number of nodes in the directory and m is the "
-                " * depth of the tree. "
-                " */"
-                "CREATE TABLE ldb_descendants"
-                "("
-                "  -- The unique identifier of the ancestor LDB entry"
+
+                /*
+                 * The purpose of the descendant table is to support the
+                 * subtree search feature.  For each LDB entry with a unique
+                 * ID (AEID), this table contains the unique identifiers
+                 * (DEID) of the descendant entries.
+                 *
+                 * For evern entry in the directory, a row exists in this
+                 * table for each of its ancestors including itself.  The 
+                 * size of the table depends on the depth of each entry.  In 
+                 * the worst case, if all the entries were at the same 
+                 * depth, the number of rows in the table is O(nm) where 
+                 * n is the number of nodes in the directory and m is the 
+                 * depth of the tree. 
+                 */
+                "CREATE TABLE ldb_descendants "
+                "( "
                 "  aeid                  INTEGER REFERENCES ldb_entry,"
-                
-                "  -- The unique identifier of the descendant LDB entry"
                 "  deid                  INTEGER REFERENCES ldb_entry"
                 ");"
                 
                 
                 "CREATE TABLE ldb_object_classes"
                 "("
-                "  -- Object classes are inserted into this table to track"
-                "  -- their class hierarchy.  'top' is the top-level class"
-                "  -- of which all other classes are subclasses."
                 "  class_name            TEXT PRIMARY KEY,"
-                
-                "  -- tree_key tracks the position of the class in"
-                "  -- the hierarchy"
                 "  tree_key              TEXT UNIQUE"
                 ");"
                 
-                "/*"
-                " * We keep a full listing of attribute/value pairs here"
-                " */"
+                /*
+                 * We keep a full listing of attribute/value pairs here
+                 */
                 "CREATE TABLE ldb_attribute_values"
                 "("
                 "  eid                   INTEGER REFERENCES ldb_entry,"
-                "  attr_name             TEXT, -- see ldb_attr_ATTRIBUTE_NAME"
+                "  attr_name             TEXT,"
                 "  attr_value            TEXT"
                 ");"
                 
-                "/*"
-                " * There is one attribute table per searchable attribute."
-                " */"
-                "/*"
+                /*
+                 * There is one attribute table per searchable attribute.
+                 */
+                /*
                 "CREATE TABLE ldb_attr_ATTRIBUTE_NAME"
                 "("
-                "  -- The unique identifier of the LDB entry"
                 "  eid                   INTEGER REFERENCES ldb_entry,"
-                
-                "  -- Normalized attribute value"
                 "  attr_value            TEXT"
                 ");"
-                "*/"
+                */
+                
+                /*
+                 * We pre-create the dn attribute table
+                 */
+                "CREATE TABLE ldb_attr_DN"
+                "("
+                "  eid                   INTEGER REFERENCES ldb_entry,"
+                "  attr_value            TEXT"
+                ");"
+
+                
+                /*
+                 * We pre-create the objectclass attribute table
+                 */
+                "CREATE TABLE ldb_attr_OBJECTCLASS"
+                "("
+                "  eid                   INTEGER REFERENCES ldb_entry,"
+                "  attr_value            TEXT"
+                ");"
+
+                
+                /*
+                 * Indexes
+                 */
                 
                 
-                "-- ------------------------------------------------------"
-                "-- Indexes"
-                
-                
-                "-- ------------------------------------------------------"
-                "-- Triggers"
+                /*
+                 * Triggers
+                 */
                 
                 "CREATE TRIGGER ldb_entry_insert_tr"
                 "  AFTER INSERT"
@@ -884,19 +927,22 @@ initialize(struct lsqlite3_private *lsqlite3,
                 "        WHERE eid = old.eid;"
                 "    END;"
                 
-                "-- ------------------------------------------------------"
-                "-- Table initialization"
-                
-                "/* We need an implicit 'top' level object class */"
-                "INSERT INTO ldb_attributes (attr_name,"
-                "                            parent_tree_key)"
-                "  SELECT 'top', '';"
-                
-                "-- ------------------------------------------------------"
-                
-                "COMMIT;"
-                
-                "-- ------------------------------------------------------"
+                /*
+                 * Table initialization
+                 */
+
+                /* The root node */
+                "INSERT INTO ldb_entry "
+                "    (eid, peid, dn) "
+                "  VALUES "
+                "    (0, NULL, '');"
+
+                /* And the root node "dn" attribute */
+                "INSERT INTO ldb_attr_DN "
+                "    (eid, attr_value) "
+                "  VALUES "
+                "    (0, '');"
+
                 ;
         
         /* Skip protocol indicator of url  */
@@ -912,6 +958,9 @@ initialize(struct lsqlite3_private *lsqlite3,
                 return ret;
         }
         
+        /* In case this is a new database, enable auto_vacuum */
+        QUERY_NOROWS(lsqlite3, FALSE, "PRAGMA auto_vacuum=1;");
+        
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
         
@@ -919,15 +968,21 @@ initialize(struct lsqlite3_private *lsqlite3,
         QUERY_INT(lsqlite3,
                   queryInt,
                   TRUE,
-                  "SELECT COUNT(*) "
-                  "  FROM sqlite_master "
+                  "SELECT COUNT(*)\n"
+                  "  FROM sqlite_master\n"
                   "  WHERE type = 'table';");
         
         if (queryInt == 0) {
                 /*
                  * Create the database schema
                  */
-                for (pTail = discard_const_p(char, schema); pTail != NULL; ) {
+                for (pTail = discard_const_p(char, schema);
+                     pTail != NULL && *pTail != '\0';
+                        ) {
+                        
+                        if (lsqlite3_debug) {
+                                printf("Execute first query in:\n%s\n", pTail);
+                        }
                         
                         if ((ret = sqlite3_prepare(
                                      lsqlite3->sqlite,
@@ -981,9 +1036,9 @@ initialize(struct lsqlite3_private *lsqlite3,
          */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "CREATE TEMPORARY TABLE " RESULT_ATTR_TABLE " "
-                     " ("
-                     "  attr_name TEXT PRIMARY KEY "
+                     "CREATE TEMPORARY TABLE " RESULT_ATTR_TABLE "\n"
+                     " (\n"
+                     "  attr_name TEXT PRIMARY KEY\n"
                      " );");
         
         /*
@@ -992,9 +1047,9 @@ initialize(struct lsqlite3_private *lsqlite3,
          */
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "CREATE TEMPORARY TABLE " FILTER_ATTR_TABLE " "
-                     " ("
-                     "  attr_name TEXT PRIMARY KEY "
+                     "CREATE TEMPORARY TABLE " FILTER_ATTR_TABLE "\n"
+                     " (\n"
+                     "  attr_name TEXT PRIMARY KEY\n"
                      " );");
         
         /* Commit the transaction */
@@ -1029,7 +1084,6 @@ query_norows(const struct lsqlite3_private *lsqlite3,
         int             ret;
         int             bLoop;
         char *          p;
-        const char *    pTail;
         sqlite3_stmt *  pStmt;
         va_list         args;
         
@@ -1041,6 +1095,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                 return -1;
         }
         
+        if (lsqlite3_debug) {
+                printf("%s\n", p);
+        }
+
         /*
          * Prepare and execute the SQL statement.  Loop allows retrying on
          * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
@@ -1050,10 +1108,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                 
                 /* Compile the SQL statement into sqlite virtual machine */
                 if ((ret = sqlite3_prepare(lsqlite3->sqlite,
-                                           pTail,
+                                           p,
                                            -1,
                                            &pStmt,
-                                           &pTail)) == SQLITE_SCHEMA) {
+                                           NULL)) == SQLITE_SCHEMA) {
                         continue;
                 } else if (ret != SQLITE_OK) {
                         ret = -1;
@@ -1116,7 +1174,6 @@ query_int(const struct lsqlite3_private * lsqlite3,
         int             ret;
         int             bLoop;
         char *          p;
-        const char *    pTail;
         sqlite3_stmt *  pStmt;
         va_list         args;
         
@@ -1125,9 +1182,13 @@ query_int(const struct lsqlite3_private * lsqlite3,
         
         /* Format the query */
         if ((p = sqlite3_vmprintf(pSql, args)) == NULL) {
-                return -1;
+                return SQLITE_NOMEM;
         }
         
+        if (lsqlite3_debug) {
+                printf("%s\n", p);
+        }
+
         /*
          * Prepare and execute the SQL statement.  Loop allows retrying on
          * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
@@ -1137,13 +1198,12 @@ query_int(const struct lsqlite3_private * lsqlite3,
                 
                 /* Compile the SQL statement into sqlite virtual machine */
                 if ((ret = sqlite3_prepare(lsqlite3->sqlite,
-                                           pTail,
+                                           p,
                                            -1,
                                            &pStmt,
-                                           &pTail)) == SQLITE_SCHEMA) {
+                                           NULL)) == SQLITE_SCHEMA) {
                         continue;
                 } else if (ret != SQLITE_OK) {
-                        ret = -1;
                         break;
                 }
                 
@@ -1153,7 +1213,6 @@ query_int(const struct lsqlite3_private * lsqlite3,
                         continue;
                 } else if (ret != SQLITE_ROW) {
                         (void) sqlite3_finalize(pStmt);
-                        ret = -1;
                         break;
                 }
                 
@@ -1166,7 +1225,6 @@ query_int(const struct lsqlite3_private * lsqlite3,
                         continue;
                 } else if (ret != SQLITE_OK) {
                         (void) sqlite3_finalize(pStmt);
-                        ret = -1;
                         break;
                 }
                 
@@ -1174,7 +1232,6 @@ query_int(const struct lsqlite3_private * lsqlite3,
                  * Normal condition is only one time through loop.  Loop is
                  * rerun in error conditions, via "continue", above.
                  */
-                ret = 0;
                 bLoop = FALSE;
         }
         
@@ -1432,6 +1489,10 @@ parsetree_to_sql(struct ldb_module *module,
                         return NULL;
                 }
                 
+                if (lsqlite3_debug) {
+                        printf("%s\n", p);
+                }
+
                 ret = talloc_strdup(hTalloc, p);
                 sqlite3_free(p);
                 
@@ -1443,7 +1504,7 @@ parsetree_to_sql(struct ldb_module *module,
                 if ((p = sqlite3_mprintf(
                              "(\n"
                              "  SELECT eid\n"
-                             "    FROM ldb_attr_objectclass\n"
+                             "    FROM ldb_attr_OBJECTCLASS\n"
                              "    WHERE attr_name IN\n"
                              "      (SELECT class_name\n"
                              "         FROM ldb_objectclasses\n"
@@ -1456,6 +1517,10 @@ parsetree_to_sql(struct ldb_module *module,
                         return NULL;
                 }
                 
+                if (lsqlite3_debug) {
+                        printf("%s\n", p);
+                }
+
                 ret = talloc_strdup(hTalloc, p);
                 sqlite3_free(p);
                 
@@ -1471,6 +1536,10 @@ parsetree_to_sql(struct ldb_module *module,
                         return NULL;
                 }
                 
+                if (lsqlite3_debug) {
+                        printf("%s\n", p);
+                }
+
                 ret = talloc_strdup(hTalloc, p);
                 sqlite3_free(p);
 	}
@@ -1541,9 +1610,9 @@ parsetree_to_attrlist(struct lsqlite3_private * lsqlite3,
         
         QUERY_NOROWS(lsqlite3,
                      FALSE,
-                     "INSERT OR IGNORE INTO " FILTER_ATTR_TABLE " "
-                     "    (attr_name) "
-                     "  VALUES "
+                     "INSERT OR IGNORE INTO " FILTER_ATTR_TABLE "\n"
+                     "    (attr_name)\n"
+                     "  VALUES\n"
                      "    (%Q);",
                      t->u.simple.attr);
 	return 0;
@@ -1561,6 +1630,7 @@ build_attr_table_list(void * hTalloc,
         int             ret;
         int             bLoop;
         char *          p;
+        char *          pAttrName;
         char *          pTableList;
         sqlite3_stmt *  pStmt;
         
@@ -1602,13 +1672,17 @@ build_attr_table_list(void * hTalloc,
                                                     sqlite3_column_text(pStmt,
                                                                         0));
                                 
+                                pAttrName =
+                                        ldb_casefold(
+                                                hTalloc,
+                                                sqlite3_column_text(pStmt, 0));
+
                                 /* Append it to the table list */
                                 if ((p = talloc_asprintf(
                                              hTalloc,
-                                             "%s%s",
+                                             "%sldb_attr_%s",
                                              *pTableList == '\0' ? "" : ",",
-                                             sqlite3_column_text(pStmt,
-                                                                 0))) == NULL) {
+                                             pAttrName)) == NULL) {
                                         
                                         talloc_free(pTableList);
                                         return NULL;
@@ -1696,63 +1770,63 @@ msg_to_sql(struct ldb_module * module,
                         case LDB_FLAG_MOD_ADD:
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "INSERT INTO ldb_attr_%q "
-                                             "    (eid, attr_value) "
-                                             "  VALUES "
+                                             "INSERT INTO ldb_attr_%q\n"
+                                             "    (eid, attr_value)\n"
+                                             "  VALUES\n"
                                              "    (%lld, %Q);",
                                              pAttrName,
                                              eid, el->values[j].data);
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "UPDATE ldb_entry "
-                                             "  SET entry_data = "
-                                             "        add_attr(entry_data, "
-                                             "                 %Q, %Q) "
-                                             "  WHERE eid = %lld;",
-                                             el->name, el->values[j].data,
-                                             eid);
+                                             "INSERT INTO ldb_attribute_values"
+                                             "    (eid, attr_name, attr_value)"
+                                             "  VALUES "
+                                             "    (%lld, %Q, %Q);",
+                                             eid,
+                                             el->name,
+                                             el->values[j].data);
                                 
                                 break;
                                 
                         case LDB_FLAG_MOD_REPLACE:
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "UPDATE ldb_attr_%q "
-                                             "  SET attr_value = %Q "
+                                             "UPDATE ldb_attr_%q\n"
+                                             "  SET attr_value = %Q\n"
                                              "  WHERE eid = %lld;",
                                              pAttrName,
                                              el->values[j].data,
                                              eid);
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "UPDATE ldb_entry "
-                                             "  SET entry_data = "
-                                             "        mod_attr(entry_data, "
-                                             "                 %Q, %Q) "
-                                             "  WHERE eid = %lld;",
-                                             el->name, el->values[j].data,
-                                             eid);
+                                             "UPDATE ldb_attribute_values "
+                                             "  SET attr_value = %Q "
+                                             "  WHERE eid = %lld "
+                                             "    AND attr_name = %Q;",
+                                             el->values[j].data,
+                                             eid,
+                                             el->name);
                                 break;
                                 
                         case LDB_FLAG_MOD_DELETE:
                                 /* No additional parameters to this query */
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "DELETE FROM ldb_attr_%q "
-                                             "  WHERE eid = %lld "
+                                             "DELETE FROM ldb_attr_%q\n"
+                                             "  WHERE eid = %lld\n"
                                              "    AND attr_value = %Q;",
                                              pAttrName,
                                              eid,
                                              el->values[j].data);
                                 QUERY_NOROWS(lsqlite3,
                                              FALSE,
-                                             "UPDATE ldb_entry "
-                                             "  SET entry_data = "
-                                             "        del_attr(entry_data, "
-                                             "                 %Q, %Q) "
-                                             "  WHERE eid = %lld;",
-                                             el->name, el->values[j].data,
-                                             eid);
+                                             "DELETE FROM ldb_attribute_values"
+                                             "  WHERE eid = %lld "
+                                             "    AND attr_name = %Q "
+                                             "    AND attr_value = %Q;",
+                                             eid,
+                                             el->name,
+                                             el->values[j].data);
                                 break;
                         }
 		}
@@ -1823,29 +1897,29 @@ new_dn(struct ldb_module * module,
                  * component 0 (the full DN requested to be be inserted)
                  * already exists.
                  */
-                if (bFirst) {
-                        /* This is a top-level entry.  Parent EID is null. */
-                        QUERY_NOROWS(lsqlite3,
-                                     FALSE,
-                                     "INSERT %s INTO ldb_entry "
-                                     "    (peid, dn) "
-                                     "  VALUES "
-                                     "    (NULL, %q);",
-                                     nComponent == 0 ? "" : "OR IGNORE",
-                                     pPartialDN);
-                } else {
-                        QUERY_NOROWS(lsqlite3,
-                                     FALSE,
-                                     "INSERT %s INTO ldb_entry "
-                                     "    (peid, dn) "
-                                     "  VALUES "
-                                     "    (%lld, %q);",
-                                     nComponent == 0 ? "" : "OR IGNORE",
-                                     eid, pPartialDN);
-                }
+                QUERY_NOROWS(lsqlite3,
+                             FALSE,
+                             "INSERT %s INTO ldb_entry\n"
+                             "    (peid, dn)\n"
+                             "  VALUES\n"
+                             "    (%lld, %Q);",
+                             nComponent == 0 ? "" : "OR IGNORE",
+                             eid, pPartialDN);
                 
                 /* Get the EID of the just inserted row (the next parent) */
                 eid = sqlite3_last_insert_rowid(lsqlite3->sqlite);
+
+                /* If this is the final component, also add DN attribute */
+                if (nComponent == 0) {
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT %s INTO ldb_attr_DN\n"
+                                     "    (eid, attr_value) "
+                                     "  VALUES "
+                                     "    (%lld, %Q);",
+                                     nComponent == 0 ? "" : "OR IGNORE",
+                                     eid, pPartialDN);
+                }
         }
         
         /* Give 'em what they came for! */
@@ -1871,10 +1945,10 @@ new_attr(struct ldb_module * module,
         QUERY_INT(lsqlite3,
                   bExists,
                   FALSE,
-                  "SELECT COUNT(*) <> 0"
-                  "  FROM sqlite_master "
-                  "  WHERE type = 'table' "
-                  "    AND tbl_name = %Q;",
+                  "SELECT COUNT(*) <> 0\n"
+                  "  FROM sqlite_master\n"
+                  "  WHERE type = 'table'\n"
+                  "    AND tbl_name = 'ldb_attr_%q';",
                   pAttrName);
         
         /* Did it exist? */
@@ -1882,10 +1956,10 @@ new_attr(struct ldb_module * module,
                 /* Nope.  Create the table */
                 QUERY_NOROWS(lsqlite3,
                              FALSE,
-                             "CREATE TABLE ldb_attr_%q "
-                             "("
-                             "  eid        INTEGER REFERENCES ldb_entry, "
-                             "  attr_value TEXT"
+                             "CREATE TABLE ldb_attr_%q\n"
+                             "(\n"
+                             "  eid        INTEGER REFERENCES ldb_entry,\n"
+                             "  attr_value TEXT\n"
                              ");",
                              pAttrName);
         }

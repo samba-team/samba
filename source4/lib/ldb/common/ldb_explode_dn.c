@@ -382,6 +382,9 @@ ldb_explode_dn(void * mem_ctx,
                         goto failed;
                 }
 
+                /* Save the pointer to the beginning of the string */
+                component->component = dest;
+
                 /* copy each of the attributes to the normalized component */
 		for (i = 0; i < component->attr_num; i++) {
 			if (i != 0) {
@@ -394,9 +397,6 @@ ldb_explode_dn(void * mem_ctx,
                         strncpy(dest, src, size + 1);
                         dest += size;
 		}
-
-                /* Save the just-generated string */
-                component->component = dest;
 
 		ldb_debug(mem_ctx,
                           LDB_DEBUG_TRACE,
@@ -438,6 +438,9 @@ ldb_explode_dn(void * mem_ctx,
                 goto failed;
         }
 
+        /* Save the pointer to the beginning of the */
+        dn->dn = dest;
+
         /* copy the normalized components into the DN */
 	for (i = 0; i < dn->comp_num; i++) {
 
@@ -454,9 +457,6 @@ ldb_explode_dn(void * mem_ctx,
                 strncpy(dest, src, size + 1);
                 dest += size;
 	}
-
-        /* Save the just-generated string */
-        dn->dn = dest;
 
 	ldb_debug(mem_ctx, LDB_DEBUG_TRACE, "dn: [%s]\n", dn->dn);
 
