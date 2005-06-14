@@ -156,7 +156,19 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	remove_pending_lock_requests_by_fid(fsp);
 
-	cancel_aio_by_fsp(fsp);
+	if (fsp->aio_write_behind) {
+		/*
+	 	 * If we're finishing write behind on a close we can get a write
+		 * error here, we must remember this.
+		 */
+		int ret = wait_for_aio_completion(fsp);
+		if (ret) {
+			saved_errno = ret;
+			err1 = -1;
+		}
+	} else {
+		cancel_aio_by_fsp(fsp);
+	}
  
 	/*
 	 * If we're flushing on a close we can get a write

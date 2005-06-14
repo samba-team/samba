@@ -279,6 +279,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t outbufsize;
+	BOOL write_through = BITSETW(inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
 	if (!min_aio_write_size || (numtowrite < min_aio_write_size)) {
@@ -338,7 +339,19 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
-	srv_defer_sign_response(aio_ex->mid);
+	if (!write_through && !lp_syncalways(SNUM(fsp->conn)) && fsp->aio_write_behind) {
+		/* Lie to the client and immediately claim we finished the write. */
+	        SSVAL(aio_ex->outbuf,smb_vwv2,numtowrite);
+                SSVAL(aio_ex->outbuf,smb_vwv4,(numtowrite>>16)&1);
+		show_msg(aio_ex->outbuf);
+		if (!send_smb(smbd_server_fd(),aio_ex->outbuf)) {
+			exit_server("handle_aio_write: send_smb failed.");
+		}
+		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write behind for file %s\n",
+			fsp->fsp_name ));
+	} else {
+		srv_defer_sign_response(aio_ex->mid);
+	}
 	outstanding_aio_calls++;
 
 	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file %s, \
@@ -351,10 +364,12 @@ offset %.0f, len = %u (mid = %u) outstanding_aio_calls = %d\n",
 
 /****************************************************************************
  Complete the read and return the data or error back to the client.
+ Returns errno or zero if all ok.
 *****************************************************************************/
 
-static void handle_aio_read_complete(struct aio_extra *aio_ex)
+static int handle_aio_read_complete(struct aio_extra *aio_ex)
 {
+	int ret = 0;
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
 	char *data = smb_buf(outbuf);
@@ -364,7 +379,7 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 		/* file was closed whilst I/O was outstanding. Just ignore. */
 		DEBUG( 3,( "handle_aio_read_complete: file closed whilst read outstanding.\n"));
 		srv_cancel_sign_response(aio_ex->mid);
-		return;
+		return 0;
 	}
 
 	nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
@@ -377,13 +392,14 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 		/* If errno is ECANCELED then don't return anything to the client. */
 		if (errno == ECANCELED) {
 			srv_cancel_sign_response(aio_ex->mid);
-			return;
+			return 0;
 		}
 
 		DEBUG( 3,( "handle_aio_read_complete: file %s nread == -1. Error = %s\n",
 			aio_ex->fsp->fsp_name, strerror(errno) ));
 
 		outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
+		ret = errno;
 	} else {
 		outsize = set_message(outbuf,12,nread,False);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
@@ -405,42 +421,66 @@ static void handle_aio_read_complete(struct aio_extra *aio_ex)
 
 	DEBUG(10,("handle_aio_read_complete: scheduled aio_read completed for file %s, offset %.0f, len = %u\n",
 		aio_ex->fsp->fsp_name, (double)aio_ex->acb.aio_offset, (unsigned int)nread ));
+
+	return ret;
 }
 
 /****************************************************************************
  Complete the write and return the data or error back to the client.
+ Returns errno or zero if all ok.
 *****************************************************************************/
 
-static void handle_aio_write_complete(struct aio_extra *aio_ex)
+static int handle_aio_write_complete(struct aio_extra *aio_ex)
 {
+	int ret = 0;
+	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
 	ssize_t nwritten;
 
-	if (aio_ex->fsp == NULL) {
+	if (fsp == NULL) {
 		/* file was closed whilst I/O was outstanding. Just ignore. */
 		DEBUG( 3,( "handle_aio_read_complete: file closed whilst read outstanding.\n"));
 		srv_cancel_sign_response(aio_ex->mid);
-		return;
+		return 0;
 	}
 
-	nwritten = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
+	nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
+
+	if (fsp->aio_write_behind) {
+		if (nwritten != numtowrite) {
+			if (nwritten == -1) {
+				DEBUG(5,("handle_aio_write_complete: aio_write_behind failed ! File %s is corrupt ! Error %s\n",
+					fsp->fsp_name, strerror(errno) ));
+				ret = errno;
+			} else {
+				DEBUG(5,("handle_aio_write_complete: aio_write_behind failed ! File %s is corrupt ! \
+Wanted %u bytes but only wrote %d\n", fsp->fsp_name, (unsigned int)numtowrite, (int)nwritten ));
+				ret = EIO;
+			}
+		} else {
+			DEBUG(10,("handle_aio_write_complete: aio_write_behind completed for file %s\n",
+				fsp->fsp_name ));
+		}
+		return 0;
+	}
 
 	/* We don't need outsize or set_message here as we've already set the
 	   fixed size length when we set up the aio call. */
 
 	if(nwritten == -1) {
 		DEBUG( 3,( "handle_aio_write: file %s wanted %u bytes. nwritten == %d. Error = %s\n",
-			aio_ex->fsp->fsp_name, (unsigned int)numtowrite,
+			fsp->fsp_name, (unsigned int)numtowrite,
 			(int)nwritten, strerror(errno) ));
 
 		/* If errno is ECANCELED then don't return anything to the client. */
 		if (errno == ECANCELED) {
 			srv_cancel_sign_response(aio_ex->mid);
-			return;
+			return 0;
 		}
 
 		UNIXERROR(ERRHRD,ERRdiskfull);
+		ret = errno;
         } else {
 		BOOL write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
 
@@ -451,9 +491,9 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 			SSVAL(outbuf,smb_err,ERRdiskfull);
 		}
                                                                                                                                   
-		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n", aio_ex->fsp->fnum, (int)numtowrite, (int)nwritten));
-		if (lp_syncalways(SNUM(aio_ex->fsp->conn)) || write_through) {
-			sync_file(aio_ex->fsp->conn,aio_ex->fsp);
+		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
+		if (lp_syncalways(SNUM(fsp->conn)) || write_through) {
+			sync_file(fsp->conn,fsp);
 		}
 	}
 
@@ -463,16 +503,20 @@ static void handle_aio_write_complete(struct aio_extra *aio_ex)
 	}
 
 	DEBUG(10,("handle_aio_write_complete: scheduled aio_write completed for file %s, offset %.0f, requested %u, written = %u\n",
-		aio_ex->fsp->fsp_name, (double)aio_ex->acb.aio_offset, (unsigned int)numtowrite, (unsigned int)nwritten ));
+		fsp->fsp_name, (double)aio_ex->acb.aio_offset, (unsigned int)numtowrite, (unsigned int)nwritten ));
+
+	return ret;
 }
 
 /****************************************************************************
  Handle any aio completion inline.
+ Returns non-zero errno if fail or zero if all ok.
 *****************************************************************************/
 
-BOOL process_aio_queue(void)
+int process_aio_queue(void)
 {
 	int i;
+	int ret = 0;
 
 	BlockSignals(True, RT_SIGNAL_AIO);
 
@@ -481,36 +525,107 @@ BOOL process_aio_queue(void)
 
 	if (!signals_received) {
 		BlockSignals(False, RT_SIGNAL_AIO);
-		return False;
+		return 0;
 	}
 
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
+		int err = 0;
 		uint16 mid = aio_pending_array[i];
 		struct aio_extra *aio_ex = find_aio_ex(mid);
 
 		if (!aio_ex) {
 			DEBUG(3,("process_aio_queue: Can't find record to match mid %u.\n",
 				(unsigned int)mid));
-			srv_cancel_sign_response(aio_ex->mid);
+			srv_cancel_sign_response(mid);
 			continue;
 		}
 
 		if (aio_ex->read_req) {
-			handle_aio_read_complete(aio_ex);
+			err = handle_aio_read_complete(aio_ex);
 		} else {
-			handle_aio_write_complete(aio_ex);
+			err = handle_aio_write_complete(aio_ex);
+		}
+
+		if (err) {
+			ret = err; /* Only save non-zero errors. */
 		}
 		delete_aio_ex(aio_ex);
 	}
 	outstanding_aio_calls -= signals_received;
 	signals_received = 0;
 	BlockSignals(False, RT_SIGNAL_AIO);
-	return True;
+	return ret;
 }
 
 /****************************************************************************
- Handle any aio completion inline.
+ We're doing write behind and the client closed the file. Wait up to 15 seconds
+ (my arbitrary choice) for the aio to complete. Return 0 if all writes completed,
+ errno to return if not.
+*****************************************************************************/
+
+BOOL wait_for_aio_completion(files_struct *fsp)
+{
+	struct aio_extra *aio_ex;
+	const SMB_STRUCT_AIOCB **aiocb_list;
+	int aio_completion_count = 0;
+	time_t start_time = time(NULL);
+	int seconds_left = 15;
+	int ret = 0;
+
+	for (seconds_left = 15; seconds_left >= 0;) {
+		int err = 0;
+		int i;
+		struct timespec ts;
+
+		for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
+			if (aio_ex->fsp == fsp) {
+				aio_completion_count++;
+			}
+		}
+
+		if (!aio_completion_count) {
+			return ret;
+		}
+
+		DEBUG(10,("wait_for_aio_completion: waiting for %d aio events to complete.\n",
+			aio_completion_count ));
+
+		aiocb_list = SMB_MALLOC_ARRAY(const SMB_STRUCT_AIOCB *, aio_completion_count);
+		if (!aiocb_list) {
+			return False;
+		}
+
+		for( i = 0, aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
+			if (aio_ex->fsp == fsp) {
+				aiocb_list[i++] = &aio_ex->acb;
+			}
+		}
+
+		/* Now wait up to 15 seconds for completion. */
+		ts.tv_sec = seconds_left;
+		ts.tv_nsec = 0;
+
+		err = SMB_VFS_AIO_SUSPEND(fsp, aiocb_list, aio_completion_count, &ts);
+
+		if ((err == 0) || (err == -1 && errno == EINTR)) {
+			err = process_aio_queue();
+			if (err) {
+				/* Only return non-zero errors. */
+				ret = err;
+			}
+		}
+
+		SAFE_FREE(aiocb_list);
+		seconds_left -= (time(NULL) - start_time);
+	}
+
+	/* We timed out - we don't know why. Return ret if already an error, else EIO. */
+	return ret ? ret : EIO;
+}
+
+/****************************************************************************
+ Cancel any outstanding aio requests. The client doesn't care about the reply.
 *****************************************************************************/
 
 void cancel_aio_by_fsp(files_struct *fsp)
@@ -552,7 +667,7 @@ void initialize_async_io_handler(void)
 {
 }
 
-BOOL process_aio_queue(void)
+int process_aio_queue(void)
 {
 	return False;
 }
@@ -578,6 +693,11 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 
 void cancel_aio_by_fsp(files_struct *fsp)
 {
+}
+
+BOOL wait_for_aio_completion(files_struct *fsp)
+{
+	return True;
 }
 
 BOOL aio_inbuffer_in_use(char *ptr)

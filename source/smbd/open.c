@@ -316,6 +316,10 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->is_directory = False;
 	fsp->is_stat = False;
 	fsp->directory_delete_on_close = False;
+	if (conn->aio_write_behind_list && is_in_path(fname, conn->aio_write_behind_list, conn->case_sensitive)) {
+		fsp->aio_write_behind = True;
+	}
+
 	string_set(&fsp->fsp_name,fname);
 	fsp->wcp = NULL; /* Write cache pointer. */
 
