@@ -47,6 +47,9 @@ struct domain_open_state {
 };
 
 
+/**
+ * Stage 1: Connect to SAM server.
+ */
 static NTSTATUS domain_open_connect(struct composite_context *c,
 				    struct domain_open_state *s)
 {
@@ -74,14 +77,19 @@ failure:
 }
 
 
+/**
+ * Stage 2: Lookup domain by name.
+ */
 static NTSTATUS domain_open_lookup(struct composite_context *c,
 				   struct domain_open_state *s)
 {
 	struct samr_OpenDomain *r = &s->open;
 
+	/* receive samr_LookupDomain reply */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
+	/* prepare for samr_OpenDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
 	r->in.sid            = s->lookup.out.sid;
@@ -101,9 +109,13 @@ failure:
 }
 
 
+/*
+ * Stage 3: Open domain.
+ */
 static NTSTATUS domain_open_open(struct composite_context *c,
 				 struct domain_open_state *s)
 {
+	/* receive samr_OpenDomain reply */
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
@@ -113,6 +125,12 @@ static NTSTATUS domain_open_open(struct composite_context *c,
 }
 
 
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
 static void domain_open_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
@@ -142,6 +160,12 @@ static void domain_open_handler(struct rpc_request *req)
 }
 
 
+/**
+ * Sends asynchronous domain_open request
+ *
+ * @param p dce/rpc call pipe 
+ * @param io arguments and results of the call
+ */
 struct composite_context *libnet_rpc_domain_open_send(struct dcerpc_pipe *p,
 						      struct libnet_rpc_domain_open *io,
 						      void (*monitor)(struct monitor_msg*))
@@ -185,12 +209,21 @@ failure:
 }
 
 
+/**
+ * Waits for and receives result of asynchronous domain_open call
+ * 
+ * @param c composite context returned by asynchronous domain_open call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
 NTSTATUS libnet_rpc_domain_open_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				     struct libnet_rpc_domain_open *io)
 {
 	NTSTATUS status;
 	struct domain_open_state *s;
 
+	/* wait for results of sending request */
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
@@ -203,6 +236,14 @@ NTSTATUS libnet_rpc_domain_open_recv(struct composite_context *c, TALLOC_CTX *me
 }
 
 
+/**
+ * Synchronous version of domain_open call
+ *
+ * @param pipe dce/rpc call pipe
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
 NTSTATUS libnet_rpc_domain_open(struct dcerpc_pipe *p,
 				TALLOC_CTX *mem_ctx,
 				struct libnet_rpc_domain_open *io)
