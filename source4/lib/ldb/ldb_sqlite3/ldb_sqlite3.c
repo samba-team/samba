@@ -1117,6 +1117,10 @@ parsetree_to_sql(struct ldb_module *module,
 		case LDB_OP_SIMPLE:
 			break;
 
+		case LDB_OP_EXTENDED:
+#warning  "derrell, you'll need to work out how to handle bitops"
+			return NULL;
+
 		case LDB_OP_AND:
 			ret = parsetree_to_sql(module,
                                                hTalloc,
