@@ -56,8 +56,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	const char *errstr;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS sasl_status;
-/*	BOOL ret;
-*/
+	BOOL ret;
+
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
 	if (!call->conn->gensec) {
@@ -71,10 +71,15 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		
 		gensec_set_target_service(call->conn->gensec, "ldap");
 
-		/*gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
+		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SEAL);
-		*/
-		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
+		
+		if (req->creds.SASL.secblob.length >= 7 &&
+		    strncmp(req->creds.SASL.secblob.data, "NTLMSSP", 7) == 0) {
+			status = gensec_start_mech_by_sasl_name(call->conn->gensec, "NTLM");
+		} else {
+			status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
 				req->creds.SASL.mechanism, nt_errstr(status)));
@@ -93,7 +98,7 @@ reply:
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_update(call->conn->gensec, reply,
-					req->creds.SASL.secblob, &resp->SASL.secblob);
+				       req->creds.SASL.secblob, &resp->SASL.secblob);
 	}
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
@@ -123,7 +128,7 @@ reply:
 		return status;
 	}
 
-/*	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, conn->out_buffer.data, conn->out_buffer.length);
+	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, conn->out_buffer.data, conn->out_buffer.length);
 	if (!ret) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -131,7 +136,7 @@ reply:
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(conn->gensec, &conn->session_info);
 	}
-*/
+
 	return status;
 }
 
