@@ -763,8 +763,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_aliases, aliases);
 
-	if (!NT_STATUS_IS_OK(status)) return status;
-
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_aliases,
 				     num_aliases);
 
