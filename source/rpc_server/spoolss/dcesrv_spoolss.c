@@ -356,7 +356,43 @@ static WERROR spoolss_GetPrinterDriver(struct dcesrv_call_state *dce_call, TALLO
 static WERROR spoolss_GetPrinterDriverDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrinterDriverDirectory *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	union spoolss_DriverDirectoryInfo *info;
+	const char *prefix;
+	const char *postfix;
+
+	/*
+	 * NOTE: normally r->in.level is 1, but both w2k3 and nt4 sp6a
+	 *        are ignoring the r->in.level completely, so we do :-)
+	 */
+       
+	/*
+	 * TODO: check the server name is ours
+	 * - if it's a invalid UNC then return WERR_INVALID_NAME
+	 * - if it's the wrong host name return WERR_INVALID_PARAM
+	 * - if it's "" then we need to return a local WINDOWS path
+	 */
+	if (strcmp("", r->in.server) == 0) {
+		prefix = "C:\\DRIVERS";
+	} else {
+		prefix = talloc_asprintf(mem_ctx, "%s\\print$", r->in.server);
+		W_ERROR_HAVE_NO_MEMORY(prefix);
+	}
+
+	if (strcmp(SPOOLSS_ARCHITECTURE_NT_X86, r->in.environment) == 0) {
+		postfix = "W32X86";
+	} else {
+		return WERR_INVALID_ENVIRONMENT;
+	}
+
+	info = talloc(mem_ctx, union spoolss_DriverDirectoryInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	info->info1.directory_name	= talloc_asprintf(mem_ctx, "%s\\%s", prefix, postfix);
+	W_ERROR_HAVE_NO_MEMORY(info->info1.directory_name);
+
+	r->out.needed	= ndr_size_spoolss_DriverDirectoryInfo(info, r->in.level, 0);
+	r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -666,16 +702,16 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		for (i=0; i < count; i++) {
 			info[i].info1.flags		= SPOOLSS_FORM_PRINTER;
 
-			info[i].info1.form_name		= talloc_strdup(mem_ctx, "Samba Printer Form");
+			info[i].info1.form_name		= talloc_strdup(mem_ctx, "Letter");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.form_name);
 
-			info[i].info1.size.width	= 30;
-			info[i].info1.size.height	= 40;
+			info[i].info1.size.width	= 0x34b5c;
+			info[i].info1.size.height	= 0x44368;
 
 			info[i].info1.area.left		= 0;
 			info[i].info1.area.top		= 0;
-			info[i].info1.area.right	= 30;
-			info[i].info1.area.bottom	= 40;
+			info[i].info1.area.right	= 0x34b5c;
+			info[i].info1.area.bottom	= 0x44368;
 		}
 		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumForms, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
@@ -745,7 +781,46 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumMonitors *r)
 {
-	return WERR_OK;
+	union spoolss_MonitorInfo *info;
+	int count;
+	int i;
+
+	count = 1;
+
+	if (count == 0) return WERR_OK;
+	if (count < 0) return WERR_GENERAL_FAILURE;
+
+	info = talloc_array(mem_ctx, union spoolss_MonitorInfo, count);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	switch (r->in.level) {
+	case 1:
+		for (i=0; i < count; i++) {
+			info[i].info1.monitor_name	= talloc_strdup(mem_ctx, "Standard TCP/IP Port");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info1.monitor_name);
+		}
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumMonitors, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	case 2:
+		for (i=0; i < count; i++) {
+			info[i].info2.monitor_name	= talloc_strdup(mem_ctx, "Standard TCP/IP Port");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.monitor_name);
+
+			info[i].info2.environment	= talloc_strdup(mem_ctx, SPOOLSS_ARCHITECTURE_NT_X86);
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.environment);
+
+			info[i].info2.dll_name		= talloc_strdup(mem_ctx, "tcpmon.dll");
+			W_ERROR_HAVE_NO_MEMORY(info[i].info2.dll_name);
+		}
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumMonitors, r->in.level, count, info);
+		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
+		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	}
+
+	return WERR_UNKNOWN_LEVEL;
 }
 
 
@@ -1108,6 +1183,41 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 	return WERR_OK;	
 }
 
+static WERROR spoolss_OpenPrinterEx_port(struct dcesrv_call_state *dce_call, 
+					 TALLOC_CTX *mem_ctx,
+					 struct spoolss_OpenPrinterEx *r,
+					 const char *server_name,
+					 const char *port_name)
+{
+	DEBUG(1, ("looking for port [%s] (server[%s])\n", port_name, server_name));
+
+	return WERR_INVALID_PRINTER_NAME;
+}
+
+static WERROR spoolss_OpenPrinterEx_monitor(struct dcesrv_call_state *dce_call, 
+					    TALLOC_CTX *mem_ctx,
+					    struct spoolss_OpenPrinterEx *r,
+					    const char *server_name,
+					    const char *monitor_name)
+{
+	if (strequal("Standard TCP/IP Port", monitor_name)) {
+		struct dcesrv_handle *handle;
+
+		handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_MONITOR);
+		W_ERROR_HAVE_NO_MEMORY(handle);
+
+		handle->data = NULL;
+
+		*r->out.handle	= handle->wire_handle;
+
+		return WERR_OK;	
+	}
+
+	DEBUG(1, ("looking for monitor [%s] (server[%s])\n", monitor_name, server_name));
+
+	return WERR_INVALID_PRINTER_NAME;
+}
+
 static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call, 
 					    TALLOC_CTX *mem_ctx,
 					    struct spoolss_OpenPrinterEx *r,
@@ -1127,7 +1237,7 @@ static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_C
 {
 	char *p;
 	char *server = NULL;
-	const char *printer = r->in.printername;
+	const char *object = r->in.printername;
 	ZERO_STRUCTP(r->out.handle);
 
 	/* no printername is there it's like open server */
@@ -1160,25 +1270,49 @@ static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_C
 		p[0] = '\0';
 		/* everything that follows is the printer name */
 		p++;
-		printer = p;
+		object = p;
 
 		/* just "" as server is invalid */
 		if (strequal(server, "")) {
-			DEBUG(2,("ivalid server: [%s][%s][%s]\n", r->in.printername, server, printer));
+			DEBUG(2,("OpenPrinterEx invalid print server: [%s][%s][%s]\n", r->in.printername, server, object));
 			return WERR_INVALID_PRINTER_NAME;
 		}
 	}
 
 	/* just "" is invalid */
-	if (strequal(printer, "")) {
-		DEBUG(2,("invalid printer: [%s][%s][%s]\n", r->in.printername, server, printer));
+	if (strequal(object, "")) {
+		DEBUG(2,("OpenPrinterEx invalid object: [%s][%s][%s]\n", r->in.printername, server, object));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	DEBUG(3,("printer: [%s][%s][%s]\n", r->in.printername, server, printer));
-	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r, server, printer);
-}
+	DEBUG(3,("OpenPrinterEx object: [%s][%s][%s]\n", r->in.printername, server, object));
 
+#define XCV_PORT ",XcvPort "
+#define XCV_MONITOR ",XcvMonitor "
+	if (strncmp(object, XCV_PORT, strlen(XCV_PORT)) == 0) {
+		object += strlen(XCV_PORT);
+
+		/* just "" is invalid */
+		if (strequal(object, "")) {
+			DEBUG(2,("OpenPrinterEx invalid port: [%s][%s][%s]\n", r->in.printername, server, object));
+			return WERR_INVALID_PRINTER_NAME;
+		}
+
+		return spoolss_OpenPrinterEx_port(dce_call, mem_ctx, r, server, object);
+	} else if (strncmp(object, XCV_MONITOR, strlen(XCV_MONITOR)) == 0) {
+		object += strlen(XCV_MONITOR);
+
+		/* just "" is invalid */
+		if (strequal(object, "")) {
+			DEBUG(2,("OpenPrinterEx invalid monitor: [%s][%s][%s]\n", r->in.printername, server, object));
+			return WERR_INVALID_PRINTER_NAME;
+		}
+
+		return spoolss_OpenPrinterEx_monitor(dce_call, mem_ctx, r, server, object);
+	}
+
+	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r, server, object);
+}
 
 /* 
   spoolss_AddPrinterEx 
