@@ -550,6 +550,11 @@ static int ltdb_index_dn(struct ldb_module *module,
 		ret = ltdb_index_dn_leaf(module, tree, index_list, list);
 		break;
 
+	case LDB_OP_EXTENDED:
+		/* we can't index with fancy bitops yet */
+		ret = -1;
+		break;
+
 	case LDB_OP_AND:
 		ret = ltdb_index_dn_and(module, tree, index_list, list);
 		break;
