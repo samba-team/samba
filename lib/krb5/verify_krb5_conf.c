@@ -624,7 +624,9 @@ main(int argc, char **argv)
     setprogname (argv[0]);
 
     ret = krb5_init_context(&context);
-    if (ret)
+    if (ret == KRB5_CONFIG_BADFORMAT)
+	errx (1, "krb5_init_context failed to parse configuration file");
+    else if (ret)
 	errx (1, "krb5_init_context failed with %d", ret);
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
