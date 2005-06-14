@@ -301,9 +301,9 @@ static int match_leaf(struct ldb_module *module,
 */
 static int comparator_and(struct ldb_val *v1, struct ldb_val *v2)
 {
-	unsigned i1, i2;
-	i1 = strtoul(v1->data, NULL, 0);
-	i2 = strtoul(v2->data, NULL, 0);
+	uint64_t i1, i2;
+	i1 = strtoull(v1->data, NULL, 0);
+	i2 = strtoull(v2->data, NULL, 0);
 	return ((i1 & i2) == i2);
 }
 
@@ -312,9 +312,9 @@ static int comparator_and(struct ldb_val *v1, struct ldb_val *v2)
 */
 static int comparator_or(struct ldb_val *v1, struct ldb_val *v2)
 {
-	unsigned i1, i2;
-	i1 = strtoul(v1->data, NULL, 0);
-	i2 = strtoul(v2->data, NULL, 0);
+	uint64_t i1, i2;
+	i1 = strtoull(v1->data, NULL, 0);
+	i2 = strtoull(v2->data, NULL, 0);
 	return ((i1 & i2) != 0);
 }
 
