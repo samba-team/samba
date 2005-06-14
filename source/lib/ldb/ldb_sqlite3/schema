@@ -146,58 +146,13 @@
 
                 -- ------------------------------------------------------
 
+/*** TESTS ***/
+
 /*
  * dn: o=University of Michigan,c=US
  * objectclass: organization
  * objectclass: domainRelatedObject
  */
--- newDN
-BEGIN;
-
-INSERT OR IGNORE INTO ldb_object
-    (parent_tree_key
-     dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('',
-          'c=US',
-          'c', 'US', 1, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key,
-     dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('0001',
-          'o=University of Michigan,c=US',
-          'o', 'University of Michigan', 1, 0);
-
--- newObjectClass
-INSERT OR IGNORE INTO ldb_attributes
-    (attr_name, parent_tree_key, objectclass_p)
-  VALUES
-    ('objectclass', '', 1);
-
-INSERT INTO ldb_object
-    (parent_tree_key,
-     dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001',
-          NULL,
-          'objectclass', 'organization', 2, 0);
-
-INSERT OR IGNORE INTO ldb_attributes
-    (attr_name, parent_tree_key, objectclass_p)
-  VALUES
-    ('objectclass', '', 1);
-
-INSERT INTO ldb_object
-    (parent_tree_key,
-     dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001',
-          NULL,
-          'objectclass', 'domainRelatedObject', 2, 0);
-
-COMMIT;
 
 
 /*
@@ -209,48 +164,6 @@ COMMIT;
  * seeAlso:
  * telephonenumber: +1 313 764-1817
  */
--- addAttrValuePair
-BEGIN;
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'l', 'Ann Arbor, Michigan', 2, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'st', 'Michigan', 2, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'o', 'University of Michigan', 2, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'o', 'UMICH', 2, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'seeAlso', '', 2, 0);
-
-INSERT INTO ldb_object
-    (parent_tree_key, dn,
-     attr_name, attr_value, object_type, max_child_num)
-  VALUES ('00010001', NULL,
-          'telephonenumber', '+1 313 764-1817', 2, 0);
-
-COMMIT;
-
--- ----------------------------------------------------------------------
 
 /*
  * dn: @ATTRIBUTES
@@ -259,44 +172,6 @@ COMMIT;
  * ou: CASE_INSENSITIVE
  * dn: CASE_INSENSITIVE
  */
--- newAttribute
-
-BEGIN;
-
-INSERT OR IGNORE INTO ldb_attributes
-    (attr_name, parent_tree_key, objectclass_p)
-  VALUES
-    ('uid', '', 0);
-
-UPDATE ldb_attributes
-  SET case_insensitive_p = 1,
-      wildcard_p = 1,
-      hidden_p = 0,
-      integer_p = 0
-  WHERE attr_name = 'uid'
-
-UPDATE ldb_attributes
-  SET case_insensitive_p = 1,
-      wildcard_p = 0,
-      hidden_p = 0,
-      integer_p = 0
-  WHERE attr_name = 'cn'
-
-UPDATE ldb_attributes
-  SET case_insensitive_p = 1,
-      wildcard_p = 0,
-      hidden_p = 0,
-      integer_p = 0
-  WHERE attr_name = 'ou'
-
-UPDATE ldb_attributes
-  SET case_insensitive_p = 1,
-      wildcard_p = 0,
-      hidden_p = 0,
-      integer_p = 0
-  WHERE attr_name = 'dn'
-
--- ----------------------------------------------------------------------
 
 /*
  * dn: @SUBCLASSES
@@ -309,25 +184,3 @@ UPDATE ldb_attributes
  * organizationalPerson: OpenLDAPperson
  * user: computer
  */
--- insertSubclass
-
-/* NOT YET UPDATED!!! *
-
-
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'domain', /* next_tree_key('top') */ '00010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'person', /* next_tree_key('top') */ '00010002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'domainDNS', /* next_tree_key('domain') */ '000100010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'organizationalPerson', /* next_tree_key('person') */ '000100020001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'fooPerson', /* next_tree_key('person') */ '000100020002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'user', /* next_tree_key('organizationalPerson') */ '0001000200010001';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'OpenLDAPperson', /* next_tree_key('organizationPerson') */ '0001000200010002';
-INSERT OR REPLACE INTO ldb_object_classes (class_name, tree_key)
-  SELECT 'computer', /* next_tree_key('user') */ '0001000200010001';
- 
