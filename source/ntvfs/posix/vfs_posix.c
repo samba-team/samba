@@ -91,6 +91,11 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 #ifdef HAVE_BLKID
 	pvfs->blkid_cache = NULL;
 #endif
+
+	/* check if the system really supports xattrs */
+	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
+		pvfs_xattr_probe(pvfs);
+	}
 }
 
 

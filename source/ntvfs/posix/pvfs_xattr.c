@@ -458,3 +458,17 @@ NTSTATUS pvfs_xattr_save(struct pvfs_state *pvfs,
 	return status;
 }
 
+
+/*
+  probe for system support for xattrs
+*/
+void pvfs_xattr_probe(struct pvfs_state *pvfs)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(pvfs);
+	DATA_BLOB blob;
+	pull_xattr_blob(pvfs, tmp_ctx, "user.XattrProbe", pvfs->base_directory, 
+			-1, 1, &blob);
+	pull_xattr_blob(pvfs, tmp_ctx, "security.XattrProbe", pvfs->base_directory, 
+			-1, 1, &blob);
+	talloc_free(tmp_ctx);
+}
