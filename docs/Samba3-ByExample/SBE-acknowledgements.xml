@@ -6,10 +6,11 @@
 
 	<para>
 	<emphasis>Samba-3 by Example</emphasis> would not have been written except
-	as a result of feedback provided by reviewers of the book <emphasis>The
-	Official Samba-3 HOWTO and Reference Guide.</emphasis> I hope this book
-	more than answers the challenge and fills the void that was brought to
-	my attention.
+	as a result of feedback provided by reviewers and readers of the book <emphasis>The
+	Official Samba-3 HOWTO and Reference Guide.</emphasis> This second edition
+	was made possible by generous feedback from Samba users. I hope this book
+	more than answers the challenge and needs of many more networks that are
+	languishing for a better networking solution.
 	</para>
 
 	<para>
@@ -32,8 +33,10 @@
 	<para>
 	My heartfelt thanks go out also to a small set of reviewers (alphabetically 
 	listed) who gave substantial feedback and significant suggestions for improvement:
-	Roland Gruber, Luke Howard, Jon Johnston, Alan Munter, Tarjei Huse, Mike MacIsaac,
-	Scott Mann, Ed Riddle, Santos Soler, Mark Taylor, and Jérôme Tournier.
+	Tony Earnshaw, William Enestvedt, Eric Hines, Roland Gruber, Gavin Henry, 
+	Steven Henry, Luke Howard, Jon Johnston, Alan Munter, Tarjei Huse, Mike MacIsaac,
+	Scott Mann, Ed Riddle, Geoff Scott, Santos Soler, Misty Stanley-Jones, Mark Taylor,
+	and Jérôme Tournier.
 	</para>
 
 	<para>
@@ -43,7 +46,8 @@
 
 	<para>
 	Particular mention is due to Lyndell, Amos and Melissa who gave me the 
-	latitude necessary to spend nearly a entire year writing Samba documentation.
+	latitude necessary to spend nearly a entire year writing Samba documentation,
+	and then gave more so this second edition could be created.
 	</para>
 
 </preface>

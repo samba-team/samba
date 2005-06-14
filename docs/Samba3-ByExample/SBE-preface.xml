@@ -474,8 +474,7 @@
 		<varlistentry>
 		<term>Chapter 9 &smbmdash; Migrating NT4 Domain to Samba-3</term><listitem>
 		<para>
-		Another six months have <?latex \linebreak ?>
-		 passed. Abmas has acquired yet another company. You will find a
+		Another six months have passed. Abmas has acquired yet another company. You will find a
 		way to migrate all users off the old network onto the existing network without loss
 		of passwords and will effect the change-over during one weekend. May the force (and caffeine) be with
 		you, may you keep your back to the wind and may the sun shine on your face.
