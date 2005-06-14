@@ -166,7 +166,29 @@ static BOOL api_svcctl_enum_services_status(pipes_struct *p)
 
 	return True;
 }
+/*******************************************************************
+ ********************************************************************/
 
+static BOOL api_svcctl_query_service_status_ex(pipes_struct *p)
+{
+	SVCCTL_Q_QUERY_SERVICE_STATUSEX q_u;
+	SVCCTL_R_QUERY_SERVICE_STATUSEX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_query_service_status_ex("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_query_service_status_ex(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_query_service_status_ex("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
 /*******************************************************************
  ********************************************************************/
 
@@ -264,6 +286,30 @@ static BOOL api_svcctl_query_service_config(pipes_struct *p)
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_query_service_config2(pipes_struct *p)
+{
+	SVCCTL_Q_QUERY_SERVICE_CONFIG2 q_u;
+	SVCCTL_R_QUERY_SERVICE_CONFIG2 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_query_service_config2("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_query_service_config2(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_query_service_config2("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  \PIPE\svcctl commands
  ********************************************************************/
 
@@ -275,11 +321,14 @@ static struct api_struct api_svcctl_cmds[] =
       { "SVCCTL_GET_DISPLAY_NAME"      , SVCCTL_GET_DISPLAY_NAME      , api_svcctl_get_display_name },
       { "SVCCTL_QUERY_STATUS"          , SVCCTL_QUERY_STATUS          , api_svcctl_query_status },
       { "SVCCTL_QUERY_SERVICE_CONFIG_W", SVCCTL_QUERY_SERVICE_CONFIG_W, api_svcctl_query_service_config },
+      { "SVCCTL_QUERY_SERVICE_CONFIG2_W", SVCCTL_QUERY_SERVICE_CONFIG2_W, api_svcctl_query_service_config2 },
       { "SVCCTL_ENUM_SERVICES_STATUS_W", SVCCTL_ENUM_SERVICES_STATUS_W, api_svcctl_enum_services_status },
       { "SVCCTL_ENUM_DEPENDENT_SERVICES_W", SVCCTL_ENUM_DEPENDENT_SERVICES_W, api_svcctl_enum_dependent_services },
       { "SVCCTL_START_SERVICE_W"       , SVCCTL_START_SERVICE_W       , api_svcctl_start_service },
-      { "SVCCTL_CONTROL_SERVICE"       , SVCCTL_CONTROL_SERVICE       , api_svcctl_control_service }
+      { "SVCCTL_CONTROL_SERVICE"       , SVCCTL_CONTROL_SERVICE       , api_svcctl_control_service },
+      { "SVCCTL_QUERY_SERVICE_STATUSEX_W", SVCCTL_QUERY_SERVICE_STATUSEX_W, api_svcctl_query_service_status_ex }
 };
+
 
 void svcctl_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
