@@ -31,8 +31,10 @@
 
 static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
 {
+	int i;
+
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE: {
+	case LDB_OP_SIMPLE:
 		if ((tree->u.simple.value.length == 1) &&
 		    (((char *)(tree->u.simple.value.data))[0] == '*')) {
 			/* Just a presence test */
@@ -43,7 +45,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 			return !data->has_error;
 		}
 
-		/* Equality is all we currently do... */
+		/* equality test */
 		asn1_push_tag(data, 0xa3);
 		asn1_write_OctetString(data, tree->u.simple.attr,
 				      strlen(tree->u.simple.attr));
@@ -51,29 +53,51 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 				      tree->u.simple.value.length);
 		asn1_pop_tag(data);
 		break;
-	}
 
-	case LDB_OP_AND: {
-		int i;
+	case LDB_OP_EXTENDED:
+		/*
+		  MatchingRuleAssertion ::= SEQUENCE {
+		  matchingRule    [1] MatchingRuleID OPTIONAL,
+		  type            [2] AttributeDescription OPTIONAL,
+		  matchValue      [3] AssertionValue,
+		  dnAttributes    [4] BOOLEAN DEFAULT FALSE
+		  }
+		*/
+		asn1_push_tag(data, 0xa9);
+		if (tree->u.extended.rule_id) {
+			asn1_push_tag(data, 1);
+			asn1_write_OctetString(data, tree->u.extended.rule_id,
+					       strlen(tree->u.extended.rule_id));
+			asn1_pop_tag(data);
+		}
+		if (tree->u.extended.attr) {
+			asn1_push_tag(data, 2);
+			asn1_write_OctetString(data, tree->u.extended.attr,
+					       strlen(tree->u.extended.attr));
+			asn1_pop_tag(data);
+		}
+		asn1_push_tag(data, 3);
+		asn1_write_OctetString(data, tree->u.extended.value.data,
+				      tree->u.extended.value.length);
+		asn1_pop_tag(data);
+		if (tree->u.extended.dnAttributes) {
+			asn1_push_tag(data, 4);
+			asn1_write_BOOLEAN(data, True);
+			asn1_pop_tag(data);
+		}
+		asn1_pop_tag(data);
+		break;
+		
 
-		asn1_push_tag(data, 0xa0);
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+		asn1_push_tag(data, 0xa0 | (tree->operation==LDB_OP_AND?0:1));
 		for (i=0; i<tree->u.list.num_elements; i++) {
 			ldap_push_filter(data, tree->u.list.elements[i]);
 		}
 		asn1_pop_tag(data);
 		break;
-	}
 
-	case LDB_OP_OR: {
-		int i;
-
-		asn1_push_tag(data, 0xa1);
-		for (i=0; i<tree->u.list.num_elements; i++) {
-			ldap_push_filter(data, tree->u.list.elements[i]);
-		}
-		asn1_pop_tag(data);
-		break;
-	}
 	default:
 		return False;
 	}
@@ -464,25 +488,34 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
+	case 2:
+		/* 'not' operation */
+		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_NOT;
+		ret->u.not.child = ldap_decode_filter_tree(ret, data);
+
+		if (!asn1_end_tag(data)) {
+			goto failed;
+		}
+		break;
+
 	case 3: {
 		/* equalityMatch */
 		const char *attrib;
 		DATA_BLOB value;
 
-		ret->operation = LDB_OP_SIMPLE;
-
-		if (tag_desc != 0xa0) {
-			/* context compound */
-			goto failed;
-		}
-
-		asn1_start_tag(data, ASN1_CONTEXT(3));
+		asn1_start_tag(data, ASN1_CONTEXT(filter_tag));
 		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
 		asn1_read_OctetString(data, &value);
 		asn1_end_tag(data);
 		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
 			goto failed;
 		}
+
+		ret->operation = LDB_OP_SIMPLE;
 		ret->u.simple.attr = talloc_steal(ret, attrib);
 		ret->u.simple.value.data = talloc_steal(ret, value.data);
 		ret->u.simple.value.length = value.length;
@@ -490,27 +523,17 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 	}
 	case 7: {
 		/* Normal presence, "attribute=*" */
-		int attr_len;
-		if (tag_desc != 0x80) {
-			/* context simple */
+		char *attr;
+
+		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(filter_tag))) {
 			goto failed;
 		}
-		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(7))) {
+		if (!asn1_read_LDAPString(data, &attr)) {
 			goto failed;
 		}
 
 		ret->operation = LDB_OP_SIMPLE;
-
-		attr_len = asn1_tag_remaining(data);
-
-		ret->u.simple.attr = talloc_size(ret, attr_len+1);
-		if (ret->u.simple.attr == NULL) {
-			goto failed;
-		}
-		if (!asn1_read(data, ret->u.simple.attr, attr_len)) {
-			goto failed;
-		}
-		ret->u.simple.attr[attr_len] = 0;
+		ret->u.simple.attr = talloc_steal(ret, attr);
 		ret->u.simple.value.data = talloc_strdup(ret, "*");
 		if (ret->u.simple.value.data == NULL) {
 			goto failed;
@@ -521,6 +544,43 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
+	case 9: {
+		char *oid, *attr, *value;
+		uint8_t dnAttributes;
+		/* an extended search */
+		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
+			goto failed;
+		}
+
+		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1));
+		asn1_read_LDAPString(data, &oid);
+		asn1_end_tag(data);
+		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(2));
+		asn1_read_LDAPString(data, &attr);
+		asn1_end_tag(data);
+		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(3));
+		asn1_read_LDAPString(data, &value);
+		asn1_end_tag(data);
+		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(4));
+		asn1_read_uint8(data, &dnAttributes);
+		asn1_end_tag(data);
+		if ((data->has_error) || (oid == NULL) || (value == NULL)) {
+			goto failed;
+		}
+
+		ret->operation               = LDB_OP_EXTENDED;
+		ret->u.extended.attr         = talloc_steal(ret, attr);
+		ret->u.extended.rule_id      = talloc_steal(ret, oid);
+		ret->u.extended.value.data   = talloc_steal(ret, value);
+		ret->u.extended.value.length = strlen(value);
+		ret->u.extended.dnAttributes = dnAttributes;
+
+		if (!asn1_end_tag(data)) {
+			goto failed;
+		}
+		break;
+	}
+
 	default:
 		DEBUG(0,("Unsupported LDAP filter operation 0x%x\n", filter_tag));
 		goto failed;
