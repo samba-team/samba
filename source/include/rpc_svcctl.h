@@ -106,8 +106,8 @@
 #define SVCCTL_CONTROL_CONTINUE			0x00000003
 #define SVCCTL_CONTROL_SHUTDOWN                 0x00000004
 
-#define SVC_HANDLE_IS_SCM        0x0000001
-#define SVC_HANDLE_IS_SERVICE    0x0000002
+#define SVC_HANDLE_IS_SCM			0x0000001
+#define SVC_HANDLE_IS_SERVICE			0x0000002
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000001
 
@@ -195,6 +195,27 @@ typedef struct Service_info_struct {
 	pstring shortdescription;
 	pstring description;
 } Service_info;
+
+/* 
+ * dispatch table of functions to handle the =ServiceControl API
+ */ 
+ 
+typedef struct {
+	/* functions for enumerating subkeys and values */	
+	WERROR 	(*stop_service)( void );
+	WERROR 	(*start_service) ( void );
+	BOOL 	(*service_status)( SERVICE_STATUS *status );
+} SERVICE_CONTROL_OPS;
+
+/* structure to store the service handle information  */
+
+typedef struct _ServiceInfo {
+	uint8			type;
+	char			*name;
+	uint32			access_granted;
+	SERVICE_CONTROL_OPS	*ops;
+} SERVICE_INFO;
+
 
 /* rpc structures */
 
