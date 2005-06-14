@@ -79,7 +79,6 @@ sub GetElementLevelTable($)
 			IS_VARYING => "$is_varying",
 			IS_CONFORMANT => "$is_conformant",
 			IS_FIXED => (not $is_conformant and util::is_constant($size)),
-			NO_METADATA => (not $is_conformant),
 			IS_INLINE => (not $is_conformant and not util::is_constant($size))
 		});
 	}
@@ -124,7 +123,6 @@ sub GetElementLevelTable($)
 				IS_VARYING => "$is_varying",
 				IS_CONFORMANT => 1,
 				IS_FIXED => 0,
-				NO_METADATA => 0,
 				IS_INLINE => 0,
 			});
 
