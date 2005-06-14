@@ -91,7 +91,7 @@ int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name,
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
 int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_message *msg);
-int ltdb_search_dn(struct ldb_module *module, char *dn,
+int ltdb_search_dn(struct ldb_module *module, const char *dn,
 		   const char * const attrs[], struct ldb_message ***res);
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 

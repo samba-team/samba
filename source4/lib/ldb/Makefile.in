@@ -148,9 +148,11 @@ test-sqlite3:
 	@echo "SKIP SQLITE3 TEST - NO SQLITE3 SUPPORT"
 endif
 
+ifeq (1,0)
 test-schema:
 	@echo "STARTING SCHEMA MODULE TEST"
 	tests/test-schema.sh
+endif
 
 test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
 

@@ -50,8 +50,8 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state = h->data;
 
 	/* fetch the old hashes */
-	ret = gendb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "dn=%s", a_state->account_dn);
+	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+			      a_state->account_dn, &res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -400,9 +400,8 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 
 failed:
-	ret = gendb_search(sam_ctx, 
-			   mem_ctx, NULL, &res, dom_attrs,
-			   "dn=%s", domain_dn);
+	ret = gendb_search_dn(sam_ctx, mem_ctx,
+			      domain_dn, &res, dom_attrs);
 
 	if (ret != 1) {
 		return status;
@@ -517,7 +516,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&now_nt, now);
 
 	/* pull all the user parameters */
-	count = gendb_search(ctx, mem_ctx, NULL, &res, user_attrs, "dn=%s", user_dn);
+	count = gendb_search_dn(ctx, mem_ctx, user_dn, &res, user_attrs);
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -533,7 +532,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
 
 	/* pull the domain parameters */
-	count = gendb_search(ctx, mem_ctx, NULL, &res, domain_attrs, "dn=%s", domain_dn);
+	count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res, domain_attrs);
 	if (count != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
