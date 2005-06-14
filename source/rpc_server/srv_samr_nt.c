@@ -9,6 +9,7 @@
  *  Copyright (C) Jean François Micouleau          1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
+ *  Copyright (C) Simo Sorce                        2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,7 +77,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
                                      struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
-	DOM_SID adm_sid, act_sid, domadmin_sid;
+	DOM_SID domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;
 	size_t i = 0;
@@ -90,16 +91,10 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	
 	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 	
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-	
 	init_sec_access(&mask, map->generic_all);
 	
-	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	
 	/* Add Full Access for Domain Admins if we are a DC */
 	
@@ -767,6 +762,8 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_aliases, aliases);
+
+	if (!NT_STATUS_IS_OK(status)) return status;
 
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_aliases,
 				     num_aliases);
