@@ -566,7 +566,7 @@ BOOL smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
  Allocate the RPC_DATA_BLOB memory.
 ********************************************************************/
 
-static size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
+size_t create_rpc_blob(RPC_DATA_BLOB *str, size_t len)
 {
 	str->buffer = TALLOC_ZERO(get_talloc_ctx(), len);
 	if (str->buffer == NULL)

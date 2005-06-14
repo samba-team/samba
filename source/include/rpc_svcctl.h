@@ -36,6 +36,7 @@
 #define SVCCTL_START_SERVICE_W			0x13
 #define SVCCTL_GET_DISPLAY_NAME			0x14
 #define SVCCTL_QUERY_SERVICE_CONFIG2_W		0x27
+#define SVCCTL_QUERY_SERVICE_STATUSEX_W         0x28
 
 /* ANSI versions not implemented currently 
 #define SVCCTL_ENUM_SERVICES_STATUS_A		0x0e
@@ -72,11 +73,43 @@
 #define SVCCTL_ACCEPT_HARDWAREPROFILECHANGE	0x00000020
 #define SVCCTL_ACCEPT_POWEREVENT		0x00000040
 
+/* SERVER_STATUS - ControlAccepted */
+#define SVCCTL_SVC_ERROR_IGNORE                 0x00000000
+#define SVCCTL_SVC_ERROR_NORMAL                 0x00000001
+#define SVCCTL_SVC_ERROR_CRITICAL               0x00000002
+#define SVCCTL_SVC_ERROR_SEVERE                 0x00000003
+
+/* QueryServiceConfig2 options */
+#define SERVICE_CONFIG_DESCRIPTION              0x00000001
+#define SERVICE_CONFIG_FAILURE_ACTIONS          0x00000002
+
+
+/* Service Config - values for ServiceType field*/
+
+#define SVCCTL_KERNEL_DRVR                         0x00000001  /* doubtful we'll have these */
+#define SVCCTL_FILE_SYSTEM_DRVR                    0x00000002  
+#define SVCCTL_WIN32_OWN_PROC                      0x00000010
+#define SVCCTL_WIN32_SHARED_PROC                   0x00000020
+#define SVCCTL_WIN32_INTERACTIVE                   0x00000100 
+
+/* Service Config - values for StartType field */
+#define SVCCTL_BOOT_START                          0x00000000
+#define SVCCTL_SYSTEM_START                        0x00000001
+#define SVCCTL_AUTO_START                          0x00000002
+#define SVCCTL_DEMAND_START                        0x00000003
+#define SVCCTL_DISABLED                            0x00000004
+
 /* Service Controls */
 
 #define SVCCTL_CONTROL_STOP			0x00000001
 #define SVCCTL_CONTROL_PAUSE			0x00000002
 #define SVCCTL_CONTROL_CONTINUE			0x00000003
+#define SVCCTL_CONTROL_SHUTDOWN                 0x00000004
+
+#define SVC_HANDLE_IS_SCM        0x0000001
+#define SVC_HANDLE_IS_SERVICE    0x0000002
+
+#define SVC_STATUS_PROCESS_INFO                 0x00000001
 
 /* utility structures for RPCs */
 
@@ -89,6 +122,19 @@ typedef struct {
 	uint32 check_point;
 	uint32 wait_hint;
 } SERVICE_STATUS;
+
+typedef struct {
+	uint32 type;
+	uint32 state;
+	uint32 controls_accepted;
+	uint32 win32_exit_code;
+	uint32 service_exit_code;
+	uint32 check_point;
+	uint32 wait_hint;
+	uint32 process_id;
+	uint32 service_flags;
+} SERVICE_STATUS_PROCESS;
+
 
 typedef struct {
 	UNISTR servicename;
@@ -108,6 +154,47 @@ typedef struct {
 	UNISTR2 *displayname;
 } SERVICE_CONFIG;
 
+typedef struct {
+        UNISTR2 *description;
+} SERVICE_DESCRIPTION;
+
+typedef struct {
+        uint32 type;
+        uint32 delay;
+} SC_ACTION;
+
+typedef struct {
+        uint32 reset_period;
+        UNISTR2 *rebootmsg;
+        UNISTR2 *command;
+        uint32  nActions;
+        SC_ACTION *saActions;
+        UNISTR2 *description;
+} SERVICE_FAILURE_ACTIONS;
+
+
+typedef struct SCM_info_struct {
+	uint32  type;                    /* should be SVC_HANDLE_IS_SCM */
+	pstring target_server_name;      /* name of the server on which the operation is taking place */
+	pstring target_db_name;          /* name of the database that we're opening */
+} SCM_info;
+
+typedef struct Service_info_struct {
+	uint32  type;		/* should be SVC_HANDLE_IS_SERVICE */
+	pstring servicename;	/* the name of the service */
+	pstring servicetype;	/* internal or external */
+	pstring filename;	/* what file name we can find this in, 
+				   as well as the "index" for what the 
+				   service name is */
+	pstring provides;
+	pstring dependencies;
+	pstring shouldstart;
+	pstring shouldstop;
+	pstring requiredstart;
+	pstring	requiredstop;
+	pstring shortdescription;
+	pstring description;
+} Service_info;
 
 /* rpc structures */
 
@@ -118,6 +205,7 @@ typedef struct {
 } SVCCTL_Q_CLOSE_SERVICE;
 
 typedef struct {
+        POLICY_HND handle;
 	WERROR status;
 } SVCCTL_R_CLOSE_SERVICE;
 
@@ -241,6 +329,33 @@ typedef struct {
 	uint32 needed;
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG;
+
+typedef struct {
+	POLICY_HND handle;
+        uint32 info_level;
+	uint32 buffer_size;
+} SVCCTL_Q_QUERY_SERVICE_CONFIG2;
+
+typedef struct {
+	UNISTR2 *description;
+        uint32 returned;
+	uint32 needed;
+        uint32 offset;
+	WERROR status;
+} SVCCTL_R_QUERY_SERVICE_CONFIG2;
+
+typedef struct {
+	POLICY_HND handle;
+        uint32 info_level;
+	uint32 buffer_size;
+} SVCCTL_Q_QUERY_SERVICE_STATUSEX;
+
+typedef struct {
+	RPC_BUFFER buffer;
+        uint32 returned;
+	uint32 needed;
+	WERROR status;
+} SVCCTL_R_QUERY_SERVICE_STATUSEX;
 
 #endif /* _RPC_SVCCTL_H */
 
