@@ -132,14 +132,11 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		DATA_BLOB blob;
-		uint32_t buf_size = 0;
 
 		r.in.servername = "";
 		r.in.level = level;
 		r.in.buffer = NULL;
-		buf_size = 0;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("Testing EnumPorts level %u\n", r.in.level);
 
@@ -160,9 +157,10 @@ static BOOL test_EnumPorts(struct test_spoolss_context *ctx)
 			continue;
 		}
 
-		blob = data_blob_talloc(ctx, NULL, buf_size);
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumPorts(ctx->p, ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -224,15 +222,12 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		DATA_BLOB blob;
-		uint32_t buf_size = 0;
 
 		r.in.server = "";
 		r.in.environment = "Windows NT x86";
 		r.in.level = level;
 		r.in.buffer = NULL;
-		buf_size = 0;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("Testing EnumPrinterDrivers level %u\n", r.in.level);
 
@@ -253,9 +248,10 @@ static BOOL test_EnumPrinterDrivers(struct test_spoolss_context *ctx)
 			continue;
 		}
 
-		blob = data_blob_talloc(ctx, NULL, buf_size);
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumPrinterDrivers(ctx->p, ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -361,14 +357,11 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		DATA_BLOB blob;
-		uint32_t buf_size = 0;
 
 		r.in.servername = "";
 		r.in.level = level;
 		r.in.buffer = NULL;
-		buf_size = 0;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("Testing EnumMonitors level %u\n", r.in.level);
 
@@ -389,9 +382,10 @@ static BOOL test_EnumMonitors(struct test_spoolss_context *ctx)
 			continue;
 		}
 
-		blob = data_blob_talloc(ctx, NULL, buf_size);
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumMonitors(ctx->p, ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -453,15 +447,12 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		DATA_BLOB blob;
-		uint32_t buf_size = 0;
 
 		r.in.servername = "";
 		r.in.environment = "Windows NT x86";
 		r.in.level = level;
 		r.in.buffer = NULL;
-		buf_size = 0;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("Testing EnumPrintProcessors level %u\n", r.in.level);
 
@@ -482,9 +473,10 @@ static BOOL test_EnumPrintProcessors(struct test_spoolss_context *ctx)
 			continue;
 		}
 
-		blob = data_blob_talloc(ctx, NULL, buf_size);
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumPrintProcessors(ctx->p, ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -545,14 +537,12 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		DATA_BLOB blob;
-		uint32_t buf_size = 0;
 
 		r.in.flags	= PRINTER_ENUM_LOCAL;
 		r.in.server	= "";
 		r.in.level	= level;
 		r.in.buffer	= NULL;
-		r.in.buf_size	= &buf_size;
-		r.out.buf_size	= &buf_size;
+		r.in.offered	= 0;
 
 		printf("\nTesting EnumPrinters level %u\n", r.in.level);
 
@@ -573,9 +563,11 @@ static BOOL test_EnumPrinters(struct test_spoolss_context *ctx)
 			continue;
 		}
 
-		blob = data_blob_talloc(ctx, NULL, buf_size);
+		blob = data_blob_talloc(ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
+
 		status = dcerpc_spoolss_EnumPrinters(ctx->p, ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dcerpc_spoolss_EnumPrinters failed - %s\n", nt_errstr(status));
@@ -684,12 +676,10 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32_t buf_size = 0;
 		r.in.handle = handle;
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("Testing GetPrinter level %u\n", r.in.level);
 
@@ -701,9 +691,10 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
+			r.in.offered = r.out.needed;
 			status = dcerpc_spoolss_GetPrinter(p, mem_ctx, &r);
 		}
 		
@@ -712,7 +703,7 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 			continue;
 		}
-		
+
 		if (!W_ERROR_IS_OK(r.out.result)) {
 			printf("GetPrinter failed - %s\n", 
 			       win_errstr(r.out.result));
@@ -751,30 +742,26 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.form_name = form_name;
 	r.in.level = 1;
 	r.in.buffer = NULL;
-	buf_size = 0;
-	r.in.buf_size = r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing GetForm\n");
 
 	status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetForm failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
-
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
-
+		r.in.offered = r.out.needed;
 		status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
 
 		if (!r.out.info) {
@@ -791,31 +778,27 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumForms r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.level = 1;
 	r.in.buffer = NULL;
-	buf_size = 0;
-	r.in.buf_size = &buf_size;
-	r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing EnumForms\n");
 
 	status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumForms failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
 		union spoolss_FormInfo *info;
 		int j;
-
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumForms(p, mem_ctx, &r);
 
@@ -946,15 +929,12 @@ static BOOL test_EnumPorts_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
-	uint32_t buf_size;
 
 	r.in.servername = talloc_asprintf(mem_ctx, "\\\\%s", 
 					  dcerpc_server_name(p));
 	r.in.level = 2;
 	r.in.buffer = NULL;
-	buf_size = 0;
-	r.in.buf_size = &buf_size;
-	r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing EnumPorts\n");
 
@@ -966,13 +946,12 @@ static BOOL test_EnumPorts_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
-
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumPorts(p, mem_ctx, &r);
-
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("EnumPorts failed - %s\n", nt_errstr(status));
 			return False;
@@ -1025,29 +1004,26 @@ static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.job_id = job_id;
 	r.in.level = 1;
 	r.in.buffer = NULL;
-	buf_size = 0;
-	r.in.buf_size = r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing GetJob\n");
 
 	status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetJob failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
-
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_GetJob(p, mem_ctx, &r);
 
@@ -1091,16 +1067,13 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumJobs r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.firstjob = 0;
 	r.in.numjobs = 0xffffffff;
 	r.in.level = 1;
 	r.in.buffer = NULL;
-	buf_size = 0;
-	r.in.buf_size = &buf_size;
-	r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing EnumJobs\n");
 
@@ -1112,12 +1085,12 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
 		union spoolss_JobInfo *info;
 		int j;
-
+		DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_EnumJobs(p, mem_ctx, &r);
 
@@ -1313,26 +1286,23 @@ static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.value_name = value_name;
-	buf_size = 0;
-	r.in.buf_size = r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing GetPrinterData\n");
 
 	status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetPrinterData failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
-
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("GetPrinterData failed - %s\n", 
 			       nt_errstr(status));
@@ -1356,13 +1326,11 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.key_name = key_name;
 	r.in.value_name = value_name;
-	buf_size = 0;
-	r.in.buf_size = r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 
 	printf("Testing GetPrinterDataEx\n");
 
@@ -1378,9 +1346,9 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		r.in.offered = r.out.needed;
 
 		status = dcerpc_spoolss_GetPrinterDataEx(p, mem_ctx, &r);
-
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("GetPrinterDataEx failed - %s\n", 
 			       nt_errstr(status));
@@ -1453,18 +1421,17 @@ static BOOL test_EnumPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = handle;
 	r.in.key_name = "PrinterDriverData";
-	r.in.buf_size = 0;
+	r.in.offered = 0;
 
 	printf("Testing EnumPrinterDataEx\n");
 
 	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumPrinterDataEx failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	r.in.buf_size = r.out.buf_size;
+	r.in.offered = r.out.needed;
 
 	status = dcerpc_spoolss_EnumPrinterDataEx(p, mem_ctx, &r);
 
@@ -1822,7 +1789,6 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32_t buf_size = 0;
 		union spoolss_PrinterInfo *info;
 		int j;
 
@@ -1830,8 +1796,7 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.server	= "";
 		r.in.level	= levels[i];
 		r.in.buffer	= NULL;
-		r.in.buf_size	= &buf_size;
-		r.out.buf_size	= &buf_size;
+		r.in.offered	= 0;
 
 		printf("\nTesting EnumPrinters level %u\n", r.in.level);
 
@@ -1843,9 +1808,10 @@ static BOOL test_EnumPrinters_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		}
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, buf_size);
+			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
+			r.in.offered = r.out.needed;
 			status = dcerpc_spoolss_EnumPrinters(p, mem_ctx, &r);
 		}
 
@@ -1894,27 +1860,25 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
-	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.architecture = "W32X86";
 	r.in.level = 1;
-	buf_size = 0;
 	r.in.buffer = NULL;
-	r.in.buf_size = r.out.buf_size = &buf_size;
+	r.in.offered = 0;
 	r.in.client_major_version = 0;
 	r.in.client_minor_version = 0;
 
 	printf("Testing GetPrinterDriver2\n");
 
 	status = dcerpc_spoolss_GetPrinterDriver2(p, mem_ctx, &r);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("GetPrinterDriver2 failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.offered = r.out.needed;
 		status = dcerpc_spoolss_GetPrinterDriver2(p, mem_ctx, &r);
 	}
 		
@@ -1943,15 +1907,12 @@ static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32_t buf_size;
 
 		r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment = "Windows NT x86";
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
-		buf_size = 0;
-		r.in.buf_size = &buf_size;
-		r.out.buf_size = &buf_size;
+		r.in.offered = 0;
 
 		printf("\nTesting EnumPrinterDrivers level %u\n", r.in.level);
 
@@ -1965,14 +1926,13 @@ static BOOL test_EnumPrinterDrivers_old(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 		}
 
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(
-				mem_ctx, NULL, buf_size);
-
+			DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
+			r.in.offered = r.out.needed;
 			status = dcerpc_spoolss_EnumPrinterDrivers(p, mem_ctx, &r);
 		}
-		
+
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("EnumPrinterDrivers failed - %s\n", 
 			       nt_errstr(status));

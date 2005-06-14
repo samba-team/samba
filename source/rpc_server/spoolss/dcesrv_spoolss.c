@@ -32,7 +32,7 @@
 #define SPOOLSS_BUFFER_SIZE(fn,level,count,info) \
 	ndr_size_##fn##_info(dce_call, level, count, info)
 
-#define SPOOLSS_BUFFER_OK(val_true,val_false) ((*r->in.buf_size >= *r->out.buf_size)?val_true:val_false)
+#define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= r->out.needed)?val_true:val_false)
 
 /* 
   spoolss_EnumPrinters 
@@ -45,8 +45,6 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	int count;
 	int i;
 	union spoolss_PrinterInfo *info;
-
-	*r->out.buf_size = 0;
 
 	spoolss_ctx = spoolssdb_connect();
 	W_ERROR_HAVE_NO_MEMORY(spoolss_ctx);
@@ -74,7 +72,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info1.comment		= samdb_result_string(msgs[i], "comment", NULL);
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -122,7 +120,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info2.cjobs		= samdb_result_uint(msgs[i], "cjobs", 0);
 			info[i].info2.averageppm	= samdb_result_uint(msgs[i], "averageppm", 0);
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -136,7 +134,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 			info[i].info4.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -152,7 +150,7 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 			info[i].info5.device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
 			info[i].info5.transmission_retry_timeout  = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -221,8 +219,6 @@ static WERROR spoolss_GetJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 static WERROR spoolss_EnumJobs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumJobs *r)
 {
-	*r->out.buf_size	= 0;
-
 	return WERR_OK;
 }
 
@@ -287,8 +283,6 @@ static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TAL
 	int count;
 	int i;
 
-	*r->out.buf_size	= 0;
-
 	count = 0;
 
 	if (count == 0) return WERR_OK;
@@ -301,42 +295,42 @@ static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TAL
 	case 1:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 2:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 3:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 4:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 5:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 	case 6:
 		for (i=0; i < count; i++) {
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -392,8 +386,6 @@ static WERROR spoolss_AddPrintProcessor(struct dcesrv_call_state *dce_call, TALL
 static WERROR spoolss_EnumPrintProcessors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrintProcessors *r)
 {
-	*r->out.buf_size	= 0;
-
 	return WERR_OK;
 }
 
@@ -558,7 +550,7 @@ static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	if (W_ERROR_IS_OK(status)) {
-		*r->out.buf_size = ndr_size_spoolss_PrinterData(&data, type, 0);
+		r->out.needed	= ndr_size_spoolss_PrinterData(&data, type, 0);
 		r->out.type	= SPOOLSS_BUFFER_OK(type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
 		r->out.data	= SPOOLSS_BUFFER_OK(data, data);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
@@ -659,8 +651,6 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	int i;
 	struct dcesrv_handle *h;
 
-	*r->out.buf_size	= 0;
-
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 
 	count = 1;
@@ -687,7 +677,7 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info1.area.right	= 30;
 			info[i].info1.area.bottom	= 40;
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumForms, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumForms, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -707,8 +697,6 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	int count;
 	int i;
 
-	*r->out.buf_size	= 0;
-
 	count = 1;
 
 	if (count == 0) return WERR_OK;
@@ -723,7 +711,7 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info1.port_name	= talloc_strdup(mem_ctx, "Samba Printer Port");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.port_name);
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -741,7 +729,7 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			info[i].info2.port_type		= SPOOLSS_PORT_TYPE_WRITE;
 			info[i].info2.reserved		= 0;
 		}
-		*r->out.buf_size= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
+		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
 		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
 		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
 		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
@@ -757,8 +745,6 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumMonitors *r)
 {
-	*r->out.buf_size	= 0;
-
 	return WERR_OK;
 }
 
