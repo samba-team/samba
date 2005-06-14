@@ -284,8 +284,8 @@ talloc_realloc() has the following equivalences:
   talloc_realloc(context, NULL, type, N) ==> talloc_array(context, type, N);
   talloc_realloc(context, ptr, type, 0)  ==> talloc_free(ptr);
 
-The "context" argument is only used if "ptr" is not NULL, otherwise it
-is ignored.
+The "context" argument is only used if "ptr" is NULL, otherwise it is
+ignored.
 
 talloc_realloc() returns the new pointer, or NULL on failure. The call
 will fail either due to a lack of memory, or because the pointer has
