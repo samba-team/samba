@@ -27,10 +27,24 @@
 </xsl:param>
 
 <!-- Show real name of the link rather then user specified description -->
-<xsl:template name="link">
-	<xsl:element name="link">
-		<xsl:copy-of select="@*"/>
-	</xsl:element>
+<xsl:template match="link">
+	<xsl:variable name="target" select="key('id',@linkend)[1]"/>
+	<xsl:variable name="refelem" select="local-name($target)"/>
+	<xsl:if test="$refelem=''">
+		<xsl:message><xsl:text>XRef to nonexistent id: </xsl:text><xsl:value-of select="@linkend"/></xsl:message>
+		<xsl:text>XrefId[?</xsl:text>
+		<xsl:apply-templates/>
+		<xsl:text>?]</xsl:text>
+	</xsl:if>
+
+	<xsl:call-template name="generate.hyperlink">
+		<xsl:with-param name="target" select="$target"/>
+		<xsl:with-param name="text">
+			<xsl:call-template name="generate.xref.text">
+				<xsl:with-param name="target" select="$target"/>
+			</xsl:call-template>
+		</xsl:with-param>
+	</xsl:call-template>
 </xsl:template>
 
 <!-- LaTeX doesn't accept verbatim stuff in titles -->
