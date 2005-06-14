@@ -77,7 +77,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
                                      struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
-	DOM_SID adm_sid, act_sid, domadmin_sid;
+	DOM_SID domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;
 	size_t i = 0;
@@ -91,16 +91,10 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
 	init_sec_access(&mask, map->generic_all);
 	
-	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* Add Full Access for Domain Admins if we are a DC */
 	
@@ -730,9 +724,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	struct samr_displayentry *aliases;
 	struct pdb_search **search = NULL;
 	uint32 num_aliases = 0;
-	NTSTATUS status;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
@@ -752,14 +743,16 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	if (sid_check_is_builtin(&info->sid))
 		search = &info->disp_info.builtins;
 
-	if (search == NULL) return NT_STATUS_INVALID_HANDLE;
+	if (search == NULL) 
+		return NT_STATUS_INVALID_HANDLE;
 
 	become_root();
 	if (*search == NULL)
 		*search = pdb_search_aliases(&info->sid);
 	unbecome_root();
 
-	if (*search == NULL) return NT_STATUS_ACCESS_DENIED;
+	if (*search == NULL) 
+		return NT_STATUS_ACCESS_DENIED;
 
 	become_root();
 	num_aliases = pdb_search_entries(*search, q_u->start_idx,
@@ -2019,7 +2012,8 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	if ( can_add_account )
 		become_root();
 
-	if ((pw == NULL) && (*add_script != '\0')) {
+	if ( !pw ) {
+		if (*add_script) {
 		int add_ret;
 
 		all_string_sub(add_script, "%u", account, sizeof(add_script));
@@ -3268,8 +3262,15 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 {
 	DOM_SID group_sid;
 	DOM_SID user_sid;
+	fstring group_sid_str;
+	uid_t uid;
+	struct passwd *pwd;
+	struct group *grp;
 	fstring grp_name;
-	fstring usr_name;
+	GROUP_MAP map;
+	NTSTATUS ret;
+	SAM_ACCOUNT *sam_user=NULL;
+	BOOL check;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
@@ -3282,23 +3283,54 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 		return r_u->status;
 	}
 
-	if (!sid_to_local_dom_grp_name(&group_sid, grp_name)) {
-		DEBUG(1, ("Could not find group for SID %s\n",
-			  sid_string_static(&group_sid)));
+	sid_to_string(group_sid_str, &group_sid);
+	DEBUG(10, ("sid is %s\n", group_sid_str));
+
+	if (sid_compare(&group_sid, get_global_sam_sid())<=0)
 		return NT_STATUS_NO_SUCH_GROUP;
-	}
+
+	DEBUG(10, ("lookup on Domain SID\n"));
+
+	if(!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
 
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, q_u->rid);
 
-	if (!sid_to_local_user_name(&user_sid, usr_name)) {
-		DEBUG(1, ("Could not find user for SID %s\n",
-			  sid_string_static(&user_sid)));
+	ret = pdb_init_sam(&sam_user);
+	if (!NT_STATUS_IS_OK(ret))
+		return ret;
+	
+	check = pdb_getsampwsid(sam_user, &user_sid);
+	
+	if (check != True) {
+		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	/* check a real user exist before we run the script to add a user to a group */
+	if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
+		pdb_free_sam(&sam_user);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	pdb_free_sam(&sam_user);
+
+	if ((pwd=getpwuid_alloc(uid)) == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if ((grp=getgrgid(map.gid)) == NULL) {
+		passwd_free(&pwd);
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	/* we need to copy the name otherwise it's overloaded in user_in_unix_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
 	/* if the user is already in the group */
-	if(user_in_unix_group_list(usr_name, grp_name)) {
+	if(user_in_unix_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
 
@@ -3316,7 +3348,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	 * we can (finally) add it to the group !
 	 */
 
-	smb_add_user_group(grp_name, usr_name);
+	smb_add_user_group(grp_name, pwd->pw_name);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -3324,10 +3356,12 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been added then ... */
-	if(!user_in_unix_group_list(usr_name, grp_name)) {
-		return NT_STATUS_ACCESS_DENIED;
+	if(!user_in_unix_group_list(pwd->pw_name, grp_name)) {
+		passwd_free(&pwd);
+		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
 	}
 
+	passwd_free(&pwd);
 	return NT_STATUS_OK;
 }
 
@@ -3339,8 +3373,10 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 {
 	DOM_SID group_sid;
 	DOM_SID user_sid;
+	SAM_ACCOUNT *sam_pass=NULL;
+	GROUP_MAP map;
 	fstring grp_name;
-	fstring usr_name;
+	struct group *grp;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
@@ -3359,23 +3395,32 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 		return r_u->status;
 	}
 		
-	if (!sid_to_local_dom_grp_name(&group_sid, grp_name)) {
-		DEBUG(1, ("Could not find group for SID %s\n",
-			  sid_string_static(&group_sid)));
+	if (!sid_check_is_in_our_domain(&group_sid))
 		return NT_STATUS_NO_SUCH_GROUP;
-	}
 
 	sid_copy(&user_sid, get_global_sam_sid());
 	sid_append_rid(&user_sid, q_u->rid);
 
-	if (!sid_to_local_user_name(&user_sid, usr_name)) {
-		DEBUG(1, ("Could not find user for SID %s\n",
-			  sid_string_static(&user_sid)));
+	if (!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if ((grp=getgrgid(map.gid)) == NULL)
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
+	/* check if the user exists before trying to remove it from the group */
+	pdb_init_sam(&sam_pass);
+	if (!pdb_getsampwsid(sam_pass, &user_sid)) {
+		DEBUG(5,("User %s doesn't exist.\n", pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* if the user is not in the group */
-	if (!user_in_unix_group_list(usr_name, grp_name)) {
+	if (!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
+		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
 	
@@ -3388,7 +3433,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	if ( can_add_accounts )
 		become_root();
 		
-	smb_delete_user_group(grp_name, usr_name);
+	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -3396,11 +3441,12 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	/******** END SeAddUsers BLOCK *********/
 	
 	/* check if the user has been removed then ... */
-	if(user_in_unix_group_list(usr_name, grp_name)) {
-		/* don't know what to reply else */
-		return NT_STATUS_ACCESS_DENIED;
+	if (user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
 	}
 	
+	pdb_free_sam(&sam_pass);
 	return NT_STATUS_OK;
 
 }
@@ -3507,7 +3553,12 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAMR_R_DELETE_DOM_GROUP *r_u)
 {
 	DOM_SID group_sid;
-	fstring grp_name;
+	DOM_SID dom_sid;
+	uint32 group_rid;
+	fstring group_sid_str;
+	gid_t gid;
+	struct group *grp;
+	GROUP_MAP map;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
@@ -3523,9 +3574,25 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 		return r_u->status;
 	}
 		
-	if (!sid_to_local_dom_grp_name(&group_sid, grp_name)) {
-		DEBUG(1, ("Could not find group for SID %s\n",
-			  sid_string_static(&group_sid)));
+	sid_copy(&dom_sid, &group_sid);
+	sid_to_string(group_sid_str, &dom_sid);
+	sid_split_rid(&dom_sid, &group_rid);
+
+	DEBUG(10, ("sid is %s\n", group_sid_str));
+
+	/* we check if it's our SID before deleting */
+	if (!sid_equal(&dom_sid, get_global_sam_sid()))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	DEBUG(10, ("lookup on Domain SID\n"));
+
+	if(!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	gid=map.gid;
+
+	/* check if group really exists */
+	if ( (grp=getgrgid(gid)) == NULL)
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -3540,7 +3607,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	/* delete mapping first */
 	
 	if ( (ret = pdb_delete_group_mapping_entry(group_sid)) == True ) {
-		smb_delete_group( grp_name );
+		smb_delete_group( grp->gr_name );
 	}
 
 	if ( can_add_accounts )
@@ -3550,7 +3617,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	
 	if ( !ret ) {
 		DEBUG(5,("_samr_delete_dom_group: Failed to delete mapping entry for group %s.\n", 
-			sid_string_static(&group_sid)));
+			group_sid_str));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	
@@ -3769,6 +3836,10 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
+	/* they created it; let the user do what he wants with it */
+
+	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
+
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -3786,12 +3857,13 @@ level 1 send also the number of users of that group
 NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_R_QUERY_GROUPINFO *r_u)
 {
 	DOM_SID group_sid;
-	gid_t gid;
+	GROUP_MAP map;
+	DOM_SID *sids=NULL;
 	uid_t *uids;
 	int num=0;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	struct acct_info info;
+	BOOL ret;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
 		return NT_STATUS_INVALID_HANDLE;
@@ -3800,10 +3872,10 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 		return r_u->status;
 	}
 		
-	if (!pdb_get_dom_grp_info(&group_sid, &info))
-		return NT_STATUS_NO_SUCH_GROUP;
-
-	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
+	become_root();
+	ret = get_domain_group_from_sid(group_sid, &map);
+	unbecome_root();
+	if (!ret)
 		return NT_STATUS_INVALID_HANDLE;
 
 	ctr=TALLOC_ZERO_P(p->mem_ctx, GROUP_INFO_CTR);
@@ -3813,12 +3885,11 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	switch (q_u->switch_level) {
 		case 1:
 			ctr->switch_value1 = 1;
-			if(!get_memberuids(gid, &uids, &num))
+			if(!get_memberuids(map.gid, &uids, &num))
 				return NT_STATUS_NO_SUCH_GROUP;
 			SAFE_FREE(uids);
-			init_samr_group_info1(&ctr->group.info1,
-					      info.acct_name, info.acct_desc,
-					      num);
+			init_samr_group_info1(&ctr->group.info1, map.nt_name, map.comment, num);
+			SAFE_FREE(sids);
 			break;
 		case 3:
 			ctr->switch_value1 = 3;
@@ -3826,8 +3897,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 			break;
 		case 4:
 			ctr->switch_value1 = 4;
-			init_samr_group_info4(&ctr->group.info4,
-					      info.acct_desc);
+			init_samr_group_info4(&ctr->group.info4, map.comment);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -3847,9 +3917,9 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SET_GROUPINFO *r_u)
 {
 	DOM_SID group_sid;
+	GROUP_MAP map;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	struct acct_info info;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
@@ -3858,28 +3928,25 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 		return r_u->status;
 	}
 		
-	if (!pdb_get_dom_grp_info(&group_sid, &info))
-		return NT_STATUS_INVALID_HANDLE;
+	if (!get_domain_group_from_sid(group_sid, &map))
+		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=q_u->ctr;
 
 	switch (ctr->switch_value1) {
 		case 1:
-			unistr2_to_ascii(info.acct_desc,
-					 &(ctr->group.info1.uni_acct_desc),
-					 sizeof(info.acct_desc)-1);
+			unistr2_to_ascii(map.comment, &(ctr->group.info1.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		case 4:
-			unistr2_to_ascii(info.acct_desc,
-					 &(ctr->group.info4.uni_acct_desc),
-					 sizeof(info.acct_desc)-1);
+			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (!pdb_set_dom_grp_info(&group_sid, &info))
-		return NT_STATUS_ACCESS_DENIED;
+	if(!pdb_update_group_mapping_entry(&map)) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -3954,7 +4021,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 {
 	DOM_SID sid;
 	DOM_SID info_sid;
-	fstring grp_name;
+	GROUP_MAP map;
 	struct samr_info *info;
 	SEC_DESC         *psd = NULL;
 	uint32            acc_granted;
@@ -3962,6 +4029,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	size_t            sd_size;
 	NTSTATUS          status;
 	fstring sid_string;
+	BOOL ret;
 	SE_PRIV se_rights;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted)) 
@@ -4002,7 +4070,11 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 
 	DEBUG(10, ("_samr_open_group:Opening SID: %s\n", sid_string));
 
-	if (!sid_to_local_dom_grp_name(&info->sid, grp_name))
+	/* check if that group really exists */
+	become_root();
+	ret = get_domain_group_from_sid(info->sid, &map);
+	unbecome_root();
+	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/* get a (unique) handle.  open a policy on it. */
