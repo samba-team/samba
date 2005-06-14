@@ -28,7 +28,7 @@
 #define NDR_SPOOLSS_PUSH_ENUM_IN(fn) do { \
 	_r.in.level	= r->in.level;\
 	_r.in.buffer	= r->in.buffer;\
-	_r.in.buf_size	= r->in.buf_size;\
+	_r.in.offered	= r->in.offered;\
 	NDR_CHECK(ndr_push__##fn(ndr, flags, &_r));\
 } while(0)
 
@@ -36,9 +36,9 @@
 	struct ndr_push *_ndr_info;\
 	_r.in.level	= r->in.level;\
 	_r.in.buffer	= r->in.buffer;\
-	_r.in.buf_size	= r->in.buf_size;\
-	_r.out.buffer	= NULL;\
-	_r.out.buf_size	= r->out.buf_size;\
+	_r.in.offered	= r->in.offered;\
+	_r.out.info	= NULL;\
+	_r.out.needed	= r->out.needed;\
 	_r.out.count	= r->out.count;\
 	_r.out.result	= r->out.result;\
 	if (r->out.info) {\
@@ -51,12 +51,12 @@
 		__r.in.count	= r->out.count;\
 		__r.out.info	= r->out.info;\
 		NDR_CHECK(ndr_push___##fn(_ndr_info, flags, &__r)); \
-		if (*r->in.buf_size > _ndr_info->offset) {\
-			uint32_t _padding_len = *r->in.buf_size - _ndr_info->offset;\
+		if (r->in.offered > _ndr_info->offset) {\
+			uint32_t _padding_len = r->in.offered - _ndr_info->offset;\
 			NDR_CHECK(ndr_push_zero(_ndr_info, _padding_len));\
 		}\
 		_data_blob_info = ndr_push_blob(_ndr_info);\
-		_r.out.buffer	= &_data_blob_info;\
+		_r.out.info	= &_data_blob_info;\
 	}\
 	NDR_CHECK(ndr_push__##fn(ndr, flags, &_r));\
 } while(0)
@@ -78,36 +78,37 @@
 	NDR_CHECK(ndr_pull__##fn(ndr, flags, &_r));\
 	r->in.level	= _r.in.level;\
 	r->in.buffer	= _r.in.buffer;\
-	r->in.buf_size	= _r.in.buf_size;\
-	r->out.buf_size = _r.out.buf_size;\
+	r->in.offered	= _r.in.offered;\
+	r->out.needed	= _r.out.needed;\
 } while(0)
 
 #define NDR_SPOOLSS_PULL_ENUM_OUT(fn) do { \
-	struct ndr_pull *_ndr_info;\
 	_r.in.level	= r->in.level;\
 	_r.in.buffer	= r->in.buffer;\
-	_r.in.buf_size	= r->in.buf_size;\
-	_r.out.buf_size	= r->out.buf_size;\
+	_r.in.offered	= r->in.offered;\
+	_r.out.needed	= r->out.needed;\
 	NDR_CHECK(ndr_pull__##fn(ndr, flags, &_r));\
 	r->out.info	= NULL;\
-	r->out.buf_size = _r.out.buf_size;\
+	r->out.needed	= _r.out.needed;\
 	r->out.count	= _r.out.count;\
 	r->out.result	= _r.out.result;\
-	if (_r.out.buffer) {\
-		struct __##fn __r;\
-		_ndr_info = ndr_pull_init_blob(_r.out.buffer, ndr);\
+	if (_r.out.info) {\
+		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr);\
 		if (!_ndr_info) return NT_STATUS_NO_MEMORY;\
 		_ndr_info->flags= ndr->flags;\
-		if (*r->out.buf_size != _ndr_info->data_size) {\
+		if (r->in.offered != _ndr_info->data_size) {\
 			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
-				"SPOOLSS Buffer: buf_size[%u] doesn't match length of buffer[%u]",\
-				*r->out.buf_size, _ndr_info->data_size);\
+				"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",\
+				r->in.offered, _ndr_info->data_size);\
 		}\
-		__r.in.level	= r->in.level;\
-		__r.in.count	= r->out.count;\
-		__r.out.info	= NULL;\
-		NDR_CHECK(ndr_pull___##fn(_ndr_info, flags, &__r));\
-		r->out.info	= __r.out.info;\
+		if (r->out.needed <= _ndr_info->data_size) {\
+			struct __##fn __r;\
+			__r.in.level	= r->in.level;\
+			__r.in.count	= r->out.count;\
+			__r.out.info	= NULL;\
+			NDR_CHECK(ndr_pull___##fn(_ndr_info, flags, &__r));\
+			r->out.info	= __r.out.info;\
+		}\
 	}\
 } while(0)
 
@@ -372,30 +373,33 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 
 		_r.in.handle	= r->in.handle;
 		_r.in.value_name= r->in.value_name;
-		_r.in.buf_size	= r->in.buf_size;
+		_r.in.offered	= r->in.offered;
 		_r.out.type	= r->out.type;
 		_r.out.data	= data_blob(NULL,0),
-		_r.out.buf_size	= r->out.buf_size;
+		_r.out.needed	= r->out.needed;
 		NDR_CHECK(ndr_pull__spoolss_GetPrinterData(ndr, flags, &_r));
 		r->in.handle	= _r.in.handle;
 		r->in.value_name= _r.in.value_name;
-		r->in.buf_size	= _r.in.buf_size;
-		r->out.buf_size	= _r.out.buf_size;
+		r->in.offered	= _r.in.offered;
+		r->out.needed	= _r.out.needed;
 	}
 	if (flags & NDR_OUT) {
 		_r.in.handle	= r->in.handle;
 		_r.in.value_name= r->in.value_name;
-		_r.in.buf_size	= r->in.buf_size;
+		_r.in.offered	= r->in.offered;
 		_r.out.type	= r->out.type;
 		_r.out.data	= data_blob(NULL,0),
-		_r.out.buf_size	= r->out.buf_size;
+		_r.out.needed	= r->out.needed;
 		_r.out.result	= r->out.result;
 		NDR_CHECK(ndr_pull__spoolss_GetPrinterData(ndr, flags, &_r));
 		r->out.type	= _r.out.type;
 		ZERO_STRUCT(r->out.data);
-		r->out.buf_size	= _r.out.buf_size;
+		r->out.needed	= _r.out.needed;
 		r->out.result	= _r.out.result;
-		if (_r.out.data.length > 0) {
+		if (_r.out.data.length != r->in.offered) {
+			/* TODO: ndr_pull_error(...) */
+		}
+		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr);
 			if (!_ndr_data) return NT_STATUS_NO_MEMORY;
@@ -431,13 +435,13 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, struct
 		NDR_CHECK(ndr_push___spoolss_SetPrinterData(_ndr_data, NDR_OUT, &__r));
 		_data_blob_data = ndr_push_blob(_ndr_data);
 
-		r->in._buf_size	= _data_blob_data.length;
+		r->in._offered	= _data_blob_data.length;
 
 		_r.in.handle	= r->in.handle;
 		_r.in.value_name= r->in.value_name;
 		_r.in.type	= r->in.type;
 		_r.in.data	= _data_blob_data;
-		_r.in._buf_size	= r->in._buf_size;
+		_r.in._offered	= r->in._offered;
 		_r.out.result	= r->out.result;
 		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
 	}
@@ -446,7 +450,7 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, struct
 		_r.in.value_name= r->in.value_name;
 		_r.in.type	= r->in.type;
 		_r.in.data	= data_blob(NULL,0),
-		_r.in._buf_size	= r->in._buf_size;
+		_r.in._offered	= r->in._offered;
 		_r.out.result	= r->out.result;
 		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
 	}
