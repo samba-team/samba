@@ -103,7 +103,7 @@ static NTSTATUS userinfo_getuser(struct composite_context *c,
 
 
 /**
- * Stage3: Close policy handle associated with opened user.
+ * Stage 3: Close policy handle associated with opened user.
  */
 static NTSTATUS userinfo_closeuser(struct composite_context *c,
 				   struct userinfo_state *s)
