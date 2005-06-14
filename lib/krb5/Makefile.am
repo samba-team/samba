@@ -27,7 +27,8 @@ TESTS =						\
 	test_cc					\
 	test_config				\
 	test_keytab				\
-	test_time
+	test_time				\
+	test_mem
 
 check_PROGRAMS = $(TESTS)
 
@@ -96,6 +97,7 @@ libkrb5_la_SOURCES =				\
 	init_creds.c				\
 	init_creds_pw.c				\
 	kcm.c					\
+	kcm.h					\
 	keyblock.c				\
 	keytab.c				\
 	keytab_any.c				\
