@@ -3,8 +3,6 @@
 <chapter id="simple">
   <title>No-Frills Samba Servers</title>
 
-<?latex \pagenumbering{arabic} ?>
-
 	<para>
 	This is the start of the real journey toward the successful deployment of Samba. For some this chapter
 	is the end of the road because their needs will have been adequately met. For others, this chapter is
@@ -208,8 +206,6 @@
 <screen>
 192.168.1.1	server
 </screen>
-
-<?latex \newpage ?>
 
 			</para></step>
 
@@ -481,8 +477,6 @@
 			<title>Charity Administration Office Network</title>
 			<imagefile scale="80">Charity-Network</imagefile>
 		</figure>
-
-<?latex \newpage ?>
 
 		<procedure>
 		<title>Samba Server Configuration</title>
@@ -1103,8 +1097,6 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</tbody>
 			</tgroup>
 		</table>
-
-<?latex \newpage ?>
 
 		<procedure>
 		<title>Migration from Windows NT4 Workstation System to Samba-3</title>

@@ -9,7 +9,7 @@
 		<authorgroup>
 			<author>&person.jht;</author>
 		</authorgroup>
-		<pubdate>April 12, 2005</pubdate>
+		<pubdate>June, 2005</pubdate>
 	</bookinfo>
 	<?latex \clearpage ?>
 	<?latex \setcounter{page}{5} ?>
@@ -54,10 +54,19 @@ been proven to work make any changes or modifications needed at your site.
 
 <para>
 The examples have been tested with Red Hat Fedora Core 2, Novell SUSE Linux Professional
-9.2 and Novell SUSE Linux Enterprise Server (SLES) 9. The principals of implementation
+9.3 and Novell SUSE Linux Enterprise Server (SLES) 9. The principals of implementation
 apply to all Linux and UNIX systems in general, though some system files and tools will 
 be different and the location of some Samba file locations will be different since these 
 are determined by the person who packages Samba for each platform.
+</para>
+
+<para>
+If you are deploying Samba is a mission-critical environment, or if you simply want
+to save time and get your Samba network operational with minimal fuss, there is the
+option to purchase commercial, professional, Samba support. Information regarding
+commercial support options may be obtained from the commercial
+<ulink url="http://www.samba.org/samba/support/">support</ulink> pages from 
+the Samba web site.
 </para>
 
 </partintro>
@@ -110,6 +119,7 @@ play in a Windows networking world.
 	<xi:include href="SBE-KerberosFastStart.xml"/>
 	<xi:include href="SBE-DomainAppsSupport.xml"/>
 	<xi:include href="SBE-HighAvailability.xml"/>
+	<xi:include href="SBE-Support.xml"/>
 	<xi:include href="SBE-Appendix1.xml"/>
 	<xi:include href="SBE-Appendix2.xml"/>
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>

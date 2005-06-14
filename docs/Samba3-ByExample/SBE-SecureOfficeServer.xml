@@ -698,11 +698,11 @@ INTIFA="eth1"
 INTIFB="eth2"
 
 /sbin/depmod -a
-/sbin/modprobe -i ip_tables
-/sbin/modprobe -i ip_conntrack
-/sbin/modprobe -i ip_conntrack_ftp
-/sbin/modprobe -i iptable_nat
-/sbin/modprobe -i ip_nat_ftp
+/sbin/modprobe ip_tables
+/sbin/modprobe ip_conntrack
+/sbin/modprobe ip_conntrack_ftp
+/sbin/modprobe iptable_nat
+/sbin/modprobe ip_nat_ftp
 $IPTABLES -P INPUT DROP
 $IPTABLES -F INPUT
 $IPTABLES -P OUTPUT ACCEPT

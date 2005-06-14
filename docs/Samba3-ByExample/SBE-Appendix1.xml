@@ -1272,6 +1272,38 @@ pwdhash: SSHA
 
 </sect1>
 
+<sect1>
+	<title>IDEALX Management Console</title>
+
+	<para>
+	IMC (the IDEALX Mamagement Console) is a tool that can be used as the basis for a comprehensive
+	web-based management interface for UNIX and Linux systems.
+	</para>
+
+	<para>
+	The Samba toolset is the first console developped for IMC. It offers a simple and ergonomic
+	interface for managing a Samba domain controler. The goal is to give Linux administrators who
+	need to manage production Samba servers an effective, intuitive and consistent management 
+	experience. An IMC screenshot of the user management tool is shown in <link linkend="imcidealx"/>.
+	</para>
+
+	<figure id="imcidealx">
+        <title>The IMC Samba User Account Screen</title>
+        <imagefile scale="40">imc-usermanager2</imagefile>
+    </figure>
+
+	<para>
+	IMC is built on a set of Perl modules. Most modules are standard CPAN modules. Some are bundled with IMC,
+	but will soon to be hosted on the CPAN independently, like Struts4P, a port of Struts to the Perl language.
+	</para>
+
+	<para>
+	For further information regarding IMC refer to the web <ulink url="http://imc.sourceforge.net/">site.</ulink>
+	Prebuilt RPM packages are also <ulink url="http://imc.sourceforge.net/download.html">available.</ulink>
+	</para>
+
+</sect1>
+
 <sect1 id="ch12-SUIDSGID">
 	<title>Effect of Setting File and Directory SUID/SGID Permissions Explained</title>
 
