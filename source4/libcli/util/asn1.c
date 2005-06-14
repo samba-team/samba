@@ -214,11 +214,18 @@ BOOL asn1_write_OctetString(struct asn1_data *data, const void *p, size_t length
 	return !data->has_error;
 }
 
+/* write a LDAP string */
+BOOL asn1_write_LDAPString(struct asn1_data *data, const char *s)
+{
+	asn1_write(data, s, strlen(s));
+	return !data->has_error;
+}
+
 /* write a general string */
 BOOL asn1_write_GeneralString(struct asn1_data *data, const char *s)
 {
 	asn1_push_tag(data, ASN1_GENERAL_STRING);
-	asn1_write(data, s, strlen(s));
+	asn1_write_LDAPString(data, s);
 	asn1_pop_tag(data);
 	return !data->has_error;
 }
@@ -477,11 +484,10 @@ BOOL asn1_check_OID(struct asn1_data *data, const char *OID)
 	return True;
 }
 
-/* read a GeneralString from a ASN1 buffer */
-BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
+/* read a LDAPString from a ASN1 buffer */
+BOOL asn1_read_LDAPString(struct asn1_data *data, char **s)
 {
 	int len;
-	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
 	len = asn1_tag_remaining(data);
 	if (len < 0) {
 		data->has_error = True;
@@ -494,9 +500,18 @@ BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
 	}
 	asn1_read(data, *s, len);
 	(*s)[len] = 0;
-	asn1_end_tag(data);
 	return !data->has_error;
 }
+
+
+/* read a GeneralString from a ASN1 buffer */
+BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
+{
+	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
+	if (!asn1_read_LDAPString(data, s)) return False;
+	return asn1_end_tag(data);
+}
+
 
 /* read a octet string blob */
 BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
