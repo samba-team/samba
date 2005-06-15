@@ -297,7 +297,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 	}
 
 	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
-		DEBUG(10,("schedule_aio_write_and_X: Already have %d aio activities outstanding.\n",
+		DEBUG(3,("schedule_aio_write_and_X: Already have %d aio activities outstanding.\n",
 			  outstanding_aio_calls ));
 		DEBUG(10,("schedule_aio_write_and_X: failed to schedule aio_write for file %s, offset %.0f, len = %u (mid = %u)\n",
 			fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)aio_ex->mid ));
@@ -492,6 +492,35 @@ Wanted %u bytes but only wrote %d\n", fsp->fsp_name, (unsigned int)numtowrite, (
 }
 
 /****************************************************************************
+ Handle any aio completion. Returns True if finished (and sets *perr if err was non-zero),
+ False if not.
+*****************************************************************************/
+
+static BOOL handle_aio_completed(struct aio_extra *aio_ex, int *perr)
+{
+	int err;
+
+	/* Ensure the operation has really completed. */
+	if (SMB_VFS_AIO_ERROR(aio_ex->fsp, &aio_ex->acb) == EINPROGRESS) {
+		DEBUG(10,( "handle_aio_completed: operation mid %u still in process for file %s\n",
+			aio_ex->mid, aio_ex->fsp->fsp_name ));
+		return False;
+	}
+
+	if (aio_ex->read_req) {
+		err = handle_aio_read_complete(aio_ex);
+	} else {
+		err = handle_aio_write_complete(aio_ex);
+	}
+
+	if (err) {
+		*perr = err; /* Only save non-zero errors. */
+	}
+
+	return True;
+}
+
+/****************************************************************************
  Handle any aio completion inline.
  Returns non-zero errno if fail or zero if all ok.
 *****************************************************************************/
@@ -513,7 +542,6 @@ int process_aio_queue(void)
 
 	/* Drain all the complete aio_reads. */
 	for (i = 0; i < signals_received; i++) {
-		int err = 0;
 		uint16 mid = aio_pending_array[i];
 		files_struct *fsp = NULL;
 		struct aio_extra *aio_ex = find_aio_ex(mid);
@@ -533,23 +561,13 @@ int process_aio_queue(void)
 			continue;
 		}
 
-		/* Ensure the operation has really completed. */
-		if (SMB_VFS_AIO_ERROR(fsp,&aio_ex->acb) == EINPROGRESS) {
-			DEBUG( 3,( "process_aio_queue: operation still in process for file %s\n", fsp->fsp_name ));
+		if (!handle_aio_completed(aio_ex, &ret)) {
 			continue;
 		}
 
-		if (aio_ex->read_req) {
-			err = handle_aio_read_complete(aio_ex);
-		} else {
-			err = handle_aio_write_complete(aio_ex);
-		}
-
-		if (err) {
-			ret = err; /* Only save non-zero errors. */
-		}
 		delete_aio_ex(aio_ex);
 	}
+
 	outstanding_aio_calls -= signals_received;
 	signals_received = 0;
 	BlockSignals(False, RT_SIGNAL_AIO);
@@ -557,10 +575,12 @@ int process_aio_queue(void)
 }
 
 /****************************************************************************
- We're doing write behind and the client closed the file. Wait up to 15 seconds
+ We're doing write behind and the client closed the file. Wait up to 30 seconds
  (my arbitrary choice) for the aio to complete. Return 0 if all writes completed,
  errno to return if not.
 *****************************************************************************/
+
+#define SMB_TIME_FOR_AIO_COMPLETE_WAIT 29
 
 BOOL wait_for_aio_completion(files_struct *fsp)
 {
@@ -568,10 +588,10 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 	const SMB_STRUCT_AIOCB **aiocb_list;
 	int aio_completion_count = 0;
 	time_t start_time = time(NULL);
-	int seconds_left = 15;
+	int seconds_left;
 	int ret = 0;
 
-	for (seconds_left = 15; seconds_left >= 0;) {
+	for (seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT; seconds_left >= 0;) {
 		int err = 0;
 		int i;
 		struct timespec ts;
@@ -601,31 +621,45 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 			}
 		}
 
-		/* Now wait up to 15 seconds for completion. */
+		/* Now wait up to seconds_left for completion. */
 		ts.tv_sec = seconds_left;
 		ts.tv_nsec = 0;
 
-		DEBUG(3,("wait_for_aio_completion: doing a wait of %d seconds.\n", seconds_left ));
+		DEBUG(10,("wait_for_aio_completion: %d events, doing a wait of %d seconds.\n",
+			aio_completion_count, seconds_left ));
 
 		err = SMB_VFS_AIO_SUSPEND(fsp, aiocb_list, aio_completion_count, &ts);
 
+		DEBUG(10,("wait_for_aio_completion: returned err = %d, errno = %s\n",
+			err, strerror(errno) ));
+		
 		if (err == -1 && errno == EAGAIN) {
+			DEBUG(0,("wait_for_aio_completion: aio_suspend timed out waiting for %d events after a wait of %d seconds\n",
+					aio_completion_count, seconds_left));
 			/* Timeout. */
-			break;
+			cancel_aio_by_fsp(fsp);
+			SAFE_FREE(aiocb_list);
+			return ret ? ret : EIO;
 		}
 
-		err = process_aio_queue();
-		if (err) {
-			/* Only return non-zero errors. */
-			ret = err;
+		/* One or more events might have completed - process them if so. */
+		for( i = 0; i < aio_completion_count; i++) {
+			uint16 mid = *(uint16 *)aiocb_list[i]->aio_sigevent.sigev_value.sival_ptr;
+
+			aio_ex = find_aio_ex(mid);
+
+			if (!handle_aio_completed(aio_ex, &err)) {
+				continue;
+			}
+			delete_aio_ex(aio_ex);
 		}
 
 		SAFE_FREE(aiocb_list);
-		seconds_left -= (time(NULL) - start_time);
+		seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT - (time(NULL) - start_time);
 	}
 
 	/* We timed out - we don't know why. Return ret if already an error, else EIO. */
-	DEBUG(0,("wait_for_aio_completion: aio_suspend timed out waiting for %d events\n",
+	DEBUG(10,("wait_for_aio_completion: aio_suspend timed out waiting for %d events\n",
 			aio_completion_count));
 
 	return ret ? ret : EIO;
