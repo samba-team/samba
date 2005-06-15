@@ -156,8 +156,6 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 */
 static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 {
-#define CHECK_MASK(am, sa, right, share) if (((am) & (right)) && !((sa) & (share))) return True
-
 	if (e1->pending || e2->pending) return False;
 
 	/* if either open involves no read.write or delete access then
@@ -184,26 +182,23 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 		return False;
 	}
 
-	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
-		   NTCREATEX_SHARE_ACCESS_WRITE);
-	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
-		   NTCREATEX_SHARE_ACCESS_WRITE);
-	
-	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
-		   NTCREATEX_SHARE_ACCESS_READ);
-	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
-		   NTCREATEX_SHARE_ACCESS_READ);
+#define CHECK_MASK(am, right, sa, share) \
+	if (((am) & (right)) && !((sa) & (share))) return True
 
-	CHECK_MASK(e1->access_mask, e2->share_access, 
-		   SEC_STD_DELETE,
-		   NTCREATEX_SHARE_ACCESS_DELETE);
-	CHECK_MASK(e2->access_mask, e1->share_access, 
-		   SEC_STD_DELETE,
-		   NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(e1->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
+		   e2->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(e2->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
+		   e1->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
+	
+	CHECK_MASK(e1->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
+		   e2->share_access, NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(e2->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
+		   e1->share_access, NTCREATEX_SHARE_ACCESS_READ);
+
+	CHECK_MASK(e1->access_mask, SEC_STD_DELETE,
+		   e2->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(e2->access_mask, SEC_STD_DELETE,
+		   e1->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
 
 	/* if a delete is pending then a second open is not allowed */
 	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||
