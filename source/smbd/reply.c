@@ -4482,7 +4482,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Copy a file as part of a reply_copy.
 ******************************************************************/
 
-static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
+BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory, int *err_ret)
 {
 	int Access,action;
