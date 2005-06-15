@@ -2798,13 +2798,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 	local_state = (struct copy_clistate *)state;
 	nt_status = NT_STATUS_UNSUCCESSFUL;
 
-	if (strequal(f->name, ".")) {
-		if (local_state->top_level_dir)
-			f->name[0] = '\0';
-		else
-			return;
-	}
-	if (strequal(f->name, ".."))
+	if (strequal(f->name, ".") || strequal(f->name, ".."))
 		return;
 
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
@@ -2832,7 +2826,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 						  False);
 			break;
 		default:
-			DEBUG(0,( "Unsupported mode %d", local_state->mode));
+			d_printf("Unsupported mode %d\n", local_state->mode);
 			return;
 		}
 
@@ -2840,19 +2834,16 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 			printf("could not handle dir %s: %s\n", 
 				dir, nt_errstr(nt_status));
 
-		if (!local_state->top_level_dir) {
-			/* search below that directory */
-			fstrcpy(new_mask, dir);
-			fstrcat(new_mask, "\\*");
+		/* search below that directory */
+		fstrcpy(new_mask, dir);
+		fstrcat(new_mask, "\\*");
 
-			old_dir = local_state->cwd;
-                        local_state->cwd = dir;
-			if (!sync_files(local_state, new_mask))
-				printf("could not handle files\n");
-			local_state->cwd = old_dir;
-		} else
-			local_state->top_level_dir = False;
-			
+		old_dir = local_state->cwd;
+		local_state->cwd = dir;
+		if (!sync_files(local_state, new_mask))
+			printf("could not handle files\n");
+		local_state->cwd = old_dir;
+
 		return;
 	}
 
@@ -2877,7 +2868,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 					  True);
 		break;
 	default:
-		DEBUG(0,( "Unsupported file mode %d", local_state->mode));
+		d_printf("Unsupported file mode %d\n", local_state->mode);
 		return;
 	}
 
@@ -2904,6 +2895,43 @@ BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 	if (cli_list(cp_clistate->cli_share_src, mask, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
 		d_printf("listing %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
+		return False;
+	}
+
+	return True;
+}
+
+
+/**
+ * Set the top level directory permissions before we do any further copies.
+ * Should set up ACL inheritance.
+ **/
+
+BOOL copy_top_level_perms(struct copy_clistate *cp_clistate, 
+				const char *sharename)
+{
+	NTSTATUS nt_status;
+
+	switch (cp_clistate->mode) {
+	case NET_MODE_SHARE_MIGRATE:
+		DEBUG(3,("calling net_copy_fileattr for '.' directory in share %s\n", sharename));
+		nt_status = net_copy_fileattr(cp_clistate->mem_ctx,
+						cp_clistate->cli_share_src, 
+						cp_clistate->cli_share_dst,
+						"\\", "\\",
+						opt_acls? True : False, 
+						opt_attrs? True : False,
+						opt_timestamps? True: False,
+						False);
+		break;
+	default:
+		d_printf("Unsupported mode %d\n", cp_clistate->mode);
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status))  {
+		printf("Could handle directory attributes for top level directory of share %s. Error %s\n", 
+			sharename, nt_errstr(nt_status));
 		return False;
 	}
 
@@ -3005,7 +3033,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			printf("syncing");
 			break;
 		default:
-			DEBUG(0,("Unsupported mode %d", cp_clistate.mode));
+			d_printf("Unsupported mode %d\n", cp_clistate.mode);
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
@@ -3018,7 +3046,6 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 		cp_clistate.cli_share_src = NULL;
 		cp_clistate.cli_share_dst = NULL;
 		cp_clistate.cwd = NULL;
-		cp_clistate.top_level_dir = True;
 		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
 
 	        /* open share source */
@@ -3040,6 +3067,11 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			got_dst_share = True;
 		}
 
+		if (!copy_top_level_perms(&cp_clistate, netname)) {
+			d_printf("Could not handle the top level directory permissions for the share: %s\n", netname);
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 
 		/* now call the filesync */
 		pstrcpy(mask, "\\*");
