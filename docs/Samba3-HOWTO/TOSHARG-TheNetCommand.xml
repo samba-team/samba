@@ -1487,7 +1487,7 @@ net ads printer search &lt;printer_name&gt; -Uadministrator%secret
 	Please refer to the net command man page for information regarding cache management.
 	</para>
 
-	</sect1>
+	</sect1 id="netmisc1">
 
 	<sect1>
 	<title>Other Miscellaneous Operations</title>
