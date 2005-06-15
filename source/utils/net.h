@@ -31,7 +31,6 @@ typedef struct copy_clistate {
 	struct cli_state *cli_share_src;
 	struct cli_state *cli_share_dst;
 	char *cwd;
-	BOOL top_level_dir;
 	uint16 attribute;
 	int mode;
 }copy_clistate; 

@@ -292,8 +292,7 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
  *
  * @return Normal NTSTATUS return.
  **/ 
-static NTSTATUS 
-net_copy_fileattr(TALLOC_CTX *mem_ctx,
+NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 		  struct cli_state *cli_share_src,
 		  struct cli_state *cli_share_dst, 
 		  const char *src_name, const char *dst_name,
