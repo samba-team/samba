@@ -1860,7 +1860,7 @@ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
-FN_GLOBAL_INTEGER(lp_disable_spoolss, &Globals.bDisableSpoolss)
+FN_GLOBAL_INTEGER(_lp_disable_spoolss, &Globals.bDisableSpoolss)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
@@ -4460,6 +4460,32 @@ const char *lp_printcapname(void)
 		return "/etc/printcap";
 
 	return PRINTCAP_NAME;
+}
+
+/*******************************************************************
+ Ensure we don't use sendfile if server smb signing is active.
+********************************************************************/
+
+static uint32 spoolss_state;
+
+BOOL lp_disable_spoolss( void )
+{
+	if ( spoolss_state == SVCCTL_STATE_UNKNOWN )
+		spoolss_state = _lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
+
+	return spoolss_state == SVCCTL_STOPPED ? True : False;
+}
+
+void lp_set_spoolss_state( uint32 state )
+{
+	SMB_ASSERT( (state == SVCCTL_STOPPED) || (state == SVCCTL_RUNNING) );
+
+	spoolss_state = state;
+}
+
+uint32 lp_get_spoolss_state( void )
+{
+	return lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 }
 
 /*******************************************************************

@@ -55,6 +55,7 @@
 
 /* SERVER_STATUS - CurrentState */
 
+#define SVCCTL_STATE_UNKNOWN		0x00000000	/* only used internally to smbd */
 #define SVCCTL_STOPPED			0x00000001
 #define SVCCTL_START_PENDING		0x00000002
 #define SVCCTL_STOP_PENDING		0x00000003
