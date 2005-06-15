@@ -1561,7 +1561,7 @@ static char* ffmt(unsigned char *c){
 
 /****************************************************************************
 ****************************************************************************/
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
+WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
 				  struct current_user *user, WERROR *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
@@ -1592,7 +1592,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		driver = &converted_driver;
 	} else {
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
-		return False;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	architecture = get_short_archi(driver->environment);
@@ -1611,7 +1611,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
 		*perr = ntstatus_to_werror(nt_status);
-		return False;
+		return WERR_NO_SUCH_SHARE;
 	}
 
 	/*
@@ -1620,7 +1620,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/*
@@ -1778,7 +1778,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 
-	return ver == -1 ? False : True;
+	return ver != -1 ? WERR_OK : WERR_UNKNOWN_PRINTER_DRIVER;
 }
 
 /****************************************************************************
