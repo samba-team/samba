@@ -275,7 +275,10 @@ int ldb_dn_cmp(const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
 
 /* case-fold a DN */
-char *ldb_dn_fold(struct ldb_module *module, const char *dn, int (*case_fold_attr_fn)(struct ldb_module * module, char * attr));
+char *ldb_dn_fold(void * mem_ctx,
+                  const char * dn,
+                  void * user_data,
+                  int (* case_fold_attr_fn)(void * user_data, char * attr));
 
 /* create an empty message */
 struct ldb_message *ldb_msg_new(void *mem_ctx);

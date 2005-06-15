@@ -47,8 +47,10 @@
   callback function used in call to ldb_dn_fold() for determining whether an
   attribute type requires case folding.
 */
-static int ltdb_case_fold_attr_required(struct ldb_module *module, char *attr)
+static int ltdb_case_fold_attr_required(void * user_data, char *attr)
 {
+    struct ldb_module *module = user_data;
+
     return ltdb_attribute_flags(module, attr) & LTDB_FLAG_CASE_INSENSITIVE;
 }
 
@@ -106,7 +108,8 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 		}
 		talloc_free(attr_name);
 	} else {
-                dn_folded = ldb_dn_fold(module, dn, ltdb_case_fold_attr_required);
+                dn_folded = ldb_dn_fold(module->ldb, dn,
+                                        module, ltdb_case_fold_attr_required);
 	}
 
 	if (!dn_folded) {
