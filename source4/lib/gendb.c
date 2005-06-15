@@ -35,22 +35,27 @@ int gendb_search_v(struct ldb_context *ldb,
 		   const char *format, 
 		   va_list ap)  _PRINTF_ATTRIBUTE(6,0)
 {
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	char *expr = NULL;
 	int count;
 
-	vasprintf(&expr, format, ap);
-	if (expr == NULL) {
-		return -1;
+	if (format) {
+		vasprintf(&expr, format, ap);
+		if (expr == NULL) {
+			return -1;
+		}
+	} else {
+		scope = LDB_SCOPE_BASE;
 	}
 
 	*res = NULL;
 
-	count = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, attrs, res);
+	count = ldb_search(ldb, basedn, scope, expr, attrs, res);
 
 	if (*res) talloc_steal(mem_ctx, *res);
 
 	DEBUG(4,("gendb_search_v: %s %s -> %d  (%s)\n", 
-		 basedn?basedn:"NULL", expr, count,
+		 basedn?basedn:"NULL", expr?expr:"NULL", count,
 		 count==-1?ldb_errstring(ldb):"OK"));
 
 	free(expr);
@@ -79,31 +84,13 @@ int gendb_search(struct ldb_context *ldb,
 }
 
 int gendb_search_dn(struct ldb_context *ldb,
-		    TALLOC_CTX *mem_ctx,
-		    const char *dn,
-		    struct ldb_message ***res,
-		    const char * const *attrs)
+		 TALLOC_CTX *mem_ctx, 
+		 const char *dn,
+		 struct ldb_message ***res,
+		 const char * const *attrs)
 {
-	va_list ap;
-	int count;
-
-	*res = NULL;
-
-	count = ldb_search(ldb, dn, LDB_SCOPE_BASE, "", attrs, res);
-
-	if (count > 1) {
-		DEBUG(1, ("DB Corruption ? - Found more then one entry for dn: %s", dn));
-		return -1;
-	}
-
-	if (*res) talloc_steal(mem_ctx, *res);
-
-	DEBUG(4,("gendb_search_dn: %s -> %d (%s)\n",
-		 dn, count, count==-1?ldb_errstring(ldb):"OK"));
-
-	return count;
+	return gendb_search(ldb, mem_ctx, dn, res, attrs, NULL);
 }
-		    
 
 /*
   setup some initial ldif in a ldb
