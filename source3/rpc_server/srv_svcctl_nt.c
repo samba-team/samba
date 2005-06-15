@@ -496,6 +496,8 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 	if ( !(info->access_granted & SC_RIGHT_SVC_START) )
 		return WERR_ACCESS_DENIED;
 		
+	return info->ops->start_service();
+	
 	return WERR_OK;
 }
 
@@ -517,6 +519,8 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 		
 	if ( !(info->access_granted & SC_RIGHT_SVC_STOP) )
 		return WERR_ACCESS_DENIED;
+		
+	return info->ops->stop_service( &r_u->svc_status );
 		
 #if 0
 	SERVICE_INFO *service_info;
@@ -582,8 +586,6 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 	DEBUG(10, ("_svcctl_query_service_config: Should call the commFound service [%s], [%s]\n",service_info->servicename,service_info->filename));
 
 #endif
-
-	return WERR_OK;
 }
 
 /********************************************************************
