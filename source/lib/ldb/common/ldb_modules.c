@@ -140,7 +140,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		const char * const attrs[] = { "@LIST" , NULL};
 		struct ldb_message **msg = NULL;
 
-		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", attrs, &msg);
+		ret = ldb_search(ldb, "@MODULES", LDB_SCOPE_BASE, "", attrs, &msg);
 		if (ret == 0 || (ret == 1 && msg[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
