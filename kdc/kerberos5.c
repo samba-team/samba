@@ -422,6 +422,7 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	    return ENOMEM;
 	}
 	memcpy(*ent->salt, key->salt->salt.data, key->salt->salt.length);
+	(*ent->salt)[key->salt->salt.length] = '\0';
     } else
 	ent->salt = NULL;
 
