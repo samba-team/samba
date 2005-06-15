@@ -138,10 +138,13 @@ ldb_explode_dn(void * mem_ctx,
 	}
 
         /* Copy the provided DN so we can manipulate it */
-	if ((dn_copy = p = talloc_strdup(mem_ctx, orig_dn)) == NULL) {
+        if ((p = ldb_dn_fold(mem_ctx, orig_dn,
+                             hUserData, case_fold_attr_fn)) == NULL) {
                 goto failed;
         }
 
+        dn_copy = p;
+        
         /* Our copy may end shorter than the original as we unescape chars */
 	dn_end = dn_copy + orig_len + 1;
 

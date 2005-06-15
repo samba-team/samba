@@ -95,11 +95,13 @@ int ldb_attr_cmp(const char *dn1, const char *dn2)
   attribute values of case insensitive attributes. We also need to remove
   extraneous spaces between elements
 */
-char *ldb_dn_fold(struct ldb_module *module, const char *dn, int (*case_fold_attr_fn)(struct ldb_module * module, char * attr))
+char *ldb_dn_fold(void * mem_ctx,
+                  const char * dn,
+                  void * user_data,
+                  int (* case_fold_attr_fn)(void * user_data, char * attr))
 {
 	const char *dn_orig = dn;
-	struct ldb_context *ldb = module->ldb;
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	char *ret;
 	size_t len;
 
@@ -133,14 +135,14 @@ char *ldb_dn_fold(struct ldb_module *module, const char *dn, int (*case_fold_att
 		}
 		if (*value == 0) goto failed;
 
-		case_fold_required = (* case_fold_attr_fn)(module, attr);
+		case_fold_required = (* case_fold_attr_fn)(user_data, attr);
 
-		attr = ldb_casefold(ldb, attr);
+		attr = ldb_casefold(tmp_ctx, attr);
 		if (attr == NULL) goto failed;
 		talloc_steal(tmp_ctx, attr);
 
 		if (case_fold_required) {
-			value = ldb_casefold(ldb, value);
+			value = ldb_casefold(tmp_ctx, value);
 			if (value == NULL) goto failed;
 			talloc_steal(tmp_ctx, value);
 		}		
@@ -156,12 +158,12 @@ char *ldb_dn_fold(struct ldb_module *module, const char *dn, int (*case_fold_att
 		if (*dn == ',') dn++;
 	}
 
-	talloc_steal(ldb, ret);
+	talloc_steal(mem_ctx, ret);
 	talloc_free(tmp_ctx);
 	return ret;
 
 failed:
 	talloc_free(tmp_ctx);
-	return ldb_casefold(ldb, dn_orig);
+	return ldb_casefold(mem_ctx, dn_orig);
 }
 

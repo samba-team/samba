@@ -167,9 +167,11 @@ static int
 parsetree_to_attrlist(struct lsqlite3_private * lsqlite3,
                       const struct ldb_parse_tree * t);
 
+#ifdef NEED_TABLE_LIST
 static char *
 build_attr_table_list(void * hTalloc,
                       struct lsqlite3_private * lsqlite3);
+#endif
 
 static int
 msg_to_sql(struct ldb_module * module,
@@ -295,36 +297,140 @@ failed:
 /* rename a record */
 static int
 lsqlite3_rename(struct ldb_module * module,
-                const char * olddn,
-                const char * newdn)
+                const char * pOldDN,
+                const char * pNewDN)
 {
-	/* ignore ltdb specials */
-	if (olddn[0] == '@' ||newdn[0] == '@') {
-		return 0;
-	}
-        
-#warning "lsqlite3_rename() is not yet supported"
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-        return -1;
+        /* Case-fold each of the DNs */
+        pOldDN = ldb_dn_fold(module->ldb, pOldDN,
+                             module, case_fold_attr_required);
+        pNewDN = ldb_dn_fold(module->ldb, pNewDN,
+                             module, case_fold_attr_required);
+
+        QUERY_NOROWS(lsqlite3,
+                     FALSE,
+                     "UPDATE ldb_entry "
+                     "  SET dn = %Q "
+                     "  WHERE dn = %Q;",
+                     pNewDN, pOldDN);
+
+        return 0;
 }
 
 /* delete a record */
 static int
-lsqlite3_delete(struct ldb_module *module,
-                const char *dn)
+lsqlite3_delete(struct ldb_module * module,
+                const char * pDN)
 {
+        int                         ret;
+        int                         bLoop;
+        long long                   eid;
+        char *                      pSql;
+        const char *                pAttrName;
+        sqlite3_stmt *              pStmt;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-	/* ignore ltdb specials */
-	if (dn[0] == '@') {
-		return 0;
-	}
-        
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
 
+        /* Determine the eid of the DN being deleted */
+        QUERY_INT(lsqlite3,
+                  eid,
+                  TRUE,
+                  "SELECT eid\n"
+                  "  FROM ldb_entry\n"
+                  "  WHERE dn = %Q;",
+                  pDN);
+        
+        /* Obtain the list of attribute names in use by this DN */
+        if ((pSql = talloc_asprintf(module->ldb,
+                                    "SELECT attr_name "
+                                    "  FROM ldb_attribute_values "
+                                    "  WHERE eid = %lld;",
+                                    eid)) == NULL) {
+                return -1;
+        }
 
-#warning "lsqlite3_delete() is not yet supported"
+        /*
+         * Prepare and execute the SQL statement.  Loop allows retrying on
+         * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
+         * requiring retrying the operation.
+         */
+        for (bLoop = TRUE; bLoop; ) {
+                /* Compile the SQL statement into sqlite virtual machine */
+                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
+                                           pSql,
+                                           -1,
+                                           &pStmt,
+                                           NULL)) == SQLITE_SCHEMA) {
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        ret = -1;
+                        break;
+                }
+                
+                /* Loop through the returned rows */
+                for (ret = SQLITE_ROW; ret == SQLITE_ROW; ) {
+                        
+                        /* Get the next row */
+                        if ((ret = sqlite3_step(pStmt)) == SQLITE_ROW) {
+                                
+                                /* Get the values from this row */
+                                pAttrName = sqlite3_column_text(pStmt, 0);
+                                
+                                /*
+                                 * Delete any entries from the specified
+                                 * attribute table that pertain to this eid.
+                                 */
+                                QUERY_NOROWS(lsqlite3,
+                                             TRUE,
+                                             "DELETE FROM ldb_attr_%q "
+                                             "  WHERE eid = %lld;",
+                                             pAttrName, eid);
+                        }
+                }
+                
+                if (ret == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_DONE) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+                
+                /* Free the virtual machine */
+                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(pStmt);
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        (void) sqlite3_finalize(pStmt);
+                        ret = -1;
+                        break;
+                }
+                
+                /*
+                 * Normal condition is only one time through loop.  Loop is
+                 * rerun in error conditions, via "continue", above.
+                 */
+                ret = 0;
+                bLoop = FALSE;
+        }
+        
+        /* Delete the descendants records */
+        QUERY_NOROWS(lsqlite3,
+                     TRUE,
+                     "DELETE FROM ldb_descendants "
+                     "  WHERE deid = %lld;",
+                     eid);
+
+        /* Delete attribute/value table entries pertaining to this DN */
+        QUERY_NOROWS(lsqlite3,
+                     TRUE,
+                     "DELETE FROM ldb_attribute_value "
+                     "  WHERE eid = %lld;",
+                     eid);
 
         /* Commit the transaction */
         QUERY_NOROWS(lsqlite3, TRUE, "COMMIT;");
@@ -348,7 +454,9 @@ lsqlite3_search_bytree(struct ldb_module * module,
         long long                   prevEID;
         char *                      pSql = NULL;
 	char *                      pSqlConstraints;
+#ifdef NEED_TABLE_LIST
         char *                      pTableList;
+#endif
         char *                      hTalloc = NULL;
         const char *                pDN;
         const char *                pAttrName;
@@ -362,6 +470,18 @@ lsqlite3_search_bytree(struct ldb_module * module,
 		pBaseDN = "";
 	}
         
+        /* Allocate a temporary talloc context */
+	if ((hTalloc = talloc_new(module->ldb)) == NULL) {
+                return -1;
+        }
+        
+        /* Case-fold the base DN */
+        if ((pBaseDN = ldb_dn_fold(hTalloc, pBaseDN,
+                                   module, case_fold_attr_required)) == NULL) {
+                talloc_free(hTalloc);
+                return -1;
+            }
+
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN IMMEDIATE;");
         
@@ -375,17 +495,12 @@ lsqlite3_search_bytree(struct ldb_module * module,
                              "  WHERE attr_value = %Q;",
                              pBaseDN)) == SQLITE_DONE) {
                 QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
+                talloc_free(hTalloc);
                 return 0;
         } else if (ret != SQLITE_OK) {
                 QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
+                talloc_free(hTalloc);
                 return -1;
-        }
-        
-        /* Allocate a temporary talloc context */
-	if ((hTalloc = talloc_new(module->ldb)) == NULL) {
-                ret = -1;
-                talloc_free(pTree);
-                goto cleanup;
         }
         
         /* Convert filter into a series of SQL conditions (constraints) */
@@ -453,14 +568,15 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 goto cleanup;
         }
         
+#ifdef NEED_TABLE_LIST
         /*
          * Build the attribute table list from the list of unique names.
          */
-        
         if ((pTableList = build_attr_table_list(hTalloc, lsqlite3)) == NULL) {
                 ret = -1;
                 goto cleanup;
         }
+#endif
         
         switch(scope) {
         case LDB_SCOPE_DEFAULT:
@@ -534,6 +650,11 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 break;
         }
         
+        if (pSql == NULL) {
+                ret = -1;
+                goto cleanup;
+        }
+
         if (lsqlite3_debug) {
                 printf("%s\n", pSql);
         }
@@ -630,11 +751,11 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 bLoop = FALSE;
         }
         
-        /* End the transaction */
-        QUERY_NOROWS(lsqlite3, FALSE, "END TRANSACTION;");
-        
         /* We're alll done with this query */
         sqlite3_free(pSql);
+        
+        /* End the transaction */
+        QUERY_NOROWS(lsqlite3, FALSE, "END TRANSACTION;");
         
         /* Were there any results? */
         if (ret != 0 || allocated == 0) {
@@ -733,9 +854,11 @@ lsqlite3_add(struct ldb_module *module,
 
 /* modify a record */
 static int
-lsqlite3_modify(struct ldb_module *module,
-                const struct ldb_message *msg)
+lsqlite3_modify(struct ldb_module * module,
+                const struct ldb_message * msg)
 {
+        char *                      pDN;
+        long long                   eid;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
         
 	/* ignore ltdb specials */
@@ -746,7 +869,25 @@ lsqlite3_modify(struct ldb_module *module,
         /* Begin a transaction */
         QUERY_NOROWS(lsqlite3, FALSE, "BEGIN EXCLUSIVE;");
         
-#warning "modify() not yet implemented"
+        /* Case-fold the DN so we can compare it to what's in the database */
+        pDN = ldb_dn_fold(module->ldb, msg->dn,
+                          module, case_fold_attr_required);
+
+        /* Determine the eid of the DN being deleted */
+        QUERY_INT(lsqlite3,
+                  eid,
+                  TRUE,
+                  "SELECT eid\n"
+                  "  FROM ldb_entry\n"
+                  "  WHERE dn = %Q;",
+                  pDN);
+        
+        /* Apply the message attributes */
+	if (msg_to_sql(module, msg, eid, TRUE) != 0) {
+                QUERY_NOROWS(lsqlite3, FALSE, "ROLLBACK;");
+                return -1;
+        }
+        
 
         /* Everything worked.  Commit it! */
         QUERY_NOROWS(lsqlite3, TRUE, "COMMIT;");
@@ -1409,7 +1550,8 @@ parsetree_to_sql(struct ldb_module *module,
                 }
                 
                 child = ret;
-                ret = talloc_asprintf("(\n"
+                ret = talloc_asprintf(hTalloc,
+                                      "(\n"
                                       "%s\n"
                                       ")\n",
                                       child);
@@ -1436,7 +1578,8 @@ parsetree_to_sql(struct ldb_module *module,
                         talloc_free(child);
                 }
                 child = ret;
-                ret = talloc_asprintf("(\n"
+                ret = talloc_asprintf(hTalloc,
+                                      "(\n"
                                       "%s\n"
                                       ")\n",
                                       child);
@@ -1495,7 +1638,7 @@ parsetree_to_sql(struct ldb_module *module,
 
                 ret = talloc_strdup(hTalloc, p);
                 sqlite3_free(p);
-                
+
 	} else if (strcasecmp(t->u.simple.attr, "objectclass") == 0) {
 		/*
                  * For object classes, we want to search for all objectclasses
@@ -1543,6 +1686,7 @@ parsetree_to_sql(struct ldb_module *module,
                 ret = talloc_strdup(hTalloc, p);
                 sqlite3_free(p);
 	}
+
 	return ret;
 }
 
@@ -1619,6 +1763,7 @@ parsetree_to_attrlist(struct lsqlite3_private * lsqlite3,
 }
 
 
+#ifdef NEED_TABLE_LIST
 /*
  * Use the already-generated FILTER_ATTR_TABLE to create a list of attribute
  * table names that will be used in search queries.
@@ -1724,6 +1869,7 @@ build_attr_table_list(void * hTalloc,
 
         return pTableList;
 }
+#endif
 
 
 /*
@@ -1847,6 +1993,7 @@ new_dn(struct ldb_module * module,
         char *                      p;
         char *                      pPartialDN;
         long long                   eid;
+        long long                   peid;
         struct ldb_dn *             pExplodedDN;
         struct ldb_dn_component *   pComponent;
 	struct ldb_context *        ldb = module->ldb;
@@ -1906,8 +2053,34 @@ new_dn(struct ldb_module * module,
                              nComponent == 0 ? "" : "OR IGNORE",
                              eid, pPartialDN);
                 
-                /* Get the EID of the just inserted row (the next parent) */
+                /* Save the parent EID */
+                peid = eid;
+                
+                /* Get the EID of the just inserted row */
                 eid = sqlite3_last_insert_rowid(lsqlite3->sqlite);
+
+                /*
+                 * Popoulate the descendant table
+                 */
+
+                /* This table has an entry for itself as well as descendants */
+                QUERY_NOROWS(lsqlite3,
+                             FALSE,
+                             "INSERT INTO ldb_descendants "
+                             "    (aeid, deid) "
+                             "  VALUES "
+                             "    (%lld, %lld);",
+                             eid, eid);
+                
+                /* Now insert rows for all of our ancestors */
+                QUERY_NOROWS(lsqlite3,
+                             FALSE,
+                             "INSERT INTO ldb_descendants "
+                             "    (aeid, deid) "
+                             "  SELECT aeid, %lld "
+                             "    FROM ldb_descendants "
+                             "    WHERE aeid = %lld;",
+                             eid, peid);
 
                 /* If this is the final component, also add DN attribute */
                 if (nComponent == 0) {
