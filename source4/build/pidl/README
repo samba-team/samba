@@ -18,12 +18,13 @@ dump.pm - Converts the parse tree back to an IDL file
 validator.pm  - Validates the parse tree
 
 -- DCE/RPC+NDR --
+ndr.pm - Generates intermediate datastructures for use by NDR parses/generators
 ndr_client.pm - Generates client call functions in C using the NDR parser
 eth_parser.pm - Generates a parser for the ethereal network sniffer
 eth_header.pm - Generates a header for ethereal
 swig.pm	- Generates SWIG interface files (.i)
 ndr_header.pm - Generates a header file with structures
-ndr.pm - Generates pull/push functions for parsing NDR
+ndr_parser.pm - Generates pull/push functions for parsing NDR
 server.pm - Generates server side implementation in C
 template.pm - Generates stubs in C for server implementation
 

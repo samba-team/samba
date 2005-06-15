@@ -160,7 +160,7 @@ sub GetElementLevelTable($)
 		DATA_TYPE => $e->{TYPE},
 		IS_DEFERRED => $is_deferred,
 		CONTAINS_DEFERRED => can_contain_deferred($e),
-		IS_SURROUNDING => is_surrounding_string($e)
+		IS_SURROUNDING => 0 #FIXME
 	});
 
 	my $i = 0;
@@ -201,17 +201,6 @@ sub pointer_type($)
 	return "ignore" if (util::has_property($e, "ignore"));
 
 	return undef;
-}
-
-sub is_surrounding_string($)
-{
-	my $e = shift;
-
-	return 0; #FIXME
-
-	return ($e->{TYPE} eq "string") and ($e->{POINTERS} == 0) 
-		and util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*") 
-		and $e->{PARENT}->{TYPE} ne "FUNCTION";
 }
 
 #####################################################################
@@ -367,8 +356,7 @@ sub ParseBitmap($)
 
 sub ParseTypedef($$)
 {
-	my $ndr = shift;
-	my $d = shift;
+	my ($ndr,$d) = @_;
 	my $data;
 
 	if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
@@ -379,17 +367,12 @@ sub ParseTypedef($$)
 		$d->{DATA}->{PROPERTIES} = $d->{PROPERTIES};
 	}
 
-	if ($d->{DATA}->{TYPE} eq "STRUCT") {
-		$data = ParseStruct($d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq "UNION") {
-		$data = ParseUnion($d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq "ENUM") {
-		$data = ParseEnum($d->{DATA});
-	} elsif ($d->{DATA}->{TYPE} eq "BITMAP") {
-		$data = ParseBitmap($d->{DATA});
-	} else {
-		die("Unknown data type '$d->{DATA}->{TYPE}'");
-	}
+	$data = {
+		STRUCT => \&ParseStruct,
+		UNION => \&ParseUnion,
+		ENUM => \&ParseEnum,
+		BITMAP => \&ParseBitmap
+	}->{$d->{DATA}->{TYPE}}->($d->{DATA});
 
 	$data->{ALIGN} = align_type($d->{NAME});
 
@@ -403,24 +386,19 @@ sub ParseTypedef($$)
 
 sub ParseConst($$)
 {
-	my $ndr = shift;
-	my $d = shift;
+	my ($ndr,$d) = @_;
 
 	return $d;
 }
 
 sub ParseFunction($$$)
 {
-	my $ndr = shift;
-	my $d = shift;
-	my $opnum = shift;
+	my ($ndr,$d,$opnum) = @_;
 	my @elements = ();
 	my $rettype = undef;
 	my $thisopnum = undef;
 
-	CheckPointerTypes($d, 
-		$ndr->{PROPERTIES}->{pointer_default_top}
-	);
+	CheckPointerTypes($d, $ndr->{PROPERTIES}->{pointer_default_top});
 
 	if (not defined($d->{PROPERTIES}{noopnum})) {
 		$thisopnum = ${$opnum};
@@ -534,9 +512,7 @@ sub Parse($)
 	my $idl = shift;
 	my @ndr = ();
 
-	foreach my $x (@{$idl}) {
-		push @ndr, ParseInterface($x);
-	}
+	push(@ndr, ParseInterface($_)) foreach (@{$idl});
 
 	return \@ndr;
 }
@@ -558,8 +534,7 @@ sub GetNextLevel($$)
 
 sub GetPrevLevel($$)
 {
-	my $e = shift;
-	my $fl = shift;
+	my ($e,$fl) = @_;
 	my $prev = undef;
 
 	foreach my $l (@{$e->{LEVELS}}) {
@@ -572,8 +547,7 @@ sub GetPrevLevel($$)
 
 sub ContainsDeferred($$)
 {
-	my $e = shift;
-	my $l = shift;
+	my ($e,$l) = @_;
 
 	do {
 		return 1 if ($l->{IS_DEFERRED}); 
