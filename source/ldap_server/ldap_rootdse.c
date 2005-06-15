@@ -112,7 +112,7 @@ static void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 }
 
 
-static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
+static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldb_message_element *attrs)
 {
 	/* 
 	 * currentTime
@@ -346,7 +346,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			goto queue_reply;
 		}
 		ent->num_attributes = res[0]->num_elements;
-		ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
+		ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
 		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);

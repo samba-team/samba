@@ -201,7 +201,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		for (i=0; i<r->num_attributes; i++) {
-			struct ldap_attribute *attr = &r->attributes[i];
+			struct ldb_message_element *attr = &r->attributes[i];
 			asn1_push_tag(&data, ASN1_SEQUENCE(0));
 			asn1_write_OctetString(&data, attr->name,
 					       strlen(attr->name));
@@ -232,7 +232,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 
 		for (i=0; i<r->num_mods; i++) {
-			struct ldap_attribute *attrib = &r->mods[i].attrib;
+			struct ldb_message_element *attrib = &r->mods[i].attrib;
 			asn1_push_tag(&data, ASN1_SEQUENCE(0));
 			asn1_write_enumerated(&data, r->mods[i].type);
 			asn1_push_tag(&data, ASN1_SEQUENCE(0));
@@ -268,7 +268,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 
 		for (i=0; i<r->num_attributes; i++) {
-			struct ldap_attribute *attrib = &r->attributes[i];
+			struct ldb_message_element *attrib = &r->attributes[i];
 			asn1_push_tag(&data, ASN1_SEQUENCE(0));
 			asn1_write_OctetString(&data, attrib->name,
 					       strlen(attrib->name));
@@ -596,7 +596,7 @@ failed:
 
 
 static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-			       struct ldap_attribute *attrib)
+			       struct ldb_message_element *attrib)
 {
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	asn1_read_OctetString_talloc(mem_ctx, data, &attrib->name);
@@ -616,12 +616,12 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 }
 
 static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-				struct ldap_attribute **attributes,
+				struct ldb_message_element **attributes,
 				int *num_attributes)
 {
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	while (asn1_peek_tag(data, ASN1_SEQUENCE(0))) {
-		struct ldap_attribute attrib;
+		struct ldb_message_element attrib;
 		ZERO_STRUCT(attrib);
 		ldap_decode_attrib(mem_ctx, data, &attrib);
 		add_attrib_to_array_talloc(mem_ctx, &attrib,

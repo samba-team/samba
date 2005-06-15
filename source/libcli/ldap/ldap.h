@@ -101,12 +101,6 @@ struct ldap_Result {
 	const char *referral;
 };
 
-struct ldap_attribute {
-	const char *name;
-	int num_values;
-	DATA_BLOB *values;
-};
-
 struct ldap_BindRequest {
 	int version;
 	const char *dn;
@@ -159,7 +153,7 @@ struct ldap_SearchRequest {
 struct ldap_SearchResEntry {
 	const char *dn;
 	int num_attributes;
-	struct ldap_attribute *attributes;
+	struct ldb_message_element *attributes;
 };
 
 struct ldap_SearchResRef {
@@ -175,7 +169,7 @@ enum ldap_modify_type {
 
 struct ldap_mod {
 	enum ldap_modify_type type;
-	struct ldap_attribute attrib;
+	struct ldb_message_element attrib;
 };
 
 struct ldap_ModifyRequest {
@@ -187,7 +181,7 @@ struct ldap_ModifyRequest {
 struct ldap_AddRequest {
 	const char *dn;
 	int num_attributes;
-	struct ldap_attribute *attributes;
+	struct ldb_message_element *attributes;
 };
 
 struct ldap_DelRequest {
@@ -338,10 +332,10 @@ NTSTATUS ldap2nterror(int ldaperror);
 /* The following definitions come from libcli/ldap/ldap_ldif.c  */
 
 BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
-			 struct ldap_attribute *attrib);
+			 struct ldb_message_element *attrib);
 BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
-				       const struct ldap_attribute *attrib,
-				       struct ldap_attribute **attribs,
+				       const struct ldb_message_element *attrib,
+				       struct ldb_message_element **attribs,
 				       int *num_attribs);
 BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod *mod,

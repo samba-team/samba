@@ -679,7 +679,7 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 
 	response.dn = "";
 	response.num_attributes = 1;
-	response.attributes = talloc(tmp_ctx, struct ldap_attribute);
+	response.attributes = talloc(tmp_ctx, struct ldb_message_element);
 	NT_STATUS_HAVE_NO_MEMORY(response.attributes);
 	response.attributes->name = "netlogon";
 	response.attributes->num_values = 1;

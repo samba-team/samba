@@ -192,6 +192,10 @@ typedef struct data_blob {
 	size_t length;
 } DATA_BLOB;
 
+/* by making struct ldb_val and DATA_BLOB the same, we can simplify
+   a fair bit of code */
+#define ldb_val data_blob
+
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 
