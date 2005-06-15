@@ -1111,13 +1111,29 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 }
 
 /*******************************************************************
+ Rewind to the start.
+********************************************************************/
+
+void RewindDir(struct smb_Dir *dirp, long *poffset)
+{
+	SMB_VFS_REWINDDIR(dirp->conn, dirp->dir);
+	dirp->file_number = 0;
+	dirp->offset = 0;
+	*poffset = 0;
+}
+
+/*******************************************************************
  Seek a dir.
 ********************************************************************/
 
 void SeekDir(struct smb_Dir *dirp, long offset)
 {
 	if (offset != dirp->offset) {
-		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		if (offset == 0) {
+			RewindDir(dirp, &offset);
+		} else {
+			SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		}
 		dirp->offset = offset;
 	}
 }
