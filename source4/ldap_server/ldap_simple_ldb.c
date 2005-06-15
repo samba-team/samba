@@ -108,7 +108,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			goto queue_reply;
 		}
 		ent->num_attributes = res[i]->num_elements;
-		ent->attributes = talloc_array(ent_r, struct ldap_attribute, ent->num_attributes);
+		ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
 		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
