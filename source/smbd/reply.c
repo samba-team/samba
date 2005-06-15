@@ -3781,7 +3781,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 			}
 
 			if(all_veto_files) {
-				RewindDir(dir_hnd);
+				RewindDir(dir_hnd,&dirpos);
 				while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 					pstring fullname;
 
