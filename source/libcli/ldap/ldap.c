@@ -603,11 +603,8 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 	asn1_start_tag(data, ASN1_SET);
 	while (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
 		DATA_BLOB blob;
-		struct ldb_val value;
 		asn1_read_OctetString(data, &blob);
-		value.data = blob.data;
-		value.length = blob.length;
-		add_value_to_attrib(mem_ctx, &value, attrib);
+		add_value_to_attrib(mem_ctx, &blob, attrib);
 		data_blob_free(&blob);
 	}
 	asn1_end_tag(data);

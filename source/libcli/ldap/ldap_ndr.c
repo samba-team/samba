@@ -25,14 +25,6 @@
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
-struct ldb_val ldb_blob(DATA_BLOB blob)
-{
-	struct ldb_val val;
-	val.data = blob.data;
-	val.length = blob.length;
-	return val;
-}
-
 /*
   encode a NDR uint32 as a ldap filter element
 */
@@ -59,7 +51,7 @@ const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, struct dom_sid *sid)
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	ret = ldb_binary_encode(mem_ctx, ldb_blob(blob));
+	ret = ldb_binary_encode(mem_ctx, blob);
 	data_blob_free(&blob);
 	return ret;
 }
@@ -78,7 +70,7 @@ const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	ret = ldb_binary_encode(mem_ctx, ldb_blob(blob));
+	ret = ldb_binary_encode(mem_ctx, blob);
 	data_blob_free(&blob);
 	return ret;
 }
