@@ -415,7 +415,13 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	ALLOC(ent->salt);
 	if (ent->salt == NULL)
 	    return ENOMEM;
-	*ent->salt = strndup(key->salt->salt.data, key->salt->salt.length);
+	*ent->salt = malloc(key->salt->salt.length + 1);
+	if (*ent->salt == NULL) {
+	    free(ent->salt);
+	    ent->salt = NULL;
+	    return ENOMEM;
+	}
+	memcpy(*ent->salt, key->salt->salt.data, key->salt->salt.length);
     } else
 	ent->salt = NULL;
 
@@ -429,8 +435,11 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	    return ENOMEM;
 	ent->s2kparams->length = 4;
 	ent->s2kparams->data = malloc(ent->s2kparams->length);
-	if (ent->s2kparams->data == NULL)
+	if (ent->s2kparams->data == NULL) {
+	    free(ent->s2kparams);
+	    ent->s2kparams = NULL;
 	    return ENOMEM;
+	}
 	_krb5_put_int(ent->s2kparams->data, 
 		      _krb5_AES_string_to_default_iterator, 
 		      ent->s2kparams->length);
