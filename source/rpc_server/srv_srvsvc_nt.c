@@ -1536,7 +1536,7 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* Does this share exist ? */
 	if (snum < 0)
-		return WERR_INVALID_NAME;
+		return WERR_NET_NAME_NOT_FOUND;
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
