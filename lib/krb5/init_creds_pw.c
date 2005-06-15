@@ -192,11 +192,11 @@ report_expiration (krb5_context context,
 		   krb5_prompter_fct prompter,
 		   krb5_data *data,
 		   const char *str,
-		   time_t time)
+		   time_t now)
 {
     char *p;
 	    
-    asprintf (&p, "%s%s", str, ctime(&time));
+    asprintf (&p, "%s%s", str, ctime(&now));
     (*prompter) (context, data, NULL, p, 0, NULL);
     free (p);
 }
@@ -1119,7 +1119,6 @@ process_pa_data_to_key(krb5_context context,
     krb5_error_code ret;
     krb5_enctype etype;
     PA_DATA *pa;
-    int index;
 
     memset(&paid, 0, sizeof(paid));
 
@@ -1140,17 +1139,17 @@ process_pa_data_to_key(krb5_context context,
 
     pa = NULL;
     if (rep->kdc_rep.padata) {
-	index = 0;
+	int idx = 0;
 	pa = krb5_find_padata(rep->kdc_rep.padata->val, 
 			      rep->kdc_rep.padata->len,
 			      KRB5_PADATA_PK_AS_REP,
-			      &index);
+			      &idx);
 	if (pa == NULL) {
-	    index = 0;
+	    idx = 0;
 	    pa = krb5_find_padata(rep->kdc_rep.padata->val, 
 				  rep->kdc_rep.padata->len,
 				  KRB5_PADATA_PK_AS_REP_19,
-				  &index);
+				  &idx);
 	}
     }
     if (pa && ctx->pk_init_ctx) {
