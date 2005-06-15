@@ -252,7 +252,6 @@ struct ldap_Control {
 };
 
 struct ldap_message {
-	TALLOC_CTX	       *mem_ctx;
 	uint32_t                messageid;
 	enum ldap_request_tag   type;
 	union ldap_Request      r;
@@ -267,7 +266,6 @@ struct ldap_queue_entry {
 };
 
 struct ldap_connection {
-	TALLOC_CTX *mem_ctx;
 	int sock;
 	int next_msgid;
 	char *host;

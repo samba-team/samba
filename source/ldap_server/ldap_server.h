@@ -47,12 +47,12 @@ struct ldapsrv_call {
 
 	struct ldapsrv_connection *conn;
 
-	struct ldap_message request;
+	struct ldap_message *request;
 
 	struct ldapsrv_reply {
 		struct ldapsrv_reply *prev,*next;
 		enum ldapsrv_reply_state state;
-		struct ldap_message msg;
+		struct ldap_message *msg;
 	} *replies;
 };
 
