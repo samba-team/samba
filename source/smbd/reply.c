@@ -3761,7 +3761,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
 		if(dir_hnd != NULL) {
-			long dirpos = TellDir(dir_hnd);
+			long dirpos = 0;
 			while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
 					continue;
@@ -3774,7 +3774,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 			}
 
 			if(all_veto_files) {
-				SeekDir(dir_hnd,dirpos);
+				RewindDir(dir_hnd);
 				while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 					pstring fullname;
 
