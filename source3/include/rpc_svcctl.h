@@ -111,6 +111,8 @@
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000001
 
+#define SVCCTL_SCRIPT_DIR  "/svcctl/"
+
 /* utility structures for RPCs */
 
 typedef struct {
@@ -204,7 +206,7 @@ typedef struct {
 	/* functions for enumerating subkeys and values */	
 	WERROR 	(*stop_service)( void );
 	WERROR 	(*start_service) ( void );
-	BOOL 	(*service_status)( SERVICE_STATUS *status );
+	WERROR 	(*service_status)( SERVICE_STATUS *status );
 } SERVICE_CONTROL_OPS;
 
 /* structure to store the service handle information  */
