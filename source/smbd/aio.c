@@ -454,7 +454,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 					fsp->fsp_name, strerror(errno) ));
 				ret = errno;
 			} else {
-				DEBUG(5,("handle_aio_write_complete: aio_write_behind failed ! File %s is corrupt ! \
+				DEBUG(0,("handle_aio_write_complete: aio_write_behind failed ! File %s is corrupt ! \
 Wanted %u bytes but only wrote %d\n", fsp->fsp_name, (unsigned int)numtowrite, (int)nwritten ));
 				ret = EIO;
 			}
@@ -578,6 +578,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 		int i;
 		struct timespec ts;
 
+		aio_completion_count = 0;
 		for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
 			if (aio_ex->fsp == fsp) {
 				aio_completion_count++;
@@ -588,7 +589,7 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 			return ret;
 		}
 
-		DEBUG(10,("wait_for_aio_completion: waiting for %d aio events to complete.\n",
+		DEBUG(3,("wait_for_aio_completion: waiting for %d aio events to complete.\n",
 			aio_completion_count ));
 
 		aiocb_list = SMB_MALLOC_ARRAY(const SMB_STRUCT_AIOCB *, aio_completion_count);
@@ -606,14 +607,19 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 		ts.tv_sec = seconds_left;
 		ts.tv_nsec = 0;
 
+		DEBUG(3,("wait_for_aio_completion: doing a wait of %d seconds.\n", seconds_left ));
+
 		err = SMB_VFS_AIO_SUSPEND(fsp, aiocb_list, aio_completion_count, &ts);
 
-		if ((err == 0) || (err == -1 && errno == EINTR)) {
-			err = process_aio_queue();
-			if (err) {
-				/* Only return non-zero errors. */
-				ret = err;
-			}
+		if (err == -1 && errno == EAGAIN) {
+			/* Timeout. */
+			break;
+		}
+
+		err = process_aio_queue();
+		if (err) {
+			/* Only return non-zero errors. */
+			ret = err;
 		}
 
 		SAFE_FREE(aiocb_list);
@@ -621,6 +627,9 @@ BOOL wait_for_aio_completion(files_struct *fsp)
 	}
 
 	/* We timed out - we don't know why. Return ret if already an error, else EIO. */
+	DEBUG(0,("wait_for_aio_completion: aio_suspend timed out waiting for %d events\n",
+			aio_completion_count));
+
 	return ret ? ret : EIO;
 }
 

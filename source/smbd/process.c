@@ -286,14 +286,16 @@ static void async_processing(char *buffer, int buffer_len)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
-	if (process_aio_queue()) {
-		return;
-	}
+	process_aio_queue();
 
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(buffer, buffer_len, 1)) {
 		process_local_message(buffer, buffer_len);
 	}
+
+	/* Do the aio check again after receive_local_message as it does a select
+	   and may have eaten our signal. */
+	process_aio_queue();
 
 	if (got_sig_term) {
 		exit_server("Caught TERM signal");
