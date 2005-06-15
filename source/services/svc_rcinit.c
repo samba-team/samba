@@ -171,7 +171,7 @@ BOOL get_LSB_data(char *fname,Service_info *si )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR rcinit_stop( void )
+static WERROR rcinit_stop( SERVICE_STATUS *service_status )
 {
 	return WERR_OK;
 }
