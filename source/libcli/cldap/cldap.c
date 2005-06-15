@@ -68,7 +68,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	DATA_BLOB blob;
 	size_t nread, dsize;
 	struct asn1_data asn1;
-	struct ldap_message ldap_msg;
+	struct ldap_message *ldap_msg;
 	struct cldap_request *req;
 
 	status = socket_pending(cldap->sock, &dsize);
@@ -102,24 +102,27 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 	talloc_steal(tmp_ctx, asn1.data);
 
-	ZERO_STRUCT(ldap_msg);
-	ldap_msg.mem_ctx = tmp_ctx;
+	ldap_msg = talloc(tmp_ctx, struct ldap_message);
+	if (ldap_msg == NULL) {
+		talloc_free(tmp_ctx);
+		return;
+	}
 
 	/* this initial decode is used to find the message id */
-	if (!ldap_decode(&asn1, &ldap_msg)) {
+	if (!ldap_decode(&asn1, ldap_msg)) {
 		DEBUG(2,("Failed to decode ldap message\n"));
 		talloc_free(tmp_ctx);
 		return;
 	}
 
 	/* find the pending request */
-	req = idr_find(cldap->idr, ldap_msg.messageid);
+	req = idr_find(cldap->idr, ldap_msg->messageid);
 	if (req == NULL) {
 		if (cldap->incoming.handler) {
-			cldap->incoming.handler(cldap, &ldap_msg, src_addr, src_port);
+			cldap->incoming.handler(cldap, ldap_msg, src_addr, src_port);
 		} else {
 			DEBUG(2,("Mismatched cldap reply %u from %s:%d\n",
-				 ldap_msg.messageid, src_addr, src_port));
+				 ldap_msg->messageid, src_addr, src_port));
 		}
 		talloc_free(tmp_ctx);
 		return;
@@ -291,7 +294,7 @@ NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 struct cldap_request *cldap_search_send(struct cldap_socket *cldap, 
 					struct cldap_search *io)
 {
-	struct ldap_message msg;
+	struct ldap_message *msg;
 	struct cldap_request *req;
 	struct ldap_SearchRequest *search;
 
@@ -313,12 +316,13 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 
 	talloc_set_destructor(req, cldap_request_destructor);
 
-	msg.mem_ctx         = req;
-	msg.messageid       = req->message_id;
-	msg.type            = LDAP_TAG_SearchRequest;
-	msg.num_controls    = 0;
-	msg.controls        = NULL;
-	search = &msg.r.SearchRequest;
+	msg = talloc(req, struct ldap_message);
+	if (msg == NULL) goto failed;
+	msg->messageid       = req->message_id;
+	msg->type            = LDAP_TAG_SearchRequest;
+	msg->num_controls    = 0;
+	msg->controls        = NULL;
+	search = &msg->r.SearchRequest;
 
 	search->basedn         = "";
 	search->scope          = LDAP_SEARCH_SCOPE_BASE;
@@ -333,7 +337,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	if (!ldap_encode(&msg, &req->encoded)) {
+	if (!ldap_encode(msg, &req->encoded)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest_addr, req->dest_port));
 		goto failed;
@@ -357,7 +361,7 @@ failed:
 */
 NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 {
-	struct ldap_message msg;
+	struct ldap_message *msg;
 	struct cldap_request *req;
 	DATA_BLOB blob1, blob2;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
@@ -375,16 +379,17 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 
 	talloc_set_destructor(req, cldap_request_destructor);
 
-	msg.mem_ctx         = req;
-	msg.messageid       = io->messageid;
-	msg.num_controls    = 0;
-	msg.controls        = NULL;
+	msg = talloc(req, struct ldap_message);
+	if (msg == NULL) goto failed;
+	msg->messageid       = io->messageid;
+	msg->num_controls    = 0;
+	msg->controls        = NULL;
 	
 	if (io->response) {
-		msg.type = LDAP_TAG_SearchResultEntry;
-		msg.r.SearchResultEntry = *io->response;
+		msg->type = LDAP_TAG_SearchResultEntry;
+		msg->r.SearchResultEntry = *io->response;
 
-		if (!ldap_encode(&msg, &blob1)) {
+		if (!ldap_encode(msg, &blob1)) {
 			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 				 req->dest_addr, req->dest_port));
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -395,10 +400,10 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 		blob1 = data_blob(NULL, 0);
 	}
 
-	msg.type = LDAP_TAG_SearchResultDone;
-	msg.r.SearchResultDone = *io->result;
+	msg->type = LDAP_TAG_SearchResultDone;
+	msg->r.SearchResultDone = *io->result;
 
-	if (!ldap_encode(&msg, &blob2)) {
+	if (!ldap_encode(msg, &blob2)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest_addr, req->dest_port));
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -430,7 +435,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 			   TALLOC_CTX *mem_ctx, 
 			   struct cldap_search *io)
 {
-	struct ldap_message ldap_msg;
+	struct ldap_message *ldap_msg;
 
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -448,10 +453,10 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		return NT_STATUS_IO_TIMEOUT;
 	}
 
-	ZERO_STRUCT(ldap_msg);
-	ldap_msg.mem_ctx = mem_ctx;
+	ldap_msg = talloc(mem_ctx, struct ldap_message);
+	NT_STATUS_HAVE_NO_MEMORY(ldap_msg);
 
-	if (!ldap_decode(&req->asn1, &ldap_msg)) {
+	if (!ldap_decode(&req->asn1, ldap_msg)) {
 		talloc_free(req);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -459,26 +464,26 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	ZERO_STRUCT(io->out);
 
 	/* the first possible form has a search result in first place */
-	if (ldap_msg.type == LDAP_TAG_SearchResultEntry) {
+	if (ldap_msg->type == LDAP_TAG_SearchResultEntry) {
 		io->out.response = talloc(mem_ctx, struct ldap_SearchResEntry);
 		NT_STATUS_HAVE_NO_MEMORY(io->out.response);
-		*io->out.response = ldap_msg.r.SearchResultEntry;
+		*io->out.response = ldap_msg->r.SearchResultEntry;
 
 		/* decode the 2nd part */
-		if (!ldap_decode(&req->asn1, &ldap_msg)) {
+		if (!ldap_decode(&req->asn1, ldap_msg)) {
 			talloc_free(req);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
-	if (ldap_msg.type != LDAP_TAG_SearchResultDone) {
+	if (ldap_msg->type != LDAP_TAG_SearchResultDone) {
 		talloc_free(req);
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 
 	io->out.result = talloc(mem_ctx, struct ldap_Result);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.result);
-	*io->out.result = ldap_msg.r.SearchResultDone;
+	*io->out.result = ldap_msg->r.SearchResultDone;
 
 	talloc_free(req);
 	return NT_STATUS_OK;

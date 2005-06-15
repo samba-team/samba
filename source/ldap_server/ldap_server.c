@@ -305,7 +305,7 @@ NTSTATUS ldapsrv_do_responses(struct ldapsrv_connection *conn)
 
 	for (call=conn->calls; call; call=next_call) {
 		for (reply=call->replies; reply; reply=next_reply) {
-			if (!ldap_encode_to_buf(&reply->msg, &conn->out_buffer)) {
+			if (!ldap_encode_to_buf(reply->msg, &conn->out_buffer)) {
 				return NT_STATUS_FOOBAR;
 			}
 			next_reply = reply->next;
@@ -375,18 +375,22 @@ static void ldapsrv_recv(struct stream_connection *conn, uint16_t flags)
 			return;
 		}
 
-		call = talloc(ldap_conn, struct ldapsrv_call);
+		call = talloc_zero(ldap_conn, struct ldapsrv_call);
 		if (!call) {
 			ldapsrv_terminate_connection(ldap_conn, "no memory");
 			return;		
 		}
 
-		ZERO_STRUCTP(call);
+		call->request = talloc_zero(call, struct ldap_message);
+		if (call->request == NULL) {
+			ldapsrv_terminate_connection(ldap_conn, "no memory");
+			return;		
+		}
+
 		call->state = LDAPSRV_CALL_STATE_NEW;
 		call->conn = ldap_conn;
-		call->request.mem_ctx = call;
 
-		if (!ldap_decode(&data, &call->request)) {
+		if (!ldap_decode(&data, call->request)) {
 			dump_data(0,buf, msg_length);
 			asn1_free(&data);
 			ldapsrv_terminate_connection(ldap_conn, "ldap_decode() failed");

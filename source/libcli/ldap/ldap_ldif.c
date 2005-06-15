@@ -212,7 +212,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 		}
 
 		if (attrib == NULL) {
-			r->attributes = talloc_realloc(msg->mem_ctx,
+			r->attributes = talloc_realloc(msg,
 							 r->attributes,
 							 struct ldap_attribute,
 							 r->num_attributes+1);
@@ -222,11 +222,11 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 			attrib = &(r->attributes[r->num_attributes]);
 			r->num_attributes += 1;
 			ZERO_STRUCTP(attrib);
-			attrib->name = talloc_strdup(msg->mem_ctx,
+			attrib->name = talloc_strdup(msg,
 						     attr_name);
 		}
 
-		if (!add_value_to_attrib(msg->mem_ctx, &value, attrib))
+		if (!add_value_to_attrib(msg, &value, attrib))
 			return False;
 	}
 	return True;
@@ -261,7 +261,7 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 		struct ldap_mod mod;
 		mod.type = LDAP_MODIFY_NONE;
 
-		mod.attrib.name = talloc_strdup(msg->mem_ctx, value.data);
+		mod.attrib.name = talloc_strdup(msg, value.data);
 
 		if (strequal(attr_name, "add"))
 			mod.type = LDAP_MODIFY_ADD;
@@ -290,14 +290,14 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 					  mod.attrib.name));
 				return False;
 			}
-			if (!add_value_to_attrib(msg->mem_ctx, &value,
+			if (!add_value_to_attrib(msg, &value,
 						 &mod.attrib)) {
 				DEBUG(3, ("Could not add value\n"));
 				return False;
 			}
 		}
 
-		if (!add_mod_to_array_talloc(msg->mem_ctx, &mod, &r->mods,
+		if (!add_mod_to_array_talloc(msg, &mod, &r->mods,
 					     &r->num_mods))
 			return False;
 	}
@@ -370,7 +370,7 @@ static struct ldap_message *ldif_read(TALLOC_CTX *mem_ctx, int (*fgetc_fn)(void 
 	if (msg == NULL)
 		return NULL;
 
-	chunk = next_chunk(msg->mem_ctx, fgetc_fn, private_data);
+	chunk = next_chunk(msg, fgetc_fn, private_data);
 	if (!chunk) {
 		goto failed;
 	}
@@ -388,7 +388,7 @@ static struct ldap_message *ldif_read(TALLOC_CTX *mem_ctx, int (*fgetc_fn)(void 
 		goto failed;
 	}
 
-	dn = talloc_strdup(msg->mem_ctx, value.data);
+	dn = talloc_strdup(msg, value.data);
 
 	if (next_attr(&s, &attr, &value) != 0) {
 		goto failed;

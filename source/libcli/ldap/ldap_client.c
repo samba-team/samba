@@ -312,9 +312,9 @@ static struct ldap_message *new_ldap_simple_bind_msg(struct ldap_connection *con
 
 	res->type = LDAP_TAG_BindRequest;
 	res->r.BindRequest.version = 3;
-	res->r.BindRequest.dn = talloc_strdup(res->mem_ctx, dn);
+	res->r.BindRequest.dn = talloc_strdup(res, dn);
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
-	res->r.BindRequest.creds.password = talloc_strdup(res->mem_ctx, pw);
+	res->r.BindRequest.creds.password = talloc_strdup(res, pw);
 
 	return res;
 }
@@ -332,7 +332,7 @@ static struct ldap_message *new_ldap_sasl_bind_msg(struct ldap_connection *conn,
 	res->r.BindRequest.version = 3;
 	res->r.BindRequest.dn = "";
 	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SASL;
-	res->r.BindRequest.creds.SASL.mechanism = talloc_strdup(res->mem_ctx, sasl_mechanism);
+	res->r.BindRequest.creds.SASL.mechanism = talloc_strdup(res, sasl_mechanism);
 	res->r.BindRequest.creds.SASL.secblob = *secblob;
 
 	return res;
@@ -348,7 +348,6 @@ static struct ldap_connection *new_ldap_connection(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	result->mem_ctx = result;
 	result->next_msgid = 1;
 	result->outstanding = NULL;
 	result->searchid = 0;
@@ -372,8 +371,8 @@ struct ldap_connection *ldap_connect(TALLOC_CTX *mem_ctx, const char *url)
 		return NULL;
 	}
 
-	ret = ldap_parse_basic_url(conn->mem_ctx, url, &conn->host,
-				  &conn->port, &conn->ldaps);
+	ret = ldap_parse_basic_url(conn, url, &conn->host,
+				   &conn->port, &conn->ldaps);
 	if (!ret) {
 		talloc_free(conn);
 		return NULL;
@@ -398,17 +397,7 @@ struct ldap_connection *ldap_connect(TALLOC_CTX *mem_ctx, const char *url)
 
 struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
 {
-	struct ldap_message *result;
-
-	result = talloc(mem_ctx, struct ldap_message);
-
-	if (!result) {
-		return NULL;
-	}
-
-	result->mem_ctx = result;
-
-	return result;
+	return talloc(mem_ctx, struct ldap_message);
 }
 
 BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
@@ -619,7 +608,7 @@ static struct ldap_message *ldap_transaction_sasl(struct ldap_connection *conn, 
 		return NULL;
 
 	status = gensec_wrap(conn->gensec, 
-			     req->mem_ctx, 
+			     req, 
 			     &request,
 			     &wrapped);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -653,7 +642,7 @@ static struct ldap_message *ldap_transaction_sasl(struct ldap_connection *conn, 
 	wrapped.length = len;
 
 	status = gensec_unwrap(conn->gensec,
-			       req->mem_ctx,
+			       req,
 			       &wrapped,
 			       &request);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -661,7 +650,7 @@ static struct ldap_message *ldap_transaction_sasl(struct ldap_connection *conn, 
 		return NULL;
 	}
 
-	rep = new_ldap_message(req->mem_ctx);
+	rep = new_ldap_message(req);
 
 	asn1_load(&asn1, request);
 	if (!ldap_decode(&asn1, rep)) {
@@ -776,7 +765,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 		goto done;
 	}
 
-	status = gensec_start_mech_by_sasl_name(conn->gensec, "GSS-SPNEGO");
+	status = gensec_start_mech_by_sasl_name(conn->gensec, "NTLM");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
 			  nt_errstr(status)));
@@ -828,8 +817,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 	}
 
 done:
-	if (mem_ctx)
-		talloc_free(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return result;
 }

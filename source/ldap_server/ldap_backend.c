@@ -32,12 +32,16 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type
 	if (!reply) {
 		return NULL;
 	}
+	reply->msg = talloc(reply, struct ldap_message);
+	if (reply->msg == NULL) {
+		talloc_free(reply);
+		return NULL;
+	}
 
 	reply->prev = reply->next = NULL;
 	reply->state = LDAPSRV_REPLY_STATE_NEW;
-	reply->msg.messageid = call->request.messageid;
-	reply->msg.type = type;
-	reply->msg.mem_ctx = reply;
+	reply->msg->messageid = call->request->messageid;
+	reply->msg->type = type;
 
 	return reply;
 }
@@ -63,14 +67,14 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
 
-	DEBUG(10,("Unwilling type[%d] id[%d]\n", call->request.type, call->request.messageid));
+	DEBUG(10,("Unwilling type[%d] id[%d]\n", call->request->type, call->request->messageid));
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
 	if (!reply) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r = &reply->msg.r.ExtendedResponse;
+	r = &reply->msg->r.ExtendedResponse;
 	r->response.resultcode = error;
 	r->response.dn = NULL;
 	r->response.errormessage = NULL;
@@ -84,7 +88,7 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
-	struct ldap_SearchRequest *req = &call->request.r.SearchRequest;
+	struct ldap_SearchRequest *req = &call->request->r.SearchRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("SearchRequest"));
@@ -102,7 +106,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		done = &done_r->msg.r.SearchResultDone;
+		done = &done_r->msg->r.SearchResultDone;
 		done->resultcode = 53;
 		done->dn = NULL;
 		done->errormessage = NULL;
@@ -116,7 +120,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 {
-	struct ldap_ModifyRequest *req = &call->request.r.ModifyRequest;
+	struct ldap_ModifyRequest *req = &call->request->r.ModifyRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("ModifyRequest"));
@@ -133,7 +137,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 {
-	struct ldap_AddRequest *req = &call->request.r.AddRequest;
+	struct ldap_AddRequest *req = &call->request->r.AddRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("AddRequest"));
@@ -150,7 +154,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 {
-	struct ldap_DelRequest *req = &call->request.r.DelRequest;
+	struct ldap_DelRequest *req = &call->request->r.DelRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("DelRequest"));
@@ -167,7 +171,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 {
-	struct ldap_ModifyDNRequest *req = &call->request.r.ModifyDNRequest;
+	struct ldap_ModifyDNRequest *req = &call->request->r.ModifyDNRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("ModifyDNRequrest"));
@@ -185,7 +189,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 {
-	struct ldap_CompareRequest *req = &call->request.r.CompareRequest;
+	struct ldap_CompareRequest *req = &call->request->r.CompareRequest;
 	struct ldapsrv_partition *part;
 
 	DEBUG(10, ("CompareRequest"));
@@ -219,14 +223,14 @@ static NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
+	ZERO_STRUCT(reply->msg->r);
 
 	return ldapsrv_queue_reply(call, reply);
 }
 
 NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 {
-	switch(call->request.type) {
+	switch(call->request->type) {
 	case LDAP_TAG_BindRequest:
 		return ldapsrv_BindRequest(call);
 	case LDAP_TAG_UnbindRequest:
