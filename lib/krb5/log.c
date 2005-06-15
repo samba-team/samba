@@ -38,8 +38,8 @@ RCSID("$Id$");
 struct facility {
     int min;
     int max;
-    krb5_log_log_func_t log;
-    krb5_log_close_func_t close;
+    krb5_log_log_func_t log_func;
+    krb5_log_close_func_t close_func;
     void *data;
 };
 
@@ -139,8 +139,8 @@ krb5_addlog_func(krb5_context context,
 		 krb5_log_facility *fac,
 		 int min,
 		 int max,
-		 krb5_log_log_func_t log,
-		 krb5_log_close_func_t close,
+		 krb5_log_log_func_t log_func,
+		 krb5_log_close_func_t close_func,
 		 void *data)
 {
     struct facility *fp = log_realloc(fac);
@@ -150,8 +150,8 @@ krb5_addlog_func(krb5_context context,
     }
     fp->min = min;
     fp->max = max;
-    fp->log = log;
-    fp->close = close;
+    fp->log_func = log_func;
+    fp->close_func = close_func;
     fp->data = data;
     return 0;
 }
@@ -366,7 +366,7 @@ krb5_closelog(krb5_context context,
 {
     int i;
     for(i = 0; i < fac->len; i++)
-	(*fac->val[i].close)(fac->val[i].data);
+	(*fac->val[i].close_func)(fac->val[i].data);
     free(fac->val);
     free(fac->program);
     fac->val = NULL;
@@ -409,7 +409,7 @@ krb5_vlog_msg(krb5_context context,
 		else
 		    actual = msg;
 	    }
-	    (*fac->val[i].log)(buf, actual, fac->val[i].data);
+	    (*fac->val[i].log_func)(buf, actual, fac->val[i].data);
 	}
     if(reply == NULL)
 	free(msg);
