@@ -55,6 +55,7 @@
 
 /* SERVER_STATUS - CurrentState */
 
+#define SVCCTL_STATE_UNKNOWN		0x00000000	/* only used internally to smbd */
 #define SVCCTL_STOPPED			0x00000001
 #define SVCCTL_START_PENDING		0x00000002
 #define SVCCTL_STOP_PENDING		0x00000003
@@ -110,6 +111,8 @@
 #define SVC_HANDLE_IS_SERVICE			0x0000002
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000001
+
+#define SVCCTL_SCRIPT_DIR  "/svcctl/"
 
 /* utility structures for RPCs */
 
@@ -202,9 +205,9 @@ typedef struct Service_info_struct {
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	WERROR 	(*stop_service)( void );
+	WERROR 	(*stop_service)( SERVICE_STATUS *status );
 	WERROR 	(*start_service) ( void );
-	BOOL 	(*service_status)( SERVICE_STATUS *status );
+	WERROR 	(*service_status)( SERVICE_STATUS *status );
 } SERVICE_CONTROL_OPS;
 
 /* structure to store the service handle information  */
