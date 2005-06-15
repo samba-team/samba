@@ -26,10 +26,13 @@
    some generic functions to get info that really should be hidden in
    particular modules */
 static int client_fd = -1;
+/* What to print out on a client disconnect error. */
+static char client_ip_string[16];
 
 void client_setfd(int fd)
 {
 	client_fd = fd;
+	safe_strcpy(client_ip_string, get_peer_addr(client_fd), sizeof(client_ip_string)-1);
 }
 
 static char *get_socket_addr(int fd)
@@ -418,7 +421,7 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 				if (fd == client_fd) {
 					/* Try and give an error message saying what client failed. */
 					DEBUG(0,("read_socket_with_timeout: client %s read error = %s.\n",
-						client_addr(), strerror(errno) ));
+						client_ip_string, strerror(errno) ));
 				} else {
 					DEBUG(0,("read_socket_with_timeout: read error = %s.\n", strerror(errno) ));
 				}
@@ -452,7 +455,7 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 			if (fd == client_fd) {
 				/* Try and give an error message saying what client failed. */
 				DEBUG(0,("read_socket_with_timeout: timeout read for client %s. select error = %s.\n",
-					client_addr(), strerror(errno) ));
+					client_ip_string, strerror(errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout read. select error = %s.\n", strerror(errno) ));
 			}
@@ -481,7 +484,7 @@ ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,un
 			if (fd == client_fd) {
 				/* Try and give an error message saying what client failed. */
 				DEBUG(0,("read_socket_with_timeout: timeout read to client %s. read error = %s.\n",
-					client_addr(), strerror(errno) ));
+					client_ip_string, strerror(errno) ));
 			} else {
 				DEBUG(0,("read_socket_with_timeout: timeout read. read error = %s.\n", strerror(errno) ));
 			}
@@ -520,7 +523,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 			if (fd == client_fd) {
 				/* Try and give an error message saying what client failed. */
 				DEBUG(0,("read_data: read failure for %d bytes to client %s. Error = %s\n",
-					(int)(N - total), client_addr(), strerror(errno) ));
+					(int)(N - total), client_ip_string, strerror(errno) ));
 			} else {
 				DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
 			}
@@ -548,7 +551,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 			if (fd == client_fd) {
 				/* Try and give an error message saying what client failed. */
 				DEBUG(0,("write_data: write failure in writing to client %s. Error %s\n",
-					client_addr(), strerror(errno) ));
+					client_ip_string, strerror(errno) ));
 			} else {
 				DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
 			}
