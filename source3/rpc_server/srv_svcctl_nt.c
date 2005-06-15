@@ -318,6 +318,13 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
 		return WERR_ACCESS_DENIED;
 		
+	/* try the service specific status call */
+
+	if ( info->ops ) 
+		return info->ops->service_status( &r_u->svc_status );
+
+	/* default action for now */
+
 	r_u->svc_status.type = 0x0020;
 	r_u->svc_status.state = 0x0004;
 	r_u->svc_status.controls_accepted = 0x0005;
@@ -497,8 +504,6 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 		return WERR_ACCESS_DENIED;
 		
 	return info->ops->start_service();
-	
-	return WERR_OK;
 }
 
 /********************************************************************
@@ -521,71 +526,6 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 		return WERR_ACCESS_DENIED;
 		
 	return info->ops->stop_service( &r_u->svc_status );
-		
-#if 0
-	SERVICE_INFO *service_info;
-	POLICY_HND   *handle;
-	pstring      command;
-	SERVICE_STATUS *service_status;
-	int          ret,fd;
-
-	/* need to find the service name by the handle that is open */
-	handle = &(q_u->handle);
-
-	service_info = find_service_info_by_hnd(p, handle);
-
-	if (!service_info) {
- 		DEBUG(10, ("_svcctl_control_service : Can't find the service for the handle\n"));
-		return WERR_BADFID; 
-	}
-
-	/* we return a SERVICE_STATUS structure if there's an error. */
-	if ( !(service_status = TALLOC_ARRAY(p->mem_ctx, SERVICE_STATUS, 1 ))  )
-		return WERR_NOMEM;
-
-	DEBUG(10, ("_svcctl_control_service: Found service [%s], [%s]\n",
-		service_info->servicename, service_info->filename));
-
-	/* TODO  - call the service config function here... */
-	memset(command, 0, sizeof(command));
-	if (q_u->control == SVCCTL_CONTROL_STOP) {
-		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR,
-			service_info->filename, "stop");
-	}
-
-	if (q_u->control == SVCCTL_CONTROL_PAUSE) {
-		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR,
-			service_info->filename, "stop");
-	}
-
-	if (q_u->control == SVCCTL_CONTROL_CONTINUE) {
-		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR,
-			service_info->filename, "restart");
-	}
-
-        DEBUG(10, ("_svcctl_control_service: status command is [%s]\n", command));
-
-	/* TODO  - wrap in privilege check */
-
-	ret = smbrun(command, &fd);
-	DEBUGADD(10, ("returned [%d]\n", ret));
-        close(fd);
-
-	if(ret != 0)
-        	DEBUG(10, ("enum_external_services: Command returned  [%d]\n", ret));
-
-	/* SET all service_stats bits here...*/
-	if (ret == 0) {
-		service_status->state              = SVCCTL_RUNNING;
-	  	service_status->controls_accepted  = SVCCTL_CONTROL_SHUTDOWN | SVCCTL_CONTROL_STOP;
-	} else {
-		service_status->state              = SVCCTL_STOPPED;
- 	 	service_status->controls_accepted  = 0;
-	}
-
-	DEBUG(10, ("_svcctl_query_service_config: Should call the commFound service [%s], [%s]\n",service_info->servicename,service_info->filename));
-
-#endif
 }
 
 /********************************************************************
