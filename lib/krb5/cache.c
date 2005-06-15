@@ -233,7 +233,11 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
     while (str && *str) {
 	tmp = strstr(str, "%{");
 	if (tmp && tmp != str) {
-	    append = strndup(str, tmp - str);
+	    append = malloc((tmp - str) + 1);
+	    if (append) {
+		memcpy(append, str, tmp - str);
+		append[tmp - str] = '\0';
+	    }
 	    str = tmp;
 	} else if (tmp) {
 	    tmp2 = strchr(tmp, '}');
