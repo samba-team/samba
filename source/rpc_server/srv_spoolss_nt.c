@@ -7628,9 +7628,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if(!move_driver_to_download_area(driver, level, &user, &err)) {
-		if (W_ERROR_IS_OK(err))
-			err = WERR_ACCESS_DENIED;
+	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(driver, level, &user, &err)) ) {
 		goto done;
 	}
 
