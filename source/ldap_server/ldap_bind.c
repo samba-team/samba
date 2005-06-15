@@ -74,12 +74,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SEAL);
 		
-		if (req->creds.SASL.secblob.length >= 7 &&
-		    strncmp(req->creds.SASL.secblob.data, "NTLMSSP", 7) == 0) {
-			status = gensec_start_mech_by_sasl_name(call->conn->gensec, "NTLM");
-		} else {
-			status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
-		}
+
+		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
 				req->creds.SASL.mechanism, nt_errstr(status)));
