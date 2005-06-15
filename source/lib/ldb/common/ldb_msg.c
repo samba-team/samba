@@ -443,7 +443,7 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 			       el2->values,
 			       sizeof(struct ldb_val) * el2->num_values);
 			el1->num_values += el2->num_values;
-			talloc_free(el2->name);
+			talloc_free(discard_const_p(char, el2->name));
 			if (i+1<msg2->num_elements) {
 				memmove(el2, el2+1, sizeof(struct ldb_message_element) * 
 					(msg2->num_elements - (i+1)));

@@ -169,7 +169,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 				talloc_free(ret);
 				return NULL;				
 			}
-			talloc_free(el2.name);
+			talloc_free(discard_const_p(char, el2.name));
 			continue;
 		}
 
