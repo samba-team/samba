@@ -733,14 +733,14 @@ krb5_get_in_cred(krb5_context context,
     pa = NULL;
     etype = rep.kdc_rep.enc_part.etype;
     if(rep.kdc_rep.padata){
-	int index = 0;
+	int i = 0;
 	pa = krb5_find_padata(rep.kdc_rep.padata->val, rep.kdc_rep.padata->len, 
-			      KRB5_PADATA_PW_SALT, &index);
+			      KRB5_PADATA_PW_SALT, &i);
 	if(pa == NULL) {
-	    index = 0;
+	    i = 0;
 	    pa = krb5_find_padata(rep.kdc_rep.padata->val, 
 				  rep.kdc_rep.padata->len, 
-				  KRB5_PADATA_AFS3_SALT, &index);
+				  KRB5_PADATA_AFS3_SALT, &i);
 	}
     }
     if(pa) {
