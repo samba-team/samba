@@ -57,10 +57,12 @@
   sensible, but it can be to anything you like, including binary data
   blobs of arbitrary size.
 */
+#ifndef ldb_val
 struct ldb_val {
-	unsigned int length;
-	void *data;
+	uint8_t *data;
+	size_t length;
 };
+#endif
 
 /* these flags are used in ldd_message_element.flags fields. The
    LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
@@ -82,7 +84,7 @@ struct ldb_val {
 */
 struct ldb_message_element {
 	unsigned int flags;
-	char *name;
+	const char *name;
 	unsigned int num_values;
 	struct ldb_val *values;
 };

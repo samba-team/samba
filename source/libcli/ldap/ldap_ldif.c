@@ -158,7 +158,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 }
 
 BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
-			 struct ldap_attribute *attrib)
+			 struct ldb_message_element *attrib)
 {
 	attrib->values = talloc_realloc(mem_ctx, 
 					  attrib->values,
@@ -174,13 +174,13 @@ BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 }
 
 BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
-				       const struct ldap_attribute *attrib,
-				       struct ldap_attribute **attribs,
+				       const struct ldb_message_element *attrib,
+				       struct ldb_message_element **attribs,
 				       int *num_attribs)
 {
 	*attribs = talloc_realloc(mem_ctx,
 				    *attribs,
-				    struct ldap_attribute,
+				    struct ldb_message_element,
 				    *num_attribs+1);
 
 	if (*attribs == NULL)
@@ -202,7 +202,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 
 	while (next_attr(chunk, &attr_name, &value) == 0) {
 		int i;
-		struct ldap_attribute *attrib = NULL;
+		struct ldb_message_element *attrib = NULL;
 		
 		for (i=0; i<r->num_attributes; i++) {
 			if (strequal(r->attributes[i].name, attr_name)) {
@@ -214,7 +214,7 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 		if (attrib == NULL) {
 			r->attributes = talloc_realloc(msg,
 							 r->attributes,
-							 struct ldap_attribute,
+							 struct ldb_message_element,
 							 r->num_attributes+1);
 			if (r->attributes == NULL)
 				return False;
