@@ -1954,7 +1954,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	Realm r;
 	char *spn = NULL, *cpn = NULL;
 	hdb_entry *server = NULL, *client = NULL;
-	int loop = 0;
+	int nloop = 0;
 	EncTicketPart adtkt;
 	char opt_str[128];
 
@@ -2023,7 +2023,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    krb5_realm *realms;
 
 	    if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
-		if(loop++ < 2) {
+		if(nloop++ < 2) {
 		    new_rlm = find_rpath(tgt->crealm, req_rlm);
 		    if(new_rlm) {
 			kdc_log(5, "krbtgt for realm %s not found, trying %s", 
