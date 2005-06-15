@@ -373,16 +373,8 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
 	char *data = smb_buf(outbuf);
-	ssize_t nread;
+	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
-	if (aio_ex->fsp == NULL) {
-		/* file was closed whilst I/O was outstanding. Just ignore. */
-		DEBUG( 3,( "handle_aio_read_complete: file closed whilst read outstanding.\n"));
-		srv_cancel_sign_response(aio_ex->mid);
-		return 0;
-	}
-
-	nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 	if (nread < 0) {
 		/* We're relying here on the fact that if the fd is
 		   closed then the aio will complete and aio_return
@@ -436,16 +428,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
-	ssize_t nwritten;
-
-	if (fsp == NULL) {
-		/* file was closed whilst I/O was outstanding. Just ignore. */
-		DEBUG( 3,( "handle_aio_read_complete: file closed whilst read outstanding.\n"));
-		srv_cancel_sign_response(aio_ex->mid);
-		return 0;
-	}
-
-	nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
+	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
 
 	if (fsp->aio_write_behind) {
 		if (nwritten != numtowrite) {
@@ -532,12 +515,27 @@ int process_aio_queue(void)
 	for (i = 0; i < signals_received; i++) {
 		int err = 0;
 		uint16 mid = aio_pending_array[i];
+		files_struct *fsp = NULL;
 		struct aio_extra *aio_ex = find_aio_ex(mid);
 
 		if (!aio_ex) {
 			DEBUG(3,("process_aio_queue: Can't find record to match mid %u.\n",
 				(unsigned int)mid));
 			srv_cancel_sign_response(mid);
+			continue;
+		}
+
+		fsp = aio_ex->fsp;
+		if (fsp == NULL) {
+			/* file was closed whilst I/O was outstanding. Just ignore. */
+			DEBUG( 3,( "process_aio_queue: file closed whilst aio outstanding.\n"));
+			srv_cancel_sign_response(mid);
+			continue;
+		}
+
+		/* Ensure the operation has really completed. */
+		if (SMB_VFS_AIO_ERROR(fsp,&aio_ex->acb) == EINPROGRESS) {
+			DEBUG( 3,( "process_aio_queue: operation still in process for file %s\n", fsp->fsp_name ));
 			continue;
 		}
 
