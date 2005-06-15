@@ -52,8 +52,8 @@ int samdb_search_domain(struct ldb_context *sam_ldb,
 	int i, count;
 
 	va_start(ap, format);
-	count = gendb_search_v(sam_ldb, mem_ctx, basedn, res, attrs,
-			       format, ap);
+	count = gendb_search_v(sam_ldb, mem_ctx, basedn,
+			       res, attrs, format, ap);
 	va_end(ap);
 
 	i=0;
