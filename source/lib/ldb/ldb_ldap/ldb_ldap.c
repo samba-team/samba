@@ -351,7 +351,7 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 				break;
 			}
 		}
-		mods[num_mods]->mod_type = el->name;
+		mods[num_mods]->mod_type = discard_const_p(char, el->name);
 		mods[num_mods]->mod_vals.modv_bvals = talloc_array(mods[num_mods], 
 								     struct berval *,
 								     1+el->num_values);
