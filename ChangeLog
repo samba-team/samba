@@ -1,3 +1,18 @@
+2005-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/log.c: rename close and log to avoid shadow warnings
+	
+	* lib/krb5/get_in_tkt.c: rename index to i to avoid shadowing
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): rename two
+	of the local `realm' to srealm to avoid shadowing
+	
+	* kdc/kerberos5.c (tgs_rep2): rename one of the tkey to uukey to
+	avoid shadow warning
+
+	* kdc/kerberos5.c (tgs_rep2): rename loop to nloop to avoid shadow
+	warning
+
 2005-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: TESTS += test_mem libkrb5_la_SOURCES +=
