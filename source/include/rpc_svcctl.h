@@ -204,7 +204,7 @@ typedef struct Service_info_struct {
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	WERROR 	(*stop_service)( void );
+	WERROR 	(*stop_service)( SERVICE_STATUS *status );
 	WERROR 	(*start_service) ( void );
 	WERROR 	(*service_status)( SERVICE_STATUS *status );
 } SERVICE_CONTROL_OPS;

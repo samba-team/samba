@@ -25,7 +25,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_stop( void )
+static WERROR spoolss_stop( SERVICE_STATUS *service_status )
 {
 	return WERR_OK;
 }
