@@ -31,7 +31,7 @@ use pidl::util;
 use pidl::template;
 use pidl::swig;
 use pidl::compat;
-use pidl::esp;
+use pidl::ejs;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -40,19 +40,20 @@ my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
 my($opt_header);
 my($opt_template) = 0;
-my($opt_client) = 0;
-my($opt_server) = 0;
+my($opt_client);
+my($opt_server);
 my($opt_parser);
 my($opt_eth_parser);
 my($opt_eth_header);
-my($opt_keep) = 0;
-my($opt_swig) = 0;
-my($opt_dcom_proxy) = 0;
-my($opt_com_header) = 0;
-my($opt_esp);
+my($opt_keep);
+my($opt_swig);
+my($opt_dcom_proxy);
+my($opt_com_header);
+my($opt_ejs);
 my($opt_odl) = 0;
 my($opt_quiet) = 0;
 my($opt_output);
+my($opt_verbose) = 0;
 my($opt_warn_compat) = 0;
 
 my $idl_parser = new idl;
@@ -74,20 +75,21 @@ Options:
  --uint-enums          don't use C enums, instead use uint* types
  --header[=OUTFILE]    create a C NDR header file
  --parser[=OUTFILE]    create a C NDR parser
- --esp[=OUTFILE]       create esp wrapper file
- --client              create a C NDR client
- --server              create server boilerplate
+ --ejs[=OUTFILE]       create ejs wrapper file
+ --client[=OUTFILE]    create a C NDR client
+ --server[=OUTFILE]    create server boilerplate
  --template            print a template for a pipe
- --eth-parser          create an ethereal parser
- --eth-header          create an ethereal header file
- --swig                create swig wrapper file
+ --eth-parser[=OUTFILE]create an ethereal parser
+ --eth-header[=OUTFILE]create an ethereal header file
+ --swig[=OUTFILE]      create swig wrapper file
  --diff                run diff on the idl and dumped output
- --keep                keep the .pidl file
+ --keep[=OUTFILE]      keep the .pidl file
  --odl                 accept ODL input
- --dcom-proxy          create DCOM proxy (implies --odl)
- --com-header          create header for COM interfaces (implies --odl)
+ --dcom-proxy[=OUTFILE]create DCOM proxy (implies --odl)
+ --com-header[=OUTFILE]create header for COM interfaces (implies --odl)
  --warn-compat         warn about incompatibility with other compilers
  --quiet               be quiet
+ --verbose             be verbose
 \n";
     exit(0);
 }
@@ -100,20 +102,21 @@ GetOptions (
 	    'dump' => \$opt_dump,
 	    'uint-enums' => \$opt_uint_enums,
 	    'header:s' => \$opt_header,
-	    'server' => \$opt_server,
+	    'server:s' => \$opt_server,
 	    'template' => \$opt_template,
 	    'parser:s' => \$opt_parser,
-	    'client' => \$opt_client,
+	    'client:s' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
 	    'eth-header:s' => \$opt_eth_header,
-	    'esp:s' => \$opt_esp,
+	    'ejs:s' => \$opt_ejs,
 	    'diff' => \$opt_diff,
 	    'odl' => \$opt_odl,
-	    'keep' => \$opt_keep,
-	    'swig' => \$opt_swig,
-	    'dcom-proxy' => \$opt_dcom_proxy,
-	    'com-header' => \$opt_com_header,
+	    'keep:s' => \$opt_keep,
+	    'swig:s' => \$opt_swig,
+	    'dcom-proxy:s' => \$opt_dcom_proxy,
+	    'com-header:s' => \$opt_com_header,
 	    'quiet' => \$opt_quiet,
+		'verbose' => \$opt_verbose,
 	    'warn-compat' => \$opt_warn_compat
 	    );
 
@@ -137,7 +140,7 @@ sub process_file($)
 		$output = $opt_output . $basename;
 	}
 
-	my($pidl_file) = util::ChangeExtension($output, ".pidl");
+	my($pidl_file) = ($opt_keep or util::ChangeExtension($output, ".pidl"));
 
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
@@ -146,7 +149,7 @@ sub process_file($)
 		defined @$pidl || die "Failed to parse $idl_file";
 		typelist::LoadIdl($pidl);
 		IdlValidator::Validate($pidl);
-		if ($opt_keep && !util::SaveStructure($pidl_file, $pidl)) {
+		if (defined($opt_keep) && !util::SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
 		}
 	} else {
@@ -169,10 +172,10 @@ sub process_file($)
 		unlink($tempfile);
 	}
 
-	if ($opt_com_header) {
+	if (defined($opt_com_header)) {
 		my $res = COMHeader::Parse($pidl);
 		if ($res) {
-			my $comh_filename = dirname($output) . "/com_$basename.h";
+			my $comh_filename = ($opt_com_header or (dirname($output) . "/com_$basename.h"));
 			util::FileSave($comh_filename, 
 			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
 			"#include \"librpc/gen_ndr/ndr_$basename.h\"\n" . 
@@ -181,10 +184,10 @@ sub process_file($)
 		$opt_odl = 1;
 	}
 
-	if ($opt_dcom_proxy) {
+	if (defined($opt_dcom_proxy)) {
 		my $res = DCOMProxy::Parse($pidl);
 		if ($res) {
-			my ($client) = util::ChangeExtension($output, "_p.c");
+			my ($client) = ($opt_dcom_proxy or util::ChangeExtension($output, "_p.c"));
 			util::FileSave($client, 
 			"#include \"includes.h\"\n" .
 			"#include \"librpc/gen_ndr/com_$basename.h\"\n" . 
@@ -201,7 +204,7 @@ sub process_file($)
 		$pidl = ODL::ODL2IDL($pidl);
 	}
 
-	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or $opt_client or $opt_server or defined($opt_parser) or defined($opt_esp)) {
+	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or defined($opt_client) or defined($opt_server) or defined($opt_parser) or defined($opt_ejs)) {
 		$ndr = Ndr::Parse($pidl);
 #		print util::MyDumper($ndr);
 	}
@@ -212,38 +215,33 @@ sub process_file($)
 			$header = util::ChangeExtension($output, ".h");
 		}
 		util::FileSave($header, NdrHeader::Parse($ndr));
-		if ($opt_swig) {
+		if (defined($opt_swig)) {
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
-		  $filename = util::ChangeExtension($filename, ".i");
+		  $filename = ($opt_swig or util::ChangeExtension($filename, ".i"));
 		  IdlSwig::RewriteHeader($pidl, $header, $filename);
 		}
 	}
 
-
 	if (defined($opt_eth_header)) {
-	  my($eparserhdr) = $opt_eth_header;
-	  if ($eparserhdr eq "") {
-		  $eparserhdr = dirname($output) . "/packet-dcerpc-$basename.h";
-	  }
+	  my($eparserhdr) = ($opt_eth_header or (dirname($output) . "/packet-dcerpc-$basename.h"));
 
 	  util::FileSave($eparserhdr, EthHeader::Parse($ndr));
 	}
 
 	my $h_filename = util::ChangeExtension($output, ".h");
-	if ($opt_client) {
-		my ($client) = util::ChangeExtension($output, "_c.c");
+	if (defined($opt_client)) {
+		my ($client) = ($opt_client or util::ChangeExtension($output, "_c.c"));
 
 		util::FileSave($client, NdrClient::Parse($ndr,$h_filename));
 	}
 
-	if (defined($opt_esp)) {
-		my $esp = $opt_esp;
-		if ($esp eq "") { $esp = util::ChangeExtension($output, "_esp.c"); }
-		util::FileSave($esp, EspClient::Parse($ndr, $h_filename));
+	if (defined($opt_ejs)) {
+		my $ejs = ($opt_ejs or util::ChangeExtension($output, "_ejs.c"));
+		util::FileSave($ejs, EjsClient::Parse($ndr, $h_filename));
 	}
 
-	if ($opt_server) {
+	if (defined($opt_server)) {
 		my $dcom = "";
 
 		foreach my $x (@{$pidl}) {
@@ -254,7 +252,7 @@ sub process_file($)
 			}
 		}
 
-		util::FileSave(util::ChangeExtension($output, "_s.c"), NdrServer::Parse($ndr,$h_filename));
+		util::FileSave(($opt_server or util::ChangeExtension($output, "_s.c")), NdrServer::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
@@ -270,22 +268,15 @@ $dcom
 	}
 
 	if (defined($opt_parser)) {
-		my $parser = $opt_parser;
-		if ($parser eq "") {
-			$parser = util::ChangeExtension($output, ".c");
-		}
+		my $parser = ($opt_parser or util::ChangeExtension($output, ".c"));
 		
 		util::FileSave($parser, NdrParser::Parse($ndr, $parser));
 	}
 
 	if (defined($opt_eth_parser)) {
-	  my($eparser) = $opt_eth_parser;
-	  if ($eparser eq "") {
-		  $eparser = dirname($output) . "/packet-dcerpc-$basename.c";
-	  }
+	  my($eparser) = ($opt_eth_parser or dirname($output) . "/packet-dcerpc-$basename.c");
 	  util::FileSave($eparser, EthParser::Parse($ndr, $basename, $eparser));
 	}
-
 
 	if ($opt_template) {
 		print IdlTemplate::Parse($pidl);

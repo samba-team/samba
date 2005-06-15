@@ -22,8 +22,7 @@ sub get_typefamily($)
 
 sub append_prefix($$)
 {
-	my $e = shift;
-	my $var_name = shift;
+	my ($e, $var_name) = @_;
 	my $pointers = 0;
 
 	foreach my $l (@{$e->{LEVELS}}) {
@@ -45,18 +44,9 @@ sub append_prefix($$)
 	return $var_name;
 }
 
-# see if a variable needs to be allocated by the NDR subsystem on pull
-sub need_alloc($)
-{
-	my $e = shift;
-
-	return 0;
-}
-
 sub is_scalar_array($$)
 {
-	my $e = shift;
-	my $l = shift;
+	my ($e,$l) = @_;
 
 	return 0 if ($l->{TYPE} ne "ARRAY");
 
@@ -115,8 +105,7 @@ sub deindent()
 # work out the name of a size_is() variable
 sub ParseExpr($$)
 {
-	my($expr) = shift;
-	my $varlist = shift;
+	my($expr,$varlist) = @_;
 
 	die("Undefined value in ParseExpr") if not defined($expr);
 
@@ -242,11 +231,7 @@ sub GenerateFunctionOutEnv($)
 # parse the data of an array - push side
 sub ParseArrayPushHeader($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $env = shift;
+	my ($e,$l,$ndr,$var_name,$env) = @_;
 
 	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 		$var_name = get_pointer_to($var_name);
@@ -271,11 +256,7 @@ sub ParseArrayPushHeader($$$$$)
 # parse an array - pull side
 sub ParseArrayPullHeader($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $env = shift;
+	my ($e,$l,$ndr,$var_name,$env) = @_;
 
 	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 		$var_name = get_pointer_to($var_name);
@@ -333,8 +314,7 @@ sub ParseArrayPullHeader($$$$$)
 
 sub compression_alg($$)
 {
-	my $e = shift;
-	my $l = shift;
+	my ($e,$l) = @_;
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
@@ -343,9 +323,7 @@ sub compression_alg($$)
 
 sub compression_clen($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
+	my ($e,$l,$env) = @_;
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
@@ -354,9 +332,7 @@ sub compression_clen($$$)
 
 sub compression_dlen($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
+	my ($e,$l,$env) = @_;
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
@@ -365,18 +341,16 @@ sub compression_dlen($$$)
 
 sub ParseCompressionPushStart($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $subndr = shift;
-	my $comndr = $subndr."_compressed";
+	my ($e,$l,$ndr) = @_;
+	my $comndr = "$ndr\_compressed";
 
 	pidl "{";
 	indent;
 	pidl "struct ndr_push *$comndr;";
 	pidl "";
-	pidl "$comndr = ndr_push_init_ctx($subndr);";
+	pidl "$comndr = ndr_push_init_ctx($ndr);";
 	pidl "if (!$comndr) return NT_STATUS_NO_MEMORY;";
-	pidl "$comndr->flags = $subndr->flags;";
+	pidl "$comndr->flags = $ndr->flags;";
 	pidl "";
 	
 	return $comndr;
@@ -384,42 +358,35 @@ sub ParseCompressionPushStart($$$)
 
 sub ParseCompressionPushEnd($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $subndr = shift;
-	my $comndr = $subndr."_compressed";
+	my ($e,$l,$ndr) = @_;
+	my $comndr = "$ndr\_compressed";
 	my $alg = compression_alg($e, $l);
 
-	pidl "NDR_CHECK(ndr_push_compression($subndr, $comndr, $alg));";
+	pidl "NDR_CHECK(ndr_push_compression($ndr, $comndr, $alg));";
 	deindent;
 	pidl "}";
 }
 
 sub ParseCompressionPullStart($$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $subndr = shift;
-	my $env = shift;
-	my $comndr = $subndr."_compressed";
+	my ($e,$l,$ndr,$env) = @_;
+	my $comndr = "$ndr\_compressed";
 	my $alg = compression_alg($e, $l);
 	my $dlen = compression_dlen($e, $l, $env);
 
 	pidl "{";
 	indent;
 	pidl "struct ndr_pull *$comndr;";
-	pidl "NDR_ALLOC($subndr, $comndr);";
-	pidl "NDR_CHECK(ndr_pull_compression($subndr, $comndr, $alg, $dlen));";
+	pidl "NDR_ALLOC($ndr, $comndr);";
+	pidl "NDR_CHECK(ndr_pull_compression($ndr, $comndr, $alg, $dlen));";
 
 	return $comndr;
 }
 
 sub ParseCompressionPullEnd($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $subndr = shift;
-	my $comndr = $subndr."_compressed";
+	my ($e,$l,$ndr) = @_;
+	my $comndr = "$ndr\_compressed";
 
 	deindent;
 	pidl "}";
@@ -427,8 +394,7 @@ sub ParseCompressionPullEnd($$$)
 
 sub ParseObfuscationPushStart($$)
 {
-	my $e = shift;
-	my $ndr = shift;
+	my ($e,$ndr) = @_;
 
 	# nothing to do here
 
@@ -437,8 +403,7 @@ sub ParseObfuscationPushStart($$)
 
 sub ParseObfuscationPushEnd($$)
 {
-	my $e = shift;
-	my $ndr = shift;
+	my ($e,$ndr) = @_;
 	my $obfuscation = util::has_property($e, "obfuscation");
 
 	pidl "NDR_CHECK(ndr_push_obfuscation($ndr, $obfuscation));";
@@ -446,8 +411,7 @@ sub ParseObfuscationPushEnd($$)
 
 sub ParseObfuscationPullStart($$)
 {
-	my $e = shift;
-	my $ndr = shift;
+	my ($e,$ndr) = @_;
 	my $obfuscation = util::has_property($e, "obfuscation");
 
 	pidl "NDR_CHECK(ndr_pull_obfuscation($ndr, $obfuscation));";
@@ -457,19 +421,14 @@ sub ParseObfuscationPullStart($$)
 
 sub ParseObfuscationPullEnd($$)
 {
-	my $e = shift;
-	my $ndr = shift;
+	my ($e,$ndr) = @_;
 
 	# nothing to do here
 }
 
 sub ParseSubcontextPushStart($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;
+	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
 	my $retndr = "_ndr_$e->{NAME}";
 
 	pidl "{";
@@ -494,10 +453,7 @@ sub ParseSubcontextPushStart($$$$$)
 
 sub ParseSubcontextPushEnd($$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr_flags = shift;
-	my $env = shift;
+	my ($e,$l,$ndr_flags,$env) = @_;
 	my $ndr = "_ndr_$e->{NAME}";
 	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
@@ -517,12 +473,7 @@ sub ParseSubcontextPushEnd($$$$)
 
 sub ParseSubcontextPullStart($$$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;	
-	my $env = shift;
+	my ($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
 	my $retndr = "_ndr_$e->{NAME}";
 	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
@@ -545,9 +496,7 @@ sub ParseSubcontextPullStart($$$$$$)
 
 sub ParseSubcontextPullEnd($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
+	my ($e,$l,$env) = @_;
 	my $ndr = "_ndr_$e->{NAME}";
 
 	if (defined $l->{COMPRESSION}) {
@@ -573,13 +522,7 @@ sub ParseSubcontextPullEnd($$$)
 
 sub ParseElementPushLevel
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $env = shift;
-	my $primitives = shift;
-	my $deferred = shift;
+	my ($e,$l,$ndr,$var_name,$env,$primitives,$deferred) = @_;
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
@@ -657,12 +600,7 @@ sub ParseElementPushLevel
 # parse scalars in a structure element
 sub ParseElementPush($$$$$$)
 {
-	my $e = shift;
-	my $ndr = shift;
-	my $var_prefix = shift;
-	my $env = shift;
-	my $primitives = shift;
-	my $deferred = shift;
+	my ($e,$ndr,$var_prefix,$env,$primitives,$deferred) = @_;
 	my $subndr = undef;
 
 	my $var_name = $var_prefix.$e->{NAME};
@@ -686,9 +624,7 @@ sub ParseElementPush($$$$$$)
 # parse a pointer in a struct element or function
 sub ParsePtrPush($$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $var_name = shift;
+	my ($e,$l,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
 		if ($l->{LEVEL} eq "EMBEDDED") {
@@ -709,9 +645,7 @@ sub ParsePtrPush($$$)
 # print scalars in a structure element
 sub ParseElementPrint($$$)
 {
-	my($e) = shift;
-	my($var_name) = shift;
-	my $env = shift;
+	my($e,$var_name,$env) = @_;
 
 	$var_name = append_prefix($e, $var_name);
 	return if (util::has_property($e, "noprint"));
@@ -791,31 +725,20 @@ sub ParseElementPrint($$$)
 # parse scalars in a structure element - pull size
 sub ParseSwitchPull($$$$$$)
 {
-	my($e) = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my($var_name) = shift;
-	my($ndr_flags) = shift;
-	my $env = shift;
+	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
 	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
 
 	$var_name = get_pointer_to($var_name);
 	pidl "NDR_CHECK(ndr_pull_set_switch_value($ndr, $var_name, $switch_var));";
-
 }
 
 #####################################################################
 # push switch element
 sub ParseSwitchPush($$$$$$)
 {
-	my($e) = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my($var_name) = shift;
-	my($ndr_flags) = shift;
-	my $env = shift;
+	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
 	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
@@ -825,11 +748,7 @@ sub ParseSwitchPush($$$$$$)
 
 sub ParseDataPull($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;
+	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
 
 	if (typelist::scalar_is_reference($l->{DATA_TYPE})) {
 		$var_name = get_pointer_to($var_name);
@@ -850,11 +769,7 @@ sub ParseDataPull($$$$$)
 
 sub ParseDataPush($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $var_name = shift;
-	my $ndr_flags = shift;
+	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
 
 	# strings are passed by value rather then reference
 	if (not typelist::is_scalar($l->{DATA_TYPE}) or typelist::scalar_is_reference($l->{DATA_TYPE})) {
@@ -866,9 +781,7 @@ sub ParseDataPush($$$$$)
 
 sub CalcNdrFlags($$$)
 {
-	my $l = shift;
-	my $primitives = shift;
-	my $deferred = shift;
+	my ($l,$primitives,$deferred) = @_;
 
 	my $scalars = 0;
 	my $buffers = 0;
@@ -893,13 +806,7 @@ sub CalcNdrFlags($$$)
 
 sub ParseElementPullLevel
 {
-	my($e) = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my($var_name) = shift;
-	my $env = shift;
-	my $primitives = shift;
-	my $deferred = shift;
+	my($e,$l,$ndr,$var_name,$env,$primitives,$deferred) = @_;
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
@@ -987,12 +894,7 @@ sub ParseElementPullLevel
 # parse scalars in a structure element - pull size
 sub ParseElementPull($$$$$$)
 {
-	my($e) = shift;
-	my $ndr = shift;
-	my($var_prefix) = shift;
-	my $env = shift;
-	my $primitives = shift;
-	my $deferred = shift;
+	my($e,$ndr,$var_prefix,$env,$primitives,$deferred) = @_;
 
 	my $var_name = $var_prefix.$e->{NAME};
 
@@ -1011,10 +913,7 @@ sub ParseElementPull($$$$$$)
 # parse a pointer in a struct element or function
 sub ParsePtrPull($$$$)
 {
-	my($e) = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my($var_name) = shift;
+	my($e,$l,$ndr,$var_name) = @_;
 
 	my $nl = Ndr::GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
@@ -1061,8 +960,7 @@ sub ParsePtrPull($$$$)
 # parse a struct
 sub ParseStructPush($$)
 {
-	my($struct) = shift;
-	my $name = shift;
+	my($struct,$name) = @_;
 	
 	return unless defined($struct->{ELEMENTS});
 
@@ -1137,8 +1035,7 @@ sub ParseStructPush($$)
 # generate a push function for an enum
 sub ParseEnumPush($$)
 {
-	my($enum) = shift;
-	my $name = shift;
+	my($enum,$name) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
 
 	start_flags($enum);
@@ -1150,8 +1047,7 @@ sub ParseEnumPush($$)
 # generate a pull function for an enum
 sub ParseEnumPull($$)
 {
-	my($enum) = shift;
-	my $name = shift;
+	my($enum,$name) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
 	my($type_v_decl) = typelist::mapType($type_fn);
 
@@ -1167,8 +1063,7 @@ sub ParseEnumPull($$)
 # generate a print function for an enum
 sub ParseEnumPrint($$)
 {
-	my($enum) = shift;
-	my $name = shift;
+	my($enum,$name) = @_;
 
 	pidl "const char *val = NULL;";
 	pidl "";
@@ -1226,8 +1121,7 @@ $typefamily{ENUM} = {
 # generate a push function for a bitmap
 sub ParseBitmapPush($$)
 {
-	my($bitmap) = shift;
-	my $name = shift;
+	my($bitmap,$name) = @_;
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
 	start_flags($bitmap);
@@ -1241,8 +1135,7 @@ sub ParseBitmapPush($$)
 # generate a pull function for an bitmap
 sub ParseBitmapPull($$)
 {
-	my($bitmap) = shift;
-	my $name = shift;
+	my($bitmap,$name) = @_;
 	my $type_fn = $bitmap->{BASE_TYPE};
 	my($type_decl) = typelist::mapType($bitmap->{BASE_TYPE});
 
@@ -1258,9 +1151,7 @@ sub ParseBitmapPull($$)
 # generate a print function for an bitmap
 sub ParseBitmapPrintElement($$$)
 {
-	my($e) = shift;
-	my($bitmap) = shift;
-	my($name) = shift;
+	my($e,$bitmap,$name) = @_;
 	my($type_decl) = typelist::mapType($bitmap->{BASE_TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 	my($flag);
@@ -1278,8 +1169,7 @@ sub ParseBitmapPrintElement($$$)
 # generate a print function for an bitmap
 sub ParseBitmapPrint($$)
 {
-	my($bitmap) = shift;
-	my $name = shift;
+	my($bitmap,$name) = @_;
 	my($type_decl) = typelist::mapType($bitmap->{TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
@@ -1330,8 +1220,7 @@ $typefamily{BITMAP} = {
 # generate a struct print function
 sub ParseStructPrint($$)
 {
-	my($struct) = shift;
-	my($name) = shift;
+	my($struct,$name) = @_;
 
 	return unless defined $struct->{ELEMENTS};
 
@@ -1382,8 +1271,7 @@ sub DeclareArrayVariables($)
 # parse a struct - pull side
 sub ParseStructPull($$)
 {
-	my($struct) = shift;
-	my $name = shift;
+	my($struct,$name) = @_;
 
 	return unless defined $struct->{ELEMENTS};
 
@@ -1506,8 +1394,7 @@ sub ParseUnionNdrSize($)
 # parse a union - push side
 sub ParseUnionPush($$)
 {
-	my $e = shift;
-	my $name = shift;
+	my ($e,$name) = @_;
 	my $have_default = 0;
 
 	# save the old relative_base_offset
@@ -1593,9 +1480,8 @@ sub ParseUnionPush($$)
 # print a union
 sub ParseUnionPrint($$)
 {
-	my $e = shift;
+	my ($e,$name) = @_;
 	my $have_default = 0;
-	my $name = shift;
 
 	pidl "int level = ndr_print_get_switch_value(ndr, r);";
 
@@ -1635,8 +1521,7 @@ sub ParseUnionPrint($$)
 # parse a union - pull side
 sub ParseUnionPull($$)
 {
-	my $e = shift;
-	my $name = shift;
+	my ($e,$name) = @_;
 	my $have_default = 0;
 	my $switch_type = $e->{SWITCH_TYPE};
 
@@ -1953,11 +1838,7 @@ sub ParseFunctionPush($)
 
 sub AllocateArrayLevel($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $ndr = shift;
-	my $env = shift;
-	my $size = shift;
+	my ($e,$l,$ndr,$env,$size) = @_;
 
 	my $var = ParseExpr($e->{NAME}, $env);
 
@@ -2162,8 +2043,7 @@ sub FunctionTable($)
 # parse the interface definitions
 sub ParseInterface($$)
 {
-	my($interface) = shift;
-	my $needed = shift;
+	my($interface,$needed) = @_;
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPEDEFS}}) {
@@ -2194,8 +2074,7 @@ sub ParseInterface($$)
 
 sub RegistrationFunction($$)
 {
-	my $idl = shift;
-	my $filename = shift;
+	my ($idl,$filename) = @_;
 
 	$filename =~ /.*\/ndr_(.*).c/;
 	my $basename = $1;
@@ -2226,8 +2105,7 @@ sub RegistrationFunction($$)
 # parse a parsed IDL structure back into an IDL file
 sub Parse($$)
 {
-	my($ndr) = shift;
-	my($filename) = shift;
+	my($ndr,$filename) = @_;
 
 	$tabs = "";
 	my $h_filename = $filename;
@@ -2260,8 +2138,7 @@ sub Parse($$)
 
 sub NeededFunction($$)
 {
-	my $fn = shift;
-	my $needed = shift;
+	my ($fn,$needed) = @_;
 	$needed->{"pull_$fn->{NAME}"} = 1;
 	$needed->{"push_$fn->{NAME}"} = 1;
 	$needed->{"print_$fn->{NAME}"} = 1;
@@ -2281,8 +2158,7 @@ sub NeededFunction($$)
 
 sub NeededTypedef($$)
 {
-	my $t = shift;
-	my $needed = shift;
+	my ($t,$needed) = @_;
 	if (util::has_property($t, "public")) {
 		$needed->{"pull_$t->{NAME}"} = not util::has_property($t, "nopull");
 		$needed->{"push_$t->{NAME}"} = not util::has_property($t, "nopush");
@@ -2316,8 +2192,7 @@ sub NeededTypedef($$)
 # work out what parse functions are needed
 sub NeededInterface($$)
 {
-	my ($interface) = shift;
-	my $needed = shift;
+	my ($interface,$needed) = @_;
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
 	    NeededFunction($d, $needed);
 	}

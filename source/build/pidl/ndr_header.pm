@@ -28,8 +28,7 @@ sub tabs()
 # parse a properties list
 sub HeaderProperties($$)
 {
-    my($props) = shift;
-	my($ignores) = shift;
+    my($props,$ignores) = @_;
 	my $ret = "";
 
 	return; 
@@ -93,8 +92,7 @@ sub HeaderElement($)
 # parse a struct
 sub HeaderStruct($$)
 {
-    my($struct) = shift;
-    my($name) = shift;
+    my($struct,$name) = @_;
     pidl "\nstruct $name {\n";
     $tab_depth++;
     my $el_count=0;
@@ -116,8 +114,7 @@ sub HeaderStruct($$)
 # parse a enum
 sub HeaderEnum($$)
 {
-    my($enum) = shift;
-    my($name) = shift;
+    my($enum,$name) = @_;
     my $first = 1;
 
     if (not util::useUintEnums()) {
@@ -164,8 +161,7 @@ sub HeaderEnum($$)
 # parse a bitmap
 sub HeaderBitmap($$)
 {
-    my($bitmap) = shift;
-    my($name) = shift;
+    my($bitmap,$name) = @_;
 
     pidl "\n/* bitmap $name */\n";
 
@@ -181,8 +177,7 @@ sub HeaderBitmap($$)
 # parse a union
 sub HeaderUnion($$)
 {
-	my($union) = shift;
-	my($name) = shift;
+	my($union,$name) = @_;
 	my %done = ();
 
 	if (defined $union->{PROPERTIES}) {
@@ -206,9 +201,7 @@ sub HeaderUnion($$)
 # parse a type
 sub HeaderType($$$)
 {
-	my $e = shift;
-	my($data) = shift;
-	my($name) = shift;
+	my($e,$data,$name) = @_;
 	if (ref($data) eq "HASH") {
 		($data->{TYPE} eq "ENUM") && HeaderEnum($data, $name);
 		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data, $name);
@@ -274,8 +267,7 @@ sub HeaderConst($)
 # parse a function
 sub HeaderFunctionInOut($$)
 {
-    my($fn) = shift;
-    my($prop) = shift;
+    my($fn,$prop) = @_;
 
     foreach my $e (@{$fn->{ELEMENTS}}) {
 	    if (util::has_property($e, $prop)) {
@@ -288,8 +280,7 @@ sub HeaderFunctionInOut($$)
 # determine if we need an "in" or "out" section
 sub HeaderFunctionInOut_needed($$)
 {
-    my($fn) = shift;
-    my($prop) = shift;
+    my($fn,$prop) = @_;
 
     if ($prop eq "out" && $fn->{RETURN_TYPE}) {
 	    return 1;
@@ -360,8 +351,7 @@ sub HeaderFunction($)
 # output prototypes for a IDL function
 sub HeaderFnProto($$)
 {
-	my $interface = shift;
-	my $fn = shift;
+	my ($interface,$fn) = @_;
 	my $name = $fn->{NAME};
 
 	pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";

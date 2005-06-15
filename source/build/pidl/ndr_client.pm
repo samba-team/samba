@@ -13,8 +13,7 @@ my($res);
 # parse a function
 sub ParseFunction($$)
 {
-	my $interface = shift;
-	my $fn = shift;
+	my ($interface, $fn) = @_;
 	my $name = $fn->{NAME};
 	my $uname = uc $name;
 
