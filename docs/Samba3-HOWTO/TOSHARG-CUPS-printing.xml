@@ -3180,7 +3180,7 @@ sets up the printer connection in the traditional
 </para>
 </sect2>
 
-<sect2>
+<sect2 id="cups-avoidps1">
 <title>Avoiding Critical PostScript Driver Settings on the Client</title>
 
 <para>
