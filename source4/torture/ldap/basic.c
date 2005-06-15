@@ -97,7 +97,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = False;
-	msg->r.SearchRequest.tree = ldb_parse_tree(msg->mem_ctx, "(objectclass=*)");
+	msg->r.SearchRequest.tree = ldb_parse_tree(msg, "(objectclass=*)");
 	msg->r.SearchRequest.num_attributes = 0;
 	msg->r.SearchRequest.attributes = NULL;
 
@@ -121,7 +121,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 					 (char *)r->attributes[i].values[j].data));
 				if (!(*basedn) && 
 				    strcasecmp("defaultNamingContext",r->attributes[i].name)==0) {
-					 *basedn = talloc_asprintf(conn->mem_ctx, "%.*s",
+					 *basedn = talloc_asprintf(conn, "%.*s",
 					 r->attributes[i].values[j].length,
 					 (char *)r->attributes[i].values[j].data);
 				}
@@ -156,9 +156,9 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 
 	req->type = LDAP_TAG_CompareRequest;
 	req->r.CompareRequest.dn = basedn;
-	req->r.CompareRequest.attribute = talloc_strdup(req->mem_ctx, "objectClass");
+	req->r.CompareRequest.attribute = talloc_strdup(req, "objectClass");
 	val = "domain";
-	req->r.CompareRequest.value = data_blob_talloc(req->mem_ctx, val, strlen(val));
+	req->r.CompareRequest.value = data_blob_talloc(req, val, strlen(val));
 
 	rep = ldap_transaction(conn, req);
 	if (!rep) {

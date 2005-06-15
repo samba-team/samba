@@ -338,7 +338,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-		ent = &ent_r->msg.r.SearchResultEntry;
+		ent = &ent_r->msg->r.SearchResultEntry;
 		ent->dn = "";
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
@@ -398,7 +398,7 @@ queue_reply:
 		errstr = ldb_errstring(rootdsedb->ldb);
 	}
 
-	done = &done_r->msg.r.SearchResultDone;
+	done = &done_r->msg->r.SearchResultDone;
 	done->dn = NULL;
 	done->resultcode = result;
 	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);;

@@ -90,6 +90,9 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
+	DEBUG(5,("ldb_search_bytree dn=%s filter=%s\n", 
+		 basedn->dn, ldb_filter_from_tree(call, r->tree)));
+
 	count = ldb_search_bytree(samdb, basedn->dn, scope, r->tree, attrs, &res);
 	talloc_steal(samdb, res);
 
@@ -97,7 +100,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-		ent = &ent_r->msg.r.SearchResultEntry;
+		ent = &ent_r->msg->r.SearchResultEntry;
 		ent->dn = talloc_steal(ent_r, res[i]->dn);
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
@@ -151,7 +154,7 @@ reply:
 		}
 	}
 
-	done = &done_r->msg.r.SearchResultDone;
+	done = &done_r->msg->r.SearchResultDone;
 	done->dn = NULL;
 	done->resultcode = result;
 	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);
@@ -250,7 +253,7 @@ reply:
 		}
 	}
 
-	add_result = &add_reply->msg.r.AddResponse;
+	add_result = &add_reply->msg->r.AddResponse;
 	add_result->dn = NULL;
 	add_result->resultcode = result;
 	add_result->errormessage = (errstr?talloc_strdup(add_reply,errstr):NULL);
@@ -302,7 +305,7 @@ reply:
 		}
 	}
 
-	del_result = &del_reply->msg.r.DelResponse;
+	del_result = &del_reply->msg->r.DelResponse;
 	del_result->dn = NULL;
 	del_result->resultcode = result;
 	del_result->errormessage = (errstr?talloc_strdup(del_reply,errstr):NULL);
@@ -412,7 +415,7 @@ reply:
 		}
 	}
 
-	modify_result = &modify_reply->msg.r.AddResponse;
+	modify_result = &modify_reply->msg->r.AddResponse;
 	modify_result->dn = NULL;
 	modify_result->resultcode = result;
 	modify_result->errormessage = (errstr?talloc_strdup(modify_reply,errstr):NULL);
@@ -481,7 +484,7 @@ reply:
 		}
 	}
 
-	compare = &compare_r->msg.r.CompareResponse;
+	compare = &compare_r->msg->r.CompareResponse;
 	compare->dn = NULL;
 	compare->resultcode = result;
 	compare->errormessage = (errstr?talloc_strdup(compare_r,errstr):NULL);
@@ -578,7 +581,7 @@ reply:
 		}
 	}
 
-	modifydn = &modifydn_r->msg.r.ModifyDNResponse;
+	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
 	modifydn->dn = NULL;
 	modifydn->resultcode = result;
 	modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);

@@ -253,7 +253,7 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 	ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 	NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-	ent = &ent_r->msg.r.SearchResultEntry;
+	ent = &ent_r->msg->r.SearchResultEntry;
 	ent->dn = talloc_steal(ent_r, wkdn);
 	DEBUG(0,("hacked result [0] dn: %s\n", ent->dn));
 	ent->num_attributes = 0;
@@ -269,7 +269,7 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 
 	DEBUG(10,("hacked_Search: results: [%d]\n",count));
 
-	done = &done_r->msg.r.SearchResultDone;
+	done = &done_r->msg->r.SearchResultDone;
 	done->dn = NULL;
 	done->resultcode = LDAP_SUCCESS;
 	done->errormessage = NULL;
@@ -346,7 +346,7 @@ DEBUGADD(0,("hacked filter: %s\n", ldb_filter_from_tree(r, r->tree)));
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-		ent = &ent_r->msg.r.SearchResultEntry;
+		ent = &ent_r->msg->r.SearchResultEntry;
 		ent->dn = talloc_steal(ent_r, res[0]->dn);
 		DEBUG(0,("hacked result [0] dn: %s\n", ent->dn));
 		ent->num_attributes = 0;
@@ -394,7 +394,7 @@ queue_reply:
 			ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 			NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
-			ent = &ent_r->msg.r.SearchResultEntry;
+			ent = &ent_r->msg->r.SearchResultEntry;
 			ent->dn = talloc_steal(ent_r, res[i]->dn);
 			DEBUG(0,("hacked result [%d] dn: %s\n", i, ent->dn));
 			ent->num_attributes = 0;
@@ -457,7 +457,7 @@ queue_reply2:
 		errstr = ldb_errstring(samdb);
 	}
 
-	done = &done_r->msg.r.SearchResultDone;
+	done = &done_r->msg->r.SearchResultDone;
 	done->dn = NULL;
 	done->resultcode = result;
 	done->errormessage = (errstr?talloc_strdup(done_r,errstr):NULL);;
@@ -700,7 +700,7 @@ reply:
 		}
 	}
 
-	add_result = &add_reply->msg.r.AddResponse;
+	add_result = &add_reply->msg->r.AddResponse;
 	add_result->dn = NULL;
 	add_result->resultcode = result;
 	add_result->errormessage = (errstr?talloc_strdup(add_reply,errstr):NULL);
@@ -752,7 +752,7 @@ reply:
 		}
 	}
 
-	del_result = &del_reply->msg.r.DelResponse;
+	del_result = &del_reply->msg->r.DelResponse;
 	del_result->dn = NULL;
 	del_result->resultcode = result;
 	del_result->errormessage = (errstr?talloc_strdup(del_reply,errstr):NULL);
@@ -867,7 +867,7 @@ reply:
 		}
 	}
 
-	modify_result = &modify_reply->msg.r.AddResponse;
+	modify_result = &modify_reply->msg->r.AddResponse;
 	modify_result->dn = NULL;
 	modify_result->resultcode = result;
 	modify_result->errormessage = (errstr?talloc_strdup(modify_reply,errstr):NULL);
@@ -936,7 +936,7 @@ reply:
 		}
 	}
 
-	compare = &compare_r->msg.r.CompareResponse;
+	compare = &compare_r->msg->r.CompareResponse;
 	compare->dn = NULL;
 	compare->resultcode = result;
 	compare->errormessage = (errstr?talloc_strdup(compare_r,errstr):NULL);
@@ -1033,7 +1033,7 @@ reply:
 		}
 	}
 
-	modifydn = &modifydn_r->msg.r.ModifyDNResponse;
+	modifydn = &modifydn_r->msg->r.ModifyDNResponse;
 	modifydn->dn = NULL;
 	modifydn->resultcode = result;
 	modifydn->errormessage = (errstr?talloc_strdup(modifydn_r,errstr):NULL);

@@ -25,7 +25,7 @@
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
-	struct ldap_BindRequest *req = &call->request.r.BindRequest;
+	struct ldap_BindRequest *req = &call->request->r.BindRequest;
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
@@ -36,7 +36,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	resp = &reply->msg.r.BindResponse;
+	resp = &reply->msg->r.BindResponse;
 	resp->response.resultcode = 0;
 	resp->response.dn = NULL;
 	resp->response.errormessage = NULL;
@@ -48,7 +48,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 {
-	struct ldap_BindRequest *req = &call->request.r.BindRequest;
+	struct ldap_BindRequest *req = &call->request->r.BindRequest;
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 	struct ldapsrv_connection *conn;
@@ -92,7 +92,7 @@ reply:
 	if (!reply) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	resp = &reply->msg.r.BindResponse;
+	resp = &reply->msg->r.BindResponse;
 	
 	conn = call->conn;
 
@@ -142,7 +142,7 @@ reply:
 
 NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 {
-	struct ldap_BindRequest *req = &call->request.r.BindRequest;
+	struct ldap_BindRequest *req = &call->request->r.BindRequest;
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
@@ -158,7 +158,7 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	resp = &reply->msg.r.BindResponse;
+	resp = &reply->msg->r.BindResponse;
 	resp->response.resultcode = 7;
 	resp->response.dn = NULL;
 	resp->response.errormessage = talloc_asprintf(reply, "Bad AuthenticationChoice [%d]", req->mechanism);
