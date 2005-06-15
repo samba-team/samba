@@ -1964,7 +1964,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    Ticket *t;
 	    hdb_entry *uu;
 	    krb5_principal p;
-	    Key *tkey;
+	    Key *uukey;
 	    
 	    if(b->additional_tickets == NULL || 
 	       b->additional_tickets->len == 0){
@@ -1986,12 +1986,12 @@ tgs_rep2(KDC_REQ_BODY *b,
 		    ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 		goto out;
 	    }
-	    ret = hdb_enctype2key(context, uu, t->enc_part.etype, &tkey);
+	    ret = hdb_enctype2key(context, uu, t->enc_part.etype, &uukey);
 	    if(ret){
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;
 	    }
-	    ret = krb5_decrypt_ticket(context, t, &tkey->key, &adtkt, 0);
+	    ret = krb5_decrypt_ticket(context, t, &uukey->key, &adtkt, 0);
 
 	    if(ret)
 		goto out;
