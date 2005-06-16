@@ -227,7 +227,7 @@ k_afs_cell_of_file(const char *path, char *cell, int len)
     parms.in_size = 0;
     parms.out = cell;
     parms.out_size = len;
-    return k_pioctl((char*)path, VIOC_FILE_CELL_NAME, &parms, 1);
+    return k_pioctl(rk_UNCONST(path), VIOC_FILE_CELL_NAME, &parms, 1);
 }
 
 int
