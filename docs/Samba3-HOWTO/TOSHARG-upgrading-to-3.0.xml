@@ -23,12 +23,12 @@ the move from 2.2.x to 3.0.20.
 Samba-3.0.20 default behavior should be approximately the same as Samba-2.2.x.
 The default behavior when the new parameter <smbconfoption name="passdb backend"/>
 is not defined in the &smb.conf; file provides the same default behavior as Samba-2.2.x
-with <smbconfoption name="encrypt passwords">Yes</smbconfoption>, and
+with <smbconfoption name="encrypt passwords">Yes</smbconfoption> and
 will use the <filename>smbpasswd</filename> database.
 </para>
 
 <para>
-So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x?</emphasis> Because
+So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x</emphasis>? Because
 Samba-3.0.20 can negotiate new protocols, such as support for native Unicode, that may result in
 differing protocol code paths being taken. The new behavior under such circumstances is not
 exactly the same as the old one. The good news is that the domain and machine SIDs will be
@@ -36,10 +36,10 @@ preserved across the upgrade.
 </para>
 
 <para>
-If the Samba-2.2.x system was using an LDAP backend, and there is no time to update the LDAP
+If the Samba-2.2.x system is using an LDAP backend, and there is no time to update the LDAP
 database, then make sure that <smbconfoption name="passdb backend">ldapsam_compat</smbconfoption>
 is specified in the &smb.conf; file. For the rest, behavior should remain more or less the same.
-At a later date, when there is time to implement a new Samba-3 compatible LDAP backend, it is possible
+At a later date, when there is time to implement a new Samba-3-compatible LDAP backend, it is possible
 to migrate the old LDAP database to the new one through use of the <command>pdbedit</command>.
 See <link linkend="pdbeditthing">The <emphasis>pdbedit</emphasis> Command</link>.
 </para>
@@ -60,8 +60,8 @@ The major new features are:
 	</para></listitem>
 
 	<listitem><para>
-	Unicode support. Samba will now negotiate Unicode on the wire and
-	internally there is a much better infrastructure for multi-byte
+	Unicode support. Samba will now negotiate Unicode on the wire, and
+	internally there is a much better infrastructure for multibyte
 	and Unicode character sets.
 	</para></listitem>
 
@@ -90,7 +90,7 @@ The major new features are:
 	</para></listitem>
 
 	<listitem><para>
-	Better Windows 200x/XP printing support including publishing
+	Better Windows 200x/XP printing support, including publishing
 	printer attributes in Active Directory.
 	</para></listitem>
 
@@ -104,12 +104,12 @@ The major new features are:
 
 	<listitem><para>
 	Support for migrating from a Windows NT 4.0 domain to a Samba
-	domain and maintaining user, group and domain SIDs.
+	domain and maintaining user, group, and domain SIDs.
 	</para></listitem>
 
 	<listitem><para>
 	Support for establishing trust relationships with Windows NT 4.0
-	Domain Controllers.
+	domain controllers.
 	</para></listitem>
 
 	<listitem><para>
@@ -145,7 +145,7 @@ complete descriptions of new or modified parameters.
 <sect2>
 <title>Removed Parameters</title>
 
-<para>(Ordered Alphabetically):</para>
+<para>In alphabetical order, these are the parameters eliminated for Samba 3.0.20.</para>
 
 <itemizedlist>
 	<listitem><para>admin log </para></listitem>
@@ -175,7 +175,7 @@ complete descriptions of new or modified parameters.
 <sect2>
 <title>New Parameters</title>
 
-<para>(New parameters have been grouped by function):</para>
+<para>New parameters in Samba 3.0.20 are grouped by function):</para>
 
 <para>Remote Management</para>
 
@@ -184,7 +184,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>shutdown script </para></listitem>
 </itemizedlist>
 
-<para>User and Group Account Management:</para>
+<para>User and Group Account Management</para>
 
 <itemizedlist>
 	<listitem><para>add group script </para></listitem>
@@ -197,14 +197,14 @@ complete descriptions of new or modified parameters.
 	<listitem><para>set primary group script </para></listitem>
 </itemizedlist>
 
-<para>Authentication:</para>
+<para>Authentication</para>
 
 <itemizedlist>
 	<listitem><para>auth methods </para></listitem>
 	<listitem><para>realm </para></listitem>
 </itemizedlist>
 
-<para>Protocol Options:</para>
+<para>Protocol Options</para>
 
 <itemizedlist>
 	<listitem><para>client lanman auth </para></listitem>
@@ -221,7 +221,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>use spnego </para></listitem>
 </itemizedlist>
 
-<para>File Service:</para>
+<para>File Service</para>
 
 <itemizedlist>
 	<listitem><para>get quota command </para></listitem>
@@ -237,14 +237,14 @@ complete descriptions of new or modified parameters.
 	<listitem><para>vfs objects </para></listitem>
 </itemizedlist>
 
-<para>Printing:</para>
+<para>Printing</para>
 
 <itemizedlist>
 	<listitem><para>max reported print jobs </para></listitem>
 </itemizedlist> 
 
 
-<para>Unicode and Character Sets:</para>
+<para>Unicode and Character Sets</para>
 
 <itemizedlist>
 	<listitem><para>display charset </para></listitem>
@@ -253,7 +253,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>UNIX charset </para></listitem>
 </itemizedlist>
 
-<para>SID to UID/GID Mappings:</para>
+<para>SID to UID/GID Mappings</para>
 
 <itemizedlist>
 	<listitem><para>idmap backend </para></listitem>
@@ -265,7 +265,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>enable rid algorithm </para></listitem>
 </itemizedlist>
 
-<para>LDAP:</para>
+<para>LDAP</para>
 
 <itemizedlist>
 	<listitem><para>ldap delete dn </para></listitem>
@@ -276,7 +276,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>ldap user suffix </para></listitem>
 </itemizedlist>
 
-<para>General Configuration:</para>
+<para>General Configuration</para>
 
 <itemizedlist>
 	<listitem><para>preload modules </para></listitem>
@@ -286,7 +286,7 @@ complete descriptions of new or modified parameters.
 </sect2>
 
 <sect2>
-<title>Modified Parameters (Changes in Behavior):</title>
+<title>Modified Parameters (Changes in Behavior)</title>
 
 <itemizedlist>
 	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
@@ -314,7 +314,7 @@ complete descriptions of new or modified parameters.
 
 	<para>
 	This section contains brief descriptions of any new databases
-	introduced in Samba-3. Please remember to backup your existing
+	introduced in Samba-3. Please remember to back up your existing
 	${lock directory}/*tdb before upgrading to Samba-3. Samba will
 	upgrade databases as they are opened (if necessary), but downgrading
 	from 3.0 to 2.2 is an unsupported path.
@@ -355,7 +355,7 @@ complete descriptions of new or modified parameters.
 		</row>
 		<row>
 			<entry>idmap</entry>
-			<entry><para>new ID map table from SIDS to UNIX UIDs/GIDs</para></entry>
+			<entry><para>New ID map table from SIDS to UNIX UIDs/GIDs</para></entry>
 			<entry>yes</entry>
 		</row>
 		<row>
@@ -371,15 +371,14 @@ complete descriptions of new or modified parameters.
 		</row>
 		<row>
 			<entry>printing/*.tdb</entry>
-			<entry><para>Cached output from `lpq command' created on a per print 
-				service basis</para></entry>
+			<entry><para>Cached output from lpq command created on a per-print-service basis</para></entry>
 			<entry>no</entry>
 		</row>
 		<row>
 
 			<entry>registry</entry>
 			<entry><para>Read-only Samba registry skeleton that provides support for
-				exporting various db tables via the winreg RPCs</para></entry>
+				exporting various database tables via the winreg RPCs</para></entry>
 			<entry>no</entry>
 		</row>
 		</tbody>
@@ -400,15 +399,15 @@ complete descriptions of new or modified parameters.
 		<listitem><para>
 		When operating as a member of a Windows domain, Samba-2.2 would
 		map any users authenticated by the remote DC to the <quote>guest account</quote>
-		if a uid could not be obtained via the getpwnam() call. Samba-3
+		if a UID could not be obtained via the getpwnam() call. Samba-3
 		rejects the connection as <?latex \linebreak ?>NT_STATUS_LOGON_FAILURE. There is no
-		current work around to re-establish the Samba-2.2 behavior.
+		current workaround to re-establish the Samba-2.2 behavior.
 		</para></listitem>
 
 		<listitem><para>
 		When adding machines to a Samba-2.2 controlled domain, the
 		<quote>add user script</quote> was used to create the UNIX identity of the
-		Machine Trust Account. Samba-3 introduces a new <quote>add machine
+		machine trust account. Samba-3 introduces a new <quote>add machine
 		script</quote> that must be specified for this purpose. Samba-3 will
 		not fall back to using the <quote>add user script</quote> in the absence of
 		an <quote>add machine script</quote>.
@@ -447,7 +446,7 @@ complete descriptions of new or modified parameters.
 	storage backends 
 	(<smbconfoption name="passdb backend"/>). 
 	Please refer to the &smb.conf;
-	man page and <link linkend="passdb">Account Information Databases</link>, for details. While both parameters assume sane default
+	man page and Chapter 10, <link linkend="passdb">Account Information Databases</link>, for details. While both parameters assume sane default
 	values, it is likely that you will need to understand what the
 	values actually mean in order to ensure Samba operates correctly.
 	</para>
@@ -455,7 +454,7 @@ complete descriptions of new or modified parameters.
 	<para>
 <indexterm><primary>pdbedit</primary></indexterm>
 	Certain functions of the <command>smbpasswd</command> tool have been split between the
-	new <command>smbpasswd</command> utility, the <command>net</command> tool and the new <command>pdbedit</command>
+	new <command>smbpasswd</command> utility, the <command>net</command> tool, and the new <command>pdbedit</command>
 	utility. See the respective man pages for details.
 	</para>
 
@@ -473,7 +472,7 @@ complete descriptions of new or modified parameters.
 
 		<para>
 		A new object class (sambaSamAccount) has been introduced to replace
-		the old sambaAccount. This change aids us in the renaming of attributes
+		the old sambaAccount. This change aids in the renaming of attributes
 		to prevent clashes with attributes from other vendors. There is a
 		conversion script (examples/LDAP/convertSambaAccount) to modify an LDIF
 		file to the new schema.
@@ -496,7 +495,7 @@ complete descriptions of new or modified parameters.
 		</para>
 
 		<para>
-		Under Samba-2.x the Domain SID can be obtained by executing:
+		Under Samba-2.x the domain SID can be obtained by executing:
 <screen>
 &prompt;<userinput>smbpasswd -S &lt;DOMAINNAME&gt;</userinput>
 </screen>
@@ -558,21 +557,21 @@ complete descriptions of new or modified parameters.
 		<itemizedlist>
 			<listitem><para>ldap suffix         &smbmdash; used to search for user and computer accounts.</para></listitem>
 			<listitem><para>ldap user suffix    &smbmdash; used to store user accounts.</para></listitem>
-			<listitem><para>ldap machine suffix &smbmdash; used to store Machine Trust Accounts.</para></listitem>
+			<listitem><para>ldap machine suffix &smbmdash; used to store machine trust accounts.</para></listitem>
 			<listitem><para>ldap group suffix   &smbmdash; location of posixGroup/sambaGroupMapping entries.</para></listitem>
 			<listitem><para>ldap idmap suffix   &smbmdash; location of sambaIdmapEntry objects.</para></listitem>
 		</itemizedlist>
 
 		<para>
 		If an <parameter>ldap suffix</parameter> is defined, it will be appended to all of the
-		remaining sub-suffix parameters. In this case, the order of the suffix
+		remaining subsuffix parameters. In this case, the order of the suffix
 		listings in smb.conf is important. Always place the <parameter>ldap suffix</parameter> first
 		in the list.
 		</para>
 
 		<para>
 		Due to a limitation in Samba's &smb.conf; parsing, you should not surround
-		the DNs with quotation marks.
+		the domain names with quotation marks.
 		</para>
 
 		</sect3>
@@ -581,9 +580,9 @@ complete descriptions of new or modified parameters.
 		<title>IdMap LDAP Support</title>
 
 		<para>
-		Samba-3 supports an ldap backend for the idmap subsystem. The
+		Samba-3 supports an LDAP backend for the idmap subsystem. The
 		following options inform Samba that the idmap table should be
-		stored on the directory server onterose in the "ou=idmap,dc=quenya,dc=org" partition.
+		stored on the directory server <emphasis>onterose</emphasis> in the ou=idmap,dc=quenya,dc=org partition.
 		</para>
 
 		<smbconfblock>
