@@ -878,7 +878,7 @@
 		[in,switch_is(level)] spoolss_SetFormInfo info
 	);
 
-	typedef [nodiscriminant,relative_base,public] union {
+	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(1)] spoolss_FormInfo1 info1;
 		[default];
 	} spoolss_FormInfo;

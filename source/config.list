@@ -38,6 +38,7 @@ utils/config.mk
 ntvfs/posix/config.mk
 ntvfs/config.mk
 ntvfs/unixuid/config.mk
+ntptr/config.mk
 torture/config.mk
 librpc/config.mk
 client/config.mk

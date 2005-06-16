@@ -167,6 +167,7 @@ typedef struct
 	char *szWINSPartners;
 	char **dcerpc_ep_servers;
 	char **server_services;
+	char *ntptr_providor;
 	char *szWinbindUID;
 	char *szWinbindGID;
 	char *szNonUnixAccountRange;
@@ -528,6 +529,7 @@ static struct parm_struct parm_table[] = {
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ntvfs handler", P_LIST, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
+	{"ntptr providor", P_STRING, P_GLOBAL, &Globals.ntptr_providor, NULL, NULL, FLAG_ADVANCED},
 	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
 	{"server services", P_LIST, P_GLOBAL, &Globals.server_services, NULL, NULL, FLAG_ADVANCED},
 
@@ -921,6 +923,7 @@ static void init_globals(void)
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup");
 	do_parameter("server services", "smb rpc nbt ldap cldap web");
+	do_parameter("ntptr providor", "simple_ldb");
 	do_parameter("auth methods", "anonymous sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
 	do_parameter("private dir", dyn_PRIVATE_DIR);
@@ -1175,6 +1178,7 @@ FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
 FN_GLOBAL_LIST(lp_server_services, &Globals.server_services)
+FN_GLOBAL_STRING(lp_ntptr_providor, &Globals.ntptr_providor)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
