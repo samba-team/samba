@@ -1175,3 +1175,20 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	return WERR_ACCESS_DENIED;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE_VALUE *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+
