@@ -258,6 +258,8 @@
 #define __attribute__(x)
 #endif
 
+#define rk_UNCONST(x) ((void *)(unsigned long)(const void *)(x))
+
 ROKEN_CPP_START
 
 #ifndef IRIX4 /* fix for compiler bug */
