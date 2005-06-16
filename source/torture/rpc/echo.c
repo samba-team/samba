@@ -432,11 +432,10 @@ static BOOL test_timeout(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		printf("request should have timed out - %s\n", nt_errstr(status));
 		goto failed;
-	}
-	
+	}	
 
 	p->request_timeout = timeout_saved;
-	return True;
+	return test_addone(p, mem_ctx);
 
 failed:
 	p->request_timeout = timeout_saved;
