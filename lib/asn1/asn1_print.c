@@ -139,7 +139,6 @@ loop (unsigned char *buf, size_t len, int indent)
 	    }
 	    case UT_OctetString : {
 		heim_octet_string str;
-		int i;
 		unsigned char *uc;
 
 		ret = der_get_octet_string (buf, length, &str, NULL);
@@ -173,7 +172,6 @@ loop (unsigned char *buf, size_t len, int indent)
 	    }
 	    case UT_OID: {
 		heim_oid o;
-		int i;
 
 		ret = der_get_oid(buf, length, &o, NULL);
 		if (ret)
@@ -251,11 +249,11 @@ usage(int code)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int optidx = 0;
 
     setprogname (argv[0]);
     initialize_asn1_error_table ();
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -263,8 +261,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    argv += optind;
-    argc -= optind;
+    argv += optidx;
+    argc -= optidx;
     if (argc != 1)
 	usage (1);
     return doit (argv[0]);
