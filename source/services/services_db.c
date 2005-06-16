@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+#if 0
+
 /* backend database routines for services.tdb */
 
 #define SERVICEDB_VERSION_V1 1 /* Will there be more? */
@@ -90,7 +92,6 @@ int num_external_services(void)
 		num_services = 0;
 	} else {
 		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
 		key_data = tdb_fetch_bystring(service_tdb, keystring);
 
 		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
@@ -98,7 +99,6 @@ int num_external_services(void)
 			external_services_string[key_data.dsize] = 0;
 			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
 		}
-		tdb_unlock_bystring(service_tdb, keystring);
 	} 
 	svc_list = str_list_make(external_services_string,NULL);
  
@@ -147,14 +147,12 @@ WERROR enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, in
 		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
 	} else {
 		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
 		key_data = tdb_fetch_bystring(service_tdb, keystring);
 		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
 			strncpy(external_services_string,key_data.dptr,key_data.dsize);
 			external_services_string[key_data.dsize] = 0;
 			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
 		}
-		tdb_unlock_bystring(service_tdb, keystring);
 	} 
 	svc_list = str_list_make(external_services_string,NULL);
  
@@ -275,7 +273,6 @@ int num_internal_services(void)
 		num_services = 0;
 	} else {
 		pstrcpy(keystring,"INTERNAL_SERVICES");
-		tdb_lock_bystring(service_tdb, keystring, 0);
 		key_data = tdb_fetch_bystring(service_tdb, keystring);
 
 		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
@@ -283,7 +280,6 @@ int num_internal_services(void)
 			internal_services_string[key_data.dsize] = 0;
 			DEBUG(8,("enum_internal_services: services list is %s, size is %d\n",internal_services_string,key_data.dsize));
 		}
-		tdb_unlock_bystring(service_tdb, keystring);
 	} 
 	svc_list = str_list_make(internal_services_string,NULL);
  
@@ -473,7 +469,6 @@ BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si)
 	tdb_store_bystring(stdb,keystring,string_tdb_data(si->description),TDB_REPLACE);
 
 	pstr_sprintf(keystring,"SERVICE/%s/SHORTDESC", service_name);
-	tdb_lock_bystring(stdb, keystring, 0);
 	if (si->shortdescription && *si->shortdescription) 
 		tdb_store_bystring(stdb,keystring,string_tdb_data(si->shortdescription),TDB_REPLACE);
 	else
@@ -539,10 +534,8 @@ BOOL init_svcctl_db(void)
 		svcname++;
 	}
 	pstrcpy(keystring,"EXTERNAL_SERVICES");
-        tdb_lock_bystring(service_tdb, keystring, 0);
 	DEBUG(8,("Storing external service list [%s]\n",external_service_list));
         tdb_store_bystring(service_tdb,keystring,string_tdb_data(external_service_list),TDB_REPLACE);
-        tdb_unlock_bystring(service_tdb,keystring);
 
 	/* Get the INTERNAL services */
 	
@@ -563,11 +556,9 @@ BOOL init_svcctl_db(void)
 		isd_ptr++;
 	}
 	pstrcpy(keystring,"INTERNAL_SERVICES");
-        tdb_lock_bystring(service_tdb, keystring, 0);
 	DEBUG(8,("Storing internal service list [%s]\n",internal_service_list));
         tdb_store_bystring(service_tdb,keystring,string_tdb_data(internal_service_list),TDB_REPLACE);
-        tdb_unlock_bystring(service_tdb,keystring);
 
 	return True;
 }
-
+#endif

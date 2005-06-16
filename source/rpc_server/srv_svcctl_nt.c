@@ -445,9 +445,9 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	
 	num_int_services = 0;
 
-	num_int_services = num_internal_services();
+	/* num_int_services = num_internal_services(); */
 
-	num_ext_services =  num_external_services();
+	/* num_ext_services =  num_external_services(); */
 
 	if ( !(services = TALLOC_ARRAY(p->mem_ctx, ENUM_SERVICES_STATUS, num_int_services+num_ext_services )) )
           return WERR_NOMEM;
@@ -458,7 +458,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 		DEBUG(8,("_svcctl_enum_services_status: Got %d internal services\n", num_int_services));
 	} 
 
-	ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services);
+	/* ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services); */
 
 	if (W_ERROR_IS_OK(ext_result)) {
 		DEBUG(8,("_svcctl_enum_services_status: Got %d external services\n", num_ext_services));
