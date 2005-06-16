@@ -23,45 +23,6 @@
 #include "smbd/service_stream.h"
 
 
-
-/****************************************************************************
- Add a home service. Returns the new service number or -1 if fail.
-****************************************************************************/
-int add_home_service(const char *service, const char *username, const char *homedir)
-{
-	int iHomeService;
-
-	if (!service || !homedir)
-		return -1;
-
-	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
-		return -1;
-
-	/*
-	 * If this is a winbindd provided username, remove
-	 * the domain component before adding the service.
-	 * Log a warning if the "path=" parameter does not
-	 * include any macros.
-	 */
-
-	{
-		const char *p = strchr(service,*lp_winbind_separator());
-
-		/* We only want the 'user' part of the string */
-		if (p) {
-			service = p + 1;
-		}
-	}
-
-	if (!lp_add_home(service, iHomeService, username, homedir)) {
-		return -1;
-	}
-	
-	return lp_servicenumber(service);
-
-}
-
-
 /**
  * Find a service entry. service is always in dos codepage.
  *
@@ -144,6 +105,8 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 	int snum;
 	enum ntvfs_type type;
 	const char *type_str;
+
+	/* TODO: check the password, when it's share level security! */
 
 	/* the service might be of the form \\SERVER\SHARE. Should we put
 	   the server name we get from this somewhere? */
