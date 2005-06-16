@@ -59,10 +59,10 @@ main(int argc, char **argv)
     int ret;
     const char *file;
     const char *name = NULL;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname(argv[0]);
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -70,16 +70,16 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    if (argc == optind) {
+    if (argc == optidx) {
 	file = "stdin";
 	name = "stdin";
 	yyin = stdin;
     } else {
-	file = argv[optind];
+	file = argv[optidx];
 	yyin = fopen (file, "r");
 	if (yyin == NULL)
 	    err (1, "open %s", file);
-	name = argv[optind + 1];
+	name = argv[optidx + 1];
     }
 
     init_generate (file, name);
