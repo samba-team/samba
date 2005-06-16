@@ -1,5 +1,13 @@
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* decapsulate.c: use rk_UNCONST
+
+	* ccache_name.c: rename to avoid shadowing
+
+	* gssapi_locl.h: give kret in GSSAPI_KRB5_INIT a more unique name
+	
+	* process_context_token.c: use rk_UNCONST to unconstify
+	
 	* test_cred.c: rename optind to optidx
 
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>

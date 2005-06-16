@@ -1,5 +1,46 @@
-2005-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/fcache.c: rename to avoid shadowing
+
+	* lib/krb5/config_file.c: rename to avoid shadowing
 	
+	* lib/krb5/cache.c (_krb5_expand_default_cc_name): just copy the
+	string instead of losing const
+
+	* lib/krb5/addr_families.c: use rk_UNCONST to silence const
+	warning
+
+	* lib/krb5/addr_families.c: rename sin to sin4
+
+	* lib/asn1/asn1_print.c: rename optind to optidx, remove shadowed
+	variables
+
+	* lib/asn1/main.c: rename optind to optidx
+
+	* lib/asn1/gen_copy.c: rename to avoid shadowing
+
+	* lib/asn1/gen_locl.h: rename function filename to get_filename
+
+	* lib/asn1/lex.l: use get_filename
+
+	* lib/asn1/gen.c: rename function filename to get_filename
+
+	* lib/krb5/acache.c: use HAVE_DLOPEN around cc_handle
+	
+	* configure.in: add headers and prototypes to logwtmp, logout and
+	openpty checks
+
+	* configure.in: include headerfiles and set prototype for tgetent
+	
+	* kdc/kerberos5.c (make_etype_info2_entry): NUL terminate the
+	string
+
+	* kdc/kerberos5.c: replace strndup with inline copy, free data on
+	failure
+
+	* lib/krb5/cache.c (_krb5_expand_default_cc_name): replace strndup
+	with inline copy
+
 	* lib/krb5/log.c: rename close and log to avoid shadow warnings
 	
 	* lib/krb5/get_in_tkt.c: rename index to i to avoid shadowing
