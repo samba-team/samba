@@ -476,7 +476,7 @@ gen_wrapper(struct assignment *as)
 	else
 	    fprintf(cfile, "NULL, ");
 	if(aarg)
-	    fprintf(cfile, "\"%s\"", arg->u.value);
+	    fprintf(cfile, "\"%s\"", aarg->u.value);
 	else
 	    fprintf(cfile, "NULL");
 	fprintf(cfile, " },\n");
