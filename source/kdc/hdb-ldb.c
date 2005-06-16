@@ -736,7 +736,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
 	 * is in our db, then direct the caller at our primary
 	 * krgtgt */
-	if (ent_type != HDB_ENT_TYPE_KRBTGT 
+	if (ent_type == HDB_ENT_TYPE_SERVER 
 	    && principal->name.name_string.len == 2
 	    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
 	    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
