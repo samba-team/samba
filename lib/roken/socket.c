@@ -48,12 +48,12 @@ socket_set_any (struct sockaddr *sa, int af)
 {
     switch (af) {
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
 
-	memset (sin, 0, sizeof(*sin));
-	sin->sin_family = AF_INET;
-	sin->sin_port   = 0;
-	sin->sin_addr.s_addr = INADDR_ANY;
+	memset (sin4, 0, sizeof(*sin4));
+	sin4->sin_family = AF_INET;
+	sin4->sin_port   = 0;
+	sin4->sin_addr.s_addr = INADDR_ANY;
 	break;
     }
 #ifdef HAVE_IPV6
@@ -82,12 +82,12 @@ socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
 
-	memset (sin, 0, sizeof(*sin));
-	sin->sin_family = AF_INET;
-	sin->sin_port   = port;
-	memcpy (&sin->sin_addr, ptr, sizeof(struct in_addr));
+	memset (sin4, 0, sizeof(*sin4));
+	sin4->sin_family = AF_INET;
+	sin4->sin_port   = port;
+	memcpy (&sin4->sin_addr, ptr, sizeof(struct in_addr));
 	break;
     }
 #ifdef HAVE_IPV6
@@ -156,8 +156,8 @@ socket_get_address (struct sockaddr *sa)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-	return &sin->sin_addr;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
+	return &sin4->sin_addr;
     }
 #ifdef HAVE_IPV6
     case AF_INET6 : {
@@ -180,8 +180,8 @@ socket_get_port (const struct sockaddr *sa)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
-	return sin->sin_port;
+	const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
+	return sin4->sin_port;
     }
 #ifdef HAVE_IPV6
     case AF_INET6 : {
@@ -204,8 +204,8 @@ socket_set_port (struct sockaddr *sa, int port)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-	sin->sin_port = port;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
+	sin4->sin_port = port;
 	break;
     }
 #ifdef HAVE_IPV6

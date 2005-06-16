@@ -113,10 +113,10 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen,
     }
 #endif
     case AF_INET : {
-	const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+	const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
 
-	return doit (AF_INET, &sin->sin_addr, sizeof(sin->sin_addr),
-		     sin->sin_port,
+	return doit (AF_INET, &sin4->sin_addr, sizeof(sin4->sin_addr),
+		     sin4->sin_port,
 		     host, hostlen,
 		     serv, servlen,
 		     flags);
