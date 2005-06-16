@@ -27,7 +27,7 @@ notebook computer into a network port and have things <quote>just work.</quote>
 UNIX administrators have a point. Many of the normative practices in the Microsoft
 Windows world at best border on bad practice from a security perspective.
 Microsoft Windows networking protocols allow workstations to arbitrarily register
-themselves on a network. Windows 2000 Active Directory registers entries in the DNS name space
+themselves on a network. Windows 2000 Active Directory registers entries in the DNS namespace
 that are equally perplexing to UNIX administrators. Welcome to the new world!
 </para>
 
@@ -41,7 +41,7 @@ compatible with their equivalents in the Microsoft Windows 2000 Server products.
 </para>
 
 <para>
-The purpose of this chapter is to provide no more than a working example of
+This chapter provides no more than a working example of
 configuration files for both DNS and DHCP servers. The examples used match
 configuration examples used elsewhere in this document.
 </para>
@@ -50,9 +50,9 @@ configuration examples used elsewhere in this document.
 This chapter explicitly does not provide a tutorial, nor does it pretend to be
 a reference guide on DNS and DHCP, as this is well beyond the scope and intent
 of this document as a whole. Anyone who wants more detailed reference materials
-on DNS or DHCP should visit the ISC Web sites at <ulink noescape="1" url="http://www.isc.org">
+on DNS or DHCP should visit the ISC Web site at <ulink noescape="1" url="http://www.isc.org">
 http://www.isc.org</ulink>. Those wanting a written text might also be interested
-in the O'Reilly publications on these two subjects.
+in the O'Reilly publications on these two subjects (John, more specific info on O'Reilly publications???????).
 </para>
 
 </sect1>
@@ -61,19 +61,19 @@ in the O'Reilly publications on these two subjects.
 <title>Example Configuration</title>
 
 <para>
-The domain name system is to the Internet what water is to life. By it nearly all
-information resources (host names) are resolved to their Internet protocol (IP) address.
+The DNS is to the Internet what water is to life. Nearly all
+information resources (host names) are resolved to their Internet protocol (IP) addresses through DNS.
 Windows networking tried hard to avoid the complexities of DNS, but alas, DNS won.
 <indexterm><primary>WINS</primary></indexterm>
-The alternative to DNS, the Windows Internet Name Service (WINS) an artifact of
-NetBIOS networking over the TCP/IP protocols, has demonstrated scalability problems as
-well as a flat non-hierarchical name space that became unmanageable as the size and
+The alternative to DNS, the Windows Internet Name Service (WINS) &smbmdash; an artifact of
+NetBIOS networking over the TCP/IP protocols &smbmdash; has demonstrated scalability problems as
+well as a flat, nonhierarchical namespace that became unmanageable as the size and
 complexity of information technology networks grew.
 </para>
 
 <para>
 WINS is a Microsoft implementation of the RFC1001/1002 NetBIOS Name Service (NBNS).
-It allows NetBIOS clients (like Microsoft Windows Machines) to register an arbitrary
+It allows NetBIOS clients (like Microsoft Windows machines) to register an arbitrary
 machine name that the administrator or user has chosen together with the IP
 address that the machine has been given. Through the use of WINS, network client machines
 could resolve machine names to their IP address.
@@ -88,14 +88,14 @@ Both WINS and Microsoft DNS rely on dynamic name registration.
 
 <para>
 Microsoft Windows clients can perform dynamic name registration to the DNS server
-on start-up. Alternately, where DHCP is used to assign workstation IP addresses,
-it is possible to register host names and their IP address by the DHCP server as
-soon as a client acknowledges an IP address lease. Lastly, Microsoft DNS can resolve
+on startup. Alternatively, where DHCP is used to assign workstation IP addresses,
+it is possible to register hostnames and their IP address by the DHCP server as
+soon as a client acknowledges an IP address lease. Finally, Microsoft DNS can resolve
 hostnames via Microsoft WINS.
 </para>
 
 <para>
-The following configurations demonstrate a simple insecure Dynamic DNS server and
+The following configurations demonstrate a simple, insecure dynamic DNS server and
 a simple DHCP server that matches the DNS configuration.
 </para>
 
@@ -114,13 +114,13 @@ a simple DHCP server that matches the DNS configuration.
 	<indexterm><primary>BIND</primary></indexterm>
 	It is assumed that this network will be situated behind a secure firewall.
 	The files that follow work with ISC BIND version 9. BIND is the Berkeley
-	Internet Name Daemon. The following configuration files are offered:
+	Internet Name Daemon.
 	</para>
 
 	<para>
 	The master configuration file <filename>/etc/named.conf</filename>
 	determines the location of all further configuration files used.
-	The location and name of this file is specified in the start-up script
+	The location and name of this file is specified in the startup script
 	that is part of the operating system.
 <programlisting>
 # Quenya.Org configuration file
@@ -274,7 +274,7 @@ $ORIGIN 1.168.192.in-addr.arpa.
 	</para>
 
 	<para>
-	The above were copied from a fully working system. All dynamically registered
+	The configuration files shown here were copied from a fully working system. All dynamically registered
 	entries have been removed. In addition to these files, BIND version 9 will
 	create for each of the dynamic registration files a file that has a 
 	<filename>.jnl</filename> extension. Do not edit or tamper with the configuration
@@ -317,8 +317,8 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
 	</para>
 
 	<para>
-	In the above example, IP addresses between 192.168.1.1 and 192.168.1.59 are
-	reserved for fixed address (commonly called <constant>hard-wired</constant>) IP addresses. The
+	In this example, IP addresses between 192.168.1.1 and 192.168.1.59 are
+	reserved for fixed-address (commonly called <constant>hard-wired</constant>) IP addresses. The
 	addresses between 192.168.1.60 and 192.168.1.254 are allocated for dynamic use.
 	</para>
 

@@ -21,15 +21,15 @@ then it is probably working fine.
 </para>
 
 <para>
-You should do all the tests, in the order shown. We have tried to
+You should do all the tests in the order shown. We have tried to
 carefully choose them so later tests only use capabilities verified in
-the earlier tests. However, do not stop at the first error as there
+the earlier tests. However, do not stop at the first error: there
 have been some instances when continuing with the tests has helped
 to solve a problem.
 </para>
 
 <para>
-If you send one of the Samba mailing lists  an email saying, <quote>it does not work</quote>
+If you send one of the Samba mailing lists  an email saying, <quote>It does not work,</quote>
 and you have not followed this test procedure, you should not be surprised
 if your email is ignored.
 </para>
@@ -41,7 +41,7 @@ if your email is ignored.
 
 <para>
 In all of the tests, it is assumed you have a Samba server called 
-BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.
+BIGSERVER and a PC called ACLIENT, both in workgroup TESTGROUP.
 </para>
 
 <para>
@@ -50,14 +50,14 @@ The procedure is similar for other types of clients.
 
 <para>
 It is also assumed you know the name of an available share in your
-&smb.conf;. I will assume this share is called <smbconfsection name="tmp"/>.
+&smb.conf;. I for our examples this share is called <smbconfsection name="tmp"/>.
 You can add a <smbconfsection name="tmp"/> share like this by adding the
 lines shown in <link linkend="tmpshare">the next example</link>.
 </para>
 
 <example id="tmpshare">
-	<title>smb.conf with [tmp] share</title>
-	<smbconfblock>
+<title>smb.conf with [tmp] Share</title>
+<smbconfblock>
 <smbconfsection name="[tmp]"/>
 <smbconfoption name="comment">temporary files </smbconfoption>
 <smbconfoption name="path">/tmp</smbconfoption>
@@ -105,7 +105,7 @@ remember to restart &smbd; and &nmbd;.
 <sect1>
 <title>The Tests</title>
 <procedure>
-<title>Diagnosing your Samba server</title>
+<title>Diagnosing Your Samba Server</title>
 
 
 <step performance="required">
@@ -117,7 +117,7 @@ configuration file is faulty.
 </para>
 
 <note><para>
-Your &smb.conf; file may be located in: <filename>/etc/samba</filename>
+Your &smb.conf; file may be located in <filename>/etc/samba</filename>
 or in <filename>/usr/local/samba/lib</filename>.
 </para></note>
 </step>
@@ -130,12 +130,12 @@ then your TCP/IP software is not correctly installed.
 </para>
 
 <para>
-You will need to start a <quote>dos prompt</quote> window on the PC to run ping.
+You will need to start a <quote>DOS prompt</quote> window on the PC to run ping.
 </para>
 
 <para>
-If you get a message saying <quote><errorname>host not found</errorname></quote> or similar, then your DNS
-software or <filename>/etc/hosts</filename> file is not correctly setup.
+If you get a message saying <quote><errorname>host not found</errorname></quote> or a similar message, then your DNS
+software or <filename>/etc/hosts</filename> file is not correctly set up.
 It is possible to run Samba without DNS entries for the server and client, but it is assumed
 you do have correct entries for the remainder of these tests. 
 </para>
@@ -157,13 +157,13 @@ This is a common problem that is often overlooked.
 
 <para>
 If you wish to check what firewall rules may be present in a system under test, simply run
-<command>iptables -L -v</command> or if <parameter>ipchains</parameter>-based firewall rules are in use,
+<command>iptables -L -v</command>, or if <parameter>ipchains</parameter>-based firewall rules are in use,
 <command>ipchains -L -v</command>.
 </para>
 
 <para>
-Here is a sample listing from a system that has an external ethernet interface (eth1) on which Samba
-is not active, and an internal (private network) interface (eth0) on which Samba is active:
+Here is a sample listing from a system that has an external Ethernet interface (eth1) on which Samba
+is not active and an internal (private network) interface (eth0) on which Samba is active:
 <screen>
 frodo:~ # iptables -L -v
 Chain INPUT (policy DROP 98496 packets, 12M bytes)
@@ -193,24 +193,24 @@ Chain reject_func (0 references)
 
 <step performance="required">
 <para>
-Run the command: <command>smbclient -L BIGSERVER</command>
+Run the command <command>smbclient -L BIGSERVER</command>
 on the UNIX box. You should get back a list of available shares. 
 </para>
 
 <para>
-If you get an error message containing the string <quote>Bad password</quote>, then
+If you get an error message containing the string <quote>bad password</quote>, then
 you probably have either an incorrect <parameter>hosts allow</parameter>, 
-<parameter>hosts deny</parameter> or <parameter>valid users</parameter> line in your 
+<parameter>hosts deny</parameter>, or <parameter>valid users</parameter> line in your 
 &smb.conf;, or your guest account is not valid. Check what your guest account is using &testparm; and
 temporarily remove any <parameter>hosts allow</parameter>, <parameter>hosts deny</parameter>,
-<parameter>valid users</parameter> or <parameter>invalid users</parameter> lines.
+<parameter>valid users</parameter>, or <parameter>invalid users</parameter> lines.
 </para>
 
 <para>
 If you get a message <quote><errorname>connection refused</errorname></quote> response, then the <command>smbd</command> server may
 not be running. If you installed it in <filename>inetd.conf</filename>, then you probably edited
 that file incorrectly. If you installed it as a daemon, then check that
-it is running, and check that the netbios-ssn port is in a LISTEN
+it is running and check that the netbios-ssn port is in a LISTEN
 state using <command>netstat -a</command>.
 </para>
 
@@ -224,8 +224,8 @@ the network super daemon.
 </para></note>
 
 <para>
-If you get a message saying <quote><errorname>session request failed</errorname></quote>, the server refused the
-connection. If it says <quote>Your server software is being unfriendly</quote>, then
+If you get a message saying <quote><errorname>session request failed,</errorname></quote> the server refused the
+connection. If it says <quote>Your server software is being unfriendly,</quote> then
 it's probably because you have invalid command line parameters to &smbd;,
 or a similar fatal problem with the initial startup of &smbd;. Also
 check your config file (&smb.conf;) for syntax errors with &testparm;
@@ -241,8 +241,8 @@ the &smb.conf; file entries as shown in <link linkend="modif1">the next example<
 
 
 <example id="modif1">
-	<title>Configuration for only allowing connections from a certain subnet</title>
-	<smbconfblock>
+<title>Configuration for Allowing Connections Only from a Certain Subnet</title>
+<smbconfblock>
 <smbconfsection name="[globals]"/>
 <smbconfoption name="hosts deny">ALL</smbconfoption>
 <smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy</smbconfoption>
@@ -252,14 +252,15 @@ the &smb.conf; file entries as shown in <link linkend="modif1">the next example<
 </example>
 
 <para>
-In the above, no allowance has been made for any session requests that
-will automatically translate to the loopback adapter address 127.0.0.1.
-To solve this problem, change these lines as shown in <link linkend="modif2">the following example</link>.
+In <link linkend="modif1">Configuration for Allowing Connections Only from a Certain Subnet</link>, no
+allowance has been made for any session requests that will automatically translate to the loopback adapter
+address 127.0.0.1.  To solve this problem, change these lines as shown in <link linkend="modif2">the following
+example</link>.
 </para>
 
 <example id="modif2">
-	<title>Configuration for allowing connections from a certain subnet and localhost</title>
-	<smbconfblock>
+<title>Configuration for Allowing Connections from a Certain Subnet and localhost</title>
+<smbconfblock>
 <smbconfsection name="[globals]"/>
 <smbconfoption name="hosts deny">ALL</smbconfoption>
 <smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy 127.</smbconfoption>
@@ -269,18 +270,17 @@ To solve this problem, change these lines as shown in <link linkend="modif2">the
 
 <para>
 <indexterm><primary>inetd</primary></indexterm>
-Another common cause of these two errors is having something already running 
 <indexterm><primary>smbclient</primary></indexterm>
-on port <constant>139</constant>, such as Samba (&smbd; is running from <application>inetd</application> already) or
-something like Digital's Pathworks. Check your <filename>inetd.conf</filename> file before trying
-to start &smbd; as a daemon &smbmdash; it can avoid a lot of frustration!
+Another common cause of these two errors is having something already running on port <constant>139</constant>,
+such as Samba (&smbd; is running from <application>inetd</application> already) or Digital's Pathworks. Check
+your <filename>inetd.conf</filename> file before trying to start &smbd; as a daemon &smbmdash; it can avoid a
+lot of frustration!
 </para>
 
 <para>
-And yet another possible cause for failure of this test is when the subnet mask
-and/or broadcast address settings are incorrect. Please check that the
-network interface IP Address/Broadcast Address/Subnet Mask settings are
-correct and that Samba has correctly noted these in the <filename>log.nmbd</filename> file.
+And yet another possible cause for failure of this test is when the subnet mask and/or broadcast address
+settings are incorrect. Please check that the network interface IP address/broadcast address/subnet mask
+settings are correct and that Samba has correctly noted these in the <filename>log.nmbd</filename> file.
 </para>
 
 </step>
@@ -288,13 +288,13 @@ correct and that Samba has correctly noted these in the <filename>log.nmbd</file
 <step performance="required">
 
 <para>
-Run the command: <command>nmblookup -B BIGSERVER __SAMBA__</command>.
+Run the command <command>nmblookup -B BIGSERVER __SAMBA__</command>.
 You should get back the IP address of your Samba server.
 </para>
 
 <para>
 If you do not, then nmbd is incorrectly installed. Check your <filename>inetd.conf</filename>
-if you run it from there, or that the daemon is running and listening to udp port 137.
+if you run it from there, or that the daemon is running and listening to UDP port 137.
 </para>
 
 <para>
@@ -309,17 +309,17 @@ inetd.
 <step performance="required">
 
 <para>
-Run the command: <command>nmblookup -B ACLIENT `*'</command>
+Run the command <command>nmblookup -B ACLIENT `*'</command>.
 </para>
 
 <para>
-You should get the PC's IP address back. If you do not then the client
+You should get the PC's IP address back. If you do not, then the client
 software on the PC isn't installed correctly, or isn't started, or you
 got the name of the PC wrong. 
 </para>
 
 <para>
-If ACLIENT does not resolve via DNS then use the IP address of the
+If ACLIENT does not resolve via DNS, then use the IP address of the
 client in the above test.
 </para>
 
@@ -328,7 +328,7 @@ client in the above test.
 <step performance="required">
 
 <para>
-Run the command: <command>nmblookup -d 2 '*'</command>
+Run the command <command>nmblookup -d 2 `*'</command>.
 </para>
 
 <para>
@@ -341,21 +341,21 @@ messages from several hosts.
 </para>
 
 <para>
-If this does not give a similar result to the previous test, then
+If this does not give a result similar to the previous test, then
 nmblookup isn't correctly getting your broadcast address through its
 automatic mechanism. In this case you should experiment with the
 <smbconfoption name="interfaces"/> option in &smb.conf; to manually configure your IP
-address, broadcast and netmask. 
+address, broadcast, and netmask. 
 </para>
 
 <para>
 If your PC and server aren't on the same subnet, then you will need to use the
-<option>-B</option> option to set the broadcast address to that of the PCs subnet.
+<option>-B</option> option to set the broadcast address to that of the PC's subnet.
 </para>
 
 <para>
 This test will probably fail if your subnet mask and broadcast address are
-not correct. (Refer to TEST 3 notes above).
+not correct. (Refer to test 3 notes above).
 </para>
 
 </step>
@@ -365,11 +365,11 @@ not correct. (Refer to TEST 3 notes above).
 
 <para>
 <indexterm><primary>smbclient</primary></indexterm>
-Run the command: <command>smbclient //BIGSERVER/TMP</command>. You should 
+Run the command <command>smbclient //BIGSERVER/TMP</command>. You should 
 then be prompted for a password. You should use the password of the account
 with which you are logged into the UNIX box. If you want to test with
 another account, then add the <option>-U accountname</option> option to the end of
-the command line. For example, <command>smbclient //bigserver/tmp -Ujohndoe</command>.
+the command line &smbmdash; for example, <command>smbclient //bigserver/tmp -Ujohndoe</command>.
 </para>
 
 <note><para>
@@ -380,11 +380,11 @@ It is possible to specify the password along with the username as follows:
 <para>
 Once you enter the password, you should get the <prompt>smb></prompt> prompt. If you
 do not, then look at the error message. If it says <quote><errorname>invalid network
-name</errorname></quote>, then the service <smbconfsection name="tmp"/> is not correctly setup in your &smb.conf;.
+name,</errorname></quote> then the service <smbconfsection name="tmp"/> is not correctly set up in your &smb.conf;.
 </para>
 
 <para>
-If it says <quote><errorname>bad password</errorname></quote>, then the likely causes are:
+If it says <quote><errorname>bad password,</errorname></quote> then the likely causes are:
 </para>
 
 <orderedlist>
@@ -403,7 +403,7 @@ If it says <quote><errorname>bad password</errorname></quote>, then the likely c
 
 <listitem>
 	<para>
-	You have a mixed case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
+	You have a mixed-case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
 	</para>
 </listitem>
 
@@ -415,7 +415,7 @@ If it says <quote><errorname>bad password</errorname></quote>, then the likely c
 
 <listitem>
 	<para>
-	You enabled password encryption but didn't map UNIX to Samba users. Run:
+	You enabled password encryption but didn't map UNIX to Samba users. Run
 	<command>smbpasswd -a username</command>
 	</para>
 </listitem>
@@ -423,7 +423,7 @@ If it says <quote><errorname>bad password</errorname></quote>, then the likely c
 
 <para>
 Once connected, you should be able to use the commands <command>dir</command>, <command>get</command>,
-<command>put</command> and so on. Type <command>help command</command> for instructions. You should
+<command>put</command>, and so on. Type <command>help command</command> for instructions. You should
 especially check that the amount of free disk space shown is correct when you type <command>dir</command>.
 </para>
 
@@ -433,19 +433,19 @@ especially check that the amount of free disk space shown is correct when you ty
 
 <para>
 On the PC, type the command <command>net view \\BIGSERVER</command>. You will 
-need to do this from within a dos prompt window. You should get back a 
+need to do this from within a DOS prompt window. You should get back a 
 list of shares available on the server.
 </para>
 
 <para>
-If you get a message <quote><errorname>network name not found</errorname></quote> or similar error, then netbios
+If you get a message <quote><errorname>network name not found</errorname></quote> or similar error, then NetBIOS
 name resolution is not working. This is usually caused by a problem in <command>nmbd</command>.
 To overcome it, you could do one of the following (you only need to choose one of them):
 </para>
 
 <orderedlist>
 <listitem><para>
-	Fixup the &nmbd; installation.
+	Fix the &nmbd; installation.
 </para></listitem>
 
 <listitem><para>
@@ -464,8 +464,8 @@ To overcome it, you could do one of the following (you only need to choose one o
 
 <para>
 If you get a message <quote><errorname>invalid network name</errorname></quote> or 
-<quote><errorname>bad password error</errorname></quote>, then apply the
-same fixes as for the <command>smbclient -L</command> test above. In
+<quote><errorname>bad password error,</errorname></quote> then apply the
+same fixes as for the <command>smbclient -L</command> test. In
 particular, make sure your <command>hosts allow</command> line is correct (see the man pages).
 </para>
 
@@ -478,9 +478,9 @@ name and password.
 </para>
 
 <para>
-If you get a message <quote><errorname>specified computer is not receiving requests</errorname></quote> or similar,
-it probably means that the host is not contact-able via TCP services.
-Check to see if the host is running TCP wrappers, and if so add an entry in
+If you get a message <quote><errorname>specified computer is not receiving requests</errorname></quote> or similar error,
+it probably means that the host is not contactable via TCP services.
+Check to see if the host is running TCP wrappers, and if so, add an entry in
 the <filename>hosts.allow</filename> file for your client (or subnet, and so on.)
 </para>
 
@@ -497,7 +497,7 @@ and other config lines in &smb.conf; are correct.
 </para>
 
 <para>
-It's also possible that the server can't work out what user name to connect you as.
+It's also possible that the server can't work out what username to connect you as.
 To see if this is the problem, add the line
 <smbconfoption name="user">username</smbconfoption> to the
 <smbconfsection name="[tmp]"/> section of 
@@ -509,7 +509,7 @@ fixes things, you may need the username mapping option.
 <para>
 It might also be the case that your client only sends encrypted passwords 
 and you have <smbconfoption name="encrypt passwords">no</smbconfoption> in &smb.conf;.
-Change this to "yes" to fix this.
+Change this setting to `yes' to fix this.
 </para>
 
 </step>
@@ -538,14 +538,14 @@ an election is held at startup.
 <para>
 From file manager, try to browse the server. Your Samba server should
 appear in the browse list of your local workgroup (or the one you
-specified in &smb.conf;). You should be able to double click on the name
-of the server and get a list of shares. If you get the error message <quote>invalid password</quote>,
+specified in &smb.conf;). You should be able to double-click on the name
+of the server and get a list of shares. If you get the error message <quote>invalid password,</quote>
  you are probably running Windows NT and it
 is refusing to browse a server that has no encrypted password
-capability and is in User Level Security mode. In this case, either set
+capability and is in user-level security mode. In this case, either set
 <smbconfoption name="security">server</smbconfoption> and 
 <smbconfoption name="password server">Windows_NT_Machine</smbconfoption> in your
-&smb.conf; file, or make sure <smbconfoption name="encrypt passwords"/> is
+&smb.conf; file or make sure <smbconfoption name="encrypt passwords"/> is
 set to <quote>yes</quote>.
 </para>
 

@@ -14,7 +14,7 @@
 
 <para>
 You can obtain the Samba source file from the
-<ulink url="http://samba.org/">Samba Website.</ulink> To obtain a development version, 
+<ulink url="http://samba.org/">Samba Web site</ulink>. To obtain a development version, 
 you can download Samba from Subversion or using <command>rsync</command>.
 </para>
 
@@ -36,7 +36,7 @@ detailed in this chapter.
 
 <para>
 This chapter is a modified version of the instructions found at the
-<ulink noescape="1" url="http://samba.org/samba/subversion.html">Samba</ulink> web site.
+<ulink noescape="1" url="http://samba.org/samba/subversion.html">Samba</ulink> Web site.
 </para>
 
 </sect2>
@@ -48,7 +48,7 @@ This chapter is a modified version of the instructions found at the
 The machine samba.org runs a publicly accessible Subversion
 repository for access to the source code of several packages, 
 including Samba, rsync, distcc, ccache, and jitterbug. There are two main ways
-of accessing the Subversion server on this host:
+of accessing the Subversion server on this host.
 </para>
 
 <sect3>
@@ -64,8 +64,8 @@ listing between any two versions on the repository.
 </para>
 
 <para>
-Use the URL:
-<ulink noescape="1" url="http://svnweb.samba.org/">http://svnweb.samba.org/</ulink>
+Use the URL
+<ulink noescape="1" url="http://svnweb.samba.org/">http://svnweb.samba.org/</ulink>.
 </para>
 </sect3>
 
@@ -75,8 +75,8 @@ Use the URL:
 <para>
 You can also access the source code via a 
 normal Subversion client. This gives you much more control over what you can 
-do with the repository and allows you to checkout whole source trees 
-and keep them up-to-date via normal Subversion commands. This is the 
+do with the repository and allows you to check out whole source trees 
+and keep them up to date via normal Subversion commands. This is the 
 preferred method of access if you are a developer and not
 just a casual browser.
 </para>
@@ -157,12 +157,12 @@ To gain access via anonymous Subversion, use the following steps.
 	location and also via anonymous rsync at the Samba
 	<ulink noescape="1" url="rsync://pserver.samba.org/ftp/unpacked/">rsync</ulink> server location. 
 	I recommend using rsync rather than ftp.
-	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync home-page</ulink> for more info on rsync.                      
+	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync home page</ulink> for more info on rsync.                      
 	</para>
 
 	<para>
 	The disadvantage of the unpacked trees is that they do not support automatic
-	merging of local changes like Subversion does. <command>rsync</command> access is most convenient 
+	merging of local changes as Subversion does. <command>rsync</command> access is most convenient 
 	for an initial install.                      
 	</para>
 </sect1>
@@ -174,7 +174,7 @@ To gain access via anonymous Subversion, use the following steps.
 <indexterm><primary>GPG</primary></indexterm>
 It is strongly recommended that you verify the PGP signature for any source file before
 installing it. Even if you're not downloading from a mirror site, verifying PGP signatures
-should be a standard reflex. Many people today use the GNU GPG tool-set in place of PGP.
+should be a standard reflex. Many people today use the GNU GPG tool set in place of PGP.
 GPG can substitute for PGP.
 </para>
 
@@ -209,7 +209,7 @@ and verify the Samba source code integrity with:
 </screen>
 
 <para>
-If you receive a message like, <quote>Good signature from Samba Distribution Verification Key...</quote>
+If you receive a message like, <quote>Good signature from Samba Distribution Verification Key...,</quote>
 then all is well. The warnings about trust relationships can be ignored. An
 example of what you would not want to see would be:
 </para>
@@ -227,7 +227,7 @@ example of what you would not want to see would be:
 	<indexterm><primary>autogen.sh</primary></indexterm>
 	After the source tarball has been unpacked, the next step involves
 	configuration to match Samba to your operating system platform.
-	If your source directory does not contain the <command>configure</command> script
+	If your source directory does not contain the <command>configure</command> script,
 	it is necessary to build it before you can continue. Building of
 	the configure script requires the correct version of the autoconf
 	tool kit. Where the necessary version of autoconf is present,
@@ -244,7 +244,7 @@ example of what you would not want to see would be:
 	To build the binaries, run the program <userinput>./configure
 	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
-	needs, then you may wish to run:
+	needs, then you may wish to first run:
 <screen>
 &rootprompt;<userinput>./configure --help</userinput>
 </screen>
@@ -264,7 +264,7 @@ example of what you would not want to see would be:
 <screen>
 &rootprompt; <userinput>make</userinput>
 </screen>
-	Once it is successfully compiled you can execute the command shown here to
+	Once it is successfully compiled, you can execute the command shown here to
 	install the binaries and manual pages:
 <screen>
 &rootprompt; <userinput>make install</userinput>
@@ -317,13 +317,13 @@ example of what you would not want to see would be:
 	</itemizedlist>
 
 	<para>
-	If your Kerberos libraries are in a non-standard location, then
+	If your Kerberos libraries are in a nonstandard location, then
 	remember to add the configure option
 	<option>--with-krb5=<replaceable>DIR</replaceable></option>.
 	</para>
 
 	<para>
-	After you run configure, make sure that 
+	After you run configure, make sure that the 
 	<filename>include/config.h</filename> it generates contain lines like this:
 <programlisting>
 #define HAVE_KRB5 1
@@ -381,8 +381,8 @@ example of what you would not want to see would be:
 	<para>
 	SuSE Linux Samba RPMs support Kerberos. Please refer to the documentation for
 	your SuSE Linux system for information regarding SuSE Linux specific configuration.
-	Additionally, SuSE are very active in the maintenance of Samba packages that provide
-	the maximum capabilities that are available. You should consider using SuSE provided
+	Additionally, SuSE is very active in the maintenance of Samba packages that provide
+	the maximum capabilities that are available. You should consider using SuSE-provided
 	packages where they are available.
 	</para>
 
@@ -402,7 +402,7 @@ example of what you would not want to see would be:
 	<application>inetd</application>. Don't try to do both!  Either you can put
 	them in <filename> inetd.conf</filename> and have them started on demand by
 	<application>inetd</application> or <application>xinetd</application>, or you
-	can start them as daemons either from the command line or in
+	can start them as daemons either from the command-line or in
 	<filename>/etc/rc.local</filename>. See the man pages for details on the
 	command line options. Take particular care to read the bit about what user
 	you need to have to start Samba. In many cases, you must be root.
@@ -420,7 +420,7 @@ example of what you would not want to see would be:
 	
 	<note>
 	<para>The following will be different if 
-	you use NIS, NIS+ or LDAP to distribute services maps.</para>
+	you use NIS, NIS+, or LDAP to distribute services maps.</para>
 	</note>
 	
 	<para>Look at your <filename>/etc/services</filename>. 
@@ -466,11 +466,11 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 	the IP address and netmask of your interfaces. Run 
 	<application>ifconfig</application> as root if you do
 	not know what the broadcast is for your net. &nmbd; tries
-	to determine it at run time, but fails on some UNIXes. 
+	to determine it at runtime, but fails on some UNIXes. 
 	</para></note>
 
 	<warning><para>
-	Many UNIXes only accept about five parameters on the command
+	Many UNIXes only accept around five parameters on the command
 	line in <filename>inetd.conf</filename>.  This means you shouldn't
 	use spaces between the options and arguments, or you should use
 	a script and start the script from <command>inetd</command>.
@@ -503,7 +503,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 </programlisting></para>
 
 	<para>
-	Make it executable with <command>chmod +x startsmb</command>
+	Make it executable with <command>chmod +x startsmb</command>.
 	</para>
 
 	<para>
@@ -516,7 +516,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 	</para>
 
 	<note><para>
-	If you use the SVR4 style init system, you may like to look at the
+	If you use the SVR4-style init system, you may like to look at the
 	<filename>examples/svr4-startup</filename> script to make Samba fit
 	into that system.
 	</para></note>
