@@ -1,5 +1,9 @@
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/principal.c: rename index to idx
+	
+	* lib/krb5/mk_error.c: use rk_UNCONST
+	
 	* lib/krb5/fcache.c: rename to avoid shadowing
 
 	* lib/krb5/config_file.c: rename to avoid shadowing
