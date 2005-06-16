@@ -1,5 +1,7 @@
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* dlopen.m4: add headers and argument to dlopen
+	
 	* c-function.m4: use ansi c declarations
 	
 	* check-var.m4: use ansi c declarations
