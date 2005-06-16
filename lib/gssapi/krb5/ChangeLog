@@ -1,3 +1,7 @@
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cred.c: rename optind to optidx
+
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c (init_auth): honor ok-as-delegate if local
