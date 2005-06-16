@@ -46,7 +46,7 @@ extern FILE *yyin;
 
 extern void yyparse(void);
 
-long base;
+long base_id;
 int number;
 char *prefix;
 char *id_str;
@@ -156,13 +156,13 @@ generate_h(void)
     fprintf(h_file, "typedef enum %s_error_number{\n", name);
 
     for(ec = codes; ec; ec = ec->next) {
-	fprintf(h_file, "\t%s = %ld%s\n", ec->name, base + ec->number, 
+	fprintf(h_file, "\t%s = %ld%s\n", ec->name, base_id + ec->number, 
 		(ec->next != NULL) ? "," : "");
     }
 
     fprintf(h_file, "} %s_error_number;\n", name);
     fprintf(h_file, "\n");
-    fprintf(h_file, "#define ERROR_TABLE_BASE_%s %ld\n", name, base);
+    fprintf(h_file, "#define ERROR_TABLE_BASE_%s %ld\n", name, base_id);
     fprintf(h_file, "\n");
     fprintf(h_file, "#endif /* %s */\n", fn);
 

@@ -77,13 +77,13 @@ id		: ID STRING
 
 et		: ET STRING
 		{
-		    base = name2number($2);
+		    base_id = name2number($2);
 		    strlcpy(name, $2, sizeof(name));
 		    free($2);
 		}
 		| ET STRING STRING
 		{
-		    base = name2number($2);
+		    base_id = name2number($2);
 		    strlcpy(name, $3, sizeof(name));
 		    free($2);
 		    free($3);

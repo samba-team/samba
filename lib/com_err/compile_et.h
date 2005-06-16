@@ -48,7 +48,7 @@
 #include <ctype.h>
 #include <roken.h>
 
-extern long base;
+extern long base_id;
 extern int number;
 extern char *prefix;
 extern char name[128];
