@@ -260,6 +260,11 @@ static void display_share_info_502(SRV_SHARE_INFO_502 *info502)
 	printf("\tpath:\t%s\n", path);
 	printf("\tpassword:\t%s\n", passwd);
 
+	printf("\ttype:\t0x%x\n", info502->info_502.type);
+	printf("\tperms:\t%d\n", info502->info_502.perms);
+	printf("\tmax_uses:\t%d\n", info502->info_502.max_uses);
+	printf("\tnum_uses:\t%d\n", info502->info_502.num_uses);
+	
 	if (info502->info_502_str.sd)
 		display_sec_desc(info502->info_502_str.sd);
 
