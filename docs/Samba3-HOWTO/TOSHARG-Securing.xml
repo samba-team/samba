@@ -13,7 +13,7 @@
 <sect1>
 <title>Introduction</title>
 <para>
-This note was attached to the Samba 2.2.8 release notes as it contained an
+This note was attached to the Samba 2.2.8 release notes because it contains an
 important security fix. The information contained here applies to Samba
 installations in general.
 </para>
@@ -38,9 +38,9 @@ of knowledge with which we may unlock the secrets of the masters.
 <title>Features and Benefits</title>
 
 <para>
-There are three levels at which security principals must be observed in order to render a site
+There are three levels at which security principles must be observed in order to render a site
 at least moderately secure. They are the perimeter firewall, the configuration of the host
-server that is running Samba and Samba itself.
+server that is running Samba, and Samba itself.
 </para>
 
 <para>
@@ -50,17 +50,18 @@ the latest protocols to permit more secure MS Windows file and print operations.
 
 <para>
 Samba may be secured from connections that originate from outside the local network. This may be
-done using <emphasis>host-based protection</emphasis> (using Samba's implementation of a technology
+done using <emphasis>host-based protection</emphasis>, using Samba's implementation of a technology
 known as <quote>tcpwrappers,</quote> or it may be done be using <emphasis>interface-based exclusion</emphasis>
 so &smbd; will bind only to specifically permitted interfaces. It is also
-possible to set specific share or resource-based exclusions, for example on the <smbconfsection name="[IPC$]"/>
-auto-share. The <smbconfsection name="[IPC$]"/> share is used for browsing purposes as well as to establish
+possible to set specific share or resource-based exclusions, for example, on the <smbconfsection name="[IPC$]"/>
+autoshare. The <smbconfsection name="[IPC$]"/> share is used for browsing purposes as well as to establish
 TCP/IP connections.
 </para>
 
 <para>
 Another method by which Samba may be secured is by setting Access Control Entries (ACEs) in an Access 
-Control List (ACL) on the shares themselves. This is discussed in <link linkend="AccessControls">File, Directory and Share Access Controls</link>.
+Control List (ACL) on the shares themselves. This is discussed in
+<link linkend="AccessControls">File, Directory, and Share Access Controls</link>.
 </para>
 
 </sect1>
@@ -69,9 +70,9 @@ Control List (ACL) on the shares themselves. This is discussed in <link linkend=
 <title>Technical Discussion of Protective Measures and Issues</title>
 
 <para>
-The key challenge of security is the fact that protective measures suffice at best
+The key challenge of security is that protective measures suffice at best
 only to close the door on known exploits and breach techniques. Never assume that
-because you have followed these few measures that the Samba server is now an impenetrable
+because you have followed these few measures, the Samba server is now an impenetrable
 fortress! Given the history of information systems so far, it is only a matter of time
 before someone will find yet another vulnerability.
 </para>
@@ -81,16 +82,16 @@ before someone will find yet another vulnerability.
 
 	<para>
 	In many installations of Samba, the greatest threat comes from outside
-	your immediate network. By default, Samba will accept connections from
+	your immediate network. By default, Samba accepts connections from
 	any host, which means that if you run an insecure version of Samba on
-	a host that is directly connected to the Internet you can be
+	a host that is directly connected to the Internet, you can be
 	especially vulnerable.
 	</para>
 
 	<para>
 	One of the simplest fixes in this case is to use the <smbconfoption name="hosts allow"/> and
-	<smbconfoption name="hosts deny"/> options in the Samba &smb.conf; configuration file to only
-	allow access to your server from a specific range of hosts. An example might be:
+	<smbconfoption name="hosts deny"/> options in the Samba &smb.conf; configuration file to
+	allow access to your server only from a specific range of hosts. An example might be:
 	</para>
 
 	<para><smbconfblock>
@@ -99,7 +100,7 @@ before someone will find yet another vulnerability.
 	</smbconfblock></para>
 
 	<para>
-	The above will only allow SMB connections from <constant>localhost</constant> (your own
+	The above will allow SMB connections only from <constant>localhost</constant> (your own
 	computer) and from the two private networks 192.168.2 and 192.168.3. All other
 	connections will be refused as soon as the client sends its first packet. The refusal
 	will be marked as <errorname>not listening on called name</errorname> error.
@@ -120,7 +121,7 @@ before someone will find yet another vulnerability.
 	</smbconfblock></para>
 
 	<para>
-	This restricts all server access to either the user <emphasis>jacko</emphasis>
+	This restricts all server access either to the user <emphasis>jacko</emphasis>
 	or to members of the system group <emphasis>smbusers</emphasis>.
 	</para>
 
@@ -131,8 +132,8 @@ before someone will find yet another vulnerability.
 	<title>Using Interface Protection</title>
 
 	<para>
-	By default, Samba will accept connections on any network interface that
-	it finds on your system. That means if you have a ISDN line or a PPP
+	By default, Samba accepts connections on any network interface that
+	it finds on your system. That means if you have an ISDN line or a PPP
 	connection to the Internet then Samba will accept connections on those
 	links. This may not be what you want.
 	</para>
@@ -148,7 +149,7 @@ before someone will find yet another vulnerability.
 
 	<para>
 	This tells Samba to only listen for connections on interfaces with a
-	name starting with <constant>eth</constant> such as <constant>eth0, eth1</constant> plus on the loopback
+	name starting with <constant>eth</constant> such as <constant>eth0 or eth1</constant>, plus on the loopback
 	interface called <constant>lo</constant>. The name you will need to use depends on what
 	OS you are using. In the above, I used the common name for Ethernet
 	adapters on Linux.
@@ -156,15 +157,15 @@ before someone will find yet another vulnerability.
 
 	<para>
 	If you use the above and someone tries to make an SMB connection to
-	your host over a PPP interface called <constant>ppp0,</constant> then they will get a TCP
-	connection refused reply. In that case, no Samba code is run at all as
+	your host over a PPP interface called <constant>ppp0,</constant> then he or she will get a TCP
+	connection refused reply. In that case, no Samba code is run at all because
 	the operating system has been told not to pass connections from that
 	interface to any Samba process.
 	</para>
 
 	</sect2>
 
-	<sect2>
+	<sect2 id="firewallports">
 	<title>Using a Firewall</title>
 
 	<para>
@@ -188,9 +189,16 @@ before someone will find yet another vulnerability.
 	</simplelist>
 
 	<para>
-	The last one is important as many older firewall setups may not be
+	The last one is important because many older firewall setups may not be
 	aware of it, given that this port was only added to the protocol in
 	recent years. 
+	</para>
+
+	<para>
+	When configuring a firewall, the high order ports (1024-65535) are often
+	used for outgoing connections and therefore should be permitted through the
+	firewall. It is prudent to block incoming packets on the high order ports
+	except for established connections.
 	</para>
 
 	</sect2>
@@ -202,7 +210,7 @@ before someone will find yet another vulnerability.
 	If the above methods are not suitable, then you could also place a
 	more specific deny on the IPC$ share that is used in the recently
 	discovered security hole. This allows you to offer access to other
-	shares while denying access to IPC$ from potentially un-trustworthy
+	shares while denying access to IPC$ from potentially untrustworthy
 	hosts.
 	</para>
 
@@ -218,18 +226,18 @@ before someone will find yet another vulnerability.
 
 	<para>
 	This instructs Samba that IPC$ connections are not allowed from
-	anywhere except from the two listed network addresses (localhost and the 192.168.115
-	subnet). Connections to other shares are still allowed. As the
+	anywhere except the two listed network addresses (localhost and the 192.168.115
+	subnet). Connections to other shares are still allowed. Because the
 	IPC$ share is the only share that is always accessible anonymously,
-	this provides some level of protection against attackers that do not
+	this provides some level of protection against attackers who do not
 	know a valid username/password for your host.
 	</para>
 
 	<para>
 	If you use this method, then clients will be given an <errorname>`access denied'</errorname>
 	reply when they try to access the IPC$ share. Those clients will not be able to
-	browse shares, and may also be unable to access some other resources.  This is not
-	recommended unless you cannot use one of the other methods listed above for some reason.
+	browse shares and may also be unable to access some other resources.  This is not
+	recommended unless for some reason you cannot use one of the other methods just discussed.
 	</para>
 
 	</sect2>
@@ -249,9 +257,9 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para>
-	The value 0x00000003 means send NTLMv2 response only. Clients will use NTLMv2 authentication,
-	use NTLMv2 session security if the server supports it. Domain Controllers accept LM,
-	NTLM and NTLMv2 authentication.
+	The value 0x00000003 means to send NTLMv2 response only. Clients will use NTLMv2 authentication;
+	use NTLMv2 session security if the server supports it. Domain controllers accept LM,
+	NTLM, and NTLMv2 authentication.
 	</para>
 
 	<para>
@@ -264,7 +272,7 @@ before someone will find yet another vulnerability.
 	<para>
 	The value 0x00080000 means permit only NTLMv2 session security. If either NtlmMinClientSec or
 	NtlmMinServerSec is set to 0x00080000, the connection will fail if NTLMv2
-	session security is not negotiated.
+	session security is negotiated.
 	</para>
 	</sect2>
 </sect1>
@@ -274,9 +282,9 @@ before someone will find yet another vulnerability.
 
 <para>
 Please check regularly on <ulink noescape="1" url="http://www.samba.org/">http://www.samba.org/</ulink> for updates and
-important announcements. Occasionally security releases are made and 
+important announcements. Occasionally security releases are made, and 
 it is highly recommended to upgrade Samba when a security vulnerability
-is discovered. Check with your OS vendor for OS specific upgrades.
+is discovered. Check with your OS vendor for OS-specific upgrades.
 </para>
 
 </sect1>
@@ -285,9 +293,9 @@ is discovered. Check with your OS vendor for OS specific upgrades.
 <title>Common Errors</title>
 
 <para>
-If all of Samba and host platform configuration were really as intuitive as one might like them to be, this
+If all of Samba and host platform configurations were really as intuitive as one might like them to be, this
 section would not be necessary. Security issues are often vexing for a support person to resolve, not
-because of the complexity of the problem, but for the reason that most administrators who post what turns
+because of the complexity of the problem, but because most administrators who post what turns
 out to be a security problem request are totally convinced that the problem is with Samba.
 </para>
 
@@ -302,7 +310,8 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para>
 	The solution is either to remove the firewall (stop it) or modify the firewall script to
-	allow SMB networking traffic through. See section above in this chapter.
+	allow SMB networking traffic through. See <link linkend="firewallports">the Using a 
+	firewall</link> section.
 	</para>
 
 	</sect2>
@@ -320,7 +329,7 @@ out to be a security problem request are totally convinced that the problem is w
 	</para>
 
 	<para><quote>
-	User xyzzy can map his home directory. Once mapped user xyzzy can also map
+	User xyzzy can map his home directory. Once mapped, user xyzzy can also map
 	anyone else's home directory.
 	</quote></para>
 
@@ -333,12 +342,12 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para>
 	If your UNIX home directories are set up so that one user can happily <command>cd</command>
-	into another users directory and execute <command>ls</command>, the UNIX security solution is to change file
-	permissions on the user's home directories such that the <command>cd</command> and <command>ls</command> are denied.
+	into another user's directory and execute <command>ls</command>, the UNIX security solution is to change file
+	permissions on the user's home directories so that the <command>cd</command> and <command>ls</command> are denied.
 	</para>
 
 	<para>
-	Samba tries very hard not to second guess the UNIX administrators security policies, and
+	Samba tries very hard not to second guess the UNIX administrator's security policies and
 	trusts the UNIX admin to set the policies and permissions he or she desires.
 	</para>
 
@@ -349,11 +358,11 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para>
 	The <smbconfoption name="only user"></smbconfoption> works in conjunction with the <smbconfoption name="users">list</smbconfoption>,
-	so to get the behavior you require, add the line :
+	so to get the behavior you require, add the line:
 	<smbconfblock>
 <smbconfoption name="users">%S</smbconfoption>
 </smbconfblock>
-	this is equivalent to adding
+	This is equivalent to adding
 	<smbconfblock>
 <smbconfoption name="valid users">%S</smbconfoption>
 	</smbconfblock>
