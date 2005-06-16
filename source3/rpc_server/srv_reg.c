@@ -465,6 +465,54 @@ static BOOL api_reg_set_value(pipes_struct *p)
 }
 
 /*******************************************************************
+ ******************************************************************/
+
+static BOOL api_reg_delete_key(pipes_struct *p)
+{
+	REG_Q_DELETE_KEY q_u;
+	REG_R_DELETE_KEY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_delete_key("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_delete_key(p, &q_u, &r_u);
+
+	if(!reg_io_r_delete_key("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ******************************************************************/
+
+static BOOL api_reg_delete_value(pipes_struct *p)
+{
+	REG_Q_DELETE_VALUE q_u;
+	REG_R_DELETE_VALUE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_delete_value("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_delete_value(p, &q_u, &r_u);
+
+	if(!reg_io_r_delete_value("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
 
@@ -486,7 +534,9 @@ static struct api_struct api_reg_cmds[] =
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
       { "REG_RESTORE_KEY"        , REG_RESTORE_KEY        , api_reg_restore_key      },
       { "REG_CREATE_KEY"         , REG_CREATE_KEY         , api_reg_create_key       },
-      { "REG_SET_VALUE"          , REG_SET_VALUE          , api_reg_set_value        }
+      { "REG_SET_VALUE"          , REG_SET_VALUE          , api_reg_set_value        },
+      { "REG_DELETE_KEY"         , REG_DELETE_KEY         , api_reg_delete_key       },
+      { "REG_DELETE_VALUE"       , REG_DELETE_VALUE       , api_reg_delete_value     }
 };
 
 void reg_get_pipe_fns( struct api_struct **fns, int *n_fns )
