@@ -28,6 +28,9 @@ struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */
 struct smbcli_transport;  /* forward declare */
 
+/* default timeout for all smb requests */
+#define SMB_REQUEST_TIMEOUT 60
+
 /* context that will be and has been negotiated between the client and server */
 struct smbcli_negotiate {
 	/* 
@@ -88,6 +91,7 @@ struct smbcli_options {
 	uint_t use_spnego:1;
 	uint32_t max_xmit;
 	uint16_t max_mux;
+	int request_timeout;
 };
 
 /* this is the context for the client transport layer */
