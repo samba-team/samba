@@ -139,8 +139,8 @@ int net_help_share(int argc, const char **argv)
 	 "\n\tMigrates files from remote to local server\n\n"
 	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares from remote to local server\n\n"
-/*	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
-	 "\n\tMigrates share-ACLs from remote to local server\n\n" */
+	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
+	 "\n\tMigrates share-ACLs from remote to local server\n\n" 
 	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares (including directories, files) from remote\n"
 	 "\tto local server\n\n"
