@@ -1,5 +1,9 @@
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* c-function.m4: use ansi c declarations
+	
+	* check-var.m4: use ansi c declarations
+
 	* pthreads.m4: disable threads on aix because of utmp/utmpx
 	problems
 
