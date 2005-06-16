@@ -492,11 +492,11 @@ init_fcc (krb5_context context,
 	    goto out;
 	}
 	while(length > 0) {
-	    int16_t tag, data_len;
+	    int16_t dtag, data_len;
 	    int i;
 	    int8_t dummy;
 
-	    ret = krb5_ret_int16 (sp, &tag);
+	    ret = krb5_ret_int16 (sp, &dtag);
 	    if(ret) {
 		krb5_clear_error_string(context);
 		ret = KRB5_CC_FORMAT;
@@ -508,7 +508,7 @@ init_fcc (krb5_context context,
 		ret = KRB5_CC_FORMAT;
 		goto out;
 	    }
-	    switch (tag) {
+	    switch (dtag) {
 	    case FCC_TAG_DELTATIME :
 		ret = krb5_ret_int32 (sp, &context->kdc_sec_offset);
 		if(ret) {

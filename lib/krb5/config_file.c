@@ -560,10 +560,10 @@ krb5_config_vget_strings(krb5_context context,
 	    goto cleanup;
 	s = strtok_r(tmp, " \t", &pos);
 	while(s){
-	    char **tmp = realloc(strings, (nstr + 1) * sizeof(*strings));
-	    if(tmp == NULL)
+	    char **tmp2 = realloc(strings, (nstr + 1) * sizeof(*strings));
+	    if(tmp2 == NULL)
 		goto cleanup;
-	    strings = tmp;
+	    strings = tmp2;
 	    strings[nstr] = strdup(s);
 	    nstr++;
 	    if(strings[nstr-1] == NULL)
