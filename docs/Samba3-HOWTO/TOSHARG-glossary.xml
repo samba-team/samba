@@ -17,7 +17,7 @@
 		<acronym>ADS</acronym>
 		<glossdef><para>
 		A service unique to Microsoft Windows 200x servers that provides a centrally managed
-		directory for management of user identities, and computer objects, as well as the permissions
+		directory for management of user identities and computer objects, as well as the permissions
 		each user or computer may be granted to access
 		distributed network resources. ADS uses Kerberos-based
 		authentication and LDAP over Kerberos for directory access.
@@ -42,8 +42,8 @@
 		<acronym>CUPS</acronym>
 		<glossdef><para>
 		A recent implementation of a high capability printing system for UNIX developed by
-		<ulink url="http://www.easysw.com/">.</ulink> The design objective of CUPS was to provide
-		a rich print processing system that has built-in intelligence that is capable of correctly rendering (processing)
+		<ulink url="http://www.easysw.com/"></ulink>. The design objective of CUPS was to provide
+		a rich print processing system that has built-in intelligence capable of correctly rendering (processing)
 		a file that is submitted for printing even if it was formatted for an entirely different printer.
 		</para>
 		</glossdef>
@@ -52,7 +52,7 @@
 	<glossentry>
 		<glossterm>Domain Master Browser</glossterm>
 		<acronym>DMB</acronym>
-		<glossdef><para>The Domain Master Browser maintains a list of all the servers that 
+		<glossdef><para>The domain master browser maintains a list of all the servers that 
 		have announced their services within a given workgroup or NT domain. See <link linkend="DMB"/> for details.
 		</para></glossdef>
 	</glossentry>
@@ -61,9 +61,9 @@
                 <glossterm>Domain Name Service</glossterm>
 		<acronym>DNS</acronym>
 		<glossdef><para>
-		A protocol by which computer host names may be resolved to the matching IP address/es. DNS is implemented
+		A protocol by which computer hostnames may be resolved to the matching IP address/es. DNS is implemented
 		by the Berkeley Internet Name Daemon. There exists a recent version of DNS that allows dynamic name registration
-		by network clients or by a DHCP server. This recent protocol is known as Dynamic DNS (DDNS).
+		by network clients or by a DHCP server. This recent protocol is known as dynamic DNS (DDNS).
 		</para></glossdef>
         </glossentry>
 
@@ -74,7 +74,7 @@
 		A protocol that was based on the BOOTP protocol that may be used to dynamically assign an IP address,
 		from a reserved pool of addresses, to a network client or device. Additionally, DHCP may assign all
 		network configuration settings and may be used to register a computer name and its address with a
-		Dynamic DNS server.
+		dynamic DNS server.
 		</para></glossdef>
         </glossentry>
 	<glossentry>
@@ -92,7 +92,7 @@
 		<glossterm>Graphical Device Interface</glossterm>
 		<acronym>GDI</acronym>
 		<glossdef><para>
-		Device Independent format for printing used by Microsoft Windows. 
+		Device-independent format for printing used by Microsoft Windows. 
 		It is quite similar to what PostScript is for UNIX. Printing jobs are first generated in GDI and
 		then converted to a device-specific format. See <link linkend="gdipost"/> for details.
 		</para></glossdef>
@@ -102,8 +102,8 @@
 		<glossterm>Group IDentifier</glossterm>
 		<acronym>GID</acronym>
 		<glossdef><para>
-		The UNIX system Group Identifier; on older systems a 32-bit unsigned integer and on newer systems
-		an unsigned 64-bit integer. The GID is used in UNIX-like operating systems for all group level access
+		The UNIX system group identifier; on older systems, a 32-bit unsigned integer, and on newer systems
+		an unsigned 64-bit integer. The GID is used in UNIX-like operating systems for all group-level access
 		control.
 		</para></glossdef>
 	</glossentry>
@@ -128,7 +128,7 @@
 		<acronym>NetBEUI</acronym>
 		<glossdef><para>
 		Very simple network protocol invented by IBM and Microsoft. It is used 
-		to do NetBIOS over ethernet with low overhead. NetBEUI is a non-routable
+		to do NetBIOS over Ethernet with low overhead. NetBEUI is a nonroutable
 		protocol.
 		</para></glossdef>
 	</glossentry>
@@ -137,11 +137,11 @@
 		<glossterm>Network Basic Input/Output System</glossterm>
 		<acronym>NetBIOS</acronym>
 		<glossdef><para>
-		NetBIOS is a simple application programming interface (API) invented in the eighties 
+		NetBIOS is a simple application programming interface (API) invented in the 1980s 
 		that allows programs to send data to certain network names. 
 		NetBIOS is always run over another network protocol such 
 		as IPX/SPX, TCP/IP, or Logical Link Control (LLC). NetBIOS run over LLC
-		is best known as NetBEUI (The NetBIOS Extended User Interface &smbmdash; a complete misnomer!).
+		is best known as NetBEUI (NetBIOS Extended User Interface &smbmdash; a complete misnomer!).
 		</para></glossdef>
 	</glossentry>
 
@@ -149,7 +149,7 @@
 	<glossentry>
 		<glossterm>NetBT</glossterm>
 		<acronym>NBT</acronym>
-		<glossdef><para>Protocol for transporting NetBIOS frames over TCP/IP. Uses ports 137, 138 and 139. 
+		<glossdef><para>Protocol for transporting NetBIOS frames over TCP/IP. Uses ports 137, 138, and 139. 
 		NetBT is a fully routable protocol.
 		</para></glossdef>
 	</glossentry>
@@ -159,9 +159,9 @@
 	<glossentry>
 		<glossterm>Local Master Browser</glossterm>
 		<acronym>LMB</acronym>
-		<glossdef><para>The Local Master Browser maintains a list 
+		<glossdef><para>The local master browser maintains a list 
 		of all servers that have announced themselves within a given workgroup or NT domain on a particular
-		broadcast isolated subnet. See <link linkend="DMB"/> for details.
+		broadcast-isolated subnet. See <link linkend="DMB"/> for details.
 		</para></glossdef>
 	</glossentry>
 
@@ -169,7 +169,7 @@
 		<glossterm>Printer Command Language</glossterm>
 		<acronym>PCL</acronym>
 		<glossdef><para>
-		A printer page description language that was developed by Hewlett Packard
+		A printer page description language that was developed by Hewlett-Packard
 		and is in common use today.
 		</para></glossdef>
 	</glossentry>
@@ -179,9 +179,9 @@
 		<acronym>PDF</acronym>
 		<glossdef>
 		<para>
-		A highly compressed document format, based on postscript, used as a document distribution format
-		that is supported by Web browsers as well as many applications. Adobe also distribute an application
-		called <quote>acrobat</quote> which is a PDF reader.
+		A highly compressed document format, based on PostScript, used as a document distribution format
+		that is supported by Web browsers as well as many applications. Adobe also distributes an application
+		called <quote>Acrobat,</quote> which is a PDF reader.
 		</para>
 		</glossdef>
 	</glossentry>
@@ -198,9 +198,9 @@
 		<glossterm>PostScript Printer Description</glossterm>
 		<acronym>PPD</acronym>
 		<glossdef><para>
-		PPD's specify and control options supported by postscript printers, such as duplexing, stapling, 
-		DPI, ... See also <link linkend="post-and-ghost"/>. PPD files can be read by printing applications
-		to enable correct postscript page layout for a particular postscript printer.
+		PPDs specify and control options supported by PostScript printers, such as duplexing, stapling, 
+		and DPI. See also <link linkend="post-and-ghost"/>. PPD files can be read by printing applications
+		to enable correct PostScript page layout for a particular PostScript printer.
 		</para></glossdef>
 	</glossentry>
 
@@ -209,10 +209,10 @@
 		<acronym>SMB</acronym>
 		<glossdef><para>
 		SMB was the original name of the protocol `spoken' by 
-		Samba. It was invented in the eighties by IBM and adopted 
+		Samba. It was invented in the 1980s by IBM and adopted 
 		and extended further by Microsoft. Microsoft 
 		renamed the protocol to CIFS during the Internet hype in the 
-		nineties.
+		1990s.
 		</para></glossdef>
 	</glossentry>
 
@@ -220,8 +220,8 @@
 		<glossterm>User IDentifier</glossterm>
 		<acronym>UID</acronym>
 		<glossdef><para>
-		The UNIX system User Identifier; on older systems a 32-bit unsigned integer and on newer systems
-		an unsigned 64-bit integer. The UID is used in UNIX-like operating systems for all user level access
+		The UNIX system user identifier; on older systems a 32-bit unsigned integer, and on newer systems,
+		an unsigned 64-bit integer. The UID is used in UNIX-like operating systems for all user-level access
 		control.
 		</para></glossdef>
 	</glossentry>

@@ -17,21 +17,21 @@
 <title>Macintosh Clients</title>
 
 <para>
-Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> has a CIFS Client/Server called <ulink url="http://www.thursby.com/products/dave.html">DAVE.</ulink>
-They test it against Windows 95, Windows NT /200x/XP and Samba for
+Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> has a CIFS client/server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>.
+They test it against Windows 95, Windows NT/200x/XP, and Samba for
 compatibility issues. At the time of this writing, DAVE was at version
 4.1. Please refer to Thursby's Web site for more information regarding this
 product.
 </para>
 
 <para> 
-Alternatives &smbmdash; There are two free implementations of AppleTalk for
+Alternatives include two free implementations of AppleTalk for
 several kinds of UNIX machines and several more commercial ones.
 These products allow you to run file services and print services
 natively to Macintosh users, with no additional support required on
 the Macintosh. The two free implementations are 
-<ulink url="http://www.umich.edu/~rsug/netatalk/">Netatalk,</ulink> and 
-<ulink url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP.</ulink> 
+<ulink url="http://www.umich.edu/~rsug/netatalk/">Netatalk</ulink> and 
+<ulink url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP</ulink>. 
 What Samba offers MS Windows users, these packages offer to Macs. 
 For more info on these packages, Samba, and Linux (and other UNIX-based systems), see
 <ulink noescape="1" url="http://www.eats.com/linux_mac_win.html">http://www.eats.com/linux_mac_win.html.</ulink>
@@ -50,7 +50,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		<para>Basically, you need three components:</para>
 		
 		<itemizedlist>
-			<listitem><para>The File and Print Client (IBM Peer)</para></listitem>
+			<listitem><para>The File and Print Client (IBM peer)</para></listitem>
 			<listitem><para>TCP/IP (Internet support) </para></listitem>
 			<listitem><para>The <quote>NetBIOS over TCP/IP</quote> driver (TCPBEUI)</para></listitem>
 		</itemizedlist>
@@ -63,18 +63,18 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 
 		<para>Adding the <quote>NetBIOS over TCP/IP</quote> driver is not described 
 		in the manual and just barely in the online documentation. Start 
-		<command>MPTS.EXE</command>, click on <guiicon>OK</guiicon>, click on <guimenu>Configure LAPS</guimenu> and click 
+		<command>MPTS.EXE</command>, click on <guiicon>OK</guiicon>, click on <guimenu>Configure LAPS</guimenu>, and click 
 		on <guimenu>IBM OS/2 NETBIOS OVER TCP/IP</guimenu> in  <guilabel>Protocols</guilabel>. This line 
 		is then moved to <guilabel>Current Configuration</guilabel>. Select that line, 
-		click on <guimenuitem>Change number</guimenuitem> and increase it from 0 to 1. Save this
+		click on <guimenuitem>Change number</guimenuitem>, and increase it from 0 to 1. Save this
 		configuration.</para>
 
 		<para>If the Samba server is not on your local subnet, you 
 		can optionally add IP names and addresses of these servers 
-		to the <guimenu>Names List</guimenu>, or specify a  WINS server (NetBIOS 
+		to the <guimenu>Names List</guimenu> or specify a  WINS server (NetBIOS 
 		Nameserver in IBM and RFC terminology). For Warp Connect, you 
 		may need to download an update for <constant>IBM Peer</constant> to bring it on 
-		the same level as Warp 4. See the Web page mentioned above.</para>
+		the same level as Warp 4. See the Web page (John, which page do you mean???????).</para>
 	</sect2>
 	
 	<sect2>
@@ -113,7 +113,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		Next, in the file specified by <replaceable>filename</replaceable>, map the 
 		name of the NT driver name to the OS/2 driver name as follows:</para>
 		
-		<para><parameter><replaceable>nt driver name</replaceable> = <replaceable>os2 driver name</replaceable>.<replaceable>device name</replaceable></parameter>, e.g.</para>
+		<para><parameter><replaceable>nt driver name</replaceable> = <replaceable>os2 driver name</replaceable>.<replaceable>device name</replaceable></parameter>, e.g.,</para>
 
 		<para><parameter>
 		HP LaserJet 5L = LASERJET.HP LaserJet 5L</parameter></para>
@@ -140,8 +140,8 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 for Workgroups. The early TCP/IP stacks had lots of bugs.</para>
 
 <para> 
-Microsoft has released an incremental upgrade to their TCP/IP 32-bit
-VxD drivers. The latest release can be found on their ftp site at
+Microsoft has released an incremental upgrade to its TCP/IP 32-bit
+VxD drivers. The latest release can be found at
 ftp.microsoft.com, located in <filename>/Softlib/MSLFILES/TCP32B.EXE</filename>.
 There is an update.txt file there that describes the problems that were
 fixed. New files include <filename>WINSOCK.DLL</filename>, 
@@ -154,7 +154,7 @@ fixed. New files include <filename>WINSOCK.DLL</filename>,
 <filename>NBTSTAT.EXE</filename>.
 </para>
 
-<para>More information about this patch is available in <ulink url="http://support.microsoft.com/kb/q99891/">Knowledge base article 99891</ulink>.</para>
+<para>More information about this patch is available in <ulink url="http://support.microsoft.com/kb/q99891/">Knowledge Base article 99891</ulink>.</para>
 
 </sect2>
 
@@ -163,7 +163,7 @@ fixed. New files include <filename>WINSOCK.DLL</filename>,
 
 <para>
 Windows for Workgroups does a lousy job with passwords. When you change passwords on either
-the UNIX box or the PC, the safest thing to do is to delete the .pwl files in the Windows
+the UNIX box or the PC, the safest thing to do is delete the .pwl files in the Windows
 directory. The PC will complain about not finding the files, but will soon get over it,
 allowing you to enter the new password.
 </para>
@@ -186,9 +186,9 @@ Often Windows for Workgroups will totally ignore a password you give it in a dia
 There is a program call <filename>admincfg.exe</filename>
 on the last disk (disk 8) of the WFW 3.11 disk set. To install it,
 type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.
-Then add an icon for it via the <application>Program Manager</application> <guimenu>New</guimenu> Menu. 
-This program allows you to control how WFW handles passwords, i.e.,
-Disable Password Caching and so on.
+Then add an icon for it via the <application>Program Manager</application> <guimenu>New</guimenu> menu. 
+This program allows you to control how WFW handles passwords,
+Disable Password Caching and so on,
 for use with <smbconfoption name="security">user</smbconfoption>.
 </para>
 
@@ -240,12 +240,12 @@ person even reported a speed drop of a factor of 30 when he went from
 
 <para>
 When using Windows 95 OEM SR2, the following updates are recommended where Samba
-is being used. Please note that the above change will effect you once these
+is being used. Please note that the above change (John, specify the change???????) will affect you once these
 updates  have been installed.
 </para>
 
 <para> 
-There are more updates than the ones mentioned here. You are referred to the
+There are more updates than the ones mentioned here. Refer to the
 Microsoft Web site for all currently available updates to your specific version
 of Windows 95.
 </para>
@@ -262,7 +262,7 @@ of Windows 95.
 Also, if using <application>MS Outlook,</application> it is desirable to 
 install the <command>OLEUPD.EXE</command> fix. This
 fix may stop your machine from hanging for an extended period when exiting
-Outlook and you may notice a significant speedup when accessing network
+Outlook, and you may notice a significant speedup when accessing network
 neighborhood services.
 </para>
 
@@ -283,7 +283,7 @@ Internet. There are various other utilities of this type freely available.
 <title>Windows 2000 Service Pack 2</title>
 
 <para> 
-There are several annoyances with Windows 2000 SP2. One of which
+There are several annoyances with Windows 2000 SP2, one of which
 only appears when using a Samba server to host user profiles
 to Windows 2000 SP2 clients in a Windows domain. This assumes
 that Samba is a member of the domain, but the problem will
@@ -294,7 +294,7 @@ most likely occur if it is not.
 In order to serve profiles successfully to Windows 2000 SP2 
 clients (when not operating as a PDC), Samba must have 
 <smbconfoption name="nt acl support">no</smbconfoption>
-added to the file share which houses the roaming profiles.
+added to the file share that houses the roaming profiles.
 If this is not done, then the Windows 2000 SP2 client will
 complain about not being able to access the profile (Access 
 Denied) and create multiple copies of it on disk (DOMAIN.user.001,
@@ -309,7 +309,7 @@ releases prior to Samba 2.2.2.
 </para>
 
 <example id="minimalprofile">
-<title>Minimal profile share</title>
+<title>Minimal Profile Share</title>
 <smbconfblock>
 <smbconfsection name="[profile]"/>
 <smbconfoption name="path">/export/profile</smbconfoption>
@@ -325,12 +325,12 @@ The reason for this bug is that the Windows 200x SP2 client copies
 the security descriptor for the profile that contains
 the Samba server's SID, and not the domain SID. The client
 compares the SID for SAMBA\user and realizes it is
-different from the one assigned to DOMAIN\user. Hence, the reason
-for the <errorname>access denied</errorname> message.
+different from the one assigned to DOMAIN\user; hence,
+<errorname>access denied</errorname> message.
 </para>
 
 <para>
-By disabling the <smbconfoption name="nt acl support"/> parameter, Samba will send
+When the <smbconfoption name="nt acl support"/> parameter is disabled, Samba will send
 the Windows 200x client a response to the QuerySecurityDescriptor trans2 call, which causes the client
 to set a default ACL for the profile. This default ACL includes:
 </para>
@@ -346,7 +346,7 @@ create accounts on the Samba host for Domain users.</para></note>
 <title>Windows NT 3.1</title>
 
 <para>If you have problems communicating across routers with Windows 
-NT 3.1 workstations, read <ulink url="http://support.microsoft.com/default.aspx?scid=kb;Q103765">this Microsoft Knowledge Base article.</ulink>
+NT 3.1 workstations, read <ulink url="http://support.microsoft.com/default.aspx?scid=kb;Q103765">this Microsoft Knowledge Base article:</ulink>.
 
 </para>
 
