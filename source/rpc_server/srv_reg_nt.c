@@ -46,7 +46,7 @@ struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE,
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
+NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
                                      uint32 access_desired, uint32 *access_granted )
 {
 	NTSTATUS result;
@@ -59,7 +59,7 @@ static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_reg_hive_sd( TALLOC_CTX *ctx )
+SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 {
 	SEC_ACE ace[2];	
 	SEC_ACCESS mask;
@@ -322,12 +322,10 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 
 WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
-	/* set up the REG unknown_1 response */
-	ZERO_STRUCT(r_u->pol);
-
 	/* close the policy handle */
-	if (!close_registry_key(p, &q_u->pol))
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+
+	if ( !close_registry_key(p, &q_u->pol) )
+		return WERR_BADFID; 
 
 	return WERR_OK;
 }
@@ -342,8 +340,9 @@ WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 	NTSTATUS status;
 	
 	/* perform access checks */
+	/* top level keys are done here without passing through the REGISTRY_HOOK api */
 	
-	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
 		
 	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
@@ -363,8 +362,9 @@ WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 	NTSTATUS status;
 	
 	/* perform access checks */
+	/* top level keys are done here without passing through the REGISTRY_HOOK api */
 	
-	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
 		
 	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
@@ -384,8 +384,9 @@ WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u
 	NTSTATUS status;
 	
 	/* perform access checks */
+	/* top level keys are done here without passing through the REGISTRY_HOOK api */
 	
-	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
 		
 	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
@@ -409,8 +410,8 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	DEBUG(5,("reg_open_entry: Enter\n"));
 
 	if ( !key )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
-
+		return WERR_BADFID;
+		
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
 	result = open_registry_key( p, &pol, key, name, 0x0 );
@@ -441,7 +442,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	DEBUG(5,("_reg_info: Enter\n"));
 
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID;
 		
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
 	
@@ -545,7 +546,7 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 	DEBUG(5,("_reg_query_key: Enter\n"));
 	
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID; 
 	
 	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) )
 		return WERR_ACCESS_DENIED;
@@ -579,9 +580,9 @@ WERROR _reg_getversion(pipes_struct *p, REG_Q_GETVERSION *q_u, REG_R_GETVERSION 
 	DEBUG(5,("_reg_getversion: Enter\n"));
 	
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID;
 	
-	r_u->unknown = 0x00000005;	/* seems to be consistent...no idea what it means */
+	r_u->win_version = 0x00000005;	/* Windows 2000 registry API version */
 	
 	DEBUG(5,("_reg_getversion: Exit\n"));
 	
@@ -603,7 +604,7 @@ WERROR _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 	DEBUG(5,("_reg_enum_key: Enter\n"));
 	
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID; 
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", regkey->name));
 	
@@ -640,7 +641,7 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 	DEBUG(5,("_reg_enum_value: Enter\n"));
 	
 	if ( !regkey )
-		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
+		return WERR_BADFID; 
 
 	DEBUG(8,("_reg_enum_key: enumerating values for key [%s]\n", regkey->name));
 

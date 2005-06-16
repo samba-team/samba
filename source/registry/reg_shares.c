@@ -158,7 +158,8 @@ REGISTRY_OPS shares_reg_ops = {
 	shares_subkey_info,
 	shares_value_info,
 	shares_store_subkey,
-	shares_store_value
+	shares_store_value,
+	NULL
 };
 
 

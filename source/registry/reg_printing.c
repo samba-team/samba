@@ -928,7 +928,8 @@ REGISTRY_OPS printing_ops = {
 	printing_subkey_info,
 	printing_value_info,
 	printing_store_subkey,
-	printing_store_value
+	printing_store_value,
+	NULL
 };
 
 
