@@ -31,11 +31,11 @@ RCSID("$Id$");
 static int
 compare(const void *p1, const void *p2)
 {
-    const char	**v1;
-    const char	**v2;
+    char	* const *v1;
+    char	* const *v2;
     
-    v1 = (const char **)p1;
-    v2 = (const char **)p2;
+    v1 = (char * const *)p1;
+    v2 = (char * const *)p2;
     return strcmp(*v1, *v2);
 }
 
