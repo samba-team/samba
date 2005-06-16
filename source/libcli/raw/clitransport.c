@@ -79,6 +79,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->options.use_spnego = lp_use_spnego();
 	transport->options.max_xmit = lp_max_xmit();
 	transport->options.max_mux = lp_maxmux();
+	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;
 
 	transport->negotiate.max_xmit = transport->options.max_xmit;
 	
@@ -580,6 +581,42 @@ BOOL smbcli_transport_process(struct smbcli_transport *transport)
 	return True;
 }
 
+/*
+  handle timeouts of individual smb requests
+*/
+static void smbcli_timeout_handler(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *private)
+{
+	struct smbcli_request *req = talloc_get_type(private, struct smbcli_request);
+
+	if (req->state == SMBCLI_REQUEST_SEND) {
+		DLIST_REMOVE(req->transport->pending_send, req);
+	}
+	if (req->state == SMBCLI_REQUEST_RECV) {
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	req->status = NT_STATUS_IO_TIMEOUT;
+	req->state = SMBCLI_REQUEST_ERROR;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+
+
+/*
+  destroy a request
+*/
+static int smbcli_request_destructor(void *ptr)
+{
+	struct smbcli_request *req = talloc_get_type(ptr, struct smbcli_request);
+	if (req->state == SMBCLI_REQUEST_SEND) {
+		DLIST_REMOVE(req->transport->pending_send, req);
+	}
+	if (req->state == SMBCLI_REQUEST_RECV) {
+		DLIST_REMOVE(req->transport->pending_recv, req);
+	}
+	return 0;
+}
 
 
 /*
@@ -600,4 +637,13 @@ void smbcli_transport_send(struct smbcli_request *req)
 
 	/* make sure we look for write events */
 	smbcli_transport_write_enable(req->transport);
+
+	/* add a timeout */
+	if (req->transport->options.request_timeout) {
+		event_add_timed(req->transport->socket->event.ctx, req, 
+				timeval_current_ofs(req->transport->options.request_timeout, 0), 
+				smbcli_timeout_handler, req);
+	}
+
+	talloc_set_destructor(req, smbcli_request_destructor);
 }
