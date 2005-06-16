@@ -20,7 +20,7 @@ void *popen(char *cmd, char *mode)
 	return 0;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	char *ret;
 	ret = getcwd(0, 1024);

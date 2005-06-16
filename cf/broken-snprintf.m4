@@ -49,7 +49,7 @@ int bar(int num, int len, ...)
 	return r != len;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	return foo(0, "12") || bar(0, 2, "12");
 }]])],[:],[ac_cv_func_vsnprintf_working=no],[:]))
