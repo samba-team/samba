@@ -37,16 +37,9 @@ case "$host" in
 	esac
 	;;
 *-*-aix*)
-	if test "$GCC" = yes; then
-		native_pthread_support=yes
-		PTHREADS_LIBS="-pthread"
-	elif expr "$CC" : ".*_r" > /dev/null ; then
-		native_pthread_support=yes
-		PTHREADS_CFLAGS=""
-		PTHREADS_LIBS=""
-	else
-		native_pthread_support=no
-	fi
+	dnl AIX is disabled since we don't handle the utmp/utmpx
+        dnl problems that aix causes when compiling with pthread support
+	native_pthread_support=no
 	;;
 mips-sgi-irix6.[[5-9]])  # maybe works for earlier versions too
 	native_pthread_support=yes
