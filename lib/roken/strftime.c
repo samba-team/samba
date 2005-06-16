@@ -290,7 +290,7 @@ strftime (char *buf, size_t maxsize, const char *format,
 		    
 	    case 's' :
 		ret = snprintf (buf, maxsize - n,
-				"%d", (int)mktime((struct tm *)tm));
+				"%d", (int)mktime(rk_UNCONST(tm)));
 		break;
 	    case 'S' :
 		ret = snprintf (buf, maxsize - n,
