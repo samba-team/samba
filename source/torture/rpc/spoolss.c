@@ -220,6 +220,9 @@ static BOOL test_GetPrinterDriverDirectory(struct test_spoolss_context *ctx)
 		const char *server;
 	} levels[] = {{
 			.level	= 1,
+			.server	= NULL
+		},{
+			.level	= 1,
 			.server	= ""
 		},{
 			.level	= 78,
@@ -846,7 +849,7 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		    struct policy_handle *handle)
+		    struct policy_handle *handle, BOOL print_server)
 {
 	NTSTATUS status;
 	struct spoolss_EnumForms r;
@@ -862,6 +865,11 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumForms failed - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	if (print_server && W_ERROR_EQUAL(r.out.result,WERR_BADFID)) {
+		printf("EnumForms on the PrintServer isn't supported by test server (NT4)\n");
+		return True;
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
@@ -1809,7 +1817,7 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_EnumForms(p, mem_ctx, &handle)) {
+	if (!test_EnumForms(p, mem_ctx, &handle, False)) {
 		ret = False;
 	}
 
@@ -2063,6 +2071,8 @@ BOOL torture_rpc_spoolss(void)
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
+
+	ret &= test_EnumForms(ctx->p, ctx, &ctx->server_handle, True);
 
 	ret &= test_EnumPorts(ctx);
 
