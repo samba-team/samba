@@ -20,7 +20,7 @@
 <title>Comparisons</title>
 
 <para>
-The Samba server uses TCP to talk to the client. Thus if you are
+The Samba server uses TCP to talk to the client, so if you are
 trying to see if it performs well, you should really compare it to
 programs that use the same protocol. The most readily available
 programs for file transfer that use TCP are ftp or another TCP-based
@@ -41,7 +41,7 @@ although this depends on your system.
 </para>
 
 <para>
-Several people have done comparisons between Samba and Novell, NFS or
+Several people have done comparisons between Samba and Novell, NFS, or
 Windows NT. In some cases Samba performed the best, in others the worst. I
 suspect the biggest factor is not Samba versus some other system, but the
 hardware and drivers used on the various systems. Given similar
@@ -61,7 +61,7 @@ performance of a TCP-based server like Samba.
 
 <para>
 The socket options that Samba uses are settable both on the command
-line with the <option>-O</option> option, or in the &smb.conf; file.
+line with the <option>-O</option> option and in the &smb.conf; file.
 </para>
 
 <para>
@@ -86,7 +86,7 @@ this is that the Microsoft TCP/IP stack is slow in sending TCP ACKs.
 <para>
 There have been reports that setting <parameter>socket options = SO_RCVBUF=8192</parameter> in smb.conf
 can seriously degrade Samba performance on the loopback adaptor (IP Address 127.0.0.1). It is strongly
-recommended that before specifying any settings for <parameter>socket options</parameter> the effect
+recommended that before specifying any settings for <parameter>socket options</parameter>, the effect
 first be quantitatively measured on the server being configured.
 </para>
 
@@ -98,7 +98,7 @@ first be quantitatively measured on the server being configured.
 <para>
 The option <smbconfoption name="read size"/> affects the overlap of disk
 reads/writes with network reads/writes. If the amount of data being
-transferred in several of the SMB commands (currently SMBwrite, SMBwriteX and
+transferred in several of the SMB commands (currently SMBwrite, SMBwriteX, and
 SMBreadbraw) is larger than this value, then the server begins writing
 the data before it has received the whole packet from the network, or
 in the case of SMBreadbraw, it begins writing to the network before
@@ -129,7 +129,7 @@ which limits the size of nearly all SMB commands. You can set the
 maximum size that Samba will negotiate using the <smbconfoption name="max xmit"/> option
 in &smb.conf;. Note that this is the maximum size of SMB requests that 
 Samba will accept, but not the maximum size that the client will accept.
-The client maximum receive size is sent to Samba by the client and Samba
+The client maximum receive size is sent to Samba by the client, and Samba
 honors this limit.
 </para>
 
@@ -146,7 +146,7 @@ In most cases the default is the best option.
 <title>Log Level</title>
 
 <para>
-If you set the log level (also known as <smbconfoption name="debug level"/>) higher than 2
+If you set the log level (also known as <smbconfoption name="debug level"/>) higher than 2,
 then you may suffer a large drop in performance. This is because the
 server flushes the log file after each operation, which can be quite
 expensive. 
@@ -166,12 +166,8 @@ being enabled by default.
 <para>
 In some cases clients do not handle <smbconfoption name="read raw"/> very well and actually
 get lower performance using it than they get using the conventional
-read operations. 
-</para>
-
-<para>
-So you might like to try <smbconfoption name="read raw">no</smbconfoption> and see what happens on your
-network. It might lower, raise or not effect your performance. Only
+read operations, so you might like to try <smbconfoption name="read raw">no</smbconfoption> and see what happens on your
+network. It might lower, raise, or not affect your performance. Only
 testing can really tell.
 </para>
 
@@ -227,11 +223,11 @@ I am running Gentoo on my server and Samba 2.2.8a. Recently
 I changed kernel version from <filename>linux-2.4.19-gentoo-r10</filename> to
 <filename>linux-2.4.20-wolk4.0s</filename>. And now I have a performance issue with Samba. 
 Many of you will probably say,  <quote>Move to vanilla sources!</quote>
-Well, I tried that and it didn't work. I have a 100mb LAN and two computers (Linux and
+Well, I tried that and it didn't work. I have a 100MB LAN and two computers (Linux and
 Windows 2000). The Linux server shares directories with DivX files, the client
-(Windows 2000) plays them via LAN. Before when I was running the 2.4.19 kernel
+(Windows 2000) plays them via LAN. Before, when I was running the 2.4.19 kernel,
 everything was fine, but now movies freeze and stop. I tried moving
-files between the server and Windows and it is terribly slow.
+files between the server and Windows, and it is terribly slow. (John, should this be set off as an extract???????)
 </para>
 
 <para>
@@ -242,7 +238,7 @@ The answer he was given is:
 Grab the mii-tool and check the duplex settings on the NIC.
 My guess is that it is a link layer issue, not an application
 layer problem. Also run ifconfig and verify that the framing
-error, collisions, and so on, look normal for ethernet.
+error, collisions, and so on, look normal for ethernet. (John, should this be set off as an extract???????)
 </para>
 
 </sect1>
@@ -253,14 +249,14 @@ error, collisions, and so on, look normal for ethernet.
 <para>
 Our Samba PDC server has been hosting three TB of data to our 500+ users
 [Windows NT/XP]  for the last three years using Samba without a problem.
-Today all shares went very slow. Also the main smbd kept
-spawning new processes so we had 1600+ running smbd's (normally we avg. 250).
+Today all shares went very slow. Also, the main smbd kept
+spawning new processes, so we had 1600+ running SMDB's (normally we average 250).
 It crashed the SUN E3500 cluster twice. After a lot of searching, I
 decided to <command>rm /var/locks/*.tdb</command>. Happy again.
 </para>
 
 <para>
-<emphasis>Question:</emphasis> Is there any method of keeping the *.tdb files in top condition or
+<emphasis>Question:</emphasis> Is there any method of keeping the *.tdb files in top condition, or
 how can I detect early corruption?
 </para>
 
@@ -284,12 +280,12 @@ a lot lower than before the locks cleanup. Any ideas on keeping it top notch?
 
 <para>
 A site reported experiencing very baffling symptoms with MYOB Premier opening and
-accessing it's data-files. Some  operations on the file would take between 40 and
+accessing its data files. Some  operations on the file would take between 40 and
 45 seconds.
 </para>
 
 <para>
-It turned out that the printer monitor program running on the windows
+It turned out that the printer monitor program running on the Windows
 clients was causing the problems. From the logs, we saw activity coming
 through with pauses of about 1 second.
 </para>
@@ -297,19 +293,19 @@ through with pauses of about 1 second.
 <para>
 Stopping the monitor software resulted in the networks access at normal
 (quick) speed. Restarting the program caused the speed to slow down
-again. The printer was a cannon lbp810 and the relevant task was
+again. The printer was a Canon LBP-810 and the relevant task was
 something like CAPON (not sure on spelling). The monitor software
-displayed a printing now dialog on the client during printing.
+displayed a "printing now" dialog on the client during printing.
 </para>
 
 <para>
-We discovered this by starting with a clean install of windows and
-trying the app at every step of the installation of other software
-process (had to do this many times).
+We discovered this by starting with a clean install of Windows and
+trying the application at every step of the installation of other software
+process (we had to do this many times).
 </para>
 
 <para>
-Moral of the story, check everything (other software included)!
+Moral of the story: Check everything (other software included)!
 </para>
 
 </sect1>
