@@ -25,14 +25,166 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/common/common.h"
-#include "rpc_server/spoolss/dcesrv_spoolss.h"
+#include "ntptr/ntptr.h"
 #include "lib/socket/socket.h"
 #include "smbd/service_stream.h"
 
-#define SPOOLSS_BUFFER_SIZE(fn,level,count,info) \
-	ndr_size_##fn##_info(dce_call, level, count, info)
+#define SPOOLSS_BUFFER_UNION(fn,info,level) \
+	((info)?ndr_size_##fn(info, level, 0):0)
+
+#define SPOOLSS_BUFFER_UNION_ARRAY(fn,info,level,count) \
+	((info)?ndr_size_##fn##_info(dce_call, level, count, info):0)
 
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= r->out.needed)?val_true:val_false)
+
+static WERROR spoolss_parse_printer_name(TALLOC_CTX *mem_ctx, const char *name,
+					 const char **_server_name,
+					 const char **_object_name,
+					 enum ntptr_HandleType *_object_type)
+{
+	char *p;
+	char *server = NULL;
+	char *server_unc = NULL;
+	const char *object = name;
+
+	/* no printername is there it's like open server */
+	if (!name) {
+		*_server_name = NULL;
+		*_object_name = NULL;
+		*_object_type = NTPTR_HANDLE_SERVER;
+		return WERR_OK;
+	}
+
+	/* just "\\" is invalid */
+	if (strequal("\\\\", name)) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
+	if (strncmp("\\\\", name, 2) == 0) {
+		server_unc = talloc_strdup(mem_ctx, name);
+		W_ERROR_HAVE_NO_MEMORY(server_unc);
+		server = server_unc + 2;
+
+		/* here we know we have "\\" in front not followed
+		 * by '\0', now see if we have another "\" in the string
+		 */
+		p = strchr_m(server, '\\');
+		if (!p) {
+			/* there's no other "\", so it's ("\\%s",server)
+			 */
+			*_server_name = server_unc;
+			*_object_name = NULL;
+			*_object_type = NTPTR_HANDLE_SERVER;
+			return WERR_OK;
+		}
+		/* here we know that we have ("\\%s\",server),
+		 * if we have '\0' as next then it's an invalid name
+		 * otherwise the printer_name
+		 */
+		p[0] = '\0';
+		/* everything that follows is the printer name */
+		p++;
+		object = p;
+
+		/* just "" as server is invalid */
+		if (strequal(server, "")) {
+			return WERR_INVALID_PRINTER_NAME;
+		}
+	}
+
+	/* just "" is invalid */
+	if (strequal(object, "")) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
+#define XCV_PORT ",XcvPort "
+#define XCV_MONITOR ",XcvMonitor "
+	if (strncmp(object, XCV_PORT, strlen(XCV_PORT)) == 0) {
+		object += strlen(XCV_PORT);
+
+		/* just "" is invalid */
+		if (strequal(object, "")) {
+			return WERR_INVALID_PRINTER_NAME;
+		}
+
+		*_server_name = server_unc;
+		*_object_name = object;
+		*_object_type = NTPTR_HANDLE_PORT;
+		return WERR_OK;
+	} else if (strncmp(object, XCV_MONITOR, strlen(XCV_MONITOR)) == 0) {
+		object += strlen(XCV_MONITOR);
+
+		/* just "" is invalid */
+		if (strequal(object, "")) {
+			return WERR_INVALID_PRINTER_NAME;
+		}
+
+		*_server_name = server_unc;
+		*_object_name = object;
+		*_object_type = NTPTR_HANDLE_MONITOR;
+		return WERR_OK;
+	}
+
+	*_server_name = server_unc;
+	*_object_name = object;
+	*_object_type = NTPTR_HANDLE_PRINTER;
+	return WERR_OK;
+}
+
+/*
+ * Check server_name is:
+ * -  "" , functions that don't allow "",
+ *         should check that on their own, before calling this function
+ * -  our name (only netbios yet, TODO: need to test dns name!)
+ * -  our ip address of the current use socket
+ * otherwise return WERR_INVALID_PRINTER_NAME
+ */
+static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call, 
+					TALLOC_CTX *mem_ctx,
+					const char *server_name)
+{
+	BOOL ret;
+	const char *ip_str;
+
+	if (!server_name) return WERR_OK;
+
+	ret = strequal("",server_name);
+	if (ret) return WERR_OK;
+
+	if (strncmp("\\\\", server_name, 2) != 0) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
+	server_name += 2;
+
+	ret = strequal(lp_netbios_name(), server_name);
+	if (ret) return WERR_OK;
+
+	/* TODO: check dns name here ? */
+
+	ip_str = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(ip_str);
+
+	ret = strequal(ip_str, server_name);
+	if (ret) return WERR_OK;
+
+	return WERR_INVALID_PRINTER_NAME;
+}
+
+static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+{
+	NTSTATUS status;
+	struct ntptr_context *ntptr;
+
+	status = ntptr_init_context(dce_call->context, lp_ntptr_providor(), &ntptr);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dce_call->context->private = ntptr;
+
+	return NT_STATUS_OK;
+}
+
+#define DCESRV_INTERFACE_SPOOLSS_BIND dcerpc_spoolss_bind
 
 /* 
   spoolss_EnumPrinters 
@@ -40,123 +192,19 @@
 static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinters *r)
 {
-	void *spoolss_ctx;
-	struct ldb_message **msgs;
-	int count;
-	int i;
-	union spoolss_PrinterInfo *info;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	WERROR status;
 
-	spoolss_ctx = spoolssdb_connect();
-	W_ERROR_HAVE_NO_MEMORY(spoolss_ctx);
+	status = spoolss_check_server_name(dce_call, mem_ctx, r->in.server);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	count = spoolssdb_search(spoolss_ctx, mem_ctx, NULL, &msgs, NULL,
-			       "(&(objectclass=printer))");
-	spoolssdb_close(spoolss_ctx);
+	status = ntptr_EnumPrinters(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	if (count == 0) return WERR_OK;
-	if (count < 0) return WERR_GENERAL_FAILURE;
-
-	info = talloc_array(mem_ctx, union spoolss_PrinterInfo, count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	switch(r->in.level) {
-	case 1:
-		for (i = 0; i < count; i++) {
-			info[i].info1.flags		= samdb_result_uint(msgs[i], "flags", 0);
-
-			info[i].info1.name		= samdb_result_string(msgs[i], "name", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info1.name);
-
-			info[i].info1.description	= samdb_result_string(msgs[i], "description", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info1.description);
-
-			info[i].info1.comment		= samdb_result_string(msgs[i], "comment", NULL);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 2:
-		for (i = 0; i < count; i++) {
-			info[i].info2.servername	= samdb_result_string(msgs[i], "servername", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.servername);
-
-			info[i].info2.printername	= samdb_result_string(msgs[i], "printername", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printername);
-
-			info[i].info2.sharename		= samdb_result_string(msgs[i], "sharename", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.sharename);
-
-			info[i].info2.portname		= samdb_result_string(msgs[i], "portname", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.portname);
-
-			info[i].info2.drivername	= samdb_result_string(msgs[i], "drivername", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.drivername);
-
-			info[i].info2.comment		= samdb_result_string(msgs[i], "comment", NULL);
-
-			info[i].info2.location		= samdb_result_string(msgs[i], "location", NULL);
-
-			info[i].info2.devmode		= NULL;
-
-			info[i].info2.sepfile		= samdb_result_string(msgs[i], "sepfile", NULL);
-
-			info[i].info2.printprocessor	= samdb_result_string(msgs[i], "printprocessor", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printprocessor);
-
-			info[i].info2.datatype		= samdb_result_string(msgs[i], "datatype", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.datatype);
-
-			info[i].info2.parameters	= samdb_result_string(msgs[i], "parameters", NULL);
-
-			info[i].info2.secdesc		= NULL;
-
-			info[i].info2.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
-			info[i].info2.priority		= samdb_result_uint(msgs[i], "priority", 0);
-			info[i].info2.defaultpriority	= samdb_result_uint(msgs[i], "defaultpriority", 0);
-			info[i].info2.starttime		= samdb_result_uint(msgs[i], "starttime", 0);
-			info[i].info2.untiltime		= samdb_result_uint(msgs[i], "untiltime", 0);
-			info[i].info2.status		= samdb_result_uint(msgs[i], "status", 0);
-			info[i].info2.cjobs		= samdb_result_uint(msgs[i], "cjobs", 0);
-			info[i].info2.averageppm	= samdb_result_uint(msgs[i], "averageppm", 0);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 4:
-		for (i = 0; i < count; i++) {
-			info[i].info4.printername	= samdb_result_string(msgs[i], "printername", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.printername);
-
-			info[i].info4.servername	= samdb_result_string(msgs[i], "servername", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.servername);
-
-			info[i].info4.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 5:
-		for (i = 0; i < count; i++) {
-			info[i].info5.printername	= samdb_result_string(msgs[i], "name", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info5.printername);
-
-			info[i].info5.portname		= samdb_result_string(msgs[i], "port", "");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info5.portname);
-
-			info[i].info5.attributes	= samdb_result_uint(msgs[i], "attributes", 0);
-			info[i].info5.device_not_selected_timeout = samdb_result_uint(msgs[i], "device_not_selected_timeout", 0);
-			info[i].info5.transmission_retry_timeout  = samdb_result_uint(msgs[i], "transmission_retry_timeout", 0);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinters, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	}
-
-	return WERR_UNKNOWN_LEVEL;
+	r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinters, r->out.info, r->in.level, r->out.count);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	r->out.count	= SPOOLSS_BUFFER_OK(r->out.count, 0);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -279,64 +327,19 @@ static WERROR spoolss_AddPrinterDriver(struct dcesrv_call_state *dce_call, TALLO
 static WERROR spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinterDrivers *r)
 {
-	union spoolss_DriverInfo *info;
-	int count;
-	int i;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	WERROR status;
 
-	count = 0;
+	status = spoolss_check_server_name(dce_call, mem_ctx, r->in.server);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	if (count == 0) return WERR_OK;
-	if (count < 0) return WERR_GENERAL_FAILURE;
+	status = ntptr_EnumPrinterDrivers(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	info = talloc_array(mem_ctx, union spoolss_DriverInfo, count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	switch (r->in.level) {
-	case 1:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 2:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 3:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 4:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 5:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 6:
-		for (i=0; i < count; i++) {
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPrinterDrivers, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	}
-
-	return WERR_UNKNOWN_LEVEL;
+	r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinterDrivers, r->out.info, r->in.level, r->out.count);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	r->out.count	= SPOOLSS_BUFFER_OK(r->out.count, 0);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -356,42 +359,17 @@ static WERROR spoolss_GetPrinterDriver(struct dcesrv_call_state *dce_call, TALLO
 static WERROR spoolss_GetPrinterDriverDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrinterDriverDirectory *r)
 {
-	union spoolss_DriverDirectoryInfo *info;
-	const char *prefix;
-	const char *postfix;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	WERROR status;
 
-	/*
-	 * NOTE: normally r->in.level is 1, but both w2k3 and nt4 sp6a
-	 *        are ignoring the r->in.level completely, so we do :-)
-	 */
-       
-	/*
-	 * TODO: check the server name is ours
-	 * - if it's a invalid UNC then return WERR_INVALID_NAME
-	 * - if it's the wrong host name return WERR_INVALID_PARAM
-	 * - if it's "" then we need to return a local WINDOWS path
-	 */
-	if (strcmp("", r->in.server) == 0) {
-		prefix = "C:\\DRIVERS";
-	} else {
-		prefix = talloc_asprintf(mem_ctx, "%s\\print$", r->in.server);
-		W_ERROR_HAVE_NO_MEMORY(prefix);
-	}
+	status = spoolss_check_server_name(dce_call, mem_ctx, r->in.server);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	if (strcmp(SPOOLSS_ARCHITECTURE_NT_X86, r->in.environment) == 0) {
-		postfix = "W32X86";
-	} else {
-		return WERR_INVALID_ENVIRONMENT;
-	}
+	status = ntptr_GetPrinterDriverDirectory(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	info = talloc(mem_ctx, union spoolss_DriverDirectoryInfo);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	info->info1.directory_name	= talloc_asprintf(mem_ctx, "%s\\%s", prefix, postfix);
-	W_ERROR_HAVE_NO_MEMORY(info->info1.directory_name);
-
-	r->out.needed	= ndr_size_spoolss_DriverDirectoryInfo(info, r->in.level, 0);
-	r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
+	r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
@@ -532,67 +510,28 @@ static WERROR spoolss_ScheduleJob(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static WERROR spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrinterData *r)
 {
+	struct ntptr_GenericHandle *handle;
 	struct dcesrv_handle *h;
-	WERROR status = WERR_INVALID_PARAM;
-	enum spoolss_PrinterDataType type = SPOOLSS_PRINTER_DATA_TYPE_NULL;
-	union spoolss_PrinterData data;
+	WERROR status;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
 
-	if (h->wire_handle.handle_type == SPOOLSS_HANDLE_SERVER) {
-		/* TODO: do access check here */
-
-		if (strcmp("W3SvcInstalled", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("BeepEnabled", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("EventLog", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("NetPopup", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("NetPopupToComputer", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("MajorVersion", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 3;
-			status		= WERR_OK;
-		} else if (strcmp("MinorVersion", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 0;
-			status		= WERR_OK;
-		} else if (strcmp("DefaultSpoolDirectory", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
-			data.string	= "C:\\PRINTERS";
-			status		= WERR_OK;
-		} else if (strcmp("Architecture", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
-			data.string	= SPOOLSS_ARCHITECTURE_NT_X86;
-			status		= WERR_OK;
-		} else if (strcmp("DsPresent", r->in.value_name) == 0) {
-			type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
-			data.value	= 1;
-			status		= WERR_OK;
-		}
+	switch (handle->type) {
+		case NTPTR_HANDLE_SERVER:
+			status = ntptr_GetPrintServerData(handle, mem_ctx, r);
+			break;
+		default:
+			status = WERR_FOOBAR;
+			break;
 	}
 
-	if (W_ERROR_IS_OK(status)) {
-		r->out.needed	= ndr_size_spoolss_PrinterData(&data, type, 0);
-		r->out.type	= SPOOLSS_BUFFER_OK(type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
-		r->out.data	= SPOOLSS_BUFFER_OK(data, data);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
-	}
+	W_ERROR_NOT_OK_RETURN(status);
 
-	return status;
+	r->out.needed	= ndr_size_spoolss_PrinterData(&r->out.data, r->out.type, 0);
+	r->out.type	= SPOOLSS_BUFFER_OK(r->out.type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
+	r->out.data	= SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 }
 
 
@@ -662,7 +601,29 @@ static WERROR spoolss_DeleteForm(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR spoolss_GetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetForm *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ntptr_GenericHandle *handle;
+	struct dcesrv_handle *h;
+	WERROR status;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
+
+	switch (handle->type) {
+		case NTPTR_HANDLE_SERVER:
+			status = ntptr_GetPrintServerForm(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PRINTER:
+			status = ntptr_GetPrinterForm(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		default:
+			return WERR_FOOBAR;
+	}
+
+	r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -682,44 +643,30 @@ static WERROR spoolss_SetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumForms *r)
 {
-	union spoolss_FormInfo *info;
-	int count;
-	int i;
+	struct ntptr_GenericHandle *handle;
 	struct dcesrv_handle *h;
+	WERROR status;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
 
-	count = 1;
-
-	if (count == 0) return WERR_OK;
-	if (count < 0) return WERR_GENERAL_FAILURE;
-
-	info = talloc_array(mem_ctx, union spoolss_FormInfo, count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	switch (r->in.level) {
-	case 1:
-		for (i=0; i < count; i++) {
-			info[i].info1.flags		= SPOOLSS_FORM_PRINTER;
-
-			info[i].info1.form_name		= talloc_strdup(mem_ctx, "Letter");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info1.form_name);
-
-			info[i].info1.size.width	= 0x34b5c;
-			info[i].info1.size.height	= 0x44368;
-
-			info[i].info1.area.left		= 0;
-			info[i].info1.area.top		= 0;
-			info[i].info1.area.right	= 0x34b5c;
-			info[i].info1.area.bottom	= 0x44368;
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumForms, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	switch (handle->type) {
+		case NTPTR_HANDLE_SERVER:
+			status = ntptr_EnumPrintServerForms(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PRINTER:
+			status = ntptr_EnumPrinterForms(handle, mem_ctx, r);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		default:
+			return WERR_FOOBAR;
 	}
 
-	return WERR_UNKNOWN_LEVEL;
+	r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumForms, r->out.info, r->in.level, r->out.count);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	r->out.count	= SPOOLSS_BUFFER_OK(r->out.count, 0);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -729,49 +676,19 @@ static WERROR spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPorts *r)
 {
-	union spoolss_PortInfo *info;
-	int count;
-	int i;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	WERROR status;
 
-	count = 1;
+	status = spoolss_check_server_name(dce_call, mem_ctx, r->in.servername);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	if (count == 0) return WERR_OK;
-	if (count < 0) return WERR_GENERAL_FAILURE;
+	status = ntptr_EnumPorts(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	info = talloc_array(mem_ctx, union spoolss_PortInfo, count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	switch (r->in.level) {
-	case 1:
-		for (i=0; i < count; i++) {
-			info[i].info1.port_name	= talloc_strdup(mem_ctx, "Samba Printer Port");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info1.port_name);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 2:
-		for (i=0; i < count; i++) {
-			info[i].info2.port_name		= talloc_strdup(mem_ctx, "Samba Printer Port");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.port_name);
-
-			info[i].info2.monitor_name	= talloc_strdup(mem_ctx, "Local Monitor");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.monitor_name);
-
-			info[i].info2.description	= talloc_strdup(mem_ctx, "Local Port");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.description);
-
-			info[i].info2.port_type		= SPOOLSS_PORT_TYPE_WRITE;
-			info[i].info2.reserved		= 0;
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumPorts, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	}
-
-	return WERR_UNKNOWN_LEVEL;
+	r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPorts, r->out.info, r->in.level, r->out.count);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	r->out.count	= SPOOLSS_BUFFER_OK(r->out.count, 0);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -781,46 +698,19 @@ static WERROR spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumMonitors *r)
 {
-	union spoolss_MonitorInfo *info;
-	int count;
-	int i;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	WERROR status;
 
-	count = 1;
+	status = spoolss_check_server_name(dce_call, mem_ctx, r->in.servername);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	if (count == 0) return WERR_OK;
-	if (count < 0) return WERR_GENERAL_FAILURE;
+	status = ntptr_EnumMonitors(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
 
-	info = talloc_array(mem_ctx, union spoolss_MonitorInfo, count);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	switch (r->in.level) {
-	case 1:
-		for (i=0; i < count; i++) {
-			info[i].info1.monitor_name	= talloc_strdup(mem_ctx, "Standard TCP/IP Port");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info1.monitor_name);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumMonitors, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	case 2:
-		for (i=0; i < count; i++) {
-			info[i].info2.monitor_name	= talloc_strdup(mem_ctx, "Standard TCP/IP Port");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.monitor_name);
-
-			info[i].info2.environment	= talloc_strdup(mem_ctx, SPOOLSS_ARCHITECTURE_NT_X86);
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.environment);
-
-			info[i].info2.dll_name		= talloc_strdup(mem_ctx, "tcpmon.dll");
-			W_ERROR_HAVE_NO_MEMORY(info[i].info2.dll_name);
-		}
-		r->out.needed	= SPOOLSS_BUFFER_SIZE(spoolss_EnumMonitors, r->in.level, count, info);
-		r->out.info	= SPOOLSS_BUFFER_OK(info, NULL);
-		r->out.count	= SPOOLSS_BUFFER_OK(count, 0);
-		return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
-	}
-
-	return WERR_UNKNOWN_LEVEL;
+	r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumMonitors, r->out.info, r->in.level, r->out.count);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	r->out.count	= SPOOLSS_BUFFER_OK(r->out.count, 0);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -1110,7 +1000,12 @@ static WERROR spoolss_ResetPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
-	return WERR_NOT_SUPPORTED;
+	/*
+	 * TODO: for now just return ok,
+	 *       to keep the w2k3 PrintServer 
+	 *       happy to allow to open the Add Printer GUI
+	 */
+	return WERR_OK;
 }
 
 
@@ -1143,175 +1038,57 @@ static WERROR spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
-static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call, 
-					   TALLOC_CTX *mem_ctx,
-					   struct spoolss_OpenPrinterEx *r,
-					   const char *server_name)
-{
-	struct spoolss_handle_server *state;
-	struct dcesrv_handle *handle;
-	BOOL ret;
-
-	/* Check printername is our name or our ip address
-	 */
-	ret = strequal(server_name, lp_netbios_name());
-	if (!ret) {
-		const char *ip = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
-		W_ERROR_HAVE_NO_MEMORY(ip);
-
-		ret = strequal(server_name, ip);
-		if (!ret) {
-			return WERR_INVALID_PRINTER_NAME;
-		}
-	}
-
-	/* TODO: do access check here */
-
-	handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_SERVER);
-	W_ERROR_HAVE_NO_MEMORY(handle);
-
-	state = talloc(handle, struct spoolss_handle_server);
-	W_ERROR_HAVE_NO_MEMORY(state);
-
-	handle->data = state;
-
-	state->access_mask = r->in.access_mask;
-
-	*r->out.handle	= handle->wire_handle;
-
-	return WERR_OK;	
-}
-
-static WERROR spoolss_OpenPrinterEx_port(struct dcesrv_call_state *dce_call, 
-					 TALLOC_CTX *mem_ctx,
-					 struct spoolss_OpenPrinterEx *r,
-					 const char *server_name,
-					 const char *port_name)
-{
-	DEBUG(1, ("looking for port [%s] (server[%s])\n", port_name, server_name));
-
-	return WERR_INVALID_PRINTER_NAME;
-}
-
-static WERROR spoolss_OpenPrinterEx_monitor(struct dcesrv_call_state *dce_call, 
-					    TALLOC_CTX *mem_ctx,
-					    struct spoolss_OpenPrinterEx *r,
-					    const char *server_name,
-					    const char *monitor_name)
-{
-	if (strequal("Standard TCP/IP Port", monitor_name)) {
-		struct dcesrv_handle *handle;
-
-		handle = dcesrv_handle_new(dce_call->context, SPOOLSS_HANDLE_MONITOR);
-		W_ERROR_HAVE_NO_MEMORY(handle);
-
-		handle->data = NULL;
-
-		*r->out.handle	= handle->wire_handle;
-
-		return WERR_OK;	
-	}
-
-	DEBUG(1, ("looking for monitor [%s] (server[%s])\n", monitor_name, server_name));
-
-	return WERR_INVALID_PRINTER_NAME;
-}
-
-static WERROR spoolss_OpenPrinterEx_printer(struct dcesrv_call_state *dce_call, 
-					    TALLOC_CTX *mem_ctx,
-					    struct spoolss_OpenPrinterEx *r,
-					    const char *server_name,
-					    const char *printer_name)
-{
-	DEBUG(3, ("looking for printer [%s] (server[%s])\n", printer_name, server_name));
-
-	return WERR_INVALID_PRINTER_NAME;
-}
-
 /* 
   spoolss_OpenPrinterEx 
 */
 static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_OpenPrinterEx *r)
 {
-	char *p;
-	char *server = NULL;
-	const char *object = r->in.printername;
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_GenericHandle *handle;
+	struct dcesrv_handle *h;
+	const char *server;
+	const char *object;
+	enum ntptr_HandleType type;
+	WERROR status;
+
 	ZERO_STRUCTP(r->out.handle);
 
-	/* no printername is there it's like open server */
-	if (!r->in.printername) {
-		return spoolss_OpenPrinterEx_server(dce_call, mem_ctx, r, NULL);
+	status = spoolss_parse_printer_name(mem_ctx, r->in.printername, &server, &object, &type);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	status = spoolss_check_server_name(dce_call, mem_ctx, server);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	switch (type) {
+		case NTPTR_HANDLE_SERVER:
+			status = ntptr_OpenPrintServer(ntptr, mem_ctx, r, server, &handle);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PORT:
+			status = ntptr_OpenPort(ntptr, mem_ctx, r, object, &handle);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_MONITOR:
+			status = ntptr_OpenMonitor(ntptr, mem_ctx, r, object, &handle);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		case NTPTR_HANDLE_PRINTER:
+			status = ntptr_OpenPrinter(ntptr, mem_ctx, r, object, &handle);
+			W_ERROR_NOT_OK_RETURN(status);
+			break;
+		default:
+			return WERR_FOOBAR;
 	}
 
-	/* just "\\" is invalid */
-	if (strequal(r->in.printername, "\\\\")) {
-		return WERR_INVALID_PRINTER_NAME;
-	}
+	h = dcesrv_handle_new(dce_call->context, handle->type);
+	W_ERROR_HAVE_NO_MEMORY(h);
 
-	if (strncmp(r->in.printername, "\\\\", 2) == 0) {
-		server = talloc_strdup(mem_ctx, r->in.printername + 2);
-		W_ERROR_HAVE_NO_MEMORY(server);
+	h->data = talloc_steal(h, handle);
 
-		/* here we know we have "\\" in front not followed
-		 * by '\0', now see if we have another "\" in the string
-		 */
-		p = strchr_m(server, '\\');
-		if (!p) {
-			/* there's no other "\", so it's ("\\%s",server)
-			 */
-			return spoolss_OpenPrinterEx_server(dce_call, mem_ctx, r, server);
-		}
-		/* here we know that we have ("\\%s\",server),
-		 * if we have '\0' as next then it's an invalid name
-		 * otherwise the printer_name
-		 */
-		p[0] = '\0';
-		/* everything that follows is the printer name */
-		p++;
-		object = p;
+	*r->out.handle	= h->wire_handle;
 
-		/* just "" as server is invalid */
-		if (strequal(server, "")) {
-			DEBUG(2,("OpenPrinterEx invalid print server: [%s][%s][%s]\n", r->in.printername, server, object));
-			return WERR_INVALID_PRINTER_NAME;
-		}
-	}
-
-	/* just "" is invalid */
-	if (strequal(object, "")) {
-		DEBUG(2,("OpenPrinterEx invalid object: [%s][%s][%s]\n", r->in.printername, server, object));
-		return WERR_INVALID_PRINTER_NAME;
-	}
-
-	DEBUG(3,("OpenPrinterEx object: [%s][%s][%s]\n", r->in.printername, server, object));
-
-#define XCV_PORT ",XcvPort "
-#define XCV_MONITOR ",XcvMonitor "
-	if (strncmp(object, XCV_PORT, strlen(XCV_PORT)) == 0) {
-		object += strlen(XCV_PORT);
-
-		/* just "" is invalid */
-		if (strequal(object, "")) {
-			DEBUG(2,("OpenPrinterEx invalid port: [%s][%s][%s]\n", r->in.printername, server, object));
-			return WERR_INVALID_PRINTER_NAME;
-		}
-
-		return spoolss_OpenPrinterEx_port(dce_call, mem_ctx, r, server, object);
-	} else if (strncmp(object, XCV_MONITOR, strlen(XCV_MONITOR)) == 0) {
-		object += strlen(XCV_MONITOR);
-
-		/* just "" is invalid */
-		if (strequal(object, "")) {
-			DEBUG(2,("OpenPrinterEx invalid monitor: [%s][%s][%s]\n", r->in.printername, server, object));
-			return WERR_INVALID_PRINTER_NAME;
-		}
-
-		return spoolss_OpenPrinterEx_monitor(dce_call, mem_ctx, r, server, object);
-	}
-
-	return spoolss_OpenPrinterEx_printer(dce_call, mem_ctx, r, server, object);
+	return WERR_OK;
 }
 
 /* 
