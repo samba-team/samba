@@ -1,3 +1,17 @@
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* slc-gram.y: fix a merge error
+	
+	* slc-gram.y: rename optind to optidx, rename variables to avoid
+	shadowing
+
+	* make_cmds.c: rename optind to optidx, move variable define to
+	avoid shadowing
+
+	* ss.c: rename index to idx
+	
+	* sl.c: use rk_UNCONST to un-constify
+
 2005-05-10  Dave Love  <fx@gnu.org>
 
 	* slc-lex.l: Include <stdlib.h>.
