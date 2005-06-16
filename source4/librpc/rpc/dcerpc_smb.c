@@ -294,6 +294,10 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 	io.writex.in.count = blob->length;
 	io.writex.in.data = blob->data;
 
+	/* we must not timeout at the smb level for rpc requests, as otherwise
+	   signing/sealing can be messed up */
+	smb->tree->session->transport->options.request_timeout = 0;
+
 	req = smb_raw_write_send(smb->tree, &io);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
