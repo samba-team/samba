@@ -185,6 +185,9 @@ $(DVIDIR)/%.dvi: %.dvi
 %.eps: %.dia
 	$(DIA) -t eps-builtin -e $@ $<
 
+%.png: %.dia
+	$(DIA) -e $@ $<
+
 %.pdf: %.eps
 	$(EPSTOPDF) $<
 
