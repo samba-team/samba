@@ -109,7 +109,7 @@ static void on_connect_activate(GtkMenuItem *menuitem, gpointer user_data)
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
 				       DCERPC_ATSVC_UUID,
 				       DCERPC_ATSVC_VERSION,
-				       credentials);
+				       credentials, NULL);
 
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, "Error while connecting to at service", status);

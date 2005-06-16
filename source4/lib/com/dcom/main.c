@@ -84,7 +84,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		return dcerpc_pipe_connect(ctx, p, "ncalrpc", 
 					   DCERPC_IREMOTEACTIVATION_UUID, 
 					   DCERPC_IREMOTEACTIVATION_VERSION,
-					   ctx->dcom->credentials);
+					   ctx->dcom->credentials, ctx->event_ctx);
 	}
 
 	/* Allow server name to contain a binding string */
@@ -92,7 +92,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect_b(ctx, p, bd, 
 					       DCERPC_IREMOTEACTIVATION_UUID, 
 					       DCERPC_IREMOTEACTIVATION_VERSION, 
-						   ctx->dcom->credentials);
+					       ctx->dcom->credentials, ctx->event_ctx);
 
 		talloc_free(mem_ctx);
 		return status;
@@ -109,7 +109,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect(ctx, p, binding, 
 					     DCERPC_IREMOTEACTIVATION_UUID, 
 					     DCERPC_IREMOTEACTIVATION_VERSION, 
-						 ctx->dcom->credentials);
+					     ctx->dcom->credentials, ctx->event_ctx);
 
 		if (NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
@@ -256,7 +256,7 @@ WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const 
 	return WERR_OK;
 }
 
-NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
+NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp)
 {
 	struct dcerpc_binding *binding;
 	struct GUID iid;
@@ -301,9 +301,13 @@ NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
+			/* TODO: jelmer, please look at this. The
+			   "NULL" here should be a real event
+			   context */
 			status = dcerpc_pipe_connect_b(NULL, &p, binding, 
 						       uuid, 0.0, 
-						       iface->ctx->dcom->credentials);
+						       iface->ctx->dcom->credentials,
+						       NULL);
 		}
 		talloc_free(binding);
 		i++;

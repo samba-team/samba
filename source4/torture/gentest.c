@@ -183,7 +183,7 @@ static BOOL connect_servers(void)
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
 							servers[i].server_name, 
 							servers[i].share_name, NULL, 
-							servers[i].credentials);
+							servers[i].credentials, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,

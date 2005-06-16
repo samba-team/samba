@@ -21,11 +21,16 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "lib/com/com.h"
+#include "lib/events/events.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
-WERROR com_init(struct com_context **ctx)
+WERROR com_init(struct com_context **ctx, struct event_context *event_ctx)
 {
 	*ctx = talloc(NULL, struct com_context);
+	if (event_ctx == NULL) {
+		event_ctx = event_context_init(*ctx);
+	}
+	(*ctx)->event_ctx = event_ctx;
 	return WERR_OK;
 }
 

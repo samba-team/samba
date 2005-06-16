@@ -208,7 +208,8 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **pp,
 
 	/* Look up identifier using the epmapper */
 	if (!b->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, b, pipe_uuid, pipe_version);
+		status = dcerpc_epm_map_binding(tmp_ctx, b, pipe_uuid, pipe_version,
+						NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));

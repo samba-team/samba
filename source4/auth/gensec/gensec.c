@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "lib/events/events.h"
 
 /* the list of currently registered GENSEC backends */
 const static struct gensec_security_ops **generic_security_ops;
@@ -228,12 +229,12 @@ const char **gensec_security_oids(TALLOC_CTX *mem_ctx, const char *skip)
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
 */
-static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security) 
+static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
+			     struct gensec_security **gensec_security,
+			     struct event_context *ev) 
 {
 	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
-	if (!(*gensec_security)) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
 	(*gensec_security)->ops = NULL;
 
@@ -241,6 +242,17 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
+	
+	if (ev == NULL) {
+		ev = event_context_init(*gensec_security);
+		if (ev == NULL) {
+			talloc_free(*gensec_security);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	(*gensec_security)->event_ctx = ev;
+
 	return NT_STATUS_OK;
 }
 
@@ -257,15 +269,14 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security **gensec_security)
 {
 	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
-	if (!(*gensec_security)) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
 	(**gensec_security) = *parent;
 	(*gensec_security)->ops = NULL;
 	(*gensec_security)->private_data = NULL;
 
 	(*gensec_security)->subcontext = True;
+	(*gensec_security)->event_ctx = parent->event_ctx;
 
 	return NT_STATUS_OK;
 }
@@ -276,10 +287,12 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
 */
-NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
+NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
+			     struct gensec_security **gensec_security,
+			     struct event_context *ev)
 {
 	NTSTATUS status;
-	status = gensec_start(mem_ctx, gensec_security);
+	status = gensec_start(mem_ctx, gensec_security, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -295,10 +308,12 @@ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
 */
-NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, struct gensec_security **gensec_security)
+NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
+			     struct gensec_security **gensec_security,
+			     struct event_context *ev)
 {
 	NTSTATUS status;
-	status = gensec_start(mem_ctx, gensec_security);
+	status = gensec_start(mem_ctx, gensec_security, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

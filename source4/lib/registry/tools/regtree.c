@@ -99,7 +99,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	}
 
 	if (remote) {
-		error = reg_open_remote(&h, cmdline_credentials, remote);
+		error = reg_open_remote(&h, cmdline_credentials, remote, NULL);
 	} else if (backend) {
 	    error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &root);
 	} else {

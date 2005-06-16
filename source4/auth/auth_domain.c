@@ -84,7 +84,7 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       credentials);
+				       credentials, ctx->auth_ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

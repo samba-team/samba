@@ -19,8 +19,6 @@
 */
 
 struct libnet_context {
-	TALLOC_CTX *mem_ctx;
-
 	/* here we need:
 	 * a client env context
 	 * a user env context
@@ -33,6 +31,8 @@ struct libnet_context {
 	/* opened handles */
 	struct policy_handle domain_handle;
 	struct policy_handle user_handle;
+
+	struct event_context *event_ctx;
 };
 
 

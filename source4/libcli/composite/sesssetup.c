@@ -263,7 +263,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 
 	smbcli_temp_set_signing(session->transport);
 
-	status = gensec_client_start(session, &session->gensec);
+	status = gensec_client_start(session, &session->gensec, c->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		return NULL;

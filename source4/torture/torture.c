@@ -82,7 +82,7 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	status = smbcli_full_connection(NULL,
 					c, hostname, 
 					sharename, NULL,
-					cmdline_credentials);
+					cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
@@ -133,7 +133,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 
 	status = dcerpc_pipe_connect(parent_ctx, 
 				     p, binding, pipe_uuid, pipe_version,
-				     cmdline_credentials);
+				     cmdline_credentials, NULL);
  
         return status;
 }
@@ -167,7 +167,7 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 	b->transport = transport;
 
 	status = dcerpc_pipe_connect_b(mem_ctx, p, b, pipe_uuid, pipe_version,
-								   cmdline_credentials);
+				       cmdline_credentials, NULL);
 					   
 	if (NT_STATUS_IS_OK(status)) {
 		*p = talloc_reference(parent_ctx, *p);
@@ -612,7 +612,7 @@ static BOOL run_tcon_devtype_test(void)
 	status = smbcli_full_connection(NULL,
 					&cli1, host, 
 					share, NULL,
-					cmdline_credentials);
+					cmdline_credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");

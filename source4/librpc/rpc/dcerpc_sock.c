@@ -36,7 +36,6 @@ struct sock_blob {
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {
-	struct event_context *event_ctx;
 	struct fd_event *fde;
 	struct socket_context *sock;
 	char *server_name;
@@ -260,16 +259,6 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
 }
 
 /* 
-   return the event context so the caller can process asynchronously
-*/
-static struct event_context *sock_event_context(struct dcerpc_connection *p)
-{
-	struct sock_private *sock = p->transport.private;
-
-	return sock->event_ctx;
-}
-
-/* 
    shutdown sock pipe connection
 */
 static NTSTATUS sock_shutdown_pipe(struct dcerpc_connection *p)
@@ -331,7 +320,6 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 
 	c->transport.send_request = sock_send_request;
 	c->transport.send_read = sock_send_read;
-	c->transport.event_context = sock_event_context;
 	c->transport.recv_data = NULL;
 
 	c->transport.shutdown_pipe = sock_shutdown_pipe;
@@ -339,13 +327,12 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	
 	sock->sock = socket_ctx;
 	sock->server_name = strupper_talloc(sock, server);
-	sock->event_ctx = event_context_init(sock);
 	sock->pending_send = NULL;
 	sock->recv.received = 0;
 	sock->recv.data = data_blob(NULL, 0);
 	sock->recv.pending_count = 0;
 
-	sock->fde = event_add_fd(sock->event_ctx, sock, socket_get_fd(sock->sock), 
+	sock->fde = event_add_fd(c->event_ctx, sock, socket_get_fd(sock->sock), 
 				 0, sock_io_handler, c);
 
 	c->transport.private = sock;

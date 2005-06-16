@@ -144,6 +144,9 @@ struct auth_context {
 
 	/* methods, in the order they should be called */
 	struct auth_method_context *methods;
+
+	/* the event context to use for calls that can block */
+	struct event_context *event_ctx;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

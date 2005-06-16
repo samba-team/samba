@@ -53,7 +53,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	status = dcerpc_pipe_connect(private, 
 				     &(private->c_pipe), binding, 
 				     iface->uuid, iface->if_version, 
-				     credentials);
+				     credentials, dce_call->event_ctx);
 
 	talloc_free(credentials);
 	if (!NT_STATUS_IS_OK(status)) {

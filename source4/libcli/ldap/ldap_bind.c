@@ -144,7 +144,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	DATA_BLOB input = data_blob(NULL, 0);
 	DATA_BLOB output = data_blob(NULL, 0);
 
-	status = gensec_client_start(conn, &conn->gensec);
+	status = gensec_client_start(conn, &conn->gensec, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to start GENSEC engine (%s)\n", nt_errstr(status)));
 		goto failed;
