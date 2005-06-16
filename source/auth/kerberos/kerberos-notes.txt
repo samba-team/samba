@@ -251,10 +251,6 @@ krb5_log_facility from Heimdal.  This allows us to redirect the
 warnings and status from the KDC (and client/server kerberos code) to
 Samba's DEBUG() system.
 
-We have added krb5_freelog() to be the opposite of krb5_initlog(), and
-ensure we do not leak memeory in this operation. (krb5_closelog() does
-not free everything that krb5_initlog creates).
-
 Similarly important is the Heimdal-specific krb5_get_error_string()
 function, which does a lot to reduce the 'administrator pain' level,
 by providing specific, english text-string error messages instead of
