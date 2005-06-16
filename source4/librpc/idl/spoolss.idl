@@ -817,7 +817,19 @@
 
 	typedef struct {
 		spoolss_FormFlags flags;
-		[relative] unistr *form_name;
+		[relative] nstring *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
+	} spoolss_FormInfo1;
+
+	typedef [nodiscriminant,relative_base,public,gensize] union {
+		[case(1)] spoolss_FormInfo1 info1;
+		[default];
+	} spoolss_FormInfo;
+
+	typedef struct {
+		spoolss_FormFlags flags;
+		unistr *form_name;
 		spoolss_FormSize size;
 		spoolss_FormArea area;
 	} spoolss_AddFormInfo1;
@@ -841,13 +853,6 @@
 
 	/******************/
 	/* Function: 0x20 */
-	typedef struct {
-		spoolss_FormFlags flags;
-		[relative] nstring *form_name;
-		spoolss_FormSize size;
-		spoolss_FormArea area;
-	} spoolss_FormInfo1;
-
 	WERROR spoolss_GetForm(
 		[in,ref] policy_handle *handle,
 		[in] unistr form_name,
@@ -858,30 +863,14 @@
 		[out] uint32 needed
 	);
 
-	typedef struct {
-		spoolss_FormFlags flags;
-		unistr *form_name;
-		spoolss_FormSize size;
-		spoolss_FormArea area;
-	} spoolss_SetFormInfo1;
-
-	typedef [switch_type(uint32)] union {
-		[case(1)] spoolss_SetFormInfo1 *info1;
-	} spoolss_SetFormInfo;
-
 	/******************/
 	/* Function: 0x21 */
 	WERROR spoolss_SetForm(
 		[in,ref] policy_handle *handle,
 		[in] unistr form_name,
 		[in] uint32 level,
-		[in,switch_is(level)] spoolss_SetFormInfo info
+		[in,switch_is(level)] spoolss_AddFormInfo info
 	);
-
-	typedef [nodiscriminant,relative_base,public,gensize] union {
-		[case(1)] spoolss_FormInfo1 info1;
-		[default];
-	} spoolss_FormInfo;
 
 	/******************/
 	/* Function: 0x22 */
