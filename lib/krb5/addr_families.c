@@ -63,20 +63,20 @@ struct addr_operations {
 static krb5_error_code
 ipv4_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
 {
-    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+    const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
     unsigned char buf[4];
 
     a->addr_type = KRB5_ADDRESS_INET;
-    memcpy (buf, &sin->sin_addr, 4);
+    memcpy (buf, &sin4->sin_addr, 4);
     return krb5_data_copy(&a->address, buf, 4);
 }
 
 static krb5_error_code
 ipv4_sockaddr2port (const struct sockaddr *sa, int16_t *port)
 {
-    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+    const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
 
-    *port = sin->sin_port;
+    *port = sin4->sin_port;
     return 0;
 }
 
@@ -130,9 +130,9 @@ ipv4_h_addr2addr (const char *addr,
 static krb5_boolean
 ipv4_uninteresting (const struct sockaddr *sa)
 {
-    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+    const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
 
-    if (sin->sin_addr.s_addr == INADDR_ANY)
+    if (sin4->sin_addr.s_addr == INADDR_ANY)
 	return TRUE;
 
     return FALSE;
