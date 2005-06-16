@@ -118,28 +118,6 @@ static NTSTATUS echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	return NT_STATUS_OK;
 }
 
-struct echo_TestSleep_private {
-	struct dcesrv_call_state *dce_call;
-	struct echo_TestSleep *r;
-};
-
-static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, 
-				   struct timeval t, void *private)
-{
-	struct echo_TestSleep_private *p = talloc_get_type(private, 
-							   struct echo_TestSleep_private);
-	struct echo_TestSleep *r = p->r;
-	NTSTATUS status;
-
-	r->out.result = r->in.seconds;
-
-	status = dcesrv_reply(p->dce_call);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("echo_TestSleep_handler: dcesrv_reply() failed - %s\n",
-			nt_errstr(status)));
-	}
-}
-
 static NTSTATUS echo_TestSurrounding(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSurrounding *r)
 {
 	if (!r->in.data) {
@@ -161,6 +139,28 @@ static uint16_t echo_TestDoublePointer(struct dcesrv_call_state *dce_call, TALLO
 	if (!**r->in.data)
 		return 0;
 	return ***r->in.data;
+}
+
+struct echo_TestSleep_private {
+	struct dcesrv_call_state *dce_call;
+	struct echo_TestSleep *r;
+};
+
+static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, 
+				   struct timeval t, void *private)
+{
+	struct echo_TestSleep_private *p = talloc_get_type(private, 
+							   struct echo_TestSleep_private);
+	struct echo_TestSleep *r = p->r;
+	NTSTATUS status;
+
+	r->out.result = r->in.seconds;
+
+	status = dcesrv_reply(p->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("echo_TestSleep_handler: dcesrv_reply() failed - %s\n",
+			nt_errstr(status)));
+	}
 }
 
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
