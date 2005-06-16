@@ -49,20 +49,20 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
     GSSAPI_KRB5_INIT();
 
     if (out_name) {
-	const char *name;
+	const char *n;
 
 	if (last_out_name) {
 	    free(last_out_name);
 	    last_out_name = NULL;
 	}
 
-	name = krb5_cc_default_name(gssapi_krb5_context);
-	if (name == NULL) {
+	n = krb5_cc_default_name(gssapi_krb5_context);
+	if (n == NULL) {
 	    *minor_status = ENOMEM;
 	    gssapi_krb5_set_error_string ();
 	    return GSS_S_FAILURE;
 	}
-	last_out_name = strdup(name);
+	last_out_name = strdup(n);
 	if (last_out_name == NULL) {
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
