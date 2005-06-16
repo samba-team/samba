@@ -43,6 +43,53 @@
 
 struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
+                                     uint32 access_desired, uint32 *access_granted )
+{
+	NTSTATUS result;
+		
+	se_access_check( sec_desc, token, access_desired, access_granted, &result );
+	
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_reg_hive_sd( TALLOC_CTX *ctx )
+{
+	SEC_ACE ace[2];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	uint32 sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, REG_KEY_READ );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* Full Access 'BUILTIN\Administrators' */
+	
+	init_sec_access(&mask, REG_KEY_ALL );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
 /******************************************************************
  free() function for REGISTRY_KEY
  *****************************************************************/
@@ -290,7 +337,20 @@ WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 
 WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, 0x0 );
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
+	
+	/* perform access checks */
+	
+	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, access_granted );
 }
 
 /*******************************************************************
@@ -298,7 +358,20 @@ WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, 0x0 );
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
+	
+	/* perform access checks */
+	
+	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, access_granted );
 }
 
 /*******************************************************************
@@ -306,7 +379,20 @@ WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, 0x0 );
+	SEC_DESC *sec_desc;
+	uint32 access_granted = 0;
+	NTSTATUS status;
+	
+	/* perform access checks */
+	
+	if ( !(sec_desc = construct_reg_hive_sd( p->mem_ctx )) )
+		return WERR_NOMEM;
+		
+	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	if ( !NT_STATUS_IS_OK(status) )
+		return ntstatus_to_werror( status );
+		
+	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, access_granted );
 }
 
 /*******************************************************************
