@@ -99,12 +99,8 @@ BOOL torture_createuser(void)
 {
 	NTSTATUS status;
 	const char *binding;
-	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	struct policy_handle h;
 	struct libnet_context *ctx;
-	struct cli_credentials *cred;
 	struct libnet_CreateUser req;
 
 	mem_ctx = talloc_init("test_createuser");
