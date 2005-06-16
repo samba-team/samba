@@ -231,7 +231,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    free(*rr);
 	    return -1;
 	}
-	strncpy((*rr)->u.txt, (char*)p + 1, *p);
+	strncpy((*rr)->u.txt, (const char*)(p + 1), *p);
 	(*rr)->u.txt[*p] = '\0';
 	break;
     }
