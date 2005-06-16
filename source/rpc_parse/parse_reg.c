@@ -326,13 +326,13 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_delete_val(const char *desc, REG_Q_DELETE_VALUE *q_u,
+BOOL reg_io_q_delete_value(const char *desc, REG_Q_DELETE_VALUE *q_u,
                          prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_delete_val");
+	prs_debug(ps, depth, desc, "reg_io_q_delete_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -354,13 +354,13 @@ BOOL reg_io_q_delete_val(const char *desc, REG_Q_DELETE_VALUE *q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_delete_val(const char *desc,  REG_R_DELETE_VALUE *r_u,
+BOOL reg_io_r_delete_value(const char *desc,  REG_R_DELETE_VALUE *r_u,
                          prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_delete_val");
+	prs_debug(ps, depth, desc, "reg_io_r_delete_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -563,7 +563,7 @@ BOOL reg_io_r_getversion(const char *desc,  REG_R_GETVERSION *r_u, prs_struct *p
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown", ps, depth, &r_u->unknown))
+	if(!prs_uint32("win_version", ps, depth, &r_u->win_version))
 		return False;
 	if(!prs_werror("status" , ps, depth, &r_u->status))
 		return False;
@@ -1237,7 +1237,7 @@ BOOL reg_io_q_set_value(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps,
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_set_val");
+	prs_debug(ps, depth, desc, "reg_io_q_set_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -1274,7 +1274,7 @@ BOOL reg_io_r_set_value(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps,
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_set_val");
+	prs_debug(ps, depth, desc, "reg_io_r_set_value");
 	depth++;
 
 	if(!prs_align(ps))
