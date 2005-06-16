@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/socket/socket.h"
+#include "lib/events/events.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -139,6 +140,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
 	BOOL ret = True;
+	struct event_context *ev = event_context_init(mem_ctx);
 
 	printf("TESTING TCP SOCKETS\n");
 
@@ -162,7 +164,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 	srv_port = socket_get_my_port(sock1);
 	printf("server port is %d\n", srv_port);
 
-	status = socket_connect(sock2, NULL, 0, srv_addr, srv_port, 0);
+	status = socket_connect_ev(sock2, NULL, 0, srv_addr, srv_port, 0, ev);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = socket_accept(sock1, &sock3);
