@@ -1,3 +1,11 @@
+2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* libtelnet/kerberos5.c: case uid_t to unsigned long in printf
+	format
+
+	* telnetd/sys_term.c (set_termbuf): use {} around if to make else
+	unambiguous
+
 2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/sys_term.c (start_login): put utmpx code into a new

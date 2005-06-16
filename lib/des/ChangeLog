@@ -1,3 +1,7 @@
+2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rnd_keys.c: Include <stdlib.h> for srandom/random.
+
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* des.c (DES_cbc_cksum): init u to make sure it have a value in
