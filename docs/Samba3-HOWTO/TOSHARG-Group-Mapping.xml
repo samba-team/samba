@@ -8,7 +8,7 @@
 	</author>
 	&author.jerry;
 </chapterinfo>
-<title>Group Mapping &smbmdash; MS Windows and UNIX</title>
+<title>Group Mapping: MS Windows and UNIX</title>
 
 
 	<para>
@@ -19,8 +19,8 @@
 	</para>
 
 	<para>
-	The new facility for mapping NT Groups to UNIX system groups allows the administrator to decide
-	which NT Domain Groups are to be exposed to MS Windows clients. Only those NT Groups that map
+	The new facility for mapping NT groups to UNIX system groups allows the administrator to decide
+	which NT domain groups are to be exposed to MS Windows clients. Only those NT groups that map
 	to a UNIX group that has a value other than the default (<constant>-1</constant>) will be exposed
 	in group selection lists in tools that access domain users and groups.
 	</para>
@@ -30,7 +30,7 @@
 	<indexterm><primary>domain admin group</primary></indexterm>
 	The <parameter>domain admin group</parameter> parameter has been removed in Samba-3 and should no longer
 	be specified in &smb.conf;. In Samba-2.2.x, this parameter was used to give the listed users membership in the
-	<constant>Domain Admins</constant> Windows group which gave local admin rights on their workstations
+	<constant>Domain Admins</constant> Windows group, which gave local admin rights on their workstations
 	(in default configurations).
 	</para>
 	</warning>
@@ -44,39 +44,39 @@
 	</para>
 
 	<para>
-<indexterm><primary>UID</primary></indexterm>
-<indexterm><primary>GID</primary></indexterm>
-<indexterm><primary>idmap uid</primary></indexterm>
+	<indexterm><primary>UID</primary></indexterm>
+	<indexterm><primary>GID</primary></indexterm>
+	<indexterm><primary>idmap uid</primary></indexterm>
 	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x/XP Professional MMC tools.
 	Appropriate interface scripts should be provided in &smb.conf; if it is desired that UNIX/Linux system
 	accounts should be automatically created when these tools are used. In the absence of these scripts, and
 	so long as <command>winbindd</command> is running, Samba group accounts that are created using these
-	tools will be allocated UNIX UIDs/GIDs from the ID range specified by the
+	tools will be allocated UNIX UIDs and GIDs from the ID range specified by the
 	<smbconfoption name="idmap uid"/>/<smbconfoption name="idmap gid"/>
 	parameters in the &smb.conf; file.
 	</para>
 
 	<figure id="idmap-sid2gid">
-		<title>IDMAP: group SID to GID resolution.</title>
+		<title>IDMAP: Group SID-to-GID Resolution.</title>
 		<imagefile scale="50">idmap-sid2gid</imagefile>
 	</figure>
 
 	<figure id="idmap-gid2sid">
-		<title>IDMAP: GID resolution to matching SID.</title>
+		<title>IDMAP: GID Resolution to Matching SID.</title>
 	<imagefile scale="50">idmap-gid2sid</imagefile>
 	</figure>
 
 	<para>
 	<indexterm><primary>IDMAP</primary></indexterm>
 	In both cases, when winbindd is not running, only locally resolvable groups can be recognized. Please refer to
-	<link linkend="idmap-sid2gid">IDMAP: group SID to GID resolution</link> and
-	<link linkend="idmap-gid2sid">IDMAP: GID resolution to matching SID</link>. 
-	The <command>net groupmap</command> is
-	used to establish UNIX group to NT SID mappings as shown in <link linkend="idmap-store-gid2sid">IDMAP: storing group mappings</link>.
+	<link linkend="idmap-sid2gid">IDMAP: Group SID-to-GID Resolution</link> and <link
+	linkend="idmap-gid2sid">IDMAP: GID Resolution to Matching SID</link>.  The <command>net groupmap</command> is
+	used to establish UNIX group to NT SID mappings as shown in <link linkend="idmap-store-gid2sid">IDMAP: storing
+	group mappings</link>.
 	</para>
 
 	<figure id="idmap-store-gid2sid">
-		<title>IDMAP storing group mappings.</title>
+		<title>IDMAP Storing Group Mappings.</title>
 		<imagefile scale="50">idmap-store-gid2sid</imagefile>
 	</figure>
 
@@ -86,8 +86,8 @@
 	Administrators should be aware that where &smb.conf; group interface scripts make
 	direct calls to the UNIX/Linux system tools (the shadow utilities, <command>groupadd</command>,
 	<command>groupdel</command>, and <command>groupmod</command>), the resulting UNIX/Linux group names will be subject
-	to any limits imposed by these tools. If the tool does not allow upper case characters
-	or space characters, then the creation of an MS Windows NT4/200x style group of
+	to any limits imposed by these tools. If the tool does not allow uppercase characters
+	or space characters, then the creation of an MS Windows NT4/200x-style group of
 	<literal>Engineering Managers</literal> will attempt to create an identically named
 	UNIX/Linux group, an attempt that will of course fail.
 	</para>
@@ -95,15 +95,15 @@
 	<para>
 	<indexterm><primary>GID</primary></indexterm>
 	<indexterm><primary>SID</primary></indexterm>
-	There are several possible work-arounds for the operating system tools limitation. One
+	There are several possible workarounds for the operating system tools limitation. One
 	method is to use a script that generates a name for the UNIX/Linux system group that
-	fits the operating system limits, and that then just passes the UNIX/Linux group ID (GID)
-	back to the calling Samba interface. This will provide a dynamic work-around solution.
+	fits the operating system limits and that then just passes the UNIX/Linux group ID (GID)
+	back to the calling Samba interface. This will provide a dynamic workaround solution.
 	</para>
 
 	<para>
-	Another work-around is to manually create a UNIX/Linux group, then manually create the
-	MS Windows NT4/200x group on the Samba server and then use the <command>net groupmap</command>
+	Another workaround is to manually create a UNIX/Linux group, then manually create the
+	MS Windows NT4/200x group on the Samba server, and then use the <command>net groupmap</command>
 	tool to connect the two to each other.
 	</para>
 
@@ -113,9 +113,9 @@
 <title>Discussion</title>
 
 	<para>
-	When installing <application>MS Windows NT4/200x</application> on a computer, the installation
+	When you install <application>MS Windows NT4/200x</application> on a computer, the installation
 	program creates default users and groups, notably the <constant>Administrators</constant> group,
-	and gives that group privileges necessary privileges to perform essential system tasks,
+	and gives that group privileges necessary to perform essential system tasks,
 	such as the ability to change the date and time or to kill (or close) any process running on the
 	local machine.
 	</para>
@@ -124,29 +124,29 @@
 	<indexterm><primary>Administrator</primary></indexterm>
 	The <constant>Administrator</constant> user is a member of the <constant>Administrators</constant> group, and thus inherits
 	<constant>Administrators</constant> group privileges. If a <constant>joe</constant> user is created to be a member of the
-	<constant>Administrators</constant> group, <constant>joe</constant> has exactly the same rights as the user,
+	<constant>Administrators</constant> group, <constant>joe</constant> has exactly the same rights as the user
 	<constant>Administrator</constant>.
 	</para>
 
 	<para>
-	When an MS Windows NT4/200x/XP machine is made a Domain Member, the <quote>Domain Admins</quote> group of the
+	When an MS Windows NT4/200x/XP machine is made a domain member, the <quote>Domain Admins</quote> group of the
 	PDC is added to the local <constant>Administrators</constant> group of the workstation. Every member of the
 	<constant>Domain Administrators</constant> group inherits the rights of the local <constant>Administrators</constant> group when
 	logging on the workstation.
 	</para>
 
 	<para>
-	The following steps describe how to make Samba PDC users members of the <constant>Domain Admins</constant> group?
+	The following steps describe how to make Samba PDC users members of the <constant>Domain Admins</constant> group.
 	</para>
 
 	<orderedlist>
 		<listitem><para>
-		Create a UNIX group (usually in <filename>/etc/group</filename>), let's call it <constant>domadm</constant>.
+		Create a UNIX group (usually in <filename>/etc/group</filename>); let's call it <constant>domadm</constant>.
 		</para></listitem>
 
 		<listitem><para>
 		Add to this group the users that must be <quote>Administrators</quote>. For example,
-		if you want <constant>joe, john</constant> and <constant>mary</constant> to be administrators,
+		if you want <constant>joe, john</constant>, and <constant>mary</constant> to be administrators,
 		your entry in <filename>/etc/group</filename> will look like this:
 		</para>
 
@@ -168,18 +168,18 @@
 		<para>
 		<indexterm><primary>Domain Admins group</primary></indexterm>
 		The quotes around <quote>Domain Admins</quote> are necessary due to the space in the group name.
-		Also make sure to leave no white-space surrounding the equal character (=).
+		Also make sure to leave no white space surrounding the equal character (=).
 		</para></listitem>
 	</orderedlist>
 
 	<para>
-	Now <constant>joe, john</constant> and <constant>mary</constant> are domain administrators.
+	Now <constant>joe, john</constant>, and <constant>mary</constant> are domain administrators.
 	</para>
 
 	<para>
 	<indexterm><primary>groups</primary><secondary>domain</secondary></indexterm>
 	It is possible to map any arbitrary UNIX group to any Windows NT4/200x group as well as
-	making any UNIX group a Windows domain group. For example, if you wanted to include a
+	to make any UNIX group a Windows domain group. For example, if you wanted to include a
 	UNIX group (e.g., acct) in an ACL on a local file or printer on a Domain Member machine,
 	you would flag that group as a domain group by running the following on the Samba PDC:
 	</para>
@@ -191,7 +191,7 @@
 	</para>
 
 	<para>
-	Be aware that the RID parameter is a unsigned 32-bit integer that should
+	Be aware that the RID parameter is an unsigned 32-bit integer that should
 	normally start at 1000. However, this RID must not overlap with any RID assigned
 	to a user. Verification for this is done differently depending on the passdb backend
 	you are using. Future versions of the tools may perform the verification automatically,
@@ -199,18 +199,18 @@
 	</para>
 
 	<sect2>
-	<title>Warning &smbmdash; User Private Group Problems</title>
+	<title>Warning: User Private Group Problems</title>
 
 	<para>
 	Windows does not permit user and group accounts to have the same name.
 	This has serious implications for all sites that use private group accounts.
 	A private group account is an administrative practice whereby users are each
 	given their own group account. Red Hat Linux, as well as several free distributions
-	of Linux by default create private groups.
+	of Linux, by default create private groups.
 	</para>
 
 	<para>
-	When mapping a UNIX/Linux group to a Windows group account all conflict can
+	When mapping a UNIX/Linux group to a Windows group account, all conflict can
 	be avoided by assuring that the Windows domain group name does not overlap
 	with any user account name.
 	</para>
@@ -228,16 +228,16 @@
 	</para>
 
 	<para>
-	All Microsoft Windows products since the release of Windows NT 3.10 support the use of nested groups.
-	Many Windows network administrators depend on this capability becasue it greatly simplifies security
+	All MS Windows products since the release of Windows NT 3.10 support the use of nested groups.
+	Many Windows network administrators depend on this capability because it greatly simplifies security
 	administration.
 	</para>
 
 	<para>
 	The nested group architecture was designed with the premise that day-to-day user and group membership
 	management should be performed on the domain security database. The application of group security
-	should be implemented on domain member servers using only local groups. On the domain member server
-	all file system security controls are then limited to use of the local groups which will contain
+	should be implemented on domain member servers using only local groups. On the domain member server,
+	all file system security controls are then limited to use of the local groups, which will contain
 	domain global groups and domain global users.
 	</para>
 
@@ -245,13 +245,13 @@
 	You may ask, What are the benefits of this arrangement? The answer is obvious to those who have plumbed
 	the dark depths of Windows networking architecture. Consider for a moment a server on which are stored
 	200,000 files, each with individual domain user and domain group settings. The company that owns the
-	file server is bought by another company resulting in the server being moved to another location and then
+	file server is bought by another company, resulting in the server being moved to another location, and then
 	it is made a member of a different domain. Who would you think now owns all the files and directories?
 	Answer: Account Unknown.
 	</para>
 
 	<para>
-	Unravelling the file ownership mess is an unenviable administrative task that can be avoided simply
+	Unraveling the file ownership mess is an unenviable administrative task that can be avoided simply
 	by using local groups to control all file and directory access control. In this case, only the members
 	of the local groups will have been lost. The files and directories in the storage subsystem will still
 	be owned by the local groups. The same goes for all ACLs on them. It is administratively much simpler
@@ -262,35 +262,35 @@
 	<para>
 	Another prominent example of the use of nested groups involves implementation of administrative privileges
 	on domain member workstations and servers. Administrative privileges are given to all members of the
-	builtin
+	built-in
 	local group <constant>Administrators</constant> on each domain member machine. To ensure that all domain
-	administrators have full rights on the member server or workstation, on joining the domain the
+	administrators have full rights on the member server or workstation, on joining the domain, the
 	<constant>Domain Admins</constant> group is added to the local Administrators group. Thus everyone who is
-	logged into the domain as a member of the Domain Admins group is also granted local adminitrative
+	logged into the domain as a member of the Domain Admins group is also granted local administrative
 	privileges on each domain member.
 	</para>
 
 	<para>
 	UNIX/Linux has no concept of support for nested groups, and thus Samba has for a long time not supported
-	them either. The problem is that you would have to enter unix groups as auxiliary members of a group in
+	them either. The problem is that you would have to enter UNIX groups as auxiliary members of a group in
 	<filename>/etc/group</filename>. This does not work because it was not a design requirement at the time
-	the UNIX file system security model was implemented. Since Samba-2.2 the winbind daemon can provide
-	<filename>/etc/group</filename> entries on demand by obtaining user and group information from the Domain
-	Controller that the Samba server is a member of.
+	the UNIX file system security model was implemented. Since Samba-2.2, the winbind daemon can provide
+	<filename>/etc/group</filename> entries on demand by obtaining user and group information from the domain
+	controller that the Samba server is a member of.
 	</para>
 	<para>
 	In effect, Samba supplements the <filename>/etc/group</filename> data via the dynamic
-	<command>libnss_winbind</command> mechanism. Beginning with Samba-3.0.3 this facility is used to provide
+	<command>libnss_winbind</command> mechanism. Beginning with Samba-3.0.3, this facility is used to provide
 	local groups in the same manner as Windows does it. It works by expanding the local groups on the
 	fly as they are accessed. For example, the <constant>Domain Users</constant> group of the domain is made
 	a member of the local group <constant>demo</constant>. Whenever Samba needs to resolve membership of the
-	<constant>demo</constant> local (alias) group winbind asks the DC for demo members of the Domain Users
-	group. By definition it can only contain user objects which can then be faked to be member of the
+	<constant>demo</constant> local (alias) group, winbind asks the domain controller for demo members of the Domain Users
+	group. By definition, it can only contain user objects, which can then be faked to be member of the
 	UNIX/Linux group <constant>demo</constant>.
 	</para>
 
 	<para>
-	To enable the use of nested groups, <command>winbindd</command> must be used together with NSS winbind.
+	To enable the use of nested groups, <command>winbindd</command> must be used with NSS winbind.
 	Creation and administration of the local groups is done best via the Windows Domain User Manager or its
 	Samba equivalent, the utility <command>net rpc group</command>. Creating the local group
 	<constant>demo</constant> is achieved by executing:
@@ -298,16 +298,16 @@
 	&rootprompt; net rpc group add demo -L -Uroot%not24get
 	</screen>
 	Here the -L switch means that you want to create a local group. It may be necessary to add -S and -U
-	switches for accessing the correct host with appropriate user or root priviliges. Adding and removing
+	switches for accessing the correct host with appropriate user or root privileges. Adding and removing
 	group
 	members can be done via the <constant>addmem</constant> and <constant>delmem</constant> subcommands of
-	<command>net rpc group</command> command. For example addition of <quote>DOM\Domain Users</quote> to the
+	<command>net rpc group</command> command. For example, addition of <quote>DOM\Domain Users</quote> to the
 	local
-	group <constant>demo</constant> would be done by executing:
+	group <constant>demo</constant> is done by executing:
 	<screen>
 	net rpc group addmem demo "DOM\Domain Users"
 	</screen>
-	Having completed these two steps the execution of <command>getent group demo</command> will show demo
+	Having completed these two steps, the execution of <command>getent group demo</command> will show demo
 	members of the global <constant>Domain Users</constant> group as members of  the group
 	<constant>demo</constant>.  This also works with any local or domain user. In case the domain DOM trusts
 	another domain, it is also possible to add global users and groups of the trusted domain as members of
@@ -324,26 +324,26 @@
 	</para>
 
 	<orderedlist>
-		<listitem><para>For Samba-3 Domain Controllers and 
-				Domain Member Servers/Clients.</para></listitem>
-		<listitem><para>To manage Domain Member Windows workstations.</para></listitem>
+		<listitem><para>For Samba-3 domain controllers and 
+				domain member servers/clients.</para></listitem>
+		<listitem><para>To manage domain member Windows workstations.</para></listitem>
 	</orderedlist>
 
 	<para>
 	Versions of Samba up to and including 3.0.10 do not provide a means for assigning rights and privileges
-	that are necessary for system administration tasks from a Windows Domain Member Client machine so that
-	domain administration tasks such as adding/deleting/changing user and group account information, and
+	that are necessary for system administration tasks from a Windows domain Member client machine, so
+	domain administration tasks such as adding, deleting, and changing user and group account information, and
 	managing workstation domain membership accounts, can be handled by any account other than root.
 	</para>
 
 	<para>
-	Samba-3.0.11 introduced a new privilege management interface (see <link linkend="rights">Chapter on Rights and Privileges</link>)
-	that permits these tasks to be delegated to non-root (i.e.: accounts other than the equivalent of the
-	MS Windows Administrator) account.
+	Samba-3.0.11 introduced a new privilege management interface (see <link linkend="rights">User Rights and Privileges</link>)
+	that permits these tasks to be delegated to non-root (i.e., accounts other than the equivalent of the
+	MS Windows Administrator) accounts.
 	</para>
 
 	<para>
-	Administrative tasks on a Windows Domain Member workstation, can be done by anyone who is a member of the
+	Administrative tasks on a Windows domain member workstation can be done by anyone who is a member of the
 	<constant>Domain Admins</constant> group. This group can be mapped to any convenient UNIX group.
 	</para>
 
@@ -351,25 +351,25 @@
 	<title>Applicable Only to Versions Earlier than 3.0.11</title>
 
 	<para>
-	Administrative tasks on UNIX/Linux systems, such as adding users or groups, requires <constant>root</constant>
-	level privilege. The addition of a Windows client to a Samba Domain involves the addition of a user account
-	for the Windows client.
+	Administrative tasks on UNIX/Linux systems, such as adding users or groups, requires
+	<constant>root</constant>-level privilege. The addition of a Windows client to a Samba domain involves the
+	addition of a user account for the Windows client.
 	</para>
 
 	<para>
-	Many UNIX administrators continue to request the Samba Team make it possible to add Windows workstations, or 
-	to ability to add/delete or modify user accounts, without requiring <constant>root</constant> privileges. 
+	Many UNIX administrators continue to request that the Samba Team make it possible to add Windows workstations, or 
+	the ability to add, delete, or modify user accounts, without requiring <constant>root</constant> privileges. 
 	Such a request violates every understanding of basic UNIX system security.
 	</para>
 
 	<para>
-	There is no safe way to provide access on a UNIX/Linux system without providing <constant>root</constant>
-	level privilege. Provision of <constant>root</constant> privileges can be done either by logging onto
-	the Domain as the user <constant>root</constant>, or by permitting particular users to use a UNIX account
-	that has a UID=0 in the <filename>/etc/passwd</filename> database. Users of such accounts can use tools
-	like the NT4 Domain User Manager, and the NT4 Domain Server Manager to manage user and group accounts as
-	well as Domain Member server and client accounts. This level of privilege is also needed to manage share
-	level ACLs.
+	There is no safe way to provide access on a UNIX/Linux system without providing
+	<constant>root</constant>-level privilege. Provision of <constant>root</constant> privileges can be done
+	either by logging onto the Domain as the user <constant>root</constant> or by permitting particular users to
+	use a UNIX account that has a UID=0 in the <filename>/etc/passwd</filename> database. Users of such accounts
+	can use tools like the NT4 Domain User Manager and the NT4 Domain Server Manager to manage user and group
+	accounts as well as domain member server and client accounts. This level of privilege is also needed to manage
+	share-level ACLs.
 	</para>
 
 	</sect3>
@@ -377,38 +377,38 @@
 	</sect2>
 
 	<sect2>
-	<title>Default Users, Groups and Relative Identifiers</title>
+	<title>Default Users, Groups, and Relative Identifiers</title>
 
 	<para>
-<indexterm><primary>Relative Identifier</primary><see>RID</see></indexterm>
-<indexterm><primary>RID</primary></indexterm>
-	When first installed, Microsoft Windows NT4/200x/XP are pre-configured with certain User, Group, and
-	Alias entities. Each has a well-known Relative Identifier (RID). These must be preserved for continued
-	integrity of operation. Samba must be provisioned with certain essential Domain Groups that require
-	the appropriate RID value. When Samba-3 is configured to use <constant>tdbsam</constant> the essential
-	Domain Groups are automatically created. It is the LDAP administrators' responsibility to create
-	(provision) the default NT Groups.
+	<indexterm><primary>Relative Identifier</primary><see>RID</see></indexterm>
+	<indexterm><primary>RID</primary></indexterm>
+	When first installed, Windows NT4/200x/XP are preconfigured with certain user, group, and
+	alias entities. Each has a well-known RID. These must be preserved for continued
+	integrity of operation. Samba must be provisioned with certain essential domain groups that require
+	the appropriate RID value. When Samba-3 is configured to use <constant>tdbsam</constant>, the essential
+	domain groups are automatically created. It is the LDAP administrator's responsibility to create
+	(provision) the default NT groups.
 	</para>
 
 	<para>
-	Each essential Domain Group must be assigned its respective well-known RID. The default Users, Groups,
-	Aliases, and RIDs are shown in <link linkend="WKURIDS">Well-Known User Default RIDs</link> table.
+	Each essential domain group must be assigned its respective well-known RID. The default users, groups,
+	aliases, and RIDs are shown in <link linkend="WKURIDS">Well-Known User Default RIDs</link>.
 	</para>
 
 	<note><para>
-	When the <parameter>passdb backend</parameter> uses LDAP (<constant>ldapsam</constant>) it is the
-	administrators' responsibility to create the essential Domain Groups, and to assign each its default RID.
+	When the <parameter>passdb backend</parameter> uses LDAP (<constant>ldapsam</constant>), it is the
+	administrator's responsibility to create the essential domain groups and to assign each its default RID.
 	</para></note>
 
 	<para>
-	It is permissible to create any Domain Group that may be necessary, just make certain that the essential
-	Domain Groups (well known) have been created and assigned its default RID. Other groups you create may
+	It is permissible to create any domain group that may be necessary; just make certain that the essential
+	domain groups (well known) have been created and assigned their default RIDs. Other groups you create may
 	be assigned any arbitrary RID you care to use.
 	</para>
 
 	<para>
-	Be sure to map each Domain Group to a UNIX system group. That is the only way to ensure that the group
-	will be available for use as an NT Domain Group.
+	Be sure to map each domain group to a UNIX system group. That is the only way to ensure that the group
+	will be available for use as an NT domain group.
 	</para>
 
 	<para>
@@ -609,10 +609,10 @@ Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
 		<indexterm><primary>smbgrpadd.sh</primary></indexterm>
 		<indexterm><primary>groupadd limitations</primary></indexterm>
 		A script to create complying group names for use by the Samba group interfaces
-		is provided in <link linkend="smbgrpadd.sh">smbgrpadd.sh</link>. This script will
-		add a temporary entry in the <filename>/etc/group</filename> file and then rename
-		it to to the desired name. This is an example of a method to get around operating
-		system maintenance tool limititations such as that present in some version of the
+		is provided in <link linkend="smbgrpadd.sh">smbgrpadd.sh</link>. This script
+		adds a temporary entry in the <filename>/etc/group</filename> file and then renames
+		it to the desired name. This is an example of a method to get around operating
+		system maintenance tool limitations such as those present in some version of the
 		<command>groupadd</command> tool.
 		</para>
 
@@ -641,9 +641,10 @@ exit 0
 </para>
 
 		<para>
-		The &smb.conf; entry for the above script would be something like that in <link linkend="smbgrpadd">the following example</link>.
+		The &smb.conf; entry for the above script would be something like that in <link linkend="smbgrpadd">"smbgrpadd"</link>.
+
 <example id="smbgrpadd">
-<title>Configuration of &smb.conf; for the add group script.</title>
+<title>Configuration of &smb.conf; for the add group Script</title>
 <smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="add group script">/path_to_tool/smbgrpadd.sh &quot;%g&quot;</smbconfoption>
@@ -659,7 +660,7 @@ exit 0
 	<para>
 		In our example we have created a UNIX/Linux group called <literal>ntadmin</literal>.
 		Our script will create the additional groups <literal>Orks</literal>, <literal>Elves</literal>, and <literal>Gnomes</literal>.
-		It is a good idea to save this shell script for later re-use just in case you ever need to rebuild your mapping database.
+		It is a good idea to save this shell script for later use just in case you ever need to rebuild your mapping database.
 		For the sake of convenience we elect to save this script as a file called <filename>initGroups.sh</filename>.
 		This script is given in <link linkend="set-group-map">intGroups.sh</link>.
 	</para>
@@ -701,8 +702,8 @@ net groupmap add ntgroup="Gnomes" unixgroup=Gnomes type=d
 
 <para>
 At this time there are many little surprises for the unwary administrator. In a real sense
-it is imperative that every step of automated control scripts must be carefully tested
-manually before putting them into active service.
+it is imperative that every step of automated control scripts be carefully tested
+manually before putting it into active service.
 </para>
 
 	<sect2>
@@ -716,11 +717,11 @@ manually before putting them into active service.
 
 		<para>
 		The most common cause of failure is an attempt to add an MS Windows group account
-		that has either an upper case character and/or a space character in it.
+		that has an uppercase character and/or a space character in it.
 		</para>
 
 		<para>
-		There are three possible work-arounds. First, use only group names that comply
+		There are three possible workarounds. First, use only group names that comply
 		with the limitations of the UNIX/Linux <command>groupadd</command> system tool.
 		Second, it involves the use of the script mentioned earlier in this chapter, and
 		third is the option is to manually create a UNIX/Linux group account that can substitute
@@ -731,10 +732,10 @@ manually before putting them into active service.
 	</sect2>
 
 	<sect2>
-	<title>Adding <emphasis>Domain Users</emphasis> to the <emphasis>Power Users</emphasis> Group</title>
+	<title>Adding <emphasis>Domain Users</emphasis> to the <literal>Power Users</literal> Group</title>
 
 		<para><quote>
-		What must I do to add Domain Users to the Power Users group?
+		What must I do to add domain users to the Power Users group?
 		</quote></para>
 
 <indexterm><primary>Domain Users group</primary></indexterm>
@@ -764,8 +765,8 @@ manually before putting them into active service.
 			</para></step>
 
 			<step><para>
-			Double click <constant>Power Users</constant>. This will launch the panel to add users or groups
-			to the local machine <constant>Power Uses</constant> group.
+			Double-click <constant>Power Users</constant>. This will launch the panel to add users or groups
+			to the local machine <constant>Power Users</constant> group.
 			</para></step>
 
 			<step><para>
@@ -777,12 +778,12 @@ manually before putting them into active service.
 			</para></step>
 
 			<step><para>
-			Double click the <constant>Domain Users</constant> group.
+			Double-click the <constant>Domain Users</constant> group.
 			</para></step>
 
 			<step><para>
-			Click the <guibutton>Ok</guibutton> button. If a logon box is presented during this process 
-			please remember to enter the connect as <constant>DOMAIN\UserName</constant>. i.e., For the
+			Click the <guibutton>OK</guibutton> button. If a logon box is presented during this process, 
+			please remember to enter the connect as <constant>DOMAIN\UserName</constant>, that is, for the
 			domain <constant>MIDEARTH</constant> and the user <constant>root</constant> enter
 			<constant>MIDEARTH\root</constant>.
 			</para></step>

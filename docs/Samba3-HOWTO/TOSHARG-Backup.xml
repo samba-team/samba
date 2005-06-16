@@ -11,10 +11,10 @@
 <title>Features and Benefits</title>
 
 <para>
-The Samba project is over ten years old. During the early history
+The Samba project is over 10 years old. During the early history
 of Samba, UNIX administrators were its key implementors. UNIX administrators
-will use UNIX system tools to backup UNIX system files. Over the past
-four years, an increasing number of Microsoft network administrators have
+use UNIX system tools to backup UNIX system files. Over the past
+4 years, an increasing number of Microsoft network administrators have
 taken an interest in Samba. This is reflected in the questions about backup
 in general on the Samba mailing lists.
 </para>
@@ -27,7 +27,7 @@ in general on the Samba mailing lists.
 <para>
 During discussions at a Microsoft Windows training course, one of
 the pro-UNIX delegates stunned the class when he pointed out that Windows
-NT4 is so limiting compared with UNIX. He likened UNIX to a Meccano set
+NT4 is limiting compared with UNIX. He likened UNIX to a Meccano set
 that has an unlimited number of tools that are simple, efficient,
 and, in combination, capable of achieving any desired outcome.
 </para>
@@ -42,7 +42,7 @@ intent is preferred by some like her.
 <para>
 Please note that all information here is provided as is and without recommendation
 of fitness or suitability. The network administrator is strongly encouraged to
-perform due-diligence research before implementing any backup solution, whether free
+perform due diligence research before implementing any backup solution, whether free
 software or commercial.
 </para>
 
@@ -62,21 +62,21 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	<indexterm><primary>BackupPC</primary></indexterm>
-	BackupPC version 2.0.0 has been released on <ulink url="http://backuppc.sourceforge.net">SourceForge.</ulink>
+	BackupPC version 2.0.0 has been released on <ulink url="http://backuppc.sourceforge.net">SourceForge</ulink>.
 	 New features include support for <command>rsync/rsyncd</command> and internationalization of the CGI interface
 	(including English, French, Spanish, and German).
 	</para>
 
 	<para>
 	BackupPC is a high-performance Perl-based package for backing up Linux,
-	UNIX or Windows PCs and laptops to a server's disk. BackupPC is highly
+	UNIX, and Windows PCs and laptops to a server's disk. BackupPC is highly
 	configurable and easy to install and maintain. SMB (via smbclient),
-	<command>tar</command> over <command>rsh/ssh</command> or <command>rsync/rsyncd</command>
+	<command>tar</command> over <command>rsh/ssh</command>, or <command>rsync/rsyncd</command>
 	 are used to extract client data.
 	</para>
 
 	<para>
-	Given the ever decreasing cost of disks and raid systems, it is now
+	Given the ever-decreasing cost of disks and RAID systems, it is now
 	practical and cost effective to backup a large number of machines onto
 	a server's local disk or network storage. This is what BackupPC does.
 	</para>
@@ -89,8 +89,8 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	BackupPC is free software distributed under a GNU GPL license.
-	BackupPC runs on Linux/UNIX/freenix servers, and has been tested
-	on Linux, UNIX, Windows 9x/ME, Windows 98, Windows 200x, Windows XP, and Mac OSX clients.
+	BackupPC runs on Linux/UNIX/freenix servers and has been tested
+	on Linux, UNIX, Windows 9x/Me, Windows 98, Windows 200x, Windows XP, and Mac OSX clients.
 	</para>
 
 	</sect2>
@@ -175,7 +175,7 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	For more information regarding Amanda, please check the <ulink url="http://www.amanda.org/">
-	www.amanda.org/ site.</ulink>
+	www.amanda.org/ site</ulink>.
 	</para>
 
 	</sect2>
@@ -193,7 +193,7 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	The home page for BOBS is located at <ulink url="http://bobs.sourceforge.net/">
-	bobs.sourceforge.net.</ulink>
+	bobs.sourceforge.net</ulink>.
 	</para>
 
 	</sect2>
