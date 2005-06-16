@@ -430,7 +430,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	ink. <quote>Unknown</quote> data are tagged by CUPS as <parameter>MIME type: application/octet-stream</parameter>
 	and not allowed to go to the printer. By default, you can only send other (known) MIME types <quote>raw</quote>.
 	Sending data <quote>raw</quote> means that CUPS does not try to convert them and passes them to the printer
-	untouched (see <link linkend="CUPSprinting">the CUPS Printing Chapter</link> for more background explanations).
+	untouched (see <link linkend="CUPS-printing">the CUPS Printing Chapter</link> for more background explanations).
 	</para>
 	</formalpara>
 
@@ -458,7 +458,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	drivers onto the Samba server first (<smbconfsection name="[print$]"/>
 	share). For a discussion on how to deposit printer drivers on the
 	Samba host (so the Windows clients can download and use them via
-	<quote>Point'n'Print</quote>), please refer to the <link linkend="classicprinting">Classic Printing
+	<quote>Point'n'Print</quote>), please refer to the <link linkend="classicalprinting">Classic Printing
 	chapter</link> of this Samba-3 HOWTO Collection. There you will find a description or reference to
 	three methods of preparing the client drivers on the Samba server:
 	</para>
@@ -2480,7 +2480,7 @@ privileges to do this.
 <note><para>
 <indexterm><primary>rpcclient</primary><secondary>setdriver</secondary></indexterm>
 Once you have successfully downloaded the CUPS PostScript driver to a client, you can easily switch all
-printers to this one by proceeding as described in <link linkend="printing">Classical Printing
+printers to this one by proceeding as described in <link linkend="classicalprinting">Classical Printing
 Support</link>. Either change a driver for an existing printer by running the <guilabel>Printer
 Properties</guilabel> dialog, or use <command>rpcclient</command> with the <command>setdriver</command>
 subcommand.
