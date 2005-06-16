@@ -64,7 +64,7 @@ void generate_type_maybe (const Symbol *s);
 void generate_glue (const Symbol *s);
 
 void init_generate (const char *filename, const char *basename);
-const char *filename (void);
+const char *get_filename (void);
 void close_generate(void);
 void add_import(const char *module);
 int yyparse(void);

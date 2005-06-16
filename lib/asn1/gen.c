@@ -65,7 +65,7 @@ add_import (const char *module)
 }
 
 const char *
-filename (void)
+get_filename (void)
 {
     return orig_filename;
 }
