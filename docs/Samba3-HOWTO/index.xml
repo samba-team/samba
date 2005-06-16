@@ -141,7 +141,7 @@ The chapters in this part each cover specific Samba features.
 </part>
 
 <part id="Appendix">
-<title>Appendixes</title>
+<title>Reference Section</title>
 
 	<xi:include href="TOSHARG-Compiling.xml"/>
 	<xi:include href="TOSHARG-Portability.xml"/>
