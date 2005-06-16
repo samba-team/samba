@@ -382,7 +382,7 @@ implementation requires the DMB to be on the same machine as the PDC.
 
 <para>
 Where a WINS server is not used, broadcast name registrations alone must suffice. Refer to
-<link linkend="NetworkBrwosing">Network Browsing</link>,<link linkend="netdiscuss">Discussion</link>
+<link linkend="NetworkBrowsing">Network Browsing</link>,<link linkend="netdiscuss">Discussion</link>
 for more information regarding TCP/IP network protocols and how SMB/CIFS names are handled.
 </para>
 
