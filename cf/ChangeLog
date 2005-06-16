@@ -1,3 +1,16 @@
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pthreads.m4: disable threads on aix because of utmp/utmpx
+	problems
+
+	* broken-getaddrinfo.m4: check for brokenness in getaddrinfo on
+	AIX that can't handle "0" as port number.
+	
+2005-06-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* db.m4: Add an option to disable ndbm, from Stefan Metzmacher
+	<metze@samba.org>
+
 2005-06-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pthreads.m4: rework how pthreads support to turned on/off,
