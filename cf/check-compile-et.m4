@@ -32,7 +32,7 @@ if ${COMPILE_ET} conftest_et.et >/dev/null 2>&1; then
 #include <com_err.h>
 #include <string.h>
 #include "conftest_et.h"
-int main(){
+int main(int argc, char **argv){
 #ifndef ERROR_TABLE_BASE_conf
 #error compile_et does not handle error_table N M
 #endif

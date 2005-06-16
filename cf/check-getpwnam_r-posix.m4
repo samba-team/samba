@@ -11,7 +11,7 @@ if test "$ac_cv_func_getpwnam_r" = yes; then
 	AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #define _POSIX_PTHREAD_SEMANTICS
 #include <pwd.h>
-int main()
+int main(int argc, char **argv)
 {
 	struct passwd pw, *pwd;
 	return getpwnam_r("", &pw, NULL, 0, &pwd) < 0;

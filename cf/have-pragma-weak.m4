@@ -16,11 +16,11 @@ cat > conftest_bar.$ac_ext <<'EOF'
 #include "confdefs.h"
 extern int foo;
 
-int t() {
+int t(void) {
   return foo;
 }
 
-int main() {
+int main(int argc, char **argv) {
   return t();
 }
 EOF

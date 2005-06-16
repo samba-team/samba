@@ -10,7 +10,7 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stddef.h>
 #include <stdlib.h>
 
-int main()
+int main(int argc, char **argv)
 {
 	return realloc(NULL, 17) == NULL;
 }

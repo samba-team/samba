@@ -35,7 +35,7 @@ case "$host" in
 			#include <stdio.h>
 			#include <errno.h>
 
-			int main()
+			int main(int argc, char **argv)
 			{
 			  int ret;
 			  ret = getmsg(open("/dev/null", 0), NULL, NULL, NULL);

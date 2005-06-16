@@ -6,7 +6,7 @@ ac_cv_func_snprintf_working=yes
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
-int main()
+int main(int argc, char **argv)
 {
 	char foo[[3]];
 	snprintf(foo, 2, "12");
