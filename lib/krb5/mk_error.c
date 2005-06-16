@@ -69,9 +69,9 @@ krb5_mk_error(krb5_context context,
     }
     msg.error_code = error_code - KRB5KDC_ERR_NONE;
     if (e_text)
-	msg.e_text = (heim_general_string*)&e_text;
+	msg.e_text = rk_UNCONST(&e_text);
     if (e_data)
-	msg.e_data = (heim_octet_string*)e_data;
+	msg.e_data = rk_UNCONST(e_data);
     if(server){
 	msg.realm = server->realm;
 	msg.sname = server->name;
