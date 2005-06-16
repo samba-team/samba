@@ -31,7 +31,7 @@ AC_CACHE_CHECK(whether byte ordering is bigendian, krb_cv_c_bigendian,[
   not big endian
 #endif]])],[krb_cv_c_bigendian=yes],[krb_cv_c_bigendian=no])
   else
-    AC_RUN_IFELSE([AC_LANG_SOURCE([[main () {
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[main (int argc, char **argv) {
       /* Are we little or big endian?  From Harbison&Steele.  */
       union
       {

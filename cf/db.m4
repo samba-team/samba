@@ -175,7 +175,7 @@ if test "$have_ndbm" = "yes"; then
 #elif defined(HAVE_DBM_H)
 #include <dbm.h>
 #endif
-int main()
+int main(int argc, char **argv)
 {
   DBM *d;
 
