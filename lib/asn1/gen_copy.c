@@ -77,27 +77,27 @@ copy_type (const char *from, const char *to, const Type *t)
 	  break;
       
       for (m = t->members; m && tag != m->val; m = m->next) {
-	  char *f;
-	  char *t;
+	  char *fn;
+	  char *tn;
 
-	  asprintf (&f, "%s(%s)->%s",
+	  asprintf (&fn, "%s(%s)->%s",
 		    m->optional ? "" : "&", from, m->gen_name);
-	  asprintf (&t, "%s(%s)->%s",
+	  asprintf (&tn, "%s(%s)->%s",
 		    m->optional ? "" : "&", to, m->gen_name);
 	  if(m->optional){
-	      fprintf(codefile, "if(%s) {\n", f);
-	      fprintf(codefile, "%s = malloc(sizeof(*%s));\n", t, t);
-	      fprintf(codefile, "if(%s == NULL) return ENOMEM;\n", t);
+	      fprintf(codefile, "if(%s) {\n", fn);
+	      fprintf(codefile, "%s = malloc(sizeof(*%s));\n", tn, tn);
+	      fprintf(codefile, "if(%s == NULL) return ENOMEM;\n", tn);
 	  }
-	  copy_type (f, t, m->type);
+	  copy_type (fn, tn, m->type);
 	  if(m->optional){
 	      fprintf(codefile, "}else\n");
-	      fprintf(codefile, "%s = NULL;\n", t);
+	      fprintf(codefile, "%s = NULL;\n", tn);
 	  }
 	  if (tag == -1)
 	      tag = m->val;
-	  free (f);
-	  free (t);
+	  free (fn);
+	  free (tn);
       }
       break;
   }
