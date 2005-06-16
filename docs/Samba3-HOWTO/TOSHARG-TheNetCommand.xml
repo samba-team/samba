@@ -224,8 +224,8 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	</para>
 
 	<para>
-	The operations that are permitted include: <constant>add</constant>, <constant>modify</constant>, and <constant>delete</constant>. An example
-	of each operation is shown here.
+	The operations that are permitted include: <constant>add</constant>, <constant>modify</constant>,
+	and <constant>delete</constant>. An example of each operation is shown here.
 	</para>
 
 	<para>
@@ -296,7 +296,7 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 
 	</sect2>
 
-	<sect2>
+	<sect2 id="grpmemshipchg">
 	<title>Manipulating Group Memberships</title>
 
 	<para>
@@ -409,7 +409,7 @@ MIDEARTH\vlendecke
 
 	</sect2>
 
-	<sect2>
+	<sect2 id="nestedgrpmgmgt">
 	<title>Nested Group Support</title>
 
 	<para>
@@ -452,6 +452,9 @@ DOM\jht
 </screen>
 	</para>
 
+	<sect3>
+	<title>Managing Nest Groups on Workstations from the Samba Server</title>
+
 	<para>
 	Windows network administrators often ask on the Samba mailing list how it is possible to grant everyone
 	administrative rights on their own workstation. This is of course a very bad practice, but commonly done
@@ -461,6 +464,73 @@ DOM\jht
     -S WINPC032 -Uadministrator%secret
 </screen>
 	</para>
+
+	<para>
+	This can be scripted, and can therefore be performed as a user logs onto the domain from a Windows
+	workstation. Here is a simple example that shows how this can be done.
+	</para>
+
+	<procedure>
+	<title>Automating User Addition to the Workstation Power Users Group</title>
+
+		<step><para>
+		Create the script shown in <link linkend="autopoweruserscript"></link> and locate it in
+		the directory <filename>/etc/samba/scripts</filename>, named as <filename>autopoweruser.sh</filename>.
+		</para></step>
+
+<example id="autopoweruserscript">
+<title>Script to Auto-add Domain Users to Workstation Power Users Group</title>
+<procedure>
+#!/bin/bash
+
+/usr/bin/net rpc group addmem "Power Users"  "DOMAIN_NAME\$1" -UAdministrator%secret -S $2
+
+exit 0
+</procedure>
+</example>
+
+		<step><para>
+		Set the permissions on this script to permit it to be executed as part of the logon process:
+<screen>
+&rootprompt; chown root:root /etc/samba/autopoweruser.sh
+&rootprompt; chmod 755 /etc/samba/autopoweruser.sh
+</screen>
+		</para></step>
+
+		<step><para>
+		Modify the &smb.conf; file so the <literal>NETLOGON</literal> stanza contains the parameters
+		shown in <link linkend="magicnetlogon">the Netlogon Example smb.conf file</link>.
+		</para></step>
+
+<example id="magicnetlogon">
+<title>A Magic Netlogon Share</title>
+<smbconfblock>
+<smbconfsection name="[netlogon]"/>
+<smbconfoption name="comment">Netlogon Share</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+<smbconfoption name="root preexec">/etc/samba/scripts/autopoweruser.sh %U %m</smbconfoption>
+<smbconfoption name="read only">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+</smbconfblock>
+</example>
+
+		<step><para>
+		Ensure that every Windows workstation Adminsitrator account has the same password that you
+		have used in the script shown in <link linkend="magicnetlogon">the Netlogon Example smb.conf
+		file</link>
+		</para></step>
+
+</procedure>
+
+	<para>
+	This script will be executed every time a user logs onto the network. Therefore every user will
+	have local Windows workstation management rights. This could of course be assigned using a group,
+	in which case there is little justification for the use of this procedure. The key justification
+	for the use of this method is that it will guarantee that all users have appropriate rights on
+	the workstation.
+	</para>
+
+	</sect3>
 
 	</sect2>
 

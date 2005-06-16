@@ -278,10 +278,49 @@ or domain. Under UNIX/Linux the equivalent is UID=0 (the root account).
 </para></note>
 
 <para>
-Commencing with Samba version 3.0.11 it is possible to operate without an Administrator account
+Releases of Samba version 3.0.11 and later make it possible to operate without an Administrator account
 providing equivalent rights and privileges have been established for a Windows user or a Windows
-group account.
+group account. 
 </para>
+
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+	<sect2>
+	<title>What Rights and Privileges Will Permit Windows Client Administration?</title>
+
+	<para>
+	When a Windows NT4 (or later) client joins a domain, the domain global <literal>Domain Admins</literal> group
+	is added to the membership of the local <literal>Administrators</literal> group on the client. Any user who is
+	a member of the domain global <literal>Domain Admins</literal> group will have administrative rights on the
+	Windows client.
+	</para>
+
+	<para>
+	This is often not the most desirable solution because it means that the user will have administrative
+	rights and privileges on domain servers also. The <literal>Power Users</literal> group on Windows client
+	workstations permits local administration of the workstation alone. Any domain global user or domain global
+	group can be added to the membership of the local workstation group <literal>Power Users</literal>.
+	</para>
+
+	<para>
+	See <link linkend="nestedgrpmgmgt">Nested Group Support</link> for an example of how to add domain users
+	and groups to a local group that is on a Windows workstation. The use of the <command>net</command>
+	command permits this to be done from the Samba server.
+	</para>
+
+	<para>
+	Another way this can be done is to log onto the Windows workstation as the user
+	<literal>Administrator</literal>, then open a <command>cmd</command> shell, then execute:
+<screen>
+c:\ net localgroup administrators /add <userinput>domain_name\entity</userinput>
+</screen>
+	where <literal>entity</literal> is either a domain user or a domain group account name.
+	</para>
+
+	</sect2>
 
 </sect1>
 
