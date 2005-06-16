@@ -35,7 +35,8 @@ NOPROTO=YES
 INIT_OBJ_FILES = \
 		lib/socket/socket.o
 ADD_OBJ_FILES = \
-		lib/socket/access.o
+		lib/socket/access.o \
+		lib/socket/connect.o
 NOPROTO=YES
 # End SUBSYSTEM SOCKET
 ################################################

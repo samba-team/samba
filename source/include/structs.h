@@ -92,6 +92,7 @@ struct ldapsrv_call;
 struct ldapsrv_connection;
 struct ldap_connection;
 struct ldap_message;
+struct ldap_Result;
 struct rw_buffer;
 struct registry_context;
 struct registry_key;
@@ -158,6 +159,8 @@ struct ldb_val;
 struct ldb_message;
 struct ldb_context;
 struct ldb_parse_tree;
+struct ldb_message_element;
+struct ldap_mod;
 
 struct dom_sid;
 struct security_token;
