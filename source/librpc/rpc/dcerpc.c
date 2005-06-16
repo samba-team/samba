@@ -513,6 +513,7 @@ static void init_ncacn_hdr(struct dcerpc_connection *c, struct ncacn_packet *pkt
   hold the state of pending full requests
 */
 struct full_request_state {
+	struct dcerpc_connection *c;
 	DATA_BLOB *reply_blob;
 	NTSTATUS status;
 };
@@ -523,7 +524,12 @@ struct full_request_state {
 static void full_request_recv(struct dcerpc_connection *c, DATA_BLOB *blob, 
 			      NTSTATUS status)
 {
-	struct full_request_state *state = c->full_request_private;
+	struct full_request_state *state = talloc_get_type(c->full_request_private,
+							   struct full_request_state);
+	if (state == NULL) {
+		/* it timed out earlier */
+		return;
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		state->status = status;
@@ -542,6 +548,7 @@ static void dcerpc_full_timeout_handler(struct event_context *ev, struct timed_e
 	struct full_request_state *state = talloc_get_type(private, 
 							   struct full_request_state);
 	state->status = NT_STATUS_IO_TIMEOUT;
+	state->c->full_request_private = NULL;
 }
 
 /*
@@ -562,6 +569,7 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 
 	state->reply_blob = reply_blob;
 	state->status = NT_STATUS_OK;
+	state->c = c;
 
 	c->transport.recv_data = full_request_recv;
 	c->full_request_private = state;
@@ -580,6 +588,8 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 	}
+
+	c->full_request_private = NULL;
 
 	return state->status;
 }
