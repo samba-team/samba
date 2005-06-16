@@ -1270,17 +1270,18 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			tdb_off current;
 			if (rec_read(tdb, tlock->off, rec) == -1)
 				goto fail;
-			if (!TDB_DEAD(rec)) {
-				/* Woohoo: we found one! */
-				if (lock_record(tdb, tlock->off) != 0)
-					goto fail;
-				return tlock->off;
-			}
 
 			/* Detect infinite loops. From "Shlomi Yaakobovich" <Shlomi@exanet.com>. */
 			if (tlock->off == rec->next) {
 				TDB_LOG((tdb, 0, "tdb_next_lock: loop detected.\n"));
 				goto fail;
+			}
+
+			if (!TDB_DEAD(rec)) {
+				/* Woohoo: we found one! */
+				if (lock_record(tdb, tlock->off) != 0)
+					goto fail;
+				return tlock->off;
 			}
 
 			/* Try to clean dead ones from old traverses */
