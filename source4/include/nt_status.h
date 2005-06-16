@@ -117,4 +117,9 @@ typedef uint32_t WERROR;
 #define NT_STATUS_DOS_CLASS(status) ((NT_STATUS_V(status) >> 16) & 0xFF)
 #define NT_STATUS_DOS_CODE(status) (NT_STATUS_V(status) & 0xFFFF)
 
+/* define ldap error codes as NTSTATUS codes */
+#define NT_STATUS_LDAP(code) NT_STATUS(0xF2000000 | code)
+#define NT_STATUS_IS_LDAP(status) ((NT_STATUS_V(status) & 0xFF000000) == 0xF2000000)
+#define NT_STATUS_LDAP_CODE(status) (NT_STATUS_V(status) & ~0xFF000000)
+
 #endif

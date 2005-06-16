@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_client.h"
 #include "lib/cmdline/popt_common.h"
 
 static BOOL test_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password)
@@ -78,12 +79,14 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 {
 	BOOL ret = True;
 	struct ldap_message *msg, *result;
+	struct ldap_request *req;
+	int i;
+	struct ldap_SearchResEntry *r;
+	NTSTATUS status;
 
 	printf("Testing RootDSE Search\n");
 
 	*basedn = NULL;
-	conn->searchid = 0;
-	conn->next_msgid = 30;
 
 	msg = new_ldap_message(conn);
 	if (!msg) {
@@ -101,45 +104,50 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	msg->r.SearchRequest.num_attributes = 0;
 	msg->r.SearchRequest.attributes = NULL;
 
-	if (!ldap_setsearchent(conn, msg, NULL)) {
-		printf("Could not setsearchent\n");
+	req = ldap_request_send(conn, msg);
+	if (req == NULL) {
+		printf("Could not setup ldap search\n");
 		return False;
 	}
 
-	result = ldap_getsearchent(conn, NULL);
-	if (result) {
-		int i;
-		struct ldap_SearchResEntry *r = &result->r.SearchResultEntry;
-		
-		DEBUG(1,("\tdn: %s\n", r->dn));
-		for (i=0; i<r->num_attributes; i++) {
-			int j;
-			for (j=0; j<r->attributes[i].num_values; j++) {
-				DEBUG(1,("\t%s: %d %.*s\n", r->attributes[i].name,
-					 r->attributes[i].values[j].length,
-					 r->attributes[i].values[j].length,
-					 (char *)r->attributes[i].values[j].data));
-				if (!(*basedn) && 
-				    strcasecmp("defaultNamingContext",r->attributes[i].name)==0) {
-					 *basedn = talloc_asprintf(conn, "%.*s",
-					 r->attributes[i].values[j].length,
-					 (char *)r->attributes[i].values[j].data);
-				}
-			}
-		}
-	} else {
-		ret = False;
+	status = ldap_result_one(req, &result, LDAP_TAG_SearchResultEntry);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("search failed - %s\n", nt_errstr(status));
+		return False;
 	}
 
-	ldap_endsearchent(conn, NULL);
+	printf("received %d replies\n", req->num_replies);
+
+	r = &result->r.SearchResultEntry;
+		
+	DEBUG(1,("\tdn: %s\n", r->dn));
+	for (i=0; i<r->num_attributes; i++) {
+		int j;
+		for (j=0; j<r->attributes[i].num_values; j++) {
+			DEBUG(1,("\t%s: %d %.*s\n", r->attributes[i].name,
+				 r->attributes[i].values[j].length,
+				 r->attributes[i].values[j].length,
+				 (char *)r->attributes[i].values[j].data));
+			if (!(*basedn) && 
+			    strcasecmp("defaultNamingContext",r->attributes[i].name)==0) {
+				*basedn = talloc_asprintf(conn, "%.*s",
+							  r->attributes[i].values[j].length,
+							  (char *)r->attributes[i].values[j].data);
+			}
+		}
+	}
+
+	talloc_free(req);
 
 	return ret;
 }
 
 static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 {
-	struct ldap_message *req, *rep;
+	struct ldap_message *msg, *rep;
+	struct ldap_request *req;
 	const char *val;
+	NTSTATUS status;
 
 	printf("Testing SASL Compare: %s\n", basedn);
 
@@ -147,21 +155,25 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 		return False;
 	}
 
-	conn->next_msgid = 55;
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		return False;
+	}
 
-	req = new_ldap_message(conn);
+	msg->type = LDAP_TAG_CompareRequest;
+	msg->r.CompareRequest.dn = basedn;
+	msg->r.CompareRequest.attribute = talloc_strdup(msg, "objectClass");
+	val = "domain";
+	msg->r.CompareRequest.value = data_blob_talloc(msg, val, strlen(val));
+
+	req = ldap_request_send(conn, msg);
 	if (!req) {
 		return False;
 	}
 
-	req->type = LDAP_TAG_CompareRequest;
-	req->r.CompareRequest.dn = basedn;
-	req->r.CompareRequest.attribute = talloc_strdup(req, "objectClass");
-	val = "domain";
-	req->r.CompareRequest.value = data_blob_talloc(req, val, strlen(val));
-
-	rep = ldap_transaction(conn, req);
-	if (!rep) {
+	status = ldap_result_one(req, &rep, LDAP_TAG_CompareResponse);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap compare request - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -171,12 +183,9 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 		rep->r.CompareResponse.errormessage,
 		rep->r.CompareResponse.referral));
 
-	if (rep->type != LDAP_TAG_CompareResponse) {
-		return False;
-	}
-
 	return True;
 }
+
 
 BOOL torture_ldap_basic(void)
 {
@@ -186,7 +195,6 @@ BOOL torture_ldap_basic(void)
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
-	/*const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");*/
 	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");
 	char *url;
 	char *basedn;
@@ -195,18 +203,18 @@ BOOL torture_ldap_basic(void)
 
 	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
 
-	status = torture_ldap_connection2(mem_ctx, &conn, url, userdn, secret);
+	status = torture_ldap_connection(mem_ctx, &conn, url);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
+
+	if (!test_search_rootDSE(conn, &basedn)) {
+		ret = False;
 	}
 
 	/* other basic tests here */
 
 	if (!test_multibind(conn, userdn, secret)) {
-		ret = False;
-	}
-
-	if (!test_search_rootDSE(conn, &basedn)) {
 		ret = False;
 	}
 
@@ -219,10 +227,9 @@ BOOL torture_ldap_basic(void)
 	}
 
 	/* no more test we are closing */
-
+        torture_ldap_close(conn);
 	talloc_free(mem_ctx);
 
-        torture_ldap_close(conn);
 
 	return ret;
 }

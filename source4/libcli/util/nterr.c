@@ -648,7 +648,7 @@ static const nt_err_code_struct nt_err_desc[] =
  *****************************************************************************/
 const char *nt_errstr(NTSTATUS nt_code)
 {
-        static pstring msg;
+        static fstring msg;
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
@@ -659,7 +659,14 @@ const char *nt_errstr(NTSTATUS nt_code)
 		idx++;
 	}
 
-	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
+	if (NT_STATUS_IS_DOS(nt_code)) {
+		slprintf(msg, sizeof(msg), "DOS code %u:%u", 
+			 NT_STATUS_DOS_CLASS(nt_code), NT_STATUS_DOS_CODE(nt_code));
+	} else if (NT_STATUS_IS_LDAP(nt_code)) {
+		slprintf(msg, sizeof(msg), "LDAP code %u", NT_STATUS_LDAP_CODE(nt_code));
+	} else {
+		slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
+	}
 
         return msg;
 }

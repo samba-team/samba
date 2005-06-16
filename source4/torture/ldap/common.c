@@ -28,92 +28,73 @@
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
-        NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int result;
+	NTSTATUS status;
 
-	if (!conn) {
-		printf("We need a valid ldap_connection structure and be connected\n");
-		return status;
+	status = ldap_bind_simple(conn, userdn, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to bind with provided credentials - %s\n", 
+		       nt_errstr(status));
 	}
 
-	result = ldap_bind_simple(conn, userdn, password);
-	if (result != LDAP_SUCCESS) {
-		printf("Failed to bind with provided credentials\n");
-		/* FIXME: what abut actually implementing an ldap_connection_free() function ?
-		          :-) sss */
-		return status;
-	}
- 
-	return NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, 
 				struct cli_credentials *creds)
 {
-        NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int result;
+        NTSTATUS status;
 
-	if (!conn) {
-		printf("We need a valid ldap_connection structure and be connected\n");
-		return status;
-	}
-
-	result = ldap_bind_sasl(conn, creds);
-	if (result != LDAP_SUCCESS) {
-		printf("Failed to bind with provided credentials and SASL mechanism\n");
-		/* FIXME: what abut actually implementing an ldap_connection_free() function ?
-		          :-) sss */
-		return status;
+	status = ldap_bind_sasl(conn, creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed sasl bind with provided credentials - %s\n", 
+		       nt_errstr(status));
 	}
  
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* open a ldap connection to a server */
 NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
 				const char *url)
 {
-        NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
 	if (!url) {
 		printf("You must specify a url string\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*conn = ldap_connect(mem_ctx, url);
-	if (!*conn) {
-		printf("Failed to initialize ldap_connection structure\n");
-		return status;
+	*conn = ldap_new_connection(mem_ctx, NULL);
+
+	status = ldap_connect(*conn, url);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to ldap server '%s' - %s\n",
+		       url, nt_errstr(status));
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* open a ldap connection to a server */
 NTSTATUS torture_ldap_connection2(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
 				const char *url, const char *userdn, const char *password)
 {
-        NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int ret;
+        NTSTATUS status;
 
 	status = torture_ldap_connection(mem_ctx, conn, url);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	ret = ldap_bind_simple(*conn, userdn, password);
-	if (ret != LDAP_SUCCESS) {
-		printf("Failed to connect with url [%s]\n", url);
-		/* FIXME: what abut actually implementing an ldap_connection_free() function ?
-		          :-) sss */
-		return status;
+	status = ldap_bind_simple(*conn, userdn, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed a simple ldap bind - %s\n", ldap_errstr(*conn, status));
 	}
  
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* close an ldap connection to a server */
 NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 {
-	/* FIXME: what about actually implementing ldap_close() ?
-		  :-) sss */
+	talloc_free(conn);
 	return NT_STATUS_OK;
 }

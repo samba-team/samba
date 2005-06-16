@@ -1,11 +1,10 @@
 /* 
    Unix SMB/CIFS mplementation.
+
    LDAP protocol helper functions for SAMBA
    
-   Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Andrew Tridgell  2005
    Copyright (C) Volker Lendecke 2004
-   Copyright (C) Stefan Metzmacher 2004
-   Copyright (C) Simo Sorce 2004
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,8 +23,15 @@
 */
 
 #include "includes.h"
-#include "system/iconv.h"
 #include "libcli/ldap/ldap.h"
+#include "libcli/ldap/ldap_client.h"
+
+
+struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
+{
+	return talloc(mem_ctx, struct ldap_message);
+}
+
 
 BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 			 struct ldb_message_element *attrib)

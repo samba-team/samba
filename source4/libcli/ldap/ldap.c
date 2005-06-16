@@ -1013,44 +1013,4 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 	return ((!data->has_error) && (data->nesting == NULL));
 }
 
-BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
-			  char **host, uint16_t *port, BOOL *ldaps)
-{
-	int tmp_port = 0;
-	char protocol[11];
-	char tmp_host[255];
-	const char *p = url;
-	int ret;
-
-	/* skip leading "URL:" (if any) */
-	if (strncasecmp( p, "URL:", 4) == 0) {
-		p += 4;
-	}
-
-	/* Paranoia check */
-	SMB_ASSERT(sizeof(protocol)>10 && sizeof(tmp_host)>254);
-		
-	ret = sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, tmp_host, &tmp_port);
-	if (ret < 2) {
-		return False;
-	}
-
-	if (strequal(protocol, "ldap")) {
-		*port = 389;
-		*ldaps = False;
-	} else if (strequal(protocol, "ldaps")) {
-		*port = 636;
-		*ldaps = True;
-	} else {
-		DEBUG(0, ("unrecognised protocol (%s)!\n", protocol));
-		return False;
-	}
-
-	if (tmp_port != 0)
-		*port = tmp_port;
-
-	*host = talloc_strdup(mem_ctx, tmp_host);
-
-	return (*host != NULL);
-}
 
