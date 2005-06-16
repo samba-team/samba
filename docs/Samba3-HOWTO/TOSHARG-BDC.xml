@@ -19,12 +19,12 @@ with configuring a Samba domain controller as described in <link linkend="samba-
 <title>Features and Benefits</title>
 
 <para>
-This is one of the most difficult chapters to summarize. It does not matter what we say here,
-for someone will still draw conclusions and/or approach the Samba Team with expectations
-that are either not yet capable of being delivered or that can be achieved far more
-effectively using a totally different approach. In the event that you should have a persistent
-concern that is not addressed in this book, please email <ulink url="mailto:jht@samba.org">John H. Terpstra</ulink>
-clearly setting out your requirements and/or question, and we will do our best to provide a solution.
+This is one of the most difficult chapters to summarize. It does not matter what we say here, for someone will
+still draw conclusions and/or approach the Samba Team with expectations that are either not yet capable of
+being delivered or that can be achieved far more effectively using a totally different approach. In the event
+that you should have a persistent concern that is not addressed in this book, please email <ulink
+url="mailto:jht@samba.org">John H. Terpstra</ulink> clearly setting out your requirements and/or question, and
+we will do our best to provide a solution.
 </para>
 
 <para>
