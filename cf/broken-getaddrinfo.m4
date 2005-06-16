@@ -19,6 +19,8 @@ main(int argc, char **argv)
 	hints.ai_family = PF_UNSPEC;
 	if(getaddrinfo(NULL, "17", &hints, &ai) != 0)
 		return 1;
+	if(getaddrinfo(NULL, "0", &hints, &ai) != 0)
+		return 1;
 	return 0;
 }
 ]])],[ac_cv_func_getaddrinfo_numserv=yes],[ac_cv_func_getaddrinfo_numserv=no]))])
