@@ -436,5 +436,5 @@ strptime (const char *buf, const char *format, struct tm *timeptr)
 		return NULL;
 	}
     }
-    return (char *)buf;
+    return rk_UNCONST(buf);
 }
