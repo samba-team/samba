@@ -887,8 +887,10 @@ void build_options(BOOL screen);
 	if (!init_registry())
 		exit(1);
 
+#if 0
 	if (!init_svcctl_db())
                 exit(1);
+#endif
 
 	if (!print_backend_init())
 		exit(1);

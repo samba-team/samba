@@ -1307,10 +1307,16 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 
 	driver_unix_convert(driverpath,conn,NULL,&bad_path,&st);
 
+	if ( !vfs_file_exist( conn, driverpath, &st ) ) {
+		*perr = WERR_BADFILE;
+		goto error_exit;
+	}
+
 	fsp = open_file_shared(conn, driverpath, &st,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+		SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+		FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
@@ -1351,8 +1357,8 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 				  driverpath, major, minor));
 	}
 
-    DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
-			driverpath, cversion));
+	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
+		driverpath, cversion));
 
 	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
@@ -1429,9 +1435,8 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->cversion = get_correct_cversion( architecture,
-									driver->driverpath, user, &err)) == -1)
-		return err;
+	if ((driver->cversion = get_correct_cversion( architecture, driver->driverpath, user, &err)) == -1)
+			return err;
 
 	return WERR_OK;
 }
@@ -1493,8 +1498,9 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
+
 	if ((driver->version = get_correct_cversion(architecture, driver->driverpath, user, &err)) == -1)
-		return err;
+			return err;
 
 	return WERR_OK;
 }
@@ -1561,7 +1567,7 @@ static char* ffmt(unsigned char *c){
 
 /****************************************************************************
 ****************************************************************************/
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
+WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
 				  struct current_user *user, WERROR *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
@@ -1580,6 +1586,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	SMB_STRUCT_STAT st;
 	int ver = 0;
 	int i;
+	int err;
 
 	memset(inbuf, '\0', sizeof(inbuf));
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -1592,7 +1599,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		driver = &converted_driver;
 	} else {
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
-		return False;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	architecture = get_short_archi(driver->environment);
@@ -1611,7 +1618,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
 		*perr = ntstatus_to_werror(nt_status);
-		return False;
+		return WERR_NO_SUCH_SHARE;
 	}
 
 	/*
@@ -1620,7 +1627,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/*
@@ -1657,18 +1664,13 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			NTSTATUS status;
 			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			status = rename_internals(conn, new_name, old_name, 0, True);
-			if (!NT_STATUS_IS_OK(status)) {
+			if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
 				*perr = ntstatus_to_werror(status);
-				unlink_internals(conn, 0, new_name);
 				ver = -1;
 			}
-		} else {
-			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			unlink_internals(conn, 0, new_name);
-		}
+		} 
 	}
 
 	if (driver->datafile && strlen(driver->datafile)) {
@@ -1678,17 +1680,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1701,17 +1698,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1725,17 +1717,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1758,17 +1745,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					NTSTATUS status;
 					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					status = rename_internals(conn, new_name, old_name, 0, True);
-					if (!NT_STATUS_IS_OK(status)) {
+					if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
 						*perr = ntstatus_to_werror(status);
-						unlink_internals(conn, 0, new_name);
 						ver = -1;
 					}
-				} else {
-					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					unlink_internals(conn, 0, new_name);
 				}
 			}
 		NextDriver: ;
@@ -1778,7 +1760,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 
-	return ver == -1 ? False : True;
+	return ver != -1 ? WERR_OK : WERR_UNKNOWN_PRINTER_DRIVER;
 }
 
 /****************************************************************************

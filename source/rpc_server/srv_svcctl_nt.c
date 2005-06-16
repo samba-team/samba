@@ -171,6 +171,7 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
                                           const char *service, uint32 access_granted )
 {
 	SERVICE_INFO *info = NULL;
+	WERROR result = WERR_OK;
 	
 	if ( !(info = SMB_MALLOC_P( SERVICE_INFO )) )
 		return WERR_NOMEM;
@@ -186,16 +187,23 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 
 		info->type = SVC_HANDLE_IS_SERVICE;
 		
-		if ( !(info->name  = SMB_STRDUP( service )) ) {
-			free_service_handle_info( info );
-			WERR_NOMEM;
-		}
-		
 		/* lookup the SERVICE_CONTROL_OPS */
 
 		for ( i=0; svcctl_ops[i].name; i++ ) {
-			if ( strequal( svcctl_ops[i].name, service ) ) 
+			if ( strequal( svcctl_ops[i].name, service ) )  {
 				info->ops = svcctl_ops[i].ops;
+				break;
+			}
+		}
+
+		if ( !svcctl_ops[i].name ) {
+			result = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
+
+		if ( !(info->name  = SMB_STRDUP( service )) ) {
+			result = WERR_NOMEM;
+			goto done;
 		}
 	}
 
@@ -204,11 +212,15 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 	/* store the SERVICE_INFO and create an open handle */
 	
 	if ( !create_policy_hnd( p, handle, free_service_handle_info, info ) ) {
-		free_service_handle_info( info );
-		return WERR_ACCESS_DENIED;
+		result = WERR_ACCESS_DENIED;
+		goto done;
 	}
 		
-	return WERR_OK;
+done:
+	if ( !W_ERROR_IS_OK(result) )
+		free_service_handle_info( info );
+
+	return result;
 }
 
 /********************************************************************
@@ -433,9 +445,9 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	
 	num_int_services = 0;
 
-	num_int_services = num_internal_services();
+	/* num_int_services = num_internal_services(); */
 
-	num_ext_services =  num_external_services();
+	/* num_ext_services =  num_external_services(); */
 
 	if ( !(services = TALLOC_ARRAY(p->mem_ctx, ENUM_SERVICES_STATUS, num_int_services+num_ext_services )) )
           return WERR_NOMEM;
@@ -446,7 +458,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 		DEBUG(8,("_svcctl_enum_services_status: Got %d internal services\n", num_int_services));
 	} 
 
-	ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services);
+	/* ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services); */
 
 	if (W_ERROR_IS_OK(ext_result)) {
 		DEBUG(8,("_svcctl_enum_services_status: Got %d external services\n", num_ext_services));
