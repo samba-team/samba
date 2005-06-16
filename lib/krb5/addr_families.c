@@ -667,7 +667,9 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
     krb5_address addr1, addr2;
     uint16_t port = 0;
     size_t ret_len = 0, l, size = 0;
-    krb5_storage *sp = krb5_storage_from_data((krb5_data*)&addr->address);
+    krb5_storage *sp;
+
+    sp = krb5_storage_from_data((krb5_data*)rk_UNCONST(&addr->address));
     /* for totally obscure reasons, these are not in network byteorder */
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
 
