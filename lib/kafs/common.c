@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -200,12 +200,12 @@ dns_find_cell(const char *cell, char *dbserver, size_t len)
  * Try to find the cells we should try to klog to in "file".
  */
 static void
-find_cells(const char *file, char ***cells, int *index)
+find_cells(const char *file, char ***cells, int *idx)
 {
     FILE *f;
     char cell[64];
     int i;
-    int ind = *index;
+    int ind = *idx;
 
     f = fopen(file, "r");
     if (f == NULL)
@@ -235,7 +235,7 @@ find_cells(const char *file, char ***cells, int *index)
 	}
     }
     fclose(f);
-    *index = ind;
+    *idx = ind;
 }
 
 /*
@@ -261,31 +261,31 @@ _kafs_afslog_all_local_cells(struct kafs_data *data,
 {
     int ret;
     char **cells = NULL;
-    int index = 0;
+    int idx = 0;
 
     if (homedir == NULL)
 	homedir = getenv("HOME");
     if (homedir != NULL) {
 	char home[MaxPathLen];
 	snprintf(home, sizeof(home), "%s/.TheseCells", homedir);
-	find_cells(home, &cells, &index);
+	find_cells(home, &cells, &idx);
     }
-    find_cells(_PATH_THESECELLS, &cells, &index);
-    find_cells(_PATH_THISCELL, &cells, &index);
-    find_cells(_PATH_ARLA_THESECELLS, &cells, &index);
-    find_cells(_PATH_ARLA_THISCELL, &cells, &index);
-    find_cells(_PATH_OPENAFS_DEBIAN_THESECELLS, &cells, &index);
-    find_cells(_PATH_OPENAFS_DEBIAN_THISCELL, &cells, &index);
-    find_cells(_PATH_OPENAFS_MACOSX_THESECELLS, &cells, &index);
-    find_cells(_PATH_OPENAFS_MACOSX_THISCELL, &cells, &index);
-    find_cells(_PATH_ARLA_DEBIAN_THESECELLS, &cells, &index);
-    find_cells(_PATH_ARLA_DEBIAN_THISCELL, &cells, &index);
-    find_cells(_PATH_ARLA_OPENBSD_THESECELLS, &cells, &index);
-    find_cells(_PATH_ARLA_OPENBSD_THISCELL, &cells, &index);
+    find_cells(_PATH_THESECELLS, &cells, &idx);
+    find_cells(_PATH_THISCELL, &cells, &idx);
+    find_cells(_PATH_ARLA_THESECELLS, &cells, &idx);
+    find_cells(_PATH_ARLA_THISCELL, &cells, &idx);
+    find_cells(_PATH_OPENAFS_DEBIAN_THESECELLS, &cells, &idx);
+    find_cells(_PATH_OPENAFS_DEBIAN_THISCELL, &cells, &idx);
+    find_cells(_PATH_OPENAFS_MACOSX_THESECELLS, &cells, &idx);
+    find_cells(_PATH_OPENAFS_MACOSX_THISCELL, &cells, &idx);
+    find_cells(_PATH_ARLA_DEBIAN_THESECELLS, &cells, &idx);
+    find_cells(_PATH_ARLA_DEBIAN_THISCELL, &cells, &idx);
+    find_cells(_PATH_ARLA_OPENBSD_THESECELLS, &cells, &idx);
+    find_cells(_PATH_ARLA_OPENBSD_THISCELL, &cells, &idx);
     
-    ret = afslog_cells(data, cells, index, uid, homedir);
-    while(index > 0)
-	free(cells[--index]);
+    ret = afslog_cells(data, cells, idx, uid, homedir);
+    while(idx > 0)
+	free(cells[--idx]);
     free(cells);
     return ret;
 }
