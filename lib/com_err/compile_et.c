@@ -196,10 +196,10 @@ int
 main(int argc, char **argv)
 {
     char *p;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname(argv[0]);
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -208,9 +208,9 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    if(optind == argc) 
+    if(optidx == argc) 
 	usage(1);
-    filename = argv[optind];
+    filename = argv[optidx];
     yyin = fopen(filename, "r");
     if(yyin == NULL)
 	err(1, "%s", filename);
