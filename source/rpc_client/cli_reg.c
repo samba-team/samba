@@ -539,8 +539,8 @@ WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SET_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_set_val,
-	            reg_io_r_set_val, 
+	            reg_io_q_set_value,
+	            reg_io_r_set_value, 
 	            WERR_GENERAL_FAILURE );
 
 	return out.status;
