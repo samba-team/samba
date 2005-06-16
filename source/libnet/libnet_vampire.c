@@ -221,7 +221,7 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 	nt_status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 					  DCERPC_NETLOGON_UUID,
 					  DCERPC_NETLOGON_VERSION,
-					  machine_account);
+					  machine_account, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

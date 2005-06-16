@@ -310,18 +310,6 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob, B
 }
 
 /* 
-   return the event context for the pipe, so the caller can wait
-   for events asynchronously
-*/
-static struct event_context *smb_event_context(struct dcerpc_connection *c)
-{
-	struct smb_private *smb = c->transport.private;
-
-	return smb->tree->session->transport->socket->event.ctx;
-}
-
-
-/* 
    shutdown SMB pipe connection
 */
 static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
@@ -426,7 +414,6 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 
 	c->transport.send_request = smb_send_request;
 	c->transport.send_read = send_read_request;
-	c->transport.event_context = smb_event_context;
 	c->transport.recv_data = NULL;
 	
 	/* Over-ride the default session key with the SMB session key */

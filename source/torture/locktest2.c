@@ -165,7 +165,7 @@ static struct smbcli_state *connect_one(char *share)
 
 	nt_status = smbcli_full_connection(NULL, 
 					   &c, myname, server_n, 0, share, NULL,
-					   username, lp_workgroup(), password);
+					   username, lp_workgroup(), password, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));
 		return NULL;

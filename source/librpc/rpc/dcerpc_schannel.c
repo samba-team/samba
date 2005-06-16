@@ -64,7 +64,9 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 	}
 
 	/* Make binding string for netlogon, not the other pipe */
-	status = dcerpc_epm_map_binding(tmp_ctx, b, DCERPC_NETLOGON_UUID, DCERPC_NETLOGON_VERSION);
+	status = dcerpc_epm_map_binding(tmp_ctx, b, 
+					DCERPC_NETLOGON_UUID, DCERPC_NETLOGON_VERSION,
+					p->conn->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
 			 DCERPC_NETLOGON_UUID, nt_errstr(status)));

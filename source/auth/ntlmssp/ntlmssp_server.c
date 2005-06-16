@@ -800,7 +800,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), &gensec_ntlmssp_state->auth_context);
+	nt_status = auth_context_create(gensec_ntlmssp_state, lp_auth_methods(), 
+					&gensec_ntlmssp_state->auth_context,
+					gensec_security->event_ctx);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	gensec_ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;

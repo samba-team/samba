@@ -76,7 +76,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	}
 	lsa->ipc_tree->tid = tcon.tconx.out.tid;
 
-	lsa->pipe = dcerpc_pipe_init(lsa);
+	lsa->pipe = dcerpc_pipe_init(lsa, cli->transport->socket->event.ctx);
 	if (lsa->pipe == NULL) {
 		talloc_free(lsa);
 		return NT_STATUS_NO_MEMORY;

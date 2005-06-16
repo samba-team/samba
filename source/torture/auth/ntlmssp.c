@@ -31,7 +31,7 @@ BOOL torture_ntlmssp_self_check(void)
 	DATA_BLOB sig, expected_sig;
 	NTSTATUS status;
 
-	status = gensec_client_start(NULL, &gensec_security);
+	status = gensec_client_start(NULL, &gensec_security, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -83,7 +83,7 @@ BOOL torture_ntlmssp_self_check(void)
 
 	talloc_free(gensec_security);
 
-	status = gensec_client_start(NULL, &gensec_security);
+	status = gensec_client_start(NULL, &gensec_security, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to start GENSEC for NTLMSSP\n");

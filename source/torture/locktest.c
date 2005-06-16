@@ -122,7 +122,7 @@ static struct smbcli_state *connect_one(char *share, int snum)
 		status = smbcli_full_connection(NULL, &c, 
 						server, 
 						share, NULL,
-						servers[snum]);
+						servers[snum], NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

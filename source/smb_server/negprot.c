@@ -38,7 +38,9 @@ static NTSTATUS get_challenge(struct smbsrv_connection *smb_conn, uint8_t buff[8
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
-	nt_status = auth_context_create(smb_conn, lp_auth_methods(), &smb_conn->negotiate.auth_context);
+	nt_status = auth_context_create(smb_conn, lp_auth_methods(), 
+					&smb_conn->negotiate.auth_context,
+					smb_conn->connection->event.ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_context_create() returned %s", nt_errstr(nt_status)));
 		return nt_status;
@@ -327,7 +329,9 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		struct gensec_security *gensec_security;
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		DATA_BLOB blob;
-		NTSTATUS nt_status = gensec_server_start(req->smb_conn, &gensec_security);
+		NTSTATUS nt_status = gensec_server_start(req->smb_conn, 
+							 &gensec_security,
+							 req->smb_conn->connection->event.ctx);
 		
 		if (req->smb_conn->negotiate.auth_context) {
 			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");

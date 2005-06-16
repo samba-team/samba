@@ -109,6 +109,7 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	BOOL subcontext;
 	uint32_t want_features;
+	struct event_context *event_ctx;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

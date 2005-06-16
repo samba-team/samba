@@ -82,7 +82,7 @@ static struct smbcli_state *connect_one(char *share)
 	status = smbcli_full_connection(NULL, &c,
 					server, 
 					share, NULL,
-					credentials);
+					credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;

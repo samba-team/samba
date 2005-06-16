@@ -341,8 +341,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case GSS_SPNEGO_CLIENT:
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
-			
-			if (!NT_STATUS_IS_OK(gensec_client_start(NULL, gensec_state))) {
+
+			nt_status = gensec_client_start(NULL, gensec_state, NULL);
+			if (!NT_STATUS_IS_OK(nt_status)) {
 				exit(1);
 			}
 
@@ -367,7 +368,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, gensec_state))) {
+			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, gensec_state, NULL))) {
 				exit(1);
 			}
 			break;

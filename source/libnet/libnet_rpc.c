@@ -100,7 +100,7 @@ static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_C
 				     binding,
 				     r->standard.in.dcerpc_iface_uuid,
 				     r->standard.in.dcerpc_iface_version,
-				     ctx->cred);
+				     ctx->cred, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->standard.out.error_string = talloc_asprintf(mem_ctx, 

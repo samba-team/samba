@@ -382,8 +382,9 @@ NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem
 /*
   sync version of smb_composite_connect 
 */
-NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx)
+NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
+			       struct event_context *ev)
 {
-	struct composite_context *c = smb_composite_connect_send(io, NULL);
+	struct composite_context *c = smb_composite_connect_send(io, ev);
 	return smb_composite_connect_recv(c, mem_ctx);
 }

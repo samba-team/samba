@@ -149,7 +149,9 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		}
 
 		/* TODO: should we use just "anonymous" here? */
-		status = auth_context_create(req->smb_conn, lp_auth_methods(), &auth_context);
+		status = auth_context_create(req->smb_conn, lp_auth_methods(), 
+					     &auth_context, 
+					     req->smb_conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;
@@ -268,7 +270,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		gensec_ctx = smb_sess->gensec_ctx;
 		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
-		status = gensec_server_start(req->smb_conn, &gensec_ctx);
+		status = gensec_server_start(req->smb_conn, &gensec_ctx,
+					     req->smb_conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			return status;

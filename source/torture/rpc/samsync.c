@@ -1505,7 +1505,7 @@ BOOL torture_rpc_samsync(void)
 				       &samsync_state->p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       credentials);
+				       credentials, NULL);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -1545,7 +1545,7 @@ BOOL torture_rpc_samsync(void)
 				       b_netlogon_wksta, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       credentials_wksta);
+				       credentials_wksta, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a Workstation: %s\n", nt_errstr(status));

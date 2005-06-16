@@ -48,6 +48,7 @@ struct dcerpc_connection {
 	uint_t flags;
 	struct dcerpc_security security_state;
 	const char *binding_string;
+	struct event_context *event_ctx;
 
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
@@ -62,9 +63,6 @@ struct dcerpc_connection {
 
 		/* send a read request to the server */
 		NTSTATUS (*send_read)(struct dcerpc_connection *);
-
-		/* get an event context for the connection */
-		struct event_context *(*event_context)(struct dcerpc_connection *);
 
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */

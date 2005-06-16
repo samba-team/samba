@@ -197,7 +197,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 
 	status = dcerpc_pipe_connect(talloc_autofree_context(), &epmapper_pipe, bs, 
 				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
-				     credentials);
+				     credentials, NULL);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		gtk_show_ntstatus(mainwin, "Error connecting to endpoint mapper", status);

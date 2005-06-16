@@ -106,7 +106,7 @@ BOOL torture_createuser(void)
 	mem_ctx = talloc_init("test_createuser");
 	binding = lp_parm_string(-1, "torture", "binding");
 
-	ctx = libnet_context_init();
+	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
 
 	req.in.user_name = TEST_USERNAME;

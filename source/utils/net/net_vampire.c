@@ -31,7 +31,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 	struct libnet_context *libnetctx;
 	union libnet_SamDump r;
 
-	libnetctx = libnet_context_init();
+	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -50,7 +50,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 		return -1;
 	}
 
-	libnet_context_destroy(&libnetctx);
+	talloc_free(libnetctx);
 
 	return 0;
 }

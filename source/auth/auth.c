@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "auth/auth.h"
+#include "lib/events/events.h"
 
 /***************************************************************************
  Set a fixed challenge
@@ -199,7 +200,9 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
-NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods, struct auth_context **auth_ctx) 
+NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods, 
+			     struct auth_context **auth_ctx,
+			     struct event_context *ev) 
 {
 	int i;
 	struct auth_context *ctx;
@@ -215,6 +218,16 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, const char **methods, struct a
 	ctx->challenge.may_be_modified	= False;
 	ctx->challenge.data		= data_blob(NULL, 0);
 	ctx->methods			= NULL;
+	
+	if (ev == NULL) {
+		ev = event_context_init(ctx);
+		if (ev == NULL) {
+			talloc_free(ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ctx->event_ctx = ev;
 
 	for (i=0; methods[i] ; i++) {
 		struct auth_method_context *method;

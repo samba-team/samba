@@ -67,8 +67,11 @@ static int dcerpc_connection_destructor(void *ptr)
 }
 
 
-/* initialise a dcerpc connection. */
-struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx)
+/* initialise a dcerpc connection. 
+   the event context is optional
+*/
+struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
+						 struct event_context *ev)
 {
 	struct dcerpc_connection *c;
 
@@ -77,6 +80,15 @@ struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
+	if (ev == NULL) {
+		ev = event_context_init(c);
+		if (ev == NULL) {
+			talloc_free(c);
+			return NULL;
+		}
+	}
+
+	c->event_ctx = ev;
 	c->call_id = 1;
 	c->security_state.auth_info = NULL;
 	c->security_state.session_key = dcerpc_generic_session_key;
@@ -93,7 +105,7 @@ struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx)
 }
 
 /* initialise a dcerpc pipe. */
-struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx)
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev)
 {
 	struct dcerpc_pipe *p;
 
@@ -102,7 +114,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	p->conn = dcerpc_connection_init(p);
+	p->conn = dcerpc_connection_init(p, ev);
 	if (p->conn == NULL) {
 		talloc_free(p);
 		return NULL;
@@ -559,13 +571,12 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 		return status;
 	}
 
-	event_add_timed(c->transport.event_context(c), state, 
+	event_add_timed(c->event_ctx, state, 
 			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0), 
 			dcerpc_full_timeout_handler, state);
 
 	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
-		struct event_context *ctx = c->transport.event_context(c);
-		if (event_loop_once(ctx) != 0) {
+		if (event_loop_once(c->event_ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 	}
@@ -850,7 +861,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
   handle timeouts of individual dcerpc requests
 */
 static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event *te, 
-				      struct timeval t, void *private)
+				   struct timeval t, void *private)
 {
 	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
 
@@ -985,7 +996,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 */
 struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
 {
-	return p->conn->transport.event_context(p->conn);
+	return p->conn->event_ctx;
 }
 
 
