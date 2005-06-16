@@ -260,18 +260,18 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 				      (int)(tmp2 - tmp) - 2, tmp + 2);
 		return KRB5_CONFIG_BADFORMAT;
 	    }
-	    if (append == NULL) {
-		free(*res);
-		res = NULL;
-		krb5_set_error_string(context, "malloc - out of memory");
-		return ENOMEM;
-	    }
 	    str = tmp2 + 1;
 	} else {
-	    append = (char *)str;
+	    append = strdup(str);
 	    str = NULL;
 	}
-
+	if (append == NULL) {
+	    free(*res);
+	    res = NULL;
+	    krb5_set_error_string(context, "malloc - out of memory");
+	    return ENOMEM;
+	}
+	
 	tlen = strlen(append);
 	tmp = realloc(*res, len + tlen + 1);
 	if (tmp == NULL) {
@@ -283,8 +283,7 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	*res = tmp;
 	memcpy(*res + len, append, tlen + 1);
 	len = len + tlen;
-	if (str)
-	    free(append);
+	free(append);
     }    
     return 0;
 }
