@@ -235,19 +235,19 @@ static const char replace_chars[] = " ntb\\/@";
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
 static size_t
-quote_string(const char *s, char *out, size_t index, size_t len)
+quote_string(const char *s, char *out, size_t idx, size_t len)
 {
     const char *p, *q;
-    for(p = s; *p && index < len; p++){
+    for(p = s; *p && idx < len; p++){
 	if((q = strchr(quotable_chars, *p))){
-	    add_char(out, index, len, '\\');
-	    add_char(out, index, len, replace_chars[q - quotable_chars]);
+	    add_char(out, idx, len, '\\');
+	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
 	}else
-	    add_char(out, index, len, *p);
+	    add_char(out, idx, len, *p);
     }
-    if(index < len)
-	out[index] = '\0';
-    return index;
+    if(idx < len)
+	out[idx] = '\0';
+    return idx;
 }
 
 
@@ -258,13 +258,13 @@ unparse_name_fixed(krb5_context context,
 		   size_t len,
 		   krb5_boolean short_form)
 {
-    size_t index = 0;
+    size_t idx = 0;
     int i;
     for(i = 0; i < princ_num_comp(principal); i++){
 	if(i)
-	    add_char(name, index, len, '/');
-	index = quote_string(princ_ncomp(principal, i), name, index, len);
-	if(index == len)
+	    add_char(name, idx, len, '/');
+	idx = quote_string(princ_ncomp(principal, i), name, idx, len);
+	if(idx == len)
 	    return ERANGE;
     } 
     /* add realm if different from default realm */
@@ -279,9 +279,9 @@ unparse_name_fixed(krb5_context context,
 	free(r);
     }
     if(!short_form) {
-	add_char(name, index, len, '@');
-	index = quote_string(princ_realm(principal), name, index, len);
-	if(index == len)
+	add_char(name, idx, len, '@');
+	idx = quote_string(princ_realm(principal), name, idx, len);
+	if(idx == len)
 	    return ERANGE;
     }
     return 0;
