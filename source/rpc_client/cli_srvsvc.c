@@ -267,6 +267,63 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 	info->switch_value = info_level;
 
 	switch(info_level) {
+	case 1:
+	{
+		SRV_SHARE_INFO_1 *info1 = &info->share.info1;
+		SH_INFO_1_STR *info1_str = &info1->info_1_str;
+		
+		char *s;
+
+		info->share.info1 = r.info.share.info1;
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info1_str->uni_netname);
+		if (s)
+			init_unistr2(&info1_str->uni_netname,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info1_str->uni_remark);
+		if (s)
+			init_unistr2(&info1_str->uni_remark,
+				     s, UNI_STR_TERMINATE);
+
+		break;
+	}
+	case 2:
+	{
+		SRV_SHARE_INFO_2 *info2 = &info->share.info2;
+		SH_INFO_2_STR *info2_str = &info2->info_2_str;
+		
+		char *s;
+
+		info->share.info2 = r.info.share.info2;
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info2_str->uni_netname);
+		if (s)
+			init_unistr2(&info2_str->uni_netname,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info2_str->uni_remark);
+		if (s)
+			init_unistr2(&info2_str->uni_remark,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info2_str->uni_path);
+		if (s)
+			init_unistr2(&info2_str->uni_path,
+				     s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info2_str->uni_passwd);
+		if (s)
+			init_unistr2(&info2_str->uni_passwd,
+				     s, UNI_STR_TERMINATE);
+
+
+		break;
+	}
 	case 502:
 	{
 		SRV_SHARE_INFO_502 *info502 = &info->share.info502;
