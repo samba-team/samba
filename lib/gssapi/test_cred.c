@@ -141,10 +141,10 @@ main(int argc, char **argv)
     struct gss_buffer_desc_struct name_buffer;
     OM_uint32 maj_stat, min_stat;
     gss_name_t name;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname(argv[0]);
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     
     if (help_flag)
@@ -155,8 +155,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc < 1)
 	errx(1, "argc < 1");
