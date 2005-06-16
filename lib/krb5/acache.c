@@ -41,8 +41,11 @@ RCSID("$Id$");
 
 /* XXX should we fetch these for each open ? */
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
-static void *cc_handle; 
 static cc_initialize_func init_func;
+
+#ifdef HAVE_DLOPEN
+static void *cc_handle; 
+#endif
 
 typedef struct krb5_acc {
     char *cache_name;
