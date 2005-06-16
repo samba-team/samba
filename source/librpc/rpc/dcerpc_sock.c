@@ -306,7 +306,7 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	}
 	talloc_steal(sock, socket_ctx);
 
-	status = socket_connect(socket_ctx, NULL, 0, server, port, 0);
+	status = socket_connect_ev(socket_ctx, NULL, 0, server, port, 0, c->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(sock);
 		return status;
