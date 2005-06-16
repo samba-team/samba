@@ -1,3 +1,18 @@
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: rename base to base_id since flex defines a function
+	with the argument base
+
+	* compile_et.h: rename base to base_id since flex defines a
+	function with the argument base
+
+	* compile_et.c: rename base to base_id since flex defines a
+	function with the argument base
+
+	* parse.y (name2number): rename base to num to avoid shadowing
+	
+	* compile_et.c: rename optind to optidx
+	
 2005-05-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: check allocation errors
