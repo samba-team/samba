@@ -65,7 +65,7 @@ find_var(char **env, char *assignment, size_t len)
 static int
 rk_read_env_file(FILE *F, char ***env, int *assigned)
 {
-    int index = 0;
+    int idx = 0;
     int i;
     char **l;
     char buf[BUFSIZ], *p, *r;
@@ -74,7 +74,7 @@ rk_read_env_file(FILE *F, char ***env, int *assigned)
 
     *assigned = 0;
 
-    for(index = 0; *env != NULL && (*env)[index] != NULL; index++);
+    for(idx = 0; *env != NULL && (*env)[idx] != NULL; idx++);
     l = *env;
 
     /* This is somewhat more relaxed on what it accepts then
@@ -104,19 +104,19 @@ rk_read_env_file(FILE *F, char ***env, int *assigned)
 	    continue;
 	}
 
-	tmp = realloc(l, (index+2) * sizeof (char *));
+	tmp = realloc(l, (idx+2) * sizeof (char *));
 	if(tmp == NULL) {
 	    ret = ENOMEM;
 	    break;
 	}
 
 	l = tmp;
-	l[index] = strdup(p);
-	if(l[index] == NULL) {
+	l[idx] = strdup(p);
+	if(l[idx] == NULL) {
 	    ret = ENOMEM;
 	    break;
 	}
-	l[++index] = NULL;
+	l[++idx] = NULL;
 	(*assigned)++;
     }
     if(ferror(F))
