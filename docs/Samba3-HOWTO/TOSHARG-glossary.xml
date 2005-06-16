@@ -154,8 +154,6 @@
 		</para></glossdef>
 	</glossentry>
 
-	<?latex \newpage ?>
-	
 	<glossentry>
 		<glossterm>Local Master Browser</glossterm>
 		<acronym>LMB</acronym>
