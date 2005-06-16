@@ -30,7 +30,6 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	NTSTATUS status;
 	union libnet_rpc_connect cn;
 	union libnet_find_pdc fp;
-	struct dcerpc_pipe *pipe;
 	struct libnet_rpc_domain_open dom_io;
 	struct libnet_rpc_useradd user_io;
 	
