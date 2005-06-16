@@ -288,7 +288,7 @@ static char *sl_readline(const char *prompt)
     old = signal(SIGINT, sl_sigint);
     if(setjmp(sl_jmp))
 	printf("\n");
-    s = readline((char*)prompt);
+    s = readline(rk_UNCONST(prompt));
     signal(SIGINT, old);
     return s;
 }
