@@ -302,5 +302,6 @@ REGISTRY_OPS eventlog_ops = {
 	eventlog_subkey_info,
 	eventlog_value_info,
 	eventlog_store_subkey,
-	eventlog_store_value
+	eventlog_store_value,
+	NULL
 };

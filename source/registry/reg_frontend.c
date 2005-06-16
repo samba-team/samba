@@ -79,8 +79,8 @@ BOOL init_registry( void )
  
 BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys_fn )
-		return key->hook->ops->store_subkeys_fn( key->name, subkeys );
+	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
+		return key->hook->ops->store_subkeys( key->name, subkeys );
 	else
 		return False;
 
@@ -92,8 +92,8 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
  
 BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_values_fn )
-		return key->hook->ops->store_values_fn( key->name, val );
+	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
+		return key->hook->ops->store_values( key->name, val );
 	else
 		return False;
 }
@@ -108,8 +108,8 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	int result = -1;
 	
-	if ( key->hook && key->hook->ops && key->hook->ops->subkey_fn )
-		result = key->hook->ops->subkey_fn( key->name, subkey_ctr );
+	if ( key->hook && key->hook->ops && key->hook->ops->fetch_subkeys )
+		result = key->hook->ops->fetch_subkeys( key->name, subkey_ctr );
 
 	return result;
 }
@@ -176,8 +176,8 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	int result = -1;
 	
-	if ( key->hook && key->hook->ops && key->hook->ops->value_fn )
-		result = key->hook->ops->value_fn( key->name, val );
+	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
+		result = key->hook->ops->fetch_values( key->name, val );
 
 	return result;
 }

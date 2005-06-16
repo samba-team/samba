@@ -347,7 +347,8 @@ REGISTRY_OPS regdb_ops = {
 	regdb_fetch_reg_keys,
 	regdb_fetch_reg_values,
 	regdb_store_reg_keys,
-	regdb_store_reg_values
+	regdb_store_reg_values,
+	NULL
 };
 
 

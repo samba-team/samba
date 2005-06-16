@@ -92,10 +92,11 @@
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*subkey_fn)( char *key, REGSUBKEY_CTR *subkeys);
-	int 	(*value_fn) ( char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys_fn)( char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values_fn)( char *key, REGVAL_CTR *val );
+	int 	(*fetch_subkeys)( char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
+	BOOL	(*reg_access_check)( uint32 parent_granted, uint32 requested, uint32 *granted );
 } REGISTRY_OPS;
 
 typedef struct {
@@ -282,12 +283,12 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;
 } REG_Q_GETVERSION;
 
 typedef struct {
-	uint32 unknown;         /* 0x0500 0000 */
-	WERROR status;         /* return status */
+	uint32 win_version;
+	WERROR status;
 } REG_R_GETVERSION;
 
 
