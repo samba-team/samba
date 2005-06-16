@@ -113,7 +113,6 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 						      r->in.server_name, nt_errstr(status));
 	}
 
-disconnect:
 	talloc_free(c.standard.out.dcerpc_pipe);
 	
 	return status;
@@ -153,7 +152,6 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 						      r->in.server_name, nt_errstr(status));
 	}
 
-disconnect:
 	talloc_free(c.standard.out.dcerpc_pipe);
 
 	return status;
