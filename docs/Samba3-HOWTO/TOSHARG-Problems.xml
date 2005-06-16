@@ -91,9 +91,10 @@ Ethereal User Guide.</para>
 
 <figure id="ethereal1"><title>Starting a capture.</title><imagefile>ethereal1</imagefile></figure>
 
-<para>Listen for data on ports 137, 138, 139, and 445. For example, use
-the filter <userinput>port 137, port 138, port 139, or port
-445</userinput> as seen in <link linkend="ethereal1">Starting a capture</link> snapshot.</para>
+<para>
+Listen for data on ports 137, 138, 139, and 445. For example, use the filter <userinput>port 137, port 138,
+port 139, or port 445</userinput> as seen in <link linkend="ethereal1">Starting a capture</link> snapshot.
+</para>
 
 <para>A console version of ethereal is available as well and is called 
 <command>tethereal</command>.</para>

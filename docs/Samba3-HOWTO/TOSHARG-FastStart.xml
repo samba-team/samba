@@ -10,7 +10,7 @@
 <para>
 When we first asked for suggestions for inclusion in the Samba HOWTO documentation,
 someone wrote asking for example configurations &smbmdash; and lots of them. That is remarkably
-difficult to do, without losing a lot of value that can be derived from presenting
+difficult to do without losing a lot of value that can be derived from presenting
 many extracts from working systems. That is what the rest of this document does.
 It does so with extensive descriptions of the configuration possibilities within the
 context of the chapter that covers it. We hope that this chapter is the medicine 
@@ -19,21 +19,21 @@ that has been requested.
 
 <para>
 The information in this chapter is very sparse compared with the book <quote>Samba-3 by Example</quote>
-that was written after the original version of this book was nearly complete. Samba-3 by Example
+that was written after the original version of this book was nearly complete. <quote>Samba-3 by Example</quote>
 was the result of feedback from reviewers during the final copy editing of the first edition. It
-was interesting to see that reader feedback mirrored that given be the original reviewers.
+was interesting to see that reader feedback mirrored that given by the original reviewers.
 In any case, a month and a half was spent in doing basic research to better understand what
-new as well as experienced network administrators would best benefit from. The book Samba-3 by Example
+new as well as experienced network administrators would best benefit from. The book <quote>Samba-3 by Example</quote>
 is the result of that research. What is presented in the few pages of this book is covered
-far more comprehensively in the second edition of Samba-3 by Example. The second edition
+far more comprehensively in the second edition of <quote>Samba-3 by Example</quote>. The second edition
 of both books will be released at the same time.
 </para>
 
 <para>
 So in summary, the book <quote>The Official Samba-3 HOWTO &amp; Reference Guide</quote> is intended
-as the equivalent of a auto mechanics' repair guide. The book <quote>Samba-3 by Example</quote> is the
-equivalent of the drivers guide that explains how to drive the car. If you want complete network
-configuration examples go to <quote>Samba-3 by Example</quote>.
+as the equivalent of an auto mechanic's repair guide. The book <quote>Samba-3 by Example</quote> is the
+equivalent of the driver's guide that explains how to drive the car. If you want complete network
+configuration examples, go to <quote>Samba-3 by Example</quote>.
 </para>
 
 <sect1>
@@ -50,7 +50,7 @@ features. These additional features are covered in the remainder of this documen
 <para>
 The examples used here have been obtained from a number of people who made
 requests for example configurations. All identities have been obscured to protect
-the guilty and any resemblance to unreal non-existent sites is deliberate.
+the guilty, and any resemblance to unreal nonexistent sites is deliberate.
 </para>
 
 </sect1>
@@ -80,16 +80,15 @@ mirror of the system described in <link linkend="StandAloneServer"></link>, <lin
 <para>
 The next example is of a secure office file and print server that will be accessible only
 to users who have an account on the system. This server is meant to closely resemble a
-Workgroup file and print server, but has to be more secure than an anonymous access machine.
+workgroup file and print server, but has to be more secure than an anonymous access machine.
 This type of system will typically suit the needs of a small office. The server provides no
-network logon facilities, offers no Domain Control; instead it is just a network
-attached storage (NAS) device and a print server.
+network logon facilities, offers no domain control; instead it is just a network-attached storage (NAS) device and a print server.
 </para>
 
 <para>
 Finally, we start looking at more complex systems that will either integrate into existing
-Microsoft Windows networks, or replace them entirely. The examples provided cover domain
-member servers as well as Samba Domain Control (PDC/BDC) and finally describes in detail
+MS Windows networks or replace them entirely. The examples provided cover domain
+member servers as well as Samba domain control (PDC/BDC) and finally describes in detail
 a large distributed network with branch offices in remote locations.
 </para>
 
@@ -106,17 +105,17 @@ clearly beyond the scope of this text.
 
 <para>
 It is also assumed that Samba has been correctly installed, either by way of installation
-of the packages that are provided by the operating system vendor, or through other means.
+of the packages that are provided by the operating system vendor or through other means.
 </para>
 
 	<sect2>
-	<title>Stand-alone Server</title>
+	<title>Standalone Server</title>
 
 	<para>
 	<indexterm><primary>Server Type</primary><secondary>Stand-alone</secondary></indexterm>
-	A Stand-alone Server implies no more than the fact that it is not a Domain Controller
-	and it does not participate in Domain Control. It can be a simple workgroup-like
-	server, or it may be a complex server that is a member of a domain security context.
+	A standalone server implies no more than the fact that it is not a domain controller
+	and it does not participate in domain control. It can be a simple, workgroup-like
+	server, or it can be a complex server that is a member of a domain security context.
 	</para>
 
 		<sect3 id="anon-ro">
@@ -137,10 +136,13 @@ of the packages that are provided by the operating system vendor, or through oth
 		change.
 		</para>
 
-		<para>The configuration file is:</para>
+		<para>
+		The configuration file is presented in <link linkend="anon-example">Anonymous Read-Only Server
+		Configuration</link>.
+		</para>
 
 		<example id="anon-example">
-				<title>Anonymous Read-Only Server Configuration</title>
+		<title>Anonymous Read-Only Server Configuration</title>
 		<smbconfblock>
 		<smbconfcomment>Global parameters</smbconfcomment>
 		<smbconfsection name="[global]"/>
@@ -171,9 +173,9 @@ of the packages that are provided by the operating system vendor, or through oth
 		</itemizedlist>
 
 		<procedure>
-		<title>Installation Procedure &smbmdash; Read-Only Server</title>
+		<title>Installation Procedure: Read-Only Server</title>
 			<step><para>
-			Add user to system (with creation of the users' home directory):
+			Add user to system (with creation of the user's home directory):
 <screen>
 &rootprompt;<userinput>useradd -c "Jack Baumbach" -m -g users -p m0r3pa1n jackb</userinput>
 </screen>
@@ -233,12 +235,12 @@ Press enter to see a dump of your service definitions
 			</para></step>
 
 			<step><para>
-			Configure your Microsoft Windows client for workgroup <emphasis>MIDEARTH</emphasis>,
+			Configure your MS Windows client for workgroup <emphasis>MIDEARTH</emphasis>,
 			set the machine name to ROBBINS, reboot, wait a few (2 - 5) minutes,
-			then open Windows Explorer and visit the network neighborhood.
+			then open Windows Explorer and visit the Network Neighborhood.
 			The machine HOBBIT should be visible. When you click this machine
 			icon, it should open up to reveal the <emphasis>data</emphasis> share. After
-			clicking the share it, should open up to reveal the files previously
+			you click the share, it should open up to reveal the files previously
 			placed in the <filename>/export</filename> directory.
 			</para></step>
 		</procedure>
@@ -259,7 +261,7 @@ Press enter to see a dump of your service definitions
 		The difference is that shared access is now forced to the user identity of jackb
 		and to the primary group jackb belongs to. One other refinement we can make is to
 		add the user <emphasis>jackb</emphasis> to the <filename>smbpasswd</filename> file.
-		To do this execute:
+		To do this, execute:
 <screen>
 &rootprompt;<userinput>smbpasswd -a jackb</userinput>
 New SMB password: <userinput>m0r3pa1n</userinput>
@@ -275,8 +277,9 @@ Added user jackb.
 		The complete, modified &smb.conf; file is as shown in <link linkend="anon-rw"/>.
 		</para>
 
-<example id="anon-rw"><title>Modified Anonymous Read-Write smb.conf</title>
-	<smbconfblock>
+<example id="anon-rw">
+<title>Modified Anonymous Read-Write smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -323,12 +326,13 @@ Added user jackb.
 		</para>
 
 		<para>
-		In this configuration it is undesirable to present the Add Printer Wizard and we do
-		not want to have automatic driver download, so we will disable it in the following
+		In this configuration, it is undesirable to present the Add Printer Wizard, and we do
+		not want to have automatic driver download, so we disable it in the following
 		configuration. <link linkend="anon-print"></link> is the resulting &smb.conf; file.
 		</para>
 
-<example id="anon-print"><title>Anonymous Print Server smb.conf</title>
+<example id="anon-print">
+<title>Anonymous Print Server smb.conf</title>
 <smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
@@ -376,12 +380,12 @@ Added user jackb.
 
 			<listitem><para>
 			Directory permissions should be set for public read-write with the
-			sticky-bit set as shown:
+			sticky bit set as shown:
 <screen>
 &rootprompt;<userinput>chmod a+trw TX /var/spool/samba</userinput>
 </screen>
 		The purpose of setting the sticky bit is to prevent who does not own the temporary print file
-		from being able to take control of it with the potential for devious mis-use.
+		from being able to take control of it with the potential for devious misuse.
 			</para></listitem>
 		</itemizedlist>
 
@@ -389,8 +393,8 @@ Added user jackb.
 		<note><para>
 		<indexterm><primary>MIME</primary><secondary>raw</secondary></indexterm>
 		<indexterm><primary>raw printing</primary></indexterm>
-		On CUPS enabled systems there is a facility to pass raw data directly to the printer without
-		intermediate processing via CUPS print filters. Where use of this mode of operation is desired
+		On CUPS-enabled systems there is a facility to pass raw data directly to the printer without
+		intermediate processing via CUPS print filters. Where use of this mode of operation is desired,
 		it is necessary to configure a raw printing device. It is also necessary to enable the raw mime
 		handler in the <filename>/etc/mime.conv</filename> and <filename>/etc/mime.types</filename>
 		files. Refer to <link linkend="cups-raw"></link>.
@@ -419,19 +423,19 @@ Added user jackb.
 		</para>
 
 		<para>
-		Site users will be: Jack Baumbach, Mary Orville and Amed Sehkah. Each will have
+		Site users will be Jack Baumbach, Mary Orville, and Amed Sehkah. Each will have
 		a password (not shown in further examples). Mary will be the printer administrator and will
 		own all files in the public share.
 		</para>
 
 		<para>
-		This configuration will be based on <emphasis>User Level Security</emphasis> that
+		This configuration will be based on <emphasis>user-level security</emphasis> that
 		is the default, and for which the default is to store Microsoft Windows-compatible
 		encrypted passwords in a file called <filename>/etc/samba/smbpasswd</filename>.
-		The default &smb.conf; entry that makes this happen is:
-		<smbconfoption name="passdb backend">smbpasswd, guest</smbconfoption>. Since this is the default
+		The default &smb.conf; entry that makes this happen is
+		<smbconfoption name="passdb backend">smbpasswd, guest</smbconfoption>. Since this is the default,
 		it is not necessary to enter it into the configuration file. Note that guest backend is
-		added to the list of active passdb backends not matter was it specified directly in Samba configuration
+		added to the list of active passdb backends no matter whether it specified directly in Samba configuration
 		file or not.
 		</para>
 
@@ -440,7 +444,7 @@ Added user jackb.
 		<title>Installing the Secure Office Server</title>
 			<step><para>
 		<indexterm><primary>office server</primary></indexterm>
-			Add all users to the Operating System:
+			Add all users to the operating system:
 <screen>
 &rootprompt;<userinput>useradd -c "Jack Baumbach" -m -g users -p m0r3pa1n jackb</userinput>
 &rootprompt;<userinput>useradd -c "Mary Orville" -m -g users -p secret maryo</userinput>
@@ -450,10 +454,11 @@ Added user jackb.
 
 			<step><para>
 			Configure the Samba &smb.conf; file as shown in <link linkend="OfficeServer"/>.
-		</para>
+			</para></step>
+
 <example id="OfficeServer">
-	<title>Secure Office Server smb.conf</title>
-	<smbconfblock>
+<title>Secure Office Server smb.conf</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -486,8 +491,8 @@ Added user jackb.
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-			</smbconfblock>
-			</example></step>
+</smbconfblock>
+</example>
 
 			<step><para>
 			Initialize the Microsoft Windows password database with the new users:
@@ -530,7 +535,7 @@ Added user ameds.
 <screen>
 &rootprompt;<userinput> nmbd; smbd;</userinput>
 </screen>
-			Both applications automatically will execute as daemons. Those who are paranoid about
+			Both applications automatically execute as daemons. Those who are paranoid about
 			maintaining control can add the <constant>-D</constant> flag to coerce them to start
 			up in daemon mode.
 			</para></step>
@@ -592,8 +597,8 @@ smb: \> <userinput>q</userinput>
 
 			<para>
 			By now you should be getting the hang of configuration basics. Clearly, it is time to
-			explore slightly more complex examples. For the remainder of this chapter we will abbreviate
-			instructions since there are previous examples.
+			explore slightly more complex examples. For the remainder of this chapter we abbreviate
+			instructions, since there are previous examples.
 			</para>
 
 		</sect3>
@@ -603,10 +608,9 @@ smb: \> <userinput>q</userinput>
 	<sect2>
 	<title>Domain Member Server</title>
 
-
 	<para>
 	<indexterm><primary>Server Type</primary><secondary>Domain Member</secondary></indexterm>
-	In this instance we will consider the simplest server configuration we can get away with
+	In this instance we consider the simplest server configuration we can get away with
 	to make an accounting department happy. Let's be warned, the users are accountants and they
 	do have some nasty demands. There is a budget for only one server for this department.
 	</para>
@@ -616,23 +620,23 @@ smb: \> <userinput>q</userinput>
 	Internal politics are typical of a medium-sized organization; Human Resources is of the
 	opinion that they run the ISG because they are always adding and disabling users. Also,
 	departmental managers have to fight tooth and nail to gain basic network resources access for
-	their staff. Accounting is different though, they get exactly what they want. So this should
+	their staff. Accounting is different, though, they get exactly what they want. So this should
 	set the scene.
 	</para>
 
 	<para>
-	We will use the users from the last example. The accounting department
-	has a general printer that all departmental users may. There is also a check printer
-	that may be used only by the person who has authority to print checks. The Chief Financial
-	Officer (CFO) wants that printer to be completely restricted and for it to be located in the
+	We use the users from the last example. The accounting department
+	has a general printer that all departmental users may use. There is also a check printer
+	that may be used only by the person who has authority to print checks. The chief financial
+	officer (CFO) wants that printer to be completely restricted and for it to be located in the
 	private storage area in her office. It therefore must be a network printer.
 	</para>
 
 	<para>
-	Accounting department uses an accounting application called <emphasis>SpytFull</emphasis>
+	The accounting department uses an accounting application called <emphasis>SpytFull</emphasis>
 	that must be run from a central application server. The software is licensed to run only off
 	one server, there are no workstation components, and it is run off a mapped share. The data
-	store is in a UNIX-based SQL backend. The UNIX gurus look after that, so is not our
+	store is in a UNIX-based SQL backend. The UNIX gurus look after that, so it is not our
 	problem.
 	</para>
 
@@ -640,7 +644,7 @@ smb: \> <userinput>q</userinput>
 	The accounting department manager (maryo) wants a general filing system as well as a separate
 	file storage area for form letters (nastygrams). The form letter area should be read-only to
 	all accounting staff except the manager. The general filing system has to have a structured
-	layout with a general area for all staff to store general documents, as well as a separate
+	layout with a general area for all staff to store general documents as well as a separate
 	file area for each member of her team that is private to that person, but she wants full
 	access to all areas. Users must have a private home share for personal work-related files
 	and for materials not related to departmental operations.
@@ -651,7 +655,7 @@ smb: \> <userinput>q</userinput>
 		
 		<para>
 		The server <emphasis>valinor</emphasis> will be a member server of the company domain.
-		Accounting will have only a local server. User accounts will be on the Domain Controllers
+		Accounting will have only a local server. User accounts will be on the domain controllers,
 		as will desktop profiles and all network policy files.
 		</para>
 
@@ -662,13 +666,14 @@ smb: \> <userinput>q</userinput>
 			</para></step>
 
 			<step><para>
-			Configure &smb.conf; according to <link linkend="fast-member-server"/>
-			and <link linkend="fast-memberserver-shares"></link>.
-			</para>
+			Configure &smb.conf; according to <link linkend="fast-member-server">Member server smb.conf
+			(globals)</link> and <link linkend="fast-memberserver-shares">Member server smb.conf (shares
+			and services)</link>.
+			</para></step>
 
-			<example id="fast-member-server">
-			<title>Member server smb.conf (globals)</title>
-			<smbconfblock>
+<example id="fast-member-server">
+<title>Member server smb.conf (globals)</title>
+<smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
@@ -681,11 +686,12 @@ smb: \> <userinput>q</userinput>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-			</smbconfblock></example>
+</smbconfblock>
+</example>
 
-			<example id="fast-memberserver-shares">
-			<title>Member server smb.conf (shares and services)</title>
-			<smbconfblock>
+<example id="fast-memberserver-shares">
+<title>Member server smb.conf (shares and services)</title>
+<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -713,12 +719,11 @@ smb: \> <userinput>q</userinput>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
-			</smbconfblock>
-			</example></step>
-
+</smbconfblock>
+</example>
 
 			<step><para>
-<indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
+			<indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
 			Join the domain. Note: Do not start Samba until this step has been completed!
 <screen>
 &rootprompt;<userinput>net rpc join -Uroot%'bigsecret'</userinput>
@@ -733,7 +738,7 @@ Joined domain MIDEARTH.
 
 			<step><para>
 			Start Samba following the normal method for your operating system platform.
-			If you wish to this manually execute as root:
+			If you wish to do this manually, execute as root:
 			<indexterm><primary>smbd</primary></indexterm>
 			<indexterm><primary>nmbd</primary></indexterm>
 			<indexterm><primary>winbindd</primary></indexterm>
@@ -746,7 +751,7 @@ Joined domain MIDEARTH.
 			</para></step>
 
 			<step><para>
-			Configure the name service switch control file on your system to resolve user and group names
+			Configure the name service switch (NSS) control file on your system to resolve user and group names
 			via winbind. Edit the following lines in <filename>/etc/nsswitch.conf</filename>:
 <programlisting>
 passwd: files winbind
@@ -825,25 +830,25 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 
 	<para>
 	<indexterm><primary>Server Type</primary><secondary>Domain Controller</secondary></indexterm>
-	For the remainder of this chapter the focus is on the configuration of Domain Control.
+	For the remainder of this chapter the focus is on the configuration of domain control.
 	The examples that follow are for two implementation strategies. Remember, our objective is
 	to create a simple but working solution. The remainder of this book should help to highlight
 	opportunity for greater functionality and the complexity that goes with it.
 	</para>
 
 	<para>
-	A Domain Controller configuration can be achieved with a simple configuration using the new
+	A domain controller configuration can be achieved with a simple configuration using the new
 	tdbsam password backend. This type of configuration is good for small
-	offices, but has limited scalability (cannot be replicated) and performance can be expected
+	offices, but has limited scalability (cannot be replicated), and performance can be expected
 	to fall as the size and complexity of the domain increases.
 	</para>
 
 	<para>
 	The use of tdbsam is best limited to sites that do not need
-	more than a primary Domain Controller (PDC). As the size of a domain grows the need
-	for additional Domain Controllers becomes apparent. Do not attempt to under-resource
-	a Microsoft Windows network environment; Domain Controllers provide essential
-	authentication services. The following are symptoms of an under-resourced Domain Control
+	more than a Primary Domain Controller (PDC). As the size of a domain grows the need
+	for additional domain controllers becomes apparent. Do not attempt to under-resource
+	a Microsoft Windows network environment; domain controllers provide essential
+	authentication services. The following are symptoms of an under-resourced domain control
 	environment:
 	</para>
 
@@ -853,27 +858,27 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 		</para></listitem>
 
 		<listitem><para>
-		File access on a Domain Member server intermittently fails, giving a permission denied
+		File access on a domain member server intermittently fails, giving a permission denied
 		error message.
 		</para></listitem>
 	</itemizedlist>
 
 	<para>
-	A more scalable Domain Control authentication backend option might use
-	Microsoft Active Directory, or an LDAP-based backend. Samba-3 provides
-	for both options as a Domain Member server. As a PDC Samba-3 is not able to provide
+	A more scalable domain control authentication backend option might use
+	Microsoft Active Directory or an LDAP-based backend. Samba-3 provides
+	for both options as a domain member server. As a PDC, Samba-3 is not able to provide
 	an exact alternative to the functionality that is available with Active Directory.
 	Samba-3 can provide a scalable LDAP-based PDC/BDC solution.
 	</para>
 
 	<para>
 	The tdbsam authentication backend provides no facility to replicate
-	the contents of the database, except by external means. (i.e., there is no self-contained protocol
-	in Samba-3 for Security Account Manager database [SAM] replication.)
+	the contents of the database, except by external means (i.e., there is no self-contained protocol
+	in Samba-3 for Security Account Manager database [SAM] replication).
 	</para>
 
 	<note><para>
-	If you need more than one Domain Controller, do not use a tdbsam authentication backend.
+	If you need more than one domain controller, do not use a tdbsam authentication backend.
 	</para></note>
 
 		<sect3>
@@ -889,15 +894,15 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 		<procedure>
 			<step><para>
 			A working PDC configuration using the tdbsam
-			password backend can be found in <link linkend="fast-engoffice-global"></link> together with
-			<link linkend="fast-engoffice-shares"></link>:
-			</para>
-			
-			<para>
-<indexterm><primary>pdbedit</primary></indexterm>
-			<example id="fast-engoffice-global">
-			<title>Engineering Office smb.conf (globals)</title>
-			<smbconfblock>
+			password backend can be found in <link linkend="fast-engoffice-global">Engineering Office smb.conf
+			(globals)</link> together with <link linkend="fast-engoffice-shares">Engineering Office smb.conf
+			(shares and services)</link>:
+			<indexterm><primary>pdbedit</primary></indexterm>
+			</para></step>
+
+<example id="fast-engoffice-global">
+<title>Engineering Office smb.conf (globals)</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="netbios name">FRODO</smbconfoption>
@@ -924,13 +929,12 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
-			</smbconfblock>
-		</example>
-		</para>
+</smbconfblock>
+</example>
 
-			<example id="fast-engoffice-shares">
-			<title>Engineering Office smb.conf (shares and services)</title>
-			<smbconfblock>
+<example id="fast-engoffice-shares">
+<title>Engineering Office smb.conf (shares and services)</title>
+<smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
@@ -970,8 +974,8 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
 <smbconfcomment>Other resource (share/printer) definitions would follow below.</smbconfcomment>
-			</smbconfblock>
-			</example></step>
+</smbconfblock>
+</example>
 
 			<step><para>
 			Create UNIX group accounts as needed using a suitable operating system tool:
@@ -993,13 +997,11 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 
 
 			<step><para>
-<indexterm><primary>net</primary><secondary>groupmap</secondary></indexterm>
-<indexterm><primary>initGroups.sh</primary></indexterm>
-			Assign each of the UNIX groups to NT groups:
-			(It may be useful to copy this text to a shell script called
-			<filename>initGroups.sh</filename>.)
-				<title>Shell script for initializing group mappings</title>
-			<programlisting>
+			<indexterm><primary>net</primary><secondary>groupmap</secondary></indexterm>
+			<indexterm><primary>initGroups.sh</primary></indexterm>
+			Assign each of the UNIX groups to NT groups by executing this shell script
+			(You could name the script <filename>initGroups.sh</filename>):
+<screen>
 #!/bin/bash
 #### Keep this as a shell script for future re-use
 			
@@ -1012,7 +1014,7 @@ net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
 net groupmap add ntgroup="Designers" unixgroup=designers type=d
 net groupmap add ntgroup="Engineers" unixgroup=engineers type=d
 net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
-</programlisting>
+</screen>
 			</para></step>
 
 			<step><para>
@@ -1027,7 +1029,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 		</procedure>
 
 		<para>
-		The above configuration provides a functional Primary Domain Control (PDC)
+		The above configuration provides a functional PDC
 		system to which must be added file shares and printers as required.
 		</para>
 
@@ -1038,7 +1040,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 
 		<para>
 		In this section we finally get to review in brief a Samba-3 configuration that
-		uses a Light Weight Directory Access (LDAP)-based authentication backend. The
+		uses a Lightweight Directory Access (LDAP)-based authentication backend. The
 		main reasons for this choice are to provide the ability to host primary
 		and Backup Domain Control (BDC), as well as to enable a higher degree of
 		scalability to meet the needs of a very distributed environment.
@@ -1054,7 +1056,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 			</para>
 
 			<para>
-			The Idealx scripts (or equivalent) are needed to manage LDAP based Posix and/or
+			The Idealx scripts (or equivalent) are needed to manage LDAP-based POSIX and/or
 			SambaSamAccounts. The Idealx scripts may be downloaded from the <ulink url="http://www.idealx.org">
 			Idealx</ulink> Web site. They may also be obtained from the Samba tarball. Linux
 			distributions tend to install the Idealx scripts in the 
@@ -1070,10 +1072,10 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 
 				<step><para>
 				Set up the LDAP server. This example is suitable for OpenLDAP 2.1.x.
-				The <filename>/etc/openldap/slapd.conf</filename> file:
-<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
+				The <filename>/etc/openldap/slapd.conf</filename> file.
+				<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
 <title>Example slapd.conf file</title>
-<programlisting>
+<screen>
 # Note commented out lines have been removed
 include         /etc/openldap/schema/core.schema
 include         /etc/openldap/schema/cosine.schema
@@ -1104,7 +1106,7 @@ index   sambaSID              eq
 index   sambaPrimaryGroupSID  eq
 index   sambaDomainName       eq
 index   default               sub
-</programlisting>
+</screen>
 				</para></step>
 
 				<step><para>
@@ -1160,8 +1162,9 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 				</para></step>
 
 				<step><para>
-				The &smb.conf; file that drives this backend can be found in example <link linkend="fast-ldap"/>.
-				</para>
+				The &smb.conf; file that drives this backend can be found in example <link
+				linkend="fast-ldap">LDAP backend smb.conf for PDC</link>.
+				</para></step>
 
 <example id="fast-ldap">
 <title>LDAP backend smb.conf for PDC</title>
@@ -1201,7 +1204,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 </smbconfblock>
-				</example></step>
+</example>
 
 				<step><para>
 				Add the LDAP password to the <filename>secrets.tdb</filename> file so Samba can update
@@ -1213,7 +1216,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 
 				<step><para>
 				Add users and groups as required. Users and groups added using Samba tools
-				will automatically be added to both the LDAP backend as well as to the operating
+				will automatically be added to both the LDAP backend and the operating
 				system as required.
 				</para></step>
 
@@ -1231,9 +1234,11 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 			<procedure>
 				<step><para>
 				Decide if the BDC should have its own LDAP server or not. If the BDC is to be
-				the LDAP server change the following &smb.conf; as indicated. The default
-				configuration in <link linkend="fast-bdc"/> uses a central LDAP server.
-			</para>
+				the LDAP server, change the following &smb.conf; as indicated. The default
+				configuration in <link linkend="fast-bdc">Remote LDAP BDC smb.conf</link>
+				uses a central LDAP server.
+				</para></step>
+
 <example id="fast-bdc">
 <title>Remote LDAP BDC smb.conf</title>
 <smbconfblock>
@@ -1264,7 +1269,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="idmap gid">15000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 </smbconfblock>
-				</example></step>
+</example>
 
 				<step><para>
 				Configure the NETLOGON and PROFILES directory as for the PDC in <link linkend="fast-bdc"/>.

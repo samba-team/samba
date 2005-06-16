@@ -12,48 +12,48 @@
 
 <para>
 Before you continue reading this section, please make sure that you are comfortable
-with configuring a Samba Domain Controller as described in <link linkend="samba-pdc">Domain Control</link>.
+with configuring a Samba domain controller as described in <link linkend="samba-pdc">Domain Control</link>.
 </para>
 
 <sect1>
 <title>Features and Benefits</title>
 
 <para>
-This is one of the most difficult chapters to summarize. It does not matter what we say here
+This is one of the most difficult chapters to summarize. It does not matter what we say here,
 for someone will still draw conclusions and/or approach the Samba Team with expectations
-that are either not yet capable of being delivered, or that can be achieved far more
+that are either not yet capable of being delivered or that can be achieved far more
 effectively using a totally different approach. In the event that you should have a persistent
 concern that is not addressed in this book, please email <ulink url="mailto:jht@samba.org">John H. Terpstra</ulink>
-clearly setting out your requirements and/or question and we will do our best to provide a solution.
+clearly setting out your requirements and/or question, and we will do our best to provide a solution.
 </para>
 
 <para>
 <indexterm><primary>SAM backend</primary><secondary>LDAP</secondary></indexterm>
-Samba-3 is capable of acting as a Backup Domain Controller (BDC) to another Samba Primary Domain
-Controller (PDC). A Samba-3 PDC can operate with an LDAP Account backend. The LDAP backend can be
-either a common master LDAP server, or a slave server. The use of a slave LDAP server has the
+Samba-3 can act as a Backup Domain Controller (BDC) to another Samba Primary Domain
+Controller (PDC). A Samba-3 PDC can operate with an LDAP account backend. The LDAP backend can be
+either a common master LDAP server or a slave server. The use of a slave LDAP server has the
 benefit that when the master is down, clients may still be able to log onto the network.
 This effectively gives Samba a high degree of scalability and is an effective solution
 for large organizations. If you use an LDAP slave server for a PDC,
-you will need to ensure the master's continued availability - if the
-slave finds it's master down at the wrong time, you will have 
+you will need to ensure the master's continued availability &smbmdash; if the
+slave finds its master down at the wrong time, you will have 
 stability and operational problems.
 </para>
 
 <para>
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
-While it is possible to run a Samba-3 BDC with non-LDAP backend, that
-backend must allow some form of 'two way' propagation, of changes
-from the BDC to the master.  Only LDAP is capable of this at this stage.
+While it is possible to run a Samba-3 BDC with a non-LDAP backend, that
+backend must allow some form of "two-way" propagation of changes
+from the BDC to the master.  Only LDAP has such capability at this stage.
 </para>
 
 <para>
 <indexterm><primary>SAM backend</primary><secondary>non-LDAP</secondary></indexterm>
-The use of a non-LDAP backend SAM database is particularly problematic because Domain Member
+The use of a non-LDAP backend SAM database is particularly problematic because domain member
 servers and workstations periodically change the Machine Trust Account password. The new
 password is then stored only locally. This means that in the absence of a centrally stored
 accounts database (such as that provided with an LDAP-based solution) if Samba-3 is running
-as a BDC, the BDC instance of the Domain Member trust account password will not reach the
+as a BDC, the BDC instance of the domain member trust account password will not reach the
 PDC (master) copy of the SAM. If the PDC SAM is then replicated to BDCs, this results in 
 overwriting the SAM that contains the updated (changed) trust account password with resulting
 breakage of the domain trust.
@@ -62,7 +62,8 @@ breakage of the domain trust.
 <para>
 Considering the number of comments and questions raised concerning how to configure a BDC,
 let's consider each possible option and look at the pros and cons for each possible solution.
-<link linkend="pdc-bdc-table">Following table</link> lists possible design configurations for a PDC/BDC infrastructure.
+<link linkend="pdc-bdc-table">The Domain Backend Account Distribution Options table below</link> lists 
+possible design configurations for a PDC/BDC infrastructure.
 <indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
@@ -89,14 +90,14 @@ let's consider each possible option and look at the pros and cons for each possi
         <entry><para>Single Central LDAP Server</para></entry>
         <entry><para>Single Central LDAP Server</para></entry>
 	<entry><para>
-	A workable solution without fail-over ability. This is a usable solution, but not optimal. 
+	A workable solution without failover ability. This is a usable solution, but not optimal. 
 	</para></entry>
         </row>
         <row>
         <entry><para>tdbsam</para></entry>
         <entry><para>tdbsam + <command>net rpc vampire</command></para></entry>
         <entry><para>
-	Does not work with Samba-3.0; as Samba does not implement the
+	Does not work with Samba-3.0; Samba does not implement the
         server-side protocols required.
 	</para></entry>
         </row>
@@ -130,7 +131,7 @@ let's consider each possible option and look at the pros and cons for each possi
 <title>Essential Background Information</title>
 
 <para>
-A Domain Controller is a machine that is able to answer logon requests from network
+A domain controller is a machine that is able to answer logon requests from network
 workstations. Microsoft LanManager and IBM LanServer were two early products that
 provided this capability. The technology has become known as the LanMan Netlogon service.
 </para>
@@ -147,19 +148,19 @@ services that are implemented over an intricate spectrum of technologies.
 <title>MS Windows NT4-style Domain Control</title>
 
 <para>
-Whenever a user logs into a Windows NT4/200x/XP Professional Workstation,
-the workstation connects to a Domain Controller (authentication server) to validate that
+Whenever a user logs into a Windows NT4/200x/XP Professional workstation,
+the workstation connects to a domain controller (authentication server) to validate that
 the username and password the user entered are valid. If the information entered
-does not match account information that has been stored in the Domain
-Control database (the SAM, or Security Account Manager database), a set of error
+does not match account information that has been stored in the domain
+control database (the SAM, or Security Account Manager database), a set of error
 codes is returned to the workstation that has made the authentication request.
 </para>
 
 <para>
-When the username/password pair has been validated, the Domain Controller
+When the username/password pair has been validated, the domain controller
 (authentication server) will respond with full enumeration of the account information
-that has been stored regarding that user in the User and Machine Accounts database
-for that Domain. This information contains a complete network access profile for
+that has been stored regarding that user in the user and machine accounts database
+for that domain. This information contains a complete network access profile for
 the user but excludes any information that is particular to the user's desktop profile,
 or for that matter it excludes all desktop profiles for groups that the user may
 belong to. It does include password time limits, password uniqueness controls,
@@ -170,36 +171,36 @@ in all versions of MS Windows NT (3.10, 3.50, 3.51, 4.0).
 
 <para>
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
-The account information (user and machine) on Domain Controllers is stored in two files,
-one containing the Security information and the other the SAM. These are stored in files
+The account information (user and machine) on domain controllers is stored in two files,
+one containing the security information and the other the SAM. These are stored in files
 by the same name in the <filename>%SystemRoot%\System32\config</filename> directory. 
 This normally translates to the path <filename>C:\WinNT\System32\config</filename>. These
-are the files that are involved in replication of the SAM database where Backup Domain
-Controllers are present on the network.
+are the files that are involved in replication of the SAM database where BDCs are present
+on the network.
 </para>
 
 <para>
-There are two situations in which it is desirable to install Backup Domain Controllers:
+There are two situations in which it is desirable to install BDCs:
 </para>
 
 <itemizedlist>
 	<listitem><para>
-	On the local network that the Primary Domain Controller is on, if there are many
+	On the local network that the PDC is on, if there are many
 	workstations and/or where the PDC is generally very busy. In this case the BDCs
 	will pick up network logon requests and help to add robustness to network services.
 	</para></listitem>
 
 	<listitem><para>
-	At each remote site, to reduce wide area network traffic and to add stability to
+	At each remote site, to reduce wide-area network traffic and to add stability to
 	remote network operations. The design of the network, the strategic placement of
-	Backup Domain Controllers, together with an implementation that localizes as much
-	of network to client interchange as possible will help to minimize wide area network
+	BDCs, together with an implementation that localizes as much
+	of network to client interchange as possible will help to minimize wide-area network
 	bandwidth needs (and thus costs).
 	</para></listitem>
 </itemizedlist>
 
 <para>
-The inter-operation of a PDC and its BDCs in a true Windows NT4 environment is worth
+The interoperation of a PDC and its BDCs in a true Windows NT4 environment is worth
 mentioning here. The PDC contains the master copy of the SAM. In the event that an
 administrator makes a change to the user account database while physically present
 on the local network that has the PDC, the change will likely be made directly to
@@ -207,19 +208,19 @@ the PDC instance of the master copy of the SAM. In the event that this update ma
 be performed in a branch office, the change will likely be stored in a delta file
 on the local BDC. The BDC will then send a trigger to the PDC to commence the process
 of SAM synchronization. The PDC will then request the delta from the BDC and apply
-it to the master SAM. The PDC will then contact all the BDCs in the Domain and
+it to the master SAM. The PDC will then contact all the BDCs in the domain and
 trigger them to obtain the update and then apply that to their own copy of the SAM.
 </para>
 
 <para>
-Samba-3 can not participate in true SAM replication and is therefore not able to
+Samba-3 cannot participate in true SAM replication and is therefore not able to
 employ precisely the same protocols used by MS Windows NT4. A Samba-3 BDC will
-not create SAM update delta files. It will not inter-operate with a PDC (NT4 or Samba)
+not create SAM update delta files. It will not interoperate with a PDC (NT4 or Samba)
 to synchronize the SAM from delta files that are held by BDCs.
 </para>
 
 <para>
-Samba-3 cannot function as a BDC to an MS Windows NT4 PDC, and Samba-3 can not
+Samba-3 cannot function as a BDC to an MS Windows NT4 PDC, and Samba-3 cannot
 function correctly as a PDC to an MS Windows NT4 BDC. Both Samba-3 and MS Windows
 NT4 can function as a BDC to its own type of PDC.
 </para>
@@ -227,17 +228,17 @@ NT4 can function as a BDC to its own type of PDC.
 <para>
 The BDC is said to hold a <emphasis>read-only</emphasis> of the SAM from which
 it is able to process network logon requests and authenticate users. The BDC can
-continue to provide this service, particularly while, for example, the wide area
+continue to provide this service, particularly while, for example, the wide-area
 network link to the PDC is down. A BDC plays a very important role in both the
-maintenance of Domain Security as well as in network integrity.
+maintenance of domain security as well as in network integrity.
 </para>
 
 <para>
 In the event that the NT4 PDC should need to be taken out of service, or if it dies, 
-one of the NT4 BDCs can be promoted to a PDC. If this happens while the original NT4 PDC is on
-line, it is automatically demoted to an NT4 BDC. This is an important aspect of Domain
-Controller management. The tool that is used to effect a promotion or a demotion is the
-Server Manager for Domains. It should be noted that Samba-3 BDCs can not be promoted
+one of the NT4 BDCs can be promoted to a PDC. If this happens while the original NT4 PDC
+is online, it is automatically demoted to an NT4 BDC. This is an important aspect of domain
+controller management. The tool that is used to effect a promotion or a demotion is the
+Server Manager for Domains. It should be noted that Samba-3 BDCs cannot be promoted
 in this manner because reconfiguration of Samba requires changes to the &smb.conf; file.
 </para>
 
@@ -246,13 +247,14 @@ in this manner because reconfiguration of Samba requires changes to the &smb.con
 
 <para>
 Beginning with Version 2.2, Samba officially supports domain logons for all current Windows clients,
-including Windows NT4, 2003 and XP Professional. For Samba to be enabled as a PDC, some
-parameters in the <smbconfsection name="[global]"/>-section of the &smb.conf; have to be set.
-Refer to <link linkend="minimalPDC">following configuration</link> for an example of the minimum required settings.
+including Windows NT4, 2003, and XP Professional. For Samba to be enabled as a PDC, some
+parameters in the <smbconfsection name="[global]"/> section of the &smb.conf; have to be set.
+Refer to <link linkend="minimalPDC">the Minimal smb.conf for a PDC in Use with a BDC &smbmdash; LDAP Server on
+PDC section</link> for an example of the minimum required settings.
 </para>
 
 <example id="minimalPDC">
-<title>Minimal smb.conf for a PDC in Use With a BDC &smbmdash; LDAP Server on PDC.</title>
+<title>Minimal smb.conf for a PDC in Use with a BDC &smbmdash; LDAP Server on PDC</title>
 <smbconfblock>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 <smbconfoption name="passdb backend">ldapsam://localhost:389</smbconfoption>
@@ -276,7 +278,7 @@ chapter; for more information please refer to <link linkend="samba-pdc">Domain C
 
 <para>
 When configuring a master and a slave LDAP server, it is advisable to use the master LDAP server
-for the PDC and slave LDAP servers for the BDCs. It is not essential to use slave LDAP servers, however,
+for the PDC and slave LDAP servers for the BDCs. It is not essential to use slave LDAP servers; however,
 many administrators will want to do so in order to provide redundant services. Of course, one or more BDCs
 may use any slave LDAP server. Then again, it is entirely possible to use a single LDAP server for the
 entire network.
@@ -292,12 +294,12 @@ subjectAltName certificate extension. More details on server certificate names a
 
 <para>
 It does not really fit within the scope of this document, but a working LDAP installation is
-basic to LDAP enabled Samba operation. When using an OpenLDAP server with Transport Layer Security
+basic to LDAP-enabled Samba operation. When using an OpenLDAP server with Transport Layer Security
 (TLS), the machine name in <filename>/etc/ssl/certs/slapd.pem</filename> must be the
 same as in <filename>/etc/openldap/sldap.conf</filename>. The Red Hat Linux startup script
 creates the <filename>slapd.pem</filename> file with hostname <quote>localhost.localdomain.</quote>
 It is impossible to access this LDAP server from a slave LDAP server (i.e., a Samba BDC) unless the
-certificate is recreated with a correct hostname.
+certificate is re-created with a correct hostname.
 </para>
 
 <para>
@@ -305,7 +307,7 @@ For preference, do not install a Samba PDC on a OpenLDAP slave server. Joining c
 will fail in this configuration because the change to the machine account in the LDAP tree
 must take place on the master LDAP server. This is not replicated rapidly enough to the slave
 server that the PDC queries. It therefore gives an error message on the client machine about
-not being able to set up account credentials. The machine account is created on the LDAP server
+not being able to set up account credentials. The machine account is created on the LDAP server,
 but the password fields will be empty.  Unfortunately, some sites are
 unable to avoid such configurations, and these sites should review the
 <smbconfoption name="ldap replication sleep"/> parameter, intended to slow down Samba sufficiently
@@ -339,17 +341,15 @@ Possible PDC/BDC plus LDAP configurations include:
 </itemizedlist>
 
 <para>
-In order to have a fall-back configuration (secondary) LDAP server one would specify
-the secondary LDAP server in the &smb.conf; file as shown in <link linkend="mulitldapcfg">following example</link>.
+In order to have a fallback configuration (secondary) LDAP server, you would specify
+the secondary LDAP server in the &smb.conf; file as shown in <link linkend="mulitldapcfg">the Multiple LDAP
+Servers in &smb.conf; example</link>.
 </para>
 
 <example id="mulitldapcfg">
 <title>Multiple LDAP Servers in &smb.conf;</title>
 <smbconfblock>
-<member>...</member>
-<smbconfoption name="passdb backend"> </smbconfoption>
-<member><parameter>ldapsam:"ldap://master.quenya.org ldap://slave.quenya.org"</parameter></member>
-<member>...</member>
+<smbconfoption name="passdb backend">ldapsam:"ldap://master.quenya.org ldap://slave.quenya.org"</smbconfoption>
 </smbconfblock>
 </example>
 
@@ -361,9 +361,9 @@ the secondary LDAP server in the &smb.conf; file as shown in <link linkend="muli
 <para>
 As of the release of MS Windows 2000 and Active Directory, this information is now stored
 in a directory that can be replicated and for which partial or full administrative control
-can be delegated. Samba-3 is not able to be a Domain Controller within an Active Directory
+can be delegated. Samba-3 is not able to be a domain controller within an Active Directory
 tree, and it cannot be an Active Directory server. This means that Samba-3 also cannot
-act as a Backup Domain Controller to an Active Directory Domain Controller.
+act as a BDC to an Active Directory domain controller.
 </para>
 
 </sect2>
@@ -372,27 +372,27 @@ act as a Backup Domain Controller to an Active Directory Domain Controller.
 <title>What Qualifies a Domain Controller on the Network?</title>
 
 <para>
-Every machine that is a Domain Controller for the domain MIDEARTH has to register the NetBIOS
+Every machine that is a domain controller for the domain MIDEARTH has to register the NetBIOS
 group name MIDEARTH&lt;#1c&gt; with the WINS server and/or by broadcast on the local network.
 The PDC also registers the unique NetBIOS name MIDEARTH&lt;#1b&gt; with the WINS server.
-The name type &lt;#1b&gt; name is normally reserved for the Domain Master Browser, a role
-that has nothing to do with anything related to authentication, but the Microsoft Domain
-implementation requires the Domain Master Browser to be on the same machine as the PDC.
+The name type &lt;#1b&gt; name is normally reserved for the Domain Master Browser (DMB), a role
+that has nothing to do with anything related to authentication, but the Microsoft domain
+implementation requires the DMB to be on the same machine as the PDC.
 </para>
 
 <para>
 Where a WINS server is not used, broadcast name registrations alone must suffice. Refer to
-<link linkend="netdiscuss">Network Browsing: Discussion</link> for more information regarding TCP/IP network protocols and how
- SMB/CIFS names are handled.
+<link linkend="NetworkBrwosing">Network Browsing</link>,<link linkend="netdiscuss">Discussion</link>
+for more information regarding TCP/IP network protocols and how SMB/CIFS names are handled.
 </para>
 
 </sect2>
 
 <sect2>
-<title>How does a Workstation find its Domain Controller?</title>
+<title>How Does a Workstation find its Domain Controller?</title>
 
 <para>
-There are two different mechanisms to locate a domain controller, one method is used when
+There are two different mechanisms to locate a domain controller: one method is used when
 NetBIOS over TCP/IP is enabled and the other when it has been disabled in the TCP/IP
 network configuration.
 </para>
@@ -408,12 +408,12 @@ environment all machines require appropriate DNS entries. More information may b
 <title>NetBIOS Over TCP/IP Enabled</title>
 <para>
 An MS Windows NT4/200x/XP Professional workstation in the domain MIDEARTH that wants a
-local user to be authenticated has to find the Domain Controller for MIDEARTH. It does this
+local user to be authenticated has to find the domain controller for MIDEARTH. It does this
 by doing a NetBIOS name query for the group name MIDEARTH&lt;#1c&gt;. It assumes that each
-of the machines it gets back from the queries is a Domain Controller and can answer logon
-requests. To not open security holes, both the workstation and the selected Domain Controller
+of the machines it gets back from the queries is a domain controller and can answer logon
+requests. To not open security holes, both the workstation and the selected domain controller
 authenticate each other. After that the workstation sends the user's credentials (name and
-password) to the local Domain Controller for validation.
+password) to the local domain controller for validation.
 </para>
 
 </sect3>
@@ -423,7 +423,7 @@ password) to the local Domain Controller for validation.
 
 <para>
 An MS Windows NT4/200x/XP Professional workstation in the realm <constant>quenya.org</constant>
-that has a need to affect user logon authentication will locate the Domain Controller by 
+that has a need to affect user logon authentication will locate the domain controller by 
 re-querying DNS servers for the <constant>_ldap._tcp.pdc._msdcs.quenya.org</constant> record.
 More information regarding this subject may be found in <link linkend="adsdnstech">DNS and Active Directory</link>.
 </para>
@@ -437,7 +437,7 @@ More information regarding this subject may be found in <link linkend="adsdnstec
 
 <para>
 The creation of a BDC requires some steps to prepare the Samba server before
-&smbd; is executed for the first time. These steps are outlines as follows:
+&smbd; is executed for the first time. These steps are as follows:
 <indexterm><primary>SID</primary></indexterm>
 </para>
 
@@ -446,9 +446,9 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	The domain SID has to be the same on the PDC and the BDC. In Samba versions
 	pre-2.2.5, the domain SID was stored in the file <filename>private/MACHINE.SID</filename>.
 	The domain SID is now stored in the file <filename>private/secrets.tdb</filename>. This file
-	is unique to each server and can not be copied from a PDC to a BDC, the BDC will generate
-	a new SID at start-up. It will over-write the PDC domain SID with the newly created BDC SID.
-	There is a procedure that will allow the BDC to aquire the Domain SID. This is described here.
+	is unique to each server and cannot be copied from a PDC to a BDC; the BDC will generate
+	a new SID at startup. It will overwrite the PDC domain SID with the newly created BDC SID.
+	There is a procedure that will allow the BDC to aquire the domain SID. This is described here.
 	</para>
 
 	<para>
@@ -508,11 +508,12 @@ The creation of a BDC requires some steps to prepare the Samba server before
 <title>Example Configuration</title>
 
 <para> Finally, the BDC has to be found by the workstations. This can be
-done by setting Samba as shown in <link linkend="minim-bdc">the next example</link>.
+done by configuring the Samba &smb.conf; file <smbconfsection name="[global]"/> section 
+as shown in <link linkend="minim-bdc">Minimal Setup for Being a BDC</link>.
 </para>
 
 <example id="minim-bdc">
-<title>Minimal setup for being a BDC</title>
+<title>Minimal Setup for Being a BDC</title>
 <smbconfblock>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 <smbconfoption name="passdb backend">ldapsam:ldap://slave-ldap.quenya.org</smbconfoption>
@@ -523,13 +524,12 @@ done by setting Samba as shown in <link linkend="minim-bdc">the next example</li
 </example>
 
 <para>
-In the <smbconfsection name="[global]"/>-section of the &smb.conf; of the BDC. This makes the BDC
-only register the name MIDEARTH&lt;#1c&gt; with the WINS server. This is no
-problem as the name MIDEARTH&lt;#1c&gt; is a NetBIOS group name that is meant to
-be registered by more than one machine. The parameter
+This configuration causes the BDC to register only the name MIDEARTH&lt;#1c&gt; with the
+WINS server. This is not a problem, as the name MIDEARTH&lt;#1c&gt; is a NetBIOS group name
+that is meant to be registered by more than one machine. The parameter
 <smbconfoption name="domain master">no</smbconfoption>
-forces the BDC not to register <?latex \linebreak ?>MIDEARTH&lt;#1b&gt; which as a unique NetBIOS
-name is reserved for the Primary Domain Controller.
+forces the BDC not to register MIDEARTH&lt;#1b&gt;, which is a unique NetBIOS name that 
+is reserved for the PDC.
 </para>
 
 <para>
@@ -542,19 +542,19 @@ use the LDAP database to resolve all UIDs and GIDs for UNIX accounts.
 <note><para>
 <indexterm><primary>Server Type</primary><secondary>Domain Member</secondary></indexterm>
 Samba-3 has introduced a new ID mapping facility. One of the features of this facility is that it
-allows greater flexibility in how user and group IDs are handled in respect to NT Domain User and Group
+allows greater flexibility in how user and group IDs are handled in respect to NT domain user and group
 SIDs. One of the new facilities provides for explicitly ensuring that UNIX/Linux UID and GID values
-will be consistent on the PDC, all BDCs and all Domain Member servers. The parameter that controls this
+will be consistent on the PDC, all BDCs, and all domain member servers. The parameter that controls this
 is called <parameter>idmap backend</parameter>. Please refer to the man page for &smb.conf; for more information
 regarding its behavior.
 </para></note>
 
 <para>
 The use of the <smbconfoption name="idmap backend">ldap:ldap://master.quenya.org</smbconfoption>
-option on a BDC only make sense where ldapsam is used on a PDC. The purpose for an LDAP based idmap backend is
-also to allow a domain-member (without its own passdb backend) to use winbindd to resolve Windows network users
-and groups to common UID/GIDs. In other words, this option is generally intended for use on BDCs and on Domain
-Member servers.
+option on a BDC only makes sense where ldapsam is used on a PDC. The purpose of an LDAP-based idmap backend is
+also to allow a domain member (without its own passdb backend) to use winbindd to resolve Windows network users
+and groups to common UID/GIDs. In other words, this option is generally intended for use on BDCs and on domain
+member servers.
 </para>
 
 </sect2>
@@ -564,9 +564,9 @@ Member servers.
 <title>Common Errors</title>
 
 <para>
-As this is a rather new area for Samba, there are not many examples that we may refer to.
+As domain control is a rather new area for Samba, there are not many examples that we may refer to.
 Updates will be published as they become available and may be found in later Samba releases or
-from the Samba web <ulink url="http://samba.org">site.</ulink>
+from the Samba Web <ulink url="http://samba.org">site</ulink>.
 </para>
 
 <sect2>
@@ -575,18 +575,18 @@ from the Samba web <ulink url="http://samba.org">site.</ulink>
 <para>
 <indexterm><primary>Machine Trust Accounts</primary></indexterm>
 This problem will occur when the passdb (SAM) files are copied  from a central
-server but the local Backup Domain Controller is acting as a PDC. This results in the application of
+server but the local BDC is acting as a PDC. This results in the application of
 Local Machine Trust Account password updates to the local SAM. Such updates 
-are not copied back to the central server. The newer machine account password is then over
-written when the SAM is re-copied from the PDC. The result is that the Domain Member machine
-on start up will find that its passwords do not match the one now in the database and
+are not copied back to the central server. The newer machine account password is then
+overwritten when the SAM is recopied from the PDC. The result is that the domain member machine
+on startup will find that its passwords do not match the one now in the database, and
 since the startup security check will now fail, this machine will not allow logon attempts
 to proceed and the account expiry error will be reported.
 </para>
 
 <para>
 The solution is to use a more robust passdb backend, such as the ldapsam backend, setting up
-a slave LDAP server for each BDC, and a master LDAP server for the PDC.
+a slave LDAP server for each BDC and a master LDAP server for the PDC.
 </para>
 
 </sect2>
@@ -619,7 +619,7 @@ has to be replicated to the BDC. So replicating the smbpasswd file very often is
 </para>
 
 <para>
-As the smbpasswd file contains plain text password equivalents, it must not be
+As the smbpasswd file contains plaintext password equivalents, it must not be
 sent unencrypted over the wire. The best way to set up smbpasswd replication from
 the PDC to the BDC is to use the utility rsync. rsync can use ssh as a transport.
 <command>ssh</command> itself can be set up to accept <emphasis>only</emphasis>
@@ -639,8 +639,8 @@ accounts will go out of sync, resulting in a broken domain. This method is
 
 <para>
 The simple answer is yes. Samba's pdb_ldap code supports binding to a replica
-LDAP server, and will also follow referrals and re-bind to the master if it ever
-needs to make a modification to the database. (Normally BDCs are read only, so
+LDAP server and will also follow referrals and rebind to the master if it ever
+needs to make a modification to the database. (Normally BDCs are read-only, so
 this will not occur often).
 </para>
 
