@@ -168,7 +168,7 @@ BOOL torture_rpc_scanner(void)
 		if (b->transport == NCACN_IP_TCP) {
 			status = dcerpc_epm_map_binding(mem_ctx, b, 
 							 l->table->uuid,
-							 l->table->if_version);
+							 l->table->if_version, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(loop_ctx);
 				printf("Failed to map port for uuid %s\n", l->table->uuid);

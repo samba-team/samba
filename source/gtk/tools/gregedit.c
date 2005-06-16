@@ -412,8 +412,9 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	cli_credentials_set_gtk_callbacks(creds);
 
 	error = reg_open_remote(&registry, 
-			creds,
-			gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
+				creds,
+				gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx),
+				NULL);
 
 	if(!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(mainwin, "Error while opening remote registry", error);

@@ -232,7 +232,7 @@ static int ejs_cli_tree_connect(MprVarHandle eid, int argc, MprVar **argv)
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	char *password = "";
+	const char *password = "";
 
 	/* Argument parsing */
 

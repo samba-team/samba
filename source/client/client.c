@@ -2730,7 +2730,7 @@ static BOOL browse_host(const char *query_host)
 	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
-				     cmdline_credentials);
+				     cmdline_credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
 			 binding, nt_errstr(status));
@@ -3220,7 +3220,7 @@ static struct smbcli_state *do_connect(const char *server, const char *share, st
 	}
 	
 	status = smbcli_full_connection(NULL, &c, server,
-					share, NULL, cred);
+					share, NULL, cred, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));

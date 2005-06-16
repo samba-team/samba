@@ -81,7 +81,10 @@ static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *
 	NTSTATUS nt_status;
 	DATA_BLOB pw_blob;
 
-	nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context);
+	/*
+	  darn, we need some way to get the right event_context here
+	*/
+	nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprCreateStringVar("Auth System Failure", 1));

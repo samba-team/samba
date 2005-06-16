@@ -390,7 +390,7 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 
 	if (remote) {
-		error = reg_open_remote (&h, cmdline_credentials, remote); 
+		error = reg_open_remote (&h, cmdline_credentials, remote, NULL); 
 	} else if (backend) {
 		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &curkey);
 	} else {

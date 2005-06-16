@@ -763,7 +763,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 	}
 
 	if (remote) {
-		error = reg_open_remote (&h, cmdline_credentials, remote);
+		error = reg_open_remote (&h, cmdline_credentials, remote, NULL);
 	} else {
 		error = reg_open_local (&h);
 	}

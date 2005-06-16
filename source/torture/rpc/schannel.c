@@ -171,7 +171,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 				       &p, b, 
 				       DCERPC_SAMR_UUID,
 				       DCERPC_SAMR_VERSION,
-				       credentials);
+				       credentials, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with schannel: %s\n", nt_errstr(status));
 		goto failed;
@@ -193,7 +193,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	/* Swap the binding details from SAMR to NETLOGON */
 	status = dcerpc_epm_map_binding(test_ctx, b, DCERPC_NETLOGON_UUID,
-					DCERPC_NETLOGON_VERSION);
+					DCERPC_NETLOGON_VERSION, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

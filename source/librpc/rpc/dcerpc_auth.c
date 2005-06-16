@@ -51,7 +51,8 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
 	if (!p->conn->security_state.generic_state) {
-		status = gensec_client_start(p, &p->conn->security_state.generic_state);
+		status = gensec_client_start(p, &p->conn->security_state.generic_state,
+					     p->conn->event_ctx);
 		if (!NT_STATUS_IS_OK(status)) goto done;
 
 		status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
@@ -153,7 +154,8 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 		p->conn->flags |= DCERPC_CONNECT;
 	}
 
-	status = gensec_client_start(p, &p->conn->security_state.generic_state);
+	status = gensec_client_start(p, &p->conn->security_state.generic_state,
+				     p->conn->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		return status;

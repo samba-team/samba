@@ -1363,7 +1363,7 @@ BOOL torture_rpc_samlogon(void)
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       credentials);
+				       credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RPC pipe connect as domain member failed: %s\n", nt_errstr(status));

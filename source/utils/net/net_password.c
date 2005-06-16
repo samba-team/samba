@@ -53,7 +53,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 		new_password = getpass(password_prompt);
 	}
 
-	libnetctx = libnet_context_init();
+	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -73,7 +73,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 		return -1;
 	}
 
-	libnet_context_destroy(&libnetctx);
+	talloc_free(libnetctx);
 
 	return 0;
 }
@@ -128,7 +128,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 		new_password = getpass(password_prompt);
 	}
 
-	libnetctx = libnet_context_init();
+	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
 		return -1;	
 	}
@@ -147,7 +147,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 		return -1;
 	}
 
-	libnet_context_destroy(&libnetctx);
+	talloc_free(libnetctx);
 
 	return 0;
 }

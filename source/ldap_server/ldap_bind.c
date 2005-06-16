@@ -22,6 +22,7 @@
 #include "ldap_server/ldap_server.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap.h"
+#include "smbd/service_stream.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
@@ -63,7 +64,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	if (!call->conn->gensec) {
 		call->conn->session_info = NULL;
 
-		status = gensec_server_start(call->conn, &call->conn->gensec);
+		status = gensec_server_start(call->conn, &call->conn->gensec,
+					     call->conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			return status;

@@ -792,7 +792,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 }
 
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const char *uuid, uint_t version)
+				const char *uuid, uint_t version, struct event_context *ev)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -850,7 +850,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 				       epmapper_binding,
 				       DCERPC_EPMAPPER_UUID,
 				       DCERPC_EPMAPPER_VERSION,
-				       anon_creds);
+				       anon_creds, ev);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -994,12 +994,12 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 		status = smbcli_full_connection(p->conn, &cli, 
 						binding->host, 
 						"IPC$", NULL, 
-						anon_creds);
+						anon_creds, p->conn->event_ctx);
 	} else {
 		status = smbcli_full_connection(p->conn, &cli, 
 						binding->host, 
 						"IPC$", NULL,
-						credentials);
+						credentials, p->conn->event_ctx);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
@@ -1008,7 +1008,9 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 
 	/* Look up identifier using the epmapper */
 	if (!binding->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, binding, pipe_uuid, pipe_version);
+		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
+						pipe_uuid, pipe_version, 
+						p->conn->event_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
@@ -1040,7 +1042,9 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx,
 
 	/* Look up identifier using the epmapper */
 	if (!binding->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, binding, pipe_uuid, pipe_version);
+		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
+						pipe_uuid, pipe_version, 
+						p->conn->event_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP NCALRPC identifier for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
@@ -1100,7 +1104,8 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx,
 
 	if (!binding->endpoint) {
 		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
-						pipe_uuid, pipe_version);
+						pipe_uuid, pipe_version, 
+						p->conn->event_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
@@ -1129,7 +1134,8 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_binding *binding,
 			       const char *pipe_uuid, 
 			       uint32_t pipe_version,
-			       struct cli_credentials *credentials)
+			       struct cli_credentials *credentials,
+			       struct event_context *ev)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	struct dcerpc_pipe *p; 
@@ -1138,7 +1144,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 
 	(*pp) = NULL;
 
-	p = dcerpc_pipe_init(parent_ctx);
+	p = dcerpc_pipe_init(parent_ctx, ev);
 	if (p == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1189,7 +1195,8 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     const char *binding,
 			     const char *pipe_uuid, 
 			     uint32_t pipe_version,
-			     struct cli_credentials *credentials)
+			     struct cli_credentials *credentials,
+			     struct event_context *ev)
 {
 	struct dcerpc_binding *b;
 	NTSTATUS status;
@@ -1210,7 +1217,8 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
 
 	status = dcerpc_pipe_connect_b(tmp_ctx,
-				       pp, b, pipe_uuid, pipe_version, credentials);
+				       pp, b, pipe_uuid, pipe_version, 
+				       credentials, ev);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*pp = talloc_reference(parent_ctx, *pp);
@@ -1235,7 +1243,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 	struct smbcli_tree *tree;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 
-	(*p2) = dcerpc_pipe_init(p);
+	(*p2) = dcerpc_pipe_init(p, p->conn->event_ctx);
 	if (*p2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

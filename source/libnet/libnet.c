@@ -20,27 +20,26 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "lib/events/events.h"
 
-struct libnet_context *libnet_context_init(void)
+struct libnet_context *libnet_context_init(struct event_context *ev)
 {
-	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 
-	mem_ctx = talloc_init("libnet_context");
-
-	ctx = talloc(mem_ctx, struct libnet_context);
+	ctx = talloc(NULL, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}
 
-	ctx->mem_ctx = mem_ctx;
+	if (ev == NULL) {
+		ev = event_context_init(ctx);
+		if (ev == NULL) {
+			talloc_free(ctx);
+			return NULL;
+		}
+	}
+	ctx->event_ctx = ev;
 
 	return ctx;
 }
 
-void libnet_context_destroy(struct libnet_context **libnetctx)
-{
-	talloc_free((*libnetctx)->mem_ctx);
-
-	(*libnetctx) = NULL;
-}

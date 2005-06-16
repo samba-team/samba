@@ -26,6 +26,7 @@ struct IUnknown_vtable;
 struct com_context 
 {
 	struct dcom_client_context *dcom;
+	struct event_context *event_ctx;
 };
 
 typedef struct IUnknown *(*get_class_object_function) (const struct GUID *clsid);
