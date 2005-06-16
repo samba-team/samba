@@ -48,7 +48,7 @@ RCSID("$Id$");
 
 #include "slc.h"
 extern FILE *yyin;
-extern struct assignment *a;
+extern struct assignment *assignment;
 %}
 
 %union {
@@ -66,7 +66,7 @@ extern struct assignment *a;
 
 start		: assignments
 		{
-			a = $1;
+			assignment = $1;
 		}
 		;
 
@@ -102,7 +102,7 @@ assignment	: LITERAL '=' STRING
 char *filename;
 FILE *cfile, *hfile;
 int error_flag;
-struct assignment *a;
+struct assignment *assignment;
 
 
 static void
@@ -436,7 +436,7 @@ gen_wrapper(struct assignment *as)
     if(opt1 != NULL)
 	cprint(1, "struct %s_options opt;\n", name->u.value);
     cprint(1, "int ret;\n");
-    cprint(1, "int optind = 0;\n");
+    cprint(1, "int optidx = 0;\n");
     cprint(1, "struct getargs args[] = {\n");
     for(tmp = find(as, "option"); 
 	tmp != NULL; 
@@ -444,7 +444,7 @@ gen_wrapper(struct assignment *as)
 	struct assignment *type = find(tmp->u.assignment, "type");
 	struct assignment *lopt = find(tmp->u.assignment, "long");
 	struct assignment *sopt = find(tmp->u.assignment, "short");
-	struct assignment *arg = find(tmp->u.assignment, "argument");
+	struct assignment *aarg = find(tmp->u.assignment, "argument");
 	struct assignment *help = find(tmp->u.assignment, "help");
 	
 	cprint(2, "{ ");
@@ -475,7 +475,7 @@ gen_wrapper(struct assignment *as)
 	    fprintf(cfile, "\"%s\", ", help->u.value);
 	else
 	    fprintf(cfile, "NULL, ");
-	if(arg)
+	if(aarg)
 	    fprintf(cfile, "\"%s\"", arg->u.value);
 	else
 	    fprintf(cfile, "NULL");
@@ -529,7 +529,7 @@ gen_wrapper(struct assignment *as)
 	free(s);
     }
     cprint(1, "args[%d].value = &help_flag;\n", nargs++);
-    cprint(1, "if(getarg(args, %d, argc, argv, &optind))\n", nargs);
+    cprint(1, "if(getarg(args, %d, argc, argv, &optidx))\n", nargs);
     cprint(2, "goto usage;\n");
 
     {
@@ -564,21 +564,21 @@ gen_wrapper(struct assignment *as)
 	}
 	if(min_args != -1 || max_args != -1) {
 	    if(min_args == max_args) {
-		cprint(1, "if(argc - optind != %d) {\n", 
+		cprint(1, "if(argc - optidx != %d) {\n", 
 		       min_args);
-		cprint(2, "fprintf(stderr, \"Need exactly %u parameters (%%u given).\\n\\n\", argc - optind);\n", min_args);
+		cprint(2, "fprintf(stderr, \"Need exactly %u parameters (%%u given).\\n\\n\", argc - optidx);\n", min_args);
 		cprint(2, "goto usage;\n");
 		cprint(1, "}\n");
 	    } else {
 		if(max_args != -1) {
-		    cprint(1, "if(argc - optind > %d) {\n", max_args);
-		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are more than expected (%u).\\n\\n\", argc - optind);\n", max_args);
+		    cprint(1, "if(argc - optidx > %d) {\n", max_args);
+		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are more than expected (%u).\\n\\n\", argc - optidx);\n", max_args);
 		    cprint(2, "goto usage;\n");
 		    cprint(1, "}\n");
 		}
 		if(min_args != -1) {
-		    cprint(1, "if(argc - optind < %d) {\n", min_args);
-		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are less than expected (%u).\\n\\n\", argc - optind);\n", min_args);
+		    cprint(1, "if(argc - optidx < %d) {\n", min_args);
+		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are less than expected (%u).\\n\\n\", argc - optidx);\n", min_args);
 		    cprint(2, "goto usage;\n");
 		    cprint(1, "}\n");
 		}
@@ -589,7 +589,7 @@ gen_wrapper(struct assignment *as)
     cprint(1, "if(help_flag)\n");
     cprint(2, "goto usage;\n");
 
-    cprint(1, "ret = %s(%s, argc - optind, argv + optind);\n", 
+    cprint(1, "ret = %s(%s, argc - optidx, argv + optidx);\n", 
 	   function->u.value, 
 	   opt1 ? "&opt": "NULL");
     if(seen_strings) {
@@ -681,10 +681,10 @@ main(int argc, char **argv)
 {
     char *p;
 
-    int optind = 0;
+    int optidx = 0;
 
     setprogname(argv[0]);
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -693,10 +693,10 @@ main(int argc, char **argv)
 	exit(0);
     }
     
-    if(argc == optind)
+    if(argc == optidx)
 	usage(1);
 
-    filename = argv[optind];
+    filename = argv[optidx];
     yyin = fopen(filename, "r");
     if(yyin == NULL)
 	err(1, "%s", filename);
@@ -714,14 +714,14 @@ main(int argc, char **argv)
     yyparse();
     if(error_flag)
 	exit(1);
-    if(check(a) == 0) {
+    if(check(assignment) == 0) {
 	cfile = fopen(cname, "w");
 	if(cfile == NULL)
 	  err(1, "%s", cname);
 	hfile = fopen(hname, "w");
 	if(hfile == NULL)
 	  err(1, "%s", hname);
-	gen(a);
+	gen(assignment);
 	fclose(cfile);
 	fclose(hfile);
     }
