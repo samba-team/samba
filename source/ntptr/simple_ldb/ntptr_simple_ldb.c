@@ -67,6 +67,19 @@ static int sptr_db_search(struct ldb_context *ldb,
 	return count;
 }
 
+#define SET_STRING(ldb, mod, attr, value) do { \
+	if (value == NULL) return WERR_INVALID_PARAM; \
+	if (samdb_msg_add_string(ldb, (TALLOC_CTX *)mod, mod, attr, value) != 0) { \
+		return WERR_NOMEM; \
+	} \
+} while (0)
+
+#define SET_UINT(ldb, mod, attr, value) do { \
+	if (samdb_msg_add_uint(ldb, (TALLOC_CTX *)mod, mod, attr, value) != 0) { \
+		return WERR_NOMEM; \
+	} \
+} while (0)
+
 static NTSTATUS sptr_init_context(struct ntptr_context *ntptr)
 {
 	struct ldb_context *sptr_db = sptr_db_connect(ntptr);
@@ -160,7 +173,7 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 	int i;
 	union spoolss_FormInfo *info;
 
-	count = sptr_db_search(sptr_db, mem_ctx, "CN=PrintServer", &msgs, NULL,
+	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, NULL,
 			       "(&(objectclass=form))");
 
 	if (count == 0) return WERR_OK;
@@ -177,12 +190,12 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 			info[i].info1.form_name		= samdb_result_string(msgs[i], "form_name", "Letter");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.form_name);
 
-			info[i].info1.size.width	= samdb_result_uint(msgs[i], "size_widgth", 0x34b5c);
+			info[i].info1.size.width	= samdb_result_uint(msgs[i], "size_width", 0x34b5c);
 			info[i].info1.size.height	= samdb_result_uint(msgs[i], "size_height", 0x44368);
 
 			info[i].info1.area.left		= samdb_result_uint(msgs[i], "area_left", 0);
 			info[i].info1.area.top		= samdb_result_uint(msgs[i], "area_top", 0);
-			info[i].info1.area.right	= samdb_result_uint(msgs[i], "are_right", 0x34b5c);
+			info[i].info1.area.right	= samdb_result_uint(msgs[i], "area_right", 0x34b5c);
 			info[i].info1.area.bottom	= samdb_result_uint(msgs[i], "area_bottom", 0x44368);
 		}
 		break;
@@ -195,16 +208,71 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 	return WERR_OK;
 }
 
+static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+				      struct spoolss_AddForm *r)
+{
+	struct ldb_context *sptr_db = talloc_get_type(server->ntptr->private_data, struct ldb_context);
+	struct ldb_message *msg,**msgs;
+	const char * const attrs[] = {"dn", NULL };
+	int count, ret;
+
+	/* TODO; do access checks here */
+
+	switch (r->in.level) {
+	case 1:
+		if (!r->in.info.info1) {
+			return WERR_FOOBAR;
+		}
+		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
+				       "(&(form_name=%s)(objectClass=form))",
+				       r->in.info.info1->form_name);
+
+		if (count == 1) return WERR_FOOBAR;
+		if (count > 1) return WERR_FOOBAR;
+		if (count < 0) return WERR_GENERAL_FAILURE;
+
+		msg = ldb_msg_new(mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(msg);
+
+		/* add core elements to the ldb_message for the Form */
+		msg->dn = talloc_asprintf(msg, "form_name=%s,CN=Forms,CN=PrintServer",
+						r->in.info.info1->form_name);
+		SET_STRING(sptr_db, msg, "objectClass", "form");
+
+		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
+
+		SET_STRING(sptr_db, msg, "form_name", r->in.info.info1->form_name);
+
+		SET_UINT(sptr_db, msg, "size_width", r->in.info.info1->size.width);
+		SET_UINT(sptr_db, msg, "size_height", r->in.info.info1->size.height);
+
+		SET_UINT(sptr_db, msg, "area_left", r->in.info.info1->area.left);
+		SET_UINT(sptr_db, msg, "area_top", r->in.info.info1->area.top);
+		SET_UINT(sptr_db, msg, "area_right", r->in.info.info1->area.right);
+		SET_UINT(sptr_db, msg, "area_bottom", r->in.info.info1->area.bottom);
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	ret = samdb_add(sptr_db, mem_ctx, msg);
+	if (ret != 0) {
+		return WERR_FOOBAR;
+	}
+
+	return WERR_OK;
+}
+
 static WERROR sptr_GetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
-					struct spoolss_GetForm *r)
+				      struct spoolss_GetForm *r)
 {
 	struct ldb_context *sptr_db = talloc_get_type(server->ntptr->private_data, struct ldb_context);
 	struct ldb_message **msgs;
 	int count;
 	union spoolss_FormInfo *info;
 
-	count = sptr_db_search(sptr_db, mem_ctx, "CN=PrintServer", &msgs, NULL,
-			       "(&(form_name=%s)(objectclass=form))",
+	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, NULL,
+			       "(&(form_name=%s)(objectClass=form))",
 			       r->in.form_name);
 
 	if (count == 0) return WERR_FOOBAR;
@@ -221,12 +289,12 @@ static WERROR sptr_GetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		info->info1.form_name	= samdb_result_string(msgs[0], "form_name", "Letter");
 		W_ERROR_HAVE_NO_MEMORY(info->info1.form_name);
 
-		info->info1.size.width	= samdb_result_uint(msgs[0], "size_widgth", 0x34b5c);
+		info->info1.size.width	= samdb_result_uint(msgs[0], "size_width", 0x34b5c);
 		info->info1.size.height	= samdb_result_uint(msgs[0], "size_height", 0x44368);
 
 		info->info1.area.left	= samdb_result_uint(msgs[0], "area_left", 0);
 		info->info1.area.top	= samdb_result_uint(msgs[0], "area_top", 0);
-		info->info1.area.right	= samdb_result_uint(msgs[0], "are_right", 0x34b5c);
+		info->info1.area.right	= samdb_result_uint(msgs[0], "area_right", 0x34b5c);
 		info->info1.area.bottom	= samdb_result_uint(msgs[0], "area_bottom", 0x44368);
 		break;
 	default:
@@ -234,6 +302,90 @@ static WERROR sptr_GetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 	}
 
 	r->out.info	= info;
+	return WERR_OK;
+}
+
+static WERROR sptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+				      struct spoolss_SetForm *r)
+{
+	struct ldb_context *sptr_db = talloc_get_type(server->ntptr->private_data, struct ldb_context);
+	struct ldb_message *msg,**msgs;
+	const char * const attrs[] = { "ntSecurityDescriptor", NULL};
+	int count, ret;
+
+	/* TODO: do checks access here */
+
+	switch (r->in.level) {
+	case 1:
+		if (!r->in.info.info1) {
+			return WERR_FOOBAR;
+		}
+
+		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
+				       "(&(form_name=%s)(objectClass=form))",
+				       r->in.info.info1->form_name);
+
+		if (count == 0) return WERR_FOOBAR;
+		if (count > 1) return WERR_FOOBAR;
+		if (count < 0) return WERR_GENERAL_FAILURE;
+
+		msg = ldb_msg_new(mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(msg);
+
+		/* add core elements to the ldb_message for the user */
+		msg->dn = msgs[0]->dn;
+
+		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
+
+		SET_STRING(sptr_db, msg, "form_name", r->in.info.info1->form_name);
+
+		SET_UINT(sptr_db, msg, "size_width", r->in.info.info1->size.width);
+		SET_UINT(sptr_db, msg, "size_height", r->in.info.info1->size.height);
+
+		SET_UINT(sptr_db, msg, "area_left", r->in.info.info1->area.left);
+		SET_UINT(sptr_db, msg, "area_top", r->in.info.info1->area.top);
+		SET_UINT(sptr_db, msg, "area_right", r->in.info.info1->area.right);
+		SET_UINT(sptr_db, msg, "area_bottom", r->in.info.info1->area.bottom);
+		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	ret = samdb_replace(sptr_db, mem_ctx, msg);
+	if (ret != 0) {
+		return WERR_FOOBAR;
+	}
+
+	return WERR_OK;
+}
+
+static WERROR sptr_DeletePrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
+					 struct spoolss_DeleteForm *r)
+{
+	struct ldb_context *sptr_db = talloc_get_type(server->ntptr->private_data, struct ldb_context);
+	struct ldb_message **msgs;
+	const char * const attrs[] = { "ntSecurityDescriptor", NULL};
+	int count, ret;
+
+	/* TODO: do checks access here */
+
+	if (!r->in.form_name) {
+		return WERR_FOOBAR;
+	}
+
+	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
+			       "(&(form_name=%s)(objectclass=form))",
+			       r->in.form_name);
+
+	if (count == 0) return WERR_FOOBAR;
+	if (count > 1) return WERR_FOOBAR;
+	if (count < 0) return WERR_GENERAL_FAILURE;
+
+	ret = samdb_delete(sptr_db, mem_ctx, msgs[0]->dn);
+	if (ret != 0) {
+		return WERR_FOOBAR;
+	}
+
 	return WERR_OK;
 }
 
@@ -520,11 +672,11 @@ static const struct ntptr_ops ntptr_simple_ldb_ops = {
 */
 	/* PrintServer Form functions */
 	.EnumPrintServerForms		= sptr_EnumPrintServerForms,
-/*	.AddPrintServerForm		= sptr_AddPrintServerForm,
-*/	.GetPrintServerForm		= sptr_GetPrintServerForm,
-/*	.SetPrintServerForm		= sptr_SetPrintServerForm,
+	.AddPrintServerForm		= sptr_AddPrintServerForm,
+	.GetPrintServerForm		= sptr_GetPrintServerForm,
+	.SetPrintServerForm		= sptr_SetPrintServerForm,
 	.DeletePrintServerForm		= sptr_DeletePrintServerForm,
-*/
+
 	/* PrintServer Driver functions */
 	.EnumPrinterDrivers		= sptr_EnumPrinterDrivers,
 /*	.AddPrinterDriver		= sptr_AddPrinterDriver,
