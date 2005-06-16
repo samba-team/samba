@@ -383,6 +383,67 @@ static BOOL test_doublepointer(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+
+/*
+  test request timeouts
+*/
+static BOOL test_timeout(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct rpc_request *req;
+	struct echo_TestSleep r;
+	int timeout_saved = p->request_timeout;
+
+	if (!lp_parm_bool(-1, "torture", "echo_TestSleep", True)) {
+		printf("timeout testing disabled - use \"torture:echo_TestSleep=yes\" to enable\n");
+		return True;
+	}
+
+	printf("testing request timeouts\n");
+	r.in.seconds = 2;
+	p->request_timeout = 1;
+
+	req = dcerpc_echo_TestSleep_send(p, mem_ctx, &r);
+	if (!req) {
+		printf("Failed to send async sleep request\n");
+		goto failed;
+	}
+
+	status	= dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		printf("request should have timed out - %s\n", nt_errstr(status));
+		goto failed;
+	}
+
+	printf("testing request destruction\n");
+	req = dcerpc_echo_TestSleep_send(p, mem_ctx, &r);
+	if (!req) {
+		printf("Failed to send async sleep request\n");
+		goto failed;
+	}
+	talloc_free(req);
+
+	req = dcerpc_echo_TestSleep_send(p, mem_ctx, &r);
+	if (!req) {
+		printf("Failed to send async sleep request\n");
+		goto failed;
+	}
+	status	= dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		printf("request should have timed out - %s\n", nt_errstr(status));
+		goto failed;
+	}
+	
+
+	p->request_timeout = timeout_saved;
+	return True;
+
+failed:
+	p->request_timeout = timeout_saved;
+	return False;
+}
+
+
 BOOL torture_rpc_echo(void)
 {
 	NTSTATUS status;
@@ -411,6 +472,7 @@ BOOL torture_rpc_echo(void)
 	ret &= test_surrounding(p, mem_ctx);
 	ret &= test_doublepointer(p, mem_ctx);
 	ret &= test_sleep(p, mem_ctx);
+	ret &= test_timeout(p, mem_ctx);
 
 	printf("\n");
 	
