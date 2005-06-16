@@ -1071,4 +1071,20 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 	return WERR_OK;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_create_key(pipes_struct *p, REG_Q_CREATE_KEY  *q_u, REG_R_CREATE_KEY *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
+
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r_u)
+{
+	return WERR_ACCESS_DENIED;
+}
 

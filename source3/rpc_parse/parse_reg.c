@@ -212,7 +212,7 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 
 
 	init_unistr4( &q_c->name, name, UNI_STR_TERMINATE );
@@ -246,7 +246,7 @@ BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4 ("name", ps, depth, &q_u->name))
@@ -318,7 +318,7 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 	init_unistr4(&q_c->name, name, UNI_STR_TERMINATE);
 }
 
@@ -338,7 +338,7 @@ BOOL reg_io_q_delete_val(const char *desc, REG_Q_DELETE_VALUE *q_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4("name", ps, depth, &q_u->name))
@@ -381,7 +381,7 @@ void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 
 	init_unistr4(&q_c->name, name, UNI_STR_TERMINATE);
 }
@@ -402,7 +402,7 @@ BOOL reg_io_q_delete_key(const char *desc,  REG_Q_DELETE_KEY *q_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4("", ps, depth, &q_u->name))
@@ -1232,7 +1232,7 @@ void init_reg_q_set_val(REG_Q_SET_VALUE *q_u, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_set_val(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_set_value(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1269,7 +1269,7 @@ BOOL reg_io_q_set_val(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_set_val(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_r_set_value(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
