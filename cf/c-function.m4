@@ -12,12 +12,12 @@ AC_CACHE_VAL(ac_cv___function__, [
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <string.h>
 
-static char *foo()
+static char *foo(void)
 {
   return __FUNCTION__;
 }
 
-int main()
+int main(int argc, char **argc)
 {
   return strcmp(foo(), "foo") != 0;
 }
