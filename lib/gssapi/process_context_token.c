@@ -56,7 +56,7 @@ OM_uint32 gss_process_context_token (
 
     if (ret == GSS_S_COMPLETE)
 	ret = gss_delete_sec_context(minor_status,
-				     (gss_ctx_id_t *)&context_handle,
+				     rk_UNCONST(&context_handle),
 				     GSS_C_NO_BUFFER);
     if (ret == GSS_S_COMPLETE)
 	*minor_status = 0;
