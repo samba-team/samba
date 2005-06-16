@@ -215,7 +215,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 	UNISTR4 class;
 	uint32 reserved;
@@ -237,7 +237,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_KEY;
 
@@ -249,7 +249,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_VALUE;
 
