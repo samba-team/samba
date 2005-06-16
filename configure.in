@@ -348,7 +348,15 @@ dnl Checks for libraries.
 AC_FIND_FUNC_NO_LIBS(logwtmp, util)
 AC_FIND_FUNC_NO_LIBS(logout, util)
 AC_FIND_FUNC_NO_LIBS(openpty, util)
-AC_FIND_FUNC_NO_LIBS(tgetent, termcap ncurses curses)
+
+AC_FIND_FUNC_NO_LIBS(tgetent, termcap ncurses curses,[
+#ifdef HAVE_TERMCAP_H
+#include <termcap.h>
+#endif
+#ifdef HAVE_CURSES_H
+#include <curses.h>
+#endif
+],[0,0])
 
 dnl Checks for library functions.
 
