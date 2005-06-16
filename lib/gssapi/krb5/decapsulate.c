@@ -87,7 +87,7 @@ _gssapi_verify_mech_header(u_char **str,
 	       mech->length) != 0)
 	return GSS_S_BAD_MECH;
     p += mech_len;
-    *str = (char *)p;
+    *str = rk_UNCONST(p);
     return GSS_S_COMPLETE;
 }
 
