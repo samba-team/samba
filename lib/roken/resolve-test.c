@@ -71,11 +71,11 @@ main(int argc, char **argv)
 {
     struct dns_reply *r;
     struct resource_record *rr;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname (argv[0]);
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     
     if (help_flag)
@@ -86,8 +86,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc != 2)
 	usage(1);
