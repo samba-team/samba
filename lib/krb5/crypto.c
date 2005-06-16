@@ -131,7 +131,7 @@ struct encryption_type {
     krb5_error_code (*encrypt)(krb5_context context,
 			       struct key_data *key,
 			       void *data, size_t len,
-			       krb5_boolean encrypt,
+			       krb5_boolean encryptp,
 			       int usage,
 			       void *ivec);
 };
@@ -1236,7 +1236,7 @@ krb5_string_to_key_salt (krb5_context context,
 			 krb5_keyblock *key)
 {
     krb5_data pw;
-    pw.data = (void*)password;
+    pw.data = rk_UNCONST(password);
     pw.length = strlen(password);
     return krb5_string_to_key_data_salt(context, enctype, pw, salt, key);
 }
@@ -1250,7 +1250,7 @@ krb5_string_to_key_salt_opaque (krb5_context context,
 				krb5_keyblock *key)
 {
     krb5_data pw;
-    pw.data = (void*)password;
+    pw.data = rk_UNCONST(password);
     pw.length = strlen(password);
     return krb5_string_to_key_data_salt_opaque(context, enctype, 
 					       pw, salt, opaque, key);
@@ -2270,7 +2270,7 @@ NULL_encrypt(krb5_context context,
 	     struct key_data *key, 
 	     void *data, 
 	     size_t len, 
-	     krb5_boolean encrypt,
+	     krb5_boolean encryptp,
 	     int usage,
 	     void *ivec)
 {
@@ -2282,14 +2282,14 @@ DES_CBC_encrypt_null_ivec(krb5_context context,
 			  struct key_data *key, 
 			  void *data, 
 			  size_t len, 
-			  krb5_boolean encrypt,
+			  krb5_boolean encryptp,
 			  int usage,
 			  void *ignore_ivec)
 {
     DES_cblock ivec;
     DES_key_schedule *s = key->schedule->data;
     memset(&ivec, 0, sizeof(ivec));
-    DES_cbc_encrypt(data, data, len, s, &ivec, encrypt);
+    DES_cbc_encrypt(data, data, len, s, &ivec, encryptp);
     return 0;
 }
 
@@ -2298,14 +2298,14 @@ DES_CBC_encrypt_key_ivec(krb5_context context,
 			 struct key_data *key, 
 			 void *data, 
 			 size_t len, 
-			 krb5_boolean encrypt,
+			 krb5_boolean encryptp,
 			 int usage,
 			 void *ignore_ivec)
 {
     DES_cblock ivec;
     DES_key_schedule *s = key->schedule->data;
     memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
-    DES_cbc_encrypt(data, data, len, s, &ivec, encrypt);
+    DES_cbc_encrypt(data, data, len, s, &ivec, encryptp);
     return 0;
 }
 
@@ -2314,7 +2314,7 @@ DES3_CBC_encrypt(krb5_context context,
 		 struct key_data *key, 
 		 void *data, 
 		 size_t len, 
-		 krb5_boolean encrypt,
+		 krb5_boolean encryptp,
 		 int usage,
 		 void *ivec)
 {
@@ -2324,7 +2324,7 @@ DES3_CBC_encrypt(krb5_context context,
 	ivec = &local_ivec;
 	memset(local_ivec, 0, sizeof(local_ivec));
     }
-    DES_ede3_cbc_encrypt(data, data, len, &s[0], &s[1], &s[2], ivec, encrypt);
+    DES_ede3_cbc_encrypt(data, data, len, &s[0], &s[1], &s[2], ivec, encryptp);
     return 0;
 }
 
@@ -2333,7 +2333,7 @@ DES_CFB64_encrypt_null_ivec(krb5_context context,
 			    struct key_data *key, 
 			    void *data, 
 			    size_t len, 
-			    krb5_boolean encrypt,
+			    krb5_boolean encryptp,
 			    int usage,
 			    void *ignore_ivec)
 {
@@ -2342,7 +2342,7 @@ DES_CFB64_encrypt_null_ivec(krb5_context context,
     DES_key_schedule *s = key->schedule->data;
     memset(&ivec, 0, sizeof(ivec));
 
-    DES_cfb64_encrypt(data, data, len, s, &ivec, &num, encrypt);
+    DES_cfb64_encrypt(data, data, len, s, &ivec, &num, encryptp);
     return 0;
 }
 
@@ -2351,7 +2351,7 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
 			  struct key_data *key, 
 			  void *data, 
 			  size_t len, 
-			  krb5_boolean encrypt,
+			  krb5_boolean encryptp,
 			  int usage,
 			  void *ignore_ivec)
 {
@@ -2359,7 +2359,7 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
     DES_key_schedule *s = key->schedule->data;
     memcpy(&ivec, key->key->keyvalue.data, sizeof(ivec));
 
-    DES_pcbc_encrypt(data, data, len, s, &ivec, encrypt);
+    DES_pcbc_encrypt(data, data, len, s, &ivec, encryptp);
     return 0;
 }
 
@@ -2370,7 +2370,7 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
 void KRB5_LIB_FUNCTION
 _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 		      size_t len, const void *aes_key,
-		      unsigned char *ivec, const int encrypt)
+		      unsigned char *ivec, const int encryptp)
 {
     unsigned char tmp[AES_BLOCK_SIZE];
     const AES_KEY *key = aes_key; /* XXX remove this when we always have AES */
@@ -2381,7 +2381,7 @@ _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
      * then at least one blocksize.
      */
 
-    if (encrypt) {
+    if (encryptp) {
 
 	while(len > AES_BLOCK_SIZE) {
 	    for (i = 0; i < AES_BLOCK_SIZE; i++)
@@ -2441,7 +2441,7 @@ AES_CTS_encrypt(krb5_context context,
 		struct key_data *key,
 		void *data,
 		size_t len,
-		krb5_boolean encrypt,
+		krb5_boolean encryptp,
 		int usage,
 		void *ivec)
 {
@@ -2449,7 +2449,7 @@ AES_CTS_encrypt(krb5_context context,
     char local_ivec[AES_BLOCK_SIZE];
     AES_KEY *k;
 
-    if (encrypt)
+    if (encryptp)
 	k = &aeskey->ekey;
     else
 	k = &aeskey->dkey;
@@ -2457,7 +2457,7 @@ AES_CTS_encrypt(krb5_context context,
     if (len < AES_BLOCK_SIZE)
 	krb5_abortx(context, "invalid use of AES_CTS_encrypt");
     if (len == AES_BLOCK_SIZE) {
-	if (encrypt)
+	if (encryptp)
 	    AES_encrypt(data, data, k);
 	else
 	    AES_decrypt(data, data, k);
@@ -2466,7 +2466,7 @@ AES_CTS_encrypt(krb5_context context,
 	    memset(local_ivec, 0, sizeof(local_ivec));
 	    ivec = local_ivec;
 	}
-	_krb5_aes_cts_encrypt(data, data, len, k, ivec, encrypt);
+	_krb5_aes_cts_encrypt(data, data, len, k, ivec, encryptp);
     }
 
     return 0;
@@ -2477,7 +2477,7 @@ AES_CBC_encrypt(krb5_context context,
                 struct key_data *key, 
                 void *data,
                 size_t len,  
-                krb5_boolean encrypt, 
+                krb5_boolean encryptp, 
                 int usage,
                 void *ivec)
 {
@@ -2485,7 +2485,7 @@ AES_CBC_encrypt(krb5_context context,
     char local_ivec[AES_BLOCK_SIZE];
     AES_KEY *k;
 
-    if (encrypt)
+    if (encryptp)
 	k = &aeskey->ekey;
     else
 	k = &aeskey->dkey;
@@ -2494,7 +2494,7 @@ AES_CBC_encrypt(krb5_context context,
         ivec = &local_ivec;
         memset(local_ivec, 0, sizeof(local_ivec));
     }
-    AES_cbc_encrypt(data, data, len, k, ivec, encrypt);
+    AES_cbc_encrypt(data, data, len, k, ivec, encryptp);
     return 0;
 }
 
@@ -2507,7 +2507,7 @@ RC2_CBC_encrypt(krb5_context context,
                 struct key_data *key, 
                 void *data,
                 size_t len,  
-                krb5_boolean encrypt, 
+                krb5_boolean encryptp, 
                 int usage,
                 void *ivec)
 {
@@ -2517,7 +2517,7 @@ RC2_CBC_encrypt(krb5_context context,
         ivec = &local_ivec;
         memset(local_ivec, 0, sizeof(local_ivec));
     }
-    RC2_cbc_encrypt(data, data, len, s, ivec, encrypt);
+    RC2_cbc_encrypt(data, data, len, s, ivec, encryptp);
     return 0;
 }
 
@@ -2694,7 +2694,7 @@ ARCFOUR_encrypt(krb5_context context,
 		struct key_data *key,
 		void *data,
 		size_t len,
-		krb5_boolean encrypt,
+		krb5_boolean encryptp,
 		int usage,
 		void *ivec)
 {
@@ -2704,7 +2704,7 @@ ARCFOUR_encrypt(krb5_context context,
     if((ret = usage2arcfour (context, &keyusage)) != 0)
 	return ret;
 
-    if (encrypt)
+    if (encryptp)
 	return ARCFOUR_subencrypt (context, key, data, len, keyusage, ivec);
     else
 	return ARCFOUR_subdecrypt (context, key, data, len, keyusage, ivec);
@@ -4320,7 +4320,7 @@ krb5_get_keyid(krb5_context context,
 
 static void
 krb5_crypto_debug(krb5_context context,
-		  int encrypt,
+		  int encryptp,
 		  size_t len,
 		  krb5_keyblock *key)
 {
@@ -4329,7 +4329,7 @@ krb5_crypto_debug(krb5_context context,
     krb5_get_keyid(context, key, &keyid);
     krb5_enctype_to_string(context, key->keytype, &kt);
     krb5_warnx(context, "%s %lu bytes with key-id %#x (%s)", 
-	       encrypt ? "encrypting" : "decrypting",
+	       encryptp ? "encrypting" : "decrypting",
 	       (unsigned long)len,
 	       keyid,
 	       kt);
