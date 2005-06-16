@@ -161,12 +161,12 @@ REQUIRED_SUBSYSTEMS = \
 INIT_FUNCTION = dcerpc_server_spoolss_init
 SUBSYSTEM = DCERPC
 INIT_OBJ_FILES = \
-		rpc_server/spoolss/dcesrv_spoolss.o \
-		rpc_server/spoolss/spoolssdb.o
+		rpc_server/spoolss/dcesrv_spoolss.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON \
-		NDR_SPOOLSS
-# End MODULE dcerpc_lsa
+		NDR_SPOOLSS \
+		NTPTR
+# End MODULE dcerpc_spoolss
 ################################################
 
 ################################################
