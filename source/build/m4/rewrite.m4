@@ -738,9 +738,9 @@ AC_SUBST(SMBD_EXTRA_LIBS)
 
 ###############################################
 # test for where we get crypt() from
-AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTHLIBS="-lcrypt $AUTHLIBS"
-  AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
+AC_CHECK_LIB_EXT(crypt, CRYPT_LIBS, crypt)
+SMB_EXT_LIB_ENABLE(CRYPT,YES)
+SMB_EXT_LIB(CRYPT, $CRYPT_LIBS)
 
 ##
 ## moved after the check for -lcrypt in order to
