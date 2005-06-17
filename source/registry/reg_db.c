@@ -163,16 +163,22 @@ BOOL init_registry_db( void )
 	return True;
 }
 
+/**********************************************************************
+ The full path to the registry key is used as database after the 
+ \'s are converted to /'s.  Key string is also normalized to UPPER
+ case. 
+**********************************************************************/
 
+static void normalize_reg_path( pstring keyname )
+{
+	pstring_sub( keyname, "\\", "/" );
+	strupper_m( keyname  );
+}
 
 /***********************************************************************
  Add subkey strings to the registry tdb under a defined key
  fmt is the same format as tdb_pack except this function only supports
  fstrings
-
- The full path to the registry key is used as database after the 
- \'s are converted to /'s.  Key string is also normalized to UPPER
- case. 
  ***********************************************************************/
  
 static BOOL regdb_store_reg_keys_internal( char *key, REGSUBKEY_CTR *ctr )
@@ -189,12 +195,8 @@ static BOOL regdb_store_reg_keys_internal( char *key, REGSUBKEY_CTR *ctr )
 		return False;
 
 	pstrcpy( keyname, key );
-	
-	/* convert to key format */
-	
-	pstring_sub( keyname, "\\", "/" ); 
-	strupper_m( keyname  );
-	
+	normalize_reg_path( keyname );
+
 	/* allocate some initial memory */
 		
 	buffer = SMB_MALLOC(sizeof(pstring));
@@ -249,13 +251,31 @@ static BOOL regdb_store_reg_keys( char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
-	REGSUBKEY_CTR subkeys;
+	REGSUBKEY_CTR subkeys, old_subkeys;
+	char *oldkeyname;
+	
+	/* fetch a list of the old subkeys so we can difure out if any were deleted */
+	
+	regsubkey_ctr_init( &old_subkeys );
+	regdb_fetch_reg_keys( key, &old_subkeys );
 	
 	/* store the subkey list for the parent */
 	
 	if ( !regdb_store_reg_keys_internal( key, ctr ) ) {
 		DEBUG(0,("regdb_store_reg_keys: Failed to store new subkey list for parent [%s}\n", key ));
 		return False;
+	}
+	
+	/* now delete removed keys */
+	
+	num_subkeys = regsubkey_ctr_numkeys( &old_subkeys );
+	for ( i=0; i<num_subkeys; i++ ) {
+		oldkeyname = regsubkey_ctr_specific_key( &old_subkeys, i );
+		if ( !regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
+			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
+			normalize_reg_path( path );
+			tdb_delete_bystring( tdb_reg, path );
+		}
 	}
 	
 	/* now create records for any subkeys that don't already exist */
@@ -268,6 +288,7 @@ static BOOL regdb_store_reg_keys( char *key, REGSUBKEY_CTR *ctr )
 			/* create a record with 0 subkeys */
 			if ( !regdb_store_reg_keys_internal( path, &subkeys ) ) {
 				DEBUG(0,("regdb_store_reg_keys: Failed to store new record for key [%s}\n", path ));
+				regsubkey_ctr_destroy( &subkeys );
 				return False;
 			}
 		}

@@ -43,22 +43,16 @@ void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
 
 int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 {
-	uint32 len;
 	char **pp;
-	int i;
-	
+
 	if ( !keyname )
 		return ctr->num_subkeys;
 
-	len = strlen( keyname );
-
 	/* make sure the keyname is not already there */
 
-	for ( i=0; i<ctr->num_subkeys; i++ ) {
-		if ( strequal( ctr->subkeys[i], keyname ) )
-			return ctr->num_subkeys;
-	}
-
+	if ( regsubkey_ctr_key_exists( ctr, keyname ) )
+		return ctr->num_subkeys;
+		
 	/* allocate a space for the char* in the array */
 		
 	if (  ctr->subkeys == 0 )
@@ -71,13 +65,58 @@ int regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
 
 	/* allocate the string and save it in the array */
 	
-	ctr->subkeys[ctr->num_subkeys] = TALLOC( ctr->ctx, len+1 );
-	strncpy( ctr->subkeys[ctr->num_subkeys], keyname, len+1 );
+	ctr->subkeys[ctr->num_subkeys] = talloc_strdup( ctr->ctx, keyname );
 	ctr->num_subkeys++;
 	
 	return ctr->num_subkeys;
 }
  
+ /***********************************************************************
+ Add a new key to the array
+ **********************************************************************/
+
+int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
+{
+	int i;
+
+	if ( !keyname )
+		return ctr->num_subkeys;
+
+	/* make sure the keyname is actually already there */
+
+	for ( i=0; i<ctr->num_subkeys; i++ ) {
+		if ( strequal( ctr->subkeys[i], keyname ) )
+			break;
+	}
+	
+	if ( i == ctr->num_subkeys )
+		return ctr->num_subkeys;
+
+	/* update if we have any keys left */
+	ctr->num_subkeys--;
+	if ( ctr->num_subkeys )
+		memmove( &ctr->subkeys[i], &ctr->subkeys[i+1], sizeof(char*) * (ctr->num_subkeys-i) );
+	
+	return ctr->num_subkeys;
+}
+
+/***********************************************************************
+ Check for the existance of a key
+ **********************************************************************/
+
+BOOL regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
+{
+	int 	i;
+	
+	for ( i=0; i<ctr->num_subkeys; i++ ) {
+		if ( strequal( ctr->subkeys[i],keyname ) )
+			return True;
+	}
+	
+	return False;
+
+}
+
 /***********************************************************************
  How many keys does the container hold ?
  **********************************************************************/
@@ -351,7 +390,7 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 }
 
 /***********************************************************************
- Delete a single value from the registry container.
+ Retrieve single value from the registry container.
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
