@@ -363,7 +363,7 @@ Added user jackb.
 		system will be CUPS. By specifying that the printcap name is CUPS, Samba will use
 		the CUPS library API to communicate directly with CUPS for all printer functions.
 		It is possible to force the use of external printing commands by setting the value
-		of the <prarameter>printing</parameter> to either SYSV or BSD, and thus the value of
+		of the <parameter>printing</parameter> to either SYSV or BSD, and thus the value of
 		the parameter <parameter>printcap name</parameter> must be set to something other than
 		CUPS. In such case, it could be set to the name of any file that contains a list
 		of printers that should be made available to Windows clients.
