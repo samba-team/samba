@@ -217,6 +217,7 @@ struct ldap_ExtendedResponse {
 };
 
 union ldap_Request {
+	struct ldap_Result 		GeneralResult;
 	struct ldap_BindRequest 	BindRequest;
 	struct ldap_BindResponse 	BindResponse;
 	struct ldap_UnbindRequest 	UnbindRequest;
