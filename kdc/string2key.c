@@ -70,14 +70,14 @@ usage(int status)
 static void
 tokey(krb5_context context, 
       krb5_enctype enctype, 
-      const char *password, 
+      const char *pw, 
       krb5_salt salt, 
       const char *label)
 {
     int i;
     krb5_keyblock key;
     char *e;
-    krb5_string_to_key_salt(context, enctype, password, salt, &key);
+    krb5_string_to_key_salt(context, enctype, pw, salt, &key);
     krb5_enctype_to_string(context, enctype, &e);
     printf(label, e);
     printf(": ");
