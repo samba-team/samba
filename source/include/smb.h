@@ -530,7 +530,6 @@ typedef uint64_t NTTIME;
  */
 
 #define UID_FIELD_INVALID 0
-#define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
 /* Lock types. */
 #define LOCKING_ANDX_SHARED_LOCK     0x01
