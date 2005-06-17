@@ -39,6 +39,8 @@
 #include "lib/ldb/include/ldb.h"
 #include "system/iconv.h"
 
+enum hdb_ldb_ent_type 
+{ HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_ANY };
 
 static const char * const krb5_attrs[] = {
 	"objectClass",
@@ -95,7 +97,7 @@ static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, con
     return timegm(&tm);
 }
 
-static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum hdb_ent_type ent_type) 
+static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum hdb_ldb_ent_type ent_type) 
 {
 	HDBFlags flags = int2HDBFlags(0);
 
@@ -109,32 +111,32 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 
 	/* Account types - clear the invalid bit if it turns out to be valid */
 	if (userAccountControl & UF_NORMAL_ACCOUNT) {
-		if (ent_type == HDB_ENT_TYPE_CLIENT || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
 	}
 	
 	if (userAccountControl & UF_INTERDOMAIN_TRUST_ACCOUNT) {
-		if (ent_type == HDB_ENT_TYPE_CLIENT || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
 		flags.invalid = 0;
 	}
 	if (userAccountControl & UF_WORKSTATION_TRUST_ACCOUNT) {
-		if (ent_type == HDB_ENT_TYPE_CLIENT || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
-		if (ent_type == HDB_ENT_TYPE_SERVER || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_SERVER || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.server = 1;
 		}
 		flags.invalid = 0;
 	}
 	if (userAccountControl & UF_SERVER_TRUST_ACCOUNT) {
-		if (ent_type == HDB_ENT_TYPE_CLIENT || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.client = 1;
 		}
-		if (ent_type == HDB_ENT_TYPE_SERVER || ent_type == HDB_ENT_TYPE_ENUM) {
+		if (ent_type == HDB_LDB_ENT_TYPE_SERVER || ent_type == HDB_LDB_ENT_TYPE_ANY) {
 			flags.server = 1;
 		}
 		flags.invalid = 0;
@@ -208,7 +210,7 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
  */
 static krb5_error_code LDB_message2entry(krb5_context context, HDB *db, 
 					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
-					 enum hdb_ent_type ent_type, struct ldb_message *realm_msg,
+					 enum hdb_ldb_ent_type ent_type, struct ldb_message *realm_msg,
 					 struct ldb_message *msg,
 					 hdb_entry *ent)
 {
@@ -217,17 +219,12 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	int i;
 	krb5_error_code ret = 0;
 	const char *dnsdomain = ldb_msg_find_string(realm_msg, "dnsDomain", NULL);
-	char *realm = talloc_strdup(mem_ctx, dnsdomain);
+	char *realm = strupper_talloc(mem_ctx, dnsdomain);
 
 	if (!realm) {
 		krb5_set_error_string(context, "talloc_strdup: out of memory");
 		ret = ENOMEM;
 		goto out;
-	}
-
-	/* TODO: Use Samba charset functions */
-	for (i=0; i< strlen(realm); i++) {
-		realm[i] = toupper(realm[i]);
 	}
 			
 	krb5_warnx(context, "LDB_message2entry:\n");
@@ -237,7 +234,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	userAccountControl = ldb_msg_find_int(msg, "userAccountControl", 0);
 	
 	ent->principal = malloc(sizeof(*(ent->principal)));
-	if (ent_type == HDB_ENT_TYPE_ENUM && principal == NULL) {
+	if (ent_type == HDB_LDB_ENT_TYPE_ANY && principal == NULL) {
 		const char *samAccountName = ldb_msg_find_string(msg, "samAccountName", NULL);
 		if (!samAccountName) {
 			krb5_set_error_string(context, "LDB_message2entry: no samAccountName present");
@@ -277,7 +274,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	ent->flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
-	if (ent_type == HDB_ENT_TYPE_KRBTGT) {
+	if (ent_type == HDB_LDB_ENT_TYPE_KRBTGT) {
 		ent->flags.invalid = 0;
 		ent->flags.server = 1;
 	}
@@ -444,7 +441,7 @@ out:
 static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_context *ldb_ctx, 					
 					    TALLOC_CTX *mem_ctx,
 					    krb5_const_principal principal,
-					    enum hdb_ent_type ent_type,
+					    enum hdb_ldb_ent_type ent_type,
 					    const char *realm_dn,
 					    struct ldb_message ***pmsg)
 {
@@ -483,19 +480,19 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	
 	switch (ent_type) {
-	case HDB_ENT_TYPE_KRBTGT:
+	case HDB_LDB_ENT_TYPE_KRBTGT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
 					 KRB5_TGS_NAME);
 		break;
-	case HDB_ENT_TYPE_CLIENT:
+	case HDB_LDB_ENT_TYPE_CLIENT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(samAccountName=%s)(userPrincipalName=%s)))", 
 					 short_princ, princ_str_talloc);
 		break;
-	case HDB_ENT_TYPE_SERVER:
+	case HDB_LDB_ENT_TYPE_SERVER:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(samAccountName=%s)(servicePrincipalName=%s)))", 
 					 short_princ, short_princ);
 		break;
-	case HDB_ENT_TYPE_ENUM:
+	case HDB_LDB_ENT_TYPE_ANY:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(|(samAccountName=%s)(servicePrincipalName=%s))(userPrincipalName=%s)))", 
 					 short_princ, short_princ, princ_str_talloc);
 		break;
@@ -710,6 +707,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 {
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_msg = NULL;
+	enum hdb_ldb_ent_type ldb_ent_type;
 	krb5_error_code ret;
 
 	const char *realm;
@@ -736,17 +734,29 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
 	 * is in our db, then direct the caller at our primary
 	 * krgtgt */
-	if (ent_type == HDB_ENT_TYPE_SERVER 
-	    && principal->name.name_string.len == 2
-	    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
-	    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
-				 mem_ctx, principal->name.name_string.val[1], NULL) == 0)) {
-		ent_type = HDB_ENT_TYPE_KRBTGT;
+	
+	switch (ent_type) {
+	case HDB_ENT_TYPE_SERVER:
+		if (principal->name.name_string.len == 2
+		    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
+		    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
+					 mem_ctx, principal->name.name_string.val[1], NULL) == 0)) {
+			ldb_ent_type = HDB_LDB_ENT_TYPE_KRBTGT;
+		} else {
+			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
+		}
+		break;
+	case HDB_ENT_TYPE_CLIENT:
+		ldb_ent_type = HDB_LDB_ENT_TYPE_CLIENT;
+		break;
+	case HDB_ENT_TYPE_ANY:
+		ldb_ent_type = HDB_LDB_ENT_TYPE_ANY;
+		break;
 	}
 
 	ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
 				   mem_ctx, 
-				   principal, ent_type, realm_dn, &msg);
+				   principal, ldb_ent_type, realm_dn, &msg);
 
 	if (ret != 0) {
 		char *alias_from = principal->name.name_string.val[0];
@@ -754,7 +764,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		Principal alias_principal;
 		
 		/* Try again with a servicePrincipal alias */
-		if (ent_type != HDB_ENT_TYPE_SERVER && ent_type != HDB_ENT_TYPE_ENUM) {
+		if (ent_type != HDB_LDB_ENT_TYPE_SERVER && ent_type != HDB_LDB_ENT_TYPE_ANY) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
@@ -857,7 +867,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 
 	if (priv->index < priv->count) {
 		ret = LDB_message2entry(context, db, mem_ctx, 
-					NULL, HDB_ENT_TYPE_ENUM, 
+					NULL, HDB_LDB_ENT_TYPE_ANY, 
 					priv->realm_msgs[0], priv->msgs[priv->index++], entry);
 	} else {
 		ret = HDB_ERR_NOENTRY;
