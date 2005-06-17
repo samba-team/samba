@@ -2926,7 +2926,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
  Try to chown a file. We will be able to chown it under the following conditions.
 
   1) If we have root privileges, then it will just work.
-  2) If we have write permission to the file and dos_filemodes is set
+  2) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
+  3) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
@@ -2935,21 +2936,40 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	int ret;
 	files_struct *fsp;
 	SMB_STRUCT_STAT st;
+	SE_PRIV se_take_ownership = SE_TAKE_OWNERSHIP;
 
+	if(!CAN_WRITE(conn)) {
+		return -1;
+	}
+
+	/* Case (1). */
 	/* try the direct way first */
 	ret = SMB_VFS_CHOWN(conn, fname, uid, gid);
 	if (ret == 0)
 		return 0;
 
-	if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
-		return -1;
+	/* Case (2). */
+	if ((uid == current_user.uid) && (user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
+		become_root();
+		/* Keep the current file gid the same - take ownership doesn't imply group change. */
+		ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
+		unbecome_root();
+		return ret;
+	}
 
-	if (SMB_VFS_STAT(conn,fname,&st))
+	/* Case (3). */
+	if (!lp_dos_filemode(SNUM(conn))) {
 		return -1;
+	}
+
+	if (SMB_VFS_STAT(conn,fname,&st)) {
+		return -1;
+	}
 
 	fsp = open_file_fchmod(conn,fname,&st);
-	if (!fsp)
+	if (!fsp) {
 		return -1;
+	}
 
 	/* only allow chown to the current user. This is more secure,
 	   and also copes with the case where the SID in a take ownership ACL is
@@ -3017,15 +3037,17 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Unpack the user/group/world id's.
 	 */
 
-	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd))
+	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd)) {
 		return False;
+	}
 
 	/*
 	 * Do we need to chown ?
 	 */
 
-	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp)))
+	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp))) {
 		need_chown = True;
+	}
 
 	/*
 	 * Chown before setting ACL only if we don't change the user, or
