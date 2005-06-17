@@ -327,7 +327,6 @@ krb5_sendto (krb5_context context,
 	 krb5_krbhst_info *hi;
 
 	 while (krb5_krbhst_next(context, handle, &hi) == 0) {
-	     int ret;
 	     struct addrinfo *ai, *a;
 
 	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
