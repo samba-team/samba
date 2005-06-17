@@ -237,8 +237,15 @@ sub ParseArrayPushHeader($$$$$)
 		$var_name = get_pointer_to($var_name);
 	}
 
-	my $size = ParseExpr($l->{SIZE_IS}, $env);
-	my $length = ParseExpr($l->{LENGTH_IS}, $env);
+	my $size;
+	my $length;
+
+	if ($l->{IS_ZERO_TERMINATED}) {
+		$size = $length = "ndr_string_length($var_name, sizeof(*$var_name))";
+	} else {
+		$size = ParseExpr($l->{SIZE_IS}, $env);
+		$length = ParseExpr($l->{LENGTH_IS}, $env);
+	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
 		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $size));";
@@ -262,17 +269,17 @@ sub ParseArrayPullHeader($$$$$)
 		$var_name = get_pointer_to($var_name);
 	}
 
-	# $var_name contains the name of the first argument here
-
-	my $length = ParseExpr($l->{SIZE_IS}, $env);
-	my $size = $length;
+	my $length;
+	my $size;
 
 	if ($l->{IS_CONFORMANT}) {
 		$length = $size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
+	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
+		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
+	} else {
+		$length = $size = ParseExpr($l->{SIZE_IS}, $env);
 	}
 
-	# if this is a conformant array then we use that size to allocate, and make sure
-	# we allocate enough to pull the elements
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
 		pidl "NDR_CHECK(ndr_pull_array_size(ndr, " . get_pointer_to($var_name) . "));";
 	}
@@ -293,13 +300,13 @@ sub ParseArrayPullHeader($$$$$)
 		pidl "}";
 	}
 
-	if ($l->{IS_CONFORMANT}) {
+	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		my $size = ParseExpr($l->{SIZE_IS}, $env);
 		check_null_pointer($size);
 		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 	}
 
-	if ($l->{IS_VARYING}) {
+	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		check_null_pointer($length);
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
@@ -541,7 +548,9 @@ sub ParseElementPushLevel
 					$var_name = get_pointer_to($var_name);
 				}
 
-				pidl "NDR_CHECK(ndr_push_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				my $nl = Ndr::GetNextLevel($e, $l);
+
+				pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 				return;
 			} 
 		} elsif ($l->{TYPE} eq "SWITCH") {
@@ -666,13 +675,21 @@ sub ParseElementPrint($$$)
 			}
 			$var_name = get_value_of($var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			my $length = ParseExpr($l->{LENGTH_IS}, $env);
+			my $length;
+
+			if (is_scalar_array($e, $l) and ($l->{IS_CONFORMANT} or $l->{IS_VARYING})){ 
+				$var_name = get_pointer_to($var_name); 
+			}
+			
+			if ($l->{IS_ZERO_TERMINATED}) {
+				$length = "ndr_string_length($var_name, sizeof(*$var_name))";
+			} else {
+				$length = ParseExpr($l->{LENGTH_IS}, $env);
+			}
 
 			if (is_scalar_array($e, $l)) {
-				if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}){ 
-					$var_name = get_pointer_to($var_name); 
-				}
-				pidl "ndr_print_array_$e->{TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
+				my $nl = Ndr::GetNextLevel($e, $l);
+				pidl "ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
 				last;
 			}
 
@@ -825,8 +842,13 @@ sub ParseElementPullLevel
 				if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
 					$var_name = get_pointer_to($var_name);
 				}
+				my $nl = Ndr::GetNextLevel($e, $l);
 
-				pidl "NDR_CHECK(ndr_pull_array_$e->{TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				if ($l->{IS_ZERO_TERMINATED}) {
+					# Make sure last element is zero!
+					pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, ndr_get_array_length(ndr, " . get_pointer_to($var_name) . "), sizeof(*$var_name)));";
+				}
 				return;
 			}
 		} elsif ($l->{TYPE} eq "POINTER") {
@@ -876,6 +898,11 @@ sub ParseElementPullLevel
 			ParseElementPullLevel($e,Ndr::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
+
+			if ($l->{IS_ZERO_TERMINATED}) {
+				# Make sure last element is zero!
+				pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, ndr_get_array_length(ndr, " . get_pointer_to($var_name) . "), sizeof(*$var_name)));";
+			}
 		}
 
 		if ($deferred and Ndr::ContainsDeferred($e, $l)) {
@@ -1846,14 +1873,15 @@ sub AllocateArrayLevel($$$$$)
 	my $pl = Ndr::GetPrevLevel($e, $l);
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
-	    $pl->{POINTER_TYPE} eq "ref") {
+	    $pl->{POINTER_TYPE} eq "ref"
+		and not $l->{IS_ZERO_TERMINATED}) {
 	    pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
 	    pidl "\tNDR_ALLOC_N($ndr, $var, $size);";
 	    pidl "}";
 	} else {
 		pidl "NDR_ALLOC_N($ndr, $var, $size);";
 	}
-	#pidl "memset($var, 0, $size * sizeof(" . $var . "[0]));";
+
 	if (grep(/in/,@{$e->{DIRECTION}}) and
 	    grep(/out/,@{$e->{DIRECTION}})) {
 		pidl "memcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));";
@@ -1909,6 +1937,8 @@ sub ParseFunctionPull($)
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and 
 				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
+		next if (($e->{LEVELS}[1]->{TYPE} eq "ARRAY") 
+			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
 			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);

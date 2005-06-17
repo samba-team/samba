@@ -569,3 +569,30 @@ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char 
 	}
 	ndr->depth--;
 }
+
+/* Return number of elements in a string including the last (zeroed) element */
+uint32_t ndr_string_length(void *_var, uint32_t element_size)
+{
+	uint32_t i;
+	uint8_t zero[4] = {0,0,0,0};
+	char *var = _var;
+
+	for (i = 0; memcmp(var+i*element_size,zero,element_size) != 0; i++);
+
+	return i+1;
+}
+
+NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, const void *_var, uint32_t count, uint32_t element_size)
+{
+	const char *var = _var;
+	uint32_t i;
+
+	for (i = 0; i < element_size; i++) {
+		 if (var+element_size*(count-1)+i != 0) {
+			return NT_STATUS_UNSUCCESSFUL;
+		 }
+	}
+
+	return NT_STATUS_OK;
+
+}
