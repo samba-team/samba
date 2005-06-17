@@ -125,7 +125,7 @@ hdb_get_name(krb5_context context,
 
 static void
 set_config (krb5_context context,
-	    krb5_config_binding *binding,
+	    const krb5_config_binding *binding,
 	    const char **dbname,
 	    const char **mkey)
 {
@@ -145,13 +145,13 @@ find_db (krb5_context context,
 	 krb5_const_principal principal)
 {
     const krb5_config_binding *top_bind = NULL;
-    krb5_config_binding *default_binding = NULL;
-    krb5_config_binding *db;
-    krb5_realm *prealm = krb5_princ_realm(context, (krb5_principal)principal);
+    const krb5_config_binding *default_binding = NULL;
+    const krb5_config_binding *db;
+    krb5_realm *prealm = krb5_princ_realm(context, rk_UNCONST(principal));
 
     *dbname = *mkey = NULL;
 
-    while ((db = (krb5_config_binding *)
+    while ((db =
 	    krb5_config_get_next(context,
 				 NULL,
 				 &top_bind,
@@ -218,7 +218,7 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	return ret;
     }
-    ent.principal = (krb5_principal)principal;
+    ent.principal = rk_UNCONST(principal);
     ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, &ent);
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
