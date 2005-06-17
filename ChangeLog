@@ -1,10 +1,10 @@
-2005-06-17  Love  <lha@kth.se>
+2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_rep.c: indent
 
 	* lib/krb5/rd_rep.c (krb5_rd_rep): check if
 	KRB5_AUTH_CONTEXT_DO_TIME set and use that as a que that timestamp
 	should be checked, DCE-STYLE gssapi needs to be able to tweek this
-
-2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/string2key.c: rename optind to optidx
 
