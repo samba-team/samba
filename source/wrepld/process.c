@@ -126,7 +126,7 @@ static void start_assoc_reply(GENERIC_PACKET *q, GENERIC_PACKET *r)
 		r->rep.msg_type=MESSAGE_REP_UPDATE_NOTIFY_REQUEST;
 		r->rep.un_rq.partner_count=partner_count;
 		
-		r->rep.un_rq.wins_owner=(WINS_OWNER *)talloc(mem_ctx, partner_count*sizeof(WINS_OWNER));
+		r->rep.un_rq.wins_owner=talloc_array(mem_ctx, WINS_OWNER, partner_count);
 		if (r->rep.un_rq.wins_owner==NULL) {
 			DEBUG(0,("start_assoc_reply: can't alloc memory\n"));
 			stop_packet(q, r, STOP_REASON_USER_REASON);
@@ -238,7 +238,7 @@ static void send_version_number_map_table(GENERIC_PACKET *q, GENERIC_PACKET *r)
 	 */ 
 	get_our_last_id(&global_wins_table[0][0]);
 
-	r->rep.avmt_rep.wins_owner=(WINS_OWNER *)talloc(mem_ctx, partner_count*sizeof(WINS_OWNER));
+	r->rep.avmt_rep.wins_owner=talloc_array(mem_ctx, WINS_OWNER, partner_count);
 	if (r->rep.avmt_rep.wins_owner==NULL) {
 		stop_packet(q, r, STOP_REASON_USER_REASON);
 		return;
@@ -407,7 +407,7 @@ static BOOL add_record_to_winsname(WINS_NAME **wins_name, int *max_names, char *
 	int i;
 	int current=*max_names;
 
-	temp_list=talloc_realloc(mem_ctx, *wins_name, (current+1)*sizeof(WINS_NAME));
+	temp_list=talloc_realloc(mem_ctx, *wins_name, WINS_NAME, current + 1);
 	if (temp_list==NULL)
 		return False;
 
@@ -431,7 +431,7 @@ static BOOL add_record_to_winsname(WINS_NAME **wins_name, int *max_names, char *
 
 	if (temp_list[current].name_flag & 2) {
 		temp_list[current].num_ip=num_ips;
-		temp_list[current].others=(struct in_addr *)talloc(mem_ctx, sizeof(struct in_addr)*num_ips);
+		temp_list[current].others=talloc_array(mem_ctx, struct in_addr, num_ips);
 		if (temp_list[current].others==NULL)
 			return False;
 	
@@ -540,7 +540,7 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 		wins_ip=*interpret_addr2(ip_str);
 
  		/* Allocate the space for the ip_list. */
-		if((ip_list = (struct in_addr *)talloc(mem_ctx,  num_ips * sizeof(struct in_addr))) == NULL) {
+		if((ip_list = talloc_array(mem_ctx, struct in_addr, num_ips)) == NULL) {
 			SAFE_FREE(dbuf.dptr);
 			DEBUG(0,("initialise_wins: talloc fail !\n"));
 			return;

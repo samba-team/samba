@@ -37,7 +37,7 @@ BOOL grow_buffer(struct BUFFER *buffer, int more)
 		more=256;
 
 	if (buffer->offset+more >= buffer->length) {
-		temp=(char *)talloc_realloc(mem_ctx, buffer->buffer, sizeof(char)* (buffer->length+more) );
+		temp=talloc_realloc(mem_ctx, buffer->buffer, char, buffer->length + more);
 		if (temp==NULL) {
 			DEBUG(0,("grow_buffer: can't grow buffer\n"));
 			return False;
@@ -141,7 +141,7 @@ static void decode_wins_name(struct BUFFER *outbuf, WINS_NAME *wins_name)
 	outbuf->offset+=4;
 
 	if (wins_name->name_flag & 2) {
-		wins_name->others=(struct in_addr *)talloc(mem_ctx, sizeof(struct in_addr)*wins_name->num_ip);
+		wins_name->others=talloc_array(mem_ctx, struct in_addr, wins_name->num_ip);
 		if (wins_name->others==NULL)
 			return;
 
@@ -172,7 +172,7 @@ static void decode_update_notify_request(struct BUFFER *inbuf, UPDATE_NOTIFY_REQ
 	un_rq->partner_count=RIVAL(inbuf->buffer, inbuf->offset);
 	inbuf->offset+=4;
 
-	un_rq->wins_owner=(WINS_OWNER *)talloc(mem_ctx, un_rq->partner_count*sizeof(WINS_OWNER));
+	un_rq->wins_owner=talloc_array(mem_ctx, WINS_OWNER, un_rq->partner_count);
 	if (un_rq->wins_owner==NULL)
 		return;
 
@@ -205,7 +205,7 @@ static void decode_send_entries_reply(struct BUFFER *inbuf, SEND_ENTRIES_REPLY *
 	se_rp->max_names = RIVAL(inbuf->buffer, inbuf->offset);
 	inbuf->offset+=4;
 
-	se_rp->wins_name=(WINS_NAME *)talloc(mem_ctx, se_rp->max_names*sizeof(WINS_NAME));
+	se_rp->wins_name=talloc_array(mem_ctx, WINS_NAME, se_rp->max_names);
 	if (se_rp->wins_name==NULL)
 		return;
 
@@ -226,7 +226,7 @@ static void decode_add_version_number_map_table_reply(struct BUFFER *inbuf, AVMT
 	avmt_rep->partner_count=RIVAL(inbuf->buffer, inbuf->offset);
 	inbuf->offset+=4;
 
-	avmt_rep->wins_owner=(WINS_OWNER *)talloc(mem_ctx, avmt_rep->partner_count*sizeof(WINS_OWNER));
+	avmt_rep->wins_owner=talloc_array(mem_ctx, WINS_OWNER, avmt_rep->partner_count);
 	if (avmt_rep->wins_owner==NULL)
 		return;
 
