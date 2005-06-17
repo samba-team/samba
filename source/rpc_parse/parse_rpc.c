@@ -463,10 +463,10 @@ BOOL smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int de
 	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
 		return False;
 
-	if(!prs_uint32("num_contexts", ps, depth, &rpc->num_contexts))
+	if(!prs_uint8("num_contexts", ps, depth, &rpc->num_contexts))
 		return False;
 
-	rpc->num_contexts &= 0xff; /* Actually a 1 byte field.. */
+	/* 3 pad bytes following - will be mopped up by the prs_align in smb_io_rpc_context(). */
 
 	/* num_contexts must not be zero. */
 	if (rpc->num_contexts == 0)
