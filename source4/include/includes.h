@@ -83,6 +83,9 @@
 #define HAVE_ADS
 #endif
 
+/* tell ldb we have the internal ldap code */
+#define HAVE_ILDAP 1
+
 /*
  * Define VOLATILE if needed.
  */
