@@ -45,6 +45,8 @@ struct cli_credentials {
 	const char *domain;
 	const char *realm;
 
+	struct samr_Password *nt_hash;
+
 	const char *(*workstation_cb) (struct cli_credentials *);
 	const char *(*password_cb) (struct cli_credentials *);
 	const char *(*username_cb) (struct cli_credentials *);
