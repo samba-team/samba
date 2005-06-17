@@ -306,7 +306,7 @@ krb5_store_string(krb5_storage *sp, const char *s)
 {
     krb5_data data;
     data.length = strlen(s);
-    data.data = (void*)s;
+    data.data = rk_UNCONST(s);
     return krb5_store_data(sp, data);
 }
 
@@ -735,8 +735,7 @@ cleanup:
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_store_creds_tag(krb5_storage *sp,
-		     krb5_creds *creds)
+krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 {
     int ret;
     int32_t header = 0;
