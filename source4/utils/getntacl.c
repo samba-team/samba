@@ -27,7 +27,9 @@
 
 #if HAVE_XATTR_SUPPORT	
 
-static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
+
+static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;
