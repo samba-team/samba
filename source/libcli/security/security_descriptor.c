@@ -287,7 +287,10 @@ BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1,
 /*
   create a security descriptor using string SIDs. This is used by the
   torture code to allow the easy creation of complex ACLs
-  This is a varargs function. The list of ACEs ends with a NULL sid.
+  This is a varargs function. The list of DACL ACEs ends with a NULL sid.
+
+  Each ACE contains a set of 4 parameters:
+  SID, ACCESS_TYPE, MASK, FLAGS
 
   a typical call would be:
 
@@ -299,7 +302,7 @@ BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1,
 				    SEC_FILE_ALL,
 				    SEC_ACE_FLAG_OBJECT_INHERIT,
 				    NULL);
-  that would create a sd with one ACE
+  that would create a sd with one DACL ACE
 */
 struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 						       const char *owner_sid,
