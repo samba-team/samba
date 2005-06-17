@@ -1,38 +1,10 @@
-- Fix string support.
- This would make strings a special kind of arrays flagged by the 
- [string] attribute. Pidl itself would support a couple of extra 
- attributes for it's own use while being compatible with other IDL 
- compilers. 
- Proposed extensions for pidl (to arrays):
-   [convert(t)] attribute for forcing conversions from CH_UCS2, etc to UTF8
-   [noheader] attribute -> Indicating the string is not preceded
-
 Implement:
-  ndr.pm:
-   - represent a string as an array with length set to "STRING"
-   - [string] implies is_varying unless noheader is specified.
   ndr_parser.pm:
    - if [charset()] specified, use instead of the for loops (call ndr_pu{ll,sh}_charset()
-   - calculate length using helper function if [string] is specified
-
-The various flags for strings would change as follows:
- 
-LIBNDR_FLAG_STR_ASCII               -> [convert(CH_ASCII)]
-LIBNDR_FLAG_STR_LEN4			    -> [string]
-LIBNDR_FLAG_STR_SIZE4	            -> [size_is()] or if needed [conformant]
-LIBNDR_FLAG_STR_NOTERM	            -> array
-LIBNDR_FLAG_STR_NULLTERM            -> [noheader]
-LIBNDR_FLAG_STR_SIZE2	            -> uint16 length; [string] char data[length]
-LIBNDR_FLAG_STR_BYTESIZE            -> uint16 length; [string] char data[length]
-LIBNDR_FLAG_STR_FIXLEN32            -> [32]
-LIBNDR_FLAG_STR_CONFORMANT          -> no longer needed
-LIBNDR_FLAG_STR_CHARLEN	            -> ???
-LIBNDR_FLAG_STR_UTF8                -> Nothing (but UCS2 has [convert(CH_UCS2)]
-LIBNDR_FLAG_STR_FIXLEN15            -> [15]
 
 - True multiple dimension array / strings in arrays support (closely related to 
 	things specified above)
 
 - compatibility mode for generating MIDL-readable data:
  - strip out pidl-specific properties
- - convert subcontext() to an array of chars.
+ - convert subcontext() to an array of uint8.
