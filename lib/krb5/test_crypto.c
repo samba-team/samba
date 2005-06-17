@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -115,7 +115,7 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_error_code ret;
     int i, iterations;
-    int optind = 0;
+    int optidx = 0;
 
     krb5_enctype enctypes[] = { 
 	ETYPE_DES_CBC_CRC,
@@ -127,7 +127,7 @@ main(int argc, char **argv)
 
     setprogname(argv[0]);
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     
     if (help_flag)
@@ -138,8 +138,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
 
     ret = krb5_init_context(&context);
