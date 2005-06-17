@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
+#include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
 
 /*********************************************************************
  Client side NTLMSSP
@@ -101,6 +102,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
 
+	const struct samr_Password *nt_hash;
 	const char *user, *domain, *password;
 
 	if (!msrpc_parse(out_mem_ctx,
@@ -174,9 +176,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		domain = cli_credentials_get_domain(gensec_security->credentials);
 	}
 
+	nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials, out_mem_ctx);
 	password = cli_credentials_get_password(gensec_security->credentials);
 
-	if (!password) {
+	if (!nt_hash) {
 		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
 
@@ -200,12 +203,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
 		
-		if (!SMBNTLMv2encrypt(user, 
-				      domain, 
-				      password, &challenge_blob, 
-				      &struct_blob, 
-				      &lm_response, &nt_response, 
-				      NULL, &session_key)) {
+		if (!SMBNTLMv2encrypt_hash(user, 
+					   domain, 
+					   nt_hash->hash, &challenge_blob, 
+					   &struct_blob, 
+					   &lm_response, &nt_response, 
+					   NULL, &session_key)) {
 			data_blob_free(&challenge_blob);
 			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
@@ -216,11 +219,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	} else if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		struct MD5Context md5_session_nonce_ctx;
-		uint8_t nt_hash[16];
 		uint8_t session_nonce[16];
 		uint8_t session_nonce_hash[16];
 		uint8_t user_session_key[16];
-		E_md4hash(password, nt_hash);
 		
 		lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 		generate_random_buffer(lm_response.data, 8);
@@ -239,33 +240,31 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		dump_data(5, session_nonce_hash, 8);
 		
 		nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-		SMBNTencrypt(password,
-			     session_nonce_hash,
-			     nt_response.data);
-
+		SMBOWFencrypt(nt_hash->hash,
+			      session_nonce_hash,
+			      nt_response.data);
+		
 		session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
 
-		SMBsesskeygen_ntv1(nt_hash, user_session_key);
+		SMBsesskeygen_ntv1(nt_hash->hash, user_session_key);
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
 		/* LM Key is incompatible... */
 		gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	} else {
-		uint8_t nt_hash[16];
-
 		if (gensec_ntlmssp_state->use_nt_response) {
 			nt_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-			SMBNTencrypt(password,challenge_blob.data,
-				     nt_response.data);
-			E_md4hash(password, nt_hash);
+			SMBOWFencrypt(nt_hash->hash, challenge_blob.data,
+				      nt_response.data);
+
 			session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-			SMBsesskeygen_ntv1(nt_hash, session_key.data);
+			SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
 			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 		}
 
-		/* lanman auth is insecure, it may be disabled */
-		if (lp_client_lanman_auth()) {
+		/* lanman auth is insecure, it may be disabled.  We may also not have a password */
+		if (lp_client_lanman_auth() && password) {
 			lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
 			if (!SMBencrypt(password,challenge_blob.data,
 					lm_response.data)) {
