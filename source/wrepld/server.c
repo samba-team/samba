@@ -295,8 +295,8 @@ static struct wins_packet_struct *read_wins_packet(int fd, int timeout)
 		total += ret;
 	}
 
-	q = (GENERIC_PACKET *)talloc(mem_ctx, sizeof(GENERIC_PACKET));
-	p = (struct wins_packet_struct *)talloc(mem_ctx, sizeof(*p));
+	q = talloc(mem_ctx, GENERIC_PACKET);
+	p = talloc(mem_ctx, struct wins_packet_struct);
 	if (q==NULL || p==NULL)
 		return NULL;
 
@@ -486,7 +486,7 @@ static void process(void)
 		}
 
 		/* free temp memory */
-		talloc_destroy_pool(mem_ctx);
+		talloc_free_children(mem_ctx);
 
 		/* free up temp memory */
 		lp_talloc_free();
