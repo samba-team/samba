@@ -42,7 +42,7 @@ krb5_keytab_key_proc (krb5_context context,
 		      krb5_const_pointer keyseed,
 		      krb5_keyblock **key)
 {
-    krb5_keytab_key_proc_args *args  = (krb5_keytab_key_proc_args *)keyseed;
+    krb5_keytab_key_proc_args *args  = rk_UNCONST(keyseed);
     krb5_keytab keytab = args->keytab;
     krb5_principal principal  = args->principal;
     krb5_error_code ret;
