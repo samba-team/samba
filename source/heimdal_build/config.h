@@ -39,6 +39,7 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #define ROKEN_LIB_FUNCTION
 
 /* these should be done with configure tests */
+#define KRB5
 #define HAVE_H_ERRNO
 #define HAVE_INET_ATON
 #define HAVE_LONG_LONG

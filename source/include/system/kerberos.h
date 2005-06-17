@@ -21,7 +21,6 @@
 */
 
 /* setup correct defines for capabilities of our version of heimdal */
-#define KRB5
 /* Whether to have KRB5 support */
 #define HAVE_KRB5 1
 
