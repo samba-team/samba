@@ -56,7 +56,11 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 		ldb_ctx = ltdb_connect(url, flags, options);
 	}
 
-#if HAVE_LDAP
+#if HAVE_ILDAP
+	if (strncmp(url, "ldap", 4) == 0) {
+		ldb_ctx = ildb_connect(url, flags, options);
+	}
+#elif HAVE_LDAP
 	if (strncmp(url, "ldap", 4) == 0) {
 		ldb_ctx = lldb_connect(url, flags, options);
 	}

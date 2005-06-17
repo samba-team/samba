@@ -29,6 +29,18 @@ NOPROTO = YES
 ################################################
 
 ################################################
+# Start MODULE libldb_ildap
+[MODULE::libldb_ildap]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		lib/ldb/ldb_ildap/ldb_ildap.o
+REQUIRED_SUBSYSTEMS = \
+		LIBCLI_LDAP
+NOPROTO = YES
+# End MODULE libldb_ildap
+################################################
+
+################################################
 # Start MODULE libldb_sqlite3
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
