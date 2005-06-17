@@ -2280,6 +2280,7 @@ static struct {
 
 	/* rpc testers */
         {"RPC-LSA", torture_rpc_lsa, 0},
+        {"RPC-SECRETS", torture_rpc_lsa_secrets, 0},
         {"RPC-ECHO", torture_rpc_echo, 0},
         {"RPC-DFS", torture_rpc_dfs, 0},
         {"RPC-SPOOLSS", torture_rpc_spoolss, 0},
