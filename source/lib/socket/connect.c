@@ -56,6 +56,9 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 
 	status = socket_connect(sock, my_address, my_port, 
 				server_address, server_port, flags);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
 
 	event_add_fd(ev, tmp_ctx, socket_get_fd(sock), EVENT_FD_WRITE, 
 		     socket_connect_handler, &status);
