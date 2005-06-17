@@ -297,7 +297,7 @@ BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &r_u->key_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &r_u->handle, ps, depth))
 		return False;
 	if(!prs_uint32("unknown", ps, depth, &r_u->unknown))
 		return False;
@@ -406,8 +406,6 @@ BOOL reg_io_q_delete_key(const char *desc,  REG_Q_DELETE_KEY *q_u,
 		return False;
 
 	if(!prs_unistr4("", ps, depth, &q_u->name))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -1219,7 +1217,7 @@ void init_reg_q_set_val(REG_Q_SET_VALUE *q_u, POLICY_HND *pol,
 {
 	ZERO_STRUCTP(q_u);
 
-	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
+	memcpy(&q_u->handle, pol, sizeof(q_u->handle));
 
 	init_unistr4(&q_u->name, val_name, UNI_STR_TERMINATE);
 	
@@ -1243,7 +1241,7 @@ BOOL reg_io_q_set_value(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 	
 	if(!prs_unistr4("name", ps, depth, &q_u->name ))

@@ -2270,7 +2270,6 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return data */
 
-	ZERO_STRUCTP(ctr);
 	regval_ctr_init(ctr);
 
 	for (i = 0; i < r.returned; i++) {

@@ -336,9 +336,6 @@ static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	int i;
 	pstring path;
 
-	ZERO_STRUCT( values );
-	ZERO_STRUCT( subkeys );
-
 	regsubkey_ctr_init( &subkeys );
 	regval_ctr_init( &values );
 	
