@@ -412,12 +412,11 @@ static BOOL upgrade_to_version_4(void)
 
 BOOL nt_printing_init(void)
 {
-	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
 	uint32 vers_id;
 
-	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
+	if ( tdb_drivers && tdb_printers && tdb_forms )
 		return True;
  
 	if (tdb_drivers)
@@ -446,8 +445,6 @@ BOOL nt_printing_init(void)
 			lock_path("ntforms.tdb"), strerror(errno) ));
 		return False;
 	}
- 
-	local_pid = sys_getpid();
  
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb_drivers, vstring, 0);
@@ -2542,8 +2539,6 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	data->num_keys++;
 	data->keys[key_index].name = SMB_STRDUP( name );
-	
-	ZERO_STRUCTP( &data->keys[key_index].values );
 	
 	regval_ctr_init( &data->keys[key_index].values );
 	

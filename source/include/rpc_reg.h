@@ -92,10 +92,11 @@
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*subkey_fn)( char *key, REGSUBKEY_CTR *subkeys);
-	int 	(*value_fn) ( char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys_fn)( char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values_fn)( char *key, REGVAL_CTR *val );
+	int 	(*fetch_subkeys)( char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
+	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
 } REGISTRY_OPS;
 
 typedef struct {
@@ -107,13 +108,11 @@ typedef struct {
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
-
 	struct _RegistryKey *prev, *next;
 
-	/* POLICY_HND	hnd; */
-	pstring 	name; 	/* full name of registry key */
-	REGISTRY_HOOK	*hook;
-	
+	pstring 	name; 		/* full name of registry key */
+	uint32 		access_granted;
+	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;
 
 /*
@@ -180,7 +179,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;   
+	POLICY_HND handle;   
 	UNISTR4 name;   	
 	uint32 type;  
 	RPC_DATA_BLOB value; 
@@ -215,7 +214,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 	UNISTR4 class;
 	uint32 reserved;
@@ -229,7 +228,7 @@ typedef struct {
 } REG_Q_CREATE_KEY;
 
 typedef struct {
-	POLICY_HND key_pol;
+	POLICY_HND handle;
 	uint32 unknown;
 	WERROR status; 
 } REG_R_CREATE_KEY;
@@ -237,7 +236,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_KEY;
 
@@ -249,7 +248,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_VALUE;
 
@@ -282,12 +281,12 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;
 } REG_Q_GETVERSION;
 
 typedef struct {
-	uint32 unknown;         /* 0x0500 0000 */
-	WERROR status;         /* return status */
+	uint32 win_version;
+	WERROR status;
 } REG_R_GETVERSION;
 
 
@@ -411,7 +410,7 @@ typedef struct {
 } REG_Q_OPEN_ENTRY;
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	WERROR status;
 } REG_R_OPEN_ENTRY;
 

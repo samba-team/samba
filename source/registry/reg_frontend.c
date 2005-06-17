@@ -79,8 +79,8 @@ BOOL init_registry( void )
  
 BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys_fn )
-		return key->hook->ops->store_subkeys_fn( key->name, subkeys );
+	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
+		return key->hook->ops->store_subkeys( key->name, subkeys );
 	else
 		return False;
 
@@ -92,8 +92,8 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
  
 BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	if ( key->hook && key->hook->ops && key->hook->ops->store_values_fn )
-		return key->hook->ops->store_values_fn( key->name, val );
+	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
+		return key->hook->ops->store_values( key->name, val );
 	else
 		return False;
 }
@@ -108,8 +108,8 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	int result = -1;
 	
-	if ( key->hook && key->hook->ops && key->hook->ops->subkey_fn )
-		result = key->hook->ops->subkey_fn( key->name, subkey_ctr );
+	if ( key->hook && key->hook->ops && key->hook->ops->fetch_subkeys )
+		result = key->hook->ops->fetch_subkeys( key->name, subkey_ctr );
 
 	return result;
 }
@@ -134,7 +134,6 @@ BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index
 	
 	if ( !ctr_init ) {
 		DEBUG(8,("fetch_reg_keys_specific: Initializing cache of subkeys for [%s]\n", key->name));
-		ZERO_STRUCTP( &ctr );	
 		regsubkey_ctr_init( &ctr );
 		
 		pstrcpy( save_path, key->name );
@@ -176,8 +175,8 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	int result = -1;
 	
-	if ( key->hook && key->hook->ops && key->hook->ops->value_fn )
-		result = key->hook->ops->value_fn( key->name, val );
+	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
+		result = key->hook->ops->fetch_values( key->name, val );
 
 	return result;
 }
@@ -202,7 +201,6 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 	if ( !ctr_init ) {
 		DEBUG(8,("fetch_reg_values_specific: Initializing cache of values for [%s]\n", key->name));
 
-		ZERO_STRUCTP( &ctr );	
 		regval_ctr_init( &ctr );
 		
 		pstrcpy( save_path, key->name );
@@ -232,6 +230,30 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 	*val = dup_registry_value( v );
 
 	return True;
+}
+
+/***********************************************************************
+ High level access check for passing the required access mask to the 
+ underlying registry backend
+ ***********************************************************************/
+
+BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, NT_USER_TOKEN *token )
+{
+	/* use the default security check if the backend has not defined its own */
+	
+	if ( !(key->hook && key->hook->ops && key->hook->ops->reg_access_check) ) {
+		SEC_DESC *sec_desc;
+		NTSTATUS status;
+		
+		if ( !(sec_desc = construct_registry_sd( get_talloc_ctx() )) )
+			return False;
+		
+		status = registry_access_check( sec_desc, token, requested, granted );		
+		
+		return NT_STATUS_IS_OK(status);
+	}
+	
+	return key->hook->ops->reg_access_check( key->name, requested, granted, token );
 }
 
 

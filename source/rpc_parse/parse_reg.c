@@ -212,7 +212,7 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 
 
 	init_unistr4( &q_c->name, name, UNI_STR_TERMINATE );
@@ -246,7 +246,7 @@ BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4 ("name", ps, depth, &q_u->name))
@@ -297,7 +297,7 @@ BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &r_u->key_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &r_u->handle, ps, depth))
 		return False;
 	if(!prs_uint32("unknown", ps, depth, &r_u->unknown))
 		return False;
@@ -318,7 +318,7 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 	init_unistr4(&q_c->name, name, UNI_STR_TERMINATE);
 }
 
@@ -326,19 +326,19 @@ void init_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_delete_val(const char *desc, REG_Q_DELETE_VALUE *q_u,
+BOOL reg_io_q_delete_value(const char *desc, REG_Q_DELETE_VALUE *q_u,
                          prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_delete_val");
+	prs_debug(ps, depth, desc, "reg_io_q_delete_value");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4("name", ps, depth, &q_u->name))
@@ -354,13 +354,13 @@ BOOL reg_io_q_delete_val(const char *desc, REG_Q_DELETE_VALUE *q_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_delete_val(const char *desc,  REG_R_DELETE_VALUE *r_u,
+BOOL reg_io_r_delete_value(const char *desc,  REG_R_DELETE_VALUE *r_u,
                          prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_delete_val");
+	prs_debug(ps, depth, desc, "reg_io_r_delete_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -381,7 +381,7 @@ void init_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
 {
 	ZERO_STRUCTP(q_c);
 
-	memcpy(&q_c->pnt_pol, hnd, sizeof(q_c->pnt_pol));
+	memcpy(&q_c->handle, hnd, sizeof(q_c->handle));
 
 	init_unistr4(&q_c->name, name, UNI_STR_TERMINATE);
 }
@@ -402,12 +402,10 @@ BOOL reg_io_q_delete_key(const char *desc,  REG_Q_DELETE_KEY *q_u,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pnt_pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_unistr4("", ps, depth, &q_u->name))
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	return True;
@@ -563,7 +561,7 @@ BOOL reg_io_r_getversion(const char *desc,  REG_R_GETVERSION *r_u, prs_struct *p
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown", ps, depth, &r_u->unknown))
+	if(!prs_uint32("win_version", ps, depth, &r_u->win_version))
 		return False;
 	if(!prs_werror("status" , ps, depth, &r_u->status))
 		return False;
@@ -1219,7 +1217,7 @@ void init_reg_q_set_val(REG_Q_SET_VALUE *q_u, POLICY_HND *pol,
 {
 	ZERO_STRUCTP(q_u);
 
-	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
+	memcpy(&q_u->handle, pol, sizeof(q_u->handle));
 
 	init_unistr4(&q_u->name, val_name, UNI_STR_TERMINATE);
 	
@@ -1232,18 +1230,18 @@ void init_reg_q_set_val(REG_Q_SET_VALUE *q_u, POLICY_HND *pol,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_set_val(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_set_value(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_set_val");
+	prs_debug(ps, depth, desc, "reg_io_q_set_value");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 	
 	if(!prs_unistr4("name", ps, depth, &q_u->name ))
@@ -1269,12 +1267,12 @@ BOOL reg_io_q_set_val(const char *desc,  REG_Q_SET_VALUE *q_u, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_set_val(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps, int depth)
+BOOL reg_io_r_set_value(const char *desc,  REG_R_SET_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_set_val");
+	prs_debug(ps, depth, desc, "reg_io_r_set_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -1459,21 +1457,6 @@ BOOL reg_io_q_open_entry(const char *desc,  REG_Q_OPEN_ENTRY *q_u, prs_struct *p
 }
 
 /*******************************************************************
- Inits a structure.
-********************************************************************/
-
-void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_u,
-			   POLICY_HND *pol, WERROR werr)
-{
-	if (W_ERROR_IS_OK(werr)) {
-		memcpy(&r_u->pol, pol, sizeof(r_u->pol));
-	} else {
-		ZERO_STRUCT(r_u->pol);
-	}
-	r_u->status = werr;
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
@@ -1488,7 +1471,7 @@ BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_u, prs_struct *p
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &r_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("handle", &r_u->handle, ps, depth))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))

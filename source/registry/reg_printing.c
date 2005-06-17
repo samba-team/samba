@@ -906,7 +906,7 @@ static int printing_value_info( char *key, REGVAL_CTR *val )
 
 static BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 {
-	return False;
+	return True;
 }
 
 /**********************************************************************
@@ -917,7 +917,7 @@ static BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
 
 static BOOL printing_store_value( char *key, REGVAL_CTR *val )
 {
-	return False;
+	return True;
 }
 
 /* 
@@ -928,7 +928,8 @@ REGISTRY_OPS printing_ops = {
 	printing_subkey_info,
 	printing_value_info,
 	printing_store_subkey,
-	printing_store_value
+	printing_store_value,
+	NULL
 };
 
 

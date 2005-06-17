@@ -256,7 +256,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                            POLICY_HND *hnd, uint32 *unk)
+                            POLICY_HND *hnd, uint32 *version)
 {
 	REG_Q_GETVERSION in;
 	REG_R_GETVERSION out;
@@ -278,7 +278,7 @@ WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 		
-	*unk = out.unknown;
+	*version = out.win_version;
 
 	return out.status;
 }
@@ -403,8 +403,8 @@ WERROR cli_reg_delete_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_DELETE_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_delete_val,
-	            reg_io_r_delete_val, 
+	            reg_io_q_delete_value,
+	            reg_io_r_delete_value, 
 	            WERR_GENERAL_FAILURE );
 	
 	return out.status;
@@ -474,7 +474,7 @@ WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 	
-	memcpy( key, &out.key_pol, sizeof(POLICY_HND) );
+	memcpy( key, &out.handle, sizeof(POLICY_HND) );
 	
 	return out.status;
 }
@@ -539,8 +539,8 @@ WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SET_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_set_val,
-	            reg_io_r_set_val, 
+	            reg_io_q_set_value,
+	            reg_io_r_set_value, 
 	            WERR_GENERAL_FAILURE );
 
 	return out.status;
@@ -621,7 +621,7 @@ WERROR cli_reg_open_entry(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 
-	memcpy( key_hnd, &out.pol, sizeof(POLICY_HND) );
+	memcpy( key_hnd, &out.handle, sizeof(POLICY_HND) );
 	
 	return out.status;
 }
