@@ -72,6 +72,7 @@ REQUIRED_SUBSYSTEMS = \
 [SUBSYSTEM::TORTURE_RPC]
 ADD_OBJ_FILES = \
 		torture/rpc/lsa.o \
+		torture/rpc/session_key.o \
 		torture/rpc/echo.o \
 		torture/rpc/dcom.o \
 		torture/rpc/dfs.o \
