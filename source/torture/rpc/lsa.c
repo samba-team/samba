@@ -1680,37 +1680,3 @@ BOOL torture_rpc_lsa(void)
 
 	return ret;
 }
-
-
-BOOL torture_rpc_lsa_secrets(void) 
-{
-        NTSTATUS status;
-        struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
-	BOOL ret = True;
-	struct policy_handle handle;
-
-	mem_ctx = talloc_init("torture_rpc_lsa_secrets");
-
-	status = torture_rpc_connection(mem_ctx, 
-					&p, 
-					DCERPC_LSARPC_NAME, 
-					DCERPC_LSARPC_UUID, 
-					DCERPC_LSARPC_VERSION);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return False;
-	}
-
-	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateSecret(p, mem_ctx, &handle)) {
-		ret = False;
-	}
-
-	talloc_free(mem_ctx);
-
-	return ret;
-}
