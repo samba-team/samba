@@ -619,7 +619,7 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_error_code ret;
     krb5_config_section *tmp_cf;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname (argv[0]);
 
@@ -629,7 +629,7 @@ main(int argc, char **argv)
     else if (ret)
 	errx (1, "krb5_init_context failed with %d", ret);
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     
     if (help_flag)
@@ -640,8 +640,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     tmp_cf = NULL;
     if(argc == 0)
