@@ -199,14 +199,15 @@ if test x"$with_krb5_support" != x"no"; then
 	# different kerberos include paths
 	AC_CHECK_HEADERS(gssapi.h gssapi_krb5.h gssapi/gssapi.h gssapi/gssapi_generic.h gssapi/gssapi_krb5.h com_err.h)
 
-	##################################################################
-	# we might need the k5crypto and com_err libraries on some systems
- 	AC_CHECK_LIB_EXT(com_err, KRB5_LIBS, _et_list)
-	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
 
 	# Heimdal checks.
 	# But only if we didn't have a krb5-config to tell us this already
 	if test x"$FOUND_KRB5_VIA_CONFIG" != x"yes"; then
+		##################################################################
+		# we might need the k5crypto and com_err libraries on some systems
+ 		AC_CHECK_LIB_EXT(com_err, KRB5_LIBS, _et_list)
+		AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
+
 		AC_CHECK_LIB_EXT(crypto, KRB5_LIBS, des_set_key)
 		AC_CHECK_LIB_EXT(asn1, KRB5_LIBS, copy_Authenticator)
 		AC_CHECK_LIB_EXT(roken, KRB5_LIBS, roken_getaddrinfo_hostspec)
