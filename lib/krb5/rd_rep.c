@@ -90,11 +90,13 @@ krb5_rd_rep(krb5_context context,
   if (ret)
       return ret;
   
-  if ((*repl)->ctime != auth_context->authenticator->ctime ||
-      (*repl)->cusec != auth_context->authenticator->cusec) {
-    ret = KRB5KRB_AP_ERR_MUT_FAIL;
-    krb5_clear_error_string (context);
-    goto out;
+  if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) { 
+      if ((*repl)->ctime != auth_context->authenticator->ctime ||
+	  (*repl)->cusec != auth_context->authenticator->cusec) {
+	  ret = KRB5KRB_AP_ERR_MUT_FAIL;
+	  krb5_clear_error_string (context);
+	  goto out;
+      }
   }
   if ((*repl)->seq_number)
       krb5_auth_con_setremoteseqnumber(context, auth_context,
