@@ -58,6 +58,7 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 	struct sock_private *sock = p->transport.private;
 
 	if (sock && sock->sock != NULL) {
+		talloc_free(sock->fde);
 		talloc_free(sock->sock);
 		sock->sock = NULL;
 	}
@@ -72,8 +73,6 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 	if (!NT_STATUS_IS_OK(status)) {
 		p->transport.recv_data(p, NULL, status);
 	}
-
-	talloc_free(sock->fde);
 }
 
 /*
@@ -107,7 +106,7 @@ static void sock_process_send(struct dcerpc_connection *p)
 		talloc_free(blob);
 	}
 
-	if (sock->pending_send == NULL) {
+	if (sock->pending_send == NULL && sock->sock) {
 		EVENT_FD_NOT_WRITEABLE(sock->fde);
 	}
 }
@@ -332,7 +331,7 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	sock->recv.data = data_blob(NULL, 0);
 	sock->recv.pending_count = 0;
 
-	sock->fde = event_add_fd(c->event_ctx, sock, socket_get_fd(sock->sock), 
+	sock->fde = event_add_fd(c->event_ctx, sock->sock, socket_get_fd(sock->sock), 
 				 0, sock_io_handler, c);
 
 	c->transport.private = sock;
