@@ -62,6 +62,8 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smbcli_session *session;
 	struct smbcli_session *session2;
 	struct smbcli_session *session3;
+	struct smbcli_session *session4;
+	struct cli_credentials *anon_creds;
 	struct smbcli_session *sessions[15];
 	struct composite_context *composite_contexts[15];
 	struct smbcli_tree *tree;
@@ -137,6 +139,25 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
 		talloc_free(session3);
+
+		printf("create a fouth anonymous security context on the same transport, without extended security\n");
+		session4 = smbcli_session_init(cli->transport, mem_ctx, False);
+
+		session4->vuid = session->vuid;
+		setup.in.sesskey = cli->transport->negotiate.sesskey;
+		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
+		setup.in.workgroup = lp_workgroup();
+		
+		anon_creds = cli_credentials_init(mem_ctx);
+		cli_credentials_set_conf(anon_creds);
+		cli_credentials_set_anonymous(anon_creds);
+
+		setup.in.credentials = anon_creds;
+	
+		status = smb_composite_sesssetup(session3, &setup);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		talloc_free(session4);
 	}
 		
 	printf("use the same tree as the existing connection\n");
