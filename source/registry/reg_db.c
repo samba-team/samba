@@ -55,6 +55,8 @@ static const char *builtin_registry_paths[] = {
 	"HKU",
 	"HKCR",
 	 NULL };
+
+#define REGVER_V1	1	/* first db version with write support */
 	
 /***********************************************************************
  Open the registry data in the tdb
@@ -125,15 +127,15 @@ static BOOL init_registry_data( void )
  
 BOOL init_registry_db( void )
 {
-	static pid_t local_pid;
+	const char *vstring = "INFO/version";
+	uint32 vers_id;
 
-	if (tdb_reg && local_pid == sys_getpid())
+	if ( tdb_reg )
 		return True;
 
 	/* placeholder tdb; reinit upon startup */
 	
-	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR, 0600);
-	if ( !tdb_reg ) 
+	if ( !(tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600)) )
 	{
 		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 		if ( !tdb_reg ) {
@@ -145,15 +147,19 @@ BOOL init_registry_db( void )
 		DEBUG(10,("init_registry: Successfully created registry tdb\n"));
 	}
 		
-	/* create the registry here */
 
-	if ( !init_registry_data() ) {
-		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
-		return False;
+	vers_id = tdb_fetch_int32(tdb_reg, vstring);
+
+	if ( vers_id != REGVER_V1 ) {
+
+		/* create the registry here */
+
+		if ( !init_registry_data() ) {
+			DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+			return False;
+		}
 	}
 
-	local_pid = sys_getpid();
-		
 	return True;
 }
 
