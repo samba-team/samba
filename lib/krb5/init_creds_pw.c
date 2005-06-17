@@ -66,7 +66,7 @@ default_s2k_func(krb5_context context, krb5_enctype type,
     krb5_data password;
     krb5_data opaque;
 
-    password.data = (void *)keyseed;
+    password.data = rk_UNCONST(keyseed);
     password.length = strlen(keyseed);
     if (s2kparms)
 	opaque = *s2kparms;
