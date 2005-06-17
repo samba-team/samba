@@ -179,7 +179,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;   
+	POLICY_HND handle;   
 	UNISTR4 name;   	
 	uint32 type;  
 	RPC_DATA_BLOB value; 
@@ -228,7 +228,7 @@ typedef struct {
 } REG_Q_CREATE_KEY;
 
 typedef struct {
-	POLICY_HND key_pol;
+	POLICY_HND handle;
 	uint32 unknown;
 	WERROR status; 
 } REG_R_CREATE_KEY;

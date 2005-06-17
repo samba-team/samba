@@ -474,7 +474,7 @@ WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 	
-	memcpy( key, &out.key_pol, sizeof(POLICY_HND) );
+	memcpy( key, &out.handle, sizeof(POLICY_HND) );
 	
 	return out.status;
 }

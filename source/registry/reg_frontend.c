@@ -134,7 +134,6 @@ BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index
 	
 	if ( !ctr_init ) {
 		DEBUG(8,("fetch_reg_keys_specific: Initializing cache of subkeys for [%s]\n", key->name));
-		ZERO_STRUCTP( &ctr );	
 		regsubkey_ctr_init( &ctr );
 		
 		pstrcpy( save_path, key->name );
@@ -202,7 +201,6 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 	if ( !ctr_init ) {
 		DEBUG(8,("fetch_reg_values_specific: Initializing cache of values for [%s]\n", key->name));
 
-		ZERO_STRUCTP( &ctr );	
 		regval_ctr_init( &ctr );
 		
 		pstrcpy( save_path, key->name );

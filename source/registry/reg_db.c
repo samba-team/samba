@@ -68,8 +68,6 @@ static BOOL init_registry_data( void )
 	int i;
 	const char *p, *p2;
 	
-	ZERO_STRUCTP( &subkeys );
-	
 	/* loop over all of the predefined paths and add each component */
 	
 	for ( i=0; builtin_registry_paths[i] != NULL; i++ ) {
@@ -168,10 +166,10 @@ BOOL init_registry_db( void )
 
  The full path to the registry key is used as database after the 
  \'s are converted to /'s.  Key string is also normalized to UPPER
- case.
+ case. 
  ***********************************************************************/
  
-static BOOL regdb_store_reg_keys( char *key, REGSUBKEY_CTR *ctr )
+static BOOL regdb_store_reg_keys_internal( char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
 	char *buffer, *tmpbuf;
@@ -235,6 +233,44 @@ done:
 	
 	return ret;
 }
+
+/***********************************************************************
+ Store the new subkey record and create any child key records that 
+ do not currently exist
+ ***********************************************************************/
+
+static BOOL regdb_store_reg_keys( char *key, REGSUBKEY_CTR *ctr )
+{
+	int num_subkeys, i;
+	pstring path;
+	REGSUBKEY_CTR subkeys;
+	
+	/* store the subkey list for the parent */
+	
+	if ( !regdb_store_reg_keys_internal( key, ctr ) ) {
+		DEBUG(0,("regdb_store_reg_keys: Failed to store new subkey list for parent [%s}\n", key ));
+		return False;
+	}
+	
+	/* now create records for any subkeys that don't already exist */
+	
+	num_subkeys = regsubkey_ctr_numkeys( ctr );
+	for ( i=0; i<num_subkeys; i++ ) {
+		pstr_sprintf( path, "%s%c%s", key, '/', regsubkey_ctr_specific_key( ctr, i ) );
+		regsubkey_ctr_init( &subkeys );
+		if ( regdb_fetch_reg_keys( path, &subkeys ) == -1 ) {
+			/* create a record with 0 subkeys */
+			if ( !regdb_store_reg_keys_internal( path, &subkeys ) ) {
+				DEBUG(0,("regdb_store_reg_keys: Failed to store new record for key [%s}\n", path ));
+				return False;
+			}
+		}
+		regsubkey_ctr_destroy( &subkeys );
+	}
+	
+	return True;
+}
+
 
 /***********************************************************************
  Retrieve an array of strings containing subkeys.  Memory should be 
