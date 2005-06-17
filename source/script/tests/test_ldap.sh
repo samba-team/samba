@@ -1,23 +1,28 @@
 #!/bin/sh
+# test some simple LDAP and CLDAP operations
+
+if [ $# -lt 1 ]; then
+cat <<EOF
+Usage: test_ldap.sh SERVER
+EOF
+exit 1;
+fi
 
 SERVER="$1"
 
-# test some simple LDAP operations
+incdir=`dirname $0`
+. $incdir/test_functions.sh
 
-echo "Testing RootDSE"
-ldbsearch -b '' -H ldap://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || exit 1
+testit "RootDSE" bin/ldbsearch -b "''" -H ldap://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
-BASEDN=`ldbsearch -b '' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep ^defaultNamingContext | awk '{print $2}'`
+BASEDN=`bin/ldbsearch -b '' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep ^defaultNamingContext | awk '{print $2}'`
 echo "BASEDN is $BASEDN"
 
 
-echo "Listing Users"
-ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=user)' sAMAccountName || exit 1
+testit "Listing Users" bin/ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
 
-echo "Listing Groups"
-ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || exit 1
+testit "Listing Users" bin/ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || failed=`expr $failed + 1`
 
-echo "CLDAP test"
-bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || exit 1
+testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || failed=`expr $failed + 1`
 
