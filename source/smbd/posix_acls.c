@@ -2949,7 +2949,9 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 		return 0;
 
 	/* Case (2). */
-	if ((uid == current_user.uid) && (user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
+	if (lp_enable_privileges() &&
+			(uid == current_user.uid) &&
+			(user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
 		become_root();
 		/* Keep the current file gid the same - take ownership doesn't imply group change. */
 		ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
@@ -3970,7 +3972,9 @@ failed to match on user or group in token (ret = %d).\n", fname, ret ));
 
   done:
 
-	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+	if (posix_acl) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+	}
 
 	DEBUG(10,("check_posix_acl_group_write: file %s returning (ret = %d).\n", fname, ret ));
 	return ret;
