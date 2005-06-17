@@ -197,6 +197,10 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 		if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) )
 			result = WERR_BADFILE; 
 	}
+
+	/* save the access mask */
+
+	regkey->access_granted = access_granted;
 	
 	/* clean up */
 
@@ -402,9 +406,10 @@ WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u
 
 WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
 {
-	POLICY_HND pol;
 	fstring name;
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->pol);
+	REGISTRY_KEY *newkey;
+	uint32 access_granted;
 	WERROR result;
 
 	DEBUG(5,("reg_open_entry: Enter\n"));
@@ -414,13 +419,31 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 		
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
-	result = open_registry_key( p, &pol, key, name, 0x0 );
+	/* check granted access first; what is the correct mask here? */
+
+	if ( !(key->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) )
+		return WERR_ACCESS_DENIED;
+
+	/* open the key first to get the appropriate REGISTRY_HOOK 
+	   and then check the premissions */
+
+	if ( !W_ERROR_IS_OK(result = open_registry_key( p, &r_u->handle, key, name, 0 )) )
+		return result;
+
+	newkey = find_regkey_index_by_hnd(p, &r_u->handle);
+
+	/* finally allow the backend to check the access for the requested key */
+
+	if ( !regkey_access_check( newkey, q_u->access, &access_granted, p->pipe_user.nt_user_token ) ) {
+		close_registry_key( p, &r_u->handle );
+		return WERR_ACCESS_DENIED;
+	}
+
+	/* if successful, save the granted access mask */
+
+	newkey->access_granted = access_granted;
 	
-	init_reg_r_open_entry( r_u, &pol, result );
-
-	DEBUG(5,("reg_open_entry: Exit\n"));
-
-	return r_u->status;
+	return WERR_OK;
 }
 
 /*******************************************************************

@@ -234,4 +234,28 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 	return True;
 }
 
+/***********************************************************************
+ High level access check for passing the required access mask to the 
+ underlying registry backend
+ ***********************************************************************/
+
+BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, NT_USER_TOKEN *token )
+{
+	/* use the default security check if the backend has not defined its own */
+	
+	if ( !(key->hook && key->hook->ops && key->hook->ops->reg_access_check) ) {
+		SEC_DESC *sec_desc;
+		NTSTATUS status;
+		
+		if ( !(sec_desc = construct_registry_sd( get_talloc_ctx() )) )
+			return False;
+		
+		status = registry_access_check( sec_desc, token, requested, granted );		
+		
+		return NT_STATUS_IS_OK(status);
+	}
+	
+	return key->hook->ops->reg_access_check( key->name, requested, granted, token );
+}
+
 

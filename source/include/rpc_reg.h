@@ -96,7 +96,7 @@ typedef struct {
 	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
 	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
 	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
-	BOOL	(*reg_access_check)( uint32 parent_granted, uint32 requested, uint32 *granted );
+	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
 } REGISTRY_OPS;
 
 typedef struct {
@@ -108,13 +108,11 @@ typedef struct {
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
-
 	struct _RegistryKey *prev, *next;
 
-	/* POLICY_HND	hnd; */
-	pstring 	name; 	/* full name of registry key */
-	REGISTRY_HOOK	*hook;
-	
+	pstring 	name; 		/* full name of registry key */
+	uint32 		access_granted;
+	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;
 
 /*
@@ -412,7 +410,7 @@ typedef struct {
 } REG_Q_OPEN_ENTRY;
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	WERROR status;
 } REG_R_OPEN_ENTRY;
 

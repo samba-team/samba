@@ -621,7 +621,7 @@ WERROR cli_reg_open_entry(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 
-	memcpy( key_hnd, &out.pol, sizeof(POLICY_HND) );
+	memcpy( key_hnd, &out.handle, sizeof(POLICY_HND) );
 	
 	return out.status;
 }
