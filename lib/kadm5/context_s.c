@@ -61,7 +61,7 @@ struct database_spec {
 };
 
 static void
-set_field(krb5_context context, krb5_config_binding *binding, 
+set_field(krb5_context context, const krb5_config_binding *binding, 
 	  const char *dbname, const char *name, const char *ext, 
 	  char **variable)
 {
@@ -99,7 +99,7 @@ set_socket_name(const char *dbname, struct sockaddr_un *un)
 
 static void
 set_config(kadm5_server_context *ctx,
-	   krb5_config_binding *binding)
+	   const krb5_config_binding *binding)
 {
     const char *p;
     if(ctx->config.dbname == NULL) {
@@ -125,11 +125,11 @@ static kadm5_ret_t
 find_db_spec(kadm5_server_context *ctx)
 {
     const krb5_config_binding *top_binding = NULL;
-    krb5_config_binding *db_binding;
-    krb5_config_binding *default_binding = NULL;
+    const krb5_config_binding *db_binding;
+    const krb5_config_binding *default_binding = NULL;
     krb5_context context = ctx->context;
 
-    while((db_binding = (krb5_config_binding *)
+    while((db_binding =
 	   krb5_config_get_next(context,
 				NULL,
 				&top_binding, 
