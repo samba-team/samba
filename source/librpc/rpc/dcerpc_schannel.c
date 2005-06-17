@@ -38,7 +38,7 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	struct netr_Credential credentials1, credentials2, credentials3;
-	struct samr_Password mach_pwd;
+	const struct samr_Password *mach_pwd;
 	uint32_t negotiate_flags;
 	struct creds_CredentialState *creds;
 	creds = talloc(tmp_ctx, struct creds_CredentialState);
@@ -103,9 +103,10 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 	/*
 	  step 3 - authenticate on the netlogon pipe
 	*/
-	E_md4hash(cli_credentials_get_password(credentials), mach_pwd.hash);
+	mach_pwd = cli_credentials_get_nt_hash(credentials, tmp_ctx);
+
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  &mach_pwd, &credentials3,
+			  mach_pwd, &credentials3,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;

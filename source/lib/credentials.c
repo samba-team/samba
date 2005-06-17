@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "include/secrets.h"
 #include "lib/ldb/include/ldb.h"
+#include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
 
 /**
  * Create a new credentials structure
@@ -101,6 +102,46 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val,
 	if (obtained >= cred->password_obtained) {
 		cred->password = talloc_strdup(cred, val);
 		cred->password_obtained = obtained;
+
+		cred->nt_hash = NULL;
+		return True;
+	}
+
+	return False;
+}
+
+/**
+ * Obtain the password for this credentials context.
+ * @param cred credentials context
+ * @retval If set, the cleartext password, otherwise NULL
+ */
+const struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred, 
+							TALLOC_CTX *mem_ctx)
+{
+	const char *password = cli_credentials_get_password(cred);
+
+	if (password) {
+		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
+		if (!nt_hash) {
+			return NULL;
+		}
+		
+		E_md4hash(password, nt_hash->hash);    
+
+		return nt_hash;
+	} else {
+		return cred->nt_hash;
+	}
+}
+
+BOOL cli_credentials_set_nt_hash(struct cli_credentials *cred,
+				 const struct samr_Password *nt_hash, 
+				 enum credentials_obtained obtained)
+{
+	if (obtained >= cred->password_obtained) {
+		cli_credentials_set_password(cred, NULL, obtained);
+		cred->nt_hash = talloc(cred, struct samr_Password);
+		*cred->nt_hash = *nt_hash;
 		return True;
 	}
 
@@ -462,6 +503,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 		"flatname",
 		"realm",
 		"secureChannelType",
+		"ntPwdHash",
 		NULL
 	};
 	
@@ -500,14 +542,9 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	}
 	
 	password = ldb_msg_find_string(msgs[0], "secret", NULL);
-	if (!password) {
-		DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
-			  cli_credentials_get_domain(cred)));
-		talloc_free(mem_ctx);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-	
+
 	machine_account = ldb_msg_find_string(msgs[0], "samAccountName", NULL);
+
 	if (!machine_account) {
 		DEBUG(1, ("Could not find 'samAccountName' in join record to domain: %s\n",
 			  cli_credentials_get_domain(cred)));
@@ -516,14 +553,32 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	}
 	
 	sct = ldb_msg_find_int(msgs[0], "secureChannelType", 0);
-	if (sct) {
-		cli_credentials_set_secure_channel_type(cred, sct);
-	} else {
+	if (!sct) { 
 		DEBUG(1, ("Domain join for acocunt %s did not have a secureChannelType set!\n",
 			  machine_account));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 	
+	if (!password) {
+		const struct ldb_val *nt_password_hash = ldb_msg_find_ldb_val(msgs[0], "ntPwdHash");
+		struct samr_Password hash;
+		ZERO_STRUCT(hash);
+		if (nt_password_hash) {
+			memcpy(hash.hash, nt_password_hash->data, 
+			       MIN(nt_password_hash->length, sizeof(hash.hash)));
+		
+			cli_credentials_set_nt_hash(cred, &hash, CRED_SPECIFIED);
+		} else {
+		
+			DEBUG(1, ("Could not find 'secret' in join record to domain: %s\n",
+				  cli_credentials_get_domain(cred)));
+			talloc_free(mem_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+	}
+	
+	cli_credentials_set_secure_channel_type(cred, sct);
+
 	domain = ldb_msg_find_string(msgs[0], "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
@@ -535,7 +590,10 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	}
 
 	cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(cred, password, CRED_SPECIFIED);
+	if (password) {
+		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
+	}
+
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
