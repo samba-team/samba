@@ -392,7 +392,7 @@ example of what you would not want to see would be:
 			  
 </sect1>
 
-<sect1>
+<sect1 id="startingSamba">
 	<title>Starting the &smbd; &nmbd; and &winbindd;</title>
 
 
@@ -520,6 +520,73 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 	<filename>examples/svr4-startup</filename> script to make Samba fit
 	into that system.
 	</para></note>
+
+	<sect3>
+	<title>Starting Samba for Red Hat Linux</title>
+
+	<para>
+	Red Hat Linux has not always included all Samba components in the standard installation.
+	So versions of Red Hat Linux do not install the winbind utility, even though it is present
+	on the installation CDROM media. Check to see if the <command>winbindd</command> is present
+	on the system:
+<screen>
+&rootprompt; ls /usr/sbin/winbindd
+/usr/sbin/winbindd
+</screen>
+	This means that the appropriate RPM package was installed. The following response means
+	that it is not installed:
+<screen>
+/bin/ls: /usr/sbin/winbind: No such file or directory
+</screen>
+	In this case it should be installed if you intend to use <command>winbindd</command>. Search
+	the CDROM installation media for the samba-winbind RPM and install it following Red Hat
+	guidelines.
+	</para>
+
+	<para>
+	The process for starting Samba will now be outlined. Be sure to configure Sambas' &smb.conf;
+	file before starting Samba. When configured, start Samba by executing:
+<screen>
+&rootprompt; service smb start
+&rootprompt; service winbind start
+</screen>
+	These steps will start &nmbd;, &smbd; and &winbindd;.
+	</para>
+
+	<para>
+	To ensure that these services will be automatically restarted when the system is rebooted
+	execute:
+<screen>
+&rootprompt; chkconfig smb on
+&rootprompt; chkconfig winbind on
+</screen>
+	Samba will be started automatically at every system reboot.
+	</para>
+
+	</sect3>
+
+	<sect3>
+	<title>Starting Samba for Novell SUSE Linux</title>
+
+	<para>
+	Novell SUSE Linux products automatically install all essential Samba components in a default installation.
+	Configure your &smb.conf; file, then execute the following to start Samba:
+<screen>
+&rootprompt; rcnmb start
+&rootprompt; rcsmb start
+&rootprompt; rcwinbind start
+</screen>
+	Now execute these commands so that Samba will be started automatically following a system
+	reboot:
+<screen>
+&rootprompt; chkconfig nmb on
+&rootprompt; chkconfig smb on
+&rootprompt; chkconfig winbind on
+</screen>
+	The Samba services will now be started automatically following a system reboot.
+	</para>
+
+	</sect3>
 
 	</sect2>
 
