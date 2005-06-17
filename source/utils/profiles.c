@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
    */
 
 #ifdef HAVE_MMAP
-  base = mmap(NULL, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  base = mmap(NULL, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #else
   base = (char *)-1;
   errno = ENOSYS;
