@@ -1,3 +1,56 @@
+2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/string2key.c: rename optind to optidx
+
+	* lib/hdb/convert_db.c: rename optind to optidx
+
+	* lib/hdb/keytab.c: const poison, add a unconst where needed
+
+	* lib/krb5/crypto.c (krb5_string_to_key): unconst password
+
+	* lib/asn1/k5.asn1: rename pvno to krb5-pvno
+
+	* lib/krb5/get_in_tkt_with_keytab.c (krb5_keytab_key_proc):
+	unconst argument
+
+	* lib/krb5/verify_krb5_conf.c: rename optind to optidx
+
+	* lib/krb5/transited.c: rename the temporary string variable to
+	`str'
+
+	* lib/krb5/test_crypto.c: rename optind to optidx
+
+	* lib/krb5/test_alname.c: rename optind to optidx
+
+	* lib/krb5/store.c: unconst argument to krb5_store (XXX this
+	should be fixed, krb5_store doesn't need to modify its argument)
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto): remove shadowing
+	unnessecery variable ret
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): remove shadowing unnessecery
+	variable len
+
+	* lib/krb5/prog_setup.c: rename optind to optidx
+
+	* lib/krb5/padata.c: rename variable index to idx
+
+	* lib/krb5/log.c: rename variable time to timestr to avoid
+	shadowing
+
+	* lib/krb5/krbhst.c (krb5_krbhst_init_flags): rename variable to
+	avoid shadowing
+
+	* lib/krb5/krbhst-test.c: rename optind to optidx
+
+	* lib/krb5/kcm.c: unconst argumen to connect, unconst argument to
+	krb5_store (XXX this should be fixed, krb5_store doesn't need to
+	modify its argument)
+
+	* lib/krb5/init_creds_pw.c (default_s2k_func): unconst password
+
+	* lib/krb5/crypto.c: rename `encrypt' to avoid shadow warning
+	
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/principal.c: rename index to idx

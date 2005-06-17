@@ -1,3 +1,24 @@
+2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* constify
+
+	* ipropd_slave.c: avoid shadowing
+
+	* ipropd_master.c: rename local variable slave to s, optind ->
+	optidx
+
+	* get_princs_c.c: rename variable exp to expression
+	
+	* ad.c: rename variable exp to expression
+
+	* log.c: rename shadowing len to num
+	
+	* get_princs_s.c: rename variable exp to expression
+
+	* context_s.c: const poison
+
+	* common_glue.c: rename variable exp to expression
+
 2005-05-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ent_setup.c (attr_to_flags): check for KRB5_KDB_OK_AS_DELEGATE
