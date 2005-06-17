@@ -36,11 +36,11 @@
 RCSID("$Id$");
 
 PA_DATA *
-krb5_find_padata(PA_DATA *val, unsigned len, int type, int *index)
+krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)
 {
-    for(; *index < len; (*index)++)
-	if(val[*index].padata_type == type)
-	    return val + *index;
+    for(; *idx < len; (*idx)++)
+	if(val[*idx].padata_type == type)
+	    return val + *idx;
     return NULL;    
 }
 
