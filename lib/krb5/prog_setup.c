@@ -50,7 +50,7 @@ krb5_program_setup(krb5_context *context, int argc, char **argv,
 		   void (*usage)(int, struct getargs*, int))
 {
     krb5_error_code ret;
-    int optind = 0;
+    int optidx = 0;
 
     if(usage == NULL)
 	usage = krb5_std_usage;
@@ -60,7 +60,7 @@ krb5_program_setup(krb5_context *context, int argc, char **argv,
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
     
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	(*usage)(1, args, num_args);
-    return optind;
+    return optidx;
 }
