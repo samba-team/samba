@@ -1459,21 +1459,6 @@ BOOL reg_io_q_open_entry(const char *desc,  REG_Q_OPEN_ENTRY *q_u, prs_struct *p
 }
 
 /*******************************************************************
- Inits a structure.
-********************************************************************/
-
-void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_u,
-			   POLICY_HND *pol, WERROR werr)
-{
-	if (W_ERROR_IS_OK(werr)) {
-		memcpy(&r_u->pol, pol, sizeof(r_u->pol));
-	} else {
-		ZERO_STRUCT(r_u->pol);
-	}
-	r_u->status = werr;
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 
@@ -1488,7 +1473,7 @@ BOOL reg_io_r_open_entry(const char *desc,  REG_R_OPEN_ENTRY *r_u, prs_struct *p
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &r_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("handle", &r_u->handle, ps, depth))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
