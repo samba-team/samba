@@ -92,7 +92,7 @@ static void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 
 	ctx->static_ptr = &ctx;
 
-	db_path = talloc_asprintf(ctx, "tdb://%s/rootdse.ldb", dyn_PRIVATE_DIR);
+	db_path = talloc_asprintf(ctx, "tdb://%s", private_path(ctx, "rootdse.ldb"));
 	if (db_path == NULL) {
 		errno = ENOMEM;
 		return NULL;
