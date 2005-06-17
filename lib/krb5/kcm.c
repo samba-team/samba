@@ -106,7 +106,7 @@ try_unix_socket(krb5_context context, const krb5_kcmcache *k,
     if (fd < 0)
 	return KRB5_CC_IO;
     
-    if (connect(fd, (struct sockaddr *)&k->path, sizeof(k->path)) != 0) {
+    if (connect(fd, rk_UNCONST(&k->path), sizeof(k->path)) != 0) {
 	close(fd);
 	return KRB5_CC_IO;
     }
@@ -521,7 +521,7 @@ kcm_retrieve(krb5_context context,
 	return ret;
     }
 
-    ret = krb5_store_creds_tag(request, (krb5_creds *)mcred);
+    ret = krb5_store_creds_tag(request, rk_UNCONST(mcred));
     if (ret) {
 	krb5_storage_free(request);
 	return ret;
