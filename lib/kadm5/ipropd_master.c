@@ -284,7 +284,7 @@ prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
     krb5_error_code ret;
     krb5_storage *sp;
     krb5_data data;
-    struct slave *slave = (struct slave *)v;
+    struct slave *s = (struct slave *)v;
 
     ret = hdb_entry2value (context, entry, &data);
     if (ret)
@@ -303,7 +303,7 @@ prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
     krb5_store_int32(sp, ONE_PRINC);
     krb5_storage_free(sp);
 
-    ret = krb5_write_priv_message (context, slave->ac, &slave->fd, &data);
+    ret = krb5_write_priv_message (context, s->ac, &s->fd, &data);
     krb5_data_free (&data);
     return ret;
 }
@@ -641,10 +641,10 @@ main(int argc, char **argv)
     slave *slaves = NULL;
     u_int32_t current_version = 0, old_version = 0;
     krb5_keytab keytab;
-    int optind;
+    int optidx;
     char **files;
     
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
