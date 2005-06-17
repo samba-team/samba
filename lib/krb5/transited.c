@@ -69,10 +69,10 @@ make_path(krb5_context context, struct tr_realm *r,
     struct tr_realm *tmp;
 
     if(strlen(from) < strlen(to)){
-	const char *tmp;
-	tmp = from;
+	const char *str;
+	str = from;
 	from = to;
-	to = tmp;
+	to = str;
     }
 	
     if(strcmp(from + strlen(from) - strlen(to), to) == 0){
