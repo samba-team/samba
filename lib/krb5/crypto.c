@@ -1174,7 +1174,7 @@ krb5_string_to_key (krb5_context context,
 		    krb5_keyblock *key)
 {
     krb5_data pw;
-    pw.data = (void*)password;
+    pw.data = rk_UNCONST(password);
     pw.length = strlen(password);
     return krb5_string_to_key_data(context, enctype, pw, principal, key);
 }
