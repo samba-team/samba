@@ -59,37 +59,35 @@ the guilty, and any resemblance to unreal nonexistent sites is deliberate.
 <title>Description of Example Sites</title>
 
 <para>
-In the first set of configuration examples we consider the case of exceptionally simple
-system requirements. There is a real temptation to make something that should require
-little effort much too complex.
+In the first set of configuration examples we consider the case of exceptionally simple system requirements.
+There is a real temptation to make something that should require little effort much too complex.
 </para>
 
 <para>
-<link linkend="anon-ro"></link> documents the type of server that might be sufficient to serve CD-ROM
-images, or reference document files for network client use. This configuration is also discussed in 
-<link linkend="StandAloneServer"></link>, <link linkend="RefDocServer"></link>.
-The purpose for this configuration is to provide a shared volume that is read-only that anyone, even guests, can access.
+<link linkend="anon-ro"></link> documents the type of server that might be sufficient to serve CD-ROM images,
+or reference document files for network client use. This configuration is also discussed in <link
+linkend="StandAloneServer"></link>, <link linkend="RefDocServer"></link>.  The purpose for this configuration
+is to provide a shared volume that is read-only that anyone, even guests, can access.
 </para>
 
 <para>
-The second example shows a minimal configuration for a print server that anyone can print
-to as long as they have the correct printer drivers installed on their computer. This is a
-mirror of the system described in <link linkend="StandAloneServer"></link>, <link linkend="SimplePrintServer"></link>.
+The second example shows a minimal configuration for a print server that anyone can print to as long as they
+have the correct printer drivers installed on their computer. This is a mirror of the system described in
+<link linkend="StandAloneServer"></link>, <link linkend="SimplePrintServer"></link>.
 </para>
 
 <para>
-The next example is of a secure office file and print server that will be accessible only
-to users who have an account on the system. This server is meant to closely resemble a
-workgroup file and print server, but has to be more secure than an anonymous access machine.
-This type of system will typically suit the needs of a small office. The server provides no
-network logon facilities, offers no domain control; instead it is just a network-attached storage (NAS) device and a print server.
+The next example is of a secure office file and print server that will be accessible only to users who have an
+account on the system. This server is meant to closely resemble a workgroup file and print server, but has to
+be more secure than an anonymous access machine.  This type of system will typically suit the needs of a small
+office. The server provides no network logon facilities, offers no domain control; instead it is just a
+network-attached storage (NAS) device and a print server.
 </para>
 
 <para>
-Finally, we start looking at more complex systems that will either integrate into existing
-MS Windows networks or replace them entirely. The examples provided cover domain
-member servers as well as Samba domain control (PDC/BDC) and finally describes in detail
-a large distributed network with branch offices in remote locations.
+The later example consider more complex systems that will either integrate into existing MS Windows networks
+or replace them entirely. These cover domain member servers as well as Samba domain control (PDC/BDC) and
+finally describes in detail a large distributed network with branch offices in remote locations.
 </para>
 
 </sect1>
@@ -118,6 +116,11 @@ of the packages that are provided by the operating system vendor or through othe
 	server, or it can be a complex server that is a member of a domain security context.
 	</para>
 
+	<para>
+	As the examples are developed, every attempt is made to progress the system toward greater capability, just as
+	one might expect would happen in a real business office as that office grows in size and its needs change.
+	</para>
+
 		<sect3 id="anon-ro">
 		<title>Anonymous Read-Only Document Server</title>
 
@@ -128,35 +131,6 @@ of the packages that are provided by the operating system vendor or through othe
 		shared resource could be a CD-ROM drive, a CD-ROM image, or a file
 		storage area.
 		</para>
-
-		<para>
-		As the examples are developed, every attempt is made to progress the
-		system toward greater capability, just as one might expect would happen
-		in a real business office as that office grows in size and its needs
-		change.
-		</para>
-
-		<para>
-		The configuration file is presented in <link linkend="anon-example">Anonymous Read-Only Server
-		Configuration</link>.
-		</para>
-
-		<example id="anon-example">
-		<title>Anonymous Read-Only Server Configuration</title>
-		<smbconfblock>
-		<smbconfcomment>Global parameters</smbconfcomment>
-		<smbconfsection name="[global]"/>
-		<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
-		<smbconfoption name="netbios name">HOBBIT</smbconfoption>
-		<smbconfoption name="security">share</smbconfoption>
-
-		<smbconfsection name="[data]"/>
-		<smbconfoption name="comment">Data</smbconfoption>
-		<smbconfoption name="path">/export</smbconfoption>
-		<smbconfoption name="read only">Yes</smbconfoption>
-		<smbconfoption name="guest ok">Yes</smbconfoption>
-		</smbconfblock>
-		</example>
 
 		<itemizedlist>
 			<listitem><para>
@@ -197,16 +171,42 @@ of the packages that are provided by the operating system vendor or through othe
 
 			<step><para>
 			Install the Samba configuration file (<filename>/etc/samba/smb.conf</filename>)
-			as shown.
+			as shown in <link linkend="anon-example">Anonymous Read-Only Server Configuration</link>.
 			</para></step>
 
+<example id="anon-example">
+<title>Anonymous Read-Only Server Configuration</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">HOBBIT</smbconfoption>
+<smbconfoption name="security">share</smbconfoption>
+
+<smbconfsection name="[data]"/>
+<smbconfoption name="comment">Data</smbconfoption>
+<smbconfoption name="path">/export</smbconfoption>
+<smbconfoption name="read only">Yes</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+</smbconfblock>
+</example>
+
 			<step><para>
-			Test the configuration file:
+			Test the configuration file by executing the following command:
 <screen>
 &rootprompt;<userinput>testparm</userinput>
 </screen>
+			Alternately, where you are operating from a master configuration file called
+			<filename>smb.conf.master</filename>, the following sequence of commands might prove
+			more appropriate:
+<screen>
+&rootprompt; cd /etc/samba
+&rootprompt; testparm -s smb.conf.master > smb.conf
+&rootprompt; testparm
+</screen>
 			Note any error messages that might be produced. Proceed only if error-free output has been
-			obtained. An example of the output with the following file will list the file.
+			obtained. An example of typical output that should be generated from the above configuration
+			file is shown here:
 <screen>
 Load smb config files from /etc/samba/smb.conf
 Processing section "[data]"
@@ -230,8 +230,9 @@ Press enter to see a dump of your service definitions
 			</para></step>
 
 			<step><para>
-			Start Samba using the method applicable to your operating system
-			platform.
+			Start Samba using the method applicable to your operating system platform. The method that
+			should be used is platform dependant. Refer to <link linkend="startingSamba">Starting Samba</link>
+			for further information regarding starting of Samba.
 			</para></step>
 
 			<step><para>
@@ -356,7 +357,16 @@ Added user jackb.
 
 		<para>
 		The above configuration is not ideal. It uses no smart features, and it deliberately
-		presents a less than elegant solution. But it is basic, and it does print.
+		presents a less than elegant solution. But it is basic, and it does print. Samba makes
+		use of the direct printing application program interface that is provided by CUPS.
+		When Samba has been compiled and linked with the CUPS libraries the default printing
+		system will be CUPS. By specifying that the printcap name is CUPS, Samba will use
+		the CUPS library API to communicate directly with CUPS for all printer functions.
+		It is possible to force the use of external printing commands by setting the value
+		of the <prarameter>printing</parameter> to either SYSV or BSD, and thus the value of
+		the parameter <parameter>printcap name</parameter> must be set to something other than
+		CUPS. In such case, it could be set to the name of any file that contains a list
+		of printers that should be made available to Windows clients.
 		</para>
 
 		<note><para>
@@ -382,7 +392,7 @@ Added user jackb.
 			Directory permissions should be set for public read-write with the
 			sticky bit set as shown:
 <screen>
-&rootprompt;<userinput>chmod a+trw TX /var/spool/samba</userinput>
+&rootprompt;<userinput>chmod a+twrx /var/spool/samba</userinput>
 </screen>
 		The purpose of setting the sticky bit is to prevent who does not own the temporary print file
 		from being able to take control of it with the potential for devious misuse.
@@ -434,7 +444,7 @@ Added user jackb.
 		encrypted passwords in a file called <filename>/etc/samba/smbpasswd</filename>.
 		The default &smb.conf; entry that makes this happen is
 		<smbconfoption name="passdb backend">smbpasswd, guest</smbconfoption>. Since this is the default,
-		it is not necessary to enter it into the configuration file. Note that guest backend is
+		it is not necessary to enter it into the configuration file. Note that the guest backend is
 		added to the list of active passdb backends no matter whether it specified directly in Samba configuration
 		file or not.
 		</para>
@@ -570,6 +580,12 @@ Workgroup            Master
 ---------            -------
 MIDEARTH             OLORIN
 </screen>
+			The following error message indicates that Samba was not running:
+<screen>
+&rootprompt; smbclient -L olorin -U%
+Error connecting to 192.168.1.40 (Connection refused)
+Connection to olorin failed
+</screen>
 			</para></step>
 
 			<step><para>
@@ -636,7 +652,7 @@ smb: \> <userinput>q</userinput>
 	The accounting department uses an accounting application called <emphasis>SpytFull</emphasis>
 	that must be run from a central application server. The software is licensed to run only off
 	one server, there are no workstation components, and it is run off a mapped share. The data
-	store is in a UNIX-based SQL backend. The UNIX gurus look after that, so it is not our
+	store is in a UNIX-based SQL backend. The UNIX gurus look after that, so this is not our
 	problem.
 	</para>
 
@@ -1061,7 +1077,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 			Idealx</ulink> Web site. They may also be obtained from the Samba tarball. Linux
 			distributions tend to install the Idealx scripts in the 
 			<filename>/usr/share/doc/packages/sambaXXXXXX/examples/LDAP/smbldap-tools</filename> directory.
-			Idealx scripts version <constant>smbldap-tools-0.8.7</constant> are known to work well.
+			Idealx scripts version <constant>smbldap-tools-0.9.1</constant> are known to work well.
 			</para>
 
 			<procedure>
@@ -1110,8 +1126,8 @@ index   default               sub
 				</para></step>
 
 				<step><para>
-				Create the following file <filename>samba-ldap-init.ldif</filename>:
-				<indexterm><primary>samba-ldap-init.ldif</primary></indexterm>
+				Create the following file <filename>initdb.ldif</filename>:
+				<indexterm><primary>initdb.ldif</primary></indexterm>
 <programlisting>
 # Organization for SambaXP Demo
 dn: dc=quenya,dc=org
@@ -1163,7 +1179,8 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 
 				<step><para>
 				The &smb.conf; file that drives this backend can be found in example <link
-				linkend="fast-ldap">LDAP backend smb.conf for PDC</link>.
+				linkend="fast-ldap">LDAP backend smb.conf for PDC</link>. Add additional stanzas
+				as required.
 				</para></step>
 
 <example id="fast-ldap">
@@ -1228,7 +1245,9 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 			<title>Backup Domain Controller</title>
 
 			<para>
-			<link linkend="fast-bdc"/> shows the example configuration for the BDC.
+			<link linkend="fast-bdc"/> shows the example configuration for the BDC. Note that
+			the &smb.conf; file does not specify the smbldap-tools scripts &smbmdash; they are
+			not needed on a BDC. Add additional stanzas for shares and printers as required.
 			</para>
 
 			<procedure>
