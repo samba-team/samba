@@ -1304,40 +1304,90 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
+	REGISTRY_KEY *newparent;
+	POLICY_HND newparent_handle;
 	REGSUBKEY_CTR subkeys;
 	BOOL write_result;
-	fstring name;
+	pstring name;
+	WERROR result;
 
 	if ( !parent )
 		return WERR_BADFID;
 		
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
-	
-	/* access checks first */
-	
-	if ( !(parent->access_granted & SEC_RIGHTS_CREATE_SUBKEY) )
-		return WERR_ACCESS_DENIED;
 		
+	/* ok.  Here's what we do.  */
+
+	if ( strrchr( name, '\\' ) ) {
+		pstring newkeyname;
+		char *ptr;
+		uint32 access_granted;
+		
+		/* (1) check for enumerate rights on the parent handle.  CLients can try 
+		       create things like 'SOFTWARE\Samba' on the HKLM handle. 
+		   (2) open the path to the child parent key if necessary */
+	
+		if ( !(parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) )
+			return WERR_ACCESS_DENIED;
+		
+		pstrcpy( newkeyname, name );
+		ptr = strrchr( newkeyname, '\\' );
+		*ptr = '\0';
+
+		result = open_registry_key( p, &newparent_handle, parent, newkeyname, 0 );
+		if ( !W_ERROR_IS_OK(result) )
+			return result;
+		
+		newparent = find_regkey_index_by_hnd(p, &newparent_handle);
+		SMB_ASSERT( newparent != NULL );
+			
+		if ( !regkey_access_check( newparent, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
+			result = WERR_ACCESS_DENIED;
+			goto done;
+		}
+
+		newparent->access_granted = access_granted;
+
+		/* copy the new key name (just the lower most keyname) */
+
+		pstrcpy( name, ptr+1 );
+	}
+	else {
+		/* use the existing open key information */
+		newparent = parent;
+		memcpy( &newparent_handle, &q_u->handle, sizeof(POLICY_HND) );
+	}
+	
+	/* (3) check for create subkey rights on the correct parent */
+	
+	if ( !(newparent->access_granted & STD_RIGHT_DELETE_ACCESS) ) {
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
+
 	regsubkey_ctr_init( &subkeys );
 	
-	/* lookup the current keys and add the new one */
+	/* lookup the current keys and delete the new one */
 	
-	fetch_reg_keys( parent, &subkeys );
+	fetch_reg_keys( newparent, &subkeys );
 	
-	/* FIXME!!! regsubkey_ctr_delkey( &subkeys, name ); */
+	regsubkey_ctr_delkey( &subkeys, name );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_keys( parent, &subkeys );
+	write_result = store_reg_keys( newparent, &subkeys );
 	
 	regsubkey_ctr_destroy( &subkeys );
 	
-	if ( !write_result )
-		return WERR_REG_IO_FAILURE;
-		
+done:
+	/* close any intermediate key handles */
+	
+	if ( newparent != parent )
+		close_registry_key( p, &newparent_handle );
+
 	/* rpc_reg.h says there is a POLICY_HDN in the reply...no idea if that is correct */
 	
-	return WERR_OK;
+	return write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 }
 
 
