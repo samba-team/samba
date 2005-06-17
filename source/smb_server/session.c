@@ -115,7 +115,7 @@ struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_con
 
 	ZERO_STRUCTP(sess);
 
-	i = idr_get_new_above(smb_conn->sessions.idtree_vuid, sess, VUID_OFFSET, UINT16_MAX);
+	i = idr_get_new_random(smb_conn->sessions.idtree_vuid, sess, UINT16_MAX);
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		talloc_free(sess);

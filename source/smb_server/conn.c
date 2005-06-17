@@ -73,7 +73,7 @@ struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 	tcon = talloc_zero(smb_conn, struct smbsrv_tcon);
 	if (!tcon) return NULL;
 
-	i = idr_get_new(smb_conn->tree.idtree_tid, tcon, UINT16_MAX);
+	i = idr_get_new_random(smb_conn->tree.idtree_tid, tcon, UINT16_MAX);
 	if (i == -1) {
 		DEBUG(1,("ERROR! Out of connection structures\n"));	       
 		return NULL;
