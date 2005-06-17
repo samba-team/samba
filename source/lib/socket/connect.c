@@ -56,7 +56,8 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 
 	status = socket_connect(sock, my_address, my_port, 
 				server_address, server_port, flags);
-	if (NT_STATUS_IS_ERR(status)) {
+	if (NT_STATUS_IS_ERR(status) && 
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
 	}
 
