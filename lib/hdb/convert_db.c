@@ -133,12 +133,12 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     HDB *db, *new;
-    int optind = 0;
+    int optidx = 0;
     int master_key_set = 0;
     
     setprogname(argv[0]);
 
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	krb5_std_usage(1, args, num_args);
 
     if(help_flag)
