@@ -142,14 +142,14 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		status = make_user_info_anonymous(req->smb_conn, &user_info);
+		status = make_user_info_anonymous(mem_ctx, &user_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;
 		}
 
 		/* TODO: should we use just "anonymous" here? */
-		status = auth_context_create(req->smb_conn, lp_auth_methods(), 
+		status = auth_context_create(mem_ctx, lp_auth_methods(), 
 					     &auth_context, 
 					     req->smb_conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
