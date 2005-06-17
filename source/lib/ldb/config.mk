@@ -17,18 +17,6 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE libldb_ldap
-[MODULE::libldb_ldap]
-SUBSYSTEM = LIBLDB
-INIT_OBJ_FILES = \
-		lib/ldb/ldb_ldap/ldb_ldap.o
-REQUIRED_SUBSYSTEMS = \
-		EXT_LIB_LDAP
-NOPROTO = YES
-# End MODULE libldb_ldap
-################################################
-
-################################################
 # Start MODULE libldb_ildap
 [MODULE::libldb_ildap]
 SUBSYSTEM = LIBLDB
