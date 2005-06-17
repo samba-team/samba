@@ -384,13 +384,6 @@ static struct getargs args[] = {
 
 static int num_args = sizeof(args) / sizeof(args[0]);
 
-static void
-usage (int code, struct getargs *args, int num_args)
-{
-    arg_printusage (args, num_args, NULL, "master");
-    exit (code);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -405,13 +398,12 @@ main(int argc, char **argv)
     krb5_principal server;
     char **files;
 
-    int optind;
     const char *master;
     
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, usage);
+    krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
     if(help_flag)
-	usage (0, args, num_args);
+	krb5_std_usage(0, args, num_args);
     if(version_flag) {
 	print_version(NULL);
 	exit(0);
@@ -433,7 +425,7 @@ main(int argc, char **argv)
     argv += optind;
 
     if (argc != 1)
-	usage (1, args, num_args);
+	krb5_std_usage(1, args, num_args);
 
     master = argv[0];
 
@@ -492,7 +484,6 @@ main(int argc, char **argv)
 	   server_context->log_context.version);
 
     for (;;) {
-	int ret;
 	krb5_data out;
 	krb5_storage *sp;
 	int32_t tmp;
