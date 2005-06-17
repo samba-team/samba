@@ -36,7 +36,7 @@
 
 RCSID("$Id$");
 
-static char *op_names[] = {
+static const char *op_names[] = {
     "get",
     "delete",
     "create",
@@ -214,7 +214,7 @@ print_entry(kadm5_server_context *server_context,
 }
 
 static char *realm;
-static char *config_file;
+static const char *config_file;
 static int version_flag;
 static int help_flag;
 

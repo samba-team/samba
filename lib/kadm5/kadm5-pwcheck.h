@@ -59,15 +59,15 @@ typedef int
 				   size_t length);
 
 struct kadm5_pw_policy_check_func {
-    char *name;
+    const char *name;
     kadm5_passwd_quality_check_func func;
 };
 
 struct kadm5_pw_policy_verifier {
-    char *name;
+    const char *name;
     int version;
-    char *vendor;
-    struct kadm5_pw_policy_check_func *funcs;
+    const char *vendor;
+    const struct kadm5_pw_policy_check_func *funcs;
 };
 
 #endif /* KADM5_PWCHECK_H */

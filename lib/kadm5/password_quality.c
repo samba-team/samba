@@ -89,7 +89,7 @@ char_class_passwd_quality (krb5_context context,
 			   char *message,
 			   size_t length)
 {
-    char *classes[] = {
+    const char *classes[] = {
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	"abcdefghijklmnopqrstuvwxyz",
 	"1234567890",
@@ -409,10 +409,10 @@ kadm5_add_passwd_quality_verifier(krb5_context context,
  *
  */
 
-static struct kadm5_pw_policy_check_func *
+static const struct kadm5_pw_policy_check_func *
 find_func(krb5_context context, const char *name)
 {
-    struct kadm5_pw_policy_check_func *f;
+    const struct kadm5_pw_policy_check_func *f;
     char *module = NULL;
     const char *p, *func;
     int i;
@@ -456,7 +456,7 @@ kadm5_check_password_quality (krb5_context context,
 			      krb5_principal principal,
 			      krb5_data *pwd_data)
 {
-    struct kadm5_pw_policy_check_func *proc;
+    const struct kadm5_pw_policy_check_func *proc;
     static char error_msg[1024];
     const char *msg;
     char **v, **vp;

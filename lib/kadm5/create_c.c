@@ -39,7 +39,7 @@ kadm5_ret_t
 kadm5_c_create_principal(void *server_handle,
 			 kadm5_principal_ent_t princ, 
 			 u_int32_t mask,
-			 char *password)
+			 const char *password)
 {
     kadm5_client_context *context = server_handle;
     kadm5_ret_t ret;
