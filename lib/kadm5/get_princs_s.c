@@ -78,7 +78,7 @@ foreach(krb5_context context, HDB *db, hdb_entry *ent, void *data)
 
 kadm5_ret_t
 kadm5_s_get_principals(void *server_handle, 
-		       const char *exp,
+		       const char *expression,
 		       char ***princs, 
 		       int *count)
 {
@@ -90,11 +90,11 @@ kadm5_s_get_principals(void *server_handle,
 	krb5_warn(context->context, ret, "opening database");
 	return ret;
     }
-    d.exp = exp;
+    d.exp = expression;
     {
 	krb5_realm r;
 	krb5_get_default_realm(context->context, &r);
-	asprintf(&d.exp2, "%s@%s", exp, r);
+	asprintf(&d.exp2, "%s@%s", expression, r);
 	free(r);
     }
     d.princs = NULL;

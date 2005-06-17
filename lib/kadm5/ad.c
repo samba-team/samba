@@ -1021,7 +1021,7 @@ kadm5_ad_get_principal(void *server_handle,
 
 static kadm5_ret_t
 kadm5_ad_get_principals(void *server_handle,
-			const char *exp,
+			const char *expression,
 			char ***principals,
 			int *count)
 {

@@ -119,11 +119,11 @@ kadm5_rename_principal(void *server_handle,
 
 kadm5_ret_t
 kadm5_get_principals(void *server_handle,
-		     const char *exp,
+		     const char *expression,
 		     char ***princs,
 		     int *count)
 {
-    return __CALL(get_principals, (server_handle, exp, princs, count));
+    return __CALL(get_principals, (server_handle, expression, princs, count));
 }
 
 kadm5_ret_t
