@@ -661,27 +661,27 @@ krb5_krbhst_init_flags(krb5_context context,
 		       krb5_krbhst_handle *handle)
 {
     struct krb5_krbhst_data *kd;
-    krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *, 
-				krb5_krbhst_info **);
+    krb5_error_code (*next)(krb5_context, struct krb5_krbhst_data *, 
+			    krb5_krbhst_info **);
     int def_port;
 
     switch(type) {
     case KRB5_KRBHST_KDC:
-	get_next = kdc_get_next;
+	next = kdc_get_next;
 	def_port = ntohs(krb5_getportbyname (context, "kerberos", "udp", 88));
 	break;
     case KRB5_KRBHST_ADMIN:
-	get_next = admin_get_next;
+	next = admin_get_next;
 	def_port = ntohs(krb5_getportbyname (context, "kerberos-adm",
 					     "tcp", 749));
 	break;
     case KRB5_KRBHST_CHANGEPW:
-	get_next = kpasswd_get_next;
+	next = kpasswd_get_next;
 	def_port = ntohs(krb5_getportbyname (context, "kpasswd", "udp",
 					     KPASSWD_PORT));
 	break;
     case KRB5_KRBHST_KRB524:
-	get_next = krb524_get_next;
+	next = krb524_get_next;
 	def_port = ntohs(krb5_getportbyname (context, "krb524", "udp", 4444));
 	break;
     default:
@@ -690,7 +690,7 @@ krb5_krbhst_init_flags(krb5_context context,
     }
     if((kd = common_init(context, realm, flags)) == NULL)
 	return ENOMEM;
-    kd->get_next = get_next;
+    kd->get_next = next;
     kd->def_port = def_port;
     *handle = kd;
     return 0;
