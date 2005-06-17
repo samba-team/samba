@@ -1,7 +1,3 @@
-Implement:
-  ndr_parser.pm:
-   - if [charset()] specified, use instead of the for loops (call ndr_pu{ll,sh}_charset()
-
 - True multiple dimension array / strings in arrays support (closely related to 
 	things specified above)
 
