@@ -231,7 +231,7 @@ typedef struct rpc_context {
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info {
 	RPC_HDR_BBA bba;
-	uint32 num_contexts;    /* the number of contexts */
+	uint8 num_contexts;    /* the number of contexts */
 	RPC_CONTEXT *rpc_context;
 } RPC_HDR_RB;
 
