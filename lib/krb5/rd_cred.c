@@ -220,7 +220,6 @@ krb5_rd_cred(krb5_context context,
     for (i = 0; i < enc_krb_cred_part.ticket_info.len; ++i) {
 	KrbCredInfo *kci = &enc_krb_cred_part.ticket_info.val[i];
 	krb5_creds *creds;
-	size_t len;
 
 	creds = calloc(1, sizeof(*creds));
 	if(creds == NULL) {
