@@ -48,15 +48,20 @@ sub GetElementLevelTable($)
 		my $is_surrounding = 0;
 		my $is_varying = 0;
 		my $is_conformant = 0;
+		my $is_string = 0;
 
 		if ($d eq "*") {
 			$is_conformant = 1;
-			unless ($size = shift @size_is) {
+			if ($size = shift @size_is) {
+			} elsif ((scalar(@size_is) == 0) and util::has_property($e, "string")) {
+				$is_string = 1;
+				delete($e->{PROPERTIES}->{string});
+			} else {
 				print "$e->{FILE}:$e->{LINE}: Must specify size_is() for conformant array!\n";
 				exit 1;
 			}
 
-			if ($length = shift @length_is) {
+			if (($length = shift @length_is) or $is_string) {
 				$is_varying = 1;
 			} else {
 				$length = $size;
@@ -73,9 +78,8 @@ sub GetElementLevelTable($)
 			SIZE_IS => $size,
 			LENGTH_IS => $length,
 			IS_DEFERRED => "$is_deferred",
-			# Inline arrays (which are a pidl extension) are never encoded
-			# as surrounding the struct they're part of
 			IS_SURROUNDING => "$is_surrounding",
+			IS_ZERO_TERMINATED => "$is_string",
 			IS_VARYING => "$is_varying",
 			IS_CONFORMANT => "$is_conformant",
 			IS_FIXED => (not $is_conformant and util::is_constant($size)),
@@ -104,30 +108,43 @@ sub GetElementLevelTable($)
 		# everything that follows will be deferred
 		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");
 
-		my $array_size;
+		my $array_size = shift @size_is;
 		my $array_length;
-		if ($array_size = shift @size_is) {
-			my $is_varying = 0;
+		my $is_varying;
+		my $is_conformant;
+		my $is_string = 0;
+		if ($array_size) {
+			$is_conformant = 1;
 			if ($array_length = shift @length_is) {
 				$is_varying = 1;
 			} else {
 				$array_length = $array_size;
+				$is_varying =0;
 			}
+		} 
+		
+		if (scalar(@size_is) == 0 and util::has_property($e, "string")) {
+			$is_string = 1;
+			$is_varying = $is_conformant = util::has_property($e, "noheader")?0:1;
+			delete($e->{PROPERTIES}->{string});
+		}
 
+		if ($array_size or $is_string) {
 			push (@$order, {
 				TYPE => "ARRAY",
+				IS_ZERO_TERMINATED => "$is_string",
 				SIZE_IS => $array_size,
 				LENGTH_IS => $array_length,
 				IS_DEFERRED => "$is_deferred",
 				IS_SURROUNDING => 0,
 				IS_VARYING => "$is_varying",
-				IS_CONFORMANT => 1,
+				IS_CONFORMANT => "$is_conformant",
 				IS_FIXED => 0,
 				IS_INLINE => 0,
 			});
 
 			$is_deferred = 0;
-		}
+		} 
 	}
 
 	if (defined(util::has_property($e, "subcontext"))) {
