@@ -162,7 +162,7 @@ struct _heimdal_syslog_data{
 };
 
 static void
-log_syslog(const char *time,
+log_syslog(const char *timestr,
 	   const char *msg,
 	   void *data)
      
@@ -211,7 +211,7 @@ struct file_data{
 };
 
 static void
-log_file(const char *time,
+log_file(const char *timestr,
 	 const char *msg,
 	 void *data)
 {
@@ -220,7 +220,7 @@ log_file(const char *time,
 	f->fd = fopen(f->filename, f->mode);
     if(f->fd == NULL)
 	return;
-    fprintf(f->fd, "%s %s\n", time, msg);
+    fprintf(f->fd, "%s %s\n", timestr, msg);
     if(f->keep_open == 0)
 	fclose(f->fd);
 }
