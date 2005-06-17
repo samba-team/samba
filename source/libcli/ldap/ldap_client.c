@@ -573,6 +573,8 @@ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_message **ms
 {
 	*msg = NULL;
 
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
 	while (req->state != LDAP_REQUEST_DONE && n >= req->num_replies) {
 		if (event_loop_once(req->conn->event.event_ctx) != 0) {
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
@@ -606,5 +608,28 @@ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message **msg, in
 		*msg = NULL;
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
+	return status;
+}
+
+/*
+  a simple ldap transaction, for single result requests that only need a status code
+  this relies on single valued requests having the response type == request type + 1
+*/
+NTSTATUS ldap_transaction(struct ldap_connection *conn, struct ldap_message *msg)
+{
+	struct ldap_request *req = ldap_request_send(conn, msg);
+	struct ldap_message *res;
+	NTSTATUS status;
+	status = ldap_result_n(req, 0, &res);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return status;
+	}
+	if (res->type != msg->type + 1) {
+		talloc_free(req);
+		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+	}
+	status = ldap_check_response(conn, &res->r.GeneralResult);
+	talloc_free(req);
 	return status;
 }

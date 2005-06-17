@@ -44,7 +44,7 @@ BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
 		return False;
 
 	attrib->values[attrib->num_values] =
-		data_blob_talloc(mem_ctx, value->data, value->length);
+		data_blob_talloc(attrib->values, value->data, value->length);
 	attrib->num_values += 1;
 	return True;
 }
@@ -63,6 +63,8 @@ BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 		return False;
 
 	(*attribs)[*num_attribs] = *attrib;
+	talloc_steal(*attribs, attrib->values);
+	talloc_steal(*attribs, attrib->name);
 	*num_attribs += 1;
 	return True;
 }
