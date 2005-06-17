@@ -587,12 +587,48 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, const void *_var, uin
 	const char *var = _var;
 	uint32_t i;
 
+	var += element_size*(count-1);
+
 	for (i = 0; i < element_size; i++) {
-		 if (var+element_size*(count-1)+i != 0) {
+		 if (var[i] != 0) {
 			return NT_STATUS_UNSUCCESSFUL;
 		 }
 	}
 
 	return NT_STATUS_OK;
 
+}
+
+NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, char **var, uint32_t length, uint8_t byte_mul, int chset)
+{
+	int ret;
+	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
+	ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+				    ndr->data+ndr->offset, 
+				    length*byte_mul,
+				    (void **)var);
+	if (ret == -1) {
+		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+				      "Bad character conversion");
+	}
+	NDR_CHECK(ndr_pull_advance(ndr, length*byte_mul));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
+{
+	int ret;
+	NDR_PUSH_NEED_BYTES(ndr, byte_mul*length);
+	ret = convert_string(CH_UNIX, chset, 
+			     var, length,
+			     ndr->data+ndr->offset, 
+			     byte_mul*length);
+	if (ret == -1) {
+		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+				      "Bad character conversion");
+	}
+	ndr->offset += byte_mul*length;
+
+	return NT_STATUS_OK;
 }

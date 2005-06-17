@@ -213,7 +213,11 @@ sub HeaderType($$$)
 		return;
 	}
 
-	pidl typelist::mapType($e->{TYPE});
+	if (util::has_property($e, "charset")) {
+		pidl "char";
+	} else {
+		pidl typelist::mapType($e->{TYPE});
+	}
 }
 
 #####################################################################

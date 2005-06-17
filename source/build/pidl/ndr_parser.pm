@@ -550,7 +550,11 @@ sub ParseElementPushLevel
 
 				my $nl = Ndr::GetNextLevel($e, $l);
 
-				pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				if (util::has_property($e, "charset")) {
+					pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), $e->{PROPERTIES}->{charset}));";
+				} else {
+					pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				} 
 				return;
 			} 
 		} elsif ($l->{TYPE} eq "SWITCH") {
@@ -688,8 +692,12 @@ sub ParseElementPrint($$$)
 			}
 
 			if (is_scalar_array($e, $l)) {
-				my $nl = Ndr::GetNextLevel($e, $l);
-				pidl "ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
+				if (util::has_property($e, "charset")) {
+					pidl "ndr_print_string(ndr, \"$e->{NAME}\", $var_name);";
+				} else {
+					my $nl = Ndr::GetNextLevel($e, $l);
+					pidl "ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
+				} 
 				last;
 			}
 
@@ -844,10 +852,14 @@ sub ParseElementPullLevel
 				}
 				my $nl = Ndr::GetNextLevel($e, $l);
 
-				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
-				if ($l->{IS_ZERO_TERMINATED}) {
-					# Make sure last element is zero!
-					pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, ndr_get_array_length(ndr, " . get_pointer_to($var_name) . "), sizeof(*$var_name)));";
+				if (util::has_property($e, "charset")) {
+					pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), $e->{PROPERTIES}->{charset}));";
+				} else {
+					pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
+					if ($l->{IS_ZERO_TERMINATED}) {
+						# Make sure last element is zero!
+						pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
+					}
 				}
 				return;
 			}
@@ -901,7 +913,7 @@ sub ParseElementPullLevel
 
 			if ($l->{IS_ZERO_TERMINATED}) {
 				# Make sure last element is zero!
-				pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, ndr_get_array_length(ndr, " . get_pointer_to($var_name) . "), sizeof(*$var_name)));";
+				pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
 			}
 		}
 
@@ -1866,6 +1878,8 @@ sub ParseFunctionPush($)
 sub AllocateArrayLevel($$$$$)
 {
 	my ($e,$l,$ndr,$env,$size) = @_;
+
+	return if (util::has_property($e, "charset"));
 
 	my $var = ParseExpr($e->{NAME}, $env);
 
