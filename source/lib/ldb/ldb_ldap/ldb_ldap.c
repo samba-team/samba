@@ -76,14 +76,13 @@ static int lldb_rename(struct ldb_module *module, const char *olddn, const char 
 	int ret = 0;
 	char *newrdn, *p;
 	const char *parentdn = "";
-	TALLOC_CTX *mem_ctx = talloc_new(lldb);
 
 	/* ignore ltdb specials */
 	if (olddn[0] == '@' ||newdn[0] == '@') {
 		return 0;
 	}
 
-	newrdn = talloc_strdup(mem_ctx, newdn);
+	newrdn = talloc_strdup(lldb, newdn);
 	if (!newrdn) {
 		return -1;
 	}
@@ -99,7 +98,7 @@ static int lldb_rename(struct ldb_module *module, const char *olddn, const char 
 		ret = -1;
 	}
 
-	talloc_free(mem_ctx);
+	talloc_free(newrdn);
 
 	return ret;
 }
