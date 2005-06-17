@@ -22,7 +22,7 @@ echo "BASEDN is $BASEDN"
 
 testit "Listing Users" bin/ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
 
-testit "Listing Users" bin/ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || failed=`expr $failed + 1`
+testit "Listing Groups" bin/ldbsearch -H ldap://$SERVER -b "$BASEDN" '(objectclass=group)' sAMAccountName || failed=`expr $failed + 1`
 
 testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || failed=`expr $failed + 1`
 
