@@ -93,12 +93,12 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_principal princ;
     krb5_salt salt;
-    int optind;
+    int optidx;
     char buf[1024];
     krb5_enctype etype;
     krb5_error_code ret;
 
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    optidx = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
 
     if(help)
 	usage(0);
@@ -108,8 +108,8 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc > 1)
 	usage(1);
