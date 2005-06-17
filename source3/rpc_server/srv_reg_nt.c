@@ -179,29 +179,23 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
 
-	ZERO_STRUCTP( &subkeys );
-	
 	regsubkey_ctr_init( &subkeys );
 	
 	if ( fetch_reg_keys( regkey, &subkeys ) == -1 )  {
-	
-		/* don't really know what to return here */
 		result = WERR_BADFILE;
+		goto done;
 	}
-	else {
-		/* 
-		 * This would previously return NT_STATUS_TOO_MANY_SECRETS
-		 * that doesn't sound quite right to me  --jerry
-		 */
-		
-		if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) )
-			result = WERR_BADFILE; 
+
+	if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) ) {
+		result = WERR_BADFILE; 
+		goto done;
 	}
 
 	/* save the access mask */
 
 	regkey->access_granted = access_granted;
 	
+done:
 	/* clean up */
 
 	regsubkey_ctr_destroy( &subkeys );
@@ -247,8 +241,6 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 	if ( !key )
 		return False;
 
-	ZERO_STRUCTP( &subkeys );
-	
 	regsubkey_ctr_init( &subkeys );	
 	   
 	if ( fetch_reg_keys( key, &subkeys ) == -1 )
@@ -289,9 +281,6 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	if ( !key )
 		return False;
 
-
-	ZERO_STRUCTP( &values );
-	
 	regval_ctr_init( &values );
 	
 	if ( fetch_reg_values( key, &values ) == -1 )
@@ -407,27 +396,27 @@ WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u
 WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
 {
 	fstring name;
-	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->pol);
+	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->pol);
 	REGISTRY_KEY *newkey;
 	uint32 access_granted;
 	WERROR result;
 
 	DEBUG(5,("reg_open_entry: Enter\n"));
 
-	if ( !key )
+	if ( !parent )
 		return WERR_BADFID;
 		
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
 	/* check granted access first; what is the correct mask here? */
 
-	if ( !(key->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) )
+	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY)) )
 		return WERR_ACCESS_DENIED;
 
 	/* open the key first to get the appropriate REGISTRY_HOOK 
 	   and then check the premissions */
 
-	if ( !W_ERROR_IS_OK(result = open_registry_key( p, &r_u->handle, key, name, 0 )) )
+	if ( !W_ERROR_IS_OK(result = open_registry_key( p, &r_u->handle, parent, name, 0 )) )
 		return result;
 
 	newkey = find_regkey_index_by_hnd(p, &r_u->handle);
@@ -473,8 +462,6 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
-	ZERO_STRUCTP( &regvals );
-	
 	regval_ctr_init( &regvals );
 
 	/* couple of hard coded registry values */
@@ -891,9 +878,6 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 	
 	/* now start parsing the values and subkeys */
 
-	ZERO_STRUCT( values );
-	ZERO_STRUCT( subkeys );
-
 	regsubkey_ctr_init( &subkeys );
 	regval_ctr_init( &values );
 	
@@ -1044,9 +1028,6 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	
 	/* lookup the values and subkeys */
 	
-	ZERO_STRUCT( values );
-	ZERO_STRUCT( subkeys );
-	
 	regsubkey_ctr_init( &subkeys );
 	regval_ctr_init( &values );
 	
@@ -1186,7 +1167,98 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 
 WERROR _reg_create_key(pipes_struct *p, REG_Q_CREATE_KEY  *q_u, REG_R_CREATE_KEY *r_u)
 {
-	return WERR_ACCESS_DENIED;
+	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
+	REGISTRY_KEY *newparent;
+	POLICY_HND newparent_handle;
+	REGSUBKEY_CTR subkeys;
+	BOOL write_result;
+	pstring name;
+	WERROR result;
+
+	if ( !parent )
+		return WERR_BADFID;
+		
+	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
+	
+	/* ok.  Here's what we do.  */
+
+	if ( strrchr( name, '\\' ) ) {
+		pstring newkeyname;
+		char *ptr;
+		uint32 access_granted;
+		
+		/* (1) check for enumerate rights on the parent handle.  CLients can try 
+		       create things like 'SOFTWARE\Samba' on the HKLM handle. 
+		   (2) open the path to the child parent key if necessary */
+	
+		if ( !(parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) )
+			return WERR_ACCESS_DENIED;
+		
+		pstrcpy( newkeyname, name );
+		ptr = strrchr( newkeyname, '\\' );
+		*ptr = '\0';
+
+		result = open_registry_key( p, &newparent_handle, parent, newkeyname, 0 );
+		if ( !W_ERROR_IS_OK(result) )
+			return result;
+		
+		newparent = find_regkey_index_by_hnd(p, &newparent_handle);
+		SMB_ASSERT( newparent != NULL );
+			
+		if ( !regkey_access_check( newparent, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
+			result = WERR_ACCESS_DENIED;
+			goto done;
+		}
+
+		newparent->access_granted = access_granted;
+
+		/* copy the new key name (just the lower most keyname) */
+
+		pstrcpy( name, ptr+1 );
+	}
+	else {
+		/* use the existing open key information */
+		newparent = parent;
+		memcpy( &newparent_handle, &q_u->handle, sizeof(POLICY_HND) );
+	}
+	
+	/* (3) check for create subkey rights on the correct parent */
+	
+	if ( !(newparent->access_granted & SEC_RIGHTS_CREATE_SUBKEY) ) {
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}	
+		
+	regsubkey_ctr_init( &subkeys );
+	
+	/* (4) lookup the current keys and add the new one */
+	
+	fetch_reg_keys( newparent, &subkeys );
+	regsubkey_ctr_addkey( &subkeys, name );
+	
+	/* now write to the registry backend */
+	
+	write_result = store_reg_keys( newparent, &subkeys );
+	
+	regsubkey_ctr_destroy( &subkeys );
+	
+	if ( !write_result )
+		return WERR_REG_IO_FAILURE;
+		
+	/* (5) open the new key and return the handle.  Note that it is probably 
+	   not correct to grant full access on this open handle.  We should pass
+	   the new open through the regkey_access_check() like we do for 
+	   _reg_open_entry() but this is ok for now. */
+	
+	result = open_registry_key( p, &r_u->handle, newparent, name, REG_KEY_ALL );
+
+done:
+	/* close any intermediate key handles */
+	
+	if ( newparent != parent )
+		close_registry_key( p, &newparent_handle );
+		
+	return result;
 }
 
 
@@ -1195,7 +1267,35 @@ WERROR _reg_create_key(pipes_struct *p, REG_Q_CREATE_KEY  *q_u, REG_R_CREATE_KEY
 
 WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r_u)
 {
-	return WERR_ACCESS_DENIED;
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+	REGVAL_CTR values;
+	BOOL write_result;
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
+		return WERR_ACCESS_DENIED;
+		
+	regval_ctr_init( &values );
+	
+	/* lookup the current values and add the new one */
+	
+	fetch_reg_values( key, &values );
+	/* FIXME!!!! regval_ctr_addvalue( &values, .... ); */
+	
+	/* now write to the registry backend */
+	
+	write_result = store_reg_values( key, &values );
+	
+	regval_ctr_destroy( &values );
+	
+	if ( !write_result )
+		return WERR_REG_IO_FAILURE;
+		
+	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1203,7 +1303,41 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 
 WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY *r_u)
 {
-	return WERR_ACCESS_DENIED;
+	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
+	REGSUBKEY_CTR subkeys;
+	BOOL write_result;
+	fstring name;
+
+	if ( !parent )
+		return WERR_BADFID;
+		
+	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
+	
+	/* access checks first */
+	
+	if ( !(parent->access_granted & SEC_RIGHTS_CREATE_SUBKEY) )
+		return WERR_ACCESS_DENIED;
+		
+	regsubkey_ctr_init( &subkeys );
+	
+	/* lookup the current keys and add the new one */
+	
+	fetch_reg_keys( parent, &subkeys );
+	
+	/* FIXME!!! regsubkey_ctr_delkey( &subkeys, name ); */
+	
+	/* now write to the registry backend */
+	
+	write_result = store_reg_keys( parent, &subkeys );
+	
+	regsubkey_ctr_destroy( &subkeys );
+	
+	if ( !write_result )
+		return WERR_REG_IO_FAILURE;
+		
+	/* rpc_reg.h says there is a POLICY_HDN in the reply...no idea if that is correct */
+	
+	return WERR_OK;
 }
 
 
@@ -1212,6 +1346,34 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 
 WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE_VALUE *r_u)
 {
-	return WERR_ACCESS_DENIED;
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+	REGVAL_CTR values;
+	BOOL write_result;
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
+		return WERR_ACCESS_DENIED;
+		
+	regval_ctr_init( &values );
+	
+	/* lookup the current values and add the new one */
+	
+	fetch_reg_values( key, &values );
+	/* FIXME!!!! regval_ctr_delval( &values, .... ); */
+	
+	/* now write to the registry backend */
+	
+	write_result = store_reg_values( key, &values );
+	
+	regval_ctr_destroy( &values );
+	
+	if ( !write_result )
+		return WERR_REG_IO_FAILURE;
+		
+	return WERR_OK;
 }
 

@@ -2543,8 +2543,6 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	data->num_keys++;
 	data->keys[key_index].name = SMB_STRDUP( name );
 	
-	ZERO_STRUCTP( &data->keys[key_index].values );
-	
 	regval_ctr_init( &data->keys[key_index].values );
 	
 	DEBUG(10,("add_new_printer_key: Inserted new data key [%s]\n", name ));
