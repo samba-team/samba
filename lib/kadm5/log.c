@@ -604,16 +604,16 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	abort ();		/* XXX */
     }
     if (mask & KADM5_KEY_DATA) {
-	size_t len;
+	size_t num;
 	int i;
 
 	for (i = 0; i < ent.keys.len; ++i)
 	    free_Key(&ent.keys.val[i]);
 	free (ent.keys.val);
 
-	len = log_ent.keys.len;
+	num = log_ent.keys.len;
 
-	ent.keys.len = len;
+	ent.keys.len = num;
 	ent.keys.val = malloc(len * sizeof(*ent.keys.val));
 	for (i = 0; i < ent.keys.len; ++i)
 	    copy_Key(&log_ent.keys.val[i],
