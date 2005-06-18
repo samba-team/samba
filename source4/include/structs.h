@@ -175,6 +175,7 @@ struct libnet_CreateUser;
 struct libnet_ListShares;
 struct libnet_AddShare;
 struct libnet_DelShare;
+struct libnet_Lookup;
 struct net_functable;
 struct net_context;
 
