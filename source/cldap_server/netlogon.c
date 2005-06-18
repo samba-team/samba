@@ -267,7 +267,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	return;
 	
 failed:
-	DEBUG(0,("cldap netlogon query failed domain=%s host=%s version=%d - %s\n",
+	DEBUG(2,("cldap netlogon query failed domain=%s host=%s version=%d - %s\n",
 		 domain, host, version, nt_errstr(status)));
 	talloc_free(tmp_ctx);
 	cldap_empty_reply(cldap, message_id, src_address, src_port);	
