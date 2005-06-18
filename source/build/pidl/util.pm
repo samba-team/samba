@@ -215,4 +215,24 @@ sub useUintEnums()
 	return $useUintEnums;
 }
 
+sub ParseExpr($$)
+{
+	my($expr,$varlist) = @_;
+
+	die("Undefined value in ParseExpr") if not defined($expr);
+
+	my @tokens = split /((?:[A-Za-z_])(?:(?:(?:[A-Za-z0-9_.])|(?:->))+))/, $expr;
+	my $ret = "";
+
+	foreach my $t (@tokens) {
+		if (defined($varlist->{$t})) {
+			$ret .= $varlist->{$t};
+		} else {
+			$ret .= $t;
+		}
+	}
+
+	return $ret;
+}
+
 1;
