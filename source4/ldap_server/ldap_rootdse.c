@@ -33,11 +33,6 @@
 	attr->values = blob;\
 } while(0)
 
-struct rootdse_db_context {
-	struct ldb_context *ldb;
-	struct rootdse_db_context **static_ptr;
-};
-
 /*
   this is used to catch debug messages from ldb
 */
@@ -55,60 +50,28 @@ static void rootdse_db_debug(void *context, enum ldb_debug_level level, const ch
 }
 
 
-/* destroy the last connection to the sam */
-static int rootdse_db_destructor(void *ctx)
-{
-	struct rootdse_db_context *rd_ctx = ctx;
-	talloc_free(rd_ctx->ldb);
-	*(rd_ctx->static_ptr) = NULL;
-	return 0;
-}				 
-
 /*
   connect to the SAM database
-  return an opaque context pointer on success, or NULL on failure
  */
-static void *rootdse_db_connect(TALLOC_CTX *mem_ctx)
+static struct ldb_context *rootdse_db_connect(TALLOC_CTX *mem_ctx)
 {
-	static struct rootdse_db_context *ctx;
 	char *db_path;
-	/*
-	  the way that unix fcntl locking works forces us to have a
-	  static ldb handle here rather than a much more sensible
-	  approach of having the ldb handle as part of the
-	  ldap base structures. Otherwise we would try to open
-	  the ldb more than once, and tdb would rightly refuse the
-	  second open due to the broken nature of unix locking.
-	*/
-	if (ctx != NULL) {
-		return talloc_reference(mem_ctx, ctx);
-	}
+	struct ldb_context *ldb;
 
-	ctx = talloc(mem_ctx, struct rootdse_db_context);
-	if (ctx == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ctx->static_ptr = &ctx;
-
-	db_path = talloc_asprintf(ctx, "tdb://%s", private_path(ctx, "rootdse.ldb"));
+	db_path = talloc_asprintf(mem_ctx, "tdb://%s", 
+				  private_path(mem_ctx, "rootdse.ldb"));
 	if (db_path == NULL) {
-		errno = ENOMEM;
 		return NULL;
 	}
 
-	DEBUG(10, ("opening %s\n", db_path));
-	ctx->ldb = ldb_connect(db_path, 0, NULL);
-	if (ctx->ldb == NULL) {
-		talloc_free(ctx);
+	ldb = ldb_wrap_connect(mem_ctx, db_path, 0, NULL);
+	if (ldb == NULL) {
 		return NULL;
 	}
 
-	talloc_set_destructor(ctx, rootdse_db_destructor);
-	ldb_set_debug(ctx->ldb, rootdse_db_debug, NULL);
+	ldb_set_debug(ldb, rootdse_db_debug, NULL);
 
-	return ctx;
+	return ldb;
 }
 
 
@@ -305,7 +268,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	struct ldb_message **res = NULL;
 	int result = LDAP_SUCCESS;
 	struct ldapsrv_reply *ent_r, *done_r;
-	struct	rootdse_db_context *rootdsedb;
+	struct ldb_context *ldb;
 	const char *errstr = NULL;
 	int count, j, y;
 	const char **attrs = NULL;
@@ -317,11 +280,11 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	local_ctx = talloc_named(call, 0, "rootdse_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	rootdsedb = rootdse_db_connect(local_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(rootdsedb);
+	ldb = rootdse_db_connect(local_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(ldb);
 
 	if (r->num_attributes >= 1) {
-		attrs = talloc_array(rootdsedb, const char *, r->num_attributes+1);
+		attrs = talloc_array(ldb, const char *, r->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (j=0; j < r->num_attributes; j++) {
@@ -331,8 +294,8 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		attrs[j] = NULL;
 	}
 
-	count = ldb_search(rootdsedb->ldb, NULL, 0, "dn=cn=rootDSE", attrs, &res);
-	talloc_steal(rootdsedb, res);
+	count = ldb_search(ldb, NULL, 0, "dn=cn=rootDSE", attrs, &res);
+	talloc_steal(local_ctx, res);
 
 	if (count == 1) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
@@ -387,7 +350,7 @@ queue_reply:
 	} else if (count == 0) {
 		DEBUG(10,("rootdse_Search: no results\n"));
 		result = LDAP_NO_SUCH_OBJECT;
-		errstr = ldb_errstring(rootdsedb->ldb);
+		errstr = ldb_errstring(ldb);
 	} else if (count > 1) {
 		DEBUG(10,("rootdse_Search: too many results[%d]\n", count));
 		result = LDAP_OTHER; 
@@ -395,7 +358,7 @@ queue_reply:
 	} else if (count == -1) {
 		DEBUG(10,("rootdse_Search: error\n"));
 		result = LDAP_OTHER;
-		errstr = ldb_errstring(rootdsedb->ldb);
+		errstr = ldb_errstring(ldb);
 	}
 
 	done = &done_r->msg->r.SearchResultDone;

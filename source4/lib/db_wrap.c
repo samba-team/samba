@@ -75,12 +75,13 @@ static int ldb_wrap_destructor(void *ctx)
   to close just talloc_free() the returned ldb_context
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
-				  const char *url,
-				  unsigned int flags,
-				  const char *options[])
+				     const char *url,
+				     unsigned int flags,
+				     const char *options[])
 {
 	struct ldb_context *ldb;
 	struct ldb_wrap *w;
+	int ret;
 
 	for (w = ldb_list; w; w = w->next) {
 		if (strcmp(url, w->url) == 0) {
@@ -88,8 +89,14 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	ldb = ldb_connect(url, flags, options);
+	ldb = ldb_init(talloc_autofree_context());
 	if (ldb == NULL) {
+		return NULL;
+	}
+	
+	ret = ldb_connect(ldb, url, flags, options);
+	if (ret == -1) {
+		talloc_free(ldb);
 		return NULL;
 	}
 
