@@ -96,7 +96,12 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		break;
 
 	case LDB_OP_NOT:
-		#warning "OP_NOT missing"
+		asn1_push_tag(data, ASN1_CONTEXT(2));
+		if (!ldap_push_filter(data, tree->u.not.child)) {
+			return False;
+		}
+		asn1_pop_tag(data);
+		break;
 
 	default:
 		return False;
