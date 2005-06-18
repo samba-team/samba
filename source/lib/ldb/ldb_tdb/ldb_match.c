@@ -44,10 +44,10 @@
 */
 static int ltdb_val_equal_integer(const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	int i1, i2;
+	uint64_t i1, i2;
 
-	i1 = strtol(v1->data, NULL, 0);
-	i2 = strtol(v2->data, NULL, 0);
+	i1 = strtoull(v1->data, NULL, 0);
+	i2 = strtoull(v2->data, NULL, 0);
 
 	return i1 == i2;
 }
