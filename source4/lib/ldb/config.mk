@@ -67,7 +67,6 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_ldif.o \
 		lib/ldb/common/ldb_parse.o \
 		lib/ldb/common/ldb_msg.o \
-		lib/ldb/common/util.o \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_debug.o \
 		lib/ldb/common/ldb_modules.o \
