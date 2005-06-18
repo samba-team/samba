@@ -272,44 +272,63 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 /*
   search the database for a single simple dn
 */
-int ltdb_search_dn(struct ldb_module *module, const char *dn,
-		   const char * const attrs[], struct ldb_message ***res)
+static int ltdb_search_dn(struct ldb_module *module, const char *dn,
+			  const char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ldb_message *msg, *msg2;
 
+	*res = NULL;
+
+	if (ltdb_lock_read(module) != 0) {
+		return -1;
+	}
+
+	ltdb->last_err_string = NULL;
+
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock_read(module);
+		return -1;
+	}
+
 	*res = talloc_array(ldb, struct ldb_message *, 2);
 	if (! *res) {
-		return -1;		
+		goto failed;
 	}
 
 	msg = talloc(*res, struct ldb_message);
 	if (msg == NULL) {
-		talloc_free(*res);
-		*res = NULL;
-		return -1;
+		goto failed;
 	}
 
 	ret = ltdb_search_dn1(module, dn, msg);
 	if (ret != 1) {
 		talloc_free(*res);
 		*res = NULL;
-		return ret;
+		ltdb_unlock_read(module);
+		return 0;
 	}
 
 	msg2 = ltdb_pull_attrs(module, msg, attrs);
 
 	talloc_free(msg);
-
 	if (!msg2) {
-		return -1;		
+		goto failed;
 	}
 
 	(*res)[0] = talloc_steal(*res, msg2);
 	(*res)[1] = NULL;
 
+	ltdb_unlock_read(module);
+
 	return 1;
+
+failed:
+	talloc_free(*res);
+	ltdb_unlock_read(module);
+	return -1;
 }
 
 
@@ -508,7 +527,6 @@ int ltdb_search(struct ldb_module *module, const char *base,
 	/* check if we are looking for a simple dn */
 	if (scope == LDB_SCOPE_BASE && (expression == NULL || expression[0] == '\0')) {
 		ret = ltdb_search_dn(module, base, attrs, res);
-		ltdb_unlock_read(module);
 		return ret;
 	}
 

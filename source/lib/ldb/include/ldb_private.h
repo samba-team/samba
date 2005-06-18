@@ -86,6 +86,11 @@ typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
+/*
+  simplify out of memory handling
+*/
+#define ldb_oom(ldb) ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb out of memory at %s:%d\n", __FILE__, __LINE__)
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
@@ -114,21 +119,21 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len);
 int ldb_should_b64_encode(const struct ldb_val *val);
 
-struct ldb_context *ltdb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[]);
-struct ldb_context *lldb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[]);
-struct ldb_context *ildb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[]);
-struct ldb_context *lsqlite3_connect(const char *url, 
-                                     unsigned int flags, 
-                                     const char *options[]);
+int ltdb_connect(struct ldb_context *ldb, const char *url, 
+		 unsigned int flags, 
+		 const char *options[]);
+int lldb_connect(struct ldb_context *ldb, const char *url, 
+		 unsigned int flags, 
+		 const char *options[]);
+int ildb_connect(struct ldb_context *ldb,
+		 const char *url, 
+		 unsigned int flags, 
+		 const char *options[]);
+int lsqlite3_connect(struct ldb_context *ldb,
+		     const char *url, 
+		     unsigned int flags, 
+		     const char *options[]);
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
-
-const char **ldb_options_parse(const char **options, int *ldbopts, const char *arg);
 
 #endif

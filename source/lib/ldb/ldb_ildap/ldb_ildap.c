@@ -349,42 +349,34 @@ static const struct ldb_module_ops ildb_ops = {
 /*
   connect to the database
 */
-struct ldb_context *ildb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[])
+int ildb_connect(struct ldb_context *ldb, const char *url, 
+		 unsigned int flags, const char *options[])
 {
-	struct ldb_context *ldb = NULL;
 	struct ildb_private *ildb = NULL;
 	NTSTATUS status;
 
-	ldb = talloc(NULL, struct ldb_context);
-	if (!ldb) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	ldb->debug_ops.debug = NULL;
-
 	ildb = talloc(ldb, struct ildb_private);
 	if (!ildb) {
-		errno = ENOMEM;
+		ldb_oom(ldb);
 		goto failed;
 	}
 
 	ildb->ldap = ldap_new_connection(ildb, NULL);
 	if (!ildb->ldap) {
-		errno = ENOMEM;
+		ldb_oom(ldb);
 		goto failed;
 	}
 
 	status = ldap_connect(ildb->ldap, url);
 	if (!NT_STATUS_IS_OK(status)) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s\n",
+			  url, ldap_errstr(ildb->ldap, status));
 		goto failed;
 	}
 
 	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
-		errno = ENOMEM;
+		ldb_oom(ldb);
 		goto failed;
 	}
 	ldb->modules->ldb = ldb;
@@ -392,10 +384,10 @@ struct ldb_context *ildb_connect(const char *url,
 	ldb->modules->private_data = ildb;
 	ldb->modules->ops = &ildb_ops;
 
-	return ldb;
+	return 0;
 
 failed:
-	talloc_free(ldb);
-	return NULL;
+	talloc_free(ildb);
+	return -1;
 }
 

@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
@@ -272,109 +273,45 @@ static void usage(void)
 	exit(1);
 }
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	struct ldb_message **msgs;
 	int ret;
 	const char *expression = NULL;
-	const char *ldb_url;
-	const char *basedn = NULL;
-	const char **options = NULL;
-	int ldbopts;
-	int opt;
-	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	const char *editor;
 	const char * const * attrs = NULL;
+	struct ldb_cmdline *options;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(NULL);
 
-	/* build the editor command to run -
-	   use the same editor priorities as vipw */
-	editor = getenv("VISUAL");
-	if (!editor) {
-		editor = getenv("EDITOR");
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
+
+	if (options->all_records) {
+		expression = "(|(objectclass=*)(dn=*))";
 	}
-	if (!editor) {
-		editor = "vi";
-	}
-
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "hab:e:H:s:vo:")) != EOF) {
-		switch (opt) {
-		case 'b':
-			basedn = optarg;
-			break;
-
-		case 'H':
-			ldb_url = optarg;
-			break;
-
-		case 's':
-			if (strcmp(optarg, "base") == 0) {
-				scope = LDB_SCOPE_BASE;
-			} else if (strcmp(optarg, "sub") == 0) {
-				scope = LDB_SCOPE_SUBTREE;
-			} else if (strcmp(optarg, "one") == 0) {
-				scope = LDB_SCOPE_ONELEVEL;
-			}
-			break;
-
-		case 'e':
-			editor = optarg;
-			break;
-
-		case 'a':
-			expression = "(|(objectclass=*)(dn=*))";
-			break;
-			
-		case 'v':
-			verbose++;
-			break;
-
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
 
 	if (!expression) {
-		if (argc == 0) {
+		if (options->argc == 0) {
 			usage();
 		}
-		expression = argv[0];
-		argc--;
-		argv++;
+		expression = options->argv[0];
+		options->argc--;
+		options->argv++;
 	}
 
-	if (argc > 0) {
-		attrs = (const char * const *)argv;
+	if (options->argc > 0) {
+		attrs = (const char * const *)options->argv;
 	}
 
-	ldb = ldb_connect(ldb_url, 0, options);
-
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, LDB_FLG_RDONLY, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
-	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
-
+	ret = ldb_search(ldb, options->basedn, options->scope, expression, attrs, &msgs);
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);
@@ -385,7 +322,7 @@ static void usage(void)
 		return 0;
 	}
 
-	do_edit(ldb, msgs, ret, editor);
+	do_edit(ldb, msgs, ret, options->editor);
 
 	if (ret > 0) {
 		ret = talloc_free(msgs);

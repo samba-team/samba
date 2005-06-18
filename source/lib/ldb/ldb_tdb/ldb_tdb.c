@@ -49,9 +49,9 @@
 */
 static int ltdb_case_fold_attr_required(void * user_data, char *attr)
 {
-    struct ldb_module *module = user_data;
+	struct ldb_module *module = talloc_get_type(user_data, struct ldb_module);
 
-    return ltdb_attribute_flags(module, attr) & LTDB_FLAG_CASE_INSENSITIVE;
+	return ltdb_attribute_flags(module, attr) & LTDB_FLAG_CASE_INSENSITIVE;
 }
 
 /*
@@ -746,6 +746,11 @@ static int ltdb_rename(struct ldb_module *module, const char *olddn, const char 
 		return -1;
 	}
 
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock(module, LDBLOCK);
+		return -1;
+	}
+
 	msg = talloc(module, struct ldb_message);
 	if (msg == NULL) {
 		goto failed;
@@ -829,28 +834,19 @@ static int ltdb_destructor(void *p)
 /*
   connect to the database
 */
-struct ldb_context *ltdb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[])
+int ltdb_connect(struct ldb_context *ldb, const char *url, 
+		 unsigned int flags, const char *options[])
 {
 	const char *path;
 	int tdb_flags, open_flags;
 	struct ltdb_private *ltdb;
 	TDB_CONTEXT *tdb;
-	struct ldb_context *ldb;
-
-	ldb = talloc_zero(NULL, struct ldb_context);
-	if (!ldb) {
-		errno = ENOMEM;
-		return NULL;
-	}
 
 	/* parse the url */
 	if (strchr(url, ':')) {
 		if (strncmp(url, "tdb://", 6) != 0) {
-			errno = EINVAL;
-			talloc_free(ldb);
-			return NULL;
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid tdb URL '%s'", url);
+			return -1;
 		}
 		path = url+6;
 	} else {
@@ -868,16 +864,15 @@ struct ldb_context *ltdb_connect(const char *url,
 	/* note that we use quite a large default hash size */
 	tdb = tdb_open(path, 10000, tdb_flags, open_flags, 0666);
 	if (!tdb) {
-		talloc_free(ldb);
-		return NULL;
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'", path);
+		return -1;
 	}
 
 	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
 		tdb_close(tdb);
-		talloc_free(ldb);
-		errno = ENOMEM;
-		return NULL;
+		ldb_oom(ldb);
+		return -1;
 	}
 
 	ltdb->tdb = tdb;
@@ -887,14 +882,14 @@ struct ldb_context *ltdb_connect(const char *url,
 
 	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
-		talloc_free(ldb);
-		errno = ENOMEM;
-		return NULL;
+		ldb_oom(ldb);
+		talloc_free(ltdb);
+		return -1;
 	}
 	ldb->modules->ldb = ldb;
 	ldb->modules->prev = ldb->modules->next = NULL;
 	ldb->modules->private_data = ltdb;
 	ldb->modules->ops = &ltdb_ops;
 
-	return ldb;
+	return 0;
 }

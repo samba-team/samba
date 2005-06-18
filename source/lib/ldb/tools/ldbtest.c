@@ -35,16 +35,15 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
 #include "system/time.h"
 #endif
 
-static const char *ldb_url;
-static const char *base_dn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
-
 static struct timeval tp1,tp2;
+static struct ldb_cmdline *options;
 
 static void _start_timer(void)
 {
@@ -69,51 +68,51 @@ static void add_records(struct ldb_context *ldb,
 		struct ldb_message_element el[6];
 		struct ldb_val vals[6][1];
 		char *name;
-		int j;
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 
 		asprintf(&name, "Test%d", i);
 
-		asprintf(&msg.dn, "cn=%s,%s", name, basedn);
+		msg.dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, basedn);
 		msg.num_elements = 6;
 		msg.elements = el;
 
 		el[0].flags = 0;
-		el[0].name = strdup("cn");
+		el[0].name = talloc_strdup(tmp_ctx, "cn");
 		el[0].num_values = 1;
 		el[0].values = vals[0];
 		vals[0][0].data = name;
 		vals[0][0].length = strlen(name);
 
 		el[1].flags = 0;
-		el[1].name = strdup("title");
+		el[1].name = talloc_strdup(tmp_ctx, "title");
 		el[1].num_values = 1;
 		el[1].values = vals[1];
-		asprintf((char **)&vals[1][0].data, "The title of %s", name);
+		vals[1][0].data = talloc_asprintf(tmp_ctx, "The title of %s", name);
 		vals[1][0].length = strlen(vals[1][0].data);
 
 		el[2].flags = 0;
-		el[2].name = strdup("uid");
+		el[2].name = talloc_strdup(tmp_ctx, "uid");
 		el[2].num_values = 1;
 		el[2].values = vals[2];
-		vals[2][0].data = ldb_casefold(ldb, name);
+		vals[2][0].data = ldb_casefold(tmp_ctx, name);
 		vals[2][0].length = strlen(vals[2][0].data);
 
 		el[3].flags = 0;
-		el[3].name = strdup("mail");
+		el[3].name = talloc_strdup(tmp_ctx, "mail");
 		el[3].num_values = 1;
 		el[3].values = vals[3];
-		asprintf((char **)&vals[3][0].data, "%s@example.com", name);
+		vals[3][0].data = talloc_asprintf(tmp_ctx, "%s@example.com", name);
 		vals[3][0].length = strlen(vals[3][0].data);
 
 		el[4].flags = 0;
-		el[4].name = strdup("objectClass");
+		el[4].name = talloc_strdup(tmp_ctx, "objectClass");
 		el[4].num_values = 1;
 		el[4].values = vals[4];
-		vals[4][0].data = strdup("OpenLDAPperson");
+		vals[4][0].data = talloc_strdup(tmp_ctx, "OpenLDAPperson");
 		vals[4][0].length = strlen(vals[4][0].data);
 
 		el[5].flags = 0;
-		el[5].name = strdup("sn");
+		el[5].name = talloc_strdup(tmp_ctx, "sn");
 		el[5].num_values = 1;
 		el[5].values = vals[5];
 		vals[5][0].data = name;
@@ -129,15 +128,7 @@ static void add_records(struct ldb_context *ldb,
 		printf("adding uid %s\r", name);
 		fflush(stdout);
 
-		for (j=0;j<msg.num_elements;j++) {
-			free(el[j].name);
-		}
-		free(name);
-		free(msg.dn);
-		free(vals[1][0].data);
-		talloc_free(vals[2][0].data);
-		free(vals[3][0].data);
-		free(vals[4][0].data);
+		talloc_free(tmp_ctx);
 	}
 
 	printf("\n");
@@ -154,30 +145,30 @@ static void modify_records(struct ldb_context *ldb,
 		struct ldb_message_element el[3];
 		struct ldb_val vals[3];
 		char *name;
-		int j;
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 		
-		asprintf(&name, "Test%d", i);
-		asprintf(&msg.dn, "cn=%s,%s", name, basedn);
+		name = talloc_asprintf(tmp_ctx, "Test%d", i);
+		msg.dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, basedn);
 
 		msg.num_elements = 3;
 		msg.elements = el;
 
 		el[0].flags = LDB_FLAG_MOD_DELETE;
-		el[0].name = strdup("mail");
+		el[0].name = talloc_strdup(tmp_ctx, "mail");
 		el[0].num_values = 0;
 
 		el[1].flags = LDB_FLAG_MOD_ADD;
-		el[1].name = strdup("mail");
+		el[1].name = talloc_strdup(tmp_ctx, "mail");
 		el[1].num_values = 1;
 		el[1].values = &vals[1];
-		asprintf((char **)&vals[1].data, "%s@other.example.com", name);
+		vals[1].data = talloc_asprintf(tmp_ctx, "%s@other.example.com", name);
 		vals[1].length = strlen(vals[1].data);
 
 		el[2].flags = LDB_FLAG_MOD_REPLACE;
-		el[2].name = strdup("mail");
+		el[2].name = talloc_strdup(tmp_ctx, "mail");
 		el[2].num_values = 1;
 		el[2].values = &vals[2];
-		asprintf((char **)&vals[2].data, "%s@other2.example.com", name);
+		vals[2].data = talloc_asprintf(tmp_ctx, "%s@other2.example.com", name);
 		vals[2].length = strlen(vals[2].data);
 
 		if (ldb_modify(ldb, &msg) != 0) {
@@ -188,13 +179,7 @@ static void modify_records(struct ldb_context *ldb,
 		printf("Modifying uid %s\r", name);
 		fflush(stdout);
 
-		for (j=0;j<msg.num_elements;j++) {
-			free(el[j].name);
-		}
-		free(name);
-		free(msg.dn);
-		free(vals[1].data);
-		free(vals[2].data);
+		talloc_free(tmp_ctx);
 	}
 
 	printf("\n");
@@ -235,7 +220,7 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 		int ret;
 
 		asprintf(&expr, "(uid=TEST%d)", uid);
-		ret = ldb_search(ldb, base_dn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+		ret = ldb_search(ldb, options->basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 
 		if (uid < nrecords && ret != 1) {
 			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
@@ -263,7 +248,7 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 {
 	printf("Adding %d records\n", nrecords);
-	add_records(ldb, base_dn, nrecords);
+	add_records(ldb, options->basedn, nrecords);
 
 	printf("Starting search on uid\n");
 	_start_timer();
@@ -271,10 +256,10 @@ static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 	printf("uid search took %.2f seconds\n", _end_timer());
 
 	printf("Modifying records\n");
-	modify_records(ldb, base_dn, nrecords);
+	modify_records(ldb, options->basedn, nrecords);
 
 	printf("Deleting records\n");
-	delete_records(ldb, base_dn, nrecords);
+	delete_records(ldb, options->basedn, nrecords);
 }
 
 
@@ -312,7 +297,7 @@ static void start_test_index(struct ldb_context **ldb)
 	}
 
 	memset(msg, 0, sizeof(*msg));
-	asprintf(&msg->dn, "cn=%s,%s", "test", base_dn);
+	asprintf(&msg->dn, "cn=%s,%s", "test", options->basedn);
 	ldb_msg_add_string(*ldb, msg, "cn", strdup("test"));
 	ldb_msg_add_string(*ldb, msg, "sn", strdup("test"));
 	ldb_msg_add_string(*ldb, msg, "uid", strdup("test"));
@@ -328,14 +313,15 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	*ldb = ldb_connect(ldb_url, 0, NULL);
-
-	if (!*ldb) {
-		perror("ldb_connect");
+	(*ldb) = ldb_init(options);
+	
+	ret = ldb_connect(*ldb, options->url, 0, NULL);
+	if (ret != 0) {
+		printf("failed to connect to %s\n", options->url);
 		exit(1);
 	}
 
-	ret = ldb_search(*ldb, base_dn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
+	ret = ldb_search(*ldb, options->basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
 	if (ret != 1) {
 		printf("Should have found 1 record - found %d\n", ret);
 		exit(1);
@@ -363,71 +349,37 @@ static void usage(void)
 	exit(1);
 }
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_context *ldb;
-	const char **options = NULL;
-	int ldbopts;
-	int opt;
-	int nrecords = 5000;
-	int nsearches = 2000;
+	int ret;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(mem_ctx);
 
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "hH:r:s:b:o:")) != EOF) {
-		switch (opt) {
-		case 'H':
-			ldb_url = optarg;
-			break;
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-		case 'r':
-			nrecords = atoi(optarg);
-			break;
+	talloc_steal(mem_ctx, options);
 
-		case 'b':
-			base_dn = optarg;
-			break;
-
-		case 's':
-			nsearches = atoi(optarg);
-			break;
-
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
+	if (options->basedn == NULL) {
+		options->basedn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 	}
 
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	ldb = ldb_connect(ldb_url, 0, options);
-
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, 0, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
 	srandom(1);
 
-	start_test(ldb, nrecords, nsearches);
+	start_test(ldb, options->num_records, options->num_searches);
 
 	start_test_index(&ldb);
 
-	talloc_free(ldb);
+	talloc_free(mem_ctx);
 
 	return 0;
 }

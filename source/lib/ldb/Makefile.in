@@ -39,7 +39,7 @@ endif
 
 CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
 
-LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS)
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS) @LIBS@
 
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
 TALLOC_OBJ=$(TALLOCDIR)/talloc.o
@@ -49,7 +49,7 @@ LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_cache.o
 
 
-COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_debug.o common/ldb_modules.o \
 	   common/ldb_explode_dn.o
@@ -80,26 +80,26 @@ bin:
 
 lib/libldb.a: $(OBJS)
 
-bin/ldbadd: tools/ldbadd.o $(LIBS)
-	$(CC) -o bin/ldbadd tools/ldbadd.o $(LIB_FLAGS)
+bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbsearch: tools/ldbsearch.o $(LIBS)
-	$(CC) -o bin/ldbsearch tools/ldbsearch.o $(LIB_FLAGS)
+bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbdel: tools/ldbdel.o $(LIBS)
-	$(CC) -o bin/ldbdel tools/ldbdel.o $(LIB_FLAGS)
+bin/ldbdel: tools/ldbdel.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbmodify: tools/ldbmodify.o $(LIBS)
-	$(CC) -o bin/ldbmodify tools/ldbmodify.o $(LIB_FLAGS)
+bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbedit: tools/ldbedit.o $(LIBS)
-	$(CC) -o bin/ldbedit tools/ldbedit.o $(LIB_FLAGS)
+bin/ldbedit: tools/ldbedit.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbrename: tools/ldbrename.o $(LIBS)
-	$(CC) -o bin/ldbrename tools/ldbrename.o $(LIB_FLAGS)
+bin/ldbrename: tools/ldbrename.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o $(LIB_FLAGS)
 
-bin/ldbtest: tools/ldbtest.o $(LIBS)
-	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
+bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS)
 
 .SUFFIXES: .1 .2 .3 .yo
 
@@ -126,7 +126,7 @@ distclean:	clean
 etags:
 	etags */*.[ch]
 
-test-tdb:
+test-tdb: $(BINS)
 	@echo "STARTING TDB BACKEND TEST"
 	tests/test-tdb.sh
 

@@ -184,6 +184,10 @@ struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
 char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
 char *ldb_binary_encode(void *ctx, struct ldb_val val);
 
+/*
+  initialise a ldb context
+*/
+struct ldb_context *ldb_init(void *mem_ctx);
 
 /* 
  connect to a database. The URL can either be one of the following forms
@@ -195,8 +199,7 @@ char *ldb_binary_encode(void *ctx, struct ldb_val val);
    the options are passed uninterpreted to the backend, and are
    backend specific
 */
-struct ldb_context *ldb_connect(const char *url, unsigned int flags,
-				const char *options[]);
+int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[]);
 
 /*
   search the database given a LDAP-like search expression

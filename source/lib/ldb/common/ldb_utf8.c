@@ -135,7 +135,7 @@ char *ldb_dn_fold(void * mem_ctx,
 		}
 		if (*value == 0) goto failed;
 
-		case_fold_required = (* case_fold_attr_fn)(user_data, attr);
+		case_fold_required = case_fold_attr_fn(user_data, attr);
 
 		attr = ldb_casefold(tmp_ctx, attr);
 		if (attr == NULL) goto failed;

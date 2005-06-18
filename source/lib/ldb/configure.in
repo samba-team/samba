@@ -23,6 +23,9 @@ AC_PATH_PROG(XSLTPROC,xsltproc)
 AC_PATH_PROG(GCOV,gcov)
 AC_CHECK_HEADERS(stdint.h)
 AC_CONFIG_HEADER(include/config.h)
+
+AC_CHECK_LIB(popt, poptGetContext)
+
 sinclude(ldap.m4)
 WITH_LDAP=$with_ldap_support
 AC_SUBST(WITH_LDAP)

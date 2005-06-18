@@ -1,8 +1,10 @@
 #!/bin/sh
 
+echo "Running extended search tests"
+
 rm -f $LDB_URL
 
-cat <<EOF | bin/ldbadd - || exit 1
+cat <<EOF | bin/ldbadd || exit 1
 dn: testrec1
 i1: 1
 i2: 0

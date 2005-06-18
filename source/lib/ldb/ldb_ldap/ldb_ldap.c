@@ -37,36 +37,6 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_ldap/ldb_ldap.h"
 
-#if 0
-/*
-  we don't need this right now, but will once we add some backend 
-  options
-*/
-
-/*
-  find an option in an option list (a null terminated list of strings)
-
-  this assumes the list is short. If it ever gets long then we really
-  should do this in some smarter way
- */
-static const char *lldb_option_find(const struct lldb_private *lldb, const char *name)
-{
-	int i;
-	size_t len = strlen(name);
-
-	if (!lldb->options) return NULL;
-
-	for (i=0;lldb->options[i];i++) {		
-		if (strncmp(lldb->options[i], name, len) == 0 &&
-		    lldb->options[i][len] == '=') {
-			return &lldb->options[i][len+1];
-		}
-	}
-
-	return NULL;
-}
-#endif
-
 /*
   rename a record
 */
@@ -494,25 +464,17 @@ static int lldb_destructor(void *p)
 /*
   connect to the database
 */
-struct ldb_context *lldb_connect(const char *url, 
-				 unsigned int flags, 
-				 const char *options[])
+int lldb_connect(struct ldb_context *ldb,
+		 const char *url, 
+		 unsigned int flags, 
+		 const char *options[])
 {
-	struct ldb_context *ldb = NULL;
 	struct lldb_private *lldb = NULL;
-	int i, version = 3;
-
-	ldb = talloc(NULL, struct ldb_context);
-	if (!ldb) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	ldb->debug_ops.debug = NULL;
+	int version = 3;
 
 	lldb = talloc(ldb, struct lldb_private);
 	if (!lldb) {
-		errno = ENOMEM;
+		ldb_oom(ldb);
 		goto failed;
 	}
 
@@ -521,6 +483,8 @@ struct ldb_context *lldb_connect(const char *url,
 
 	lldb->last_rc = ldap_initialize(&lldb->ldap, url);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_initialize failed for URL '%s' - %s\n",
+			  url, ldap_err2string(lldb->last_rc));
 		goto failed;
 	}
 
@@ -528,12 +492,13 @@ struct ldb_context *lldb_connect(const char *url,
 
 	lldb->last_rc = ldap_set_option(lldb->ldap, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (lldb->last_rc != LDAP_SUCCESS) {
-		goto failed;
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_set_option failed - %s\n",
+			  ldap_err2string(lldb->last_rc));
 	}
 
 	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
-		errno = ENOMEM;
+		ldb_oom(ldb);
 		goto failed;
 	}
 	ldb->modules->ldb = ldb;
@@ -541,29 +506,10 @@ struct ldb_context *lldb_connect(const char *url,
 	ldb->modules->private_data = lldb;
 	ldb->modules->ops = &lldb_ops;
 
-	if (options) {
-		/* take a copy of the options array, so we don't have to rely
-		   on the caller keeping it around (it might be dynamic) */
-		for (i=0;options[i];i++) ;
-
-		lldb->options = talloc_array(lldb, char *, i+1);
-		if (!lldb->options) {
-			goto failed;
-		}
-		
-		for (i=0;options[i];i++) {
-			lldb->options[i+1] = NULL;
-			lldb->options[i] = talloc_strdup(lldb->options, options[i]);
-			if (!lldb->options[i]) {
-				goto failed;
-			}
-		}
-	}
-
-	return ldb;
+	return 0;
 
 failed:
-	talloc_free(ldb);
-	return NULL;
+	talloc_free(lldb);
+	return -1;
 }
 

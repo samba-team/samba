@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
@@ -113,93 +114,45 @@ static int do_search(struct ldb_context *ldb,
 	return 0;
 }
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	const char * const * attrs = NULL;
-	const char *ldb_url;
-	const char *basedn = NULL;
-	const char **options = NULL;
-	int opt, ldbopts;
-	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	int interactive = 0, sort_attribs=0, ret=0;
+	struct ldb_cmdline *options;
+	int ret;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(NULL);
 
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "b:H:s:o:hiS")) != EOF) {
-		switch (opt) {
-		case 'b':
-			basedn = optarg;
-			break;
-
-		case 'H':
-			ldb_url = optarg;
-			break;
-
-		case 's':
-			if (strcmp(optarg, "base") == 0) {
-				scope = LDB_SCOPE_BASE;
-			} else if (strcmp(optarg, "sub") == 0) {
-				scope = LDB_SCOPE_SUBTREE;
-			} else if (strcmp(optarg, "one") == 0) {
-				scope = LDB_SCOPE_ONELEVEL;
-			}
-			break;
-
-		case 'i':
-			interactive = 1;
-			break;
-
-                case 'S':
-                        sort_attribs = 1;
-                        break;
-
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc < 1 && !interactive) {
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
+	
+	if (options->argc < 1 && !options->interactive) {
 		usage();
 		exit(1);
 	}
 
-	if (argc > 1) {
-		attrs = (const char * const *)(argv+1);
+	if (options->argc > 1) {
+		attrs = (const char * const *)(options->argv+1);
 	}
 
-	ldb = ldb_connect(ldb_url, LDB_FLG_RDONLY, options);
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, LDB_FLG_RDONLY, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
-	if (interactive) {
+	if (options->interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {
-			if (do_search(ldb, basedn, scope, sort_attribs, line, attrs) == -1) {
+			if (do_search(ldb, options->basedn, 
+				      options->scope, options->sorted, line, attrs) == -1) {
 				ret = -1;
 			}
 		}
 	} else {
-		ret = do_search(ldb, basedn, scope, sort_attribs, argv[0], attrs);
+		ret = do_search(ldb, options->basedn, options->scope, options->sorted, 
+				options->argv[0], attrs);
 	}
 
 	talloc_free(ldb);
