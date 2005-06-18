@@ -29,6 +29,10 @@ lmPwdHash: HIDDEN
 lmPwdHistory: HIDDEN
 createTimestamp: HIDDEN
 modifyTimestamp: HIDDEN
+groupType: INTEGER
+sAMAccountType: INTEGER
+systemFlags: INTEGER
+userAccountControl: INTEGER
 
 dn: @SUBCLASSES
 top: domain
