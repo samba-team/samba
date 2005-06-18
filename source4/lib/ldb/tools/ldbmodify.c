@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
@@ -88,66 +89,40 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	return count;
 }
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int count=0;
-	const char *ldb_url;
-	const char **options = NULL;
-	int ldbopts;
-	int opt, i;
+	int i, ret;
+	struct ldb_cmdline *options;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(NULL);
 
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "hH:o:")) != EOF) {
-		switch (opt) {
-		case 'H':
-			ldb_url = optarg;
-			break;
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	ldb = ldb_connect(ldb_url, 0, options);
-
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, 0, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
-	if (argc == 0) {
+	if (options->argc == 0) {
 		usage();
 		exit(1);
 	}
 
-	for (i=0;i<argc;i++) {
+	for (i=0;i<options->argc;i++) {
+		const char *fname = options->argv[i];
 		FILE *f;
-		if (strcmp(argv[i],"-") == 0) {
+		if (strcmp(fname,"-") == 0) {
 			f = stdin;
 		} else {
-			f = fopen(argv[i], "r");
+			f = fopen(fname, "r");
 		}
 		if (!f) {
-			perror(argv[i]);
+			perror(fname);
 			exit(1);
 		}
 		count += process_file(ldb, f);

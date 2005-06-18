@@ -216,20 +216,15 @@ static const struct ldb_module_ops lsqlite3_ops = {
 /*
  * connect to the database
  */
-struct ldb_context *
-lsqlite3_connect(const char *url, 
-                 unsigned int flags, 
-                 const char *options[])
+int lsqlite3_connect(struct ldb_context *ldb,
+		     const char *url, 
+		     unsigned int flags, 
+		     const char *options[])
 {
 	int                         i;
         int                         ret;
 	struct ldb_context *        ldb = NULL;
 	struct lsqlite3_private *   lsqlite3 = NULL;
-        
-	ldb = talloc(NULL, struct ldb_context);
-	if (!ldb) {
-		goto failed;
-	}
         
 	lsqlite3 = talloc(ldb, struct lsqlite3_private);
 	if (!lsqlite3) {
@@ -279,14 +274,14 @@ lsqlite3_connect(const char *url,
 		}
 	}
         
-	return ldb;
+	return 0;
         
 failed:
         if (lsqlite3->sqlite != NULL) {
                 (void) sqlite3_close(lsqlite3->sqlite);
         }
-	talloc_free(ldb);
-	return NULL;
+	talloc_free(lsqlite3);
+	return -1;
 }
 
 
@@ -1204,7 +1199,9 @@ destructor(void *p)
 {
 	struct lsqlite3_private *   lsqlite3 = p;
         
-        (void) sqlite3_close(lsqlite3->sqlite);
+	if (lsqlite3->sqlite) {
+		sqlite3_close(lsqlite3->sqlite);
+	}
 	return 0;
 }
 

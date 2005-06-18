@@ -37,6 +37,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
@@ -55,61 +56,38 @@ static void usage(void)
 }
 
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	const char *ldb_url;
-	const char **options = NULL;
-	int ldbopts;
-	int opt, ret;
+	int ret;
+	struct ldb_cmdline *options;
+	const char *dn1, *dn2;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(NULL);
 
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "hH:o:")) != EOF) {
-		switch (opt) {
-		case 'H':
-			ldb_url = optarg;
-			break;
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	ldb = ldb_connect(ldb_url, 0, options);
-
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, 0, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
-	if (argc < 2) {
+	if (options->argc < 2) {
 		usage();
 	}
 
-	ret = ldb_rename(ldb, argv[0], argv[1]);
+	dn1 = options->argv[0];
+	dn2 = options->argv[1];
+
+	ret = ldb_rename(ldb, dn1, dn2);
 	if (ret == 0) {
 		printf("Renamed 1 record\n");
 	} else  {
 		printf("rename of '%s' to '%s' failed - %s\n", 
-			argv[0], argv[1], ldb_errstring(ldb));
+			dn1, dn2, ldb_errstring(ldb));
 	}
 
 	talloc_free(ldb);

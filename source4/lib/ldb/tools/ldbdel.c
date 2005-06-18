@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/tools/cmdline.h"
 
 #ifdef _SAMBA_BUILD_
 #include "system/filesys.h"
@@ -77,72 +78,41 @@ static void usage(void)
 	exit(1);
 }
 
- int main(int argc, char * const argv[])
+ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	const char **options = NULL;
-	int ldbopts;
 	int ret, i;
-	const char *ldb_url;
-	int opt, recursive=0;
+	struct ldb_cmdline *options;
 
-	ldb_url = getenv("LDB_URL");
+	ldb = ldb_init(NULL);
 
-	ldbopts = 0;
-	while ((opt = getopt(argc, argv, "hH:ro:")) != EOF) {
-		switch (opt) {
-		case 'H':
-			ldb_url = optarg;
-			break;
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-		case 'r':
-			recursive=1;
-			break;
-
-		case 'o':
-			options = ldb_options_parse(options, &ldbopts, optarg);
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc < 1) {
+	if (options->argc < 1) {
 		usage();
 		exit(1);
 	}
 
-	ldb = ldb_connect(ldb_url, 0, options);
-	if (!ldb) {
-		perror("ldb_connect");
+	ret = ldb_connect(ldb, options->url, 0, options->options);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			options->url, ldb_errstring(ldb));
+		talloc_free(ldb);
 		exit(1);
 	}
 
-	ldb_set_debug_stderr(ldb);
-
-	for (i=0;i<argc;i++) {
-		if (recursive) {
-			ret = ldb_delete_recursive(ldb, argv[i]);
+	for (i=0;i<options->argc;i++) {
+		const char *dn = options->argv[i];
+		if (options->recursive) {
+			ret = ldb_delete_recursive(ldb, dn);
 		} else {
-			ret = ldb_delete(ldb, argv[i]);
+			ret = ldb_delete(ldb, dn);
 			if (ret == 0) {
 				printf("Deleted 1 record\n");
 			}
 		}
 		if (ret != 0) {
-			printf("delete of '%s' failed - %s\n", 
-			       argv[i], ldb_errstring(ldb));
+			printf("delete of '%s' failed - %s\n", dn, ldb_errstring(ldb));
 		}
 	}
 
