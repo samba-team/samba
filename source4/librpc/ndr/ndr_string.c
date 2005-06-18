@@ -618,17 +618,16 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, char **var, uint3
 
 NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
 {
-	int ret;
+	ssize_t ret;
 	NDR_PUSH_NEED_BYTES(ndr, byte_mul*length);
 	ret = convert_string(CH_UNIX, chset, 
 			     var, length,
-			     ndr->data+ndr->offset, 
-			     byte_mul*length);
+			     ndr->data+ndr->offset, byte_mul*length);
 	if (ret == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}
-	ndr->offset += byte_mul*length;
+	ndr->offset += ret;
 
 	return NT_STATUS_OK;
 }

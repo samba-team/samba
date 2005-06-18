@@ -278,39 +278,6 @@ sub deindent()
 	$tabs = substr($tabs, 0, -1);
 }
 
-####################################################################
-# work out the name of a size_is() variable
-sub ParseExpr($$)
-{
-	my($orig_expr) = shift;
-	my $varlist = shift;
-
-	die("Undefined value in ParseExpr") if not defined($orig_expr);
-
-	my $expr = $orig_expr;
-
-	return $expr if (util::is_constant($expr));
-
-	my $prefix = "";
-	my $postfix = "";
-
-	if ($expr =~ /\*(.*)/) {
-		$expr = $1;
-		$prefix = "*";
-	}
-
-	if ($expr =~ /^(.*)([\&\|\/+])(.*)$/) {
-		$postfix = $2.$3;
-		$expr = $1;
-	}
-
-	if (defined($varlist->{$expr})) {
-		return $prefix.$varlist->{$expr}.$postfix;
-	}
-
-	return $prefix.$expr.$postfix;
-}
-
 #####################################################################
 # check that a variable we get from ParseExpr isn't a null pointer
 sub check_null_pointer($)
@@ -431,7 +398,7 @@ sub compression_clen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return ParseExpr($clen, $env);
+	return util::ParseExpr($clen, $env);
 }
 
 sub compression_dlen($$$)
@@ -442,7 +409,7 @@ sub compression_dlen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return ParseExpr($dlen, $env);
+	return util::ParseExpr($dlen, $env);
 }
 
 sub ParseCompressionStart($$$$)
@@ -559,7 +526,7 @@ sub ParseSwitch($$$$$$)
 	my($var_name) = shift;
 	my($ndr_flags) = shift;
 	my $env = shift;
-	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
 
@@ -683,7 +650,7 @@ sub ParseElementLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
@@ -968,7 +935,7 @@ sub ParseArrayHeader($$$$$)
 
 	# $var_name contains the name of the first argument here
 
-	my $length = ParseExpr($l->{SIZE_IS}, $env);
+	my $length = util::ParseExpr($l->{SIZE_IS}, $env);
 	my $size = $length;
 
 	if ($l->{IS_CONFORMANT}) {
@@ -998,13 +965,13 @@ sub ParseArrayHeader($$$$$)
 	}
 
 	if ($l->{IS_CONFORMANT}) {
-		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		my $size = util::ParseExpr($l->{SIZE_IS}, $env);
 		check_null_pointer($size);
 		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 	}
 
 	if ($l->{IS_VARYING}) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
 		check_null_pointer($length);
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 	}
