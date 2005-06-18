@@ -340,7 +340,11 @@ static int ildb_unlock(struct ldb_module *module, const char *lockname)
 */
 static const char *ildb_errstring(struct ldb_module *module)
 {
-	struct ildb_private *ildb = module->private_data;
+	struct ildb_private *ildb = talloc_get_type(module->private_data, 
+						    struct ildb_private);
+	if (ildb == NULL) {
+		return "ildap not connected";
+	}
 	return ldap_errstr(ildb->ldap, ildb->last_rc);
 }
 
@@ -427,6 +431,9 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	return 0;
 
 failed:
+	if (ldb->modules) {
+		ldb->modules->private_data = NULL;
+	}
 	talloc_free(ildb);
 	return -1;
 }

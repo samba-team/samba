@@ -270,7 +270,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	struct ldapsrv_reply *ent_r, *done_r;
 	struct ldb_context *ldb;
 	const char *errstr = NULL;
-	int count, j, y;
+	int count, j;
 	const char **attrs = NULL;
 
 	if (r->scope != LDAP_SEARCH_SCOPE_BASE) {

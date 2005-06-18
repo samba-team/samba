@@ -93,7 +93,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 {
 	struct ldb_context *ldb;
 	int count=0;
-	int i, ret;
+	int i;
 	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL);
