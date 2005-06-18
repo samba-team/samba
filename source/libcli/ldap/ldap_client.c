@@ -549,7 +549,9 @@ NTSTATUS ldap_check_response(struct ldap_connection *conn, struct ldap_Result *r
 	}
 	conn->last_error = talloc_asprintf(conn, "LDAP error %u - %s <%s> <%s>", 
 					   r->resultcode,
-					   r->dn, r->errormessage, r->referral);
+					   r->dn?r->dn:"(NULL)", 
+					   r->errormessage?r->errormessage:"", 
+					   r->referral?r->referral:"");
 	
 	return NT_STATUS_LDAP(r->resultcode);
 }
