@@ -529,7 +529,7 @@ sub ParseElementPushLevel
 				my $nl = Ndr::GetNextLevel($e, $l);
 
 				if (util::has_property($e, "charset")) {
-					pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), $e->{PROPERTIES}->{charset}));";
+					pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				} else {
 					pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 				} 
@@ -831,7 +831,7 @@ sub ParseElementPullLevel
 				my $nl = Ndr::GetNextLevel($e, $l);
 
 				if (util::has_property($e, "charset")) {
-					pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), $e->{PROPERTIES}->{charset}));";
+					pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				} else {
 					pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 					if ($l->{IS_ZERO_TERMINATED}) {
