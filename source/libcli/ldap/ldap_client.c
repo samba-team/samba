@@ -156,6 +156,8 @@ static void ldap_try_decode_plain(struct ldap_connection *conn)
 	/* try and decode - this will fail if we don't have a full packet yet */
 	while (asn1.ofs < asn1.length) {
 		struct ldap_message *msg = talloc(conn, struct ldap_message);
+		off_t saved_ofs = asn1.ofs;
+			
 		if (msg == NULL) {
 			ldap_connection_dead(conn);
 			return;
@@ -164,6 +166,7 @@ static void ldap_try_decode_plain(struct ldap_connection *conn)
 		if (ldap_decode(&asn1, msg)) {
 			ldap_match_message(conn, msg);
 		} else {
+			asn1.ofs = saved_ofs;
 			talloc_free(msg);
 			break;
 		}
