@@ -243,8 +243,7 @@ static void ldap_recv_handler(struct ldap_connection *conn)
 	/* work out how much data is pending */
 	status = socket_pending(conn->sock, &npending);
 	if (!NT_STATUS_IS_OK(status) || npending == 0) {
-		DEBUG(0,("ldap_recv_handler - pending=%d - %s\n", 
-			 (int)npending, nt_errstr(status)));
+		ldap_connection_dead(conn);
 		return;
 	}
 
