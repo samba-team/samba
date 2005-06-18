@@ -10,6 +10,12 @@ package Ndr;
 use strict;
 use pidl::typelist;
 
+sub nonfatal($$)
+{
+	my ($e,$s) = @_;
+	warn ("$e->{FILE}:$e->{LINE}: Warning: $s\n");
+}
+
 #####################################################################
 # return a table describing the order in which the parts of an element
 # should be parsed
@@ -171,6 +177,19 @@ sub GetElementLevelTable($)
 			IS_DEFERRED => $is_deferred
 		});
 	}
+
+	if (scalar(@size_is) > 0) {
+		nonfatal($e, "size_is() on non-array element");
+	}
+
+	if (scalar(@length_is) > 0) {
+		nonfatal($e, "length_is() on non-array element");
+	}
+
+	if (util::has_property($e, "string")) {
+		nonfatal($e, "string() attribute on non-array element");
+	}
+
 
 	push (@$order, {
 		TYPE => "DATA",
