@@ -11,10 +11,10 @@ ADD_OBJ_FILES = \
 		libnet/libnet_vampire.o \
 		libnet/libnet_user.o \
 		libnet/libnet_share.o \
+		libnet/libnet_lookup.o \
 		libnet/userinfo.o \
 		libnet/userman.o \
-		libnet/domain.o \
-		libnet/lookup.o
+		libnet/domain.o 
 
 REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_SRVSVC LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBSAMBA3
 # End SUBSYSTEM LIBNET
