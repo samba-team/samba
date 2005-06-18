@@ -63,6 +63,9 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/* ensure we don't get SIGPIPE */
+	BlockSignals(True,SIGPIPE);
+
 	return sock;
 }
 
