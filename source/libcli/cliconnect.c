@@ -183,14 +183,6 @@ struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 	return cli;
 }
 
-/****************************************************************************
- Shutdown a client structure.
-****************************************************************************/
-void smbcli_shutdown(struct smbcli_state *cli)
-{
-	talloc_free(cli);
-}
-
 /*
   parse a //server/share type UNC name
 */

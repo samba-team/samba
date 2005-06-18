@@ -196,7 +196,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 				smbcli_close(cli[server][conn], fnum[server][fstype][conn][f]);
 			}
 			smbcli_ulogoff(cli[server][conn]);
-			smbcli_shutdown(cli[server][conn]);
+			talloc_free(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server]);
 		if (!cli[server][conn]) {

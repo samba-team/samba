@@ -151,7 +151,7 @@ static struct smbcli_state *do_connection(char *the_service)
 	    !smbcli_connect(c, server_n, &ip)) {
 		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {
-			smbcli_shutdown(c);
+			talloc_free(c);
 		}
 		return NULL;
 	}
@@ -170,7 +170,7 @@ static struct smbcli_state *do_connection(char *the_service)
 		char *p;
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
 			 sys_getpid(), called.name, smbcli_errstr(c)));
-		smbcli_shutdown(c);
+		talloc_free(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -186,7 +186,7 @@ static struct smbcli_state *do_connection(char *the_service)
 
 	if (!smbcli_negprot(c)) {
 		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
-		smbcli_shutdown(c);
+		talloc_free(c);
 		return NULL;
 	}
 
@@ -220,7 +220,7 @@ static struct smbcli_state *do_connection(char *the_service)
 				!smbcli_session_setup(c, "", "", 0, "", 0, workgroup)) {
 			DEBUG(0,("%d: session setup failed: %s\n",
 				sys_getpid(), smbcli_errstr(c)));
-			smbcli_shutdown(c);
+			talloc_free(c);
 			return NULL;
 		}
 		DEBUG(0,("Anonymous login successful\n"));
@@ -231,7 +231,7 @@ static struct smbcli_state *do_connection(char *the_service)
 	if (!smbcli_tconX(c, share, "?????", password, strlen(password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
 			 sys_getpid(), smbcli_errstr(c)));
-		smbcli_shutdown(c);
+		talloc_free(c);
 		return NULL;
 	}
 
@@ -379,7 +379,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct smbcli_s
 
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
-		smbcli_shutdown(c);
+		talloc_free(c);
 		c = NULL;
 
 		if (!closed) {
