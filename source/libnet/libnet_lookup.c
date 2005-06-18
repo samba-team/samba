@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "lib/events/events.h"
+#include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
 #include "libcli/composite/monitor.h"
 #include "libnet/composite.h"
@@ -38,7 +39,7 @@ struct lookup_state {
 };
 
 
-struct composite_context *libnet_Lookup_send(struct libnet_lookup *io)
+struct composite_context *libnet_Lookup_send(struct libnet_Lookup *io)
 {
 	struct composite_context *c;
 	struct lookup_state *s;
@@ -76,7 +77,7 @@ failed:
 
 
 NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-			    struct libnet_lookup *io)
+			    struct libnet_Lookup *io)
 {
 	NTSTATUS status;
 	struct lookup_state *s;
@@ -88,7 +89,7 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS libnet_Lookup(TALLOC_CTX *mem_ctx, struct libnet_lookup *io)
+NTSTATUS libnet_Lookup(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
 {
 	struct composite_context *c = libnet_Lookup_send(io);
 	return libnet_Lookup_recv(c, mem_ctx, io);
