@@ -37,6 +37,16 @@
 #include "ldb/include/ldb_private.h"
 
 /* 
+   initialise a ldb context
+   The mem_ctx is optional
+*/
+struct ldb_context *ldb_init(void *mem_ctx)
+{
+	struct ldb_context *ldb = talloc_zero(mem_ctx, struct ldb_context);
+	return ldb;
+}
+
+/* 
  connect to a database. The URL can either be one of the following forms
    ldb://path
    ldapi://path
@@ -46,45 +56,45 @@
    the options are passed uninterpreted to the backend, and are
    backend specific
 */
-struct ldb_context *ldb_connect(const char *url, unsigned int flags,
-				const char *options[])
+int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, const char *options[])
 {
-	struct ldb_context *ldb_ctx = NULL;
+	int ret;
 
 	if (strncmp(url, "tdb:", 4) == 0 ||
 	    strchr(url, ':') == NULL) {
-		ldb_ctx = ltdb_connect(url, flags, options);
+		ret = ltdb_connect(ldb, url, flags, options);
 	}
 
 #if HAVE_ILDAP
-	if (strncmp(url, "ldap", 4) == 0) {
-		ldb_ctx = ildb_connect(url, flags, options);
+	else if (strncmp(url, "ldap", 4) == 0) {
+		ret = ildb_connect(ldb, url, flags, options);
 	}
 #elif HAVE_LDAP
-	if (strncmp(url, "ldap", 4) == 0) {
-		ldb_ctx = lldb_connect(url, flags, options);
+	else if (strncmp(url, "ldap", 4) == 0) {
+		ret = lldb_connect(ldb, url, flags, options);
 	}
 #endif
-
 #if HAVE_SQLITE3
-	if (strncmp(url, "sqlite:", 7) == 0) {
+	else if (strncmp(url, "sqlite:", 7) == 0) {
 		ldb_ctx = lsqlite3_connect(url, flags, options);
 	}
 #endif
-
-
-	if (!ldb_ctx) {
-		errno = EINVAL;
-		return NULL;
+	else {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'", url);
+		return -1;
 	}
 
-	if (ldb_load_modules(ldb_ctx, options) != 0) {
-		talloc_free(ldb_ctx);
-		errno = EINVAL;
-		return NULL;
+	if (ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'", url);
+		return ret;
 	}
 
-	return ldb_ctx;
+	if (ldb_load_modules(ldb, options) != 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'", url);
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
