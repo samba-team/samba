@@ -164,7 +164,7 @@ static BOOL connect_servers(void)
 		for (j=0;j<NINSTANCES;j++) {
 			if (servers[i].cli[j]) {
 				smbcli_tdis(servers[i].cli[j]);
-				smbcli_shutdown(servers[i].cli[j]);
+				talloc_free(servers[i].cli[j]);
 				servers[i].cli[j] = NULL;
 			}
 		}

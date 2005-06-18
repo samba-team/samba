@@ -78,7 +78,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	if (!connected_ok) {
 		release_server_mutex();
 		DEBUG(0,("password server not available\n"));
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return NULL;
 	}
 	
@@ -86,7 +86,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 					     desthost, &dest_ip)) {
 		release_server_mutex();
 		DEBUG(1,("password server fails session request\n"));
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return NULL;
 	}
 	
@@ -99,7 +99,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	if (!smbcli_negprot(cli)) {
 		DEBUG(1,("%s rejected the negprot\n",desthost));
 		release_server_mutex();
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return NULL;
 	}
 
@@ -107,7 +107,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
 		release_server_mutex();
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return NULL;
 	}
 
@@ -121,7 +121,7 @@ static struct smbcli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		DEBUG(0,("%s rejected the initial session setup (%s)\n",
 			 desthost, smbcli_errstr(cli)));
 		release_server_mutex();
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return NULL;
 	}
 	
@@ -140,7 +140,7 @@ static void free_server_private_data(void **private_data_pointer)
 {
 	struct smbcli_state **cli = (struct smbcli_state **)private_data_pointer;
 	if (*cli && (*cli)->initialised) {
-		smbcli_shutdown(*cli);
+		talloc_free(*cli);
 	}
 }
 
@@ -170,7 +170,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 		} else if (cli->secblob.length < 8) {
 			/* We can't do much if we don't get a full challenge */
 			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
-			smbcli_shutdown(cli);
+			talloc_free(cli);
 			return data_blob(NULL, 0);
 		}
 
@@ -361,7 +361,7 @@ use this machine as the password server.\n"));
 	}
 
 	if (locally_made_cli) {
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 	}
 
 	return(nt_status);
