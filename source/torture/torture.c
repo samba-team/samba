@@ -56,21 +56,24 @@ static struct smbcli_state *open_nbt_connection(void)
 	cli = smbcli_state_init(NULL);
 	if (!cli) {
 		printf("Failed initialize smbcli_struct to connect with %s\n", host);
-		return NULL;
+		goto failed;
 	}
 
 	if (!smbcli_socket_connect(cli, host)) {
 		printf("Failed to connect with %s\n", host);
-		return cli;
+		goto failed;
 	}
 
 	if (!smbcli_transport_establish(cli, &calling, &called)) {
 		printf("%s rejected the session\n",host);
-		smbcli_shutdown(cli);
-		return NULL;
+		goto failed;
 	}
 
 	return cli;
+
+failed:
+	talloc_free(cli);
+	return NULL;
 }
 
 BOOL torture_open_connection_share(struct smbcli_state **c, 
@@ -112,7 +115,7 @@ BOOL torture_close_connection(struct smbcli_state *c)
 		printf("tdis failed (%s)\n", smbcli_errstr(c->tree));
 		ret = False;
 	}
-	smbcli_shutdown(c);
+	talloc_free(c);
 	return ret;
 }
 
@@ -489,7 +492,7 @@ static BOOL run_tcon_test(void)
 	if (NT_STATUS_IS_ERR(smbcli_tconX(cli, share, "?????", password))) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		           smbcli_errstr(cli->tree));
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return False;
 	}
 
@@ -649,7 +652,7 @@ static BOOL run_tcon_devtype_test(void)
 	if (!tcon_devtest(cli1, share, "FOOBA", NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
-	smbcli_shutdown(cli1);
+	talloc_free(cli1);
 
 	if (ret)
 		printf("Passed tcondevtest\n");

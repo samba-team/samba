@@ -233,7 +233,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
     if ((status = smb_print(cli, argv[3] /* title */, fp)) != 0)
       break;
 
-  smbcli_shutdown(cli);
+  talloc_free(cli);
 
  /*
   * Return the queue status...

@@ -150,7 +150,7 @@ static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum
 					fnum[server][conn][f] = -1;
 				}
 			}
-			smbcli_shutdown(cli[server][conn]);
+			talloc_free(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server], server);
 		if (!cli[server][conn]) {

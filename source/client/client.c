@@ -1069,7 +1069,7 @@ static BOOL do_altname(char *name)
 ****************************************************************************/
 static int cmd_quit(const char **cmd_ptr)
 {
-	smbcli_shutdown(cli);
+	talloc_free(cli);
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1263,7 +1263,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	}
 
 	if (f == x_stdin) {
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		exit(0);
 	}
 	
@@ -3251,7 +3251,7 @@ static int process(char *base_directory)
 		process_stdin();
 	}
   
-	smbcli_shutdown(cli);
+	talloc_free(cli);
 	return rc;
 }
 
@@ -3287,12 +3287,12 @@ static int do_message_op(void)
 
 	if (!smbcli_transport_establish(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		smbcli_shutdown(cli);
+		talloc_free(cli);
 		return 1;
 	}
 
 	send_message();
-	smbcli_shutdown(cli);
+	talloc_free(cli);
 
 	return 0;
 }
