@@ -213,12 +213,12 @@ static void ldap_try_decode_wrapped(struct ldap_connection *conn)
 			return;
 		}
 
-		if (ldap_decode(&asn1, msg)) {
+		while (ldap_decode(&asn1, msg)) {
 			ldap_match_message(conn, msg);
-		} else {
-			talloc_free(msg);
+			msg = talloc(conn, struct ldap_message);
 		}
 		
+		talloc_free(msg);
 		asn1_free(&asn1);
 
 		if (conn->partial.length == len + 4) {
