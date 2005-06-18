@@ -13,7 +13,7 @@ SERVER="$1"
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
-testit "RootDSE" bin/ldbsearch -b "''" -H ldap://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
+testit "RootDSE" bin/ldbsearch --basedn='' -H ldap://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
 BASEDN=`bin/ldbsearch -b '' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep ^defaultNamingContext | awk '{print $2}'`
