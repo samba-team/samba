@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libnet/composite.h"
-#include "librpc/gen_ndr/ndr_samr.h"
 
 
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)
@@ -41,7 +40,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (!NT_STATUS_IS_OK(status)) return status;
 
 	/* connect rpc service of remote server */
-	cn.standard.level                      = LIBNET_RPC_CONNECT_STANDARD;
+	cn.standard.level                      = LIBNET_RPC_CONNECT_PDC;
 	cn.standard.in.server_name             = fp.generic.out.pdc_name;
 	cn.standard.in.dcerpc_iface_name       = DCERPC_SAMR_NAME;
 	cn.standard.in.dcerpc_iface_uuid       = DCERPC_SAMR_UUID;
