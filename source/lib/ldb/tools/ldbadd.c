@@ -90,20 +90,12 @@ static int process_file(struct ldb_context *ldb, FILE *f)
  int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	int i, ret, count=0;
+	int i, count=0;
 	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
-
-	ret = ldb_connect(ldb, options->url, 0, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
 
 	if (options->argc == 0) {
 		count += process_file(ldb, stdin);

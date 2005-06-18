@@ -26,6 +26,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/tools/cmdline.h"
+#ifdef _SAMBA_BUILD_
+#include "lib/cmdline/popt_common.h"
+#endif
 
 /*
   process command line options
@@ -50,9 +53,19 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
 		{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "dn=*", NULL },
 		{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
+		{ "sasl-mechanism", 0, POPT_ARG_STRING, &options.sasl_mechanism, 0, "choose SASL mechanism", "MECHANISM" },
 		{ NULL,    'o', POPT_ARG_STRING, NULL, 'o', "ldb_connect option", "OPTION" },
+#ifdef _SAMBA_BUILD_
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+#endif
 		POPT_TABLEEND
 	};
+
+#ifdef _SAMBA_BUILD_
+	ldbsearch_init_subsystems;
+#endif
 
 	ret = talloc_zero(ldb, struct ldb_cmdline);
 	if (ret == NULL) {
@@ -73,6 +86,8 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	if (!options.editor) {
 		options.editor = "vi";
 	}
+
+	options.scope = LDB_SCOPE_DEFAULT;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -130,6 +145,12 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	if (ret->url == NULL) {
 		fprintf(stderr, "You must supply a url with -H or with $LDB_URL\n");
 		if (usage) usage();
+		goto failed;
+	}
+
+	if (ldb_connect(ldb, ret->url, 0, ret->options) != 0) {
+		fprintf(stderr, "Failed to connect to %s - %s\n", 
+			ret->url, ldb_errstring(ldb));
 		goto failed;
 	}
 

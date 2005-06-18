@@ -34,6 +34,7 @@
 #include "ldb/include/ldb_private.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
+#include "lib/cmdline/popt_common.h"
 
 struct ildb_private {
 	const char *basedn;
@@ -110,6 +111,10 @@ static int ildb_search(struct ldb_module *module, const char *base,
 	int count, i;
 	struct ldap_message **ldapres, *msg;
 
+	if (scope == LDB_SCOPE_DEFAULT) {
+		scope = LDB_SCOPE_SUBTREE;
+	}
+	
 	if (base == NULL) {
 		base = "";
 	}
@@ -383,6 +388,15 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->prev = ldb->modules->next = NULL;
 	ldb->modules->private_data = ildb;
 	ldb->modules->ops = &ildb_ops;
+
+	if (cmdline_credentials->username_obtained > CRED_GUESSED) {
+		status = ldap_bind_sasl(ildb->ldap, cmdline_credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
+				  ldap_errstr(ildb->ldap, status));
+			goto failed;
+		}
+	}
 
 	return 0;
 

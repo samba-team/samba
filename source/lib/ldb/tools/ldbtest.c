@@ -365,14 +365,6 @@ static void usage(void)
 		options->basedn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 	}
 
-	ret = ldb_connect(ldb, options->url, 0, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
-
 	srandom(1);
 
 	start_test(ldb, options->num_records, options->num_searches);
