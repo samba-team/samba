@@ -39,10 +39,11 @@ static const struct resolve_method {
 	const char *name;
 	struct composite_context *(*send_fn)(struct nbt_name *, struct event_context *);
 	NTSTATUS (*recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
+
 } methods[] = {
-	{ "bcast", resolve_name_bcast_send, resolve_name_bcast_recv },
-	{ "wins",  resolve_name_wins_send, resolve_name_wins_recv },
-	{ "host",  resolve_name_host_send, resolve_name_host_recv }
+	{ "bcast", resolve_name_bcast_send,  resolve_name_bcast_recv },
+	{ "wins",  resolve_name_wins_send,   resolve_name_wins_recv },
+	{ "host",  resolve_name_host_send,   resolve_name_host_recv }
 };
 
 
@@ -115,7 +116,8 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 /*
   general name resolution - async send
  */
-struct composite_context *resolve_name_send(struct nbt_name *name, struct event_context *event_ctx)
+struct composite_context *resolve_name_send(struct nbt_name *name, struct event_context *event_ctx,
+					    const char **methods)
 {
 	struct composite_context *c;
 	struct resolve_state *state;
@@ -130,9 +132,15 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	status = nbt_name_dup(state, name, &state->name);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	state->methods = lp_name_resolve_order();
-	if (state->methods == NULL) {
-		return NULL;
+	/* use default methods from config file if not passed explicitly */
+	if (methods == NULL) {
+		state->methods = lp_name_resolve_order();
+		if (state->methods == NULL) {
+			return NULL;
+		}
+
+	} else {
+		state->methods = methods;
 	}
 
 	c->state = SMBCLI_REQUEST_SEND;
@@ -178,7 +186,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
  */
 NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_send(name, NULL);
+	struct composite_context *c = resolve_name_send(name, NULL, NULL);
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 
