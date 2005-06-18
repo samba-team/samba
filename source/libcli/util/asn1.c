@@ -576,7 +576,6 @@ BOOL asn1_read_Integer(struct asn1_data *data, int *i)
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
 	if (!asn1_read_implicit_Integer(data, i)) return False;
 	return asn1_end_tag(data);	
-	
 }
 
 /* read an interger */
