@@ -832,8 +832,6 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
 			
-		*psid_name_use = SID_NAME_ALIAS;
-			
 		DEBUG(5,("local_lookup_sid: looking up gid %u %s\n", (unsigned int)gid,
 			 gr ? "succeeded" : "failed" ));
 			
@@ -1223,24 +1221,6 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 }
 
 /****************************************************************************
- Convert a gid to SID - algorithmic.
-****************************************************************************/
-
-DOM_SID *algorithmic_gid_to_sid(DOM_SID *psid, uid_t gid)
-{
-	if ( !lp_enable_rid_algorithm() )
-		return NULL;
-
-	DEBUG(8,("algorithmic_gid_to_sid: falling back to RID algorithm\n"));
-	sid_copy( psid, get_global_sam_sid() );
-	sid_append_rid( psid, pdb_gid_to_group_rid(gid) );
-	DEBUG(10,("algorithmic_gid_to_sid:  gid (%d) -> SID %s.\n",
-		(unsigned int)gid, sid_string_static(psid) ));
-
-	return psid;
-}
-
-/****************************************************************************
  Convert a gid to SID - locally.
 ****************************************************************************/
 
@@ -1260,14 +1240,16 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 	
 	if ( !ret ) {
 
-		/* algorithmic to rid mapping if enabled */
+		/* fallback to rid mapping if enabled */
 
 		if ( lp_enable_rid_algorithm() ) {
+			sid_copy(psid, get_global_sam_sid());
+			sid_append_rid(psid, pdb_gid_to_group_rid(gid));
 
 			DEBUG(10,("local_gid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", 
 				(unsigned int)gid, sid_string_static(psid)));
 				
-			return algorithmic_gid_to_sid(psid, gid);
+			return psid;
 		}
 		else
 			return NULL;
