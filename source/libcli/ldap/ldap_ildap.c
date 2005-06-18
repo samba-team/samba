@@ -189,6 +189,12 @@ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn,
 		struct ldap_message *res;
 		status = ldap_result_n(req, i, &res);
 		if (!NT_STATUS_IS_OK(status)) break;
+
+		if (res->type == LDAP_TAG_SearchResultDone) {
+			status = ldap_check_response(conn, &res->r.GeneralResult);
+			break;
+		}
+
 		if (res->type != LDAP_TAG_SearchResultEntry) continue;
 		
 		(*results) = talloc_realloc(conn, *results, struct ldap_message *, n+2);
