@@ -154,28 +154,28 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 
 	status = gensec_set_credentials(conn->gensec, creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC creds: %s\n", 
+		DEBUG(1, ("Failed to set GENSEC creds: %s\n", 
 			  nt_errstr(status)));
 		goto failed;
 	}
 
 	status = gensec_set_target_hostname(conn->gensec, conn->host);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+		DEBUG(1, ("Failed to set GENSEC target hostname: %s\n", 
 			  nt_errstr(status)));
 		goto failed;
 	}
 
 	status = gensec_set_target_service(conn->gensec, "ldap");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
+		DEBUG(1, ("Failed to set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
 		goto failed;
 	}
 
 	status = gensec_start_mech_by_sasl_name(conn->gensec, "NTLM");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
+		DEBUG(1, ("Failed to set GENSEC client SPNEGO mechanism: %s\n",
 			  nt_errstr(status)));
 		goto failed;
 	}
