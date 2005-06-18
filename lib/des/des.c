@@ -241,10 +241,10 @@ store(const uint32_t v[2], unsigned char *b)
  */
 
 void
-DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int encrypt)
+DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int forward_encrypt)
 {
     IP(u);
-    desx(u, ks, encrypt);
+    desx(u, ks, forward_encrypt);
     FP(u);
 }
 
@@ -254,11 +254,11 @@ DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int encrypt)
 
 void
 DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
-		DES_key_schedule *ks, int encrypt)
+		DES_key_schedule *ks, int forward_encrypt)
 {
     uint32_t u[2];
     load(*input, u);
-    DES_encrypt(u, ks, encrypt);
+    DES_encrypt(u, ks, forward_encrypt);
     store(u, *output);
 }
 
@@ -268,14 +268,14 @@ DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
 
 void
 DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
-		DES_key_schedule *ks, DES_cblock *iv, int encrypt)
+		DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
 {
     uint32_t u[2];
     uint32_t uiv[2];
 
     load(*iv, uiv);
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -329,14 +329,14 @@ DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
 
 void
 DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
-		 DES_key_schedule *ks, DES_cblock *iv, int encrypt)
+		 DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
 {
     uint32_t u[2];
     uint32_t uiv[2];
 
     load(*iv, uiv);
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	uint32_t t[2];
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
@@ -391,10 +391,10 @@ DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
 
 static void
 _des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2, 
-	      DES_key_schedule *ks3, int encrypt)
+	      DES_key_schedule *ks3, int forward_encrypt)
 {
     IP(u);
-    if (encrypt) {
+    if (forward_encrypt) {
 	desx(u, ks1, 1); /* IP + FP cancel out each other */
 	desx(u, ks2, 0);
 	desx(u, ks3, 1);
@@ -416,11 +416,11 @@ DES_ecb3_encrypt(DES_cblock *input,
 		 DES_key_schedule *ks1,
 		 DES_key_schedule *ks2,
 		 DES_key_schedule *ks3,
-		 int encrypt)
+		 int forward_encrypt)
 {
     uint32_t u[2];
     load(*input, u);
-    _des3_encrypt(u, ks1, ks2, ks3, encrypt);
+    _des3_encrypt(u, ks1, ks2, ks3, forward_encrypt);
     store(u, *output);
     return;
 }
@@ -433,14 +433,14 @@ void
 DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
 		     long length, DES_key_schedule *ks1, 
 		     DES_key_schedule *ks2, DES_key_schedule *ks3,
-		     DES_cblock *iv, int encrypt)
+		     DES_cblock *iv, int forward_encrypt)
 {
     uint32_t u[2];
     uint32_t uiv[2];
 
     load(*iv, uiv);
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	while (length >= DES_CBLOCK_LEN) {
 	    load(input, u);
 	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
@@ -496,14 +496,14 @@ DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
 void
 DES_cfb64_encrypt(unsigned char *input, unsigned char *output, 
 		  long length, DES_key_schedule *ks, DES_cblock *iv,
-		  int *num, int encrypt)
+		  int *num, int forward_encrypt)
 {
     unsigned char tmp[DES_CBLOCK_LEN];
     uint32_t uiv[2];
 
     load(*iv, uiv);
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	int i = *num;
 
 	while (length > 0) {
@@ -606,13 +606,14 @@ bitswap8(unsigned char b)
 void
 DES_string_to_key(const char *str, DES_cblock *key)
 {
-    unsigned char *s, *k;
+    const unsigned char *s;
+    unsigned char *k;
     DES_key_schedule ks;
     size_t i, len;
 
     memset(key, 0, sizeof(*key));
     k = *key;
-    s = (unsigned char *)str;
+    s = (const unsigned char *)str;
 
     len = strlen(str);
     for (i = 0; i < len; i++) {
@@ -878,7 +879,7 @@ FP(uint32_t v[2])
 }
 
 static void
-desx(uint32_t block[2], DES_key_schedule *ks, int encrypt)
+desx(uint32_t block[2], DES_key_schedule *ks, int forward_encrypt)
 {
     uint32_t *keys;
     uint32_t fval, work, right, left;
@@ -887,7 +888,7 @@ desx(uint32_t block[2], DES_key_schedule *ks, int encrypt)
     left = block[0];
     right = block[1];
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	keys = &ks->ks[0];
 
 	for( round = 0; round < 8; round++ ) {

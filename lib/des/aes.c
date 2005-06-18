@@ -79,12 +79,12 @@ AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 void
 AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 		unsigned long size, const AES_KEY *key,
-		unsigned char *iv, int encrypt)
+		unsigned char *iv, int forward_encrypt)
 {
     unsigned char tmp[AES_BLOCK_SIZE];
     int i;
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	while (size >= AES_BLOCK_SIZE) {
 	    for (i = 0; i < AES_BLOCK_SIZE; i++)
 		tmp[i] = in[i] ^ iv[i];

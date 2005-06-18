@@ -198,12 +198,12 @@ RC2_decryptc(unsigned char *in, unsigned char *out, const RC2_KEY *key)
 
 void
 RC2_cbc_encrypt(const unsigned char *in, unsigned char *out, long size,
-		RC2_KEY *key, unsigned char *iv, int encrypt)
+		RC2_KEY *key, unsigned char *iv, int forward_encrypt)
 {
     unsigned char tmp[RC2_BLOCK_SIZE];
     int i;
 
-    if (encrypt) {
+    if (forward_encrypt) {
 	while (size >= RC2_BLOCK_SIZE) {
 	    for (i = 0; i < RC2_BLOCK_SIZE; i++)
 		tmp[i] = in[i] ^ iv[i];
