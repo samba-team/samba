@@ -303,14 +303,6 @@ static void usage(void)
 		attrs = (const char * const *)options->argv;
 	}
 
-	ret = ldb_connect(ldb, options->url, LDB_FLG_RDONLY, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
-
 	ret = ldb_search(ldb, options->basedn, options->scope, expression, attrs, &msgs);
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));

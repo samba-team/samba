@@ -119,7 +119,7 @@ static int do_search(struct ldb_context *ldb,
 	struct ldb_context *ldb;
 	const char * const * attrs = NULL;
 	struct ldb_cmdline *options;
-	int ret;
+	int ret = -1;
 
 	ldb = ldb_init(NULL);
 
@@ -132,14 +132,6 @@ static int do_search(struct ldb_context *ldb,
 
 	if (options->argc > 1) {
 		attrs = (const char * const *)(options->argv+1);
-	}
-
-	ret = ldb_connect(ldb, options->url, LDB_FLG_RDONLY, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
 	}
 
 	if (options->interactive) {

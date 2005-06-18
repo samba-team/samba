@@ -67,14 +67,6 @@ static void usage(void)
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-	ret = ldb_connect(ldb, options->url, 0, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
-
 	if (options->argc < 2) {
 		usage();
 	}

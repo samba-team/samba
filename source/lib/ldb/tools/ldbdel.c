@@ -93,14 +93,6 @@ static void usage(void)
 		exit(1);
 	}
 
-	ret = ldb_connect(ldb, options->url, 0, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
-
 	for (i=0;i<options->argc;i++) {
 		const char *dn = options->argv[i];
 		if (options->recursive) {

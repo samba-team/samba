@@ -100,14 +100,6 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-	ret = ldb_connect(ldb, options->url, 0, options->options);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to connect to %s - %s\n", 
-			options->url, ldb_errstring(ldb));
-		talloc_free(ldb);
-		exit(1);
-	}
-
 	if (options->argc == 0) {
 		usage();
 		exit(1);
