@@ -12,15 +12,13 @@ use strict;
 # signal a fatal validation error
 sub fatal($$)
 {
-	my $pos = shift;
-	my $s = shift;
+	my ($pos,$s) = @_;
 	die("$pos->{FILE}:$pos->{LINE}:$s\n");
 }
 
 sub nonfatal($$)
 {
-	my $pos = shift;
-	my $s = shift;
+	my ($pos,$s) = @_;
 	warn ("$pos->{FILE}:$pos->{LINE}:warning:$s\n");
 }
 
@@ -46,8 +44,7 @@ sub el_name($)
 # find a sibling var in a structure
 sub find_sibling($$)
 {
-	my($e) = shift;
-	my($name) = shift;
+	my($e,$name) = @_;
 	my($fn) = $e->{PARENT};
 
 	if ($name =~ /\*(.*)/) {
@@ -60,7 +57,6 @@ sub find_sibling($$)
 
 	return undef;
 }
-
 
 my %property_list = (
 	# interface
@@ -140,8 +136,7 @@ my %property_list = (
 # check for unknown properties
 sub ValidProperties($$)
 {
-	my $e = shift;
-	my $t = shift;
+	my ($e,$t) = @_;
 
 	return unless defined $e->{PROPERTIES};
 
@@ -171,7 +166,6 @@ sub mapToScalar($)
 
 	return undef;
 }
-
 
 #####################################################################
 # parse a struct
