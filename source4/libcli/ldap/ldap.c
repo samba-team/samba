@@ -38,7 +38,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		if ((tree->u.simple.value.length == 1) &&
 		    (((char *)(tree->u.simple.value.data))[0] == '*')) {
 			/* Just a presence test */
-			asn1_push_tag(data, 0x87);
+			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(7));
 			asn1_write(data, tree->u.simple.attr,
 				   strlen(tree->u.simple.attr));
 			asn1_pop_tag(data);
@@ -46,7 +46,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		}
 
 		/* equality test */
-		asn1_push_tag(data, 0xa3);
+		asn1_push_tag(data, ASN1_CONTEXT(3));
 		asn1_write_OctetString(data, tree->u.simple.attr,
 				      strlen(tree->u.simple.attr));
 		asn1_write_OctetString(data, tree->u.simple.value.data,
@@ -63,37 +63,34 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		  dnAttributes    [4] BOOLEAN DEFAULT FALSE
 		  }
 		*/
-		asn1_push_tag(data, 0xa9);
+		asn1_push_tag(data, ASN1_CONTEXT(9));
 		if (tree->u.extended.rule_id) {
-			asn1_push_tag(data, 1);
-			asn1_write_OctetString(data, tree->u.extended.rule_id,
-					       strlen(tree->u.extended.rule_id));
+			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(1));
+			asn1_write_LDAPString(data, tree->u.extended.rule_id);
 			asn1_pop_tag(data);
 		}
 		if (tree->u.extended.attr) {
-			asn1_push_tag(data, 2);
-			asn1_write_OctetString(data, tree->u.extended.attr,
-					       strlen(tree->u.extended.attr));
+			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(2));
+			asn1_write_LDAPString(data, tree->u.extended.attr);
 			asn1_pop_tag(data);
 		}
-		asn1_push_tag(data, 3);
-		asn1_write_OctetString(data, tree->u.extended.value.data,
-				      tree->u.extended.value.length);
+		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(3));
+		asn1_write_LDAPString(data, tree->u.extended.value.data);
 		asn1_pop_tag(data);
-		if (tree->u.extended.dnAttributes) {
-			asn1_push_tag(data, 4);
-			asn1_write_BOOLEAN(data, True);
-			asn1_pop_tag(data);
-		}
+		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(4));
+		asn1_write_uint8(data, tree->u.extended.dnAttributes);
+		asn1_pop_tag(data);
 		asn1_pop_tag(data);
 		break;
 		
 
 	case LDB_OP_AND:
 	case LDB_OP_OR:
-		asn1_push_tag(data, 0xa0 | (tree->operation==LDB_OP_AND?0:1));
+		asn1_push_tag(data, ASN1_CONTEXT(tree->operation==LDB_OP_AND?0:1));
 		for (i=0; i<tree->u.list.num_elements; i++) {
-			ldap_push_filter(data, tree->u.list.elements[i]);
+			if (!ldap_push_filter(data, tree->u.list.elements[i])) {
+				return False;
+			}
 		}
 		asn1_pop_tag(data);
 		break;
@@ -162,7 +159,6 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		}
 
 		asn1_pop_tag(&data);
-		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_BindResponse: {
@@ -187,7 +183,9 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_Integer(&data, r->timelimit);
 		asn1_write_BOOLEAN(&data, r->attributesonly);
 
-		ldap_push_filter(&data, r->tree);
+		if (!ldap_push_filter(&data, r->tree)) {
+			return False;
+		}
 
 		asn1_push_tag(&data, ASN1_SEQUENCE(0));
 		for (i=0; i<r->num_attributes; i++) {
@@ -389,6 +387,12 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 	}
 
 	asn1_pop_tag(&data);
+
+	if (data.has_error) {
+		asn1_free(&data);
+		return False;
+	}
+
 	*result = data_blob(data.data, data.length);
 	asn1_free(&data);
 	return True;
@@ -438,16 +442,14 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx, 
 						      struct asn1_data *data)
 {
-	uint8_t filter_tag, tag_desc;
+	uint8_t filter_tag;
 	struct ldb_parse_tree *ret;
 
 	if (!asn1_peek_uint8(data, &filter_tag)) {
 		return NULL;
 	}
 
-	tag_desc = filter_tag;
 	filter_tag &= 0x1f;	/* strip off the asn1 stuff */
-	tag_desc &= 0xe0;
 
 	ret = talloc(mem_ctx, struct ldb_parse_tree);
 	if (ret == NULL) return NULL;
@@ -459,11 +461,6 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		ret->operation = (filter_tag == 0)?LDB_OP_AND:LDB_OP_OR;
 		ret->u.list.num_elements = 0;
 		ret->u.list.elements = NULL;
-
-		if (tag_desc != 0xa0) {
-			/* context compount */
-			goto failed;
-		}
 
 		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
 			goto failed;
