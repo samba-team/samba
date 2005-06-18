@@ -191,7 +191,7 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 	sess_crypt_blob(&out, blob, session_key, False);
 
 	if (IVAL(out.data, 4) != 1) {
-		DEBUG(0,("Unexpected revision number %d in session crypted secret (BLOB)\n",
+		DEBUG(2,("Unexpected revision number %d in session crypted secret (BLOB)\n",
 			 IVAL(out.data, 4)));
 		return NT_STATUS_UNKNOWN_REVISION;
 	}
