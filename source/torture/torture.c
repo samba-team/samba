@@ -2342,7 +2342,7 @@ static struct {
 	{"NET-USERADD", torture_useradd, 0},
 	{"NET-USERDEL", torture_userdel, 0},
 	{"NET-DOMOPEN", torture_domainopen, 0},
-	{"NET-LOOKUP", torture_lookup, 0},
+	{"NET-API-LOOKUP", torture_lookup, 0},
 	{"NET-API-CREATEUSER", torture_createuser, 0},
 
 	{NULL, NULL, 0}};
