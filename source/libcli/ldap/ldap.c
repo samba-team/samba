@@ -98,6 +98,9 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		asn1_pop_tag(data);
 		break;
 
+	case LDB_OP_NOT:
+		#warning "OP_NOT missing"
+
 	default:
 		return False;
 	}
@@ -605,7 +608,6 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		DATA_BLOB blob;
 		asn1_read_OctetString(data, &blob);
 		add_value_to_attrib(mem_ctx, &blob, attrib);
-		data_blob_free(&blob);
 	}
 	asn1_end_tag(data);
 	asn1_end_tag(data);

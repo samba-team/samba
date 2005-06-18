@@ -309,27 +309,15 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			goto queue_reply;
 		}
 		ent->num_attributes = res[0]->num_elements;
-		ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
-		NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
+		ent->attributes = talloc_steal(ent_r, res[0]->elements);
+
 		for (j=0; j < ent->num_attributes; j++) {
-			ent->attributes[j].name = talloc_steal(ent->attributes, res[0]->elements[j].name);
-			ent->attributes[j].num_values = 0;
-			ent->attributes[j].values = NULL;
-			ent->attributes[j].num_values = res[0]->elements[j].num_values;
 			if (ent->attributes[j].num_values == 1 &&
-				strncmp(res[0]->elements[j].values[0].data, "_DYNAMIC_", 9) == 0) {
+			    ent->attributes[j].values[0].length >= 9 &&
+			    strncmp(ent->attributes[j].values[0].data, "_DYNAMIC_", 9) == 0) {
 				status = fill_dynamic_values(ent->attributes, &(ent->attributes[j]));
 				if (!NT_STATUS_IS_OK(status)) {
 					return status;
-				}
-			} else {
-				ent->attributes[j].values = talloc_array(ent->attributes,
-								DATA_BLOB, ent->attributes[j].num_values);
-				NT_STATUS_HAVE_NO_MEMORY(ent->attributes[j].values);
-				for (y=0; y < ent->attributes[j].num_values; y++) {
-					ent->attributes[j].values[y].length = res[0]->elements[j].values[y].length;
-					ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
-										res[0]->elements[j].values[y].data);
 				}
 			}
 		}
