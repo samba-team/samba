@@ -162,7 +162,7 @@ BOOL create_next_pdu(pipes_struct *p)
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
 		p->hdr.flags |= RPC_FLG_LAST;
-		if ((auth_seal || auth_verify) && (data_len_left % 8)) {
+		if ((auth_seal || auth_verify || p->netsec_auth_validated) && (data_len_left % 8)) {
 			ss_padding_len = 8 - (data_len_left % 8);
 			DEBUG(10,("create_next_pdu: adding sign/seal padding of %u\n",
 				ss_padding_len ));
