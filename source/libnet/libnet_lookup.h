@@ -18,53 +18,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  composite function io definitions
-*/
 
-#include "librpc/gen_ndr/ndr_samr.h"
-
-
-struct libnet_rpc_userinfo {
+struct libnet_Lookup {
 	struct {
-		struct policy_handle domain_handle;
-		const char *sid;
-		uint16_t level;
+		const char *hostname;
+		int type;
+		const char **methods;
 	} in;
 	struct {
-		union samr_UserInfo info;
-	} out;
-};
-
-
-struct libnet_rpc_useradd {
-	struct {
-		struct policy_handle domain_handle;
-		const char *username;
-	} in;
-	struct {
-		struct policy_handle user_handle;
-	} out;
-};
-
-
-struct libnet_rpc_userdel {
-	struct {
-		struct policy_handle domain_handle;
-		const char *username;
-	} in;
-	struct {
-		struct policy_handle user_handle;
-	} out;
-};
-
-
-struct libnet_rpc_domain_open {
-	struct {
-		const char *domain_name;
-		uint32_t access_mask;
-	} in;
-	struct {
-		struct policy_handle domain_handle;
+		const char **address;
 	} out;
 };

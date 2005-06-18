@@ -174,12 +174,14 @@ static void userinfo_handler(struct rpc_request *req)
  * @param io arguments and results of the call
  */
 struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
-						      struct libnet_rpc_userinfo *io,
-						      void (*monitor)(struct monitor_msg*))
+						   struct libnet_rpc_userinfo *io,
+						   void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct userinfo_state *s;
 	struct dom_sid *sid;
+
+	if (!p || !io) return NULL;
 	
 	c = talloc_zero(p, struct composite_context);
 	if (c == NULL) goto failure;
@@ -229,7 +231,7 @@ failure:
  */
 
 NTSTATUS libnet_rpc_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				     struct libnet_rpc_userinfo *io)
+				  struct libnet_rpc_userinfo *io)
 {
 	NTSTATUS status;
 	struct userinfo_state *s;
@@ -259,8 +261,8 @@ NTSTATUS libnet_rpc_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_c
  */
 
 NTSTATUS libnet_rpc_userinfo(struct dcerpc_pipe *pipe,
-				TALLOC_CTX *mem_ctx,
-				struct libnet_rpc_userinfo *io)
+			     TALLOC_CTX *mem_ctx,
+			     struct libnet_rpc_userinfo *io)
 {
 	struct composite_context *c = libnet_rpc_userinfo_send(pipe, io, NULL);
 	return libnet_rpc_userinfo_recv(c, mem_ctx, io);

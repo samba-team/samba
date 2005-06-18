@@ -13,7 +13,9 @@ ADD_OBJ_FILES = \
 		libnet/libnet_share.o \
 		libnet/userinfo.o \
 		libnet/userman.o \
-		libnet/domain.o
-REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_SRVSVC LIBCLI_COMPOSITE LIBSAMBA3
+		libnet/domain.o \
+		libnet/lookup.o
+
+REQUIRED_SUBSYSTEMS = RPC_NDR_SAMR RPC_NDR_SRVSVC LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBSAMBA3
 # End SUBSYSTEM LIBNET
 #################################
