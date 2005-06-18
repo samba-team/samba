@@ -353,7 +353,6 @@ static void usage(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_context *ldb;
-	int ret;
 
 	ldb = ldb_init(mem_ctx);
 
