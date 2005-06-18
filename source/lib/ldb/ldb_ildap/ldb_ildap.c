@@ -37,9 +37,9 @@
 #include "lib/cmdline/popt_common.h"
 
 struct ildb_private {
-	const char *basedn;
 	struct ldap_connection *ldap;
 	NTSTATUS last_rc;
+	struct ldb_message *rootDSE;
 };
 
 /*
@@ -100,6 +100,8 @@ static int ildb_delete(struct ldb_module *module, const char *dn)
 }
 
 
+static void ildb_rootdse(struct ldb_module *module);
+
 /*
   search for matching records
 */
@@ -116,7 +118,13 @@ static int ildb_search(struct ldb_module *module, const char *base,
 	}
 	
 	if (base == NULL) {
-		base = "";
+		if (ildb->rootDSE == NULL) {
+			ildb_rootdse(module);
+		}
+		if (ildb->rootDSE != NULL) {
+			base = ldb_msg_find_string(ildb->rootDSE, 
+						   "defaultNamingContext", "");
+		}
 	}
 
 	if (expression == NULL || expression[0] == '\0') {
@@ -352,6 +360,22 @@ static const struct ldb_module_ops ildb_ops = {
 
 
 /*
+  fetch the rootDSE
+*/
+static void ildb_rootdse(struct ldb_module *module)
+{
+	struct ildb_private *ildb = module->private_data;
+	struct ldb_message **res = NULL;
+	int ret;
+	ret = ildb_search(module, "", LDB_SCOPE_BASE, "dn=dc=rootDSE", NULL, &res);
+	if (ret == 1) {
+		ildb->rootDSE = talloc_steal(ildb, res[0]);
+	}
+	talloc_free(res);
+}
+
+
+/*
   connect to the database
 */
 int ildb_connect(struct ldb_context *ldb, const char *url, 
@@ -365,6 +389,8 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 		ldb_oom(ldb);
 		goto failed;
 	}
+
+	ildb->rootDSE = NULL;
 
 	ildb->ldap = ldap_new_connection(ildb, NULL);
 	if (!ildb->ldap) {
