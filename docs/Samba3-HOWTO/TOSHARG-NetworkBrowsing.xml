@@ -521,94 +521,81 @@ noldor.quenya.org. 1200  IN      A       10.1.1.17
 <title>How Browsing Functions</title>
 
 <para>
-MS Windows machines register their NetBIOS names 
-(i.e., the machine name for each service type in operation) on startup.
-The exact method by which this name registration 
-takes place is determined by whether or not the MS Windows client/server 
-has been given a WINS server address, whether or not LMHOSTS lookup 
-is enabled, whether or not DNS for NetBIOS name resolution is enabled, and so on.
+MS Windows machines register their NetBIOS names (i.e., the machine name for each service type in operation)
+on startup.  The exact method by which this name registration takes place is determined by whether or not the
+MS Windows client/server has been given a WINS server address, whether or not LMHOSTS lookup is enabled,
+whether or not DNS for NetBIOS name resolution is enabled, and so on.
 </para>
 
 <para>
-In the case where there is no WINS server, all name registrations as 
-well as name lookups are done by UDP broadcast. This isolates name 
-resolution to the local subnet, unless LMHOSTS is used to list all 
-names and IP addresses. In such situations, Samba provides a means by 
-which the Samba server name may be forcibly injected into the browse 
-list of a remote MS Windows network (using the 
-<smbconfoption name="remote announce"/> parameter).
+In the case where there is no WINS server, all name registrations as well as name lookups are done by UDP
+broadcast. This isolates name resolution to the local subnet, unless LMHOSTS is used to list all names and IP
+addresses. In such situations, Samba provides a means by which the Samba server name may be forcibly injected
+into the browse list of a remote MS Windows network (using the <smbconfoption name="remote announce"/>
+parameter).
 </para>
 
 <para>
-Where a WINS server is used, the MS Windows client will use UDP 
-unicast to register with the WINS server. Such packets can be routed, 
-and thus WINS allows name resolution to function across routed networks.
+Where a WINS server is used, the MS Windows client will use UDP unicast to register with the WINS server. Such
+packets can be routed, and thus WINS allows name resolution to function across routed networks.
 </para>
 
 <para>
-During the startup process, an election takes place to create a 
-local master browser (LMB) if one does not already exist. On each NetBIOS network 
-one machine will be elected to function as the domain master browser (DMB). This 
-domain browsing has nothing to do with MS security Domain Control. 
-Instead, the DMB serves the role of contacting each 
-LMB (found by asking WINS or from LMHOSTS) and exchanging browse 
-list contents. This way every master browser will eventually obtain a complete 
-list of all machines that are on the network. Every 11 to 15 minutes an election 
-is held to determine which machine will be the master browser. By the nature of 
-the election criteria used, the machine with the highest uptime, or the 
-most senior protocol version or other criteria, will win the election 
-as DMB.
+During the startup process, an election takes place to create a local master browser (LMB) if one does not
+already exist. On each NetBIOS network one machine will be elected to function as the domain master browser
+(DMB). This domain browsing has nothing to do with MS security Domain Control.  Instead, the DMB serves the
+role of contacting each LMB (found by asking WINS or from LMHOSTS) and exchanging browse list contents. This
+way every master browser will eventually obtain a complete list of all machines that are on the network. Every
+11 to 15 minutes an election is held to determine which machine will be the master browser. By the nature of
+the election criteria used, the machine with the highest uptime, or the most senior protocol version or other
+criteria, will win the election as DMB.
 </para>
 
 <para>
-Clients wishing to browse the network make use of this list but also depend 
-on the availability of correct name resolution to the respective IP 
-address or addresses. 
+Where a WINS server is used, the DMB registers its IP address with the WINS server using the name of the
+domain and the NetBIOS name type #1B. e.g., DOMAIN&lt;1B&gt;. All LMBs register their IP address with the WINS
+server, also with the name of the domain and the NetBIOS name type of #1D. The #1B name is unique to one
+server within the domain security context, and only one #1D name is registered for each network segment.
+Machines that have registered the #1D name will be authoritive browse list maintainers for the network segment
+they are on. The DMB is responsible for synchronizing the browse lists it obtains from the LMBs.
 </para>
 
 <para>
-Any configuration that breaks name resolution and/or browsing intrinsics 
-will annoy users because they will have to put up with protracted 
-inability to use the network services.
+Clients wishing to browse the network make use of this list but also depend on the availability of correct
+name resolution to the respective IP address or addresses.
 </para>
 
 <para>
-Samba supports a feature that allows forced synchronization of browse lists across
-routed networks using the <smbconfoption name="remote browse sync"/>
-parameter in the &smb.conf; file. This causes Samba to contact the LMB
-on a remote network and to request browse list synchronization. This
-effectively bridges two networks that are separated by routers. The two remote
-networks may use either broadcast-based name resolution or WINS-based name
-resolution, but it should be noted that the
-<smbconfoption name="remote browse sync"/> parameter provides
-browse list synchronization &smbmdash; and that is distinct from name-to-address
-resolution. In other words, for cross-subnet browsing to function correctly, it is
-essential that a name-to-address resolution mechanism be provided. This mechanism
-could be via DNS, <filename>/etc/hosts</filename>, and so on.
+Any configuration that breaks name resolution and/or browsing intrinsics will annoy users because they will
+have to put up with protracted inability to use the network services.
+</para>
+
+<para>
+Samba supports a feature that allows forced synchronization of browse lists across routed networks using the
+<smbconfoption name="remote browse sync"/> parameter in the &smb.conf; file. This causes Samba to contact the
+LMB on a remote network and to request browse list synchronization. This effectively bridges two networks that
+are separated by routers. The two remote networks may use either broadcast-based name resolution or WINS-based
+name resolution, but it should be noted that the <smbconfoption name="remote browse sync"/> parameter provides
+browse list synchronization &smbmdash; and that is distinct from name-to-address resolution. In other words,
+for cross-subnet browsing to function correctly, it is essential that a name-to-address resolution mechanism
+be provided. This mechanism could be via DNS, <filename>/etc/hosts</filename>, and so on.
 </para>
 
 <sect2 id="DMB">
 <title>Configuring Workgroup Browsing</title>
 
 <para>
-To configure cross-subnet browsing on a network containing machines
-in a workgroup, not an NT domain, you need to set up one
-Samba server to be the DMB (note that this is not
-the same as a Primary Domain Controller, although in an NT domain the
-same machine plays both roles). The role of a DMB is
-to collate the browse lists from LMB on all the
-subnets that have a machine participating in the workgroup. Without
-one machine configured as a DMB, each subnet would
-be an isolated workgroup unable to see any machines on another
-subnet. It is the presence of a DMB that makes
-cross-subnet browsing possible for a workgroup.
+To configure cross-subnet browsing on a network containing machines in a workgroup, not an NT domain, you need
+to set up one Samba server to be the DMB (note that this is not the same as a Primary Domain Controller,
+although in an NT domain the same machine plays both roles). The role of a DMB is to collate the browse lists
+from LMB on all the subnets that have a machine participating in the workgroup. Without one machine configured
+as a DMB, each subnet would be an isolated workgroup unable to see any machines on another subnet. It is the
+presence of a DMB that makes cross-subnet browsing possible for a workgroup.
 </para>
 
 <para>
-In a workgroup environment the DMB must be a
-Samba server, and there must only be one DMB per
-workgroup name. To set up a Samba server as a DMB,
-set the following option in the <smbconfsection name="[global]"/> section 
+In a workgroup environment the DMB must be a Samba server, and there must only be one DMB per workgroup name.
+To set up a Samba server as a DMB, set the following option in the <smbconfsection name="[global]"/> section
 of the &smb.conf; file:
 </para>
 
@@ -619,10 +606,9 @@ of the &smb.conf; file:
 </para>
 
 <para>
-The DMB should preferably be the LMB
-for its own subnet. In order to achieve this, set the following
-options in the <smbconfsection name="[global]"/> section of the &smb.conf;
-file as shown in <link linkend="dmbexample">Domain Master Browser smb.conf</link>
+The DMB should preferably be the LMB for its own subnet. In order to achieve this, set the following options
+in the <smbconfsection name="[global]"/> section of the &smb.conf; file as shown in <link
+linkend="dmbexample">Domain Master Browser smb.conf</link>
 </para>
 
 <example id="dmbexample">
@@ -641,13 +627,11 @@ The DMB may be the same machine as the WINS server, if necessary.
 </para>
 
 <para>
-Next, you should ensure that each of the subnets contains a machine that can act as
-an LMB for the workgroup. Any MS Windows NT/200x/XP machine should
-be able to do this, as will Windows 9x/Me machines (although these tend to get
-rebooted more often, so it is not such a good idea to use them). To make a Samba
-server an LMB, set the following options in the
-<smbconfsection name="[global]"/> section of the &smb.conf; file as
-shown in <link linkend="lmbexample">Local master browser smb.conf</link>
+Next, you should ensure that each of the subnets contains a machine that can act as an LMB for the workgroup.
+Any MS Windows NT/200x/XP machine should be able to do this, as will Windows 9x/Me machines (although these
+tend to get rebooted more often, so it is not such a good idea to use them). To make a Samba server an LMB,
+set the following options in the <smbconfsection name="[global]"/> section of the &smb.conf; file as shown in
+<link linkend="lmbexample">Local master browser smb.conf</link>
 </para>
 
 <example id="lmbexample">
