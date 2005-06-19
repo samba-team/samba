@@ -180,11 +180,11 @@ typedef struct
 	char *szIDMapBackend;
 	char *szGuestaccount;
 	char *swat_directory;
-	BOOL web_tls;
-	char *web_keyfile;
-	char *web_certfile;
-	char *web_cafile;
-	char *web_crlfile;
+	BOOL tls_enabled;
+	char *tls_keyfile;
+	char *tls_certfile;
+	char *tls_cafile;
+	char *tls_crlfile;
 	int max_mux;
 	int max_xmit;
 	int pwordlevel;
@@ -599,11 +599,11 @@ static struct parm_struct parm_table[] = {
 	{"cldap port", P_INTEGER, P_GLOBAL, &Globals.cldap_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"krb5 port", P_INTEGER, P_GLOBAL, &Globals.krb5_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"web port", P_INTEGER, P_GLOBAL, &Globals.web_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web tls", P_BOOL, P_GLOBAL, &Globals.web_tls, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web tls keyfile", P_STRING, P_GLOBAL, &Globals.web_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web tls certfile", P_STRING, P_GLOBAL, &Globals.web_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web tls cafile", P_STRING, P_GLOBAL, &Globals.web_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"web tls crlfile", P_STRING, P_GLOBAL, &Globals.web_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls enabled", P_BOOL, P_GLOBAL, &Globals.tls_enabled, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls keyfile", P_STRING, P_GLOBAL, &Globals.tls_keyfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls certfile", P_STRING, P_GLOBAL, &Globals.tls_certfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls cafile", P_STRING, P_GLOBAL, &Globals.tls_cafile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"tls crlfile", P_STRING, P_GLOBAL, &Globals.tls_crlfile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"swat directory", P_STRING, P_GLOBAL, &Globals.swat_directory, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -1051,10 +1051,10 @@ static void init_globals(void)
 	do_parameter("max wins ttl", "432000");
 	do_parameter("min wins ttl", "10");
 
-	do_parameter("web tls", "True");
-	do_parameter_var("web tls keyfile", "%s/tls/key.pem", dyn_PRIVATE_DIR);
-	do_parameter_var("web tls certfile", "%s/tls/cert.pem", dyn_PRIVATE_DIR);
-	do_parameter_var("web tls cafile", "%s/tls/ca.pem", dyn_PRIVATE_DIR);
+	do_parameter("tls enabled", "True");
+	do_parameter_var("tls keyfile", "%s/tls/key.pem", dyn_PRIVATE_DIR);
+	do_parameter_var("tls certfile", "%s/tls/cert.pem", dyn_PRIVATE_DIR);
+	do_parameter_var("tls cafile", "%s/tls/ca.pem", dyn_PRIVATE_DIR);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1157,11 +1157,11 @@ FN_GLOBAL_INTEGER(lp_krb5_port, &Globals.krb5_port)
 FN_GLOBAL_INTEGER(lp_web_port, &Globals.web_port)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_swat_directory, &Globals.swat_directory)
-FN_GLOBAL_BOOL(lp_web_tls, &Globals.web_tls)
-FN_GLOBAL_STRING(lp_web_keyfile, &Globals.web_keyfile)
-FN_GLOBAL_STRING(lp_web_certfile, &Globals.web_certfile)
-FN_GLOBAL_STRING(lp_web_cafile, &Globals.web_cafile)
-FN_GLOBAL_STRING(lp_web_crlfile, &Globals.web_crlfile)
+FN_GLOBAL_BOOL(lp_tls_enabled, &Globals.tls_enabled)
+FN_GLOBAL_STRING(lp_tls_keyfile, &Globals.tls_keyfile)
+FN_GLOBAL_STRING(lp_tls_certfile, &Globals.tls_certfile)
+FN_GLOBAL_STRING(lp_tls_cafile, &Globals.tls_cafile)
+FN_GLOBAL_STRING(lp_tls_crlfile, &Globals.tls_crlfile)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)

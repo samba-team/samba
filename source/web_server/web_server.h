@@ -55,7 +55,7 @@ struct websrv_context {
 		int response_code;
 		const char **headers;
 	} output;
-	void *tls_session;
+	struct tls_context *tls;
 	struct session_data *session;
 };
 
@@ -74,6 +74,6 @@ struct esp_data {
 		int lifetime;
 	} *sessions;
 	struct MprVar *application_data;
-	void *tls_data;
+	struct tls_params *tls_params;
 };
 

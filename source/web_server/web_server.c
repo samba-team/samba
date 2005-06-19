@@ -26,6 +26,7 @@
 #include "web_server/web_server.h"
 #include "lib/events/events.h"
 #include "system/filesys.h"
+#include "lib/tls/tls.h"
 
 /* don't allow connections to hang around forever */
 #define HTTP_TIMEOUT 30
@@ -68,7 +69,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	DATA_BLOB b;
 
 	/* not the most efficient http parser ever, but good enough for us */
-	status = tls_socket_recv(web, buf, sizeof(buf), &nread);
+	status = tls_socket_recv(web->tls, buf, sizeof(buf), &nread);
 	if (NT_STATUS_IS_ERR(status)) goto failed;
 	if (!NT_STATUS_IS_OK(status)) return;
 
@@ -128,7 +129,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 	b.data += web->output.nsent;
 	b.length -= web->output.nsent;
 
-	status = tls_socket_send(web, &b, &nsent);
+	status = tls_socket_send(web->tls, &b, &nsent);
 	if (NT_STATUS_IS_ERR(status)) {
 		stream_terminate_connection(web->conn, "socket_send: failed");
 		return;
@@ -161,6 +162,8 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 
 	if (web->output.content.length == web->output.nsent && 
 	    web->output.fd == -1) {
+		talloc_free(web->tls);
+		web->tls = NULL;
 		stream_terminate_connection(web->conn, NULL);
 	}
 }
@@ -171,8 +174,8 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 static void websrv_accept(struct stream_connection *conn)
 {
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
+	struct esp_data *edata = talloc_get_type(task->private, struct esp_data);
 	struct websrv_context *web;
-	NTSTATUS status;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
@@ -187,8 +190,9 @@ static void websrv_accept(struct stream_connection *conn)
 			timeval_current_ofs(HTTP_TIMEOUT, 0),
 			websrv_timeout, web);
 
-	status = tls_init_connection(web);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	web->tls = tls_init_server(edata->tls_params, conn->socket, 
+				   conn->event.fde, "GPHO");
+	if (web->tls == NULL) goto failed;
 
 	return;
 
@@ -240,8 +244,6 @@ static void websrv_task_init(struct task_server *task)
 	   per connection as that wouldn't allow for session variables */
 	status = http_setup_esp(task);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	tls_initialise(task);
 
 	return;
 

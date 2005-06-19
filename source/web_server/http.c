@@ -30,6 +30,7 @@
 #include "system/time.h"
 #include "web_server/esp/esp.h"
 #include "dlinklist.h"
+#include "lib/tls/tls.h"
 
 #define SWAT_SESSION_KEY "SwatSessionId"
 #define HTTP_PREAUTH_URI "/scripting/preauth.esp"
@@ -245,12 +246,12 @@ static void http_redirect(EspHandle handle, int code, char *url)
 			char *p = strrchr(web->input.url, '/');
 			if (p == web->input.url) {
 				url = talloc_asprintf(web, "http%s://%s/%s", 
-						      web->tls_session?"s":"",
+						      tls_enabled(web->tls)?"s":"",
 						      host, url);
 			} else {
 				int dirlen = p - web->input.url;
 				url = talloc_asprintf(web, "http%s://%s%*.*s/%s",
-						      web->tls_session?"s":"",
+						      tls_enabled(web->tls)?"s":"",
 						      host, 
 						      dirlen, dirlen, web->input.url,
 						      url);
@@ -450,10 +451,10 @@ static void http_setup_arrays(struct esp_state *esp)
 	SETVAR(ESP_SERVER_OBJ, "DOCUMENT_ROOT", lp_swat_directory());
 	SETVAR(ESP_SERVER_OBJ, "SERVER_PORT", 
 	       talloc_asprintf(esp, "%u", socket_get_my_port(web->conn->socket)));
-	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", web->tls_session?"https":"http");
+	SETVAR(ESP_SERVER_OBJ, "SERVER_PROTOCOL", tls_enabled(web->tls)?"https":"http");
 	SETVAR(ESP_SERVER_OBJ, "SERVER_SOFTWARE", "SWAT");
 	SETVAR(ESP_SERVER_OBJ, "GATEWAY_INTERFACE", "CGI/1.1");
-	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", edata->tls_data?"True":"False");
+	SETVAR(ESP_SERVER_OBJ, "TLS_SUPPORT", tls_support(edata->tls_params)?"True":"False");
 }
 
 #if HAVE_SETJMP_H
@@ -947,6 +948,9 @@ NTSTATUS http_setup_esp(struct task_server *task)
 	NT_STATUS_HAVE_NO_MEMORY(edata);
 
 	task->private = edata;
+
+	edata->tls_params = tls_initialise(edata);
+	NT_STATUS_HAVE_NO_MEMORY(edata->tls_params);
 
 	return NT_STATUS_OK;
 }
