@@ -25,7 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "auth/auth.h"
-
+#include "version.h"
 
 struct sesssetup_state {
 	union smb_sesssetup setup;
@@ -50,10 +50,10 @@ static DATA_BLOB lanman_blob(TALLOC_CTX *mem_ctx, const char *pass, DATA_BLOB ch
   form an encrypted NT password from a plaintext password
   and the server supplied challenge
 */
-static DATA_BLOB nt_blob(TALLOC_CTX *mem_ctx, const char *pass, DATA_BLOB challenge)
+static DATA_BLOB nt_blob(TALLOC_CTX *mem_ctx, const struct samr_Password *nt_hash, DATA_BLOB challenge)
 {
 	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, 24);
-	SMBNTencrypt(pass, challenge.data, blob.data);
+	SMBOWFencrypt(nt_hash->hash, challenge.data, blob.data);
 	return blob;
 }
 
@@ -67,26 +67,6 @@ static void set_user_session_key(struct smbcli_session *session,
 						     session_key->data, 
 						     session_key->length);
 }
-
-/*
-  setup signing for a NT1 style session setup
-*/
-static void use_nt1_session_keys(struct smbcli_session *session, 
-				 const char *password, const DATA_BLOB *nt_response)
-{
-	struct smbcli_transport *transport = session->transport; 
-	uint8_t nt_hash[16];
-	DATA_BLOB session_key = data_blob_talloc(session, NULL, 16);
-
-	E_md4hash(password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, session_key.data);
-
-	smbcli_transport_simple_set_signing(transport, session_key, *nt_response);
-
-	set_user_session_key(session, &session_key);
-	data_blob_free(&session_key);
-}
-
 
 /*
   handler for completion of a smbcli_request sub-request
@@ -169,6 +149,7 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 						struct smb_composite_sesssetup *io) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	const struct samr_Password *nt_hash = cli_credentials_get_nt_hash(io->in.credentials, state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
 
 	state->setup.nt1.level           = RAW_SESSSETUP_NT1;
@@ -178,7 +159,7 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.sesskey      = io->in.sesskey;
 	state->setup.nt1.in.capabilities = io->in.capabilities;
 	state->setup.nt1.in.os           = "Unix";
-	state->setup.nt1.in.lanman       = "Samba";
+	state->setup.nt1.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	state->setup.nt1.in.user         = cli_credentials_get_username(io->in.credentials);
 	state->setup.nt1.in.domain       = cli_credentials_get_domain(io->in.credentials);
 
@@ -187,14 +168,59 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else if (session->transport->negotiate.sec_mode & 
 		   NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		state->setup.nt1.in.password1 = lanman_blob(state, password, 
-							    session->transport->negotiate.secblob);
-		state->setup.nt1.in.password2 = nt_blob(state, password, 
-							session->transport->negotiate.secblob);
-		use_nt1_session_keys(session, password, &state->setup.nt1.in.password2);
-	} else {
+		DATA_BLOB session_key;
+		/* TODO: NTLMv2 in the client session setup */
+		if (lp_client_ntlmv2_auth()) {
+			DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_netbios_name(), lp_workgroup());
+			DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key;
+			
+			/* TODO - test with various domain cases, and without domain */
+			if (!SMBNTLMv2encrypt_hash(state, 
+						   state->setup.nt1.in.user, state->setup.nt1.in.domain, 
+						   nt_hash->hash, &session->transport->negotiate.secblob,
+						   &names_blob,
+						   &lmv2_response, &ntlmv2_response, 
+						   &lmv2_session_key, &session_key)) {
+				data_blob_free(&names_blob);
+				return NULL;
+			}
+			data_blob_free(&names_blob);
+			state->setup.nt1.in.password1 = lmv2_response;
+			state->setup.nt1.in.password2 = ntlmv2_response;
+			
+			smbcli_transport_simple_set_signing(session->transport, session_key, 
+							    state->setup.nt1.in.password2);
+			set_user_session_key(session, &session_key);
+			
+			data_blob_free(&lmv2_session_key);
+			data_blob_free(&session_key);
+		} else {
+
+			state->setup.nt1.in.password2 = nt_blob(state, nt_hash,
+								session->transport->negotiate.secblob);
+			if (lp_client_lanman_auth()) {
+				state->setup.nt1.in.password1 = lanman_blob(state, password, 
+									    session->transport->negotiate.secblob);
+			} else {
+				/* if not sending the LM password, send the NT password twice */
+				state->setup.nt1.in.password1 = state->setup.nt1.in.password2;
+			}
+
+			session_key = data_blob_talloc(session, NULL, 16);
+			SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
+			smbcli_transport_simple_set_signing(session->transport, session_key, 
+							    state->setup.nt1.in.password2);
+			set_user_session_key(session, &session_key);
+			
+			data_blob_free(&session_key);
+		}
+
+	} else if (lp_client_plaintext_auth()) {
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
+	} else {
+		/* could match windows client and return 'cannot logon from this workstation', but it just confuses everybody */
+		return NULL;
 	}
 
 	return smb_raw_session_setup_send(session, &state->setup);
@@ -219,7 +245,7 @@ static struct smbcli_request *session_setup_old(struct composite_context *c,
 	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
 	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
 	state->setup.old.in.os      = "Unix";
-	state->setup.old.in.lanman  = "Samba";
+	state->setup.old.in.lanman  = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	
 	if (!password) {
 		state->setup.old.in.password = data_blob(NULL, 0);
@@ -256,7 +282,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	state->setup.spnego.in.sesskey      = io->in.sesskey;
 	state->setup.spnego.in.capabilities = io->in.capabilities;
 	state->setup.spnego.in.os           = "Unix";
-	state->setup.spnego.in.lanman       = "Samba";
+	state->setup.spnego.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	state->setup.spnego.in.workgroup    = io->in.workgroup;
 
 	state->setup.spnego.out.vuid        = session->vuid;
