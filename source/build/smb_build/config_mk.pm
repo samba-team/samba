@@ -12,7 +12,7 @@ use smb_build::input;
 use strict;
 
 my %attribute_types = (
-	"NOPROTO" => "string",
+	"NOPROTO" => "bool",
    	"REQUIRED_SUBSYSTEMS" => "list",
 	"OUTPUT_TYPE" => "string",
 	"INIT_OBJ_FILES" => "list",
