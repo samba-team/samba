@@ -242,11 +242,10 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
+	child_si->bound = 1;
 
-	if (addr && addrlen) {
-		child_si->myname_len = *addrlen;
-		child_si->myname = sockaddr_dup(addr, *addrlen);
-	}
+	child_si->myname_len = parent_si->myname_len;
+	child_si->myname = sockaddr_dup(parent_si->myname, parent_si->myname_len);
 
 	child_si->peername_len = *addrlen;
 	child_si->peername = sockaddr_dup(addr, *addrlen);
