@@ -46,7 +46,7 @@
   this base64 decoder was taken from jitterbug (written by tridge).
   we might need to replace it with a new version
 */
-static int base64_decode(char *s)
+int ldb_base64_decode(char *s)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i, n;
@@ -92,7 +92,7 @@ static int base64_decode(char *s)
   encode as base64
   caller frees
 */
-char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
+char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i;
@@ -100,7 +100,7 @@ char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
 	int bytes = (len*8 + 5)/6;
 	char *out;
 
-	out = talloc_array(ldb, char, bytes+2);
+	out = talloc_array(mem_ctx, char, bytes+2);
 	if (!out) return NULL;
 
 	for (i=0;i<bytes;i++) {
@@ -402,7 +402,7 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 	}
 
 	if (base64_encoded) {
-		int len = base64_decode(value->data);
+		int len = ldb_base64_decode(value->data);
 		if (len == -1) {
 			/* it wasn't valid base64 data */
 			return -1;
