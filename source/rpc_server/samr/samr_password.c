@@ -400,11 +400,13 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 
 failed:
-	ret = gendb_search_dn(sam_ctx, mem_ctx,
-			      domain_dn, &res, dom_attrs);
-
-	if (ret != 1) {
-		return status;
+	if (domain_dn) {
+		ret = gendb_search_dn(sam_ctx, mem_ctx,
+				      domain_dn, &res, dom_attrs);
+		
+		if (ret != 1) {
+			return status;
+		}
 	}
 
 	/* on failure we need to fill in the reject reasons */
