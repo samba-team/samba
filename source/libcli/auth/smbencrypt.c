@@ -324,7 +324,8 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 	return response;
 }
 
-static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
+static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx, 
+					  const uint8_t ntlm_v2_hash[16],
 					  const DATA_BLOB *server_chal,
 					  const DATA_BLOB *names_blob)
 {
@@ -332,7 +333,8 @@ static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
 	
-	TALLOC_CTX *mem_ctx = talloc_init("NTLMv2_generate_response internal context");
+	TALLOC_CTX *mem_ctx = talloc_named(out_mem_ctx, 0, 
+					   "NTLMv2_generate_response internal context");
 
 	if (!mem_ctx) {
 		return data_blob(NULL, 0);
@@ -346,7 +348,7 @@ static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
 	
-	final_response = data_blob(NULL, sizeof(ntlmv2_response) + ntlmv2_client_data.length);
+	final_response = data_blob(out_mem_ctx, sizeof(ntlmv2_response) + ntlmv2_client_data.length);
 
 	memcpy(final_response.data, ntlmv2_response, sizeof(ntlmv2_response));
 
@@ -358,12 +360,13 @@ static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	return final_response;
 }
 
-static DATA_BLOB LMv2_generate_response(const uint8_t ntlm_v2_hash[16],
+static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx, 
+					const uint8_t ntlm_v2_hash[16],
 					const DATA_BLOB *server_chal)
 {
 	uint8_t lmv2_response[16];
-	DATA_BLOB lmv2_client_data = data_blob(NULL, 8);
-	DATA_BLOB final_response = data_blob(NULL, 24);
+	DATA_BLOB lmv2_client_data = data_blob(mem_ctx, 8);
+	DATA_BLOB final_response = data_blob(mem_ctx, 24);
 	
 	/* LMv2 */
 	/* client-supplied random data */
@@ -383,7 +386,8 @@ static DATA_BLOB LMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uint8_t nt_hash[16],
+BOOL SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx, 
+			   const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal, 
 			   const DATA_BLOB *names_blob,
 			   DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
@@ -400,10 +404,11 @@ BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uint8_t n
 	}
 	
 	if (nt_response) {
-		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal,
+		*nt_response = NTLMv2_generate_response(mem_ctx, 
+							ntlm_v2_hash, server_chal,
 							names_blob); 
 		if (user_session_key) {
-			*user_session_key = data_blob(NULL, 16);
+			*user_session_key = data_blob(mem_ctx, 16);
 			
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
@@ -414,9 +419,10 @@ BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uint8_t n
 	/* LMv2 */
 	
 	if (lm_response) {
-		*lm_response = LMv2_generate_response(ntlm_v2_hash, server_chal);
+		*lm_response = LMv2_generate_response(mem_ctx, 
+						      ntlm_v2_hash, server_chal);
 		if (lm_session_key) {
-			*lm_session_key = data_blob(NULL, 16);
+			*lm_session_key = data_blob(mem_ctx, 16);
 			
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of lm_response for session key */
@@ -427,7 +433,9 @@ BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uint8_t n
 	return True;
 }
 
-BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+BOOL SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx, 
+		      const char *user, const char *domain, 
+		      const char *password, 
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
@@ -436,7 +444,8 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	uint8_t nt_hash[16];
 	E_md4hash(password, nt_hash);
 
-	return SMBNTLMv2encrypt_hash(user, domain, nt_hash, server_chal, names_blob,
+	return SMBNTLMv2encrypt_hash(mem_ctx, 
+				     user, domain, nt_hash, server_chal, names_blob,
 				     lm_response, nt_response, lm_session_key, user_session_key);
 }
 
