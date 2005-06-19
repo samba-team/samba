@@ -243,13 +243,41 @@ Information Databases</link>.
 </sect1>
 
 <sect1>
+<title>Comparison of Single Sign-on and Domain Security</title>
+
+<para>
+When network administrators  are asked to describe the benefits of Windows NT4 and active directory networking
+the most often mentioned feature is that of SSO. Many companies have implemented SSO solutions. The mode of
+implementation of a single sign-on solution is an important factor in the practice of networking in general,
+and is critical in respect of Windows networking. Where a company may have a wide variety of information
+systems, each of which require some form of user authentication and validation it is not uncommon that users
+may need to remember more than a dozen login IDs and passwords. The problem will be compounded when the
+password for each system must be changed at regular intervals, and particularly so where password uniqueness
+and history limits are applied.
+</para>
+
+<para>
+There is a wide perception that SSO is the answer to the problem of users having to deal with too many
+information system access credentials. Many elaborate schemes have been devised to make it possible to deliver
+a user-friendly SSO solution. The trouble is that if this implementation is not done correctly, the site may
+end up paying dearly by way of complexity and management overheads. Simply put, many SSO solutions are an
+administrative nightmare.
+</para>
+
+<para>
+SSO implementations may involve centralization of all user account information in one repository. Depending on
+... add stuff here JHT!
+</para>
+
+</sect1>
+
+<sect1>
 <title>Basics of Domain Control</title>
 
 <para>
 <indexterm><primary>domain control</primary></indexterm>
-Over the years, public perceptions of what domain control really is has taken on an
-almost mystical nature. Before we branch into a brief overview of domain control,
-there are three basic types of domain controllers.
+Over the years, public perceptions of what domain control really is has taken on an almost mystical nature.
+Before we branch into a brief overview of domain control, there are three basic types of domain controllers.
 </para>
 
 <sect2>
