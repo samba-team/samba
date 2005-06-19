@@ -159,6 +159,20 @@ static NTSTATUS tls_handshake(struct tls_context *tls)
 	return NT_STATUS_OK;
 }
 
+/*
+  see how many bytes are pending on the connection
+*/
+NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
+{
+	if (!tls->tls_enabled || tls->tls_detect) {
+		return socket_pending(tls->socket, npending);
+	}
+	*npending = gnutls_record_check_pending(tls->session);
+	if (*npending == 0) {
+		return socket_pending(tls->socket, npending);
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   receive data either by tls or normal socket_recv
@@ -222,7 +236,7 @@ NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t 
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
-		DEBUG(0,("gnutls_record_send failed - %s\n", gnutls_strerror(ret)));
+		DEBUG(0,("gnutls_record_send of %d failed - %s\n", blob->length, gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	*sendlen = ret;
@@ -424,6 +438,11 @@ BOOL tls_enabled(struct tls_context *tls)
 BOOL tls_support(struct tls_params *params)
 {
 	return False;
+}
+
+NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
+{
+	return socket_pending((struct socket_context *)tls, npending);
 }
 
 #endif

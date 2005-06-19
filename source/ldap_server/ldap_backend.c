@@ -38,18 +38,15 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type
 		return NULL;
 	}
 
-	reply->prev = reply->next = NULL;
-	reply->state = LDAPSRV_REPLY_STATE_NEW;
 	reply->msg->messageid = call->request->messageid;
 	reply->msg->type = type;
 
 	return reply;
 }
 
-NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 {
 	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
-	return NT_STATUS_OK;
 }
 
 struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn, uint8_t scope)
@@ -83,7 +80,8 @@ NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	r->value.data = NULL;
 	r->value.length = 0;
 
-	return ldapsrv_queue_reply(call, reply);
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
@@ -112,7 +110,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		done->errormessage = NULL;
 		done->referral = NULL;
 
-		return ldapsrv_queue_reply(call, done_r);
+		ldapsrv_queue_reply(call, done_r);
+		return NT_STATUS_OK;
 	}
 
 	return part->ops->Search(part, call, req);
@@ -225,7 +224,8 @@ static NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 
 	ZERO_STRUCT(reply->msg->r);
 
-	return ldapsrv_queue_reply(call, reply);
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)

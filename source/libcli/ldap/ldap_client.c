@@ -174,7 +174,7 @@ static void ldap_try_decode_plain(struct ldap_connection *conn)
 
 	/* keep any remaining data in conn->partial */
 	data_blob_free(&conn->partial);
-	if (asn1.ofs != conn->partial.length) {
+	if (asn1.ofs != asn1.length) {
 		conn->partial = data_blob_talloc(conn, 
 						 asn1.data + asn1.ofs, 
 						 asn1.length - asn1.ofs);

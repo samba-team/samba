@@ -44,7 +44,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	resp->response.referral = NULL;
 	resp->SASL.secblob = data_blob(NULL, 0);
 
-	return ldapsrv_queue_reply(call, reply);
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
@@ -56,8 +57,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	int result;
 	const char *errstr;
 	NTSTATUS status = NT_STATUS_OK;
-	NTSTATUS sasl_status;
-	BOOL ret;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -105,6 +104,7 @@ reply:
 	} else if (NT_STATUS_IS_OK(status)) {
 		result = LDAP_SUCCESS;
 		errstr = NULL;
+		call->conn->enable_wrap = True;
 	} else {
 		result = 49;
 		errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
@@ -115,27 +115,8 @@ reply:
 	resp->response.errormessage = errstr;
 	resp->response.referral = NULL;
 
-	sasl_status = status;
-	status = ldapsrv_queue_reply(call, reply);
-	if (!NT_STATUS_IS_OK(sasl_status) || !NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = ldapsrv_do_responses(call->conn);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ret = ldapsrv_append_to_buf(&conn->sasl_out_buffer, conn->out_buffer.data, conn->out_buffer.length);
-	if (!ret) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ldapsrv_consumed_from_buf(&conn->out_buffer, conn->out_buffer.length);
-	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(conn->gensec, &conn->session_info);
-	}
-
-	return status;
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
@@ -163,7 +144,8 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	resp->response.referral = NULL;
 	resp->SASL.secblob = data_blob(NULL, 0);
 
-	return ldapsrv_queue_reply(call, reply);
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ldapsrv_UnbindRequest(struct ldapsrv_call *call)
