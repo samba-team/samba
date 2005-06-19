@@ -35,7 +35,7 @@
 struct lookup_state {
 	struct composite_context *resolve_ctx;
 	struct nbt_name hostname;
-	char address[16];
+	const char **address;
 };
 
 
@@ -61,6 +61,7 @@ struct composite_context *libnet_Lookup_send(struct libnet_Lookup *io)
 	s->hostname.name   = talloc_strdup(s, io->in.hostname);
 	s->hostname.type   = io->in.type;
 	s->hostname.scope  = NULL;
+	s->address         = io->out.address;
 
 	c->private  = s;
 	c->state    = SMBCLI_REQUEST_SEND;
@@ -84,7 +85,7 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
 	s = talloc_get_type(c->private, struct lookup_state);
 
-	status = resolve_name_recv(s->resolve_ctx, mem_ctx, io->out.address);
+	status = resolve_name_recv(s->resolve_ctx, mem_ctx, s->address);
 	return status;
 }
 
