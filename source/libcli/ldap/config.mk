@@ -7,6 +7,6 @@ ADD_OBJ_FILES = libcli/ldap/ldap.o \
 		libcli/ldap/ldap_msg.o \
 		libcli/ldap/ldap_ndr.o \
 		libcli/ldap/ldap_ildap.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBBASIC LIBEVENTS GENSEC SOCKET RPC_NDR_SAMR
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBEVENTS GENSEC SOCKET RPC_NDR_SAMR
 # End SUBSYSTEM LIBCLI_LDAP
 #################################

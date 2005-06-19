@@ -8,7 +8,7 @@ ADD_OBJ_FILES = \
 		librpc/ndr/ndr_string.o \
 		librpc/ndr/ndr_obfuscate.o \
 		librpc/ndr/ndr_misc.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBTALLOC LIBBASIC
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS LIBTALLOC
 # End SUBSYSTEM NDR_RAW
 ################################################
 
