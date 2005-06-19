@@ -266,7 +266,32 @@ administrative nightmare.
 
 <para>
 SSO implementations may involve centralization of all user account information in one repository. Depending on
-... add stuff here JHT!
+environmental complexity and the age of the systems over which a SSO solution is implemented, it may not be
+possible to change the solution architecture so as to accomodate a new identity management and user
+authentication system. Many SSO solutions involving legacy systems consist of a new super-structure that
+handles authentication on behalf of the user. The software that gets layered over the old system may simply
+implement a proxy authentication system. This means that the addition of SSO increases over-all information
+systems complexity. Ideally, the implementation of SSO should reduce complexity and reduce administative
+overheads.
+</para>
+
+<para>
+JJJ More Info HERE!
+</para>
+
+<para>
+Briefly describe:	1. New auth system that uses external auth.
+					2. SSO system that stores info about all IT systems, and provides front-end
+						app. that hides the IT systems beneath a veneer of its own.
+					3. Meta-directories and distribution if ID info.
+					4. The significance of Samba in the context of SSO
+					5. Implications of domain security
+						a) with NT4 domain
+						b) with ADS
+</para>
+
+<para>
+Other considerations: Should this stuff go elsewhere? Should it be dropped? Should this chapter be revamped?
 </para>
 
 </sect1>
