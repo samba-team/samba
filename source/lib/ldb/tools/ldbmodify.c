@@ -101,25 +101,17 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
-		usage();
-		exit(1);
-	}
-
-	for (i=0;i<options->argc;i++) {
-		const char *fname = options->argv[i];
-		FILE *f;
-		if (strcmp(fname,"-") == 0) {
-			f = stdin;
-		} else {
+		count += process_file(ldb, stdin);
+	} else {
+		for (i=0;i<options->argc;i++) {
+			const char *fname = options->argv[i];
+			FILE *f;
 			f = fopen(fname, "r");
-		}
-		if (!f) {
-			perror(fname);
-			exit(1);
-		}
-		count += process_file(ldb, f);
-		if (f != stdin) {
-			fclose(f);
+			if (!f) {
+				perror(fname);
+				exit(1);
+			}
+			count += process_file(ldb, f);
 		}
 	}
 
