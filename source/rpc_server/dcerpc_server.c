@@ -941,9 +941,10 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		talloc_free(dce_conn->partial_input.data);
 		return NT_STATUS_NO_MEMORY;
 	}
-	call->conn = dce_conn;
-	call->replies = NULL;
-	call->context = NULL;
+	call->conn      = dce_conn;
+	call->replies   = NULL;
+	call->context   = NULL;
+	call->event_ctx = dce_conn->srv_conn->event.ctx;
 
 	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
