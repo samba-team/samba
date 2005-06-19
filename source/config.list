@@ -12,6 +12,7 @@ lib/socket/config.mk
 lib/ldb/config.mk
 lib/talloc/config.mk
 lib/tdb/config.mk
+lib/tls/config.mk
 lib/registry/config.mk
 lib/messaging/config.mk
 lib/events/config.mk

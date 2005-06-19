@@ -19,9 +19,7 @@ NOPROTO=YES
 INIT_OBJ_FILES = \
 		web_server/web_server.o
 ADD_OBJ_FILES = \
-		web_server/http.o \
-		web_server/tls.o \
-		web_server/tlscert.o
-REQUIRED_SUBSYSTEMS = ESP EXT_LIB_GNUTLS SMBCALLS
+		web_server/http.o
+REQUIRED_SUBSYSTEMS = ESP LIBTLS SMBCALLS
 # End SUBSYSTEM WEB
 #######################
