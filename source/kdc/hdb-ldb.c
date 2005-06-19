@@ -820,7 +820,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	}
 	if (ret == 0) {
 		ret = LDB_message2entry(context, db, mem_ctx, 
-					principal, ent_type, 
+					principal, ldb_ent_type, 
 					realm_msg[0], msg[0], entry);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: message2entry failed\n");	
