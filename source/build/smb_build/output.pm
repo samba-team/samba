@@ -70,6 +70,10 @@ sub create_output($)
 	$depend->{PROTO}{TYPE} = "PROTO";
 	$depend->{PROTO}{NAME} = "PROTO";
 
+	$depend->{ALL_OBJS}{OUTPUT_TYPE} = "OBJLIST";
+	$depend->{ALL_OBJS}{TYPE} = "";
+	$depend->{ALL_OBJS}{NAME} = "ALL_OBJS";
+
 	foreach $part (values %{$depend}) {
 		next if not defined($part->{OUTPUT_TYPE});
 
@@ -83,6 +87,7 @@ sub create_output($)
 		push(@{$part->{OBJ_LIST}}, @{$part->{ADD_OBJ_FILES}}) if defined($part->{ADD_OBJ_FILES});
 		push(@{$part->{OBJ_LIST}}, @{$part->{OBJ_FILES}}) if defined($part->{OBJ_FILES});
 
+		push(@{$depend->{ALL_OBJS}{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if (defined(@{$part->{OBJ_LIST}}));
 		push(@{$depend->{PROTO}{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if ((not defined ($part->{NOPROTO}) or $part->{NOPROTO} eq "NO") and defined(@{$part->{OBJ_LIST}}));
 	}
 
