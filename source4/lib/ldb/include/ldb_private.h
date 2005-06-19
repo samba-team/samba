@@ -116,7 +116,6 @@ const char *ldb_next_errstring(struct ldb_module *module);
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
-char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len);
 int ldb_should_b64_encode(const struct ldb_val *val);
 
 int ltdb_connect(struct ldb_context *ldb, const char *url, 
