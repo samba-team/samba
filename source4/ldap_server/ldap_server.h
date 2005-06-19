@@ -21,62 +21,36 @@
 
 #include "libcli/ldap/ldap.h"
 
-struct rw_buffer {
-	uint8_t *data;
-	size_t ofs, length;
-};
+struct ldapsrv_connection {
+	struct stream_connection *connection;
+	struct gensec_security *gensec;
+	struct auth_session_info *session_info;
+	struct ldapsrv_service *service;
+	struct tls_context *tls;
 
-enum ldapsrv_call_state {
-	LDAPSRV_CALL_STATE_NEW = 0,
-	LDAPSRV_CALL_STATE_BUSY,
-	LDAPSRV_CALL_STATE_ASYNC,
-	LDAPSRV_CALL_STATE_ABORT,
-	LDAPSRV_CALL_STATE_COMPLETE
-};
+	/* partially received request */
+	DATA_BLOB partial;
 
-enum ldapsrv_reply_state {
-	LDAPSRV_REPLY_STATE_NEW = 0,
-	LDAPSRV_REPLY_STATE_SEND
-};
+	/* are we using gensec wrapping? */
+	BOOL enable_wrap;
 
-struct ldapsrv_connection;
+	/* reply send queue */
+	struct ldapsrv_send {
+		struct ldapsrv_send *next, *prev;
+		DATA_BLOB data;
+	} *send_queue;
+};
 
 struct ldapsrv_call {
-	struct ldapsrv_call *prev,*next;
-	enum ldapsrv_call_state state;
-
 	struct ldapsrv_connection *conn;
-
 	struct ldap_message *request;
-
 	struct ldapsrv_reply {
-		struct ldapsrv_reply *prev,*next;
-		enum ldapsrv_reply_state state;
+		struct ldapsrv_reply *prev, *next;
 		struct ldap_message *msg;
 	} *replies;
 };
 
 struct ldapsrv_service;
-
-struct ldapsrv_connection {
-	struct stream_connection *connection;
-
-	struct gensec_security *gensec;
-	struct auth_session_info *session_info;
-
-	struct rw_buffer sasl_in_buffer;
-	struct rw_buffer sasl_out_buffer;
-
-	struct rw_buffer in_buffer;
-	struct rw_buffer out_buffer;
-
-	struct ldapsrv_call *calls;
-
-	struct ldapsrv_service *service;
-
-	struct tls_context *tls;
-};
-
 struct ldapsrv_partition;
 
 struct ldapsrv_partition_ops {

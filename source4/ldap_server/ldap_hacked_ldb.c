@@ -197,7 +197,6 @@ DEBUG(0, (__location__": convert_values(ncname): end ok\n"));
 static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
 {
-	NTSTATUS status;
 	void *local_ctx;
 	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
@@ -259,10 +258,7 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 	ent->num_attributes = 0;
 	ent->attributes = NULL;
 
-	status = ldapsrv_queue_reply(call, ent_r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	ldapsrv_queue_reply(call, ent_r);
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
@@ -277,7 +273,8 @@ static NTSTATUS hacked_wellknown_Search(struct ldapsrv_partition *partition, str
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	ldapsrv_queue_reply(call, done_r);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -385,10 +382,7 @@ DEBUGADD(0,("hacked filter: %s\n", ldb_filter_from_tree(r, r->tree)));
 			}
 		}
 queue_reply:
-		status = ldapsrv_queue_reply(call, ent_r);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		ldapsrv_queue_reply(call, ent_r);
 	} else {
 		for (i=0; i < count; i++) {
 			ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
@@ -433,10 +427,7 @@ queue_reply:
 				}
 			}
 queue_reply2:
-			status = ldapsrv_queue_reply(call, ent_r);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
+			ldapsrv_queue_reply(call, ent_r);
 		}
 	}
 
@@ -465,7 +456,8 @@ queue_reply2:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	ldapsrv_queue_reply(call, done_r);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -573,10 +565,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			}
 		}
 queue_reply:
-		status = ldapsrv_queue_reply(call, ent_r);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		ldapsrv_queue_reply(call, ent_r);
 	}
 
 reply:
@@ -607,7 +596,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	ldapsrv_queue_reply(call, done_r);
+	return NT_STATUS_OK;
 #endif
 }
 
@@ -708,7 +698,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, add_reply);
+	ldapsrv_queue_reply(call, add_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -760,7 +751,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, del_reply);
+	ldapsrv_queue_reply(call, del_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -875,7 +867,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, modify_reply);
+	ldapsrv_queue_reply(call, modify_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -944,7 +937,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, compare_r);
+	ldapsrv_queue_reply(call, compare_r);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
@@ -1041,7 +1035,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, modifydn_r);
+	ldapsrv_queue_reply(call, modifydn_r);
+	return NT_STATUS_OK;
 }
 
 static const struct ldapsrv_partition_ops hldb_ops = {

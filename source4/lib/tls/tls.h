@@ -59,3 +59,8 @@ BOOL tls_enabled(struct tls_context *tls);
 BOOL tls_support(struct tls_params *parms);
 
 
+/*
+  ask for the number of bytes in a pending incoming packet
+*/
+NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending);
+
