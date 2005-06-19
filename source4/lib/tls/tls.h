@@ -37,7 +37,8 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx);
 struct tls_context *tls_init_server(struct tls_params *parms,
 				    struct socket_context *sock, 
 				    struct fd_event *fde,
-				    const char *plain_chars);
+				    const char *plain_chars,
+				    BOOL tls_enable);
 
 /*
   call these to send and receive data. They behave like socket_send() and socket_recv()
