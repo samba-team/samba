@@ -124,6 +124,8 @@ static int ildb_search(struct ldb_module *module, const char *base,
 		if (ildb->rootDSE != NULL) {
 			base = ldb_msg_find_string(ildb->rootDSE, 
 						   "defaultNamingContext", "");
+		} else {
+			base = "";
 		}
 	}
 

@@ -299,8 +299,12 @@ BOOL asn1_peek(struct asn1_data *data, void *p, int len)
 	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
 		return False;
 
-	if (data->ofs + len > data->length)
+	if (data->ofs + len > data->length) {
+		/* we need to mark the buffer as consumed, so the caller knows
+		   this was an out of data error, and not a decode error */
+		data->ofs = data->length;
 		return False;
+	}
 
 	memcpy(p, data->data + data->ofs, len);
 	return True;
@@ -437,7 +441,7 @@ BOOL asn1_read_OID(struct asn1_data *data, const char **OID)
 		do {
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
-		} while (!data->has_error && b & 0x80);
+		} while (!data->has_error && (b & 0x80));
 		tmp_oid = talloc_asprintf_append(tmp_oid, " %u",  v);
 	}
 
@@ -540,7 +544,7 @@ BOOL asn1_read_implicit_Integer(struct asn1_data *data, int *i)
 	uint8_t b;
 	*i = 0;
 
-	while (asn1_tag_remaining(data)>0) {
+	while (!data->has_error && asn1_tag_remaining(data)>0) {
 		if (!asn1_read_uint8(data, &b)) return False;
 		*i = (*i << 8) + b;
 	}
@@ -564,7 +568,7 @@ BOOL asn1_read_enumerated(struct asn1_data *data, int *v)
 	*v = 0;
 	
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
-	while (asn1_tag_remaining(data)>0) {
+	while (!data->has_error && asn1_tag_remaining(data)>0) {
 		uint8_t b;
 		asn1_read_uint8(data, &b);
 		*v = (*v << 8) + b;

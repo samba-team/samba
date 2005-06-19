@@ -254,9 +254,9 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 		return;
 	}
 	if (npending == 0) {
+		ldapsrv_terminate_connection(conn, "EOF from client");
 		return;
 	}
-
 
 	conn->partial.data = talloc_realloc_size(conn, conn->partial.data, 
 						 conn->partial.length + npending);

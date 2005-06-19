@@ -501,7 +501,9 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 
 		ret->operation = LDB_OP_NOT;
 		ret->u.not.child = ldap_decode_filter_tree(ret, data);
-
+		if (ret->u.not.child == NULL) {
+			goto failed;
+		}
 		if (!asn1_end_tag(data)) {
 			goto failed;
 		}
@@ -595,7 +597,6 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 
 failed:
 	talloc_free(ret);
-	DEBUG(0,("Failed to parse ASN.1 LDAP filter\n"));
 	return NULL;	
 }
 
