@@ -244,7 +244,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strlen(buf) > 3) {
-		in = base64_decode_data_blob(buf + 3);
+		in = base64_decode_data_blob(NULL, buf + 3);
 	} else {
 		in = data_blob(NULL, 0);
 	}
@@ -309,7 +309,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (strlen(buf) > 3) {
-		in = base64_decode_data_blob(buf + 3);
+		in = base64_decode_data_blob(NULL, buf + 3);
 	} else {
 		in = data_blob(NULL, 0);
 	}
@@ -450,7 +450,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	nt_status = auth_nt_status_squash(nt_status);
 
 	if (out.length) {
-		out_base64 = base64_encode_data_blob(out);
+		out_base64 = base64_encode_data_blob(NULL, out);
 	} else {
 		out_base64 = NULL;
 	}
