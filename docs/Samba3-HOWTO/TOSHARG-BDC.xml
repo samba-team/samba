@@ -29,26 +29,36 @@ we will do our best to provide a solution.
 
 <para>
 <indexterm><primary>SAM backend</primary><secondary>LDAP</secondary></indexterm>
-Samba-3 can act as a Backup Domain Controller (BDC) to another Samba Primary Domain
-Controller (PDC). A Samba-3 PDC can operate with an LDAP account backend. The LDAP backend can be
-either a common master LDAP server or a slave server. The use of a slave LDAP server has the
-benefit that when the master is down, clients may still be able to log onto the network.
-This effectively gives Samba a high degree of scalability and is an effective solution
-for large organizations. If you use an LDAP slave server for a PDC,
-you will need to ensure the master's continued availability &smbmdash; if the
-slave finds its master down at the wrong time, you will have 
-stability and operational problems.
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+<indexterm><primary>LDAP</primary><secondary>slave</secondary></indexterm>
+<indexterm><primary>scalability</primary></indexterm>
+Samba-3 can act as a Backup Domain Controller (BDC) to another Samba Primary Domain Controller (PDC). A
+Samba-3 PDC can operate with an LDAP account backend. The LDAP backend can be either a common master LDAP
+server or a slave server. The use of a slave LDAP server has the benefit that when the master is down, clients
+may still be able to log onto the network.  This effectively gives Samba a high degree of scalability and is
+an effective solution for large organizations. If you use an LDAP slave server for a PDC, you will need to
+ensure the master's continued availability &smbmdash; if the slave finds its master down at the wrong time,
+you will have stability and operational problems.
 </para>
 
 <para>
+<indexterm><primary>two-way</primary><secondary>propagation</secondary></indexterm>
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
+<indexterm><primary>non-LDAP</primary><secondary>backend</secondary></indexterm>
 While it is possible to run a Samba-3 BDC with a non-LDAP backend, that
 backend must allow some form of "two-way" propagation of changes
 from the BDC to the master.  Only LDAP has such capability at this stage.
 </para>
 
 <para>
+<indexterm><primary>non-LDAP</primary><secondary>backend</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>non-LDAP</secondary></indexterm>
+<indexterm><primary>domain</primary><secondary>member</secondary><tertiary>server</tertiary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>trust account password</primary></indexterm>
+<indexterm><primary>domain trust</primary></indexterm>
 The use of a non-LDAP backend SAM database is particularly problematic because domain member
 servers and workstations periodically change the Machine Trust Account password. The new
 password is then stored only locally. This means that in the absence of a centrally stored
@@ -60,14 +70,14 @@ breakage of the domain trust.
 </para>
 
 <para>
-Considering the number of comments and questions raised concerning how to configure a BDC,
-let's consider each possible option and look at the pros and cons for each possible solution.
-<link linkend="pdc-bdc-table">The Domain Backend Account Distribution Options table below</link> lists 
-possible design configurations for a PDC/BDC infrastructure.
 <indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
+Considering the number of comments and questions raised concerning how to configure a BDC,
+let's consider each possible option and look at the pros and cons for each possible solution.
+<link linkend="pdc-bdc-table">The Domain Backend Account Distribution Options table below</link> lists 
+possible design configurations for a PDC/BDC infrastructure.
 </para>
 
 <table frame="all" id="pdc-bdc-table"><title>Domain Backend Account Distribution Options</title>
