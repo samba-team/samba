@@ -69,9 +69,19 @@ static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
 	}
 
 	status = socket_recv(tls->socket, buf, size, &nread, 0);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		return 0;
+	}
+	if (NT_STATUS_IS_ERR(status)) {
+		EVENT_FD_NOT_READABLE(tls->fde);
+		EVENT_FD_NOT_WRITEABLE(tls->fde);
+		errno = EBADF;
+		return -1;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		EVENT_FD_READABLE(tls->fde);
 		EVENT_FD_NOT_WRITEABLE(tls->fde);
+		errno = EAGAIN;
 		return -1;
 	}
 	if (tls->output_pending) {
@@ -185,7 +195,6 @@ NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen,
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
-		DEBUG(0,("gnutls_record_recv failed - %s\n", gnutls_strerror(ret)));
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	*nread = ret;
