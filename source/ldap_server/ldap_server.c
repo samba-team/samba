@@ -330,6 +330,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
+	int port;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
 	if (conn == NULL) goto failed;
@@ -341,10 +342,12 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->service     = talloc_get_type(c->private, struct ldapsrv_service);
 	c->private        = conn;
 
+	port = socket_get_my_port(c->socket);
+
 	/* note that '0' is a ASN1_SEQUENCE(0), which is the first byte on
 	   any ldap connection */
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
-				    c->event.fde, "0");
+				    c->event.fde, NULL, port != 389);
 	if (conn->tls == NULL) goto failed;
 
 	return;
