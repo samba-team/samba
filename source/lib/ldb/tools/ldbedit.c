@@ -41,7 +41,7 @@
 #include "system/filesys.h"
 #endif
 
-static int verbose;
+static struct ldb_cmdline *options;
 
 /*
   debug routine 
@@ -77,14 +77,14 @@ static int modify_record(struct ldb_context *ldb,
 		return 0;
 	}
 
+	if (options->verbose > 0) {
+		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
+	}
+
 	if (ldb_modify(ldb, mod) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
 			msg1->dn, ldb_errstring(ldb));
 		return -1;
-	}
-
-	if (verbose > 0) {
-		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
 	}
 
 	return mod->num_elements;
@@ -121,13 +121,13 @@ static int merge_edits(struct ldb_context *ldb,
 	for (i=0;i<count2;i++) {
 		msg = msg_find(msgs1, count1, msgs2[i]->dn);
 		if (!msg) {
+			if (options->verbose > 0) {
+				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
+			}
 			if (ldb_add(ldb, msgs2[i]) != 0) {
 				fprintf(stderr, "failed to add %s - %s\n",
 					msgs2[i]->dn, ldb_errstring(ldb));
 				return -1;
-			}
-			if (verbose > 0) {
-				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
 			}
 			adds++;
 		} else {
@@ -141,13 +141,13 @@ static int merge_edits(struct ldb_context *ldb,
 	for (i=0;i<count1;i++) {
 		msg = msg_find(msgs2, count2, msgs1[i]->dn);
 		if (!msg) {
+			if (options->verbose > 0) {
+				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
+			}
 			if (ldb_delete(ldb, msgs1[i]->dn) != 0) {
 				fprintf(stderr, "failed to delete %s - %s\n",
 					msgs1[i]->dn, ldb_errstring(ldb));
 				return -1;
-			}
-			if (verbose > 0) {
-				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
 			}
 			deletes++;
 		}
@@ -280,7 +280,6 @@ static void usage(void)
 	int ret;
 	const char *expression = NULL;
 	const char * const * attrs = NULL;
-	struct ldb_cmdline *options;
 
 	ldb = ldb_init(NULL);
 
