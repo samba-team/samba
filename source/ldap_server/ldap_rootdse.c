@@ -322,10 +322,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 			}
 		}
 queue_reply:
-		status = ldapsrv_queue_reply(call, ent_r);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		ldapsrv_queue_reply(call, ent_r);
 	}
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
@@ -357,7 +354,8 @@ queue_reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	ldapsrv_queue_reply(call, done_r);
+	return NT_STATUS_OK;
 }
 
 static const struct ldapsrv_partition_ops rootdse_ops = {

@@ -38,7 +38,6 @@
 static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
 {
-	NTSTATUS status;
 	void *local_ctx;
 	struct ldap_dn *basedn;
 	struct ldap_Result *done;
@@ -128,10 +127,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			}
 		}
 queue_reply:
-		status = ldapsrv_queue_reply(call, ent_r);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		ldapsrv_queue_reply(call, ent_r);
 	}
 
 reply:
@@ -162,7 +158,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	ldapsrv_queue_reply(call, done_r);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -261,7 +258,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, add_reply);
+	ldapsrv_queue_reply(call, add_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -313,7 +311,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, del_reply);
+	ldapsrv_queue_reply(call, del_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -423,7 +422,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, modify_reply);
+	ldapsrv_queue_reply(call, modify_reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
@@ -492,7 +492,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, compare_r);
+	ldapsrv_queue_reply(call, compare_r);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
@@ -589,7 +590,8 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, modifydn_r);
+	ldapsrv_queue_reply(call, modifydn_r);
+	return NT_STATUS_OK;
 }
 
 static const struct ldapsrv_partition_ops sldb_ops = {
