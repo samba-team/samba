@@ -25,9 +25,14 @@ transport="ncacn_np"
         "--option=usespnego=yes--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no" \
+        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no" \
+        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=yes" \
+        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=yes --option=ntlmssp_client:128bit=no" \
+        "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no --option=ntlmssp_client:128bit=no" \
+        "--option=usespnego=no --option=clientntlmv2auth=yes" \
         "--option=usespnego=no" \
     ; do
-   name="$transport with $ntlmoptions"
+   name="RPC-SECRETS on $transport with $ntlmoptions"
    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-SECRETS "$*" || failed=`expr $failed + 1`
   done
 testok $0 $failed
