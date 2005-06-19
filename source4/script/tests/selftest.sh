@@ -24,6 +24,8 @@ CONFFILE=$LIBDIR/smb.conf
 PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
+CONFIGURATION="--configfile=$CONFFILE"
+export CONFIGURATION
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
 export SMBD_TEST_FIFO
@@ -74,7 +76,7 @@ fi
 smbd_check_or_start
 
 # ensure any one smbtorture call doesn't run too long
-TORTURE_OPTIONS="--maximum-runtime=300"
+TORTURE_OPTIONS="--maximum-runtime=300 $CONFIGURATION"
 export TORTURE_OPTIONS
 
 
