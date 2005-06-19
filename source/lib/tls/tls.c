@@ -111,6 +111,10 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 	b.length = size;
 
 	status = socket_send(tls->socket, &b, &nwritten, 0);
+	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		errno = EAGAIN;
+		return -1;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		EVENT_FD_WRITEABLE(tls->fde);
 		return -1;
