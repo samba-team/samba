@@ -71,6 +71,9 @@ static int base64_decode(char *s)
 		}
 		s++; i++;
 	}
+	if (bit_offset >= 3) {
+		n--;
+	}
 
 	if (*s && !p) {
 		/* the only termination allowed */
