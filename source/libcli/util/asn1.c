@@ -387,26 +387,6 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 }
 
 
-/* Get the length to be expected in buf */
-BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
-			uint8_t tag, size_t *result)
-{
-	struct asn1_data data;
-
-	/* Fake the asn1_load to avoid the memdup, this is just to be able to
-	 * re-use the length-reading in asn1_start_tag */
-	ZERO_STRUCT(data);
-	data.data = buf;
-	data.length = buf_length;
-	if (!asn1_start_tag(&data, tag))
-		return False;
-	*result = asn1_tag_remaining(&data)+data.ofs;
-	/* We can't use asn1_end_tag here, as we did not consume the complete
-	 * tag, so asn1_end_tag would flag an error and not free nesting */
-	talloc_free(data.nesting);
-	return True;
-}
-
 /* stop reading a tag */
 BOOL asn1_end_tag(struct asn1_data *data)
 {

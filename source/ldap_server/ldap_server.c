@@ -1,6 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    LDAP server
+
+   Copyright (C) Andrew Tridgell 2005
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Stefan Metzmacher 2004
    
@@ -25,14 +28,18 @@
 #include "dlinklist.h"
 #include "asn_1.h"
 #include "ldap_server/ldap_server.h"
+#include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 #include "lib/socket/socket.h"
+#include "lib/tls/tls.h"
 
 /*
   close the socket and shutdown a server_context
 */
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
 {
+	talloc_free(ldap_conn->tls);
+	ldap_conn->tls = NULL;
 	stream_terminate_connection(ldap_conn->connection, reason);
 }
 
@@ -65,27 +72,36 @@ BOOL ldapsrv_append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 	memcpy(buf->data+buf->length, data, length);
 
 	buf->length += length;
+
 	return True;
 }
 
-static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
+static BOOL read_into_buf(struct ldapsrv_connection *conn, struct rw_buffer *buf)
 {
 	NTSTATUS status;
 	DATA_BLOB tmp_blob;
 	BOOL ret;
 	size_t nread;
 
-	tmp_blob = data_blob_talloc(sock, NULL, 1024);
+	tmp_blob = data_blob_talloc(conn, NULL, 1024);
 	if (tmp_blob.data == NULL) {
 		return False;
 	}
 
-	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
+	status = tls_socket_recv(conn->tls, tmp_blob.data, tmp_blob.length, &nread);
+	if (NT_STATUS_IS_OK(status) && nread == 0) {
+		return False;
+	}
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		talloc_free(tmp_blob.data);
 		return False;
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_blob.data);
+		return True;
+	}
+
 	tmp_blob.length = nread;
 
 	ret = ldapsrv_append_to_buf(buf, tmp_blob.data, tmp_blob.length);
@@ -104,19 +120,13 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	BOOL ret;
 	uint8_t *buf;
 	size_t buf_length, sasl_length;
-	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 	size_t nread;
 
-	if (!conn->gensec) {
-		return read_into_buf(sock, &conn->in_buffer);
-	}
-	if (!conn->session_info) {
-		return read_into_buf(sock, &conn->in_buffer);
-	}
-	if (!(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	if (!conn->gensec || !conn->session_info ||
+	    !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
 	      gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
-		return read_into_buf(sock, &conn->in_buffer);
+		return read_into_buf(conn, &conn->in_buffer);
 	}
 
 	mem_ctx = talloc_new(conn);
@@ -131,11 +141,19 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 		return False;
 	}
 
-	status = socket_recv(sock, tmp_blob.data, tmp_blob.length, &nread, 0);
+	status = tls_socket_recv(conn->tls, tmp_blob.data, tmp_blob.length, &nread);
+	if (NT_STATUS_IS_OK(status) && nread == 0) {
+		talloc_free(conn->tls);
+		return False;
+	}
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);
 		return False;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return True;
 	}
 	tmp_blob.length = nread;
 
@@ -185,7 +203,7 @@ static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
 	return ret;
 }
 
-static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
+static BOOL write_from_buf(struct ldapsrv_connection *conn, struct rw_buffer *buf)
 {
 	NTSTATUS status;
 	DATA_BLOB tmp_blob;
@@ -194,7 +212,7 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 	tmp_blob.data = buf->data;
 	tmp_blob.length = buf->length;
 
-	status = socket_send(sock, &tmp_blob, &sendlen, 0);
+	status = tls_socket_send(conn->tls, &tmp_blob, &sendlen);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
 		return False;
@@ -213,20 +231,19 @@ static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 	DATA_BLOB sasl;
 	size_t sendlen;
 	BOOL ret;
-	struct socket_context *sock = conn->connection->socket;
 	TALLOC_CTX *mem_ctx;
 
 
 	if (!conn->gensec) {
-		return write_from_buf(sock, &conn->out_buffer);
+		return write_from_buf(conn, &conn->out_buffer);
 	}
 	if (!conn->session_info) {
-		return write_from_buf(sock, &conn->out_buffer);
+		return write_from_buf(conn, &conn->out_buffer);
 	}
 	if (conn->sasl_out_buffer.length == 0 &&
 	    !(gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
 	      gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL))) {
-		return write_from_buf(sock, &conn->out_buffer);
+		return write_from_buf(conn, &conn->out_buffer);
 	}
 
 	mem_ctx = talloc_new(conn);
@@ -270,7 +287,7 @@ nodata:
 	tmp_blob.data = conn->sasl_out_buffer.data;
 	tmp_blob.length = conn->sasl_out_buffer.length;
 
-	status = socket_send(sock, &tmp_blob, &sendlen, 0);
+	status = tls_socket_send(conn->tls, &tmp_blob, &sendlen);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
 		talloc_free(mem_ctx);
@@ -334,13 +351,9 @@ static void ldapsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct ldapsrv_connection *ldap_conn = talloc_get_type(conn->private, struct ldapsrv_connection);
 	uint8_t *buf;
-	size_t buf_length, msg_length;
-	DATA_BLOB blob;
-	struct asn1_data data;
+	size_t buf_length;
 	struct ldapsrv_call *call;
 	NTSTATUS status;
-
-	DEBUG(10,("ldapsrv_recv\n"));
 
 	if (!ldapsrv_read_buf(ldap_conn)) {
 		ldapsrv_terminate_connection(ldap_conn, "ldapsrv_read_buf() failed");
@@ -350,30 +363,33 @@ static void ldapsrv_recv(struct stream_connection *conn, uint16_t flags)
 	peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 
 	while (buf_length > 0) {
-		/* LDAP Messages are always SEQUENCES */
-
-		if (!asn1_object_length(buf, buf_length, ASN1_SEQUENCE(0),
-					&msg_length)) {
-			ldapsrv_terminate_connection(ldap_conn, "asn1_object_length() failed");
-			return;
-		}
-
-		if (buf_length < msg_length) {
-			/* Not enough yet */
-			break;
-		}
-
-		/* We've got a complete LDAP request in the in-buffer, convert
-		 * that to a ldap_message and put it into the incoming
-		 * queue. */
+		DATA_BLOB blob;
+		struct asn1_data data;
+		struct ldap_message *msg = talloc(conn, struct ldap_message);
 
 		blob.data = buf;
-		blob.length = msg_length;
+		blob.length = buf_length;
 
 		if (!asn1_load(&data, blob)) {
 			ldapsrv_terminate_connection(ldap_conn, "asn1_load() failed");
 			return;
 		}
+
+		if (!ldap_decode(&data, msg)) {
+			if (data.ofs == data.length) {
+				/* we don't have a complete msg yet */
+				talloc_free(msg);
+				asn1_free(&data);
+				return;
+			}
+			asn1_free(&data);
+			talloc_free(msg);
+			ldapsrv_terminate_connection(ldap_conn, "ldap_decode() failed");
+			return;
+		}
+
+		ldapsrv_consumed_from_buf(&ldap_conn->in_buffer, data.ofs);
+		asn1_free(&data);
 
 		call = talloc_zero(ldap_conn, struct ldapsrv_call);
 		if (!call) {
@@ -381,28 +397,11 @@ static void ldapsrv_recv(struct stream_connection *conn, uint16_t flags)
 			return;		
 		}
 
-		call->request = talloc_zero(call, struct ldap_message);
-		if (call->request == NULL) {
-			ldapsrv_terminate_connection(ldap_conn, "no memory");
-			return;		
-		}
-
+		call->request = talloc_steal(call, msg);
 		call->state = LDAPSRV_CALL_STATE_NEW;
 		call->conn = ldap_conn;
 
-		if (!ldap_decode(&data, call->request)) {
-			dump_data(0,buf, msg_length);
-			asn1_free(&data);
-			ldapsrv_terminate_connection(ldap_conn, "ldap_decode() failed");
-			return;
-		}
-
-		asn1_free(&data);
-
-		DLIST_ADD_END(ldap_conn->calls, call,
-			      struct ldapsrv_call *);
-
-		ldapsrv_consumed_from_buf(&ldap_conn->in_buffer, msg_length);
+		DLIST_ADD_END(ldap_conn->calls, call, struct ldapsrv_call *);
 
 		status = ldapsrv_do_call(call);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -453,18 +452,27 @@ static void ldapsrv_send(struct stream_connection *conn, uint16_t flags)
 */
 static void ldapsrv_accept(struct stream_connection *conn)
 {
+	struct ldapsrv_service *ldapsrv_service = 
+		talloc_get_type(conn->private, struct ldapsrv_service);
 	struct ldapsrv_connection *ldap_conn;
 
-	DEBUG(10, ("ldapsrv_accept\n"));
-
 	ldap_conn = talloc_zero(conn, struct ldapsrv_connection);
-
-	if (ldap_conn == NULL)
-		return;
+	if (ldap_conn == NULL) goto failed;
 
 	ldap_conn->connection = conn;
 	ldap_conn->service = talloc_get_type(conn->private, struct ldapsrv_service);
 	conn->private = ldap_conn;
+
+	/* note that '0' is a ASN1_SEQUENCE(0), which is the first byte on
+	   any ldap connection */
+	ldap_conn->tls = tls_init_server(ldapsrv_service->tls_params, conn->socket, 
+					 conn->event.fde, "0");
+	if (ldap_conn->tls == NULL) goto failed;
+
+	return;
+
+failed:
+	talloc_free(conn);
 }
 
 static const struct stream_server_ops ldap_stream_ops = {
@@ -485,31 +493,40 @@ static NTSTATUS add_socket(struct event_context *event_context, const struct mod
 
 	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 				     "ipv4", address, &port, ldap_service);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
+			 address, port, nt_errstr(status)));
+	}
 
-	port = 3268;
-
-	return stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
-				   "ipv4", address, &port, ldap_service);
+	/* add ldaps server */
+	port = 636;
+	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+				     "ipv4", address, &port, ldap_service);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
+			 address, port, nt_errstr(status)));
+	}
+	return status;
 }
 
 /*
   open the ldap server sockets
 */
-static NTSTATUS ldapsrv_init(struct event_context *event_context, const struct model_ops *model_ops)
+static void ldapsrv_task_init(struct task_server *task)
 {	
 	struct ldapsrv_service *ldap_service;
 	struct ldapsrv_partition *rootDSE_part;
 	struct ldapsrv_partition *part;
 	NTSTATUS status;
 
-	DEBUG(10,("ldapsrv_init\n"));
+	ldap_service = talloc_zero(task, struct ldapsrv_service);
+	if (ldap_service == NULL) goto failed;
 
-	ldap_service = talloc_zero(event_context, struct ldapsrv_service);
-	NT_STATUS_HAVE_NO_MEMORY(ldap_service);
+	ldap_service->tls_params = tls_initialise(ldap_service);
+	if (ldap_service->tls_params == NULL) goto failed;
 
 	rootDSE_part = talloc(ldap_service, struct ldapsrv_partition);
-	NT_STATUS_HAVE_NO_MEMORY(rootDSE_part);
+	if (rootDSE_part == NULL) goto failed;
 
 	rootDSE_part->base_dn = ""; /* RootDSE */
 	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
@@ -518,7 +535,7 @@ static NTSTATUS ldapsrv_init(struct event_context *event_context, const struct m
 	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
 
 	part = talloc(ldap_service, struct ldapsrv_partition);
-	NT_STATUS_HAVE_NO_MEMORY(part);
+	if (part == NULL) goto failed;
 
 	part->base_dn = "*"; /* default partition */
 	if (lp_parm_bool(-1, "ldapsrv", "hacked", False)) {
@@ -540,15 +557,28 @@ static NTSTATUS ldapsrv_init(struct event_context *event_context, const struct m
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(i);
-			status = add_socket(event_context, model_ops, address, ldap_service);
-			NT_STATUS_NOT_OK_RETURN(status);
+			status = add_socket(task->event_ctx, task->model_ops, address, ldap_service);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(event_context, model_ops, lp_socket_address(), ldap_service);
-		NT_STATUS_NOT_OK_RETURN(status);
+		status = add_socket(task->event_ctx, task->model_ops, lp_socket_address(), ldap_service);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
-	return NT_STATUS_OK;
+	return;
+
+failed:
+	task_terminate(task, "Failed to startup ldap server task");	
+}
+
+/*
+  called on startup of the web server service It's job is to start
+  listening on all configured sockets
+*/
+static NTSTATUS ldapsrv_init(struct event_context *event_context, 
+			     const struct model_ops *model_ops)
+{	
+	return task_server_startup(event_context, model_ops, ldapsrv_task_init);
 }
 
 
