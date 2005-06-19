@@ -14,7 +14,7 @@ sub generate_objlist($)
 {
 	my $subsys = shift;
 
-	$subsys->{TARGET} = "$subsys->{TYPE}_$subsys->{NAME}";
+	$subsys->{TARGET} = "bin/.$subsys->{TYPE}_$subsys->{NAME}";
 	$subsys->{OUTPUT} = "\$($subsys->{TYPE}_$subsys->{NAME}_OBJS)";
 }
 
