@@ -191,7 +191,7 @@ static void websrv_accept(struct stream_connection *conn)
 			websrv_timeout, web);
 
 	web->tls = tls_init_server(edata->tls_params, conn->socket, 
-				   conn->event.fde, "GPHO");
+				   conn->event.fde, "GPHO", True);
 	if (web->tls == NULL) goto failed;
 
 	return;

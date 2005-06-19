@@ -332,7 +332,8 @@ init_failed:
 struct tls_context *tls_init_server(struct tls_params *params, 
 				    struct socket_context *socket,
 				    struct fd_event *fde, 
-				    const char *plain_chars)
+				    const char *plain_chars,
+				    BOOL tls_enable)
 {
 	struct tls_context *tls;
 	int ret;
@@ -343,7 +344,7 @@ struct tls_context *tls_init_server(struct tls_params *params,
 	tls->socket          = socket;
 	tls->fde             = fde;
 
-	if (!params->tls_enabled) {
+	if (!params->tls_enabled || !tls_enable) {
 		tls->tls_enabled = False;
 		return tls;
 	}
@@ -402,7 +403,6 @@ BOOL tls_support(struct tls_params *params)
 	return params->tls_enabled;
 }
 
-
 #else
 
 /* for systems without tls we just map the tls socket calls to the
@@ -416,7 +416,8 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 struct tls_context *tls_init_server(struct tls_params *params, 
 				    struct socket_context *sock, 
 				    struct fd_event *fde,
-				    const char *plain_chars)
+				    const char *plain_chars,
+				    BOOL tls_enable)
 {
 	if (plain_chars == NULL) return NULL;
 	return (struct tls_context *)sock;
