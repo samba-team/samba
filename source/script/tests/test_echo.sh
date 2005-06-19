@@ -32,15 +32,18 @@ for transport in $transports; do
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:echo_TestSleep=no" \
+        "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:echo_TestSleep=no" \
     ; do
-   name="$transport with $bindoptions and $ntlmoptions"
+   name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
   done
  done
 done
 
 # separately test the print option - its v slow
-name="print option"
+name="RPC-ECHO with print option"
 testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server[print]" -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
 
 testok $0 $failed

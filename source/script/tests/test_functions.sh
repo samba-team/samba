@@ -109,7 +109,7 @@ testit() {
 			echo "TEST FAILED: $name (status $status)"
 			echo "=========================================="
    		else
-			echo "TEST FAILED: $name (status $status)"
+			echo "TEST FAILED: $cmdline (status $status)"
 		fi
 		return 1;
 	fi
