@@ -702,6 +702,7 @@ a more complete explanation.
 <title>Samba ADS Domain Control</title>
 
 <para>
+<indexterm><primary>active directory</primary></indexterm>
 Samba-3 is not, and cannot act as, an Active Directory server. It cannot truly function as an Active Directory
 PDC. The protocols for some of the functionality of Active Directory domain controllers has been partially
 implemented on an experimental only basis. Please do not expect Samba-3 to support these protocols. Do not
@@ -712,6 +713,8 @@ someday or maybe never!
 </para>
 
 <para>
+<indexterm><primary>domain controllers</primary></indexterm>
+<indexterm><primary>active directory</primary></indexterm>
 To be sure, Samba-3 is designed to provide most of the functionality that Microsoft Windows NT4-style
 domain controllers have. Samba-3 does not have all the capabilities of Windows NT4, but it does have
 a number of features that Windows NT4 domain controllers do not have. In short, Samba-3 is not NT4 and it
@@ -725,6 +728,7 @@ enough for all to understand.
 <title>Domain and Network Logon Configuration</title>
 
 <para>
+<indexterm><primary>domain logon</primary></indexterm>
 The subject of network or domain logons is discussed here because it forms
 an integral part of the essential functionality that is provided by a domain controller.
 </para>
@@ -733,6 +737,7 @@ an integral part of the essential functionality that is provided by a domain con
 <title>Domain Network Logon Service</title>
 
 <para>
+<indexterm><primary>domain logon</primary></indexterm>
 All domain controllers must run the netlogon service (<emphasis>domain logons</emphasis>
 in Samba). One domain controller must be configured with <smbconfoption name="domain master">Yes</smbconfoption>
 (the PDC); on all BDCs set the parameter <smbconfoption name="domain master">No</smbconfoption>.
@@ -787,6 +792,11 @@ Microsoft, and we recommend that you do not do that.
 <title>The Special Case of Windows 9x/Me</title>
 
 <para>
+<indexterm><primary>domain</primary></indexterm>
+<indexterm><primary>workgroup</primary></indexterm>
+<indexterm><primary>authentication</primary></indexterm>
+<indexterm><primary>browsing</primary></indexterm>
+<indexterm><primary>rights</primary></indexterm>
 A domain and a workgroup are exactly the same in terms of network
 browsing. The difference is that a distributable authentication
 database is associated with a domain, for secure login access to a
@@ -796,6 +806,7 @@ now in the same way as MS Windows NT/200x.
 </para>
 
 <para>
+<indexterm><primary>browsing</primary></indexterm>
 The SMB client logging on to a domain has an expectation that every other
 server in the domain should accept the same authentication information.
 Network browsing functionality of domains and workgroups is identical and
@@ -804,6 +815,9 @@ It should be noted that browsing is totally orthogonal to logon support.
 </para>
 
 <para>
+<indexterm><primary>single-logon</primary></indexterm>
+<indexterm><primary>domain logons</primary></indexterm>
+<indexterm><primary>network logon</primary></indexterm>
 Issues related to the single-logon network model are discussed in this
 section. Samba supports domain logons, network logon scripts, and user
 profiles for MS Windows for Workgroups and MS Windows 9x/Me clients,
@@ -811,14 +825,12 @@ which are the focus of this section.
 </para>
 
 <para>
-When an SMB client in a domain wishes to log on, it broadcasts requests for a
-logon server. The first one to reply gets the job and validates its
-password using whatever mechanism the Samba administrator has installed.
-It is possible (but ill advised) to create a domain where the user
-database is not shared between servers; that is, they are effectively workgroup
-servers advertising themselves as participating in a domain. This
-demonstrates how authentication is quite different from but closely
-involved with domains.
+<indexterm><primary>broadcast request</primary></indexterm>
+When an SMB client in a domain wishes to log on, it broadcasts requests for a logon server. The first one to
+reply gets the job and validates its password using whatever mechanism the Samba administrator has installed.
+It is possible (but ill advised) to create a domain where the user database is not shared between servers;
+that is, they are effectively workgroup servers advertising themselves as participating in a domain. This
+demonstrates how authentication is quite different from but closely involved with domains.
 </para>
 
 <para>
@@ -828,18 +840,19 @@ the network and download their preferences, desktop, and start menu.
 </para>
 
 <para><emphasis>
-MS Windows XP Home edition is not able to join a domain and does not permit
-the use of domain logons.
+MS Windows XP Home edition is not able to join a domain and does not permit the use of domain logons.
 </emphasis></para>
 
 <para>
-Before launching into the configuration instructions, it is 
-worthwhile to look at how a Windows 9x/Me client performs a logon:
+Before launching into the configuration instructions, it is worthwhile to look at how a Windows 9x/Me client
+performs a logon:
 </para>
 
 <orderedlist>
 <listitem>
 	<para>
+	<indexterm><primary>DOMAIN&lt;#1C&gt;</primary></indexterm>
+	<indexterm><primary>logon server</primary></indexterm>
 	The client broadcasts (to the IP broadcast address of the subnet it is in)
 	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;#1C&gt; at the
 	NetBIOS layer. The client chooses the first response it receives, which
@@ -852,6 +865,9 @@ worthwhile to look at how a Windows 9x/Me client performs a logon:
 
 <listitem>
 	<para>
+	<indexterm><primary>IPC$</primary></indexterm>
+	<indexterm><primary>SMBsessetupX</primary></indexterm>
+	<indexterm><primary>SMBtconX</primary></indexterm>
 	The client connects to that server, logs on (does an SMBsessetupX) and
 	then connects to the IPC$ share (using an SMBtconX).
 	</para>
@@ -859,6 +875,7 @@ worthwhile to look at how a Windows 9x/Me client performs a logon:
 
 <listitem>
 	<para>
+	<indexterm><primary>NetWkstaUserLogon</primary></indexterm>
 	The client does a NetWkstaUserLogon request, which retrieves the name
 	of the user's logon script. 
 	</para>
@@ -874,6 +891,8 @@ worthwhile to look at how a Windows 9x/Me client performs a logon:
 
 <listitem>
 	<para>
+	<indexterm><primary>NetUserGetInfo</primary></indexterm>
+	<indexterm><primary>profile</primary></indexterm>
 	The client sends a NetUserGetInfo request to the server to retrieve
 	the user's home share, which is used to search for profiles. Since the
 	response to the NetUserGetInfo request does not contain much more than	
@@ -884,6 +903,7 @@ worthwhile to look at how a Windows 9x/Me client performs a logon:
 
 <listitem>
 	<para>
+	<indexterm><primary>profiles</primary></indexterm>
 	The client connects to the user's home share and searches for the 
 	user's profile. As it turns out, you can specify the user's home share as
 	a share name and path. For example, <filename>\\server\fred\.winprofile</filename>.
@@ -893,6 +913,7 @@ worthwhile to look at how a Windows 9x/Me client performs a logon:
 
 <listitem>
 	<para>
+	<indexterm><primary>CONFIG.POL</primary></indexterm>
 	The client then disconnects from the user's home share and reconnects to
 	the NetLogon share and looks for <filename>CONFIG.POL</filename>, the policies file. If this is
 	found, it is read and implemented.
@@ -906,6 +927,8 @@ The main difference between a PDC and a Windows 9x/Me logon server configuration
 
 <itemizedlist>
 <listitem><para>
+	<indexterm><primary>password</primary><secondary>plaintext</secondary></indexterm>
+	<indexterm><primary>plaintext password</primary></indexterm>
 	Password encryption is not required for a Windows 9x/Me logon server. But note
 	that beginning with MS Windows 98 the default setting is that plaintext
 	password support is disabled. It can be re-enabled with the registry
@@ -913,16 +936,19 @@ The main difference between a PDC and a Windows 9x/Me logon server configuration
 	</para></listitem>
 
 	<listitem><para>
+	<indexterm><primary>machine trust account</primary></indexterm>
 	Windows 9x/Me clients do not require and do not use Machine Trust Accounts.
 	</para></listitem>
 </itemizedlist>
 
 <para>
+<indexterm><primary>network logon services</primary></indexterm>
 A Samba PDC will act as a Windows 9x/Me logon server; after all, it does provide the
 network logon services that MS Windows 9x/Me expect to find.
 </para>
 
 <note><para>
+<indexterm><primary>sniffer</primary></indexterm>
 Use of plaintext passwords is strongly discouraged. Where used they are easily detected
 using a sniffer tool to examine network traffic.
 </para></note>
@@ -934,6 +960,9 @@ using a sniffer tool to examine network traffic.
 <title>Security Mode and Master Browsers</title>
 
 <para>
+<indexterm><primary>security mode</primary></indexterm>
+<indexterm><primary>user-mode security</primary></indexterm>
+<indexterm><primary>share-mode security</primary></indexterm>
 There are a few comments to make in order to tie up some loose ends. There has been much debate over the issue
 of whether it is okay to configure Samba as a domain controller that operates with security mode other than
 user-mode. The only security mode that will not work due to technical reasons is share-mode security. Domain
@@ -941,6 +970,13 @@ and server mode security are really just a variation on SMB user-level security.
 </para>
 
 <para>
+<indexterm><primary>DOMAIN&lt;1C&gt;</primary></indexterm>
+<indexterm><primary>DOMAIN&lt;#1B&gt;</primary></indexterm>
+<indexterm><primary>DMB</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>NetBIOS name</primary></indexterm>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>election</primary></indexterm>
 Actually, this issue is also closely tied to the debate on whether Samba must be the DMB for its workgroup
 when operating as a domain controller.  In a pure Microsoft Windows NT domain, the PDC wins the election to be
 the DMB, and then registers the DOMAIN&lt;#1B&gt; NetBIOS name. This is not the name used by Windows clients
@@ -954,6 +990,11 @@ where a Samba server is the PDC it is wise to configure the Samba domain control
 </para>
 
 <note><para>
+<indexterm><primary>DOMAIN&lt;1D&gt;</primary></indexterm>
+<indexterm><primary>synchronization</primary></indexterm>
+<indexterm><primary>domain control</primary></indexterm>
+<indexterm><primary>browse list management</primary></indexterm>
+<indexterm><primary>network</primary><secondary>logon</secondary><tertiary>service</tertiary></indexterm>
 SMB/CIFS servers that register the DOMAIN&lt;1C&gt; name do so because they provide the network logon
 service. Server that register the DOMAIN&lt;1B&gt; name are DMBs &smbmdash; meaning that they are responsible
 for browse list synchronization across all machines that have registered the DOMAIN&lt;1D&gt; name. The later
@@ -989,14 +1030,19 @@ This is the only officially supported mode of operation.
 <title>Common Errors</title>
 
 <sect2>
-	<title><quote>$</quote> Cannot Be Included in Machine Name</title>
+<title><quote>$</quote> Cannot Be Included in Machine Name</title>
+
 <para>
+<indexterm><primary>BSD</primary></indexterm>
+<indexterm><primary>FreeBSD</primary></indexterm>
+<indexterm><primary>/etc/passwd</primary></indexterm>
 A machine account, typically stored in <filename>/etc/passwd</filename>, takes the form of the machine
 name with a <quote>$</quote> appended. Some BSD systems will not create a user with a <quote>$</quote> in the name.
 Recent versions of FreeBSD have removed this limitation, but older releases are still in common use.
 </para>
 
 <para>
+<indexterm><primary>vipw</primary></indexterm>
 The problem is only in the program used to make the entry. Once made, it works perfectly.  Create a user
 without the <quote>$</quote>. Then use <command>vipw</command> to edit the entry, adding the <quote>$</quote>.
 Or create the whole entry with vipw if you like; make sure you use a unique user login ID.
@@ -1016,6 +1062,7 @@ important for security reasons.
 <title>Joining Domain Fails Because of Existing Machine Account</title>
 		
 <para>
+<indexterm><primary>join domain</primary></indexterm>
 <quote>I get told, `You already have a connection to the Domain....' or `Cannot join domain, the
 credentials supplied conflict with an existing set...' when creating a Machine Trust Account.</quote>
 </para>
