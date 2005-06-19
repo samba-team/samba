@@ -138,8 +138,6 @@ static void ldapsrv_try_decode_plain(struct ldapsrv_connection *conn)
 {
 	struct asn1_data asn1;
 
-	file_save("asn1.dat", conn->partial.data, conn->partial.length);
-
 	if (!asn1_load(&asn1, conn->partial)) {
 		ldapsrv_terminate_connection(conn, "out of memory");
 		return;
