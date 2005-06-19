@@ -172,6 +172,9 @@ int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
 */
 const char *ldb_errstring(struct ldb_context *ldb)
 {
+	if (ldb->modules == NULL) {
+		return "ldb not connected";
+	}
 	return ldb->modules->ops->errstring(ldb->modules);
 }
 
