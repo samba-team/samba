@@ -551,7 +551,8 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	ZERO_STRUCT(user_session_key);
 	
 	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->account_name, samlogon_state->account_domain, 
+	if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+			      samlogon_state->account_name, samlogon_state->account_domain, 
 			      samlogon_state->password, &samlogon_state->chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
@@ -681,7 +682,8 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, enum nt
 	ZERO_STRUCT(user_session_key);
 	
 	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->account_name, samlogon_state->account_domain, 
+	if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+			      samlogon_state->account_name, samlogon_state->account_domain, 
 			      samlogon_state->password, &samlogon_state->chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 

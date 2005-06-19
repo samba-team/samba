@@ -203,7 +203,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
 		
-		if (!SMBNTLMv2encrypt_hash(user, 
+		if (!SMBNTLMv2encrypt_hash(gensec_ntlmssp_state,
+					   user, 
 					   domain, 
 					   nt_hash->hash, &challenge_blob, 
 					   &struct_blob, 
