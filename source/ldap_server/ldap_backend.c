@@ -255,3 +255,17 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 		return ldapsrv_unwilling(call, 2);
 	}
 }
+
+
+/*
+  connect to the sam database
+*/
+struct ldb_context *ldapsrv_sam_connect(struct ldapsrv_call *call)
+{
+	const char *url;
+	url = lp_parm_string(-1, "ldapsrv", "samdb");
+	if (url) {
+		return ldb_wrap_connect(call, url, 0, NULL);
+	}
+	return samdb_connect(call);
+}

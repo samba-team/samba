@@ -461,7 +461,7 @@ queue_reply2:
 }
 
 static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_SearchRequest *r)
+			    struct ldap_SearchRequest *r)
 {
 	NTSTATUS status;
 	void *local_ctx;
@@ -481,7 +481,7 @@ static NTSTATUS hldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "hldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	status = hacked_Search(partition, call, r, samdb);
@@ -618,7 +618,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "hldb_Add local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -717,7 +717,7 @@ static NTSTATUS hldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "hldb_Del local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -772,7 +772,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "hldb_Modify local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -889,7 +889,7 @@ static NTSTATUS hldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	local_ctx = talloc_named(call, 0, "hldb_Compare local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -957,7 +957,7 @@ static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	local_ctx = talloc_named(call, 0, "hldb_ModifyDN local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	olddn = ldap_parse_dn(local_ctx, r->dn);
