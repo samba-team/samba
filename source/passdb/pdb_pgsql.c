@@ -29,12 +29,21 @@
 
 /* handles for doing db transactions */
 typedef struct pdb_pgsql_data {
+  PGconn     *master_handle ;
   PGconn     *handle ;
+
   PGresult   *pwent  ;
   long        currow ;
+  const char *db     ;
+  const char *host   ;
+  const char *port   ;
+  const char *user   ;
+  const char *pass   ;
   
   const char *location ;
 } pdb_pgsql_data ;
+
+struct pdb_context *the_pdb_context;
 
 #define SET_DATA(data,methods) { \
 	if(!methods){ \
@@ -42,27 +51,76 @@ typedef struct pdb_pgsql_data {
 			return NT_STATUS_INVALID_PARAMETER; \
 	} \
 	data = (struct pdb_pgsql_data *)methods->private_data; \
-		if(!data || !(data->handle)){ \
-			DEBUG(0, ("invalid handle!\n")); \
-				return NT_STATUS_INVALID_HANDLE; \
-		} \
 }
+
 
 #define SET_DATA_QUIET(data,methods) { \
 	if(!methods){ \
 		DEBUG(0, ("invalid methods!\n")); \
 			return ; \
 	} \
-	data = (struct pdb_pgsql_data *)methods->private_data; \
-		if(!data || !(data->handle)){ \
-			DEBUG(0, ("invalid handle!\n")); \
-				return ; \
-		} \
+	data = (struct pdb_pgsql_data *)methods->private_data;\
 }
-
 
 #define config_value( data, name, default_value ) \
   lp_parm_const_string( GLOBAL_SECTION_SNUM, (data)->location, name, default_value )
+
+static PGconn *pgsqlsam_connect( struct pdb_pgsql_data *data )
+{
+  PGconn *handle;
+  
+  DEBUG
+  (
+    1, 
+    (
+      "Connecting to database server, host: %s, user: %s, password: XXXXXX, database: %s, port: %s\n",
+      data->host, data->user, data->db, data->port
+    )
+  ) ;
+  
+  /* Do the pgsql initialization */
+  handle = PQsetdbLogin( 
+                         data->host,
+                         data->port,
+                         NULL,
+                         NULL,
+                         data->db,
+                         data->user,
+                         data->pass
+                       ) ;
+  
+  if ( handle != NULL && PQstatus( handle ) != CONNECTION_OK )
+  {
+    DEBUG( 0, ("Failed to connect to pgsql database: error: %s\n",
+		(handle != NULL ? PQerrorMessage( handle ) : "")) ) ;
+    return NULL;
+  }
+  
+  DEBUG( 5, ("Connected to pgsql database\n") ) ;
+  return handle;
+}
+
+/* The assumption here is that the master process will get connection 0,
+ * and all the renaining ones just one connection for their etire life span.
+ */
+static PGconn *choose_connection( struct pdb_pgsql_data *data )
+{
+  if ( data->master_handle == NULL )
+  {
+    data->master_handle = pgsqlsam_connect( data );
+    return data->master_handle ;
+  }
+
+  /* Master connection != NULL, so we are just another process. */
+
+  /* If we didn't connect yet, do it now. */
+  if ( data->handle == NULL )
+  {
+    data->handle = pgsqlsam_connect( data );
+  }
+
+  return data->handle ;
+}
 
 static long PQgetlong( PGresult *r, long row, long col )
 {
@@ -75,6 +133,8 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
 {
   pstring temp ;
   DOM_SID sid ;
+  unsigned char *hours ;
+  size_t hours_len = 0 ;
   
   if ( row >= PQntuples( r ) ) return NT_STATUS_INVALID_PARAMETER ;
 
@@ -100,9 +160,16 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
   pdb_set_acct_ctrl            ( u, PQgetlong ( r, row, 23 ), PDB_SET ) ;
   pdb_set_logon_divs           ( u, PQgetlong ( r, row, 24 ), PDB_SET ) ;
   pdb_set_hours_len            ( u, PQgetlong ( r, row, 25 ), PDB_SET ) ;
-  pdb_set_bad_password_count	( u, PQgetlong (r, row, 26 ), PDB_SET ) ;
-  pdb_set_logon_count            ( u, PQgetlong ( r, row, 27 ), PDB_SET ) ;
+  pdb_set_bad_password_count   ( u, PQgetlong ( r, row, 26 ), PDB_SET ) ;
+  pdb_set_logon_count          ( u, PQgetlong ( r, row, 27 ), PDB_SET ) ;
   pdb_set_unknown_6            ( u, PQgetlong ( r, row, 28 ), PDB_SET ) ;
+  hours = PQgetvalue ( r, row,  29 );
+  if ( hours != NULL ) {
+    hours = PQunescapeBytea ( hours, &hours_len ) ;
+    if ( hours_len > 0 )
+       pdb_set_hours            ( u, hours, PDB_SET ) ;
+    free ( hours );
+  }
   
   if ( !PQgetisnull( r, row, 18 ) ) {
     string_to_sid( &sid, PQgetvalue( r, row, 18 ) ) ;
@@ -126,22 +193,29 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
 static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
   struct pdb_pgsql_data *data ;
+  PGconn *handle ;
   char *query ;
   NTSTATUS retval ;
   
   SET_DATA( data, methods ) ;
+
+  /* Connect to the DB. */
+  handle = choose_connection( data );
+  if ( handle == NULL )
+    return NT_STATUS_UNSUCCESSFUL ;
+  DEBUG( 5, ("CONNECTING pgsqlsam_setsampwent\n") ) ;
   
   query = sql_account_query_select(NULL, data->location, update, SQL_SEARCH_NONE, NULL);
   
   /* Do it */
   DEBUG( 5, ("Executing query %s\n", query) ) ;
-  data->pwent  = PQexec( data->handle, query ) ;
+  data->pwent  = PQexec( handle, query ) ;
   data->currow = 0 ;
   
   /* Result? */
   if ( data->pwent == NULL )
   {
-    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( data->handle ) ) ) ;
+    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( handle ) ) ) ;
     retval = NT_STATUS_UNSUCCESSFUL ;
   }
   else if ( PQresultStatus( data->pwent ) != PGRES_TUPLES_OK )
@@ -154,8 +228,10 @@ static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
     DEBUG( 5, ("pgsqlsam_setsampwent succeeded(%d results)!\n", PQntuples(data->pwent)) ) ;
     retval = NT_STATUS_OK ;
   }
-  
+
   talloc_free(query);
+  if ( data->pwent != NULL )
+    PQclear( data->pwent ) ;
   return retval ;
 }
 
@@ -206,6 +282,7 @@ static NTSTATUS pgsqlsam_getsampwent( struct pdb_methods *methods, SAM_ACCOUNT *
 static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCOUNT *user, enum sql_search_field field, const char *sname )
 {
   struct pdb_pgsql_data *data ;
+  PGconn *handle ;
   
   char *esc ;
   char *query ;
@@ -233,17 +310,22 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
   
   //tmp_sname = smb_xstrdup(sname);
   PQescapeString( esc, sname, strlen(sname) ) ;
+
+  /* Connect to the DB. */
+  handle = choose_connection( data );
+  if ( handle == NULL )
+    return NT_STATUS_UNSUCCESSFUL ;
   
   query = sql_account_query_select(NULL, data->location, True, field, esc);
   
   /* Do it */
   DEBUG( 5, ("Executing query %s\n", query) ) ;
-  result = PQexec( data->handle, query ) ;
+  result = PQexec( handle, query ) ;
   
   /* Result? */
   if ( result == NULL )
   {
-    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( data->handle ) ) ) ;
+    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( handle ) ) ) ;
     retval = NT_STATUS_UNSUCCESSFUL ;
   }
   else if ( PQresultStatus( result ) != PGRES_TUPLES_OK )
@@ -258,8 +340,9 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
   
   talloc_free( esc   ) ;
   talloc_free( query ) ;
-  
-  PQclear( result ) ;
+ 
+  if ( result != NULL )
+    PQclear( result ) ;
   
   return retval ;
 }
@@ -271,6 +354,9 @@ static NTSTATUS pgsqlsam_select_by_field ( struct pdb_methods *methods, SAM_ACCO
 static NTSTATUS pgsqlsam_getsampwnam ( struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname )
 {
   struct pdb_pgsql_data *data;
+  size_t i, l;
+  char *lowercasename;
+  NTSTATUS result;
   
   SET_DATA(data, methods);
   
@@ -279,8 +365,18 @@ static NTSTATUS pgsqlsam_getsampwnam ( struct pdb_methods *methods, SAM_ACCOUNT 
     DEBUG( 0, ("invalid name specified") ) ;
     return NT_STATUS_INVALID_PARAMETER;
   }
+
+  lowercasename = smb_xstrdup(sname);
+  l = strlen(lowercasename);
+  for(i = 0; i < l; i++) {
+    lowercasename[i] = tolower(lowercasename[i]);
+  }
   
-  return pgsqlsam_select_by_field( methods, user, SQL_SEARCH_USER_NAME, sname ) ;
+  result = pgsqlsam_select_by_field( methods, user, SQL_SEARCH_USER_NAME, lowercasename ) ;
+
+  SAFE_FREE( lowercasename ) ;
+
+  return result;
 }
 
 
@@ -307,6 +403,7 @@ static NTSTATUS pgsqlsam_getsampwsid ( struct pdb_methods *methods, SAM_ACCOUNT 
 static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_ACCOUNT *sam_pass )
 {
   struct pdb_pgsql_data *data ;
+  PGconn *handle ;
   
   const char *sname = pdb_get_username( sam_pass ) ;
   char *esc ;
@@ -332,15 +429,20 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
   }
   
   PQescapeString( esc, sname, strlen(sname) ) ;
+
+  /* Connect to the DB. */
+  handle = choose_connection( data );
+  if ( handle == NULL )
+    return NT_STATUS_UNSUCCESSFUL ;
   
   query = sql_account_query_delete(NULL, data->location, esc);
   
   /* Do it */
-  result = PQexec( data->handle, query ) ;
+  result = PQexec( handle, query ) ;
   
   if ( result == NULL )
   {
-    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( data->handle ) ) ) ;
+    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( handle ) ) ) ;
     retval = NT_STATUS_UNSUCCESSFUL ;
   }
   else if ( PQresultStatus( result ) != PGRES_COMMAND_OK )
@@ -354,6 +456,8 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
     retval = NT_STATUS_OK ;
   }
   
+  if ( result != NULL )
+    PQclear( result ) ;
   talloc_free( esc ) ;
   talloc_free( query ) ;
   
@@ -363,8 +467,10 @@ static NTSTATUS pgsqlsam_delete_sam_account( struct pdb_methods *methods, SAM_AC
 static NTSTATUS pgsqlsam_replace_sam_account( struct pdb_methods *methods, const SAM_ACCOUNT *newpwd, char isupdate )
 {
   struct pdb_pgsql_data *data ;
+  PGconn *handle ;
   char *query;
   PGresult *result ;
+  NTSTATUS retval ;
   
   if ( !methods )
   {
@@ -374,31 +480,43 @@ static NTSTATUS pgsqlsam_replace_sam_account( struct pdb_methods *methods, const
   
   data = (struct pdb_pgsql_data *) methods->private_data ;
   
-  if ( data == NULL || data->handle == NULL )
+  if ( data == NULL || handle == NULL )
   {
     DEBUG( 0, ("invalid handle!\n") ) ;
     return NT_STATUS_INVALID_HANDLE ;
   }
 
   query = sql_account_query_update(NULL, data->location, newpwd, isupdate);
+  if ( query == NULL ) /* Nothing to update. */
+    return NT_STATUS_OK;
 
-  result = PQexec( data->handle, query ) ;
+  /* Connect to the DB. */
+  handle = choose_connection( data );
+  if ( handle == NULL )
+    return NT_STATUS_UNSUCCESSFUL ;
 
+  result = PQexec( handle, query ) ;
   
   /* Execute the query */
   if ( result == NULL )
   {
-    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( data->handle ) ) ) ;
-    return NT_STATUS_INVALID_PARAMETER;
+    DEBUG( 0, ("Error executing %s, %s\n", query, PQerrorMessage( handle ) ) ) ;
+    retval = NT_STATUS_INVALID_PARAMETER;
   }
   else if ( PQresultStatus( result ) != PGRES_COMMAND_OK )
   {
     DEBUG( 0, ("Error executing %s, %s\n", query, PQresultErrorMessage( result ) ) ) ;
-    return NT_STATUS_INVALID_PARAMETER;
+    retval = NT_STATUS_INVALID_PARAMETER;
   }
+  else
+  {
+    retval = NT_STATUS_OK;
+  }
+  if ( result != NULL )
+    PQclear( result ) ;
   talloc_free(query);
   
-  return NT_STATUS_OK;
+  return retval;
 }
 
 static NTSTATUS pgsqlsam_add_sam_account ( struct pdb_methods *methods, SAM_ACCOUNT *newpwd )
@@ -422,6 +540,8 @@ static NTSTATUS pgsqlsam_init ( struct pdb_context *pdb_context, struct pdb_meth
     return NT_STATUS_UNSUCCESSFUL;
   }
   
+  the_pdb_context = pdb_context;
+
   if (!NT_STATUS_IS_OK
     (nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
     return nt_status;
@@ -440,7 +560,9 @@ static NTSTATUS pgsqlsam_init ( struct pdb_context *pdb_context, struct pdb_meth
   
   data = talloc( pdb_context->mem_ctx, struct pdb_pgsql_data ) ;
   (*pdb_method)->private_data = data ;
-  data->handle = NULL ;
+
+  data->master_handle = NULL;
+  data->handle = NULL;
   data->pwent  = NULL ;
 
   if ( !location )
@@ -448,43 +570,33 @@ static NTSTATUS pgsqlsam_init ( struct pdb_context *pdb_context, struct pdb_meth
     DEBUG( 0, ("No identifier specified. Check the Samba HOWTO Collection for details\n") ) ;
     return NT_STATUS_INVALID_PARAMETER;
   }
-  
+
   data->location = smb_xstrdup( location ) ;
 
   if(!sql_account_config_valid(data->location)) {
-	  return NT_STATUS_INVALID_PARAMETER;
+          return NT_STATUS_INVALID_PARAMETER;
   }
-  
+
   DEBUG
   (
-    1, 
+    1,
     (
-      "Connecting to database server, host: %s, user: %s, password: XXXXXX, database: %s, port: %s\n",
-      config_value( data, "pgsql host"    , CONFIG_HOST_DEFAULT ),
-      config_value( data, "pgsql user"    , CONFIG_USER_DEFAULT ),
-      config_value( data, "pgsql database", CONFIG_DB_DEFAULT   ),
-      config_value( data, "pgsql port"    , CONFIG_PORT_DEFAULT )
+	"Database server parameters: host: %s, user: %s, password: XXXX, database: %s, port: %s\n",
+	config_value( data, "pgsql host"    , CONFIG_HOST_DEFAULT ),
+	config_value( data, "pgsql user"    , CONFIG_USER_DEFAULT ),
+	config_value( data, "pgsql database", CONFIG_DB_DEFAULT   ),
+	config_value( data, "pgsql port"    , CONFIG_PORT_DEFAULT )
     )
   ) ;
-  
-  /* Do the pgsql initialization */
-  data->handle = PQsetdbLogin( 
-                                config_value( data, "pgsql host"    , CONFIG_HOST_DEFAULT ),
-                                config_value( data, "pgsql port"    , CONFIG_PORT_DEFAULT ),
-                                NULL,
-                                NULL,
-                                config_value( data, "pgsql database", CONFIG_DB_DEFAULT   ),
-                                config_value( data, "pgsql user"    , CONFIG_USER_DEFAULT ),
-                                config_value( data, "pgsql password", CONFIG_PASS_DEFAULT )
-                             ) ;
-  
-  if ( PQstatus( data->handle ) != CONNECTION_OK )
-  {
-    DEBUG( 0, ("Failed to connect to pgsql database: error: %s\n", PQerrorMessage( data->handle )) ) ;
-    return NT_STATUS_UNSUCCESSFUL;
-  }
-  
-  DEBUG( 5, ("Connected to pgsql database\n") ) ;
+
+  /* Save the parameters. */
+  data->db   = config_value( data, "pgsql database", CONFIG_DB_DEFAULT   );
+  data->host = config_value( data, "pgsql host"    , CONFIG_HOST_DEFAULT );
+  data->port = config_value( data, "pgsql port"    , CONFIG_PORT_DEFAULT );
+  data->user = config_value( data, "pgsql user"    , CONFIG_USER_DEFAULT );
+  data->pass = config_value( data, "pgsql password", CONFIG_PASS_DEFAULT );
+
+  DEBUG( 5, ("Pgsql module intialized\n") ) ;
   return NT_STATUS_OK;
 }
 
