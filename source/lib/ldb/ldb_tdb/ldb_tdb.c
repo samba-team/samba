@@ -679,6 +679,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 				}
 			}
 			break;
+		default:
+			ltdb->last_err_string = "Invalid ldb_modify flags";
+			goto failed;
 		}
 	}
 
