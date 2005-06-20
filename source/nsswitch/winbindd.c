@@ -224,7 +224,11 @@ static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
 	terminate();
 }
 
-static struct winbindd_dispatch_table dispatch_table[] = {
+static struct winbindd_dispatch_table {
+	enum winbindd_cmd cmd;
+	void (*fn)(struct winbindd_cli_state *state);
+	const char *winbindd_cmd_name;
+} dispatch_table[] = {
 	
 	/* User functions */
 
@@ -326,7 +330,7 @@ static void process_request(struct winbindd_cli_state *state)
 		if (state->request.cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n",
 				  table->winbindd_cmd_name ));
-			state->response.result = table->fn(state);
+			table->fn(state);
 			break;
 		}
 	}
@@ -334,7 +338,7 @@ static void process_request(struct winbindd_cli_state *state)
 	if (!table->fn) {
 		DEBUG(10,("process_request: unknown request fn number %d\n",
 			  (int)state->request.cmd ));
-		state->response.result = WINBINDD_ERROR;
+		request_error(state);
 	}
 }
 
@@ -458,7 +462,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 
 static void request_len_recv(void *private, BOOL success);
 static void request_recv(void *private, BOOL success);
-void request_finished(struct winbindd_cli_state *state);
+static void request_finished(struct winbindd_cli_state *state);
 void request_finished_cont(void *private, BOOL success);
 static void response_main_sent(void *private, BOOL success);
 static void response_extra_sent(void *private, BOOL success);
@@ -510,10 +514,24 @@ static void response_main_sent(void *private, BOOL success)
 			  response_extra_sent, state);
 }
 
-void request_finished(struct winbindd_cli_state *state)
+static void request_finished(struct winbindd_cli_state *state)
 {
 	setup_async_write(&state->fd_event, &state->response,
 			  sizeof(state->response), response_main_sent, state);
+}
+
+void request_error(struct winbindd_cli_state *state)
+{
+	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
+	state->response.result = WINBINDD_ERROR;
+	request_finished(state);
+}
+
+void request_ok(struct winbindd_cli_state *state)
+{
+	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
+	state->response.result = WINBINDD_OK;
+	request_finished(state);
 }
 
 void request_finished_cont(void *private, BOOL success)
@@ -521,9 +539,10 @@ void request_finished_cont(void *private, BOOL success)
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private, struct winbindd_cli_state);
 
-	if (!success)
-		state->response.result = WINBINDD_ERROR;
-	request_finished(state);
+	if (success)
+		request_ok(state);
+	else
+		request_error(state);
 }
 
 static void request_recv(void *private, BOOL success)
@@ -537,9 +556,6 @@ static void request_recv(void *private, BOOL success)
 	}
 
 	process_request(state);
-
-	if (state->response.result != WINBINDD_PENDING)
-		request_finished(state);
 }
 
 static void request_len_recv(void *private, BOOL success)
