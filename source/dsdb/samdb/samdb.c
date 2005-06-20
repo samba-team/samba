@@ -922,7 +922,6 @@ int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_messa
 
 	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "objectGUID", guidstr);
 	samdb_msg_set_ldaptime(sam_ldb, mem_ctx, msg, "whenCreated", now);
-	samdb_msg_set_ldaptime(sam_ldb, mem_ctx, msg, "whenChanged", now);
 	return ldb_add(sam_ldb, msg);
 }
 
@@ -939,8 +938,6 @@ int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, const char *d
 */
 int samdb_modify(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	time_t now = time(NULL);
-	samdb_msg_set_ldaptime(sam_ldb, mem_ctx, msg, "whenChanged", now);
 	return ldb_modify(sam_ldb, msg);
 }
 
