@@ -332,6 +332,7 @@ static void async_reply_recv(void *private, BOOL success)
 	if (!success) {
 		DEBUG(5, ("Could not receive async reply\n"));
 		state->response->result = WINBINDD_ERROR;
+		return;
 	}
 
 	if (state->response->result == WINBINDD_OK)
@@ -418,6 +419,41 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 	state->private = private;
 
 	init_child_connection(domain, domain_init_recv, state);
+}
+
+static void recvfrom_child(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+	enum winbindd_result result = state->response.result;
+
+	/* This is an optimization: The child has written directly to the
+	 * response buffer. The request itself is still in pending state,
+	 * state that in the result code. */
+
+	state->response.result = WINBINDD_PENDING;
+
+	if ((!success) || (result != WINBINDD_OK)) {
+		request_error(state);
+		return;
+	}
+
+	request_ok(state);
+}
+
+void sendto_child(struct winbindd_cli_state *state,
+		  struct winbindd_child *child)
+{
+	async_request(state->mem_ctx, child, &state->request,
+		      &state->response, recvfrom_child, state);
+}
+
+void sendto_domain(struct winbindd_cli_state *state,
+		   struct winbindd_domain *domain)
+{
+	async_domain_request(state->mem_ctx, domain,
+			     &state->request, &state->response,
+			     recvfrom_child, state);
 }
 
 static void domain_init_recv(void *private, BOOL success)

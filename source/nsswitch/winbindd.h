@@ -98,12 +98,6 @@ struct winbindd_state {
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 };
 
-struct winbindd_dispatch_table {
-	enum winbindd_cmd cmd;
-	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
-	const char *winbindd_cmd_name;
-};
-
 extern struct winbindd_state server_state;  /* Server information */
 
 typedef struct {
