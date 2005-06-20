@@ -32,7 +32,7 @@ static void lookupsid_recv(void *private, BOOL success,
 			   const char *dom_name, const char *name,
 			   enum SID_NAME_USE type);
 
-enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
+void winbindd_lookupsid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
@@ -44,11 +44,11 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	winbindd_lookupsid_async(state->mem_ctx, &sid, lookupsid_recv, state);
-	return WINBINDD_PENDING;
 }
 
 static void lookupsid_recv(void *private, BOOL success,
@@ -60,16 +60,14 @@ static void lookupsid_recv(void *private, BOOL success,
 
 	if (!success) {
 		DEBUG(5, ("lookupsid returned an error\n"));
-		state->response.result = WINBINDD_ERROR;
-		request_finished(state);
+		request_error(state);
 		return;
 	}
 
 	fstrcpy(state->response.data.name.dom_name, dom_name);
 	fstrcpy(state->response.data.name.name, name);
 	state->response.data.name.type = type;
-	state->response.result =  WINBINDD_OK;
-	request_finished(state);
+	request_ok(state);
 }
 
 /**
@@ -79,7 +77,7 @@ static void lookupsid_recv(void *private, BOOL success,
 static void lookupname_recv(void *private, BOOL success,
 			    const DOM_SID *sid, enum SID_NAME_USE type);
 
-enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
+void winbindd_lookupname(struct winbindd_cli_state *state)
 {
 	char *name_domain, *name_user;
 	char *p;
@@ -106,7 +104,6 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 
 	winbindd_lookupname_async(state->mem_ctx, name_domain, name_user,
 				  lookupname_recv, state);
-	return WINBINDD_PENDING;
 }
 
 static void lookupname_recv(void *private, BOOL success,
@@ -117,15 +114,13 @@ static void lookupname_recv(void *private, BOOL success,
 
 	if (!success) {
 		DEBUG(5, ("lookupname returned an error\n"));
-		state->response.result = WINBINDD_ERROR;
-		request_finished(state);
+		request_error(state);
 		return;
 	}
 
 	sid_to_string(state->response.data.sid.sid, sid);
 	state->response.data.sid.type = type;
-	state->response.result = WINBINDD_OK;
-	request_finished(state);
+	request_ok(state);
 	return;
 }
 
@@ -146,7 +141,7 @@ struct winbindd_child *idmap_child(void)
 
 static void sid2uid_recv(void *private, BOOL success, uid_t uid);
 
-enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
+void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS result;
@@ -159,13 +154,15 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	if (idmap_proxyonly()) {
 		DEBUG(8, ("IDMAP proxy only\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
 			  state->request.data.sid));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* Query only the local tdb, everything else might possibly block */
@@ -174,11 +171,11 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
-		return WINBINDD_OK;
+		request_ok(state);
+		return;
 	}
 
 	winbindd_sid2uid_async(state->mem_ctx, &sid, sid2uid_recv, state);
-	return WINBINDD_PENDING;
 }
 
 static void sid2uid_recv(void *private, BOOL success, uid_t uid)
@@ -189,14 +186,12 @@ static void sid2uid_recv(void *private, BOOL success, uid_t uid)
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
 			  state->request.data.sid));
-		state->response.result = WINBINDD_ERROR;
-		request_finished(state);
+		request_error(state);
 		return;
 	}
 
-	state->response.result = WINBINDD_OK;
 	state->response.data.uid = uid;
-	request_finished(state);
+	request_ok(state);
 }
 
 /* Convert a sid to a gid.  We assume we only have one rid attached to the
@@ -204,7 +199,7 @@ static void sid2uid_recv(void *private, BOOL success, uid_t uid)
 
 static void sid2gid_recv(void *private, BOOL success, gid_t gid);
 
-enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
+void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS result;
@@ -217,13 +212,15 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	if (idmap_proxyonly()) {
 		DEBUG(8, ("IDMAP proxy only\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
 			  state->request.data.sid));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* Query only the local tdb, everything else might possibly block */
@@ -232,11 +229,11 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 				  ID_QUERY_ONLY|ID_CACHE_ONLY);
 
 	if (NT_STATUS_IS_OK(result)) {
-		return WINBINDD_OK;
+		request_ok(state);
+		return;
 	}
 
 	winbindd_sid2gid_async(state->mem_ctx, &sid, sid2gid_recv, state);
-	return WINBINDD_PENDING;
 }
 
 static void sid2gid_recv(void *private, BOOL success, gid_t gid)
@@ -247,14 +244,12 @@ static void sid2gid_recv(void *private, BOOL success, gid_t gid)
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
 			  state->request.data.sid));
-		state->response.result = WINBINDD_ERROR;
-		request_finished(state);
+		request_error(state);
 		return;
 	}
 
-	state->response.result = WINBINDD_OK;
 	state->response.data.gid = gid;
-	request_finished(state);
+	request_ok(state);
 }
 
 /* Convert a uid to a sid */
@@ -274,7 +269,7 @@ static void uid2sid_lookupname_recv(void *private, BOOL success,
 				    enum SID_NAME_USE type);
 static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success);
 
-enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
+void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
@@ -285,7 +280,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 	if (idmap_proxyonly()) {
 		DEBUG(8, ("IDMAP proxy only\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	status = idmap_uid_to_sid(&sid, state->request.data.uid,
@@ -294,20 +290,23 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
 		state->response.data.sid.type = SID_NAME_USER;
-		return WINBINDD_OK;
+		request_ok(state);
+		return;
 	}
 
 	if (is_in_uid_range(state->request.data.uid)) {
 		/* This is winbind's, so we should better have succeeded
 		 * above. */
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* The only chance that this is correct is that winbind trusted
 	 * domains only = yes, and the user exists in nss and the domain. */
 
 	if (!lp_winbind_trusted_domains_only()) {
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* The only chance that this is correct is that winbind trusted
@@ -316,7 +315,8 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	uid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct uid2sid_state);
 	if (uid2sid_state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	uid2sid_state->cli_state = state;
@@ -324,7 +324,6 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 	winbindd_uid2name_async(state->mem_ctx, state->request.data.uid,
 				uid2sid_uid2name_recv, uid2sid_state);
-	return WINBINDD_PENDING;
 }
 
 static void uid2sid_uid2name_recv(void *private, BOOL success,
@@ -339,8 +338,7 @@ static void uid2sid_uid2name_recv(void *private, BOOL success,
 	fstrcpy(state->name, username);
 
 	if (!success) {
-		state->cli_state->response.result = WINBINDD_ERROR;
-		request_finished(state->cli_state);
+		request_error(state->cli_state);
 		return;
 	}
 
@@ -357,8 +355,7 @@ static void uid2sid_lookupname_recv(void *private, BOOL success,
 	unid_t id;
 
 	if ((!success) || (type != SID_NAME_USER)) {
-		state->cli_state->response.result = WINBINDD_ERROR;
-		request_finished(state->cli_state);
+		request_error(state->cli_state);
 		return;
 	}
 
@@ -379,8 +376,7 @@ static void uid2sid_idmap_set_mapping_recv(void *private, BOOL success)
 
 	sid_to_string(state->cli_state->response.data.sid.sid, &state->sid);
 	state->cli_state->response.data.sid.type = state->type;
-	state->cli_state->response.result = WINBINDD_OK;
-	request_finished(state->cli_state);
+	request_ok(state->cli_state);
 }
 
 /* Convert a gid to a sid */
@@ -400,7 +396,7 @@ static void gid2sid_lookupname_recv(void *private, BOOL success,
 				    enum SID_NAME_USE type);
 static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success);
 
-enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
+void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 	NTSTATUS status;
@@ -411,7 +407,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	if (idmap_proxyonly()) {
 		DEBUG(8, ("IDMAP proxy only\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	status = idmap_gid_to_sid(&sid, state->request.data.gid,
@@ -420,20 +417,23 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	if (NT_STATUS_IS_OK(status)) {
 		sid_to_string(state->response.data.sid.sid, &sid);
 		state->response.data.sid.type = SID_NAME_USER;
-		return WINBINDD_OK;
+		request_ok(state);
+		return;
 	}
 
 	if (is_in_gid_range(state->request.data.gid)) {
 		/* This is winbind's, so we should better have succeeded
 		 * above. */
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* The only chance that this is correct is that winbind trusted
 	 * domains only = yes, and the user exists in nss and the domain. */
 
 	if (!lp_winbind_trusted_domains_only()) {
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	/* The only chance that this is correct is that winbind trusted
@@ -442,7 +442,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	gid2sid_state = TALLOC_ZERO_P(state->mem_ctx, struct gid2sid_state);
 	if (gid2sid_state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
 	gid2sid_state->cli_state = state;
@@ -450,7 +451,6 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	winbindd_gid2name_async(state->mem_ctx, state->request.data.gid,
 				gid2sid_gid2name_recv, gid2sid_state);
-	return WINBINDD_PENDING;
 }
 
 static void gid2sid_gid2name_recv(void *private, BOOL success,
@@ -465,8 +465,7 @@ static void gid2sid_gid2name_recv(void *private, BOOL success,
 	fstrcpy(state->name, username);
 
 	if (!success) {
-		state->cli_state->response.result = WINBINDD_ERROR;
-		request_finished(state->cli_state);
+		request_error(state->cli_state);
 		return;
 	}
 
@@ -484,8 +483,7 @@ static void gid2sid_lookupname_recv(void *private, BOOL success,
 
 	if ((!success) ||
 	    ((type != SID_NAME_DOM_GRP) && (type!=SID_NAME_ALIAS))) {
-		state->cli_state->response.result = WINBINDD_ERROR;
-		request_finished(state->cli_state);
+		request_error(state->cli_state);
 		return;
 	}
 
@@ -505,22 +503,19 @@ static void gid2sid_idmap_set_mapping_recv(void *private, BOOL success)
 
 	sid_to_string(state->cli_state->response.data.sid.sid, &state->sid);
 	state->cli_state->response.data.sid.type = state->type;
-	state->cli_state->response.result = WINBINDD_OK;
-	request_finished(state->cli_state);
+	request_ok(state->cli_state);
 }
 
-enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+void winbindd_allocate_rid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
 			  "denied!\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
-	async_request(state->mem_ctx, idmap_child(),
-		      &state->request, &state->response,
-		      request_finished_cont, state);
-	return WINBINDD_PENDING;
+	sendto_child(state, idmap_child());
 }
 
 enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
@@ -538,18 +533,16 @@ enum winbindd_result winbindd_dual_allocate_rid(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-enum winbindd_result winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
+void winbindd_allocate_rid_and_gid(struct winbindd_cli_state *state)
 {
 	if ( !state->privileged ) {
 		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
 			  "denied!\n"));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
-	async_request(state->mem_ctx, idmap_child(),
-		      &state->request, &state->response,
-		      request_finished_cont, state);
-	return WINBINDD_PENDING;
+	sendto_child(state, idmap_child());
 }
 
 enum winbindd_result winbindd_dual_allocate_rid_and_gid(struct winbindd_domain *domain,

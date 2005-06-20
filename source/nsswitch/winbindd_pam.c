@@ -185,7 +185,7 @@ static void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
  Authenticate a user with a clear text password
 **********************************************************************/
 
-enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
+void winbindd_pam_auth(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	fstring name_domain, name_user;
@@ -215,13 +215,11 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 			  state->request.data.auth.user, 
 			  state->response.data.auth.nt_status_string,
 			  state->response.data.auth.pam_error));
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	}
 
-	async_domain_request(state->mem_ctx, domain,
-			     &state->request, &state->response,
-			     request_finished_cont, state);
-	return WINBINDD_PENDING;
+	sendto_domain(state, domain);
 }
 
 enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
@@ -500,7 +498,7 @@ done:
  Challenge Response Authentication Protocol 
 **********************************************************************/
 
-enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
+void winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain = NULL;
 	const char *domain_name = NULL;
@@ -546,10 +544,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		domain = find_auth_domain(domain_name);
 
 	if (domain != NULL) {
-		async_domain_request(state->mem_ctx, domain,
-				     &state->request, &state->response,
-				     request_finished_cont, state);
-		return WINBINDD_PENDING;
+		sendto_domain(state, domain);
+		return;
 	}
 
 	result = NT_STATUS_NO_SUCH_USER;
@@ -560,7 +556,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		  state->request.data.auth.user, 
 		  state->response.data.auth.nt_status_string,
 		  state->response.data.auth.pam_error));
-	return WINBINDD_ERROR;
+	request_error(state);
+	return;
 }
 
 
@@ -802,7 +799,7 @@ done:
 
 /* Change a user password */
 
-enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
+void winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
 	char *oldpass, *newpass;
@@ -815,9 +812,6 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		state->request.data.chauthtok.user));
 
 	/* Setup crap */
-
-	if (state == NULL)
-		return WINBINDD_ERROR;
 
 	parse_domain_user(state->request.data.chauthtok.user, domain, user);
 
@@ -858,5 +852,8 @@ done:
 	       state->response.data.auth.nt_status_string,
 	       state->response.data.auth.pam_error));	      
 
-	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+	if (NT_STATUS_IS_OK(result))
+		request_ok(state);
+	else
+		request_error(state);
 }
