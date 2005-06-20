@@ -28,6 +28,7 @@
 #include "dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "lib/tls/tls.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 
@@ -90,8 +91,8 @@ static void ldap_connection_dead(struct ldap_connection *conn)
 		}
 	}
 
-	talloc_free(conn->sock);
-	conn->sock = NULL;
+	talloc_free(conn->tls);
+	conn->tls = NULL;
 }
 
 
@@ -244,7 +245,7 @@ static void ldap_recv_handler(struct ldap_connection *conn)
 	size_t npending=0, nread;
 
 	/* work out how much data is pending */
-	status = socket_pending(conn->sock, &npending);
+	status = tls_socket_pending(conn->tls, &npending);
 	if (!NT_STATUS_IS_OK(status) || npending == 0) {
 		ldap_connection_dead(conn);
 		return;
@@ -258,8 +259,8 @@ static void ldap_recv_handler(struct ldap_connection *conn)
 	}
 
 	/* receive the pending data */
-	status = socket_recv(conn->sock, conn->partial.data + conn->partial.length,
-			     npending, &nread, 0);
+	status = tls_socket_recv(conn->tls, conn->partial.data + conn->partial.length,
+				 npending, &nread);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		return;
 	}
@@ -288,7 +289,7 @@ static void ldap_send_handler(struct ldap_connection *conn)
 		size_t nsent;
 		NTSTATUS status;
 
-		status = socket_send(conn->sock, &req->data, &nsent, 0);
+		status = tls_socket_send(conn->tls, &req->data, &nsent);
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			break;
 		}
@@ -331,7 +332,7 @@ static void ldap_io_handler(struct event_context *ev, struct fd_event *fde,
 	struct ldap_connection *conn = talloc_get_type(private, struct ldap_connection);
 	if (flags & EVENT_FD_WRITE) {
 		ldap_send_handler(conn);
-		if (conn->sock == NULL) return;
+		if (conn->tls == NULL) return;
 	}
 	if (flags & EVENT_FD_READ) {
 		ldap_recv_handler(conn);
@@ -416,6 +417,14 @@ NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	conn->tls = tls_init_client(conn->sock, conn->event.fde, conn->ldaps);
+	if (conn->tls == NULL) {
+		talloc_free(conn->sock);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	talloc_steal(conn, conn->tls);
+	talloc_steal(conn->tls, conn->sock);
+
 	return NT_STATUS_OK;
 }
 
@@ -460,7 +469,7 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 {
 	struct ldap_request *req;
 
-	if (conn->sock == NULL) {
+	if (conn->tls == NULL) {
 		return NULL;
 	}
 
