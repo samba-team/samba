@@ -99,9 +99,12 @@ To use it, set the
 enviroment variable to
 .Ql KCM: Ns Ar uid
 or add the stanza
-.br
-[libdefaults]default_cc_name KCM:%{uid}
-.br
+.Bd -literal
+
+[libdefaults]
+        default_cc_name = KCM:%{uid}
+
+.Ed
 to the
 .Pa /etc/krb5.conf
 configuration file and make sure
