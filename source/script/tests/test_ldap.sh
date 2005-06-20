@@ -29,7 +29,7 @@ for p in $PROTOCOLS; do
     testit "RootDSE" bin/ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 
     echo "Getting defaultNamingContext"
-    BASEDN=`bin/ldbsearch $options -b '' -H $p://$SERVER -s base DUMMY=x defaultNamingContext | grep ^defaultNamingContext | awk '{print $2}'`
+    BASEDN=`bin/ldbsearch $CONFIGURATION $options -b '' -H $p://$SERVER -s base DUMMY=x defaultNamingContext | grep ^defaultNamingContext | awk '{print $2}'`
     echo "BASEDN is $BASEDN"
 
     testit "Listing Users" bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER '(objectclass=user)' sAMAccountName || failed=`expr $failed + 1`
