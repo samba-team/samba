@@ -49,6 +49,7 @@
 #define CONFIG_BAD_PASSWORD_COUNT_DEFAULT		"bad_password_count"
 #define CONFIG_LOGON_COUNT_DEFAULT			"logon_count"
 #define CONFIG_UNKNOWN_6_DEFAULT			"unknown_6"
+#define CONFIG_LOGON_HOURS				"logon_hours"
 
 /* Used to construct insert and update queries */
 
@@ -212,7 +213,7 @@ char *sql_account_query_select(TALLOC_CTX *mem_ctx, const char *data, BOOL updat
 	}
 
 	query = talloc_asprintf(mem_ctx,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -271,6 +272,8 @@ char *sql_account_query_select(TALLOC_CTX *mem_ctx, const char *data, BOOL updat
 							   CONFIG_LOGON_COUNT_DEFAULT),
 			 config_value_read(data, "unknown 6 column",
 							   CONFIG_UNKNOWN_6_DEFAULT),
+			 config_value_read(data, "logon hours column",
+							   CONFIG_LOGON_HOURS),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT), 
 			 field_string, value
 				 );
@@ -294,6 +297,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	pstring temp;
 	fstring sid_str;
 	pdb_sql_query *query;
+ 	int some_field_affected = 0;
 
 	query = talloc(mem_ctx, pdb_sql_query);
 	query->update = isupdate;
@@ -315,6 +319,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_ACCTCTRL)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 						config_value_write(location, "acct ctrl column",
 										   CONFIG_ACCT_CTRL_DEFAULT),
@@ -322,6 +327,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONTIME)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logon time column",
@@ -330,6 +336,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGOFFTIME)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logoff time column",
@@ -338,6 +345,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_KICKOFFTIME)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "kickoff time column",
@@ -346,6 +354,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_CANCHANGETIME)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass can change time column",
@@ -354,6 +363,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_MUSTCHANGETIME)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass must change time column",
@@ -362,6 +372,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_PASSLASTSET)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "pass last set time column",
@@ -370,6 +381,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_HOURSLEN)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "hours len column",
@@ -378,6 +390,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONDIVS)) {
+ 		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
 											   "logon divs column",
@@ -386,6 +399,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERSID)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "user sid column",
 											  CONFIG_USER_SID_DEFAULT),
@@ -394,6 +408,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_GROUPSID)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "group sid column",
 											  CONFIG_GROUP_SID_DEFAULT),
@@ -402,6 +417,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "username column",
 											  CONFIG_USERNAME_DEFAULT),
@@ -409,6 +425,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_DOMAIN)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "domain column",
 											  CONFIG_DOMAIN_DEFAULT),
@@ -416,6 +433,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "nt username column",
@@ -424,6 +442,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_FULLNAME)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "fullname column",
 											  CONFIG_FULLNAME_DEFAULT),
@@ -431,6 +450,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LOGONSCRIPT)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "logon script column",
@@ -439,6 +459,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_PROFILE)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "profile path column",
@@ -447,6 +468,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_DRIVE)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "dir drive column",
 											  CONFIG_DIR_DRIVE_DEFAULT),
@@ -454,6 +476,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_SMBHOME)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "home dir column",
 											  CONFIG_HOME_DIR_DEFAULT),
@@ -461,6 +484,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_WORKSTATIONS)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "workstations column",
@@ -469,6 +493,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_UNKNOWNSTR)) {
+ 		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
 											  "unknown string column",
@@ -477,6 +502,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_LMPASSWD)) {
+		some_field_affected = 1;
 		pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
 		pdb_sql_string_field(query,
@@ -486,12 +512,27 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 	}
 
 	if (IS_SAM_CHANGED(newpwd, PDB_NTPASSWD)) {
+		some_field_affected = 1;
 		pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
 		pdb_sql_string_field(query,
 						   config_value_write(location, "nt pass column",
 											  CONFIG_NT_PW_DEFAULT), temp);
 	}
+
+ 	if (IS_SAM_CHANGED(newpwd, PDB_HOURS)) {
+ 		some_field_affected = 1;
+ 		pdb_sql_string_field(query,
+ 							config_value_write(location,
+ 											   "logon hours column",
+ 											   CONFIG_LOGON_HOURS),
+ 							pdb_get_hours(newpwd));
+ 	}
+
+ 	if (!some_field_affected) {
+		talloc_free(query);
+ 		return NULL;
+ 	}
 
 	if (query->update) {
 		query->part1[strlen(query->part1) - 1] = '\0';
