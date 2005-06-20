@@ -391,6 +391,8 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	}
 
 	query = sql_account_query_update(NULL, data->location, newpwd, isupdate);
+ 	if ( query == NULL ) /* Nothing to update. */
+ 		return NT_STATUS_OK;
 	
 	/* Execute the query */
 	if (mysql_query(data->handle, query)) {
