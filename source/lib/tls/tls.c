@@ -519,7 +519,7 @@ struct tls_context *tls_init_server(struct tls_params *params,
 				    const char *plain_chars,
 				    BOOL tls_enable)
 {
-	if (plain_chars == NULL) return NULL;
+	if (tls_enable && plain_chars == NULL) return NULL;
 	return (struct tls_context *)sock;
 }
 
