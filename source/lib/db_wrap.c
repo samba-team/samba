@@ -82,6 +82,8 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	struct ldb_wrap *w;
 	int ret;
+	struct event_context *ev;
+
 
 	for (w = ldb_list; w; w = w->next) {
 		if (strcmp(url, w->url) == 0) {
@@ -92,6 +94,14 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	ldb = ldb_init(talloc_autofree_context());
 	if (ldb == NULL) {
 		return NULL;
+	}
+
+	/* we want to use the existing event context if possible. This
+	   relies on the fact that in smbd, everything is a child of
+	   the main event_context */
+	ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
+	if (ev) {
+		ldb_set_opaque(ldb, "EventContext", ev);
 	}
 	
 	ret = ldb_connect(ldb, url, flags, options);
