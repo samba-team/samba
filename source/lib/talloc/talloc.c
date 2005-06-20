@@ -1127,7 +1127,7 @@ void *talloc_find_parent_byname(const void *context, const char *name)
 	while (tc->parent && (!tc->name || strcmp(tc->name, name))) {
 		tc = tc->parent;
 	}
-	if (tc == NULL) {
+	if (tc == NULL || tc->name == NULL || strcmp(tc->name, name)) {
 		return NULL;
 	}
 	return (void *)(tc+1);
