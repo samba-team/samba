@@ -372,4 +372,8 @@ int ldb_set_debug(struct ldb_context *ldb,
 /* this sets up debug to print messages on stderr */
 int ldb_set_debug_stderr(struct ldb_context *ldb);
 
+/* control backend specific opaque values */
+int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value);
+void *ldb_get_opaque(struct ldb_context *ldb, const char *name);
+
 #endif

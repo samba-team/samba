@@ -398,7 +398,7 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	ildb->rootDSE = NULL;
 
-	ildb->ldap = ldap_new_connection(ildb, NULL);
+	ildb->ldap = ldap_new_connection(ildb, ldb_get_opaque(ldb, "EventContext"));
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
 		goto failed;
@@ -421,7 +421,8 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->private_data = ildb;
 	ldb->modules->ops = &ildb_ops;
 
-	if (cmdline_credentials->username_obtained > CRED_GUESSED) {
+	if (cmdline_credentials != NULL &&
+	    cmdline_credentials->username_obtained > CRED_GUESSED) {
 		status = ldap_bind_sasl(ildb->ldap, cmdline_credentials);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",

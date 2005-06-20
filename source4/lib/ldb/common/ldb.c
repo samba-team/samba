@@ -178,3 +178,34 @@ const char *ldb_errstring(struct ldb_context *ldb)
 	return ldb->modules->ops->errstring(ldb->modules);
 }
 
+
+/*
+  set backend specific opaque parameters
+*/
+int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value)
+{
+	struct ldb_opaque *o = talloc(ldb, struct ldb_opaque);
+	if (o == NULL) {
+		ldb_oom(ldb);
+		return -1;
+	}
+	o->next = ldb->opaque;
+	o->name = name;
+	o->value = value;
+	ldb->opaque = o;
+	return 0;
+}
+
+/*
+  get a previously set opaque value
+*/
+void *ldb_get_opaque(struct ldb_context *ldb, const char *name)
+{
+	struct ldb_opaque *o;
+	for (o=ldb->opaque;o;o=o->next) {
+		if (strcmp(o->name, name) == 0) {
+			return o->value;
+		}
+	}
+	return NULL;
+}
