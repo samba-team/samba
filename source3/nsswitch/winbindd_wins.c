@@ -132,7 +132,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 /* Get hostname from IP  */
 
-enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
+void winbindd_wins_byip(struct winbindd_cli_state *state)
 {
 	fstring response;
 	int i, count, maxlen, size;
@@ -151,7 +151,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	    size = strlen(state->request.data.winsreq);
 	    if (size > maxlen) {
 		SAFE_FREE(status);
-		return WINBINDD_ERROR;
+		request_error(state);
+		return;
 	    }
 	    fstrcat(response,state->request.data.winsreq);
 	    fstrcat(response,"\t");
@@ -162,7 +163,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 			size = sizeof(status[i].name) + strlen(response);
 			if (size > maxlen) {
 			    SAFE_FREE(status);
-			    return WINBINDD_ERROR;
+			    request_error(state);
+			    return;
 			}
 			fstrcat(response, status[i].name);
 			fstrcat(response, " ");
@@ -173,12 +175,12 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	    SAFE_FREE(status);
 	}
 	fstrcpy(state->response.data.winsresp,response);
-	return WINBINDD_OK;
+	request_ok(state);
 }
 
 /* Get IP from hostname */
 
-enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
+void winbindd_wins_byname(struct winbindd_cli_state *state)
 {
 	struct in_addr *ip_list;
 	int i, count, maxlen, size;
@@ -200,7 +202,8 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		    size = strlen(addr);
 		    if (size > maxlen) {
 			SAFE_FREE(ip_list);
-			return WINBINDD_ERROR;
+			request_error(state);
+			return;
 		    }
 		    if (i != 0) {
 			/* Clear out the newline character */
@@ -215,15 +218,18 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		size = strlen(state->request.data.winsreq) + strlen(response);
 		if (size > maxlen) {
 		    SAFE_FREE(ip_list);
-		    return WINBINDD_ERROR;
+		    request_error(state);
+		    return;
 		}   
 		fstrcat(response,state->request.data.winsreq);
 		fstrcat(response,"\n");
 		SAFE_FREE(ip_list);
-	} else
-		return WINBINDD_ERROR;
+	} else {
+		request_error(state);
+		return;
+	}
 
 	fstrcpy(state->response.data.winsresp,response);
 
-	return WINBINDD_OK;
+	request_ok(state);
 }
