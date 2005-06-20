@@ -130,6 +130,7 @@ void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 void *talloc_autofree_context(void);
 size_t talloc_get_size(const void *ctx);
 void *talloc_find_parent_byname(const void *ctx, const char *name);
+void talloc_show_parents(const void *context, FILE *file);
 
 #endif
 
