@@ -22,6 +22,7 @@ AC_DEFUN([_SMB_BUILD_CORE],
 $PERL -I$srcdir/build <<\_SMB_ACEOF
 use strict;
 
+my %SETTINGS;
 my %INPUT;
 
 use smb_build::main;
@@ -60,7 +61,7 @@ $SMB_INFO_BINARIES
 
 $SMB_INFO_ENABLES
 
-smb_build_main(\%INPUT);
+smb_build_main(\%INPUT, \%SETTINGS);
 
 _SMB_ACEOF
 

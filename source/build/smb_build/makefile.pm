@@ -737,9 +737,10 @@ sub _prepare_rule_lists($)
 # $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub _prepare_makefile_in($)
+sub _prepare_makefile_in($$)
 {
 	my $CTX = shift;
+	my $settings = shift;
 	my $output;
 
 	$output  = "########################################\n";
@@ -791,13 +792,14 @@ sub _prepare_makefile_in($)
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($$)
+sub create_makefile_in($$$)
 {
 	my $CTX = shift;
+	my $settings = shift;
 	my $file = shift;
 
 	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
-	print MAKEFILE_IN _prepare_makefile_in($CTX);
+	print MAKEFILE_IN _prepare_makefile_in($CTX, $settings);
 	close(MAKEFILE_IN);
 
 	print "config.smb_build.pl: creating $file\n";

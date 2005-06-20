@@ -137,6 +137,8 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
     	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -Wmissing-format-attribute -Wformat=2 -Wno-format-y2k -DDEBUG_PASSWORD -DDEVELOPER"
+        SMB_INFO_BUILD_ENV="$SMB_INFO_BUILD_ENV 
+        	\$SETTINGS{DEVELOPER} = \"YES\";"
     fi])
 
 debug=no
