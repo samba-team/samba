@@ -12,6 +12,12 @@ Changes in release 0.7
 
  * Bug fixes
 
+Changes in release 0.6.5
+
+ * fix vulnerabilities in telnetd
+
+ * unbreak Kerberos 4 and kaserver
+
 Changes in release 0.6.4
 
  * fix vulnerabilities in telnet
