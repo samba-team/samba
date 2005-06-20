@@ -665,13 +665,26 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 
 	DEBUG(10,("smbsrv_recv\n"));
 
+	/* our backends are designed to process one request at a time,
+	   unless they deliberately mark the request as async and
+	   process it later on a timer or other event. This enforces
+	   that ordering. */
+	if (smb_conn->processing) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
+		return;
+	}
+
+	smb_conn->processing = True;
 	status = receive_smb_request(smb_conn);
+	smb_conn->processing = False;
 	if (NT_STATUS_IS_ERR(status)) {
 		talloc_free(conn->event.fde);
 		conn->event.fde = NULL;
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 		return;
 	}
+
+	EVENT_FD_READABLE(conn->event.fde);
 
 	/* free up temporary memory */
 	lp_talloc_free();
@@ -749,6 +762,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smbsrv_tcon_init(smb_conn);
 
 	smb_conn->connection = conn;
+	smb_conn->processing = False;
 
 	conn->private = smb_conn;
 }
