@@ -87,7 +87,7 @@ START=`date`
  sleep 4
 
  failed=0
- $SRCDIR/script/tests/test_ldap.sh localhost || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_ldap.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_session_key.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
