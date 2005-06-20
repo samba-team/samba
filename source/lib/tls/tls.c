@@ -39,7 +39,6 @@ struct tls_params {
 
 /* hold per connection tls data */
 struct tls_context {
-	struct tls_params *params;
 	struct socket_context *socket;
 	struct fd_event *fde;
 	gnutls_session session;
@@ -50,7 +49,18 @@ struct tls_context {
 	BOOL tls_detect;
 	const char *plain_chars;
 	BOOL output_pending;
+	gnutls_certificate_credentials xcred;
+	BOOL interrupted;
 };
+
+#define TLSCHECK(call) do { \
+	ret = call; \
+	if (ret < 0) { \
+		DEBUG(0,("TLS %s - %s\n", #call, gnutls_strerror(ret))); \
+		goto failed; \
+	} \
+} while (0)
+
 
 
 /*
@@ -80,7 +90,6 @@ static ssize_t tls_pull(gnutls_transport_ptr ptr, void *buf, size_t size)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		EVENT_FD_READABLE(tls->fde);
-		EVENT_FD_NOT_WRITEABLE(tls->fde);
 		errno = EAGAIN;
 		return -1;
 	}
@@ -153,6 +162,9 @@ static NTSTATUS tls_handshake(struct tls_context *tls)
 	
 	ret = gnutls_handshake(tls->session);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
+		if (gnutls_record_get_direction(tls->session) == 1) {
+			EVENT_FD_WRITEABLE(tls->fde);
+		}
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
@@ -160,6 +172,28 @@ static NTSTATUS tls_handshake(struct tls_context *tls)
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
 	tls->done_handshake = True;
+	return NT_STATUS_OK;
+}
+
+/*
+  possibly continue an interrupted operation
+*/
+static NTSTATUS tls_interrupted(struct tls_context *tls)
+{
+	int ret;
+
+	if (!tls->interrupted) {
+		return NT_STATUS_OK;
+	}
+	if (gnutls_record_get_direction(tls->session) == 1) {
+		ret = gnutls_record_send(tls->session, NULL, 0);
+	} else {
+		ret = gnutls_record_recv(tls->session, NULL, 0);
+	}
+	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
+		return STATUS_MORE_ENTRIES;
+	}
+	tls->interrupted = False;
 	return NT_STATUS_OK;
 }
 
@@ -173,7 +207,12 @@ NTSTATUS tls_socket_pending(struct tls_context *tls, size_t *npending)
 	}
 	*npending = gnutls_record_check_pending(tls->session);
 	if (*npending == 0) {
-		return socket_pending(tls->socket, npending);
+		NTSTATUS status = socket_pending(tls->socket, npending);
+		if (*npending == 0) {
+			/* seems to be a gnutls bug */
+			(*npending) = 100;
+		}
+		return status;
 	}
 	return NT_STATUS_OK;
 }
@@ -208,8 +247,15 @@ NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen,
 	status = tls_handshake(tls);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	status = tls_interrupted(tls);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	ret = gnutls_record_recv(tls->session, buf, wantlen);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
+		if (gnutls_record_get_direction(tls->session) == 1) {
+			EVENT_FD_WRITEABLE(tls->fde);
+		}
+		tls->interrupted = True;
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
@@ -235,8 +281,15 @@ NTSTATUS tls_socket_send(struct tls_context *tls, const DATA_BLOB *blob, size_t 
 	status = tls_handshake(tls);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	status = tls_interrupted(tls);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	ret = gnutls_record_send(tls->session, blob->data, blob->length);
 	if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
+		if (gnutls_record_get_direction(tls->session) == 1) {
+			EVENT_FD_WRITEABLE(tls->fde);
+		}
+		tls->interrupted = True;
 		return STATUS_MORE_ENTRIES;
 	}
 	if (ret < 0) {
@@ -317,6 +370,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 	gnutls_certificate_set_dh_params(params->x509_cred, params->dh_params);
 
 	params->tls_enabled = True;
+
 	return params;
 
 init_failed:
@@ -349,14 +403,6 @@ struct tls_context *tls_init_server(struct tls_params *params,
 		return tls;
 	}
 
-#define TLSCHECK(call) do { \
-	ret = call; \
-	if (ret < 0) { \
-		DEBUG(0,("TLS %s - %s\n", #call, gnutls_strerror(ret))); \
-		goto failed; \
-	} \
-} while (0)
-
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_SERVER));
 
 	talloc_set_destructor(tls, tls_destructor);
@@ -379,10 +425,10 @@ struct tls_context *tls_init_server(struct tls_params *params,
 	}
 
 	tls->output_pending  = False;
-	tls->params          = params;
 	tls->done_handshake  = False;
 	tls->have_first_byte = False;
 	tls->tls_enabled     = True;
+	tls->interrupted     = False;
 	
 	return tls;
 
@@ -390,6 +436,60 @@ failed:
 	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
 	tls->tls_enabled = False;
 	params->tls_enabled = False;
+	return tls;
+}
+
+
+/*
+  setup for a new client connection
+*/
+struct tls_context *tls_init_client(struct socket_context *socket,
+				    struct fd_event *fde, 
+				    BOOL tls_enable)
+{
+	struct tls_context *tls;
+	int ret;
+	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
+	tls = talloc(socket, struct tls_context);
+	if (tls == NULL) return NULL;
+
+	tls->socket          = socket;
+	tls->fde             = fde;
+	tls->tls_enabled     = tls_enable;
+
+	if (!tls->tls_enabled) {
+		return tls;
+	}
+
+	gnutls_global_init();
+
+	gnutls_certificate_allocate_credentials(&tls->xcred);
+	gnutls_certificate_set_x509_trust_file(tls->xcred, lp_tls_cafile(),
+					       GNUTLS_X509_FMT_PEM);
+	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
+	TLSCHECK(gnutls_set_default_priority(tls->session));
+	gnutls_certificate_type_set_priority(tls->session, cert_type_priority);
+	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE, tls->xcred));
+
+	talloc_set_destructor(tls, tls_destructor);
+
+	gnutls_transport_set_ptr(tls->session, (gnutls_transport_ptr)tls);
+	gnutls_transport_set_pull_function(tls->session, (gnutls_pull_func)tls_pull);
+	gnutls_transport_set_push_function(tls->session, (gnutls_push_func)tls_push);
+	gnutls_transport_set_lowat(tls->session, 0);
+	tls->tls_detect = False;
+
+	tls->output_pending  = False;
+	tls->done_handshake  = False;
+	tls->have_first_byte = False;
+	tls->tls_enabled     = True;
+	tls->interrupted     = False;
+	
+	return tls;
+
+failed:
+	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
+	tls->tls_enabled = False;
 	return tls;
 }
 
@@ -420,6 +520,13 @@ struct tls_context *tls_init_server(struct tls_params *params,
 				    BOOL tls_enable)
 {
 	if (plain_chars == NULL) return NULL;
+	return (struct tls_context *)sock;
+}
+
+struct tls_context *tls_init_client(struct socket_context *sock, 
+				    struct fd_event *fde,
+				    BOOL tls_enable)
+{
 	return (struct tls_context *)sock;
 }
 
