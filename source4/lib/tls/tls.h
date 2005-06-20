@@ -41,6 +41,13 @@ struct tls_context *tls_init_server(struct tls_params *parms,
 				    BOOL tls_enable);
 
 /*
+  call tls_init_client() on each new client connection
+*/
+struct tls_context *tls_init_client(struct socket_context *sock, 
+				    struct fd_event *fde,
+				    BOOL tls_enable);
+
+/*
   call these to send and receive data. They behave like socket_send() and socket_recv()
  */
 NTSTATUS tls_socket_recv(struct tls_context *tls, void *buf, size_t wantlen, 
