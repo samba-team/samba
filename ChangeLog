@@ -1,3 +1,7 @@
+2005-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kcm/kcm.8: fix example
+
 2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/rd_rep.c: indent
