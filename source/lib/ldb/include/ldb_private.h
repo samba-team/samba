@@ -77,6 +77,13 @@ struct ldb_context {
 
 	/* debugging operations */
 	struct ldb_debug_ops debug_ops;
+
+	/* backend specific opaque parameters */
+	struct ldb_opaque {
+		struct ldb_opaque *next;
+		const char *name;
+		void *value;
+	} *opaque;
 };
 
 /* the modules init function */
