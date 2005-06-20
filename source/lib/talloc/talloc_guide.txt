@@ -567,3 +567,16 @@ This function lets you know the amount of memory alloced so far by
 this context. It does NOT account for subcontext memory.
 This can be used to calculate the size of an array.
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_find_parent_byname(const void *ctx, const char *name);
+
+Find a parent memory context of the current context that has the given
+name. This can be very useful in complex programs where it may be
+difficult to pass all information down to the level you need, but you
+know the structure you want is a parent of another context.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+(type *)talloc_find_parent_bytype(ctx, type);
+
+Like talloc_find_parent_byname() but takes a type, making it typesafe.
+

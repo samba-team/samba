@@ -1108,3 +1108,27 @@ size_t talloc_get_size(const void *context)
 
 	return tc->size;
 }
+
+/*
+  find a parent of this context that has the given name, if any
+*/
+void *talloc_find_parent_byname(const void *context, const char *name)
+{
+	struct talloc_chunk *tc;
+
+	if (context == NULL) {
+		return NULL;
+	}
+
+	tc = talloc_chunk_from_ptr(context);
+	while (tc->prev) {
+		tc = tc->prev;
+	}
+	while (tc->parent && (!tc->name || strcmp(tc->name, name))) {
+		tc = tc->parent;
+	}
+	if (tc == NULL) {
+		return NULL;
+	}
+	return (void *)(tc+1);
+}

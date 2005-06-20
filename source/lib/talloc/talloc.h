@@ -65,6 +65,8 @@ typedef void TALLOC_CTX;
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
+#define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
+
 
 #if TALLOC_DEPRECATED
 #define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
@@ -127,6 +129,7 @@ void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned
 void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 void *talloc_autofree_context(void);
 size_t talloc_get_size(const void *ctx);
+void *talloc_find_parent_byname(const void *ctx, const char *name);
 
 #endif
 
