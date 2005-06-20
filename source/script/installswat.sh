@@ -169,7 +169,7 @@ fi
 
 cat << EOF
 ======================================================================
-The SWAT files have been installed. Remember to read the swat/README
+The SWAT files have been installed. Remember to read the documentation
 for information on enabling and using SWAT
 ======================================================================
 EOF
