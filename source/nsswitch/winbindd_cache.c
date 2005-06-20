@@ -467,21 +467,13 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
-		extern BOOL opt_dual_daemon;
 
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
 			 kstr, domain->name ));
 
-		if (opt_dual_daemon) {
-			extern BOOL background_process;
-			background_process = True;
-			DEBUG(10,("wcache_fetch: background processing expired entry %s for domain %s\n",
-				 kstr, domain->name ));
-		} else {
-			centry_free(centry);
-			free(kstr);
-			return NULL;
-		}
+		centry_free(centry);
+		free(kstr);
+		return NULL;
 	}
 
 	DEBUG(10,("wcache_fetch: returning entry %s for domain %s\n",
@@ -1049,7 +1041,6 @@ do_query:
 	return status;
 }
 
-
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -1451,6 +1442,7 @@ struct winbindd_methods cache_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	msrpc_lookupsids,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,
@@ -1567,58 +1559,8 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 		return False;
 	}
 
+	dump_data(11, data.dptr, data.dsize);
+
 	response->extra_data = data.dptr;
 	return True;
-}
-
-char *cache_store_request_data(TALLOC_CTX *mem_ctx, char *request_string)
-{
-	int i;
-
-	if (!init_wcache())
-		return NULL;
-
-	for (i=0; i<2; i++) {
-		char *key = talloc_strdup(mem_ctx, generate_random_str(16));
-		if (key == NULL)
-			return NULL;
-		DEBUG(10, ("Storing request key %s\n", key));
-		if (tdb_store_bystring(wcache->tdb, key,
-			      	       string_tdb_data(request_string),
-			      	       TDB_INSERT) == 0)
-			return key;
-	}
-	return NULL;
-}
-
-char *cache_retrieve_request_data(TALLOC_CTX *mem_ctx, char *key)
-{
-	TDB_DATA data;
-	char *result = NULL;
-
-	if (!init_wcache())
-		return NULL;
-
-	DEBUG(10, ("Retrieving key %s\n", key));
-
-	data = tdb_fetch_bystring(wcache->tdb, key);
-	if (data.dptr == NULL)
-		return NULL;
-
-	if (strnlen(data.dptr, data.dsize) != (data.dsize)) {
-		DEBUG(0, ("Received invalid request string\n"));
-		goto done;
-	}
-	result = TALLOC_ARRAY(mem_ctx, char, data.dsize+1);
-	if (result != NULL) {
-		memcpy(result, data.dptr, data.dsize);
-		result[data.dsize] = '\0';
-	}
-	if (tdb_delete_bystring(wcache->tdb, key) != 0) {
-		DEBUG(0, ("Could not delete key %s\n", key));
-		result = NULL;
-	}
-  done:
-	SAFE_FREE(data.dptr);
-	return result;
 }

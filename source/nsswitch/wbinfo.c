@@ -515,23 +515,24 @@ static BOOL wbinfo_lookupsid(char *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
+	fstring tmp;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
 	/* Send off request */
 
-	fstrcpy(request.data.sid, sid);
+	fstr_sprintf(tmp, "%s\n", sid);
+	request.extra_data = tmp;
+	request.extra_len = strlen(tmp)+1;
 
-	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
+	if (winbindd_request(WINBINDD_LOOKUPSIDS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
 	/* Display response */
 
-	d_printf("%s%c%s %d\n", response.data.name.dom_name, 
-		 winbind_separator(), response.data.name.name, 
-		 response.data.name.type);
+	d_printf("%s", (char *)response.extra_data);
 
 	return True;
 }

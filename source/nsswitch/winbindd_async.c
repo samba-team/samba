@@ -84,12 +84,12 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		      &state->response, do_async_recv, state);
 }
 
-static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-			    const struct winbindd_request *request,
-			    void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
-					 struct winbindd_response *response,
-					 void *c, void *private),
-			    void *c, void *private)
+void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+		     const struct winbindd_request *request,
+		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+				  struct winbindd_response *response,
+				  void *c, void *private),
+		     void *c, void *private)
 {
 	struct do_async_state *state;
 
@@ -726,14 +726,14 @@ static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
-			  DOM_SID **sids, int *num_sids)
+BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+		   DOM_SID **sids, int *num_sids)
 {
 	char *p, *q;
 
 	p = sidstr;
 	if (p == NULL)
-		return True;
+		return False;
 
 	while (p[0] != '\0') {
 		DOM_SID sid;
@@ -806,7 +806,6 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 {
 	struct winbindd_request request;
 	char *sidstr = NULL;
-	char *keystr;
 
 	if (num_sids == 0) {
 		cont(private, True, NULL, 0);
@@ -818,16 +817,10 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 		return;
 	}
 
-	keystr = cache_store_request_data(mem_ctx, sidstr);
-	if (keystr == NULL) {
-		cont(private, False, NULL, 0);
-		return;
-	}
-
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
-	fstrcpy(request.domain_name, domain->name);
-	fstrcpy(request.data.dual_sidaliases.cache_key, keystr);
+	request.extra_len = strlen(sidstr);
+	request.extra_data = sidstr;
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
 			cont, private);
@@ -838,7 +831,6 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 {
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
-	char *key = state->request.data.dual_sidaliases.cache_key;
 	char *sidstr;
 	int i, num_aliases;
 	uint32 *alias_rids;
@@ -846,12 +838,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
-	/* Ensure null termination */
-        state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
-        state->request.data.dual_sidaliases.cache_key
-		[sizeof(state->request.data.dual_sidaliases.cache_key)-1]='\0';
-
-	sidstr = cache_retrieve_request_data(state->mem_ctx, key);
+	sidstr = state->request.extra_data;
 	if (sidstr == NULL)
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
 

@@ -34,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 11
+#define WINBIND_INTERFACE_VERSION 12
 
 /* Socket commands */
 
@@ -74,6 +74,7 @@ enum winbindd_cmd {
 	/* SID conversion */
 
 	WINBINDD_LOOKUPSID,
+	WINBINDD_LOOKUPSIDS,
 	WINBINDD_LOOKUPNAME,
 
 	/* Lookup functions */
@@ -173,6 +174,8 @@ typedef struct winbindd_gr {
 /* This is a flag that can only be sent from parent to child */
 #define WBFLAG_IS_PRIVILEGED            0x0400
 
+#define WINBINDD_MAX_EXTRA_DATA (128*1024)
+
 /* Winbind request structure */
 
 struct winbindd_request {
@@ -181,7 +184,6 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
-	int msgid;
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -238,10 +240,9 @@ struct winbindd_request {
 			gid_t gid;
 			fstring sid;
 		} dual_idmapset;
-		struct {
-			fstring cache_key;
-		} dual_sidaliases;
 	} data;
+	char *extra_data;
+	size_t extra_len;
 	char null_term;
 };
 

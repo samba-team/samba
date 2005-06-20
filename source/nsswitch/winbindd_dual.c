@@ -36,213 +36,49 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-extern BOOL opt_dual_daemon;
-BOOL background_process = False;
-int dual_daemon_pipe = -1;
-
-
-/* a list of requests ready to be sent to the dual daemon */
-struct dual_list {
-	struct dual_list *next;
-	char *data;
-	int length;
-	int offset;
-};
-
-static struct dual_list *dual_list;
-static struct dual_list *dual_list_end;
-
 /* Read some data from a client connection */
 
-static void dual_client_read(struct winbindd_cli_state *state)
+static void child_read_request(struct winbindd_cli_state *state)
 {
-	int n;
-    
+	ssize_t len;
+
 	/* Read data */
 
-	n = sys_read(state->sock, state->read_buf_len + 
-		 (char *)&state->request, 
-		 sizeof(state->request) - state->read_buf_len);
-	
-	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full "
-		  "request.\n", n, (unsigned long)(sizeof(state->request) - n -
-						   state->read_buf_len) ));
+	len = read_data(state->sock, (char *)&state->request,
+			sizeof(state->request));
 
-	/* Read failed, kill client */
-	
-	if (n == -1 || n == 0) {
-		DEBUG(5,("read failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
-			 (n == -1) ? strerror(errno) : "EOF"));
-		
+	if (len != sizeof(state->request)) {
+		DEBUG(0, ("Got invalid request length: %d\n", len));
 		state->finished = True;
 		return;
 	}
-	
-	/* Update client state */
-	
-	state->read_buf_len += n;
-	state->last_access = time(NULL);
-}
 
-/*
-  setup a select() including the dual daemon pipe
- */
-int dual_select_setup(fd_set *fds, int maxfd)
-{
-	if (dual_daemon_pipe == -1 ||
-	    !dual_list) {
-		return maxfd;
-	}
-
-	FD_SET(dual_daemon_pipe, fds);
-	if (dual_daemon_pipe > maxfd) {
-		maxfd = dual_daemon_pipe;
-	}
-	return maxfd;
-}
-
-
-/*
-  a hook called from the main winbindd select() loop to handle writes
-  to the dual daemon pipe 
-*/
-void dual_select(fd_set *fds)
-{
-	int n;
-
-	if (dual_daemon_pipe == -1 ||
-	    !dual_list ||
-	    !FD_ISSET(dual_daemon_pipe, fds)) {
+	if (state->request.extra_len == 0) {
+		state->request.extra_data = NULL;
 		return;
 	}
 
-	n = sys_write(dual_daemon_pipe, 
-		  &dual_list->data[dual_list->offset],
-		  dual_list->length - dual_list->offset);
+	DEBUG(10, ("Need to read %d extra bytes\n", state->request.extra_len));
 
-	if (n <= 0) {
-		/* the pipe is dead! fall back to normal operation */
-		dual_daemon_pipe = -1;
+	state->request.extra_data =
+		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+
+	if (state->request.extra_data == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		state->finished = True;
 		return;
 	}
 
-	dual_list->offset += n;
+	/* Ensure null termination */
+	state->request.extra_data[state->request.extra_len] = '\0';
 
-	if (dual_list->offset == dual_list->length) {
-		struct dual_list *next;
-		next = dual_list->next;
-		free(dual_list->data);
-		free(dual_list);
-		dual_list = next;
-		if (!dual_list) {
-			dual_list_end = NULL;
-		}
-	}
-}
+	len = read_data(state->sock, state->request.extra_data,
+			state->request.extra_len);
 
-/* 
-   send a request to the background daemon 
-   this is called for stale cached entries
-*/
-void dual_send_request(struct winbindd_cli_state *state)
-{
-	struct dual_list *list;
-
-	if (!background_process) return;
-
-	list = SMB_MALLOC_P(struct dual_list);
-	if (!list) return;
-
-	list->next = NULL;
-	list->data = memdup(&state->request, sizeof(state->request));
-	list->length = sizeof(state->request);
-	list->offset = 0;
-	
-	if (!dual_list_end) {
-		dual_list = list;
-		dual_list_end = list;
-	} else {
-		dual_list_end->next = list;
-		dual_list_end = list;
-	}
-
-	background_process = False;
-}
-
-
-/* 
-the main dual daemon 
-*/
-void do_dual_daemon(void)
-{
-	int fdpair[2];
-	struct winbindd_cli_state state;
-	
-	if (pipe(fdpair) != 0) {
+	if (len != state->request.extra_len) {
+		DEBUG(0, ("Could not read extra data\n"));
+		state->finished = True;
 		return;
-	}
-
-	ZERO_STRUCT(state);
-	state.pid = getpid();
-
-	dual_daemon_pipe = fdpair[1];
-	state.sock = fdpair[0];
-
-	if (sys_fork() != 0) {
-		close(fdpair[0]);
-		return;
-	}
-	close(fdpair[1]);
-
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all() == -1) {
-		DEBUG(0,("tdb_reopen_all failed.\n"));
-		_exit(0);
-	}
-	
-	dual_daemon_pipe = -1;
-	opt_dual_daemon = False;
-
-	while (1) {
-		/* free up any talloc memory */
-		lp_talloc_free();
-		main_loop_talloc_free();
-
-		/* fetch a request from the main daemon */
-		dual_client_read(&state);
-
-		if (state.finished) {
-			/* we lost contact with our parent */
-			exit(0);
-		}
-
-		/* process full rquests */
-		if (state.read_buf_len == sizeof(state.request)) {
-			DEBUG(4,("dual daemon request %d\n", (int)state.request.cmd));
-
-			/* special handling for the stateful requests */
-			switch (state.request.cmd) {
-			case WINBINDD_GETPWENT:
-				winbindd_setpwent(&state);
-				break;
-				
-			case WINBINDD_GETGRENT:
-			case WINBINDD_GETGRLST:
-				winbindd_setgrent(&state);
-				break;
-			default:
-				break;
-			}
-
-			winbind_process_packet(&state);
-			SAFE_FREE(state.response.extra_data);
-
-			free_getent_state(state.getpwent_state);
-			free_getent_state(state.getgrent_state);
-			state.getpwent_state = NULL;
-			state.getgrent_state = NULL;
-		}
 	}
 }
 
@@ -263,6 +99,7 @@ struct winbindd_async_request {
 	void *private;
 };
 
+static void async_main_request_sent(void *private, BOOL success);
 static void async_request_sent(void *private, BOOL success);
 static void async_reply_recv(void *private, BOOL success);
 static void schedule_async_request(struct winbindd_child *child);
@@ -297,6 +134,30 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	schedule_async_request(child);
 
 	return;
+}
+
+static void async_main_request_sent(void *private, BOOL success)
+{
+	struct winbindd_async_request *state =
+		talloc_get_type_abort(private, struct winbindd_async_request);
+
+	if (!success) {
+		DEBUG(5, ("Could not send async request\n"));
+
+		state->response->length = sizeof(struct winbindd_response);
+		state->response->result = WINBINDD_ERROR;
+		state->continuation(state->private, False);
+		return;
+	}
+
+	if (state->request->extra_len == 0) {
+		async_request_sent(private, True);
+		return;
+	}
+
+	setup_async_write(&state->child->event, state->request->extra_data,
+			  state->request->extra_len,
+			  async_request_sent, state);
 }
 
 static void async_request_sent(void *private, BOOL success)
@@ -374,7 +235,7 @@ static void schedule_async_request(struct winbindd_child *child)
 
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
-			  async_request_sent, request);
+			  async_main_request_sent, request);
 	return;
 }
 
@@ -482,6 +343,7 @@ struct winbindd_child_dispatch_table {
 static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	
 	{ WINBINDD_LOOKUPSID, winbindd_dual_lookupsid, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPSIDS, winbindd_dual_lookupsids, "LOOKUPSIDS" },
 	{ WINBINDD_LOOKUPNAME, winbindd_dual_lookupname, "LOOKUPNAME" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_dual_list_trusted_domains,
 	  "LIST_TRUSTDOM" },
@@ -645,49 +507,40 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		reopen_logs();
 	}
 	
-	dual_daemon_pipe = -1;
-	opt_dual_daemon = False;
-
 	while (1) {
 		/* free up any talloc memory */
 		lp_talloc_free();
 		main_loop_talloc_free();
 
 		/* fetch a request from the main daemon */
-		dual_client_read(&state);
+		child_read_request(&state);
 
 		if (state.finished) {
 			/* we lost contact with our parent */
 			exit(0);
 		}
 
-		/* process full rquests */
-		if (state.read_buf_len == sizeof(state.request)) {
-			DEBUG(4,("child daemon request %d\n",
-				 (int)state.request.cmd));
+		DEBUG(4,("child daemon request %d\n", (int)state.request.cmd));
 
-			state.request.null_term = '\0';
-			child_process_request(child->domain, &state);
+		state.request.null_term = '\0';
+		child_process_request(child->domain, &state);
 
-			if (state.response.result == WINBINDD_OK)
-				cache_store_response(sys_getpid(),
-						     &state.response);
+		SAFE_FREE(state.request.extra_data);
 
-			SAFE_FREE(state.response.extra_data);
+		if (state.response.result == WINBINDD_OK)
+			cache_store_response(sys_getpid(), &state.response);
 
-			/* We just send the result code back, the result
-			 * structure needs to be fetched via the
-			 * winbindd_cache. Hmm. That needs fixing... */
+		SAFE_FREE(state.response.extra_data);
 
-			if (write_data(state.sock,
-				       (void *)&state.response.result,
-				       sizeof(state.response.result)) !=
-			    sizeof(state.response.result)) {
-				DEBUG(0, ("Could not write result\n"));
-				exit(1);
-			}
+		/* We just send the result code back, the result
+		 * structure needs to be fetched via the
+		 * winbindd_cache. Hmm. That needs fixing... */
 
-			state.read_buf_len = 0;
+		if (write_data(state.sock, (void *)&state.response.result,
+			       sizeof(state.response.result)) !=
+		    sizeof(state.response.result)) {
+			DEBUG(0, ("Could not write result\n"));
+			exit(1);
 		}
 	}
 }

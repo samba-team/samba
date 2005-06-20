@@ -894,6 +894,7 @@ struct winbindd_methods ads_methods = {
 	enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
+	msrpc_lookupsids,
 	query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,

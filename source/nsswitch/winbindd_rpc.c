@@ -316,6 +316,28 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS msrpc_lookupsids(struct winbindd_domain *domain,
+			  TALLOC_CTX *mem_ctx,
+			  uint32 num_sids, const DOM_SID *sids,
+			  char ***domain_names,
+			  char ***names,
+			  enum SID_NAME_USE **types)
+{
+	NTSTATUS result;
+	struct rpc_pipe_client *cli;
+	POLICY_HND lsa_policy;
+
+	DEBUG(3,("lookupsids [rpc] for domain %s\n", domain->name ));
+
+	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	return rpccli_lsa_lookup_sids(cli, mem_ctx, &lsa_policy,
+					num_sids, sids, domain_names, names,
+					types);
+}
+
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -891,6 +913,7 @@ struct winbindd_methods msrpc_methods = {
 	enum_local_groups,
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
+	msrpc_lookupsids,
 	query_user,
 	lookup_usergroups,
 	msrpc_lookup_useraliases,

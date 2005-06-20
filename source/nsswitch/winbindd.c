@@ -27,7 +27,6 @@
 #include "winbindd.h"
 
 BOOL opt_nocache = False;
-BOOL opt_dual_daemon = True;
 static BOOL interactive = False;
 
 extern BOOL override_logfile;
@@ -139,12 +138,6 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
-#if 0
-	/* Clear cached user and group enumation info */	
-	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
-		wcache_flush_cache();
-#endif
-
 	/* We need to invalidate cached user list entries on a SIGHUP 
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
@@ -270,6 +263,7 @@ static struct winbindd_dispatch_table {
 	/* SID related functions */
 
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPSIDS, winbindd_lookupsids, "LOOKUPSIDS" },
 	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 
 	/* Lookup related functions */
@@ -462,6 +456,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 
 static void request_len_recv(void *private, BOOL success);
 static void request_recv(void *private, BOOL success);
+static void request_main_recv(void *private, BOOL success);
 static void request_finished(struct winbindd_cli_state *state);
 void request_finished_cont(void *private, BOOL success);
 static void response_main_sent(void *private, BOOL success);
@@ -482,6 +477,7 @@ static void response_extra_sent(void *private, BOOL success)
 		return;
 	}
 
+	SAFE_FREE(state->request.extra_data);
 	SAFE_FREE(state->response.extra_data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
@@ -545,19 +541,6 @@ void request_finished_cont(void *private, BOOL success)
 		request_error(state);
 }
 
-static void request_recv(void *private, BOOL success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	process_request(state);
-}
-
 static void request_len_recv(void *private, BOOL success)
 {
 	struct winbindd_cli_state *state =
@@ -577,7 +560,61 @@ static void request_len_recv(void *private, BOOL success)
 
 	setup_async_read(&state->fd_event, (uint32 *)(&state->request)+1,
 			 sizeof(state->request) - sizeof(uint32),
-			 request_recv, state);
+			 request_main_recv, state);
+}
+
+static void request_main_recv(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	if (state->request.extra_len == 0) {
+		state->request.extra_data = NULL;
+		request_recv(state, True);
+		return;
+	}
+
+	if ((!state->privileged) &&
+	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
+		DEBUG(3, ("Got request with %d bytes extra data on "
+			  "unprivileged socket\n", state->request.extra_len));
+		state->request.extra_data = NULL;
+		state->finished = True;
+		return;
+	}
+
+	state->request.extra_data =
+		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+
+	if (state->request.extra_data == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		state->finished = True;
+		return;
+	}
+
+	/* Ensure null termination */
+	state->request.extra_data[state->request.extra_len] = '\0';
+
+	setup_async_read(&state->fd_event, state->request.extra_data,
+			 state->request.extra_len, request_recv, state);
+}
+
+static void request_recv(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private, struct winbindd_cli_state);
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	process_request(state);
 }
 
 /* Process a new connection by adding it to the client connection list */
@@ -709,11 +746,6 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 	
 	state->read_buf_len = 0;
 	state->write_buf_len = sizeof(struct winbindd_response);
-
-	/* we might need to send it to the dual daemon */
-	if (opt_dual_daemon) {
-		dual_send_request(state);
-	}
 }
 
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
@@ -764,10 +796,6 @@ static void process_loop(void)
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
 
-	if (opt_dual_daemon) {
-		maxfd = dual_select_setup(&w_fds, maxfd);
-	}
-
 	/* Set up client readers and writers */
 
 	state = winbindd_client_list();
@@ -812,10 +840,6 @@ static void process_loop(void)
 	}
 
 	/* Create a new connection if listen_sock readable */
-
-	if (opt_dual_daemon) {
-		dual_select(&w_fds);
-	}
 
 	ev = fd_events;
 	while (ev != NULL) {
@@ -917,7 +941,6 @@ int main(int argc, char **argv)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
@@ -1047,10 +1070,6 @@ int main(int argc, char **argv)
 	if (interactive)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
-
-	if (opt_dual_daemon) {
-		do_dual_daemon();
-	}
 
 	/* Initialise messaging system */
 

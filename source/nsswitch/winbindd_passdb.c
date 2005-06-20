@@ -284,6 +284,16 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS lookupsids(struct winbindd_domain *domain,
+			   TALLOC_CTX *mem_ctx,
+			   uint32 num_sids, const DOM_SID *sids,
+			   char ***domain_names, char ***names,
+			   enum SID_NAME_USE **types)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -397,6 +407,7 @@ struct winbindd_methods passdb_methods = {
 	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
+	lookupsids,
 	query_user,
 	lookup_usergroups,
 	lookup_useraliases,
