@@ -58,7 +58,7 @@ cat >$CONFFILE<<EOF
 	lock dir = $LOCKDIR
 	sam database = tdb://$PRIVATEDIR/sam.ldb
 	name resolve order = bcast
-	interfaces = lo
+	interfaces = lo*
 
 [tmp]
 	path = $TMPDIR
