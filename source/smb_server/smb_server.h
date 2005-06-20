@@ -254,4 +254,6 @@ struct smbsrv_connection {
 		struct smb_trans2 *trans;
 		uint8_t command;
 	} *trans_partial;
+
+	BOOL processing;
 };
