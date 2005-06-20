@@ -317,16 +317,25 @@ section</link> for an example of the minimum required settings.
 <smbconfoption name="passdb backend">ldapsam://localhost:389</smbconfoption>
 <smbconfoption name="domain master">yes</smbconfoption>
 <smbconfoption name="domain logons">yes</smbconfoption>
+<smbconfoption name="ldap suffix">dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=Users</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=Computers</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
 </smbconfblock>
 </example>
 
 <para>
 <indexterm><primary>profile path</primary></indexterm>
 <indexterm><primary>home drive</primary></indexterm>
-Several other things like a <smbconfsection name="[homes]"/> and a
-<smbconfsection name="[netlogon]"/> share also need to be set along with
-settings for the profile path, the user's home drive, and so on. This is not covered in this
-chapter; for more information please refer to <link linkend="samba-pdc">Domain Control</link>.
+Several other things like a <smbconfsection name="[homes]"/> and a <smbconfsection name="[netlogon]"/> share
+also need to be set along with settings for the profile path, the user's home drive, and so on. This is not
+covered in this chapter; for more information please refer to <link linkend="samba-pdc">Domain Control</link>.
+Refer to <link linkend="samba-pdc">the Domain Control chapter</link> for specific recommendations for PDC
+configuration. Alternately, fully documented working example network configurations using OpenLDAP and Samba
+as available in the <ulink url="http://www.samba.org/samba/docs/Samba3-ByExample">book</ulink> <quote>Samba-3
+by Example</quote> that may be obtained from local and on-line book stores.
 </para>
 
 </sect3>
@@ -507,7 +516,7 @@ environment all machines require appropriate DNS entries. More information may b
 <indexterm><primary>credentials validation</primary></indexterm>
 An MS Windows NT4/200x/XP Professional workstation in the domain MIDEARTH that wants a
 local user to be authenticated has to find the domain controller for MIDEARTH. It does this
-by doing a NetBIOS name query for the group name MIDEARTH&lt;#1c&gt;. It assumes that each
+by doing a NetBIOS name query for the group name MIDEARTH&lt;#1C&gt;. It assumes that each
 of the machines it gets back from the queries is a domain controller and can answer logon
 requests. To not open security holes, both the workstation and the selected domain controller
 authenticate each other. After that the workstation sends the user's credentials (name and
@@ -551,12 +560,12 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	<indexterm><primary>private/secrets.tdb</primary></indexterm>
 	<indexterm><primary>private/MACHINE.SID</primary></indexterm>
 	<indexterm><primary>domain SID</primary></indexterm>
-	The domain SID has to be the same on the PDC and the BDC. In Samba versions
-	pre-2.2.5, the domain SID was stored in the file <filename>private/MACHINE.SID</filename>.
-	The domain SID is now stored in the file <filename>private/secrets.tdb</filename>. This file
-	is unique to each server and cannot be copied from a PDC to a BDC; the BDC will generate
-	a new SID at startup. It will overwrite the PDC domain SID with the newly created BDC SID.
-	There is a procedure that will allow the BDC to aquire the domain SID. This is described here.
+	The domain SID has to be the same on the PDC and the BDC. In Samba versions pre-2.2.5, the domain SID was
+	stored in the file <filename>private/MACHINE.SID</filename>.  For all versions of Samba released since 2.2.5
+	the domain SID is stored in the file <filename>private/secrets.tdb</filename>. This file is unique to each
+	server and cannot be copied from a PDC to a BDC; the BDC will generate a new SID at startup. It will overwrite
+	the PDC domain SID with the newly created BDC SID.  There is a procedure that will allow the BDC to aquire the
+	domain SID. This is described here.
 	</para>
 
 	<para>
@@ -583,9 +592,8 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	</para></listitem>
 
 	<listitem><para>
-	Either <smbconfoption name="ldap suffix"/> or
-	<smbconfoption name="ldap idmap suffix"/> must be specified in
-	the &smb.conf; file.
+	The <smbconfoption name="ldap suffix"/> parameter and the <smbconfoption name="ldap idmap suffix"/>
+	parameter must be specified in the &smb.conf; file.
 	</para></listitem>
 
 	<listitem><para>
@@ -619,6 +627,25 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	file with <command>rsync</command> and <command>ssh</command>, this method
 	is broken and flawed, and is therefore not recommended. A better solution
 	is to set up slave LDAP servers for each BDC and a master LDAP server for the PDC.
+	The use of rsync is inherently flawed by the fact that the data will be replicated
+	at timed intervals. There is no guarantee that the BDC will be operating at all
+	times with correct and current machine and user account information. This means that
+	this method runs the risk of users being inconvenienced by discontinuity of access
+	to network services due to inconsistent security data. It must be born in mind that
+	Windows workstations update (change) the machine trust account password at regular
+	intervals &smbmdash; administrators are not normally aware that this is happening
+	or when it takes place.
+	</para>
+
+	<para>
+	<indexterm><primary>POSIX</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>SambaSAMAccount</primary></indexterm>
+	<indexterm><primary>synchronize</primary></indexterm>
+	The use of LDAP for both the POSIX (UNIX user and group) accounts and for the
+	SambaSAMAccount data automatically ensures that all account change information
+	will be written to the shared directory. This eliminates the need for any special
+	action to synchronize account information because LDAP will meet that requirement.
 	</para></listitem>
 
 	<listitem><para>
@@ -628,11 +655,12 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	<indexterm><primary>BDC</primary></indexterm>
 	<indexterm><primary>cron</primary></indexterm>
 	<indexterm><primary>rsync</primary></indexterm>
-	The netlogon share has to be replicated from the PDC to the
-	BDC. This can be done manually whenever login scripts are changed,
-	or it can be done automatically using a <command>cron</command> job
-	that will replicate the directory structure in this share using a tool
-	like <command>rsync</command>.
+	The netlogon share has to be replicated from the PDC to the BDC. This can be done manually whenever login
+	scripts are changed, or it can be done automatically using a <command>cron</command> job that will replicate
+	the directory structure in this share using a tool like <command>rsync</command>. The use of
+	<command>rsync</command> for replication of the netlogon data is not critical to network security and is one
+	that can be manually managed given that the administrator will make all changes to the netlogon share as part
+	of a conscious move.
 	</para></listitem>
 
 </itemizedlist>
@@ -640,9 +668,10 @@ The creation of a BDC requires some steps to prepare the Samba server before
 <sect2>
 <title>Example Configuration</title>
 
-<para> Finally, the BDC has to be found by the workstations. This can be
-done by configuring the Samba &smb.conf; file <smbconfsection name="[global]"/> section 
-as shown in <link linkend="minim-bdc">Minimal Setup for Being a BDC</link>.
+<para>
+Finally, the BDC has to be capable of being found by the workstations. This can be done by configuring the
+Samba &smb.conf; file <smbconfsection name="[global]"/> section as shown in <link linkend="minim-bdc">Minimal
+Setup for Being a BDC</link>.
 </para>
 
 <example id="minim-bdc">
@@ -652,21 +681,33 @@ as shown in <link linkend="minim-bdc">Minimal Setup for Being a BDC</link>.
 <smbconfoption name="passdb backend">ldapsam:ldap://slave-ldap.quenya.org</smbconfoption>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="domain logons">yes</smbconfoption>
-<smbconfoption name="idmap backend">ldap:ldap://slave-ldap.quenya.org</smbconfoption>
+<smbconfoption name="ldap suffix">dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=Users</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=Computers</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://master-ldap.quenya.org</smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
 </smbconfblock>
 </example>
+
+<para>
+Fully documented working example network configurations using OpenLDAP and Samba
+as available in the <ulink url="http://www.samba.org/samba/docs/Samba3-ByExample">book</ulink> <quote>Samba-3
+by Example</quote> that may be obtained from local and on-line book stores.
+</para>
 
 <para>
 <indexterm><primary>BDC</primary></indexterm>
 <indexterm><primary>NetBIOS</primary></indexterm>
 <indexterm><primary>group</primary></indexterm>
 <indexterm><primary>PDC</primary></indexterm>
-This configuration causes the BDC to register only the name MIDEARTH&lt;#1C&gt; with the
-WINS server. This is not a problem, as the name MIDEARTH&lt;#1C&gt; is a NetBIOS group name
-that is meant to be registered by more than one machine. The parameter
-<smbconfoption name="domain master">no</smbconfoption>
-forces the BDC not to register MIDEARTH&lt;#1B&gt;, which is a unique NetBIOS name that 
-is reserved for the PDC.
+This configuration causes the BDC to register only the name MIDEARTH&lt;#1C&gt; with the WINS server. This is
+not a problem, as the name MIDEARTH&lt;#1C&gt; is a NetBIOS group name that is meant to be registered by more
+than one machine. The parameter <smbconfoption name="domain master">no</smbconfoption> forces the BDC not to
+register MIDEARTH&lt;#1B&gt;, which is a unique NetBIOS name that is reserved for the PDC.
 </para>
 
 <para>
@@ -677,8 +718,12 @@ is reserved for the PDC.
 <indexterm><primary>LDAP database</primary></indexterm>
 <indexterm><primary>UID</primary></indexterm>
 <indexterm><primary>GID</primary></indexterm>
-The <parameter>idmap backend</parameter> will redirect the <command>winbindd</command> utility to
-use the LDAP database to resolve all UIDs and GIDs for UNIX accounts.
+<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>nss_ldap</primary></indexterm>
+The <parameter>idmap backend</parameter> will redirect the <command>winbindd</command> utility to use the LDAP
+database to store all mappings for Windows SIDs to  UIDs and GIDs for UNIX accounts in a repository that is
+shared. The BDC will however depend on local resolution of UIDs and GIDs via NSS and the
+<command>nss_ldap</command> utility.
 </para>
 
 <note><para>
@@ -713,9 +758,12 @@ member servers.
 
 <para>
 <indexterm><primary>domain control</primary></indexterm>
-As domain control is a rather new area for Samba, there are not many examples that we may refer to.
-Updates will be published as they become available and may be found in later Samba releases or
-from the Samba Web <ulink url="http://samba.org">site</ulink>.
+Domain control was a new area for Samba, but there are now many examples that we may refer to.
+Updated information will be published as they become available and may be found in later Samba releases or
+from the Samba Web <ulink url="http://samba.org">site</ulink>; refer in particular to the
+<filename>WHATSNEW.txt</filename> in the Samba release tarball. The book, <quote>Samba-3 by Example</quote>
+documents well tested and proven configuration examples. You can obtain a copy of this
+<ulink url="http://www.samba.org/samba/docs/Samba3-ByExample.pdf">book</ulink> for the Samba web site.
 </para>
 
 <sect2>

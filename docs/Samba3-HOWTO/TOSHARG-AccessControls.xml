@@ -408,7 +408,8 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	For example, Windows NT/2K/XP provides the capacity to set access controls on a directory into which people can
 	write files but not delete them. It is possible to set an ACL on a Windows file that permits the file to be written to
 	but not deleted. Such concepts are foreign to the UNIX operating system file space. Within the UNIX file system
-	anyone who has the ability to create a file can write to it and has the capability to delete it.
+	anyone who has the ability to create a file can write to it and anyone who has write permission on the
+	directory that contains a file and has write permission for it has the capability to delete it.
 	</para>
 
 	<para>
