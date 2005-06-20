@@ -16,9 +16,10 @@ use strict;
 
 my $config_list = "config.list";
 
-sub smb_build_main($)
+sub smb_build_main($$)
 {
 	my $INPUT = shift;
+	my $settings = shift;
 
 	my @mkfiles = split('\n', `grep -v ^# $config_list`);
 
@@ -32,7 +33,7 @@ sub smb_build_main($)
 	
 	my $OUTPUT = output::create_output($DEPEND);
 
-	makefile::create_makefile_in($OUTPUT, "Makefile.in");
+	makefile::create_makefile_in($OUTPUT, $settings, "Makefile.in");
 
 	smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 
