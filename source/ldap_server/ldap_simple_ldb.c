@@ -54,7 +54,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	basedn = ldap_parse_dn(local_ctx, r->basedn);
@@ -179,7 +179,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "sldb_Add local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -277,7 +277,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "sldb_Del local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -332,7 +332,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "sldb_Modify local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -444,7 +444,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	dn = ldap_parse_dn(local_ctx, r->dn);
@@ -512,7 +512,7 @@ static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	local_ctx = talloc_named(call, 0, "sldb_ModifyDN local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = samdb_connect(local_ctx);
+	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
 	olddn = ldap_parse_dn(local_ctx, r->dn);
