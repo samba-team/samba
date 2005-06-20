@@ -1121,14 +1121,33 @@ void *talloc_find_parent_byname(const void *context, const char *name)
 	}
 
 	tc = talloc_chunk_from_ptr(context);
-	while (tc->prev) {
-		tc = tc->prev;
-	}
-	while (tc->parent && (!tc->name || strcmp(tc->name, name))) {
+	while (tc) {
+		if (tc->name && strcmp(tc->name, name) == 0) {
+			return (void*)(tc+1);
+		}
+		while (tc && tc->prev) tc = tc->prev;
 		tc = tc->parent;
 	}
-	if (tc == NULL || tc->name == NULL || strcmp(tc->name, name)) {
-		return NULL;
+	return NULL;
+}
+
+/*
+  show the parentage of a context
+*/
+void talloc_show_parents(const void *context, FILE *file)
+{
+	struct talloc_chunk *tc;
+
+	if (context == NULL) {
+		fprintf(file, "talloc no parents for NULL\n");
+		return;
 	}
-	return (void *)(tc+1);
+
+	tc = talloc_chunk_from_ptr(context);
+	fprintf(file, "talloc parents of '%s'\n", talloc_get_name(context));
+	while (tc) {
+		fprintf(file, "\t'%s'\n", talloc_get_name(tc+1));
+		while (tc && tc->prev) tc = tc->prev;
+		tc = tc->parent;
+	}
 }
