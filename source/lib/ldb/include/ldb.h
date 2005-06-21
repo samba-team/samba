@@ -285,6 +285,9 @@ struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s);
 int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
 int ldb_base64_decode(char *s);
+int ldb_ldif_add_handlers(struct ldb_context *ldb, 
+			  const struct ldb_ldif_handler *handlers, 
+			  unsigned num_handlers);
 
 
 /* useful functions for ldb_message structure manipulation */
