@@ -97,13 +97,12 @@ the Samba server is not a member of a domain security context.
 <indexterm><primary>local smbpasswd file</primary></indexterm>
 <indexterm><primary>LDAP backend</primary></indexterm>
 <indexterm><primary>Winbind</primary></indexterm>
-Through the use of Pluggable Authentication Modules (PAM) and the name service switcher (NSS),
-which maintains the UNIX-user database, the source of authentication may reside on 
-another server. We would be inclined to call this the authentication server.
-This means that the Samba server may use the local UNIX/Linux system password database
-(<filename>/etc/passwd</filename> or <filename>/etc/shadow</filename>), may use a
-local smbpasswd file, or may use an LDAP backend, or even via PAM and Winbind another CIFS/SMB server
-for authentication.
+Through the use of Pluggable Authentication Modules (PAM) (see <link linkend="pam">the chapter on PAM</link>)
+and the name service switcher (NSS), which maintains the UNIX-user database, the source of authentication may
+reside on another server. We would be inclined to call this the authentication server.  This means that the
+Samba server may use the local UNIX/Linux system password database (<filename>/etc/passwd</filename> or
+<filename>/etc/shadow</filename>), may use a local smbpasswd file, or may use an LDAP backend, or even via PAM
+and Winbind another CIFS/SMB server for authentication.
 </para>
 
 </sect1>
