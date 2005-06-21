@@ -5,7 +5,7 @@
 
 This is a preview release of the Samba 3.0.20 code base and
 is provided for testing only.  This release is *not* intended
-for production servers.  There has been a substancial amount 
+for production servers.  There has been a substantial amount 
 of development since the 3.0.14a stable release (and since the
 3.015pre2 release as well).  We would like to ask the Samba 
 community for help in testing these changes as we work towards
@@ -40,8 +40,8 @@ Winbindd has been completely rewritten in this release to support
 an almost completely non-blocking, asynchronous request/reply
 model.  This means that winbindd will scale much better in 
 large domain environments and on high latency networks.  Neither 
-the client inerface nor the command line tools (i.e. wbinfo) have 
-changed in theiur calling conventions or syntax.  However, it is 
+the client interface nor the command line tools (i.e. wbinfo) have 
+changed in their calling conventions or syntax.  However, it is 
 required (more so than normal) that you install the nss_winbind.so
 library included in this release.
 
@@ -64,20 +64,19 @@ Changes since 3.0.15pre2
     acl check permissions		New
     enable asu support 			New
     ldap filter				Removed
+    map to guest			Modified (new value added)
     printer admin			Deprecated
     winbind enable local accounts	Removed
-
-
 
 
 commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
-    * Add checks against the current effective groupid (e.g. force 
+    * Add checks against the current effective group id (e.g. force 
       user) when testing write permissions one ACLs.
     * Fix FindFirst/FindNext server code when parsing directories
-      on old IRIX xfs file systems (thanks to Cale Fairchild
+      on old IRIX XFS file systems (thanks to Cale Fairchild
       for the debugging help).
     * BUG 2644: Test for special files to be ignored was reversed.
     * Ensure yield_connection() is called on all appropriate error
@@ -95,7 +94,7 @@ o   Jeremy Allison <jra@samba.org>
       a file is extended. Should catch disk full errors on write
       from MS-Office.
     * Add "acl check permissions" to turn on/off the new 
-      behaviour of checking for write access in a directory 
+      behavior of checking for write access in a directory 
       before delete. 
     * Refactor printing interface to take offset into job. 
     * Allow mapping of POSIX ACLs to NT perms to differentiate 
@@ -104,14 +103,38 @@ o   Jeremy Allison <jra@samba.org>
       domain passwords on the wire.
     * BUG 2729: Resume keys are *mandatory* for a search when 
       listing a W2K and above server from a FATxx filesystem only.
+    * BUG 2735: Ensure that smbd mangles control characters in file 
+      and directory names.
+    * Refactor small pieces of socket handling code (in conjunction 
+      with Derrell).
+    * BUG 2698: Fix infinite listing loop in smbclient caused by
+      an invalid character set conversion.
+    * Add client code that will abort a directory listing if we 
+      see the same name twice between packets.
+    * Performance improvements in trans2 qfilepathinfo code by 
+      removing unnecessary memset() calls.
+    * Rewrite the RPC bind parsing functions to follow the 
+      spec; fixes bug with 64-bit Windows XP and OS X 10.4.
+    * BUG 2774: Set sparse flag if needed when returning 
+      file attributes.
+    * Fix errors listing directories from Windows NT clients 
+      which caused "." and ".." to show up in explorer.exe.
+    * Merge of error code fixes from SAMBA_4_0 branch.
+    * BUG 2801: Fix regression in the "delete veto files" option.
+    * Fix based on work from  Shlomi Yaakobovich to catch loops 
+      in corrupted tdb files.
+    * Allow someone with SeTakeOwnershipPrivilege to chown the 
+      user of a file to herself.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
-    * BUG 2684: Add per service hosts allow/deny checkks for 
-      printers when  connecting via MS-RPC
+    * BUG 2684: Add per service hosts allow/deny checks for 
+      printers when  connecting via MS-RPC.
+    * BUG 2391: Fix segv caused by free a static pointer returned 
+      from getpwnam().
+    * Support kerberos authentication in smbd when using a keytab
+      and participating in a non-Microsoft Kerberos realm.
 
-
-o   Timur Bakeyev <timur@com.bat.ru>
 
 o   Ed Boraas <ed.boraas@concordia.ab.ca>.
     * Added Linux per-socket TCP settings.
@@ -121,7 +144,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 2626: ensure that the calling_name is set to something 
       after parsing smb.conf (if not set via -n).
     * Use "add machine script" when creating a user (ACB_NORMAL)
-      who has a name ending in '$' (e.g. usrmgr.exe createing
+      who has a name ending in '$' (e.g. usrmgr.exe creating
       domain trust accounts).
     * Add 'rid' synonym for idmap_rid IDMap module.
     * Ensure that we set full access on the handle returned 
@@ -130,11 +153,12 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix bug when looking for internal domains in winbindd
       (caused winbindd_getgrgid() for local groups to fail).
     * Fix query and set alias info calls (level 1 from the MMC 
-      manage computer plugin.
+      manage computer plug-in.
     * Remove bogus log messages about unknown specversions.
-    * BUG 2680: copy files from an MSDFS win2k root share
+    * BUG 2680: copy files from an MS-DFS win2k root share
     * BUG 2688: re-implement support for the -P (--port) option
-    * Support connecting to an 'msdfs proxy' share on a Samba server.
+    * Support connecting to an 'msdfs proxy' share on a Samba
+      server.
     * Strip the directory path from cups command line printing 
       defaults.
     * Fix bug that prevented smbclient from creating directories 
@@ -144,7 +168,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Add the capability to read and write WinNT regf registry 
       files.
     * Implement access checks for RegOpenXXX() server calls.
-    * Extened registry client rpc calls.
+    * Extend registry client rpc calls.
     * Add "net rpc registry" set of commands.
     * Remove testprns tool.
     * Ensure that printer ACLs use the specific bits as well as 
@@ -157,15 +181,65 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Remove "winbind enable local accounts" support.
     * Remove "ldap filter" smb.conf option.
     * Remove editreg utility (needs to be rewritten using regfio.c).
+    * Fix build failure when running 'make torture' without first 
+      running 'make all' first.
+    * BUG 1261: Remove unusable libbiconv from iconv detection 
+      in configure.
+    * Add new option for "map to guest".  "Bad Uid" re-enables the
+      Samba 2.2 behavior of mapping authenticated users to the
+      guest account if there does not exist a valid Unix account 
+      for the Windows domain user (based on patch from 
+      aruna.prabakar@hp.com).
+    * Fix a couple of regressions after introduction of new winbindd.
+    * Fix smbpasswd user password change (still worked by bad error
+      messages) due to trying to strdup a NULL pointer.
+    * Implement default security descriptors for the
+      OpenService[Manager]() calls and check requested access mask 
+      at connect time.
+    * Include access checks on handle mask for \svcctl operations
+      such as ControlService() and StartService().
+    * Implement simulated start and stop service control for 
+      the spooler service as a per smbd service state value.
+    * Add interface structure for controlling service via rc.init
+      scripts (incomplete).
+    * Convert move_driver_to_download_area() to use copy_file()
+      rather than moving the files.
+    * Add version number to registry.tdb file since it can be 
+      modified now.
+    * Remove over-paranoid assert() call when checking spoolss 
+      buffer pointers
+
+
+o   <core@road-star.jp>
+    * BUG 2792: Ensure the shadow copy module hooks seekdir, 
+      telldir, rewinddir to match updated large directory code.
 
 
 o   Guenther Deschner <gd@samba.org>
     * Adding robustness checks for tdbdump and tdbtool.
     * Extend tdb command line parsing to arbitrary hex characters.
+    * Document pam_winbind.c to clarify the working status of
+      require-membership-of option.
+    * Added client-support for various lsa_query_trust_dom_info()
+      calls and a rpcclient-tester for some info-levels.
+    * Add "net rpc trustdom vampire" tool (in conjunction with 
+      Lars Mueller).
+    * Add missing cli_srvsvc_net_share_set_info-function and
+      rpcclient-testers (in preparation for net share acl migration).
+    * Print trusted domain passwords returned via rpcclient in 
+      display charset.
+    * Error code fixes when attempting to manipulating 
+      non-existent shares.
+    * Cleanup "net share migrate" code. 
+
+
+o   Renaud Duhaut <rd@duhaut.com> 
+    * BUG 1040: Add directory_mode parameter when creating recycle
+      directories.
 
 
 o   Steven Edwards <steven_ed4153@yahoo.com>.
-    * Use chsize if we don't have ftruncate.
+    * Use chsize() if we don't have ftruncate().
 
 
 o   Rodrigo Fernandez-Vizarra <Rodrigo.Fernandez-Vizarra@Sun.COM>
@@ -175,12 +249,15 @@ o   Rodrigo Fernandez-Vizarra <Rodrigo.Fernandez-Vizarra@Sun.COM>
 
 o   Steve French <sfrench@us.ibm.com>
     * Add missing error code mappings when a client unsuccessfully 
-      tries to create a hardlink.
+      tries to create a hard-link.
     * Add support so umount.cifs can update mtab.
     * Add two newer mount options to syntax help for mount.cifs.
     * Add missing remount flag handling.
     * Allow domain= to be specified in credentials file. 
-    * Fix umount.cifs help, allow root to unmount someone else's mount.
+    * Fix umount.cifs help, allow root to unmount someone else's
+      mount.
+    * Lock mtab when updating it during umount.cifs, also delete
+      only one matching entry at a time.
 
 
 o   Deryck Hodge <deryck@samba.org>
@@ -194,7 +271,6 @@ o   Olaf Imig <Olaf.Imig@bifab.de>
     * BUG 2653: Fix segv in rpcclient OpenPrinterEx() call.
 
 
-
 o   Volker Lendecke <vl@samba.org>
     * Refactor passdb interface functions.
     * Compile fixes when '#define PARANOID_MALLOC_CHECKER 1'.
@@ -202,13 +278,17 @@ o   Volker Lendecke <vl@samba.org>
     * Return correct group type from smbd for BUILTIN groups.
     * Backport the talloc() layer from Samba 4.
     * BUG 2701: Fix segv in ldap reconnection code.
-    * BUG 2705:
+    * BUG 2705: Fix segv when connecting from usrmgr.exe.
     * Use the SID in the user token for the %s expansion in 'afs 
       username map'.
     * Memory leak fixes in passdb code.
-    * BUG 2070:
-    * BUG 2725: 
-
+    * BUG 2720: Fixes for "net usersidlist".
+    * BUG 2725: Fix segv in "net ads user".
+    * Only allow schannel connections if a successful Auth2 
+      has been previously performed.
+    * Don't look at gencache.tdb for the trusted domains if 
+      winbind is present.
+    * Rewrite winbindd using an asynchronous process model.
 
 
 o   Herb Lewis <herb@samba.org>
@@ -222,7 +302,9 @@ o   Derrell Lipman <derrell@samba.org>
     * Correct deprecated lvalue casts in testsuite/libsmbclient.
     * BUG 2663.  cli_getattrE() and cli_setattrE() were not 
       formatting or parsing the timestamp values correctly.
-    * Correctly detech AF_LOCAL support in configure.
+    * Correctly detect AF_LOCAL support in configure.
+    * Fix problem updating file times on Windows 98 hosts using 
+      libsmbclient.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
@@ -230,15 +312,28 @@ o   Jason Mader <jason@ncac.gwu.edu>
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
-o   Marcel Muller <mueller@maazl.de>
+    * BUG 2736: Add retries to workaround winbind race condition 
+      with detecting idle clients.
+
+
+o   Lars Mueller <lmuelle@suse.de>
+    * BUG 2767: Add new options to testparm (--show-all-parameters,
+      --parameter-name, and --section-name).
+    * Fix net share migrate files to also migrate the ACLs of 
+      the top level dir of a share.
+
+
 o   James Peach <jpeach@sgi.com>
     * IRIX compiler warning fixes.
     * BUG 2596: Fix become_root link issues and one IRIX stack 
       backtrace bug.
+    * Fix for null pointer ACL free.
 
 
 o   Marcin Porwit <mporwit@centeris.com>
-    * Miscellaneous fixes for Samba's experiemental event log support.
+    * Miscellaneous fixes for Samba's experimental event log support.
+    * Add ServiceQueryConfig2() and ServiceQueryStatusEx() server 
+      calls.
 
 
 o   Tim Potter <tpot@samba.org>
@@ -250,10 +345,25 @@ o   Tim Potter <tpot@samba.org>
     * BUG 2611: Add fflush(stdout) after displaying username prompt 
       in smbsh if username not specified on command line.
     * BUG 2699: Fix for segfault in samba.winbind.auth_crap module 
+    * BUG 2808: Update install swat message to reflect the fact 
+      that swat/README no longer exists.
+
+
+o   Denis Sbragion <d.sbragion@infotecna.it>
+    * BUG 2196: Allow absolute path (system wide) recycle bin.
+
+
+o   Fernando Schapachnik <fernando@mecon.gov.ar> 
+    * Add logon hours support for the Postgres backend.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Fix bug in profiles tool caused by use of MAP_PRIVATE.
 
 
 o   Joerg Sonnenberger <joerg@leaf.dragonflybsd.org>
-    BUG 2362: Quota support fix for DragonFly.
+    * BUG 2362: Quota support fix for DragonFly.
+    * Fix dragonfly detection in configure.
 
 
 o   John Terpstra <jht@samba.org>
@@ -954,8 +1064,8 @@ o   Herb Lewis <herb@samba.org>
     
     
 o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340, 2341, 
-       2342)
+    * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340,
+      2341, 2342)
     
     
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
@@ -4626,10 +4736,11 @@ Brief Description of Changes
    any mappings of SID to dynamically allocated UNIX ids.  This was
    a conscious design choice.
 
-3) New functions have been added to winbindd to emulate the 'add user 
-   script' family of smbd functions without requiring that external
-   scripts be defined.  This functionality is controlled by the 'winbind 
-   enable local accounts' smb.conf parameter (enabled by default).
+3) (OBSOLETE) New functions have been added to winbindd to emulate 
+   the 'add user script' family of smbd functions without requiring 
+   that external scripts be defined.  This functionality is controlled 
+   by the 'winbind  enable local accounts' smb.conf parameter (enabled 
+   by default).
 
    However, this account management functionality is only supported 
    in a local tdb (winbindd_idmap.tdb).  If these new UNIX accounts 
