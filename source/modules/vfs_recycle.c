@@ -109,6 +109,17 @@ static BOOL recycle_touch(vfs_handle_struct *handle)
 	return ret;
 }
 
+static BOOL recycle_touch_mtime(vfs_handle_struct *handle)
+{
+	BOOL ret;
+
+	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch_mtime", False);
+
+	DEBUG(10, ("recycle: touch_mtime = %s\n", ret?"True":"False"));
+	
+	return ret;
+}
+
 static const char **recycle_exclude(vfs_handle_struct *handle)
 {
 	const char **tmp_lp;
@@ -317,9 +328,9 @@ static BOOL matchparam(const char **haystack_list, const char *needle)
 }
 
 /**
- * Touch access date
+ * Touch access or modify date
  **/
-static void recycle_do_touch(vfs_handle_struct *handle, const char *fname)
+static void recycle_do_touch(vfs_handle_struct *handle, const char *fname, BOOL touch_mtime)
 {
 	SMB_STRUCT_STAT st;
 	struct utimbuf tb;
@@ -331,7 +342,7 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname)
 	}
 	currtime = time(&currtime);
 	tb.actime = currtime;
-	tb.modtime = st.st_mtime;
+	tb.modtime = touch_mtime ? currtime : st.st_mtime;
 
 	if (SMB_VFS_NEXT_UTIME(handle, handle->conn, fname, &tb) == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n", fname, strerror(errno)));
@@ -490,8 +501,8 @@ static int recycle_unlink(vfs_handle_struct *handle, connection_struct *conn, co
 	}
 
 	/* touch access date of moved file */
-	if (recycle_touch(handle) == True )
-		recycle_do_touch(handle, final_name);
+	if (recycle_touch(handle) == True || recycle_touch_mtime(handle))
+		recycle_do_touch(handle, final_name, recycle_touch_mtime(handle));
 
 done:
 	SAFE_FREE(path_name);
