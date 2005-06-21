@@ -450,11 +450,13 @@ Offset Size         Name
 /*
  Info level for TRANS2_QFSINFO - returns version of CIFS UNIX extensions, plus
  64-bits worth of capability fun :-).
+ Use the same info level for TRANS2_SETFSINFO
 */
 
 #define SMB_QUERY_CIFS_UNIX_INFO      0x200
+#define SMB_SET_CIFS_UNIX_INFO        0x200
 
-/* Returns the following.
+/* Returns or sets the following.
 
   UINT16             major version number
   UINT16             minor version number
@@ -473,12 +475,6 @@ Offset Size         Name
 #define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
 						(chflags) and lsattr */
 #define CIFS_UNIX_POSIX_PATHNAMES_CAP	   0x10 /* Use POSIX pathnames on the wire. */
-
-/*
- Info level for TRANSACT2_SETFSINFO - takes 64-bits of capabilies in the data section.
-*/
-
-#define SMB_SET_CIFS_UNIX_INFO      0x200
 
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
