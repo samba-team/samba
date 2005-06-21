@@ -2426,21 +2426,10 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 {
 	char *pdata = *ppdata;
 	char *params = *pparams;
-	files_struct *fsp = NULL;
 	uint16 info_level;
 	int outsize;
-	SMB_NTQUOTA_STRUCT quotas;
-	
-	ZERO_STRUCT(quotas);
 
 	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",lp_servicename(SNUM(conn))));
-
-	/* access check */
-	if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
-		DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
-			lp_servicename(SNUM(conn)),conn->user));
-		return ERROR_DOS(ERRSRV,ERRaccess);
-	}
 
 	/*  */
 	if (total_params < 4) {
@@ -2482,62 +2471,76 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
-			/* note: normaly there're 48 bytes,
-			 * but we didn't use the last 6 bytes for now 
-			 * --metze 
-			 */
-			fsp = file_fsp(params,0);
-			if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
-				DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-			}
+			{
+				files_struct *fsp = NULL;
+				SMB_NTQUOTA_STRUCT quotas;
+	
+				ZERO_STRUCT(quotas);
 
-			if (total_data < 42) {
-				DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
-					total_data));
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
+				/* access check */
+				if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
+					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
+						lp_servicename(SNUM(conn)),conn->user));
+					return ERROR_DOS(ERRSRV,ERRaccess);
+				}
+
+				/* note: normaly there're 48 bytes,
+				 * but we didn't use the last 6 bytes for now 
+				 * --metze 
+				 */
+				fsp = file_fsp(params,0);
+				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+				}
+
+				if (total_data < 42) {
+					DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
+						total_data));
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 			
-			/* unknown_1 24 NULL bytes in pdata*/
+				/* unknown_1 24 NULL bytes in pdata*/
 		
-			/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-			quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+				/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
+				quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
-			quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+				quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if ((IVAL(pdata,28) != 0)&&
-				((quotas.softlim != 0xFFFFFFFF)||
-				(IVAL(pdata,28)!=0xFFFFFFFF))) {
-				/* more than 32 bits? */
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
+				if ((IVAL(pdata,28) != 0)&&
+					((quotas.softlim != 0xFFFFFFFF)||
+					(IVAL(pdata,28)!=0xFFFFFFFF))) {
+					/* more than 32 bits? */
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 #endif /* LARGE_SMB_OFF_T */
 		
-			/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-			quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+				/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
+				quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
-			quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+				quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if ((IVAL(pdata,36) != 0)&&
-				((quotas.hardlim != 0xFFFFFFFF)||
-				(IVAL(pdata,36)!=0xFFFFFFFF))) {
-				/* more than 32 bits? */
-				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
+				if ((IVAL(pdata,36) != 0)&&
+					((quotas.hardlim != 0xFFFFFFFF)||
+					(IVAL(pdata,36)!=0xFFFFFFFF))) {
+					/* more than 32 bits? */
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 #endif /* LARGE_SMB_OFF_T */
 		
-			/* quota_flags 2 bytes **/
-			quotas.qflags = SVAL(pdata,40);
+				/* quota_flags 2 bytes **/
+				quotas.qflags = SVAL(pdata,40);
 		
-			/* unknown_2 6 NULL bytes follow*/
+				/* unknown_2 6 NULL bytes follow*/
 		
-			/* now set the quotas */
-			if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
-				DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-				return ERROR_DOS(ERRSRV,ERRerror);
-			}
+				/* now set the quotas */
+				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
+					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+					return ERROR_DOS(ERRSRV,ERRerror);
+				}
 			
-			break;
+				break;
+			}
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
 				info_level));
