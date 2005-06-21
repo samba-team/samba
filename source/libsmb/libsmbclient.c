@@ -3017,14 +3017,26 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
                 m_time = tbuf[1].tv_sec;
         }
 
+        if (DEBUGLVL(4)) 
         {
+                char *p;
                 char atimebuf[32];
                 char mtimebuf[32];
 
-                DEBUG(4, ("smbc_utimes(%s, atime = %s mtime = %s)\n",
-                          fname,
-                          ctime_r(&a_time, atimebuf),
-                          ctime_r(&m_time, mtimebuf)));
+                strncpy(atimebuf, ctime(&a_time), sizeof(atimebuf));
+                atimebuf[sizeof(atimebuf) - 1] = '\0';
+                if ((p = strchr(atimebuf, '\n')) != NULL) {
+                        *p = '\0';
+                }
+
+                strncpy(mtimebuf, ctime(&m_time), sizeof(mtimebuf));
+                mtimebuf[sizeof(mtimebuf) - 1] = '\0';
+                if ((p = strchr(mtimebuf, '\n')) != NULL) {
+                        *p = '\0';
+                }
+
+                dbgtext("smbc_utimes(%s, atime = %s mtime = %s)\n",
+                        fname, atimebuf, mtimebuf);
         }
 
 	if (smbc_parse_path(context, fname,
