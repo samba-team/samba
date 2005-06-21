@@ -13,8 +13,11 @@ the next official, production Samba 3.0 release.
 
 Additional features introduced in Samba 3.0.20pre1 include:
 
-  o New asynchronous winbindd
+  o New asynchronous winbindd.
   o Support for Microsoft Print Migrator.
+  o New Windows NT registry file I/O library.
+  o New user right (SeTakeOwnershipPrivilege) added.
+  o New "net share migrate" options.
 
 
 What happened to 3.0.15 - 3.0.19?
@@ -41,15 +44,25 @@ an almost completely non-blocking, asynchronous request/reply
 model.  This means that winbindd will scale much better in 
 large domain environments and on high latency networks.  Neither 
 the client interface nor the command line tools (i.e. wbinfo) have 
-changed in their calling conventions or syntax.  However, it is 
-required (more so than normal) that you install the nss_winbind.so
-library included in this release.
+changed in their calling conventions or syntax.  However, due to 
+internal structure changes, it is required (more so than normal) 
+that you install the nss_winbind.so library included in this release.
 
 
 Support for Microsoft Print Migrator
 ====================================
 
-
+Samba 3.0.20pre1 supports backing up print drivers and queues
+using the Microsoft Print Migrator (printmig.exe) tool.  Currently
+only support for restoring drivers onto a Samba server has been 
+implemented.  The final 3.0.20 release will include for 
+restoring the print queues and printer settings as well.  This
+will allow organizations to easily migrate or consolidate from a 
+Windows print server environment to a Samba print server without
+having to individually reinstall drivers and printers.  The current 
+restore support also allows administrators to create a master list 
+of drivers which can be installed on a new Samba host in a single 
+action.
 
 
 ######################################################################
@@ -216,8 +229,6 @@ o   <core@road-star.jp>
 
 
 o   Guenther Deschner <gd@samba.org>
-    * Adding robustness checks for tdbdump and tdbtool.
-    * Extend tdb command line parsing to arbitrary hex characters.
     * Document pam_winbind.c to clarify the working status of
       require-membership-of option.
     * Added client-support for various lsa_query_trust_dom_info()
@@ -292,6 +303,8 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Herb Lewis <herb@samba.org>
+    * Adding robustness checks for tdbdump and tdbtool.
+    * Extend tdb command line parsing to arbitrary hex characters.
     * Add LOCKING debug class.
     * Fix more compiler warnings.
 
