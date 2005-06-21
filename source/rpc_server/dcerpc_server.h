@@ -177,6 +177,8 @@ struct dcesrv_connection {
 
 	/* the transport level session key */
 	DATA_BLOB transport_session_key;
+
+	BOOL processing;
 };
 
 

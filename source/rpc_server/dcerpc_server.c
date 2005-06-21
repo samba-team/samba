@@ -320,6 +320,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->auth_state.session_info = NULL;
 	p->auth_state.session_key = dcesrv_generic_session_key;
 	p->srv_conn = srv_conn;
+	p->processing = False;
 
 	talloc_set_destructor(p, dcesrv_endpoint_destructor);
 
