@@ -87,6 +87,11 @@ static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 	DATA_BLOB tmp_blob;
 	size_t nread;
 
+	if (dce_conn->processing) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
+		return;
+	}
+
 	tmp_blob = data_blob_talloc(conn->socket, NULL, 0x1000);
 	if (tmp_blob.data == NULL) {
 		dcesrv_terminate_connection(dce_conn, "out of memory");
@@ -105,8 +110,12 @@ static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 
 	tmp_blob.length = nread;
 
+	dce_conn->processing = True;
 	status = dcesrv_input(dce_conn, &tmp_blob);
+	dce_conn->processing = False;
 	talloc_free(tmp_blob.data);
+
+	EVENT_FD_READABLE(conn->event.fde);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
