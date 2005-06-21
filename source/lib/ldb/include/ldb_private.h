@@ -84,6 +84,10 @@ struct ldb_context {
 		const char *name;
 		void *value;
 	} *opaque;
+
+	/* ldif attribute handling table */
+	unsigned ldif_num_handlers;
+	struct ldb_ldif_handler *ldif_handlers;
 };
 
 /* the modules init function */
