@@ -242,6 +242,8 @@ o   Guenther Deschner <gd@samba.org>
     * Error code fixes when attempting to manipulating 
       non-existent shares.
     * Cleanup "net share migrate" code. 
+    * Allow to touch mtime in vfs-recycle with "recycle:touch_mtime 
+      = true".
 
 
 o   Renaud Duhaut <rd@duhaut.com> 
@@ -318,6 +320,8 @@ o   Derrell Lipman <derrell@samba.org>
     * Correctly detect AF_LOCAL support in configure.
     * Fix problem updating file times on Windows 98 hosts using 
       libsmbclient.
+    * Fix compile breakage on Solaris by eliminating the use of 
+      ctime_r() in libsmbclient DEBUG statement.
 
 
 o   Jason Mader <jason@ncac.gwu.edu>
