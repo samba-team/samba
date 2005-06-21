@@ -503,7 +503,7 @@ Join to domain 'MEGANET2' is not valid
 
 		<step><para>
 		Execute:
-		<indexterm><primary>net ads join</primary></indexterm>
+		<indexterm><primary>net</primary><secondary>ads</secondary><tertiary>join</tertiary></indexterm>
 <screen>
 &rootprompt; net ads join -UAdministrator%password
 Joined domain BUTTERNET.
