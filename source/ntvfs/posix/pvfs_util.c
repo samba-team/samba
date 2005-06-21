@@ -198,7 +198,6 @@ uint32_t pvfs_name_hash(const char *key, size_t length)
 */
 uint64_t pvfs_round_alloc_size(struct pvfs_state *pvfs, uint64_t size)
 {
-	const uint64_t round_value = 511;
-	if (size == 0) return 0;
-	return (size + round_value) & ~round_value;
+	const uint32_t round_value = pvfs->alloc_size_rounding;
+	return round_value * ((size + round_value - 1)/round_value);
 }

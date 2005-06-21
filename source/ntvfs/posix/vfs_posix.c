@@ -51,6 +51,9 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
 	}
 
+	/* this must be a power of 2 */
+	pvfs->alloc_size_rounding = lp_parm_int(-1, "posix", "allocationrounding", 512);
+
 #if HAVE_XATTR_SUPPORT
 	if (lp_parm_bool(snum, "posix", "xattr", True)) pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 #endif
