@@ -43,6 +43,6 @@ RCSID("$Id$");
 void ROKEN_LIB_FUNCTION
 esetenv(const char *var, const char *val, int rewrite)
 {
-    if (setenv ((char *)var, (char *)val, rewrite))
+    if (setenv (rk_UNCONST(var), rk_UNCONST(val), rewrite))
 	errx (1, "failed setting environment variable %s", var);
 }
