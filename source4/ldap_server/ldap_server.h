@@ -39,6 +39,8 @@ struct ldapsrv_connection {
 		struct ldapsrv_send *next, *prev;
 		DATA_BLOB data;
 	} *send_queue;
+
+	BOOL processing;
 };
 
 struct ldapsrv_call {
