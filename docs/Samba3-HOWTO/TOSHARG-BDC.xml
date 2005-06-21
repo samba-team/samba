@@ -469,9 +469,9 @@ act as a BDC to an Active Directory domain controller.
 <indexterm><primary>WINS</primary></indexterm>
 <indexterm><primary>NetBIOS</primary></indexterm>
 Every machine that is a domain controller for the domain MIDEARTH has to register the NetBIOS
-group name MIDEARTH&lt;#1C&gt; with the WINS server and/or by broadcast on the local network.
-The PDC also registers the unique NetBIOS name MIDEARTH&lt;#1B&gt; with the WINS server.
-The name type &lt;#1B&gt; name is normally reserved for the Domain Master Browser (DMB), a role
+group name MIDEARTH&lt;1C&gt; with the WINS server and/or by broadcast on the local network.
+The PDC also registers the unique NetBIOS name MIDEARTH&lt;1B&gt; with the WINS server.
+The name type &lt;1B&gt; name is normally reserved for the Domain Master Browser (DMB), a role
 that has nothing to do with anything related to authentication, but the Microsoft domain
 implementation requires the DMB to be on the same machine as the PDC.
 </para>
@@ -516,7 +516,7 @@ environment all machines require appropriate DNS entries. More information may b
 <indexterm><primary>credentials validation</primary></indexterm>
 An MS Windows NT4/200x/XP Professional workstation in the domain MIDEARTH that wants a
 local user to be authenticated has to find the domain controller for MIDEARTH. It does this
-by doing a NetBIOS name query for the group name MIDEARTH&lt;#1C&gt;. It assumes that each
+by doing a NetBIOS name query for the group name MIDEARTH&lt;1C&gt;. It assumes that each
 of the machines it gets back from the queries is a domain controller and can answer logon
 requests. To not open security holes, both the workstation and the selected domain controller
 authenticate each other. After that the workstation sends the user's credentials (name and
@@ -704,10 +704,10 @@ by Example</quote> that may be obtained from local and on-line book stores.
 <indexterm><primary>NetBIOS</primary></indexterm>
 <indexterm><primary>group</primary></indexterm>
 <indexterm><primary>PDC</primary></indexterm>
-This configuration causes the BDC to register only the name MIDEARTH&lt;#1C&gt; with the WINS server. This is
-not a problem, as the name MIDEARTH&lt;#1C&gt; is a NetBIOS group name that is meant to be registered by more
+This configuration causes the BDC to register only the name MIDEARTH&lt;1C&gt; with the WINS server. This is
+not a problem, as the name MIDEARTH&lt;1C&gt; is a NetBIOS group name that is meant to be registered by more
 than one machine. The parameter <smbconfoption name="domain master">no</smbconfoption> forces the BDC not to
-register MIDEARTH&lt;#1B&gt;, which is a unique NetBIOS name that is reserved for the PDC.
+register MIDEARTH&lt;1B&gt;, which is a unique NetBIOS name that is reserved for the PDC.
 </para>
 
 <para>
