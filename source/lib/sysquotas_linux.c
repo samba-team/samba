@@ -556,5 +556,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 }
 
 #else /* HAVE_QUOTACTL_LINUX */
+ void dummy_sysquotas_linux(void);
+
  void dummy_sysquotas_linux(void){}
 #endif /* HAVE_QUOTACTL_LINUX */

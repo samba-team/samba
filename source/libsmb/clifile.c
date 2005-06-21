@@ -266,8 +266,8 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 	sbuf->st_ctime = interpret_long_date(rdata + 16);    /* time of last change */
 	sbuf->st_atime = interpret_long_date(rdata + 24);    /* time of last access */
 	sbuf->st_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
-	sbuf->st_uid = IVAL(rdata,40);      /* user ID of owner */
-	sbuf->st_gid = IVAL(rdata,48);      /* group ID of owner */
+	sbuf->st_uid = (uid_t) IVAL(rdata,40);      /* user ID of owner */
+	sbuf->st_gid = (gid_t) IVAL(rdata,48);      /* group ID of owner */
 	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
 #if defined(HAVE_MAKEDEV)
 	{
@@ -1103,15 +1103,15 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	}
 
 	if (c_time) {
-		*c_time = make_unix_date3(cli->inbuf+smb_vwv0);
+		*c_time = make_unix_date2(cli->inbuf+smb_vwv0);
 	}
 
 	if (a_time) {
-		*a_time = make_unix_date3(cli->inbuf+smb_vwv2);
+		*a_time = make_unix_date2(cli->inbuf+smb_vwv2);
 	}
 
 	if (m_time) {
-		*m_time = make_unix_date3(cli->inbuf+smb_vwv4);
+		*m_time = make_unix_date2(cli->inbuf+smb_vwv4);
 	}
 
 	return True;
@@ -1186,9 +1186,9 @@ BOOL cli_setattrE(struct cli_state *cli, int fd,
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0, fd);
-	put_dos_date3(cli->outbuf,smb_vwv1, c_time);
-	put_dos_date3(cli->outbuf,smb_vwv3, a_time);
-	put_dos_date3(cli->outbuf,smb_vwv5, m_time);
+	put_dos_date2(cli->outbuf,smb_vwv1, c_time);
+	put_dos_date2(cli->outbuf,smb_vwv3, a_time);
+	put_dos_date2(cli->outbuf,smb_vwv5, m_time);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;

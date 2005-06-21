@@ -128,7 +128,7 @@
 
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(CONST_DISCARD(void *, (x))); (x)=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
@@ -585,8 +585,7 @@ void tdb_dump_all(TDB_CONTEXT *tdb)
 	for (i=0;i<tdb->header.hash_size;i++) {
 		tdb_dump_chain(tdb, i);
 	}
-	printf("freelist:\n");
-	tdb_dump_chain(tdb, -1);
+	tdb_printfreelist(tdb);
 }
 
 int tdb_printfreelist(TDB_CONTEXT *tdb)
@@ -1271,17 +1270,18 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			tdb_off current;
 			if (rec_read(tdb, tlock->off, rec) == -1)
 				goto fail;
-			if (!TDB_DEAD(rec)) {
-				/* Woohoo: we found one! */
-				if (lock_record(tdb, tlock->off) != 0)
-					goto fail;
-				return tlock->off;
-			}
 
 			/* Detect infinite loops. From "Shlomi Yaakobovich" <Shlomi@exanet.com>. */
 			if (tlock->off == rec->next) {
 				TDB_LOG((tdb, 0, "tdb_next_lock: loop detected.\n"));
 				goto fail;
+			}
+
+			if (!TDB_DEAD(rec)) {
+				/* Woohoo: we found one! */
+				if (lock_record(tdb, tlock->off) != 0)
+					goto fail;
+				return tlock->off;
 			}
 
 			/* Try to clean dead ones from old traverses */

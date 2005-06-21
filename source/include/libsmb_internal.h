@@ -12,9 +12,9 @@
 struct _SMBCSRV {
 	struct cli_state cli;
 	dev_t dev;
+	BOOL no_pathinfo;
 	BOOL no_pathinfo2;
         BOOL no_nt_session;
-	int server_fd;
 
 	SMBCSRV *next, *prev;
 	

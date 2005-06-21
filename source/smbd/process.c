@@ -116,6 +116,7 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 			DEBUG(0,("push_message: malloc fail (3)\n"));
 			data_blob_free(&msg->buf);
 			SAFE_FREE(msg);
+			return False;
 		}
 	}
 
@@ -935,8 +936,14 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			change_to_root_user();
 
 		/* does this protocol need a valid tree connection? */
-		if ((flags & AS_USER) && !conn)
-			return ERROR_DOS(ERRSRV, ERRinvnid);
+		if ((flags & AS_USER) && !conn) {
+			/* Amazingly, the error code depends on the command (from Samba4). */
+			if (type == SMBntcreateX) {
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			} else {
+				return ERROR_DOS(ERRSRV, ERRinvnid);
+			}
+		}
 
 
 		/* does this protocol need to be run as the connected user? */

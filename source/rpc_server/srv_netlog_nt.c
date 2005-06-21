@@ -27,6 +27,7 @@
 #include "includes.h"
 
 extern struct dcinfo last_dcinfo;
+extern BOOL server_auth2_negotiated;
 extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS
@@ -55,12 +56,6 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 /*************************************************************************
  net_reply_logon_ctrl:
  *************************************************************************/
-
-/* Some flag values reverse engineered from NLTEST.EXE */
-
-#define LOGON_CTRL_IN_SYNC          0x00
-#define LOGON_CTRL_REPL_NEEDED      0x01
-#define LOGON_CTRL_REPL_IN_PROGRESS 0x02
 
 NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
 		       NET_R_LOGON_CTRL *r_u)
@@ -427,6 +422,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	init_net_r_auth_2(r_u, &srv_cred, &srv_flgs, status);
 
 	if (NT_STATUS_IS_OK(status)) {
+		server_auth2_negotiated = True;
 		last_dcinfo = p->dc;
 	}
 

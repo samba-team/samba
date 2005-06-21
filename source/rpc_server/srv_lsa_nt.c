@@ -173,12 +173,10 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			status = lookup_name(dom_name, user, &sid, &name_type);
 		}
 
-#if 0 /* This is not true. */
 		if (name_type == SID_NAME_WKN_GRP) {
 			/* BUILTIN aliases are still aliases :-) */
 			name_type = SID_NAME_ALIAS;
 		}
-#endif
 
 		DEBUG(5, ("init_lsa_rid2s: %s\n", status ? "found" : 
 			  "not found"));
@@ -751,12 +749,51 @@ NTSTATUS _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 }
 
 /***************************************************************************
-  "No more secrets Marty...." :-).
  ***************************************************************************/
 
 NTSTATUS _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+NTSTATUS _lsa_open_trusted_domain(pipes_struct *p, LSA_Q_OPEN_TRUSTED_DOMAIN *q_u, LSA_R_OPEN_TRUSTED_DOMAIN *r_u)
+{
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+NTSTATUS _lsa_create_trusted_domain(pipes_struct *p, LSA_Q_CREATE_TRUSTED_DOMAIN *q_u, LSA_R_CREATE_TRUSTED_DOMAIN *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+NTSTATUS _lsa_create_secret(pipes_struct *p, LSA_Q_CREATE_SECRET *q_u, LSA_R_CREATE_SECRET *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+NTSTATUS _lsa_set_secret(pipes_struct *p, LSA_Q_SET_SECRET *q_u, LSA_R_SET_SECRET *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+NTSTATUS _lsa_delete_object(pipes_struct *p, LSA_Q_DELETE_OBJECT *q_u, LSA_R_DELETE_OBJECT *r_u)
+{
+	return NT_STATUS_ACCESS_DENIED;
 }
 
 /***************************************************************************

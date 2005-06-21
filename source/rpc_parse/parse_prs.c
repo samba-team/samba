@@ -153,11 +153,7 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 
 	if (size) {
 		/* We can't call the type-safe version here. */
-#if defined(PARANOID_MALLOC_CHECKER)
-		ret = talloc_zero_array_(ps->mem_ctx, size, count);
-#else
-		ret = talloc_zero_array(ps->mem_ctx, size, count);
-#endif
+		ret = _talloc_zero_array(ps->mem_ctx, size, count, "parse_prs");
 	}
 	return ret;
 }
@@ -1241,6 +1237,32 @@ BOOL prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_
 
 	dump_data(5+depth, q, len);
 
+	return True;
+}
+
+BOOL prs_string_alloc(const char *name, prs_struct *ps, int depth,
+		      const char **str)
+{
+	size_t len;
+	char *tmp_str;
+
+	if (UNMARSHALLING(ps))
+		len = strlen(&ps->data_p[ps->data_offset]);
+	else
+		len = strlen(*str);
+
+	tmp_str = PRS_ALLOC_MEM(ps, char, len+1);
+
+	if (tmp_str == NULL)
+		return False;
+
+	if (MARSHALLING(ps))
+		strncpy(tmp_str, *str, len);
+
+	if (!prs_string(name, ps, depth, tmp_str, len+1))
+		return False;
+
+	*str = tmp_str;
 	return True;
 }
 

@@ -255,22 +255,6 @@ int rpcstr_push(void* dest, const char *src, int dest_len, int flags)
 }
 
 /*******************************************************************
- Return a DOS codepage version of a little-endian unicode string.
- len is the filename length (ignoring any terminating zero) in uin16
- units. Always null terminates.
- Hack alert: uses fixed buffer(s).
-********************************************************************/
-char *dos_unistrn2(const uint16 *src, int len)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	nexti = (nexti+1)%8;
-	pull_ucs2(NULL, lbuf, src, MAXUNI-3, len*2, STR_NOALIGN);
-	return lbuf;
-}
-
-/*******************************************************************
  Convert a (little-endian) UNISTR2 structure to an ASCII string
 ********************************************************************/
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
@@ -398,10 +382,10 @@ size_t strnlen_w(const smb_ucs2_t *src, size_t max)
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 {
 	while (*s != 0) {
-                if (c == *s) return CONST_DISCARD(smb_ucs2_t *, s);
+		if (c == *s) return (smb_ucs2_t *)s;
 		s++;
 	}
-	if (c == *s) return CONST_DISCARD(smb_ucs2_t *, s);
+	if (c == *s) return (smb_ucs2_t *)s;
 
 	return NULL;
 }
@@ -422,7 +406,7 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	if (len == 0) return NULL;
 	p += (len - 1);
 	do {
-		if (c == *p) return CONST_DISCARD(smb_ucs2_t *, p);
+		if (c == *p) return (smb_ucs2_t *)p;
 	} while (p-- != s);
 	return NULL;
 }
@@ -443,7 +427,7 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
 			n--;
 
 		if (!n)
-			return CONST_DISCARD(smb_ucs2_t *, p);
+			return (smb_ucs2_t *)p;
 	} while (p-- != s);
 	return NULL;
 }
@@ -461,7 +445,7 @@ smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 		return NULL;
 
 	inslen = strlen_w(ins);
-	r = CONST_DISCARD(smb_ucs2_t *, s);
+	r = (smb_ucs2_t *)s;
 
 	while ((r = strchr_w(r, *ins))) {
 		if (strncmp_w(r, ins, inslen) == 0) 
@@ -732,7 +716,7 @@ smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 		int i;
 		for (i=0; p[i] && *s != UCS2_CHAR(p[i]); i++) 
 			;
-		if (p[i]) return CONST_DISCARD(smb_ucs2_t *, s);
+		if (p[i]) return (smb_ucs2_t *)s;
 		s++;
 	}
 	return NULL;
@@ -747,7 +731,7 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 		return NULL;
 
 	inslen = strlen(ins);
-	r = CONST_DISCARD(smb_ucs2_t *, s);
+	r = (smb_ucs2_t *)s;
 
 	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
 		if (strncmp_wa(r, ins, inslen) == 0) 

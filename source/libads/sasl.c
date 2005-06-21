@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
-
 #include "includes.h"
 
 #ifdef HAVE_LDAP
@@ -287,8 +285,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			ENCTYPE_DES_CBC_MD5,
 			ENCTYPE_NULL};
 	gss_OID_desc nt_principal = 
-                {10, CONST_DISCARD(char *,
-                                     "\052\206\110\206\367\022\001\002\002\002")};
+	{10, "\052\206\110\206\367\022\001\002\002\002"};
 
 	/* we need to fetch a service ticket as the ldap user in the
 	   servers realm, regardless of our realm */

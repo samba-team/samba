@@ -169,11 +169,9 @@ typedef struct
 	char *szIdmapGID;
 	BOOL bEnableRidAlgorithm;
 	int AlgorithmicRidBase;
-	char *szTemplatePrimaryGroup;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
-	BOOL bWinbindEnableLocalAccounts;
 	BOOL bWinbindEnumUsers;
 	BOOL bWinbindEnumGroups;
 	BOOL bWinbindUseDefaultDomain;
@@ -227,6 +225,7 @@ typedef struct
 	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
+	int winbind_max_idle_children;
 	int iLockSpinCount;
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
@@ -239,7 +238,6 @@ typedef struct
 #endif
 	int ldap_ssl;
 	char *szLdapSuffix;
-	char *szLdapFilter;
 	char *szLdapAdminDn;
 	char *szAclCompat;
 	char *szCupsServer;
@@ -304,6 +302,7 @@ typedef struct
 	BOOL bUseKerberosKeytab;
 	BOOL bDeferSharingViolations;
 	BOOL bEnablePrivileges;
+	BOOL bASUSupport;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -436,6 +435,7 @@ typedef struct
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
 	BOOL bEASupport;
+	BOOL bAclCheckPermissions;
 	int iallocation_roundup_size;
 	param_opt_struct *param_opt;
 
@@ -563,6 +563,7 @@ static service sDefault = {
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
 	False,			/* bEASupport */
+	True,			/* bAclCheckPermissions */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	
 	NULL,			/* Parametric options */
@@ -762,6 +763,7 @@ static const struct enum_list enum_map_to_guest[] = {
 	{NEVER_MAP_TO_GUEST, "Never"},
 	{MAP_TO_GUEST_ON_BAD_USER, "Bad User"},
 	{MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"},
+        {MAP_TO_GUEST_ON_BAD_UID, "Bad Uid"},
 	{-1, NULL}
 };
 
@@ -855,7 +857,7 @@ static struct parm_struct parm_table[] = {
 	{"admin users", P_LIST, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"read list", P_LIST, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"write list", P_LIST, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	{"printer admin", P_LIST, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_PRINT}, 
+	{"printer admin", P_LIST, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_PRINT | FLAG_DEPRECATED }, 
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_ADVANCED}, 
@@ -865,6 +867,7 @@ static struct parm_struct parm_table[] = {
 	{"writeable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 	{"writable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 
+	{"acl check permissions", P_BOOL, P_LOCAL, &sDefault.bAclCheckPermissions, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"create mask", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_HIDE}, 
 	{"force create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
@@ -922,7 +925,7 @@ static struct parm_struct parm_table[] = {
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{ "defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
+	{"defer sharing violations", P_BOOL, P_GLOBAL, &Globals.bDeferSharingViolations, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL},
 	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -947,6 +950,7 @@ static struct parm_struct parm_table[] = {
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 
+	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
 	{"enable svcctl", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
@@ -1112,7 +1116,6 @@ static struct parm_struct parm_table[] = {
 #endif
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED}, 
-	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, NULL, NULL, FLAG_ADVANCED}, 
@@ -1212,17 +1215,16 @@ static struct parm_struct parm_table[] = {
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_HIDE}, 
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED}, 
 	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_HIDE}, 
-	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED}, 
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED}, 
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL, NULL, FLAG_ADVANCED}, 
-	{"winbind enable local accounts", P_BOOL, P_GLOBAL, &Globals.bWinbindEnableLocalAccounts, NULL, NULL, FLAG_ADVANCED|FLAG_DEPRECATED}, 
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1267,13 +1269,13 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
 #else
-			string_set(&pService->szLpqcommand, "/usr/bin/lpq -P'%p'");
-			string_set(&pService->szLprmcommand, "/usr/bin/lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand, "/usr/bin/lpr -P'%p' %s; rm %s");
+			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand, "lpr -P'%p' %s; rm %s");
 			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
 			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
-			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
-			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
+			string_set(&pService->szQueuepausecommand, "disable '%p'");
+			string_set(&pService->szQueueresumecommand, "enable '%p'");
 #endif /* HAVE_CUPS */
 			break;
 
@@ -1502,7 +1504,6 @@ static void init_globals(void)
 #endif /* WITH_LDAP_SAMCONFIG */
 
 	string_set(&Globals.szLdapSuffix, "");
-	string_set(&Globals.szLdapFilter, "(uid=%u)");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
@@ -1552,7 +1553,6 @@ static void init_globals(void)
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
-	string_set(&Globals.szTemplatePrimaryGroup, "nobody");
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
@@ -1564,12 +1564,12 @@ static void init_globals(void)
 	string_set(&Globals.szEventLogOldestRecordCommand, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
-	Globals.bWinbindEnableLocalAccounts = False;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = False;
+	Globals.winbind_max_idle_children = 3;
 
 	Globals.bEnableRidAlgorithm = True;
 
@@ -1590,6 +1590,8 @@ static void init_globals(void)
 
 	Globals.bEnablePrivileges = False;
 	
+	Globals.bASUSupport       = True;
+	
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 }
 
@@ -1603,7 +1605,7 @@ void lp_talloc_free(void)
 {
 	if (!lp_talloc)
 		return;
-	talloc_destroy(lp_talloc);
+	talloc_free(lp_talloc);
 	lp_talloc = NULL;
 }
 
@@ -1745,12 +1747,10 @@ FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
-FN_GLOBAL_STRING(lp_template_primary_group, &Globals.szTemplatePrimaryGroup)
 FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
-FN_GLOBAL_BOOL(lp_winbind_enable_local_accounts, &Globals.bWinbindEnableLocalAccounts)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -1766,7 +1766,6 @@ FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 #endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
-FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
@@ -1841,6 +1840,7 @@ FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
 FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
+FN_GLOBAL_BOOL(lp_enable_asu_support, &Globals.bASUSupport)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -1860,7 +1860,7 @@ FN_GLOBAL_BOOL(lp_paranoid_server_security, &Globals.paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
-FN_GLOBAL_INTEGER(lp_disable_spoolss, &Globals.bDisableSpoolss)
+FN_GLOBAL_INTEGER(_lp_disable_spoolss, &Globals.bDisableSpoolss)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
@@ -1968,6 +1968,7 @@ FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
+FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
@@ -1988,6 +1989,7 @@ FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
+FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
@@ -2515,6 +2517,59 @@ static int map_parameter(const char *pszParmName)
 	   stored in different storage
 	 */
 	return (-1);
+}
+
+/***************************************************************************
+ Show all parameter's name, type, [values,] and flags.
+***************************************************************************/
+
+void show_parameter_list(void)
+{
+	int classIndex, parmIndex, enumIndex, flagIndex;
+	BOOL hadFlag;
+	const char *section_names[] = { "local", "global", NULL};
+	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
+		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING", "P_GSTRING",
+		"P_UGSTRING", "P_ENUM", "P_SEP"};
+	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
+		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
+		FLAG_HIDE, FLAG_DOS_STRING};
+	const char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
+		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
+		"FLAG_DEPRECATED", "FLAG_HIDE", "FLAG_DOS_STRING", NULL};
+
+	for ( classIndex=0; section_names[classIndex]; classIndex++) {
+		printf("[%s]\n", section_names[classIndex]);
+		for (parmIndex = 0; parm_table[parmIndex].label; parmIndex++) {
+			if (parm_table[parmIndex].class == classIndex) {
+				printf("%s=%s", 
+					parm_table[parmIndex].label,
+					type[parm_table[parmIndex].type]);
+				switch (parm_table[parmIndex].type) {
+				case P_ENUM:
+					printf(",");
+					for (enumIndex=0; parm_table[parmIndex].enum_list[enumIndex].name; enumIndex++)
+						printf("%s%s",
+							enumIndex ? "|" : "",
+							parm_table[parmIndex].enum_list[enumIndex].name);
+					break;
+				default:
+					break;
+				}
+				printf(",");
+				hadFlag = False;
+				for ( flagIndex=0; flag_names[flagIndex]; flagIndex++ ) {
+					if (parm_table[parmIndex].flags & flags[flagIndex]) {
+						printf("%s%s",
+							hadFlag ? "|" : "",
+							flag_names[flagIndex]);
+						hadFlag = True;
+					}
+				}
+				printf("\n");
+			}
+		}
+	}
 }
 
 /***************************************************************************
@@ -3540,7 +3595,7 @@ static void dump_globals(FILE *f)
 	int i;
 	param_opt_struct *data;
 	
-	fprintf(f, "# Global parameters\n[global]\n");
+	fprintf(f, "[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].class == P_GLOBAL &&
@@ -3585,7 +3640,7 @@ static void dump_a_service(service * pService, FILE * f)
 	param_opt_struct *data;
 	
 	if (pService != &sDefault)
-		fprintf(f, "\n[%s]\n", pService->szService);
+		fprintf(f, "[%s]\n", pService->szService);
 
 	for (i = 0; parm_table[i].label; i++) {
 
@@ -3625,6 +3680,48 @@ static void dump_a_service(service * pService, FILE * f)
 	}
 }
 
+/***************************************************************************
+ Display the contents of a parameter of a single services record.
+***************************************************************************/
+
+BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
+{
+	service * pService = ServicePtrs[snum];
+	int i, result = False;
+	parm_class class;
+	unsigned flag = 0;
+
+	if (isGlobal) {
+		class = P_GLOBAL;
+		flag = FLAG_GLOBAL;
+	} else
+		class = P_LOCAL;
+	
+	for (i = 0; parm_table[i].label; i++) {
+		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
+		    (parm_table[i].class == class || parm_table[i].flags & flag) &&
+		    parm_table[i].ptr &&
+		    (*parm_table[i].label != '-') &&
+		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
+		{
+			void *ptr;
+
+			if (isGlobal)
+				ptr = parm_table[i].ptr;
+			else
+				ptr = ((char *)pService) +
+					PTR_DIFF(parm_table[i].ptr, &sDefault);
+
+			print_parameter(&parm_table[i],
+					ptr, f);
+			fprintf(f, "\n");
+			result = True;
+			break;
+		}
+	}
+
+	return result;
+}
 
 /***************************************************************************
  Return info about the next service  in a service. snum==GLOBAL_SECTION_SNUM gives the globals.
@@ -4003,6 +4100,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		/* When 'restrict anonymous = 2' guest connections to ipc$
 		   are denied */
 		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
+		if ( lp_enable_asu_support() )
 		lp_add_ipc("ADMIN$", False);
 	}
 
@@ -4056,8 +4154,10 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint)
 
 	dump_a_service(&sDefault, f);
 
-	for (iService = 0; iService < maxtoprint; iService++)
+	for (iService = 0; iService < maxtoprint; iService++) {
+		fprintf(f,"\n");
 		lp_dump_one(f, show_defaults, iService);
+	}
 }
 
 /***************************************************************************
@@ -4360,6 +4460,32 @@ const char *lp_printcapname(void)
 		return "/etc/printcap";
 
 	return PRINTCAP_NAME;
+}
+
+/*******************************************************************
+ Ensure we don't use sendfile if server smb signing is active.
+********************************************************************/
+
+static uint32 spoolss_state;
+
+BOOL lp_disable_spoolss( void )
+{
+	if ( spoolss_state == SVCCTL_STATE_UNKNOWN )
+		spoolss_state = _lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
+
+	return spoolss_state == SVCCTL_STOPPED ? True : False;
+}
+
+void lp_set_spoolss_state( uint32 state )
+{
+	SMB_ASSERT( (state == SVCCTL_STOPPED) || (state == SVCCTL_RUNNING) );
+
+	spoolss_state = state;
+}
+
+uint32 lp_get_spoolss_state( void )
+{
+	return lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 }
 
 /*******************************************************************

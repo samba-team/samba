@@ -320,7 +320,7 @@ void update_trustdom_cache( void )
 	if ( (last_check = trustdom_cache_fetch_timestamp()) == 0 ) 
 		trustdom_cache_store_timestamp(0, now+TRUSTDOM_UPDATE_INTERVAL);
 
-	time_diff = now - last_check;
+	time_diff = (int) (now - last_check);
 	
 	if ( (time_diff > 0) && (time_diff < TRUSTDOM_UPDATE_INTERVAL) ) {
 		DEBUG(10,("update_trustdom_cache: not time to update trustdom_cache yet\n"));

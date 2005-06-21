@@ -43,7 +43,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	server = strdup(unc_name + 2);
+	server = SMB_XSTRDUP(unc_name + 2);
 
 	if (strchr(server, '\\')) {
 		char *c = strchr(server, '\\');

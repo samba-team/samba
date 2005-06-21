@@ -122,7 +122,7 @@ winbind_startnext_timeout(nsd_file_t **rqp, nsd_times_t *to)
 }
 
 static void
-dequeue_request()
+dequeue_request(void)
 {
 	nsd_file_t *rq;
 	struct winbindd_request *request;

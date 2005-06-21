@@ -25,12 +25,6 @@
 
 uint32 global_client_caps = 0;
 
-extern BOOL global_encrypted_passwords_negotiated;
-extern BOOL global_spnego_negotiated;
-extern enum protocol_types Protocol;
-extern int max_send;
-extern struct auth_context *negprot_global_auth_context;
-
 static struct auth_ntlmssp_state *global_ntlmssp_state;
 
 /*
@@ -150,7 +144,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
 	struct passwd *pw;
-	char *user;
+	fstring user;
 	int sess_vuid;
 	NTSTATUS ret;
 	DATA_BLOB auth_data;
@@ -160,6 +154,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob(NULL, 0);
 	fstring real_username;
+	BOOL map_domainuser_to_guest = False;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(auth_data);
@@ -244,37 +239,54 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		}
 	}
 
-	asprintf(&user, "%s%c%s", domain, *lp_winbind_separator(), client);
+	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
 	
 	/* lookup the passwd struct, create a new user if necessary */
 
 	map_username( user );
 
 	pw = smb_getpwnam( user, real_username, True );
-	
 	if (!pw) {
-		DEBUG(1,("Username %s is invalid on this system\n",user));
-		SAFE_FREE(user);
-		SAFE_FREE(client);
-		data_blob_free(&ap_rep);
-		data_blob_free(&session_key);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+
+		/* this was originally the behavior of Samba 2.2, if a user
+		   did not have a local uid but has been authenticated, then 
+		   map them to a guest account */
+
+		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){ 
+			map_domainuser_to_guest = True;
+			fstrcpy(user,lp_guestaccount());
+			pw = smb_getpwnam( user, real_username, True );
+		} 
+
+		/* extra sanity check that the guest account is valid */
+
+		if ( !pw ) {
+			DEBUG(1,("Username %s is invalid on this system\n", user));
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		}
 	}
 
 	/* setup the string used by %U */
 	
 	sub_set_smb_name( real_username );
 	reload_services(True);
-	
-	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info, real_username, pw))) 
-	{
-		DEBUG(1,("make_server_info_from_pw failed!\n"));
-		SAFE_FREE(user);
-		SAFE_FREE(client);
-		data_blob_free(&ap_rep);
-		data_blob_free(&session_key);
-		return ERROR_NT(ret);
+	if ( map_domainuser_to_guest ) {
+		make_server_info_guest(&server_info);
+	} else {
+		ret = make_server_info_pw(&server_info, real_username, pw);
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(1,("make_server_info_from_pw failed!\n"));
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			passwd_free(&pw);
+			return ERROR_NT(ret);
+		}
 	}
+	passwd_free(&pw);
 
         /* make_server_info_pw does not set the domain. Without this we end up
 	 * with the local netbios name in substitutions for %D. */
@@ -288,7 +300,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
  	   A better interface would copy it.... */
 	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
 
-	SAFE_FREE(user);
 	SAFE_FREE(client);
 
 	if (sess_vuid == -1) {
@@ -319,9 +330,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
         /* wrap that up in a nice GSS-API wrapping */
 	if (NT_STATUS_IS_OK(ret)) {
-		ap_rep_wrapped = spnego_gen_krb5_wrap(
-                        ap_rep,
-                        CONST_ADD(const uint8 *, TOK_ID_KRB_AP_REP));
+		ap_rep_wrapped = spnego_gen_krb5_wrap(ap_rep, TOK_ID_KRB_AP_REP);
 	} else {
 		ap_rep_wrapped = data_blob(NULL, 0);
 	}
@@ -459,7 +468,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos_mechanism && (SEC_ADS == lp_security())) {
+	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
@@ -643,8 +652,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	fstring native_lanman;
 	fstring primary_domain;
 	static BOOL done_sesssetup = False;
+	extern BOOL global_encrypted_passwords_negotiated;
+	extern BOOL global_spnego_negotiated;
+	extern enum protocol_types Protocol;
+	extern int max_send;
 
 	auth_usersupplied_info *user_info = NULL;
+	extern struct auth_context *negprot_global_auth_context;
 	auth_serversupplied_info *server_info = NULL;
 
 	NTSTATUS nt_status;

@@ -30,7 +30,6 @@
 extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
-extern char magic_char;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
@@ -119,6 +118,9 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 		}
 
 		if (!(*s & 0x80)) {
+			if (*s <= 0x1f) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
 			switch (*s) {
 				case '*':
 				case '?':
@@ -245,6 +247,9 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname)
 		}
 
 		if (!(*s & 0x80)) {
+			if (*s <= 0x1f) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
 			*d++ = *s++;
 		} else {
 			switch(next_mb_char_size(s)) {
@@ -275,6 +280,100 @@ NTSTATUS check_path_syntax_wcard(pstring destname, const pstring srcname)
 		if (num_bad_components > 2) {
 			ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
+	}
+
+	*d = '\0';
+	return ret;
+}
+
+/****************************************************************************
+ Check the path for a POSIX client.
+ We're assuming here that '/' is not the second byte in any multibyte char
+ set (a safe assumption).
+****************************************************************************/
+
+NTSTATUS check_path_syntax_posix(pstring destname, const pstring srcname)
+{
+	char *d = destname;
+	const char *s = srcname;
+	NTSTATUS ret = NT_STATUS_OK;
+	BOOL start_of_name_component = True;
+
+	while (*s) {
+		if (*s == '/') {
+			/*
+			 * Safe to assume is not the second part of a mb char as this is handled below.
+			 */
+			/* Eat multiple '/' or '\\' */
+			while (*s == '/') {
+				s++;
+			}
+			if ((d != destname) && (*s != '\0')) {
+				/* We only care about non-leading or trailing '/' */
+				*d++ = '/';
+			}
+
+			start_of_name_component = True;
+			continue;
+		}
+
+		if (start_of_name_component) {
+			if ((s[0] == '.') && (s[1] == '.') && (s[2] == '/' || s[2] == '\0')) {
+				/* Uh oh - "/../" or "/..\0" ! */
+
+				/*
+				 * No mb char starts with '.' so we're safe checking the directory separator here.
+				 */
+
+				/* If  we just added a '/' - delete it */
+				if ((d > destname) && (*(d-1) == '/')) {
+					*(d-1) = '\0';
+					d--;
+				}
+
+				/* Are we at the start ? Can't go back further if so. */
+				if (d <= destname) {
+					ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+					break;
+				}
+				/* Go back one level... */
+				/* We know this is safe as '/' cannot be part of a mb sequence. */
+				/* NOTE - if this assumption is invalid we are not in good shape... */
+				/* Decrement d first as d points to the *next* char to write into. */
+				for (d--; d > destname; d--) {
+					if (*d == '/')
+						break;
+				}
+				s += 2; /* Else go past the .. */
+				continue;
+
+			} else if ((s[0] == '.') && ((s[1] == '\0') || (s[1] == '/'))) {
+				/* Eat the '.' */
+				s++;
+				continue;
+			}
+		}
+
+		if (!(*s & 0x80)) {
+			*d++ = *s++;
+		} else {
+			switch(next_mb_char_size(s)) {
+				case 4:
+					*d++ = *s++;
+				case 3:
+					*d++ = *s++;
+				case 2:
+					*d++ = *s++;
+				case 1:
+					*d++ = *s++;
+					break;
+				default:
+					DEBUG(0,("check_path_syntax_posix: character length assumptions invalid !\n"));
+					*d = '\0';
+					return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		start_of_name_component = False;
 	}
 
 	*d = '\0';
@@ -1753,8 +1852,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	
-	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask, sizeof(pstring)-1 );
+	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
+		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
 	
 	if (!has_wild) {
 		pstrcat(directory,"/");
@@ -2097,21 +2196,18 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	maxcount = MIN(65535,maxcount);
 
 	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
-		SMB_OFF_T size = fsp->size;
-		SMB_OFF_T sizeneeded = startpos + maxcount;
+		SMB_STRUCT_STAT st;
+		SMB_OFF_T size = 0;
   
-		if (size < sizeneeded) {
-			SMB_STRUCT_STAT st;
-			if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0)
-				size = st.st_size;
-			if (!fsp->can_write) 
-				fsp->size = size;
+		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
+			size = st.st_size;
 		}
 
-		if (startpos >= size)
+		if (startpos >= size) {
 			nread = 0;
-		else
+		} else {
 			nread = MIN(maxcount,(size - startpos));	  
+		}
 	}
 
 #if 0 /* mincount appears to be ignored in a W2K server. JRA. */
@@ -2128,6 +2224,9 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	END_PROFILE(SMBreadbraw);
 	return -1;
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
 
 /****************************************************************************
  Reply to a lockread (core+ protocol).
@@ -2221,6 +2320,9 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	END_PROFILE(SMBlockread);
 	return(outsize);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a read.
@@ -2467,6 +2569,14 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
+#if 0
+	/* Enable when the AIO code is moved over. JRA. */
+	if (schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
+		END_PROFILE(SMBreadX);
+		return -1;
+	}
+#endif
+
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
@@ -2540,6 +2650,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(outbuf,smb_com,SMBwritebraw);
 	SSVALS(outbuf,smb_vwv0,-1);
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server("reply_writebraw: send_smb failed.");
   
@@ -2610,6 +2721,9 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Reply to a writeunlock (core+).
 ****************************************************************************/
@@ -2673,6 +2787,9 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	END_PROFILE(SMBwriteunlock);
 	return outsize;
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /****************************************************************************
  Reply to a write.
@@ -2778,9 +2895,12 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
 
+	set_message(outbuf,6,0,True);
+  
 	/* Deal with possible LARGE_WRITEX */
-	if (large_writeX)
+	if (large_writeX) {
 		numtowrite |= ((((size_t)SVAL(inbuf,smb_vwv9)) & 1 )<<16);
+	}
 
 	if(smb_doff > smblen || (smb_doff + numtowrite > smblen)) {
 		END_PROFILE(SMBwriteX);
@@ -2822,18 +2942,28 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	done, just a write of zero. To truncate a file,
 	use SMBwrite. */
 
-	if(numtowrite == 0)
+	if(numtowrite == 0) {
 		nwritten = 0;
-	else
+	} else {
+
+#if 0
+		/* Enable when AIO code is moved over. JRA. */
+
+		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
+					fsp,data,startpos,numtowrite)) {
+			END_PROFILE(SMBwriteX);
+			return -1;
+		}
+#endif
+
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+	}
   
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteX);
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
-	set_message(outbuf,6,0,True);
-  
 	SSVAL(outbuf,smb_vwv2,nwritten);
 	if (large_writeX)
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
@@ -3121,6 +3251,9 @@ int reply_writeclose(connection_struct *conn,
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Reply to a lock.
 ****************************************************************************/
@@ -3201,6 +3334,9 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	return(outsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
+
 /****************************************************************************
  Reply to a tdis.
 ****************************************************************************/
@@ -3261,6 +3397,7 @@ int reply_echo(connection_struct *conn,
 
 		smb_setlen(outbuf,outsize - 4);
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_echo: send_smb failed.");
 	}
@@ -3512,7 +3649,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
-	if( strchr_m(directory, ':')) {
+	if( is_ntfs_stream_name(directory)) {
 		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
 		END_PROFILE(SMBmkdir);
 		return ERROR_FORCE_DOS(ERRDOS, ERRinvalidname);
@@ -3631,7 +3768,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
 		if(dir_hnd != NULL) {
-			long dirpos = TellDir(dir_hnd);
+			long dirpos = 0;
 			while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
 					continue;
@@ -3644,7 +3781,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 			}
 
 			if(all_veto_files) {
-				SeekDir(dir_hnd,dirpos);
+				RewindDir(dir_hnd,&dirpos);
 				while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 					pstring fullname;
 
@@ -4037,8 +4174,8 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask, sizeof(pstring)-1 );
+	if (!rc && mangle_is_mangled(mask,SNUM(conn)))
+		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
 
 	has_wild = ms_has_wild(mask);
 
@@ -4046,7 +4183,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, ui
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = mangle_is_8_3(name, True);
+		BOOL is_short_name = mangle_is_8_3(name, True, SNUM(conn));
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -4345,7 +4482,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Copy a file as part of a reply_copy.
 ******************************************************************/
 
-static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
+BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory, int *err_ret)
 {
 	int Access,action;
@@ -4518,8 +4655,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!rc && mangle_is_mangled(mask))
-		mangle_check_cache( mask, sizeof(pstring)-1 );
+	if (!rc && mangle_is_mangled(mask, SNUM(conn)))
+		mangle_check_cache( mask, sizeof(pstring)-1, SNUM(conn));
 
 	has_wild = ms_has_wild(mask);
 
@@ -4651,6 +4788,9 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	END_PROFILE(pathworks_setdir);
 	return(outsize);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
 
 /****************************************************************************
  Get a lock pid, dealing with large count requests.
@@ -4989,6 +5129,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
+
 /****************************************************************************
  Reply to a SMBreadbmpx (read block multiplex) request.
 ****************************************************************************/
@@ -5053,6 +5196,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		SSVAL(outbuf,smb_vwv6,nread);
 		SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_readbmpx: send_smb failed.");
 
@@ -5213,6 +5357,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	if (write_through && tcount==nwritten) {
 		/* We need to send both a primary and a secondary response */
 		smb_setlen(outbuf,outsize - 4);
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_writebmpx: send_smb failed.");
 

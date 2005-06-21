@@ -72,7 +72,7 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
 		signals_received++;
 	} /* Else signal is lost. */
-	sys_select_signal();
+	sys_select_signal(RT_SIGNAL_LEASE);
 }
 
 /****************************************************************************
@@ -311,5 +311,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	return &koplocks;
 }
 #else
+ void oplock_linux_dummy(void);
+
  void oplock_linux_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_LINUX */

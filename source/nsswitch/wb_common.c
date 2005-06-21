@@ -26,9 +26,6 @@
 
 #include "winbind_client.h"
 
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
-
 /* Global variables.  These are effectively the client state information */
 
 int winbindd_fd = -1;           /* fd for winbindd socket */
@@ -591,12 +588,18 @@ NSS_STATUS winbindd_request(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response)
 {
-	NSS_STATUS status;
+	NSS_STATUS status = NSS_STATUS_UNAVAIL;
+	int count = 0;
 
-	status = winbindd_send_request(req_type, request);
-	if (status != NSS_STATUS_SUCCESS) 
-		return(status);
-	return winbindd_get_response(response);
+	while ((status == NSS_STATUS_UNAVAIL) && (count < 10)) {
+		status = winbindd_send_request(req_type, request);
+		if (status != NSS_STATUS_SUCCESS) 
+			return(status);
+		status = winbindd_get_response(response);
+		count += 1;
+	}
+
+	return status;
 }
 
 /*************************************************************************
@@ -609,7 +612,7 @@ NSS_STATUS winbindd_request(int req_type,
 
 BOOL winbind_off( void )
 {
-        static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");
+	static char *s = CONST_DISCARD(char *, WINBINDD_DONT_ENV "=1");
 
 	return putenv(s) != -1;
 }

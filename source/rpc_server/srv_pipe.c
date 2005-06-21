@@ -52,6 +52,7 @@ extern struct current_user current_user;
  next. This is the way the netlogon schannel works.
 **************************************************************/
 struct dcinfo last_dcinfo;
+BOOL server_auth2_negotiated = False;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
@@ -161,7 +162,7 @@ BOOL create_next_pdu(pipes_struct *p)
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
 		p->hdr.flags |= RPC_FLG_LAST;
-		if ((auth_seal || auth_verify) && (data_len_left % 8)) {
+		if ((auth_seal || auth_verify || p->netsec_auth_validated) && (data_len_left % 8)) {
 			ss_padding_len = 8 - (data_len_left % 8);
 			DEBUG(10,("create_next_pdu: adding sign/seal padding of %u\n",
 				ss_padding_len ));
@@ -975,6 +976,12 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			RPC_AUTH_NETSEC_NEG neg;
 			struct netsec_auth_struct *a = &(p->netsec_auth);
 
+			if (!server_auth2_negotiated) {
+				DEBUG(0, ("Attempt to bind using schannel "
+					  "without successful serverauth2\n"));
+				return False;
+			}
+
 			if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
 				DEBUG(0,("api_pipe_bind_req: "
 					 "Could not unmarshal SCHANNEL auth neg\n"));
@@ -1061,15 +1068,15 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
-	if(check_bind_req(p, &hdr_rb.abstract, &hdr_rb.transfer, hdr_rb.context_id )) 
-	{
+	if(check_bind_req(p, &hdr_rb.rpc_context[0].abstract, &hdr_rb.rpc_context[0].transfer[0],
+				hdr_rb.rpc_context[0].context_id )) {
 		init_rpc_hdr_ba(&hdr_ba,
 	                MAX_PDU_FRAG_LEN,
 	                MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
-	                &hdr_rb.transfer);
+	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
 		RPC_IFACE null_interface;
 		ZERO_STRUCT(null_interface);

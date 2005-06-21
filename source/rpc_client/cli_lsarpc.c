@@ -43,14 +43,18 @@
  *
  * @param cli Handle on an initialised SMB connection */
 
-NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				BOOL sec_qos, uint32 des_access,
+				POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
 	LSA_R_OPEN_POL r;
 	LSA_SEC_QOS qos;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -72,7 +76,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_pol("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_OPENPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -100,13 +104,21 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+{
+	return rpccli_lsa_open_policy(&cli->pipes[PI_LSARPC], mem_ctx,
+				      sec_qos, des_access, pol);
+}
+
 /** Open a LSA policy handle
   *
   * @param cli Handle on an initialised SMB connection 
   */
 
-NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, BOOL sec_qos,
+				 uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL2 q;
@@ -126,17 +138,17 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (sec_qos) {
 		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
+		init_q_open_pol2(&q, cli->cli->srv_name_slash, 0, des_access, 
                                  &qos);
 	} else {
-		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
+		init_q_open_pol2(&q, cli->cli->srv_name_slash, 0, des_access, 
                                  NULL);
 	}
 
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_pol2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -164,15 +176,25 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+{
+	return rpccli_lsa_open_policy2(&cli->pipes[PI_LSARPC], mem_ctx,
+				       sec_qos, des_access, pol);
+}
+
+
 /** Close a LSA policy handle */
 
-NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                       POLICY_HND *pol)
+NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
+			  POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
 	LSA_R_CLOSE r;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -187,7 +209,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_lsa_q_close(&q, pol);
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_CLOSE, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_CLOSE, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -215,11 +237,19 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                       POLICY_HND *pol)
+{
+	return rpccli_lsa_close(&cli->pipes[PI_LSARPC], mem_ctx, pol);
+}
+
 /** Lookup a list of sids */
 
-NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *pol, int num_sids, const DOM_SID *sids, 
-                             char ***domains, char ***names, uint32 **types)
+NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol, int num_sids,
+				const DOM_SID *sids, 
+				char ***domains, char ***names, uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -242,7 +272,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -332,12 +362,23 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, int num_sids,
+			     const DOM_SID *sids, 
+                             char ***domains, char ***names, uint32 **types)
+{
+	return rpccli_lsa_lookup_sids(&cli->pipes[PI_LSARPC], mem_ctx,
+				      pol, num_sids, sids,
+				      domains, names, types);
+}
+
 /** Lookup a list of names */
 
-NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, 
-			      const char **names, DOM_SID **sids, 
-			      uint32 **types)
+NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, int num_names, 
+				 const char **names, DOM_SID **sids, 
+				 uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -359,7 +400,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -433,18 +474,30 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              POLICY_HND *pol, int num_names, 
+			      const char **names, DOM_SID **sids, 
+			      uint32 **types)
+{
+	return rpccli_lsa_lookup_names(&cli->pipes[PI_LSARPC], mem_ctx,
+				       pol, num_names, names, sids, types);
+}
+
 /** Query info policy
  *
  *  @param domain_sid - returned remote server's domain sid */
 
-NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                   POLICY_HND *pol, uint16 info_class, 
-                                   char **domain_name, DOM_SID **domain_sid)
+NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      POLICY_HND *pol, uint16 info_class, 
+				      char **domain_name, DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
 	LSA_R_QUERY_INFO r;
 	NTSTATUS result;
+
+	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -459,7 +512,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query(&q, pol, info_class);
 
 	if (!lsa_io_q_query("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -523,6 +576,15 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                   POLICY_HND *pol, uint16 info_class, 
+                                   char **domain_name, DOM_SID **domain_sid)
+{
+	return rpccli_lsa_query_info_policy(&cli->pipes[PI_LSARPC], mem_ctx,
+					    pol, info_class, domain_name,
+					    domain_sid);
+}
+
 /** Query info policy2
  *
  *  @param domain_name - returned remote server's domain name
@@ -531,11 +593,13 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  *  @param domain_guid - returned remote server's domain guid
  *  @param domain_sid - returned remote server's domain sid */
 
-NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, uint16 info_class, 
-				    char **domain_name, char **dns_name,
-				    char **forest_name, struct uuid **domain_guid,
-				    DOM_SID **domain_sid)
+NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       POLICY_HND *pol, uint16 info_class, 
+				       char **domain_name, char **dns_name,
+				       char **forest_name,
+				       struct uuid **domain_guid,
+				       DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO2 q;
@@ -558,7 +622,7 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query2(&q, pol, info_class);
 
 	if (!lsa_io_q_query_info2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYINFO2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, LSA_QUERYINFO2, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -616,6 +680,19 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *pol, uint16 info_class, 
+				    char **domain_name, char **dns_name,
+				    char **forest_name,
+				    struct uuid **domain_guid,
+				    DOM_SID **domain_sid)
+{
+	return rpccli_lsa_query_info_policy2(&cli->pipes[PI_LSARPC], mem_ctx,
+					     pol, info_class, domain_name,
+					     dns_name, forest_name,
+					     domain_guid, domain_sid);
+}
+
 /**
  * Enumerate list of trusted domains
  *
@@ -631,10 +708,11 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  * @return nt status code of response
  **/
 
-NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *pol, uint32 *enum_ctx, 
-                                uint32 *num_domains,
-                                char ***domain_names, DOM_SID **domain_sids)
+NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   POLICY_HND *pol, uint32 *enum_ctx, 
+				   uint32 *num_domains,
+				   char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM in;
@@ -650,7 +728,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
         init_q_enum_trust_dom(&in, pol, *enum_ctx, 0x10000);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM, 
+	CLI_DO_RPC_EX( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM, 
 	            in, out, 
 	            qbuf, rbuf,
 	            lsa_io_q_enum_trust_dom,
@@ -701,6 +779,15 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return out.status;
 }
 
+NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_ctx, 
+                                uint32 *num_domains,
+                                char ***domain_names, DOM_SID **domain_sids)
+{
+	return rpccli_lsa_enum_trust_dom(&cli->pipes[PI_LSARPC], mem_ctx,
+					 pol, enum_ctx, num_domains,
+					 domain_names, domain_sids);
+}
 
 /** Enumerate privileges*/
 
@@ -1452,4 +1539,199 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
 #endif
 
+NTSTATUS cli_lsa_open_trusted_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *pol, DOM_SID *dom_sid, uint32 access_mask,
+				     POLICY_HND *trustdom_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPEN_TRUSTED_DOMAIN q;
+	LSA_R_OPEN_TRUSTED_DOMAIN r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_trusted_domain(&q, pol, dom_sid, access_mask);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_trusted_domain("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENTRUSTDOM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_trusted_domain("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+	
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*trustdom_pol = r.handle;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+NTSTATUS cli_lsa_query_trusted_domain_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					   POLICY_HND *pol, 
+					   uint16 info_class, DOM_SID *dom_sid, 
+					   LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info(&q, pol, info_class); 
+
+	if (!lsa_io_q_query_trusted_domain_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFO, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+		
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+
+NTSTATUS cli_lsa_query_trusted_domain_info_by_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+						  POLICY_HND *pol, 
+						  uint16 info_class, DOM_SID *dom_sid, 
+						  LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info_by_sid(&q, pol, info_class, dom_sid); 
+
+	if (!lsa_io_q_query_trusted_domain_info_by_sid("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYSID, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+NTSTATUS cli_lsa_query_trusted_domain_info_by_name(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+						   POLICY_HND *pol, 
+						   uint16 info_class, const char *domain_name, 
+						   LSA_TRUSTED_DOMAIN_INFO **info)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME q;
+	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_trusted_domain_info_by_name(&q, pol, info_class, domain_name); 
+
+	if (!lsa_io_q_query_trusted_domain_info_by_name("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYNAME, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_trusted_domain_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	*info = r.info;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+	
+	return result;
+}
+
 /** @} **/
+

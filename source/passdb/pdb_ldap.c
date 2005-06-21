@@ -198,7 +198,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	 * in the filter expression, replace %u with the real name
 	 * so in ldap filter, %u MUST exist :-)
 	 */
-	pstr_sprintf(filter, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf(filter, "(&%s%s)", "(uid=%u)", 
 		get_objclass_filter(ldap_state->schema_ver));
 
 	/* 
@@ -1210,7 +1210,7 @@ static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update,
 	const char **attr_list;
 	BOOL machine_mask = False, user_mask = False;
 
-	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
+	pstr_sprintf( filter, "(&%s%s)", "(uid=%u)", 
 		get_objclass_filter(ldap_state->schema_ver));
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
@@ -1806,7 +1806,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	   we need to return the samba attributes here */
 	   
 	escape_user = escape_ldap_string_alloc( username );
-	pstrcpy( filter, lp_ldap_filter() );
+	pstrcpy( filter, "(uid=%u)" );
 	all_string_sub( filter, "%u", escape_user, sizeof(filter) );
 	SAFE_FREE( escape_user );
 
@@ -2343,7 +2343,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		goto done;
 	}
 
-	sid_filter = strdup("(&(objectClass=sambaSamAccount)(|");
+	sid_filter = SMB_STRDUP("(&(objectClass=sambaSamAccount)(|");
 	if (sid_filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3098,8 +3098,6 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
-	talloc_destroy(mem_ctx);
-
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -3170,7 +3168,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	for (i=0; i<num_rids; i++)
 		(*attrs)[i] = SID_NAME_UNKNOWN;
 
-	allsids = strdup("");
+	allsids = SMB_STRDUP("");
 	if (allsids == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_rids; i++) {
@@ -3330,7 +3328,7 @@ char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	char *result = NULL;
 
 	asprintf(&filter, "(&%s(objectclass=sambaSamAccount))",
-		 lp_ldap_filter());
+		 "(uid=%u)");
 	if (filter == NULL) goto done;
 
 	escaped = escape_ldap_string_alloc(username);
@@ -3390,7 +3388,7 @@ struct ldap_search_state {
 static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 {
 	struct ldap_search_state *state = search->private;
-	LDAP *ld = state->connection->ldap_struct;
+	LDAP *ld;
 	int rc = LDAP_OPERATIONS_ERROR;
 
 	state->entries = NULL;
@@ -3423,7 +3421,13 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 		state->connection->paged_results = False;
 	}
 
-	state->current_entry = ldap_first_entry(ld, state->entries);
+        ld = state->connection->ldap_struct;
+        if ( ld == NULL) {
+                DEBUG(5, ("Don't have an LDAP connection right after a "
+			  "search\n"));
+                return False;
+        }
+        state->current_entry = ldap_first_entry(ld, state->entries);
 
 	if (state->current_entry == NULL) {
 		ldap_msgfree(state->entries);

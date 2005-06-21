@@ -92,7 +92,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	BOOL component_was_mangled = False;
 	BOOL name_has_wildcard = False;
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(*pst);
 
 	*dirpath = 0;
 	*bad_path = False;
@@ -150,7 +150,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
-	if (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve))
+	if (!conn->case_preserve || (mangle_is_8_3(name, False, SNUM(conn)) && !conn->short_case_preserve))
 		strnorm(name, lp_defaultcase(SNUM(conn)));
 
 	start = name;
@@ -179,7 +179,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * sensitive then searching won't help.
 	 */
 
-	if (conn->case_sensitive && !mangle_is_mangled(name) && !*lp_mangled_map(SNUM(conn)))
+	if (conn->case_sensitive && !mangle_is_mangled(name, SNUM(conn)) && !*lp_mangled_map(SNUM(conn)))
 		return(False);
 
 	name_has_wildcard = ms_has_wild(start);
@@ -189,7 +189,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	 * just a component. JRA.
 	 */
 
-	if (mangle_is_mangled(start))
+	if (mangle_is_mangled(start, SNUM(conn)))
 		component_was_mangled = True;
 
 	/* 
@@ -258,7 +258,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstring rest;
 
 			/* Stat failed - ensure we don't use it. */
-			ZERO_STRUCT(st);
+			SET_STAT_INVALID(st);
 			*rest = 0;
 
 			/*
@@ -317,8 +317,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 * base of the filename.
 				 */
 
-				if (mangle_is_mangled(start)) {
-					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name) );
+				if (mangle_is_mangled(start, SNUM(conn))) {
+					mangle_check_cache( start, sizeof(pstring) - 1 - (start - name), SNUM(conn));
 				}
 
 				DEBUG(5,("New file %s\n",start));
@@ -346,7 +346,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				if (SMB_VFS_STAT(conn,name, &st) == 0) {
 					*pst = st;
 				} else {
-					ZERO_STRUCT(st);
+					SET_STAT_INVALID(st);
 				}
 			}
 		} /* end else */
@@ -433,7 +433,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	BOOL mangled;
 	long curpos;
 
-	mangled = mangle_is_mangled(name);
+	mangled = mangle_is_mangled(name, SNUM(conn));
 
 	/* handle null paths */
 	if (*path == 0)
@@ -447,7 +447,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 	 * (JRA).
 	 */
 	if (mangled)
-		mangled = !mangle_check_cache( name, maxlength );
+		mangled = !mangle_check_cache( name, maxlength, SNUM(conn));
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(conn, path))) {

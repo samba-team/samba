@@ -31,15 +31,20 @@ extern file_info def_finfo;
  by NT and 2 is used by OS/2
 ****************************************************************************/
 
-static size_t interpret_long_filename(struct cli_state *cli,
-				   int level,char *p,file_info *finfo)
+static size_t interpret_long_filename(struct cli_state *cli, int level,char *p,file_info *finfo,
+					uint32 *p_resume_key, DATA_BLOB *p_last_name_raw, uint32 *p_last_name_raw_len)
 {
 	file_info finfo2;
 	int len;
 	char *base = p;
 
-	if (!finfo) finfo = &finfo2;
+	if (!finfo) {
+		finfo = &finfo2;
+	}
 
+	if (p_resume_key) {
+		*p_resume_key = 0;
+	}
 	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
 	switch (level) {
@@ -85,6 +90,10 @@ static size_t interpret_long_filename(struct cli_state *cli,
 		{
 			size_t namelen, slen;
 			p += 4; /* next entry offset */
+
+			if (p_resume_key) {
+				*p_resume_key = IVAL(p,0);
+			}
 			p += 4; /* fileindex */
 				
 			/* these dates appear to arrive in a
@@ -131,6 +140,22 @@ static size_t interpret_long_filename(struct cli_state *cli,
 			clistr_pull(cli, finfo->name, p,
 				    sizeof(finfo->name),
 				    namelen, 0);
+
+			/* To be robust in the face of unicode conversion failures
+			   we need to copy the raw bytes of the last name seen here.
+			   Namelen doesn't include the terminating unicode null, so
+			   copy it here. */
+
+			if (p_last_name_raw && p_last_name_raw_len) {
+				if (namelen + 2 > p_last_name_raw->length) {
+					memset(p_last_name_raw->data, '\0', sizeof(p_last_name_raw->length));
+					*p_last_name_raw_len = 0;
+				} else {
+					memcpy(p_last_name_raw->data, p, namelen);
+					SSVAL(p_last_name_raw->data, namelen, 0);
+					*p_last_name_raw_len = namelen + 2;
+				}
+			}
 			return (size_t)IVAL(base, 0);
 		}
 	}
@@ -146,7 +171,7 @@ static size_t interpret_long_filename(struct cli_state *cli,
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
 		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
-#if 0
+#if 1
 	int max_matches = 1366; /* Match W2k - was 512. */
 #else
 	int max_matches = 512;
@@ -170,6 +195,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	uint16 setup;
 	pstring param;
 	const char *mnt;
+	uint32 resume_key = 0;
+	uint32 last_name_raw_len = 0;
+	DATA_BLOB last_name_raw = data_blob(NULL, 2*sizeof(pstring));
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
@@ -204,13 +232,19 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,0,ff_dir_handle);
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
-			SIVAL(param,6,0); /* ff_resume_key */
+			/* For W2K servers serving out FAT filesystems we *must* set the
+			   resume key. If it's not FAT then it's returned as zero. */
+			SIVAL(param,6,resume_key); /* ff_resume_key */
 			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
 			   can miss filenames. Use last filename continue instead. JRA */
 			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			p = param+12;
-			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
-					 STR_TERMINATE);
+			if (last_name_raw_len && (last_name_raw_len < (sizeof(param)-12))) {
+				memcpy(p, last_name_raw.data, last_name_raw_len);
+				p += last_name_raw_len;
+			} else {
+				p += clistr_push(cli, param+12, mask, sizeof(param)-12, STR_TERMINATE);
+			}
 		}
 
 		param_len = PTR_DIFF(p, param);
@@ -277,7 +311,15 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				/* Last entry - fixup the last offset length. */
 				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
 			}
-			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
+			p2 += interpret_long_filename(cli,info_level,p2,&finfo,
+							&resume_key,&last_name_raw,&last_name_raw_len);
+
+			if (!First && *mask && strcsequal(finfo.name, mask)) {
+				DEBUG(0,("Error: Looping in FIND_NEXT as name %s has already been seen?\n",
+					finfo.name));
+				ff_eos = 1;
+				break;
+			}
 		}
 
 		if (ff_lastname > 0) {
@@ -317,12 +359,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	mnt = cli_cm_get_mntpoint( cli );
 
 	for (p=dirlist,i=0;i<total_received;i++) {
-		p += interpret_long_filename(cli,info_level,p,&finfo);
+		p += interpret_long_filename(cli,info_level,p,&finfo,NULL,NULL,NULL);
 		fn( mnt,&finfo, Mask, state );
 	}
 
-	/* free up the dirlist buffer */
+	/* free up the dirlist buffer and last name raw blob */
 	SAFE_FREE(dirlist);
+	data_blob_free(&last_name_raw);
 	return(total_received);
 }
 

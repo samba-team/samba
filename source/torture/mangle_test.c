@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+extern int torture_numops;
+
 static TDB_CONTEXT *tdb;
 
 #define NAME_LENGTH 20
@@ -159,7 +161,6 @@ static void gen_name(char *name)
 
 BOOL torture_mangle(int dummy)
 {
-	extern int torture_numops;
 	static struct cli_state *cli;
 	int i;
 	BOOL ret = True;

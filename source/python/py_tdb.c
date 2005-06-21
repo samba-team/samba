@@ -348,7 +348,7 @@ static BOOL make_lock_list(PyObject *py_keys, TDB_DATA **keys, int *num_keys)
 		/* Turn python list into array of keys */
 		
 		*num_keys = PyList_Size(py_keys);
-		*keys = (TDB_DATA *)malloc(sizeof(TDB_DATA) * (*num_keys));
+		*keys = (TDB_DATA *)SMB_XMALLOC_ARRAY(TDB_DATA, (*num_keys));
 		
 		for (i = 0; i < *num_keys; i++) {
 			PyObject *key = PyList_GetItem(py_keys, i);
@@ -368,7 +368,7 @@ static BOOL make_lock_list(PyObject *py_keys, TDB_DATA **keys, int *num_keys)
 
 		/* Turn python string into a single key */
 
-		*keys = (TDB_DATA *)malloc(sizeof(TDB_DATA));
+		*keys = (TDB_DATA *)SMB_XMALLOC_P(TDB_DATA);
 		*num_keys = 1;
 		PyArg_Parse(py_keys, "s#", &(*keys)->dptr, &(*keys)->dsize);
 	}

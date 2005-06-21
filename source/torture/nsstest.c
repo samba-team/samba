@@ -167,13 +167,13 @@ static struct group *nss_getgrent(void)
 		return NULL;
 
 	if (!buf) 
-		buf = malloc(buflen);
+		buf = SMB_MALLOC(buflen);
 
 again:	
 	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = SMB_REALLOC(buf, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -199,12 +199,12 @@ static struct group *nss_getgrnam(const char *name)
 		return NULL;
 
 	if (!buf) 
-		buf = malloc(buflen);
+		buf = SMB_MALLOC(buflen);
 again:	
 	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = SMB_REALLOC(buf, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -230,13 +230,13 @@ static struct group *nss_getgrgid(gid_t gid)
 		return NULL;
 
 	if (!buf) 
-		buf = malloc(buflen);
+		buf = SMB_MALLOC(buflen);
 
 again:	
 	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = realloc(buf, buflen);
+		buf = SMB_REALLOC(buf, buflen);
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
@@ -333,7 +333,7 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	int i;
 	NSS_STATUS status;
 
-	groups = (gid_t *)malloc(size * sizeof(gid_t));
+	groups = SMB_MALLOC_ARRAY(gid_t, size);
 	groups[0] = gid;
 
 	status = nss_initgroups(name, gid, &groups, &start, &size);

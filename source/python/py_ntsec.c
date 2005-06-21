@@ -157,7 +157,7 @@ BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict, TALLOC_CTX *mem_ctx)
 	
 	acl->num_aces = PyList_Size(obj);
 
-	acl->ace = talloc(mem_ctx, acl->num_aces * sizeof(SEC_ACE));
+	acl->ace = _talloc(mem_ctx, acl->num_aces * sizeof(SEC_ACE));
 	acl->size = SEC_ACL_HEADER_SIZE;
 
 	for (i = 0; i < acl->num_aces; i++) {

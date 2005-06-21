@@ -25,10 +25,11 @@
    the right thing about local DST.  Unlike previous versions, this
    version is reentrant.  */
 
-#include <config.h>
-
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+# ifdef HAVE_ALLOCA_H
+#  include <alloca.h>
+# endif
 #endif
 
 /* Since the code of getdate.y is not included in the Emacs executable

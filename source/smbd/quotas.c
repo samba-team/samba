@@ -923,7 +923,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 #else
 
-#if    defined(__FreeBSD__) || defined(__OpenBSD__)
+#if    defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <ufs/ufs/quota.h>
 #include <machine/param.h>
 #elif         AIX
@@ -933,12 +933,12 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 #define dqb_curfiles dqb_curinodes
 #define dqb_fhardlimit dqb_ihardlimit
 #define dqb_fsoftlimit dqb_isoftlimit
-#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
+#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
 #include <sys/quota.h>
 #include <devnm.h>
 #endif
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 
 #include <rpc/rpc.h>
 #include <rpc/types.h>
@@ -1119,7 +1119,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
   int r;
   struct dqblk D;
   uid_t euser_id;
-#if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__)
+#if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) && !defined(__DragonFly__)
   char dev_disk[256];
   SMB_STRUCT_STAT S;
 
@@ -1136,7 +1136,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 	return (False);
 #endif /* ifdef HPUX */
 
-#endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) */
+#endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) && !defined(__DragonFly__) */
 
   euser_id = geteuid();
 
@@ -1149,11 +1149,11 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
   restore_re_uid();
 #else 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
   {
     /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
     gid_t egrp_id;
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
     SMB_DEV_T devno;
     struct statfs *mnts;
     SMB_STRUCT_STAT st;
@@ -1180,7 +1180,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
     save_re_uid();
     set_effective_uid(0);
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
     if (strcmp(mnts[i].f_fstypename,"nfs") == 0) {
         BOOL retval;
         retval = nfs_quotas(mnts[i].f_mntfromname,euser_id,bsize,dfree,dsize);
@@ -1208,17 +1208,17 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
     return False;
   r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
   restore_re_uid();
-#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
+#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-#endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ */
+#endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
 #endif /* HPUX */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
   *bsize = DEV_BSIZE;
-#else /* !__FreeBSD__ && !__OpenBSD__ */
+#else /* !__FreeBSD__ && !__OpenBSD__ && !__DragonFly__ */
   *bsize = 1024;
-#endif /*!__FreeBSD__ && !__OpenBSD__ */
+#endif /*!__FreeBSD__ && !__OpenBSD__ && !__DragonFly__ */
 
   if (r)
     {
@@ -1241,7 +1241,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
     return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
   if ((D.dqb_curblocks>D.dqb_bsoftlimit)
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__DragonFly__)
 ||((D.dqb_curfiles>D.dqb_fsoftlimit) && (D.dqb_fsoftlimit != 0))
 #endif
     ) {

@@ -74,7 +74,7 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
 		signals_received++;
 	} /* Else signal is lost. */
-	sys_select_signal();
+	sys_select_signal(RT_SIGNAL_NOTIFY);
 }
 
 /****************************************************************************
@@ -101,9 +101,8 @@ static BOOL kernel_check_notify(connection_struct *conn, uint16 vuid, char *path
 			close((int)fd_pending_array[i]);
 			fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 			if (signals_received - i - 1) {
-				memmove(CONST_DISCARD(void *, &fd_pending_array[i]),
-                                        CONST_DISCARD(void *, &fd_pending_array[i+1]),
-                                        sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
+				memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+						sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 			}
 			data->directory_handle = -1;
 			signals_received--;
@@ -130,9 +129,8 @@ static void kernel_remove_notify(void *datap)
 			if (fd == (int)fd_pending_array[i]) {
 				fd_pending_array[i] = (SIG_ATOMIC_T)-1;
 				if (signals_received - i - 1) {
-					memmove(CONST_DISCARD(void *, &fd_pending_array[i]),
-                                                CONST_DISCARD(void *, &fd_pending_array[i+1]),
-                                                sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
+					memmove((void *)&fd_pending_array[i], (void *)&fd_pending_array[i+1],
+							sizeof(SIG_ATOMIC_T)*(signals_received-i-1));
 				}
 				data->directory_handle = -1;
 				signals_received--;
@@ -219,7 +217,6 @@ struct cnotify_fns *kernel_notify_init(void)
 
 	ZERO_STRUCT(act);
 
-	act.sa_handler = NULL;
 	act.sa_sigaction = signal_handler;
 	act.sa_flags = SA_SIGINFO;
 	sigemptyset( &act.sa_mask );
@@ -243,5 +240,7 @@ struct cnotify_fns *kernel_notify_init(void)
 }
 
 #else
+ void notify_kernel_dummy(void);
+
  void notify_kernel_dummy(void) {}
 #endif /* HAVE_KERNEL_CHANGE_NOTIFY */

@@ -169,7 +169,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
             /* tell user what is happening */
 #define greeting "Changing password for "
-            Announce = (char *) malloc(sizeof(greeting)+strlen(user));
+            Announce = SMB_MALLOC_ARRAY(char, sizeof(greeting)+strlen(user));
             if (Announce == NULL) {
                 _log_err(LOG_CRIT, "password: out of memory");
                 pdb_free_sam(&sampass);

@@ -9,6 +9,7 @@
  *  Copyright (C) Jean François Micouleau          1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
+ *  Copyright (C) Simo Sorce                        2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,7 +77,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
                                      struct generic_mapping *map,
 				     DOM_SID *sid, uint32 sid_access )
 {
-	DOM_SID adm_sid, act_sid, domadmin_sid;
+	DOM_SID domadmin_sid;
 	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;
 	size_t i = 0;
@@ -90,16 +91,10 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	
 	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 	
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-	
 	init_sec_access(&mask, map->generic_all);
 	
-	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	
 	/* Add Full Access for Domain Admins if we are a DC */
 	
@@ -730,9 +725,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	struct samr_displayentry *aliases;
 	struct pdb_search **search = NULL;
 	uint32 num_aliases = 0;
-	NTSTATUS status;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
@@ -752,14 +744,16 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	if (sid_check_is_builtin(&info->sid))
 		search = &info->disp_info.builtins;
 
-	if (search == NULL) return NT_STATUS_INVALID_HANDLE;
+	if (search == NULL) 
+		return NT_STATUS_INVALID_HANDLE;
 
 	become_root();
 	if (*search == NULL)
 		*search = pdb_search_aliases(&info->sid);
 	unbecome_root();
 
-	if (*search == NULL) return NT_STATUS_ACCESS_DENIED;
+	if (*search == NULL) 
+		return NT_STATUS_ACCESS_DENIED;
 
 	become_root();
 	num_aliases = pdb_search_entries(*search, q_u->start_idx,
@@ -768,8 +762,6 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 	
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
 				  num_aliases, aliases);
-
-	if (!NT_STATUS_IS_OK(status)) return status;
 
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_aliases,
 				     num_aliases);
@@ -988,17 +980,18 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	if ( !ret )
 		return NT_STATUS_NO_SUCH_ALIAS;
 
-	switch (q_u->switch_level) {
+	if ( !(r_u->ctr = TALLOC_ZERO_P( p->mem_ctx, ALIAS_INFO_CTR )) ) 
+		return NT_STATUS_NO_MEMORY;
+
+
+	switch (q_u->level ) {
 	case 1:
-		r_u->ptr = 1;
-		r_u->ctr.switch_value1 = 1;
-		init_samr_alias_info1(&r_u->ctr.alias.info1,
-				      info.acct_name, 1, info.acct_desc);
+		r_u->ctr->level = 1;
+		init_samr_alias_info1(&r_u->ctr->alias.info1, info.acct_name, 1, info.acct_desc);
 		break;
 	case 3:
-		r_u->ptr = 1;
-		r_u->ctr.switch_value1 = 3;
-		init_samr_alias_info3(&r_u->ctr.alias.info3, info.acct_desc);
+		r_u->ctr->level = 3;
+		init_samr_alias_info3(&r_u->ctr->alias.info3, info.acct_desc);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -1985,13 +1978,15 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		se_priv_copy( &se_rights, &se_machine_account );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( acb_info & ACB_NORMAL )
+	/* usrmgr.exe (and net rpc trustdom grant) creates a normal user 
+	   account for domain trusts and changes the ACB flags later */
+	else if ( acb_info & ACB_NORMAL && (account[strlen(account)-1] != '$') )
 	{
 		pstrcpy(add_script, lp_adduser_script());
 		se_priv_copy( &se_rights, &se_add_users );
 		can_add_account = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
 	} 
-	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) 
+	else 	/* implicit assumption of a BDC or domain trust account here (we already check the flags earlier) */
 	{
 		pstrcpy(add_script, lp_addmachine_script());
 		if ( lp_enable_privileges() ) {
@@ -2017,14 +2012,6 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
-		else	/* no add user script -- ask winbindd to do it */
-		{
-			if ( !winbind_create_user( account, &new_rid ) ) {
-				DEBUG(3,("_samr_create_user: winbind_create_user(%s) failed\n", 
-					account));
-			}
-		}
-		
 	}
 	
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
@@ -2389,7 +2376,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
 	
-	se_priv_add( &se_rights, &se_add_users );
+	se_priv_copy( &se_rights, &se_add_users );
 	
 	
 	status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
@@ -3466,18 +3453,6 @@ static int smb_delete_user(const char *unix_user)
 	pstring del_script;
 	int ret;
 
-	/* try winbindd first since it is impossible to determine where 
-	   a user came from via NSS.  Try the delete user script if this fails
-	   meaning the user did not exist in winbindd's list of accounts */
-
-	if ( winbind_delete_user( unix_user ) ) {
-		DEBUG(3,("winbind_delete_user: removed user (%s)\n", unix_user));
-		return 0;
-	}
-
-
-	/* fall back to 'delete user script' */
-
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
@@ -3780,6 +3755,11 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
+
+	/* they created it; let the user do what he wants with it */
+
+	info->acc_granted = GENERIC_RIGHTS_GROUP_ALL_ACCESS;
+
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -3847,6 +3827,10 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
+
+	/* they created it; let the user do what he wants with it */
+
+	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
@@ -3981,11 +3965,13 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		
 	ctr=&q_u->ctr;
 
-	switch (ctr->switch_value1) {
+	switch (ctr->level) {
 		case 3:
-			unistr2_to_ascii(info.acct_desc,
-					 &(ctr->alias.info3.uni_acct_desc),
-					 sizeof(info.acct_desc)-1);
+			if ( ctr->alias.info3.description.string ) {
+				unistr2_to_ascii( info.acct_desc, 
+					ctr->alias.info3.description.string, 
+					sizeof(info.acct_desc)-1 );
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;

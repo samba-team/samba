@@ -20,10 +20,8 @@
 
 #include "includes.h"
 
-extern char magic_char;
 extern struct timeval smb_last_time;
 extern userdom_struct current_user_info;
-
 
 /****************************************************************************
  Load parameters specific to a connection/service.
@@ -80,7 +78,6 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 			conn->case_sensitive = False;
 			break;
 	}
-	magic_char = lp_magicchar(snum);
 	return(True);
 }
 
@@ -278,7 +275,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	*user = 0;
 	fstrcpy(dev, pdev);
-	ZERO_STRUCT(st);
+	SET_STAT_INVALID(st);
 
 	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, dev))) {
 		return NULL;
@@ -365,7 +362,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->service = snum;
 	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
-	conn->ipc = ((strncmp(dev,"IPC",3) == 0) || strequal(dev,"ADMIN$"));
+	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) || ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );
 	conn->dirptr = NULL;
 
 	/* Case options for the share. */
@@ -521,7 +518,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* Initialise VFS function pointers */
 
 	if (!smbd_vfs_init(conn)) {
-		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(snum)));
 		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
@@ -544,8 +541,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 /* ROOT Activities: */	
 	/* check number of connections */
 	if (!claim_connection(conn,
-			      lp_servicename(SNUM(conn)),
-			      lp_max_connections(SNUM(conn)),
+			      lp_servicename(snum),
+			      lp_max_connections(snum),
 			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
 		conn_free(conn);
@@ -555,16 +552,16 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
 	/* execute any "root preexec = " line */
-	if (*lp_rootpreexec(SNUM(conn))) {
+	if (*lp_rootpreexec(snum)) {
 		int ret;
 		pstring cmd;
-		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
+		pstrcpy(cmd,lp_rootpreexec(snum));
 		standard_sub_conn(conn,cmd,sizeof(cmd));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
-		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
+		if (ret != 0 && lp_rootpreexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)));
+			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
 			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
@@ -575,6 +572,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!change_to_user(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
+		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*status = NT_STATUS_LOGON_FAILURE;
 		return NULL;
@@ -584,16 +582,16 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
 	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
+	if (*lp_preexec(snum)) {
 		int ret;
 		pstring cmd;
-		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		pstrcpy(cmd,lp_preexec(snum));
 		standard_sub_conn(conn,cmd,sizeof(cmd));
 		ret = smbrun(cmd,NULL);
-		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
 			change_to_root_user();
-			yield_connection(conn, lp_servicename(SNUM(conn)));
+			yield_connection(conn, lp_servicename(snum));
 			conn_free(conn);
 			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
@@ -601,7 +599,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 #ifdef WITH_FAKE_KASERVER
-	if (lp_afs_share(SNUM(conn))) {
+	if (lp_afs_share(snum)) {
 		afs_login(conn);
 	}
 #endif
@@ -612,9 +610,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
 	if (SMB_VFS_STAT(conn, conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
-		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
+		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(snum)));
 		change_to_root_user();
-		yield_connection(conn, lp_servicename(SNUM(conn)));
+		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
@@ -642,7 +640,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
 		dbgtext( "%s", srv_is_signing_active() ? "signed " : "");
-		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
+		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
@@ -650,9 +648,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray( &conn->veto_list, lp_veto_files(SNUM(conn)));
-		set_namearray( &conn->hide_list, lp_hide_files(SNUM(conn)));
-		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
+		set_namearray( &conn->veto_list, lp_veto_files(snum));
+		set_namearray( &conn->hide_list, lp_hide_files(snum));
+		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(snum));
 	}
 	
 	/* Invoke VFS make connection hook */
@@ -660,6 +658,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		change_to_root_user();
+		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*status = NT_STATUS_UNSUCCESSFUL;
 		return NULL;
@@ -784,7 +783,9 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	snum = find_service(service);
 
 	if (snum < 0) {
-		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
+		if (strequal(service,"IPC$") 
+			|| (lp_enable_asu_support() && strequal(service,"ADMIN$"))) 
+		{
 			DEBUG(3,("refusing IPC connection to %s\n", service));
 			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
@@ -812,8 +813,9 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 }
 
 /****************************************************************************
-close a cnum
+ Close a cnum.
 ****************************************************************************/
+
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	if (IS_IPC(conn)) {

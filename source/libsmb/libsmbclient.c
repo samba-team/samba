@@ -420,7 +420,7 @@ static int smbc_errno(SMBCCTX *context, struct cli_state *c)
 }
 
 /* 
- * Check a server_fd.
+ * Check a server for being alive and well.
  * returns 0 if the server is in shape. Returns 1 on error 
  * 
  * Also useable outside libsmbclient to enable external cache
@@ -646,13 +646,10 @@ SMBCSRV *smbc_server(SMBCCTX *context,
          * Force use of port 139 for first try if share is $IPC, empty, or
          * null, so browse lists can work
          */
-        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0)
-        {
+        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0) {
                 port_try_first = 139;
                 port_try_next = 445;
-        }
-        else
-        {
+        } else {
                 port_try_first = 445;
                 port_try_next = 139;
         }
@@ -748,7 +745,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
   
 	/*
 	 * Ok, we have got a nice connection
-	 * Let's find a free server_fd 
+	 * Let's allocate a server structure.
 	 */
 
 	srv = SMB_MALLOC_P(SMBCSRV);
@@ -760,6 +757,9 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	ZERO_STRUCTP(srv);
 	srv->cli = c;
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+        srv->no_pathinfo = False;
+        srv->no_pathinfo2 = False;
+        srv->no_nt_session = False;
 
 	/* now add it to the cache (internal or external)  */
 	/* Let the cache function set errno if it wants to */
@@ -1248,7 +1248,10 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
         }
 
 	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
-		a_time = c_time = m_time;
+                if (m_time != NULL) {
+                        if (a_time != NULL) *a_time = *m_time;
+                        if (c_time != NULL) *c_time = *m_time;
+                }
 		srv->no_pathinfo2 = True;
 		return True;
 	}
@@ -1259,10 +1262,145 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 }
 
 /*
- * Routine to unlink() a file
+ * Set file info on an SMB server.  Use setpathinfo call first.  If that
+ * fails, use setattrE..
+ *
+ * Access and modification time parameters are always used and must be
+ * provided.  Create time, if zero, will be determined from the actual create
+ * time of the file.  If non-zero, the create time will be set as well.
+ *
+ * "mode" (attributes) parameter may be set to -1 if it is not to be set.
  */
+static BOOL smbc_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
+                        time_t c_time, time_t a_time, time_t m_time,
+                        uint16 mode)
+{
+        int fd;
+        int ret;
 
-static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
+        /*
+         * Get the create time of the file (if not provided); we'll need it in
+         * the set call.
+         */
+        if (! srv->no_pathinfo && c_time == 0) {
+                if (! cli_qpathinfo(&srv->cli, path,
+                                    &c_time, NULL, NULL, NULL, NULL)) {
+                        /* qpathinfo not available */
+                        srv->no_pathinfo = True;
+                } else {
+                        /*
+                         * We got a creation time.  Some OS versions don't
+                         * return a valid create time, though.  If we got an
+                         * invalid time, start with the current time instead.
+                         */
+                        if (c_time == 0 || c_time == (time_t) -1) {
+                                c_time = time(NULL);
+                        }
+
+                        /*
+                         * We got a creation time.  For sanity sake, since
+                         * there is no POSIX function to set the create time
+                         * of a file, if the existing create time is greater
+                         * than either of access time or modification time,
+                         * set create time to the smallest of those.  This
+                         * ensure that the create time of a file is never
+                         * greater than its last access or modification time.
+                         */
+                        if (c_time > a_time) c_time = a_time;
+                        if (c_time > m_time) c_time = m_time;
+                }
+        }
+
+        /*
+         * First, try setpathinfo (if qpathinfo succeeded), for it is the
+         * modern function for "new code" to be using, and it works given a
+         * filename rather than requiring that the file be opened to have its
+         * attributes manipulated.
+         */
+        if (srv->no_pathinfo ||
+            ! cli_setpathinfo(&srv->cli, path, c_time, a_time, m_time, mode)) {
+
+                /*
+                 * setpathinfo is not supported; go to plan B. 
+                 *
+                 * cli_setatr() does not work on win98, and it also doesn't
+                 * support setting the access time (only the modification
+                 * time), so in all cases, we open the specified file and use
+                 * cli_setattrE() which should work on all OS versions, and
+                 * supports both times.
+                 */
+
+                /* Don't try {q,set}pathinfo() again, with this server */
+                srv->no_pathinfo = True;
+
+                /* Open the file */
+                if ((fd = cli_open(&srv->cli, path, O_RDWR, DENY_NONE)) < 0) {
+
+                        errno = smbc_errno(context, &srv->cli);
+                        return -1;
+                }
+
+                /*
+                 * Get the creat time of the file (if it wasn't provided).
+                 * We'll need it in the set call
+                 */
+                if (c_time == 0) {
+                        ret = cli_getattrE(&srv->cli, fd,
+                                           NULL, NULL,
+                                           &c_time, NULL, NULL);
+                } else {
+                        ret = True;
+                }
+                    
+                /* If we got create time, set times */
+                if (ret) {
+                        /* Some OS versions don't support create time */
+                        if (c_time == 0 || c_time == -1) {
+                                c_time = time(NULL);
+                        }
+
+                        /*
+                         * For sanity sake, since there is no POSIX function
+                         * to set the create time of a file, if the existing
+                         * create time is greater than either of access time
+                         * or modification time, set create time to the
+                         * smallest of those.  This ensure that the create
+                         * time of a file is never greater than its last
+                         * access or modification time.
+                         */
+                        if (c_time > a_time) c_time = a_time;
+                        if (c_time > m_time) c_time = m_time;
+                        
+                        /* Set the new attributes */
+                        ret = cli_setattrE(&srv->cli, fd,
+                                           c_time, a_time, m_time);
+                        cli_close(&srv->cli, fd);
+                }
+
+                /*
+                 * Unfortunately, setattrE() doesn't have a provision for
+                 * setting the access mode (attributes).  We'll have to try
+                 * cli_setatr() for that, and with only this parameter, it
+                 * seems to work on win98.
+                 */
+                if (ret && mode != (uint16) -1) {
+                        ret = cli_setatr(&srv->cli, path, mode, 0);
+                }
+
+                if (! ret) {
+                        errno = smbc_errno(context, &srv->cli);
+                        return False;
+                }
+        }
+
+        return True;
+}
+
+ /*
+  * Routine to unlink() a file
+  */
+
+ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
@@ -1305,22 +1443,6 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 		return -1;  /* smbc_server sets errno */
 
 	}
-
-	/*  if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
-
-    int job = smbc_stat_printjob(srv, path, NULL, NULL);
-    if (job == -1) {
-
-      return -1;
-
-    }
-    if ((err = cli_printjob_del(&srv->cli, job)) != 0) {
-
-    
-      return -1;
-
-    }
-    } else */
 
 	if (!cli_unlink(&srv->cli, path)) {
 
@@ -1905,6 +2027,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	fstring server, share, user, password, options;
 	pstring workgroup;
 	pstring path;
+        uint16 mode;
+        char *p;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
 	struct in_addr rem_ip;
@@ -2197,6 +2321,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 			/* Now, list the files ... */
 
+                        p = path + strlen(path);
 			pstrcat(path, "\\*");
 
 			if (cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
@@ -2207,6 +2332,27 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 					SAFE_FREE(dir);
 				}
 				errno = smbc_errno(context, &srv->cli);
+
+                                if (errno == EINVAL) {
+                                    /*
+                                     * See if they asked to opendir something
+                                     * other than a directory.  If so, the
+                                     * converted error value we got would have
+                                     * been EINVAL rather than ENOTDIR.
+                                     */
+                                    *p = '\0'; /* restore original path */
+
+                                    if (smbc_getatr(context, srv, path,
+                                                    &mode, NULL,
+                                                    NULL, NULL, NULL,
+                                                    NULL) &&
+                                        ! IS_DOS_DIR(mode)) {
+
+                                        /* It is.  Correct the error value */
+                                        errno = ENOTDIR;
+                                    }
+                                }
+
 				return NULL;
 
 			}
@@ -2846,8 +2992,8 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
         SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
-	uint16 mode;
-        time_t t = (tbuf == NULL ? time(NULL) : tbuf->tv_sec);
+        time_t a_time;
+        time_t m_time;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2864,7 +3010,22 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 
 	}
   
-	DEBUG(4, ("smbc_utimes(%s, [%s])\n", fname, ctime(&t)));
+        if (tbuf == NULL) {
+                a_time = m_time = time(NULL);
+        } else {
+                a_time = tbuf[0].tv_sec;
+                m_time = tbuf[1].tv_sec;
+        }
+
+        {
+                char atimebuf[32];
+                char mtimebuf[32];
+
+                DEBUG(4, ("smbc_utimes(%s, atime = %s mtime = %s)\n",
+                          fname,
+                          ctime_r(&a_time, atimebuf),
+                          ctime_r(&m_time, mtimebuf)));
+        }
 
 	if (smbc_parse_path(context, fname,
                             server, sizeof(server),
@@ -2884,25 +3045,14 @@ int smbc_utimes_ctx(SMBCCTX *context, const char *fname, struct timeval *tbuf)
 	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
-		return -1;  /* errno set by smbc_server */
+		return -1;      /* errno set by smbc_server */
 	}
 
-	if (!smbc_getatr(context, srv, path,
-                         &mode, NULL,
-                         NULL, NULL, NULL,
-                         NULL)) {
-                return -1;
-	}
+        if (!smbc_setatr(context, srv, path, 0, a_time, m_time, 0)) {
+                return -1;      /* errno set by smbc_setatr */
+        }
 
-	if (!cli_setatr(&srv->cli, path, mode, t)) {
-		/* some servers always refuse directory changes */
-		if (!(mode & aDIR)) {
-			errno = smbc_errno(context, &srv->cli);
-                        return -1;
-		}
-	}
-
-	return 0;
+        return 0;
 }
 
 
@@ -3282,7 +3432,7 @@ static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
     
-        ret = talloc(ctx, sizeof(DOS_ATTR_DESC));
+        ret = TALLOC_P(ctx, DOS_ATTR_DESC);
         if (!ret) {
                 errno = ENOMEM;
                 return NULL;
@@ -4284,23 +4434,15 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                         dos_attr_parse(context, dad, srv, namevalue);
 
                         /* Set the new DOS attributes */
-#if 0                           /* not yet implemented */
-                        if (! cli_setpathinfo(&srv->cli, path,
-                                              dad->c_time,
-                                              dad->a_time,
-                                              dad->m_time,
-                                              dad->mode)) {
-                                if (!cli_setatr(&srv->cli, path,
-                                                dad->mode, dad->m_time)) {
-                                        errno = smbc_errno(context, &srv->cli);
-                                }
+                        if (! smbc_setatr(context, srv, path,
+                                          dad->c_time,
+                                          dad->a_time,
+                                          dad->m_time,
+                                          dad->mode)) {
+
+                                /* cause failure if NT failed too */
+                                dad = NULL; 
                         }
-#else
-                        if (!cli_setatr(&srv->cli, path,
-                                        dad->mode, dad->m_time)) {
-                                errno = smbc_errno(context, &srv->cli);
-                        }
-#endif
                 }
 
                 /* we only fail if both NT and DOS sets failed */
@@ -4422,28 +4564,11 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                                 dos_attr_parse(context, dad, srv, namevalue);
 
                                 /* Set the new DOS attributes */
-#if 0                           /* not yet implemented */
-                                ret2 = cli_setpathinfo(&srv->cli, path,
-                                                       dad->c_time,
-                                                       dad->a_time,
-                                                       dad->m_time,
-                                                       dad->mode);
-                                if (! ret2) {
-                                        ret2 = cli_setatr(&srv->cli, path,
-                                                          dad->mode,
-                                                          dad->m_time);
-                                        if (! ret2) {
-                                                errno = smbc_errno(context,
-                                                                   &srv->cli);
-                                        }
-                                }
-#else
-                                ret2 = cli_setatr(&srv->cli, path,
-                                                  dad->mode, dad->m_time);
-                                if (! ret2) {
-                                        errno = smbc_errno(context, &srv->cli);
-                                }
-#endif
+                                ret2 = smbc_setatr(context, srv, path,
+                                                   dad->c_time,
+                                                   dad->a_time,
+                                                   dad->m_time,
+                                                   dad->mode);
 
                                 /* ret2 has True (success) / False (failure) */
                                 if (ret2) {

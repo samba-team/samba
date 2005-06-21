@@ -88,8 +88,7 @@ int kerberos_kinit_password(const char *principal,
 		return code;
 	}
 	
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me,
-                                                 CONST_DISCARD(char *, password), 
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
 						 kerb_prompter, 
 						 NULL, 0, NULL, NULL))) {
 		krb5_free_principal(ctx, me);
@@ -248,7 +247,7 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
  Setting principal to NULL deletes this entry.
  ************************************************************************/
 
- BOOL kerberos_secrets_store_salting_principal(const char *service,
+BOOL kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
 					      const char *principal)
 {

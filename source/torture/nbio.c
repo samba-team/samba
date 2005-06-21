@@ -281,7 +281,7 @@ static void delete_fn(const char *mnt, file_info *finfo, const char *name, void 
 	char *s, *n;
 	if (finfo->name[0] == '.') return;
 
-	n = strdup(name);
+	n = SMB_STRDUP(name);
 	n[strlen(n)-1] = 0;
 	asprintf(&s, "%s%s", n, finfo->name);
 	if (finfo->mode & aDIR) {

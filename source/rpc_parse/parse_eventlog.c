@@ -304,7 +304,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 	if(r_u->num_bytes_in_resp != 0)
 		r_u->sent_size = r_u->num_bytes_in_resp;
 	else
-		r_u->real_size = entry->record.length;
+		r_u->real_size = r_u->bytes_in_next_record;
 
 	if(!(prs_align(ps)))
 		return False;
@@ -372,7 +372,9 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 
 	/* Now pad with whitespace until the end of the response buffer */
 
-	r_u->end_of_entries_padding = (uint8 *)calloc(q_u->max_read_size - r_u->num_bytes_in_resp, sizeof(uint8));
+	r_u->end_of_entries_padding =
+		SMB_CALLOC_ARRAY(uint8,
+				 q_u->max_read_size - r_u->num_bytes_in_resp);
 
 	if(!(prs_uint8s(False, "end of entries padding", ps, 
 		depth, r_u->end_of_entries_padding,

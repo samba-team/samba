@@ -20,6 +20,16 @@
 
 #include "includes.h"
 
+static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
+{
+#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
+		return FILE_ATTRIBUTE_SPARSE;
+	}
+#endif
+	return 0;
+}
+
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
@@ -116,13 +126,18 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname, BOOL c
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
+uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
 
-	if ((sbuf->st_mode & S_IWUSR) == 0)
+	if (lp_acl_check_permissions(SNUM(conn))) {
+		if (!can_write_to_file(conn, path, sbuf)) {
+			result |= aRONLY;
+		}
+	} else if ((sbuf->st_mode & S_IWUSR) == 0) {
 		result |= aRONLY;
-	
+	}
+
 	if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
 		result |= aARCH;
 
@@ -135,11 +150,7 @@ uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
 	if (S_ISDIR(sbuf->st_mode))
 		result = aDIR | (result & aRONLY);
 
-#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
-		result |= FILE_ATTRIBUTE_SPARSE;
-	}
-#endif
+	result |= set_sparse_flag(sbuf);
  
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
@@ -288,10 +299,11 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 
 	/* Get the DOS attributes from an EA by preference. */
 	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
+		result |= set_sparse_flag(sbuf);
 		return result;
 	}
 
-	result = dos_mode_from_sbuf(conn, sbuf);
+	result = dos_mode_from_sbuf(conn, path, sbuf);
 
 	/* Now do any modifications that depend on the path name. */
 	/* hide files with a name starting with a . */
@@ -433,9 +445,11 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 
 int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times)
 {
+	SMB_STRUCT_STAT sbuf;
 	int ret = -1;
 
 	errno = 0;
+	ZERO_STRUCT(sbuf);
 
 	if(SMB_VFS_UTIME(conn,fname, times) == 0)
 		return 0;
@@ -453,7 +467,7 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
 	 */
 
 	/* Check if we have write access. */
-	if (can_write_to_file(conn, fname)) {
+	if (can_write_to_file(conn, fname, &sbuf)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
 		ret = SMB_VFS_UTIME(conn,fname, times);

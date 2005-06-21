@@ -418,7 +418,6 @@ typedef struct files_struct {
 	SMB_INO_T inode;
 	BOOL delete_on_close;
 	SMB_OFF_T pos;
-	SMB_BIG_UINT size;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
 	SMB_BIG_UINT position_information;
 	mode_t mode;
@@ -1111,6 +1110,12 @@ struct bitmap {
 #define UNIX_ACCESS_W		FILE_GENERIC_WRITE
 #define UNIX_ACCESS_X		FILE_GENERIC_EXECUTE
 
+/* Mapping of access rights to UNIX perms. for a UNIX directory. */
+#define UNIX_DIRECTORY_ACCESS_RWX		FILE_GENERIC_ALL
+#define UNIX_DIRECTORY_ACCESS_R 		FILE_GENERIC_READ
+#define UNIX_DIRECTORY_ACCESS_W			FILE_GENERIC_WRITE
+#define UNIX_DIRECTORY_ACCESS_X			FILE_GENERIC_EXECUTE
+
 #if 0
 /*
  * This is the old mapping we used to use. To get W2KSP2 profiles
@@ -1644,12 +1649,6 @@ struct unix_error_map {
 };
 
 /*
-#include "ntdomain.h"
-
-#include "client.h"
-*/
-
-/*
  * Size of new password account encoding string.  This is enough space to
  * hold 11 ACB characters, plus the surrounding [] and a terminating null.
  * Do not change unless you are adding new ACB bits!
@@ -1678,9 +1677,10 @@ struct unix_error_map {
    level security.
 */
 
-#define NEVER_MAP_TO_GUEST 0
-#define MAP_TO_GUEST_ON_BAD_USER 1
-#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
+#define NEVER_MAP_TO_GUEST 		0
+#define MAP_TO_GUEST_ON_BAD_USER 	1
+#define MAP_TO_GUEST_ON_BAD_PASSWORD 	2
+#define MAP_TO_GUEST_ON_BAD_UID 	3
 
 #define SAFE_NETBIOS_CHARS ". -_"
 

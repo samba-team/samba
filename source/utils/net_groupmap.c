@@ -3,7 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2001.
- *  Copyright (C) Gerald Carter                2003.
+ *  Copyright (C) Gerald Carter                2003,
+ *  Copyright (C) Volker Lendecke              2004
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -670,7 +671,6 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	DOM_SID alias;
 	DOM_SID *members;
 	int i, num;
-	NTSTATUS result;
 
 	if ( (argc != 1) || 
 	     !string_to_sid(&alias, argv[0]) ) {
@@ -679,8 +679,7 @@ static int net_groupmap_listmem(int argc, const char **argv)
 	}
 
 	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
-		d_printf("Could not list members for sid %s: %s\n",
-			 argv[0], nt_errstr(result));
+		d_printf("Could not list members for sid %s\n", argv[0]);
 		return -1;
 	}
 

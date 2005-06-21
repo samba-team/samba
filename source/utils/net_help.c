@@ -73,7 +73,7 @@ int net_help_user(int argc, const char **argv)
 		 "\n\tDelete specified user\n");
 	d_printf("\nnet [<method>] user INFO <name> [misc. options] [targets]"\
 		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet [<method>] user ADD <name> [password] [-c container] "\
+	d_printf("\nnet [<method>] user ADD <name> [-c container] "\
 		 "[-F user flags] [misc. options]"\
 		 " [targets]\n\tAdd specified user\n");
 	d_printf("\nnet [<method>] user RENAME <oldusername> <newusername>"\
@@ -139,8 +139,8 @@ int net_help_share(int argc, const char **argv)
 	 "\n\tMigrates files from remote to local server\n\n"
 	 "net [<method>] share MIGRATE SHARES <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares from remote to local server\n\n"
-/*	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
-	 "\n\tMigrates share-ACLs from remote to local server\n\n" */
+	 "net [<method>] share MIGRATE SECURITY <sharename> [misc. options] [targets]"
+	 "\n\tMigrates share-ACLs from remote to local server\n\n" 
 	 "net [<method>] share MIGRATE ALL <sharename> [misc. options] [targets]"
 	 "\n\tMigrates shares (including directories, files) from remote\n"
 	 "\tto local server\n\n"

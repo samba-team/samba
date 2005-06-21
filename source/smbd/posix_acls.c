@@ -801,7 +801,7 @@ static BOOL nt4_compatible_acls(void)
  not get. Deny entries are implicit on get with ace->perms = 0.
 ****************************************************************************/
 
-static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace)
+static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace, BOOL directory_ace)
 {
 	SEC_ACCESS sa;
 	uint32 nt_mask = 0;
@@ -809,7 +809,11 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
 	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
+		if (directory_ace) {
+			nt_mask = UNIX_DIRECTORY_ACCESS_RWX;
+		} else {
 			nt_mask = UNIX_ACCESS_RWX;
+		}
 	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
 		/*
 		 * Windows NT refuses to display ACEs with no permissions in them (but
@@ -825,9 +829,15 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 		else
 			nt_mask = 0;
 	} else {
-		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
-		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
-		nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
+		if (directory_ace) {
+			nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_DIRECTORY_ACCESS_R : 0 );
+			nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_DIRECTORY_ACCESS_W : 0 );
+			nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_DIRECTORY_ACCESS_X : 0 );
+		} else {
+			nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
+			nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
+			nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
+		}
 	}
 
 	DEBUG(10,("map_canon_ace_perms: Mapped (UNIX) %x to (NT) %x\n",
@@ -1097,13 +1107,28 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 
 		if (setting_acl) {
+			/* See if the owning user is in any of the other groups in
+			   the ACE. If so, OR in the permissions from that group. */
+
+			BOOL group_matched = False;
+			canon_ace *pace_iter;
+
+			for (pace_iter = *pp_ace; pace_iter; pace_iter = pace_iter->next) {
+				if (pace_iter->type == SMB_ACL_GROUP_OBJ || pace_iter->type == SMB_ACL_GROUP) {
+					if (uid_entry_in_group(pace, pace_iter)) {
+						pace->perms |= pace_iter->perms;
+						group_matched = True;
+					}
+				}
+			}
+
 			/* If we only got an "everyone" perm, just use that. */
-			if (!got_grp && got_other)
-				pace->perms = pace_other->perms;
-			else if (got_grp && uid_entry_in_group(pace, pace_group))
-				pace->perms = pace_group->perms;
-			else
-				pace->perms = 0;
+			if (!group_matched) {
+				if (got_other)
+					pace->perms = pace_other->perms;
+				else
+					pace->perms = 0;
+			}
 
 			apply_default_perms(fsp, pace, S_IRUSR);
 		} else {
@@ -2005,8 +2030,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
  then a simple POSIX permission of rw-r--r-- should really map to 5 entries,
 
  Entry 0: owner : deny all except read and write.
- Entry 1: group : deny all except read.
- Entry 2: owner : allow read and write.
+ Entry 1: owner : allow read and write.
+ Entry 2: group : deny all except read.
  Entry 3: group : allow read.
  Entry 4: Everyone : allow read.
 
@@ -2800,7 +2825,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			for (i = 0; i < num_acls; i++, ace = ace->next) {
 				SEC_ACCESS acc;
 
-				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace, fsp->is_directory);
 				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, ace->inherited ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 			}
 
@@ -2818,7 +2843,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			for (i = 0; i < num_def_acls; i++, ace = ace->next) {
 				SEC_ACCESS acc;
 	
-				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace, fsp->is_directory);
 				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
 						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
 						SEC_ACE_FLAG_INHERIT_ONLY|
@@ -2901,7 +2926,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
  Try to chown a file. We will be able to chown it under the following conditions.
 
   1) If we have root privileges, then it will just work.
-  2) If we have write permission to the file and dos_filemodes is set
+  2) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
+  3) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
@@ -2910,21 +2936,42 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	int ret;
 	files_struct *fsp;
 	SMB_STRUCT_STAT st;
+	SE_PRIV se_take_ownership = SE_TAKE_OWNERSHIP;
 
+	if(!CAN_WRITE(conn)) {
+		return -1;
+	}
+
+	/* Case (1). */
 	/* try the direct way first */
 	ret = SMB_VFS_CHOWN(conn, fname, uid, gid);
 	if (ret == 0)
 		return 0;
 
-	if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
-		return -1;
+	/* Case (2). */
+	if (lp_enable_privileges() &&
+			(uid == current_user.uid) &&
+			(user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
+		become_root();
+		/* Keep the current file gid the same - take ownership doesn't imply group change. */
+		ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
+		unbecome_root();
+		return ret;
+	}
 
-	if (SMB_VFS_STAT(conn,fname,&st))
+	/* Case (3). */
+	if (!lp_dos_filemode(SNUM(conn))) {
 		return -1;
+	}
+
+	if (SMB_VFS_STAT(conn,fname,&st)) {
+		return -1;
+	}
 
 	fsp = open_file_fchmod(conn,fname,&st);
-	if (!fsp)
+	if (!fsp) {
 		return -1;
+	}
 
 	/* only allow chown to the current user. This is more secure,
 	   and also copes with the case where the SID in a take ownership ACL is
@@ -2992,15 +3039,17 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Unpack the user/group/world id's.
 	 */
 
-	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd))
+	if (!unpack_nt_owners( SNUM(conn), &sbuf, &user, &grp, security_info_sent, psd)) {
 		return False;
+	}
 
 	/*
 	 * Do we need to chown ?
 	 */
 
-	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp)))
+	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp))) {
 		need_chown = True;
+	}
 
 	/*
 	 * Chown before setting ACL only if we don't change the user, or
@@ -3742,6 +3791,7 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 /****************************************************************************
  Check for POSIX group ACLs. If none use stat entry.
+ Return -1 if no match, 0 if match and denied, 1 if match and allowed.
 ****************************************************************************/
 
 static int check_posix_acl_group_write(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
@@ -3752,6 +3802,7 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 	int i;
 	BOOL seen_mask = False;
 	int ret = -1;
+	gid_t cu_gid;
 
 	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS)) == NULL) {
 		goto check_stat;
@@ -3781,6 +3832,12 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *fnam
 		if (have_write == -1) {
 			goto check_stat;
 		}
+
+		/*
+		 * Solaris returns 2 for this if write is available.
+		 * canonicalize to 0 or 1.
+		 */	
+		have_write = (have_write ? 1 : 0);
 
 		switch(tagtype) {
 			case SMB_ACL_MASK:
@@ -3845,6 +3902,12 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 			goto check_stat;
 		}
 
+		/*
+		 * Solaris returns 2 for this if write is available.
+		 * canonicalize to 0 or 1.
+		 */	
+		have_write = (have_write ? 1 : 0);
+
 		switch(tagtype) {
 			case SMB_ACL_GROUP:
 			{
@@ -3853,27 +3916,16 @@ match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "can
 					goto check_stat;
 				}
 
-				/* Does it match the current effective group ? */
-				if (current_user.gid == *pgid) {
-					ret = have_write;
-					DEBUG(10,("check_posix_acl_group_write: file %s \
-match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
-
-					/* If we don't have write permission this entry doesn't
-					 * prevent the subsequent enumeration of the supplementary
-					 * groups.
-					 */
-					if (have_write) {
-						goto done;
-					}
-				}
-
-				/* Continue with the supplementary groups. */
-				for (i = 0; i < current_user.ngroups; i++) {
-					if (current_user.groups[i] == *pgid) {
+				/*
+				 * Does it match the current effective group
+				 * or supplementary groups ?
+				 */
+				for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
+							cu_gid = get_current_user_gid_next(&i)) {
+					if (cu_gid == *pgid) {
 						ret = have_write;
 						DEBUG(10,("check_posix_acl_group_write: file %s \
-match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
+match on group %u -> can write.\n", fname, (unsigned int)cu_gid ));
 
 						/* If we don't have write permission this entry doesn't
 							terminate the enumeration of the entries. */
@@ -3899,18 +3951,13 @@ match on group %u -> can write.\n", fname, (unsigned int)*pgid ));
   check_stat:
 
 	/* Do we match on the owning group entry ? */
-
-	/* First, does it match the current effective group ? */
-	if (current_user.gid == psbuf->st_gid) {
-		ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
-		DEBUG(10,("check_posix_acl_group_write: file %s \
-match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "can write" : "cannot write"));
-		goto done;
-	}
-
-	/* If not look at the supplementary groups. */
-	for (i = 0; i < current_user.ngroups; i++) {
-		if (current_user.groups[i] == psbuf->st_gid) {
+	/*
+	 * Does it match the current effective group
+	 * or supplementary groups ?
+	 */
+	for (cu_gid = get_current_user_gid_first(&i); cu_gid != (gid_t)-1;
+					cu_gid = get_current_user_gid_next(&i)) {
+		if (cu_gid == psbuf->st_gid) {
 			ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
 			DEBUG(10,("check_posix_acl_group_write: file %s \
 match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "can write" : "cannot write"));
@@ -3918,14 +3965,16 @@ match on owning group %u -> %s.\n", fname, (unsigned int)psbuf->st_gid, ret ? "c
 		}
 	}
 
-	if (i == current_user.ngroups) {
+	if (cu_gid == (gid_t)-1) {
 		DEBUG(10,("check_posix_acl_group_write: file %s \
 failed to match on user or group in token (ret = %d).\n", fname, ret ));
 	}
 
   done:
 
-	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+	if (posix_acl) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+	}
 
 	DEBUG(10,("check_posix_acl_group_write: file %s returning (ret = %d).\n", fname, ret ));
 	return ret;
@@ -3993,9 +4042,8 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
  this to successfully check for ability to write for dos filetimes.
 ****************************************************************************/
 
-BOOL can_write_to_file(connection_struct *conn, const char *fname)
+BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
-	SMB_STRUCT_STAT sbuf;  
 	int ret;
 
 	if (!CAN_WRITE(conn)) {
@@ -4007,22 +4055,24 @@ BOOL can_write_to_file(connection_struct *conn, const char *fname)
 		return True;
 	}
 
-	/* Get the file permission mask and owners. */
-	if(SMB_VFS_STAT(conn, fname, &sbuf) != 0) {
-		return False;
+	if (!VALID_STAT(*psbuf)) {
+		/* Get the file permission mask and owners. */
+		if(SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+			return False;
+		}
 	}
 
 	/* Check primary owner write access. */
-	if (current_user.uid == sbuf.st_uid) {
-		return (sbuf.st_mode & S_IWUSR) ? True : False;
+	if (current_user.uid == psbuf->st_uid) {
+		return (psbuf->st_mode & S_IWUSR) ? True : False;
 	}
 
 	/* Check group or explicit user acl entry write access. */
-	ret = check_posix_acl_group_write(conn, fname, &sbuf);
+	ret = check_posix_acl_group_write(conn, fname, psbuf);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
 
 	/* Finally check other write access. */
-	return (sbuf.st_mode & S_IWOTH) ? True : False;
+	return (psbuf->st_mode & S_IWOTH) ? True : False;
 }

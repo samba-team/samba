@@ -42,6 +42,7 @@ struct smb_Dir {
 	char *dir_path;
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
+	unsigned int file_number;
 };
 
 struct dptr_struct {
@@ -62,6 +63,40 @@ static struct dptr_struct *dirptrs;
 static int dirhandles_open = 0;
 
 #define INVALID_DPTR_KEY (-3)
+
+/****************************************************************************
+ Make a dir struct.
+****************************************************************************/
+
+void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL uc)
+{  
+	char *p;
+	pstring mask2;
+
+	pstrcpy(mask2,mask);
+
+	if ((mode & aDIR) != 0)
+		size = 0;
+
+	memset(buf+1,' ',11);
+	if ((p = strchr_m(mask2,'.')) != NULL) {
+		*p = 0;
+		push_ascii(buf+1,mask2,8, 0);
+		push_ascii(buf+9,p+1,3, 0);
+		*p = '.';
+	} else
+		push_ascii(buf+1,mask2,11, 0);
+
+	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
+	SCVAL(buf,21,mode);
+	put_dos_date(buf,22,date);
+	SSVAL(buf,26,size & 0xFFFF);
+	SSVAL(buf,28,(size >> 16)&0xFFFF);
+	/* We only uppercase if FLAGS2_LONG_PATH_COMPONENTS is zero in the input buf.
+	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
+	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
+	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
+}
 
 /****************************************************************************
  Initialise the dir bitmap.
@@ -526,7 +561,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 {
 	pstring pathreal;
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild) {
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
@@ -595,7 +630,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 
 BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
 {
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(*pst);
 
 	if (!dptr->has_wild && (dptr->dir_hnd->offset == -1)) {
 		/* This is a singleton directory and we're already at the end. */
@@ -624,11 +659,11 @@ BOOL dptr_fill(char *buf1,unsigned int key)
 		DEBUG(1,("filling null dirptr %d\n",key));
 		return(False);
 	}
-	offset = TellDir(dptr->dir_hnd);
+	offset = (uint32)TellDir(dptr->dir_hnd);
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
 		(long)dptr->dir_hnd,(int)offset));
 	buf[0] = key;
-	SIVAL(buf,1,offset | DPTR_MASK);
+	SIVAL(buf,1,offset);
 	return(True);
 }
 
@@ -641,16 +676,22 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
 	unsigned int key = *(unsigned char *)buf;
 	struct dptr_struct *dptr = dptr_get(key, False);
 	uint32 offset;
+	long seekoff;
 
 	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",key));
 		return(NULL);
 	}
 	*num = key;
-	offset = IVAL(buf,1)&~DPTR_MASK;
-	SeekDir(dptr->dir_hnd,(long)offset);
+	offset = IVAL(buf,1);
+	if (offset == (uint32)-1) {
+		seekoff = -1;
+	} else {
+		seekoff = (long)offset;
+	}
+	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
-		key,dptr_path(key),offset));
+		key,dptr_path(key),(int)seekoff));
 	return(dptr);
 }
 
@@ -744,7 +785,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 
-			if (!mangle_is_8_3(filename, False))
+			if (!mangle_is_8_3(filename, False, SNUM(conn)))
 				mangle_map(filename,True,False,SNUM(conn));
 
 			pstrcpy(fname,filename);
@@ -918,7 +959,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	BOOL hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	BOOL hide_special = lp_hide_special_files(SNUM(conn));
 
-	ZERO_STRUCTP(pst);
+	SET_STAT_INVALID(*pst);
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
 		return True; /* . and .. are always visible. */
@@ -946,7 +987,7 @@ BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *
 			return False;
 		}
 		/* Honour _hide_special_ option */
-		if (hide_special && !file_is_special(conn, entry, pst)) {
+		if (hide_special && file_is_special(conn, entry, pst)) {
 			SAFE_FREE(entry);
 			return False;
 		}
@@ -1034,23 +1075,51 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	const char *n;
 	connection_struct *conn = dirp->conn;
 
-	SeekDir(dirp, *poffset);
+	/* Cheat to allow . and .. to be the first entries returned. */
+	if ((*poffset == 0) && (dirp->file_number < 2)) {
+		if (dirp->file_number == 0) {
+			n = ".";
+		} else {
+			n = "..";
+		}
+		dirp->file_number++;
+		return n;
+	} else {
+		/* A real offset, seek to it. */
+		SeekDir(dirp, *poffset);
+	}
+
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
 		struct name_cache_entry *e;
-		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
-		if (dirp->offset == -1) {
-			return NULL;
+		/* Ignore . and .. - we've already returned them. */
+		if (*n == '.') {
+			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
+				continue;
+			}
 		}
+		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
 		dirp->name_cache_index = (dirp->name_cache_index+1) % NAME_CACHE_SIZE;
-
 		e = &dirp->name_cache[dirp->name_cache_index];
 		SAFE_FREE(e->name);
 		e->name = SMB_STRDUP(n);
 		*poffset = e->offset= dirp->offset;
+		dirp->file_number++;
 		return e->name;
 	}
 	dirp->offset = -1;
 	return NULL;
+}
+
+/*******************************************************************
+ Rewind to the start.
+********************************************************************/
+
+void RewindDir(struct smb_Dir *dirp, long *poffset)
+{
+	SMB_VFS_REWINDDIR(dirp->conn, dirp->dir);
+	dirp->file_number = 0;
+	dirp->offset = 0;
+	*poffset = 0;
 }
 
 /*******************************************************************
@@ -1060,7 +1129,11 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 void SeekDir(struct smb_Dir *dirp, long offset)
 {
 	if (offset != dirp->offset) {
-		SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		if (offset == 0) {
+			RewindDir(dirp, &offset);
+		} else {
+			SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
+		}
 		dirp->offset = offset;
 	}
 }
@@ -1105,6 +1178,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 
 	/* Not found in the name cache. Rewind directory and start from scratch. */
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
+	dirp->file_number = 0;
 	*poffset = 0;
 	while ((entry = ReadDirName(dirp, poffset))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {

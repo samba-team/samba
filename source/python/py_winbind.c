@@ -706,7 +706,7 @@ static PyMethodDef winbind_methods[] = {
 "Authenticate a username and password using plaintext authentication.\n"
 "The NT status code is returned with zero indicating success." },
 
-	{ "auth_crap", (PyCFunction)py_auth_crap, METH_VARARGS,
+	{ "auth_crap", (PyCFunction)py_auth_crap, METH_VARARGS | METH_KEYWORDS,
 	  "auth_crap(s, s) -> int\n"
 "\n"
 "Authenticate a username and password using the challenge/response\n"

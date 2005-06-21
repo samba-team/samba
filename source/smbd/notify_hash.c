@@ -91,7 +91,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	
 	offset = 0;
 	while ((fname = ReadDirName(dp, &offset))) {
-		ZERO_STRUCT(st);
+		SET_STAT_INVALID(st);
 		if(strequal(fname, ".") || strequal(fname, ".."))
 			continue;		
 

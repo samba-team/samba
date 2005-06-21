@@ -292,11 +292,10 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
  *
  * @return Normal NTSTATUS return.
  **/ 
-static NTSTATUS 
-net_copy_fileattr(TALLOC_CTX *mem_ctx,
+NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 		  struct cli_state *cli_share_src,
 		  struct cli_state *cli_share_dst, 
-		  char *src_name, char *dst_name,
+		  const char *src_name, const char *dst_name,
 		  BOOL copy_acls, BOOL copy_attrs,
 		  BOOL copy_timestamps, BOOL is_file)
 {
@@ -449,7 +448,7 @@ out:
 NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		       struct cli_state *cli_share_src,
 		       struct cli_state *cli_share_dst, 
-		       char *src_name, char *dst_name,
+		       const char *src_name, const char *dst_name,
 		       BOOL copy_acls, BOOL copy_attrs,
 		       BOOL copy_timestamps, BOOL is_file)
 {
@@ -479,7 +478,8 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		fnum_src = cli_nt_create(cli_share_src, src_name, READ_CONTROL_ACCESS);
 
 	if (fnum_src == -1) {
-		DEBUGADD(0,("cannot open file %s on originating server %s\n", 
+		DEBUGADD(0,("cannot open %s %s on originating server %s\n",
+			is_file ? "file":"dir",
 			src_name, cli_errstr(cli_share_src)));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
@@ -1137,7 +1137,6 @@ get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
 {
 
-	char *sharename;
 	POLICY_HND hnd;
 
 	/* no arguments given, enumerate all printers */
@@ -1153,9 +1152,7 @@ get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 
 	/* argument given, get a single printer by name */
-	sharename = SMB_STRDUP(argv[0]);
-
-	if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+	if (!net_spoolss_open_printer_ex(cli, mem_ctx, argv[0],
 			MAXIMUM_ALLOWED_ACCESS,	cli->user_name, &hnd)) 
 		return False;
 
@@ -1254,7 +1251,7 @@ NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid, const char
 
         for (i=0; archi_table[i].long_archi!=NULL; i++) {
 
-		int num_drivers;
+		uint32 num_drivers;
 
 		/* enum remote drivers */
 		if (!net_spoolss_enumprinterdrivers(cli, mem_ctx, level,
@@ -1395,7 +1392,7 @@ NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid, const c
 }
 
 /** 
- * List print-queues w.r.t. thei publishing
+ * List print-queues w.r.t. their publishing state
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
@@ -1960,6 +1957,12 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 
 		}
 
+		if (strlen(drivername) == 0) {
+			DEBUGADD(1,("Did not get driver for printer %s\n",
+				    printername));
+			goto done;
+		}
+
 		/* setdriver dst */
 		init_unistr(&info_ctr_dst.printers_2->drivername, drivername);
 		
@@ -2297,28 +2300,34 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 			DEBUG(3,("republished printer\n"));
 		}
 
-		/* copy devmode (info level 2) */
-		ctr_dst.printers_2->devmode = TALLOC_MEMDUP(mem_ctx, 
-			ctr_enum.printers_2[i].devmode, sizeof(DEVICEMODE));
+		if (ctr_enum.printers_2[i].devmode != NULL) {
 
-		/* do not copy security descriptor (we have another command for that) */
-		ctr_dst.printers_2->secdesc = NULL;
+			/* copy devmode (info level 2) */
+			ctr_dst.printers_2->devmode =
+				TALLOC_MEMDUP(mem_ctx,
+					      ctr_enum.printers_2[i].devmode,
+					      sizeof(DEVICEMODE));
+
+			/* do not copy security descriptor (we have another
+			 * command for that) */
+			ctr_dst.printers_2->secdesc = NULL;
 
 #if 0
-		if (asprintf(&devicename, "\\\\%s\\%s", longname, printername) < 0) {
-			nt_status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
+			if (asprintf(&devicename, "\\\\%s\\%s", longname,
+				     printername) < 0) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 
-		init_unistr(&ctr_dst.printers_2->devmode->devicename, devicename); 
+			init_unistr(&ctr_dst.printers_2->devmode->devicename,
+				    devicename); 
 #endif
-		if (!net_spoolss_setprinter(cli_dst, mem_ctx, &hnd_dst, 
-						level, &ctr_dst)) 
-			goto done;
+			if (!net_spoolss_setprinter(cli_dst, mem_ctx, &hnd_dst,
+						    level, &ctr_dst)) 
+				goto done;
 		
-		DEBUGADD(1,("\tSetPrinter of DEVICEMODE succeeded\n"));
-
-
+			DEBUGADD(1,("\tSetPrinter of DEVICEMODE succeeded\n"));
+		}
 
 		/* STEP 2: COPY REGISTRY VALUES */
 	

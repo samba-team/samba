@@ -673,25 +673,6 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
 		return False;
 		
-	/* Sanity Check - look for unknown specversions, but don't fail if we see one.
-	   Let the size determine that */
-	   
-	switch (devmode->specversion) {
-		/* list of observed spec version's */
-		case 0x0320:
-		case 0x0400:
-		case 0x0401:
-		case 0x040d:
-			break;
-			
-		default:
-			DEBUG(0,("spoolss_io_devmode: Unknown specversion in devicemode [0x%x]\n",
-				devmode->specversion));
-			DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
-			break;
-	}
-			
-	
 	if (!prs_uint16("driverversion",    ps, depth, &devmode->driverversion))
 		return False;
 	if (!prs_uint16("size",             ps, depth, &devmode->size))
@@ -911,7 +892,8 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 
 	q_u->user_switch = 1;
 	
-	q_u->user_ctr.level           = 1;
+	q_u->user_ctr.level                 = 1;
+	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
 	q_u->user_ctr.user.user1->size      = strlen(clientname) + strlen(user_name) + 10;
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2;

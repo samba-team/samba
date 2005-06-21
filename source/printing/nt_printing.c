@@ -38,8 +38,9 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 #define NTDRIVERS_DATABASE_VERSION_1 1
 #define NTDRIVERS_DATABASE_VERSION_2 2
 #define NTDRIVERS_DATABASE_VERSION_3 3 /* little endian version of v2 */
+#define NTDRIVERS_DATABASE_VERSION_4 4 /* fix generic bits in security descriptors */
  
-#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_3
+#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_4
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -283,17 +284,139 @@ static BOOL upgrade_to_version_3(void)
 	return True;
 }
 
+/*******************************************************************
+ Fix an issue with security descriptors.  Printer sec_desc must 
+ use more than the generic bits that were previously used 
+ in <= 3.0.14a.  They must also have a owner and group SID assigned.
+ Otherwise, any printers than have been migrated to a Windows 
+ host using printmig.exe will not be accessible.
+*******************************************************************/
+
+static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
+                            TDB_DATA data, void *state )
+{
+	prs_struct ps;
+	SEC_DESC_BUF *sd_orig = NULL;
+	SEC_DESC_BUF *sd_new, *sd_store;
+	SEC_DESC *sec, *new_sec;
+	TALLOC_CTX *ctx = state;
+	int result, i;
+	uint32 sd_size, size_new_sec;
+	DOM_SID sid;
+
+	if (!data.dptr || data.dsize == 0)
+		return 0;
+
+	if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) != 0 )
+		return 0;
+
+	/* upgrade the security descriptor */
+
+	ZERO_STRUCT( ps );
+
+	prs_init( &ps, 0, ctx, UNMARSHALL );
+	prs_give_memory( &ps, data.dptr, data.dsize, True );
+
+	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
+		/* delete bad entries */
+		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n", key.dptr ));
+		tdb_delete( tdb_printers, key );
+		return 0;
+	}
+
+	sec = sd_orig->sec;
+		
+	/* is this even valid? */
+	
+	if ( !sec->dacl )
+		return 0;
+		
+	/* update access masks */
+	
+	for ( i=0; i<sec->dacl->num_aces; i++ ) {
+		switch ( sec->dacl->ace[i].info.mask ) {
+			case (GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS):
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_PRINT;
+				break;
+				
+			case GENERIC_ALL_ACCESS:
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_FULL_CONTROL;
+				break;
+				
+			case READ_CONTROL_ACCESS:
+				sec->dacl->ace[i].info.mask = PRINTER_ACE_MANAGE_DOCUMENTS;
+			
+			default:	/* no change */
+				break;
+		}
+	}
+
+	/* create a new SEC_DESC with the appropriate owner and group SIDs */
+
+	string_to_sid(&sid, "S-1-5-32-544" );
+	new_sec = make_sec_desc( ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+		&sid, &sid,
+		NULL, NULL, &size_new_sec );
+	sd_new = make_sec_desc_buf( ctx, size_new_sec, new_sec );
+
+	if ( !(sd_store = sec_desc_merge( ctx, sd_new, sd_orig )) ) {
+		DEBUG(0,("sec_desc_upg_fn: Failed to update sec_desc for %s\n", key.dptr ));
+		return 0;
+	}
+	
+	/* store it back */
+	
+	sd_size = sec_desc_size(sd_store->sec) + sizeof(SEC_DESC_BUF);
+	prs_init(&ps, sd_size, ctx, MARSHALL);
+
+	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
+		DEBUG(0,("sec_desc_upg_fn: Failed to parse new sec_desc for %s\n", key.dptr ));
+		return 0;
+	}
+
+	data.dptr = prs_data_p( &ps );
+	data.dsize = sd_size;
+	
+	result = tdb_store( tdb_printers, key, data, TDB_REPLACE );
+
+	prs_mem_free( &ps );
+	
+	/* 0 to continue and non-zero to stop traversal */
+
+	return (result == -1);
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL upgrade_to_version_4(void)
+{
+	TALLOC_CTX *ctx;
+	int result;
+
+	DEBUG(0,("upgrade_to_version_4: upgrading printer security descriptors\n"));
+
+	if ( !(ctx = talloc_init( "upgrade_to_version_4" )) ) 
+		return False;
+
+	result = tdb_traverse( tdb_printers, sec_desc_upg_fn, ctx );
+
+	talloc_destroy( ctx );
+
+	return ( result != -1 );
+}
+
 /****************************************************************************
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
 
 BOOL nt_printing_init(void)
 {
-	static pid_t local_pid;
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
+	uint32 vers_id;
 
-	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
+	if ( tdb_drivers && tdb_printers && tdb_forms )
 		return True;
  
 	if (tdb_drivers)
@@ -323,33 +446,43 @@ BOOL nt_printing_init(void)
 		return False;
 	}
  
-	local_pid = sys_getpid();
- 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb_drivers, vstring, 0);
-	{
-		int32 vers_id;
 
-		/* Cope with byte-reversed older versions of the db. */
-		vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+	/* ---------------- Start Lock Region ---------------- */
+
+	/* Cope with byte-reversed older versions of the db. */
+	vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+
+	if ( vers_id != NTDRIVERS_DATABASE_VERSION ) {
+
 		if ((vers_id == NTDRIVERS_DATABASE_VERSION_2) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_2)) {
 			/* Written on a bigendian machine with old fetch_int code. Save as le. */
 			/* The only upgrade between V2 and V3 is to save the version in little-endian. */
-			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
-			vers_id = NTDRIVERS_DATABASE_VERSION;
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
+			vers_id = NTDRIVERS_DATABASE_VERSION_3;
 		}
 
-		if (vers_id != NTDRIVERS_DATABASE_VERSION) {
-
+		if (vers_id != NTDRIVERS_DATABASE_VERSION_3 ) {
+	
 			if ((vers_id == NTDRIVERS_DATABASE_VERSION_1) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_1)) { 
 				if (!upgrade_to_version_3())
 					return False;
 			} else
 				tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
 			 
-			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
 		}
+
+		/* at this point we know that the database is at version 3 so upgrade to v4 */
+
+		if ( !upgrade_to_version_4() )
+			return False;
+		tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
 	}
+
+	/* ---------------- End Lock Region ------------------ */
+
 	tdb_unlock_bystring(tdb_drivers, vstring);
 
 	update_c_setprinter(True);
@@ -1016,8 +1149,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	SMB_STRUCT_STAT stat_buf;
 	BOOL bad_path;
 
-	ZERO_STRUCT(st);
-	ZERO_STRUCT(stat_buf);
+	SET_STAT_INVALID(st);
+	SET_STAT_INVALID(stat_buf);
 	new_create_time = (time_t)0;
 	old_create_time = (time_t)0;
 
@@ -1129,7 +1262,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	SMB_STRUCT_STAT   st;
 	connection_struct *conn;
 
-	ZERO_STRUCT(st);
+	SET_STAT_INVALID(st);
 
 	*perr = WERR_INVALID_PARAM;
 
@@ -1171,10 +1304,16 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 
 	driver_unix_convert(driverpath,conn,NULL,&bad_path,&st);
 
+	if ( !vfs_file_exist( conn, driverpath, &st ) ) {
+		*perr = WERR_BADFILE;
+		goto error_exit;
+	}
+
 	fsp = open_file_shared(conn, driverpath, &st,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+		SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+		FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
@@ -1215,8 +1354,8 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 				  driverpath, major, minor));
 	}
 
-    DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
-			driverpath, cversion));
+	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
+		driverpath, cversion));
 
 	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
@@ -1293,9 +1432,8 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->cversion = get_correct_cversion( architecture,
-									driver->driverpath, user, &err)) == -1)
-		return err;
+	if ((driver->cversion = get_correct_cversion( architecture, driver->driverpath, user, &err)) == -1)
+			return err;
 
 	return WERR_OK;
 }
@@ -1357,8 +1495,9 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
+
 	if ((driver->version = get_correct_cversion(architecture, driver->driverpath, user, &err)) == -1)
-		return err;
+			return err;
 
 	return WERR_OK;
 }
@@ -1425,7 +1564,7 @@ static char* ffmt(unsigned char *c){
 
 /****************************************************************************
 ****************************************************************************/
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
+WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
 				  struct current_user *user, WERROR *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
@@ -1444,6 +1583,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	SMB_STRUCT_STAT st;
 	int ver = 0;
 	int i;
+	int err;
 
 	memset(inbuf, '\0', sizeof(inbuf));
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -1456,7 +1596,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		driver = &converted_driver;
 	} else {
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
-		return False;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	architecture = get_short_archi(driver->environment);
@@ -1475,7 +1615,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
 		*perr = ntstatus_to_werror(nt_status);
-		return False;
+		return WERR_NO_SUCH_SHARE;
 	}
 
 	/*
@@ -1484,7 +1624,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	/*
@@ -1521,18 +1661,13 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			NTSTATUS status;
 			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			status = rename_internals(conn, new_name, old_name, 0, True);
-			if (!NT_STATUS_IS_OK(status)) {
+			if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
 				*perr = ntstatus_to_werror(status);
-				unlink_internals(conn, 0, new_name);
 				ver = -1;
 			}
-		} else {
-			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			unlink_internals(conn, 0, new_name);
-		}
+		} 
 	}
 
 	if (driver->datafile && strlen(driver->datafile)) {
@@ -1542,17 +1677,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1565,17 +1695,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1589,17 +1714,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				status = rename_internals(conn, new_name, old_name, 0, True);
-				if (!NT_STATUS_IS_OK(status)) {
+				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = ntstatus_to_werror(status);
-					unlink_internals(conn, 0, new_name);
 					ver = -1;
 				}
-			} else {
-				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				unlink_internals(conn, 0, new_name);
 			}
 		}
 	}
@@ -1622,17 +1742,12 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					NTSTATUS status;
 					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					status = rename_internals(conn, new_name, old_name, 0, True);
-					if (!NT_STATUS_IS_OK(status)) {
+					if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
 						*perr = ntstatus_to_werror(status);
-						unlink_internals(conn, 0, new_name);
 						ver = -1;
 					}
-				} else {
-					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					unlink_internals(conn, 0, new_name);
 				}
 			}
 		NextDriver: ;
@@ -1642,7 +1757,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	close_cnum(conn, user->vuid);
 	unbecome_user();
 
-	return ver == -1 ? False : True;
+	return ver != -1 ? WERR_OK : WERR_UNKNOWN_PRINTER_DRIVER;
 }
 
 /****************************************************************************
@@ -2424,8 +2539,6 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	data->num_keys++;
 	data->keys[key_index].name = SMB_STRDUP( name );
-	
-	ZERO_STRUCTP( &data->keys[key_index].values );
 	
 	regval_ctr_init( &data->keys[key_index].values );
 	
@@ -4860,37 +4973,13 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
 	SEC_DESC *psd = NULL;
-	DOM_SID owner_sid;
+	DOM_SID adm_sid;
 	size_t sd_size;
 
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
-
-	/* Make the security descriptor owned by the Administrators group
-	   on the PDC of the domain. */
-
-	if (secrets_fetch_domain_sid(lp_workgroup(), &owner_sid)) {
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
-	} else {
-
-		/* Backup plan - make printer owned by admins.
- 		   This should emulate a lanman printer as security
- 		   settings can't be changed. */
-
-		sid_copy(&owner_sid, get_global_sam_sid());
-		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
-	}
-
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
-		     SEC_ACE_FLAG_INHERIT_ONLY);
-
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-	init_sec_ace(&ace[i++], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 	/* Add the domain admins group if we are a DC */
@@ -4902,15 +4991,35 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 		sid_append_rid(&domadmins_sid, DOMAIN_GROUP_RID_ADMINS);
 		
 		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+		init_sec_ace(&ace[i++], &domadmins_sid, 
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
 		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
-			     SEC_ACE_FLAG_INHERIT_ONLY);
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
+		sid_append_rid(&adm_sid, DOMAIN_USER_RID_ADMIN);
 
 		init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
-		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+		init_sec_ace(&ace[i++], &adm_sid, 
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 	}
-		     
+
+	/* add BUILTIN\Administrators as FULL CONTROL */
+
+	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, 
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the BUILTIN\Administrators */
+
 	/* The ACL revision number in rpc_secdesc.h differs from the one
 	   created by NT when setting ACE entries in printer
 	   descriptors.  NT4 complains about the property being edited by a
@@ -4918,8 +5027,9 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
 		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-				    &owner_sid, NULL,
-				    NULL, psa, &sd_size);
+			&global_sid_Builtin_Administrators, 
+			&global_sid_Builtin_Administrators,
+			NULL, psa, &sd_size);
 	}
 
 	if (!psd) {

@@ -29,16 +29,19 @@ ftruncate for operating systems that don't have it
 ********************************************************************/
  int ftruncate(int f,SMB_OFF_T l)
 {
-      struct  flock   fl;
+#ifdef HAVE_CHSIZE
+	return chsize(f,l);
+#else
+	struct  flock   fl;
 
-      fl.l_whence = 0;
-      fl.l_len = 0;
-      fl.l_start = l;
-      fl.l_type = F_WRLCK;
-      return fcntl(f, F_FREESP, &fl);
+	fl.l_whence = 0;
+	fl.l_len = 0;
+	fl.l_start = l;
+	fl.l_type = F_WRLCK;
+	return fcntl(f, F_FREESP, &fl);
+#endif
 }
 #endif /* HAVE_FTRUNCATE */
-
 
 #ifndef HAVE_STRLCPY
 /* like strncpy but does not 0 fill the buffer and always null 

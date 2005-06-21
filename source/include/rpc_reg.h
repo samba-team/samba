@@ -25,6 +25,8 @@
 #ifndef _RPC_REG_H /* _RPC_REG_H */
 #define _RPC_REG_H 
 
+#include "reg_objects.h"
+
 /* RPC opnum */
 
 #define REG_OPEN_HKCR		0x00
@@ -58,12 +60,15 @@
 #define HKEY_USERS         	0x80000003
 #define HKEY_PERFORMANCE_DATA	0x80000004
 
-#define KEY_HKLM	"HKLM"
-#define KEY_HKU		"HKU"
-#define KEY_HKCR	"HKCR"
-#define KEY_PRINTING 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
-#define KEY_EVENTLOG 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
-#define KEY_TREE_ROOT	""
+#define KEY_HKLM		"HKLM"
+#define KEY_HKU			"HKU"
+#define KEY_HKCR		"HKCR"
+#define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
+#define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
+#define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
+#define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
+#define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_TREE_ROOT		""
 
 /* Registry data types */
 
@@ -80,36 +85,6 @@
 #define REG_FULL_RESOURCE_DESCRIPTOR   9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
 
-/*
- * INTERNAL REGISTRY STRUCTURES 
- */
-
-/* structure to contain registry values */
-
-typedef struct {
-	fstring		valuename;
-	uint16		type;
-	uint32		size;	/* in bytes */
-	uint8           *data_p;
-} REGISTRY_VALUE;
-
-/* container for registry values */
-
-typedef struct {
-	TALLOC_CTX      *ctx;
-	uint32          num_values;
-	REGISTRY_VALUE	**values;
-} REGVAL_CTR;
-
-/* container for registry subkey names */
-
-typedef struct {
-	TALLOC_CTX	*ctx;
-	uint32          num_subkeys;
-	char            **subkeys;
-} REGSUBKEY_CTR;
-
-
 /* 
  * container for function pointers to enumeration routines
  * for vitural registry view 
@@ -117,10 +92,11 @@ typedef struct {
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*subkey_fn)( char *key, REGSUBKEY_CTR *subkeys);
-	int 	(*value_fn) ( char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys_fn)( char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values_fn)( char *key, REGVAL_CTR *val );
+	int 	(*fetch_subkeys)( char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
+	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
 } REGISTRY_OPS;
 
 typedef struct {
@@ -129,17 +105,14 @@ typedef struct {
 } REGISTRY_HOOK;
 
 
-
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
-
 	struct _RegistryKey *prev, *next;
 
-	POLICY_HND	hnd;
-	pstring 	name; 	/* full name of registry key */
-	REGISTRY_HOOK	*hook;
-	
+	pstring 	name; 		/* full name of registry key */
+	uint32 		access_granted;
+	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;
 
 /*
@@ -206,7 +179,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;   
+	POLICY_HND handle;   
 	UNISTR4 name;   	
 	uint32 type;  
 	RPC_DATA_BLOB value; 
@@ -225,23 +198,23 @@ typedef struct {
 	UNISTR4 name;
 	uint32 *type;  
 	REGVAL_BUFFER *value; /* value, in byte buffer */
-	uint32 *len_value1; 
-	uint32 *len_value2; 
+	uint32 *buffer_len; 
+	uint32 *name_len; 
 } REG_Q_ENUM_VALUE;
 
 typedef struct { 
 	UNISTR4 name;
 	uint32 *type;
 	REGVAL_BUFFER *value;
-	uint32 *len_value1;
-	uint32 *len_value2;
+	uint32 *buffer_len1;
+	uint32 *buffer_len2;
 	WERROR status;
 } REG_R_ENUM_VALUE;
 
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 	UNISTR4 class;
 	uint32 reserved;
@@ -255,7 +228,7 @@ typedef struct {
 } REG_Q_CREATE_KEY;
 
 typedef struct {
-	POLICY_HND key_pol;
+	POLICY_HND handle;
 	uint32 unknown;
 	WERROR status; 
 } REG_R_CREATE_KEY;
@@ -263,7 +236,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_KEY;
 
@@ -275,7 +248,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pnt_pol;
+	POLICY_HND handle;
 	UNISTR4 name;
 } REG_Q_DELETE_VALUE;
 
@@ -308,12 +281,12 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;
 } REG_Q_GETVERSION;
 
 typedef struct {
-	uint32 unknown;         /* 0x0500 0000 */
-	WERROR status;         /* return status */
+	uint32 win_version;
+	WERROR status;
 } REG_R_GETVERSION;
 
 
@@ -377,33 +350,21 @@ typedef struct {
 typedef struct {
 	POLICY_HND pol; 
 	uint32 key_index;       
-	uint16 key_name_len;    /* 0x0000 */
+	uint16 key_name_len;   
 	uint16 unknown_1;       /* 0x0414 */
-	uint32 ptr1;            /* pointer */
+	uint32 ptr1;          
 	uint32 unknown_2;       /* 0x0000 020A */
-	uint8  pad1[8];         /* padding - zeros */
-	uint32 ptr2;            /* pointer */
-	uint8  pad2[8];         /* padding - zeros */
-	uint32 ptr3;            /* pointer */
-	NTTIME time;            /* current time? */
+	uint8  pad1[8];        
+	uint32 ptr2;           
+	uint8  pad2[8];        
+	uint32 ptr3;           
+	NTTIME time;           
 } REG_Q_ENUM_KEY;
 
 typedef struct { 
-	uint16 key_name_len;    /* number of bytes in key name */
-	uint16 unknown_1;       /* 0x0414 - matches with query unknown_1 */
-
-	uint32 ptr1;            /* pointer */
-	uint32 unknown_2;       /* 0x0000 020A */
-	uint32 unknown_3;       /* 0x0000 0000 */
-
-	UNISTR3 key_name;
-
-	uint32 ptr2;            /* pointer */
-	uint8  pad2[8];         /* padding - zeros */
-
-	uint32 ptr3;            /* pointer */
-	NTTIME time;            /* current time? */
-
+	UNISTR4 keyname;
+	UNISTR4 *classname;
+	NTTIME *time;            
 	WERROR status;         /* return status */
 } REG_R_ENUM_KEY;
 
@@ -449,7 +410,7 @@ typedef struct {
 } REG_Q_OPEN_ENTRY;
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	WERROR status;
 } REG_R_OPEN_ENTRY;
 

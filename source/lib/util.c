@@ -603,40 +603,6 @@ void unix_clean_name(char *s)
 	trim_string(s,NULL,"/..");
 }
 
-/****************************************************************************
- Make a dir struct.
-****************************************************************************/
-
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL uc)
-{  
-	char *p;
-	pstring mask2;
-
-	pstrcpy(mask2,mask);
-
-	if ((mode & aDIR) != 0)
-		size = 0;
-
-	memset(buf+1,' ',11);
-	if ((p = strchr_m(mask2,'.')) != NULL) {
-		*p = 0;
-		push_ascii(buf+1,mask2,8, 0);
-		push_ascii(buf+9,p+1,3, 0);
-		*p = '.';
-	} else
-		push_ascii(buf+1,mask2,11, 0);
-
-	memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
-	SCVAL(buf,21,mode);
-	put_dos_date(buf,22,date);
-	SSVAL(buf,26,size & 0xFFFF);
-	SSVAL(buf,28,(size >> 16)&0xFFFF);
-	/* We only uppercase if FLAGS2_LONG_PATH_COMPONENTS is zero in the input buf.
-	   Strange, but verified on W2K3. Needed for OS/2. JRA. */
-	push_ascii(buf+30,fname,12, uc ? STR_UPPER : 0);
-	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
-}
-
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
@@ -671,6 +637,46 @@ void close_low_fds(BOOL stderr_too)
 			return;
 		}
 	}
+#endif
+}
+
+/*******************************************************************
+ Write data into an fd at a given offset. Ignore seek errors.
+********************************************************************/
+
+ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	if (pos == (SMB_OFF_T)-1) {
+		return write_data(fd, buffer, N);
+	}
+#if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
+	while (total < N) {
+		ret = sys_pwrite(fd,buffer + total,N - total, pos);
+		if (ret == -1 && errno == ESPIPE) {
+			return write_data(fd, buffer + total,N - total);
+		}
+		if (ret == -1) {
+			DEBUG(0,("write_data_at_offset: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0) {
+			return total;
+		}
+		total += ret;
+		pos += ret;
+	}
+	return (ssize_t)total;
+#else
+	/* Use lseek and write_data. */
+	if (sys_lseek(fd, pos, SEEK_SET) == -1) {
+		if (errno != ESPIPE) {
+			return -1;
+		}
+	}
+	return write_data(fd, buffer, N);
 #endif
 }
 
@@ -984,18 +990,22 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void **array, uint32 *num_elements,
 			ssize_t *array_size)
 {
-	if (*array_size == -1)
+	if (*array_size < 0)
 		return;
 
 	if (*array == NULL) {
-		if (*array_size == 0)
+		if (*array_size == 0) {
 			*array_size = 128;
+		}
+
+		if (*array_size >= MAX_ALLOC_SIZE/element_size) {
+			goto error;
+		}
 
 		if (mem_ctx != NULL)
-			*array = talloc_array(mem_ctx, element_size,
-					      *array_size);
+			*array = TALLOC(mem_ctx, element_size * (*array_size));
 		else
-			*array = malloc_array(element_size, *array_size);
+			*array = SMB_MALLOC(element_size * (*array_size));
 
 		if (*array == NULL)
 			goto error;
@@ -1004,13 +1014,16 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 	if (*num_elements == *array_size) {
 		*array_size *= 2;
 
+		if (*array_size >= MAX_ALLOC_SIZE/element_size) {
+			goto error;
+		}
+
 		if (mem_ctx != NULL)
-			*array = talloc_realloc_array(mem_ctx, *array,
-						      element_size,
-						      *array_size);
+			*array = TALLOC_REALLOC(mem_ctx, *array,
+						element_size * (*array_size));
 		else
-			*array = realloc_array(*array, element_size,
-					       *array_size);
+			*array = SMB_REALLOC(*array,
+					     element_size * (*array_size));
 
 		if (*array == NULL)
 			goto error;
@@ -1584,7 +1597,7 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 		}
 
 		levels = trace_back_stack(0, addrs, names,
-				BACKTRACE_STACK_SIZE, NAMESIZE);
+				BACKTRACE_STACK_SIZE, NAMESIZE - 1);
 
 		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
 		for (i = 0; i < levels; i++) {
@@ -1786,6 +1799,9 @@ void free_namearray(name_compare_entry *name_array)
 	SAFE_FREE(name_array);
 }
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LOCKING
+
 /****************************************************************************
  Simple routine to do POSIX file locking. Cruft in NFS and 64->32 bit mapping
  is dealt with in posix.c
@@ -1835,6 +1851,9 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 
 	return(True);
 }
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_ALL
 
 /*******************************************************************
  Is the name specified one of my netbios names.
@@ -2192,44 +2211,6 @@ int set_maxfiles(int requested_max)
 	 */
 	return requested_max;
 #endif
-}
-
-/*****************************************************************
- Splits out the start of the key (HKLM or HKU) and the rest of the key.
-*****************************************************************/  
-
-BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
-{
-	pstring tmp;
-
-	if (!next_token(&full_keyname, tmp, "\\", sizeof(tmp)))
-		return False;
-
-	(*reg_type) = 0;
-
-	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
-
-	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
-		(*reg_type) = HKEY_LOCAL_MACHINE;
-	else if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
-		(*reg_type) = HKEY_CLASSES_ROOT;
-	else if (strequal(tmp, "HKU") || strequal(tmp, "HKEY_USERS"))
-		(*reg_type) = HKEY_USERS;
-	else if (strequal(tmp, "HKPD")||strequal(tmp, "HKEY_PERFORMANCE_DATA"))
-		(*reg_type) = HKEY_PERFORMANCE_DATA;
-	else {
-		DEBUG(10,("reg_split_key: unrecognised hive key %s\n", tmp));
-		return False;
-	}
-	
-	if (next_token(&full_keyname, tmp, "\n\r", sizeof(tmp)))
-		fstrcpy(key_name, tmp);
-	else
-		key_name[0] = 0;
-
-	DEBUG(10, ("reg_split_key: name %s\n", key_name));
-
-	return True;
 }
 
 /*****************************************************************
@@ -2686,6 +2667,29 @@ void name_to_fqdn(fstring fqdn, const char *name)
 		fstrcpy(fqdn, name);
 	}
 }
+
+/**********************************************************************
+ Extension to talloc_get_type: Abort on type mismatch
+***********************************************************************/
+
+void *talloc_check_name_abort(const void *ptr, const char *name)
+{
+	void *result;
+
+	if (ptr == NULL)
+		return NULL;
+
+	result = talloc_check_name(ptr, name);
+	if (result != NULL)
+		return result;
+
+	DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
+		  name, talloc_get_name(ptr)));
+	smb_panic("aborting");
+	/* Keep the compiler happy */
+	return NULL;
+}
+
 
 #ifdef __INSURE__
 

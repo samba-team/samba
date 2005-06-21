@@ -51,34 +51,6 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 }
 
 /****************************************************************************
- Add and Delete UNIX users on demand, based on NTSTATUS codes.
- We don't care about RID's here so ignore.
-****************************************************************************/
-
-void auth_add_user_script(const char *domain, const char *username)
-{
-	/*
-	 * User validated ok against Domain controller.
-	 * If the admin wants us to try and create a UNIX
-	 * user on the fly, do so.
-	 */
-	
-	if ( *lp_adduser_script() )
-		smb_create_user(domain, username, NULL);
-	else {
-		DEBUG(10,("auth_add_user_script: no 'add user script'.  Asking winbindd\n"));
-		
-		/* should never get here is we a re a domain member running winbindd
-		   However, a host set for 'security = server' might run winbindd for 
-		   account allocation */
-		   
-		if ( !winbind_create_user(username, NULL) ) {
-			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
-		}
-	}
-}
-
-/****************************************************************************
  Create a SAM_ACCOUNT - either by looking in the pdb, or by faking it up from
  unix info.
 ****************************************************************************/
@@ -607,7 +579,7 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 						       group_sidstr, sidstr);
 		}
 
-		command = strdup(lp_log_nt_token_command());
+		command = SMB_STRDUP(lp_log_nt_token_command());
 		command = realloc_string_sub(command, "%s", user_sidstr);
 		command = realloc_string_sub(command, "%t", group_sidstr);
 		DEBUG(8, ("running command: [%s]\n", command));
@@ -986,6 +958,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 uid_t *uid, gid_t *gid,
 				 SAM_ACCOUNT **sam_account)
 {
+	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
 	fstring real_username;
 	struct passwd *passwd;
@@ -1020,7 +993,9 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 	DEBUG(5,("fill_sam_account: located username was [%s]\n",
 		*found_username));
 
-	return pdb_init_sam_pw(sam_account, passwd);
+	nt_status = pdb_init_sam_pw(sam_account, passwd);
+	passwd_free(&passwd);
+	return nt_status;
 }
 
 /****************************************************************************
@@ -1052,7 +1027,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 	if ( p ) {
 		fstring strip_username;
 
-		pw = Get_Pwnam( domuser );
+		pw = Get_Pwnam_alloc( domuser );
 		if ( pw ) {	
 			/* make sure we get the case of the username correct */
 			/* work around 'winbind use default domain = yes' */
@@ -1083,7 +1058,7 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 	
 	/* just lookup a plain username */
 	
-	pw = Get_Pwnam(username);
+	pw = Get_Pwnam_alloc(username);
 		
 	/* Create local user if requested. */
 	
@@ -1092,8 +1067,8 @@ struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 		if (username[strlen(username)-1] == '$')
 			return NULL;
 
-		auth_add_user_script(NULL, username);
-		pw = Get_Pwnam(username);
+		smb_create_user(NULL, username, NULL);
+		pw = Get_Pwnam_alloc(username);
 	}
 	
 	/* one last check for a valid passwd struct */
@@ -1181,12 +1156,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		DEBUG(3,("User %s does not exist, trying to add it\n", internal_username));
-		auth_add_user_script( nt_domain, sent_nt_username );
+		smb_create_user( nt_domain, sent_nt_username, NULL);
 		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
 			&found_username, &uid, &gid, &sam_account );
 	}
 	
+	/* if we still don't have a valid unix account check for 
+	  'map to gues = bad uid' */
+	  
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		if ( lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID ) {
+		 	make_server_info_guest(server_info); 
+			return NT_STATUS_OK;
+		}
+		
 		DEBUG(0, ("make_server_info_info3: pdb_init_sam failed!\n"));
 		return nt_status;
 	}
@@ -1560,11 +1543,26 @@ BOOL is_trusted_domain(const char* dom_name)
 			return True;
 	}
 	else {
-		/* if winbindd is not up and we are a domain member) then we need to update the
-		   trustdom_cache ourselves */
+		NSS_STATUS result;
 
-		if ( !winbind_ping() )
-			update_trustdom_cache();
+		/* If winbind is around, ask it */
+
+		result = wb_is_trusted_domain(dom_name);
+
+		if (result == NSS_STATUS_SUCCESS) {
+			return True;
+		}
+
+		if (result == NSS_STATUS_NOTFOUND) {
+			/* winbind could not find the domain */
+			return False;
+		}
+
+		/* The only other possible result is that winbind is not up
+		   and running. We need to update the trustdom_cache
+		   ourselves */
+		
+		update_trustdom_cache();
 	}
 
 	/* now the trustdom cache should be available a DC could still

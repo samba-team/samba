@@ -43,7 +43,7 @@
  * @note You are explicitly allowed to pass NULL pointers -- they will
  * always be ignored.
  **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(CONST_DISCARD(void *, (x))); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 #endif
 
 /* zero a structure */
@@ -87,6 +87,7 @@
  * extern struct current_user current_user;
  */
 #define FSP_BELONGS_CONN(fsp,conn) do {\
+			extern struct current_user current_user;\
 			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid));\
 			} while(0)
@@ -97,6 +98,7 @@
  * extern struct current_user current_user;
  */
 #define CHECK_FSP(fsp,conn) do {\
+			extern struct current_user current_user;\
 			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
@@ -141,6 +143,7 @@
 
 #define VALID_STAT(st) ((st).st_nlink != 0)  
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
+#define SET_STAT_INVALID(st) ((st).st_nlink = 0)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -225,16 +228,10 @@ true if two IP addresses are equal
 	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
 
 /****************************************************************************
- Used by dptr_zero.
-****************************************************************************/
-
-#define DPTR_MASK ((uint32)(((uint32)1)<<31))
-
-/****************************************************************************
  Return True if the offset is at zero.
 ****************************************************************************/
 
-#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
+#define dptr_zero(buf) (IVAL(buf,1) == 0)
 
 /*******************************************************************
 copy an IP address from one buffer to another
@@ -282,23 +279,30 @@ copy an IP address from one buffer to another
 /* limiting size of ipc replies */
 #define SMB_REALLOC_LIMIT(ptr,size) SMB_REALLOC(ptr,MAX((size),4*1024))
 
-/* #define PARANOID_MALLOC_CHECKER 1 */
+/* The new talloc is paranoid malloc checker safe. */
+
+#define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
+#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
+#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup(ctx, ptr, size, __location__)
+#define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
+#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
+#define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
+#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
+#define talloc_destroy(ctx) talloc_free(ctx)
+
+/* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
+   the smbmount utils */
+
+#if defined(DEVELOPER) && !defined(SMBMOUNT_MALLOC)
+#  define PARANOID_MALLOC_CHECKER 1
+#endif
 
 #if defined(PARANOID_MALLOC_CHECKER)
 
-#define TALLOC(ctx, size) talloc_((ctx),(size))
-#define TALLOC_P(ctx, type) (type *)talloc_((ctx),sizeof(type))
-#define TALLOC_ARRAY(ctx, type, count) (type *)talloc_array_((ctx),sizeof(type),(count))
-#define TALLOC_MEMDUP(ctx, ptr, size) talloc_memdup_((ctx),(ptr),(size))
-#define TALLOC_ZERO(ctx, size) talloc_zero_((ctx),(size))
-#define TALLOC_ZERO_P(ctx, type) (type *)talloc_zero_((ctx),sizeof(type))
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)talloc_zero_array_((ctx),sizeof(type),(count))
-#define TALLOC_REALLOC(ctx, ptr, count) talloc_realloc_((ctx),(ptr),(count))
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array_((ctx),(ptr),sizeof(type),(count))
-
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
 #define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem_((ps),(size),1)
-
 
 /* Get medieval on our ass about malloc.... */
 
@@ -336,15 +340,10 @@ copy an IP address from one buffer to another
 
 #else
 
-#define TALLOC(ctx, size) talloc((ctx),(size))
-#define TALLOC_P(ctx, type) (type *)talloc((ctx),sizeof(type))
-#define TALLOC_ARRAY(ctx, type, count) (type *)talloc_array((ctx),sizeof(type),(count))
-#define TALLOC_MEMDUP(ctx, ptr, size) talloc_memdup((ctx),(ptr),(size))
-#define TALLOC_ZERO(ctx, size) talloc_zero((ctx),(size))
-#define TALLOC_ZERO_P(ctx, type) (type *)talloc_zero((ctx),sizeof(type))
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)talloc_zero_array((ctx),sizeof(type),(count))
-#define TALLOC_REALLOC(ctx, ptr, count) talloc_realloc((ctx),(ptr),(count))
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array((ctx),(ptr),sizeof(type),(count))
+#define _STRING_LINE_(s)    #s
+#define _STRING_LINE2_(s)   _STRING_LINE_(s)
+#define __LINESTR__       _STRING_LINE2_(__LINE__)
+#define __location__ __FILE__ ":" __LINESTR__
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
 #define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)

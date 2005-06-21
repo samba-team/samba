@@ -66,7 +66,7 @@ static void smbd_set_server_fd(int fd)
 static void sig_term(void)
 {
 	got_sig_term = 1;
-	sys_select_signal();
+	sys_select_signal(SIGTERM);
 }
 
 /****************************************************************************
@@ -76,7 +76,7 @@ static void sig_term(void)
 static void sig_hup(int sig)
 {
 	reload_after_sighup = 1;
-	sys_select_signal();
+	sys_select_signal(SIGHUP);
 }
 
 /****************************************************************************
@@ -747,6 +747,10 @@ void build_options(BOOL screen);
 		log_stdout = True;
 	}
 
+	if (interactive && (DEBUGLEVEL >= 9)) {
+		talloc_enable_leak_report();
+	}
+
 	if (log_stdout && Fork) {
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
@@ -883,6 +887,11 @@ void build_options(BOOL screen);
 	if (!init_registry())
 		exit(1);
 
+#if 0
+	if (!init_svcctl_db())
+                exit(1);
+#endif
+
 	if (!print_backend_init())
 		exit(1);
 
@@ -951,14 +960,6 @@ void build_options(BOOL screen);
 	smbd_process();
 	
 	namecache_shutdown();
-
-	if (interactive) {
-		TALLOC_CTX *mem_ctx = talloc_init("end_description");
-		char *description = talloc_describe_all(mem_ctx);
-
-		DEBUG(3, ("tallocs left:\n%s\n", description));
-		talloc_destroy(mem_ctx);
-	}
 
 	exit_server("normal exit");
 	return(0);

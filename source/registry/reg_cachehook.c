@@ -1,6 +1,6 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
+ *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -67,7 +67,7 @@ BOOL reghook_cache_add( REGISTRY_HOOK *hook )
  Initialize the cache tree
  *********************************************************************/
 
-REGISTRY_HOOK* reghook_cache_find( char *keyname )
+REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 {
 	char *key;
 	int len;

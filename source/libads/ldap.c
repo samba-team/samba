@@ -1703,7 +1703,7 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 			ldap_memfree(utf8_field);
 		}
 		ber_free(b, 0);
-		talloc_destroy_pool(ctx);
+		talloc_free_children(ctx);
 		fn(NULL, NULL, data_area); /* completed an entry */
 
 	}

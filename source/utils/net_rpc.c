@@ -141,7 +141,7 @@ int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flag
 	}
 		
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		if (cli->nt_pipe_fnum[cli->pipe_idx])
+		if (cli->pipes[cli->pipe_idx].fnum)
 			cli_nt_session_close(cli);
 	}
 
@@ -663,6 +663,11 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Display results */
+    if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to delete user account - %s\n", nt_errstr(result));
+    } else {
+        d_printf("Deleted user account\n");
+    }
 
  done:
 	return result;
@@ -703,7 +708,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid, const char 
 	SAM_USER_INFO_7 info7;
 
 	if (argc != 2) {
-		d_printf("New and old username must be specified\n");
+		d_printf("Old and new username must be specified\n");
 		rpc_user_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
@@ -1146,12 +1151,9 @@ int net_rpc_user(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		if (opt_long_list_entries) {
-		} else {
-		}
-			return run_rpc_command(NULL,PI_SAMR, 0, 
-					       rpc_user_list_internals,
-					       argc, argv);
+		return run_rpc_command(NULL,PI_SAMR, 0, 
+				       rpc_user_list_internals,
+				       argc, argv);
 	}
 
 	return net_run_function(argc, argv, func, rpc_user_usage);
@@ -1459,8 +1461,7 @@ rpc_alias_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 	/* We've got a comment to set */
 
-	alias_info.switch_value1 = 3;
-	alias_info.switch_value2 = 3;
+	alias_info.level = 3;
 	init_samr_alias_info3(&alias_info.alias.info3, opt_comment);
 
 	result = cli_samr_set_aliasinfo(cli, mem_ctx, &alias_pol, &alias_info);
@@ -2026,7 +2027,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_tdup(mem_ctx,
-								   &ctr.alias.info3.uni_acct_desc);
+								   ctr.alias.info3.description.string);
 				}
 			}
 			
@@ -2081,7 +2082,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 				    (NT_STATUS_IS_OK(cli_samr_close(cli, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_tdup(mem_ctx,
-								   &ctr.alias.info3.uni_acct_desc);
+								   ctr.alias.info3.description.string);
 				}
 			}
 			
@@ -2432,9 +2433,6 @@ int net_rpc_group(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		if (opt_long_list_entries) {
-		} else {
-		}
 		return run_rpc_command(NULL, PI_SAMR, 0, 
 				       rpc_group_list_internals,
 				       argc, argv);
@@ -2473,7 +2471,7 @@ rpc_share_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 	WERROR result;
 	char *sharename=talloc_strdup(mem_ctx, argv[0]);
 	char *path;
-	uint32 type=0; /* only allow disk shares to be added */
+	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
 	uint32 level = 2;
@@ -2570,6 +2568,139 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 
 }
 
+
+static WERROR get_share_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     uint32 level, int argc, const char **argv, 
+			     SRV_SHARE_INFO_CTR *ctr)
+{
+	WERROR result;
+	SRV_SHARE_INFO info;
+
+	/* no specific share requested, enumerate all */
+	if (argc == 0) {
+
+		ENUM_HND hnd;
+		uint32 preferred_len = 0xffffffff;
+
+		init_enum_hnd(&hnd, 0);
+
+		result = cli_srvsvc_net_share_enum(cli, mem_ctx, level, ctr, 
+					   preferred_len, &hnd);
+		goto done;
+	}
+
+	/* request just one share */
+	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[0], level, &info);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* construct ctr */
+	ZERO_STRUCTP(ctr);
+
+	ctr->info_level = ctr->switch_value = level;
+	ctr->ptr_share_info = ctr->ptr_entries = 1;
+	ctr->num_entries = ctr->num_entries2 = 1;
+
+	switch (level) {
+	case 1:
+	{
+		char *s;
+		SRV_SHARE_INFO_1 *info1;
+		
+		ctr->share.info1 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_1, 1);
+		info1 = ctr->share.info1;
+				
+		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
+
+		/* Copy pointer crap */
+
+		memcpy(&info1->info_1, &info.share.info1.info_1, sizeof(SH_INFO_1));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_netname);
+		if (s)
+			init_unistr2(&info1->info_1_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info1.info_1_str.uni_remark);
+		if (s)
+			init_unistr2(&info1->info_1_str.uni_remark, s, UNI_STR_TERMINATE);
+	}
+	case 2:
+	{
+		char *s;
+		SRV_SHARE_INFO_2 *info2;
+		
+		ctr->share.info2 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_2, 1);
+		info2 = ctr->share.info2;
+				
+		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
+
+		/* Copy pointer crap */
+
+		memcpy(&info2->info_2, &info.share.info2.info_2, sizeof(SH_INFO_2));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_netname);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_remark);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_remark, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_path);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_path, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info2.info_2_str.uni_passwd);
+		if (s)
+			init_unistr2(&info2->info_2_str.uni_passwd, s, UNI_STR_TERMINATE);
+	}
+	case 502:
+	{
+		char *s;
+		SRV_SHARE_INFO_502 *info502;
+
+		ctr->share.info502 = TALLOC_ARRAY(mem_ctx, SRV_SHARE_INFO_502, 1);
+		info502 = ctr->share.info502;
+
+		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
+
+		/* Copy pointer crap */
+
+		memcpy(&info502->info_502, &info.share.info502.info_502, sizeof(SH_INFO_502));
+
+		/* Duplicate strings */
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_netname);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_netname, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_remark);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_remark, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_path);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_path, s, UNI_STR_TERMINATE);
+
+		s = unistr2_tdup(mem_ctx, &info.share.info502.info_502_str.uni_passwd);
+		if (s)
+			init_unistr2(&info502->info_502_str.uni_passwd, s, UNI_STR_TERMINATE);
+
+		info502->info_502_str.sd = dup_sec_desc(mem_ctx, info.share.info502.info_502_str.sd);
+				
+	}
+
+	} /* switch */
+
+done:
+	return result;
+}
+
 /** 
  * List shares on a remote RPC server
  *
@@ -2593,14 +2724,9 @@ rpc_share_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 {
 	SRV_SHARE_INFO_CTR ctr;
 	WERROR result;
-	ENUM_HND hnd;
-	uint32 preferred_len = 0xffffffff, i;
+	uint32 i, level = 1;
 
-	init_enum_hnd(&hnd, 0);
-
-	result = cli_srvsvc_net_share_enum(
-		cli, mem_ctx, 1, &ctr, preferred_len, &hnd);
-
+	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
@@ -2616,6 +2742,52 @@ rpc_share_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 		display_share_info_1(&ctr.share.info1[i]);
  done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/*** 
+ * 'net rpc share list' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+static int rpc_share_list(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_list_internals, argc, argv);
+}
+
+static BOOL check_share_availability(struct cli_state *cli, const char *netname)
+{
+	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+		d_printf("skipping   [%s]: not a file share.\n", netname);
+		return False;
+	}
+
+	if (!cli_tdis(cli)) 
+		return False;
+
+	return True;
+}
+
+static BOOL check_share_sanity(struct cli_state *cli, fstring netname, uint32 type)
+{
+	/* only support disk shares */
+	if (! ( type == STYPE_DISKTREE || type == (STYPE_DISKTREE | STYPE_HIDDEN)) ) {
+		printf("share [%s] is not a diskshare (type: %x)\n", netname, type);
+		return False;
+	}
+
+	/* skip builtin shares */
+	/* FIXME: should print$ be added too ? */
+	if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$") || 
+	    strequal(netname,"global")) 
+		return False;
+
+	if (opt_exclude && in_list(netname, opt_exclude, False)) {
+		printf("excluding  [%s]\n", netname);
+		return False;
+	}
+
+	return check_share_availability(cli, netname);
 }
 
 /** 
@@ -2641,24 +2813,18 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	SRV_SHARE_INFO_CTR ctr_src;
-	ENUM_HND hnd;
-	uint32 type = 0; /* only allow disk shares to be added */
-	uint32 num_uses = 0, perms = 0, max_uses = 0;
+	uint32 type = STYPE_DISKTREE; /* only allow disk shares to be added */
 	char *password = NULL; /* don't allow a share password */
-	uint32 preferred_len = 0xffffffff, i;
+	uint32 i;
 	BOOL got_dst_srvsvc_pipe = False;
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
-	SEC_DESC *share_sd = NULL;
 
-	init_enum_hnd(&hnd, 0);
-
-	result = cli_srvsvc_net_share_enum(
-			cli, mem_ctx, level, &ctr_src, preferred_len, &hnd);
+	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr_src);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	/* connect local PI_SRVSVC */
+	/* connect destination PI_SRVSVC */
         nt_status = connect_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
@@ -2676,58 +2842,24 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 			remark, &ctr_src.share.info502[i].info_502_str.uni_remark);
 		rpcstr_pull_unistr2_fstring(
 			path, &ctr_src.share.info502[i].info_502_str.uni_path);
-		num_uses 	= ctr_src.share.info502[i].info_502.num_uses;
-		max_uses 	= ctr_src.share.info502[i].info_502.max_uses;
-		perms		= ctr_src.share.info502[i].info_502.perms;
 
-
-		if (opt_acls)
-			share_sd = dup_sec_desc(
-				mem_ctx, ctr_src.share.info502[i].info_502_str.sd);
-
-		/* since we do not have NetShareGetInfo implemented in samba3 we 
-		   only can skip inside the enum-ctr_src */
-		if (argc == 1) {
-			char *one_share = talloc_strdup(mem_ctx, argv[0]);
-			if (!strequal(netname, one_share))
-				continue;
-		}
-
-		/* skip builtin shares */
-		/* FIXME: should print$ be added too ? */
-		if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$") || 
-		    strequal(netname,"global")) 
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
 			continue;
 
-		if (opt_exclude && in_list(netname, opt_exclude, False)) {
-			printf("excluding  [%s]\n", netname);
-			continue;
-		} 
-
-		/* only work with file-shares */
-		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
-			d_printf("skipping   [%s]: not a file share.\n", netname);
-			continue;
-		}
-
-		if (!cli_tdis(cli)) 
-			goto done;
-
-
-		/* finallly add the share on the dst server 
-		   please note that samba currently does not allow to 
-		   add a share without existing directory */
+		/* finally add the share on the dst server */ 
 
 		printf("migrating: [%s], path: %s, comment: %s, %s share-ACLs\n", 
 			netname, path, remark, opt_acls ? "including" : "without" );
 
 		if (opt_verbose && opt_acls)
-			display_sec_desc(share_sd);
+			display_sec_desc(ctr_src.share.info502[i].info_502_str.sd);
 
-		result = cli_srvsvc_net_share_add(cli_dst, mem_ctx, netname, type,
-						  remark, perms, max_uses,
-						  num_uses, path, password, 
-						  level, share_sd);
+		result = cli_srvsvc_net_share_add(cli_dst, mem_ctx, netname, type, remark,
+						  ctr_src.share.info502[i].info_502.perms,
+						  ctr_src.share.info502[i].info_502.max_uses,
+						  ctr_src.share.info502[i].info_502.num_uses,
+						  path, password, level, 
+						  opt_acls? ctr_src.share.info502[i].info_502_str.sd : NULL);
 	
                 if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
 			printf("           [%s] does already exist\n", netname);
@@ -2775,14 +2907,6 @@ static int rpc_share_migrate_shares(int argc, const char **argv)
 			       argc, argv);
 }
 
-typedef struct copy_clistate {
-	TALLOC_CTX *mem_ctx;
-	struct cli_state *cli_share_src;
-	struct cli_state *cli_share_dst;
-	const char *cwd;
-} copy_clistate;
-
-
 /**
  * Copy a file/dir 
  *
@@ -2793,11 +2917,16 @@ typedef struct copy_clistate {
  **/
 static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct copy_clistate *local_state = (struct copy_clistate *)state;
-	fstring filename, new_mask, dir;
+	static NTSTATUS nt_status;
+	static struct copy_clistate *local_state;
+	static fstring filename, new_mask;
+	fstring dir;
+	char *old_dir;
 
-	if (strequal(f->name, ".") || strequal(f->name, "..")) 
+	local_state = (struct copy_clistate *)state;
+	nt_status = NT_STATUS_UNSUCCESSFUL;
+
+	if (strequal(f->name, ".") || strequal(f->name, ".."))
 		return;
 
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
@@ -2811,31 +2940,38 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 		fstrcat(dir, "\\");
 		fstrcat(dir, f->name);
 
-		/* create that directory */
-		nt_status = net_copy_file(local_state->mem_ctx, 
-					  local_state->cli_share_src, 
-					  local_state->cli_share_dst, 
-					  dir, dir, 
-					  opt_acls? True : False, 
-					  opt_attrs? True : False,
-					  opt_timestamps? True : False,
-					  False);
+		switch (local_state->mode)
+		{
+		case NET_MODE_SHARE_MIGRATE:
+			/* create that directory */
+			nt_status = net_copy_file(local_state->mem_ctx,
+						  local_state->cli_share_src,
+						  local_state->cli_share_dst,
+						  dir, dir,
+						  opt_acls? True : False,
+						  opt_attrs? True : False,
+						  opt_timestamps? True : False,
+						  False);
+			break;
+		default:
+			d_printf("Unsupported mode %d\n", local_state->mode);
+			return;
+		}
 
 		if (!NT_STATUS_IS_OK(nt_status)) 
-			printf("could not copy dir %s: %s\n", 
+			printf("could not handle dir %s: %s\n", 
 				dir, nt_errstr(nt_status));
 
 		/* search below that directory */
 		fstrcpy(new_mask, dir);
 		fstrcat(new_mask, "\\*");
 
-		if (!sync_files(local_state->mem_ctx, 
-				local_state->cli_share_src, 
-				local_state->cli_share_dst, 
-				new_mask, dir))
+		old_dir = local_state->cwd;
+		local_state->cwd = dir;
+		if (!sync_files(local_state, new_mask))
+			printf("could not handle files\n");
+		local_state->cwd = old_dir;
 
-			printf("could not sync files\n");
-			
 		return;
 	}
 
@@ -2847,17 +2983,25 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 
 	DEBUG(3,("got file: %s\n", filename));
 
-	nt_status = net_copy_file(local_state->mem_ctx, 
-				  local_state->cli_share_src, 
-				  local_state->cli_share_dst, 
-				  filename, filename, 
-				  opt_acls? True : False, 
-				  opt_attrs? True : False,
-				  opt_timestamps? True: False,
-				  True);
+	switch (local_state->mode)
+	{
+	case NET_MODE_SHARE_MIGRATE:
+		nt_status = net_copy_file(local_state->mem_ctx, 
+					  local_state->cli_share_src, 
+					  local_state->cli_share_dst, 
+					  filename, filename, 
+					  opt_acls? True : False, 
+					  opt_attrs? True : False,
+					  opt_timestamps? True: False,
+					  True);
+		break;
+	default:
+		d_printf("Unsupported file mode %d\n", local_state->mode);
+		return;
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) 
-		printf("could not copy file %s: %s\n", 
+		printf("could not handle file %s: %s\n", 
 			filename, nt_errstr(nt_status));
 
 }
@@ -2866,34 +3010,56 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
  * sync files, can be called recursivly to list files 
  * and then call copy_fn for each file 
  *
- * @param mem_ctx	TALLOC_CTX
- * @param cli_share_src	a connected share on the originating server
- * @param cli_share_dst	a connected share on the destination server
+ * @param cp_clistate	pointer to the copy_clistate we work with
  * @param mask		the current search mask
- * @param cwd		the current path
  *
  * @return 		Boolean result
  **/
-BOOL sync_files(TALLOC_CTX *mem_ctx, 
-		struct cli_state *cli_share_src, 
-		struct cli_state *cli_share_dst,
-		pstring mask, fstring cwd)
-
+BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 {
-
-	uint16 attribute = aSYSTEM | aHIDDEN | aDIR;
-	struct copy_clistate clistate;
-
-	clistate.mem_ctx 	= mem_ctx;
-	clistate.cli_share_src 	= cli_share_src;
-	clistate.cli_share_dst 	= cli_share_dst;
-	clistate.cwd 		= cwd;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if (cli_list(cli_share_src, mask, attribute, copy_fn, &clistate) == -1) {
+	if (cli_list(cp_clistate->cli_share_src, mask, cp_clistate->attribute, copy_fn, cp_clistate) == -1) {
 		d_printf("listing %s failed with error: %s\n", 
-			mask, cli_errstr(cli_share_src));
+			mask, cli_errstr(cp_clistate->cli_share_src));
+		return False;
+	}
+
+	return True;
+}
+
+
+/**
+ * Set the top level directory permissions before we do any further copies.
+ * Should set up ACL inheritance.
+ **/
+
+BOOL copy_top_level_perms(struct copy_clistate *cp_clistate, 
+				const char *sharename)
+{
+	NTSTATUS nt_status;
+
+	switch (cp_clistate->mode) {
+	case NET_MODE_SHARE_MIGRATE:
+		DEBUG(3,("calling net_copy_fileattr for '.' directory in share %s\n", sharename));
+		nt_status = net_copy_fileattr(cp_clistate->mem_ctx,
+						cp_clistate->cli_share_src, 
+						cp_clistate->cli_share_dst,
+						"\\", "\\",
+						opt_acls? True : False, 
+						opt_attrs? True : False,
+						opt_timestamps? True: False,
+						False);
+		break;
+	default:
+		d_printf("Unsupported mode %d\n", cp_clistate->mode);
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status))  {
+		printf("Could handle directory attributes for top level directory of share %s. Error %s\n", 
+			sharename, nt_errstr(nt_status));
 		return False;
 	}
 
@@ -2924,103 +3090,91 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	SRV_SHARE_INFO_CTR ctr_src;
-	ENUM_HND hnd;
-	uint32 preferred_len = 0xffffffff, i;
-	uint32 level = 2;
-	struct cli_state *cli_share_src = NULL;
-	struct cli_state *cli_share_dst = NULL;
+	uint32 i;
+	uint32 level = 502;
+	struct copy_clistate cp_clistate;
 	BOOL got_src_share = False;
 	BOOL got_dst_share = False;
-	pstring mask;
+	pstring mask = "\\*";
 	char *dst = NULL;
+
+	/* decrese argc and safe mode */
+	cp_clistate.mode = argv[--argc][0];
 
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
-	init_enum_hnd(&hnd, 0);
-
-	result = cli_srvsvc_net_share_enum(
-			cli, mem_ctx, level, &ctr_src, preferred_len, &hnd);
+	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr_src);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	for (i = 0; i < ctr_src.num_entries; i++) {
 
-		fstring netname = "", remark = "", path = "";
+		fstring netname = "";
 
 		rpcstr_pull_unistr2_fstring(
-			netname, &ctr_src.share.info2[i].info_2_str.uni_netname);
-		rpcstr_pull_unistr2_fstring(
-			remark, &ctr_src.share.info2[i].info_2_str.uni_remark);
-		rpcstr_pull_unistr2_fstring(
-			path, &ctr_src.share.info2[i].info_2_str.uni_path);
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
 
-		/* since we do not have NetShareGetInfo implemented in samba3 we 
-		   only can skip inside the enum-ctr_src */
-		if (argc == 1) {
-			char *one_share = talloc_strdup(mem_ctx, argv[0]);
-			if (!strequal(netname, one_share))
-				continue;
-		}
-
-		/* skip builtin and hidden shares 
-		   In particular, one might not want to mirror whole discs :) */
-		if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$"))
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
 			continue;
-		
+
+		/* one might not want to mirror whole discs :) */
 		if (strequal(netname, "print$") || netname[1] == '$') {
 			d_printf("skipping   [%s]: builtin/hidden share\n", netname);
 			continue;
 		}
 
-		if (opt_exclude && in_list(netname, opt_exclude, False)) {
-			printf("excluding  [%s]\n", netname);
-			continue;
-		} 
-
-		/* only work with file-shares */
-		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
-			d_printf("skipping   [%s]: not a file share.\n", netname);
-			continue;
+		switch (cp_clistate.mode)
+		{
+		case NET_MODE_SHARE_MIGRATE:
+			printf("syncing");
+			break;
+		default:
+			d_printf("Unsupported mode %d\n", cp_clistate.mode);
+			break;
 		}
-
-		if (!cli_tdis(cli))
-			return NT_STATUS_UNSUCCESSFUL;
-
-		printf("syncing    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
+		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
 			netname, 
 			opt_acls ? "including" : "without", 
 			opt_attrs ? "including" : "without",
 			opt_timestamps ? "(preserving timestamps)" : "");
 
+		cp_clistate.mem_ctx = mem_ctx;
+		cp_clistate.cli_share_src = NULL;
+		cp_clistate.cli_share_dst = NULL;
+		cp_clistate.cwd = NULL;
+		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
 
 	        /* open share source */
-		nt_status = connect_to_service(&cli_share_src, &cli->dest_ip, 
-					       cli->desthost, netname, "A:");
+		nt_status = connect_to_service(&cp_clistate.cli_share_src,
+					       &cli->dest_ip, cli->desthost,
+					       netname, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
 
 		got_src_share = True;
 
+		if (cp_clistate.mode == NET_MODE_SHARE_MIGRATE) {
+			/* open share destination */
+			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
+						       NULL, dst, netname, "A:");
+			if (!NT_STATUS_IS_OK(nt_status))
+				goto done;
 
-	        /* open share destination */
-		nt_status = connect_to_service(&cli_share_dst, NULL, 
-					       dst, netname, "A:");
-		if (!NT_STATUS_IS_OK(nt_status))
-			goto done;
+			got_dst_share = True;
+		}
 
-		got_dst_share = True;
-
-
-		/* now call the filesync */
-		pstrcpy(mask, "\\*");
-
-		if (!sync_files(mem_ctx, cli_share_src, cli_share_dst, mask, NULL)) {
-			d_printf("could not sync files for share: %s\n", netname);
+		if (!copy_top_level_perms(&cp_clistate, netname)) {
+			d_printf("Could not handle the top level directory permissions for the share: %s\n", netname);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
-		
+
+		if (!sync_files(&cp_clistate, mask)) {
+			d_printf("could not handle files for share: %s\n", netname);
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
 	}
 
 	nt_status = NT_STATUS_OK;
@@ -3028,11 +3182,11 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 done:
 
 	if (got_src_share)
-		cli_shutdown(cli_share_src);
+		cli_shutdown(cp_clistate.cli_share_src);
 
 	if (got_dst_share)
-		cli_shutdown(cli_share_dst);
-		
+		cli_shutdown(cp_clistate.cli_share_dst);
+
 	return nt_status;
 
 }
@@ -3047,6 +3201,121 @@ static int rpc_share_migrate_files(int argc, const char **argv)
 
 	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_share_migrate_files_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate share-ACLs from a remote RPC server to the local RPC srever
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+static NTSTATUS 
+rpc_share_migrate_security_internals(const DOM_SID *domain_sid, const char *domain_name, 
+				     struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				     int argc, const char **argv)
+{
+	WERROR result;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SRV_SHARE_INFO_CTR ctr_src;
+	SRV_SHARE_INFO info;
+	uint32 i;
+	BOOL got_dst_srvsvc_pipe = False;
+	struct cli_state *cli_dst = NULL;
+	uint32 level = 502; /* includes secdesc */
+
+	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr_src);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* connect destination PI_SRVSVC */
+        nt_status = connect_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
+        if (!NT_STATUS_IS_OK(nt_status))
+                return nt_status;
+
+
+	for (i = 0; i < ctr_src.num_entries; i++) {
+
+		fstring netname = "", remark = "", path = "";
+		/* reset error-code */
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
+		rpcstr_pull_unistr2_fstring(
+			remark, &ctr_src.share.info502[i].info_502_str.uni_remark);
+		rpcstr_pull_unistr2_fstring(
+			path, &ctr_src.share.info502[i].info_502_str.uni_path);
+
+		if (!check_share_sanity(cli, netname, ctr_src.share.info502[i].info_502.type))
+			continue;
+
+		printf("migrating: [%s], path: %s, comment: %s, including share-ACLs\n", 
+			netname, path, remark);
+
+		if (opt_verbose)
+			display_sec_desc(ctr_src.share.info502[i].info_502_str.sd);
+
+		/* init info */
+		ZERO_STRUCT(info);
+
+		info.switch_value = level;
+		info.ptr_share_ctr = 1;
+
+		/* FIXME: shouldn't we be able to just set the security descriptor ? */
+		info.share.info502 = ctr_src.share.info502[i];
+
+		/* finally modify the share on the dst server */
+		result = cli_srvsvc_net_share_set_info(cli_dst, mem_ctx, netname, level, &info);
+	
+		if (!W_ERROR_IS_OK(result)) {
+			printf("cannot set share-acl: %s\n", dos_errstr(result));
+			goto done;
+		}
+
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_dst_srvsvc_pipe) {
+		cli_nt_session_close(cli_dst);
+		cli_shutdown(cli_dst);
+	}
+
+	return nt_status;
+
+}
+
+/** 
+ * Migrate share-acls from a rpc-server to another
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_share_migrate_security(int argc, const char **argv)
+{
+
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
+
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+			       rpc_share_migrate_security_internals,
 			       argc, argv);
 }
 
@@ -3070,15 +3339,18 @@ static int rpc_share_migrate_all(int argc, const char **argv)
 		return -1;
 	}
 
+	/* order is important. we don't want to be locked out by the share-acl
+	 * before copying files - gd */
+	
 	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_internals, argc, argv);
 	if (ret)
 		return ret;
-#if 0
-	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_security_internals, argc, argv);
+
+	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_files_internals, argc, argv);
 	if (ret)
 		return ret;
-#endif
-	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_files_internals, argc, argv);
+	
+	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_security_internals, argc, argv);
 }
 
 
@@ -3095,17 +3367,20 @@ static int rpc_share_migrate(int argc, const char **argv)
 		{"all", 	rpc_share_migrate_all},
 		{"files", 	rpc_share_migrate_files},
 		{"help",	rpc_share_usage},
-/*		{"security", 	rpc_share_migrate_security},*/
+		{"security", 	rpc_share_migrate_security},
 		{"shares", 	rpc_share_migrate_shares},
 		{NULL, NULL}
 	};
+
+	char mode = NET_MODE_SHARE_MIGRATE;
+	argv[argc++] = &mode;
 
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
 
 struct full_alias {
 	DOM_SID sid;
-	int num_members;
+	uint32 num_members;
 	DOM_SID *members;
 };
 
@@ -3487,6 +3762,13 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	int i;
 	struct user_token *result;
 
+	if (lp_winbind_use_default_domain() &&
+	    (opt_target_workgroup == NULL)) {
+		d_printf("winbind use default domain = yes set, please "
+			 "specify a workgroup\n");
+		return False;
+	}
+
 	/* Send request to winbind daemon */
 
 	ZERO_STRUCT(request);
@@ -3529,14 +3811,15 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 
 		DEBUG(3, ("%s\n", name));
 
-		if (p == NULL)
-			continue;
-
-		*p++ = '\0';
-
-		fstrcpy(domain, name);
-		strupper_m(domain);
-		fstrcpy(user, p);
+		if (p == NULL) {
+			fstrcpy(domain, opt_target_workgroup);
+			fstrcpy(user, name);
+		} else {
+			*p++ = '\0';
+			fstrcpy(domain, name);
+			strupper_m(domain);
+			fstrcpy(user, p);
+		}
 
 		get_user_sids(domain, user, &(result[i].token));
 		i+=1;
@@ -3879,6 +4162,7 @@ int net_rpc_share(int argc, const char **argv)
 		{"delete", rpc_share_delete},
 		{"allowedusers", rpc_share_allowedusers},
 		{"migrate", rpc_share_migrate},
+		{"list", rpc_share_list},
 		{NULL, NULL}
 	};
 
@@ -4440,6 +4724,7 @@ static int rpc_trustdom_add(int argc, const char **argv)
 	}
 }
 
+
 /**
  * Remove interdomain trust account from the RPC server.
  * All parameters (except for argc and argv) are passed by run_rpc_command
@@ -4570,6 +4855,7 @@ static int rpc_trustdom_del(int argc, const char **argv)
 		return -1;
 	}
 }
+ 
 
 /**
  * Establish trust relationship to a trusting domain.
@@ -4664,7 +4950,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		cli_shutdown(cli);
 		return -1;
 	}
-	
+
 	/*
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
@@ -4727,7 +5013,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum[cli->pipe_idx])
+	if (cli->pipes[cli->pipe_idx].fnum)
 		cli_nt_session_close(cli);
 
 	cli_shutdown(cli);
@@ -4783,6 +5069,7 @@ static int rpc_trustdom_usage(int argc, const char **argv)
 	d_printf("  net rpc trustdom establish \t establish relationship to trusted domain\n");
 	d_printf("  net rpc trustdom revoke \t abandon relationship to trusted domain\n");
 	d_printf("  net rpc trustdom list \t show current interdomain trust relationships\n");
+	d_printf("  net rpc trustdom vampire \t vampire interdomain trust relationships from remote server\n");
 	return -1;
 }
 
@@ -4798,6 +5085,201 @@ static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
+static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
+{
+	fstring ascii_sid, padding;
+	int pad_len, col_len = 20;
+
+	/* convert sid into ascii string */
+	sid_to_string(ascii_sid, dom_sid);
+
+	/* calculate padding space for d_printf to look nicer */
+	pad_len = col_len - strlen(trusted_dom_name);
+	padding[pad_len] = 0;
+	do padding[--pad_len] = ' '; while (pad_len);
+			
+	d_printf("%s%s%s\n", trusted_dom_name, padding, ascii_sid);
+}
+
+static NTSTATUS vampire_trusted_domain(struct cli_state *cli, 
+				      TALLOC_CTX *mem_ctx, 
+				      POLICY_HND *pol, 
+				      DOM_SID dom_sid, 
+				      const char *trusted_dom_name)
+{
+	NTSTATUS nt_status;
+	LSA_TRUSTED_DOMAIN_INFO *info;
+	char *cleartextpwd;
+	DATA_BLOB data;
+	smb_ucs2_t *uni_dom_name;
+
+	nt_status = cli_lsa_query_trusted_domain_info_by_sid(cli, mem_ctx, pol, 4, &dom_sid, &info);
+	
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0,("Could not query trusted domain info. Error was %s\n",
+		nt_errstr(nt_status)));
+		goto done;
+	}
+
+	data = data_blob(NULL, info->password.password.length);
+
+	memcpy(data.data, info->password.password.data, info->password.password.length);
+	data.length 	= info->password.password.length;
+				
+	cleartextpwd = decrypt_trustdom_secret(cli->pwd.password, &data);
+
+	if (cleartextpwd == NULL) {
+		DEBUG(0,("retrieved NULL password\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+	
+	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) < 0) {
+		DEBUG(0, ("Could not convert domain name %s to unicode\n",
+			  trusted_dom_name));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!secrets_store_trusted_domain_password(trusted_dom_name,
+						   uni_dom_name,
+						   strlen_w(uni_dom_name)+1,
+						   cleartextpwd,
+						   dom_sid)) {
+		DEBUG(0, ("Storing password for trusted domain failed.\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	DEBUG(100,("sucessfully vampired trusted domain [%s], sid: [%s], password: [%s]\n",  
+		trusted_dom_name, sid_string_static(&dom_sid), cleartextpwd));
+
+done:
+	SAFE_FREE(cleartextpwd);
+	data_blob_free(&data);
+
+	return nt_status;
+}
+
+static int rpc_trustdom_vampire(int argc, const char **argv)
+{
+	/* common variables */
+	TALLOC_CTX* mem_ctx;
+	struct cli_state *cli;
+	NTSTATUS nt_status;
+	const char *domain_name = NULL;
+	DOM_SID *queried_dom_sid;
+	POLICY_HND connect_hnd;
+
+	/* trusted domains listing variables */
+	unsigned int num_domains, enum_ctx = 0;
+	int i;
+	DOM_SID *domain_sids;
+	char **trusted_dom_names;
+	fstring pdc_name;
+	char *dummy;
+
+	/*
+	 * Listing trusted domains (stored in secrets.tdb, if local)
+	 */
+
+	mem_ctx = talloc_init("trust relationships vampire");
+
+	/*
+	 * set domain and pdc name to local samba server (default)
+	 * or to remote one given in command line
+	 */
+
+	if (StrCaseCmp(opt_workgroup, lp_workgroup())) {
+		domain_name = opt_workgroup;
+		opt_target_workgroup = opt_workgroup;
+	} else {
+		fstrcpy(pdc_name, global_myname());
+		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
+		opt_target_workgroup = domain_name;
+	};
+
+	/* open \PIPE\lsarpc and open policy handle */
+	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) {
+		DEBUG(0, ("Couldn't connect to domain controller\n"));
+		return -1;
+	};
+
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+		DEBUG(0, ("Could not initialise lsa pipe\n"));
+		return -1;
+	};
+
+	nt_status = cli_lsa_open_policy2(cli, mem_ctx, False, SEC_RIGHTS_QUERY_VALUE,
+					&connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
+ 			nt_errstr(nt_status)));
+		return -1;
+	};
+
+	/* query info level 5 to obtain sid of a domain being queried */
+	nt_status = cli_lsa_query_info_policy(
+		cli, mem_ctx, &connect_hnd, 5 /* info level */, 
+		&dummy, &queried_dom_sid);
+
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			nt_errstr(nt_status)));
+		return -1;
+	}
+
+	/*
+	 * Keep calling LsaEnumTrustdom over opened pipe until
+	 * the end of enumeration is reached
+	 */
+
+	d_printf("Vampire trusted domains:\n\n");
+
+	do {
+		nt_status = cli_lsa_enum_trust_dom(cli, mem_ctx, &connect_hnd, &enum_ctx,
+						   &num_domains,
+						   &trusted_dom_names, &domain_sids);
+		
+		if (NT_STATUS_IS_ERR(nt_status)) {
+			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
+				nt_errstr(nt_status)));
+			return -1;
+		};
+		
+		for (i = 0; i < num_domains; i++) {
+
+			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+
+			nt_status = vampire_trusted_domain(cli, mem_ctx, &connect_hnd, 
+							   domain_sids[i], trusted_dom_names[i]);
+			if (!NT_STATUS_IS_OK(nt_status))
+				return -1;
+		};
+
+		/*
+		 * in case of no trusted domains say something rather
+		 * than just display blank line
+		 */
+		if (!num_domains) d_printf("none\n");
+
+	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+
+	/* close this connection before doing next one */
+	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+	if (NT_STATUS_IS_ERR(nt_status)) {
+		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
+			nt_errstr(nt_status)));
+		return -1;
+	};
+
+	/* close lsarpc pipe and connection to IPC$ */
+	cli_nt_session_close(cli);
+	cli_shutdown(cli);
+
+	talloc_destroy(mem_ctx);	 
+	return 0;
+}
 
 static int rpc_trustdom_list(int argc, const char **argv)
 {
@@ -4807,7 +5289,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
-	fstring ascii_sid, padding;
+	fstring padding;
 	int ascii_dom_name_len;
 	POLICY_HND connect_hnd;
 	
@@ -4893,15 +5375,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		};
 		
 		for (i = 0; i < num_domains; i++) {
-			/* convert sid into ascii string */
-			sid_to_string(ascii_sid, &(domain_sids[i]));
-		
-			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(trusted_dom_names[i]);
-			padding[pad_len] = 0;
-			do padding[--pad_len] = ' '; while (pad_len);
-			
-			d_printf("%s%s%s\n", trusted_dom_names[i], padding, ascii_sid);
+			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
 		};
 		
 		/*
@@ -5053,6 +5527,7 @@ static int rpc_trustdom(int argc, const char **argv)
 		{"revoke", rpc_trustdom_revoke},
 		{"help", rpc_trustdom_usage},
 		{"list", rpc_trustdom_list},
+		{"vampire", rpc_trustdom_vampire},
 		{NULL, NULL}
 	};
 
@@ -5473,7 +5948,7 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
-	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n\n\n");
+	d_printf("  net rpc oldjoin \t\t\tto join a domain created in server manager\n");
 	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc password <username> [<password>] -Uadmin_username%%admin_pass\n");
@@ -5489,6 +5964,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
 	d_printf("  net rpc shutdown \t\tto shutdown a remote server\n");
 	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
+	d_printf("  net rpc registry\t\tto manage registry hives\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
@@ -5559,6 +6035,7 @@ int net_rpc(int argc, const char **argv)
 		{"getsid", net_rpc_getsid},
 		{"rights", net_rpc_rights},
 		{"service", net_rpc_service},
+		{"registry", net_rpc_registry},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};

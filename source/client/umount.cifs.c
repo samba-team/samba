@@ -34,9 +34,10 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
+#include <fstab.h>
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "2"
+#define UNMOUNT_CIFS_VERSION_MINOR "5"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
 #define UNMOUNT_CIFS_VENDOR_SUFFIX ""
@@ -48,6 +49,13 @@
 
 #ifndef MNT_EXPIRE
 #define MNT_EXPIRE 0x04
+#endif
+
+#ifndef MOUNTED_LOCK
+#define MOUNTED_LOCK    "/etc/mtab~"
+#endif
+#ifndef MOUNTED_TEMP
+#define MOUNTED_TEMP    "/etc/mtab.tmp"
 #endif
 
 #define CIFS_IOC_CHECKUMOUNT _IO(0xCF, 2)
@@ -85,6 +93,8 @@ static void umount_cifs_usage(void)
 	printf("\n\tman 8 umount.cifs\n");
 	printf("\nTo display the version number of the cifs umount utility:");
 	printf("\n\t%s -V\n",thisprogram);
+	printf("\nInvoking the umount utility on cifs mounts, can execute");
+	printf(" /sbin/umount.cifs (if present and umount -i is not specified.\n");
 }
 
 static int umount_check_perm(char * dir)
@@ -92,8 +102,11 @@ static int umount_check_perm(char * dir)
 	int fileid;
 	int rc;
 
-	/* presumably can not chdir into the target as we do on mount */
+	/* allow root to unmount, no matter what */
+	if(getuid() == 0)
+		return 0;
 
+	/* presumably can not chdir into the target as we do on mount */
 	fileid = open(dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW, 0);
 	if(fileid == -1) {
 		if(verboseflg)
@@ -106,12 +119,124 @@ static int umount_check_perm(char * dir)
 	if(verboseflg)
 		printf("ioctl returned %d with errno %d %s\n",rc,errno,strerror(errno));
 
-	if(rc == ENOTTY)
-		printf("user unmounting via %s is an optional feature of the cifs filesystem driver (cifs.ko)\n\tand requires cifs.ko version 1.32 or later\n",thisprogram);
-	else if (rc > 0)
+	if(rc == ENOTTY) {
+		printf("user unmounting via %s is an optional feature of",thisprogram);
+		printf(" the cifs filesystem driver (cifs.ko)");
+		printf("\n\tand requires cifs.ko version 1.32 or later\n");
+	} else if (rc > 0)
 		printf("user unmount of %s failed with %d %s\n",dir,errno,strerror(errno));
 	close(fileid);
 
+	return rc;
+}
+
+int lock_mtab(void)
+{
+	int rc;
+	
+	rc = mknod(MOUNTED_LOCK , 0600, 0);
+	if(rc == -1)
+		printf("\ngetting lock file %s failed with %s\n",MOUNTED_LOCK,
+				strerror(errno));
+		
+	return rc;	
+	
+}
+
+void unlock_mtab(void)
+{
+	unlink(MOUNTED_LOCK);	
+}
+
+int remove_from_mtab(char * mountpoint)
+{
+	int rc;
+	int num_matches;
+	FILE * org_fd;
+	FILE * new_fd;
+	struct mntent * mount_entry;
+
+	/* Do we need to check if it is a symlink to e.g. /proc/mounts
+	in which case we probably do not want to update it? */
+
+	/* Do we first need to check if it is writable? */ 
+
+	if (lock_mtab()) {
+		printf("Mount table locked\n");
+		return -EACCES;
+	}
+	
+	if(verboseflg)
+		printf("attempting to remove from mtab\n");
+
+	org_fd = setmntent(MOUNTED, "r");
+
+	if(org_fd == NULL) {
+		printf("Can not open %s\n",MOUNTED);
+		unlock_mtab();
+		return -EIO;
+	}
+
+	new_fd = setmntent(MOUNTED_TEMP,"w");
+	if(new_fd == NULL) {
+		printf("Can not open temp file %s", MOUNTED_TEMP);
+		endmntent(org_fd);
+		unlock_mtab();
+		return -EIO;
+	}
+
+	/* BB fix so we only remove the last entry that matches BB */
+	num_matches = 0;
+	while((mount_entry = getmntent(org_fd)) != NULL) {
+		if(strcmp(mount_entry->mnt_dir, mountpoint) == 0) {
+			num_matches++;
+		}
+	}	
+	if(verboseflg)
+		printf("%d matching entries in mount table\n", num_matches);
+		
+	/* Is there a better way to seek back to the first entry in mtab? */
+	endmntent(org_fd);
+	org_fd = setmntent(MOUNTED, "r");
+
+	if(org_fd == NULL) {
+		printf("Can not open %s\n",MOUNTED);
+		unlock_mtab();
+		return -EIO;
+	}
+	
+	while((mount_entry = getmntent(org_fd)) != NULL) {
+		if(strcmp(mount_entry->mnt_dir, mountpoint) != 0) {
+			addmntent(new_fd, mount_entry);
+		} else {
+			if(num_matches != 1) {
+				addmntent(new_fd, mount_entry);
+				num_matches--;
+			} else if(verboseflg)
+				printf("entry not copied (ie entry is removed)\n");
+		}
+	}
+
+	if(verboseflg)
+		printf("done updating tmp file\n");
+	rc = fchmod (fileno (new_fd), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	if(rc < 0) {
+		printf("error %s changing mode of %s\n", strerror(errno),
+			MOUNTED_TEMP);
+	}
+	endmntent(new_fd);
+
+	rc = rename(MOUNTED_TEMP, MOUNTED);
+
+	if(rc < 0) {
+		printf("failure %s renaming %s to %s\n",strerror(errno),
+			MOUNTED_TEMP, MOUNTED);
+		unlock_mtab();
+		return -EIO;
+	}
+
+	unlock_mtab();
+	
 	return rc;
 }
 
@@ -122,10 +247,8 @@ int main(int argc, char ** argv)
 	int flags = 0;
 	int nomtab = 0;
 	int retry_remount = 0;
-	struct mntent mountent;
 	struct statfs statbuf;
 	char * mountpoint;
-	FILE * pmntfile;
 
 	if(argc && argv) {
 		thisprogram = argv[0];
@@ -215,7 +338,7 @@ int main(int argc, char ** argv)
 	rc = statfs(mountpoint, &statbuf);
 	
 	if(rc || (statbuf.f_type != CIFS_MAGIC_NUMBER)) {
-		printf("Wrong filesystem. This utility only unmounts cifs filesystems.\n");
+		printf("This utility only unmounts cifs filesystems.\n");
 		return -EINVAL;
 	}
 
@@ -235,51 +358,13 @@ int main(int argc, char ** argv)
 		default:
 			printf("unmount error %d = %s\n",errno,strerror(errno));
 		}
-		printf("Refer to the umount.cifs(8) manual page (e.g.man 8 umount.cifs)\n");
+		printf("Refer to the umount.cifs(8) manual page (man 8 umount.cifs)\n");
 		return -1;
 	} else {
-		pmntfile = setmntent(MOUNTED, "a+");
-		if(pmntfile) {
-/*			mountent.mnt_fsname = share_name;
-			mountent.mnt_dir = mountpoint; 
-			mountent.mnt_type = "cifs"; 
-			mountent.mnt_opts = malloc(220);
-			if(mountent.mnt_opts) {
-				char * mount_user = getusername();
-				memset(mountent.mnt_opts,0,200);
-				if(flags & MS_RDONLY)
-					strcat(mountent.mnt_opts,"ro");
-				else
-					strcat(mountent.mnt_opts,"rw");
-				if(flags & MS_MANDLOCK)
-					strcat(mountent.mnt_opts,",mand");
-				else
-					strcat(mountent.mnt_opts,",nomand");
-				if(flags & MS_NOEXEC)
-					strcat(mountent.mnt_opts,",noexec");
-				if(flags & MS_NOSUID)
-					strcat(mountent.mnt_opts,",nosuid");
-				if(flags & MS_NODEV)
-					strcat(mountent.mnt_opts,",nodev");
-				if(flags & MS_SYNCHRONOUS)
-					strcat(mountent.mnt_opts,",synch");
-				if(mount_user) {
-					if(getuid() != 0) {
-						strcat(mountent.mnt_opts,",user=");
-						strcat(mountent.mnt_opts,mount_user);
-					}
-					free(mount_user);
-				}
-			}
-			mountent.mnt_freq = 0;
-			mountent.mnt_passno = 0;
-			rc = addmntent(pmntfile,&mountent);
-			endmntent(pmntfile);
-			if(mountent.mnt_opts)
-				free(mountent.mnt_opts);*/
-		} else {
-		    printf("could not update mount table\n");
-		}
+		if(verboseflg)
+			printf("umount2 succeeded\n");
+		if(nomtab == 0)
+			remove_from_mtab(mountpoint);
 	}
 
 	return 0;

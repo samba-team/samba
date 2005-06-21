@@ -29,6 +29,11 @@
 */
 
 #include "includes.h"
+
+/* We don't care about the paranoid malloc checker in this standalone
+   program */
+#undef malloc
+
 #include <assert.h>
 
 int quiet = 0;

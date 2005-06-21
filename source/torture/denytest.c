@@ -1556,8 +1556,8 @@ BOOL torture_denytest2(int dummy)
 			       resultstr(denytable2[i].result));
 		}
 
-		cli_close(cli1, fnum1);
-		cli_close(cli2, fnum2);
+		if (fnum1 != -1) cli_close(cli1, fnum1);
+		if (fnum2 != -1) cli_close(cli2, fnum2);
 	}
 		
 	for (i=0;i<2;i++) {

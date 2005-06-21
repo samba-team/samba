@@ -112,7 +112,6 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 	return True;
 }
 
-
 /*****************************************************************
  Id mapping cache.  This is to avoid Winbind mappings already
  seen by smbd to be queried too frequently, keeping winbindd
@@ -250,8 +249,8 @@ static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 		if (sid_compare(&pc->sid, psid) == 0) {
 			fstring sid;
 			*pgid = pc->gid;
-			DEBUG(3,("fetch uid from cache %u -> %s\n",
-				(unsigned int)*pgid, sid_to_string(sid, psid)));
+			DEBUG(3,("fetch gid from cache %u -> %s\n",
+				 (unsigned int)*pgid, sid_to_string(sid, psid)));
 			DLIST_PROMOTE(gid_sid_cache_head, pc);
 			return True;
 		}

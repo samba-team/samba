@@ -54,7 +54,12 @@ if test x"${SAMBA_VERSION_IS_SVN_SNAPSHOT}" = x"yes";then
     if test x"${HAVESVN}" = x"no";then
 	HAVESVK=no
 	svk info ${SOURCE_DIR} >/dev/null 2>&1 && HAVESVK=yes
-	TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
+	TMP_MIRRORED_REVISION=`(svk info ${SOURCE_DIR} 2>/dev/null) |grep 'Mirrored From:.*samba\.org.*' |sed -e 's/Mirrored From: .* Rev\..* \([0-9]*\).*/\1/'`
+	if test -n "$TMP_MIRRORED_REVISION"; then
+	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}-[SVN-${TMP_MIRRORED_REVISION}]"
+	else
+	    TMP_SVK_REVISION_STR="${TMP_REVISION}-${USER}@${HOSTNAME}"
+	fi
     fi
 
     if test x"${HAVESVN}" = x"yes";then

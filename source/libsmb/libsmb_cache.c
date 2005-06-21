@@ -102,7 +102,7 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
 
 /*
  * Search the server cache for a server 
- * returns server_fd on success, -1 on error (not found)
+ * returns server handle on success, NULL on error (not found)
  * This function is only used if the external cache is not enabled 
  */
 static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server, 

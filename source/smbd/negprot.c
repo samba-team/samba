@@ -178,7 +178,6 @@ static int negprot_spnego(char *p)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	char *principal;
 	int len;
 
 	global_spnego_negotiated = True;
@@ -211,12 +210,16 @@ static int negprot_spnego(char *p)
 		return 16;
 	}
 #endif
-	if (lp_security() != SEC_ADS) {
+	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
 		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
 	} else {
-		asprintf(&principal, "%s$@%s", guid, lp_realm());
-		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, principal);
-		free(principal);
+		fstring myname;
+		char *host_princ_s = NULL;
+		name_to_fqdn(myname, global_myname());
+		strlower_m(myname);
+		asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm());
+		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, host_princ_s);
+		SAFE_FREE(host_princ_s);
 	}
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
