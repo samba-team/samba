@@ -20,10 +20,49 @@
 <title>Account Information Databases</title>
 
 <para>
+<indexterm><primary>account backends</primary></indexterm>
+<indexterm><primary>password backends</primary></indexterm>
+<indexterm><primary>scalability</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
 Samba-3 implements a new capability to work concurrently with multiple account backends.
 The possible new combinations of password backends allows Samba-3 a degree of flexibility
-and scalability that previously could be achieved only with MS Windows Active Directory.
+and scalability that previously could be achieved only with MS Windows Active Directory (ADS).
 This chapter describes the new functionality and how to get the most out of it.
+</para>
+
+<para>
+<indexterm><primary>passdb backend</primary></indexterm>
+<indexterm><primary>smbpasswd</primary></indexterm>
+<indexterm><primary>tdbsam</primary></indexterm>
+<indexterm><primary>ldapsam</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>single repository</primary></indexterm>
+The three passdb backends that are fully maintained (actively supported) by the Samba Team are:
+<literal>smbpasswd</literal> (being obsoleted), <literal>tdbsam</literal> (a tdb based binary file format),
+and <literal>ldapsam</literal> (LDAP directory).  Of these, only the <literal>ldapsam</literal> backend
+stores both POSIX (UNIX) and Samba user and group account information in a single repository. The
+<literal>smbpasswd</literal> and <literal>tdbsam</literal> backends store only Samba user accounts.
+</para>
+
+<para>
+In a strict sense, there are three supported account storage and access systems. One of these is considered
+obsolete (smbpasswd). It is recommended to use <literal>tdbsam</literal> method for all simple systems. Use
+the <literal>ldapsam</literal> for larger and more complex networks.
+</para>
+
+<para>
+<indexterm><primary>passdb backend</primary></indexterm>
+<indexterm><primary>account storage mechanisms</primary></indexterm>
+<indexterm><primary>account storage system</primary></indexterm>
+<indexterm><primary>user and trust accounts</primary></indexterm>
+<indexterm><primary>machine trust accounts</primary></indexterm>
+<indexterm><primary>computer accounts</primary></indexterm>
+<indexterm><primary>interdomain trust accounts</primary></indexterm>
+In a strict and literal sense, the passdb backends are account storage mechanisms (or methods) alone. The choice
+of terminology can be misleading, however we are stuck with this choice of wording. This chapter documents the
+nature of the account storage system with a focus on user and trust accounts. Trust accounts have two forms,
+machine trust accounts (computer accounts) and interdomain trust accounts. These are all treated as user-like
+entities.
 </para>
 
 <sect1>
@@ -38,12 +77,17 @@ as follows:
 </para>
 
 <sect2>
-	<title>Backward Compatibility Backends</title>
+	<title>Backward Compatibility Account Storage Systems</title>
 
 <variablelist>
 	<varlistentry><term>Plaintext</term>
 		<listitem>
 			<para>
+<indexterm><primary>plaintext</primary></indexterm>
+<indexterm><primary>plaintext authentication</primary></indexterm>
+<indexterm><primary>/etc/passwd</primary></indexterm>
+<indexterm><primary>/etc/shadow</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
 			This isn't really a backend at all, but is listed here for simplicity.  Samba can be configured to pass
 			plaintext authentication requests to the traditional UNIX/Linux <filename>/etc/passwd</filename> and
 			<filename>/etc/shadow</filename>-style subsystems.  On systems that have Pluggable Authentication Modules
@@ -58,6 +102,10 @@ as follows:
 	<varlistentry><term>smbpasswd</term>
 		<listitem>
 			<para>
+<indexterm><primary>smbpasswd</primary></indexterm>
+<indexterm><primary>LanMan passwords</primary></indexterm>
+<indexterm><primary>NT-encrypted passwords</primary></indexterm>
+<indexterm><primary>SAM</primary></indexterm>
 			This option allows continued use of the <filename>smbpasswd</filename>
 			file that maintains a plain ASCII (text) layout that includes the MS Windows
 			LanMan and NT-encrypted passwords as well as a field that stores some
@@ -77,6 +125,9 @@ as follows:
 	<varlistentry><term>ldapsam_compat (Samba-2.2 LDAP Compatibility)</term>
 		<listitem>
 			<para>
+<indexterm><primary>ldapsam_compat</primary></indexterm>
+<indexterm><primary>Samba-2.2.x LDAP schema</primary></indexterm>
+<indexterm><primary>OpenLDAP backend</primary></indexterm>
 			There is a password backend option that allows continued operation with
 			an existing OpenLDAP backend that uses the Samba-2.2.x LDAP schema extension.
 			This option is provided primarily as a migration tool, although there is
@@ -90,7 +141,7 @@ as follows:
 </sect2>
 
 <sect2>
-<title>New Backends</title>
+<title>New Account Storage Systems</title>
 
 <para>
 Samba-3 introduces a number of new password backend capabilities.
@@ -104,12 +155,21 @@ Samba-3 introduces a number of new password backend capabilities.
 	<varlistentry><term>tdbsam</term>
 		<listitem>
 			<para>
+<indexterm><primary>rich database backend</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
 			This backend provides a rich database backend for local servers. This
 			backend is not suitable for multiple domain controllers (i.e., PDC + one
 			or more BDC) installations.
 			</para>
 
 			<para>
+<indexterm><primary>extended SAM</primary></indexterm>
+<indexterm><primary>TDB</primary></indexterm>
+<indexterm><primary>binary format TDB</primary></indexterm>
+<indexterm><primary>trivial database</primary></indexterm>
+<indexterm><primary>system access controls</primary></indexterm>
+<indexterm><primary>MS Windows NT4/200x</primary></indexterm>
 			The <emphasis>tdbsam</emphasis> password backend stores the old <emphasis>
 			smbpasswd</emphasis> information plus the extended MS Windows NT/200x
 			SAM information into a binary format TDB (trivial database) file.
@@ -119,6 +179,9 @@ Samba-3 introduces a number of new password backend capabilities.
 			</para>
 
 			<para>
+<indexterm><primary>simple operation</primary></indexterm>
+<indexterm><primary>OpenLDAP</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
 			The inclusion of the <emphasis>tdbsam</emphasis> capability is a direct
 			response to user requests to allow simple site operation without the overhead
 			of the complexities of running OpenLDAP. It is recommended to use this only
@@ -131,16 +194,28 @@ Samba-3 introduces a number of new password backend capabilities.
 	<varlistentry><term>ldapsam</term>
 		<listitem>
 			<para>
+<indexterm><primary>rich directory backend</primary></indexterm>
+<indexterm><primary>distributed account</primary></indexterm>
 			This provides a rich directory backend for distributed account installation.	
 			</para>
 
 			<para>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>OpenLDAP</primary></indexterm>
+<indexterm><primary>Samba schema</primary></indexterm>
+<indexterm><primary>schema file</primary></indexterm>
+<indexterm><primary>examples/LDAP</primary></indexterm>
 			Samba-3 has a new and extended LDAP implementation that requires configuration
 			of OpenLDAP with a new format Samba schema. The new format schema file is
 			included in the <filename class="directory">examples/LDAP</filename> directory of the Samba distribution.
 			</para>
 
 			<para>
+<indexterm><primary>expands control abilities</primary></indexterm>
+<indexterm><primary>profile</primary></indexterm>
+<indexterm><primary>home directories</primary></indexterm>
+<indexterm><primary>account access controls</primary></indexterm>
+<indexterm><primary>greater scalability</primary></indexterm>
 			The new LDAP implementation significantly expands the control abilities that
 			were possible with prior versions of Samba. It is now possible to specify
 			<quote>per-user</quote> profile settings, home directories, account access controls, and
@@ -153,6 +228,8 @@ Samba-3 introduces a number of new password backend capabilities.
 	<varlistentry><term>mysqlsam (MySQL-based backend)</term>
 		<listitem>
 			<para>
+<indexterm><primary>MySQL-based SAM</primary></indexterm>
+<indexterm><primary>database backend</primary></indexterm>
 			It is expected that the MySQL-based SAM will be very popular in some corners.
 			This database backend will be of considerable interest to sites that want to
 			leverage existing MySQL technology.
@@ -163,10 +240,10 @@ Samba-3 introduces a number of new password backend capabilities.
 	<varlistentry><term>pgsqlsam (PostGreSQL-based backend)</term>
 		<listitem>
 			<para>
-				Stores user information in a PostgreSQL database.
-				This backend is largely undocumented at 
-				the moment, though its configuration is very similar to 
-				that of the mysqlsam backend.
+<indexterm><primary>PostgreSQL database</primary></indexterm>
+<indexterm><primary>mysqlsam</primary></indexterm>
+				Stores user information in a PostgreSQL database.  This backend is largely undocumented at 
+				the moment, though its configuration is very similar to that of the mysqlsam backend.
 			</para>
 		</listitem>
 	</varlistentry>
@@ -175,13 +252,21 @@ Samba-3 introduces a number of new password backend capabilities.
 		<listitem>
 			<para>
 <indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>XML format</primary></indexterm>
+<indexterm><primary>pdb2pdb</primary></indexterm>
 			Allows the account and password data to be stored in an XML format
 			data file. This backend cannot be used for normal operation, it can only 
 			be used in conjunction with <command>pdbedit</command>'s pdb2pdb 
-			functionality. The DTD that is used might be subject to changes in the future.
+			functionality. The Document Type Definition (DTD) file that is used 
+			might be subject to changes in the future. (See the XML <ulink
+			url="http://www.brics.dk/~amoeller/XML/schemas/">reference</ulink> for a definition
+			of XML terms.)
 			</para>
 
 			<para>
+<indexterm><primary>account migration</primary></indexterm>
+<indexterm><primary>database backends</primary></indexterm>
+<indexterm><primary>backend format</primary></indexterm>
 			The <parameter>xmlsam</parameter> option can be useful for account migration between database
 			backends or backups. Use of this tool allows the data to be edited before migration
 			into another backend format.
@@ -199,39 +284,54 @@ Samba-3 introduces a number of new password backend capabilities.
 	<title>Technical Information</title>
 
 	<para>
+<indexterm><primary>plaintext passwords</primary></indexterm>
+<indexterm><primary>encrypted passwords</primary></indexterm>
 	Old Windows clients send plaintext passwords over the wire. Samba can check these
 	passwords by encrypting them and comparing them to the hash stored in the UNIX user database.
 	</para>
 
 	<para>
 <indexterm><primary>encrypted passwords</primary></indexterm>	
-	Newer Windows clients send encrypted passwords (LanMan and NT hashes) instead of plaintext passwords over the wire. The newest clients will send only encrypted
-	passwords and refuse to send plaintext passwords unless their registry is tweaked.
+<indexterm><primary>LanMan</primary></indexterm>
+<indexterm><primary>plaintext passwords</primary></indexterm>
+<indexterm><primary>registry</primary></indexterm>
+	Newer Windows clients send encrypted passwords (LanMan and NT hashes) instead of plaintext passwords over
+	the wire. The newest clients will send only encrypted passwords and refuse to send plaintext passwords unless
+	their registry is tweaked.
 	</para>
 
 	<para>
-	These passwords can't be converted to UNIX-style encrypted passwords. Because of that,
-	you can't use the standard UNIX user database, and you have to store the LanMan and NT
-	hashes somewhere else.
+<indexterm><primary>UNIX-style encrypted passwords</primary></indexterm>
+<indexterm><primary>converted</primary></indexterm>
+	Many people ask why Samba can not simply use the UNIX password database. Windows requires
+	passwords that are encrypted in its own format.  The UNIX passwords can't be converted to 
+	UNIX-style encrypted passwords. Because of that, you can't use the standard UNIX user
+	database, and you have to store the LanMan and NT hashes somewhere else.
 	</para>
 	
 	<para>
+<indexterm><primary>differently encrypted passwords</primary></indexterm>
+<indexterm><primary>profile</primary></indexterm>
+<indexterm><primary>workstations</primary></indexterm>
+<indexterm><primary>tdbsam</primary></indexterm>
 	In addition to differently encrypted passwords, Windows also stores certain data for each
 	user that is not stored in a UNIX user database: for example, workstations the user may logon from,
 	the location where the user's profile is stored, and so on. Samba retrieves and stores this
-	information using a <smbconfoption name="passdb backend"/>. Commonly available backends are LDAP, plain text
-	file, and MySQL. For more information, see the man page for &smb.conf; regarding the 
+	information using a <smbconfoption name="passdb backend"/>. Commonly available backends are LDAP,
+	tdbsam, plain text file, and MySQL. For more information, see the man page for &smb.conf; regarding the 
 	<smbconfoption name="passdb backend"/> parameter.
 	</para>
 
 
 	<figure id="idmap-sid2uid">
 		<title>IDMAP: Resolution of SIDs to UIDs.</title>
-		<imagefile scale="50">idmap-sid2uid</imagefile>
+		<imagefile scale="40">idmap-sid2uid</imagefile>
 	</figure>
 
 	<para>
 	<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
 	The resolution of SIDs to UIDs is fundamental to correct operation of Samba. In both cases shown, if winbindd
 	is not running or cannot be contacted, then only local SID/UID resolution is possible. See <link
 	linkend="idmap-sid2uid">resolution of SIDs to UIDs</link> and <link linkend="idmap-uid2sid">resolution of UIDs
@@ -247,6 +347,12 @@ Samba-3 introduces a number of new password backend capabilities.
 	<title>Important Notes About Security</title>
 		
 		<para>
+<indexterm><primary>SMB password encryption</primary></indexterm>
+<indexterm><primary>clear-text passwords</primary></indexterm>
+<indexterm><primary>hashed password equivalent</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>MYSQL</primary></indexterm>
+<indexterm><primary>secret</primary></indexterm>
 		The UNIX and SMB password encryption techniques seem similar on the surface. This
 		similarity is, however, only skin deep. The UNIX scheme typically sends clear-text
 		passwords over the network when logging in. This is bad. The SMB encryption scheme
@@ -262,18 +368,25 @@ Samba-3 introduces a number of new password backend capabilities.
 		</para>
 		
 		<para>
+<indexterm><primary>password scheme</primary></indexterm>
+<indexterm><primary>plaintext passwords</primary></indexterm>
+<indexterm><primary>compatible</primary></indexterm>
 		Ideally, we would like a password scheme that involves neither plaintext passwords
 		on the network nor plaintext passwords on disk. Unfortunately, this is not available because Samba is stuck with
 		having to be compatible with other SMB systems (Windows NT, Windows for Workgroups, Windows 9x/Me).
 		</para>
 
 		<para>
+<indexterm><primary>encrypted passwords</primary></indexterm>
+<indexterm><primary>plaintext passwords</primary></indexterm>
 		Windows NT 4.0 Service Pack 3 changed the default setting so plaintext passwords
 		are disabled from being sent over the wire. This mandates either the use of encrypted
 		password support or editing the Windows NT registry to re-enable plaintext passwords.
 		</para>
 		
 		<para>
+<indexterm><primary>domain security</primary></indexterm>
+<indexterm><primary>domain environment</primary></indexterm>
 		The following versions of Microsoft Windows do not support full domain security protocols,
 		although they may log onto a domain environment:
 		</para>
@@ -287,6 +400,9 @@ Samba-3 introduces a number of new password backend capabilities.
 
 		<note>
 		<para>
+<indexterm><primary>Windows XP Home</primary></indexterm>
+<indexterm><primary>domain member</primary></indexterm>
+<indexterm><primary>domain logons</primary></indexterm>
  		MS Windows XP Home does not have facilities to become a domain member, and it cannot participate in domain logons.
 		</para>
 		</note>
@@ -304,6 +420,12 @@ Samba-3 introduces a number of new password backend capabilities.
 		</itemizedlist>
 			
 		<para>
+<indexterm><primary>SMB/CIFS</primary></indexterm>
+<indexterm><primary>authentication</primary></indexterm>
+<indexterm><primary>challenge/response mechanis</primary></indexterm>
+<indexterm><primary>clear-text</primary></indexterm>
+<indexterm><primary>encrypted</primary></indexterm>
+<indexterm><primary>negotiate</primary></indexterm>
 		All current releases of Microsoft SMB/CIFS clients support authentication via the
 		SMB challenge/response mechanism described here. Enabling clear-text authentication
 		does not disable the ability of the client to participate in encrypted authentication.
@@ -312,6 +434,11 @@ Samba-3 introduces a number of new password backend capabilities.
 		</para>
 
 		<para>
+<indexterm><primary>cached encrypted password</primary></indexterm>
+<indexterm><primary>plaintext passwords</primary></indexterm>
+<indexterm><primary>registry change</primary></indexterm>
+<indexterm><primary>auto-reconnect</primary></indexterm>
+<indexterm><primary>encrypted passwords</primary></indexterm>
 		MS Windows clients will cache the encrypted password alone. Where plaintext passwords
 		are re-enabled through the appropriate registry change, the plaintext password is never
 		cached. This means that in the event that a network connections should become disconnected
@@ -324,26 +451,43 @@ Samba-3 introduces a number of new password backend capabilities.
 		<title>Advantages of Encrypted Passwords</title>
 
 			<itemizedlist>
-				<listitem><para>Plaintext passwords are not passed across 
-				the network. Someone using a network sniffer cannot just 
-				record passwords going to the SMB server.</para></listitem>
-
-				<listitem><para>Plaintext passwords are not stored anywhere in
-				memory or on disk.</para></listitem>
-			 
-				<listitem><para>Windows NT does not like talking to a server 
-				that does not support encrypted passwords. It will refuse 
-				to browse the server if the server is also in user-level 
-				security mode. It will insist on prompting the user for the 
-				password on each connection, which is very annoying. The
-				only thing you can do to stop this is to use SMB encryption.
+				<listitem><para>
+<indexterm><primary>passed across the network</primary></indexterm>
+<indexterm><primary>network sniffer</primary></indexterm>
+<indexterm><primary>SMB server</primary></indexterm>
+				Plaintext passwords are not passed across the network. Someone using a network sniffer
+				cannot just record passwords going to the SMB server.
 				</para></listitem>
 
-				<listitem><para>Encrypted password support allows automatic share
-				(resource) reconnects.</para></listitem>
+				<listitem><para>
+<indexterm><primary>not stored anywhere</primary></indexterm>
+<indexterm><primary>memory</primary></indexterm>
+<indexterm><primary>disk</primary></indexterm>
+				Plaintext passwords are not stored anywhere in memory or on disk.
+				</para></listitem>
+			 
+				<listitem><para>
+<indexterm><primary>encrypted passwords</primary></indexterm>
+<indexterm><primary>user-level security</primary></indexterm>
+<indexterm><primary>password prompt</primary></indexterm>
+<indexterm><primary>SMB encryption</primary></indexterm>
+				Windows NT does not like talking to a server that does not support encrypted passwords. It will refuse to
+				browse the server if the server is also in user-level security mode. It will insist on prompting the user for
+				the password on each connection, which is very annoying. The only thing you can do to stop this is to use SMB
+				encryption.
+				</para></listitem>
 
-				<listitem><para>Encrypted passwords are essential for PDC/BDC
-				operation.</para></listitem>
+				<listitem><para>
+<indexterm><primary>encrypted password</primary></indexterm>
+<indexterm><primary>automatic reconnects</primary></indexterm>
+				Encrypted password support allows automatic share (resource) reconnects.
+				</para></listitem>
+
+				<listitem><para>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+				Encrypted passwords are essential for PDC/BDC operation.
+				</para></listitem>
 			</itemizedlist>
 		</sect3>
 
@@ -352,15 +496,23 @@ Samba-3 introduces a number of new password backend capabilities.
 		<title>Advantages of Non-Encrypted Passwords</title>
 
 			<itemizedlist>
-				<listitem><para>Plaintext passwords are not kept 
-				on disk and are not cached in memory. </para></listitem>
+				<listitem><para>
+<indexterm><primary>cached in memory</primary></indexterm>
+				Plaintext passwords are not kept on disk and are not cached in memory.
+				</para></listitem>
 				
-				<listitem><para>Plaintext passwords use the same password file as other UNIX 
-				services, such as Login and FTP.</para></listitem>
+				<listitem><para>
+<indexterm><primary>Login</primary></indexterm>
+<indexterm><primary>FTP</primary></indexterm>
+				Plaintext passwords use the same password file as other UNIX services, such as Login and FTP.
+				</para></listitem>
 				
-				<listitem><para>Use of other services (such as Telnet and FTP) that
-				send plaintext passwords over the network makes sending them for SMB
-				is not such a big deal.</para></listitem>
+				<listitem><para>
+<indexterm><primary>Telnet</primary></indexterm>
+<indexterm><primary>FTP</primary></indexterm>
+				Use of other services (such as Telnet and FTP) that send plaintext passwords over
+				the network makes sending them for SMB is not such a big deal.
+				</para></listitem>
 			</itemizedlist>
 		</sect3>
 	</sect2>
@@ -369,26 +521,38 @@ Samba-3 introduces a number of new password backend capabilities.
 	<title>Mapping User Identifiers between MS Windows and UNIX</title>
 
 	<para>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>mapping</primary></indexterm>
 	Every operation in UNIX/Linux requires a user identifier (UID), just as in
 	MS Windows NT4/200x this requires a security identifier (SID). Samba provides
 	two means for mapping an MS Windows user to a UNIX/Linux UID.
 	</para>
 
 	<para>
-	First, all Samba SAM database accounts require
-	a UNIX/Linux UID that the account will map to. As users are added to the account
-	information database, Samba will call the <smbconfoption name="add user script"/>
-	interface to add the account to the Samba host OS. In essence all accounts in
-	the local SAM require a local user account.
+<indexterm><primary>Samba SAM</primary></indexterm>
+<indexterm><primary>SAM</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>account information database</primary></indexterm>
+<indexterm><primary>local user account</primary></indexterm>
+	First, all Samba SAM database accounts require a UNIX/Linux UID that the account will map to. As users are
+	added to the account information database, Samba will call the <smbconfoption name="add user script"/>
+	interface to add the account to the Samba host OS. In essence all accounts in the local SAM require a local
+	user account.
 	</para>
 
 	<para>
 	<indexterm><primary>idmap uid</primary></indexterm>
 	<indexterm><primary>idmap gid</primary></indexterm>
-	The second way to map Windows SID to UNIX UID is via the
-	<emphasis>idmap uid</emphasis> and <emphasis>idmap gid</emphasis> parameters in &smb.conf;.
-	Please refer to the man page for information about these parameters.
-	These parameters are essential when mapping users from a remote SAM server.
+	<indexterm><primary>UID</primary></indexterm>
+	<indexterm><primary>SAM</primary></indexterm>
+	<indexterm><primary>foreign domain</primary></indexterm>
+	<indexterm><primary>non-member Windows client</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	The second way to map Windows SID to UNIX UID is via the <emphasis>idmap uid</emphasis> and
+	<emphasis>idmap gid</emphasis> parameters in &smb.conf;.  Please refer to the man page for information about
+	these parameters.  These parameters are essential when mapping users from a remote (non-member Windows client
+	or a member of a foreign domain) SAM server.
 	</para>
 
 	</sect2>
@@ -397,6 +561,12 @@ Samba-3 introduces a number of new password backend capabilities.
 	<title>Mapping Common UIDs/GIDs on Distributed Machines</title>
 
 	<para>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+<indexterm><primary>domain member servers</primary></indexterm>
+<indexterm><primary>NFS</primary></indexterm>
+<indexterm><primary>rsync</primary></indexterm>
 	Samba-3 has a special facility that makes it possible to maintain identical UIDs and GIDs
 	on all servers in a distributed network. A distributed network is one where there exists
 	a PDC, one or more BDCs, and/or one or more domain member servers. Why is this important?
@@ -405,6 +575,13 @@ Samba-3 introduces a number of new password backend capabilities.
 	</para>
 
 	<para>
+<indexterm><primary>LDAP-based</primary></indexterm>
+<indexterm><primary>idmap backend</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>SAM backend</primary></indexterm>
+<indexterm><primary>LDAP idmap Backend</primary></indexterm>
 	<indexterm><primary>idmap backend</primary></indexterm>
 	The special facility is enabled using a parameter called <parameter>idmap backend</parameter>.
 	The default setting for this parameter is an empty string. Technically it is possible to use
