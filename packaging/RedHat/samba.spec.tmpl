@@ -125,7 +125,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 
 # Install standard binary files
-for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
+for i in nmblookup smbclient smbpasswd smbstatus testparm \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
 	smbcacls pdbedit tdbbackup smbtree ntlm_auth smbcquotas
 do
@@ -413,7 +413,6 @@ fi
 %{prefix}/bin/smbspool
 %{prefix}/bin/rpcclient
 %{prefix}/bin/testparm
-%{prefix}/bin/testprns
 %{prefix}/bin/findsmb
 %{prefix}/bin/smbstatus
 %{prefix}/bin/nmblookup
