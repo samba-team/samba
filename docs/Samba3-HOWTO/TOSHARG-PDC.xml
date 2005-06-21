@@ -1020,13 +1020,13 @@ performs a logon:
 <orderedlist>
 <listitem>
 	<para>
-	<indexterm><primary>DOMAIN&lt;#1C&gt;</primary></indexterm>
+	<indexterm><primary>DOMAIN&lt;1C&gt;</primary></indexterm>
 	<indexterm><primary>logon server</primary></indexterm>
 	The client broadcasts (to the IP broadcast address of the subnet it is in)
-	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;#1C&gt; at the
+	a NetLogon request. This is sent to the NetBIOS name DOMAIN&lt;1C&gt; at the
 	NetBIOS layer. The client chooses the first response it receives, which
 	contains the NetBIOS name of the logon server to use in the format of 
-	<filename>\\SERVER</filename>. The <literal>#1C</literal> name is the name
+	<filename>\\SERVER</filename>. The <literal>1C</literal> name is the name
 	type that is registered by domain controllers (SMB/CIFS servers that provide
 	the netlogon service).
 	</para>
@@ -1140,7 +1140,7 @@ and server mode security are really just a variation on SMB user-level security.
 
 <para>
 <indexterm><primary>DOMAIN&lt;1C&gt;</primary></indexterm>
-<indexterm><primary>DOMAIN&lt;#1B&gt;</primary></indexterm>
+<indexterm><primary>DOMAIN&lt;1B&gt;</primary></indexterm>
 <indexterm><primary>DMB</primary></indexterm>
 <indexterm><primary>PDC</primary></indexterm>
 <indexterm><primary>NetBIOS name</primary></indexterm>
@@ -1148,7 +1148,7 @@ and server mode security are really just a variation on SMB user-level security.
 <indexterm><primary>election</primary></indexterm>
 Actually, this issue is also closely tied to the debate on whether Samba must be the DMB for its workgroup
 when operating as a domain controller.  In a pure Microsoft Windows NT domain, the PDC wins the election to be
-the DMB, and then registers the DOMAIN&lt;#1B&gt; NetBIOS name. This is not the name used by Windows clients
+the DMB, and then registers the DOMAIN&lt;1B&gt; NetBIOS name. This is not the name used by Windows clients
 to locate the domain controller, all domain controllers register the DOMAIN&lt;1C&gt; name and Windows clients
 locate a network logon server by seraching for the DOMAIN&lt;1C&gt; name.  A DMB is a Domain Master Browser
 &smbmdash; see <link linkend="NetworkBrowsing">The Network Browsing Chapter</link>, <link
@@ -1169,7 +1169,7 @@ service. Server that register the DOMAIN&lt;1B&gt; name are DMBs &smbmdash; mean
 for browse list synchronization across all machines that have registered the DOMAIN&lt;1D&gt; name. The later
 are LMBs that have the responsibility to listen to all NetBIOS name registrations that occur locally to their
 own network segment. The network logon service (NETLOGON) is germane to domain control and has nothing to do
-with network browsing and browse list management. The #1C and #1B/#1D name services are orthogonal to each
+with network browsing and browse list management. The 1C and 1B/1D name services are orthogonal to each
 other.
 </para></note>
 
