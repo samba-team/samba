@@ -39,6 +39,12 @@ struct lookup_state {
 };
 
 
+/**
+ * Sends asynchronous Lookup request
+ *
+ * @param io arguments and result of the call
+ */
+
 struct composite_context *libnet_Lookup_send(struct libnet_Lookup *io)
 {
 	struct composite_context *c;
@@ -77,6 +83,15 @@ failed:
 }
 
 
+/**
+ * Waits for and receives results of asynchronous Lookup call
+ *
+ * @param c composite context returned by asynchronous Lookup call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 			    struct libnet_Lookup *io)
 {
@@ -90,8 +105,63 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 }
 
 
+/**
+ * Synchronous version of Lookup call
+ *
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS libnet_Lookup(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
 {
 	struct composite_context *c = libnet_Lookup_send(io);
+	return libnet_Lookup_recv(c, mem_ctx, io);
+}
+
+
+/*
+ * Shortcut functions to find common types of name
+ * (and skip nbt name type argument)
+ */
+
+
+/**
+ * Sends asynchronous LookupHost request
+ */
+struct composite_context* libnet_LookupHost_send(struct libnet_Lookup *io)
+{
+	io->in.type = NBT_NAME_SERVER;
+	return libnet_Lookup_send(io);
+}
+
+
+
+/**
+ * Synchronous version of LookupHost call
+ */
+NTSTATUS libnet_LookupHost(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
+{
+	struct composite_context *c = libnet_LookupHost_send(io);
+	return libnet_Lookup_recv(c, mem_ctx, io);
+}
+
+
+/**
+ * Sends asynchronous LookupPdc request
+ */
+struct composite_context* libnet_LookupPdc_send(struct libnet_Lookup *io)
+{
+	io->in.type = NBT_NAME_PDC;
+	return libnet_Lookup_send(io);
+}
+
+
+/**
+ * Synchronous version of LookupPdc
+ */
+NTSTATUS libnet_LookupPdc(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
+{
+	struct composite_context *c = libnet_LookupPdc_send(io);
 	return libnet_Lookup_recv(c, mem_ctx, io);
 }

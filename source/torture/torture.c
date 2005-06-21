@@ -2343,6 +2343,8 @@ static struct {
 	{"NET-USERDEL", torture_userdel, 0},
 	{"NET-DOMOPEN", torture_domainopen, 0},
 	{"NET-API-LOOKUP", torture_lookup, 0},
+	{"NET-API-LOOKUPHOST", torture_lookup_host, 0},
+	{"NET-API-LOOKUPPDC", torture_lookup_pdc, 0},
 	{"NET-API-CREATEUSER", torture_createuser, 0},
 
 	{NULL, NULL, 0}};
