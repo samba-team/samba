@@ -130,7 +130,8 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 	req->replies[req->num_replies] = talloc_steal(req->replies, msg);
 	req->num_replies++;
 
-	if (msg->type != LDAP_TAG_SearchResultEntry) {
+	if (msg->type != LDAP_TAG_SearchResultEntry &&
+	    msg->type != LDAP_TAG_SearchResultReference) {
 		/* currently only search results expect multiple
 		   replies */
 		req->state = LDAP_REQUEST_DONE;
