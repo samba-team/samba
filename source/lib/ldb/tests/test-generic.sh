@@ -50,3 +50,6 @@ if [ "$count" != 3 ]; then
     echo returned $count records - expected 3
     exit 1
 fi
+
+echo "Testing binary file attribute value"
+$VALGRIND bin/ldbmodify tests/photo.ldif || exit 1
