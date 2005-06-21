@@ -1398,7 +1398,7 @@ static int lp_int(const char *s)
 		return (-1);
 	}
 
-	return atoi(s); 
+	return strtol(s, NULL, 0); 
 }
 
 /*******************************************************************
@@ -1412,7 +1412,7 @@ static int lp_ulong(const char *s)
 		return (-1);
 	}
 
-	return strtoul(s, NULL, 10);
+	return strtoul(s, NULL, 0);
 }
 
 /*******************************************************************
