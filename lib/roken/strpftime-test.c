@@ -279,6 +279,15 @@ main(int argc, char **argv)
 	    }
 	}
     }
+    {
+	struct tm tm;
+	memset(&tm, 0, sizeof(tm));
+	strptime ("200505", "%Y%m", &tm);
+	if (tm.tm_year != 105)
+	    ++ret;
+	if (tm.tm_mon != 4)
+	    ++ret;
+    }
     if (ret) {
 	printf ("%d errors\n", ret);
 	return 1;
