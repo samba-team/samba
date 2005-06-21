@@ -72,6 +72,9 @@ struct pvfs_state {
 	/* if posix:eadb is set, then this gets setup */
 	struct tdb_wrap *ea_db;
 
+	/* the allocation size rounding */
+	uint32_t alloc_size_rounding;
+	
 	/* used to accelerate acl mapping */
 	struct {
 		const struct dom_sid *creator_owner;
