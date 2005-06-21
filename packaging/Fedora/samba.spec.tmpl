@@ -205,6 +205,8 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbsh.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbget.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man5/smbgetrc.5*
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man8/mount.cifs.8*
+rm -f $RPM_BUILD_ROOT/%{_mandir}/man8/umount.cifs.8*
+rm -f $RPM_BUILD_ROOT/%{_mandir}/man8/testprns.1*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -269,11 +271,9 @@ fi
 %attr(755,root,root) /%{_lib}/security/pam_smbpass.so
 %{_sbindir}/smbd
 %{_sbindir}/nmbd
-# %{_bindir}/make_unicodemap
 %{_bindir}/mksmbpasswd.sh
 %{_bindir}/smbcontrol
 %{_bindir}/smbstatus
-# %{_bindir}/smbadduser
 %{_bindir}/tdbbackup
 %{_bindir}/tdbtool
 %config(noreplace) %{_sysconfdir}/sysconfig/samba
@@ -281,7 +281,6 @@ fi
 %attr(755,root,root) %config %{initdir}/smb
 %config(noreplace) %{_sysconfdir}/logrotate.d/samba
 %config(noreplace) %{_sysconfdir}/pam.d/samba
-# %{_mandir}/man1/make_unicodemap.1*
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
 %{_mandir}/man5/smbpasswd.5*
@@ -291,11 +290,8 @@ fi
 %{_mandir}/man8/smbd.8*
 %{_mandir}/man8/pam_winbind.8*
 %{_mandir}/man8/tdbbackup.8*
-#%{_mandir}/ja/man1/smbstatus.1*
-#%{_mandir}/ja/man5/smbpasswd.5*
-#%{_mandir}/ja/man7/samba.7*
-#%{_mandir}/ja/man8/smbd.8*
-#%{_mandir}/ja/man8/nmbd.8*
+%{_mandir}/man8/libsmbclient.8*
+
 %{_libdir}/samba/vfs
 
 %attr(0700,root,root) %dir /var/log/samba
@@ -307,7 +303,6 @@ fi
 %{_datadir}/swat
 %{_sbindir}/swat
 %{_mandir}/man8/swat.8*
-#%{_mandir}/ja/man8/swat.8*
 %attr(755,root,root) %{_libdir}/samba/*.msg
 
 %files client
