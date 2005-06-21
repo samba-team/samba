@@ -26,14 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-struct sid_ctr {
-	DOM_SID *sid;
-	BOOL finished;
-	const char *domain;
-	const char *name;
-	enum SID_NAME_USE type;
-};
-
 struct lookupsids_state {
 	TALLOC_CTX *mem_ctx;
 	uint32 num_sids;
@@ -58,7 +50,7 @@ static void lookupsids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    void *cont, void *private);
 static void lookupsids_finished(struct lookupsids_state *state);
 
-void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID *sids,
+void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
 		      void (*cont)(void *private, BOOL success,
 				   uint32 num_sids, const char **domains,
 				   const char **names,
@@ -92,12 +84,16 @@ void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID *sids,
 	}
 
 	for (i=0; i<num_sids; i++) {
-		state->ctrs[i].sid = &sids[i];
+		state->ctrs[i].sid = sids[i];
 		state->ctrs[i].finished =
-			lookup_special_sid(&sids[i],
+			lookup_special_sid(sids[i],
 					   &state->ctrs[i].domain,
 					   &state->ctrs[i].name,
-					   &state->ctrs[i].type);
+					   &state->ctrs[i].type) ||
+			lookup_cached_sid(mem_ctx, sids[i],
+					  &state->ctrs[i].domain,
+					  &state->ctrs[i].name,
+					  &state->ctrs[i].type);
 
 		if (state->ctrs[i].finished) {
 			/* Ok, that was easy :-) */
@@ -214,6 +210,13 @@ static void lookupsids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 		goto failed;
 	}
 
+	for (i=0; i<state->num_dom_ctrs; i++) {
+		cache_sid2name(state->domain, state->dom_ctrs[i]->sid,
+			       state->dom_ctrs[i]->domain,
+			       state->dom_ctrs[i]->name,
+			       state->dom_ctrs[i]->type);
+	}
+
 	state->num_finished += state->num_dom_ctrs;
 
 	if (state->num_finished == state->num_sids) {
@@ -327,7 +330,8 @@ static void winbindd_lookupsids_recv(void *private, BOOL success,
 void winbindd_lookupsids(struct winbindd_cli_state *state)
 {
 	DOM_SID *sids = NULL;
-	int num_sids = 0;
+	DOM_SID **sidptrs;
+	int i, num_sids = 0;
 
 	DEBUG(3, ("[%5lu]: lookupsids %s\n", (unsigned long)state->pid, 
 		  state->request.data.sid));
@@ -345,7 +349,18 @@ void winbindd_lookupsids(struct winbindd_cli_state *state)
 		return;
 	}
 
-	lookupsids_async(state->mem_ctx, num_sids, sids,
+	sidptrs = TALLOC_ARRAY(state->mem_ctx, DOM_SID *, num_sids);
+	if (sidptrs == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		request_error(state);
+		return;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		sidptrs[i] = &sids[i];
+	}
+
+	lookupsids_async(state->mem_ctx, num_sids, sidptrs,
 			 winbindd_lookupsids_recv, state);
 }
 

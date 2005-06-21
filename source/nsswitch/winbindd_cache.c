@@ -1354,6 +1354,168 @@ skip_save:
 	return status;
 }
 
+static NTSTATUS query_aliasmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 alias_rid,
+			       uint32 *num_members,
+			       DOM_SID **members)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	DOM_SID alias_sid;
+
+	sid_copy(&alias_sid, &domain->sid);
+	sid_append_rid(&alias_sid, alias_rid);
+
+	if (cache->tdb == NULL) {
+		goto do_query;
+	}
+
+	centry = wcache_fetch(cache, domain, "AM/%s",
+			      sid_string_static(&alias_sid));
+
+	if (centry == NULL) {
+		goto do_query;
+	}
+
+	status = centry->status;
+
+	if (NT_STATUS_IS_OK(status)) {
+
+		*num_members = centry_uint32(centry);
+		if (*num_members != 0) {
+			(*members) = TALLOC_ARRAY(mem_ctx, DOM_SID,
+						  *num_members);
+			if (*members == NULL) {
+				DEBUG(0, ("talloc failed\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i=0; i<(*num_members); i++) {
+				centry_sid(centry, &(*members)[i]);
+			}
+		}
+	}
+
+	DEBUG(10, ("query_groupmem: [Cached]: cached info for domain %s "
+		   "status %s\n", domain->name,
+		   get_friendly_nt_error_msg(status)));
+
+	centry_free(centry);
+	return status;
+
+ do_query:
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
+	DEBUG(10, ("lookup_groupmem: [Cached] - doing backend query for info "
+		   "for domain %s\n", domain->name));
+
+	status = domain->backend->query_aliasmem(domain, mem_ctx, alias_rid,
+						 num_members, members);
+
+	refresh_sequence_number(domain, False);
+	centry = centry_start(domain, status);
+	if (centry == NULL) {
+		return status;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		centry_put_uint32(centry, *num_members);
+		for (i=0; i<(*num_members); i++) {
+			centry_put_sid(centry, &(*members)[i]);
+		}
+	}
+	centry_end(centry, "AM/%s", sid_string_static(&alias_sid));
+	centry_free(centry);
+
+	return status;
+}
+
+static NTSTATUS query_groupmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 group_rid,
+			       uint32 *num_members,
+			       uint32 **members)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	DOM_SID group_sid;
+
+	sid_copy(&group_sid, &domain->sid);
+	sid_append_rid(&group_sid, group_rid);
+
+	if (cache->tdb == NULL) {
+		goto do_query;
+	}
+
+	centry = wcache_fetch(cache, domain, "Gm/%s",
+			      sid_string_static(&group_sid));
+
+	if (centry == NULL) {
+		goto do_query;
+	}
+
+	status = centry->status;
+
+	if (NT_STATUS_IS_OK(status)) {
+
+		*num_members = centry_uint32(centry);
+		if (*num_members != 0) {
+			(*members) = TALLOC_ARRAY(mem_ctx, uint32,
+						  *num_members);
+			if (*members == NULL) {
+				DEBUG(0, ("talloc failed\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i=0; i<(*num_members); i++) {
+				(*members)[i] = centry_uint32(centry);
+			}
+		}
+	}
+
+	DEBUG(10, ("query_groupmem: [Cached]: cached info for domain %s "
+		   "status %s\n", domain->name,
+		   get_friendly_nt_error_msg(status)));
+
+	centry_free(centry);
+	return status;
+
+ do_query:
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
+	DEBUG(10, ("lookup_groupmem: [Cached] - doing backend query for info "
+		   "for domain %s\n", domain->name));
+
+	status = domain->backend->query_groupmem(domain, mem_ctx, group_rid,
+						 num_members, members);
+
+	refresh_sequence_number(domain, False);
+	centry = centry_start(domain, status);
+	if (centry == NULL) {
+		return status;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		centry_put_uint32(centry, *num_members);
+		for (i=0; i<(*num_members); i++) {
+			centry_put_uint32(centry, (*members)[i]);
+		}
+	}
+	centry_end(centry, "Gm/%s", sid_string_static(&group_sid));
+	centry_free(centry);
+
+	return status;
+}
+
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
@@ -1447,6 +1609,8 @@ struct winbindd_methods cache_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	query_aliasmem,
+	query_groupmem,
 	sequence_number,
 	trusted_domains,
 	alternate_name
@@ -1563,4 +1727,48 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 
 	response->extra_data = data.dptr;
 	return True;
+}
+
+BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+		       const char **domain_name, const char **name,
+		       enum SID_NAME_USE *type)
+{
+	struct winbindd_domain *domain;
+	struct winbind_cache *cache;
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+
+	domain = find_lookup_domain_from_sid(sid);
+	if (domain == NULL) {
+		return False;
+	}
+
+	cache = get_cache(domain);
+
+	if (cache->tdb == NULL) {
+		return False;
+	}
+
+	centry = wcache_fetch(cache, domain, "SN/%s", sid_string_static(sid));
+	if (centry == NULL) {
+		return False;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*domain_name = centry_string(centry, mem_ctx);
+		*name = centry_string(centry, mem_ctx);
+	}
+
+	status = centry->status;
+	centry_free(centry);
+	return NT_STATUS_IS_OK(status);
+}
+
+void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
+		    const char *domain_name, const char *name,
+		    enum SID_NAME_USE type)
+{
+	wcache_save_sid_to_name(domain, NT_STATUS_OK, sid, domain_name,
+				name, type);
 }

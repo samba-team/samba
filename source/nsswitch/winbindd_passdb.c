@@ -335,6 +335,25 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS query_aliasmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 alias_rid,
+			       uint32 *num_members,
+			       DOM_SID **members)
+{
+	/* This needs fixing! */
+	return NT_STATUS_NO_SUCH_ALIAS;
+}
+
+static NTSTATUS query_groupmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 group_rid,
+			       uint32 *num_members,
+			       uint32 **members)
+{
+	return NT_STATUS_NO_SUCH_GROUP;
+}
+
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
@@ -412,6 +431,8 @@ struct winbindd_methods passdb_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	query_aliasmem,
+	query_groupmem,
 	sequence_number,
 	trusted_domains,
 	alternate_name

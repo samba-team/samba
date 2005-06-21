@@ -47,6 +47,14 @@ struct fd_event {
 	void *private;
 };
 
+struct sid_ctr {
+	DOM_SID *sid;
+	BOOL finished;
+	const char *domain;
+	const char *name;
+	enum SID_NAME_USE type;
+};
+
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
@@ -267,6 +275,20 @@ struct winbindd_methods {
 				    uint32 *num_names, 
 				    DOM_SID **sid_mem, char ***names, 
 				    uint32 **name_types);
+
+	/* Basic query aliasmem call */
+	NTSTATUS (*query_aliasmem)(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 alias_rid,
+				   uint32 *num_members,
+				   DOM_SID **members);
+
+	/* Basic query groupmem call */
+	NTSTATUS (*query_groupmem)(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 group_rid,
+				   uint32 *num_members,
+				   uint32 **members);
 
 	/* return the current global sequence number */
 	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);

@@ -226,6 +226,42 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return result;
 }
 
+static NTSTATUS query_aliasmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 alias_rid,
+			       uint32 *num_members,
+			       DOM_SID **members)
+{
+	NTSTATUS result;
+
+	result = msrpc_methods.query_aliasmem(domain, mem_ctx, alias_rid,
+					      num_members, members);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
+		result = msrpc_methods.query_aliasmem(domain, mem_ctx,
+						      alias_rid,
+						      num_members, members);
+	return result;
+}
+
+static NTSTATUS query_groupmem(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       uint32 group_rid,
+			       uint32 *num_members,
+			       uint32 **members)
+{
+	NTSTATUS result;
+
+	result = msrpc_methods.query_groupmem(domain, mem_ctx, group_rid,
+					      num_members, members);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))
+		result = msrpc_methods.query_groupmem(domain, mem_ctx,
+						      group_rid,
+						      num_members, members);
+	return result;
+}
+
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
@@ -287,6 +323,8 @@ struct winbindd_methods reconnect_methods = {
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
+	query_aliasmem,
+	query_groupmem,
 	sequence_number,
 	trusted_domains,
 	alternate_name

@@ -643,6 +643,71 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS msrpc_query_aliasmem(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      uint32 alias_rid,
+			      uint32 *num_members,
+			      DOM_SID **members)
+{
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        POLICY_HND dom_pol, alias_pol;
+	struct rpc_pipe_client *cli;
+
+	DEBUG(10, ("rpc: lookup_aliasmem %s, rid=%d\n", domain->name,
+		   alias_rid));
+
+	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_samr_open_alias(cli, mem_ctx, &dom_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					alias_rid, &alias_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_samr_query_aliasmem(cli, mem_ctx, &alias_pol,
+					    num_members, members);
+
+	rpccli_samr_close(cli, mem_ctx, &alias_pol);
+	return result;
+}
+
+NTSTATUS msrpc_query_groupmem(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      uint32 group_rid,
+			      uint32 *num_members,
+			      uint32 **members)
+{
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        POLICY_HND dom_pol, group_pol;
+	struct rpc_pipe_client *cli;
+	uint32 *attr;
+
+	DEBUG(10, ("rpc: lookup_groupmem %s, rid=%d\n", domain->name,
+		   group_rid));
+
+	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_samr_open_group(cli, mem_ctx, &dom_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					group_rid, &group_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
+					    num_members, members, &attr);
+
+	rpccli_samr_close(cli, mem_ctx, &group_pol);
+	return result;
+}
+
 #ifdef HAVE_LDAP
 
 #include <ldap.h>
@@ -918,6 +983,8 @@ struct winbindd_methods msrpc_methods = {
 	lookup_usergroups,
 	msrpc_lookup_useraliases,
 	lookup_groupmem,
+	msrpc_query_aliasmem,
+	msrpc_query_groupmem,
 	sequence_number,
 	trusted_domains,
 	alternate_name

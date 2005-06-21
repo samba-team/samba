@@ -115,8 +115,10 @@ enum winbindd_cmd {
 	/* return a list of group sids for a user sid */
 	WINBINDD_GETUSERSIDS,
 
-	/* Return the domain groups a user is in */
+	/* Various group queries */
 	WINBINDD_GETUSERDOMGROUPS,
+	WINBINDD_QUERY_ALIASMEM,
+	WINBINDD_QUERY_GROUPMEM,
 
 	/* Initialize connection in a child */
 	WINBINDD_INIT_CONNECTION,

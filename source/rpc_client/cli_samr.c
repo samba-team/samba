@@ -1162,9 +1162,10 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Query alias members */
 
-NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *alias_pol, uint32 *num_mem, 
-                                 DOM_SID **sids)
+NTSTATUS rpccli_samr_query_aliasmem(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    POLICY_HND *alias_pol, uint32 *num_mem, 
+				    DOM_SID **sids)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_ALIASMEM q;
@@ -1187,7 +1188,7 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_aliasmem(&q, alias_pol);
 
 	if (!samr_io_q_query_aliasmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_ALIASMEM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, SAMR_QUERY_ALIASMEM, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1227,11 +1228,19 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *alias_pol, uint32 *num_mem, 
+                                 DOM_SID **sids)
+{
+	return rpccli_samr_query_aliasmem(&cli->pipes[PI_SAMR], mem_ctx,
+					  alias_pol, num_mem, sids);
+}
 /* Open handle on an alias */
 
-NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                             POLICY_HND *domain_pol, uint32 access_mask, 
-                             uint32 alias_rid, POLICY_HND *alias_pol)
+NTSTATUS rpccli_samr_open_alias(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx, 
+				POLICY_HND *domain_pol, uint32 access_mask, 
+				uint32 alias_rid, POLICY_HND *alias_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_ALIAS q;
@@ -1253,7 +1262,7 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_open_alias(&q, domain_pol, access_mask, alias_rid);
 
 	if (!samr_io_q_open_alias("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_OPEN_ALIAS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req_int(cli, SAMR_OPEN_ALIAS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1279,6 +1288,15 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&rbuf);
 
 	return result;
+}
+
+NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *domain_pol, uint32 access_mask, 
+			     uint32 alias_rid, POLICY_HND *alias_pol)
+{
+	return rpccli_samr_open_alias(&cli->pipes[PI_SAMR], mem_ctx,
+				      domain_pol, access_mask, alias_rid,
+				      alias_pol);
 }
 
 /* Create an alias */

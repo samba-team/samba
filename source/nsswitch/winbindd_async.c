@@ -706,16 +706,16 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
-			  int num_sids, char **result)
+BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+		   int num_sids, char **result, ssize_t *len)
 {
 	int i;
 	size_t buflen = 0;
-	ssize_t len = 0;
 
+	*len = 0;
 	*result = NULL;
 	for (i=0; i<num_sids; i++) {
-		sprintf_append(mem_ctx, result, &len, &buflen,
+		sprintf_append(mem_ctx, result, len, &buflen,
 			       "%s\n", sid_string_static(&sids[i]));
 	}
 
@@ -750,6 +750,49 @@ BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 		}
 		add_sid_to_array(mem_ctx, &sid, sids, num_sids);
 		p = q;
+	}
+	return True;
+}
+
+BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, int num_rids,
+		   char **result, ssize_t *len)
+{
+	int i;
+	size_t buflen = 0;
+
+	*len = 0;
+	*result = NULL;
+	for (i=0; i<num_rids; i++) {
+		sprintf_append(mem_ctx, result, len, &buflen,
+			       "%ld\n", rids[i]);
+	}
+
+	if ((num_rids != 0) && (*result == NULL)) {
+		return False;
+	}
+
+	return True;
+}
+
+BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
+		   uint32 **sids, int *num_rids)
+{
+	char *p;
+
+	p = ridstr;
+	if (p == NULL)
+		return False;
+
+	while (p[0] != '\0') {
+		uint32 rid;
+		char *q;
+		rid = strtoul(p, &q, 10);
+		if (*q != '\n') {
+			DEBUG(0, ("Got invalid ridstr: %s\n", p));
+			return False;
+		}
+		p = q+1;
+		ADD_TO_ARRAY(mem_ctx, uint32, rid, sids, num_rids);
 	}
 	return True;
 }
@@ -806,20 +849,21 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 {
 	struct winbindd_request request;
 	char *sidstr = NULL;
+	ssize_t len;
 
 	if (num_sids == 0) {
 		cont(private, True, NULL, 0);
 		return;
 	}
 
-	if (!print_sidlist(mem_ctx, sids, num_sids, &sidstr)) {
+	if (!print_sidlist(mem_ctx, sids, num_sids, &sidstr, &len)) {
 		cont(private, False, NULL, 0);
 		return;
 	}
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
-	request.extra_len = strlen(sidstr);
+	request.extra_len = len;
 	request.extra_data = sidstr;
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
@@ -832,6 +876,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
 	char *sidstr;
+	size_t len;
 	int i, num_aliases;
 	uint32 *alias_rids;
 	NTSTATUS result;
@@ -878,7 +923,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	}
 
 	if (!print_sidlist(NULL, sids, num_sids,
-			   (char **)&state->response.extra_data)) {
+			   (char **)&state->response.extra_data, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
 		return WINBINDD_ERROR;
 	}
@@ -886,7 +931,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	if (state->response.extra_data != NULL) {
 		DEBUG(10, ("aliases_list: %s\n",
 			   (char *)state->response.extra_data));
-		state->response.length += strlen(state->response.extra_data)+1;
+		state->response.length += len+1;
 	}
 	
 	return WINBINDD_OK;
@@ -1388,3 +1433,149 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			cont, private);
 }
 
+static void query_aliasmem_recv(TALLOC_CTX *mem_ctx, BOOL success,
+				struct winbindd_response *response,
+				void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, uint32 num_mem,
+		     const DOM_SID *mem) = c;
+	uint32 num_members;
+	DOM_SID *members;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger query_aliasmem\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("query_aliasmem failed\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	DEBUG(10, ("query_aliasmem returned %d members\n",
+		   response->data.num_entries));
+
+	if (response->data.num_entries == 0) {
+		cont(private, True, 0, NULL);
+		return;
+	}
+
+	members = NULL;
+	num_members = 0;
+
+	if (!parse_sidlist(mem_ctx, response->extra_data,
+			   &members, &num_members)) {
+		DEBUG(1, ("parse_sidlist failed\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	if (response->data.num_entries != num_members) {
+		DEBUG(1, ("dual_queryaliasmem returned %d, sidlist %d long\n",
+			  response->data.num_entries, num_members));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	cont(private, True, num_members, members);
+}
+
+void query_aliasmem_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			  void (*cont)(void *private, BOOL success,
+				       uint32 num_members,
+				       DOM_SID *members),
+			  void (*private))
+{
+	struct winbindd_request request;
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(5, ("Could not find domain for SID %s\n",
+			  sid_string_static(sid)));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_QUERY_ALIASMEM;
+	sid_to_string(request.data.sid, sid);
+	do_async_domain(mem_ctx, domain, &request, query_aliasmem_recv,
+			cont, private);
+}
+
+static void query_groupmem_recv(TALLOC_CTX *mem_ctx, BOOL success,
+				struct winbindd_response *response,
+				void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ, uint32 num_mem,
+		     uint32 *mem) = c;
+	uint32 num_members;
+	uint32 *members;
+
+	if (!success) {
+		DEBUG(5, ("Could not trigger query_groupmem\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	if (response->result != WINBINDD_OK) {
+		DEBUG(5, ("query_groupmem failed\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	DEBUG(10, ("query_groupmem returned %d members\n",
+		   response->data.num_entries));
+
+	if (response->data.num_entries == 0) {
+		cont(private, True, 0, NULL);
+		return;
+	}
+
+	members = NULL;
+	num_members = 0;
+
+	if (!parse_ridlist(mem_ctx, response->extra_data,
+			   &members, &num_members)) {
+		DEBUG(1, ("parse_ridlist failed\n"));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	if (response->data.num_entries != num_members) {
+		DEBUG(1, ("dual_querygroupmem returned %d, sidlist %d long\n",
+			  response->data.num_entries, num_members));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	cont(private, True, num_members, members);
+}
+
+void query_groupmem_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			  void (*cont)(void *private, BOOL success,
+				       uint32 num_members, uint32 *members),
+			  void (*private))
+{
+	struct winbindd_request request;
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(5, ("Could not find domain for SID %s\n",
+			  sid_string_static(sid)));
+		cont(private, False, 0, NULL);
+		return;
+	}
+
+	ZERO_STRUCT(request);
+	request.cmd = WINBINDD_QUERY_GROUPMEM;
+	sid_to_string(request.data.sid, sid);
+	do_async_domain(mem_ctx, domain, &request, query_groupmem_recv,
+			cont, private);
+}

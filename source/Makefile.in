@@ -667,6 +667,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_passdb.o \
 		nsswitch/winbindd_dual.o \
 		nsswitch/winbindd_lookupsids.o \
+		nsswitch/winbindd_groupmem.o \
 		nsswitch/winbindd_async.o
 
 WINBINDD_OBJ = \

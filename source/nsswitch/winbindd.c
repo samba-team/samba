@@ -236,6 +236,10 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
 	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
 	  "GETUSERDOMGROUPS" },
+	{ WINBINDD_QUERY_ALIASMEM, winbindd_query_aliasmem,
+	  "QUERY_ALIASMEM" },
+	{ WINBINDD_QUERY_GROUPMEM, winbindd_group_members,
+	  "QUERY_GROUPMEM" },
 
 	/* Group functions */
 

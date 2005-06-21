@@ -371,6 +371,10 @@ static struct winbindd_child_dispatch_table child_dispatch_table[] = {
 	  "GETUSERDOMGROUPS" },
 	{ WINBINDD_DUAL_GETSIDALIASES, winbindd_dual_getsidaliases,
 	  "GETSIDALIASES" },
+	{ WINBINDD_QUERY_ALIASMEM, winbindd_dual_query_aliasmem,
+	  "QUERY_ALIASMEM" },
+	{ WINBINDD_QUERY_GROUPMEM, winbindd_dual_query_groupmem,
+	  "QUERY_GROUPMEM" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

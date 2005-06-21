@@ -192,6 +192,55 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 	return True;
 }
 
+static BOOL wbinfo_get_aliasmem(const char *alias_sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	fstrcpy(request.data.sid, alias_sid);
+
+	result = winbindd_request(WINBINDD_QUERY_ALIASMEM, &request,
+				  &response);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	if (response.data.num_entries != 0)
+		printf("%s", (char *)response.extra_data);
+	
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
+
+static BOOL wbinfo_get_groupmem(const char *group_sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	fstrcpy(request.data.sid, group_sid);
+
+	result = winbindd_request(WINBINDD_QUERY_GROUPMEM, &request,
+				  &response);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	if (response.data.num_entries != 0)
+		printf("%s", (char *)response.extra_data);
+	
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
 
 /* Convert NetBIOS name to IP */
 
@@ -953,6 +1002,8 @@ enum {
 	OPT_SEQUENCE,
 	OPT_GETDCNAME,
 	OPT_USERDOMGROUPS,
+	OPT_ALIASMEM,
+	OPT_GROUPMEM,
 	OPT_USERSIDS
 };
 
@@ -990,6 +1041,10 @@ int main(int argc, char **argv)
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
+		{ "aliasmem", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_ALIASMEM, "Get alias members", "SID" },
+		{ "groupmem", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_GROUPMEM, "Get group members", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
@@ -1150,6 +1205,20 @@ int main(int argc, char **argv)
 		case OPT_USERDOMGROUPS:
 			if (!wbinfo_get_userdomgroups(string_arg)) {
 				d_printf("Could not get user's domain groups "
+					 "for user SID %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case OPT_ALIASMEM:
+			if (!wbinfo_get_aliasmem(string_arg)) {
+				d_printf("Could not get alias members "
+					 "for user SID %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case OPT_GROUPMEM:
+			if (!wbinfo_get_groupmem(string_arg)) {
+				d_printf("Could not get group members "
 					 "for user SID %s\n", string_arg);
 				goto done;
 			}
