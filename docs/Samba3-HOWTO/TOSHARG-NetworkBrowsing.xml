@@ -249,7 +249,7 @@ configuration parameter called the NetBIOS node-type. There are four basic NetBI
 </itemizedlist>
 
 <para>
-<indexterm><primary>Hybrid</primary></indexterm>
+<indexterm><primary>h-node</primary></indexterm>
 <indexterm><primary>hybrid</primary></indexterm>
 <indexterm><primary>enables NetBIOS over TCP/IP</primary></indexterm>
 <indexterm><primary>WINS</primary></indexterm>
