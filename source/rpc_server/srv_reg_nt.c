@@ -1378,6 +1378,8 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	write_result = store_reg_keys( newparent, &subkeys );
 	
 	regsubkey_ctr_destroy( &subkeys );
+
+	result = write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 	
 done:
 	/* close any intermediate key handles */
@@ -1387,7 +1389,7 @@ done:
 
 	/* rpc_reg.h says there is a POLICY_HDN in the reply...no idea if that is correct */
 	
-	return write_result ? WERR_OK : WERR_REG_IO_FAILURE;
+	return result;
 }
 
 
