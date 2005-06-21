@@ -105,6 +105,62 @@ static ldb_ldif_handler_t ldb_ldif_write_fn(struct ldb_context *ldb, const char 
 }
 
 /*
+  
+*/
+static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
+{
+	struct stat statbuf;
+	char *buf;
+	int count, size, bytes;
+	int ret;
+	int f;
+
+	f = open(value->data, O_RDONLY);
+	if (f == -1) {
+		return -1;
+	}
+
+	if (fstat(f, &statbuf) != 0) {
+		ret = -1;
+		goto done;
+	}
+
+	if (statbuf.st_size == 0) {
+		ret = -1;
+		goto done;
+	}
+
+	value->data = talloc_size(mem_ctx, statbuf.st_size + 1);
+	if (value->data == NULL) {
+		ret = -1;
+		goto done;
+	}
+	value->data[statbuf.st_size] = 0;
+
+	count = 0;
+	size = statbuf.st_size;
+	buf = value->data;
+	while (count < statbuf.st_size) {
+		bytes = read(f, buf, size);
+		if (bytes == -1) {
+			talloc_free(value->data);
+			ret = -1;
+			goto done;
+		}
+		count += bytes;
+		buf += bytes;
+		size -= bytes;
+	}
+
+	value->length = statbuf.st_size;
+	ret = statbuf.st_size;
+
+done:
+	close(f);
+	return ret;
+}
+
+/*
   this base64 decoder was taken from jitterbug (written by tridge).
   we might need to replace it with a new version
 */
@@ -426,10 +482,11 @@ static char *next_chunk(struct ldb_context *ldb,
 
 
 /* simple ldif attribute parser */
-static int next_attr(char **s, const char **attr, struct ldb_val *value)
+static int next_attr(void *mem_ctx, char **s, const char **attr, struct ldb_val *value)
 {
 	char *p;
 	int base64_encoded = 0;
+	int binary_file = 0;
 
 	if (strncmp(*s, "-\n", 2) == 0) {
 		value->length = 0;
@@ -447,6 +504,11 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 
 	if (*p == ':') {
 		base64_encoded = 1;
+		p++;
+	}
+
+	if (*p == '<') {
+		binary_file = 1;
 		p++;
 	}
 
@@ -476,6 +538,14 @@ static int next_attr(char **s, const char **attr, struct ldb_val *value)
 			return -1;
 		}
 		value->length = len;
+	}
+
+	if (binary_file) {
+		int len = ldb_read_data_file(mem_ctx, value);
+		if (len == -1) {
+			/* an error occured hile trying to retrieve the file */
+			return -1;
+		}
 	}
 
 	return 0;
@@ -564,7 +634,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->private_data = chunk;
 	s = chunk;
 
-	if (next_attr(&s, &attr, &value) != 0) {
+	if (next_attr(ldif, &s, &attr, &value) != 0) {
 		goto failed;
 	}
 	
@@ -577,7 +647,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 
 	msg->dn = value.data;
 
-	while (next_attr(&s, &attr, &value) == 0) {
+	while (next_attr(ldif, &s, &attr, &value) == 0) {
 		ldb_ldif_handler_t read_fn;
 		struct ldb_message_element *el;
 		int ret, empty = 0;
