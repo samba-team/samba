@@ -40,7 +40,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include <ctype.h>
-
+#ifdef _SAMBA_BUILD_
+#include "system/filesys.h"
+#endif
 
 /*
   add to the list of ldif handlers for this ldb context
