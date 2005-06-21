@@ -41,6 +41,30 @@
 #include "ldb/include/ldb_private.h"
 #include <ctype.h>
 
+
+/*
+  add to the list of ldif handlers for this ldb context
+*/
+int ldb_ldif_add_handlers(struct ldb_context *ldb, 
+			  const struct ldb_ldif_handler *handlers, 
+			  unsigned num_handlers)
+{
+	struct ldb_ldif_handler *h;
+	h = talloc_realloc(ldb, ldb->ldif_handlers,
+			   struct ldb_ldif_handler,
+			   ldb->ldif_num_handlers + num_handlers);
+	if (h == NULL) {
+		ldb_oom(ldb);
+		return -1;
+	}
+	ldb->ldif_handlers = h;
+	memcpy(h + ldb->ldif_num_handlers, 
+	       handlers, sizeof(*h) * num_handlers);
+	ldb->ldif_num_handlers += num_handlers;
+	return 0;
+}
+			  
+
 /*
   default function for ldif read/write
 */
@@ -59,7 +83,7 @@ static ldb_ldif_handler_t ldb_ldif_read_fn(struct ldb_context *ldb, const char *
 {
 	int i;
 	for (i=0;i<ldb->ldif_num_handlers;i++) {
-		if (strcmp(attr, ldb->ldif_handlers[i].attr) == 0) {
+		if (ldb_attr_cmp(attr, ldb->ldif_handlers[i].attr) == 0) {
 			return ldb->ldif_handlers[i].read_fn;
 		}
 	}
@@ -73,7 +97,7 @@ static ldb_ldif_handler_t ldb_ldif_write_fn(struct ldb_context *ldb, const char 
 {
 	int i;
 	for (i=0;i<ldb->ldif_num_handlers;i++) {
-		if (strcmp(attr, ldb->ldif_handlers[i].attr) == 0) {
+		if (ldb_attr_cmp(attr, ldb->ldif_handlers[i].attr) == 0) {
 			return ldb->ldif_handlers[i].write_fn;
 		}
 	}

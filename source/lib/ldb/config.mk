@@ -91,11 +91,19 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
+# Start SUBSYSTEM LDBSAMBA
+[SUBSYSTEM::LDBSAMBA]
+OBJ_FILES = \
+		lib/ldb/samba/ldif_handlers.o
+# End SUBSYSTEM LDBSAMBA
+################################################
+
+################################################
 # Start SUBSYSTEM LIBLDB_CMDLINE
 [SUBSYSTEM::LIBLDB_CMDLINE]
 OBJ_FILES= \
 		lib/ldb/tools/cmdline.o
-REQUIRED_SUBSYSTEMS = LIBLDB LIBCMDLINE LIBBASIC
+REQUIRED_SUBSYSTEMS = LIBLDB LIBCMDLINE LIBBASIC LDBSAMBA
 # End SUBSYSTEM LIBLDB_CMDLINE
 ################################################
 

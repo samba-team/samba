@@ -36,9 +36,9 @@
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
 					void (*usage)(void))
 {
-	struct ldb_cmdline options, *ret;
+	struct ldb_cmdline options, *ret=NULL;
 	poptContext pc;
-	int num_options = 0;
+	int r, num_options = 0;
 	char opt;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -65,6 +65,10 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 
 #ifdef _SAMBA_BUILD_
 	ldbsearch_init_subsystems;
+	r = ldb_register_samba_handlers(ldb);
+	if (r != 0) {
+		goto failed;
+	}
 #endif
 
 	ret = talloc_zero(ldb, struct ldb_cmdline);
