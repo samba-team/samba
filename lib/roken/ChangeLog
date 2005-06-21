@@ -1,3 +1,30 @@
+2005-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* strptime.c: Write a new parse_number function that is possible
+	to limit that amount of numbers used, with this strptime can
+	handle strptime("200505", "%Y%m", &tm);
+
+2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* getaddrinfo.c: avoid shadowing sin
+	
+	* resolve-test.c: rename optind to optidx to avoid shadowing
+	
+	* strptime.c: UNCONST return value from strptime
+	
+	* strftime.c: rk_UNCONST argument mktime
+	
+	* getnameinfo.c: avoid shadowing sin
+	
+	* socket.c: avoid shadowing sin
+
+	* resolve.c (parse_record): fix casting to avoid losing const
+	
+	* roken.awk: since we got no feedback regarding people running
+	heimdal on the crays, remove the quoted # version
+	
+	* environment.c: rename index to idx to avoid shadowing
+
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse_reply-test.c: avoid signedness warnings
