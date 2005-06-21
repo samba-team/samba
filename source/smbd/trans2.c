@@ -2479,7 +2479,6 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					(unsigned int)client_unix_cap_low,
 					(unsigned int)client_unix_cap_high ));
 
-				outsize = set_message(outbuf,0,0,True);
 				break;
 			}
 		case SMB_FS_QUOTA_INFORMATION:
@@ -2538,14 +2537,6 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				return ERROR_DOS(ERRSRV,ERRerror);
 			}
 			
-			/* 
-			 * sending this reply works fine, 
-			 * but I'm not sure it's the same 
-			 * like windows do...
-			 * --metze
-			 */ 
-			outsize = set_message(outbuf,10,0,True);
-
 			break;
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
@@ -2553,6 +2544,14 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 			break;
 	}
+
+	/* 
+	 * sending this reply works fine, 
+	 * but I'm not sure it's the same 
+	 * like windows do...
+	 * --metze
+	 */ 
+	outsize = set_message(outbuf,10,0,True);
 
 	return outsize;
 }
