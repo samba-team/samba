@@ -184,6 +184,19 @@ struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s);
 char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree);
 char *ldb_binary_encode(void *ctx, struct ldb_val val);
 
+
+/*
+  functions for controlling ldif encode/decode
+*/
+typedef int (*ldb_ldif_handler_t)(struct ldb_context *, const struct ldb_val *, struct ldb_val *);
+
+struct ldb_ldif_handler {
+	const char *attr;
+	ldb_ldif_handler_t read_fn;
+	ldb_ldif_handler_t write_fn;
+};
+
+
 /*
   initialise a ldb context
 */

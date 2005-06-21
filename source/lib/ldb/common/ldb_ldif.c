@@ -41,6 +41,44 @@
 #include "ldb/include/ldb_private.h"
 #include <ctype.h>
 
+/*
+  default function for ldif read/write
+*/
+static int ldb_ldif_default(struct ldb_context *ldb, const struct ldb_val *in, 
+			    struct ldb_val *out)
+{
+	*out = *in;
+	return 0;
+}
+
+
+/*
+  return a function for reading an ldif encoded attributes into a ldb_val
+*/
+static ldb_ldif_handler_t ldb_ldif_read_fn(struct ldb_context *ldb, const char *attr)
+{
+	int i;
+	for (i=0;i<ldb->ldif_num_handlers;i++) {
+		if (strcmp(attr, ldb->ldif_handlers[i].attr) == 0) {
+			return ldb->ldif_handlers[i].read_fn;
+		}
+	}
+	return ldb_ldif_default;
+}
+
+/*
+  return a function for writing an ldif encoded attribute from a ldb_val
+*/
+static ldb_ldif_handler_t ldb_ldif_write_fn(struct ldb_context *ldb, const char *attr)
+{
+	int i;
+	for (i=0;i<ldb->ldif_num_handlers;i++) {
+		if (strcmp(attr, ldb->ldif_handlers[i].attr) == 0) {
+			return ldb->ldif_handlers[i].write_fn;
+		}
+	}
+	return ldb_ldif_default;
+}
 
 /*
   this base64 decoder was taken from jitterbug (written by tridge).
@@ -49,9 +87,9 @@
 int ldb_base64_decode(char *s)
 {
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	int bit_offset, byte_offset, idx, i, n;
+	int bit_offset=0, byte_offset, idx, i, n;
 	uint8_t *d = (uint8_t *)s;
-	char *p;
+	char *p=NULL;
 
 	n=i=0;
 
@@ -254,13 +292,17 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		}
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			if (ldb_should_b64_encode(&msg->elements[i].values[j])) {
+			ldb_ldif_handler_t write_fn = ldb_ldif_write_fn(ldb, 
+								      msg->elements[i].name);
+			struct ldb_val v;
+			ret = write_fn(ldb, &msg->elements[i].values[j], &v);
+			CHECK_RET;
+			if (ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
 						 msg->elements[i].name);
 				CHECK_RET;
 				ret = base64_encode_f(ldb, fprintf_fn, private_data, 
-						      msg->elements[i].values[j].data, 
-						      msg->elements[i].values[j].length,
+						      v.data, v.length,
 						      strlen(msg->elements[i].name)+3);
 				CHECK_RET;
 				ret = fprintf_fn(private_data, "\n");
@@ -269,12 +311,14 @@ int ldb_ldif_write(struct ldb_context *ldb,
 				ret = fprintf_fn(private_data, "%s: ", msg->elements[i].name);
 				CHECK_RET;
 				ret = fold_string(fprintf_fn, private_data,
-						  msg->elements[i].values[j].data,
-						  msg->elements[i].values[j].length,
+						  v.data, v.length,
 						  strlen(msg->elements[i].name)+2);
 				CHECK_RET;
 				ret = fprintf_fn(private_data, "\n");
 				CHECK_RET;
+			}
+			if (v.data != msg->elements[i].values[j].data) {
+				talloc_free(v.data);
 			}
 		}
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
@@ -510,8 +554,9 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->dn = value.data;
 
 	while (next_attr(&s, &attr, &value) == 0) {
+		ldb_ldif_handler_t read_fn;
 		struct ldb_message_element *el;
-		int empty = 0;
+		int ret, empty = 0;
 
 		if (ldb_attr_cmp(attr, "changetype") == 0) {
 			int i;
@@ -555,6 +600,8 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		
 		el = &msg->elements[msg->num_elements-1];
 
+		read_fn = ldb_ldif_read_fn(ldb, attr);
+
 		if (msg->num_elements > 0 && ldb_attr_cmp(attr, el->name) == 0 &&
 		    flags == el->flags) {
 			/* its a continuation */
@@ -564,7 +611,13 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (!el->values) {
 				goto failed;
 			}
-			el->values[el->num_values] = value;
+			ret = read_fn(ldb, &value, &el->values[el->num_values]);
+			if (ret != 0) {
+				goto failed;
+			}
+			if (value.data != el->values[el->num_values].data) {
+				talloc_steal(el->values, el->values[el->num_values].data);
+			}
 			el->num_values++;
 		} else {
 			/* its a new attribute */
@@ -582,7 +635,13 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				goto failed;
 			}
 			el->num_values = 1;
-			el->values[0] = value;
+			ret = read_fn(ldb, &value, &el->values[0]);
+			if (ret != 0) {
+				goto failed;
+			}
+			if (value.data != el->values[0].data) {
+				talloc_steal(el->values, el->values[0].data);
+			}
 			msg->num_elements++;
 		}
 	}
