@@ -245,6 +245,11 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 	NTSTATUS status;
 	size_t npending, nread;
 
+	if (conn->processing) {
+		EVENT_FD_NOT_READABLE(c->event.fde);
+		return;
+	}
+
 	/* work out how much data is pending */
 	status = tls_socket_pending(conn->tls, &npending);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -279,12 +284,16 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 	}
 	conn->partial.length += nread;
 
+	conn->processing = True;
 	/* see if we can decode what we have */
 	if (conn->enable_wrap) {
 		ldapsrv_try_decode_wrapped(conn);
 	} else {
 		ldapsrv_try_decode_plain(conn);
 	}
+	conn->processing = False;
+
+	EVENT_FD_READABLE(c->event.fde);
 }
 	
 /*
@@ -338,6 +347,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->send_queue  = NULL;
 	conn->connection  = c;
 	conn->service     = talloc_get_type(c->private, struct ldapsrv_service);
+	conn->processing  = False;
 	c->private        = conn;
 
 	port = socket_get_my_port(c->socket);
