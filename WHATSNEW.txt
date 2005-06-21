@@ -1,15 +1,112 @@
                    ==================================
+                   Release Notes for Samba 3.0.20pre1
+                               June 21, 2005
+                   ==================================
+
+This is a preview release of the Samba 3.0.20 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  There has been a substancial amount 
+of development since the 3.0.14a stable release (and since the
+3.015pre2 release as well).  We would like to ask the Samba 
+community for help in testing these changes as we work towards
+the next official, production Samba 3.0 release.
+
+Additional features introduced in Samba 3.0.15pre2 include:
+
+  o 
+
+
+What happened to 3.0.15 - 3.0.19?
+==================================
+
+After some discussion it was deemed that the amount of changes 
+going into the next Samba 3.0 release needed something to catch
+people's attention.  Skipping several releases was chosed as 
+the best solution with the least overhead.  There will be no
+3.0.15 - 3.0.19 ever released.  The next production release
+following 3.0.20 should be 3.0.21.
+
+The original announcement about the version number change can 
+be found in the samba mailing list archives:
+
+http://marc.theaimsgroup.com/?l=samba&m=111721010206997&w=2
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.15pre2
+------------------------
+
+    Parameter Name                      Action
+    --------------                      ------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Add checks against the current effective groupid (e.g. force 
+      user) when testing write permissions one ACLs.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 2626: ensure that the calling_name is set to something 
+      after parsing smb.conf (if not set via -n).
+
+
+o   Guenther Deschner <gd@samba.org>
+o   Steve French <sfrench@us.ibm.com>
+
+o   Deryck Hodge <deryck@samba.org>
+    * BUG 2137: Encode quotes for display in HTML (original patch 
+      from Jay Fenlason).
+
+
+o   Guenter Kukkukk <guenter.kukkukk@kukkukk.com>
+o   Tom Lackemann <cessnatomny@yahoo.com>
+o   Volker Lendecke <vl@samba.org>
+    * Refactor passdb interface functions.
+
+
+o   Herb Lewis <herb@samba.org>
+o   Derrell Lipman <derrell@samba.org>
+    * BUG 2564: Ensure correct errno when smbc_opendir() was called 
+      with a file rather than a directory.
+
+o   Jason Mader <jason@ncac.gwu.edu>
+o   Jim McDonough <jmcd@us.ibm.com>
+o   Marcel Muller <mueller@maazl.de>
+o   James Peach <jpeach@sgi.com>
+    * IRIX compiler warning fixes.
+
+
+o   Marcin Porwit <mporwit@centeris.com>
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 2623, 2630: $< and $* are not valid in explicit rules 
+      according to POSIX.
+    * BUG 2560: Fix compile error lurking where PATH_MAX is not 
+      defined.
+    * BUG 2625: Remove configure check for FTRUNCATE_NEEDS_ROOT.
+    * BUG 2611: Add fflush(stdout) after displaying username prompt 
+      in smbsh if username not specified on command line.
+
+
+o   Simo Sorce <idra@samba.org>
+o   Mark Weaver <mark-clist@npsl.co.uk>
+o   Jelmer Vernooij <jelmer@samba.org>
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==================================
                    Release Notes for Samba 3.0.15pre2
                                Apr 18, 2005
                    ==================================
-
-This is a preview release of the Samba 3.0.15 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  However, there have been several bug
-fixes and new features added since 3.0.14a that we feel are
-important to make available to the Samba community for wider
-testing.  There are still more changes planned before the 
-final 3.0.15 release.
 
 Additional features introduced in Samba 3.0.15pre2 include:
 
@@ -201,9 +298,6 @@ o   Mark Weaver <mark-clist@npsl.co.uk>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Remove --with-manpage-languages configure option.
 
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ===============================
