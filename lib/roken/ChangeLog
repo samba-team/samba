@@ -1,5 +1,7 @@
 2005-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* esetenv.c: unconst
+
 	* strptime.c: Write a new parse_number function that is possible
 	to limit that amount of numbers used, with this strptime can
 	handle strptime("200505", "%Y%m", &tm);
