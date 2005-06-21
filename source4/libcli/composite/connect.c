@@ -349,7 +349,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 
 	make_nbt_name_server(&name, io->in.dest_host);
 
-	state->creq = resolve_name_send(&name, c->event_ctx, NULL);
+	state->creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
 	if (state->creq == NULL) goto failed;
 
 	state->creq->async.private = c;
