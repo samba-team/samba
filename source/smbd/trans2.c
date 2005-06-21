@@ -2433,7 +2433,7 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 	
 	ZERO_STRUCT(quotas);
 
-	DEBUG(10,("call_trans2setfsinfo: SET_FS_QUOTA: for service [%s]\n",lp_servicename(SNUM(conn))));
+	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",lp_servicename(SNUM(conn))));
 
 	/* access check */
 	if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
@@ -2449,25 +2449,54 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	fsp = file_fsp(params,0);
-
-	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
-		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-	}
-
 	info_level = SVAL(params,2);
 
 	switch(info_level) {
+		case SMB_SET_CIFS_UNIX_INFO:
+			{
+				uint16 client_unix_major;
+				uint16 client_unix_minor;
+				uint32 client_unix_cap_low;
+				uint32 client_unix_cap_high;
+
+				if (!lp_unix_extensions()) {
+					return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				}
+
+				/* There should be 12 bytes of capabilities set. */
+				if (total_data < 8) {
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
+				client_unix_major = SVAL(pdata,0);
+				client_unix_minor = SVAL(pdata,2);
+				client_unix_cap_low = IVAL(pdata,4);
+				client_unix_cap_high = IVAL(pdata,8);
+				/* Just print these values for now. */
+				DEBUG(10,("call_trans2setfsinfo: set unix info. major = %u, minor = %u\
+cap_low = 0x%x, cap_high = 0x%x\n",
+					(unsigned int)client_unix_major,
+					(unsigned int)client_unix_minor,
+					(unsigned int)client_unix_cap_low,
+					(unsigned int)client_unix_cap_high ));
+
+				outsize = set_message(outbuf,0,0,True);
+				break;
+			}
 		case SMB_FS_QUOTA_INFORMATION:
 			/* note: normaly there're 48 bytes,
 			 * but we didn't use the last 6 bytes for now 
 			 * --metze 
 			 */
+			fsp = file_fsp(params,0);
+			if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+				DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+				return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+			}
+
 			if (total_data < 42) {
 				DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
 					total_data));
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 			
 			/* unknown_1 24 NULL bytes in pdata*/
@@ -2481,7 +2510,7 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 				((quotas.softlim != 0xFFFFFFFF)||
 				(IVAL(pdata,28)!=0xFFFFFFFF))) {
 				/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 #endif /* LARGE_SMB_OFF_T */
 		
@@ -2494,7 +2523,7 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 				((quotas.hardlim != 0xFFFFFFFF)||
 				(IVAL(pdata,36)!=0xFFFFFFFF))) {
 				/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 			}
 #endif /* LARGE_SMB_OFF_T */
 		
@@ -2509,6 +2538,14 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 				return ERROR_DOS(ERRSRV,ERRerror);
 			}
 			
+			/* 
+			 * sending this reply works fine, 
+			 * but I'm not sure it's the same 
+			 * like windows do...
+			 * --metze
+			 */ 
+			outsize = set_message(outbuf,10,0,True);
+
 			break;
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
@@ -2516,14 +2553,6 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 			break;
 	}
-
-	/* 
-	 * sending this reply works fine, 
-	 * but I'm not sure it's the same 
-	 * like windows do...
-	 * --metze
-	 */ 
-	outsize = set_message(outbuf,10,0,True);
 
 	return outsize;
 }
