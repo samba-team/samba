@@ -132,16 +132,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	status = nbt_name_dup(state, name, &state->name);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	/* use default methods from config file if not passed explicitly */
-	if (methods == NULL) {
-		state->methods = lp_name_resolve_order();
-		if (state->methods == NULL) {
-			return NULL;
-		}
-
-	} else {
-		state->methods = methods;
-	}
+	if (methods == NULL) goto failed;
+	state->methods = methods;
 
 	c->state = SMBCLI_REQUEST_SEND;
 	c->private = state;
@@ -186,7 +178,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
  */
 NTSTATUS resolve_name(struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
-	struct composite_context *c = resolve_name_send(name, NULL, NULL);
+	struct composite_context *c = resolve_name_send(name, NULL, lp_name_resolve_order());
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 
