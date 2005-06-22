@@ -880,45 +880,6 @@ No privileges assigned
 	</para>
 
 	<para>
-	For reference purposes, a Windows 2000 Domain Controller reports that it supports the following
-	privileges:
-<screen>
-         SeCreateTokenPrivilege  Create a token object
-  SeAssignPrimaryTokenPrivilege  Replace a process level token
-          SeLockMemoryPrivilege  Lock pages in memory
-       SeIncreaseQuotaPrivilege  Increase quotas
-      SeMachineAccountPrivilege  Add workstations to domain
-                 SeTcbPrivilege  Act as part of the operating system
-            SeSecurityPrivilege  Manage auditing and security log
-       SeTakeOwnershipPrivilege  Take ownership of files or other objects
-          SeLoadDriverPrivilege  Load and unload device drivers
-       SeSystemProfilePrivilege  Profile system performance
-          SeSystemtimePrivilege  Change the system time
-SeProfileSingleProcessPrivilege  Profile single process
-SeIncreaseBasePriorityPrivilege  Increase scheduling priority
-      SeCreatePagefilePrivilege  Create a pagefile
-     SeCreatePermanentPrivilege  Create permanent shared objects
-              SeBackupPrivilege  Back up files and directories
-             SeRestorePrivilege  Restore files and directories
-            SeShutdownPrivilege  Shut down the system
-               SeDebugPrivilege  Debug programs
-               SeAuditPrivilege  Generate security audits
-   SeSystemEnvironmentPrivilege  Modify firmware environment values
-        SeChangeNotifyPrivilege  Bypass traverse checking
-      SeRemoteShutdownPrivilege  Force shutdown from a remote system
-              SeUndockPrivilege  Remove computer from docking station
-           SeSyncAgentPrivilege  Synchronize directory service data
-    SeEnableDelegationPrivilege  Enable computer and user accounts to
-                                 be trusted for delegation
-        SeManageVolumePrivilege  Perform volume maintenance tasks
-         SeImpersonatePrivilege  Impersonate a client after authentication
-        SeCreateGlobalPrivilege  Create global objects
-</screen>
-	The Samba Team are implementing only those privileges that are logical and useful in the UNIX/Linux
-	envronment. Many of the Windows 200X/XP privileges have no direct equivalence in UNIX.
-	</para>
-
-	<para>
 	In this example, all rights are assigned to the <constant>Domain Admins</constant> group. This is a good
 	idea since members of this group are generally expected to be all-powerful. This assignment makes that
 	the reality:
