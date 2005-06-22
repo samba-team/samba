@@ -398,7 +398,9 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 	} else {
 		ret = srvstr_pull( inbuf, tmppath_ptr, src, dest_len, src_len, flags);
 	}
-	if (allow_wcard_names) {
+	if (lp_posix_pathnames()) {
+		*err = check_path_syntax_posix(dest, tmppath);
+	} else if (allow_wcard_names) {
 		*err = check_path_syntax_wcard(dest, tmppath);
 	} else {
 		*err = check_path_syntax(dest, tmppath);
@@ -1032,6 +1034,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	NTSTATUS nt_status;
 	BOOL allow_long_path_components = (SVAL(inbuf,smb_flg2) & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 
+	if (lp_posix_pathnames()) {
+		return reply_unknown(inbuf, outbuf);
+	}
+
 	START_PROFILE(SMBsearch);
 
 	*mask = *directory = *fname = 0;
@@ -1227,6 +1233,10 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	int dptr_num= -2;
 	char *p;
 	NTSTATUS err;
+
+	if (lp_posix_pathnames()) {
+		return reply_unknown(inbuf, outbuf);
+	}
 
 	START_PROFILE(SMBfclose);
 
