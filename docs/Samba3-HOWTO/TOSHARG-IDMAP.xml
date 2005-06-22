@@ -16,7 +16,7 @@
 <indexterm><primary>UID</primary></indexterm>
 <indexterm><primary>GID</primary></indexterm>
 The Microsoft Windows operating system has a number of features that impose specific challenges
-to interoperability with the operating system on which Samba is implemented. This chapter deals
+to interoperability with the operating systems on which Samba is implemented. This chapter deals
 explicitly with the mechanisms Samba-3 (version 3.0.8 and later) uses to overcome one of the
 key challenges in the integration of Samba servers into an MS Windows networking environment.
 This chapter deals with identity mapping (IDMAP) of Windows security identifiers (SIDs)
