@@ -440,17 +440,6 @@ cleanup_princ:
 	return retval;
 }
 
-#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
- const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
-{
-	static krb5_data kdata;
-
-	kdata.data = discard_const(krb5_principal_get_comp_string(context, principal, i));
-	kdata.length = strlen(kdata.data);
-	return &kdata;
-}
-#endif
-
  krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
 {
 #if defined(HAVE_KRB5_KT_FREE_ENTRY)

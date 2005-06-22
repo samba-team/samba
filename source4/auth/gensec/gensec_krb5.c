@@ -400,6 +400,26 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 
 
 /**
+ * Check if the packet is one for this mechansim
+ * 
+ * @param gensec_security GENSEC state
+ * @param in The request, as a DATA_BLOB
+ * @return Error, INVALID_PARAMETER if it's not a packet for us
+ *                or NT_STATUS_OK if the packet is ok. 
+ */
+
+static NTSTATUS gensec_krb5_magic(struct gensec_security *gensec_security, 
+				  const DATA_BLOB *in) 
+{
+	if (gensec_gssapi_check_oid(in, GENSEC_OID_KERBEROS5)) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+
+/**
  * Next state function for the Krb5 GENSEC mechanism
  * 
  * @param gensec_krb5_state KRB5 State
@@ -494,7 +514,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		/* Parse the GSSAPI wrapping, if it's there... (win2k3 allows it to be omited) */
 		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
 			nt_status = ads_verify_ticket(out_mem_ctx, 
-						      gensec_krb5_state->smb_krb5_context->krb5_context, 
+						      gensec_krb5_state->smb_krb5_context,
 						      gensec_krb5_state->auth_context, 
 						      lp_realm(), 
 						      gensec_get_target_service(gensec_security), &in, 
@@ -503,7 +523,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		} else {
 			/* TODO: check the tok_id */
 			nt_status = ads_verify_ticket(out_mem_ctx, 
-						      gensec_krb5_state->smb_krb5_context->krb5_context, 
+						      gensec_krb5_state->smb_krb5_context,
 						      gensec_krb5_state->auth_context, 
 						      lp_realm(), 
 						      gensec_get_target_service(gensec_security), 
@@ -669,6 +689,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.oid            = gensec_krb5_oids,
 	.client_start   = gensec_krb5_client_start,
 	.server_start   = gensec_krb5_server_start,
+	.magic   	= gensec_krb5_magic,
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,

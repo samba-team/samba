@@ -269,9 +269,21 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 			continue;
 		}
 
+		if (!all_ops[i]->magic) {
+			continue;
+		}
+
+		nt_status = all_ops[i]->magic(gensec_security, &in);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			continue;
+		}
+
+		spnego_state->state_position = SPNEGO_FALLBACK;
+
 		nt_status = gensec_subcontext_start(spnego_state, 
 						    gensec_security, 
 						    &spnego_state->sub_sec_security);
+
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
@@ -279,18 +291,11 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 						     all_ops[i]);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
-			continue;
+			return nt_status;
 		}
 		nt_status = gensec_update(spnego_state->sub_sec_security,
 					  out_mem_ctx, in, out);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			spnego_state->state_position = SPNEGO_FALLBACK;
-			return nt_status;
-		}
-		talloc_free(spnego_state->sub_sec_security);
-		spnego_state->sub_sec_security = NULL;
+		return nt_status;
 	}
 	DEBUG(1, ("Failed to parse SPNEGO request\n"));
 	return NT_STATUS_INVALID_PARAMETER;

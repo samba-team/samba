@@ -91,7 +91,7 @@ DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx,
 				 krb5_ticket *tkt);
 
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
-			   krb5_context context,
+			   struct smb_krb5_context *smb_krb5_context,
 			   krb5_auth_context auth_context,
 			   const char *realm, const char *service, 
 			   const DATA_BLOB *ticket, 
@@ -116,5 +116,13 @@ NTSTATUS kinit_to_ccache(TALLOC_CTX *parent_ctx,
 			  const char **ccache_name);
 krb5_error_code smb_krb5_init_context(TALLOC_CTX *parent_ctx, 
 				      struct smb_krb5_context **smb_krb5_context); 
+krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 
+						struct cli_credentials *machine_account, 
+						struct smb_krb5_context *smb_krb5_context,
+						krb5_principal *salt_princ);
+NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
+			      struct cli_credentials *machine_account,
+			      struct smb_krb5_context *smb_krb5_context,
+			      krb5_keytab *keytab);
 #endif /* HAVE_KRB5 */
 

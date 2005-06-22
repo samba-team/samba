@@ -46,6 +46,7 @@ struct gensec_gssapi_state {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_ccache ccache;
 	const char *ccache_name;
+	krb5_keytab keytab;
 
 	gss_cred_id_t cred;
 };
@@ -170,6 +171,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 {
 	NTSTATUS nt_status;
 	struct gensec_gssapi_state *gensec_gssapi_state;
+	struct cli_credentials *machine_account;
 
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -178,7 +180,30 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = gensec_security->private_data;
 
+	machine_account = cli_credentials_init(gensec_gssapi_state);
+	cli_credentials_set_conf(machine_account);
+	nt_status = cli_credentials_set_machine_account(machine_account);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
+		talloc_free(machine_account);
+		return nt_status;
+	} else {
+		nt_status = create_memory_keytab(gensec_gssapi_state,
+						 machine_account, 
+						 gensec_gssapi_state->smb_krb5_context,
+						 &gensec_gssapi_state->keytab);
+		talloc_free(machine_account);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(3, ("Could not create memory keytab!\n"));
+			talloc_free(machine_account);
+			return nt_status;
+		}
+	}
+
+	gsskrb5_register_acceptor_keytab(gensec_gssapi_state->keytab);
 	return NT_STATUS_OK;
+
 }
 
 static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_security)
@@ -236,7 +261,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-#ifdef HAVE_GSS_KRB5_CCACHE_NAME /* FIXME, we need an alternate function */
 	maj_stat = gss_krb5_ccache_name(&min_stat, 
 					gensec_gssapi_state->ccache_name, 
 					NULL);
@@ -246,7 +270,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-#endif
 
 	maj_stat = gss_acquire_cred(&min_stat, 
 				    gensec_gssapi_state->client_name,
@@ -265,6 +288,25 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
+
+/**
+ * Check if the packet is one for this mechansim
+ * 
+ * @param gensec_security GENSEC state
+ * @param in The request, as a DATA_BLOB
+ * @return Error, INVALID_PARAMETER if it's not a packet for us
+ *                or NT_STATUS_OK if the packet is ok. 
+ */
+
+static NTSTATUS gensec_gssapi_magic(struct gensec_security *gensec_security, 
+				    const DATA_BLOB *in) 
+{
+	if (gensec_gssapi_check_oid(in, GENSEC_OID_KERBEROS5)) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
 
 
 /**
@@ -294,8 +336,18 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 	{
+		maj_stat = gss_krb5_ccache_name(&min_stat, 
+						gensec_gssapi_state->ccache_name, 
+						NULL);
+		if (maj_stat) {
+			DEBUG(1, ("GSS krb5 ccache set %s failed: %s\n",
+				  gensec_gssapi_state->ccache_name, 
+				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
 		maj_stat = gss_init_sec_context(&min_stat, 
-						GSS_C_NO_CREDENTIAL, 
+						gensec_gssapi_state->cred,
 						&gensec_gssapi_state->gssapi_context, 
 						gensec_gssapi_state->server_name, 
 						discard_const_p(gss_OID_desc, gensec_gssapi_state->gss_oid),
@@ -756,6 +808,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.oid            = gensec_krb5_oids,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
+	.magic  	= gensec_gssapi_magic,
 	.update 	= gensec_gssapi_update,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,

@@ -89,6 +89,16 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_KEY_EXCH\n"));
 }
 
+static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security, 
+				     const DATA_BLOB *first_packet) 
+{
+	if (first_packet->length > 8 && memcmp("NTLMSSP\0", first_packet->data, 8) == 0) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
 /**
  * Next state function for the wrapped NTLMSSP state machine
  * 
@@ -337,6 +347,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.oid            = gensec_ntlmssp_oids,
 	.client_start   = gensec_ntlmssp_client_start,
 	.server_start   = gensec_ntlmssp_server_start,
+	.magic 	        = gensec_ntlmssp_magic,
 	.update 	= gensec_ntlmssp_update,
 	.sig_size	= gensec_ntlmssp_sig_size,
 	.sign_packet	= gensec_ntlmssp_sign_packet,
