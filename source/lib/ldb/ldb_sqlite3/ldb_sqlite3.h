@@ -1,10 +1,10 @@
 #include <sqlite3.h>
 
 struct lsqlite3_private {
-	char **options;
-	const char *basedn;
-        sqlite3 * sqlite;
-        int lock_count;
+	char **         options;
+	const char *    basedn;
+        sqlite3 *       sqlite;
+        int             lock_count;
 };
 
 void
