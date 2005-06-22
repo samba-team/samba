@@ -716,3 +716,42 @@ struct mangle_fns *mangle_hash2_init(void)
 
 	return &mangle_fns;
 }
+
+static void posix_mangle_reset(void)
+{;}
+
+static BOOL posix_is_mangled(const char *s, int snum)
+{
+	return False;
+}
+
+static BOOL posix_is_8_3(const char *fname, BOOL check_case, BOOL allow_wildcards, int snum)
+{
+	return False;
+}
+
+static BOOL posix_check_cache( char *s, size_t maxlen, int snum )
+{
+	return False;
+}
+
+static void posix_name_map(char *OutName, BOOL need83, BOOL cache83, int default_case, int snum)
+{
+	if (need83) {
+		memset(OutName, '\0', 13);
+	}
+}
+
+/* POSIX paths backend - no mangle. */
+static struct mangle_fns posix_mangle_fns = {
+        posix_mangle_reset,
+        posix_is_mangled,
+        posix_is_8_3,
+        posix_check_cache,
+        posix_name_map
+};
+
+struct mangle_fns *posix_mangle_init(void)
+{
+	return &posix_mangle_fns;
+}

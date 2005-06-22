@@ -238,7 +238,7 @@ BOOL dptr_set_wcard_and_attributes(int key, const char *wcard, uint16 attr)
 		dptr->wcard = SMB_STRDUP(wcard);
 		if (!dptr->wcard)
 			return False;
-		if (wcard[0] == '.' && wcard[1] == 0) {
+		if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
 			dptr->has_wild = True;
 		} else {
 			dptr->has_wild = ms_has_wild(wcard);

@@ -29,6 +29,7 @@ static const struct {
 } mangle_backends[] = {
 	{ "hash", mangle_hash_init },
 	{ "hash2", mangle_hash2_init },
+	{ "posix", posix_mangle_init },
 	/*{ "tdb", mangle_tdb_init }, */
 	{ NULL, NULL }
 };
@@ -39,7 +40,7 @@ static const struct {
 static void mangle_init(void)
 {
 	int i;
-	char *method;
+	const char *method;
 
 	if (mangle_fns)
 		return;
@@ -68,6 +69,13 @@ void mangle_reset_cache(void)
 {
 	mangle_init();
 	mangle_fns->reset();
+}
+
+void mangle_change_to_posix(void)
+{
+	mangle_fns = NULL;
+	lp_set_mangling_method("posix");
+	mangle_reset_cache();
 }
 
 /*
