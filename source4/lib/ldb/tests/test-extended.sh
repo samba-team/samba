@@ -5,32 +5,32 @@ echo "Running extended search tests"
 rm -f $LDB_URL
 
 cat <<EOF | bin/ldbadd || exit 1
-dn: testrec1
+dn: cn=testrec1,cn=TEST
 i1: 1
 i2: 0
 i3: 1234
 i4: 0x7003004
 
-dn: testrec2
+dn: cn=testrec2,cn=TEST
 i1: 0x800000
 
-dn: testrec3
+dn: cn=testrec3,cn=TEST
 i1: 0x101010101
 i1: 7
 
-dn: auser1
+dn: cn=auser1,cn=TEST
 groupType: 2147483648
 samAccountType: 805306368
 
-dn: auser2
+dn: cn=auser2,cn=TEST
 groupType: 2147483648
 samAccountType: 805306369
 
-dn: auser3
+dn: cn=auser3,cn=TEST
 groupType: 2147483649
 samAccountType: 805306370
 
-dn: auser4
+dn: cn=auser4,cn=TEST
 groupType: 2147483649
 samAccountType: 805306369
 EOF
