@@ -2451,6 +2451,12 @@ char *parent_dirname(const char *path)
 BOOL ms_has_wild(const char *s)
 {
 	char c;
+
+	if (lp_posix_pathnames()) {
+		/* With posix pathnames no characters are wild. */
+		return False;
+	}
+
 	while ((c = *s++)) {
 		switch (c) {
 		case '*':

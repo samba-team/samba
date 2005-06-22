@@ -4523,3 +4523,29 @@ void set_store_dos_attributes(int snum, BOOL val)
 		return;
 	ServicePtrs[(snum)]->bStoreDosAttributes = val;
 }
+
+void lp_set_mangling_method(const char *new_method)
+{
+	string_set(&Globals.szManglingMethod, new_method);
+}
+
+/*******************************************************************
+ Global state for POSIX pathname processing.
+********************************************************************/
+
+static BOOL posix_pathnames;
+
+BOOL lp_posix_pathnames(void)
+{
+	return posix_pathnames;
+}
+
+/*******************************************************************
+ Change everything needed to ensure POSIX pathname processing (currently
+ not much).
+********************************************************************/
+
+void lp_set_posix_pathnames(void)
+{
+	posix_pathnames = True;
+}
