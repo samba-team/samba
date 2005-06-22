@@ -604,13 +604,13 @@ DOM\jht
 
 <example id="autopoweruserscript">
 <title>Script to Auto-add Domain Users to Workstation Power Users Group</title>
-<procedure>
+<screen>
 #!/bin/bash
 
 /usr/bin/net rpc group addmem "Power Users"  "DOMAIN_NAME\$1" -UAdministrator%secret -S $2
 
 exit 0
-</procedure>
+</screen>
 </example>
 
 		<step><para>
