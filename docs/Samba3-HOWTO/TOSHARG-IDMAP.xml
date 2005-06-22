@@ -33,9 +33,33 @@ This is followed by an overview of how the IDMAP facility may be implemented.
 <indexterm><primary>IDMAP</primary></indexterm>
 <indexterm><primary>IDMAP infrastructure</primary></indexterm>
 <indexterm><primary>default behavior</primary></indexterm>
-The IDMAP facility is usually of concern where more than one Samba server (or Samba network client)
-is installed in one domain. Where there is a single Samba server, do not be too concerned regarding
+The IDMAP facility is of concern where more than one Samba server (or Samba network client)
+is installed in a domain. Where there is a single Samba server, do not be too concerned regarding
 the IDMAP infrastructure &smbmdash; the default behavior of Samba is nearly always sufficient.
+Where mulitple Samba servers are used it is often necessary to move data off one server and onto
+another, and that is where the fun begins!
+</para>
+
+<para>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>nss_ldap</primary></indexterm>
+<indexterm><primary>NT4 domain members</primary></indexterm>
+<indexterm><primary>ADS domain members</primary></indexterm>
+<indexterm><primary>security name-space</primary></indexterm>
+Where user and group account information is stored in an LDAP directory every server can have the same
+consistent UID and GID for users and groups. This is achieved using NSS and the nss_ldap tool. Samba
+can be configured to use only local accounts, in which case the scope of the IDMAP problem is somewhat
+reduced. This works reasonably well if the servers belong to a single domain, and interdomain trusts
+are not needed. On the other hand, if the Samba servers are NT4 domain members, or ADS  domain members,
+or if there is a need to keep the security name-space separate (i.e., the user
+<literal>DOMINICUS\FJones</literal> must not be given access to the account resources of the user 
+<literal>FRANCISCUS\FJones</literal><footnote>Samba local account mode results in both
+<literal>DOMINICUS\FJones</literal> and <literal>FRANCISCUS\FJones</literal> mapping to the UNIX user
+<literal>FJones</literal>.</footnote> free from inadvertent cross-over, close attention should be given
+to the way that the IDMAP facility is configured.
 </para>
 
 <para>
@@ -52,7 +76,7 @@ of foreign SIDs to local UNIX UIDs and GIDs.
 
 <para>
 <indexterm><primary>winbindd</primary></indexterm>
-The use of the IDMAP facility requires that the <command>winbindd</command> be executed on Samba startup.
+The use of the IDMAP facility requires the execution of the <command>winbindd</command> upon Samba startup.
 </para>
 
 <sect1>
@@ -98,7 +122,7 @@ on Server Types and Security Modes</link>.
 	<indexterm><primary>Active Directory</primary></indexterm>
 	Samba-3 can act as a Windows NT4 PDC or BDC, thereby providing domain control protocols that
 	are compatible with Windows NT4. Samba-3 file and print sharing protocols are compatible with
-	all version of MS Windows products. Windows NT4, as with MS Active Directory,
+	all versions of MS Windows products. Windows NT4, as with MS Active Directory,
 	extensively makes use of Windows SIDs.
 	</para>
 
@@ -365,7 +389,7 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	<indexterm><primary>RID base</primary></indexterm>
-	For example, ifa user has a UID of 4321, and the algorithmic RID base has a value of 1000, the RID will
+	For example, if a user has a UID of 4321, and the algorithmic RID base has a value of 1000, the RID will
 	be <constant>1000 + (2 x 4321) = 9642</constant>. Thus, if the domain SID is
 	<constant>S-1-5-21-89238497-92787123-12341112</constant>, the resulting SID is
 	<constant>S-1-5-21-89238497-92787123-12341112-9642</constant>.
@@ -403,7 +427,7 @@ on Server Types and Security Modes</link>.
 	<indexterm><primary>BDC</primary></indexterm>
 	<indexterm><primary>LDAP backend</primary></indexterm>
 	Security identifiers used within a domain must be managed to avoid conflict and to preserve itegrity.
-	In an NT4 domain context, that PDC manages the distribution of all security credentials to the backup
+	In an NT4 domain context, the PDC manages the distribution of all security credentials to the backup
 	domain controllers (BDCs). At this time the only passdb backend for a Samba domain controller that is suitable
 	for such information is an LDAP backend.
 	</para>
@@ -427,7 +451,7 @@ on Server Types and Security Modes</link>.
 	</para>
 
 	<para>
-	IDMAP information can, however, be written directly to the LDAP server so long as all domain controllers
+	IDMAP information can be written directly to the LDAP server so long as all domain controllers
 	have access to the master (writable) LDAP server. Samba-3 at this time does not handle LDAP redirects
 	in the IDMAP backend. This means that it is is unsafe to use a slave (replicate) LDAP server with
 	the IDMAP facility.
@@ -496,9 +520,10 @@ passwd: files winbind
 shadow: files winbind
 group:  files winbind
 ...
-hosts:  files wins
+hosts:  files [dns] wins
 ...
 </screen>
+	The use of DNS in the hosts entry should be made only if DNS is used on site.
 	</para>
 
 	<para>
@@ -517,7 +542,7 @@ hosts:  files wins
 Joined domain MEGANET2.
 </screen>
 	<indexterm><primary>join</primary></indexterm>
-	The success or failure of the join can be confirmed with the following command:
+	The success of the join can be confirmed with the following command:
 <screen>
 &rootprompt; net rpc testjoin
 Join to 'MIDEARTH' is OK
@@ -666,7 +691,7 @@ Join to domain is not valid
 	<indexterm><primary>idmap_rid</primary></indexterm>
 	<indexterm><primary>realm</primary></indexterm>
 	The idmap_rid facility can be used both for NT4/Samba-style domains and Active Directory.
-	To use this with an NT4 domain, the <parameter>realm</parameter> is not used; additionally, the
+	To use this with an NT4 domain, do not include the <parameter>realm</parameter> parameter; additionally, the
 	method used to join the domain uses the <constant>net rpc join</constant> process.
 	</para>
 
@@ -724,7 +749,7 @@ hosts:  files wins
 	</para>
 
 	<para>
-	The following procedure can be used to utilize the idmap_rid facility:
+	The following procedure can be uses the idmap_rid facility:
 	</para>
 
 	<procedure>
