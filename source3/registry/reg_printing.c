@@ -639,6 +639,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	
 	if ( !new_path ) {
 		char *p;
+		uint32 printer_status = PRINTER_STATUS_OK;
 
 		/* we are dealing with the printer itself */
 
@@ -652,7 +653,10 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 		regval_ctr_addvalue( val, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
 		regval_ctr_addvalue( val, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
 		regval_ctr_addvalue( val, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
-		regval_ctr_addvalue( val, "Status",           REG_DWORD, (char*)&info2->status,           sizeof(info2->status) );
+
+		/* lie and say everything is ok since we don't want to call print_queue_length() to get the real status */
+		regval_ctr_addvalue( val, "Status",           REG_DWORD, (char*)&printer_status,          sizeof(info2->status) );
+
 		regval_ctr_addvalue( val, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
 		regval_ctr_addvalue( val, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
 
