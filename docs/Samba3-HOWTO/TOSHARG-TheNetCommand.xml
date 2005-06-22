@@ -607,7 +607,8 @@ DOM\jht
 <screen>
 #!/bin/bash
 
-/usr/bin/net rpc group addmem "Power Users"  "DOMAIN_NAME\$1" -UAdministrator%secret -S $2
+/usr/bin/net rpc group addmem "Power Users" "DOMAIN_NAME\$1" \
+                   -UAdministrator%secret -S $2
 
 exit 0
 </screen>

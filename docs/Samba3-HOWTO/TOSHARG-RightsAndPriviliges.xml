@@ -75,8 +75,8 @@ The remainder of this chapter explains how to manage and use these privileges on
                 <colspec align="left"/>
                 <thead>
                         <row>
-                                <entry align="center">Privilege</entry>
-                                <entry align="center">Description</entry>
+                                <entry align="left">Privilege</entry>
+                                <entry align="left">Description</entry>
                         </row>
                 </thead>
                 <tbody>
