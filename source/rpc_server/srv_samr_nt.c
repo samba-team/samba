@@ -45,11 +45,14 @@ extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
 
 typedef struct disp_info {
-	struct pdb_search *users;
-	struct pdb_search *machines;
-	struct pdb_search *groups;
-	struct pdb_search *aliases;
-	struct pdb_search *builtins;
+	struct pdb_search *users; /* querydispinfo 1 and 4 */
+	struct pdb_search *machines; /* querydispinfo 2 */
+	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
+	struct pdb_search *aliases; /* enumaliases */
+	struct pdb_search *builtins; /* enumaliases */
+
+	uint16 enum_acb_mask;
+	struct pdb_search *enum_users; /* enumusers with a mask */
 } DISP_INFO;
 
 struct samr_info {
@@ -264,6 +267,8 @@ static void free_samr_db(struct samr_info *info)
 	info->disp_info.aliases = NULL;
 	pdb_search_destroy(info->disp_info.builtins);
 	info->disp_info.builtins = NULL;
+	pdb_search_destroy(info->disp_info.enum_users);
+	info->disp_info.enum_users = NULL;
 }
 
 static void free_samr_info(void *ptr)
@@ -590,11 +595,19 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	if (info->disp_info.users == NULL)
-		info->disp_info.users = pdb_search_users(q_u->acb_mask);
-	if (info->disp_info.users == NULL)
+	if ((info->disp_info.enum_users != NULL) &&
+	    (info->disp_info.enum_acb_mask != q_u->acb_mask)) {
+		pdb_search_destroy(info->disp_info.enum_users);
+		info->disp_info.enum_users = NULL;
+	}
+
+	if (info->disp_info.enum_users == NULL) {
+		info->disp_info.enum_users = pdb_search_users(q_u->acb_mask);
+		info->disp_info.enum_acb_mask = q_u->acb_mask;
+	}
+	if (info->disp_info.enum_users == NULL)
 		return NT_STATUS_ACCESS_DENIED;
-	num_account = pdb_search_entries(info->disp_info.users,
+	num_account = pdb_search_entries(info->disp_info.enum_users,
 					 enum_context, max_entries,
 					 &entries);
 	unbecome_root();
