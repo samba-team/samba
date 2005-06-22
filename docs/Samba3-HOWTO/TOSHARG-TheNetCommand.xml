@@ -178,6 +178,32 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 	<sect2>
 	<title>Adding, Renaming, or Deletion of Group Accounts</title>
 
+	<para>
+	Samba provides file and print services to Windows clients. The file system resources it makes available
+	to the Windows environment must, of necessity, be provided in a manner that is compatible with the
+	Windows networking environment. UNIX groups are created and deleted as required to serve operational
+	needs in the UNIX operating system and its file systems.
+	</para>
+
+	<para>
+	In order to make available to the Windows environment Samba has a facility by which UNIX groups can
+	be mapped to a logical entity, called a Windows (or domain) group. Samba supports two types of Windows
+	groups, local and global. Global groups can contain as members, global users. This membership is
+	affected in the normal UNIX manner, but adding UNIX users to UNIX groups. Windows user accounts consist
+	of a mapping between a user SambaSAMAccount (logical entity) and a UNIX user account. Therefore, 
+	a UNIX user is mapped to a Windows user (i.e., is given a Windows user account and password) and the
+	UNIX groups to which that user belongs, is mapped to a Windows group account. The result is that in
+	the Windows account environment that user is also a member of the Windows group account by virtue
+	of UNIX group memberships.
+	</para>
+
+	<para>
+	The following sub-sections that deal with management of Windows groups demonstrates the relationship
+	between the UNIX group account and its members to the respective Windows group accounts. It goes on to
+	show how UNIX group members automatically pass-through to Windows group membership as soon as a logical
+	mapping has been created.
+	</para>
+
 	<sect3>
 	<title>Adding or Creating a New Group</title>
 
@@ -185,6 +211,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 	Before attempting to add a Windows group account, the currently available groups can be listed as shown
 	here:
 <indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>group</tertiary></indexterm>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>group list</tertiary></indexterm>
 <screen>
 &rootprompt; net rpc group list -Uroot%not24get
 Password:
@@ -199,6 +226,7 @@ Engineers
 </screen>
 	A Windows group account called <quote>SupportEngrs</quote> can be added by executing the following
 command:
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>group add</tertiary></indexterm>
 <screen>
 &rootprompt; net rpc group add "SupportEngrs" -Uroot%not24get
 </screen>
@@ -316,11 +344,17 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 <screen>
 &rootprompt; net groupmap add ntgroup="EliteEngrs" unixgroup=Engineers type=d
 </screen>
+	Supported mapping types are 'd' (domain global) and 'l' (domain local).
 	A Windows group may be deleted, and then a new Windows group can be mapped to the UNIX group by
 	executing these commands:
 <screen>
 &rootprompt; net groupmap delete ntgroup=Engineers
 &rootprompt; net groupmap add ntgroup=EngineDrivers unixgroup=Engineers type=d
+	The deletion and addition operations affected only the logical entities known as Windows groups, or domain
+	groups. These operations are inert to UNIX system groups, meaning that they neither delete nor create UNIX
+	system groups. The mapping of a UNIX group to a Windows group makes the UNIX group available as Windows
+	groups so that files and folders on domain member clients (workstations and servers) can be given
+	domain-wide access controls for domain users and groups.
 </screen>
 	</para>
 
@@ -331,7 +365,9 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 <screen>
 &rootprompt; net groupmap add ntgroup=Pixies unixgroup=pixies type=l
 </screen>
-	Local groups can be used with Samba to enable multiple nested group support.
+	Supported mapping types are 'd' (domain global) and 'l' (domain local), a domain local group is Samba is
+	treated as local to the individual Samba serverr. Local groups can be used with Samba to enable multiple
+	nested group support.
 	</para>
 
 	</sect3>
@@ -957,6 +993,11 @@ SeDiskOperatorPrivilege
 
 	<sect2>
 	<title>Machine Trust Accounts</title>
+
+	<para>
+	The net command looks in the &smb.conf; file to obtain its own configuration settings. Thus, the following
+	command 'know' which domain to join from the &smb.conf; file.
+	</para>
 
 	<para>
 	A Samba server domain trust account can be validated as shown in this example:
