@@ -12,8 +12,8 @@ echo "Showing modified record"
 $VALGRIND bin/ldbsearch '(uid=uham)'  || exit 1
 
 echo "Rename entry"
-OLDDN="cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Michigan,c=US"
-NEWDN="cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=US"
+OLDDN="cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST"
+NEWDN="cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST"
 $VALGRIND bin/ldbrename "$OLDDN" "$NEWDN"  || exit 1
 
 echo "Showing renamed record"
@@ -39,13 +39,13 @@ $VALGRIND bin/ldbsearch '(&(objectclass=person)(uid=uham)(!(uid=uhamxx)))' uid \
 $VALGRIND bin/ldbsearch '(&(uid=uham)(uid=uha*)(title=*))' uid || exit 1
 $VALGRIND bin/ldbsearch '((' uid && exit 1
 $VALGRIND bin/ldbsearch '(objectclass=)' uid || exit 1
-$VALGRIND bin/ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=US' -s base "" sn || exit 1
+$VALGRIND bin/ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' -s base "" sn || exit 1
 
 echo "Starting ldbtest indexed"
 time $VALGRIND bin/ldbtest --num-records 1000 --num-searches 5000  || exit 1
 
 echo "Testing one level search"
-count=`$VALGRIND bin/ldbsearch -b 'ou=Groups,o=University of Michigan,c=US' -s one 'objectclass=*' none |grep ^dn | wc -l`
+count=`$VALGRIND bin/ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep ^dn | wc -l`
 if [ "$count" != 3 ]; then
     echo returned $count records - expected 3
     exit 1

@@ -1,4 +1,4 @@
-dn: o=University of Michigan,c=US
+dn: o=University of Michigan,c=TEST
 objectclass: organization
 objectclass: domainRelatedObject
 l: Ann Arbor, Michigan

@@ -1,5 +1,5 @@
 dn: cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Michiga
- n,c=US
+ n,c=TEST
 changetype: modify
 add: drink
 drink: mango lassi
