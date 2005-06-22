@@ -350,12 +350,12 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 <screen>
 &rootprompt; net groupmap delete ntgroup=Engineers
 &rootprompt; net groupmap add ntgroup=EngineDrivers unixgroup=Engineers type=d
+</screen>
 	The deletion and addition operations affected only the logical entities known as Windows groups, or domain
 	groups. These operations are inert to UNIX system groups, meaning that they neither delete nor create UNIX
 	system groups. The mapping of a UNIX group to a Windows group makes the UNIX group available as Windows
 	groups so that files and folders on domain member clients (workstations and servers) can be given
 	domain-wide access controls for domain users and groups.
-</screen>
 	</para>
 
 	<para>
