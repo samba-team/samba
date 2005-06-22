@@ -1612,13 +1612,12 @@ DHCP traffic:          300 (clients) x 6 (packets)
 		with the types of data necessary for interoperability with Microsoft Windows networking. The use
 		of LDAP with Samba requires the use of a number of schemas, one of which is the NIS schema, but also
 		a Samba-specific schema extension.
-		</para>
+		<para>
 
-	</answer>
+</answer>
 	</qandaentry>
 
 	</qandaset>
-
 </sect1>
 
 </chapter>
