@@ -37,7 +37,7 @@ $VALGRIND bin/ldbsearch '(|(uid=uham)(uid=uham)(objectclass=OpenLDAPperson))'  |
 $VALGRIND bin/ldbsearch '(&(uid=uham)(uid=uham)(!(objectclass=xxx)))'  || exit 1
 $VALGRIND bin/ldbsearch '(&(objectclass=person)(uid=uham)(!(uid=uhamxx)))' uid \* \+ dn  || exit 1
 $VALGRIND bin/ldbsearch '(&(uid=uham)(uid=uha*)(title=*))' uid || exit 1
-$VALGRIND bin/ldbsearch '((' uid && exit 1
+$VALGRIND bin/ldbsearch '((' uid || exit 1
 $VALGRIND bin/ldbsearch '(objectclass=)' uid || exit 1
 $VALGRIND bin/ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' -s base "" sn || exit 1
 

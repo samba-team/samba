@@ -120,18 +120,23 @@ static int do_search(struct ldb_context *ldb,
 	const char * const * attrs = NULL;
 	struct ldb_cmdline *options;
 	int ret = -1;
+	const char *expression = "(|(objectclass=*)(dn=*))";
 
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
-	
-	if (options->argc < 1 && !options->interactive) {
-		usage();
-		exit(1);
+
+	/* the check for '=' is for compatibility with ldapsearch */
+	if (!options->interactive &&
+	    options->argc > 0 && 
+	    strchr(options->argv[0], '=')) {
+		expression = options->argv[0];
+		options->argv++;
+		options->argc--;
 	}
 
-	if (options->argc > 1) {
-		attrs = (const char * const *)(options->argv+1);
+	if (options->argc > 0) {
+		attrs = (const char * const *)(options->argv);
 	}
 
 	if (options->interactive) {
@@ -144,7 +149,7 @@ static int do_search(struct ldb_context *ldb,
 		}
 	} else {
 		ret = do_search(ldb, options->basedn, options->scope, options->sorted, 
-				options->argv[0], attrs);
+				expression, attrs);
 	}
 
 	talloc_free(ldb);
