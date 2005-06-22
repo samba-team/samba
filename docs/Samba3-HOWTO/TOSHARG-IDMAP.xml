@@ -30,12 +30,20 @@ This is followed by an overview of how the IDMAP facility may be implemented.
 
 <para>
 <indexterm><primary>network client</primary></indexterm>
+<indexterm><primary>IDMAP</primary></indexterm>
+<indexterm><primary>IDMAP infrastructure</primary></indexterm>
+<indexterm><primary>default behavior</primary></indexterm>
 The IDMAP facility is usually of concern where more than one Samba server (or Samba network client)
 is installed in one domain. Where there is a single Samba server, do not be too concerned regarding
 the IDMAP infrastructure &smbmdash; the default behavior of Samba is nearly always sufficient.
 </para>
 
 <para>
+<indexterm><primary>IDMAP</primary></indexterm>
+<indexterm><primary>domain access</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
 <indexterm><primary>one domain</primary></indexterm>
 The use of IDMAP is important where the Samba server will be accessed by workstations or servers from
 more than one domain, in which case it is important to run winbind so it can handle the resolution (ID mapping)
@@ -70,6 +78,7 @@ on Server Types and Security Modes</link>.
 	<para>
 	<indexterm><primary>IDMAP</primary></indexterm>
 	<indexterm><primary>identity</primary></indexterm>
+	<indexterm><primary>local user</primary></indexterm>
 	By definition, this means that users and groups will be created and controlled locally, and
 	the identity of a network user must match a local UNIX/Linux user login. The IDMAP facility
 	is therefore of little to no interest, winbind will not be necessary, and the IDMAP facility
@@ -115,6 +124,17 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind is not used; users and groups are local: </term>
 			<listitem>
 				<para>
+				<indexterm><primary>winbindd</primary></indexterm>
+				<indexterm><primary>smbd</primary></indexterm>
+				<indexterm><primary>network traffic</primary></indexterm>
+				<indexterm><primary>LoginID</primary></indexterm>
+				<indexterm><primary>account name</primary></indexterm>
+				<indexterm><primary>getpwnam</primary></indexterm>
+				<indexterm><primary>NSS</primary></indexterm>
+				<indexterm><primary>local users</primary></indexterm>
+				<indexterm><primary>local groups</primary></indexterm>
+				<indexterm><primary>/etc/passwd</primary></indexterm>
+				<indexterm><primary>/etc/group</primary></indexterm>
 				Where <command>winbindd</command> is not used Samba (<command>smbd</command>)
 				uses the underlying UNIX/Linux mechanisms to resolve the identity of incoming
 				network traffic. This is done using the LoginID (account name) in the
@@ -126,6 +146,8 @@ on Server Types and Security Modes</link>.
 				</para>
 
 				<para>
+				<indexterm><primary>SessionSetupAndX</primary></indexterm>
+				<indexterm><primary>/etc/passwd</primary></indexterm>
 				For example, if an incoming SessionSetupAndX request is owned by the user
 				<constant>BERYLIUM\WambatW</constant>, a system call will be made to look up
 				the user <constant>WambatW</constant> in the <filename>/etc/passwd</filename>
@@ -133,6 +155,14 @@ on Server Types and Security Modes</link>.
 				</para>
 
 				<para>
+				<indexterm><primary>standalone</primary></indexterm>
+				<indexterm><primary>domain member server</primary></indexterm>
+				<indexterm><primary>NT4</primary></indexterm>
+				<indexterm><primary>ADS</primary></indexterm>
+				<indexterm><primary>PDC</primary></indexterm>
+				<indexterm><primary>smbpasswd</primary></indexterm>
+				<indexterm><primary>tdbsam</primary></indexterm>
+				<indexterm><primary>passdb backend</primary></indexterm>
 				This configuration may be used with standalone Samba servers, domain member
 				servers (NT4 or ADS), and for a PDC that uses either an smbpasswd
 				or a tdbsam-based Samba passdb backend.
@@ -143,6 +173,12 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind is not used; users and groups resolved via NSS: </term>
 			<listitem>
 				<para>
+				<indexterm><primary>user accounts</primary></indexterm>
+				<indexterm><primary>group accounts</primary></indexterm>
+				<indexterm><primary>local accounts</primary></indexterm>
+				<indexterm><primary>repository</primary></indexterm>
+				<indexterm><primary>NIS</primary></indexterm>
+				<indexterm><primary>LDAP</primary></indexterm>
 				In this situation user and group accounts are treated as if they are local
 				accounts. The only way in which this differs from having local accounts is
 				that the accounts are stored in a repository that can be shared. In practice
@@ -150,6 +186,13 @@ on Server Types and Security Modes</link>.
 				</para>
 
 				<para>
+				<indexterm><primary>standalone</primary></indexterm>
+				<indexterm><primary>domain member server</primary></indexterm>
+				<indexterm><primary>NT4</primary></indexterm>
+				<indexterm><primary>ADS</primary></indexterm>
+				<indexterm><primary>PDC</primary></indexterm>
+				<indexterm><primary>smbpasswd</primary></indexterm>
+				<indexterm><primary>tdbsam</primary></indexterm>
 				This configuration may be used with standalone Samba servers, domain member
 				servers (NT4 or ADS), and for a PDC that uses either an smbpasswd
 				or a tdbsam-based Samba passdb backend.
@@ -160,6 +203,10 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind/NSS with the default local IDMAP table: </term>
 			<listitem>
 				<para>
+				<indexterm><primary>NT4 domain</primary></indexterm>
+				<indexterm><primary>ADS domain</primary></indexterm>
+				<indexterm><primary>winbind</primary></indexterm>
+				<indexterm><primary>domain control</primary></indexterm>
 				There are many sites that require only a simple Samba server or a single Samba
 				server that is a member of a Windows NT4 domain or an ADS domain. A typical example
 				is an appliance like file server on which no local accounts are configured and
@@ -169,6 +216,11 @@ on Server Types and Security Modes</link>.
 				</para>
 
 				<para>
+				<indexterm><primary>UID numbers</primary></indexterm>
+				<indexterm><primary>GID numbers</primary></indexterm>
+				<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+				<indexterm><primary>winbind</primary></indexterm>
+				<indexterm><primary>SID</primary></indexterm>
 				Winbind is a great convenience in this situation. All that is needed is a range of
 				UID numbers and GID numbers that can be defined in the &smb.conf; file. The
 				<filename>/etc/nsswitch.conf</filename> file is configured to use <command>winbind</command>,
@@ -177,6 +229,10 @@ on Server Types and Security Modes</link>.
 				</para>
 
 				<para>
+				<indexterm><primary>UID</primary></indexterm>
+				<indexterm><primary>GID</primary></indexterm>
+				<indexterm><primary>IDMAP</primary></indexterm>
+				<indexterm><primary>corrupted file</primary></indexterm>
 				This configuration is not convenient or practical in sites that have more than one
 				Samba server and that require the same UID or GID for the same user or group across
 				all servers. One of the hazards of this method is that in the event that the winbind
@@ -211,6 +267,7 @@ on Server Types and Security Modes</link>.
 				<indexterm><primary>SID</primary></indexterm>
 				<indexterm><primary>UID</primary></indexterm>
 				<indexterm><primary>idmap backend</primary></indexterm>
+				<indexterm><primary>automatic mapping</primary></indexterm>
 				This facility requires the allocation of the <parameter>idmap uid</parameter> and the
 				<parameter>idmap gid</parameter> ranges, and within the <parameter>idmap uid</parameter>
 				it is possible to allocate a subset of this range for automatic mapping of the relative
@@ -227,6 +284,13 @@ on Server Types and Security Modes</link>.
 			<listitem>
 				<para>
 				<indexterm><primary>Domain Member</primary></indexterm>
+				<indexterm><primary>winbind</primary></indexterm>
+				<indexterm><primary>SID</primary></indexterm>
+				<indexterm><primary>UID</primary></indexterm>
+				<indexterm><primary>GID</primary></indexterm>
+				<indexterm><primary>idmap gid</primary></indexterm>
+				<indexterm><primary>idmap uid</primary></indexterm>
+				<indexterm><primary>LDAP</primary></indexterm>
 				In this configuration <command>winbind</command> resolved SIDs to UIDs and GIDs from
 				the <parameter>idmap uid</parameter> and <parameter>idmap gid</parameter> ranges specified
 				in the &smb.conf; file, but instead of using a local winbind IDMAP table, it is stored
@@ -236,6 +300,8 @@ on Server Types and Security Modes</link>.
 
 				<para>
 				<indexterm><primary>idmap backend</primary></indexterm>
+				<indexterm><primary>LDAP server</primary></indexterm>
+				<indexterm><primary>LDAP redirects</primary></indexterm>
 				It is important that all LDAP IDMAP clients use only the master LDAP server because the
 				<parameter>idmap backend</parameter> facility in the &smb.conf; file does not correctly
 				handle LDAP redirects.
@@ -307,6 +373,9 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	<indexterm><primary>on-the-fly</primary></indexterm>
+	<indexterm><primary>SID</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>ldapsam</primary></indexterm>
 	The foregoing type of SID is produced by Samba as an automatic function and is either produced on the fly
 	(as is the case when using a <parameter>passdb backend = [tdbsam | smbpasswd]</parameter>), or may be stored
 	as a permanent part of an account in an LDAP-based ldapsam.
@@ -314,6 +383,14 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	<indexterm><primary>SFU 3.5</primary></indexterm>
+	<indexterm><primary>ADS</primary></indexterm>
+	<indexterm><primary>directory schema</primary></indexterm>
+	<indexterm><primary>account attributes</primary></indexterm>
+	<indexterm><primary>UID</primary></indexterm>
+	<indexterm><primary>GID</primary></indexterm>
+	<indexterm><primary>ADS schema</primary></indexterm>
+	<indexterm><primary>account management</primary></indexterm>
+	<indexterm><primary>MMC</primary></indexterm>
 	ADS uses a directory schema that can be extended to accommodate additional
 	account attributes such as UIDs and GIDs. The installation of Microsoft Service for UNIX 3.5 will expand
 	the normal ADS schema to include UNIX account attributes. These must of course be managed separately
@@ -322,9 +399,12 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	<indexterm><primary>PDC</primary></indexterm>
+	<indexterm><primary>passdb backend</primary></indexterm>
+	<indexterm><primary>BDC</primary></indexterm>
+	<indexterm><primary>LDAP backend</primary></indexterm>
 	Security identifiers used within a domain must be managed to avoid conflict and to preserve itegrity.
 	In an NT4 domain context, that PDC manages the distribution of all security credentials to the backup
-	domain controllers. At this time the only passdb backend for a Samba domain controller that is suitable
+	domain controllers (BDCs). At this time the only passdb backend for a Samba domain controller that is suitable
 	for such information is an LDAP backend.
 	</para>
 
@@ -335,6 +415,12 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	<indexterm><primary>BDC</primary></indexterm>
+	<indexterm><primary>read-only access</primary></indexterm>
+	<indexterm><primary>security credentials</primary></indexterm>
+	<indexterm><primary>LDAP</primary></indexterm>
+	<indexterm><primary>group account</primary></indexterm>
+	<indexterm><primary>write changes</primary></indexterm>
+	<indexterm><primary>directory</primary></indexterm>
 	BDCs have read-only access to security credentials that are stored in LDAP.
 	Changes in user or group account information are passed by the BDC to the PDC. Only the PDC can write
 	changes to the directory.
@@ -359,6 +445,7 @@ on Server Types and Security Modes</link>.
 <indexterm><primary>Domain Member Client</primary><see>DMC</see></indexterm>
 <indexterm><primary>DMS</primary></indexterm>
 <indexterm><primary>DMC</primary></indexterm>
+<indexterm><primary>winbind</primary></indexterm>
 Anyone who wishes to use <command>winbind</command> will find the following example configurations helpful.
 Remember that in the majority of cases <command>winbind</command> is of primary interest for use with
 domain member servers (DMSs) and domain member clients (DMCs).
@@ -445,6 +532,9 @@ Join to domain 'MEGANET2' is not valid
 		</para></step>
 
 		<step><para>
+		<indexterm><primary>nmbd</primary></indexterm>
+		<indexterm><primary>winbind</primary></indexterm>
+		<indexterm><primary>smbd</primary></indexterm>
 		Start the <command>nmbd, winbind,</command> and <command>smbd</command> daemons in the order shown.
 		</para></step>
 	</procedure>
@@ -456,6 +546,7 @@ Join to domain 'MEGANET2' is not valid
 
 	<para>
 	<indexterm><primary>domain join</primary></indexterm>
+	<indexterm><primary>ADS domain</primary></indexterm>
 	The procedure for joining an ADS domain is similar to the NT4 domain join, except the &smb.conf; file
 	will have the following contents:
 <screen>
@@ -526,6 +617,9 @@ GARGOYLE$@'s password:
 Join to domain is not valid
 </screen>
 		<indexterm><primary>error message</primary></indexterm>
+		<indexterm><primary>failure</primary></indexterm>
+		<indexterm><primary>log level</primary></indexterm>
+		<indexterm><primary>identify</primary></indexterm>
 		The specific error message may differ from the above because it depends on the type of failure that
 		may have occurred. Increase the <parameter>log level</parameter> to 10, repeat the test,
 		and then examine the log files produced to identify the nature of the failure.
