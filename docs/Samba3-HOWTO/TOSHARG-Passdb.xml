@@ -635,38 +635,122 @@ Samba-3 introduces a number of new password backend capabilities.
 	</sect2>
 
 	<sect2>
-	<title>Regarding LDAP Directories and Windows Computer Accounts</title>
+	<title>Comments Regarding LDAP</title>
+
+	<para>
+	There is much excitement and interest in LDAP directories in the information technology world
+	today. The LDAP architecture was designed to be highly scalable. It was also designed for
+	use across a huge number of potential areas of application encompasing a wide range of operating
+	systems and platforms. LDAP technologies are at the heart of the current generations of Federated
+	Identity Management (FIM) solutions that can underlie a corporate Single Sign-On (SSO) environment.
+	</para>
+
+	<para>
+	LDAP implementations have been built across a wide variety of platforms. It lies at the core of Microsoft
+	Windows Active Directory services, Novell's e-Directory, as well as many others. Implementation of the
+	directory services LDAP involves interaction with legacy as well as new generation applications, all of which
+	depend on some form of authentication services.
+	</para>
+
+	<para>
+	UNIX services can utilize LDAP directory information for authentication and access controls
+	through intermediate tools and utilities. The total environment that consists of the LDAP directory
+	and the middle-ware tools and utilities makes it possible for all user access to the UNIX platform
+	to be managed from a central environment and yet distributed to wherever the point of need may
+	be physically located. Applications that benefit from this infrastructure include: UNIX login 
+	shells, mail and messaging systems, quota controls, printing systems, DNS servers, DHCP servers,
+	and also Samba.
+	</para>
+
+	<para>
+	Many sites are installing LDAP for the first time in order to provide a scalable passdb backend
+	for Samba. Others are faced with the need to adapt an existing LDAP directory to new uses such
+	as for the Samba SAM backend. Whatever your particular need and attraction to Samba may be,
+	decisions made in respect of the design of the LDAP directory structure and its implementation
+	are of a durable nature for the site. These have far-reaching implications that affect long term
+	information systems management costs.
+	</para>
+
+	<para>
+	Do not rush into an LDAP deployment. Take the time to understand how the design of the Directory
+	Information Tree (DIT) may impact current and future site needs, as well as the ability to meet
+	them. The way that Samba SAM information should be stored within the DIT varies from site to site
+	and with each implementation new experience is gained. It is well understood by LDAP veterans that
+	first implementation create awakening, second implementations of LDAP create fear, and 
+	third-generation deployments bring peace and tranquility.
+	</para>
+
+	<sect3>
+	<title>Caution Regarding LDAP and Samba</title>
+
+	<para>
+	Samba requires UNIX POSIX identity information as well as a place to store information that is
+	specific to Samba and the Windows networking environment. The most used information that must
+	be dealt with includes: user accounts, group accounts, machine trust accounts, interdomain
+	trust accounts, and intermediate information specific to Samba internals.
+	</para>
+
+	<para>
+	The example deployment guidelines in this book, as well as other books and HOWTO documents
+	available from the internet may not fit with established directory designs and implementations.
+	The existing DIT may not be able to accomodate the simple information layout proposed in common
+	sources. Additionally, you may find that the common scripts and tools that are used to provision
+	the LDAP directory for use with Samba may not suit your needs.
+	</para>
+
+	<para>
+	It is not uncommon, for sites that have existing LDAP DITs to find necessity to generate a
+	set of site specific scripts and utilities to make it possible to deploy Samba within the
+	scope of site operations. The way that user and group accounts are distributed throughout
+	the DIT may make this a challenging matter. The solution will of course be rewarding, but
+	the journey to it may be challenging. Take time to understand site needs and do not rush
+	into deployment.
+	</para>
+
+	<para>
+	Above all, do not blindly use scripts and tools that are not suitable for your site. Check
+	and validate all scripts before you execute them to make sure that the existing infrastructure
+	will not be damaged by inadvertent use of an inappropriate tool.
+	</para>
+
+	</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>LDAP Directories and Windows Computer Accounts</title>
 
 		<para>
-		Samba doesn't provide a turnkey solution to LDAP. It is best to deal with the design and configuration
-		of an LDAP directory prior to integration with Samba. A working knowledge of LDAP makes Samba integration
-		easy, and the lack of a working knowledge of LDAP can make it one a frustrating experience.
+		Samba doesn't provide a turnkey solution to LDAP. It is best to deal with the design and
+		configuration of an LDAP directory prior to integration with Samba. A working knowledge
+		of LDAP makes Samba integration easy, and the lack of a working knowledge of LDAP can make
+		it a frustrating experience.
 		</para>
 
 		<para>
-		Computer (machine) accounts can be placed where ever you like in an LDAP directory subject to some
-		constraints that are described in this chapter.
+		Computer (machine) accounts can be placed wherever you like in an LDAP directory subject
+		to some constraints that are described in this chapter.
 		</para>
 
 		<para>
 		The POSIX and sambaSamAccount components of computer (machine) accounts are both used by Samba.
-		That is, machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats
+		Thus, machine accounts are treated inside Samba in the same way that Windows NT4/200X treats
 		them. A user account and a machine account are indistinquishable from each other, except that
 		the machine account ends in a $ character, as do trust accounts.
 		</para>
 
 		<para>
-		The need for Windows user, group, machine, trust, and other accounts to be tied to a valid UNIX UID
-		is a design decision that was made a long way back in the history of Samba development. It is
-		unlikely that this decision will be reversed or changed during the remaining life of the
+		The need for Windows user, group, machine, trust, and other accounts to be tied to a valid UNIX
+		UID is a design decision that was made a long way back in the history of Samba development. It
+		is unlikely that this decision will be reversed or changed during the remaining life of the
 		Samba-3.x series.
 		</para>
 
 		<para>
 		The resolution of a UID from the Windows SID is achieved within Samba through a mechanism that
-		must refer back to the host operating system on which Samba is running. The
-		NSS is the preferred mechanism that shields applications (like Samba) from the
-		need to know everything about every host OS it runs on.
+		must refer back to the host operating system on which Samba is running. The NSS is the preferred
+		mechanism that shields applications (like Samba) from the need to know everything about every
+		host OS it runs on.
 		</para>
 
 		<para>
@@ -698,13 +782,23 @@ Samba-3 introduces a number of new password backend capabilities.
 Samba provides two tools for management of user and machine accounts:
 <command>smbpasswd</command> and <command>pdbedit</command>. 
 </para>
+
+<para>
+Some people are confused when reference is made to <literal>smbpasswd</literal> because the
+name refers to a storage mechanism for SambaSAMAccount information, but it is also the name
+of a utility tool. That tool is destined to eventually be replaced by new functionality that
+is being added to the <command>net</command> toolset.
+</para>
+
 	<sect2>
-	<title>The <emphasis>smbpasswd</emphasis> Command</title>
+	<title>The <command>smbpasswd</command> Command</title>
 	
 		<para>
-		The smbpasswd utility is similar to the <command>passwd</command>
+		The <command>smbpasswd</command> utility is similar to the <command>passwd</command>
 		and <command>yppasswd</command> programs. It maintains the two 32 byte password
-		fields in the passdb backend.
+		fields in the passdb backend. This utility operates independantly of the actual
+		account and password storage methods used (as specified by the <parameter>passdb
+		backend</parameter> in the &smb.conf; file.
 		</para>
 
 		<para>
@@ -714,15 +808,14 @@ Samba provides two tools for management of user and machine accounts:
 
 		<para>
 		<command>smbpasswd</command> has the capability to change passwords on Windows NT
-		servers (this only works when the request is sent to the NT PDC
-		if changing an NT domain user's password).
+		servers (this only works when the request is sent to the NT PDC if changing an NT
+		domain user's password).
 		</para>
 
 		<para>
+		<indexterm><primary>user management</primary></indexterm>
+		<indexterm><primary>user account</primary><secondary>Adding/Deleting</secondary></indexterm>
 		<command>smbpasswd</command> can be used to:
-<indexterm><primary>User Management</primary></indexterm>
-<indexterm><primary>User Accounts</primary><secondary>Adding/Deleting</secondary></indexterm>
-		
 		</para>
 
 		<itemizedlist>
@@ -782,15 +875,14 @@ Samba provides two tools for management of user and machine accounts:
 	</sect2>
 
 	<sect2 id="pdbeditthing">
-	<title>The <emphasis>pdbedit</emphasis> Command</title>
+	<title>The <command>pdbedit</command> Command</title>
 
 		<para>
-<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>User Management</primary></indexterm>
+		<indexterm><primary>User Accounts</primary><secondary>Adding/Deleting</secondary></indexterm>
 		<command>pdbedit</command> is a tool that can be used only by root. It is used to
 		manage the passdb backend. <command>pdbedit</command> can be used to:
-<indexterm><primary>User Management</primary></indexterm>
-<indexterm><primary>User Accounts</primary><secondary>Adding/Deleting</secondary></indexterm>
-
 		</para>
 
 		<itemizedlist>
@@ -800,14 +892,14 @@ Samba provides two tools for management of user and machine accounts:
 		</itemizedlist>
 
 		<para>
-<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
 		The <command>pdbedit</command> tool is the only one that can manage the account
 		security and policy settings. It is capable of all operations that smbpasswd can
 		do as well as a superset of them.
 		</para>
 
 		<para>
-<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
 		One particularly important purpose of the <command>pdbedit</command> is to allow
 		the migration of account information from one passdb backend to another. See the
 		<link linkend="XMLpassdb">XML</link> password backend section of this chapter.
@@ -843,7 +935,7 @@ Password must change: Mon, 18 Jan 2038 20:14:07 GMT
 </screen>
 
 		<para>
-<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
 		The <command>pdbedit</command> tool allows migration of authentication (account)
 		databases from one backend to another. For example, to migrate accounts from an
 		old <filename>smbpasswd</filename> database to a <parameter>tdbsam</parameter>
@@ -882,13 +974,14 @@ capability.
 
 <para>
 It is possible to specify not only multiple password backends, but even multiple
-backends of the same type. For example, to use two different tdbsam databases:
-</para>
+backends of the same type. For example, to use two different <literal>tdbsam</literal> databases:
 
-<para>
 <smbconfblock>
-	<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb tdbsam:/etc/samba/old-passdb.tdb</smbconfoption>
+<smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb tdbsam:/etc/samba/old-passdb.tdb</smbconfoption>
 </smbconfblock>
+
+What is possible, is not always sensible. Be careful to avoid complexity to the point that it
+may be said that the solution is <quote>too clever by half!</quote>
 </para>
 
 
@@ -901,7 +994,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 		or <filename>/etc/smbpasswd</filename>. When password encryption is disabled, no 
 		SMB-specific data is stored at all. Instead, all operations are conducted via the way
 		that the Samba host OS will access its <filename>/etc/passwd</filename> database.
-		On Linux systems, for example, all operations are done via PAM.
+		On most Linux systems, for example, all user and group resolution is done via PAM.
 		</para>
 
 	</sect2>
@@ -910,19 +1003,19 @@ backends of the same type. For example, to use two different tdbsam databases:
 	<title>smbpasswd: Encrypted Password Database</title>
 
 		<para>
-<indexterm><primary>SAM backend</primary><secondary>smbpasswd</secondary></indexterm>
-		Traditionally, when configuring <smbconfoption name="encrypt passwords">yes</smbconfoption> in Samba's &smb.conf; file, user account
-		information such as username, LM/NT password hashes, password change times, and account
-		flags have been stored in the <filename>smbpasswd(5)</filename> file. There are several
-		disadvantages to this approach for sites with large numbers of users (counted
-		in the thousands).
+		<indexterm><primary>SAM backend</primary><secondary>smbpasswd</secondary></indexterm>
+		Traditionally, when configuring <smbconfoption name="encrypt passwords">yes</smbconfoption>
+		in Samba's &smb.conf; file, user account information such as username, LM/NT password hashes,
+		password change times, and account flags have been stored in the <filename>smbpasswd(5)</filename>
+		file. There are several disadvantages to this approach for sites with large numbers of users
+		(counted in the thousands).
 		</para>
 
 		<itemizedlist>
 		<listitem><para>
 		The first problem is that all lookups must be performed sequentially. Given that
-		there are approximately two lookups per domain logon (one for a normal
-		session connection such as when mapping a network drive or printer), this
+		there are approximately two lookups per domain logon (one during intial logon validation
+		and one for a session connection setup, such as when mapping a network drive or printer), this
 		is a performance bottleneck for large sites. What is needed is an indexed approach
 		such as used in databases.
 		</para></listitem>
@@ -959,8 +1052,8 @@ backends of the same type. For example, to use two different tdbsam databases:
 	<sect2>
 	<title>tdbsam</title>
 
-	<para>
-<indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
+		<para>
+		<indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
 		Samba can store user and machine account data in a <quote>TDB</quote> (trivial database).
 		Using this backend does not require any additional configuration. This backend is
 		recommended for new installations that do not require LDAP.
@@ -980,13 +1073,23 @@ backends of the same type. For example, to use two different tdbsam databases:
 		the performance-based scalability limits of the tdbsam architecture.
 		</para>
 
+		<para>
+		There are sites that have thousands of users and yet require only one server.
+		One site recently reported having 4,500 user accounts on one UNIX system and
+		reported excellent performance with the <literal>tdbsam</literal> passdb backend.
+		The limitation of where the <literal>tdbsam</literal> passdb backend can be used
+		is not one pertaining to a limitation in the TDB storage system, it is based
+		only on the need for a reliable distribution mechanism for the SambaSAMAccount
+		backend.
+		</para>
+
 	</sect2>
 
 	<sect2>
 	<title>ldapsam</title>
 
 		<para>
-<indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
+		<indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 		There are a few points to stress that the ldapsam does not provide. The LDAP
 		support referred to in this documentation does not include:
 		</para>
@@ -998,11 +1101,9 @@ backends of the same type. For example, to use two different tdbsam databases:
 		</itemizedlist>
 
 		<para>
-		The second item can be accomplished by using LDAP NSS and PAM modules. LGPL
-		versions of these libraries can be obtained from 
-		<ulink url="http://www.padl.com/">PADL Software</ulink>.
-		More information about the configuration of these packages may be found in
-		<ulink url="http://safari.oreilly.com/?XmlId=1-56592-491-6">
+		The second item can be accomplished by using LDAP NSS and PAM modules. LGPL versions of these libraries can be
+		obtained from <ulink url="http://www.padl.com/">PADL Software</ulink>.  More information about the
+		configuration of these packages may be found in <ulink url="http://safari.oreilly.com/?XmlId=1-56592-491-6">
 		<emphasis>LDAP, System Administration</emphasis> by Gerald Carter, Chapter 6, Replacing NIS"</ulink>.
 		</para>
 
@@ -1016,7 +1117,15 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 		<itemizedlist>
 			<listitem><para><ulink url="http://www.openldap.org/">OpenLDAP</ulink></para></listitem>
-			<listitem><para><ulink url="http://iplanet.netscape.com/directory">Sun iPlanet Directory Server</ulink></para></listitem>
+			<listitem><para><ulink url="http://www.sun.com/software/products/directory_srvr_ee/index.xml">
+				Sun One Directory Server</ulink></para></listitem>
+			<listitem><para><ulink url="http://www.novell.com/products/edirectory/"></ulink>Novell eDirectory</para></listitem>
+			<listitem><para><ulink url="http://www-306.ibm.com/software/tivoli/products/directory-server/">IBM
+				Tivoli Directory Server</ulink></para></listitem>
+			<listitem><para><ulink url="http://www.redhat.com/software/rha/directory/">Red Hat Directory
+				Server</ulink></para></listitem>
+			<listitem><para><ulink url="http://www.linuxsecurity.com/content/view/119229">Fedora Directory
+				Server</ulink></para></listitem>
 		</itemizedlist>
 
 		<para>
@@ -1036,10 +1145,14 @@ backends of the same type. For example, to use two different tdbsam databases:
 		<title>Supported LDAP Servers</title>
 
 			<para>
-			The LDAP ldapsam code was developed and tested using the OpenLDAP 2.0 and 2.1 server and
+			The LDAP ldapsam code was developed and tested using the OpenLDAP 2.x server and
 			client libraries. The same code should work with Netscape's Directory Server and client SDK.
 			However, there are bound to be compile errors and bugs. These should not be hard to fix.
 			Please submit fixes via the process outlined in <link linkend="bugreport">Reporting Bugs</link>.
+			</para>
+
+			<para>
+			Samba is capable of working with any standards compliant LDAP server.
 			</para>
 
 		</sect3>
@@ -1049,11 +1162,9 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 
 			<para>
-			Samba-3.0 includes the necessary schema file for OpenLDAP 2.0 in
-			<filename>examples/LDAP/samba.schema</filename>. The sambaSamAccount ObjectClass is given here:
-			</para>
-
-<para>
+			Samba-3.0 includes the necessary schema file for OpenLDAP 2.x in
+			<filename>examples/LDAP/samba.schema</filename> directory of the source code distribution
+			tarball. The schema entry for the sambaSamAccount ObjectClass is shown here:
 <programlisting>
 ObjectClass (1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
     DESC 'Samba-3.0 Auxiliary SAM Account'
@@ -1065,7 +1176,7 @@ ObjectClass (1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
           sambaProfilePath $ description $ sambaUserWorkstations $
           sambaPrimaryGroupSID $ sambaDomainName ))
 </programlisting>
-</para>
+			</para>
 
 			<para>
 			The <filename>samba.schema</filename> file has been formatted for OpenLDAP 2.0/2.1.
@@ -1075,9 +1186,9 @@ ObjectClass (1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
 			</para>
 
 			<para>
-			Just as the smbpasswd file is meant to store information that provides information additional to  a
-			user's <filename>/etc/passwd</filename> entry, so is the sambaSamAccount object
-			meant to supplement the UNIX user account information. A sambaSamAccount is an
+			Just as the smbpasswd file is meant to store information that provides information
+			additional to  a user's <filename>/etc/passwd</filename> entry, so is the sambaSamAccount
+			object meant to supplement the UNIX user account information. A sambaSamAccount is an
 			<constant>AUXILIARY</constant> ObjectClass, so it can be used to augment existing
 			user account information in the LDAP directory, thus providing information needed
 			for Samba account handling. However, there are several fields (e.g., uid) that overlap
@@ -1090,7 +1201,7 @@ ObjectClass (1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
 			<para>
 			In order to store all user account information (UNIX and Samba) in the directory,
 			it is necessary to use the sambaSamAccount and posixAccount ObjectClasses in
-			combination. However, smbd will still obtain the user's UNIX account
+			combination. However, <command>smbd</command> will still obtain the user's UNIX account
 			information via the standard C library calls, such as getpwnam().
 			This means that the Samba server must also have the LDAP NSS library installed
 			and functioning correctly. This division of information makes it possible to
@@ -1102,28 +1213,22 @@ ObjectClass (1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
 		<sect3>
 		<title>OpenLDAP Configuration</title>
 
-			<para>
-			To include support for the sambaSamAccount object in an OpenLDAP directory
-			server, first copy the samba.schema file to slapd's configuration directory.
-			The samba.schema file can be found in the directory <filename>examples/LDAP</filename>
-			in the Samba source distribution.
-			</para>
-
-<para>
+		<para>
+		To include support for the sambaSamAccount object in an OpenLDAP directory
+		server, first copy the samba.schema file to slapd's configuration directory.
+		The samba.schema file can be found in the directory <filename>examples/LDAP</filename>
+		in the Samba source distribution.
 <screen>
 &rootprompt;<userinput>cp samba.schema /etc/openldap/schema/</userinput>
 </screen>
-</para>
+		</para>
 
-			<para>
-			Next, include the <filename>samba.schema</filename> file in <filename>slapd.conf</filename>.
-			The sambaSamAccount object contains two attributes that depend on other schema
-			files. The <parameter>uid</parameter> attribute is defined in <filename>cosine.schema</filename> and
-			the <parameter>displayName</parameter> attribute is defined in the <filename>inetorgperson.schema</filename>
-			file. Both of these must be included before the <filename>samba.schema</filename> file.
-			</para>
-
-<para>
+		<para>
+		Next, include the <filename>samba.schema</filename> file in <filename>slapd.conf</filename>.
+		The sambaSamAccount object contains two attributes that depend on other schema
+		files. The <parameter>uid</parameter> attribute is defined in <filename>cosine.schema</filename> and
+		the <parameter>displayName</parameter> attribute is defined in the <filename>inetorgperson.schema</filename>
+		file. Both of these must be included before the <filename>samba.schema</filename> file.
 <programlisting>
 ## /etc/openldap/slapd.conf
 
@@ -1137,7 +1242,7 @@ include            /etc/openldap/schema/nis.schema
 include            /etc/openldap/schema/samba.schema
 ....
 </programlisting>
-</para>
+		</para>
 
 		<para>
 		It is recommended that you maintain some indices on some of the most useful attributes,
@@ -1173,23 +1278,17 @@ index   default               sub
 
 		<para>
 		Create the new index by executing:
-		</para>
-
-<para>
 <screen>
 &rootprompt;./sbin/slapindex -f slapd.conf
 </screen>
-</para>
+		</para>
 
 		<para>
 		Remember to restart slapd after making these changes:
-		</para>
-
-<para>
 <screen>
 &rootprompt;<userinput>/etc/init.d/slapd restart</userinput>
 </screen>
-</para>
+		</para>
 
 		</sect3>
 
@@ -1200,9 +1299,6 @@ index   default               sub
 		Before you can add accounts to the LDAP database, you must create the account containers
 		that they will be stored in. The following LDIF file should be modified to match your
 		needs (DNS entries, and so on):
-		</para>
-		
-<para>
 <programlisting>
 # Organization for Samba Base
 dn: dc=quenya,dc=org
@@ -1218,7 +1314,7 @@ objectclass: organizationalRole
 cn: Manager
 description: Directory Manager
 
-# Setting up container for users
+# Setting up container for Users OU
 dn: ou=People,dc=quenya,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -1260,7 +1356,7 @@ objectclass: organizationalRole
 objectclass: simpleSecurityObject
 userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 </programlisting>
-</para>
+		</para>
 
 		<para>
 		The userPassword shown above should be generated using <command>slappasswd</command>.
@@ -1269,28 +1365,23 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 		<para>
 		The following command will then load the contents of the LDIF file into the LDAP
 		database.
-		</para>
-
-<para>
 <screen>
 &prompt;<userinput>slapadd -v -l initldap.dif</userinput>
 </screen>
-</para>
+		</para>
 
 		<para>
 		Do not forget to secure your LDAP server with an adequate access control list
 		as well as an admin password.
 		</para>
 
-		<note>
-		<para>
+		<note><para>
 		Before Samba can access the LDAP server, you need to store the LDAP admin password
 		in the Samba-3 <filename>secrets.tdb</filename> database by:
 <screen>
 &rootprompt;<userinput>smbpasswd -w <replaceable>secret</replaceable></userinput>
 </screen>
-		</para>
-		</note>
+		</para></note>
 
 		</sect3>
 
@@ -1303,24 +1394,25 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			LDAP libraries are found.
 			</para>
 
-			<para>LDAP-related smb.conf options are 
-			<smbconfoption name="passdb backend">ldapsam:url</smbconfoption>,
-			<smbconfoption name="ldap admin dn"/>,
-			<smbconfoption name="ldap delete dn"/>,
-			<smbconfoption name="ldap filter"/>,
-			<smbconfoption name="ldap group suffix"/>,
-			<smbconfoption name="ldap idmap suffix"/>,
-			<smbconfoption name="ldap machine suffix"/>,
-			<smbconfoption name="ldap passwd sync"/>,
-			<smbconfoption name="ldap ssl"/>,
-			<smbconfoption name="ldap suffix"/>,
-			<smbconfoption name="ldap user suffix"/>,
-		</para>
+			<para>LDAP-related smb.conf options are:
+			<smbconfblock>
+			<smbconfoption name="passdb backend">ldapsam:url</smbconfoption>
+			<smbconfoption name="ldap admin dn"/>
+			<smbconfoption name="ldap delete dn"/>
+			<smbconfoption name="ldap filter"/>
+			<smbconfoption name="ldap group suffix"/>
+			<smbconfoption name="ldap idmap suffix"/>
+			<smbconfoption name="ldap machine suffix"/>
+			<smbconfoption name="ldap passwd sync"/>
+			<smbconfoption name="ldap ssl"/>
+			<smbconfoption name="ldap suffix"/>
+			<smbconfoption name="ldap user suffix"/>
+			</smbconfblock>
+			</para>
 
 			<para>
-			These are described in the &smb.conf; man
-			page and so are not repeated here. However, a <link linkend="confldapex">sample &smb.conf; file</link> for
-			use with an LDAP directory could appear as in Example 10.4.1.
+			These are described in the &smb.conf; man page and so are not repeated here. However, an example 
+			for use with an LDAP directory is shown in <link linkend="confldapex">the Configuration with LDAP.</link>
 			</para>
 
 <example id="confldapex">
@@ -1332,16 +1424,16 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfoption name="netbios name">MORIA</smbconfoption>
 <smbconfoption name="workgroup">NOLDOR</smbconfoption>
 
-<smbconfcomment>ldap related parameters</smbconfcomment>
+<smbconfcomment>LDAP related parameters:</smbconfcomment>
 
-<smbconfcomment>define the DN to use when binding to the directory servers</smbconfcomment>
-<smbconfcomment>The password for this DN is not stored in smb.conf. Rather it</smbconfcomment>
-<smbconfcomment>must be set by using 'smbpasswd -w secretpw' to store the</smbconfcomment>
-<smbconfcomment>passphrase in the secrets.tdb file. If the "ldap admin dn" values</smbconfcomment>
-<smbconfcomment>change, this password will need to be reset.</smbconfcomment>
+<smbconfcomment>Define the DN used when binding to the LDAP servers.</smbconfcomment>
+<smbconfcomment>The password for this DN is not stored in smb.conf</smbconfcomment>
+<smbconfcomment>Set it using 'smbpasswd -w secretpw' to store the</smbconfcomment>
+<smbconfcomment>passphrase in the secrets.tdb file.</smbconfcomment>
+<smbconfcomment>If the "ldap admin dn" value changes, it must be reset.</smbconfcomment>
 <smbconfoption name="ldap admin dn">"cn=Manager,dc=quenya,dc=org"</smbconfoption>
 
-<smbconfcomment>Define the SSL option when connecting to the directory</smbconfcomment>
+<smbconfcomment>SSL directory connections can be configured by:</smbconfcomment>
 <smbconfcomment>('off', 'start tls', or 'on' (default))</smbconfcomment>
 <smbconfoption name="ldap ssl">start tls</smbconfoption>
 
@@ -1351,7 +1443,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfcomment>smbpasswd -x delete the entire dn-entry</smbconfcomment>
 <smbconfoption name="ldap delete dn">no</smbconfoption>
 
-<smbconfcomment>the machine and user suffix added to the base suffix</smbconfcomment>
+<smbconfcomment>The machine and user suffix are added to the base suffix</smbconfcomment>
 <smbconfcomment>wrote WITHOUT quotes. NULL suffixes by default</smbconfcomment>
 <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
@@ -1360,11 +1452,8 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfcomment>Trust UNIX account information in LDAP</smbconfcomment>
 <smbconfcomment> (see the smb.conf man page for details)</smbconfcomment>
 
-<smbconfcomment> specify the base DN to use when searching the directory</smbconfcomment>
+<smbconfcomment>Specify the base DN to use when searching the directory</smbconfcomment>
 <smbconfoption name="ldap suffix">dc=quenya,dc=org</smbconfoption>
-
-<smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
-<smbconfoption name="ldap filter">(uid=%u)</smbconfoption>
 </smbconfblock>
 </example>
 
