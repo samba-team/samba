@@ -1217,7 +1217,8 @@ subnet 123.45.67.64 netmask 255.255.255.252 {
 		</para></step>
 
 		<step><para>
-		Create the files shown in their directories as follows: (John, on this page, the numbered entry comes after the table it's referencing!!!!!)
+		Create the files shown in their respective directories as shown in <link linkend="namedrscfiles">DNS
+		(named) Resource Files</link>.
 
 			<table id="namedrscfiles">
 				<title>DNS (named) Resource Files</title>
