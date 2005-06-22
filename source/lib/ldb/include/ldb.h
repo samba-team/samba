@@ -255,6 +255,16 @@ int ldb_modify(struct ldb_context *ldb,
 int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn);
 
 /*
+  create a named lock
+*/
+int ldb_lock(struct ldb_context *ldb, const char *lockname);
+
+/*
+  release a named lock
+*/
+int ldb_unlock(struct ldb_context *ldb, const char *lockname);
+
+/*
   delete a record from the database
 */
 int ldb_delete(struct ldb_context *ldb, const char *dn);
