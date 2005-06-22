@@ -267,6 +267,9 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 
 BOOL is_ntfs_stream_name(const char *fname)
 {
+	if (lp_posix_pathnames()) {
+		return False;
+	}
 	return (strchr_m(fname, ':') != NULL) ? True : False;
 }
 
