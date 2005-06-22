@@ -57,6 +57,11 @@ struct gensec_security_ops {
 	const char **oid;  /* NULL if not offered by SPNEGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
+	/**
+	   Determine if a packet has the right 'magic' for this mechanism
+	*/
+	NTSTATUS (*magic)(struct gensec_security *gensec_security, 
+			  const DATA_BLOB *first_packet);
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 			   const DATA_BLOB in, DATA_BLOB *out);
 	NTSTATUS (*seal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,

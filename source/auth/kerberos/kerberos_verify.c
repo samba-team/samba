@@ -34,9 +34,6 @@
 
 #ifdef HAVE_KRB5
 
-#if !defined(HAVE_KRB5_PRINC_COMPONENT)
-const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
-#endif
 static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 {
 	DATA_BLOB out;
@@ -308,7 +305,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 ***********************************************************************************/
 
  NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
-			    krb5_context context,
+			    struct smb_krb5_context *smb_krb5_context,
 			    krb5_auth_context auth_context,
 			    const char *realm, const char *service, 
 			    const DATA_BLOB *ticket, 
@@ -319,15 +316,10 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
-	krb5_rcache rcache = NULL;
+	krb5_principal salt_princ;
 	int ret;
 
-	BOOL got_replay_mutex = False;
-
 	char *malloc_principal;
-	char *machine_username;
-	krb5_principal salt_princ = NULL;
-	char *salt_princ_string;
 
 	NTSTATUS creds_nt_status;
 	struct cli_credentials *machine_account;
@@ -342,100 +334,45 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 	
 	if (!NT_STATUS_IS_OK(creds_nt_status)) {
 		DEBUG(3, ("Could not obtain machine account credentials from the local database\n"));
-
-		/* This just becomes a locking key, if we don't have creds, we must be using the keytab */
-		salt_princ_string = talloc_asprintf(mem_ctx, "host/%s@%s", lp_netbios_name(), lp_realm());
-		if (!salt_princ_string) {
-			ret = ENOMEM;
-		} else {
-			ret = krb5_parse_name(context, salt_princ_string, &salt_princ);
-		}
+		talloc_free(machine_account);
+		machine_account = NULL;
 	} else {
-
-		machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
-		
-		if (!machine_username) {
-			ret = ENOMEM;
-		} else {
-			char *salt_body;
-			char *lower_realm = strlower_talloc(mem_ctx, cli_credentials_get_realm(machine_account));;
-			if (machine_username[strlen(machine_username)-1] == '$') {
-				machine_username[strlen(machine_username)-1] = '\0';
-			}
-			if (!lower_realm) {
-				ret = ENOMEM;
-			} else {
-				salt_body = talloc_asprintf(mem_ctx, "%s.%s", machine_username, 
-							    lower_realm);
-				if (!salt_body) {
-					ret = ENOMEM;
-				} else {
-					salt_princ_string = talloc_asprintf(mem_ctx, "host/%s@%s", salt_body, cli_credentials_get_realm(machine_account));
-					if (!salt_princ_string) {
-						ret = ENOMEM;
-					} else {
-						ret = krb5_parse_name(context, salt_princ_string, &salt_princ);
-					}
-				}
-			}
+		ret = salt_principal_from_credentials(mem_ctx, machine_account, 
+						      smb_krb5_context, 
+						      &salt_princ);
+		if (ret) {
+			DEBUG(1,("ads_verify_ticket: maksing salt principal failed (%s)\n",
+				 error_message(ret)));
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 	}
 	
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: maksing salt principal failed (%s)\n",
-			 error_message(ret)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	/* This whole process is far more complex than I would
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
 
-	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
-	 * code surrounding the replay cache... */
-
-	if (!grab_server_mutex("replay cache mutex")) {
-		DEBUG(1,("ads_verify_ticket: unable to protect replay cache with mutex.\n"));
-		goto out;
-	}
-
-	got_replay_mutex = True;
-
 	/*
-	 * JRA. We must set the rcache here. This will prevent replay attacks.
+	 * TODO: Actually hook in the replay cache in Heimdal, then
+	 * re-add calls to setup a replay cache here, in our private
+	 * directory.  This will eventually prevent replay attacks
 	 */
 
-	ret = krb5_get_server_rcache(context, krb5_princ_component(context, salt_princ, 0), &rcache);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_get_server_rcache failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-
-	ret = krb5_auth_con_setrcache(context, auth_context, rcache);
-	if (ret) {
-		DEBUG(1,("ads_verify_ticket: krb5_auth_con_setrcache failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-
-	ret = ads_keytab_verify_ticket(mem_ctx, context, auth_context, 
+	ret = ads_keytab_verify_ticket(mem_ctx, smb_krb5_context->krb5_context, auth_context, 
 				       service, ticket, &packet, &tkt, keyblock);
-	if (ret) {
-		ret = ads_secrets_verify_ticket(mem_ctx, machine_account, context, auth_context,
+	if (ret && machine_account) {
+		ret = ads_secrets_verify_ticket(mem_ctx, machine_account, smb_krb5_context->krb5_context, auth_context,
 						salt_princ, ticket, 
 						&packet, &tkt, keyblock);
 	}
 
-	release_server_mutex();
-	got_replay_mutex = False;
-
 	if (ret) {
 		goto out;
 	}
 
-	ret = krb5_mk_rep(context, auth_context, &packet);
+	ret = krb5_mk_rep(smb_krb5_context->krb5_context, auth_context, &packet);
 	if (ret) {
 		DEBUG(3,("ads_verify_ticket: Failed to generate mutual authentication reply (%s)\n",
-			 smb_get_krb5_error_message(context, ret, mem_ctx)));
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 		goto out;
 	}
 
@@ -459,10 +396,10 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
+	if ((ret = krb5_unparse_name(smb_krb5_context->krb5_context, get_principal_from_tkt(tkt),
 				     &malloc_principal))) {
 		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
-			 smb_get_krb5_error_message(context, ret, mem_ctx)));
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 		sret = NT_STATUS_LOGON_FAILURE;
 		goto out;
 	}
@@ -479,10 +416,6 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 
  out:
 
-	if (got_replay_mutex) {
-		release_server_mutex();
-	}
-
 	if (!NT_STATUS_IS_OK(sret)) {
 		data_blob_free(auth_data);
 	}
@@ -492,11 +425,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 	}
 
 	if (tkt != NULL) {
-		krb5_free_ticket(context, tkt);
-	}
-
-	if (salt_princ != NULL) {
-		krb5_free_principal(context, salt_princ);
+		krb5_free_ticket(smb_krb5_context->krb5_context, tkt);
 	}
 
 	return sret;
