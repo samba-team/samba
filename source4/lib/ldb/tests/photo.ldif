@@ -1,4 +1,4 @@
-dn: cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=US
+dn: cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
 changetype: modify
 add: photo
 photo:< tests/samba4.png
