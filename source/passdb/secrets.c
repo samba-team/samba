@@ -123,57 +123,6 @@ char *secrets_fetch_machine_password(const char *domain)
 }
 
 
-
-/*******************************************************************************
- Lock the secrets tdb based on a string - this is used as a primitive form of mutex
- between smbd instances.
-*******************************************************************************/
-
-BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
-{
-	size_t ref_count = *p_ref_count;
-	int ret = 0;
-
-	secrets_init();
-	if (!tdb)
-		return False;
-
-	if (ref_count == 0) {
-		ret = tdb_lock_bystring(tdb->tdb, name);
-		if (ret == 0)
-			DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
-	}
-
-	if (ret == 0) {
-		*p_ref_count = ++ref_count;
-		DEBUG(10,("secrets_named_mutex: ref_count for mutex %s = %u\n", name, (uint_t)ref_count ));
-	}
-	return (ret == 0);
-}
-
-/*******************************************************************************
- Unlock a named mutex.
-*******************************************************************************/
-
-void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
-{
-	size_t ref_count = *p_ref_count;
-
-	SMB_ASSERT(ref_count != 0);
-
-	secrets_init();
-	if (!tdb)
-		return;
-
-	if (ref_count == 1) {
-		tdb_unlock_bystring(tdb->tdb, name);
-		DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));
-	}
-
-	*p_ref_count = --ref_count;
-	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (uint_t)ref_count ));
-}
-
 /*
   connect to the schannel ldb
 */
