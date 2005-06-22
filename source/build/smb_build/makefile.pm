@@ -164,10 +164,8 @@ sub _prepare_dummy_MAKEDIR()
 bin/.dummy:
 	@: >> $@ || : > $@
 
-dynconfig.o: dynconfig.c Makefile
-	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
-@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+dynconfig.o: TARGET_CFLAGS=$(PATH_FLAGS)
+dynconfig.o: Makefile
 
 __EOD__
 }
