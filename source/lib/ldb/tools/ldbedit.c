@@ -278,28 +278,23 @@ static void usage(void)
 	struct ldb_context *ldb;
 	struct ldb_message **msgs;
 	int ret;
-	const char *expression = NULL;
+	const char *expression = "(|(objectclass=*)(dn=*))";
 	const char * const * attrs = NULL;
 
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-	if (options->all_records) {
-		expression = "(|(objectclass=*)(dn=*))";
-	}
-
-	if (!expression) {
-		if (options->argc == 0) {
-			usage();
-		}
+	/* the check for '=' is for compatibility with ldapsearch */
+	if (options->argc > 0 && 
+	    strchr(options->argv[0], '=')) {
 		expression = options->argv[0];
-		options->argc--;
 		options->argv++;
+		options->argc--;
 	}
 
 	if (options->argc > 0) {
-		attrs = (const char * const *)options->argv;
+		attrs = (const char * const *)(options->argv);
 	}
 
 	ret = ldb_search(ldb, options->basedn, options->scope, expression, attrs, &msgs);
