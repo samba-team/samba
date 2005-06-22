@@ -64,6 +64,11 @@ static void add_records(struct ldb_context *ldb,
 	struct ldb_message msg;
 	int i;
 
+        if (ldb_lock(ldb, "transaction") != 0) {
+                printf("transaction lock failed\n");
+                exit(1);
+        }
+
 	for (i=0;i<count;i++) {
 		struct ldb_message_element el[6];
 		struct ldb_val vals[6][1];
@@ -130,6 +135,11 @@ static void add_records(struct ldb_context *ldb,
 
 		talloc_free(tmp_ctx);
 	}
+
+        if (ldb_unlock(ldb, "transaction") != 0) {
+                printf("transaction unlock failed\n");
+                exit(1);
+        }
 
 	printf("\n");
 }

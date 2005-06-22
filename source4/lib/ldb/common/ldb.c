@@ -76,7 +76,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 #endif
 #if HAVE_SQLITE3
 	else if (strncmp(url, "sqlite:", 7) == 0) {
-		ldb_ctx = lsqlite3_connect(url, flags, options);
+                ret = lsqlite3_connect(ldb, url, flags, options);
 	}
 #endif
 	else {
@@ -165,6 +165,22 @@ int ldb_delete(struct ldb_context *ldb, const char *dn)
 int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
 {
 	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
+}
+
+/*
+  create a named lock
+*/
+int ldb_lock(struct ldb_context *ldb, const char *lockname)
+{
+        return ldb->modules->ops->named_lock(ldb->modules, lockname);
+}
+
+/*
+  release a named lock
+*/
+int ldb_unlock(struct ldb_context *ldb, const char *lockname)
+{
+        return ldb->modules->ops->named_unlock(ldb->modules, lockname);
 }
 
 /*
