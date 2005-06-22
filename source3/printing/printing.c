@@ -2094,6 +2094,8 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	const char* sharename = lp_const_servicename( snum );
 	print_status_struct status;
 	int len;
+
+	ZERO_STRUCT( status );
  
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
