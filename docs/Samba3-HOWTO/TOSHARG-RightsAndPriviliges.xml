@@ -57,7 +57,7 @@ access to the UNIX host system.
 <title>Rights Management Capabilities</title>
 
 <para>
-Samba 3.0.11 introduces support for the Windows privilege model.  This model
+Samba 3.0.11 introduced support for the Windows privilege model.  This model
 allows certain rights to be assigned to a user or group SID.  In order to enable
 this feature, <smbconfoption name="enable privileges">yes</smbconfoption>
 must be defined in the <smbconfsection name="global"/> section of the &smb.conf; file.
@@ -99,6 +99,18 @@ The remainder of this chapter explains how to manage and use these privileges on
                         <row>
                                 <entry><para>SeDiskOperatorPrivilege</para></entry>
                                 <entry><para>Manage disk share</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeBackupPrivilege</para></entry>
+                                <entry><para>Back up files and directories</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeRestorePrivilege</para></entry>
+                                <entry><para>Restore files and directories</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeTakeOwnershipPrivilege</para></entry>
+                                <entry><para>Take ownership of files or other objects</para></entry>
                         </row>
                 </tbody>
         </tgroup>
@@ -246,6 +258,50 @@ on the Samba mailing lists.
 	</varlistentry>
 
 </variablelist>
+
+</sect2>
+
+<sect2>
+<title>Privileges Suppored by Windows 2000 Domain Controllers</title>
+
+<para>
+    For reference purposes, a Windows 2000 Domain Controller reports that it supports the following
+    privileges:
+<screen>
+         SeCreateTokenPrivilege  Create a token object
+  SeAssignPrimaryTokenPrivilege  Replace a process level token
+          SeLockMemoryPrivilege  Lock pages in memory
+       SeIncreaseQuotaPrivilege  Increase quotas
+      SeMachineAccountPrivilege  Add workstations to domain
+                 SeTcbPrivilege  Act as part of the operating system
+            SeSecurityPrivilege  Manage auditing and security log
+       SeTakeOwnershipPrivilege  Take ownership of files or other objects
+          SeLoadDriverPrivilege  Load and unload device drivers
+       SeSystemProfilePrivilege  Profile system performance
+          SeSystemtimePrivilege  Change the system time
+SeProfileSingleProcessPrivilege  Profile single process
+SeIncreaseBasePriorityPrivilege  Increase scheduling priority
+      SeCreatePagefilePrivilege  Create a pagefile
+     SeCreatePermanentPrivilege  Create permanent shared objects
+              SeBackupPrivilege  Back up files and directories
+             SeRestorePrivilege  Restore files and directories
+            SeShutdownPrivilege  Shut down the system
+               SeDebugPrivilege  Debug programs
+               SeAuditPrivilege  Generate security audits
+   SeSystemEnvironmentPrivilege  Modify firmware environment values
+        SeChangeNotifyPrivilege  Bypass traverse checking
+      SeRemoteShutdownPrivilege  Force shutdown from a remote system
+              SeUndockPrivilege  Remove computer from docking station
+           SeSyncAgentPrivilege  Synchronize directory service data
+    SeEnableDelegationPrivilege  Enable computer and user accounts to
+                                 be trusted for delegation
+        SeManageVolumePrivilege  Perform volume maintenance tasks
+         SeImpersonatePrivilege  Impersonate a client after authentication
+        SeCreateGlobalPrivilege  Create global objects
+</screen>
+    The Samba Team are implementing only those privileges that are logical and useful in the UNIX/Linux
+    envronment. Many of the Windows 200X/XP privileges have no direct equivalence in UNIX.
+    </para>
 
 </sect2>
 
