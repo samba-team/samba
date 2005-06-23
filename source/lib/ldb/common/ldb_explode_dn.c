@@ -154,12 +154,11 @@ ldb_explode_dn(void * mem_ctx,
 	}
 
         /* Copy the provided DN so we can manipulate it */
-        if ((p = ldb_dn_fold(mem_ctx, orig_dn,
-                             hUserData, case_fold_attr_fn)) == NULL) {
+        if ((dn_copy = talloc_strdup(mem_ctx, orig_dn)) == NULL) {
                 goto failed;
         }
 
-        dn_copy = p;
+        p = dn_copy;
         
         /* Our copy may end shorter than the original as we unescape chars */
 	dn_end = dn_copy + orig_len + 1;
@@ -224,13 +223,17 @@ ldb_explode_dn(void * mem_ctx,
                                 goto failed;
                         }
 
-                        /* attribute names are always case-folded */
-                        p = attribute->name;
-                        if ((attribute->name =
-                             ldb_casefold(attribute, p)) == NULL) {
-                                goto failed;
-                        }
-                        talloc_free(p);
+                        /* see if this attribute name needs case folding */
+                        if (case_fold_attr_fn != NULL &&
+                            (* case_fold_attr_fn)(hUserData,
+                                                  attribute->name)) {
+	                        p = attribute->name;
+        	                if ((attribute->name =
+                	             ldb_casefold(attribute, p)) == NULL) {
+                        	        goto failed;
+                        	}
+                        	talloc_free(p);
+			}
 
 			ldb_debug(mem_ctx,
                                   LDB_DEBUG_TRACE,
