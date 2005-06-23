@@ -26,9 +26,10 @@
 #include "dynconfig.h"
 #include "system/network.h"
 #include "system/iconv.h"
+#include "system/dir.h"
 #include "system/filesys.h"
 
-/**************************************************************************n
+/***************************************************************************
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
 ****************************************************************************/

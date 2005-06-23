@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/dir.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_security.h"
 

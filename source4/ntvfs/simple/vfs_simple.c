@@ -27,6 +27,7 @@
 */
 
 #include "includes.h"
+#include "system/dir.h"
 #include "system/filesys.h"
 #include "svfs.h"
 #include "system/time.h"
