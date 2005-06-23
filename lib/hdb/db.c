@@ -256,6 +256,13 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 	krb5_clear_error_string(context);
 	return 0;
     }
+    if (ret) {
+	DB_close(context, db);
+	krb5_set_error_string(context, "hdb_open: failed %s database %s",
+			      (flags & O_ACCMODE) == O_RDONLY ? 
+			      "checking format of" : "initialize", 
+			      db->hdb_name);
+    }
     return ret;
 }
 
