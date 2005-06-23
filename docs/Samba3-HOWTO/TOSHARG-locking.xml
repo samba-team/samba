@@ -69,7 +69,7 @@ server as well as on each MS Windows client!
 <indexterm><primary>deny modes</primary></indexterm>
 There are two types of locking that need to be performed by an SMB server.
 The first is <emphasis>record locking</emphasis> that allows a client to lock
-a range of bytes in a open file. The second is the <emphasis>deny modes</emphasis>
+a range of bytes in an open file. The second is the <emphasis>deny modes</emphasis>
 that are specified when a file is open.
 </para>
 
@@ -92,7 +92,7 @@ many more differences, too many to be listed here.
 <para>
 <indexterm><primary>record locking</primary></indexterm>
 <indexterm><primary>byte-range lock</primary></indexterm>
-Samba 2.2 and above implement record locking completely independent of the
+Samba 2.2 and above implement record locking completely independently of the
 underlying UNIX system. If a byte-range lock that the client requests happens
 to fall into the range of 0 to 2^31, Samba hands this request down to the UNIX system.
 No other locks can be seen by UNIX, anyway.
@@ -103,8 +103,8 @@ No other locks can be seen by UNIX, anyway.
 <indexterm><primary>rpc.lockd</primary></indexterm>
 Strictly speaking, an SMB server should check for locks before every read and write call on
 a file. Unfortunately, with the way fcntl() works, this can be slow and may overstress
-the <command>rpc.lockd</command>. This is almost always unnecessary because clients are supposed to
-independently make locking calls before reads and writes if locking is
+the <command>rpc.lockd</command>. This is almost always unnecessary because clients are 
+independently supposed to make locking calls before reads and writes if locking is
 important to them. By default, Samba only makes locking calls when explicitly asked
 to by a client, but if you set <smbconfoption name="strict locking">yes</smbconfoption>, it
 will make lock checking calls on <emphasis>every</emphasis> read and write call.
@@ -450,13 +450,10 @@ regularly opening the same file.
 <indexterm><primary>Multiuser databases</primary></indexterm>
 <indexterm><primary>management bottleneck</primary></indexterm>
 <indexterm><primary>oplocks disabled</primary></indexterm>
-Multiuser databases clearly pose a risk due to their very nature &smbmdash;
-they are typically heavily accessed by numerous users at random
-intervals. Placing a multiuser database on a share with oplocks
-enabled will likely result in a locking management bottleneck
-on the Samba server. Whether the database application is developed
-in-house or a commercially available product, ensure that the share
-has oplocks disabled.
+Multiuser databases clearly pose a risk due to their very nature &smbmdash; they are typically heavily
+accessed by numerous users at random intervals. Placing a multiuser database on a share with oplocks enabled
+will likely result in a locking management bottleneck on the Samba server. Whether the database application is
+developed in-house or a commercially available product, ensure that the share has oplocks disabled.
 </para>
 
 </sect3>
@@ -470,18 +467,13 @@ has oplocks disabled.
 <indexterm><primary>client-side data caching</primary></indexterm>
 <indexterm><primary>oplocks management</primary></indexterm>
 <indexterm><primary>disabling oplocks</primary></indexterm>
-Process data management (PDM) applications such as IMAN, Enovia, and
-Clearcase are increasing in usage with Windows client platforms and
-therefore with SMB datastores. PDM applications manage multiuser
-environments for critical data security and access. The typical PDM
-environment is usually associated with sophisticated client design
-applications that will load data locally as demanded. In addition, the
-PDM application will usually monitor the data state of each client.
-In this case, client-side data caching is best left to the local
-application and PDM server to negotiate and maintain. It is
-appropriate to eliminate the client OS from any caching tasks, and the
-server from any oplocks management, by disabling oplocks on
-the share.
+Process data management (PDM) applications such as IMAN, Enovia, and Clearcase are increasing in usage with
+Windows client platforms and therefore with SMB datastores. PDM applications manage multiuser environments for
+critical data security and access. The typical PDM environment is usually associated with sophisticated client
+design applications that will load data locally as demanded. In addition, the PDM application will usually
+monitor the data state of each client.  In this case, client-side data caching is best left to the local
+application and PDM server to negotiate and maintain. It is appropriate to eliminate the client OS from any
+caching tasks, and the server from any oplocks management, by disabling oplocks on the share.
 </para>
 
 </sect3>
@@ -491,16 +483,12 @@ the share.
 
 <para>
 <indexterm><primary>oplock break</primary></indexterm>
-Samba includes an &smb.conf; parameter called 
-<smbconfoption name="force user"/> that changes
-the user accessing a share from the incoming user to whatever user is
-defined by the smb.conf variable. If oplocks is enabled
-on a share, the change in user access causes an oplock break to be sent
-to the client, even if the user has not explicitly loaded a file. In
-cases where the network is slow or unreliable, an oplock break can
-become lost without the user even accessing a file. This can cause
-apparent performance degradation as the client continually reconnects
-to overcome the lost oplock break.
+Samba includes an &smb.conf; parameter called <smbconfoption name="force user"/> that changes the user
+accessing a share from the incoming user to whatever user is defined by the &smb.conf; variable. If oplocks is
+enabled on a share, the change in user access causes an oplock break to be sent to the client, even if the
+user has not explicitly loaded a file. In cases where the network is slow or unreliable, an oplock break can
+become lost without the user even accessing a file. This can cause apparent performance degradation as the
+client continually reconnects to overcome the lost oplock break.
 </para>
 
 <para>
@@ -542,7 +530,7 @@ likely cause problems. The parameters are
 <para>
 <indexterm><primary>turn oplocks off</primary></indexterm>
 For most users, administrators, and environments, if these parameters
-are required, then the better option is to simply turn oplocks off.
+are required, then the better option is simply to turn oplocks off.
 The Samba SWAT help text for both parameters reads: <quote>Do not change
 this parameter unless you have read and understood the Samba oplock code.</quote>
 This is good advice.
@@ -1096,6 +1084,7 @@ tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
 	<sect2>
 		<title>Problems Saving Files in MS Office on Windows XP</title>
 
+<indexterm><primary>KB 812937</primary></indexterm>
 		<para>This is a bug in Windows XP. More information can be 
 		found in <ulink url="http://support.microsoft.com/?id=812937">Microsoft Knowledge Base article 812937</ulink></para>.
 
@@ -1107,6 +1096,7 @@ tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
 		
 		<para><quote>It sometimes takes approximately 35 seconds to delete files over the network after XP SP1 has been applied.</quote></para>
 
+<indexterm><primary>KB 811492</primary></indexterm>
 		<para>This is a bug in Windows XP. More information can be found in <ulink url="http://support.microsoft.com/?id=811492">
 				Microsoft Knowledge Base article 811492</ulink></para>.
 	</sect2>
@@ -1117,9 +1107,9 @@ tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
 <title>Additional Reading</title>
 
 <para>
-You may want to check for an updated version of this white paper on our Web site from
-time to time. Many of our white papers are updated as information changes. For those papers,
-the last edited date is always at the top of the paper.
+You may want to check for an updated documentation regarding file and record locking issues on the Microsoft
+<ulink url="http://support.microsoft.com/">Support</ulink> web site. Additionally, a search for the work
+<literal>locking</literal> on the Samba <ulink url="http://www.samba.org/">web</ulink> site.
 </para>
 
 <para>
@@ -1127,26 +1117,23 @@ Section of the Microsoft MSDN Library on opportunistic locking:
 </para>
 
 <para>
-Opportunistic Locks, Microsoft Developer Network (MSDN), Windows Development &gt;
-Windows Base Services &gt; Files and I/O &gt; SDK Documentation &gt; File Storage &gt; File Systems
-&gt; About File Systems &gt; Opportunistic Locks, Microsoft Corporation
-<ulink noescape="1" url="http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp">http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp</ulink>.
+<indexterm><primary>KB 224992</primary></indexterm>
+Microsoft Knowledge Base, <quote>Maintaining Transactional Integrity with OPLOCKS</quote>,
+Microsoft Corporation, April 1999, <ulink noescape="1" url="http://support.microsoft.com/?id=224992">Microsoft
+KB Article 224992</ulink>.
 </para>
 
 <para>
-	Microsoft Knowledge Base Article Q224992, <?latex \linebreak ?><quote>Maintaining Transactional Integrity 
-with OPLOCKS</quote>,
-Microsoft Corporation, April 1999, <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
+<indexterm><primary>KB 296264</primary></indexterm>
+Microsoft Knowledge Base, <quote>Configuring Opportunistic Locking in Windows 2000</quote>,
+Microsoft Corporation, April 2001 <ulink noescape="1" url="http://support.microsoft.com/?id=296264">Microsoft KB Article 296264</ulink>.
 </para>
 
 <para>
-Microsoft Knowledge Base Article Q296264, <quote>Configuring Opportunistic Locking in Windows 2000</quote>,
-Microsoft Corporation, April 2001 <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264</ulink>.
-</para>
-
-<para>
-Microsoft Knowledge Base Article Q129202, <quote>PC Ext: Explanation of Opportunistic Locking on Windows NT</quote>,
-Microsoft Corporation, April 1995 <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202</ulink>.
+<indexterm><primary>KB 129202</primary></indexterm>
+Microsoft Knowledge Base, <quote>PC Ext: Explanation of Opportunistic Locking on Windows NT</quote>,
+Microsoft Corporation, April 1995 <ulink noescape="1" url="http://support.microsoft.com/?id=129202">Microsoft
+KB Article 129202</ulink>.
 </para>
 
 </sect1>
