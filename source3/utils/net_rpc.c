@@ -3374,6 +3374,7 @@ static int rpc_share_migrate(int argc, const char **argv)
 
 	char mode = NET_MODE_SHARE_MIGRATE;
 	argv[argc++] = &mode;
+	argv[argc] = NULL;
 
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
