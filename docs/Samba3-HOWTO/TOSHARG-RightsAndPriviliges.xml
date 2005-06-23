@@ -369,8 +369,8 @@ mailing lists.
 <title>Privileges Suppored by Windows 2000 Domain Controllers</title>
 
 <para>
-    For reference purposes, a Windows NT4 Primary Domain Controller reports that is supports the following
-	prvileges:
+    For reference purposes, a Windows NT4 Primary Domain Controller reports support for the following
+	privileges:
 <indexterm><primary>SeCreateTokenPrivilege</primary></indexterm>
 <indexterm><primary>SeAssignPrimaryTokenPrivilege</primary></indexterm>
 <indexterm><primary>SeLockMemoryPrivilege</primary></indexterm>
@@ -419,7 +419,7 @@ SeIncreaseBasePriorityPrivilege  Increase scheduling priority
         SeChangeNotifyPrivilege  Bypass traverse checking
       SeRemoteShutdownPrivilege  Force shutdown from a remote system
 </screen>
-	And Windows 200x/XP Domain Controllers and workstations reports supports the following privileges:
+	And Windows 200x/XP Domain Controllers and workstations reports to support the following privileges:
 <indexterm><primary>SeCreateTokenPrivilege</primary></indexterm>
 <indexterm><primary>SeAssignPrimaryTokenPrivilege</primary></indexterm>
 <indexterm><primary>SeLockMemoryPrivilege</primary></indexterm>
