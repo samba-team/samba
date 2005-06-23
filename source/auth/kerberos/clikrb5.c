@@ -503,6 +503,8 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 	krb5_error_code ret;
 	TALLOC_CTX *tmp_ctx;
 	
+	initialize_krb5_error_table();
+	
 	*smb_krb5_context = talloc(parent_ctx, struct smb_krb5_context);
 	tmp_ctx = talloc_new(*smb_krb5_context);
 
