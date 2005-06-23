@@ -39,10 +39,7 @@ stuff
 a @code{libkrb5} library that should be possible to get to work with
 simple applications
 @item
-a GSS-API library that should have all the important functions for
-building applications
-@item
-Eric Young's @file{libdes}
+a GSS-API library
 @item
 @file{kinit}, @file{klist}, @file{kdestroy}
 @item
