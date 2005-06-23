@@ -164,6 +164,9 @@ query_int(const struct lsqlite3_private * lsqlite3,
 static int case_fold_attr_required(void * hUserData,
                                    char *attr);
 
+static int case_fold_attr_not_required(void * hUserData,
+                                   char *attr);
+
 static int
 add_msg_attr(void * hTalloc,
              long long eid,
@@ -182,12 +185,6 @@ parsetree_to_sql(struct ldb_module *module,
 static int
 parsetree_to_attrlist(struct ldb_module *module,
                       const struct ldb_parse_tree * t);
-
-#ifdef NEED_TABLE_LIST
-static char *
-build_attr_table_list(void * hTalloc,
-                      struct lsqlite3_private * lsqlite3);
-#endif
 
 static int
 msg_to_sql(struct ldb_module * module,
@@ -328,6 +325,8 @@ lsqlite3_rename(struct ldb_module * module,
                 const char * pOldDN,
                 const char * pNewDN)
 {
+	const char *pOldNormalizedDN;
+	const char *pNewNormalizedDN;
         long long                   eid;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
@@ -337,9 +336,9 @@ lsqlite3_rename(struct ldb_module * module,
         }
 
         /* Case-fold each of the DNs */
-        pOldDN = ldb_dn_fold(module->ldb, pOldDN,
+        pOldNormalizedDN = ldb_dn_fold(module->ldb, pOldDN,
                              module, case_fold_attr_required);
-        pNewDN = ldb_dn_fold(module->ldb, pNewDN,
+        pNewNormalizedDN = ldb_dn_fold(module->ldb, pNewDN,
                              module, case_fold_attr_required);
 
         /* Begin a transaction */
@@ -353,25 +352,26 @@ lsqlite3_rename(struct ldb_module * module,
                   TRUE,
                   "SELECT eid\n"
                   "  FROM ldb_entry\n"
-                  "  WHERE dn = %Q;",
-                  pOldDN);
+                  "  WHERE normalized_dn = %Q;",
+                  pOldNormalizedDN);
         
         QUERY_NOROWS(lsqlite3,
                      TRUE,
                      "UPDATE ldb_entry "
-                     "  SET dn = %Q "
+                     "  SET dn = %Q, "
+		     "  normalized_dn = %Q "
                      "  WHERE eid = %lld;",
-                     pNewDN, eid);
+                     pNewDN, pNewNormalizedDN, eid);
 
         QUERY_NOROWS(lsqlite3,
                      TRUE,
                      "UPDATE ldb_attribute_values "
                      "  SET attr_value = %Q, "
-                     "      attr_value_normalized = upper(%Q) "
+                     "      attr_value_normalized = %Q "
                      "  WHERE eid = %lld "
                      "    AND attr_name = 'DN';",
                      pNewDN,
-                     pNewDN,
+                     pNewNormalizedDN,
                      eid);
 
         /* Commit the transaction */
@@ -388,6 +388,7 @@ static int
 lsqlite3_delete(struct ldb_module * module,
                 const char * pDN)
 {
+	char *pNormalizedDN;
         long long                   eid;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
@@ -402,7 +403,7 @@ lsqlite3_delete(struct ldb_module * module,
         }
 
         /* Case-fold the DNs */
-        pDN = ldb_dn_fold(module->ldb, pDN, module, case_fold_attr_required);
+        pNormalizedDN = ldb_dn_fold(module->ldb, pDN, module, case_fold_attr_required);
 
         /* Determine the eid of the DN being deleted */
         QUERY_INT(lsqlite3,
@@ -411,8 +412,8 @@ lsqlite3_delete(struct ldb_module * module,
                   "SELECT eid\n"
                   "  FROM ldb_attribute_values\n"
                   "  WHERE attr_name = 'DN'\n"
-                  "    AND attr_value_normalized = upper(%Q);",
-                  pDN);
+                  "    AND attr_value_normalized = %Q;",
+                  pNormalizedDN);
         
         /* Delete attribute/value table entries pertaining to this DN */
         QUERY_NOROWS(lsqlite3,
@@ -453,11 +454,9 @@ lsqlite3_search_bytree(struct ldb_module * module,
         long long                   prevEID;
         char *                      pSql = NULL;
 	char *                      pSqlConstraints;
-#ifdef NEED_TABLE_LIST
-        char *                      pTableList;
-#endif
         char *                      hTalloc = NULL;
         const char *                pDN;
+        const char *                pNormalizedBaseDN;
         const char *                pAttrName;
         const char *                pAttrValue;
         const char *                pResultAttrList;
@@ -465,17 +464,13 @@ lsqlite3_search_bytree(struct ldb_module * module,
         sqlite3_stmt *              pStmt;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
         
-	if (pBaseDN == NULL) {
-		pBaseDN = "";
-	}
-        
         /* Allocate a temporary talloc context */
 	if ((hTalloc = talloc_new(module->ldb)) == NULL) {
                 return -1;
         }
         
         /* Case-fold the base DN */
-        if ((pBaseDN = ldb_dn_fold(hTalloc, pBaseDN,
+        if ((pNormalizedBaseDN = ldb_dn_fold(hTalloc, pBaseDN?pBaseDN:"",
                                    module, case_fold_attr_required)) == NULL) {
                 talloc_free(hTalloc);
                 return -1;
@@ -492,10 +487,9 @@ lsqlite3_search_bytree(struct ldb_module * module,
         if ((ret = query_int(lsqlite3,
                              &eid,
                              "SELECT eid\n"
-                             "  FROM ldb_attribute_values\n"
-                             "  WHERE attr_name = 'DN'\n"
-                             "    AND attr_value_normalized = upper(%Q);",
-                             pBaseDN)) == SQLITE_DONE) {
+                             "  FROM ldb_entry\n"
+                             "  WHERE normalized_dn = %Q;",
+                             pNormalizedBaseDN)) == SQLITE_DONE) {
                 UNLOCK_DB(module, "rollback");
                 talloc_free(hTalloc);
                 return 0;
@@ -563,16 +557,6 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 ret = -1;
                 goto cleanup;
         }
-        
-#ifdef NEED_TABLE_LIST
-        /*
-         * Build the attribute table list from the list of unique names.
-         */
-        if ((pTableList = build_attr_table_list(hTalloc, lsqlite3)) == NULL) {
-                ret = -1;
-                goto cleanup;
-        }
-#endif
         
         switch(scope) {
         case LDB_SCOPE_DEFAULT:
@@ -913,7 +897,7 @@ static int
 lsqlite3_modify(struct ldb_module * module,
                 const struct ldb_message * msg)
 {
-        char *                      pDN;
+        char *                      pNormalizedDN;
         long long                   eid;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
         
@@ -928,7 +912,7 @@ lsqlite3_modify(struct ldb_module * module,
         }
         
         /* Case-fold the DN so we can compare it to what's in the database */
-        pDN = ldb_dn_fold(module->ldb, msg->dn,
+        pNormalizedDN = ldb_dn_fold(module->ldb, msg->dn,
                           module, case_fold_attr_required);
 
         /* Determine the eid of the DN being deleted */
@@ -937,8 +921,8 @@ lsqlite3_modify(struct ldb_module * module,
                   TRUE,
                   "SELECT eid\n"
                   "  FROM ldb_entry\n"
-                  "  WHERE dn = %Q;",
-                  pDN);
+                  "  WHERE normalized_dn = %Q;",
+                  pNormalizedDN);
         
         /* Apply the message attributes */
 	if (msg_to_sql(module, msg, eid, TRUE) != 0) {
@@ -1047,6 +1031,7 @@ initialize(struct lsqlite3_private *lsqlite3,
                 "  eid                   INTEGER PRIMARY KEY,"
                 "  peid                  INTEGER REFERENCES ldb_entry,"
                 "  dn                    TEXT UNIQUE NOT NULL,"
+		"  normalized_dn	 TEXT UNIQUE NOT NULL,"
                 "  tree_key              TEXT UNIQUE,"
                 "  max_child_num         INTEGER DEFAULT 0,"
                 "  create_timestamp      INTEGER,"
@@ -1150,9 +1135,9 @@ initialize(struct lsqlite3_private *lsqlite3,
 
                 /* The root node */
                 "INSERT INTO ldb_entry "
-                "    (eid, peid, dn, tree_key) "
+                "    (eid, peid, dn, normalized_dn, tree_key) "
                 "  VALUES "
-                "    (0, NULL, '', '0001');"
+                "    (0, NULL, '', '', '0001');"
 
                 /* And the root node "dn" attribute */
                 "INSERT INTO ldb_attribute_values "
@@ -1371,8 +1356,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
         struct timeval  tv;
         struct timezone tz;
         
-        gettimeofday(&tv, &tz);
-        t0 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
+        if (lsqlite3_debug & SQLITE3_DEBUG_QUERY) {
+        	gettimeofday(&tv, &tz);
+        	t0 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
+	}
 
         /* Begin access to variable argument list */
         va_start(args, pSql);
@@ -1432,10 +1419,9 @@ query_norows(const struct lsqlite3_private *lsqlite3,
         /* All done with variable argument list */
         va_end(args);
         
-        gettimeofday(&tv, NULL);
-        t1 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
-
         if (lsqlite3_debug & SQLITE3_DEBUG_QUERY) {
+        	gettimeofday(&tv, NULL);
+        	t1 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
                 printf("%1.6lf %s\n%s\n\n", t1 - t0,
                        ret == 0 ? "SUCCESS" : "FAIL",
                        p);
@@ -1473,8 +1459,10 @@ query_int(const struct lsqlite3_private * lsqlite3,
         struct timeval  tv;
         struct timezone tz;
         
-        gettimeofday(&tv, &tz);
-        t0 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
+        if (lsqlite3_debug & SQLITE3_DEBUG_QUERY) {
+        	gettimeofday(&tv, &tz);
+        	t0 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
+	}
 
         /* Begin access to variable argument list */
         va_start(args, pSql);
@@ -1537,10 +1525,10 @@ query_int(const struct lsqlite3_private * lsqlite3,
         /* All done with variable argument list */
         va_end(args);
         
-        gettimeofday(&tv, NULL);
-        t1 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
 
         if (lsqlite3_debug & SQLITE3_DEBUG_QUERY) {
+        	gettimeofday(&tv, NULL);
+        	t1 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
                 printf("%1.6lf %s\n%s\n\n", t1 - t0,
                        ret == 0 ? "SUCCESS" : "FAIL",
                        p);
@@ -1563,8 +1551,16 @@ case_fold_attr_required(void * hUserData,
 {
 //        struct ldb_module * module = hUserData;
         
-#warning "currently, all attributes require case folding"
         return TRUE;
+}
+
+static int
+case_fold_attr_not_required(void * hUserData,
+                        char *attr)
+{
+//        struct ldb_module * module = hUserData;
+        
+        return FALSE;
 }
 
 
@@ -1702,7 +1698,7 @@ parsetree_to_sql(struct ldb_module *module,
                  const struct ldb_parse_tree *t)
 {
 	int                     i;
-        char *                  pDN;
+        char *                  pNormalizedDN;
 	char *                  child;
         char *                  p;
 	char *                  ret = NULL;
@@ -1847,15 +1843,15 @@ parsetree_to_sql(struct ldb_module *module,
                 sqlite3_free(p);
                 
         } else if (strcasecmp(t->u.simple.attr, "dn") == 0) {
-                pDN = ldb_dn_fold(module->ldb, t->u.simple.value.data,
+                pNormalizedDN = ldb_dn_fold(module->ldb, t->u.simple.value.data,
                                   module, case_fold_attr_required);
                 if ((p = sqlite3_mprintf(
                              "  SELECT eid\n"
                              "    FROM ldb_attribute_values\n"
                              "    WHERE attr_name = %Q\n"
-                             "      AND attr_value_normalized = upper(%Q)\n",
+                             "      AND attr_value_normalized = %Q\n",
                              pAttrName,
-                             pDN)) == NULL) {
+                             pNormalizedDN)) == NULL) {
                         return NULL;
                 }
                 
@@ -2080,6 +2076,7 @@ new_dn(struct ldb_module * module,
         int                         bFirst;
         char *                      p;
         char *                      pPartialDN;
+        char *                      pPartialNormalizedDN;
         long long                   eid;
         long long                   peid;
         double                      t0 = 0;
@@ -2096,12 +2093,12 @@ new_dn(struct ldb_module * module,
                 t0 = (double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0);
         }
 
-        /* Explode and normalize the DN */
+        /* Explode the DN */
         if ((pExplodedDN =
              ldb_explode_dn(ldb,
                             pDN,
                             ldb,
-                            case_fold_attr_required)) == NULL) {
+                            case_fold_attr_not_required)) == NULL) {
                 return -1;
         }
         
@@ -2114,6 +2111,10 @@ new_dn(struct ldb_module * module,
 
         /* Allocate a string to hold the partial DN of each component */
         if ((pPartialDN = talloc_strdup(ldb, "")) == NULL) {
+                return -1;
+        }
+        
+        if ((pPartialNormalizedDN = talloc_strdup(pPartialDN, "")) == NULL) {
                 return -1;
         }
         
@@ -2158,6 +2159,7 @@ new_dn(struct ldb_module * module,
                 
                 /* Save the new partial DN */
                 pPartialDN = p;
+		pPartialNormalizedDN = ldb_dn_fold(pPartialDN, p, module, case_fold_attr_required);
                 
                 if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
                         gettimeofday(&tv, NULL);
@@ -2177,11 +2179,11 @@ new_dn(struct ldb_module * module,
                 QUERY_NOROWS(lsqlite3,
                              FALSE,
                              "INSERT %s INTO ldb_entry\n"
-                             "    (peid, dn)\n"
+                             "    (peid, dn, normalized_dn)\n"
                              "  VALUES\n"
-                             "    (%lld, %Q);",
+                             "    (%lld, %Q, %Q);",
                              nComponent == 0 ? "" : "OR IGNORE",
-                             eid, pPartialDN);
+                             eid, pPartialDN, pPartialNormalizedDN);
                 
                 /* Save the parent EID */
                 peid = eid;
@@ -2200,8 +2202,8 @@ new_dn(struct ldb_module * module,
                           FALSE,
                           "SELECT eid "
                           "  FROM ldb_entry "
-                          "  WHERE dn = %Q;",
-                          pPartialDN);
+                          "  WHERE normalized_dn = %Q;",
+                          pPartialNormalizedDN);
 
                 if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
                         gettimeofday(&tv, NULL);
@@ -2220,11 +2222,11 @@ new_dn(struct ldb_module * module,
                              "     attr_value,\n"
                              "     attr_value_normalized) "
                              "  VALUES "
-                             "    (%lld, 'DN', %Q, upper(%Q));",
+                             "    (%lld, 'DN', %Q, %Q);",
                              nComponent == 0 ? "" : "OR IGNORE",
                              eid,
                              pPartialDN, /* FIX ME */
-                             pPartialDN);
+                             pPartialNormalizedDN);
         }
         
         if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
