@@ -391,6 +391,7 @@ static void
 do_authenticate (struct rx_header *hdr,
 		 krb5_storage *sp,
 		 struct sockaddr_in *addr,
+		 const char *from,
 		 krb5_data *reply)
 {
     krb5_error_code ret;
@@ -422,6 +423,11 @@ do_authenticate (struct rx_header *hdr,
 
     snprintf (client_name, sizeof(client_name), "%s.%s@%s",
 	      name, instance, v4_realm);
+    snprintf (server_name, sizeof(server_name), "%s.%s@%s",
+	      "krbtgt", v4_realm, v4_realm);
+
+    kdc_log(0, "AS-REQ (kaserver) %s from %s for %s",
+	    client_name, from, server_name);
 
     ret = db_fetch4 (name, instance, v4_realm, &client_entry);
     if (ret) {
@@ -430,9 +436,6 @@ do_authenticate (struct rx_header *hdr,
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
-
-    snprintf (server_name, sizeof(server_name), "%s.%s@%s",
-	      "krbtgt", v4_realm, v4_realm);
 
     ret = db_fetch4 ("krbtgt", v4_realm, v4_realm, &server_entry);
     if (ret) {
@@ -593,6 +596,7 @@ static void
 do_getticket (struct rx_header *hdr,
 	      krb5_storage *sp,
 	      struct sockaddr_in *addr,
+	      const char *from,
 	      krb5_data *reply)
 {
     krb5_error_code ret;
@@ -707,6 +711,9 @@ do_getticket (struct rx_header *hdr,
     snprintf (client_name, sizeof(client_name),
 	      "%s.%s@%s", ad.pname, ad.pinst, ad.prealm);
 
+    kdc_log(0, "TGS-REQ (kaserver) %s from %s for %s",
+	    client_name, from, server_name);
+
     ret = db_fetch4 (ad.pname, ad.pinst, ad.prealm, &client_entry);
     if(ret && ret != HDB_ERR_NOENTRY) {
 	kdc_log(0, "Client not found in database: (krb4) %s: %s",
@@ -741,15 +748,15 @@ do_getticket (struct rx_header *hdr,
 
     /* and extract them */
     {
-	krb5_storage *sp;
+	krb5_storage *tsp;
 	int32_t tmp;
 
-	sp = krb5_storage_from_mem (times.data, times.length);
-	krb5_ret_int32 (sp, &tmp);
+	tsp = krb5_storage_from_mem (times.data, times.length);
+	krb5_ret_int32 (tsp, &tmp);
 	start_time = tmp;
-	krb5_ret_int32 (sp, &tmp);
+	krb5_ret_int32 (tsp, &tmp);
 	end_time = tmp;
-	krb5_storage_free (sp);
+	krb5_storage_free (tsp);
     }
 
     /* life */
@@ -845,10 +852,10 @@ do_kaserver(unsigned char *buf,
     switch (op) {
     case AUTHENTICATE :
     case AUTHENTICATE_V2 :
-	do_authenticate (&hdr, sp, addr, reply);
+	do_authenticate (&hdr, sp, addr, from, reply);
 	break;
     case GETTICKET :
-	do_getticket (&hdr, sp, addr, reply);
+	do_getticket (&hdr, sp, addr, from, reply);
 	break;
     case AUTHENTICATE_OLD :
     case CHANGEPASSWORD :
