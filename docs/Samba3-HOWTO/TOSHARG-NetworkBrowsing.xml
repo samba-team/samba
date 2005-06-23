@@ -1641,6 +1641,20 @@ Some people find browsing fails because they do not have the global
 IPC$ connection that lists the shares is done as guest and so you must have a valid guest account.
 </para>
 
+<note><para>
+<indexterm><primary>IPC$</primary></indexterm>
+<indexterm><primary>Windows Explorer</primary></indexterm>
+<indexterm><primary>browse resources</primary></indexterm>
+<indexterm><primary>Network Neighborhood</primary></indexterm>
+<indexterm><primary>My Network Places</primary></indexterm>
+The <literal>IPC$</literal> share is used by all SMB/CIFS clients to obtain the list of resources
+that is available on the server. This is the source of the list of shares and printers when browsing
+an SMB/CIFS server (also Windows machines) using the Windows Explorer to browse resources through
+the Windows Network Neighborhood (also called My Network Places) through to a Windows server. At 
+this point the client has opened a connection to the <literal>\\server\IPC4</literal> resource. 
+Clicking on a share will then open up a connection to the <literal>\\server\share</literal>.
+</para></note>
+
 <para>
 <indexterm><primary>guest account</primary></indexterm>
 <indexterm><primary>anonymous access</primary></indexterm>
