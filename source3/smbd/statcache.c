@@ -64,7 +64,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 
 	if((*full_orig_name == '\0') || (full_orig_name[0] == '.' && 
 				((full_orig_name[1] == '\0') ||
-				 (full_orig_name[1] == '.' && full_orig_name[1] == '\0'))))
+				 (full_orig_name[1] == '.' && full_orig_name[2] == '\0'))))
 		return;
 
 	/*
