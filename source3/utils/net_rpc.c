@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static int net_mode_share;
+
 /**
  * @file net_rpc.c
  *
@@ -2940,7 +2942,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 		fstrcat(dir, "\\");
 		fstrcat(dir, f->name);
 
-		switch (local_state->mode)
+		switch (net_mode_share)
 		{
 		case NET_MODE_SHARE_MIGRATE:
 			/* create that directory */
@@ -2954,7 +2956,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 						  False);
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", local_state->mode);
+			d_printf("Unsupported mode %d\n", net_mode_share);
 			return;
 		}
 
@@ -2983,7 +2985,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 
 	DEBUG(3,("got file: %s\n", filename));
 
-	switch (local_state->mode)
+	switch (net_mode_share)
 	{
 	case NET_MODE_SHARE_MIGRATE:
 		nt_status = net_copy_file(local_state->mem_ctx, 
@@ -2996,7 +2998,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 					  True);
 		break;
 	default:
-		d_printf("Unsupported file mode %d\n", local_state->mode);
+		d_printf("Unsupported file mode %d\n", net_mode_share);
 		return;
 	}
 
@@ -3040,7 +3042,7 @@ BOOL copy_top_level_perms(struct copy_clistate *cp_clistate,
 {
 	NTSTATUS nt_status;
 
-	switch (cp_clistate->mode) {
+	switch (net_mode_share) {
 	case NET_MODE_SHARE_MIGRATE:
 		DEBUG(3,("calling net_copy_fileattr for '.' directory in share %s\n", sharename));
 		nt_status = net_copy_fileattr(cp_clistate->mem_ctx,
@@ -3053,7 +3055,7 @@ BOOL copy_top_level_perms(struct copy_clistate *cp_clistate,
 						False);
 		break;
 	default:
-		d_printf("Unsupported mode %d\n", cp_clistate->mode);
+		d_printf("Unsupported mode %d\n", net_mode_share);
 		break;
 	}
 
@@ -3098,9 +3100,6 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	pstring mask = "\\*";
 	char *dst = NULL;
 
-	/* decrese argc and safe mode */
-	cp_clistate.mode = argv[--argc][0];
-
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
 	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr_src);
@@ -3124,13 +3123,13 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			continue;
 		}
 
-		switch (cp_clistate.mode)
+		switch (net_mode_share)
 		{
 		case NET_MODE_SHARE_MIGRATE:
 			printf("syncing");
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", cp_clistate.mode);
+			d_printf("Unsupported mode %d\n", net_mode_share);
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
@@ -3154,7 +3153,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 
 		got_src_share = True;
 
-		if (cp_clistate.mode == NET_MODE_SHARE_MIGRATE) {
+		if (net_mode_share == NET_MODE_SHARE_MIGRATE) {
 			/* open share destination */
 			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
 						       NULL, dst, netname, "A:");
@@ -3372,9 +3371,7 @@ static int rpc_share_migrate(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	char mode = NET_MODE_SHARE_MIGRATE;
-	argv[argc++] = &mode;
-	argv[argc] = NULL;
+	net_mode_share = NET_MODE_SHARE_MIGRATE;
 
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
