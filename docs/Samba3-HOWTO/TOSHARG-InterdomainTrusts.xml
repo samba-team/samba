@@ -23,6 +23,10 @@
 <indexterm><primary>trusts</primary></indexterm>
 <indexterm><primary>samba-to-samba trusts</primary></indexterm>
 <indexterm><primary>Active Directory</primary></indexterm>
+<indexterm><primary>NT4-style domain</primary></indexterm>
+<indexterm><primary>trust relationships</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>LDAP-based</primary></indexterm>
 Samba-3 supports NT4-style domain trust relationships. This is a feature that many sites
 will want to use if they migrate to Samba-3 from an NT4-style domain and do not want to
 adopt Active Directory or an LDAP-based authentication backend. This chapter explains
@@ -35,15 +39,31 @@ trusts.
 <indexterm><primary>winbind</primary></indexterm>
 <indexterm><primary>UID range</primary></indexterm>
 <indexterm><primary>GID range</primary></indexterm>
+<indexterm><primary>daemon</primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
 The use of interdomain trusts requires use of <command>winbind</command>, so the
 <command>winbindd</command> daemon must be running. Winbind operation in this mode is
 dependent on the specification of a valid UID range and a valid GID range in the &smb.conf; file.
-These are specified respectively using 
-<smbconfoption name="idmap uid">10000-20000</smbconfoption> and
-<smbconfoption name="idmap gid">10000-20000</smbconfoption>.
+These are specified respectively using:
+<smbconfblock>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+</smbconfblock>
+<indexterm><primary>passdb backend</primary></indexterm>
+<indexterm><primary>POSIX user accounts</primary></indexterm>
+<indexterm><primary>maximum value</primary></indexterm>
+<indexterm><primary>4294967295</primary></indexterm>
+The range of values specified must not overlap values used by the host operating system and must
+not overlap values used in the passdb backend for POSIX user accounts. The maximum value is
+limited by the upper-most value permitted by the host operating system. This is a UNIX kernel
+limited parameter. Linux kernel 2.6 based systems support a maximum value of 4294967295 
+(32-bit unsigned variable).
 </para>
 
 <note><para>
+<indexterm><primary>winbind</primary></indexterm>
+<indexterm><primary>trusting domain</primary></indexterm>
+<indexterm><primary>trusted domain</primary></indexterm>
 The use of winbind is necessary only when Samba is the trusting domain, not when it is the
 trusted domain.
 </para></note>
@@ -52,16 +72,23 @@ trusted domain.
 <title>Features and Benefits</title>
 
 <para>
+<indexterm><primary>scalability</primary></indexterm>
+<indexterm><primary>trust relationships</primary></indexterm>
 Samba-3 can participate in Samba-to-Samba as well as in Samba-to-MS Windows NT4-style
 trust relationships. This imparts to Samba scalability similar to that with MS Windows NT4.
 </para>
 
 <para>
-Given that Samba-3 can function with a scalable backend authentication
-database such as LDAP, and given its ability to run in primary as well as backup domain control
-modes, the administrator would be well advised to consider alternatives to the use of
-interdomain trusts simply because, by the very nature of how this works, it is fragile.
-That was, after all, a key reason for the development and adoption of Microsoft Active Directory.
+<indexterm><primary>scalable backend</primary></indexterm>
+<indexterm><primary>authentication database</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>interdomain trusts</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
+Given that Samba-3 can function with a scalable backend authentication database such as LDAP, and given its
+ability to run in primary as well as backup domain control modes, the administrator would be well advised to
+consider alternatives to the use of interdomain trusts simply because, by the very nature of how trusts
+function, this system is fragile.  That was, after all, a key reason for the development and adoption of
+Microsoft Active Directory.
 </para>
 
 </sect1>
@@ -70,6 +97,12 @@ That was, after all, a key reason for the development and adoption of Microsoft 
 <title>Trust Relationship Background</title>
 
 <para>
+<indexterm><primary>security domains</primary></indexterm>
+<indexterm><primary>nonhierarchical</primary></indexterm>
+<indexterm><primary>security structure</primary></indexterm>
+<indexterm><primary>large organizations</primary></indexterm>
+<indexterm><primary>delegation</primary></indexterm>
+<indexterm><primary>administrative responsibilities</primary></indexterm>
 MS Windows NT3/4-type security domains employ a nonhierarchical security structure.
 The limitations of this architecture as it effects the scalability of MS Windows networking
 in large organizations is well known. Additionally, the flat namespace that results from
@@ -78,19 +111,31 @@ large and diverse organizations.
 </para>
 
 <para>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>Kerberos</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>limitations</primary></indexterm>
+<indexterm><primary>domain security</primary></indexterm>
 Microsoft developed Active Directory Service (ADS), based on Kerberos and LDAP, as a means
 of circumventing the limitations of the older technologies. Not every organization is ready
 or willing to embrace ADS. For small companies the older NT4-style domain security paradigm
-is quite adequate, so there remains an entrenched user base for whom there is no direct
+is quite adequate, and so there remains an entrenched user base for whom there is no direct
 desire to go through a disruptive change to adopt ADS.
 </para>
 
 <para>
+<indexterm><primary>security domains</primary></indexterm>
+<indexterm><primary>access rights</primary></indexterm>
+<indexterm><primary>privileges</primary></indexterm>
+<indexterm><primary>trusts</primary></indexterm>
+<indexterm><primary>trusted domain</primary></indexterm>
+<indexterm><primary>trusting domain</primary></indexterm>
+<indexterm><primary>one direction</primary></indexterm>
 With Windows NT, Microsoft introduced the ability to allow different security domains
 to effect a mechanism so users from one domain may be given access rights and privileges
 in another domain. The language that describes this capability is couched in terms of
 <emphasis>trusts</emphasis>. Specifically, one domain will <emphasis>trust</emphasis> the users
-from another domain. The domain from which users are available to another security domain is
+from another domain. The domain from which users can access another security domain is
 said to be a trusted domain. The domain in which those users have assigned rights and privileges
 is the trusting domain. With NT3.x/4.0 all trust relationships are always in one direction only,
 so if users in both domains are to have privileges and rights in each others' domain, then it is
@@ -98,19 +143,30 @@ necessary to establish two relationships, one in each direction.
 </para>
 
 <para>
-In an NT4-style MS security domain, all trusts are nontransitive. This means that if there
-are three domains (let's call them red, white, and blue), where red and white have a trust
-relationship, and white and blue have a trust relationship, then it holds that there is no
-implied trust between the red and blue domains. Relationships are explicit and not
-transitive.
+<indexterm><primary>security domain</primary></indexterm>
+<indexterm><primary>nontransitive</primary></indexterm>
+<indexterm><primary>trust relationship</primary></indexterm>
+<indexterm><primary>transitive</primary></indexterm>
+<indexterm><primary>explicit trust</primary></indexterm>
+Further, in an NT4-style MS security domain, all trusts are nontransitive. This means that if there are three
+domains (let's call them red, white, and blue), where red and white have a trust relationship, and white and
+blue have a trust relationship, then it holds that there is no implied trust between the red and blue domains.
+Relationships are explicit and not transitive.
 </para>
 
 <para>
-New to MS Windows 2000 ADS security contexts is the fact that trust relationships are two-way
-by default. Also, all inter-ADS domain trusts are transitive. In the case of the red, white, and blue
-domains, with Windows 2000 and ADS, the red and blue domains can trust each other. This is
-an inherent feature of ADS domains. Samba-3 implements MS Windows NT4-style interdomain trusts
-and interoperates with MS Windows 200x ADS security domains in similar manner to MS Windows NT4-style domains.
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>security contexts</primary></indexterm>
+<indexterm><primary>trust relationships</primary></indexterm>
+<indexterm><primary>two-way trust</primary></indexterm>
+<indexterm><primary>Windows 2000</primary></indexterm>
+<indexterm><primary>security domains</primary></indexterm>
+<indexterm><primary>NT4-style domains</primary></indexterm>
+New to MS Windows 2000 ADS security contexts is the fact that trust relationships are two-way by default.
+Also, all inter-ADS domain trusts are transitive. In the case of the red, white, and blue domains, with
+Windows 2000 and ADS, the red and blue domains can trust each other. This is an inherent feature of ADS
+domains. Samba-3 implements MS Windows NT4-style interdomain trusts and interoperates with MS Windows 200x ADS
+security domains in similar manner to MS Windows NT4-style domains.
 </para>
 
 </sect1>
@@ -119,10 +175,12 @@ and interoperates with MS Windows 200x ADS security domains in similar manner to
 <title>Native MS Windows NT4 Trusts Configuration</title>
 
 <para>
+<indexterm><primary>Interdomain Trusts</primary><secondary>creating</secondary></indexterm>
+<indexterm><primary>two-way trust</primary></indexterm>
+<indexterm><primary>security credentials</primary></indexterm>
 There are two steps to creating an interdomain trust relationship. To effect a two-way trust
 relationship, it is necessary for each domain administrator to create a trust account for the 
 other domain to use in verifying security credentials.
-<indexterm><primary>Interdomain Trusts</primary><secondary>creating</secondary></indexterm>
 </para>
 
 
@@ -130,6 +188,11 @@ other domain to use in verifying security credentials.
 <title>Creating an NT4 Domain Trust</title>
 
 <para>
+<indexterm><primary>domain trust</primary></indexterm>
+<indexterm><primary>trust relationships</primary></indexterm>
+<indexterm><primary>>Domain User Manager</primary></indexterm>
+<indexterm><primary>remote domain</primary></indexterm>
+<indexterm><primary>standard confirmation</primary></indexterm>
 For MS Windows NT4, all domain trust relationships are configured using the 
 <application>Domain User Manager</application>. This is done from the Domain User Manager Policies
 entry on the menu bar. From the <guimenu>Policy</guimenu> menu, select
@@ -149,6 +212,11 @@ The password needs to be typed twice (for standard confirmation).
 <title>Completing an NT4 Domain Trust</title>
 
 <para>
+<indexterm><primary>trust relationship</primary></indexterm>
+<indexterm><primary>trusting domain</primary></indexterm>
+<indexterm><primary>trusted domain</primary></indexterm>
+<indexterm><primary>remote domain</primary></indexterm>
+<indexterm><primary>password assigned</primary></indexterm>
 <indexterm><primary>Interdomain Trusts</primary><secondary>Completing</secondary></indexterm>
 A trust relationship will work only when the other (trusting) domain makes the appropriate connections
 with the trusted domain. To consummate the trust relationship, the administrator launches the
@@ -165,6 +233,11 @@ must be entered the name of the remote domain as well as the password assigned t
 
 
 <para>
+<indexterm><primary>two-way trust</primary></indexterm>
+<indexterm><primary>trust relationship</primary></indexterm>
+<indexterm><primary>trust established</primary></indexterm>
+<indexterm><primary>one-way trust</primary></indexterm>
+<indexterm><primary>Windows NT4 domains</primary></indexterm>
 <indexterm><primary>Interdomain Trusts</primary><secondary>Facilities</secondary></indexterm>
 A two-way trust relationship is created when two one-way trusts are created, one in each direction.
 Where a one-way trust has been established between two MS Windows NT4 domains (let's call them
@@ -254,23 +327,32 @@ DomA and DomB), the following facilities are created:
 <title>Configuring Samba NT-Style Domain Trusts</title>
 
 <para>
+<indexterm><primary>interdomain trust</primary></indexterm>
 This description is meant to be a fairly short introduction about how to set up a Samba server so
 that it can participate in interdomain trust relationships. Trust relationship support in Samba
 is at an early stage, so do not be surprised if something does not function as it should.
 </para>
 
 <para>
-Each of the procedures described next assumes the peer domain in the trust relationship is 
-controlled by a Windows NT4 server. However, the remote end could just as well be another 
-Samba-3  domain. It can be clearly seen, after reading this document, that combining 
-Samba-specific parts of what's written in the following sections leads to trust between domains in a purely Samba 
-environment.
+<indexterm><primary>peer domain</primary></indexterm>
+<indexterm><primary>trust relationship</primary></indexterm>
+<indexterm><primary>Windows NT4 Server</primary></indexterm>
+<indexterm><primary>between domains</primary></indexterm>
+Each of the procedures described next assumes the peer domain in the trust relationship is controlled by a
+Windows NT4 server. However, the remote end could just as well be another Samba-3  domain. It can be clearly
+seen, after reading this document, that combining Samba-specific parts of what's written in the following
+sections leads to trust between domains in a purely Samba environment.
 </para>
 
 <sect2 id="samba-trusted-domain">
 <title>Samba as the Trusted Domain</title>
 
 <para>
+<indexterm><primary>trusted party</primary></indexterm>
+<indexterm><primary>special account</primary></indexterm>
+<indexterm><primary>trusting party</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>smbpasswd</primary></indexterm>
 In order to set the Samba PDC to be the trusted party of the relationship, you first need
 to create a special account for the domain that will be the trusting party. To do that,
 you can use the <command>smbpasswd</command> utility. Creating the trusted domain account is 
@@ -293,6 +375,10 @@ account with the Interdomain trust flag</quote>.
 </para>
 
 <para>
+<indexterm><primary>account name</primary></indexterm>
+<indexterm><primary>remote domain</primary></indexterm>
+<indexterm><primary>password database</primary></indexterm>
+<indexterm><primary>/etc/passwd</primary></indexterm>
 The account name will be <quote>rumba$</quote> (the name of the remote domain).
 If this fails, you should check that the trust account has been added to the system
 password database (<filename>/etc/passwd</filename>). If it has not been added, you
@@ -300,29 +386,31 @@ can add it manually and then repeat the previous step.
 </para>
 
 <para>
-After issuing this command, you will be asked to enter the password for
-the account. You can use any password you want, but be aware that Windows NT will
-not change this password until 7 days following account creation.
-After the command returns successfully, you can look at the entry for the new account
-(in the standard way as appropriate for your configuration) and see that the account's name is
-really RUMBA$ and it has the <quote>I</quote> flag set in the flags field. Now you are ready to confirm
-the trust by establishing it from Windows NT Server.
+<indexterm><primary>password</primary></indexterm>
+<indexterm><primary>new account</primary></indexterm>
+<indexterm><primary>confirm the trust</primary></indexterm>
+<indexterm><primary>Windows NT Server</primary></indexterm>
+After issuing this command, you will be asked to enter the password for the account. You can use any password
+you want, but be aware that Windows NT will not change this password until 7 days following account creation.
+After the command returns successfully, you can look at the entry for the new account (in the standard way as
+appropriate for your configuration) and see that the account's name is really RUMBA$ and it has the
+<quote>I</quote> flag set in the flags field. Now you are ready to confirm the trust by establishing it from
+Windows NT Server.
 </para>
 
 
 <para>
 <indexterm><primary>User Manager</primary></indexterm>
-Open <application>User Manager for Domains</application> and from the
-<guimenu>Policies</guimenu> menu, select <guimenuitem>Trust Relationships...</guimenuitem>.
-Beside the <guilabel>Trusted domains</guilabel> list box, click the
-<guimenu>Add...</guimenu> button. You will be prompted for
-the trusted domain name and the relationship password. Type in SAMBA, as this is
-the name of the remote domain and the password used at the time of account creation.
-Click on <guibutton>OK</guibutton> and, if everything went without incident, you will see the
-<computeroutput>
-Trusted domain relationship successfully established
-</computeroutput>
-message.
+<indexterm><primary>trusted domain name</primary></indexterm>
+<indexterm><primary>relationship password</primary></indexterm>
+<indexterm><primary>remote domain</primary></indexterm>
+<indexterm><primary>established</primary></indexterm>
+Open <application>User Manager for Domains</application> and from the <guimenu>Policies</guimenu> menu, select
+<guimenuitem>Trust Relationships...</guimenuitem>.  Beside the <guilabel>Trusted domains</guilabel> list box,
+click the <guimenu>Add...</guimenu> button. You will be prompted for the trusted domain name and the
+relationship password. Type in SAMBA, as this is the name of the remote domain and the password used at the
+time of account creation.  Click on <guibutton>OK</guibutton> and, if everything went without incident, you
+will see the <computeroutput> Trusted domain relationship successfully established </computeroutput> message.
 </para>
 
 </sect2>
@@ -330,6 +418,8 @@ message.
 <title>Samba as the Trusting Domain</title>
 
 <para>
+<indexterm><primary>NT-controlled domain</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
 This time activities are somewhat reversed. Again, we'll assume that your domain
 controlled by the Samba PDC is called SAMBA and the NT-controlled domain is called RUMBA.
 </para>
@@ -341,6 +431,8 @@ The very first step is to add an account for the SAMBA domain on RUMBA's PDC.
 
 <para>
 <indexterm><primary>User Manager</primary></indexterm>
+<indexterm><primary>trusted domain</primary></indexterm>
+<indexterm><primary>password</primary></indexterm>
 Launch the <application>Domain User Manager</application>, then from the menu select
 <guimenu>Policies</guimenu>, <guimenuitem>Trust Relationships</guimenuitem>.
 Now, next to the <guilabel>Trusted Domains</guilabel> box, press the <guibutton>Add</guibutton>
@@ -349,13 +441,15 @@ the relationship.
 </para>
 
 <para>
-The password can be arbitrarily chosen. It is easy to change the password
-from the Samba server whenever you want. After you confirm the password, your account is
-ready for use. Now its Samba's turn.
+<indexterm><primary>password</primary></indexterm>
+<indexterm><primary>confirm the password</primary></indexterm>
+The password can be arbitrarily chosen. It is easy to change the password from the Samba server whenever you
+want. After you confirm the password, your account is ready for use. Now its Samba's turn.
 </para>
 
 <para>
 Using your favorite shell while logged in as root, issue this command:
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>trustdom establish</tertiary></indexterm>
 </para>
 
 <para>
@@ -363,8 +457,11 @@ Using your favorite shell while logged in as root, issue this command:
 </para>
 
 <para>
+<indexterm><primary>password</primary></indexterm>
+<indexterm><primary>interdomain connection</primary></indexterm>
+<indexterm><primary>ordinary connection</primary></indexterm>
 You will be prompted for the password you just typed on your Windows NT4 Server box.
-An error message, <errorname>"NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT,"</errorname>
+An error message, <literal>"NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT,"</literal>
 that may be reported periodically is of no concern and may safely be ignored.
 It means the password you gave is correct and the NT4 server says the account is ready for
 interdomain connection and not for ordinary connection.  After that, be patient;
@@ -383,7 +480,12 @@ the <filename>secrets.tdb</filename> file.
 
 <sect1>
 <title>NT4-Style Domain Trusts with Windows 2000</title>
+
 <para>
+<indexterm><primary>trust relationship</primary></indexterm>
+<indexterm><primary>Windows 2000 server</primary></indexterm>
+<indexterm><primary>NT4-style</primary></indexterm>
+<indexterm><primary>mixed mode</primary></indexterm>
 Although <application>Domain User Manager</application> is not present in Windows 2000, it is 
 also possible to establish an NT4-style trust relationship with a Windows 2000 domain 
 controller running in mixed mode as the trusting server. It should also be possible for 
@@ -391,23 +493,23 @@ Samba to trust a Windows 2000 server; however, more testing is still needed in t
 </para>
 
 <para>
-After <link linkend="samba-trusted-domain">creating the interdomain trust account on the 
-Samba server</link> as described previously, open <application>Active Directory Domains and 
-Trusts</application> on the AD controller of the domain whose resources you wish Samba users 
-to have access to. Remember that since NT4-style trusts are not transitive, if you want 
-your users to have access to multiple mixed-mode domains in your AD forest, you will need to 
-repeat this process for each of those domains. With <application>Active Directory domains 
-and trusts</application> open, right-click on the name of the Active Directory domain that 
-will trust our Samba domain and choose <guimenuitem>Properties</guimenuitem>, then click on
-the <guilabel>Trusts</guilabel> tab. In the upper part of the panel, you will see a list box 
-labeled <guilabel>Domains trusted by this domain:</guilabel> and an 
-<guilabel>Add...</guilabel> button next to it. Press this button and, just as with NT4, you 
-will be prompted for the trusted domain name and the relationship password. Press <emphasis>OK</emphasis> and 
-after a moment, Active Directory will respond with
-<computeroutput>
-The trusted domain has been added and the trust has been verified.
-</computeroutput>
-Your Samba users can now be granted access to resources in the AD domain.
+<indexterm><primary>interdomain trust</primary></indexterm>
+<indexterm><primary>trust account</primary></indexterm>
+<indexterm><primary>not transitive</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
+After <link linkend="samba-trusted-domain">creating the interdomain trust account on the Samba server</link>
+as described previously, open <application>Active Directory Domains and Trusts</application> on the AD
+controller of the domain whose resources you wish Samba users to have access to. Remember that since NT4-style
+trusts are not transitive, if you want your users to have access to multiple mixed-mode domains in your AD
+forest, you will need to repeat this process for each of those domains. With <application>Active Directory
+domains and trusts</application> open, right-click on the name of the Active Directory domain that will trust
+our Samba domain and choose <guimenuitem>Properties</guimenuitem>, then click on the
+<guilabel>Trusts</guilabel> tab. In the upper part of the panel, you will see a list box labeled
+<guilabel>Domains trusted by this domain:</guilabel> and an <guilabel>Add...</guilabel> button next to it.
+Press this button and, just as with NT4, you will be prompted for the trusted domain name and the relationship
+password. Press <emphasis>OK</emphasis> and after a moment, Active Directory will respond with
+<computeroutput> The trusted domain has been added and the trust has been verified.</computeroutput> Your
+Samba users can now be granted access to resources in the AD domain.
 </para>
 </sect1>
 
@@ -451,7 +553,7 @@ when you unjoin the machine, it is done; otherwise it is not done.
 </sect2>
 
 <sect2>
-<title>Problems with LDAP ldapsam and the smbldap-tools</title>
+<title>Problems with LDAP ldapsam and Older Versions of smbldap-tools</title>
 
 <para>
 If you use the <command>smbldap-useradd</command> script to create a trust
