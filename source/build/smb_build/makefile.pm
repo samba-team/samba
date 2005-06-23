@@ -486,19 +486,15 @@ sub _prepare_proto_rules()
 # exist, not necessarily that they are up to date.  Since they're
 # removed by 'make clean' this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/build_env.h
+proto_exists: include/proto.h
 
 delheaders: pch_clean
-	-rm -f $(builddir)/include/proto.h $(builddir)/include/build_env.h:
+	-rm -f $(builddir)/include/proto.h
 
 include/proto.h:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh "$(PERL)" \
 	  -h _PROTO_H_ $(builddir)/include/proto.h \
 	  $(PROTO_PROTO_OBJS)
-
-include/build_env.h:
-	@echo Building include/build_env.h
-	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
 # 'make headers' or 'make proto' calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
@@ -518,18 +514,19 @@ clean: delheaders
 
 distclean: clean
 	-rm -f bin/.dummy
-	-rm -f include/config.h 
+	-rm -f include/config.h include/smb_build.h
 	-rm -f Makefile*
 	-rm -f config.status
-	-rm -f config.smb_build.*
 	-rm -f config.log config.cache
+	-rm -f samba4-deps.dot
+	-rm -f lib/registry/winregistry.pc
 
 removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
 
 realdistclean: distclean removebackup
 	-rm -f include/config.h.in
-	-rm -f lib/version.h
+	-rm -f include/version.h
 	-rm -f configure
 __EOD__
 
