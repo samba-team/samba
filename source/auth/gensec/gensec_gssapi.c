@@ -170,6 +170,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
+	OM_uint32 maj_stat, min_stat;
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *machine_account;
 
@@ -201,7 +202,21 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		}
 	}
 
-	gsskrb5_register_acceptor_keytab(gensec_gssapi_state->keytab);
+	maj_stat = gsskrb5_acquire_cred(&min_stat, 
+					gensec_gssapi_state->keytab, NULL,
+					NULL,
+					GSS_C_INDEFINITE,
+					GSS_C_NULL_OID_SET,
+					GSS_C_ACCEPT,
+					&gensec_gssapi_state->cred,
+					NULL, 
+					NULL);
+	if (maj_stat) {
+		DEBUG(1, ("Aquiring acceptor credentails failed: %s\n", 
+			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
 	return NT_STATUS_OK;
 
 }
@@ -251,8 +266,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	initialize_krb5_error_table();
-	
 	nt_status = kinit_to_ccache(gensec_gssapi_state, 
 				    gensec_get_credentials(gensec_security),
 				    gensec_gssapi_state->smb_krb5_context, 
@@ -261,24 +274,15 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-	maj_stat = gss_krb5_ccache_name(&min_stat, 
-					gensec_gssapi_state->ccache_name, 
+	maj_stat = gsskrb5_acquire_cred(&min_stat, 
+					NULL, gensec_gssapi_state->ccache,
+					gensec_gssapi_state->client_name,
+					GSS_C_INDEFINITE,
+					GSS_C_NULL_OID_SET,
+					GSS_C_INITIATE,
+					&gensec_gssapi_state->cred,
+					NULL, 
 					NULL);
-	if (maj_stat) {
-		DEBUG(1, ("GSS krb5 ccache set %s failed: %s\n",
-			  gensec_gssapi_state->ccache_name, 
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	maj_stat = gss_acquire_cred(&min_stat, 
-				    gensec_gssapi_state->client_name,
-				    GSS_C_INDEFINITE,
-				    GSS_C_NULL_OID_SET,
-				    GSS_C_INITIATE,
-				    &gensec_gssapi_state->cred,
-				    NULL, 
-				    NULL);
 	if (maj_stat) {
 		DEBUG(1, ("Aquiring initiator credentails failed: %s\n", 
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
@@ -336,16 +340,6 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 	{
-		maj_stat = gss_krb5_ccache_name(&min_stat, 
-						gensec_gssapi_state->ccache_name, 
-						NULL);
-		if (maj_stat) {
-			DEBUG(1, ("GSS krb5 ccache set %s failed: %s\n",
-				  gensec_gssapi_state->ccache_name, 
-				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
 		maj_stat = gss_init_sec_context(&min_stat, 
 						gensec_gssapi_state->cred,
 						&gensec_gssapi_state->gssapi_context, 
@@ -365,7 +359,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	{
 		maj_stat = gss_accept_sec_context(&min_stat, 
 						  &gensec_gssapi_state->gssapi_context, 
-						  GSS_C_NO_CREDENTIAL, 
+						  gensec_gssapi_state->cred,
 						  &input_token, 
 						  gensec_gssapi_state->input_chan_bindings,
 						  &gensec_gssapi_state->client_name, 
