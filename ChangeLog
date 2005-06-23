@@ -1,3 +1,14 @@
+2005-06-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kaserver.c: log the kaserver requests, avoid shadowing
+	variables
+
+	* lib/hdb/db3.c (DB_open): in case of error, close database
+
+	* lib/hdb/ndbm.c (NDBM_open): in case of error, close database
+
+	* lib/hdb/db.c (DB_open): in case of error, close database
+
 2005-06-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kcm/kcm.8: fix example
