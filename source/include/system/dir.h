@@ -37,3 +37,6 @@
 # endif
 #endif
 
+#ifndef HAVE_MKDIR_MODE
+#define mkdir(dir, mode) mkdir(dir)
+#endif
