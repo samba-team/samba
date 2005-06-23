@@ -500,9 +500,9 @@ SeIncreaseBasePriorityPrivilege  Increase scheduling priority
 <indexterm><primary>SID</primary></indexterm>
 <indexterm><primary>net getlocalsid</primary></indexterm>
 Please note that every Windows NT4 and later server requires a domain Administrator account. Samba version
-commencing with 3.0.11 permit the Administrative duties to be performed via assigned rights and privileges
+commencing with 3.0.11 permit Administrative duties to be performed via assigned rights and privileges
 (see <link linkend="rights">User Rights and Privileges</link>).  An account in the server's passdb backend can
-be set to the domain SID of the default administrator account.  To obtain the domain SID on a Samba domain
+be set to the well-known RID of the default administrator account.  To obtain the domain SID on a Samba domain
 controller, run the following command:
 <screen>
 &rootprompt; net getlocalsid

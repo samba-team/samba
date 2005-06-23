@@ -12,6 +12,9 @@
 
 <para>
 <indexterm><primary>ACLs</primary></indexterm>
+<indexterm><primary>share</primary></indexterm>
+<indexterm><primary>network access controls</primary></indexterm>
+<indexterm><primary>unauthorized access</primary></indexterm>
 Advanced MS Windows users are frequently perplexed when file, directory, and share manipulation of
 resources shared via Samba do not behave in the manner they might expect. MS Windows network
 administrators are often confused regarding network access controls and how to
@@ -19,12 +22,18 @@ provide users with the access they need while protecting resources from unauthor
 </para>
 
 <para>
+<indexterm><primary>file access permissions</primary></indexterm>
+<indexterm><primary>directory access permissions</primary></indexterm>
 Many UNIX administrators are unfamiliar with the MS Windows environment and in particular
 have difficulty in visualizing what the MS Windows user wishes to achieve in attempts to set file
 and directory access permissions. 
 </para>
 
 <para>
+<indexterm><primary>bridge</primary></indexterm>
+<indexterm><primary>directory controls</primary></indexterm>
+<indexterm><primary>directory permissions</primary></indexterm>
+<indexterm><primary></primary></indexterm>
 The problem lies in the differences in how file and directory permissions and controls work
 between the two environments. This difference is one that Samba cannot completely hide, even
 though it does try to bridge the chasm to a degree.
@@ -33,7 +42,8 @@ though it does try to bridge the chasm to a degree.
 <para>
 <indexterm><primary>Extended Attributes</primary></indexterm>
 <indexterm><primary>ACLs</primary><secondary>POSIX</secondary></indexterm>
-
+<indexterm><primary>Access Control List</primary></indexterm>
+<indexterm><primary>commercial Linux products</primary></indexterm>
 POSIX Access Control List technology has been available (along with extended attributes)
 for UNIX for many years, yet there is little evidence today of any significant use. This
 explains to some extent the slow adoption of ACLs into commercial Linux products. MS Windows
@@ -42,12 +52,15 @@ decade-old MS Windows NT operating system.
 </para>
 
 <para>
+<indexterm><primary>network administrator</primary></indexterm>
 The purpose of this chapter is to present each of the points of control that are possible with
 Samba-3 in the hope that this will help the network administrator to find the optimum method
 for delivering the best environment for MS Windows desktop users.
 </para>
 
 <para>
+<indexterm><primary>interoperability</primary></indexterm>
+<indexterm><primary>data interchange</primary></indexterm>
 This is an opportune point to mention that Samba was created to provide a means of interoperability
 and interchange of data between differing operating environments. Samba has no intent to change
 UNIX/Linux into a platform like MS Windows. Instead the purpose was and is to provide a sufficient
@@ -59,7 +72,7 @@ beyond early plans and expectations, yet the gap continues to shrink.
 <title>Features and Benefits</title>
 
 	<para>
-	Samba offers a lot of flexibility in file system access management. These are the key access control
+	Samba offers much flexibility in file system access management. These are the key access control
 	facilities present in Samba today:
 	</para>
 
@@ -71,6 +84,9 @@ beyond early plans and expectations, yet the gap continues to shrink.
 		</para>
 
 			<para>
+<indexterm><primary>UNIX file system access controls</primary></indexterm>
+<indexterm><primary>access controls</primary></indexterm>
+<indexterm><primary>permissions and controls</primary></indexterm>
 			Samba honors and implements UNIX file system access controls. Users
 			who access a Samba server will do so as a particular MS Windows user.
 			This information is passed to the Samba server as part of the logon or
@@ -86,6 +102,7 @@ beyond early plans and expectations, yet the gap continues to shrink.
 		</para>
 
 			<para>
+<indexterm><primary>share settings</primary></indexterm>
 			In configuring share settings and controls in the &smb.conf; file,
 			the network administrator can exercise overrides to native file
 			system permissions and behaviors. This can be handy and convenient
@@ -101,6 +118,7 @@ beyond early plans and expectations, yet the gap continues to shrink.
 		</para>
 
 			<para>
+<indexterm><primary>ACLs on shares</primary></indexterm>
 			Just as it is possible in MS Windows NT to set ACLs on shares
 			themselves, so it is possible to do in Samba.
 			Few people make use of this facility, yet it remains one of the
@@ -116,6 +134,7 @@ beyond early plans and expectations, yet the gap continues to shrink.
 		</para>
 
 			<para>
+<indexterm><primary>native ACLs</primary></indexterm>
 			The use of POSIX ACLs on UNIX/Linux is possible only if the underlying
 			operating system supports them. If not, then this option will not be
 			available to you. Current UNIX technology platforms have native support
@@ -215,7 +234,10 @@ at how Samba helps to bridge the differences.
 		<para>
 		So what should Samba do if all three are present? That which is lexically first will be
 		accessible to MS Windows users; the others are invisible and unaccessible &smbmdash; any
-		other solution would be suicidal.
+		other solution would be suicidal. The Windows client will ask for a case insensitive file
+		lookup, and that is the reason for which Samba must offer a consistent selection in the
+		event that the UNIX directory contains multiple files that would match a case insensitive
+		file listing.
 		</para></listitem>
 		</varlistentry>
 
@@ -283,6 +305,9 @@ at how Samba helps to bridge the differences.
 	<title>Managing Directories</title>
 
 	<para>
+<indexterm><primary>create</primary></indexterm>
+<indexterm><primary>delete</primary></indexterm>
+<indexterm><primary>rename</primary></indexterm>
 	There are three basic operations for managing directories: <command>create</command>, <command>delete</command>,
 	<command>rename</command>. <link linkend="TOSH-Accesstbl">Managing Directories with UNIX and
 	Windows</link> compares the commands in Windows and UNIX that implement these operations.
@@ -310,10 +335,11 @@ at how Samba helps to bridge the differences.
 
 	<para>
 	<indexterm><primary>ACLs</primary><secondary>File System</secondary></indexterm>
-	The network administrator is strongly advised to read foundational training manuals and reference materials
+<indexterm><primary>POSIX ACLs</primary></indexterm>
+<indexterm><primary>EAs</primary></indexterm>
+	The network administrator is strongly advised to read basic UNIX training manuals and reference materials
 	regarding file and directory permissions maintenance. Much can be achieved with the basic UNIX permissions
-	without having to resort to more complex facilities like POSIX ACLs or extended
-	attributes (EAs).
+	without having to resort to more complex facilities like POSIX ACLs or extended attributes (EAs).
 	</para>
 
 	<para>
@@ -356,6 +382,12 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	<para>
 		Any bit flag may be unset. An unset bit flag is the equivalent of "cannot" and is represented
 		as a <quote>-</quote> character (see <link linkend="access2"/>)
+<indexterm><primary>read</primary></indexterm>
+<indexterm><primary>write</primary></indexterm>
+<indexterm><primary>execute</primary></indexterm>
+<indexterm><primary>user</primary></indexterm>
+<indexterm><primary>group</primary></indexterm>
+<indexterm><primary>other</primary></indexterm>
 	</para>
 
 <example id="access2">
@@ -370,23 +402,41 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 
 
 	<para>
-	Additional possibilities in the [type] field are c = character device, b = block device, p = pipe device,r
+<indexterm><primary>character device</primary></indexterm>
+<indexterm><primary>block device</primary></indexterm>
+<indexterm><primary>pipe device</primary></indexterm>
+<indexterm><primary>UNIX Domain Socket</primary></indexterm>
+	Additional possibilities in the [type] field are c = character device, b = block device, p = pipe device,
 	s = UNIX Domain Socket.
 	</para>
 
 	<para>
+<indexterm><primary>read</primary></indexterm>
+<indexterm><primary>write</primary></indexterm>
+<indexterm><primary>execute</primary></indexterm>
+<indexterm><primary>SGID</primary></indexterm>
+<indexterm><primary>SUID</primary></indexterm>
 	The letters <constant>rwxXst</constant> set permissions for the user, group, and others as read (r), write (w),
 	execute (or access for directories) (x), execute  only  if  the  file  is a directory or already has execute
-	permission for some user (X), set user or group ID on execution (s), sticky (t).
+	permission for some user (X), set user (SUID) or group ID (SGID) on execution (s), sticky (t).
 	</para>
 
 	<para>
+<indexterm><primary>sticky bit</primary></indexterm>
+<indexterm><primary>unlinked</primary></indexterm>
+<indexterm><primary>/tmp</primary></indexterm>
+<indexterm><primary>world-writable</primary></indexterm>
 	When the sticky bit is set on a directory, files in that directory may be unlinked (deleted) or renamed only by root or their owner. 
 	Without the sticky  bit, anyone able to write to the directory can delete or rename files. The sticky bit is commonly found on
 	directories, such as <filename>/tmp</filename>, that are world-writable.
 	</para>
 
 	<para>
+<indexterm><primary>write</primary></indexterm>
+<indexterm><primary>read</primary></indexterm>
+<indexterm><primary>setting up directories</primary></indexterm>
+<indexterm><primary>set user id</primary><see>SUID</see></indexterm>
+<indexterm><primary>set group id</primary><see>SGID</see></indexterm>
 	When the set user or group ID bit (s) is set on a directory, then all files created within it will be owned by the user and/or
 	group whose `set user or group' bit is set. This can be helpful in setting up directories for which it is desired that
 	all users who are in a group should be able to write to and read from a file, particularly when it is undesirable for that file
@@ -404,21 +454,32 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	<title>Protecting Directories and Files from Deletion</title>
 
 	<para>
+<indexterm><primary>protect files</primary></indexterm>
+<indexterm><primary>protect directories</primary></indexterm>
+<indexterm><primary>access controls</primary></indexterm>
+<indexterm><primary>capability to delete</primary></indexterm>
 	People have asked on the Samba mailing list how is it possible to protect files or directories from deletion by users.
 	For example, Windows NT/2K/XP provides the capacity to set access controls on a directory into which people can
 	write files but not delete them. It is possible to set an ACL on a Windows file that permits the file to be written to
 	but not deleted. Such concepts are foreign to the UNIX operating system file space. Within the UNIX file system
-	anyone who has the ability to create a file can write to it and anyone who has write permission on the
+	anyone who has the ability to create a file can write to it. Anyone who has write permission on the
 	directory that contains a file and has write permission for it has the capability to delete it.
 	</para>
 
 	<para>
+<indexterm><primary>directory permissions</primary></indexterm>
+<indexterm><primary>delete a file</primary></indexterm>
+<indexterm><primary>write access</primary></indexterm>
 	For the record, in the UNIX environment the ability to delete a file is controlled by the permissions on
 	the directory that the file is in. In other words, a user can delete a file in a directory to which that
 	user has write access, even if that user does not own the file.
 	</para>
 	
 	<para>
+<indexterm><primary>file system capabilities</primary></indexterm>
+<indexterm><primary>inheritance</primary></indexterm>
+<indexterm><primary>POSIX ACLs</primary></indexterm>
+<indexterm><primary>extended attributes</primary></indexterm>
 	Of necessity, Samba is subject to the file system semantics of the host operating system. Samba is therefore
 	limited in the file system capabilities that can be made available through Windows ACLs, and therefore performs
 	a "best fit" translation to POSIX ACLs. Some UNIX file systems do, however support, a feature known
@@ -427,6 +488,10 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	</para>	
 
 	<para>
+<indexterm><primary>extended attributes</primary></indexterm>
+<indexterm><primary>immutible</primary></indexterm>
+<indexterm><primary>chattr</primary></indexterm>
+<indexterm><primary>CAP_LINUX_IMMUTABLE</primary></indexterm>
 	The specific semantics of the extended attributes are not consistent across UNIX and UNIX-like systems such as Linux.
 	For example, it is possible on some implementations of the extended attributes to set a flag that prevents the directory
 	or file from being deleted. The extended attribute that may achieve this is called the <constant>immutible</constant> bit.
@@ -466,7 +531,7 @@ mystic:/home/hannibal > rm filename
 	</procedure>
 
 	<para>
-	On those systems and file system types that support the immutible bit, it is possible to create directories
+	On operating systems and file system types that support the immutible bit, it is possible to create directories
 	that cannot be deleted. Check the man page on your particular host system to determine whether or not
 	immutable directories are writable. If they are not, then the entire directory and its contents will effectively
 	be protected from writing (file creation also) and deletion.
@@ -492,16 +557,16 @@ mystic:/home/hannibal > rm filename
 	<title>User- and Group-Based Controls</title>
 
 	<para>
-	User- and group-based controls can prove quite useful. In some situations it is distinctly desirable to affect all
-	file system operations as if a single user were doing so. The use of the <smbconfoption name="force user"/> and 
-	<smbconfoption name="force group"/> behavior will achieve this. In other situations it may be necessary to use a
-	paranoia level of control to ensure that only particular authorized persons will be able to access a share or
-	its contents. Here the use of the <smbconfoption name="valid users"/> or the
-	<smbconfoption name="invalid users"/> may be most useful.
+	User- and group-based controls can prove quite useful. In some situations it is distinctly desirable to
+	force all file system operations as if a single user were doing so. The use of the
+	<smbconfoption name="force user"/> and <smbconfoption name="force group"/> behavior will achieve this.
+	In other situations it may be necessary to use a paranoia level of control to ensure that only particular
+	authorized persons will be able to access a share or its contents. Here the use of the
+	<smbconfoption name="valid users"/> or the <smbconfoption name="invalid users"/> parameter may be useful.
 	</para>
 
 	<para>
-	As always, it is highly advisable to use the least difficult to maintain and the least ambiguous method for
+	As always, it is highly advisable to use the easiest to maintain and the least ambiguous method for
 	controlling access. Remember, when you leave the scene, someone else will need to provide assistance, and
 	if he or she finds too great a mess or does not understand what you have done, there is risk of
 	Samba being removed and an alternative solution being adopted.
@@ -599,15 +664,15 @@ mystic:/home/hannibal > rm filename
 	<title>File and Directory Permissions-Based Controls</title>
 
 	<para>
-	The following file and directory permission-based controls, if misused, can result in considerable difficulty in
-	diagnosing causes of misconfiguration. Use them sparingly and carefully. By gradually introducing them one by one,
-	undesirable side effects may be detected. In the event of a problem, always comment all of them out and then gradually
-	reintroduce them in a controlled way.
+	Directory permission-based controls, if misused, can result in considerable difficulty in diagnosing the causes of 
+	misconfiguration. Use them sparingly and carefully. By gradually introducing each, one at a time, undesirable side 
+	effects may be detected. In the event of a problem, always comment all of them out and then gradually reintroduce 
+	them in a controlled way.
 	</para>
 
 	<para>
 	Refer to <link linkend="fdpbc">File and Directory Permission Based Controls</link> for information 
-	regarding the parameters that may be used to affect file and directory permission-based access controls.
+	regarding the parameters that may be used to set file and directory permission-based access controls.
 	</para>
 
 	<table frame='all' id="fdpbc"><title>File and Directory Permission-Based Controls</title>
@@ -697,9 +762,9 @@ mystic:/home/hannibal > rm filename
 	<title>Miscellaneous Controls</title>
 
 	<para>
-	The following are documented because of the prevalence of administrators creating inadvertent barriers to file
-	access by not understanding the full implications of &smb.conf; file settings. 
-	See <link linkend="mcoc">Other Controls</link>.
+	The parameter documented in <link linkend="mcoc">Other Controls</link> are often used by administrators 
+	in ways that creat inadvertent barriers to file access. Such are the consequences of not understanding the 
+	full implications of &smb.conf; file settings.
 	</para>
 
 	<table frame='all' id="mcoc"><title>Other Controls</title>
@@ -791,6 +856,10 @@ mystic:/home/hannibal > rm filename
 
 
 	<para>
+<indexterm><primary>per-share access control</primary></indexterm>
+<indexterm><primary>Everyone - Full Control</primary></indexterm>
+<indexterm><primary>specific restrictions</primary></indexterm>
+<indexterm><primary>share access</primary></indexterm>
 	<indexterm><primary>permissions</primary><secondary>share ACLs</secondary></indexterm>
 	This section deals with how to configure Samba per-share access control restrictions.
 	By default, Samba sets no restrictions on the share itself. Restrictions on the share itself
@@ -800,13 +869,20 @@ mystic:/home/hannibal > rm filename
 	</para>
 
 	<para>
+<indexterm><primary>access control</primary></indexterm>
+<indexterm><primary>MMC</primary></indexterm>
+<indexterm><primary>Computer Management</primary></indexterm>
 	At this time Samba does not provide a tool for configuring access control settings on the share
-	itself. Samba does have the capacity to store and act on access control settings, but  the only
-	way to create those settings is to use either the NT4 Server Manager or the Windows 200x
-	Microsoft Management Console (MMC) for Computer Management.
+	itself the only way to create those settings is to use either the NT4 Server Manager or the Windows 200x
+	Microsoft Management Console (MMC) for Computer Management. There are currently no plans to provide
+	this capability in the Samba command-line tool set.
 	</para>
 
 	<para>
+<indexterm><primary>share_info.tdb</primary></indexterm>
+<indexterm><primary>/usr/local/samba/var</primary></indexterm>
+<indexterm><primary>tdbdump</primary></indexterm>
+<indexterm><primary>tdb files</primary></indexterm>
 	Samba stores the per-share access control settings in a file called <filename>share_info.tdb</filename>.
 	The location of this file on your system will depend on how Samba was compiled. The default location
 	for Samba's tdb files is under <filename>/usr/local/samba/var</filename>. If the <filename>tdbdump</filename>
@@ -824,11 +900,14 @@ mystic:/home/hannibal > rm filename
 			<sect3>
 			<title>Windows NT4 Workstation/Server</title>
 			<para>
-			The tool you can use to manage share permissions on a Samba server from a Windows NT4 Workstation or Server
+<indexterm><primary>manage share permissions</primary></indexterm>
+<indexterm><primary>share permissions</primary></indexterm>
+<indexterm><primary>NT Server Manager</primary></indexterm>
+<indexterm><primary>Windows NT4</primary></indexterm>
+			The tool you need to manage share permissions on a Samba server from a Windows NT4 Workstation or Server
 			is the NT Server Manager.  Server Manager is shipped with Windows NT4 Server products but not with Windows
 			NT4 Workstation.  You can obtain the NT Server Manager for MS Windows NT4 Workstation from the Microsoft
-			web site <ulink
-url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ulink> section.
+			web site <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ulink> section.
 			</para>
 
 			<procedure>
@@ -841,7 +920,7 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 			</para></step>
 
 			<step><para>
-			Click on the share that you wish to manage and click the <guilabel>Properties</guilabel> tab. then click
+			Click on the share that you wish to manage and click the <guilabel>Properties</guilabel> tab, then click
 			the <guilabel>Permissions</guilabel> tab. Now you can add or change access control settings as you wish.
 			</para></step>
 			</procedure>
@@ -852,6 +931,10 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 			<title>Windows 200x/XP</title>
 
 			<para>
+<indexterm><primary>Windows NT4/200x/XP</primary></indexterm>
+<indexterm><primary>ACLs on share</primary></indexterm>
+<indexterm><primary>Sharing</primary></indexterm>
+<indexterm><primary>Permissions</primary></indexterm>
 			On <application>MS Windows NT4/200x/XP</application> system, ACLs on the share itself are set using native
 			tools, usually from File Manager. For example, in Windows 200x, right-click on the shared folder,
 			then select <guimenuitem>Sharing</guimenuitem>, then click on <guilabel>Permissions</guilabel>. The default 
@@ -859,6 +942,9 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 			</para>
 
 			<para>
+<indexterm><primary>Computer Management</primary></indexterm>
+<indexterm><primary>MMC</primary></indexterm>
+<indexterm><primary>tool</primary></indexterm>
 			MS Windows 200x and later versions come with a tool called the <application>Computer Management</application>
 			snap-in for the MMC. This tool is located by clicking on <guimenu>Control Panel ->
 			Administrative Tools -> Computer Management</guimenu>.
@@ -881,6 +967,7 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 			</para></step>
 
 			<step><para>
+<indexterm><primary>Share Permissions</primary></indexterm>
 			In the right panel, double-click on the share on which you wish to set access control permissions.
 			Then click the tab <guilabel>Share Permissions</guilabel>. It is now possible to add access control entities
 			to the shared folder. Remember to set what type of access (full control, change, read) you
@@ -960,17 +1047,13 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 		<para>
 		Clicking on the <guibutton>Ownership</guibutton> button brings up a dialog box telling you who owns
 		the given file. The owner name will be displayed like this:
-		</para>
-
-		<para>
-			<constant>SERVER\user (Long name)</constant>
-		</para>
-
-		<para>
+		<screen>
+		<constant>SERVER\user (Long name)</constant>
+		</screen>
 		<replaceable>SERVER</replaceable> is the NetBIOS name of the Samba server, <replaceable>user</replaceable>
 		is the username of the UNIX user who owns the file, and <replaceable>(Long name)</replaceable> is the
 		descriptive string identifying the user (normally found in the GECOS field of the UNIX password database).
-		Click on the <guibutton>Close </guibutton> button to remove this dialog.
+		Click on the <guibutton>Close</guibutton> button to remove this dialog.
 		</para>
 
 		<para>
@@ -979,6 +1062,7 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 		</para>
 
 		<para>
+<indexterm><primary>Take Ownership</primary></indexterm>
 		The <guibutton>Take Ownership</guibutton> button will not allow you to change the ownership of this file to
 		yourself (clicking it will display a dialog box complaining that the user as whom you are currently logged onto
 		the NT client cannot be found). The reason for this is that changing the ownership of a file is a privileged
@@ -988,6 +1072,9 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 		</para>
 
 		<para>
+<indexterm><primary>chown</primary></indexterm>
+<indexterm><primary>ownership</primary></indexterm>
+<indexterm><primary>Seclib</primary></indexterm>
 		There is an NT <command>chown</command> command that will work with Samba and allow a user with administrator
 		privilege connected to a Samba server as root to change the ownership of files on both a local NTFS file system
 		or remote mounted NTFS or Samba drive. This is available as part of the <application>Seclib</application> NT
@@ -1021,7 +1108,7 @@ url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">support</ul
 
 
 		<para>
-		The permissions field is displayed differently for files and directories, both are discussed next.
+		The permissions field is displayed differently for files and directories. Both are discussed next.
 		</para>
 
 		<sect3>
@@ -1436,9 +1523,9 @@ default:other:---     &lt;-- inherited permissions for everyone (other)
 	<title>Mapping of Windows Directory ACLs to UNIX POSIX ACLs</title>
 
 	<para>
-	Interesting things happen in the mapping of UNIX POSIX directory permissions as well
-	as UNIX POSIX ACLs to Windows ACEs (Access Control Entries, the discrete components of
-	an ACLs when they are mapped to Windows directory ACLs.
+	Interesting things happen in the mapping of UNIX POSIX directory permissions and
+	UNIX POSIX ACLs to Windows ACEs (Access Control Entries, the discrete components of
+	an ACL) are mapped to Windows directory ACLs.
 	</para>
 
 	<para>
@@ -1487,25 +1574,23 @@ are examples recently taken from the mailing list.
 
 		<step>
 			<para>
-			Set the ownership to whatever public owner and group you want
+			Set the ownership to whatever public user and group you want
 <screen>
 &prompt;find `directory_name' -type d -exec chown user.group {}\;
-&prompt;find `directory_name' -type d -exec chmod 1775 `directory_name'
-&prompt;find `directory_name' -type f -exec chmod 0775 {} \;
+&prompt;find `directory_name' -type d -exec chmod 1775 {}\;
+&prompt;find `directory_name' -type f -exec chmod 0775 {}\;
 &prompt;find `directory_name' -type f -exec chown user.group {}\;
 </screen>
 			</para>
 
 			<note><para>
 			The above will set the <constant>sticky bit</constant> on all directories. Read your
-			UNIX/Linux man page on what that does. It causes the OS to assign 
-			to all files created in the directories the ownership of the 
-			directory.
+			UNIX/Linux man page on what that does. It causes the OS to assign to all files 
+			created in the directories the ownership of the directory.
 			</para></note>
 		</step>
 		<step>
 			<para>
-
 			Directory is <replaceable>/foodbar</replaceable>:
 <screen>
 &prompt;<userinput>chown jack.engr /foodbar</userinput>
@@ -1513,7 +1598,7 @@ are examples recently taken from the mailing list.
 			</para>
 
 			<note>
-				<para>This is the same as doing:</para>
+			<para>This is the same as doing:</para>
 <screen>
 &prompt;<userinput>chown jack /foodbar</userinput>
 &prompt;<userinput>chgrp engr /foodbar</userinput>
