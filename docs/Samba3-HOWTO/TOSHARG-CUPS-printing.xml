@@ -1996,7 +1996,7 @@ long as Samba has been compiled with CUPS library (libcups) support. If Samba ha
 support, and if no other print commands are set up, then printing will use the <emphasis>System V</emphasis>
 AT&amp;T command set, with the -oraw option automatically passing through (if you want your own defined print
 commands to work with a Samba server that has CUPS support compiled in, simply use <smbconfoption
-name="printing">sysv</smbconfoption>). This is illustrated in <link linkend="13small">the Printing via
+name="classicalprinting">sysv</smbconfoption>). This is illustrated in <link linkend="13small">the Printing via
 CUPS/Samba Server diagram</link>.
 </para>
 
