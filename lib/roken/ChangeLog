@@ -1,4 +1,10 @@
+2005-06-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* base64.c: Add const, from Andrew Abartlet <abartlet@samba.org>
+
 2005-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* strpftime-test.c: test for "%Y%m"
 
 	* esetenv.c: unconst
 
