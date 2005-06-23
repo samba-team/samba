@@ -462,6 +462,20 @@ When true, this is the same as
 .Pp
 and is only left for backwards compatibility.
 .El
+.It Li [password-quality]
+Check the Password quality assurance in the info documentation for
+more information.
+.Bl -tag -width "xxx" -offset indent
+.It Li check_library = Va library-name
+Library name that contains the password check_function
+.It Li check_function = Va function-name
+Function name for checking passwords in check_library
+.It Li policy_libraries = Va library1 ... libraryN
+List of libraries that can do password policy checks
+.It Li policies = Va policy1 ... policyN
+List of policy names to apply to the password. Builtin policies are
+among other minimum-length, character-class, external-check.
+.El
 .El
 .Sh ENVIRONMENT
 .Ev KRB5_CONFIG
