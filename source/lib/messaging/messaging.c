@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "system/dir.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "messages.h"
