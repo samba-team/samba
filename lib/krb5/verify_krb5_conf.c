@@ -534,6 +534,8 @@ struct entry capaths_entries[] = {
 struct entry password_quality_entries[] = {
     { "policies", krb5_config_string, NULL },
     { "external_program", krb5_config_string, NULL },
+    { "min_classes", krb5_config_string, check_numeric },
+    { "min_length", krb5_config_string, check_numeric },
     { "", krb5_config_list, all_strings },
     { NULL }
 };
