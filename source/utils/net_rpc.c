@@ -2850,18 +2850,15 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 
 		/* finally add the share on the dst server */ 
 
-		printf("migrating: [%s], path: %s, comment: %s, %s share-ACLs\n", 
-			netname, path, remark, opt_acls ? "including" : "without" );
-
-		if (opt_verbose && opt_acls)
-			display_sec_desc(ctr_src.share.info502[i].info_502_str.sd);
+		printf("migrating: [%s], path: %s, comment: %s, without share-ACLs\n", 
+			netname, path, remark);
 
 		result = cli_srvsvc_net_share_add(cli_dst, mem_ctx, netname, type, remark,
 						  ctr_src.share.info502[i].info_502.perms,
 						  ctr_src.share.info502[i].info_502.max_uses,
 						  ctr_src.share.info502[i].info_502.num_uses,
 						  path, password, level, 
-						  opt_acls? ctr_src.share.info502[i].info_502_str.sd : NULL);
+						  NULL);
 	
                 if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
 			printf("           [%s] does already exist\n", netname);
