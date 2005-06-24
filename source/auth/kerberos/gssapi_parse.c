@@ -100,7 +100,6 @@ BOOL gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 {
 	BOOL ret;
 	struct asn1_data data;
-	int data_remaining;
 
 	asn1_load(&data, *blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
