@@ -57,6 +57,9 @@ cat >$CONFFILE<<EOF
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
 	sam database = tdb://$PRIVATEDIR/sam.ldb
+	spoolss database = tdb://$PRIVATEDIR/spoolss.ldb
+	wins database = tdb://$PRIVATEDIR/wins.ldb
+	registry:HKEY_LOCAL_MACHINE = tdb://$PRIVATEDIR/hklm.ldb
 	name resolve order = bcast
 	interfaces = lo*
 
