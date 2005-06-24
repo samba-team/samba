@@ -185,12 +185,12 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 		result = WERR_BADFILE;
 		goto done;
 	}
-
+		
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) ) {
-		result = WERR_BADFILE; 
+			result = WERR_BADFILE; 
 		goto done;
 	}
-
+	
 	/* save the access mask */
 
 	regkey->access_granted = access_granted;
@@ -317,7 +317,7 @@ WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* close the policy handle */
 
-	if ( !close_registry_key(p, &q_u->pol) )
+	if (!close_registry_key(p, &q_u->pol))
 		return WERR_BADFID; 
 
 	return WERR_OK;
@@ -405,14 +405,14 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 
 	if ( !parent )
 		return WERR_BADFID;
-		
+
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
 	/* check granted access first; what is the correct mask here? */
 
 	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY)) )
 		return WERR_ACCESS_DENIED;
-
+	
 	/* open the key first to get the appropriate REGISTRY_HOOK 
 	   and then check the premissions */
 
@@ -503,19 +503,61 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 				value_ascii = REG_PT_WINNT;
 				break;
 		}
-		value_length = push_ucs2(value, value, value_ascii,
-					 sizeof(value),
-					 STR_TERMINATE|STR_NOALIGN);
-		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ,
-				    value, value_length);
 		
+		value_length = push_ucs2(value, value, value_ascii, sizeof(value), 
+			STR_TERMINATE|STR_NOALIGN);
+		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ, value, value_length);
 		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
 		status = WERR_OK;
 		
 		goto out;
 	}
+	
+	/* "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters"  */
+	
+	if ( strequal( name, "Hostname") ) {
+		char   *hname;
 
+		hname = myhostname();
+		value_length = push_ucs2( value, value, hname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "Hostname",REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+
+	if ( strequal( name, "Domain") ) {
+		fstring mydomainname;
+	
+		get_mydnsdomname( mydomainname );		
+		value_length = push_ucs2( value, value, mydomainname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "Domain", REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+	
+	/* "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" */
+	
+	if ( strequal( name, "SystemRoot") ) {
+		value_length = push_ucs2( value, value, "c:\\windows", sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "SystemRoot", REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+	
+	
 	/* else fall back to actually looking up the value */
 	
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
@@ -1377,6 +1419,8 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	write_result = store_reg_keys( newparent, &subkeys );
 	
 	regsubkey_ctr_destroy( &subkeys );
+
+	result = write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 	
 done:
 	/* close any intermediate key handles */
@@ -1384,7 +1428,7 @@ done:
 	if ( newparent != parent )
 		close_registry_key( p, &newparent_handle );
 
-	return write_result ? WERR_OK : WERR_REG_IO_FAILURE;
+	return result;
 }
 
 
@@ -1423,4 +1467,43 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 		
 	return WERR_OK;
 }
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_get_key_sec(pipes_struct *p, REG_Q_GET_KEY_SEC  *q_u, REG_R_GET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	
+		
+	return WERR_ACCESS_DENIED;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_set_key_sec(pipes_struct *p, REG_Q_SET_KEY_SEC  *q_u, REG_R_SET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_ACCESS_DENIED;
+}
+
 
