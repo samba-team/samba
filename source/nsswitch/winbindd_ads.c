@@ -39,8 +39,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 
-	if (domain->private) {
-		ads = (ADS_STRUCT *)domain->private;
+	if (domain->private_data) {
+		ads = (ADS_STRUCT *)domain->private_data;
 
 		/* check for a valid structure */
 
@@ -54,7 +54,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->is_mine = True;
 			ads_destroy( &ads );
 			ads_kdestroy("MEMORY:winbind_ccache");
-			domain->private = NULL;
+			domain->private_data = NULL;
 		}	
 	}
 
@@ -101,7 +101,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	ads->is_mine = False;
 
-	domain->private = (void *)ads;
+	domain->private_data = (void *)ads;
 	return ads;
 }
 
@@ -767,7 +767,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		   through since ads_USN() has already done 
 		   that indirectly */
 		   
-		domain->private = NULL;
+		domain->private_data = NULL;
 	}
 	return ads_ntstatus(rc);
 }

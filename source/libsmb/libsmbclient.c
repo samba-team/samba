@@ -3305,7 +3305,7 @@ static BOOL parse_ace(struct cli_state *ipc_cli,
 /* add an ACE to a list of ACEs in a SEC_ACL */
 static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 {
-	SEC_ACL *new;
+	SEC_ACL *newacl;
 	SEC_ACE *aces;
 	if (! *the_acl) {
 		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
@@ -3315,9 +3315,9 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 	aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces);
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
-	new = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	newacl = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
-	(*the_acl) = new;
+	(*the_acl) = newacl;
 	return True;
 }
 

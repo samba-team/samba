@@ -38,24 +38,24 @@ struct lookupsids_state {
 	uint32 num_dom_ctrs;
 	struct sid_ctr **dom_ctrs;
 
-	void (*cont)(void *private, BOOL success, uint32 num_sids,
+	void (*cont)(void *private_data, BOOL success, uint32 num_sids,
 		     const char **domains, const char **names,
 		     enum SID_NAME_USE *types);
-	void *private;
+	void *private_data;
 };
 
 static void lookup_next_domain(struct lookupsids_state *state);
 static void lookupsids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
-			    void *cont, void *private);
+			    void *cont, void *private_data);
 static void lookupsids_finished(struct lookupsids_state *state);
 
 void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
-		      void (*cont)(void *private, BOOL success,
+		      void (*cont)(void *private_data, BOOL success,
 				   uint32 num_sids, const char **domains,
 				   const char **names,
 				   enum SID_NAME_USE *types),
-		      void *private)
+		      void *private_data)
 {
 	struct lookupsids_state *state;
 	uint32 i;
@@ -64,7 +64,7 @@ void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
 
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		cont(private, False, 0, NULL, NULL, NULL);
+		cont(private_data, False, 0, NULL, NULL, NULL);
 		return;
 	}
 
@@ -73,13 +73,13 @@ void lookupsids_async(TALLOC_CTX *mem_ctx, uint32 num_sids, DOM_SID **sids,
 	state->num_finished = 0;
 
 	state->cont = cont;
-	state->private = private;
+	state->private_data = private_data;
 
 	state->ctrs = TALLOC_ARRAY(state, struct sid_ctr, num_sids);
 	state->dom_ctrs = TALLOC_ARRAY(state, struct sid_ctr *, num_sids);
 	if ((state->ctrs == NULL) || (state->dom_ctrs == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		cont(private, False, 0, NULL, NULL, NULL);
+		cont(private_data, False, 0, NULL, NULL, NULL);
 		return;
 	}
 
@@ -157,10 +157,10 @@ static void lookup_next_domain(struct lookupsids_state *state)
 
 static void lookupsids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    struct winbindd_response *response,
-			    void *cont, void *private)
+			    void *cont, void *private_data)
 {
 	struct lookupsids_state *state =
-		talloc_get_type_abort(private, struct lookupsids_state);
+		talloc_get_type_abort(private_data, struct lookupsids_state);
 	uint32 i;
 	char *p;
 
@@ -230,7 +230,7 @@ static void lookupsids_recv(TALLOC_CTX *mem_ctx, BOOL success,
 
  failed:
 	DEBUG(5, ("dual_lookupsids failed\n"));
-	state->cont(state->private, False, 0, NULL, NULL, NULL);
+	state->cont(state->private_data, False, 0, NULL, NULL, NULL);
 	return;
 }
 
@@ -308,7 +308,7 @@ static void lookupsids_finished(struct lookupsids_state *state)
 
 	if ((domains == NULL) || (names == NULL) || (types == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		state->cont(state->private, False, 0, NULL, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL, NULL);
 		return;
 	}
 
@@ -318,11 +318,11 @@ static void lookupsids_finished(struct lookupsids_state *state)
 		types[i] = state->ctrs[i].type;
 	}
 
-	state->cont(state->private, True, state->num_sids,
+	state->cont(state->private_data, True, state->num_sids,
 		    domains, names, types);
 }
 
-static void winbindd_lookupsids_recv(void *private, BOOL success,
+static void winbindd_lookupsids_recv(void *private_data, BOOL success,
 				     uint32 num_sids,
 				     const char **domains, const char **names,
 				     enum SID_NAME_USE *types);
@@ -364,13 +364,13 @@ void winbindd_lookupsids(struct winbindd_cli_state *state)
 			 winbindd_lookupsids_recv, state);
 }
 
-static void winbindd_lookupsids_recv(void *private, BOOL success,
+static void winbindd_lookupsids_recv(void *private_data, BOOL success,
 				     uint32 num_sids,
 				     const char **domains, const char **names,
 				     enum SID_NAME_USE *types)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	char *result = NULL;
 	ssize_t len = 0;

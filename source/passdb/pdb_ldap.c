@@ -3775,7 +3775,7 @@ struct ldap_search_state {
 
 static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private;
+	struct ldap_search_state *state = search->private_data;
 	LDAP *ld;
 	int rc = LDAP_OPERATIONS_ERROR;
 
@@ -3827,7 +3827,7 @@ static BOOL ldapsam_search_firstpage(struct pdb_search *search)
 
 static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private;
+	struct ldap_search_state *state = search->private_data;
 	LDAP *ld = state->connection->ldap_struct;
 	int rc;
 
@@ -3858,7 +3858,7 @@ static BOOL ldapsam_search_nextpage(struct pdb_search *search)
 static BOOL ldapsam_search_next_entry(struct pdb_search *search,
 				      struct samr_displayentry *entry)
 {
-	struct ldap_search_state *state = search->private;
+	struct ldap_search_state *state = search->private_data;
 	LDAP *ld = state->connection->ldap_struct;
 	BOOL result;
 
@@ -3894,7 +3894,7 @@ static BOOL ldapsam_search_next_entry(struct pdb_search *search,
 
 static void ldapsam_search_end(struct pdb_search *search)
 {
-	struct ldap_search_state *state = search->private;
+	struct ldap_search_state *state = search->private_data;
 	int rc;
 
 	if (state->pagedresults_cookie == NULL)
@@ -4045,7 +4045,7 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 		return False;
 	}
 
-	search->private = state;
+	search->private_data = state;
 	search->next_entry = ldapsam_search_next_entry;
 	search->search_end = ldapsam_search_end;
 
@@ -4152,7 +4152,7 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 		return False;
 	}
 
-	search->private = state;
+	search->private_data = state;
 	search->next_entry = ldapsam_search_next_entry;
 	search->search_end = ldapsam_search_end;
 

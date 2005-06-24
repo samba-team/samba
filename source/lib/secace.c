@@ -72,25 +72,25 @@ void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, SEC_ACCESS mask, u
  adds new SID with its permissions to ACE list
 ********************************************************************/
 
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask)
 {
 	unsigned int i = 0;
 	
-	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
+	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
 	*num += 1;
 	
-	if((new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
+	if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num - 1; i ++)
-		sec_ace_copy(&(*new)[i], &old[i]);
+		sec_ace_copy(&(*pp_new)[i], &old[i]);
 
-	(*new)[i].type  = 0;
-	(*new)[i].flags = 0;
-	(*new)[i].size  = SEC_ACE_HEADER_SIZE + sid_size(sid);
-	(*new)[i].info.mask = mask;
-	sid_copy(&(*new)[i].trustee, sid);
+	(*pp_new)[i].type  = 0;
+	(*pp_new)[i].flags = 0;
+	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + sid_size(sid);
+	(*pp_new)[i].info.mask = mask;
+	sid_copy(&(*pp_new)[i].trustee, sid);
 	return NT_STATUS_OK;
 }
 
@@ -117,19 +117,19 @@ NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
  delete SID from ACL
 ********************************************************************/
 
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, uint32 *num, DOM_SID *sid)
+NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32 *num, DOM_SID *sid)
 {
 	unsigned int i     = 0;
 	unsigned int n_del = 0;
 
-	if (!ctx || !new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
+	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
-	if((new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
+	if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num; i ++) {
 		if (sid_compare(&old[i].trustee, sid) != 0)
-			sec_ace_copy(&(*new)[i], &old[i]);
+			sec_ace_copy(&(*pp_new)[i], &old[i]);
 		else
 			n_del ++;
 	}

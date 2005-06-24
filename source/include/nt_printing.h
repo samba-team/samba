@@ -295,7 +295,7 @@ typedef struct ntdevicemode
 	uint32	reserved2;
 	uint32	panningwidth;
 	uint32	panningheight;
-	uint8 	*private;
+	uint8 	*nt_dev_private;
 } NT_DEVICEMODE;
 
 typedef struct nt_printer_info_level_2

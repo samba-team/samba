@@ -207,7 +207,7 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
 ********************************************************************/
 
 void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-                           char *name, char *class, uint32 access_desired,
+                           char *name, char *key_class, uint32 access_desired,
                            SEC_DESC_BUF *sec_buf)
 {
 	ZERO_STRUCTP(q_c);
@@ -216,7 +216,7 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 
 
 	init_unistr4( &q_c->name, name, UNI_STR_TERMINATE );
-	init_unistr4( &q_c->class, class, UNI_STR_TERMINATE );
+	init_unistr4( &q_c->key_class, key_class, UNI_STR_TERMINATE );
 
 	q_c->access = access_desired;
 
@@ -254,7 +254,7 @@ BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_unistr4 ("class", ps, depth, &q_u->class))
+	if(!prs_unistr4 ("key_class", ps, depth, &q_u->key_class))
 		return False;
 	if(!prs_align(ps))
 		return False;
@@ -436,12 +436,12 @@ BOOL reg_io_r_delete_key(const char *desc,  REG_R_DELETE_KEY *r_u, prs_struct *p
  Inits a structure.
 ********************************************************************/
 
-void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd, const char *class)
+void init_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd, const char *key_class)
 {
 	ZERO_STRUCTP(q_o);
 
 	memcpy(&q_o->pol, hnd, sizeof(q_o->pol));
-	init_unistr4(&q_o->class, class, UNI_STR_TERMINATE);
+	init_unistr4(&q_o->key_class, key_class, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -461,7 +461,7 @@ BOOL reg_io_q_query_key(const char *desc,  REG_Q_QUERY_KEY *q_u, prs_struct *ps,
 	
 	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
 		return False;
-	if(!prs_unistr4("class", ps, depth, &q_u->class))
+	if(!prs_unistr4("key_class", ps, depth, &q_u->key_class))
 		return False;
 
 	if(!prs_align(ps))
@@ -486,7 +486,7 @@ BOOL reg_io_r_query_key(const char *desc,  REG_R_QUERY_KEY *r_u, prs_struct *ps,
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_unistr4("class", ps, depth, &r_u->class))
+	if(!prs_unistr4("key_class", ps, depth, &r_u->key_class))
 		return False;
 
 	if(!prs_align(ps))

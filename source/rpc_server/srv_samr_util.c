@@ -251,7 +251,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	}
 
 	if (from->fields_present & ACCT_LOGON_HOURS) {
-		pstring old, new;
+		pstring oldstr, newstr;
 		DEBUG(15,("INFO_21 LOGON_DIVS: %08X -> %08X\n",pdb_get_logon_divs(to),from->logon_divs));
 		if (from->logon_divs != pdb_get_logon_divs(to)) {
 			pdb_set_logon_divs(to, from->logon_divs, PDB_CHANGED);
@@ -263,9 +263,9 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		}
 
 		DEBUG(15,("INFO_21 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
-		pdb_sethexhours(old, pdb_get_hours(to));
-		pdb_sethexhours(new, from->logon_hrs.hours);
-		if (!strequal(old, new)) {
+		pdb_sethexhours(oldstr, pdb_get_hours(to));
+		pdb_sethexhours(newstr, from->logon_hrs.hours);
+		if (!strequal(oldstr, newstr)) {
 			pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 		}
 	}

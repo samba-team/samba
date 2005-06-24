@@ -79,11 +79,11 @@ static int cap_open(vfs_handle_struct *handle, connection_struct *conn, const ch
 	return SMB_VFS_NEXT_OPEN(handle, conn, capname, flags, mode);
 }
 
-static int cap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
+static int cap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
 {
 	pstring capold, capnew;
-	capencode(capold, old);
-	capencode(capnew, new);
+	capencode(capold, oldname);
+	capencode(capnew, newname);
 
 	return SMB_VFS_NEXT_RENAME(handle, conn, capold, capnew);
 }

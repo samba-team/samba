@@ -453,11 +453,10 @@ typedef struct files_struct {
 #include "sysquotas.h"
 
 /* used to hold an arbitrary blob of data */
-typedef struct data_blob
-{
+typedef struct data_blob_ {
 	uint8 *data;
 	size_t length;
-	void (*free)(struct data_blob *data_blob);
+	void (*free)(struct data_blob_ *data_blob);
 } DATA_BLOB;
 
 /*
@@ -751,7 +750,7 @@ struct parm_struct
 {
 	const char *label;
 	parm_type type;
-	parm_class class;
+	parm_class p_class;
 	void *ptr;
 	BOOL (*special)(int snum, const char *, char **);
 	const struct enum_list *enum_list;
@@ -1590,13 +1589,12 @@ struct nmb_name {
 	unsigned int name_type;
 };
 
-
 /* A netbios node status array element. */
-struct node_status {
+typedef struct node_status_ {
 	nstring name;
 	unsigned char type;
 	unsigned char flags;
-};
+} NODE_STATUS_STRUCT;
 
 /* The extra info from a NetBIOS node status query */
 struct node_status_extra {

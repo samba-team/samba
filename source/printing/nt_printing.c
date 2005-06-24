@@ -2095,13 +2095,13 @@ int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 			nt_devmode->reserved2,
 			nt_devmode->panningwidth,
 			nt_devmode->panningheight,
-			nt_devmode->private);
+			nt_devmode->nt_dev_private);
 
 	
-	if (nt_devmode->private) {
+	if (nt_devmode->nt_dev_private) {
 		len += tdb_pack(buf+len, buflen-len, "B",
 				nt_devmode->driverextra,
-				nt_devmode->private);
+				nt_devmode->nt_dev_private);
 	}
 
 	DEBUG(8,("Packed devicemode [%s]\n", nt_devmode->formname));
@@ -2360,7 +2360,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->panningwidth     = 0;
 	nt_devmode->panningheight    = 0;
 	
-	nt_devmode->private = NULL;
+	nt_devmode->nt_dev_private = NULL;
 	return nt_devmode;
 }
 
@@ -2380,9 +2380,9 @@ NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
 		return NULL;
 	}
 
-	new_nt_devicemode->private = NULL;
-	if (nt_devicemode->private != NULL) {
-		if ((new_nt_devicemode->private = memdup(nt_devicemode->private, nt_devicemode->driverextra)) == NULL) {
+	new_nt_devicemode->nt_dev_private = NULL;
+	if (nt_devicemode->nt_dev_private != NULL) {
+		if ((new_nt_devicemode->nt_dev_private = memdup(nt_devicemode->nt_dev_private, nt_devicemode->driverextra)) == NULL) {
 			SAFE_FREE(new_nt_devicemode);
 			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
 			return NULL;
@@ -2405,7 +2405,7 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 
 	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
 
-	SAFE_FREE(nt_devmode->private);
+	SAFE_FREE(nt_devmode->nt_dev_private);
 	SAFE_FREE(*devmode_ptr);
 }
 
@@ -2491,25 +2491,25 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.reserved2,
 			  &devmode.panningwidth,
 			  &devmode.panningheight,
-			  &devmode.private);
+			  &devmode.nt_dev_private);
 	
-	if (devmode.private) {
+	if (devmode.nt_dev_private) {
 		/* the len in tdb_unpack is an int value and
 		 * devmode.driverextra is only a short
 		 */
-		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
+		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.nt_dev_private);
 		devmode.driverextra=(uint16)extra_len;
 		
 		/* check to catch an invalid TDB entry so we don't segfault */
 		if (devmode.driverextra == 0) {
-			devmode.private = NULL;
+			devmode.nt_dev_private = NULL;
 		}
 	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
 	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
-	if (devmode.private)
+	if (devmode.nt_dev_private)
 		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
 
 	return len;

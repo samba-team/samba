@@ -105,7 +105,7 @@ static char winbind_separator(void)
 
 	/* Send off request */
 
-	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind separator!\n");
 		return *lp_winbind_separator();
@@ -135,7 +135,7 @@ const char *get_winbind_domain(void)
 
 	/* Send off request */
 
-	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
@@ -161,7 +161,7 @@ const char *get_winbind_netbios_name(void)
 
 	/* Send off request */
 
-	if (winbindd_request(WINBINDD_NETBIOS_NAME, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("could not obtain winbind netbios name!\n"));
 		return global_myname();
@@ -231,7 +231,7 @@ static BOOL get_require_membership_sid(void) {
 		return False;
 	}
 
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
 			  require_membership_of));
@@ -268,7 +268,7 @@ static BOOL check_plaintext_auth(const char *user, const char *pass,
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth.require_membership_of_sid, require_membership_of_sid);
 
-	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
 	
@@ -348,7 +348,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 	
-	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
 	/* Display response */
 

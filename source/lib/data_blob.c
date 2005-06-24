@@ -35,6 +35,7 @@ static void free_data_blob(DATA_BLOB *d)
  construct a data blob, must be freed with data_blob_free()
  you can pass NULL for p and get a blank data blob
 *******************************************************************/
+
 DATA_BLOB data_blob(const void *p, size_t length)
 {
 	DATA_BLOB ret;

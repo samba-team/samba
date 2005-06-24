@@ -300,7 +300,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 		DEBUG(3,("schedule_aio_write_and_X: Already have %d aio activities outstanding.\n",
 			  outstanding_aio_calls ));
 		DEBUG(10,("schedule_aio_write_and_X: failed to schedule aio_write for file %s, offset %.0f, len = %u (mid = %u)\n",
-			fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)aio_ex->mid ));
+			fsp->fsp_name, (double)startpos, (unsigned int)numtowrite, (unsigned int)SVAL(inbuf,smb_mid) ));
 		return False;
 	}
 

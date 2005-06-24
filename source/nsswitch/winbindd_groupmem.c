@@ -39,42 +39,42 @@ struct groupmembers_state {
 	struct sid_ctr *members;
 	struct sid_ctr **lookup_ctrs;
 
-	void (*cont)(void *private, BOOL success,
+	void (*cont)(void *private_data, BOOL success,
 		     uint32 num_members,
 		     const char **domains,
 		     const char **names);
-	void *private;
+	void *private_data;
 };
 
-static void grpmem_sid2name_recv(void *private, BOOL success,
+static void grpmem_sid2name_recv(void *private_data, BOOL success,
 				 const char *dom_name,
 				 const char *name,
 				 enum SID_NAME_USE type);
-static void grpmem_aliasmem_recv(void *private, BOOL success,
+static void grpmem_aliasmem_recv(void *private_data, BOOL success,
 				 uint32 num_members,
 				 DOM_SID *members);
-static void grpmem_groupmem_recv(void *private, BOOL success,
+static void grpmem_groupmem_recv(void *private_data, BOOL success,
 				 uint32 num_members,
 				 uint32 *members);
 static void lookup_members(struct groupmembers_state *state);
-static void lookup_members_recv(void *private, BOOL success,
+static void lookup_members_recv(void *private_data, BOOL success,
 				uint32 num_sids, const char **domains,
 				const char **names,
 				enum SID_NAME_USE *types);
 
 void winbindd_groupmembers_async(TALLOC_CTX *mem_ctx, const DOM_SID *group_sid,
-				 void (*cont)(void *private, BOOL success,
+				 void (*cont)(void *private_data, BOOL success,
 					      uint32 num_members,
 					      const char **domains,
 					      const char **names),
-				 void *private)
+				 void *private_data)
 {
 	struct groupmembers_state *state;
 
 	state = TALLOC_P(mem_ctx, struct groupmembers_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		cont(private, False, 0, NULL, NULL);
+		cont(private_data, False, 0, NULL, NULL);
 		return;
 	}
 
@@ -87,24 +87,24 @@ void winbindd_groupmembers_async(TALLOC_CTX *mem_ctx, const DOM_SID *group_sid,
 	state->members = NULL;
 
 	state->cont = cont;
-	state->private = private;
+	state->private_data = private_data;
 
 	winbindd_lookupsid_async(mem_ctx, group_sid, grpmem_sid2name_recv,
 				 state);
 }
 
-static void grpmem_sid2name_recv(void *private, BOOL success,
+static void grpmem_sid2name_recv(void *private_data, BOOL success,
 				 const char *dom_name,
 				 const char *name,
 				 enum SID_NAME_USE type)
 {
 	struct groupmembers_state *state =
-		talloc_get_type_abort(private, struct groupmembers_state);
+		talloc_get_type_abort(private_data, struct groupmembers_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup sid %s\n",
 			  sid_string_static(&state->group_sid)));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
@@ -127,26 +127,26 @@ static void grpmem_sid2name_recv(void *private, BOOL success,
 
 	DEBUG(5, ("%s\\%s is not a group: %s\n", dom_name, name,
 		  sid_type_lookup(type)));
-	state->cont(state->private, False, 0, NULL, NULL);
+	state->cont(state->private_data, False, 0, NULL, NULL);
 }
 
-static void grpmem_aliasmem_recv(void *private, BOOL success,
+static void grpmem_aliasmem_recv(void *private_data, BOOL success,
 				 uint32 num_members,
 				 DOM_SID *members)
 {
 	struct groupmembers_state *state =
-		talloc_get_type_abort(private, struct groupmembers_state);
+		talloc_get_type_abort(private_data, struct groupmembers_state);
 	int i;
 
 	if (!success) {
 		DEBUG(5, ("Could not get alias members for %s\n",
 			  sid_string_static(&state->group_sid)));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
 	if (num_members == 0) {
-		state->cont(state->private, True, 0, NULL, NULL);
+		state->cont(state->private_data, True, 0, NULL, NULL);
 		return;
 	}
 
@@ -154,7 +154,7 @@ static void grpmem_aliasmem_recv(void *private, BOOL success,
 				      num_members);
 	if (state->members == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
@@ -168,12 +168,12 @@ static void grpmem_aliasmem_recv(void *private, BOOL success,
 	lookup_members(state);
 }
 
-static void grpmem_groupmem_recv(void *private, BOOL success,
+static void grpmem_groupmem_recv(void *private_data, BOOL success,
 				 uint32 num_members,
 				 uint32 *members)
 {
 	struct groupmembers_state *state =
-		talloc_get_type_abort(private, struct groupmembers_state);
+		talloc_get_type_abort(private_data, struct groupmembers_state);
 	int i, j;
 	DOM_SID domain_sid;
 	uint32 group_rid;
@@ -181,12 +181,12 @@ static void grpmem_groupmem_recv(void *private, BOOL success,
 	if (!success) {
 		DEBUG(5, ("Could not get group members for %s\n",
 			  sid_string_static(&state->group_sid)));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
 	if (num_members == 0) {
-		state->cont(state->private, True, 0, NULL, NULL);
+		state->cont(state->private_data, True, 0, NULL, NULL);
 		return;
 	}
 
@@ -198,7 +198,7 @@ static void grpmem_groupmem_recv(void *private, BOOL success,
 		ctr.sid = sid_dup_talloc(state->mem_ctx, &domain_sid);
 		if (ctr.sid == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			state->cont(state->private, False, 0, NULL, NULL);
+			state->cont(state->private_data, False, 0, NULL, NULL);
 			return;
 		}
 		sid_append_rid(ctr.sid, members[i]);
@@ -242,7 +242,7 @@ static void lookup_members(struct groupmembers_state *state)
 
 	if (sidptrs == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
@@ -250,13 +250,13 @@ static void lookup_members(struct groupmembers_state *state)
 			 lookup_members_recv, state);
 }
 
-static void lookup_members_recv(void *private, BOOL success,
+static void lookup_members_recv(void *private_data, BOOL success,
 				uint32 num_sids, const char **domains,
 				const char **names,
 				enum SID_NAME_USE *types)
 {
 	struct groupmembers_state *state =
-		talloc_get_type_abort(private, struct groupmembers_state);
+		talloc_get_type_abort(private_data, struct groupmembers_state);
 	int i;
 
 	const char **result_domains = NULL;
@@ -267,7 +267,7 @@ static void lookup_members_recv(void *private, BOOL success,
 	if (!success) {
 		DEBUG(5, ("Could not lookup groupmembers for %s\n",
 			  sid_string_static(&state->group_sid)));
-		state->cont(state->private, False, 0, NULL, NULL);
+		state->cont(state->private_data, False, 0, NULL, NULL);
 		return;
 	}
 
@@ -306,6 +306,6 @@ static void lookup_members_recv(void *private, BOOL success,
 			     &result_names, &num_names);
 	}
 
-	state->cont(state->private, True, num_names, result_domains,
+	state->cont(state->private_data, True, num_names, result_domains,
 		    result_names);
 }

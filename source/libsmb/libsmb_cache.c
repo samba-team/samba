@@ -46,7 +46,7 @@ struct smbc_server_cache {
  * Add a new connection to the server cache.
  * This function is only used if the external cache is not enabled 
  */
-static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
+static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * newsrv,
 				  const char * server, const char * share, 
 				  const char * workgroup, const char * username)
 {
@@ -60,7 +60,7 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
        
 	ZERO_STRUCTP(srvcache);
 
-	srvcache->server = new;
+	srvcache->server = newsrv;
 
 	srvcache->server_name = SMB_STRDUP(server);
 	if (!srvcache->server_name) {

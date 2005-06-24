@@ -752,7 +752,7 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 	wcp->offset = 0;
 	wcp->alloc_size = alloc_size;
 	wcp->data_size = 0;
-	if((wcp->data = SMB_MALLOC(wcp->alloc_size)) == NULL) {
+	if((wcp->data = (char *)SMB_MALLOC(wcp->alloc_size)) == NULL) {
 		DEBUG(0,("setup_write_cache: malloc fail for buffer size %u.\n",
 			(unsigned int)wcp->alloc_size ));
 		SAFE_FREE(wcp);

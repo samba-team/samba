@@ -43,7 +43,7 @@ static char winbind_separator(void)
 
 	/* Send off request */
 
-	if (winbindd_request(WINBINDD_INFO, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind separator!\n");
 		/* HACK: (this module should not call lp_ funtions) */
@@ -71,7 +71,7 @@ static const char *get_winbind_domain(void)
 
 	/* Send off request */
 
-	if (winbindd_request(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind domain name!\n");
 		
@@ -123,7 +123,7 @@ static BOOL wbinfo_get_usergroups(char *user)
 
 	fstrcpy(request.data.username, user);
 
-	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
@@ -151,7 +151,7 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	/* Send request */
 	fstrcpy(request.data.sid, user_sid);
 
-	result = winbindd_request(WINBINDD_GETUSERSIDS, &request, &response);
+	result = winbindd_request_response(WINBINDD_GETUSERSIDS, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
@@ -178,7 +178,7 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 	/* Send request */
 	fstrcpy(request.data.sid, user_sid);
 
-	result = winbindd_request(WINBINDD_GETUSERDOMGROUPS, &request,
+	result = winbindd_request_response(WINBINDD_GETUSERDOMGROUPS, &request,
 				  &response);
 
 	if (result != NSS_STATUS_SUCCESS)
@@ -203,7 +203,7 @@ static BOOL wbinfo_get_aliasmem(const char *alias_sid)
 	/* Send request */
 	fstrcpy(request.data.sid, alias_sid);
 
-	result = winbindd_request(WINBINDD_QUERY_ALIASMEM, &request,
+	result = winbindd_request_response(WINBINDD_QUERY_ALIASMEM, &request,
 				  &response);
 
 	if (result != NSS_STATUS_SUCCESS)
@@ -228,7 +228,7 @@ static BOOL wbinfo_get_groupmem(const char *group_sid)
 	/* Send request */
 	fstrcpy(request.data.sid, group_sid);
 
-	result = winbindd_request(WINBINDD_QUERY_GROUPMEM, &request,
+	result = winbindd_request_response(WINBINDD_QUERY_GROUPMEM, &request,
 				  &response);
 
 	if (result != NSS_STATUS_SUCCESS)
@@ -256,7 +256,7 @@ static BOOL wbinfo_wins_byname(char *name)
 
 	fstrcpy(request.data.winsreq, name);
 
-	if (winbindd_request(WINBINDD_WINS_BYNAME, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
@@ -282,7 +282,7 @@ static BOOL wbinfo_wins_byip(char *ip)
 
 	fstrcpy(request.data.winsreq, ip);
 
-	if (winbindd_request(WINBINDD_WINS_BYIP, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_WINS_BYIP, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
@@ -304,7 +304,7 @@ static BOOL wbinfo_list_domains(void)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
+	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -347,7 +347,7 @@ static BOOL wbinfo_show_sequence(const char *domain)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_SHOW_SEQUENCE, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -376,7 +376,7 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_DOMAIN_INFO, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_DOMAIN_INFO, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -413,7 +413,7 @@ static BOOL wbinfo_getdcname(const char *domain_name)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_GETDCNAME, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_GETDCNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("Could not get dc name for %s\n", domain_name);
 		return False;
@@ -435,7 +435,7 @@ static BOOL wbinfo_check_secret(void)
 
         ZERO_STRUCT(response);
 
-        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response);
+        result = winbindd_request_response(WINBINDD_CHECK_MACHACC, NULL, &response);
 		
 	d_printf("checking the trust secret via RPC calls %s\n", 
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
@@ -462,7 +462,7 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 
 	request.data.uid = uid;
 
-	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_UID_TO_SID, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -487,7 +487,7 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 
 	request.data.gid = gid;
 
-	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_GID_TO_SID, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -512,7 +512,7 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 
 	fstrcpy(request.data.sid, sid);
 
-	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_SID_TO_UID, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -535,7 +535,7 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 
 	fstrcpy(request.data.sid, sid);
 
-	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_SID_TO_GID, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -575,7 +575,7 @@ static BOOL wbinfo_lookupsid(char *sid)
 	request.extra_data = tmp;
 	request.extra_len = strlen(tmp)+1;
 
-	if (winbindd_request(WINBINDD_LOOKUPSIDS, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LOOKUPSIDS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -601,7 +601,7 @@ static BOOL wbinfo_lookupname(char *name)
 	parse_wbinfo_domain_user(name, request.data.name.dom_name, 
 				 request.data.name.name);
 
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -636,7 +636,7 @@ static BOOL wbinfo_auth(char *username)
         } else
                 fstrcpy(request.data.auth.user, username);
 
-	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
 
@@ -734,7 +734,7 @@ static BOOL wbinfo_auth_crap(char *username)
 		request.data.auth_crap.nt_resp_len = 24;
 	}
 
-	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
 	/* Display response */
 
@@ -778,7 +778,7 @@ static BOOL wbinfo_klog(char *username)
 
 	request.flags |= WBFLAG_PAM_AFS_TOKEN;
 
-	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
+	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
 
@@ -830,7 +830,7 @@ static BOOL print_domain_users(const char *domain)
 			fstrcpy( request.domain_name, domain );
 	}
 
-	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -868,7 +868,7 @@ static BOOL print_domain_groups(const char *domain)
 			fstrcpy( request.domain_name, domain );
 	}
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LIST_GROUPS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -983,7 +983,7 @@ static BOOL wbinfo_ping(void)
 {
         NSS_STATUS result;
 
-	result = winbindd_request(WINBINDD_PING, NULL, NULL);
+	result = winbindd_request_response(WINBINDD_PING, NULL, NULL);
 
 	/* Display response */
 
