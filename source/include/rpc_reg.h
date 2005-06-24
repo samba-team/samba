@@ -43,7 +43,7 @@
 #define REG_GET_KEY_SEC		0x0c
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
-#define REG_INFO		0x11
+#define REG_QUERY_VALUE		0x11
 #define REG_RESTORE_KEY		0x13
 #define REG_SAVE_KEY		0x14
 #define REG_SET_KEY_SEC		0x15
@@ -241,7 +241,6 @@ typedef struct {
 } REG_Q_DELETE_KEY;
 
 typedef struct {
-	POLICY_HND key_pol;
 	WERROR status; 
 } REG_R_DELETE_KEY;
 
@@ -389,7 +388,7 @@ typedef struct {
 	uint32 ptr_buflen2;
 	uint32 buflen2;
 
-} REG_Q_INFO;
+} REG_Q_QUERY_VALUE;
 
 typedef struct { 
 	uint32 *type;
@@ -397,7 +396,7 @@ typedef struct {
 	uint32 *buf_max_len;
 	uint32 *buf_len;
 	WERROR status;	/* return status */
-} REG_R_INFO;
+} REG_R_QUERY_VALUE;
 
 
 /***********************************************/

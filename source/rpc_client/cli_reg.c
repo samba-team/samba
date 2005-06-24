@@ -286,24 +286,24 @@ WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-WERROR cli_reg_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_query_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd, const char *val_name,
                            uint32 *type, REGVAL_BUFFER *buffer)
 {
-	REG_Q_INFO in;
-	REG_R_INFO out;
+	REG_Q_QUERY_VALUE in;
+	REG_R_QUERY_VALUE out;
 	prs_struct qbuf, rbuf;
 
 	ZERO_STRUCT (in);
 	ZERO_STRUCT (out);
 	
-	init_reg_q_info(&in, hnd, val_name, buffer);
+	init_reg_q_query_value(&in, hnd, val_name, buffer);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
+	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_info,
-	            reg_io_r_info, 
+	            reg_io_q_query_value,
+	            reg_io_r_query_value, 
 	            WERR_GENERAL_FAILURE );
 		    
 
