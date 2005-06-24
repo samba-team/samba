@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # Script that reads in Makefile.in and outputs the names of all 
 # used but undefined vars and all defined but unused vars 
+# Copyright Jelmer Vernooij <jelmer@samba.org>
 
 # Arguments:
 #  1: Makefile.in
