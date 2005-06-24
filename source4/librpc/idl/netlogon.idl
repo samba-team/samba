@@ -109,7 +109,7 @@ interface netlogon
 	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
 		[value(length)] uint16 size;
-		[size_is(size),length_is(length)] uint8 *data;
+		[size_is(length),length_is(length)] uint8 *data;
 	} netr_ChallengeResponse;
 
 	typedef [flag(NDR_PAHEX)] struct {
