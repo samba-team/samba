@@ -47,7 +47,7 @@ struct samr_domain_state {
 	struct samr_connect_state *connect_state;
 	void *sam_ctx;
 	uint32_t access_mask;
-	const char *domain_sid;
+	struct dom_sid *domain_sid;
 	const char *domain_name;
 	const char *domain_dn;
 };
@@ -59,7 +59,7 @@ struct samr_account_state {
 	struct samr_domain_state *domain_state;
 	void *sam_ctx;
 	uint32_t access_mask;
-	const char *account_sid;
+	struct dom_sid *account_sid;
 	const char *account_name;
 	const char *account_dn;
 };

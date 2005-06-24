@@ -257,7 +257,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	}
 
 	if (!domain_name) {
-		const char *domain_sid;
+		struct dom_sid *domain_sid;
 
 		domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 		if (!domain_sid) {
@@ -267,20 +267,20 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		/* find the domain's DN */
 		ret = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_tmp, NULL,
 				   "(&(objectSid=%s)(objectclass=domain))", 
-				   domain_sid);
+				   ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 		if (ret == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		
 		if (ret == 0) {
 			DEBUG(3,("check_sam_security: Couldn't find domain_sid [%s] in passdb file.\n",
-				 domain_sid));
+				 dom_sid_string(mem_ctx, domain_sid)));
 			return NT_STATUS_NO_SUCH_USER;
 		}
 		
 		if (ret > 1) {
 			DEBUG(0,("Found %d records matching domain_sid [%s]\n", 
-				 ret, domain_sid));
+				 ret, dom_sid_string(mem_ctx, domain_sid)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -400,15 +400,14 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 
 	/* Need to unroll some nested groups, but not aliases */
 	for (i = 0; i < group_ret; i++) {
-		str = ldb_msg_find_string(group_msgs[i], "objectSid", NULL);
-		groupSIDs[i] = dom_sid_parse_talloc(groupSIDs, str);
+		groupSIDs[i] = samdb_result_dom_sid(groupSIDs, 
+						    group_msgs[i], "objectSid");
 		NT_STATUS_HAVE_NO_MEMORY(groupSIDs[i]);
 	}
 
 	talloc_free(tmp_ctx);
 
-	str = ldb_msg_find_string(msgs[0], "objectSid", NULL);
-	account_sid = dom_sid_parse_talloc(server_info, str);
+	account_sid = samdb_result_dom_sid(server_info, msgs[0], "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY(account_sid);
 
 	primary_group_sid = dom_sid_dup(server_info, account_sid);

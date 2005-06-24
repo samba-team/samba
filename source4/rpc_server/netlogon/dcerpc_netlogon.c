@@ -313,7 +313,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	struct ldb_message **msgs_domain;
 	NTSTATUS nt_status;
 	struct ldb_message *mod;
-	const char *domain_sid;
+	struct dom_sid *domain_sid;
 
 	const char *attrs[] = {"objectSid", NULL };
 
@@ -356,20 +356,20 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	num_records_domain = gendb_search(sam_ctx, mem_ctx, NULL, 
 					  &msgs_domain, domain_attrs,
 					  "(&(objectSid=%s)(objectclass=domain))", 
-					  domain_sid);
+					  ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (num_records_domain == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	if (num_records_domain == 0) {
 		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
-			 domain_sid));
+			 dom_sid_string(mem_ctx, domain_sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records_domain > 1) {
 		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 num_records_domain, domain_sid));
+			 num_records_domain, dom_sid_string(mem_ctx, domain_sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1036,7 +1036,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	struct ldb_message **msgs_domain;
 	NTSTATUS nt_status;
 	struct ldb_message *mod;
-	const char *domain_sid;
+	struct dom_sid *domain_sid;
 	char new_pass[512];
 	uint32_t new_pass_len;
 
@@ -1083,20 +1083,21 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	num_records_domain = gendb_search(sam_ctx, mem_ctx, NULL, 
 					  &msgs_domain, domain_attrs,
 					  "(&(objectSid=%s)(objectclass=domain))", 
-					  domain_sid);
+					  ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (num_records_domain == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	if (num_records_domain == 0) {
 		DEBUG(3,("Couldn't find domain [%s] in samdb.\n", 
-			 domain_sid));
+			 ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records_domain > 1) {
 		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 num_records_domain, domain_sid));
+			 num_records_domain, 
+			 ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

@@ -35,7 +35,8 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_private.h"
-#include <time.h>
+#include "system/time.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"
 
@@ -169,14 +170,15 @@ static char *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx
    allocate a new RID for the domain
    return the new sid string
 */
-static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, const char *obj_dn)
+static struct dom_sid *samldb_get_new_sid(struct ldb_module *module, 
+					  TALLOC_CTX *mem_ctx, const char *obj_dn)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_message **res = NULL;
-	const char *dom_dn, *dom_sid;
-	char *obj_sid;
+	const char *dom_dn;
 	uint32_t rid;
 	int ret, tries = 10;
+	struct dom_sid *dom_sid, *obj_sid;
 
 	/* get the domain component part of the provided dn */
 
@@ -197,11 +199,11 @@ static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 	ret = ldb_search(module->ldb, dom_dn, LDB_SCOPE_BASE, "objectSid=*", attrs, &res);
 	if (ret != 1) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
-		if (res) talloc_free(res);
+		talloc_free(res);
 		return NULL;
 	}
 
-	dom_sid = ldb_msg_find_string(res[0], "objectSid", NULL);
+	dom_sid = samdb_result_dom_sid(res, res[0], "objectSid");
 	if (dom_sid == NULL) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_get_new_sid: error retrieving domain sid!\n");
 		talloc_free(res);
@@ -225,11 +227,9 @@ static char *samldb_get_new_sid(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
 	}
 
 	/* return the new object sid */
-
-	obj_sid = talloc_asprintf(mem_ctx, "%s-%u", dom_sid, rid);
+	obj_sid = dom_sid_add_rid(mem_ctx, dom_sid, rid);
 
 	talloc_free(res);
-
 
 	return obj_sid;
 }
@@ -307,6 +307,18 @@ static BOOL samldb_msg_add_string(struct ldb_module *module, struct ldb_message 
 	return True;
 }
 
+static BOOL samldb_msg_add_sid(struct ldb_module *module, struct ldb_message *msg, const char *name, const struct dom_sid *sid)
+{
+	struct ldb_val v;
+	NTSTATUS status;
+	status = ndr_push_struct_blob(&v, msg, sid, 
+				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return (ldb_msg_add_value(module->ldb, msg, name, &v) == 0);
+}
+
 static BOOL samldb_find_or_add_attribute(struct ldb_module *module, struct ldb_message *msg, const char *name, const char *value, const char *set_value)
 {
 	if (samldb_find_attribute(msg, name, value) == NULL) {
@@ -367,7 +379,7 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 {
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
-	char *rdn, *basedn, *sidstr;
+	char *rdn, *basedn;
 
 	if (samldb_find_attribute(msg, "objectclass", "group") == NULL) {
 		return NULL;
@@ -418,15 +430,17 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-
-		if ((sidstr = samldb_get_new_sid(module, msg2, msg2->dn)) == NULL) {
+		struct dom_sid *sid = samldb_get_new_sid(module, msg2, msg2->dn);
+		if (sid == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: internal error! Can't generate new sid\n");
 			return NULL;
 		}
 
-		if ( ! samldb_msg_add_string(module, msg2, "objectSid", sidstr)) {
+		if (!samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
+			talloc_free(sid);
 			return NULL;
 		}
+		talloc_free(sid);
 	}
 
 	if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, samldb_generate_samAccountName(msg2))) {
@@ -444,7 +458,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 {
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
-	char *rdn, *basedn, *sidstr;
+	char *rdn, *basedn;
 
 	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
 		return NULL;
@@ -500,15 +514,18 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
-
-		if ((sidstr = samldb_get_new_sid(module, msg2, msg2->dn)) == NULL) {
+		struct dom_sid *sid;
+		sid = samldb_get_new_sid(module, msg2, msg2->dn);
+		if (sid == NULL) {
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: internal error! Can't generate new sid\n");
 			return NULL;
 		}
 
-		if ( ! samldb_msg_add_string(module, msg2, "objectSid", sidstr)) {
+		if ( ! samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
+			talloc_free(sid);
 			return NULL;
 		}
+		talloc_free(sid);
 	}
 
 	if ( ! samldb_find_or_add_attribute(module, msg2, "sAMAccountName", NULL, samldb_generate_samAccountName(msg2))) {
