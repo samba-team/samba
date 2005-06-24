@@ -84,7 +84,7 @@ struct pai_entry {
 };
 	
 struct pai_val {
-	BOOL protected;
+	BOOL pai_protected;
 	unsigned int num_entries;
 	struct pai_entry *entry_list;
 	unsigned int num_def_entries;
@@ -149,7 +149,7 @@ static unsigned int num_inherited_entries(canon_ace *ace_list)
  Create the on-disk format. Caller must free.
 ************************************************************************/
 
-static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, BOOL protected, size_t *store_size)
+static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, BOOL pai_protected, size_t *store_size)
 {
 	char *pai_buf = NULL;
 	canon_ace *ace_list = NULL;
@@ -177,7 +177,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 	/* Set up the header. */
 	memset(pai_buf, '\0', PAI_ENTRIES_BASE);
 	SCVAL(pai_buf,PAI_VERSION_OFFSET,PAI_VERSION);
-	SCVAL(pai_buf,PAI_FLAG_OFFSET,(protected ? PAI_ACL_FLAG_PROTECTED : 0));
+	SCVAL(pai_buf,PAI_FLAG_OFFSET,(pai_protected ? PAI_ACL_FLAG_PROTECTED : 0));
 	SSVAL(pai_buf,PAI_NUM_ENTRIES_OFFSET,num_entries);
 	SSVAL(pai_buf,PAI_NUM_DEFAULT_ENTRIES_OFFSET,num_def_entries);
 
@@ -213,7 +213,7 @@ static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, B
 ************************************************************************/
 
 static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_list,
-					canon_ace *dir_ace_list, BOOL protected)
+					canon_ace *dir_ace_list, BOOL pai_protected)
 {
 	int ret;
 	size_t store_size;
@@ -227,7 +227,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	 * none of the entries in it are marked as inherited.
 	 */
 
-	if (!protected && num_inherited_entries(file_ace_list) == 0 && num_inherited_entries(dir_ace_list) == 0) {
+	if (!pai_protected && num_inherited_entries(file_ace_list) == 0 && num_inherited_entries(dir_ace_list) == 0) {
 		/* Instead just remove the attribute if it exists. */
 		if (fsp->fd != -1)
 			SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, SAMBA_POSIX_INHERITANCE_EA_NAME);
@@ -236,7 +236,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 		return;
 	}
 
-	pai_buf = create_pai_buf(file_ace_list, dir_ace_list, protected, &store_size);
+	pai_buf = create_pai_buf(file_ace_list, dir_ace_list, pai_protected, &store_size);
 
 	if (fsp->fd != -1)
 		ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
@@ -247,7 +247,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 
 	SAFE_FREE(pai_buf);
 
-	DEBUG(10,("store_inheritance_attribute:%s for file %s\n", protected ? " (protected)" : "", fsp->fsp_name));
+	DEBUG(10,("store_inheritance_attribute:%s for file %s\n", pai_protected ? " (protected)" : "", fsp->fsp_name));
 	if (ret == -1 && !no_acl_syscall_error(errno))
 		DEBUG(1,("store_inheritance_attribute: Error %s\n", strerror(errno) ));
 }
@@ -280,7 +280,7 @@ static BOOL get_protected_flag(struct pai_val *pal)
 {
 	if (!pal)
 		return False;
-	return pal->protected;
+	return pal->pai_protected;
 }
 
 /************************************************************************
@@ -352,7 +352,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
 
 	memset(paiv, '\0', sizeof(struct pai_val));
 
-	paiv->protected = (CVAL(buf,PAI_FLAG_OFFSET) == PAI_ACL_FLAG_PROTECTED);
+	paiv->pai_protected = (CVAL(buf,PAI_FLAG_OFFSET) == PAI_ACL_FLAG_PROTECTED);
 
 	paiv->num_entries = SVAL(buf,PAI_NUM_ENTRIES_OFFSET);
 	paiv->num_def_entries = SVAL(buf,PAI_NUM_DEFAULT_ENTRIES_OFFSET);
@@ -360,7 +360,7 @@ static struct pai_val *create_pai_val(char *buf, size_t size)
 	entry_offset = buf + PAI_ENTRIES_BASE;
 
 	DEBUG(10,("create_pai_val:%s num_entries = %u, num_def_entries = %u\n",
-			paiv->protected ? " (protected)" : "", paiv->num_entries, paiv->num_def_entries ));
+			paiv->pai_protected ? " (pai_protected)" : "", paiv->num_entries, paiv->num_def_entries ));
 
 	for (i = 0; i < paiv->num_entries; i++) {
 		struct pai_entry *paie;
@@ -484,7 +484,7 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 
 	paiv = create_pai_val(pai_buf, ret);
 
-	if (paiv && paiv->protected)
+	if (paiv && paiv->pai_protected)
 		DEBUG(10,("load_inherited_info: ACL is protected for file %s\n", fsp->fsp_name));
 
 	SAFE_FREE(pai_buf);
