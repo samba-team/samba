@@ -713,10 +713,10 @@ static Eventlog_entry *_eventlog_read_package_entry(prs_struct *ps,
 						    Eventlog_entry *entry)
 {
     uint8 *offset;
-    Eventlog_entry *new = NULL;
+    Eventlog_entry *ee_new = NULL;
 
-    new = PRS_ALLOC_MEM(ps, Eventlog_entry, 1);
-    if(new == NULL)
+    ee_new = PRS_ALLOC_MEM(ps, Eventlog_entry, 1);
+    if(ee_new == NULL)
 	return NULL;
 
     entry->data_record.sid_padding = ((4 - ((entry->data_record.source_name_len 
@@ -767,14 +767,14 @@ static Eventlog_entry *_eventlog_read_package_entry(prs_struct *ps,
     memcpy(offset, &(entry->data_record.user_data), entry->data_record.user_data_len);
     offset += entry->data_record.user_data_len;
 
-    memcpy(&(new->record), &entry->record, sizeof(Eventlog_record));
-    memcpy(&(new->data_record), &entry->data_record, sizeof(Eventlog_data_record));
-    new->data = entry->data;
+    memcpy(&(ee_new->record), &entry->record, sizeof(Eventlog_record));
+    memcpy(&(ee_new->data_record), &entry->data_record, sizeof(Eventlog_data_record));
+    ee_new->data = entry->data;
 
-    return new;
+    return ee_new;
 }
 
-static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *new)
+static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *ee_new)
 {
     Eventlog_entry *insert_point;
 
@@ -782,8 +782,8 @@ static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog
 
     if (NULL == insert_point) 
     {
-	r_u->entry = new;
-	new->next = NULL;
+	r_u->entry = ee_new;
+	ee_new->next = NULL;
     } 
     else
     {
@@ -791,11 +791,11 @@ static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog
 	{
 	    insert_point=insert_point->next;
 	}
-	new->next = NULL;
-	insert_point->next = new;
+	ee_new->next = NULL;
+	insert_point->next = ee_new;
     }
     r_u->num_records++; 
-    r_u->num_bytes_in_resp += new->record.length;
+    r_u->num_bytes_in_resp += ee_new->record.length;
 
     return True;
 }
@@ -806,7 +806,7 @@ WERROR _eventlog_read_eventlog(pipes_struct *p,
 {
     Eventlog_info *info = NULL;
     POLICY_HND *handle;
-    Eventlog_entry entry, *new;
+    Eventlog_entry entry, *ee_new;
     BOOL eof = False, eor = False;
     const char *direction = "";
     uint32 num_records_read = 0;
@@ -854,20 +854,20 @@ WERROR _eventlog_read_eventlog(pipes_struct *p,
 	    _eventlog_read_parse_line(buffer[i], &entry, &eor);
 	    if(eor == True)
 	    {
-		/* package new entry */
-		if((new = _eventlog_read_package_entry(ps, q_u, r_u, &entry)) == NULL)
+		/* package ee_new entry */
+		if((ee_new = _eventlog_read_package_entry(ps, q_u, r_u, &entry)) == NULL)
 		{
 		    free(buffer);
 		    return WERR_NOMEM;
 		}
 		/* Now see if there is enough room to add */
-		if(r_u->num_bytes_in_resp + new->record.length > q_u->max_read_size)
+		if(r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size)
 		{
-		    r_u->bytes_in_next_record = new->record.length;
+		    r_u->bytes_in_next_record = ee_new->record.length;
 		    /* response would be too big to fit in client-size buffer */
 		    break;
 		}
-		_eventlog_add_record_to_resp(r_u, new);
+		_eventlog_add_record_to_resp(r_u, ee_new);
 		ZERO_STRUCT(entry);
 		eor=False;
 		num_records_read = r_u->num_records - num_records_read;

@@ -774,15 +774,15 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 
 	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {
-			devmode->private=PRS_ALLOC_MEM(ps, uint8, devmode->driverextra);
-			if(devmode->private == NULL)
+			devmode->dev_private=PRS_ALLOC_MEM(ps, uint8, devmode->driverextra);
+			if(devmode->dev_private == NULL)
 				return False;
-			DEBUG(7,("spoolss_io_devmode: allocated memory [%d] for private\n",devmode->driverextra)); 
+			DEBUG(7,("spoolss_io_devmode: allocated memory [%d] for dev_private\n",devmode->driverextra)); 
 		}
 			
-		DEBUG(7,("spoolss_io_devmode: parsing [%d] bytes of private\n",devmode->driverextra));
-		if (!prs_uint8s(False, "private",  ps, depth,
-				devmode->private, devmode->driverextra))
+		DEBUG(7,("spoolss_io_devmode: parsing [%d] bytes of dev_private\n",devmode->driverextra));
+		if (!prs_uint8s(False, "dev_private",  ps, depth,
+				devmode->dev_private, devmode->driverextra))
 			return False;
 	}
 
@@ -6188,7 +6188,7 @@ BOOL spoolss_io_q_getjob(const char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, 
 void free_devmode(DEVICEMODE *devmode)
 {
 	if (devmode!=NULL) {
-		SAFE_FREE(devmode->private);
+		SAFE_FREE(devmode->dev_private);
 		SAFE_FREE(devmode);
 	}
 }
@@ -6350,7 +6350,7 @@ BOOL spoolss_io_q_routerreplyprinter (const char *desc, SPOOL_Q_ROUTERREPLYPRINT
 	if (!prs_uint32("change_id", ps, depth, &q_u->change_id))
 		return False;
 
-	if (!prs_uint8s(False, "private",  ps, depth, q_u->unknown2, 5))
+	if (!prs_uint8s(False, "dev_private",  ps, depth, q_u->unknown2, 5))
 		return False;
 
 	return True;

@@ -231,7 +231,7 @@ struct vfs_ops {
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-		int (*rename)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new);
+		int (*rename)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldname, const char *newname);
 		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		int (*stat)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);

@@ -432,15 +432,15 @@ static int copy_reg(const char *source, const char *dest)
 	return -1;
 }
 
-int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
+int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
 {
 	int result;
 
 	START_PROFILE(syscall_rename);
-	result = rename(old, new);
+	result = rename(oldname, newname);
 	if (errno == EXDEV) {
 		/* Rename across filesystems needed. */
-		result = copy_reg(old, new);
+		result = copy_reg(oldname, newname);
 	}
 
 	END_PROFILE(syscall_rename);

@@ -216,7 +216,7 @@ typedef struct {
 typedef struct {
 	POLICY_HND handle;
 	UNISTR4 name;
-	UNISTR4 class;
+	UNISTR4 key_class;
 	uint32 reserved;
 	uint32 access;
 	uint32 *sec_info;
@@ -260,11 +260,11 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND pol;
-	UNISTR4 class;
+	UNISTR4 key_class;
 } REG_Q_QUERY_KEY;
 
 typedef struct {
-	UNISTR4 class;
+	UNISTR4 key_class;
 	uint32 num_subkeys;
 	uint32 max_subkeylen;
 	uint32 reserved; 	/* 0x0000 0000 - according to MSDN (max_subkeysize?) */

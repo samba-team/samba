@@ -153,9 +153,9 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
         int flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	if (!(flgs2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		int class  = CVAL(cli->inbuf,smb_rcls);
+		int e_class  = CVAL(cli->inbuf,smb_rcls);
 		int code  = SVAL(cli->inbuf,smb_err);
-		return dos_to_ntstatus(class, code);
+		return dos_to_ntstatus(e_class, code);
         }
 
         return NT_STATUS(IVAL(cli->inbuf,smb_rcls));

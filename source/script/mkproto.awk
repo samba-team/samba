@@ -136,6 +136,10 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^NODE_STATUS_STRUCT/ ) {
+    gotstart = 1;
+  }
+
   if(!gotstart) {
     next;
   }

@@ -87,7 +87,7 @@ static void free_queued_message(struct pending_message_list *msg)
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private, size_t private_len)
+static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private_data, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg = SMB_MALLOC_P(struct pending_message_list);
@@ -110,8 +110,8 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 		msg->msg_time = *ptv;
 	}
 
-	if (private) {
-		msg->private_data = data_blob(private, private_len);
+	if (private_data) {
+		msg->private_data = data_blob(private_data, private_len);
 		if (msg->private_data.data == NULL) {
 			DEBUG(0,("push_message: malloc fail (3)\n"));
 			data_blob_free(&msg->buf);
@@ -249,7 +249,7 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
  for processing.
 ****************************************************************************/
 
-BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private, size_t priv_len)
+BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_data, size_t priv_len)
 {
 	uint16 mid = SVAL(InBuffer,smb_mid);
 	struct timeval tv;
@@ -275,7 +275,7 @@ BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private,
 		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 
 	return push_queued_message(SHARE_VIOLATION_QUEUE, InBuffer,
-			smb_len(InBuffer)+4, &tv, private, priv_len);
+			smb_len(InBuffer)+4, &tv, private_data, priv_len);
 }
 
 /****************************************************************************

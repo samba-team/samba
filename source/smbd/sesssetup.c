@@ -223,7 +223,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 		fstrcpy(wb_request.domain_name, domain);
 
-		wb_result = winbindd_request(WINBINDD_DOMAIN_INFO,
+		wb_result = winbindd_request_response(WINBINDD_DOMAIN_INFO,
 					     &wb_request, &wb_response);
 
 		if (wb_result == NSS_STATUS_SUCCESS) {

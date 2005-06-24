@@ -970,8 +970,8 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 		return True;
 	}
 
-	dump_data(100, new_nt_p16, NT_HASH_LEN);
-	dump_data(100, pwhistory, PW_HISTORY_ENTRY_LEN*pwHisLen);
+	dump_data(100, (const char *)new_nt_p16, NT_HASH_LEN);
+	dump_data(100, (const char *)pwhistory, PW_HISTORY_ENTRY_LEN*pwHisLen);
 
 	memset(zero_md5_nt_pw, '\0', SALTED_MD5_HASH_LEN);
 	for (i=0; i<pwHisLen; i++) {

@@ -168,7 +168,7 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	
 	vuser->n_groups = server_info->n_groups;
 	if (vuser->n_groups) {
-		if (!(vuser->groups = memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
+		if (!(vuser->groups = (gid_t *)memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
 			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
 			data_blob_free(&session_key);
 			free(vuser);
@@ -316,7 +316,7 @@ void add_session_user(const char *user)
 			DEBUG(3,("add_session_user: session userlist already too large.\n"));
 			return;
 		}
-		newlist = SMB_REALLOC( session_userlist, len_session_userlist + PSTRING_LEN );
+		newlist = (char *)SMB_REALLOC( session_userlist, len_session_userlist + PSTRING_LEN );
 		if( newlist == NULL ) {
 			DEBUG(1,("Unable to resize session_userlist\n"));
 			return;

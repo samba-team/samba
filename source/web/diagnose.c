@@ -25,10 +25,6 @@ extern struct in_addr loopback_ip;
 
 #ifdef WITH_WINBIND
 
-NSS_STATUS winbindd_request(int req_type,
-			struct winbindd_request *request,
-			struct winbindd_response *response);
-
 /* check to see if winbind is running by pinging it */
 
 BOOL winbindd_running(void)

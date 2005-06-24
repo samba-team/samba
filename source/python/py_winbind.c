@@ -30,7 +30,7 @@ PyObject *winbind_error;	/* A winbind call returned WINBINDD_ERROR */
 
 /* Prototypes from common.h */
 
-NSS_STATUS winbindd_request(int req_type, 
+NSS_STATUS winbindd_request_response(int req_type, 
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 
@@ -66,7 +66,7 @@ static PyObject *py_name_to_sid(PyObject *self, PyObject *args)
 		fstrcpy(request.data.name.name, name);
 	}
 
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response)  
+	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response)  
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;
@@ -94,7 +94,7 @@ static PyObject *py_sid_to_name(PyObject *self, PyObject *args)
 
 	fstrcpy(request.data.sid, sid);
 
-	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response)  
+	if (winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response)  
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;
@@ -126,7 +126,7 @@ static PyObject *py_enum_domain_users(PyObject *self, PyObject *args)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) 
+	if (winbindd_request_response(WINBINDD_LIST_USERS, NULL, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -157,7 +157,7 @@ static PyObject *py_enum_domain_groups(PyObject *self, PyObject *args)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) 
+	if (winbindd_request_response(WINBINDD_LIST_GROUPS, NULL, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -192,7 +192,7 @@ static PyObject *py_enum_trust_dom(PyObject *self, PyObject *args)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) 
+	if (winbindd_request_response(WINBINDD_LIST_TRUSTDOM, NULL, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -222,7 +222,7 @@ static PyObject *py_check_secret(PyObject *self, PyObject *args)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) 
+	if (winbindd_request_response(WINBINDD_CHECK_MACHACC, NULL, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -294,7 +294,7 @@ static PyObject *py_uid_to_sid(PyObject *self, PyObject *args)
 
 	request.data.uid = id;
 
-	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) 
+	if (winbindd_request_response(WINBINDD_UID_TO_SID, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -319,7 +319,7 @@ static PyObject *py_gid_to_sid(PyObject *self, PyObject *args)
 
 	request.data.gid = id;
 
-	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) 
+	if (winbindd_request_response(WINBINDD_GID_TO_SID, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -344,7 +344,7 @@ static PyObject *py_sid_to_uid(PyObject *self, PyObject *args)
 
 	fstrcpy(request.data.sid, sid);
 
-	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) 
+	if (winbindd_request_response(WINBINDD_SID_TO_UID, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -369,7 +369,7 @@ static PyObject *py_sid_to_gid(PyObject *self, PyObject *args)
 
 	fstrcpy(request.data.sid, sid);
 
-	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) 
+	if (winbindd_request_response(WINBINDD_SID_TO_GID, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -399,7 +399,7 @@ static PyObject *py_auth_plaintext(PyObject *self, PyObject *args)
 	fstrcpy(request.data.auth.user, username);
 	fstrcpy(request.data.auth.pass, password);
 
-	if (winbindd_request(WINBINDD_PAM_AUTH, &request, &response) 
+	if (winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -446,7 +446,7 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 		request.data.auth_crap.nt_resp_len = 24;
 	}
 
-	if (winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response) 
+	if (winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -506,7 +506,7 @@ static PyObject *py_auth_smbd(PyObject *self, PyObject *args, PyObject *kw)
 
 
 
-	if (winbindd_request(WINBINDD_SMBD_AUTH_CRAP, &request, &response) 
+	if (winbindd_request_response(WINBINDD_SMBD_AUTH_CRAP, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -534,7 +534,7 @@ static PyObject *py_getpwnam(PyObject *self, PyObject *args)
 
 	fstrcpy(request.data.username, username);
 
-	if (winbindd_request(WINBINDD_GETPWNAM, &request, &response) 
+	if (winbindd_request_response(WINBINDD_GETPWNAM, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		
@@ -565,7 +565,7 @@ static PyObject *py_getpwuid(PyObject *self, PyObject *args)
 
 	request.data.uid = uid;
 
-	if (winbindd_request(WINBINDD_GETPWUID, &request, &response) 
+	if (winbindd_request_response(WINBINDD_GETPWUID, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
 		PyErr_SetString(winbind_error, "lookup failed");
 		return NULL;		

@@ -1309,7 +1309,7 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private_val)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
@@ -1347,7 +1347,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *private)
 			ret = -1;
 			goto out;
 		}
-		if (fn && fn(tdb, key, dbuf, private)) {
+		if (fn && fn(tdb, key, dbuf, private_val)) {
 			/* They want us to terminate traversal */
 			ret = count;
 			if (unlock_record(tdb, tl.off) != 0) {

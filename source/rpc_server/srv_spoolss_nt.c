@@ -1445,7 +1445,7 @@ static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
 			return NULL;
 	}
 
-	d->private = TALLOC_MEMDUP(ctx, devmode->private, devmode->driverextra);
+	d->dev_private = TALLOC_MEMDUP(ctx, devmode->dev_private, devmode->driverextra);
 	
 	return d;
 }
@@ -1885,12 +1885,12 @@ BOOL convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 	 * has a new one. JRA.
 	 */
 
-	if ((devmode->driverextra != 0) && (devmode->private != NULL)) {
-		SAFE_FREE(nt_devmode->private);
+	if ((devmode->driverextra != 0) && (devmode->dev_private != NULL)) {
+		SAFE_FREE(nt_devmode->nt_dev_private);
 		nt_devmode->driverextra=devmode->driverextra;
-		if((nt_devmode->private=SMB_MALLOC_ARRAY(uint8, nt_devmode->driverextra)) == NULL)
+		if((nt_devmode->nt_dev_private=SMB_MALLOC_ARRAY(uint8, nt_devmode->driverextra)) == NULL)
 			return False;
-		memcpy(nt_devmode->private, devmode->private, nt_devmode->driverextra);
+		memcpy(nt_devmode->nt_dev_private, devmode->dev_private, nt_devmode->driverextra);
 	}
 
 	*pp_nt_devmode = nt_devmode;
@@ -4089,7 +4089,7 @@ static void free_dev_mode(DEVICEMODE *dev)
 	if (dev == NULL)
 		return;
 
-	SAFE_FREE(dev->private);
+	SAFE_FREE(dev->dev_private);
 	SAFE_FREE(dev);	
 }
 
@@ -4132,8 +4132,8 @@ static BOOL convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
 	devmode->mediatype        = ntdevmode->mediatype;
 	devmode->dithertype       = ntdevmode->dithertype;
 
-	if (ntdevmode->private != NULL) {
-		if ((devmode->private=(uint8 *)memdup(ntdevmode->private, ntdevmode->driverextra)) == NULL)
+	if (ntdevmode->nt_dev_private != NULL) {
+		if ((devmode->dev_private=(uint8 *)memdup(ntdevmode->nt_dev_private, ntdevmode->driverextra)) == NULL)
 			return False;
 	}
 	

@@ -36,7 +36,7 @@ static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const
 static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path);
 static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode);
 static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
-static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new);
+static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname);
 static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path);
 static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
 static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode);
@@ -190,14 +190,14 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return result;
 }
 
-static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
+static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
+	result = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
 
 	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
-	       old, new,
+	       oldname, newname,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 

@@ -223,7 +223,7 @@ exit_rmdir:
 
 /* File operations */
 
-static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new)
+static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldname, const char *newname)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -232,14 +232,14 @@ static int atalk_rename(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
+	ret = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
 
-	if (!conn || !old) return ret;
+	if (!conn || !oldname) return ret;
 
 	if (!(ctx = talloc_init("rename_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, old, &adbl_path, &orig_path, 
+	if (atalk_build_paths(ctx, conn->origpath, oldname, &adbl_path, &orig_path, 
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 
