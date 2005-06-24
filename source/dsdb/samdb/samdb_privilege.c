@@ -31,29 +31,26 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 					  const struct dom_sid *sid, 
 					  uint64_t *mask)
 {
-	char *sidstr;
 	const char * const attrs[] = { "privilege", NULL };
 	struct ldb_message **res = NULL;
 	struct ldb_message_element *el;
 	int ret, i;
+	char *sidstr;
 	
 	*mask = 0;
 
-	sidstr = dom_sid_string(mem_ctx, sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	ret = gendb_search(samctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
+	talloc_free(sidstr);
 	if (ret != 1) {
-		talloc_free(sidstr);
 		/* not an error to not match */
 		return NT_STATUS_OK;
 	}
 
 	el = ldb_msg_find_element(res[0], "privilege");
 	if (el == NULL) {
-		talloc_free(sidstr);
 		return NT_STATUS_OK;
 	}
 

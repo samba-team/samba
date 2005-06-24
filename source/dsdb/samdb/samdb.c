@@ -61,17 +61,17 @@ int samdb_search_domain(struct ldb_context *sam_ldb,
 	while (i<count) {
 		struct dom_sid *entry_sid;
 
-		entry_sid = samdb_result_dom_sid(mem_ctx, (*res)[i],
-						 "objectSid");
+		entry_sid = samdb_result_dom_sid(mem_ctx, (*res)[i], "objectSid");
 
 		if ((entry_sid == NULL) ||
 		    (!dom_sid_in_domain(domain_sid, entry_sid))) {
-
 			/* Delete that entry from the result set */
 			(*res)[i] = (*res)[count-1];
 			count -= 1;
+			talloc_free(entry_sid);
 			continue;
 		}
+		talloc_free(entry_sid);
 		i += 1;
 	}
 
@@ -122,6 +122,37 @@ const char *samdb_search_string(struct ldb_context *sam_ldb,
 	va_end(ap);
 
 	return str;
+}
+
+/*
+  search the sam for a dom_sid attribute in exactly 1 record
+*/
+struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
+				     TALLOC_CTX *mem_ctx,
+				     const char *basedn,
+				     const char *attr_name,
+				     const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
+{
+	va_list ap;
+	int count;
+	struct ldb_message **res;
+	const char * const attrs[2] = { attr_name, NULL };
+	struct dom_sid *sid;
+
+	va_start(ap, format);
+	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
+	va_end(ap);
+	if (count > 1) {		
+		DEBUG(1,("samdb: search for %s %s not single valued (count=%d)\n", 
+			 attr_name, format, count));
+	}
+	if (count != 1) {
+		talloc_free(res);
+		return NULL;
+	}
+	sid = samdb_result_dom_sid(mem_ctx, res[0], attr_name);
+	talloc_free(res);
+	return sid;	
 }
 
 /*
@@ -274,16 +305,18 @@ const char *samdb_result_string(struct ldb_message *msg, const char *attr,
   pull a rid from a objectSid in a result set. 
 */
 uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-				 const char *attr, uint32_t default_value)
+				   const char *attr, uint32_t default_value)
 {
 	struct dom_sid *sid;
-	const char *sidstr = ldb_msg_find_string(msg, attr, NULL);
-	if (!sidstr) return default_value;
+	uint32_t rid;
 
-	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
-	if (!sid) return default_value;
-
-	return sid->sub_auths[sid->num_auths-1];
+	sid = samdb_result_dom_sid(mem_ctx, msg, attr);
+	if (sid == NULL) {
+		return default_value;
+	}
+	rid = sid->sub_auths[sid->num_auths-1];
+	talloc_free(sid);
+	return rid;
 }
 
 /*
@@ -292,10 +325,24 @@ uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
 				     const char *attr)
 {
-	const char *sidstr = ldb_msg_find_string(msg, attr, NULL);
-	if (!sidstr) return NULL;
-
-	return dom_sid_parse_talloc(mem_ctx, sidstr);
+	const struct ldb_val *v;
+	struct dom_sid *sid;
+	NTSTATUS status;
+	v = ldb_msg_find_ldb_val(msg, attr);
+	if (v == NULL) {
+		return NULL;
+	}
+	sid = talloc(mem_ctx, struct dom_sid);
+	if (sid == NULL) {
+		return NULL;
+	}
+	status = ndr_pull_struct_blob(v, sid, sid, 
+				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sid);
+		return NULL;
+	}
+	return sid;
 }
 
 /*
@@ -324,15 +371,13 @@ struct GUID samdb_result_guid(struct ldb_message *msg, const char *attr)
   pull a sid prefix from a objectSid in a result set. 
   this is used to find the domain sid for a user
 */
-const char *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-				    const char *attr)
+struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+					const char *attr)
 {
 	struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, msg, attr);
 	if (!sid || sid->num_auths < 1) return NULL;
-
 	sid->num_auths--;
-
-	return dom_sid_string(mem_ctx, sid);
+	return sid;
 }
 
 /*
@@ -701,6 +746,22 @@ int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 		return -1;
 	}
 	return ldb_msg_add_string(sam_ldb, msg, a, s);
+}
+
+/*
+  add a dom_sid element to a message
+*/
+int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, struct dom_sid *sid)
+{
+	struct ldb_val v;
+	NTSTATUS status;
+	status = ndr_push_struct_blob(&v, mem_ctx, sid, 
+				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return ldb_msg_add_value(sam_ldb, msg, attr_name, &v);
 }
 
 /*
