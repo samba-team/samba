@@ -179,7 +179,7 @@ pidl "
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, void *r)
+static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
 	NTSTATUS status;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;

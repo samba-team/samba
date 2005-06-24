@@ -47,7 +47,7 @@ NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *
 /*
   parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
 */
-NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *sid)
+NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -89,7 +89,7 @@ NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid 
 /*
   push a dom_sid28 - this is a dom_sid in a 28 byte fixed buffer
 */
-NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, struct dom_sid *sid)
+NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
 {
 	uint32_t old_offset;
 	uint32_t padding;

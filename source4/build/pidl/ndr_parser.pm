@@ -603,7 +603,7 @@ sub ParseElementPush($$$$$$)
 	start_flags($e);
 
 	if (my $value = util::has_property($e, "value")) {
-		pidl "$var_name = " . util::ParseExpr($value, $env) . ";";
+		$var_name = util::ParseExpr($value, $env);
 	}
 
 	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
@@ -642,9 +642,7 @@ sub ParseElementPrint($$$)
 	return if (util::has_property($e, "noprint"));
 
 	if (my $value = util::has_property($e, "value")) {
-		pidl "if (ndr->flags & LIBNDR_PRINT_SET_VALUES) {";
-		pidl "\t$var_name = " . util::ParseExpr($value,$env) . ";";
-		pidl "}";
+		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . util::ParseExpr($value,$env) . ":$var_name";
 	}
 
 	foreach my $l (@{$e->{LEVELS}}) {
@@ -1361,13 +1359,13 @@ sub ParseStructNdrSize($)
 sub ArgsStructPush($)
 {
 	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r";
+	return "struct ndr_push *ndr, int ndr_flags, const struct $e->{NAME} *r";
 }
 
 sub ArgsStructPrint($)
 {
 	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, struct $e->{NAME} *r";
+	return "struct ndr_print *ndr, const char *name, const struct $e->{NAME} *r";
 }
 
 sub ArgsStructPull($)
@@ -1634,13 +1632,13 @@ sub ParseUnionPull($$)
 sub ArgsUnionPush($)
 {
 	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, union $e->{NAME} *r";
+	return "struct ndr_push *ndr, int ndr_flags, const union $e->{NAME} *r";
 }
 
 sub ArgsUnionPrint($)
 {
 	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, union $e->{NAME} *r";
+	return "struct ndr_print *ndr, const char *name, const union $e->{NAME} *r";
 }
 
 sub ArgsUnionPull($)
@@ -1746,7 +1744,7 @@ sub ParseFunctionPrint($)
 
 	return if util::has_property($fn, "noprint");
 
-	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, struct $fn->{NAME} *r)";
+	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
 
@@ -1809,7 +1807,7 @@ sub ParseFunctionPush($)
 
 	return if util::has_property($fn, "nopush");
 
-	pidl fn_prefix($fn) . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)";
+	pidl fn_prefix($fn) . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, const struct $fn->{NAME} *r)";
 	pidl "{";
 	indent;
 
