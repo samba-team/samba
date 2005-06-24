@@ -232,23 +232,23 @@ void _cleanup( pam_handle_t * pamh, void *x, int error_status )
  */
 char * smbpXstrDup( const char *x )
 {
-    register char *new = NULL;
+    register char *newstr = NULL;
 
     if (x != NULL) {
         register int i;
 
         for (i = 0; x[i]; ++i); /* length of string */
-        if ((new = SMB_MALLOC_ARRAY(char, ++i)) == NULL) {
+        if ((newstr = SMB_MALLOC_ARRAY(char, ++i)) == NULL) {
             i = 0;
             _log_err( LOG_CRIT, "out of memory in smbpXstrDup" );
         } else {
             while (i-- > 0) {
-                new[i] = x[i];
+                newstr[i] = x[i];
             }
         }
         x = NULL;
     }
-    return new;			/* return the duplicate or NULL on error */
+    return newstr;			/* return the duplicate or NULL on error */
 }
 
 /* ************************************************************** *
@@ -374,21 +374,21 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
         pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
 
         if (data_name != NULL) {
-            struct _pam_failed_auth *new = NULL;
+            struct _pam_failed_auth *newauth = NULL;
             const struct _pam_failed_auth *old = NULL;
 
             /* get a failure recorder */
 
-            new = SMB_MALLOC_P( struct _pam_failed_auth );
+            newauth = SMB_MALLOC_P( struct _pam_failed_auth );
 
-            if (new != NULL) {
+            if (newauth != NULL) {
 
                 /* any previous failures for this user ? */
                 pam_get_data(pamh, data_name, (const void **) &old);
 
                 if (old != NULL) {
-                    new->count = old->count + 1;
-                    if (new->count >= SMB_MAX_RETRIES) {
+                    newauth->count = old->count + 1;
+                    if (newauth->count >= SMB_MAX_RETRIES) {
                         retval = PAM_MAXTRIES;
                     }
                 } else {
@@ -396,17 +396,17 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
-                    new->count = 1;
+                    newauth->count = 1;
                 }
-		if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sampass), &(new->id)))) {
+		if (!NT_STATUS_IS_OK(sid_to_uid(pdb_get_user_sid(sampass), &(newauth->id)))) {
                     _log_err(LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
 		}		
-                new->user = smbpXstrDup( name );
-                new->agent = smbpXstrDup( uidtoname( getuid() ) );
-                pam_set_data( pamh, data_name, new, _cleanup_failures );
+                newauth->user = smbpXstrDup( name );
+                newauth->agent = smbpXstrDup( uidtoname( getuid() ) );
+                pam_set_data( pamh, data_name, newauth, _cleanup_failures );
 
             } else {
                 _log_err( LOG_CRIT, "no memory for failure recorder" );
