@@ -21,7 +21,7 @@ interface netlogon
 
 	typedef [public] struct {
 		[value(strlen_m(string)*2)]  uint16 size;
-		[value(size)]                uint16 length;
+		[value(strlen_m(string)*2)]  uint16 length;
 		unistr_noterm *string;
 	} netr_String;
 	
