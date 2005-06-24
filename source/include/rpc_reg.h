@@ -146,7 +146,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	uint32 sec_info;
 	uint32 ptr; 
 	BUFHDR hdr_sec;
@@ -161,7 +161,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	uint32 sec_info;
 	uint32 ptr; 
 	BUFHDR hdr_sec; 
