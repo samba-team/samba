@@ -74,7 +74,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(call->conn->gensec, GENSEC_FEATURE_SEAL);
-		
 
 		status = gensec_start_mech_by_sasl_name(call->conn->gensec, req->creds.SASL.mechanism);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -104,7 +103,10 @@ reply:
 	} else if (NT_STATUS_IS_OK(status)) {
 		result = LDAP_SUCCESS;
 		errstr = NULL;
-		call->conn->enable_wrap = True;
+		if (gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SEAL) ||
+		    gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SIGN)) {
+			call->conn->enable_wrap = True;
+		}
 	} else {
 		result = 49;
 		errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
