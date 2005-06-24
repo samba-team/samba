@@ -745,7 +745,7 @@ makes a structure.
 void init_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_u, POLICY_HND *pol,
                             uint32 sec_info, SEC_DESC_BUF *sec_desc_buf)
 {
-	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
+	memcpy(&q_u->handle, pol, sizeof(q_u->handle));
 
 	q_u->sec_info = sec_info;
 
@@ -769,7 +769,7 @@ BOOL reg_io_q_set_key_sec(const char *desc,  REG_Q_SET_KEY_SEC *q_u, prs_struct 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))
@@ -813,7 +813,7 @@ void init_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_u, POLICY_HND *pol,
                             uint32 sec_info, uint32 sec_buf_size,
                             SEC_DESC_BUF *psdb)
 {
-	memcpy(&q_u->pol, pol, sizeof(q_u->pol));
+	memcpy(&q_u->handle, pol, sizeof(q_u->handle));
 
 	q_u->sec_info = sec_info;
 
@@ -838,7 +838,7 @@ BOOL reg_io_q_get_key_sec(const char *desc,  REG_Q_GET_KEY_SEC *q_u, prs_struct 
 	if(!prs_align(ps))
 		return False;
 	
-	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
+	if(!smb_io_pol_hnd("", &q_u->handle, ps, depth))
 		return False;
 
 	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))

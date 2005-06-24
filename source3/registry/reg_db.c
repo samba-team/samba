@@ -56,6 +56,22 @@ static const char *builtin_registry_paths[] = {
 	"HKCR",
 	 NULL };
 
+#if 0	/* not used yet */
+struct builtin_regkey_value {
+	const char *path;
+	const char *valuename;
+	uint32 type;
+	union {
+		const char *string;
+		uint32 dw_value;
+	} data;
+};
+
+static struct builtin_regkey_value builtin_values[] = {
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 	"SystemRoot", 	REG_SZ, 	{ "c:\\Windows" } },
+};
+#endif
+
 #define REGVER_V1	1	/* first db version with write support */
 	
 /***********************************************************************
@@ -356,37 +372,9 @@ static int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 
 static int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
 {
-	UNISTR2 data;
-	int    num_vals;
-	char   *hname;
-	fstring mydomainname;
+	int    num_vals = 0;
 
 	DEBUG(10,("regdb_fetch_reg_values: Looking for value of key [%s] \n", key));
-
-	num_vals = 0;
-
-	if ( strequal(key, "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" ) ) {
-		DEBUG(10,("regdb_fetch_reg_values: Supplying SystemRoot \n"));
-		init_unistr2( &data, "c:\\Windows", UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "SystemRoot",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		num_vals = 1;
-	} else if ( strequal(key, "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" ) ) {
-		DEBUG(10,("regdb_fetch_reg_values: Supplying ProductType \n"));
-		init_unistr2( &data, "WinNT", UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "ProductType",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		num_vals = 1;
-	} else if ( strequal(key, "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters" ) ) {
-		DEBUG(10,("regdb_fetch_reg_values: Supplying Hostname & Domain Name\n"));
-		hname = SMB_STRDUP(myhostname());
-		get_mydnsdomname(mydomainname);
-		init_unistr2( &data, hname, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Hostname",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		init_unistr2( &data, mydomainname, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( val, "Domain",REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-		num_vals = 2;
-	}
-
-
 
 	return num_vals;
 }
