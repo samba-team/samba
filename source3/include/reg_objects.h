@@ -26,6 +26,7 @@
 typedef struct {
 	fstring		valuename;
 	uint16		type;
+	/* this should be encapsulated in an RPC_DATA_BLOB */
 	uint32		size;	/* in bytes */
 	uint8           *data_p;
 } REGISTRY_VALUE;

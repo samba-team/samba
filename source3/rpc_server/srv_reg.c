@@ -164,13 +164,13 @@ static BOOL api_reg_open_entry(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_info
+ api_reg_query_value
  ********************************************************************/
 
-static BOOL api_reg_info(pipes_struct *p)
+static BOOL api_reg_query_value(pipes_struct *p)
 {
-	REG_Q_INFO q_u;
-	REG_R_INFO r_u;
+	REG_Q_QUERY_VALUE q_u;
+	REG_R_QUERY_VALUE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -178,12 +178,12 @@ static BOOL api_reg_info(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg unknown 0x11*/
-	if(!reg_io_q_info("", &q_u, data, 0))
+	if(!reg_io_q_query_value("", &q_u, data, 0))
 		return False;
 
-	r_u.status = _reg_info(p, &q_u, &r_u);
+	r_u.status = _reg_query_value(p, &q_u, &r_u);
 
-	if(!reg_io_r_info("", &r_u, rdata, 0))
+	if(!reg_io_r_query_value("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -526,7 +526,7 @@ static struct api_struct api_reg_cmds[] =
       { "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
       { "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },
       { "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
-      { "REG_INFO"               , REG_INFO               , api_reg_info             },
+      { "REG_QUERY_VALUE"        , REG_QUERY_VALUE        , api_reg_query_value      },
       { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
       { "REG_SHUTDOWN_EX"        , REG_SHUTDOWN_EX        , api_reg_shutdown_ex      },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
