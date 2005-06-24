@@ -16,7 +16,9 @@
 <title>Features and Benefits</title>
 
 <para>
-<indexterm><primary></primary></indexterm>
+<indexterm><primary>Virtual File System</primary><see>VFS</see></indexterm>
+<indexterm><primary>modules</primary></indexterm>
+<indexterm><primary>loaded modules</primary></indexterm>
 Stackable VFS (Virtual File System) modules support was new to Samba-3 and has proven quite popular.  Samba
 passes each request to access the UNIX file system through the loaded VFS modules.  This chapter covers the
 modules that come with the Samba source and provides references to some external modules.
@@ -29,12 +31,17 @@ modules that come with the Samba source and provides references to some external
 <title>Discussion</title>
 
 <para>
+<indexterm><primary>IRIX</primary></indexterm>
+<indexterm><primary>GNU/Linux</primary></indexterm>
 If not supplied with your platform distribution binary Samba package you may have problems compiling these
 modules, as shared libraries are compiled and linked in different ways on different systems. They currently
 have been tested against GNU/Linux and IRIX.
 </para>
 
 <para>
+<indexterm><primary>VFS modules</primary></indexterm>
+<indexterm><primary>modules</primary></indexterm>
+<indexterm><primary>recycle bin</primary></indexterm>
 To use the VFS modules, create a share similar to the one below. The important parameter is the <smbconfoption
 name="vfs objects"/> parameter where you can list one or more VFS modules by name. For example, to log all
 access to files and put deleted files in a recycle bin, see <link linkend="vfsrecyc">the smb.conf with VFS
@@ -54,6 +61,9 @@ modules example</link>:
 </example>
 
 <para>
+<indexterm><primary>virus scanner</primary></indexterm>
+<indexterm><primary>scanner module</primary></indexterm>
+<indexterm><primary>recycle bin</primary></indexterm>
 The modules are used in the order in which they are specified.  Let's say that you want to both have a virus
 scanner module and a recycle bin module. It is wise to put the virus scanner module as the first one so that
 it is the first that get run an may detect a virus immediately, before any action is performed on that file.
@@ -61,12 +71,18 @@ it is the first that get run an may detect a virus immediately, before any actio
 </para>
 
 <para>
+<indexterm><primary>/usr/local/samba/lib/vfs</primary></indexterm>
+<indexterm><primary>/usr/lib/samba/vfs</primary></indexterm>
 Samba will attempt to load modules from the <filename>/lib</filename> directory in the root directory of the
 Samba installation (usually <filename>/usr/lib/samba/vfs</filename> or
 <filename>/usr/local/samba/lib/vfs</filename>).
 </para>
 
 <para>
+<indexterm><primary>modules</primary></indexterm>
+<indexterm><primary>VFS</primary></indexterm>
+<indexterm><primary>multiple modules</primary></indexterm>
+<indexterm><primary>multiple VFS</primary></indexterm>
 Some modules can be used twice for the same share.  This can be done using a configuration similar to the one
 shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</link>.
 
@@ -95,8 +111,8 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>audit</title>
 
 		<para>
-		A simple module to audit file access to the syslog
-		facility. The following operations are logged:
+<indexterm><primary>audit file access</primary></indexterm>
+		A simple module to audit file access to the syslog facility. The following operations are logged:
 		<itemizedlist>
 			<listitem><para>share</para></listitem>
 			<listitem><para>connect/disconnect</para></listitem>
@@ -111,6 +127,9 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>extd_audit</title>
 
 		<para>
+<indexterm><primary>audit module</primary></indexterm>
+<indexterm><primary>extd_audit module</primary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
 		This module is identical with the <command>audit</command> module above except
 		that it sends audit logs to both syslog as well as the <command>smbd</command> log files. The 
 		<smbconfoption name="log level"/> for this module is set in the &smb.conf; file. 
@@ -139,6 +158,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 		<title>Configuration of Auditing</title>
 
 		<para>
+<indexterm><primary>logging</primary></indexterm>
 		This auditing tool is more felxible than most people readily will recognize. There are a number of ways
 		by which useful logging information can be recorded.
 		</para>
@@ -174,6 +194,10 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>fake_perms</title>
 
 		<para>
+<indexterm><primary>fake_perms</primary></indexterm>
+<indexterm><primary>Roaming Profile</primary></indexterm>
+<indexterm><primary>writeable</primary></indexterm>
+<indexterm><primary>read only</primary></indexterm>
 		This module was created to allow Roaming Profile files and directories to be set (on the Samba server
 		under UNIX) as read only. This module will, if installed on the Profiles share, report to the client
 		that the Profile files and directories are writeable. This satisfies the client even though the files
@@ -186,12 +210,19 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>recycle</title>
 
 		<para>
+<indexterm><primary>recycle</primary></indexterm>
+<indexterm><primary>unlink calls</primary></indexterm>
+<indexterm><primary>recycle directory</primary></indexterm>
 		A Recycle Bin-like module. Where used, unlink calls will be intercepted and files moved
 		to the recycle directory instead of being deleted. This gives the same effect as the
 		<guiicon>Recycle Bin</guiicon> on Windows computers.
 		</para>
 
 		<para>
+<indexterm><primary>recycle</primary></indexterm>
+<indexterm><primary>.recycle</primary></indexterm>
+<indexterm><primary>recycle:keeptree</primary></indexterm>
+<indexterm><primary>deleted files</primary></indexterm>
 		The <guiicon>Recycle Bin</guiicon> will not appear in <application>Windows Explorer</application> views of the
 		network file system (share) nor on any mapped drive. Instead, a directory called <filename>.recycle</filename>
 		will be automatically created when the first file is deleted. Users can recover files from the
@@ -204,6 +235,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:repository</term>
 				<listitem><para>
+<indexterm><primary>recycle:repository</primary></indexterm>
 				Relative path of the directory where deleted files should be moved.
 				</para></listitem>
 			</varlistentry>
@@ -211,6 +243,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:keeptree</term>
 				<listitem><para>
+<indexterm><primary>recycle:keeptree</primary></indexterm>
 				Specifies whether the directory structure should be kept or if the files in the directory that is being 
 				deleted should be kept separately in the recycle bin.
 				</para></listitem>
@@ -219,6 +252,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:versions</term>
 				<listitem><para>
+<indexterm><primary>recycle:versions</primary></indexterm>
 				If this option is set, two files 
 				with the same name that are deleted will both 
 				be kept in the recycle bin. Newer deleted versions 
@@ -229,6 +263,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:touch</term>
 				<listitem><para>
+<indexterm><primary>recycle:touch</primary></indexterm>
 				Specifies whether a file's access date should be touched when the file is moved to the recycle bin.
 				</para></listitem>
 			</varlistentry>
@@ -236,6 +271,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:maxsize</term>
 				<listitem><para>
+<indexterm><primary>recycle:maxsize</primary></indexterm>
 				Files that are larger than the number of bytes specified by this parameter will not be put into the recycle bin.
 				</para></listitem>
 			</varlistentry>
@@ -243,6 +279,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:exclude</term>
 				<listitem><para>
+<indexterm><primary>recycle:exclude</primary></indexterm>
 				List of files that should not be put into the recycle bin when deleted, but deleted in the regular way.
 				</para></listitem>
 			</varlistentry>
@@ -250,6 +287,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:exclude_dir</term>
 				<listitem><para>
+<indexterm><primary>recycle:exclude_dir</primary></indexterm>
 				Contains a list of directories. When files from these directories are
 				deleted, they are not put into the
 				recycle bin but are deleted in the
@@ -260,6 +298,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<varlistentry>
 			<term>recycle:noversions</term>
 				<listitem><para>
+<indexterm><primary>recycle:noversions</primary></indexterm>
 				Specifies a list of paths (wildcards such as * and ? are supported) for which no versioning
 				should be used. Only useful when <emphasis>recycle:versions</emphasis> is enabled.
 				</para></listitem>
@@ -273,11 +312,13 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<title>netatalk</title>
 
 		<para>
+<indexterm><primary>netatalk</primary></indexterm>
 		A netatalk module will ease co-existence of Samba and netatalk file sharing services.
 		</para>
 
 		<para>Advantages compared to the old netatalk module:
 		<itemizedlist>
+<indexterm><primary>.AppleDouble</primary></indexterm>
 			<listitem><para>Does not care about creating .AppleDouble forks, just keeps them in sync.</para></listitem>
 			<listitem><para>If a share in &smb.conf; does not contain .AppleDouble item in hide or veto list, it will be added automatically.</para></listitem>
 		</itemizedlist>
@@ -289,11 +330,13 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
       <title>shadow_copy</title>
 
 	<warning><para>
+<indexterm><primary>shadow_copy</primary></indexterm>
 	<emphasis>THIS IS NOT A BACKUP, ARCHIVAL, OR VERSION CONTROL SOLUTION!</emphasis>
 	</para>
 
 	<para>
-	With Samba or Windows servers, shadow copy is designed to be an end-user tool only.  It does not replace or
+<indexterm><primary>version control</primary></indexterm>
+	With Samba or Windows servers, shadow_copy is designed to be an end-user tool only.  It does not replace or
 	enhance your backup and archival solutions and should in no way be considered as such.  Additionally, if you
 	need version control, implement a version control system.  You have been warned.
 	</para></warning>
@@ -310,6 +353,12 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	</para>
 
 	<para>
+<indexterm><primary>shadow_copy</primary></indexterm>
+<indexterm><primary>VFS module</primary></indexterm>
+<indexterm><primary>shadow_copy module</primary></indexterm>
+<indexterm><primary>LVM</primary></indexterm>
+<indexterm><primary>EVMS</primary></indexterm>
+<indexterm><primary>Logical Volume Manager</primary><see>LVM</see></indexterm>
 	The shadow_copy VFS module requires some underlying file system setup with some sort of Logical Volume Manager
 	(LVM) such as LVM1, LVM2, or EVMS.  Setting up LVM is beyond the scope of this document; however, we will
 	outline the steps we took to test this functionality for <emphasis>example purposes only.</emphasis> You need
@@ -328,20 +377,16 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	    LVM1 and LVM2</ulink></para>
 	  </listitem>
 	  <listitem>
-	    <para><ulink url="http://evms.sourceforge.net/">Enterprise
-	    Volume Management System (EVMS)</ulink></para>
+	    <para><ulink url="http://evms.sourceforge.net/">Enterprise Volume Management System (EVMS)</ulink></para>
 	  </listitem>
 	  <listitem>
 	    <para><ulink url="http://tldp.org/HOWTO/LVM-HOWTO/">The LVM HOWTO</ulink></para>
 	  </listitem>
 	  <listitem>
 	    <para>
-	      See <ulink
-	      url="http://www-106.ibm.com/developerworks/linux/library/l-lvm/">Learning
-	      Linux LVM, Part 1</ulink> and <ulink
-	      url="http://www-106.ibm.com/developerworks/library/l-lvm2.html">Learning
-	      Linux LWM, Part 2</ulink> for Daniel Robbins' well
-	      written a two part tutorial on Linux and LVM using LVM
+	      See <ulink url="http://www-106.ibm.com/developerworks/linux/library/l-lvm/">Learning
+	      Linux LVM, Part 1</ulink> and <ulink url="http://www-106.ibm.com/developerworks/library/l-lvm2.html">Learning
+	      Linux LWM, Part 2</ulink> for Daniel Robbins' well written a two part tutorial on Linux and LVM using LVM
 	      source code and reiserfs.</para>
 	  </listitem>
 	</itemizedlist>
@@ -349,6 +394,8 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	<sect3>
 	<title>Shadow Copy Setup</title>
 	<para>
+<indexterm><primary>XFS file system</primary></indexterm>
+<indexterm><primary>Debian Sarge</primary></indexterm>
 	At the time of this writing, not much testing has been done.  I tested the shadow copy VFS module with a
 	specific scenario which was not deployed in a production environment, but more as a proof of concept.  The
 	scenario involved a Samba 3 file server on Debian Sarge with an XFS file system and LVM1.  I do NOT recommend
@@ -378,6 +425,8 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	  <listitem>
 	    <formalpara><title>Install &amp; Configure LVM</title>
 		<para>
+<indexterm><primary>shadow copies</primary></indexterm>
+<indexterm><primary>Snapshots</primary></indexterm>
 		Before you can make shadow copies available to the client, you have to create the shadow copies.  This is
 		done by taking some sort of file system snapshot.  Snapshots are a typical feature of Logical Volume
 		Managers such as LVM, so we first need to have that setup.
@@ -391,18 +440,31 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 
 			<listitem>
 			<para>
+<indexterm><primary>lvm10 package</primary></indexterm>
+<indexterm><primary>devfsd package</primary></indexterm>
+<indexterm><primary>Debian</primary></indexterm>
+<indexterm><primary>xfsprogs</primary></indexterm>
+<indexterm><primary>apt-get</primary></indexterm>
 			Install lvm10 and devfsd packages if you have not done so already.  On Debian systems, you are warned of the
 			interaction of devfs and lvm1 which requires the use of devfs filenames.  Running <command>apt-get update
 			&amp;&amp; apt-get install lvm10 devfsd xfsprogs</command> should do the trick for this example.
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>create volume</primary></indexterm>
+<indexterm><primary>create partition</primary></indexterm>
+<indexterm><primary>fdisk</primary></indexterm>
+<indexterm><primary>cfdisk</primary></indexterm>
+<indexterm><primary>Linux LVM</primary></indexterm>
 			Now you need to create a volume.  You will need to create a partition (or partitions) to add to your volume.
 			Use your favorite partitioning tool (e.g. Linux fdisk, cfdisk, etc.).  The partition type should be set to
 			0x8e for "Linux LVM."  In this example, we will use /dev/hdb1.
 			</para>
 
 			<para>
+<indexterm><primary>Linux LVM partition</primary></indexterm>
+<indexterm><primary>LVM volume</primary></indexterm>
+<indexterm><primary>modprobe</primary></indexterm>
 			Once you have the Linux LVM partition (type 0x8e), you can run a series of commands to create the LVM volume.
 			You can use several disks and or partitions, but we will use only one in this example.  You may also need to
 			load the kernel module with something like <command>modprobe lvm-mod </command> and set your system up to load
@@ -410,41 +472,59 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>pvcreate</primary></indexterm>
 			Create the physical volume with <command>pvcreate /dev/hdb1</command>
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>vgcreate</primary></indexterm>
+<indexterm><primary>volume group</primary></indexterm>
 			Create the volume group with and add /dev/hda1 to it with <command>vgcreate shadowvol /dev/hdb1</command>
 			</para>
 
 			<para>
+<indexterm><primary>vgdisplay</primary></indexterm>
 			You can use <command>vgdisplay</command> to review information about the volume group.
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>lvcreate</primary></indexterm>
 			Now you can create the logical volume with something like <command>lvcreate -L400M -nsh_test shadowvol</command>
 			</para>
 
 			<para>
+<indexterm><primary>/dev/shadowvol</primary></indexterm>
 			This creates the logical volume of 400MB's named "sh_test" in the volume group we created called shadowvol.
 			If everything is working so far, you should see them in <filename>/dev/shadowvol</filename>.
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>mkfs.xfs</primary></indexterm>
 			Now we should be ready to format the logical volume we named sh_test with <command>mkfs.xfs
 			/dev/shadowvol/sh_test</command>
 			</para>
 
 			<para>
+<indexterm><primary>logical volume</primary></indexterm>
+<indexterm><primary>LVM</primary></indexterm>
+<indexterm><primary>freezing</primary></indexterm>
+<indexterm><primary>resizing</primary></indexterm>
+<indexterm><primary>growing</primary></indexterm>
 			You can format the logical volume with any file system you choose, but make sure to use one that allows you to
 			take advantage of the additional features of LVM such as freezing, resizing and growing your file systems.
 			</para>
 
 			<para>
+<indexterm><primary>LVM volume</primary></indexterm>
+<indexterm><primary>shadow_copy</primary></indexterm>
+<indexterm><primary>module</primary></indexterm>
 			Now we have an LVM volume where we can play with the shadow_copy VFS module.
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>mkdir</primary></indexterm>
+<indexterm><primary>permissions</primary></indexterm>
+<indexterm><primary>chmod</primary></indexterm>
 			Now we need to prepare the directory with something like <command>mkdir -p /data/shadow_share</command> or
 			whatever you want to name your shadow copy enabled Samba share.  Make sure you set the permissions such that
 			you can use it.  If in doubt, use <command>chmod 777 /data/shadow_share</command> and tighten the permissions
@@ -452,10 +532,12 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>mount</primary></indexterm>
 			Mount the LVM volume using something like <command>mount /dev/shadowvol/sh_test /data/shadow_share</command>
 			</para>
 
 			<para>
+<indexterm><primary>/etc/fstab</primary></indexterm>
 			You may also want to edit your <filename>/etc/fstab</filename> so that this partition mounts during the system boot.
 			</para></listitem>
 		</itemizedlist>
@@ -487,6 +569,9 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 		<listitem>
 	    <formalpara><title>Create Snapshots and Make Them Available to shadow_copy.so</title> 
 		<para>
+<indexterm><primary>shadow_copy</primary></indexterm>
+<indexterm><primary>LVM snapshots</primary></indexterm>
+<indexterm><primary>module</primary></indexterm>
 		Before you can browse the shadow copies, you must create them and mount them.  This will most likely be done
 		with a script that runs as a cron job.  With this particular solution, the shadow_copy VFS module is used to
 		browse LVM snapshots.  Those snapshots are not created by the module.  They are not made available by the
@@ -531,6 +616,7 @@ mount /dev/shadowvol/$SNAPNAME /data/shadow_share/@GMT-$SNAPNAME -onouuid,ro
 <title>VFS Modules Available Elsewhere</title>
 
 <para>
+<indexterm><primary>VFS modules</primary></indexterm>
 This section contains a listing of various other VFS modules that have been posted but do not currently reside
 in the Samba CVS tree for one reason or another (e.g., it is easy for the maintainer to have his or her own
 CVS tree).
@@ -544,6 +630,7 @@ No statements about the stability or functionality of any module should be impli
 <title>DatabaseFS</title>
 
 <para>
+<indexterm><primary>DatabaseFS</primary></indexterm>
 URL: <ulink noescape="1" url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">
 Taylors University DatabaeFS</ulink>
 </para>
@@ -569,11 +656,13 @@ might prove useful for someone else who wishes to create a virtual filesystem.
 <sect2>
 <title>vscan</title>
 
+<indexterm><primary>vscan</primary></indexterm>
 <para>URL: <ulink noescape="1" url="http://www.openantivirus.org/projects.php#samba-vscan">
 Open Anti-Virus vscan</ulink>
 </para>
 
 <para>
+<indexterm><primary>samba-vscan</primary></indexterm>
 samba-vscan is a proof-of-concept module for Samba, which provides on-access anti-virus support for files
 shared using Samba.  samba-vscan supports various virus scanners and is maintained by Rainer Link.
 </para>
