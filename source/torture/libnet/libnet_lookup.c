@@ -32,7 +32,6 @@ BOOL torture_lookup(void)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
-	const char** methods = lp_name_resolve_order();
 
 	mem_ctx = talloc_init("test_lookup");
 
@@ -58,7 +57,6 @@ BOOL torture_lookup_host(void)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
-	const char** methods = lp_name_resolve_order();
 
 	mem_ctx = talloc_init("test_lookup_host");
 
@@ -83,7 +81,6 @@ BOOL torture_lookup_pdc(void)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
-	const char** methods = lp_name_resolve_order();
 
 	mem_ctx = talloc_init("test_lookup_pdc");
 
