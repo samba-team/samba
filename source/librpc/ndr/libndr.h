@@ -247,9 +247,8 @@ enum ndr_compression_alg {
 #define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
-typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
-typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const void *);
+typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
-typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
-typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
+typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
+typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, const void *);
 

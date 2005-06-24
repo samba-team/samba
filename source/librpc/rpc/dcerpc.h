@@ -142,9 +142,9 @@ struct dcerpc_pipe {
 struct dcerpc_interface_call {
 	const char *name;
 	size_t struct_size;
-	NTSTATUS (*ndr_push)(struct ndr_push *, int , void *);
-	NTSTATUS (*ndr_pull)(struct ndr_pull *, int , void *);
-	void (*ndr_print)(struct ndr_print *, const char *, int, void *);	
+	ndr_push_flags_fn_t ndr_push;
+	ndr_pull_flags_fn_t ndr_pull;
+	ndr_print_function_t ndr_print;
 };
 
 struct dcerpc_endpoint_list {

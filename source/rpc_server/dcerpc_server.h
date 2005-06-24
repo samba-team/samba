@@ -60,7 +60,7 @@ struct dcesrv_interface {
 
 	/* the ndr_push function for the chosen interface.
 	 */
-	NTSTATUS (*ndr_push)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_push *,void *);
+	NTSTATUS (*ndr_push)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_push *, const void *);
 
 	/* for any private use by the interface code */
 	const void *private;

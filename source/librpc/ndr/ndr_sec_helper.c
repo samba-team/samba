@@ -27,7 +27,7 @@
 /*
   return the wire size of a dom_sid
 */
-size_t ndr_size_dom_sid(struct dom_sid *sid)
+size_t ndr_size_dom_sid(const struct dom_sid *sid)
 {
 	if (!sid) return 0;
 	return 8 + 4*sid->num_auths;
@@ -36,7 +36,7 @@ size_t ndr_size_dom_sid(struct dom_sid *sid)
 /*
   return the wire size of a dom_sid
 */
-size_t ndr_length_dom_sid(struct dom_sid *sid)
+size_t ndr_length_dom_sid(const struct dom_sid *sid)
 {
 	if (!sid) return 0;
 	if (sid->sid_rev_num == 0) return 0;
@@ -46,7 +46,7 @@ size_t ndr_length_dom_sid(struct dom_sid *sid)
 /*
   return the wire size of a security_ace
 */
-size_t ndr_size_security_ace(struct security_ace *ace)
+size_t ndr_size_security_ace(const struct security_ace *ace)
 {
 	if (!ace) return 0;
 	return 8 + ndr_size_dom_sid(&ace->trustee);
@@ -56,7 +56,7 @@ size_t ndr_size_security_ace(struct security_ace *ace)
 /*
   return the wire size of a security_acl
 */
-size_t ndr_size_security_acl(struct security_acl *acl)
+size_t ndr_size_security_acl(const struct security_acl *acl)
 {
 	size_t ret;
 	int i;
@@ -71,7 +71,7 @@ size_t ndr_size_security_acl(struct security_acl *acl)
 /*
   return the wire size of a security descriptor
 */
-size_t ndr_size_security_descriptor(struct security_descriptor *sd)
+size_t ndr_size_security_descriptor(const struct security_descriptor *sd)
 {
 	size_t ret;
 	if (!sd) return 0;
@@ -87,17 +87,17 @@ size_t ndr_size_security_descriptor(struct security_descriptor *sd)
 /*
   print a dom_sid
 */
-void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
 {
 	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr, sid));
 }
 
-void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
 {
 	ndr_print_dom_sid(ndr, name, sid);
 }
 
-void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
 {
 	ndr_print_dom_sid(ndr, name, sid);
 }

@@ -308,7 +308,7 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 /*
   push a nbt name to the wire
 */
-NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, struct nbt_name *r)
+NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *cname, *fullname;
 	NTSTATUS status;
