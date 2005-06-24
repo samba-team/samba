@@ -63,13 +63,15 @@ sub cfile_parse($$$)
 	open(FI, $in) or die("Can't open $in");
 	my $ln = 0;	
 	my $line;
-	foreach($line = <FI>) { 
+	while($line = <FI>) { 
 		$ln++;
-		if ($line =~ /\#([ \t]*)include ["<]([^">]+)/) { 
+		$_ = $line;
+		if (/\#([ \t]*)include ["<]([^">]+)/) { 
 			$headers->{$2} = "$in:$ln";
 		}
 
-		foreach($line =~ /([A-Za-z0-9_]+)/g) { 
+		$_ = $line;
+		while(/([A-Za-z0-9_]+)/g) { 
 			$symbols->{$1} = "$in:$ln";
 		}
 	}

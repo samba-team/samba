@@ -1,4 +1,4 @@
-AC_CHECK_HEADERS(direct.h)
+AC_CHECK_HEADERS(direct.h windows.h winsock2.h ws2tcpip.h)
 
 #######################################
 # Check for mkdir mode
