@@ -160,8 +160,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 {
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
-	struct dom_sid2 *sid;
-	const char *sidstr;
+	struct dom_sid *sid;
 		
 	r->out.sid = NULL;
 
@@ -173,19 +172,12 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	sidstr = samdb_search_string(c_state->sam_ctx,
-				     mem_ctx, NULL, "objectSid",
-				     "(&(name=%s)(objectclass=domain))",
-				     r->in.domain_name->string);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	}
-
-	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	sid = samdb_search_dom_sid(c_state->sam_ctx,
+				   mem_ctx, NULL, "objectSid",
+				   "(&(name=%s)(objectclass=domain))",
+				   r->in.domain_name->string);
 	if (sid == NULL) {
-		DEBUG(0,("samdb: Invalid sid '%s' for domain %s\n",
-			 sidstr, r->in.domain_name->string));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
 	r->out.sid = sid;
@@ -266,7 +258,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_OpenDomain *r)
 {
 	struct dcesrv_handle *h_conn, *h_domain;
-	const char *sidstr, *domain_name;
+	const char *domain_name;
 	struct samr_connect_state *c_state;
 	struct samr_domain_state *d_state;
 	const char * const attrs[2] = { "name", NULL};
@@ -283,15 +275,10 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	ret = gendb_search(c_state->sam_ctx,
 			   mem_ctx, NULL, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=domain))", 
-			   sidstr);
+			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (ret != 1) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -308,7 +295,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	d_state->connect_state = talloc_reference(d_state, c_state);
 	d_state->sam_ctx = c_state->sam_ctx;
-	d_state->domain_sid = talloc_strdup(d_state, sidstr);
+	d_state->domain_sid = dom_sid_dup(d_state, r->in.sid);
 	d_state->domain_name = talloc_strdup(d_state, domain_name);
 	d_state->domain_dn = talloc_strdup(d_state, msgs[0]->dn);
 	if (!d_state->domain_sid || !d_state->domain_name || !d_state->domain_dn) {
@@ -470,7 +457,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	const char *name;
 	struct ldb_message *msg;
 	struct dom_sid *sid;
-	const char *groupname, *sidstr;
+	const char *groupname;
 	struct dcesrv_handle *g_handle;
 	int ret;
 
@@ -526,10 +513,10 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
-	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
-				     msg->dn, "objectSid", NULL);
-	if (sidstr == NULL) {
+	/* retrieve the sid for the group just created */
+	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
+				   msg->dn, "objectSid", NULL);
+	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -547,11 +534,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.group_handle = g_handle->wire_handle;
-
-	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
-	if (!sid)
-		return NT_STATUS_UNSUCCESSFUL;
-
 	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
 	return NT_STATUS_OK;
@@ -578,7 +560,6 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 	int ldb_cnt, count, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
-	struct dom_sid *domain_sid;
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -588,15 +569,11 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 
 	d_state = h->data;
 
-	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
-	if (domain_sid == NULL)
-		return NT_STATUS_NO_MEMORY;
-	
 	/* search for all domain groups in this domain. This could possibly be
 	   cached and resumed based on resume_key */
 	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn, &res, attrs,
-				      domain_sid,
+				      d_state->domain_sid,
 				      "(&(grouptype=%s)(objectclass=group))",
 				      ldb_hexstr(mem_ctx,
 						 GTYPE_SECURITY_GLOBAL_GROUP));
@@ -680,7 +657,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char *name;
 	struct ldb_message *msg;
 	struct dom_sid *sid;
-	const char *account_name, *sidstr;
+	const char *account_name;
 	struct dcesrv_handle *u_handle;
 	int ret;
 	const char *container, *class=NULL;
@@ -756,10 +733,10 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
-	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
+	/* retrieve the sid for the group just created */
+	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
 				   msg->dn, "objectSid", NULL);
-	if (sidstr == NULL) {
+	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -778,10 +755,6 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	*r->out.user_handle = u_handle->wire_handle;
 	*r->out.access_granted = 0xf07ff; /* TODO: fix access mask calculations */
-
-	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
-	if (!sid)
-		return NT_STATUS_UNSUCCESSFUL;
 
 	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
@@ -898,7 +871,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *alias_name, *name, *sidstr;
+	const char *alias_name, *name;
 	struct ldb_message *msg;
 	struct dom_sid *sid;
 	struct dcesrv_handle *a_handle;
@@ -960,12 +933,9 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
-	/* retrieve the sidstring for the group just created */
-	sidstr = samdb_search_string(d_state->sam_ctx, a_state,
+	/* retrieve the sid for the alias just created */
+	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
 				   msg->dn, "objectSid", NULL);
-	if (sidstr == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
@@ -980,10 +950,6 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_handle->data = talloc_steal(a_handle, a_state);
 
 	*r->out.alias_handle = a_handle->wire_handle;
-
-	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
-	if (!sid)
-		return NT_STATUS_UNSUCCESSFUL;
 
 	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
@@ -1003,7 +969,6 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 	int ldb_cnt, count, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
-	struct dom_sid *domain_sid;
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -1013,15 +978,12 @@ static NTSTATUS samr_EnumDomainAliases(struct dcesrv_call_state *dce_call, TALLO
 
 	d_state = h->data;
 
-	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
-	if (domain_sid == NULL)
-		return NT_STATUS_NO_MEMORY;
-	
 	/* search for all domain groups in this domain. This could possibly be
 	   cached and resumed based on resume_key */
 	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn,
-				      &res, attrs, domain_sid,
+				      &res, attrs, 
+				      d_state->domain_sid,
 				      "(&(|(grouptype=%s)(grouptype=%s)))"
 				      "(objectclass=group))",
 				      ldb_hexstr(mem_ctx,
@@ -1102,7 +1064,6 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	struct dom_sid *domain_sid;
 	int i, count = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
@@ -1124,17 +1085,14 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_NO_MEMORY;
 
 		for (i=0; i<r->in.sids->num_sids; i++) {
-			const char *sidstr, *memberdn;
+			const char *memberdn;
 
-			sidstr = dom_sid_string(mem_ctx,
-						r->in.sids->sids[i].sid);
-			if (sidstr == NULL)
-				return NT_STATUS_NO_MEMORY;
-
-			memberdn = samdb_search_string(d_state->sam_ctx,
-						       mem_ctx, NULL, "dn",
-						       "(objectSid=%s)",
-						       sidstr);
+			memberdn = 
+				samdb_search_string(d_state->sam_ctx,
+						    mem_ctx, NULL, "dn",
+						    "(objectSid=%s)",
+						    ldap_encode_ndr_dom_sid(mem_ctx, 
+									    r->in.sids->sids[i].sid));
 
 			if (memberdn == NULL)
 				continue;
@@ -1145,14 +1103,9 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 				return NT_STATUS_NO_MEMORY;
 		}
 
-		domain_sid = dom_sid_parse_talloc(mem_ctx,
-						  d_state->domain_sid);
-		if (domain_sid == NULL)
-			return NT_STATUS_NO_MEMORY;
-
 		count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 					    d_state->domain_dn, &res, attrs,
-					    domain_sid, "%s))", filter);
+					    d_state->domain_sid, "%s))", filter);
 		if (count < 0)
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -1215,8 +1168,7 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	for (i=0;i<r->in.num_names;i++) {
 		struct ldb_message **res;
-		struct dom_sid2 *sid;
-		const char *sidstr;
+		struct dom_sid *sid;
 		uint32_t atype, rtype;
 
 		r->out.rids.ids[i] = 0;
@@ -1229,18 +1181,12 @@ static NTSTATUS samr_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			continue;
 		}
 
-		sidstr = samdb_result_string(res[0], "objectSid", NULL);
-		if (sidstr == NULL) {
-			status = STATUS_SOME_UNMAPPED;
-			continue;
-		}
-		
-		sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 		if (sid == NULL) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
-
+		
 		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
 		if (atype == 0) {
 			status = STATUS_SOME_UNMAPPED;
@@ -1300,13 +1246,21 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		const char * const attrs[] = { 	"sAMAccountType",
 						"sAMAccountName", NULL };
 		uint32_t atype;
+		struct dom_sid *sid;
 
 		ids[i] = SID_NAME_UNKNOWN;
 
+		sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rids[i]);
+		if (sid == NULL) {
+			names[i].string = NULL;
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+		
 		count = gendb_search(d_state->sam_ctx, mem_ctx,
 				     d_state->domain_dn, &res, attrs,
-				     "(objectSid=%s-%u)", d_state->domain_sid,
-				     r->in.rids[i]);
+				     "(objectSid=%s)", 
+				     ldap_encode_ndr_dom_sid(mem_ctx, sid));
 		if (count != 1) {
 			names[i].string = NULL;
 			status = STATUS_SOME_UNMAPPED;
@@ -1349,7 +1303,8 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *groupname, *sidstr;
+	const char *groupname;
+	struct dom_sid *sid;
 	struct ldb_message **msgs;
 	struct dcesrv_handle *g_handle;
 	const char * const attrs[2] = { "sAMAccountName", NULL };
@@ -1362,8 +1317,8 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	d_state = h->data;
 
 	/* form the group SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, r->in.rid);
-	if (!sidstr) {
+	sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (!sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1372,19 +1327,22 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(grouptype=%s))",
-			   sidstr, ldb_hexstr(mem_ctx,
-					      GTYPE_SECURITY_GLOBAL_GROUP));
+			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
+			   ldb_hexstr(mem_ctx,
+				      GTYPE_SECURITY_GLOBAL_GROUP));
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 	if (ret != 1) {
-		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", 
+			 ret, dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	groupname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
 	if (groupname == NULL) {
-		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
+			 dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1396,7 +1354,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+	a_state->account_sid = talloc_steal(a_state, sid);
 	a_state->account_name = talloc_strdup(a_state, groupname);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -1586,7 +1544,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
 	struct ldb_message *mod;
-	char *membersidstr;
+	struct dom_sid *membersid;
 	const char *memberdn;
 	struct ldb_message **msgs;
 	const char * const attrs[2] = { "dn", NULL };
@@ -1597,16 +1555,15 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	membersidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
-				       r->in.rid);
-	if (membersidstr == NULL)
+	membersid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (membersid == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
 	ret = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
-			   membersidstr);
+			   ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret == 0)
 		return NT_STATUS_NO_SUCH_USER;
@@ -1674,7 +1631,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
 	struct ldb_message *mod;
-	char *membersidstr;
+	struct dom_sid *membersid;
 	const char *memberdn;
 	struct ldb_message **msgs;
 	const char * const attrs[2] = { "dn", NULL };
@@ -1685,16 +1642,15 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	membersidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
-				       r->in.rid);
-	if (membersidstr == NULL)
+	membersid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (membersid == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* In native mode, AD can also nest domain groups. Not sure yet
 	 * whether this is also available via RPC. */
 	ret = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn,
 			   &msgs, attrs, "(&(objectSid=%s)(objectclass=user))",
-			   membersidstr);
+			   ldap_encode_ndr_dom_sid(mem_ctx, membersid));
 
 	if (ret == 0)
 		return NT_STATUS_NO_SUCH_USER;
@@ -1820,7 +1776,8 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *alias_name, *sidstr;
+	const char *alias_name;
+	struct dom_sid *sid;
 	struct ldb_message **msgs;
 	struct dcesrv_handle *g_handle;
 	const char * const attrs[2] = { "sAMAccountName", NULL };
@@ -1833,9 +1790,8 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	d_state = h->data;
 
 	/* form the alias SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
-				 r->in.rid);
-	if (sidstr == NULL)
+	sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (sid == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* search for the group record */
@@ -1843,7 +1799,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=group)"
 			   "(|(grouptype=%s)(grouptype=%s)))",
-			   sidstr,
+			   ldap_encode_ndr_dom_sid(mem_ctx, sid),
 			   ldb_hexstr(mem_ctx,
 				      GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
 			   ldb_hexstr(mem_ctx,
@@ -1852,13 +1808,15 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 	if (ret != 1) {
-		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", 
+			 ret, dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	alias_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
 	if (alias_name == NULL) {
-		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
+			 dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1870,7 +1828,7 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+	a_state->account_sid = talloc_steal(a_state, sid);
 	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -2030,7 +1988,6 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	const char *sidstr;
 	struct ldb_message *mod;
 	struct ldb_message **msgs;
 	const char * const attrs[2] = { "dn", NULL };
@@ -2042,28 +1999,27 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
-	if (sidstr == NULL)
-		return NT_STATUS_INVALID_PARAMETER;
-
 	ret = gendb_search(d_state->sam_ctx, mem_ctx, NULL,
-			   &msgs, attrs, "(objectsid=%s)", sidstr);
+			   &msgs, attrs, "(objectsid=%s)", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
 	if (ret == 1) {
 		memberdn = ldb_msg_find_string(msgs[0], "dn", NULL);
 	} else 	if (ret > 1) {
-		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", 
+			 ret, dom_sid_string(mem_ctx, r->in.sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		struct ldb_message *msg;
 		struct GUID guid;
-		const char *guidstr, *basedn;
+		const char *guidstr, *basedn, *sidstr;
+
+		sidstr = dom_sid_string(mem_ctx, r->in.sid);
+		NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 		/* We might have to create a ForeignSecurityPrincipal, but
 		 * only if it's not our own domain */
-		if (dom_sid_in_domain(dom_sid_parse_talloc(mem_ctx,
-							   d_state->domain_sid),
-				      r->in.sid))
+		if (dom_sid_in_domain(d_state->domain_sid, r->in.sid))
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 		msg = ldb_msg_new(mem_ctx);
@@ -2166,7 +2122,6 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	const char *sidstr;
 	struct ldb_message *mod;
 	const char *memberdn;
 
@@ -2175,12 +2130,9 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
-	if (sidstr == NULL)
-		return NT_STATUS_INVALID_PARAMETER;
-
 	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-				       "dn", "(objectSid=%s)", sidstr);
+				       "dn", "(objectSid=%s)", 
+				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
 	if (memberdn == NULL)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2274,7 +2226,8 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct samr_domain_state *d_state;
 	struct samr_account_state *a_state;
 	struct dcesrv_handle *h;
-	const char *account_name, *sidstr;
+	const char *account_name;
+	struct dom_sid *sid;
 	struct ldb_message **msgs;
 	struct dcesrv_handle *u_handle;
 	const char * const attrs[2] = { "sAMAccountName", NULL };
@@ -2287,8 +2240,8 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	d_state = h->data;
 
 	/* form the users SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, r->in.rid);
-	if (!sidstr) {
+	sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (!sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2296,18 +2249,20 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	ret = gendb_search(d_state->sam_ctx,
 			   mem_ctx, d_state->domain_dn, &msgs, attrs,
 			   "(&(objectSid=%s)(objectclass=user))", 
-			   sidstr);
+			   ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	if (ret != 1) {
-		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", ret, 
+			 dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	account_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
 	if (account_name == NULL) {
-		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
+			 dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2319,7 +2274,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+	a_state->account_sid = talloc_steal(a_state, sid);
 	a_state->account_name = talloc_strdup(a_state, account_name);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -2801,7 +2756,6 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
-	struct dom_sid *domain_sid;
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct samr_RidWithTypeArray *array;
 	int count;
@@ -2810,12 +2764,9 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
-	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
-	if (domain_sid == NULL)
-		return NT_STATUS_NO_MEMORY;
 
 	count = samdb_search_domain(a_state->sam_ctx, mem_ctx, NULL, &res,
-				    attrs, domain_sid,
+				    attrs, d_state->domain_sid,
 				    "(&(member=%s)(grouptype=%s)(objectclass=group))",
 				    a_state->account_dn,
 				    ldb_hexstr(mem_ctx,
@@ -2873,7 +2824,6 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 	int ldb_cnt, count, i;
 	const char * const attrs[4] = { "objectSid", "sAMAccountName",
 					"description", NULL };
-	struct dom_sid *domain_sid;
 	struct samr_DispEntryFull *entriesFull = NULL;
 	struct samr_DispEntryAscii *entriesAscii = NULL;
 	struct samr_DispEntryGeneral * entriesGeneral = NULL;
@@ -2907,15 +2857,11 @@ static NTSTATUS samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
-	if (domain_sid == NULL)
-		return NT_STATUS_NO_MEMORY;
-
 	/* search for all requested objects in this domain. This could
 	   possibly be cached and resumed based on resume_key */
 	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				      d_state->domain_dn, &res, attrs,
-				      domain_sid, "%s", filter);
+				      d_state->domain_sid, "%s", filter);
 	if (ldb_cnt == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -3127,8 +3073,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	struct dom_sid *domain_sid;
-	const char *membersid, *memberdn;
+	const char *memberdn;
 	struct ldb_message **res;
 	const char * const attrs[3] = { "dn", "objectSid", NULL };
 	int i, count;
@@ -3137,13 +3082,9 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 
 	d_state = h->data;
 
-	domain_sid = dom_sid_parse_talloc(mem_ctx, d_state->domain_sid);
-	membersid = dom_sid_string(mem_ctx, r->in.sid);
-	if ((domain_sid == NULL) || (membersid == NULL))
-		return NT_STATUS_NO_MEMORY;
-
 	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-				       "dn", "(objectSid=%s)", membersid);
+				       "dn", "(objectSid=%s)", 
+				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (memberdn == NULL)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -3152,7 +3093,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 
 	count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
 				    d_state->domain_dn, &res, attrs,
-				    domain_sid,
+				    d_state->domain_sid,
 				    "(&(member=%s)(objectClass=group)"
 				    "(|(groupType=%s)(groupType=%s)))",
 				    memberdn,

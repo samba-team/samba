@@ -65,7 +65,6 @@ struct lsa_account_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
 	struct dom_sid *account_sid;
-	const char *account_sid_str;
 	const char *account_dn;
 };
 
@@ -221,7 +220,6 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	const char *sid_str;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -266,13 +264,8 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	sid_str = samdb_search_string(state->sam_ldb, mem_ctx,
-				      state->domain_dn, "objectSid", NULL);
-	if (!sid_str) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
-
-	state->domain_sid = dom_sid_parse_talloc(state, sid_str);
+	state->domain_sid = samdb_search_dom_sid(state->sam_ldb, state,
+						 state->domain_dn, "objectSid", NULL);
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -519,16 +512,11 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	for (i=0;i<count;i++) {
-		const char *sidstr;
-
-		sidstr = samdb_result_string(res[i + *r->in.resume_handle], "objectSid", NULL);
-		if (sidstr == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		r->out.sids->sids[i].sid = dom_sid_parse_talloc(r->out.sids->sids, sidstr);
-		if (r->out.sids->sids[i].sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		r->out.sids->sids[i].sid = 
+			samdb_result_dom_sid(r->out.sids->sids, 
+					     res[i + *r->in.resume_handle],
+					     "objectSid");
+		NT_STATUS_HAVE_NO_MEMORY(r->out.sids->sids[i].sid);
 	}
 
 	r->out.sids->num_sids = count;
@@ -1104,7 +1092,7 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 	NTSTATUS status;
 
 	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, 
-			   "objectSid=%s", sid_str);
+			   "objectSid=%s", ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret == 1) {
 		*name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
 		if (!*name) {
@@ -1315,17 +1303,13 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	astate->account_sid_str = dom_sid_string(astate, astate->account_sid);
-	if (astate->account_sid_str == NULL) {
-		talloc_free(astate);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* check it really exists */
-	astate->account_dn = samdb_search_string(state->sam_ldb, astate,
-						 NULL, "dn", 
-						 "(&(objectSid=%s)(objectClass=group))", 
-						 astate->account_sid_str);
+	astate->account_dn = 
+		samdb_search_string(state->sam_ldb, astate,
+				    NULL, "dn", 
+				    "(&(objectSid=%s)(objectClass=group))", 
+				    ldap_encode_ndr_dom_sid(mem_ctx,
+							    astate->account_sid));
 	if (astate->account_dn == NULL) {
 		talloc_free(astate);
 		return NT_STATUS_NO_SUCH_USER;
@@ -1422,7 +1406,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 
 	state = h->data;
 
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1471,7 +1455,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 	const char *dn;
 	struct lsa_EnumAccountRights r2;
 
-	sidstr = dom_sid_string(mem_ctx, sid);
+	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2348,16 +2332,9 @@ static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0;i<ret;i++) {
-		const char *sidstr;
-		sidstr = samdb_result_string(res[i], "objectSid", NULL);
-		if (sidstr == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		r->out.sids->sids[i].sid = dom_sid_parse_talloc(r->out.sids->sids,
-								sidstr);
-		if (r->out.sids->sids[i].sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		r->out.sids->sids[i].sid = samdb_result_dom_sid(r->out.sids->sids,
+								res[i], "objectSid");
+		NT_STATUS_HAVE_NO_MEMORY(r->out.sids->sids[i].sid);
 	}
 	r->out.sids->num_sids = ret;
 
@@ -2540,12 +2517,7 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 
 	ret = gendb_search(state->sam_ldb, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
 	if (ret == 1) {
-		const char *sid_str = ldb_msg_find_string(res[0], "objectSid", NULL);
-		if (sid_str == NULL) {
-			return NT_STATUS_INVALID_SID;
-		}
-
-		*sid = dom_sid_parse_talloc(mem_ctx, sid_str);
+		*sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 		if (*sid == NULL) {
 			return NT_STATUS_INVALID_SID;
 		}

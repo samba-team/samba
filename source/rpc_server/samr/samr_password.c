@@ -147,11 +147,11 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", "unicodePwd", NULL };
-	const char *domain_sid;
 	struct samr_Password *lm_pwd;
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
 	struct samr_Password lm_verifier;
+	struct dom_sid *domain_sid;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_WRONG_PASSWORD;
@@ -211,7 +211,8 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-					"(objectSid=%s)", domain_sid);
+					"(objectSid=%s)", 
+					ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (!domain_dn) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -267,7 +268,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	const char * const dom_attrs[] = { "minPwdLength", "pwdHistoryLength", 
 					   "pwdProperties", "minPwdAge", "maxPwdAge", 
 					   NULL };
-	const char *domain_sid;
+	struct dom_sid *domain_sid;
 	struct samr_Password *nt_pwd, *lm_pwd;
 	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo;
@@ -360,7 +361,8 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-					"(objectSid=%s)", domain_sid);
+					"(objectSid=%s)", 
+					ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (!domain_dn) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;

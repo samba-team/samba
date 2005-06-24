@@ -85,11 +85,5 @@ static const struct ldb_ldif_handler samba_handlers[] = {
 */
 int ldb_register_samba_handlers(struct ldb_context *ldb)
 {
-#if 0
-	/* we can't enable this until we fix the sam code to handle
-	   non-string elements */
 	return ldb_ldif_add_handlers(ldb, samba_handlers, ARRAY_SIZE(samba_handlers));
-#else
-	return 0;
-#endif
 }

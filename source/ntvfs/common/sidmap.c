@@ -97,26 +97,18 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 					  TALLOC_CTX *mem_ctx, struct dom_sid **sid)
 {
 	const char *attrs[] = { "objectSid", NULL };
-	void *ctx = talloc_new(mem_ctx);
-	const char *sidstr;
 	int ret;
-	struct ldb_message **res;
+	struct ldb_message **res = NULL;
 
-	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
+	ret = gendb_search(sidmap->samctx, mem_ctx, NULL, &res, attrs, 
 			   "(&(objectClass=domain)(name=%s))", lp_workgroup());
 	if (ret != 1) {
-		talloc_free(ctx);
+		talloc_free(res);
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 	
-	sidstr = samdb_result_string(res[0], "objectSid", NULL);
-	if (sidstr == NULL) {
-		talloc_free(ctx);
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	}
-
-	*sid = dom_sid_parse_talloc(mem_ctx, sidstr);
-	talloc_free(ctx);
+	*sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	talloc_free(res);
 	if (*sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -137,26 +129,21 @@ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 	const char *s;
 	void *ctx;
 	struct ldb_message **res;
-	const char *sidstr;
 	struct dom_sid *domain_sid;
 	NTSTATUS status;
 
 	ctx = talloc_new(sidmap);
-	sidstr = dom_sid_string(ctx, sid);
-	if (sidstr == NULL) {
-		talloc_free(ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
-			   "objectSid=%s", sidstr);
+			   "objectSid=%s", ldap_encode_ndr_dom_sid(ctx, sid));
 	if (ret != 1) {
 		goto allocated_sid;
 	}
 
 	/* make sure its a user, not a group */
 	if (!is_user_account(res[0])) {
-		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n", sidstr));
+		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n", 
+			 dom_sid_string(ctx, sid)));
 		talloc_free(ctx);
 		return NT_STATUS_INVALID_SID;
 	}
@@ -174,7 +161,7 @@ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 	if (s != NULL) {
 		struct passwd *pwd = getpwnam(s);
 		if (!pwd) {
-			DEBUG(0,("unixName %s for sid %s does not exist as a local user\n", s, sidstr));
+			DEBUG(0,("unixName %s for sid %s does not exist as a local user\n", s, dom_sid_string(ctx, sid)));
 			talloc_free(ctx);
 			return NT_STATUS_NO_SUCH_USER;
 		}
@@ -188,7 +175,8 @@ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 	if (s != NULL) {
 		struct passwd *pwd = getpwnam(s);
 		if (!pwd) {
-			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local user\n", s, sidstr));
+			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local user\n", 
+				 s, dom_sid_string(ctx, sid)));
 			talloc_free(ctx);
 			return NT_STATUS_NO_SUCH_USER;
 		}
@@ -217,7 +205,7 @@ allocated_sid:
 	
 
 	DEBUG(0,("sid_to_unixuid: no unixID, unixName or sAMAccountName for sid %s\n", 
-		 sidstr));
+		 dom_sid_string(ctx, sid)));
 
 	talloc_free(ctx);
 	return NT_STATUS_INVALID_SID;
@@ -236,26 +224,21 @@ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 	const char *s;
 	void *ctx;
 	struct ldb_message **res;
-	const char *sidstr;
 	NTSTATUS status;
 	struct dom_sid *domain_sid;
 
 	ctx = talloc_new(sidmap);
-	sidstr = dom_sid_string(ctx, sid);
-	if (sidstr == NULL) {
-		talloc_free(ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
-			   "objectSid=%s", sidstr);
+			   "objectSid=%s", ldap_encode_ndr_dom_sid(ctx, sid));
 	if (ret != 1) {
 		goto allocated_sid;
 	}
 
 	/* make sure its not a user */
 	if (!is_group_account(res[0])) {
-		DEBUG(0,("sid_to_unixgid: sid %s is a ATYPE_NORMAL_ACCOUNT\n", sidstr));
+		DEBUG(0,("sid_to_unixgid: sid %s is a ATYPE_NORMAL_ACCOUNT\n", 
+			 dom_sid_string(ctx, sid)));
 		talloc_free(ctx);
 		return NT_STATUS_INVALID_SID;
 	}
@@ -274,7 +257,7 @@ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 		struct group *grp = getgrnam(s);
 		if (!grp) {
 			DEBUG(0,("unixName '%s' for sid %s does not exist as a local group\n", 
-				 s, sidstr));
+				 s, dom_sid_string(ctx, sid)));
 			talloc_free(ctx);
 			return NT_STATUS_NO_SUCH_USER;
 		}
@@ -288,7 +271,7 @@ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
 	if (s != NULL) {
 		struct group *grp = getgrnam(s);
 		if (!grp) {
-			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local group\n", s, sidstr));
+			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local group\n", s, dom_sid_string(ctx, sid)));
 			talloc_free(ctx);
 			return NT_STATUS_NO_SUCH_USER;
 		}
@@ -314,7 +297,7 @@ allocated_sid:
 	}
 
 	DEBUG(0,("sid_to_unixgid: no unixID, unixName or sAMAccountName for sid %s\n", 
-		 sidstr));
+		 dom_sid_string(ctx, sid)));
 
 	talloc_free(ctx);
 	return NT_STATUS_INVALID_SID;
@@ -363,18 +346,11 @@ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "unixID=%u", (unsigned int)uid);
 	for (i=0;i<ret;i++) {
-		const char *sidstr;
-
 		if (!is_user_account(res[i])) continue;
 
-		sidstr = samdb_result_string(res[i], "objectSid", NULL);
-		if (sidstr == NULL) continue;
-
-		*sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		*sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
 		talloc_free(ctx);
-		if (*sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(*sid);
 		return NT_STATUS_OK;
 	}
 
@@ -391,18 +367,11 @@ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 			   "(|(unixName=%s)(sAMAccountName=%s))", 
 			   pwd->pw_name, pwd->pw_name);
 	for (i=0;i<ret;i++) {
-		const char *sidstr;
-
 		if (!is_user_account(res[i])) continue;
 
-		sidstr = samdb_result_string(res[i], "objectSid", NULL);
-		if (sidstr == NULL) continue;
-
-		*sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		*sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
 		talloc_free(ctx);
-		if (*sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(*sid);
 		return NT_STATUS_OK;
 	}
 
@@ -475,18 +444,11 @@ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 	ret = gendb_search(sidmap->samctx, ctx, NULL, &res, attrs, 
 			   "unixID=%u", (unsigned int)gid);
 	for (i=0;i<ret;i++) {
-		const char *sidstr;
-
 		if (!is_group_account(res[i])) continue;
 
-		sidstr = samdb_result_string(res[i], "objectSid", NULL);
-		if (sidstr == NULL) continue;
-
-		*sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		*sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
 		talloc_free(ctx);
-		if (*sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(*sid);
 		return NT_STATUS_OK;
 	}
 
@@ -503,18 +465,11 @@ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 			   "(|(unixName=%s)(sAMAccountName=%s))", 
 			   grp->gr_name, grp->gr_name);
 	for (i=0;i<ret;i++) {
-		const char *sidstr;
-
 		if (!is_group_account(res[i])) continue;
 
-		sidstr = samdb_result_string(res[i], "objectSid", NULL);
-		if (sidstr == NULL) continue;
-
-		*sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+		*sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
 		talloc_free(ctx);
-		if (*sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(*sid);
 		return NT_STATUS_OK;
 	}
 

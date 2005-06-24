@@ -102,6 +102,15 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
 	if (ev) {
 		ldb_set_opaque(ldb, "EventContext", ev);
+	} else {
+		DEBUG(0,("WARNING: event_context not found\n"));
+		talloc_show_parents(mem_ctx, stdout);
+	}
+
+	ret = ldb_register_samba_handlers(ldb);
+	if (ret == -1) {
+		talloc_free(ldb);
+		return NULL;
 	}
 	
 	ret = ldb_connect(ldb, url, flags, options);

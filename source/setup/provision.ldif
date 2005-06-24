@@ -1,7 +1,7 @@
 dn: @INDEXLIST
 @IDXATTR: name
 @IDXATTR: sAMAccountName
-@IDXATTR: objectSid
+@IDXATTR: objectSid_DISABLED_BY_TRIDGE
 @IDXATTR: objectClass
 @IDXATTR: member
 @IDXATTR: unixID
