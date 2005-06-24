@@ -35,7 +35,6 @@
  *  Author: Derrell Lipman
  */
 
-#include <ctype.h>
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
@@ -496,35 +495,18 @@ failed:
 }
 
 
-static char *
-parse_slash(char *p,
-            char *end)
+static char *parse_slash(char *p, char *end)
 {
-	switch (*(p + 1)) {
-	case ',':
-	case '=':
-	case '\n':
-	case '+':
-	case '<':
-	case '>':
-	case '#':
-	case ';':
-	case '\\':
-	case '"':
+	unsigned x;
+	if (strchr(",=\n+<>#;\\\"", p[1])) {
 		memmove(p, p + 1, end - (p + 1));
 		return (end - 1);
-
-	default:
-                if (isxdigit(p[1]) && isxdigit(p[2])) {
-                        int             x;
-
-                        sscanf(p + 1, "%02x", &x);
-                        *p = (char) x;
-                        memmove(p + 1, p + 3, end - (p + 3));
-                        return (end - 2);
-                } else {
-                        return NULL;
-                }
 	}
+	if (sscanf(p + 1, "%02x", &x) == 1) {
+		*p = (unsigned char)x;
+		memmove(p + 1, p + 3, end - (p + 3));
+		return (end - 2);
+	}
+	return NULL;
 }
 
