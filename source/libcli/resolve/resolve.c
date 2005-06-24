@@ -40,7 +40,7 @@ static const struct resolve_method {
 	struct composite_context *(*send_fn)(struct nbt_name *, struct event_context *);
 	NTSTATUS (*recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
 
-} methods[] = {
+} resolve_methods[] = {
 	{ "bcast", resolve_name_bcast_send,  resolve_name_bcast_recv },
 	{ "wins",  resolve_name_wins_send,   resolve_name_wins_recv },
 	{ "host",  resolve_name_host_send,   resolve_name_host_recv }
@@ -54,9 +54,9 @@ static const struct resolve_method *find_method(const char *name)
 {
 	int i;
 	if (name == NULL) return NULL;
-	for (i=0;i<ARRAY_SIZE(methods);i++) {
-		if (strcasecmp(name, methods[i].name) == 0) {
-			return &methods[i];
+	for (i=0;i<ARRAY_SIZE(resolve_methods);i++) {
+		if (strcasecmp(name, resolve_methods[i].name) == 0) {
+			return &resolve_methods[i];
 		}
 	}
 	return NULL;
