@@ -18,7 +18,7 @@
 
 	typedef struct {
 		[value(2*strlen_m(name))] uint16 name_len;
-		[value(name_len)]       uint16 name_size;
+		[value(2*strlen_m(name))] uint16 name_size;
 		unistr_noterm *name;
 	} eventlog_String;
 
