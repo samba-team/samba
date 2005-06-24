@@ -361,7 +361,7 @@ sub HeaderFnProto($$)
 	my ($interface,$fn) = @_;
 	my $name = $fn->{NAME};
 
-	pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
+	pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, const struct $name *r);\n";
 
 	if (defined($fn->{OPNUM})) {
 		pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
@@ -370,7 +370,7 @@ sub HeaderFnProto($$)
 
 	return unless util::has_property($fn, "public");
 
-	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, struct $name *r);\n";
+	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, const struct $name *r);\n";
 	pidl "NTSTATUS ndr_pull_$name(struct ndr_pull *ndr, int flags, struct $name *r);\n";
 
 	pidl "\n";

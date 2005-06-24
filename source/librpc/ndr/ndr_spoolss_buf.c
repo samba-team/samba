@@ -179,7 +179,7 @@
 /*
   spoolss_EnumPrinters
 */
-NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, int flags, struct spoolss_EnumPrinters *r)
+NTSTATUS ndr_push_spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinters *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrinters,{
 		_r.in.flags	= r->in.flags;
@@ -211,7 +211,7 @@ uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, uint32_t level,
 /*
   spoolss_EnumJobs
 */
-NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, struct spoolss_EnumJobs *r)
+NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, const struct spoolss_EnumJobs *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumJobs,{
 		_r.in.handle	= r->in.handle;
@@ -247,7 +247,7 @@ uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumPrinterDrivers
 */
-NTSTATUS ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, struct spoolss_EnumPrinterDrivers *r)
+NTSTATUS ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinterDrivers *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrinterDrivers,{
 		_r.in.server		= r->in.server;
@@ -279,7 +279,7 @@ uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, uint32_t 
 /*
   spoolss_EnumForms
 */
-NTSTATUS ndr_push_spoolss_EnumForms(struct ndr_push *ndr, int flags, struct spoolss_EnumForms *r)
+NTSTATUS ndr_push_spoolss_EnumForms(struct ndr_push *ndr, int flags, const struct spoolss_EnumForms *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumForms,{
 		_r.in.handle	= r->in.handle;
@@ -307,7 +307,7 @@ uint32_t ndr_size_spoolss_EnumForms_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumPorts
 */
-NTSTATUS ndr_push_spoolss_EnumPorts(struct ndr_push *ndr, int flags, struct spoolss_EnumPorts *r)
+NTSTATUS ndr_push_spoolss_EnumPorts(struct ndr_push *ndr, int flags, const struct spoolss_EnumPorts *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPorts,{
 		_r.in.servername= r->in.servername;
@@ -335,7 +335,7 @@ uint32_t ndr_size_spoolss_EnumPorts_info(TALLOC_CTX *mem_ctx, uint32_t level, ui
 /*
   spoolss_EnumMonitors
 */
-NTSTATUS ndr_push_spoolss_EnumMonitors(struct ndr_push *ndr, int flags, struct spoolss_EnumMonitors *r)
+NTSTATUS ndr_push_spoolss_EnumMonitors(struct ndr_push *ndr, int flags, const struct spoolss_EnumMonitors *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumMonitors,{
 		_r.in.servername= r->in.servername;
@@ -363,7 +363,7 @@ uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, uint32_t level,
 /*
   spoolss_EnumPrintProcessors
 */
-NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, struct spoolss_EnumPrintProcessors *r)
+NTSTATUS ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcessors *r)
 {
 	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrintProcessors,{
 		_r.in.servername	= r->in.servername;
@@ -395,7 +395,7 @@ uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, uint32
 /*
   spoolss_GetPrinterData
 */
-NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, struct spoolss_GetPrinterData *r)
+NTSTATUS ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r)
 {
 	struct _spoolss_GetPrinterData _r;
 	if (flags & NDR_IN) {
@@ -487,7 +487,7 @@ NTSTATUS ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct
 /*
   spoolss_SetPrinterData
 */
-NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, struct spoolss_SetPrinterData *r)
+NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r)
 {
 	struct _spoolss_SetPrinterData _r;
 	if (flags & NDR_IN) {
@@ -504,13 +504,11 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, struct
 		NDR_CHECK(ndr_push___spoolss_SetPrinterData(_ndr_data, NDR_OUT, &__r));
 		_data_blob_data = ndr_push_blob(_ndr_data);
 
-		r->in._offered	= _data_blob_data.length;
-
 		_r.in.handle	= r->in.handle;
 		_r.in.value_name= r->in.value_name;
 		_r.in.type	= r->in.type;
 		_r.in.data	= _data_blob_data;
-		_r.in._offered	= r->in._offered;
+		_r.in._offered	= _data_blob_data.length;
 		_r.out.result	= r->out.result;
 		NDR_CHECK(ndr_push__spoolss_SetPrinterData(ndr, flags, &_r));
 	}

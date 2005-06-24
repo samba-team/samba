@@ -622,7 +622,7 @@ NTSTATUS ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p
 /*
   push a struct to a blob using NDR
 */
-NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
 			      ndr_push_flags_fn_t fn)
 {
 	NTSTATUS status;

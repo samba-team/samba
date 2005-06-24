@@ -78,7 +78,7 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_DUALSTRINGARRAY(struct ndr_push *ndr, int ndr_flags, struct DUALSTRINGARRAY *ar)
+NTSTATUS ndr_push_DUALSTRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct DUALSTRINGARRAY *ar)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -86,7 +86,7 @@ NTSTATUS ndr_push_DUALSTRINGARRAY(struct ndr_push *ndr, int ndr_flags, struct DU
 /*
   print a dom_sid
 */
-void ndr_print_DUALSTRINGARRAY(struct ndr_print *ndr, const char *name, struct DUALSTRINGARRAY *ar)
+void ndr_print_DUALSTRINGARRAY(struct ndr_print *ndr, const char *name, const struct DUALSTRINGARRAY *ar)
 {
 	int i;
 	ndr->print(ndr, "%-25s: DUALSTRINGARRAY", name);
@@ -149,7 +149,7 @@ NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRING
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_STRINGARRAY(struct ndr_push *ndr, int ndr_flags, struct STRINGARRAY *ar)
+NTSTATUS ndr_push_STRINGARRAY(struct ndr_push *ndr, int ndr_flags, const struct STRINGARRAY *ar)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -157,7 +157,7 @@ NTSTATUS ndr_push_STRINGARRAY(struct ndr_push *ndr, int ndr_flags, struct STRING
 /*
   print a dom_sid
 */
-void ndr_print_STRINGARRAY(struct ndr_print *ndr, const char *name, struct STRINGARRAY *ar)
+void ndr_print_STRINGARRAY(struct ndr_print *ndr, const char *name, const struct STRINGARRAY *ar)
 {
 	int i;
 	ndr->print(ndr, "%-25s: STRINGARRAY", name);
