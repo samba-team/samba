@@ -15,7 +15,7 @@ I am the Director of Corporate Standards at Sun Microsystems, and manage Sun's s
 that, I was the Director of Standards at Netscape, which was when I met John. Before Sun, there was Digital
 Equipment Corporation, also standards. I've written several books on standards, and tend to observe (and
 occasionally help) the technical and business trends that drive standardization as a discipline. I tend to see
-standardization as a management tool, not as a technical discipline – and this is part of the rationale that
+standardization as a management tool, not as a technical discipline and this is part of the rationale that
 John provided.
 </para>
 
@@ -38,7 +38,7 @@ know</emphasis>, why are you doing a standard?
 
 <para>
 A <emphasis>good standard</emphasis> survives because people know how to use it. People know how to use a
-standard when it is so transparent, so obvious, and so easy that it become invisible. And a standard become
+standard when it is so transparent, so obvious, and so easy that it become invisible. And a standard becomes
 invisible only when the documentation describing how to deploy it is clear, unambiguous, and correct. These
 three elements must be present for a standard to be useful, allowing communication and interaction between two
 separate and distinct entities to occur without obvious effort. As you read this book, look for the evidence
@@ -56,8 +56,8 @@ for communication between two or more entities whether person-machine, machine-m
 The intent of this book is not to convince anyone of any agenda political, technical, or social. The intent
 is to provide documentation for users who need to know about Samba, how to use it, and how to get on with
 their primary responsibilities. While there is pride on John's part because of the tremendous success of
-Samba, he write for the person who needs a tool to accomplish a particular job, and who has selected Samba to
-be that tool.
+the Samba documentation, he writes for the person who needs a tool to accomplish a particular job, and who has
+selected Samba to be that tool.
 </para>
 
 <para>
