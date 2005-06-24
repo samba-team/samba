@@ -101,8 +101,11 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
-		if (nread == 0) {
+		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_OK;
+		}
+		if (nread == 0) {
+			return NT_STATUS_END_OF_FILE;
 		}
 		req->in.size += nread;
 
@@ -129,8 +132,11 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	if (nread == 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
+	}
+	if (nread == 0) {
+		return NT_STATUS_END_OF_FILE;
 	}
 
 	req->in.size += nread;
