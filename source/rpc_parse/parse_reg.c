@@ -905,7 +905,7 @@ BOOL reg_io_r_get_key_sec(const char *desc,  REG_R_GET_KEY_SEC *q_u, prs_struct 
 makes a structure.
 ********************************************************************/
 
-BOOL init_reg_q_info(REG_Q_INFO *q_u, POLICY_HND *pol, const char *val_name,
+BOOL init_reg_q_query_value(REG_Q_QUERY_VALUE *q_u, POLICY_HND *pol, const char *val_name,
                      REGVAL_BUFFER *value_output)
 {
         if (q_u == NULL)
@@ -936,12 +936,12 @@ BOOL init_reg_q_info(REG_Q_INFO *q_u, POLICY_HND *pol, const char *val_name,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *q_u, prs_struct *ps, int depth)
+BOOL reg_io_q_query_value(const char *desc,  REG_Q_QUERY_VALUE *q_u, prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_info");
+	prs_debug(ps, depth, desc, "reg_io_q_query_value");
 	depth++;
 
 	if(!prs_align(ps))
@@ -990,10 +990,10 @@ BOOL reg_io_q_info(const char *desc,  REG_Q_INFO *q_u, prs_struct *ps, int depth
 
 /*******************************************************************
  Inits a structure.
- New version to replace older init_reg_r_info()
+ New version to replace older init_reg_r_query_value()
 ********************************************************************/
 
-BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
+BOOL init_reg_r_query_value(uint32 include_keyval, REG_R_QUERY_VALUE *r_u,
 		     REGISTRY_VALUE *val, WERROR status)
 {
 	uint32			buf_len = 0;
@@ -1031,12 +1031,12 @@ BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_u,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_info(const char *desc, REG_R_INFO *r_u, prs_struct *ps, int depth)
+BOOL reg_io_r_query_value(const char *desc, REG_R_QUERY_VALUE *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_info");
+	prs_debug(ps, depth, desc, "reg_io_r_query_value");
 	depth++;
 
 	if(!prs_align(ps))

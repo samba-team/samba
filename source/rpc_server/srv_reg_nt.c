@@ -439,7 +439,7 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
  reg_reply_info
  ********************************************************************/
 
-WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
+WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VALUE *r_u)
 {
 	WERROR			status = WERR_BADFILE;
 	fstring 		name;
@@ -479,8 +479,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		regval_ctr_addvalue(&regvals, "RefusePasswordChange", 
 				    REG_DWORD,
 				    (const char*)&dwValue, sizeof(dwValue));
-		val = dup_registry_value(
-			regval_ctr_specific_value( &regvals, 0 ) );
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
  	
 		status = WERR_OK;
 	
@@ -522,7 +521,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
 	{
 		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
-		if ( StrCaseCmp( val->valuename, name ) == 0 ) {
+		if ( strequal( val->valuename, name ) ) {
 			DEBUG(10,("_reg_info: Found match for value [%s]\n", name));
 			status = WERR_OK;
 			break;
@@ -533,7 +532,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
   
 out:
-	init_reg_r_info(q_u->ptr_buf, r_u, val, status);
+	init_reg_r_query_value(q_u->ptr_buf, r_u, val, status);
 	
 	regval_ctr_destroy( &regvals );
 	free_registry_value( val );
@@ -1385,8 +1384,6 @@ done:
 	if ( newparent != parent )
 		close_registry_key( p, &newparent_handle );
 
-	/* rpc_reg.h says there is a POLICY_HDN in the reply...no idea if that is correct */
-	
 	return write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 }
 
