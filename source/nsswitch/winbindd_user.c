@@ -401,7 +401,7 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 
 /* Rewind file pointer for ntdom passwd database */
 
-void winbindd_setpwent(struct winbindd_cli_state *state)
+static BOOL winbindd_setpwent_internal(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
         
@@ -410,8 +410,7 @@ void winbindd_setpwent(struct winbindd_cli_state *state)
 	/* Check user has enabled this */
         
 	if (!lp_winbind_enum_users()) {
-		request_error(state);
-		return;
+		return False;
 	}
 
 	/* Free old static data if it exists */
@@ -425,7 +424,7 @@ void winbindd_setpwent(struct winbindd_cli_state *state)
 	/* add any local users we have */
 	        
 	if ( (domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL )
-		return WINBINDD_ERROR;
+		return False;
                 
 	ZERO_STRUCTP(domain_state);
 
@@ -453,8 +452,7 @@ void winbindd_setpwent(struct winbindd_cli_state *state)
                 
 		if ((domain_state = SMB_MALLOC_P(struct getent_state)) == NULL) {
 			DEBUG(0, ("malloc failed\n"));
-			request_error(state);
-			return;
+			return False;
 		}
                 
 		ZERO_STRUCTP(domain_state);
@@ -467,7 +465,16 @@ void winbindd_setpwent(struct winbindd_cli_state *state)
 	}
         
 	state->getpwent_initialized = True;
-	request_ok(state);
+	return True;
+}
+
+void winbindd_setpwent(struct winbindd_cli_state *state)
+{
+	if (winbindd_setpwent_internal(state)) {
+		request_ok(state);
+	} else {
+		request_error(state);
+	}
 }
 
 /* Close file pointer to ntdom passwd database */
@@ -603,7 +610,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 	user_list = (struct winbindd_pw *)state->response.extra_data;
 
 	if (!state->getpwent_initialized)
-		winbindd_setpwent(state);
+		winbindd_setpwent_internal(state);
 	
 	if (!(ent = state->getpwent_state)) {
 		request_error(state);
