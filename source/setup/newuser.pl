@@ -121,14 +121,14 @@ $ldif .= "objectGUID: " . randguid() . "\n";
 $ldif .= "memberOf: $dom_users\n";
 $ldif .= "userAccountControl: 0x10200\n";
 $ldif .= "sAMAccountType: 0x30000000\n";
-$ldif .= "objectClass: user\n";
 $ldif .= "unicodePwd: $opt_password\n";
 $ldif .= "unixName: $opt_unixname\n";
 
 my $user_dn = "CN=$opt_username,CN=Users,$domain_dn";
 
 open FILE, ">newuser.ldif";
-print FILE "dn: $user_dn";
+print FILE "dn: $user_dn\n";
+print FILE "objectClass: user\n";
 print FILE "$ldif\n";
 close FILE;
 
