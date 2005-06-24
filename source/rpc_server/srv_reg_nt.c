@@ -503,19 +503,61 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 				value_ascii = REG_PT_WINNT;
 				break;
 		}
-		value_length = push_ucs2(value, value, value_ascii,
-					 sizeof(value),
-					 STR_TERMINATE|STR_NOALIGN);
-		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ,
-				    value, value_length);
 		
+		value_length = push_ucs2(value, value, value_ascii, sizeof(value), 
+			STR_TERMINATE|STR_NOALIGN);
+		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ, value, value_length);
 		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
 		status = WERR_OK;
 		
 		goto out;
 	}
+	
+	/* "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters"  */
+	
+	if ( strequal( name, "Hostname") ) {
+		char   *hname;
 
+		hname = myhostname();
+		value_length = push_ucs2( value, value, hname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "Hostname",REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+
+	if ( strequal( name, "Domain") ) {
+		fstring mydomainname;
+	
+		get_mydnsdomname( mydomainname );		
+		value_length = push_ucs2( value, value, mydomainname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "Domain", REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+	
+	/* "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" */
+	
+	if ( strequal( name, "SystemRoot") ) {
+		value_length = push_ucs2( value, value, "c:\\windows", sizeof(value), STR_TERMINATE|STR_NOALIGN);		
+		regval_ctr_addvalue( &regvals, "SystemRoot", REG_SZ, value, value_length );
+
+		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = WERR_OK;
+	
+		goto out;
+	}
+	
+	
 	/* else fall back to actually looking up the value */
 	
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
@@ -1425,4 +1467,43 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 		
 	return WERR_OK;
 }
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_get_key_sec(pipes_struct *p, REG_Q_GET_KEY_SEC  *q_u, REG_R_GET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	
+		
+	return WERR_ACCESS_DENIED;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_set_key_sec(pipes_struct *p, REG_Q_SET_KEY_SEC  *q_u, REG_R_SET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_ACCESS_DENIED;
+}
+
 
