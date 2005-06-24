@@ -164,10 +164,8 @@ sub _prepare_dummy_MAKEDIR()
 bin/.dummy:
 	@: >> $@ || : > $@
 
-dynconfig.o: dynconfig.c Makefile
-	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
-@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+dynconfig.o_CFLAGS = $(PATH_FLAGS)
+dynconfig.o: Makefile
 
 __EOD__
 }
@@ -202,7 +200,7 @@ sub _prepare_std_CC_rule($$$$$)
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
-	\@\$(CC) \$(TARGET_CFLAGS) \$(CFLAGS) $flags -c \$< -o \$\@
+	\@\$(CC) \$(TARGET_CFLAGS) \$(\$\@_CFLAGS) \$(CFLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 
 __EOD__
