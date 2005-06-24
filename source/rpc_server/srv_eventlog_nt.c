@@ -169,12 +169,18 @@ WERROR _eventlog_open_eventlog(pipes_struct *p,
     DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->source_log_file_name));
 
     if(!create_policy_hnd(p, &(r_u->handle), free_eventlog_info, (void *)info))
+    {
+	free_eventlog_info(info);
 	return WERR_NOMEM;
+    }
 
     policy_handle_to_string(&r_u->handle, &info->handle_string);
 
     if(!(_eventlog_open_eventlog_hook(info)))
+    {
+	close_policy_hnd(p, &r_u->handle);
 	return WERR_BADFILE;
+    }
 
     return WERR_OK;
 }

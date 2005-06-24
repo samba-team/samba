@@ -185,7 +185,7 @@ static BOOL api_eventlog_clear_eventlog(pipes_struct *p)
 struct api_struct api_eventlog_cmds[] =
 {
 	{"EVENTLOG_OPENEVENTLOG", 	EVENTLOG_OPENEVENTLOG, 		api_eventlog_open_eventlog    },
-	{"EVENTLOG_CLOSEVENTLOG", 	EVENTLOG_CLOSEEVENTLOG, 	api_eventlog_close_eventlog   },
+	{"EVENTLOG_CLOSEEVENTLOG", 	EVENTLOG_CLOSEEVENTLOG, 	api_eventlog_close_eventlog   },
 	{"EVENTLOG_GETNUMRECORDS", 	EVENTLOG_GETNUMRECORDS, 	api_eventlog_get_num_records  },
 	{"EVENTLOG_GETOLDESTENTRY", 	EVENTLOG_GETOLDESTENTRY, 	api_eventlog_get_oldest_entry },
 	{"EVENTLOG_READEVENTLOG", 	EVENTLOG_READEVENTLOG, 		api_eventlog_read_eventlog    },
