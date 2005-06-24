@@ -177,7 +177,7 @@ struct trustdom_state {
 	struct winbindd_response *response;
 };
 
-static void trustdom_recv(void *private, BOOL success);
+static void trustdom_recv(void *private_data, BOOL success);
 
 static void add_trusted_domains( struct winbindd_domain *domain )
 {
@@ -213,11 +213,11 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 			     trustdom_recv, state);
 }
 
-static void trustdom_recv(void *private, BOOL success)
+static void trustdom_recv(void *private_data, BOOL success)
 {
 	extern struct winbindd_methods cache_methods;
 	struct trustdom_state *state =
-		talloc_get_type_abort(private, struct trustdom_state);
+		talloc_get_type_abort(private_data, struct trustdom_state);
 	struct winbindd_response *response = state->response;
 	char *p;
 
@@ -311,17 +311,17 @@ struct init_child_state {
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private, BOOL success);
-	void *private;
+	void (*continuation)(void *private_data, BOOL success);
+	void *private_data;
 };
 
-static void init_child_recv(void *private, BOOL success);
-static void init_child_getdc_recv(void *private, BOOL success);
+static void init_child_recv(void *private_data, BOOL success);
+static void init_child_getdc_recv(void *private_data, BOOL success);
 
 enum winbindd_result init_child_connection(struct winbindd_domain *domain,
-					   void (*continuation)(void *private,
+					   void (*continuation)(void *private_data,
 								BOOL success),
-					   void *private)
+					   void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
@@ -340,7 +340,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 
 	if ((request == NULL) || (response == NULL) || (state == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
-		continuation(private, False);
+		continuation(private_data, False);
 		return WINBINDD_ERROR;
 	}
 
@@ -351,7 +351,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	state->request = request;
 	state->response = response;
 	state->continuation = continuation;
-	state->private = private;
+	state->private_data = private_data;
 
 	if (domain->primary) {
 		/* The primary domain has to find the DC name itself */
@@ -376,10 +376,10 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 	return WINBINDD_PENDING;
 }
 
-static void init_child_getdc_recv(void *private, BOOL success)
+static void init_child_getdc_recv(void *private_data, BOOL success)
 {
 	struct init_child_state *state =
-		talloc_get_type_abort(private, struct init_child_state);
+		talloc_get_type_abort(private_data, struct init_child_state);
 	const char *dcname = "";
 
 	DEBUG(10, ("Received getdcname response\n"));
@@ -398,17 +398,17 @@ static void init_child_getdc_recv(void *private, BOOL success)
 		      init_child_recv, state);
 }
 
-static void init_child_recv(void *private, BOOL success)
+static void init_child_recv(void *private_data, BOOL success)
 {
 	struct init_child_state *state =
-		talloc_get_type_abort(private, struct init_child_state);
+		talloc_get_type_abort(private_data, struct init_child_state);
 
 	DEBUG(5, ("Received child initialization response for domain %s\n",
 		  state->domain->name));
 
 	if ((!success) || (state->response->result != WINBINDD_OK)) {
 		DEBUG(3, ("Could not init child\n"));
-		state->continuation(state->private, False);
+		state->continuation(state->private_data, False);
 		talloc_destroy(state->mem_ctx);
 		return;
 	}
@@ -429,7 +429,7 @@ static void init_child_recv(void *private, BOOL success)
 	state->domain->initialized = 1;
 
 	if (state->continuation != NULL)
-		state->continuation(state->private, True);
+		state->continuation(state->private_data, True);
 	talloc_destroy(state->mem_ctx);
 }
 

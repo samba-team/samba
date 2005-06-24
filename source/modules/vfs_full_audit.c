@@ -121,7 +121,7 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 			      const DATA_BLOB *hdr, SMB_OFF_T offset,
 			      size_t n);
 static int smb_full_audit_rename(vfs_handle_struct *handle, connection_struct *conn,
-			const char *old, const char *new);
+			const char *oldname, const char *newname);
 static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd);
 static int smb_full_audit_stat(vfs_handle_struct *handle, connection_struct *conn,
 		      const char *fname, SMB_STRUCT_STAT *sbuf);
@@ -1012,13 +1012,13 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 }
 
 static int smb_full_audit_rename(vfs_handle_struct *handle, connection_struct *conn,
-			const char *old, const char *new)
+			const char *oldname, const char *newname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
+	result = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
 
-	do_log(SMB_VFS_OP_RENAME, (result >= 0), handle, "%s|%s", old, new);
+	do_log(SMB_VFS_OP_RENAME, (result >= 0), handle, "%s|%s", oldname, newname);
 
 	return result;    
 }

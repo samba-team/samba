@@ -395,7 +395,7 @@ static void print_sid(DOM_SID *sid);
 
 int verbose = 1;
 DOM_SID old_sid, new_sid;
-int change = 0, new = 0;
+int change = 0, new_val = 0;
 
 /* Compare two SIDs for equality */
 static int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
@@ -562,7 +562,7 @@ int main(int argc, char *argv[])
 		break;
 
 	case 'n':
-		new = 1;
+		new_val = 1;
 		if (!get_sid(&new_sid, poptGetOptArg(pc))) {
 			fprintf(stderr, "Argument to -n should be a SID in form of S-1-5-...\n");
 			poptPrintUsage(pc, stderr, 0);
@@ -584,7 +584,7 @@ int main(int argc, char *argv[])
 	  exit(1);
   }
 
-  if ((!change & new) || (change & !new)) {
+  if ((!change & new_val) || (change & !new_val)) {
 	  fprintf(stderr, "You must specify both -c and -n if one or the other is set!\n");
 	  poptPrintUsage(pc, stderr, 0);
 	  exit(252);

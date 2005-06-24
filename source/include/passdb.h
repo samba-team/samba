@@ -195,7 +195,7 @@ typedef struct sam_passwd
 		const struct pdb_methods *backend_private_methods;
 		void *backend_private_data; 
 		void (*backend_private_data_free_fn)(void **);
-	} private;
+	} private_u;
 
 	/* Lets see if the remaining code can get the hint that you
 	   are meant to use the pdb_...() functions. */
@@ -221,7 +221,7 @@ typedef struct sam_group {
 
 		uint32 mem_num;			/* Number of member SIDs */
 		DOM_SID *members;		/* SID array */
-	} private;
+	} private_g;
 
 } SAM_GROUP;
 
@@ -253,7 +253,7 @@ struct pdb_search {
 	uint32 num_entries;
 	ssize_t cache_size;
 	BOOL search_ended;
-	void *private;
+	void *private_data;
 	BOOL (*next_entry)(struct pdb_search *search,
 			   struct samr_displayentry *entry);
 	void (*search_end)(struct pdb_search *search);

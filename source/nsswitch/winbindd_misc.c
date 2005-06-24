@@ -219,7 +219,7 @@ struct sequence_state {
 	char *extra_data;
 };
 
-static void sequence_recv(void *private, BOOL success);
+static void sequence_recv(void *private_data, BOOL success);
 
 void winbindd_show_sequence(struct winbindd_cli_state *state)
 {
@@ -279,9 +279,9 @@ void winbindd_show_sequence(struct winbindd_cli_state *state)
 			     sequence_recv, seq);
 }
 
-static void sequence_recv(void *private, BOOL success)
+static void sequence_recv(void *private_data, BOOL success)
 {
-	struct sequence_state *state = private;
+	struct sequence_state *state = private_data;
 	uint32 seq = DOM_SEQUENCE_NONE;
 
 	if ((success) && (state->response->result == WINBINDD_OK))
@@ -345,7 +345,7 @@ struct domain_info_state {
 	struct winbindd_cli_state *cli_state;
 };
 
-static void domain_info_init_recv(void *private, BOOL success);
+static void domain_info_init_recv(void *private_data, BOOL success);
 
 void winbindd_domain_info(struct winbindd_cli_state *state)
 {
@@ -400,9 +400,9 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 	request_ok(state);
 }
 
-static void domain_info_init_recv(void *private, BOOL success)
+static void domain_info_init_recv(void *private_data, BOOL success)
 {
-	struct domain_info_state *istate = private;
+	struct domain_info_state *istate = private_data;
 	struct winbindd_cli_state *state = istate->cli_state;
 	struct winbindd_domain *domain = istate->domain;
 

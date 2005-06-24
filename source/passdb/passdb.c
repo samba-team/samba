@@ -52,7 +52,7 @@ const char *get_default_sam_name(void)
 
 void pdb_fill_default_sam(SAM_ACCOUNT *user)
 {
-	ZERO_STRUCT(user->private); /* Don't touch the talloc context */
+	ZERO_STRUCT(user->private_u); /* Don't touch the talloc context */
 
 	/* no initial methods */
 	user->methods = NULL;
@@ -60,36 +60,36 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->private.logon_time            = (time_t)0;
-	user->private.pass_last_set_time    = (time_t)0;
-	user->private.pass_can_change_time  = (time_t)0;
-	user->private.logoff_time           = 
-	user->private.kickoff_time          = 
-	user->private.pass_must_change_time = get_time_t_max();
-	user->private.fields_present        = 0x00ffffff;
-	user->private.logon_divs = 168; 	/* hours per week */
-	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
-	user->private.bad_password_count = 0;
-	user->private.logon_count = 0;
-	user->private.unknown_6 = 0x000004ec; /* don't know */
+	user->private_u.logon_time            = (time_t)0;
+	user->private_u.pass_last_set_time    = (time_t)0;
+	user->private_u.pass_can_change_time  = (time_t)0;
+	user->private_u.logoff_time           = 
+	user->private_u.kickoff_time          = 
+	user->private_u.pass_must_change_time = get_time_t_max();
+	user->private_u.fields_present        = 0x00ffffff;
+	user->private_u.logon_divs = 168; 	/* hours per week */
+	user->private_u.hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(user->private_u.hours, 0xff, user->private_u.hours_len); /* available at all hours */
+	user->private_u.bad_password_count = 0;
+	user->private_u.logon_count = 0;
+	user->private_u.unknown_6 = 0x000004ec; /* don't know */
 
 	/* Some parts of samba strlen their pdb_get...() returns, 
 	   so this keeps the interface unchanged for now. */
 	   
-	user->private.username = "";
-	user->private.domain = "";
-	user->private.nt_username = "";
-	user->private.full_name = "";
-	user->private.home_dir = "";
-	user->private.logon_script = "";
-	user->private.profile_path = "";
-	user->private.acct_desc = "";
-	user->private.workstations = "";
-	user->private.unknown_str = "";
-	user->private.munged_dial = "";
+	user->private_u.username = "";
+	user->private_u.domain = "";
+	user->private_u.nt_username = "";
+	user->private_u.full_name = "";
+	user->private_u.home_dir = "";
+	user->private_u.logon_script = "";
+	user->private_u.profile_path = "";
+	user->private_u.acct_desc = "";
+	user->private_u.workstations = "";
+	user->private_u.unknown_str = "";
+	user->private_u.munged_dial = "";
 
-	user->private.plaintext_pw = NULL;
+	user->private_u.plaintext_pw = NULL;
 
 	/* 
 	   Unless we know otherwise have a Account Control Bit
@@ -97,17 +97,17 @@ void pdb_fill_default_sam(SAM_ACCOUNT *user)
 	   asks for a filtered list of users.
 	*/
 
-	user->private.acct_ctrl = ACB_NORMAL;
+	user->private_u.acct_ctrl = ACB_NORMAL;
 }	
 
 static void destroy_pdb_talloc(SAM_ACCOUNT **user) 
 {
 	if (*user) {
-		data_blob_clear_free(&((*user)->private.lm_pw));
-		data_blob_clear_free(&((*user)->private.nt_pw));
+		data_blob_clear_free(&((*user)->private_u.lm_pw));
+		data_blob_clear_free(&((*user)->private_u.nt_pw));
 
-		if((*user)->private.plaintext_pw!=NULL)
-			memset((*user)->private.plaintext_pw,'\0',strlen((*user)->private.plaintext_pw));
+		if((*user)->private_u.plaintext_pw!=NULL)
+			memset((*user)->private_u.plaintext_pw,'\0',strlen((*user)->private_u.plaintext_pw));
 		talloc_destroy((*user)->mem_ctx);
 		*user = NULL;
 	}
@@ -396,13 +396,13 @@ static void pdb_free_sam_contents(SAM_ACCOUNT *user)
 	/* Kill off sensitive data.  Free()ed by the
 	   talloc mechinism */
 
-	data_blob_clear_free(&(user->private.lm_pw));
-	data_blob_clear_free(&(user->private.nt_pw));
-	if (user->private.plaintext_pw!=NULL)
-		memset(user->private.plaintext_pw,'\0',strlen(user->private.plaintext_pw));
+	data_blob_clear_free(&(user->private_u.lm_pw));
+	data_blob_clear_free(&(user->private_u.nt_pw));
+	if (user->private_u.plaintext_pw!=NULL)
+		memset(user->private_u.plaintext_pw,'\0',strlen(user->private_u.plaintext_pw));
 
-	if (user->private.backend_private_data && user->private.backend_private_data_free_fn) {
-		user->private.backend_private_data_free_fn(&user->private.backend_private_data);
+	if (user->private_u.backend_private_data && user->private_u.backend_private_data_free_fn) {
+		user->private_u.backend_private_data_free_fn(&user->private_u.backend_private_data);
 	}
 }
 

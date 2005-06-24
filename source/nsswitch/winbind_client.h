@@ -5,7 +5,7 @@ void init_request(struct winbindd_request *req,int rq_type);
 NSS_STATUS winbindd_send_request(int req_type,
 				 struct winbindd_request *request);
 NSS_STATUS winbindd_get_response(struct winbindd_response *response);
-NSS_STATUS winbindd_request(int req_type, 
+NSS_STATUS winbindd_request_response(int req_type, 
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 int winbind_open_pipe_sock(void);

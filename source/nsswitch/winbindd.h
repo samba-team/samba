@@ -43,8 +43,8 @@ struct fd_event {
 	void (*handler)(struct fd_event *fde, int flags);
 	void *data;
 	size_t length, done;
-	void (*finished)(void *private, BOOL success);
-	void *private;
+	void (*finished)(void *private_data, BOOL success);
+	void *private_data;
 };
 
 struct winbindd_cli_state {
@@ -163,7 +163,7 @@ struct winbindd_domain {
 
         /* Private data for the backends (used for connection cache) */
 
-	void *private; 
+	void *private_data; 
 
 	/* A working DC */
 	fstring dcname;

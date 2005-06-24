@@ -157,11 +157,11 @@ struct getpwsid_state {
 	gid_t gid;
 };
 
-static void getpwsid_queryuser_recv(void *private, BOOL success,
+static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *acct_name,
 				    const char *full_name, uint32 group_rid);
-static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid);
-static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid);
+static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid);
+static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
 
 static void winbindd_getpwsid(struct winbindd_cli_state *state,
 			      const DOM_SID *sid)
@@ -192,12 +192,12 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 	request_error(state);
 }
 	
-static void getpwsid_queryuser_recv(void *private, BOOL success,
+static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *acct_name,
 				    const char *full_name, uint32 group_rid)
 {
 	struct getpwsid_state *s =
-		talloc_get_type_abort(private, struct getpwsid_state);
+		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not query user %s\\%s\n", s->domain->name,
@@ -215,10 +215,10 @@ static void getpwsid_queryuser_recv(void *private, BOOL success,
 			       getpwsid_sid2uid_recv, s);
 }
 
-static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid)
+static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid)
 {
 	struct getpwsid_state *s =
-		talloc_get_type_abort(private, struct getpwsid_state);
+		talloc_get_type_abort(private_data, struct getpwsid_state);
 
 	if (!success) {
 		DEBUG(5, ("Could not query user's %s\\%s uid\n",
@@ -232,10 +232,10 @@ static void getpwsid_sid2uid_recv(void *private, BOOL success, uid_t uid)
 			       getpwsid_sid2gid_recv, s);
 }
 
-static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid)
+static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 {
 	struct getpwsid_state *s =
-		talloc_get_type_abort(private, struct getpwsid_state);
+		talloc_get_type_abort(private_data, struct getpwsid_state);
 	struct winbindd_pw *pw;
 	fstring output_username;
 	char *homedir;
@@ -297,7 +297,7 @@ static void getpwsid_sid2gid_recv(void *private, BOOL success, gid_t gid)
 
 /* Return a password structure from a username.  */
 
-static void getpwnam_name2sid_recv(void *private, BOOL success,
+static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type);
 
 void winbindd_getpwnam(struct winbindd_cli_state *state)
@@ -343,10 +343,10 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 				  getpwnam_name2sid_recv, state);
 }
 
-static void getpwnam_name2sid_recv(void *private, BOOL success,
+static void getpwnam_name2sid_recv(void *private_data, BOOL success,
 				   const DOM_SID *sid, enum SID_NAME_USE type)
 {
-	struct winbindd_cli_state *state = private;
+	struct winbindd_cli_state *state = private_data;
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup name for user %s\n",

@@ -303,7 +303,7 @@ _nss_winbind_setpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return winbindd_request(WINBINDD_SETPWENT, NULL, NULL);
+	return winbindd_request_response(WINBINDD_SETPWENT, NULL, NULL);
 }
 
 /* Close ntdom password database "file pointer" */
@@ -320,7 +320,7 @@ _nss_winbind_endpwent(void)
 		free_response(&getpwent_response);
 	}
 
-	return winbindd_request(WINBINDD_ENDPWENT, NULL, NULL);
+	return winbindd_request_response(WINBINDD_ENDPWENT, NULL, NULL);
 }
 
 /* Fetch the next password entry from ntdom password database */
@@ -355,7 +355,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 
 	request.data.num_entries = MAX_GETPWENT_USERS;
 
-	ret = winbindd_request(WINBINDD_GETPWENT, &request, 
+	ret = winbindd_request_response(WINBINDD_GETPWENT, &request, 
 			       &getpwent_response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
@@ -425,7 +425,7 @@ _nss_winbind_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 
 		request.data.uid = uid;
 
-		ret = winbindd_request(WINBINDD_GETPWUID, &request, &response);
+		ret = winbindd_request_response(WINBINDD_GETPWUID, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, 
@@ -487,7 +487,7 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 		request.data.username
 			[sizeof(request.data.username) - 1] = '\0';
 
-		ret = winbindd_request(WINBINDD_GETPWNAM, &request, &response);
+		ret = winbindd_request_response(WINBINDD_GETPWNAM, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_pwent(result, &response.data.pw, &buffer,
@@ -543,7 +543,7 @@ _nss_winbind_setgrent(void)
 		free_response(&getgrent_response);
 	}
 
-	return winbindd_request(WINBINDD_SETGRENT, NULL, NULL);
+	return winbindd_request_response(WINBINDD_SETGRENT, NULL, NULL);
 }
 
 /* Close "file pointer" for ntdom group database */
@@ -560,7 +560,7 @@ _nss_winbind_endgrent(void)
 		free_response(&getgrent_response);
 	}
 
-	return winbindd_request(WINBINDD_ENDGRENT, NULL, NULL);
+	return winbindd_request_response(WINBINDD_ENDGRENT, NULL, NULL);
 }
 
 /* Get next entry from ntdom group database */
@@ -597,7 +597,7 @@ winbind_getgrent(enum winbindd_cmd cmd,
 
 	request.data.num_entries = MAX_GETGRENT_USERS;
 
-	ret = winbindd_request(cmd, &request, 
+	ret = winbindd_request_response(cmd, &request, 
 			       &getgrent_response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
@@ -700,7 +700,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		request.data.groupname
 			[sizeof(request.data.groupname) - 1] = '\0';
 
-		ret = winbindd_request(WINBINDD_GETGRNAM, &request, &response);
+		ret = winbindd_request_response(WINBINDD_GETGRNAM, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 			ret = fill_grent(result, &response.data.gr, 
@@ -762,7 +762,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		request.data.gid = gid;
 
-		ret = winbindd_request(WINBINDD_GETGRGID, &request, &response);
+		ret = winbindd_request_response(WINBINDD_GETGRGID, &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
 
@@ -821,7 +821,7 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 	strncpy(request.data.username, user,
 		sizeof(request.data.username) - 1);
 
-	ret = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+	ret = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
 
 	if (ret == NSS_STATUS_SUCCESS) {
 		int num_gids = response.data.num_entries;
@@ -897,7 +897,7 @@ _nss_winbind_getusersids(const char *user_sid, char **group_sids,
 	strncpy(request.data.sid, user_sid,sizeof(request.data.sid) - 1);
 	request.data.sid[sizeof(request.data.sid) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_GETUSERSIDS, &request, &response);
+	ret = winbindd_request_response(WINBINDD_GETUSERSIDS, &request, &response);
 
 	if (ret != NSS_STATUS_SUCCESS) {
 		goto done;
@@ -940,7 +940,7 @@ _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
 		sizeof(request.data.name.name) - 1);
 	request.data.name.name[sizeof(request.data.name.name) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_LOOKUPNAME, &request, &response);
+	ret = winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;
@@ -981,7 +981,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 
 	/* we need to fetch the separator first time through */
 	if (!sep_char) {
-		ret = winbindd_request(WINBINDD_INFO, &request, &response);
+		ret = winbindd_request_response(WINBINDD_INFO, &request, &response);
 		if (ret != NSS_STATUS_SUCCESS) {
 			*errnop = errno = EINVAL;
 			goto failed;
@@ -996,7 +996,7 @@ _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
 		sizeof(request.data.sid) - 1);
 	request.data.sid[sizeof(request.data.sid) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
+	ret = winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;
@@ -1043,7 +1043,7 @@ _nss_winbind_sidtouid(const char *sid, uid_t *uid, int *errnop)
 	strncpy(request.data.sid, sid, sizeof(request.data.sid) - 1);
 	request.data.sid[sizeof(request.data.sid) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
+	ret = winbindd_request_response(WINBINDD_SID_TO_UID, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;
@@ -1073,7 +1073,7 @@ _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop)
 	strncpy(request.data.sid, sid, sizeof(request.data.sid) - 1);
 	request.data.sid[sizeof(request.data.sid) - 1] = '\0';
 
-	ret = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
+	ret = winbindd_request_response(WINBINDD_SID_TO_GID, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;
@@ -1103,7 +1103,7 @@ _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
 
 	request.data.uid = uid;
 
-	ret = winbindd_request(WINBINDD_UID_TO_SID, &request, &response);
+	ret = winbindd_request_response(WINBINDD_UID_TO_SID, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;
@@ -1142,7 +1142,7 @@ _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
 
 	request.data.gid = gid;
 
-	ret = winbindd_request(WINBINDD_GID_TO_SID, &request, &response);
+	ret = winbindd_request_response(WINBINDD_GID_TO_SID, &request, &response);
 	if (ret != NSS_STATUS_SUCCESS) {
 		*errnop = errno = EINVAL;
 		goto failed;

@@ -1338,7 +1338,7 @@ static void init_globals(void)
 			if ((parm_table[i].type == P_STRING ||
 			     parm_table[i].type == P_USTRING) &&
 			    parm_table[i].ptr)
-				string_set(parm_table[i].ptr, "");
+				string_set((char **)parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
 
@@ -2272,12 +2272,12 @@ static void free_service(service *pservice)
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].class == P_LOCAL)
+		    parm_table[i].p_class == P_LOCAL)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
-			 parm_table[i].class == P_LOCAL)
+			 parm_table[i].p_class == P_LOCAL)
 			     str_list_free((char ***)
 			     		    (((char *)pservice) +
 					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
@@ -2541,7 +2541,7 @@ void show_parameter_list(void)
 	for ( classIndex=0; section_names[classIndex]; classIndex++) {
 		printf("[%s]\n", section_names[classIndex]);
 		for (parmIndex = 0; parm_table[parmIndex].label; parmIndex++) {
-			if (parm_table[parmIndex].class == classIndex) {
+			if (parm_table[parmIndex].p_class == classIndex) {
 				printf("%s=%s", 
 					parm_table[parmIndex].label,
 					type[parm_table[parmIndex].type]);
@@ -2632,7 +2632,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 	BOOL not_added;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || pcopymapDest[i])) {
 			void *def_ptr = parm_table[i].ptr;
 			void *src_ptr =
@@ -2659,12 +2659,12 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					break;
 
 				case P_STRING:
-					string_set(dest_ptr,
+					string_set((char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set(dest_ptr,
+					string_set((char **)dest_ptr,
 						   *(char **)src_ptr);
 					strupper_m(*(char **)dest_ptr);
 					break;
@@ -3268,7 +3268,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	if (snum < 0) {
 		parm_ptr = def_ptr;
 	} else {
-		if (parm_table[parmnum].class == P_GLOBAL) {
+		if (parm_table[parmnum].p_class == P_GLOBAL) {
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
@@ -3300,11 +3300,11 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean((BOOL *)parm_ptr, pszParmValue);
 			break;
 
 		case P_BOOLREV:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean((BOOL *)parm_ptr, pszParmValue);
 			*(BOOL *)parm_ptr = !*(BOOL *)parm_ptr;
 			break;
 
@@ -3321,16 +3321,16 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			str_list_free(parm_ptr);
+			str_list_free((char ***)parm_ptr);
 			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
 			break;
 
 		case P_STRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set((char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set((char **)parm_ptr, pszParmValue);
 			strupper_m(*(char **)parm_ptr);
 			break;
 
@@ -3598,7 +3598,7 @@ static void dump_globals(FILE *f)
 	fprintf(f, "[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_GLOBAL &&
+		if (parm_table[i].p_class == P_GLOBAL &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
 			if (defaults_saved && is_default(i))
@@ -3644,7 +3644,7 @@ static void dump_a_service(service * pService, FILE * f)
 
 	for (i = 0; parm_table[i].label; i++) {
 
-		if (parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
@@ -3688,18 +3688,18 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
 	service * pService = ServicePtrs[snum];
 	int i, result = False;
-	parm_class class;
+	parm_class p_class;
 	unsigned flag = 0;
 
 	if (isGlobal) {
-		class = P_GLOBAL;
+		p_class = P_GLOBAL;
 		flag = FLAG_GLOBAL;
 	} else
-		class = P_LOCAL;
+		p_class = P_LOCAL;
 	
 	for (i = 0; parm_table[i].label; i++) {
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
-		    (parm_table[i].class == class || parm_table[i].flags & flag) &&
+		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
@@ -3733,7 +3733,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 	if (snum < 0) {
 		/* do the globals */
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
+			if (parm_table[*i].p_class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
 			if (!parm_table[*i].ptr
@@ -3751,10 +3751,10 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 		service *pService = ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
+			if (parm_table[*i].p_class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
-			if (parm_table[*i].class == P_LOCAL &&
+			if (parm_table[*i].p_class == P_LOCAL &&
 			    parm_table[*i].ptr &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
@@ -3795,7 +3795,7 @@ static void dump_copy_map(BOOL *pcopymap)
 	printf("\n\tNon-Copied parameters:\n");
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    parm_table[i].ptr && !pcopymap[i] &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr)))
 		{
