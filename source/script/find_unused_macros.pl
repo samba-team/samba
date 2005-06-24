@@ -6,7 +6,6 @@
 
 my %defined,%used,%files;
 
-# First, make a list of defines in configure
 $in = shift;
 
 while($tmp = shift) { 
