@@ -146,9 +146,9 @@ static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, int fi
 	return vfswrap_lseek(NULL, fsp, filedes, offset, whence);
 }
 
-static int skel_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
+static int skel_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
 {
-	return vfswrap_rename(NULL, conn, old, new);
+	return vfswrap_rename(NULL, conn, oldname, newname);
 }
 
 static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
