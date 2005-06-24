@@ -35,7 +35,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 	struct ldb_message **res = NULL;
 	struct ldb_message_element *el;
 	int ret, i;
-	char *sidstr;
+	const char *sidstr;
 	
 	*mask = 0;
 
