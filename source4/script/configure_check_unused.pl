@@ -62,13 +62,14 @@ sub cfile_parse($$$)
 
 	open(FI, $in) or die("Can't open $in");
 	my $ln = 0;	
-	foreach(<FI>) { 
+	my $line;
+	foreach($line = <FI>) { 
 		$ln++;
-		foreach(/\#([ \t]*)include ["<]([^">]+)/g) { 
+		if ($line =~ /\#([ \t]*)include ["<]([^">]+)/) { 
 			$headers->{$2} = "$in:$ln";
 		}
 
-		foreach(/([A-Za-z0-9_]+)/g) { 
+		foreach($line =~ /([A-Za-z0-9_]+)/g) { 
 			$symbols->{$1} = "$in:$ln";
 		}
 	}
@@ -100,10 +101,11 @@ foreach (keys %ac_defines) {
 (keys %ac_func_checks) or warn("No function checks found in configure.in file, parse error?");
 
 foreach (keys %ac_func_checks) {
+	my $def = "HAVE_".uc($_);
 	if (not defined($symbols{$_})) {
-		print "$ac_func_checks{$_}: Autoconf-checked function $_ is unused\n";
-	} elsif (not defined($symbols{"HAVE_".uc($_)})) {
-		print "$ac_func_checks{$_}: Autoconf-define for function $_ is unused\n";
+		print "$ac_func_checks{$_}: Autoconf-checked function `$_' is unused\n";
+	} elsif (not defined($symbols{$def})) {
+		print "$ac_func_checks{$_}: Autoconf-define `$def' for function `$_' is unused\n";
 	}
 }
 
@@ -113,8 +115,8 @@ foreach (keys %ac_headers) {
 	my $def = "HAVE_".uc($_);
 	$def =~ s/[\/\.]/_/g;
 	if (not defined($headers{$_})) {
-		print "$ac_headers{$_}: Autoconf-checked header $_ is unused\n";
+		print "$ac_headers{$_}: Autoconf-checked header `$_' is unused\n";
 	} elsif (not defined($symbols{$def})) {
-		print "$ac_headers{$_}: Autoconf-define for header $_ is unused\n"; 
+		print "$ac_headers{$_}: Autoconf-define `$def' for header `$_' is unused\n"; 
 	}
 }
