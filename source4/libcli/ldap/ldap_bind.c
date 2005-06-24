@@ -234,7 +234,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	}
 
 	if (NT_STATUS_IS_OK(status) &&
-	    (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	    (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL) ||
 	     gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN))) {
 		conn->enable_wrap = True;
 	}
