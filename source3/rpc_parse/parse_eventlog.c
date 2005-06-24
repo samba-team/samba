@@ -33,7 +33,7 @@ BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u
 	if(q_u == NULL)
 		return False;
     
-    /* Data format seems to be:
+    /** Data format seems to be:
        UNKNOWN structure
          uint32            unknown
          uint16            unknown
@@ -258,7 +258,7 @@ BOOL eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u
 
 	return True;
 }
-/* Structure of response seems to be:
+/** Structure of response seems to be:
    DWORD num_bytes_in_resp -- MUST be the same as q_u->max_read_size
    for i=0..n
        EVENTLOGRECORD record
@@ -397,7 +397,7 @@ BOOL eventlog_io_r_read_eventlog(const char *desc,
 	return True;
 }
 
-/* The windows client seems to be doing something funny with the file name
+/** The windows client seems to be doing something funny with the file name
    A call like
       ClearEventLog(handle, "backup_file")
    on the client side will result in the backup file name looking like this on the
