@@ -324,7 +324,7 @@ done
 		<member><para>samba-3.0.20 or later</para></member>
 		<member><para>samba-client-3.0.20 or later</para></member>
 		<member><para>samba-winbind-3.0.20 or later</para></member>
-		<member><para>smbldap-tools Version 0.8.8</para></member>
+		<member><para>smbldap-tools Version 0.9.1</para></member>
 	</simplelist>
 
 	<para>
