@@ -60,16 +60,14 @@ AC_CHECK_HEADERS(compat.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
-AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
+AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(stdint.h locale.h)
 AC_CHECK_HEADERS(shadow.h netdb.h netinet/in.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h security/pam_modules.h)
-AC_CHECK_HEADERS(stropts.h)
+AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h)
-AC_CHECK_HEADERS(windows.h winsock2.h ws2tcpip.h)
 
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
@@ -187,22 +185,18 @@ if test x"$ac_cv_func_connect" = x"no"; then
     fi
 fi
 
-AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strtoull strtouq strerror chown fchown chmod fchmod chroot link mknod mknod64)
-AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
-AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf realpath)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize)
-AC_CHECK_FUNCS(setluid getpwanam setlinebuf)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
-AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm backtrace)
+AC_CHECK_FUNCS(dlopen dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strtoull strtouq strerror chroot)
+AC_CHECK_FUNCS(bzero memset strlcpy strlcat)
+AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
+AC_CHECK_FUNCS(initgroups)
+AC_CHECK_FUNCS(setgroups sysconf mktime rename ftruncate chsize)
+AC_CHECK_FUNCS(getpwanam setlinebuf)
+AC_CHECK_FUNCS(srandom random srand rand setenv usleep)
+AC_CHECK_FUNCS(syslog vsyslog timegm backtrace)
 AC_CHECK_FUNCS(setbuffer)
 
-AC_CHECK_FUNCS(getdents)
 AC_CHECK_FUNCS(pread pwrite)
-
-# needed for lib/charcnv.c
-AC_CHECK_FUNCS(setlocale)
 
 #####################################
 # we might need the resolv library on some systems
