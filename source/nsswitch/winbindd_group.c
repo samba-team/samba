@@ -375,7 +375,7 @@ void winbindd_getgrgid(struct winbindd_cli_state *state)
 
 /* "Rewind" file pointer for group database enumeration */
 
-void winbindd_setgrent(struct winbindd_cli_state *state)
+static BOOL winbindd_setgrent_internal(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
@@ -384,8 +384,7 @@ void winbindd_setgrent(struct winbindd_cli_state *state)
 	/* Check user has enabled this */
 
 	if (!lp_winbind_enum_groups()) {
-		request_error(state);
-		return;
+		return False;
 	}		
 
 	/* Free old static data if it exists */
@@ -413,8 +412,7 @@ void winbindd_setgrent(struct winbindd_cli_state *state)
 		
 		if ((domain_state = SMB_MALLOC_P(struct getent_state)) == NULL) {
 			DEBUG(1, ("winbindd_setgrent: malloc failed for domain_state!\n"));
-			request_error(state);
-			return;
+			return False;
 		}
 		
 		ZERO_STRUCTP(domain_state);
@@ -427,7 +425,16 @@ void winbindd_setgrent(struct winbindd_cli_state *state)
 	}
 	
 	state->getgrent_initialized = True;
-	request_ok(state);
+	return True;
+}
+
+void winbindd_setgrent(struct winbindd_cli_state *state)
+{
+	if (winbindd_setgrent_internal(state)) {
+		request_ok(state);
+	} else {
+		request_error(state);
+	}
 }
 
 /* Close file pointer to ntdom group database */
@@ -592,7 +599,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	group_list = (struct winbindd_gr *)state->response.extra_data;
 
 	if (!state->getgrent_initialized)
-		winbindd_setgrent(state);
+		winbindd_setgrent_internal(state);
 
 	if (!(ent = state->getgrent_state)) {
 		request_error(state);
