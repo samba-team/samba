@@ -278,7 +278,7 @@ BOOL torture_useradd(void)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct samr_String domain_name;
-	char* name = TEST_USERNAME;
+	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
@@ -339,7 +339,7 @@ BOOL torture_userdel(void)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct samr_String domain_name;
-	char* name = TEST_USERNAME;
+	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
