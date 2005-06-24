@@ -76,9 +76,9 @@ static int export_database (struct pdb_context *in, struct pdb_context
 
 	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
 		DEBUG(4, ("Processing account %s\n",
-			  user->private.username));
+			  user->private_u.username));
 		if (!username || 
-		    (strcmp(username, user->private.username)
+		    (strcmp(username, user->private_u.username)
 		     == 0)) {
 			out->pdb_add_sam_account(out, user);
 			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {

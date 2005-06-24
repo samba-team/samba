@@ -1614,7 +1614,7 @@ struct user_search {
 static BOOL next_entry_users(struct pdb_search *s,
 			     struct samr_displayentry *entry)
 {
-	struct user_search *state = s->private;
+	struct user_search *state = s->private_data;
 	SAM_ACCOUNT *user = NULL;
 	NTSTATUS status;
 
@@ -1677,7 +1677,7 @@ static BOOL pdb_default_search_users(struct pdb_methods *methods,
 
 	state->acct_flags = acct_flags;
 
-	search->private = state;
+	search->private_data = state;
 	search->next_entry = next_entry_users;
 	search->search_end = search_end_users;
 	return True;
@@ -1691,7 +1691,7 @@ struct group_search {
 static BOOL next_entry_groups(struct pdb_search *s,
 			      struct samr_displayentry *entry)
 {
-	struct group_search *state = s->private;
+	struct group_search *state = s->private_data;
 	uint32 rid;
 	GROUP_MAP *map = &state->groups[state->current_group];
 
@@ -1709,7 +1709,7 @@ static BOOL next_entry_groups(struct pdb_search *s,
 
 static void search_end_groups(struct pdb_search *search)
 {
-	struct group_search *state = search->private;
+	struct group_search *state = search->private_data;
 	SAFE_FREE(state->groups);
 }
 
@@ -1731,7 +1731,7 @@ static BOOL pdb_search_grouptype(struct pdb_search *search,
 	}
 
 	state->current_group = 0;
-	search->private = state;
+	search->private_data = state;
 	search->next_entry = next_entry_groups;
 	search->search_end = search_end_groups;
 	return True;

@@ -3684,7 +3684,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 	fstrcpy(request.data.name.dom_name, domain);
 	fstrcpy(request.data.name.name, user);
 
-	result = winbindd_request(WINBINDD_LOOKUPNAME, &request, &response);
+	result = winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("winbind could not find %s\n", full_name));
@@ -3706,7 +3706,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 
 	fstrcpy(request.data.username, full_name);
 
-	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("winbind could not get groups of %s\n", full_name));
@@ -3725,7 +3725,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 
 		sidrequest.data.gid = gid;
 
-		result = winbindd_request(WINBINDD_GID_TO_SID,
+		result = winbindd_request_response(WINBINDD_GID_TO_SID,
 					  &sidrequest, &sidresponse);
 
 		if (result != NSS_STATUS_SUCCESS) {
@@ -3769,7 +3769,7 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	
-	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 

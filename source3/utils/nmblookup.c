@@ -101,7 +101,7 @@ static void do_node_status(int fd, const char *name, int type, struct in_addr ip
 {
 	struct nmb_name nname;
 	int count, i, j;
-	struct node_status *status;
+	NODE_STATUS_STRUCT *status;
 	struct node_status_extra extra;
 	fstring cleanname;
 

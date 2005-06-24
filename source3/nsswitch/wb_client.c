@@ -28,7 +28,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-NSS_STATUS winbindd_request(int req_type,
+NSS_STATUS winbindd_request_response(int req_type,
                                  struct winbindd_request *request,
                                  struct winbindd_response *response);
 
@@ -52,7 +52,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 	fstrcpy(request.data.name.dom_name, dom_name);
 	fstrcpy(request.data.name.name, name);
 
-	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
+	if ((result = winbindd_request_response(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
 		if (!string_to_sid(sid, response.data.sid.sid))
 			return False;
@@ -83,7 +83,7 @@ BOOL winbind_lookup_sid(const DOM_SID *sid,
 	
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
+	result = winbindd_request_response(WINBINDD_LOOKUPSID, &request, &response);
 
 	/* Copy out result */
 
@@ -121,7 +121,7 @@ BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 	
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_SID_TO_UID, &request, &response);
+	result = winbindd_request_response(WINBINDD_SID_TO_UID, &request, &response);
 
 	/* Copy out result */
 
@@ -152,7 +152,7 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_UID_TO_SID, &request, &response);
+	result = winbindd_request_response(WINBINDD_UID_TO_SID, &request, &response);
 
 	/* Copy out result */
 
@@ -188,7 +188,7 @@ BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 	
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_SID_TO_GID, &request, &response);
+	result = winbindd_request_response(WINBINDD_SID_TO_GID, &request, &response);
 
 	/* Copy out result */
 
@@ -219,7 +219,7 @@ BOOL winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_GID_TO_SID, &request, &response);
+	result = winbindd_request_response(WINBINDD_GID_TO_SID, &request, &response);
 
 	/* Copy out result */
 
@@ -246,7 +246,7 @@ BOOL winbind_allocate_rid(uint32 *rid)
 
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_ALLOCATE_RID, &request, &response);
+	result = winbindd_request_response(WINBINDD_ALLOCATE_RID, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS)
 		return False;
@@ -270,7 +270,7 @@ BOOL winbind_allocate_rid_and_gid(uint32 *rid, gid_t *gid)
 
 	/* Make request */
 
-	result = winbindd_request(WINBINDD_ALLOCATE_RID_AND_GID, &request,
+	result = winbindd_request_response(WINBINDD_ALLOCATE_RID_AND_GID, &request,
 				  &response);
 
 	if (result != NSS_STATUS_SUCCESS)
@@ -299,7 +299,7 @@ static int wb_getgroups(const char *user, gid_t **groups)
 
 	ZERO_STRUCT(response);
 
-	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result == NSS_STATUS_SUCCESS) {
 		
@@ -415,7 +415,7 @@ BOOL winbind_ping( void )
 {
 	NSS_STATUS result;
 
-	result = winbindd_request(WINBINDD_PING, NULL, NULL);
+	result = winbindd_request_response(WINBINDD_PING, NULL, NULL);
 
 	return result == NSS_STATUS_SUCCESS;
 }
@@ -450,5 +450,5 @@ NSS_STATUS wb_is_trusted_domain(const char *domain)
 
 	fstrcpy(request.domain_name, domain);
 
-	return winbindd_request(WINBINDD_DOMAIN_INFO, &request, &response);
+	return winbindd_request_response(WINBINDD_DOMAIN_INFO, &request, &response);
 }

@@ -163,7 +163,7 @@ void send_trans_reply(char *outbuf,
 static BOOL api_rpc_trans_reply(char *outbuf, smb_np_struct *p)
 {
 	BOOL is_data_outstanding;
-	char *rdata = SMB_MALLOC(p->max_trans_reply);
+	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
 	int data_len;
 
 	if(rdata == NULL) {

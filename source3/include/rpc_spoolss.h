@@ -517,7 +517,7 @@ typedef struct devicemode
 	uint32 reserved2;
 	uint32 panningwidth;
 	uint32 panningheight;
-	uint8 *private;
+	uint8 *dev_private;
 }
 DEVICEMODE;
 

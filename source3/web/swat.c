@@ -216,7 +216,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	void *ptr = parm->ptr;
 	char *utf8_s1, *utf8_s2;
 
-	if (parm->class == P_LOCAL && snum >= 0) {
+	if (parm->p_class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
@@ -344,9 +344,9 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 	const char *last_heading = NULL;
 
 	while ((parm = lp_next_parameter(snum, &i, allparameters))) {
-		if (snum < 0 && parm->class == P_LOCAL && !(parm->flags & FLAG_GLOBAL))
+		if (snum < 0 && parm->p_class == P_LOCAL && !(parm->flags & FLAG_GLOBAL))
 			continue;
-		if (parm->class == P_SEPARATOR) {
+		if (parm->p_class == P_SEPARATOR) {
 			heading = parm->label;
 			continue;
 		}
@@ -360,7 +360,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 			if (!(parm->flags & FLAG_BASIC)) {
 					void *ptr = parm->ptr;
 
-				if (parm->class == P_LOCAL && snum >= 0) {
+				if (parm->p_class == P_LOCAL && snum >= 0) {
 					ptr = lp_local_ptr(snum, ptr);
 				}
 
@@ -488,7 +488,7 @@ static void commit_parameter(int snum, struct parm_struct *parm, const char *v)
 	int i;
 	char *s;
 
-	if (snum < 0 && parm->class == P_LOCAL) {
+	if (snum < 0 && parm->p_class == P_LOCAL) {
 		/* this handles the case where we are changing a local
 		   variable globally. We need to change the parameter in 
 		   all shares where it is currently set to the default */

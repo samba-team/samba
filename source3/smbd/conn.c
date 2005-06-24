@@ -283,7 +283,7 @@ void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len)
 	connection_struct *conn, *next;
 	fstring sharename;
 
-	fstrcpy(sharename, buf);
+	fstrcpy(sharename, (const char *)buf);
 
 	if (strcmp(sharename, "*") == 0) {
 		DEBUG(1,("Forcing close of all shares\n"));

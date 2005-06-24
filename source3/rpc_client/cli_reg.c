@@ -214,7 +214,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
 		ZERO_STRUCT (in);
 
-		*class_len = out.class.string->uni_max_len;
+		*class_len = out.key_class.string->uni_max_len;
 		if ( *class_len > saved_class_len )
 			return out.status;
 			
@@ -238,8 +238,8 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 
-	*class_len      = out.class.string->uni_max_len;
-	unistr2_to_ascii(key_class, out.class.string, saved_class_len-1);
+	*class_len      = out.key_class.string->uni_max_len;
+	unistr2_to_ascii(key_class, out.key_class.string, saved_class_len-1);
 	*num_subkeys    = out.num_subkeys   ;
 	*max_subkeylen  = out.max_subkeylen ;
 	*num_values     = out.num_values    ;

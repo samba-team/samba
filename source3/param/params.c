@@ -264,7 +264,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
 		if( i > (bSize - 2) ) {
 			char *tb;
       
-			tb = SMB_REALLOC( bufr, bSize +BUFR_INC );
+			tb = (char *)SMB_REALLOC( bufr, bSize +BUFR_INC );
 			if( NULL == tb ) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func) );
 				return False;
@@ -356,7 +356,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
 		/* Loop until we've found the start of the value. */
 		if( i > (bSize - 2) ) {
 			/* Ensure there's space for next char.    */
-			char *tb = SMB_REALLOC( bufr, bSize + BUFR_INC );
+			char *tb = (char *)SMB_REALLOC( bufr, bSize + BUFR_INC );
 			if( NULL == tb ) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func) );
 				return False;
@@ -414,7 +414,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
 	while( (EOF !=c) && (c > 0) ) {
 		if( i > (bSize - 2) ) {
 			/* Make sure there's enough room. */
-			char *tb = SMB_REALLOC( bufr, bSize + BUFR_INC );
+			char *tb = (char *)SMB_REALLOC( bufr, bSize + BUFR_INC );
 			if( NULL == tb ) {
 				DEBUG(0, ("%s Memory re-allocation failure.", func));
 				return False;
