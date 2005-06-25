@@ -1014,9 +1014,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	pstring directory;
 	pstring fname;
 	SMB_OFF_T size;
-	int mode;
+	uint32 mode;
 	time_t date;
-	int dirtype;
+	uint32 dirtype;
 	int outsize = 0;
 	unsigned int numentries = 0;
 	unsigned int maxentries = 0;
@@ -1115,7 +1115,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		ok = True;
      
 		if (status_len == 0) {
-			dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid));
+			dptr_num = dptr_create(conn,directory,True,expect_close,SVAL(inbuf,smb_pid), mask, dirtype);
 			if (dptr_num < 0) {
 				if(dptr_num == -2) {
 					END_PROFILE(SMBsearch);
@@ -1123,10 +1123,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 				}
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
-			}
-			if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
-				END_PROFILE(SMBsearch);
-				return ERROR_DOS(ERRDOS,ERRnomem);
 			}
 		} else {
 			dirtype = dptr_attr(dptr_num);
@@ -1743,10 +1739,10 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_path, BOOL check_is_at_open)
+NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL bad_path, BOOL check_is_at_open)
 {
 	SMB_STRUCT_STAT sbuf;
-	int fmode;
+	uint32 fmode;
 	int smb_action;
 	int access_mode;
 	files_struct *fsp;
@@ -1817,7 +1813,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_
  code.
 ****************************************************************************/
 
-NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
+NTSTATUS unlink_internals(connection_struct *conn, uint32 dirtype, char *name)
 {
 	pstring directory;
 	pstring mask;
@@ -1879,8 +1875,11 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
+		if (strequal(mask,"????????.???"))
+			pstrcpy(mask,"*");
+
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory);
+			dir_hnd = OpenDir(conn, directory, mask, dirtype);
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
@@ -1890,9 +1889,6 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		if (dir_hnd) {
 			long offset = 0;
 			error = NT_STATUS_NO_SUCH_FILE;
-
-			if (strequal(mask,"????????.???"))
-				pstrcpy(mask,"*");
 
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				SMB_STRUCT_STAT st;
@@ -1954,7 +1950,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
 	int outsize = 0;
 	pstring name;
-	int dirtype;
+	uint32 dirtype;
 	NTSTATUS status;
 	START_PROFILE(SMBunlink);
 	
@@ -3707,7 +3703,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 	const char *dname = NULL;
 	BOOL ret = False;
 	long offset = 0;
-	struct smb_Dir *dir_hnd = OpenDir(conn, directory);
+	struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
 
 	if(dir_hnd == NULL)
 		return True;
@@ -3775,7 +3771,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		 */
 		BOOL all_veto_files = True;
 		const char *dname;
-		struct smb_Dir *dir_hnd = OpenDir(conn, directory);
+		struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
 
 		if(dir_hnd != NULL) {
 			long dirpos = 0;
@@ -3997,7 +3993,7 @@ static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T 
  Rename an open file - given an fsp.
 ****************************************************************************/
 
-NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, uint16 attrs, BOOL replace_if_exists)
+NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *newname, uint32 attrs, BOOL replace_if_exists)
 {
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
@@ -4111,7 +4107,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
  code. 
 ****************************************************************************/
 
-NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, uint16 attrs, BOOL replace_if_exists)
+NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, uint32 attrs, BOOL replace_if_exists)
 {
 	pstring directory;
 	pstring mask;
@@ -4333,16 +4329,16 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		const char *dname;
 		pstring destname;
 		
+		if (strequal(mask,"????????.???"))
+			pstrcpy(mask,"*");
+			
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory);
+			dir_hnd = OpenDir(conn, directory, mask, attrs);
 		
 		if (dir_hnd) {
 			long offset = 0;
 			error = NT_STATUS_NO_SUCH_FILE;
 /*			Was error = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
-			
-			if (strequal(mask,"????????.???"))
-				pstrcpy(mask,"*");
 			
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				pstring fname;
@@ -4444,7 +4440,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring name;
 	pstring newname;
 	char *p;
-	uint16 attrs = SVAL(inbuf,smb_vwv0);
+	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	NTSTATUS status;
 
 	START_PROFILE(SMBmv);
@@ -4689,15 +4685,15 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		const char *dname;
 		pstring destname;
 
+		if (strequal(mask,"????????.???"))
+			pstrcpy(mask,"*");
+
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory);
+			dir_hnd = OpenDir(conn, directory, mask, 0);
 
 		if (dir_hnd) {
 			long offset = 0;
 			error = ERRbadfile;
-
-			if (strequal(mask,"????????.???"))
-				pstrcpy(mask,"*");
 
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				pstring fname;
