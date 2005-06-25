@@ -29,11 +29,11 @@
 /*
   terminate a task service
 */
-void task_terminate(struct task_server *task, const char *reason)
+void task_server_terminate(struct task_server *task, const char *reason)
 {
 	struct event_context *event_ctx = task->event_ctx;
 	const struct model_ops *model_ops = task->model_ops;
-	DEBUG(0,("task_terminate: [%s]\n", reason));
+	DEBUG(0,("task_server_terminate: [%s]\n", reason));
 	talloc_free(task);
 	model_ops->terminate(event_ctx, reason);
 }
@@ -63,7 +63,7 @@ static void task_server_callback(struct event_context *event_ctx, uint32_t serve
 
 	task->msg_ctx = messaging_init(task, task->server_id, task->event_ctx);
 	if (!task->msg_ctx) {
-		task_terminate(task, "messaging_init() failed");
+		task_server_terminate(task, "messaging_init() failed");
 		return;
 	}
 

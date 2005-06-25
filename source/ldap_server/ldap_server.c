@@ -461,7 +461,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	return;
 
 failed:
-	task_terminate(task, "Failed to startup ldap server task");	
+	task_server_terminate(task, "Failed to startup ldap server task");	
 }
 
 /*

@@ -248,7 +248,7 @@ static void websrv_task_init(struct task_server *task)
 	return;
 
 failed:
-	task_terminate(task, "Failed to startup web server task");
+	task_server_terminate(task, "Failed to startup web server task");
 }
 
 

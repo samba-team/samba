@@ -235,13 +235,13 @@ static void kdc_task_init(struct task_server *task)
 	krb5_error_code ret;
 
 	if (iface_count() == 0) {
-		task_terminate(task, "kdc: no network interfaces configured");
+		task_server_terminate(task, "kdc: no network interfaces configured");
 		return;
 	}
 
 	kdc = talloc(task, struct kdc_server);
 	if (kdc == NULL) {
-		task_terminate(task, "kdc: out of memory");
+		task_server_terminate(task, "kdc: out of memory");
 		return;
 	}
 
@@ -250,7 +250,7 @@ static void kdc_task_init(struct task_server *task)
 	/* Setup the KDC configuration */
 	kdc->config = talloc(kdc, struct krb5_kdc_configuration);
 	if (!kdc->config) {
-		task_terminate(task, "kdc: out of memory");
+		task_server_terminate(task, "kdc: out of memory");
 		return;
 	}
 	krb5_kdc_default_config(kdc->config);
@@ -264,14 +264,14 @@ static void kdc_task_init(struct task_server *task)
 	if (ret) {
 		DEBUG(1,("kdc_task_init: krb5_init_context failed (%s)\n", 
 			 error_message(ret)));
-		task_terminate(task, "kdc: krb5_init_context failed");
+		task_server_terminate(task, "kdc: krb5_init_context failed");
 		return; 
 	}
 
 	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc->config, struct HDB *);
 	if (!kdc->config->db) {
-		task_terminate(task, "kdc: out of memory");
+		task_server_terminate(task, "kdc: out of memory");
 		return;
 	}
 	kdc->config->num_db = 1;
@@ -281,14 +281,14 @@ static void kdc_task_init(struct task_server *task)
 	if (ret != 0) {
 		DEBUG(1, ("kdc_task_init: hdb_ldb_create fails: %s\n", 
 			  smb_get_krb5_error_message(kdc->smb_krb5_context->krb5_context, ret, kdc))); 
-		task_terminate(task, "kdc: hdb_ldb_create failed");
+		task_server_terminate(task, "kdc: hdb_ldb_create failed");
 		return; 
 	}
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_terminate(task, "kdc failed to setup interfaces");
+		task_server_terminate(task, "kdc failed to setup interfaces");
 		return;
 	}
 }
