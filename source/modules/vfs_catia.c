@@ -105,13 +105,13 @@ static int catia_open(vfs_handle_struct *handle, connection_struct *conn,
 }
 
 static int catia_rename(vfs_handle_struct *handle, connection_struct *conn,
-			const char *old, const char *new)
+			const char *oldname, const char *newname)
 {
         pstring oname, nname;
 
-        pstrcpy(oname, old);
+        pstrcpy(oname, oldname);
         to_unix(oname);
-        pstrcpy(nname, new);
+        pstrcpy(nname, newname);
         to_unix(nname);
 
         DEBUG(10, ("converted old name: %s\n", oname));

@@ -232,7 +232,7 @@ void nb_rename(const char *oldname, const char *newname)
 {
 	if (!cli_rename(c, oldname, newname)) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
-		       old, new, cli_errstr(c));
+		       oldname, newname, cli_errstr(c));
 		exit(1);
 	}
 }

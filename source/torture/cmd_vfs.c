@@ -129,7 +129,7 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_OK;
 	}
 
-	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, argv[1]);
+	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, argv[1], NULL, 0);
 	if (vfs->currentdir == NULL) {
 		printf("opendir error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -142,7 +142,7 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
 static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	struct dirent *dent;
+	SMB_STRUCT_DIRENT *dent;
 
 	if (vfs->currentdir == NULL) {
 		printf("readdir: error=-1 (no open directory)\n");
