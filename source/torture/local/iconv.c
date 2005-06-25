@@ -315,8 +315,16 @@ BOOL torture_local_iconv(void)
 	unsigned char inbuf[1000];
 	int ok = 1;
 	unsigned int codepoint, i, c;
+	static iconv_t cd;
 
-	srandom(time(NULL));
+        srandom(time(NULL));
+
+	cd = iconv_open("UTF-16LE", "UCS-4LE");
+	if (cd == (iconv_t)-1) {
+		printf("unable to test - system iconv library does not support UTF-16LE -> UCS-4LE\n");
+		return True;
+	}
+	iconv_close(cd);
 
 	printf("Testing next_codepoint()\n");
 	for (codepoint=0;ok && codepoint<(1<<20);codepoint++) {
