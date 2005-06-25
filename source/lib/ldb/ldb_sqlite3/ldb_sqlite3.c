@@ -84,6 +84,16 @@
                 }                                                       \
         } while (0)
 
+#define GET_EID(lsqlite3, result_var, bRollbackOnError, pDN)    \
+        do {                                                    \
+                if (getEID(lsqlite3, &result_var, pDN) != 0) {  \
+                        if (bRollbackOnError) {                 \
+                                UNLOCK_DB(module, "rollback");  \
+                        }                                       \
+                        return -1;                              \
+                }                                               \
+        } while (0)
+
 
 #define SQLITE3_DEBUG_QUERY     (1 << 0)
 #define SQLITE3_DEBUG_INIT      (1 << 1)
@@ -95,6 +105,7 @@
  * Static variables
  */
 static int      lsqlite3_debug = FALSE;
+sqlite3_stmt *  stmtGetEID = NULL;
 
 /*
  * Forward declarations
@@ -160,6 +171,11 @@ query_int(const struct lsqlite3_private * lsqlite3,
           long long * pRet,
           const char * pSql,
           ...);
+
+static int
+getEID(const struct lsqlite3_private * lsqlite3,
+       long long * pRet,
+       const char * pNormalizedDN);
 
 static int case_fold_attr_required(void * hUserData,
                                    char *attr);
@@ -336,10 +352,10 @@ lsqlite3_rename(struct ldb_module * module,
         }
 
         /* Case-fold each of the DNs */
-        pOldNormalizedDN = ldb_dn_fold(module->ldb, pOldDN,
-                             module, case_fold_attr_required);
-        pNewNormalizedDN = ldb_dn_fold(module->ldb, pNewDN,
-                             module, case_fold_attr_required);
+        pOldNormalizedDN =
+            ldb_dn_fold(module->ldb, pOldDN, module, case_fold_attr_required);
+        pNewNormalizedDN =
+            ldb_dn_fold(module->ldb, pNewDN, module, case_fold_attr_required);
 
         /* Begin a transaction */
         if (LOCK_DB(module, "transaction") < 0) {
@@ -347,13 +363,7 @@ lsqlite3_rename(struct ldb_module * module,
         }
 
         /* Determine the eid of the DN being renamed */
-        QUERY_INT(lsqlite3,
-                  eid,
-                  TRUE,
-                  "SELECT eid\n"
-                  "  FROM ldb_entry\n"
-                  "  WHERE normalized_dn = %Q;",
-                  pOldNormalizedDN);
+        GET_EID(lsqlite3, eid, TRUE, pOldNormalizedDN);
         
         QUERY_NOROWS(lsqlite3,
                      TRUE,
@@ -403,17 +413,11 @@ lsqlite3_delete(struct ldb_module * module,
         }
 
         /* Case-fold the DNs */
-        pNormalizedDN = ldb_dn_fold(module->ldb, pDN, module, case_fold_attr_required);
+        pNormalizedDN =
+                ldb_dn_fold(module->ldb, pDN, module, case_fold_attr_required);
 
         /* Determine the eid of the DN being deleted */
-        QUERY_INT(lsqlite3,
-                  eid,
-                  TRUE,
-                  "SELECT eid\n"
-                  "  FROM ldb_attribute_values\n"
-                  "  WHERE attr_name = 'DN'\n"
-                  "    AND attr_value_normalized = %Q;",
-                  pNormalizedDN);
+        GET_EID(lsqlite3, eid, TRUE, pNormalizedDN);
         
         /* Delete attribute/value table entries pertaining to this DN */
         QUERY_NOROWS(lsqlite3,
@@ -470,26 +474,26 @@ lsqlite3_search_bytree(struct ldb_module * module,
         }
         
         /* Case-fold the base DN */
-        if ((pNormalizedBaseDN = ldb_dn_fold(hTalloc, pBaseDN?pBaseDN:"",
-                                   module, case_fold_attr_required)) == NULL) {
+        if ((pNormalizedBaseDN =
+             ldb_dn_fold(hTalloc,
+                         pBaseDN == NULL ? "" : pBaseDN,
+                         module,
+                         case_fold_attr_required)) == NULL) {
+
                 talloc_free(hTalloc);
                 return -1;
             }
 
         /* Begin a transaction */
         if (LOCK_DB(module, "transaction") < 0) {
+                talloc_free(hTalloc);
                 return -1;
         }
         
         /*
          * Obtain the eid of the base DN
          */
-        if ((ret = query_int(lsqlite3,
-                             &eid,
-                             "SELECT eid\n"
-                             "  FROM ldb_entry\n"
-                             "  WHERE normalized_dn = %Q;",
-                             pNormalizedBaseDN)) == SQLITE_DONE) {
+        if ((ret = getEID(lsqlite3, &eid, pNormalizedBaseDN)) == SQLITE_DONE) {
                 UNLOCK_DB(module, "rollback");
                 talloc_free(hTalloc);
                 return 0;
@@ -685,9 +689,15 @@ lsqlite3_search_bytree(struct ldb_module * module,
                                            -1,
                                            &pStmt,
                                            NULL)) == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
+
                         if (pppRes != NULL && *pppRes != NULL) {
                                 talloc_free(*pppRes);
                         }
+
                         continue;
                 } else if (ret != SQLITE_OK) {
                         ret = -1;
@@ -730,6 +740,11 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 }
                 
                 if (ret == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
+
                         (void) sqlite3_finalize(pStmt);
                         if (pppRes != NULL && *pppRes != NULL) {
                                 talloc_free(*pppRes);
@@ -743,7 +758,11 @@ lsqlite3_search_bytree(struct ldb_module * module,
                 
                 /* Free the virtual machine */
                 if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
+
                         if (pppRes != NULL && *pppRes != NULL) {
                                 talloc_free(*pppRes);
                         }
@@ -916,13 +935,7 @@ lsqlite3_modify(struct ldb_module * module,
                           module, case_fold_attr_required);
 
         /* Determine the eid of the DN being deleted */
-        QUERY_INT(lsqlite3,
-                  eid,
-                  TRUE,
-                  "SELECT eid\n"
-                  "  FROM ldb_entry\n"
-                  "  WHERE normalized_dn = %Q;",
-                  pNormalizedDN);
+        GET_EID(lsqlite3, eid, TRUE, pNormalizedDN);
         
         /* Apply the message attributes */
 	if (msg_to_sql(module, msg, eid, TRUE) != 0) {
@@ -1067,6 +1080,9 @@ initialize(struct lsqlite3_private *lsqlite3,
 
                 "CREATE INDEX ldb_attribute_values_eid_idx "
                 "  ON ldb_attribute_values (eid);"
+                
+                "CREATE INDEX ldb_attribute_values_name_value_idx "
+                "  ON ldb_attribute_values (attr_name, attr_value_normalized);"
                 
                 
 
@@ -1351,7 +1367,7 @@ query_norows(const struct lsqlite3_private *lsqlite3,
         char *          p;
         sqlite3_stmt *  pStmt;
         va_list         args;
-        double          t0;
+        double          t0 = 0;
         double          t1;
         struct timeval  tv;
         struct timezone tz;
@@ -1382,6 +1398,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                                            -1,
                                            &pStmt,
                                            NULL)) == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         ret = -1;
@@ -1390,6 +1410,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                 
                 /* No rows expected, so just step through machine code once */
                 if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         (void) sqlite3_finalize(pStmt);
                         continue;
                 } else if (ret != SQLITE_DONE) {
@@ -1400,7 +1424,10 @@ query_norows(const struct lsqlite3_private *lsqlite3,
                 
                 /* Free the virtual machine */
                 if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         (void) sqlite3_finalize(pStmt);
@@ -1454,7 +1481,7 @@ query_int(const struct lsqlite3_private * lsqlite3,
         char *          p;
         sqlite3_stmt *  pStmt;
         va_list         args;
-        double          t0;
+        double          t0 = 0;
         double          t1;
         struct timeval  tv;
         struct timezone tz;
@@ -1489,6 +1516,10 @@ query_int(const struct lsqlite3_private * lsqlite3,
                                            -1,
                                            &pStmt,
                                            NULL)) == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         break;
@@ -1496,6 +1527,10 @@ query_int(const struct lsqlite3_private * lsqlite3,
                 
                 /* One row expected */
                 if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         (void) sqlite3_finalize(pStmt);
                         continue;
                 } else if (ret != SQLITE_ROW) {
@@ -1508,7 +1543,10 @@ query_int(const struct lsqlite3_private * lsqlite3,
                 
                 /* Free the virtual machine */
                 if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        (void) sqlite3_finalize(pStmt);
+                        if (stmtGetEID != NULL) {
+                                sqlite3_finalize(stmtGetEID);
+                                stmtGetEID = NULL;
+                        }
                         continue;
                 } else if (ret != SQLITE_OK) {
                         (void) sqlite3_finalize(pStmt);
@@ -1536,6 +1574,92 @@ query_int(const struct lsqlite3_private * lsqlite3,
 
         /* Free the memory we allocated for our query string */
         sqlite3_free(p);
+        
+        return ret;
+}
+
+
+/*
+ * getEID()
+ *
+ * This function is used for the very common case of retrieving an EID value
+ * given a normalized DN.
+ *
+ * NOTE: If more than one value is returned by the query, all but the first
+ * one will be ignored.
+ */
+static int
+getEID(const struct lsqlite3_private * lsqlite3,
+       long long * pRet,
+       const char * pNormalizedDN)
+{
+        int             ret;
+        int             bLoop;
+        const char *    query =
+            "SELECT eid\n"
+            "  FROM ldb_attribute_values\n"
+            "  WHERE attr_name = 'DN'\n"
+                "    AND attr_value_normalized = :dn;";
+        
+        /*
+         * Prepare and execute the SQL statement.  Loop allows retrying on
+         * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
+         * requiring retrying the operation.
+         */
+        for (bLoop = TRUE; bLoop; ) {
+                
+                /* Compile the SQL statement into sqlite virtual machine */
+                ret = SQLITE_OK;
+                if (stmtGetEID == NULL &&
+                    (ret = sqlite3_prepare(lsqlite3->sqlite,
+                                           query,
+                                           -1,
+                                           &stmtGetEID,
+                                           NULL)) == SQLITE_SCHEMA) {
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        break;
+                }
+                
+                /* Bind our parameter */
+                if ((ret = sqlite3_bind_text(stmtGetEID,
+                                             1,
+                                             pNormalizedDN,
+                                             -1,
+                                             SQLITE_STATIC)) != SQLITE_OK) {
+                        break;
+                }
+
+                /* One row expected */
+                if ((ret = sqlite3_step(stmtGetEID)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(stmtGetEID);
+                        stmtGetEID = NULL;
+                        continue;
+                } else if (ret != SQLITE_ROW) {
+                        (void) sqlite3_reset(stmtGetEID);
+                        break;
+                }
+                
+                /* Get the value to be returned */
+                *pRet = sqlite3_column_int64(stmtGetEID, 0);
+                
+                /* Free the virtual machine */
+                if ((ret = sqlite3_reset(stmtGetEID)) == SQLITE_SCHEMA) {
+                        (void) sqlite3_finalize(stmtGetEID);
+                        stmtGetEID = NULL;
+                        continue;
+                } else if (ret != SQLITE_OK) {
+                        (void) sqlite3_finalize(stmtGetEID);
+                        stmtGetEID = NULL;
+                        break;
+                }
+                
+                /*
+                 * Normal condition is only one time through loop.  Loop is
+                 * rerun in error conditions, via "continue", above.
+                 */
+                bLoop = FALSE;
+        }
         
         return ret;
 }
@@ -2072,8 +2196,9 @@ new_dn(struct ldb_module * module,
        char * pDN,
        long long * pEID)
 {
-        int                         nComponent;
+        int                         ret;
         int                         bFirst;
+        int                         nComponent;
         char *                      p;
         char *                      pPartialDN;
         char *                      pPartialNormalizedDN;
@@ -2159,7 +2284,10 @@ new_dn(struct ldb_module * module,
                 
                 /* Save the new partial DN */
                 pPartialDN = p;
-		pPartialNormalizedDN = ldb_dn_fold(pPartialDN, p, module, case_fold_attr_required);
+		pPartialNormalizedDN = ldb_dn_fold(pPartialDN,
+                                                   p,
+                                                   module,
+                                                   case_fold_attr_required);
                 
                 if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
                         gettimeofday(&tv, NULL);
@@ -2171,62 +2299,60 @@ new_dn(struct ldb_module * module,
                 
                 /*
                  * Ensure that an entry is in the ldb_entry table for this
-                 * component.  Any component other than the last one
-                 * (component 0) may already exist.  It is an error if
-                 * component 0 (the full DN requested to be be inserted)
-                 * already exists.
+                 * component.
                  */
-                QUERY_NOROWS(lsqlite3,
-                             FALSE,
-                             "INSERT %s INTO ldb_entry\n"
-                             "    (peid, dn, normalized_dn)\n"
-                             "  VALUES\n"
-                             "    (%lld, %Q, %Q);",
-                             nComponent == 0 ? "" : "OR IGNORE",
-                             eid, pPartialDN, pPartialNormalizedDN);
+                if ((ret = getEID(lsqlite3,
+                                  &eid,
+                                  pPartialNormalizedDN)) == SQLITE_DONE) {
+
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT INTO ldb_entry\n"
+                                     "    (peid, dn, normalized_dn)\n"
+                                     "  VALUES\n"
+                                     "    (%lld, %Q, %Q);",
+                                     eid, pPartialDN, pPartialNormalizedDN);
                 
+                        if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
+                                gettimeofday(&tv, NULL);
+                                t1 = ((double) tv.tv_sec +
+                                      ((double) tv.tv_usec / 1000000.0));
+                                printf("%1.6lf loc 5\n", t1 - t0);
+                                t0 = t1;
+                        }
+                
+                        /* Get the EID of the just inserted row */
+                        eid = sqlite3_last_insert_rowid(lsqlite3->sqlite);
+
+                        if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
+                                gettimeofday(&tv, NULL);
+                                t1 = ((double) tv.tv_sec +
+                                      ((double) tv.tv_usec / 1000000.0));
+                                printf("%1.6lf loc 8\n", t1 - t0);
+                                t0 = t1;
+                        }
+                
+                        /* Also add DN attribute */
+                        QUERY_NOROWS(lsqlite3,
+                                     FALSE,
+                                     "INSERT INTO ldb_attribute_values\n"
+                                     "    (eid,\n"
+                                     "     attr_name,\n"
+                                     "     attr_value,\n"
+                                     "     attr_value_normalized) "
+                                     "  VALUES "
+                                     "    (%lld, 'DN', %Q, %Q);",
+                                     eid,
+                                     pPartialDN, /* FIX ME */
+                                     pPartialNormalizedDN);
+
+                } else if (ret != SQLITE_OK) {
+                        UNLOCK_DB(module, "rollback");
+                        return -1;
+                }
+
                 /* Save the parent EID */
                 peid = eid;
-                
-                if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
-                        gettimeofday(&tv, NULL);
-                        t1 = ((double) tv.tv_sec +
-                              ((double) tv.tv_usec / 1000000.0));
-                        printf("%1.6lf loc 5\n", t1 - t0);
-                        t0 = t1;
-                }
-                
-                /* Get the EID of the just inserted row */
-                QUERY_INT(lsqlite3,
-                          eid,
-                          FALSE,
-                          "SELECT eid "
-                          "  FROM ldb_entry "
-                          "  WHERE normalized_dn = %Q;",
-                          pPartialNormalizedDN);
-
-                if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
-                        gettimeofday(&tv, NULL);
-                        t1 = ((double) tv.tv_sec +
-                              ((double) tv.tv_usec / 1000000.0));
-                        printf("%1.6lf loc 8\n", t1 - t0);
-                        t0 = t1;
-                }
-                
-                /* Also add DN attribute */
-                QUERY_NOROWS(lsqlite3,
-                             FALSE,
-                             "INSERT %s INTO ldb_attribute_values\n"
-                             "    (eid,\n"
-                             "     attr_name,\n"
-                             "     attr_value,\n"
-                             "     attr_value_normalized) "
-                             "  VALUES "
-                             "    (%lld, 'DN', %Q, %Q);",
-                             nComponent == 0 ? "" : "OR IGNORE",
-                             eid,
-                             pPartialDN, /* FIX ME */
-                             pPartialNormalizedDN);
         }
         
         if (lsqlite3_debug & SQLITE3_DEBUG_NEWDN) {
