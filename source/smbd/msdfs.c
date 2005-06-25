@@ -989,7 +989,7 @@ static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 	cnt++;
 	
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, ".");
+	dirp = SMB_VFS_OPENDIR(conn, ".", NULL, 0);
 	if(!dirp)
 		goto out;
 

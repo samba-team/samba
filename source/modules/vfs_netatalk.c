@@ -172,11 +172,11 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname)
+DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	DIR *ret = 0;
 
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
 
 	/*
 	 * when we try to perform delete operation upon file which has fork
@@ -379,7 +379,7 @@ static vfs_op_tuple atalk_ops[] = {
     
 	/* Directory operations */
 
-	{SMB_VFS_OP(atalk_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_opendir),	 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 
 	/* File operations */
