@@ -11,6 +11,8 @@ if test x"$CC" = x""; then
 	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
 fi
 
+AC_C_INLINE
+
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 
