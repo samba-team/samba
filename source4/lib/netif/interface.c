@@ -219,7 +219,6 @@ void load_interfaces(void)
 	if (!ptr || !*ptr || !**ptr) {
 		if (total_probed <= 0) {
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
-			exit(1);
 		}
 		for (i=0;i<total_probed;i++) {
 			if (probed_ifaces[i].netmask.s_addr != allones_ip.addr &&
