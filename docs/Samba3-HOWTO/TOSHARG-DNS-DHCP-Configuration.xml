@@ -52,8 +52,17 @@ a reference guide on DNS and DHCP, as this is well beyond the scope and intent
 of this document as a whole. Anyone who wants more detailed reference materials
 on DNS or DHCP should visit the ISC Web site at <ulink noescape="1" url="http://www.isc.org">
 http://www.isc.org</ulink>. Those wanting a written text might also be interested
-in the O'Reilly publications on these two subjects (John, more specific info on O'Reilly publications???????).
+in the O'Reilly publications on DNS, see the <ulink
+url="http://www.oreilly.com/catalog/dns/index.htm">O'Reilly</ulink web site, and the
+<ulink url="http://www.bind9.net/books-dhcp">BIND9.NET</ulink> web site for details.
+The books are:
 </para>
+
+<orderedlist>
+	<listitem><para>DNS and BIND, By Cricket Liu, Paul Albitz, ISBN: 1-56592-010-4</para></listitem>
+	<listitem><para>DNS & Bind Cookbook, By Cricket Liu, ISBN: 0-596-00410-9</para></listitem>
+	<listitem><para>The DHCP Handbook (2nd Edition), By: Ralph Droms, Ted Lemon, ISBN 0-672-32327-3</para></listitem>
+</orderedlist>
 
 </sect1>
 
