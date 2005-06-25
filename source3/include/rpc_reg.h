@@ -92,10 +92,10 @@
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*fetch_subkeys)( char *key, REGSUBKEY_CTR *subkeys);
-	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
+	int 	(*fetch_subkeys)( const char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( const char *key, REGVAL_CTR *val );
 	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
 } REGISTRY_OPS;
 
@@ -252,7 +252,6 @@ typedef struct {
 } REG_Q_DELETE_VALUE;
 
 typedef struct {
-	POLICY_HND key_pol;
 	WERROR status;
 } REG_R_DELETE_VALUE;
 

@@ -343,8 +343,6 @@ BOOL reg_io_q_delete_value(const char *desc, REG_Q_DELETE_VALUE *q_u,
 
 	if(!prs_unistr4("name", ps, depth, &q_u->name))
 		return False;
-	if(!prs_align(ps))
-		return False;
 
 	return True;
 }
@@ -462,9 +460,6 @@ BOOL reg_io_q_query_key(const char *desc,  REG_Q_QUERY_KEY *q_u, prs_struct *ps,
 	if(!smb_io_pol_hnd("", &q_u->pol, ps, depth))
 		return False;
 	if(!prs_unistr4("key_class", ps, depth, &q_u->key_class))
-		return False;
-
-	if(!prs_align(ps))
 		return False;
 
 	return True;
