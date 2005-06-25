@@ -362,6 +362,10 @@ sub _prepare_objlist_rule($)
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	my $output;
 
+	if (! $ctx->{TARGET}) {
+		return "";
+	}
+
 	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 
 	$output .= "$ctx->{TARGET}: ";
