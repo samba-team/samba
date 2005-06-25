@@ -154,9 +154,9 @@ static int eventlog_subkey_values( char *key, REGVAL_CTR *val )
  the memory allocated here.
  **********************************************************************/
 
-static char* trim_eventlog_reg_path( char *path )
+static char* trim_eventlog_reg_path( const char *path )
 {
-	char *p;
+	const char *p;
 	uint16 key_len = strlen(KEY_EVENTLOG);
 	
 	/* 
@@ -186,7 +186,7 @@ static char* trim_eventlog_reg_path( char *path )
  Enumerate registry subkey names given a registry path.  
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
-static int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int eventlog_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
     char 	*path;
     BOOL       	top_level = False;
@@ -251,7 +251,7 @@ static int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-static int eventlog_value_info( char *key, REGVAL_CTR *val )
+static int eventlog_value_info( const char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -280,7 +280,7 @@ static int eventlog_value_info( char *key, REGVAL_CTR *val )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-static BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL eventlog_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -290,7 +290,7 @@ static BOOL eventlog_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  people storing eventlog information directly via registry calls
  (for now at least)
  *********************************************************************/
-static BOOL eventlog_store_value( char *key, REGVAL_CTR *val )
+static BOOL eventlog_store_value( const char *key, REGVAL_CTR *val )
 {
 	return False;
 }
