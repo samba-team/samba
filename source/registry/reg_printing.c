@@ -49,9 +49,9 @@ static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
  the memory allocated here.
  **********************************************************************/
 
-static char* trim_reg_path( char *path )
+static char* trim_reg_path( const char *path )
 {
-	char *p;
+	const char *p;
 	uint16 key_len = strlen(path);
 	uint16 base_key_len;
 
@@ -837,7 +837,7 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
  
-static int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -876,7 +876,7 @@ static int printing_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-static int printing_value_info( char *key, REGVAL_CTR *val )
+static int printing_value_info( const char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -908,7 +908,7 @@ static int printing_value_info( char *key, REGVAL_CTR *val )
  (for now at least)
  *********************************************************************/
 
-static BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL printing_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return True;
 }
@@ -919,7 +919,7 @@ static BOOL printing_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  (for now at least)
  *********************************************************************/
 
-static BOOL printing_store_value( char *key, REGVAL_CTR *val )
+static BOOL printing_store_value( const char *key, REGVAL_CTR *val )
 {
 	return True;
 }
