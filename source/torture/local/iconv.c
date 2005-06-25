@@ -38,6 +38,10 @@ static int gen_codepoint_utf16(unsigned int codepoint,
 	size_t size_in, size_out, ret;
 	if (!cd) {
 		cd = iconv_open("UTF-16LE", "UCS-4LE");
+		if (cd == (iconv_t)-1) {
+			cd = NULL;
+			return -1;
+		}
 	}
 
 	in[0] = codepoint & 0xFF;
@@ -123,6 +127,10 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 
 	if (!cd) {
 		cd = iconv_open(charset, "UTF-16LE");
+		if (cd == (iconv_t)-1) {
+			cd = NULL;
+			return 0;
+		}
 		cd2 = smb_iconv_open(charset, "UTF-16LE");
 		cd3 = smb_iconv_open("UTF-16LE", charset);
 		last_charset = charset;
