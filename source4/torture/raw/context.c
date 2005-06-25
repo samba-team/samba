@@ -138,8 +138,6 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
-		talloc_free(session3);
-
 		printf("create a fouth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, mem_ctx, False);
 
