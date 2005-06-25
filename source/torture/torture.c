@@ -210,16 +210,16 @@ static BOOL check_error(int line, struct cli_state *c,
 			uint8 eclass, uint32 ecode, NTSTATUS nterr)
 {
         if (cli_is_dos_error(c)) {
-                uint8 class;
+                uint8 cclass;
                 uint32 num;
 
                 /* Check DOS error */
 
-                cli_dos_error(c, &class, &num);
+                cli_dos_error(c, &cclass, &num);
 
-                if (eclass != class || ecode != num) {
+                if (eclass != cclass || ecode != num) {
                         printf("unexpected error code class=%d code=%d\n", 
-                               (int)class, (int)num);
+                               (int)cclass, (int)num);
                         printf(" expected %d/%d %s (line=%d)\n", 
                                (int)eclass, (int)ecode, nt_errstr(nterr), line);
                         return False;
@@ -2114,7 +2114,7 @@ test how many open files this server supports on the one socket
 static BOOL run_maxfidtest(int dummy)
 {
 	struct cli_state *cli;
-	const char *template = "\\maxfid.%d.%d";
+	const char *ftemplate = "\\maxfid.%d.%d";
 	fstring fname;
 	int fnums[0x11000], i;
 	int retries=4;
@@ -2130,7 +2130,7 @@ static BOOL run_maxfidtest(int dummy)
 	cli_sockopt(cli, sockops);
 
 	for (i=0; i<0x11000; i++) {
-		slprintf(fname,sizeof(fname)-1,template, i,(int)getpid());
+		slprintf(fname,sizeof(fname)-1,ftemplate, i,(int)getpid());
 		if ((fnums[i] = cli_open(cli, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
@@ -2146,7 +2146,7 @@ static BOOL run_maxfidtest(int dummy)
 
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
-		slprintf(fname,sizeof(fname)-1,template, i,(int)getpid());
+		slprintf(fname,sizeof(fname)-1,ftemplate, i,(int)getpid());
 		cli_close(cli, fnums[i]);
 		if (!cli_unlink(cli, fname)) {
 			printf("unlink of %s failed (%s)\n", 
