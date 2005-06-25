@@ -414,7 +414,7 @@ unless ($newdb) {
 $opt_quiet or print "Putting new database files in $newdb\n";
 
 unless ($opt_outputdir) {
-	mkdir($newdb) || die "Unable to create temporary directory $newdb\n";
+	mkdir($newdb, 0755) || die "Unable to create temporary directory $newdb\n";
 }
 
 FileSave("$newdb/sam.ldif", $res);
