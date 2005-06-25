@@ -150,7 +150,7 @@ static void winbind_task_init(struct task_server *task)
 	   stream_setup_socket() call. */
 	model_ops = process_model_byname("single");
 	if (!model_ops) {
-		task_terminate(task, "Can't find 'single' process model_ops");
+		task_server_terminate(task, "Can't find 'single' process model_ops");
 		return;
 	}
 
@@ -164,7 +164,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
 			 WINBINDD_ECHO_SOCKET, nt_errstr(status)));
-		task_terminate(task, "winbind Failed to find to ECHO unix socket");
+		task_server_terminate(task, "winbind Failed to find to ECHO unix socket");
 		return;
 	}
 
@@ -175,7 +175,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n",
 			 WINBINDD_ECHO_ADDR, port, nt_errstr(status)));
-		task_terminate(task, "winbind Failed to find to ECHO tcp socket");
+		task_server_terminate(task, "winbind Failed to find to ECHO tcp socket");
 		return;
 	}
 }
