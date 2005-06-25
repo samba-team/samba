@@ -464,6 +464,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	regval_ctr_init( &regvals );
 
+	/* FIXME!!! Move these to a dynmanic lookup in the reg_fetch_values() */
 	/* couple of hard coded registry values */
 	
 	if ( strequal(name, "RefusePasswordChange") ) {
@@ -543,20 +544,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	
 		goto out;
 	}
-	
-	/* "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" */
-	
-	if ( strequal( name, "SystemRoot") ) {
-		value_length = push_ucs2( value, value, "c:\\windows", sizeof(value), STR_TERMINATE|STR_NOALIGN);		
-		regval_ctr_addvalue( &regvals, "SystemRoot", REG_SZ, value, value_length );
-
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
- 	
-		status = WERR_OK;
-	
-		goto out;
-	}
-	
 	
 	/* else fall back to actually looking up the value */
 	
@@ -1311,6 +1298,7 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGVAL_CTR values;
 	BOOL write_result;
+	fstring valuename;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -1320,12 +1308,16 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
 		return WERR_ACCESS_DENIED;
 		
+	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
+
+		
 	regval_ctr_init( &values );
 	
 	/* lookup the current values and add the new one */
 	
 	fetch_reg_values( key, &values );
-	/* FIXME!!!! regval_ctr_addvalue( &values, .... ); */
+	
+	regval_ctr_addvalue( &values, valuename, q_u->type, q_u->value.buffer, q_u->value.buf_len );
 	
 	/* now write to the registry backend */
 	
@@ -1440,7 +1432,8 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGVAL_CTR values;
 	BOOL write_result;
-
+	fstring valuename;
+	
 	if ( !key )
 		return WERR_BADFID;
 		
@@ -1448,13 +1441,16 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 	
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
 		return WERR_ACCESS_DENIED;
-		
+
+	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
+
 	regval_ctr_init( &values );
 	
 	/* lookup the current values and add the new one */
 	
 	fetch_reg_values( key, &values );
-	/* FIXME!!!! regval_ctr_delval( &values, .... ); */
+	
+	regval_ctr_delvalue( &values, valuename );
 	
 	/* now write to the registry backend */
 	

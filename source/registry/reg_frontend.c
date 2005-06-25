@@ -70,9 +70,6 @@ BOOL init_registry( void )
 	return True;
 }
 
-
-
-
 /***********************************************************************
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
@@ -81,8 +78,8 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
 	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
 		return key->hook->ops->store_subkeys( key->name, subkeys );
-	else
-		return False;
+		
+	return False;
 
 }
 
@@ -94,8 +91,8 @@ BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
 		return key->hook->ops->store_values( key->name, val );
-	else
-		return False;
+
+	return False;
 }
 
 
