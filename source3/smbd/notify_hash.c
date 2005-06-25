@@ -76,7 +76,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	 * larger than the max time_t value).
 	 */
 
-	dp = OpenDir(conn, path);
+	dp = OpenDir(conn, path, NULL, 0);
 	if (dp == NULL)
 		return False;
 

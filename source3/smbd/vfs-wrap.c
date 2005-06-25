@@ -88,7 +88,7 @@ int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_
     
 /* Directory operations */
 
-DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
+DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	DIR *result;
 

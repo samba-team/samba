@@ -450,7 +450,7 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 		mangled = !mangle_check_cache( name, maxlength, SNUM(conn));
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(conn, path))) {
+	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
 		return(False);
 	}

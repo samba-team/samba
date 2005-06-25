@@ -71,9 +71,9 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fs
 	return vfswrap_get_shadow_copy_data(NULL, fsp, shadow_copy_data, labels);
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
+static DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
-	return vfswrap_opendir(NULL, conn, fname);
+	return vfswrap_opendir(NULL, conn, fname, mask, attr);
 }
 
 static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)

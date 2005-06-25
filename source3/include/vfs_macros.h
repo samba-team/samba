@@ -36,7 +36,7 @@
 #define SMB_VFS_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs.ops.get_shadow_copy_data((fsp)->conn->vfs.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 
 /* Directory operations */
-#define SMB_VFS_OPENDIR(conn, fname) ((conn)->vfs.ops.opendir((conn)->vfs.handles.opendir, (conn), (fname)))
+#define SMB_VFS_OPENDIR(conn, fname, mask, attr) ((conn)->vfs.ops.opendir((conn)->vfs.handles.opendir, (conn), (fname), (mask), (attr)))
 #define SMB_VFS_READDIR(conn, dirp) ((conn)->vfs.ops.readdir((conn)->vfs.handles.readdir, (conn), (dirp))) 
 #define SMB_VFS_SEEKDIR(conn, dirp, offset) ((conn)->vfs.ops.seekdir((conn)->vfs.handles.seekdir, (conn), (dirp), (offset)))
 #define SMB_VFS_TELLDIR(conn, dirp) ((conn)->vfs.ops.telldir((conn)->vfs.handles.telldir, (conn), (dirp)))
@@ -137,7 +137,7 @@
 #define SMB_VFS_OPAQUE_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs_opaque.ops.get_shadow_copy_data((fsp)->conn->vfs_opaque.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 
 /* Directory operations */
-#define SMB_VFS_OPAQUE_OPENDIR(conn, fname) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (conn), (fname)))
+#define SMB_VFS_OPAQUE_OPENDIR(conn, fname, mask, attr) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (conn), (fname), (mask), (attr)))
 #define SMB_VFS_OPAQUE_READDIR(conn, dirp) ((conn)->vfs_opaque.ops.readdir((conn)->vfs_opaque.handles.readdir, (conn), (dirp))) 
 #define SMB_VFS_OPAQUE_SEEKDIR(conn, dirp, offset) ((conn)->vfs_opaque.ops.seekdir((conn)->vfs_opaque.handles.seekdir, (conn), (dirp), (offset))) 
 #define SMB_VFS_OPAQUE_TELLDIR(conn, dirp) ((conn)->vfs_opaque.ops.telldir((conn)->vfs_opaque.handles.telldir, (conn), (dirp))) 
@@ -238,7 +238,7 @@
 #define SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data ,labels) ((handle)->vfs_next.ops.get_shadow_copy_data((handle)->vfs_next.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 
 /* Directory operations */
-#define SMB_VFS_NEXT_OPENDIR(handle, conn, fname) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (conn), (fname)))
+#define SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (conn), (fname), (mask), (attr)))
 #define SMB_VFS_NEXT_READDIR(handle, conn, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset) ((handle)->vfs_next.ops.seekdir((handle)->vfs_next.handles.seekdir, (conn), (dirp), (offset))) 
 #define SMB_VFS_NEXT_TELLDIR(handle, conn, dirp) ((handle)->vfs_next.ops.telldir((handle)->vfs_next.handles.telldir, (conn), (dirp))) 

@@ -996,7 +996,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 
 static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				  void *inbuf, void *outbuf,
-				 char *path_mask,int dirtype,int info_level,
+				 char *path_mask,uint32 dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
@@ -1012,7 +1012,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
 	long prev_dirpos=0;
-	int mode=0;
+	uint32 mode=0;
 	SMB_OFF_T file_size = 0;
 	SMB_BIG_UINT allocation_size = 0;
 	uint32 len;
@@ -1020,7 +1020,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	char *nameptr;
 	char *last_entry_ptr;
 	BOOL was_8_3;
-	int nt_extmode; /* Used for NT connections instead of mode */
+	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	BOOL check_mangled_names = lp_manglednames(SNUM(conn));
 
@@ -1576,7 +1576,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	int dirtype = SVAL(params,0);
+	uint32 dirtype = SVAL(params,0);
 	int maxentries = SVAL(params,2);
 	uint16 findfirst_flags = SVAL(params,4);
 	BOOL close_after_first = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE);
@@ -1606,9 +1606,9 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 
 	*directory = *mask = 0;
 
-	DEBUG(3,("call_trans2findfirst: dirtype = %d, maxentries = %d, close_after_first=%d, \
+	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
-		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
+		(unsigned int)dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
 		info_level, max_data_bytes));
 
 	if (!maxentries) {
@@ -1711,19 +1711,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	*pparams = params;
 
-	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
-	if (dptr_num < 0) {
-		talloc_destroy(ea_ctx);
-		return(UNIXERROR(ERRDOS,ERRbadfile));
-	}
-
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
-		dptr_close(&dptr_num);
+	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, dirtype);
+	if (dptr_num < 0) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return(UNIXERROR(ERRDOS,ERRbadfile));
 	}
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));

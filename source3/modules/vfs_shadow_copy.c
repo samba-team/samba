@@ -72,10 +72,10 @@ static BOOL shadow_copy_match_name(const char *name)
 	return False;
 }
 
-static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
+static DIR *shadow_copy_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	shadow_copy_Dir *dirp;
-	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,conn,fname);
+	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,conn,fname,mask,attr);
 
 	if (!p) {
 		DEBUG(0,("shadow_copy_opendir: SMB_VFS_NEXT_OPENDIR() failed for [%s]\n",fname));
@@ -166,7 +166,7 @@ int shadow_copy_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR
 
 static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
 {
-	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,fsp->conn,fsp->conn->connectpath);
+	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,fsp->conn,fsp->conn->connectpath,NULL,0);
 
 	shadow_copy_data->num_volumes = 0;
 	shadow_copy_data->labels = NULL;
