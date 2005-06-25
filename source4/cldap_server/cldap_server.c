@@ -120,13 +120,13 @@ static void cldapd_task_init(struct task_server *task)
 	NTSTATUS status;
 
 	if (iface_count() == 0) {
-		task_terminate(task, "cldapd: no network interfaces configured");
+		task_server_terminate(task, "cldapd: no network interfaces configured");
 		return;
 	}
 
 	cldapd = talloc(task, struct cldapd_server);
 	if (cldapd == NULL) {
-		task_terminate(task, "cldapd: out of memory");
+		task_server_terminate(task, "cldapd: out of memory");
 		return;
 	}
 
@@ -136,7 +136,7 @@ static void cldapd_task_init(struct task_server *task)
 	/* start listening on the configured network interfaces */
 	status = cldapd_startup_interfaces(cldapd);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_terminate(task, "cldapd failed to setup interfaces");
+		task_server_terminate(task, "cldapd failed to setup interfaces");
 		return;
 	}
 }

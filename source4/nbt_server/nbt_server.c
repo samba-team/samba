@@ -54,13 +54,13 @@ static void nbtd_task_init(struct task_server *task)
 	NTSTATUS status;
 
 	if (iface_count() == 0) {
-		task_terminate(task, "nbtd: no network interfaces configured");
+		task_server_terminate(task, "nbtd: no network interfaces configured");
 		return;
 	}
 
 	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
-		task_terminate(task, "nbtd: out of memory");
+		task_server_terminate(task, "nbtd: out of memory");
 		return;
 	}
 
@@ -72,14 +72,14 @@ static void nbtd_task_init(struct task_server *task)
 	/* start listening on the configured network interfaces */
 	status = nbtd_startup_interfaces(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_terminate(task, "nbtd failed to setup interfaces");
+		task_server_terminate(task, "nbtd failed to setup interfaces");
 		return;
 	}
 
 	/* start the WINS server, if appropriate */
 	status = nbtd_winsserver_init(nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_terminate(task, "nbtd failed to start WINS server");
+		task_server_terminate(task, "nbtd failed to start WINS server");
 		return;
 	}
 
@@ -87,7 +87,7 @@ static void nbtd_task_init(struct task_server *task)
 	status = IRPC_REGISTER(task->msg_ctx, irpc, NBTD_INFORMATION, 
 			       nbtd_information, nbtsrv);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_terminate(task, "nbtd failed to setup monitoring");
+		task_server_terminate(task, "nbtd failed to setup monitoring");
 		return;
 	}
 
