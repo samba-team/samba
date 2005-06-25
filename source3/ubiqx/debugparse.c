@@ -262,16 +262,16 @@ void dbg_test( void )
   int  i;
   int  linecount  = 1;
   dbg_Token old   = dbg_null,
-            new   = dbg_null,
+            newtok= dbg_null,
             state = dbg_null;
 
   while( fgets( bufr, DBG_BSIZE, stdin ) )
     {
     for( i = 0; bufr[i]; i++ )
       {
-      old = new;
-      new = dbg_char2token( &state, bufr[i] );
-      switch( new )
+      old = newtok;
+      newtok = dbg_char2token( &state, bufr[i] );
+      switch( newtok )
         {
         case dbg_header:
           if( linecount > 1 )
@@ -283,8 +283,8 @@ void dbg_test( void )
         case dbg_ignore:
           break;
         default:
-          if( old != new )
-            (void)printf( "\n[%05d]%12s: ", linecount, dbg_token2string(new) );
+          if( old != newtok )
+            (void)printf( "\n[%05d]%12s: ", linecount, dbg_token2string(newtok) );
           (void)putchar( bufr[i] );
         }
       }
