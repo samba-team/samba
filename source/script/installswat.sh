@@ -11,7 +11,7 @@ installdir() {
     dir=$1
     ext=$2
     mkdir -p $SWATDIR/$dir || exit 1
-    for f in $dir/*.$ext; do
+    for f in `ls $dir/*.$ext`; do
 	echo Installing $f
 	cp $f $SWATDIR/$dir/ || exit 1
 	chmod 0644 $SWATDIR/$f || exit 1
