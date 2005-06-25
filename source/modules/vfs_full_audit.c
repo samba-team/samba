@@ -87,7 +87,7 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
                                 SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
 
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
-			  const char *fname);
+			  const char *fname, const char *mask, uint32 attr);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 				    connection_struct *conn, DIR *dirp);
 static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
@@ -816,11 +816,11 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 }
 
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
-			  const char *fname)
+			  const char *fname, const char *mask, uint32 attr)
 {
 	DIR *result;
 
-	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
+	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
 
 	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s", fname);
 

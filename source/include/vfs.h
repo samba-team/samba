@@ -56,7 +56,8 @@
 /* Changed to version 9 to include the get_shadow_data call. --metze */
 /* Changed to version 10 to include pread/pwrite calls. */
 /* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
-#define SMB_VFS_INTERFACE_VERSION 11
+/* Changed to version 12 to add mask and attributes to opendir(). JRA */
+#define SMB_VFS_INTERFACE_VERSION 12
 
 
 /* to bug old modules witch are trying to compile with the old functions */
@@ -212,7 +213,7 @@ struct vfs_ops {
 		
 		/* Directory operations */
 		
-		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname);
+		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attributes);
 		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
 		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp, long offset);
 		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
