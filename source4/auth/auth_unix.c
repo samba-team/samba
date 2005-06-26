@@ -24,7 +24,6 @@
 #include "auth/auth.h"
 #include "system/passwd.h"
 
-
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
  */
@@ -426,12 +425,337 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 
 #else
 
-static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
+static NTSTATUS talloc_getpwnam(TALLOC_CTX *ctx, char *username, struct passwd **pws)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+        struct passwd *ret;
+	struct passwd *from;
+
+	*pws = NULL;
+
+	ret = talloc(ctx, struct passwd);
+	NT_STATUS_HAVE_NO_MEMORY(ret);
+
+	from = getpwnam(username);
+	if (!from) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+        ret->pw_name = talloc_strdup(ctx, from->pw_name);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_name);
+
+        ret->pw_passwd = talloc_strdup(ctx, from->pw_passwd);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_passwd);
+
+        ret->pw_uid = from->pw_uid;
+        ret->pw_gid = from->pw_gid;
+        ret->pw_gecos = talloc_strdup(ctx, from->pw_gecos);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_gecos);
+
+        ret->pw_dir = talloc_strdup(ctx, from->pw_dir);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_dir);
+
+        ret->pw_shell = talloc_strdup(ctx, from->pw_shell);
+	NT_STATUS_HAVE_NO_MEMORY(ret->pw_shell);
+
+	*pws = ret;
+
+	return NT_STATUS_OK;
 }
 
-#endif /*(HAVE_SECURITY_PAM_APPL_H)*/
+
+/****************************************************************************
+core of password checking routine
+****************************************************************************/
+static NTSTATUS password_check(const char *username, const char *password,
+					const char *crypted, const char *salt)
+{
+	BOOL ret;
+
+#ifdef WITH_AFS
+	if (afs_auth(username, password))
+		return NT_STATUS_OK;
+#endif /* WITH_AFS */
+
+#ifdef WITH_DFS
+	if (dfs_auth(username, password))
+		return NT_STATUS_OK;
+#endif /* WITH_DFS */
+
+#ifdef OSF1_ENH_SEC
+	
+	ret = (strcmp(osf1_bigcrypt(password, salt), crypted) == 0);
+
+	if (!ret) {
+		DEBUG(2,
+		      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
+		ret = (strcmp((char *)crypt(password, salt), crypted) == 0);
+	}
+	if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
+#endif /* OSF1_ENH_SEC */
+	
+#ifdef ULTRIX_AUTH
+	ret = (strcmp((char *)crypt16(password, salt), crypted) == 0);
+	if (ret) {
+		return NT_STATUS_OK;
+        } else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
+#endif /* ULTRIX_AUTH */
+	
+#ifdef LINUX_BIGCRYPT
+	ret = (linux_bigcrypt(password, salt, crypted));
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+#endif /* LINUX_BIGCRYPT */
+	
+#if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
+	
+	/*
+	 * Some systems have bigcrypt in the C library but might not
+	 * actually use it for the password hashes (HPUX 10.20) is
+	 * a noteable example. So we try bigcrypt first, followed
+	 * by crypt.
+	 */
+
+	if (strcmp(bigcrypt(password, salt), crypted) == 0)
+		return NT_STATUS_OK;
+	else
+		ret = (strcmp((char *)crypt(password, salt), crypted) == 0);
+	if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+#else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
+	
+#ifdef HAVE_BIGCRYPT
+	ret = (strcmp(bigcrypt(password, salt), crypted) == 0);
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+#endif /* HAVE_BIGCRYPT */
+	
+#ifndef HAVE_CRYPT
+	DEBUG(1, ("Warning - no crypt available\n"));
+	return NT_STATUS_LOGON_FAILURE;
+#else /* HAVE_CRYPT */
+	ret = (strcmp((char *)crypt(password, salt), crypted) == 0);
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+#endif /* HAVE_CRYPT */
+#endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
+}
+
+/**
+ Does a string have any lowercase chars in it?
+**/
+static BOOL strhaslower(const char *s)
+{
+	while (*s) {
+		if (islower(*s)) return True;
+		s++;
+	}
+	return False;
+}
+
+/**
+ Does a string have any uppercase chars in it?
+**/
+static BOOL strhasupper(const char *s)
+{
+	while (*s) {
+		if (isupper(*s)) return True;
+		s++;
+	}
+	return False;
+}
+
+static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersupplied_info *user_info)
+{
+	char *username;
+	char *password;
+	char *pwcopy;
+	char *salt;
+	char *crypted;
+	struct passwd *pws;
+	NTSTATUS nt_status;
+	int level = lp_passwordlevel();
+
+	username = talloc_strdup(ctx, user_info->account_name);
+	password = talloc_strdup(ctx, user_info->plaintext_password.data);
+
+	nt_status = talloc_getpwnam(ctx, username, &pws);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	crypted = pws->pw_passwd;
+	salt = pws->pw_passwd;
+
+#ifdef HAVE_GETSPNAM
+	{
+		struct spwd *spass;
+
+		/* many shadow systems require you to be root to get
+		   the password, in most cases this should already be
+		   the case when this function is called, except
+		   perhaps for IPC password changing requests */
+
+		spass = getspnam(pws->pw_name);
+		if (spass && spass->sp_pwdp) {
+			crypted = talloc_strdup(ctx, spass->sp_pwdp);
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+			salt = talloc_strdup(ctx, spass->sp_pwdp);
+			NT_STATUS_HAVE_NO_MEMORY(salt);
+		}
+	}
+#elif defined(IA_UINFO)
+	{
+		char *ia_password;
+		/* Need to get password with SVR4.2's ia_ functions
+		   instead of get{sp,pw}ent functions. Required by
+		   UnixWare 2.x, tested on version
+		   2.1. (tangent@cyberport.com) */
+		uinfo_t uinfo;
+		if (ia_openinfo(pws->pw_name, &uinfo) != -1) {
+			ia_get_logpwd(uinfo, &ia_password);
+			crypted = talloc_strdup(ctx, ia_password);
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+		}
+	}
+#endif
+
+#ifdef HAVE_GETPRPWNAM
+	{
+		struct pr_passwd *pr_pw = getprpwnam(pws->pw_name);
+		if (pr_pw && pr_pw->ufld.fd_encrypt) {
+			crypted = talloc_strdup(ctx, pr_pw->ufld.fd_encrypt);
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+		}
+	}
+#endif
+
+#ifdef HAVE_GETPWANAM
+	{
+		struct passwd_adjunct *pwret;
+		pwret = getpwanam(s);
+		if (pwret && pwret->pwa_passwd) {
+			crypted = talloc_strdup(ctx, pwret->pwa_passwd);
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+		}
+	}
+#endif
+
+#ifdef OSF1_ENH_SEC
+	{
+		struct pr_passwd *mypasswd;
+		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n", username));
+		mypasswd = getprpwnam(username);
+		if (mypasswd) {
+			username = talloc_strdup(ctx, mypasswd->ufld.fd_name);
+			NT_STATUS_HAVE_NO_MEMORY(username);
+			crypted = talloc_strdup(ctx, mypasswd->ufld.fd_encrypt);
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+		} else {
+			DEBUG(5,("OSF1_ENH_SEC: No entry for user %s in protected database !\n", username));
+		}
+	}
+#endif
+
+#ifdef ULTRIX_AUTH
+	{
+		AUTHORIZATION *ap = getauthuid(pws->pw_uid);
+		if (ap) {
+			crypted = talloc_strdup(ctx, ap->a_password);
+			endauthent();
+			NT_STATUS_HAVE_NO_MEMORY(crypted);
+		}
+	}
+#endif
+
+#if defined(HAVE_TRUNCATED_SALT)
+	/* crypt on some platforms (HPUX in particular)
+	   won't work with more than 2 salt characters. */
+	salt[2] = 0;
+#endif
+
+	if (crypted[0] == '\0') {
+		if (!lp_null_passwords()) {
+			DEBUG(2, ("Disallowing %s with null password\n", username));
+			return NT_STATUS_LOGON_FAILURE;
+		}
+		if (password == NULL) {
+			DEBUG(3, ("Allowing access to %s with null password\n", username));
+			return NT_STATUS_OK;
+		}
+	}
+
+	/* try it as it came to us */
+	nt_status = password_check(username, password, crypted, salt);
+        if NT_STATUS_IS_OK(nt_status) {
+		return nt_status;
+	}
+	else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+		/* No point continuing if its not the password thats to blame (ie PAM disabled). */
+		return nt_status;
+	}
+
+	if ( user_info->flags | USER_INFO_CASE_INSENSITIVE_PASSWORD) {
+		return nt_status;
+	}
+
+	/* if the password was given to us with mixed case then we don't
+	 * need to proceed as we know it hasn't been case modified by the
+	 * client */
+	if (strhasupper(password) && strhaslower(password)) {
+		return nt_status;
+	}
+
+	/* make a copy of it */
+	pwcopy = talloc_strdup(ctx, password);
+	if (!pwcopy)
+		return NT_STATUS_NO_MEMORY;
+
+	/* try all lowercase if it's currently all uppercase */
+	if (strhasupper(pwcopy)) {
+		strlower(pwcopy);
+		nt_status = password_check(username, pwcopy, crypted, salt);
+		if NT_STATUS_IS_OK(nt_status) {
+			return nt_status;
+		}
+	}
+
+	/* give up? */
+	if (level < 1) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* last chance - all combinations of up to level chars upper! */
+	strlower(pwcopy);
+
+#if 0
+        if (NT_STATUS_IS_OK(nt_status = string_combinations(pwcopy, password_check, level))) {
+		return nt_status;
+	}
+#endif   
+	return NT_STATUS_WRONG_PASSWORD;
+}
+
+#endif
 
 /** Check a plaintext username/password
  *
@@ -454,16 +778,19 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = check_unix_password(mem_ctx, user_info);
+	nt_status = check_unix_password(check_ctx, user_info);
 	if ( ! NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(check_ctx);
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(mem_ctx, user_info, server_info);
+	nt_status = authunix_make_server_info(check_ctx, user_info, server_info);
 	if ( ! NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(check_ctx);
 		return nt_status;
 	}
 
+	talloc_free(check_ctx);
 	return NT_STATUS_OK;
 }
 
