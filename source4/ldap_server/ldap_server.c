@@ -105,7 +105,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		}
 		data_blob_free(&blob);
 		blob = data_blob_talloc(call, NULL, wrapped.length + 4);
-		if (q->data.data == NULL) {
+		if (blob.data == NULL) {
 			goto failed;
 		}
 		RSIVAL(blob.data, 0, wrapped.length);
