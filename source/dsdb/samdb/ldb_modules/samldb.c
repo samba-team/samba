@@ -460,7 +460,8 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	struct ldb_message_element *attribute;
 	char *rdn, *basedn;
 
-	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
+	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && 
+	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
 		return NULL;
 	}
 
