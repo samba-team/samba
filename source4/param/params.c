@@ -518,8 +518,6 @@ static myFILE *OpenConfFile( const char *FileName )
    */
   {
   const char *func = "params.c:OpenConfFile() -";
-  extern BOOL in_client;
-  int lvl = in_client?1:0;
   myFILE *ret;
 
   ret = malloc_p(myFILE);
@@ -528,7 +526,7 @@ static myFILE *OpenConfFile( const char *FileName )
   ret->buf = file_load(FileName, &ret->size);
   if( NULL == ret->buf )
     {
-    DEBUG( lvl,
+    DEBUG( 1,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
     SAFE_FREE(ret);
