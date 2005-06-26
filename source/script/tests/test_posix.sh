@@ -10,10 +10,6 @@ EOF
 exit 1;
 fi
 
-if [ -z "$VALGRIND" ]; then
-    export MALLOC_CHECK_=2
-fi
-
 unc="$1"
 username="$2"
 password="$3"
