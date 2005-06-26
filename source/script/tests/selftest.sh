@@ -70,11 +70,19 @@ cat >$CONFFILE<<EOF
 	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $LOCKDIR/eadb.tdb
+
+[cifs]
+	read only = no
+	ntvfs handler = cifs
+        cifs:server = localhost
+        cifs:user = $USERNAME
+        cifs:password = $PASSWORD
+        cifs:domain = $DOMAIN
+	cifs:share = tmp
 EOF
 
-ADDARG="-s $CONFFILE"
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
-	ADDARG="$ADDARG --option=\"torture:progress=no\""
+	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
 fi
 
 smbd_check_or_start
@@ -89,15 +97,17 @@ START=`date`
  # give time for nbt server to register its names
  echo delaying for nbt name registration
  sleep 4
+ bin/nmblookup -U localhost localhost 
 
  failed=0
  $SRCDIR/script/tests/test_ldap.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_session_key.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" $ADDARG || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_local.sh $ADDARG || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_quick.sh //localhost/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_session_key.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_local.sh || failed=`expr $failed + $?`
  exit $failed
 ) 9>$SMBD_TEST_FIFO
 failed=$?
