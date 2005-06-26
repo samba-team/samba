@@ -1103,7 +1103,7 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 
   write_fn() should return the number of bytes successfully written.
 
-  this will return STATUS_BUFFER_OVERFLOW if there is more to be read
+  this will return STATUS_BUFFER_OVERFLOW if there is more to be written
   from the current fragment
 */
 NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
