@@ -370,6 +370,8 @@ if (!$opt_wheel) {
 if (!$opt_users) {
 	if (defined getgrnam("users")) {
 		$opt_users = "users";
+	} elsif (defined getgrnam("guest")) {
+		$opt_users = "guest";
 	}
 }
 
