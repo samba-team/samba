@@ -42,7 +42,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	int r;
 #endif
         int num_options = 0;
-	char opt;
+	int opt;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
