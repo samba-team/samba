@@ -931,10 +931,10 @@ static void init_globals(void)
 	do_parameter("auth methods", "anonymous sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
 	do_parameter("private dir", dyn_PRIVATE_DIR);
-	do_parameter_var("sam database", "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
-	do_parameter_var("spoolss database", "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
-	do_parameter_var("wins database", "tdb://%s/wins.ldb", dyn_PRIVATE_DIR);
-	do_parameter_var("registry:HKEY_LOCAL_MACHINE", "ldb:/%s/hklm.ldb", dyn_PRIVATE_DIR);
+	do_parameter("sam database", "sam.ldb");
+	do_parameter("spoolss database", "spoolss.ldb");
+	do_parameter("wins database", "wins.ldb");
+	do_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb");
 	do_parameter("guest account", GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
@@ -1056,9 +1056,9 @@ static void init_globals(void)
 	do_parameter("min wins ttl", "10");
 
 	do_parameter("tls enabled", "True");
-	do_parameter_var("tls keyfile", "%s/tls/key.pem", dyn_PRIVATE_DIR);
-	do_parameter_var("tls certfile", "%s/tls/cert.pem", dyn_PRIVATE_DIR);
-	do_parameter_var("tls cafile", "%s/tls/ca.pem", dyn_PRIVATE_DIR);
+	do_parameter("tls keyfile", "tls/key.pem");
+	do_parameter("tls certfile", "tls/cert.pem");
+	do_parameter("tls cafile", "tls/ca.pem");
 }
 
 static TALLOC_CTX *lp_talloc;

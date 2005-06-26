@@ -83,7 +83,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	struct ldb_wrap *w;
 	int ret;
 	struct event_context *ev;
-
+	char *real_url = NULL;
 
 	for (w = ldb_list; w; w = w->next) {
 		if (strcmp(url, w->url) == 0) {
@@ -112,12 +112,20 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
+
+	real_url = private_path(ldb, url);
+	if (real_url == NULL) {
+		talloc_free(ldb);
+		return NULL;
+	}
 	
-	ret = ldb_connect(ldb, url, flags, options);
+	ret = ldb_connect(ldb, real_url, flags, options);
 	if (ret == -1) {
 		talloc_free(ldb);
 		return NULL;
 	}
+
+	talloc_free(real_url);
 
 	w = talloc(ldb, struct ldb_wrap);
 	if (w == NULL) {
