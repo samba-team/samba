@@ -7,28 +7,24 @@ echo Installing swat files in $SWATDIR
 
 cd $SRCDIR/../swat || exit 1
 
+mkdir -p $SWATDIR || exit 1
+
 installdir() {
-    dir=$1
-    ext=$2
-    mkdir -p $SWATDIR/$dir || exit 1
-    for f in `ls $dir/*.$ext`; do
-	echo Installing $f
-	cp $f $SWATDIR/$dir/ || exit 1
+    for f in $*; do
+	dname=`dirname $f`
+	echo "Installing $f in $dname"
+	test -d $SWATDIR/$dname || mkdir -p $SWATDIR/$dname || exit 1
+	cp $f $SWATDIR/$dname/ || exit 1
 	chmod 0644 $SWATDIR/$f || exit 1
     done
 }
 
-installdir . esp
-installdir esptest esp
-installdir esptest js
-installdir images png
-installdir images gif
-installdir images ico
-installdir scripting ejs
-installdir scripting esp
-installdir scripting js
-installdir style css
-installdir docs js
+installdir *.esp
+installdir esptest/*.esp esptest/*.js
+installdir images/*.png images/*.ico
+installdir scripting/*.ejs scripting/*.esp scripting/*.js
+installdir style/*.css
+installdir docs/*.js
 
 cat << EOF
 ======================================================================
