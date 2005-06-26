@@ -1,0 +1,39 @@
+#!/bin/sh
+# run a quick set of filesystem tests
+
+if [ $# -lt 3 ]; then
+cat <<EOF
+Usage: test_quick.sh UNC USERNAME PASSWORD <first> <smbtorture args>
+EOF
+exit 1;
+fi
+
+unc="$1"
+username="$2"
+password="$3"
+start="$4"
+shift 4
+ADDARGS="$*"
+
+incdir=`dirname $0`
+. $incdir/test_functions.sh
+
+tests="BASE-UNLINK BASE-ATTR"
+tests="$tests BASE-DIR2 BASE-TCON BASE-OPEN BASE-DELETE"
+tests="$tests BASE-CHKPATH RAW-QFSINFO RAW-QFILEINFO RAW-SFILEINFO"
+tests="$tests RAW-LOCK RAW-MKDIR RAW-SEEK RAW-OPEN RAW-WRITE"
+tests="$tests RAW-UNLINK RAW-READ RAW-CLOSE RAW-IOCTL RAW-RENAME"
+tests="$tests RAW-EAS RAW-STREAMS RAW-ACLS"
+
+failed=0
+for t in $tests; do
+    if [ ! -z "$start" -a "$start" != $t ]; then
+	continue;
+    fi
+    start=""
+    name="$t"
+    testit "$name" $VALGRIND bin/smbtorture $TORTURE_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+done
+
+testok $0 $failed
+sleep 10000
