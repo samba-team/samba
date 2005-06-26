@@ -25,8 +25,6 @@
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 
-extern BOOL in_client;
-
 static pstring credentials;
 static pstring my_netbios_name;
 static pstring password;
@@ -869,8 +867,6 @@ static void parse_mount_smb(int argc, char **argv)
 	else
 		setenv("CLI_FORCE_ASCII", "true", 1);
 #endif
-
-	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
