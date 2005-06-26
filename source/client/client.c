@@ -39,7 +39,6 @@
 #endif
 
 static struct smbcli_state *cli;
-extern BOOL in_client;
 static int port = 0;
 static pstring cur_dir = "\\";
 static pstring cd_path = "";
@@ -3369,8 +3368,6 @@ static void remember_query_host(const char *arg,
 
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
-
-	in_client = True;   /* Make sure that we tell lp_load we are */
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {

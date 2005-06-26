@@ -65,7 +65,6 @@
 #include "dlinklist.h"
 #include "param/loadparm.h"
 
-BOOL in_client = False;		/* Not in the client by default */
 static BOOL bLoaded = False;
 
 #ifndef GLOBAL_NAME
@@ -3025,9 +3024,7 @@ BOOL lp_load(const char *pszFname)
 
 	bLoaded = True;
 
-	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
-	/* if bWINSsupport is true and we are in the client            */
-	if (in_client && Globals.bWINSsupport) {
+	if (Globals.bWINSsupport) {
 		lp_do_parameter(-1, "wins server", "127.0.0.1");
 	}
 

@@ -23,13 +23,6 @@
 #include "includes.h"
 
 /*
- * Globals...
- */
-
-extern BOOL		in_client;	/* Boolean for client library */
-
-
-/*
  * Local functions...
  */
 
@@ -183,8 +176,6 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
   */
 
   setup_logging("smbspool", DEBUG_STDOUT);
-
-  in_client = True;   /* Make sure that we tell lp_load we are */
 
   if (!lp_load(dyn_CONFIGFILE))
   {
