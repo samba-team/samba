@@ -24,6 +24,7 @@ CONFFILE=$LIBDIR/smb.conf
 PRIVATEDIR=$PREFIX/private
 NCALRPCDIR=$PREFIX/ncalrpc
 LOCKDIR=$PREFIX/lockdir
+TLSDIR=$PRIVATEDIR/tls
 CONFIGURATION="--configfile=$CONFFILE"
 export CONFIGURATION
 
@@ -39,11 +40,15 @@ if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
 	echo "SOCKET_WRAPPER_DIR=$SOCKET_WRAPPER_DIR"
 fi
 
+# start off with 0 failures
+failed=0
+export failed
+
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
 rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR
+mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
 ./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT
 
@@ -56,10 +61,6 @@ cat >$CONFFILE<<EOF
 	pid directory = $PIDDIR
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
-	sam database = tdb://$PRIVATEDIR/sam.ldb
-	spoolss database = tdb://$PRIVATEDIR/spoolss.ldb
-	wins database = tdb://$PRIVATEDIR/wins.ldb
-	registry:HKEY_LOCAL_MACHINE = tdb://$PRIVATEDIR/hklm.ldb
 	name resolve order = bcast
 	interfaces = lo*
 
