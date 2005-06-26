@@ -29,6 +29,7 @@
 struct smb_private {
 	uint16_t fnum;
 	struct smbcli_tree *tree;
+	const char *server_name;
 };
 
 
@@ -340,7 +341,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 static const char *smb_peer_name(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = c->transport.private;
-	return smb->tree->session->transport->called.name;
+	return smb->server_name;
 }
 
 /*
@@ -404,9 +405,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 
 	talloc_free(pipe_name_talloc);
 
-	if (!NT_STATUS_IS_OK(status)) {
-                return status;
-        }
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/*
 	  fill in the transport methods
@@ -424,12 +423,12 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 	c->security_state.session_key = smb_session_key;
 
 	smb = talloc(c, struct smb_private);
-	if (smb == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(smb);
 
-	smb->fnum = io.ntcreatex.out.fnum;
-	smb->tree = tree;
+	smb->fnum	= io.ntcreatex.out.fnum;
+	smb->tree	= tree;
+	smb->server_name= strupper_talloc(smb, tree->session->transport->socket->hostname);
+	NT_STATUS_HAVE_NO_MEMORY(smb->server_name);
 
 	c->transport.private = smb;
 
