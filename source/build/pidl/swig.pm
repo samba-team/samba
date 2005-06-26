@@ -7,10 +7,6 @@ package IdlSwig;
 
 use strict;
 
-# Some build farm machines don't have the Data::Dumper module installed
-
-eval("use Data::Dumper");
-
 sub pidl($)
 {
 	print OUT shift;

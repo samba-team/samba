@@ -4,7 +4,6 @@
 # released under the GNU GPL
 
 package IdlValidator;
-use Data::Dumper;
 
 use strict;
 
