@@ -279,6 +279,7 @@ const char *ldb_errstring(struct ldb_context *ldb);
   casefold a string (should be UTF8, but at the moment it isn't)
 */
 char *ldb_casefold(void *mem_ctx, const char *s);
+int ldb_caseless_cmp(const char *s1, const char *s2);
 
 /*
   ldif manipulation functions
