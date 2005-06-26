@@ -99,24 +99,11 @@ my $domain_dn = search("(objectClass=domainDNS)", "dn");
 my $ldif = `ldbsearch -H $opt_samdb 'cn=TemplateUser' | grep -v Template | grep -v '^#'`;
 chomp $ldif;
 
-my $sid;
-
-# crude way of working out a rid
-for (my $i=1001;$i<1100;$i++) {
-	if (search("objectSid=$domain_sid-$i","objectSid") eq "") {
-		$sid = "$domain_sid-$i";
-		last;
-	}
-}
-
-print "Chose new SID $sid\n";
-
 my $dom_users = search("name=Domain Users", "dn");
 
 
 $ldif .= "sAMAccountName: $opt_username\n";
 $ldif .= "name: $opt_username\n";
-$ldif .= "objectSid: $sid\n";
 $ldif .= "objectGUID: " . randguid() . "\n";
 $ldif .= "memberOf: $dom_users\n";
 $ldif .= "userAccountControl: 0x10200\n";
