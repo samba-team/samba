@@ -134,7 +134,7 @@ static void dcesrv_sock_send(struct stream_connection *conn, uint16_t flags)
 	NTSTATUS status;
 
 	status = dcesrv_output(dce_conn, conn->socket, dcerpc_write_fn);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		dcesrv_terminate_connection(dce_conn, "eof on socket");
 		return;
 	}
