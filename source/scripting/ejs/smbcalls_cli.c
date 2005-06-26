@@ -449,6 +449,9 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+#define IS_TREE_HANDLE(x) (mprVarIsPtr((x)->type) && \
+                           talloc_check_name((x)->ptr, "struct smbcli_tree"))
+
 /* Perform a tree disconnect:
 
      tree_disconnect(tree_handle);
@@ -459,8 +462,13 @@ static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 	struct smbcli_tree *tree;
 	NTSTATUS result;
 
-	if (!mprVarIsPtr(argv[0]->type) || 
-	    !talloc_check_name(argv[0]->ptr, "struct smbcli_tree")) {
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, 
+			       "tree_disconnect(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
 		ejsSetErrorMsg(eid, "first arg is not a tree handle");
 		return -1;
 	}
@@ -474,6 +482,74 @@ static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 	return 0;
 }
 
+/* Perform a tree connect:
+
+     result = mkdir(tree_handle, DIRNAME);
+ */
+
+static int ejs_mkdir(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS result;
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "mkdir(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = argv[0]->ptr;
+
+	if (!mprVarIsString(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "arg 2 must be a string");
+		return -1;
+	}
+
+	result = smbcli_mkdir(tree, argv[1]->string);
+
+	ejsSetReturnValue(eid, mprNTSTATUS(result));
+
+	return 0;
+}
+
+/* Perform a tree connect:
+
+     result = rmdir(tree_handle, DIRNAME);
+ */
+
+static int ejs_rmdir(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS result;
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "rmdir(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = argv[0]->ptr;
+
+	if (!mprVarIsString(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "arg 2 must be a string");
+		return -1;
+	}
+	
+	result = smbcli_rmdir(tree, argv[1]->string);
+
+	ejsSetReturnValue(eid, mprNTSTATUS(result));
+
+	return 0;
+}
+
 /*
   setup C functions that be called from ejs
 */
@@ -481,6 +557,9 @@ void smb_setup_ejs_cli(void)
 {
 	ejsDefineStringCFunction(-1, "tree_connect", ejs_tree_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "tree_disconnect", ejs_tree_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
+
+	ejsDefineCFunction(-1, "mkdir", ejs_mkdir, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "rmdir", ejs_rmdir, NULL, MPR_VAR_SCRIPT_HANDLE);
 
 #if 0
 	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
