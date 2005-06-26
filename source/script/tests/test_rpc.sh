@@ -16,10 +16,6 @@ EOF
 exit 1;
 fi
 
-if [ -z "$VALGRIND" ]; then
-    export MALLOC_CHECK_=2
-fi
-
 server="$1"
 username="$2"
 password="$3"

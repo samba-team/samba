@@ -9,10 +9,6 @@ EOF
 exit 1;
 fi
 
-if [ -z "$VALGRIND" ]; then
-    export MALLOC_CHECK_=2
-fi
-
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 

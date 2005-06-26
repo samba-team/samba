@@ -164,3 +164,9 @@ teststatus() {
 	fi
 	exit $failed
 }
+
+if [ -z "$VALGRIND" ]; then
+    MALLOC_CHECK_=2
+    export MALLOC_CHECK_
+fi
+
