@@ -80,7 +80,7 @@ testit() {
 		date
 		echo "Testing $name"
 	else
-		echo "Testing $name"
+		echo "Testing $name ($failed)"
 	fi
 
 	smbd_check_only && SMBD_IS_UP="yes"
