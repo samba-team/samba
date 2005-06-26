@@ -24,6 +24,7 @@
 #include "lib/ejs/ejs.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "clilist.h"
 
 #if 0
 
@@ -482,7 +483,7 @@ static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 	return 0;
 }
 
-/* Perform a tree connect:
+/* Create a directory:
 
      result = mkdir(tree_handle, DIRNAME);
  */
@@ -516,7 +517,7 @@ static int ejs_mkdir(MprVarHandle eid, int argc, MprVar **argv)
 	return 0;
 }
 
-/* Perform a tree connect:
+/* Remove a directory:
 
      result = rmdir(tree_handle, DIRNAME);
  */
@@ -550,6 +551,138 @@ static int ejs_rmdir(MprVarHandle eid, int argc, MprVar **argv)
 	return 0;
 }
 
+/* Rename a file or directory:
+
+     result = rename(tree_handle, SRCFILE, DESTFILE);
+ */
+
+static int ejs_rename(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS result;
+
+	if (argc != 3) {
+		ejsSetErrorMsg(eid, "rename(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = argv[0]->ptr;
+
+	if (!mprVarIsString(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "arg 2 must be a string");
+		return -1;
+	}
+	
+	if (!mprVarIsString(argv[2]->type)) {
+		ejsSetErrorMsg(eid, "arg 3 must be a string");
+		return -1;
+	}
+	
+	result = smbcli_rename(tree, argv[1]->string, argv[2]->string);
+
+	ejsSetReturnValue(eid, mprNTSTATUS(result));
+
+	return 0;
+}
+
+/* Unlink a file or directory:
+
+     result = unlink(tree_handle, FILENAME);
+ */
+
+static int ejs_unlink(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS result;
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "unlink(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = argv[0]->ptr;
+
+	if (!mprVarIsString(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "arg 2 must be a string");
+		return -1;
+	}
+	
+	result = smbcli_unlink(tree, argv[1]->string);
+
+	ejsSetReturnValue(eid, mprNTSTATUS(result));
+
+	return 0;
+}
+
+/* List directory contents
+
+     result = list(tree_handle, ARG1, ...);
+ */
+
+static void ejs_list_helper(struct clilist_file_info *info, const char *mask, 
+			    void *state)
+
+{
+	MprVar *result = (MprVar *)state, value;
+	char idx[16];
+
+	mprItoa(result->properties->numDataItems, idx, sizeof(idx));
+	value = mprCreateStringVar(info->name, 1);
+	mprCreateProperty(result, idx, &value);
+}
+
+static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	char *mask;
+	uint16_t attribute;
+	MprVar result;
+
+	if (argc != 3) {
+		ejsSetErrorMsg(eid, "list(): invalid number of args");
+		return -1;
+	}
+
+	if (!IS_TREE_HANDLE(argv[0])) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = argv[0]->ptr;
+
+	if (!mprVarIsString(argv[1]->type)) {
+		ejsSetErrorMsg(eid, "arg 2 must be a string");
+		return -1;
+	}
+	
+	mask = argv[1]->string;
+
+	if (!mprVarIsNumber(argv[2]->type)) {
+		ejsSetErrorMsg(eid, "arg 3 must be a number");
+		return -1;
+	}
+
+	attribute = mprVarToInteger(argv[2]);
+
+	result = mprCreateObjVar("list", MPR_DEFAULT_HASH_SIZE);
+
+	smbcli_list(tree, mask, attribute, ejs_list_helper, &result);
+
+	ejsSetReturnValue(eid, result);
+
+	return 0;
+}
+
 /*
   setup C functions that be called from ejs
 */
@@ -560,6 +693,10 @@ void smb_setup_ejs_cli(void)
 
 	ejsDefineCFunction(-1, "mkdir", ejs_mkdir, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "rmdir", ejs_rmdir, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "rename", ejs_rename, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "unlink", ejs_unlink, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "list", ejs_list, NULL, MPR_VAR_SCRIPT_HANDLE);
+	
 
 #if 0
 	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
