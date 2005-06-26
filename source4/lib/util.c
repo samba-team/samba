@@ -657,13 +657,19 @@ char *lib_path(TALLOC_CTX* mem_ctx, const char *name)
  * @brief Returns an absolute path to a file in the Samba private directory.
  *
  * @param name File to find, relative to PRIVATEDIR.
+ * if name is not relative, then use it as-is
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-
 char *private_path(TALLOC_CTX* mem_ctx, const char *name)
 {
 	char *fname;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
 	fname = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(), name);
 	return fname;
 }

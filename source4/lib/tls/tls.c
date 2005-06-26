@@ -309,17 +309,22 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 {
 	struct tls_params *params;
 	int ret;
-	const char *keyfile = lp_tls_keyfile();
-	const char *certfile = lp_tls_certfile();
-	const char *cafile = lp_tls_cafile();
-	const char *crlfile = lp_tls_crlfile();
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *keyfile = private_path(tmp_ctx, lp_tls_keyfile());
+	const char *certfile = private_path(tmp_ctx, lp_tls_certfile());
+	const char *cafile = private_path(tmp_ctx, lp_tls_cafile());
+	const char *crlfile = private_path(tmp_ctx, lp_tls_crlfile());
 	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
 
 	params = talloc(mem_ctx, struct tls_params);
-	if (params == NULL) return NULL;
+	if (params == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	if (!lp_tls_enabled() || keyfile == NULL || *keyfile == 0) {
 		params->tls_enabled = False;
+		talloc_free(tmp_ctx);
 		return params;
 	}
 
@@ -371,11 +376,13 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx)
 
 	params->tls_enabled = True;
 
+	talloc_free(tmp_ctx);
 	return params;
 
 init_failed:
 	DEBUG(0,("GNUTLS failed to initialise - %s\n", gnutls_strerror(ret)));
 	params->tls_enabled = False;
+	talloc_free(tmp_ctx);
 	return params;
 }
 
@@ -450,6 +457,8 @@ struct tls_context *tls_init_client(struct socket_context *socket,
 	struct tls_context *tls;
 	int ret;
 	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
+	char *cafile;
+
 	tls = talloc(socket, struct tls_context);
 	if (tls == NULL) return NULL;
 
@@ -461,11 +470,16 @@ struct tls_context *tls_init_client(struct socket_context *socket,
 		return tls;
 	}
 
+	cafile = private_path(tls, lp_tls_cafile());
+	if (!cafile || !*cafile) {
+		goto failed;
+	}
+
 	gnutls_global_init();
 
 	gnutls_certificate_allocate_credentials(&tls->xcred);
-	gnutls_certificate_set_x509_trust_file(tls->xcred, lp_tls_cafile(),
-					       GNUTLS_X509_FMT_PEM);
+	gnutls_certificate_set_x509_trust_file(tls->xcred, cafile, GNUTLS_X509_FMT_PEM);
+	talloc_free(cafile);
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
 	TLSCHECK(gnutls_set_default_priority(tls->session));
 	gnutls_certificate_type_set_priority(tls->session, cert_type_priority);
