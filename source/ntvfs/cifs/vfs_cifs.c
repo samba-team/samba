@@ -548,6 +548,17 @@ static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  a handler for async seek replies
+ */
+static void async_seek(struct smbcli_request *c_req)
+{
+	struct async_info *async = c_req->async.private;
+	struct smbsrv_request *req = async->req;
+	req->async_states->status = smb_raw_seek_recv(c_req, async->parms);
+	req->async_states->send_fn(req);
+}
+
+/*
   seek in a file
 */
 static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs, 
@@ -564,7 +575,7 @@ static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs,
 
 	c_req = smb_raw_seek_send(private->tree, io);
 
-	SIMPLE_ASYNC_TAIL;
+	ASYNC_RECV_TAIL(io, async_seek);
 }
 
 /*
