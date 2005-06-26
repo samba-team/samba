@@ -22,9 +22,12 @@
 
 #include "includes.h"
 #include "lib/ejs/ejs.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+
+#if 0
+
+#include "librpc/gen_ndr/ndr_nbt.h"
 
 /* Connect to a server */
 
@@ -398,15 +401,93 @@ static int ejs_cli_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 	return 0;
 }
 
+#endif
+
+/* Perform a tree connect:
+
+     tree_handle = tree_connect("\\\\frogurt\\homes", "user%pass");
+ */
+
+static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds;
+	struct smbcli_tree *tree;
+	const char *hostname, *sharename;
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "tree_connect(): invalid number of args");
+		return -1;
+	}
+
+	/* Set up host, share destination */
+
+	mem_ctx = talloc_init(NULL);
+	smbcli_parse_unc(argv[0], mem_ctx, &hostname, &sharename);
+
+	/* Set up credentials */
+
+	creds = cli_credentials_init(NULL);
+	cli_credentials_set_conf(creds);
+	cli_credentials_parse_string(creds, argv[1], CRED_SPECIFIED);
+
+	/* Do connect */
+
+	result = smbcli_tree_full_connection(NULL, &tree, hostname, 0,
+					     sharename, "?????", creds, NULL);
+
+	talloc_free(mem_ctx);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		ejsSetReturnValue(eid, mprNTSTATUS(result));
+		return 0;
+	}
+
+	ejsSetReturnValue(eid, mprCreatePtrVar(tree, talloc_get_name(tree)));
+
+	return 0;
+}
+
+/* Perform a tree disconnect:
+
+     tree_disconnect(tree_handle);
+ */
+
+static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
+{
+	struct smbcli_tree *tree;
+	NTSTATUS result;
+
+	if (!mprVarIsPtr(argv[0]->type) || 
+	    !talloc_check_name(argv[0]->ptr, "struct smbcli_tree")) {
+		ejsSetErrorMsg(eid, "first arg is not a tree handle");
+		return -1;
+	}
+
+	tree = talloc_check_name(argv[0]->ptr, "struct smbcli_tree");
+
+	result = smb_tree_disconnect(tree);
+
+	ejsSetReturnValue(eid, mprNTSTATUS(result));
+
+	return 0;
+}
+
 /*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_cli(void)
 {
+	ejsDefineStringCFunction(-1, "tree_connect", ejs_tree_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "tree_disconnect", ejs_tree_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
+
+#if 0
 	ejsDefineStringCFunction(-1, "connect", ejs_cli_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "session_setup", ejs_cli_ssetup, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "tree_connect", ejs_cli_tree_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "tree_disconnect", ejs_cli_tree_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "session_logoff", ejs_cli_session_logoff, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "disconnect", ejs_cli_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "disconnect", ejs_cli_disconnect, NULL, MPR_VAR_SCRIPT_HANDLE);	
+#endif
 }
