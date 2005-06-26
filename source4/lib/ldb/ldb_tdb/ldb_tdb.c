@@ -38,6 +38,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_dn.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 #define LDBLOCK	"INT_LDBLOCK"
@@ -107,9 +108,30 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 			talloc_free(attr_name_folded);
 		}
 		talloc_free(attr_name);
-	} else {
-                dn_folded = ldb_dn_fold(module->ldb, dn,
-                                        module, ltdb_case_fold_attr_required);
+	}
+	/* special cases for tdb */
+	else if (*dn == '@' || strncmp(LDBLOCK, dn, strlen(LDBLOCK)) == 0) {
+
+		dn_folded = talloc_strdup(ldb, dn);
+	}
+	else {
+		struct ldb_dn *edn, *cedn;
+
+		edn = ldb_dn_explode(ldb, dn);
+		if (!edn)
+			goto failed;
+
+		cedn = ldb_dn_casefold(ldb, edn, module,
+					ltdb_case_fold_attr_required);
+		if (!edn)
+			goto failed;
+
+                dn_folded = ldb_dn_linearize(ldb, cedn);
+		if (!dn_folded)
+			goto failed;
+
+		talloc_free(edn);
+		talloc_free(cedn);
 	}
 
 	if (!dn_folded) {
@@ -141,6 +163,7 @@ failed:
 static int ltdb_lock(struct ldb_module *module, const char *lockname)
 {
 	struct ltdb_private *ltdb = module->private_data;
+	char *lock_dn;
 	TDB_DATA key;
 	int ret;
 
@@ -148,14 +171,21 @@ static int ltdb_lock(struct ldb_module *module, const char *lockname)
 		return -1;
 	}
 
-	key = ltdb_key(module, lockname);
+	lock_dn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
+	if (lock_dn == NULL) {
+		return -1;
+	}
+
+	key = ltdb_key(module, lock_dn);
 	if (!key.dptr) {
+		talloc_free(lock_dn);
 		return -1;
 	}
 
 	ret = tdb_chainlock(ltdb->tdb, key);
 
 	talloc_free(key.dptr);
+	talloc_free(lock_dn);
 
 	return ret;
 }
@@ -166,20 +196,28 @@ static int ltdb_lock(struct ldb_module *module, const char *lockname)
 static int ltdb_unlock(struct ldb_module *module, const char *lockname)
 {
 	struct ltdb_private *ltdb = module->private_data;
+	char *lock_dn;
 	TDB_DATA key;
 
 	if (lockname == NULL) {
 		return -1;
 	}
 
-	key = ltdb_key(module, lockname);
+	lock_dn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
+	if (lock_dn == NULL) {
+		return -1;
+	}
+
+	key = ltdb_key(module, lock_dn);
 	if (!key.dptr) {
+		talloc_free(lock_dn);
 		return -1;
 	}
 
 	tdb_chainunlock(ltdb->tdb, key);
 
 	talloc_free(key.dptr);
+	talloc_free(lock_dn);
 
 	return 0;
 }

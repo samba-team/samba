@@ -119,6 +119,7 @@ void *_talloc_zero(const void *ctx, size_t size, const char *name);
 void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
 char *talloc_strdup(const void *t, const char *p);
 char *talloc_strndup(const void *t, const char *p, size_t n);
+char *talloc_append_string(const void *t, char *orig, const char *append);
 char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append(char *s,
