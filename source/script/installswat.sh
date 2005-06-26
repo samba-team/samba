@@ -1,7 +1,7 @@
 #!/bin/sh
 
 SWATDIR=$1
-SRCDIR=$2/
+SRCDIR=$2
 
 echo Installing swat files in $SWATDIR
 
