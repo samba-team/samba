@@ -21,6 +21,7 @@
 
 #ifdef _SAMBA_BUILD_
 #include "includes.h"
+#undef SOCKET_WRAPPER
 #include "system/network.h"
 #include "system/filesys.h"
 #else
