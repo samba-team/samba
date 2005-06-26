@@ -65,7 +65,7 @@ SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth/auth_unix.o
 REQUIRED_SUBSYSTEMS = \
-		EXT_LIB_PAM PAM_ERRORS
+		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
 # End MODULE auth_developer
 #######################
 
