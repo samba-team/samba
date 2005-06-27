@@ -1299,6 +1299,7 @@ static int setup_select_timeout(void)
 
 void check_reload(int t)
 {
+	static pid_t mypid = 0;
 	static time_t last_smb_conf_reload_time = 0;
 	static time_t last_printer_reload_time = 0;
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
@@ -1312,6 +1313,15 @@ void check_reload(int t)
 			last_printer_reload_time = t - printcap_cache_time + 60;
 		else
 			last_printer_reload_time = t;
+	}
+
+	if (mypid != getpid()) { /* First time or fork happened meanwhile */
+		/* randomize over 60 second the printcap reload to avoid all
+		 * process hitting cupsd at the same time */
+		int time_range = 60;
+
+		last_printer_reload_time += random() % time_range;
+		mypid = getpid();
 	}
 
 	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
