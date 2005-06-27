@@ -85,4 +85,15 @@ BOOL reg_split_key( char *path, char **base, char **key )
 }
 
 
+/**********************************************************************
+ The full path to the registry key is used as database after the 
+ \'s are converted to /'s.  Key string is also normalized to UPPER
+ case. 
+**********************************************************************/
+
+void normalize_reg_path( pstring keyname )
+{
+	pstring_sub( keyname, "\\", "/" );
+	strupper_m( keyname  );
+}
 

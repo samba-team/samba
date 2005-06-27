@@ -217,18 +217,6 @@ BOOL init_registry_db( void )
 	return True;
 }
 
-/**********************************************************************
- The full path to the registry key is used as database after the 
- \'s are converted to /'s.  Key string is also normalized to UPPER
- case. 
-**********************************************************************/
-
-static void normalize_reg_path( pstring keyname )
-{
-	pstring_sub( keyname, "\\", "/" );
-	strupper_m( keyname  );
-}
-
 /***********************************************************************
  Add subkey strings to the registry tdb under a defined key
  fmt is the same format as tdb_pack except this function only supports
@@ -308,7 +296,7 @@ static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
 	REGSUBKEY_CTR subkeys, old_subkeys;
 	char *oldkeyname;
 	
-	/* fetch a list of the old subkeys so we can difure out if any were deleted */
+	/* fetch a list of the old subkeys so we can determine if any were deleted */
 	
 	regsubkey_ctr_init( &old_subkeys );
 	regdb_fetch_reg_keys( key, &old_subkeys );
@@ -331,6 +319,8 @@ static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
 			tdb_delete_bystring( tdb_reg, path );
 		}
 	}
+
+	regsubkey_ctr_destroy( &old_subkeys );
 	
 	/* now create records for any subkeys that don't already exist */
 	
@@ -491,8 +481,10 @@ static int regdb_fetch_reg_values( const char* key, REGVAL_CTR *values )
 	
 	data = tdb_fetch_bystring( tdb_reg, keystr );
 	
-	if ( !data.dptr ) 
+	if ( !data.dptr ) {
+		/* all keys have zero values by default */
 		return 0;
+	}
 	
 	len = regdb_unpack_values( values, data.dptr, data.dsize );
 	
