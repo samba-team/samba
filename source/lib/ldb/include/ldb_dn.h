@@ -20,27 +20,23 @@
 */
 
 struct ldb_dn_attribute {
-	char *                      rdn;
-	char *                      name;
-	char *                      value;
+	char *name;
+	char *value;
 };
 
 struct ldb_dn_component {
-	char *                      component;
-	int                         attr_num;
-	struct ldb_dn_attribute **  attributes;
+	int attr_num;
+	struct ldb_dn_attribute **attributes;
 };
 
 struct ldb_dn {
-	char *                      dn;
-	int                         comp_num;
-	struct ldb_dn_component **  components;
+	int comp_num;
+	struct ldb_dn_component **components;
 };
 
 
-extern struct ldb_dn *
-ldb_explode_dn(void * mem_ctx,
-               const char * orig_dn,
-               void * hUserData,
-               int (*case_fold_attr_fn)(void * hUserData,
-                                        char * attr));
+struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn);
+int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
+struct ldb_dn *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *edn, void *user_data,
+				int (* case_fold_attr_fn)(void * user_data, char * attr));
