@@ -224,6 +224,7 @@ REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC
+MANPAGE = torture/man/smbtorture.1
 # End BINARY smbtorture
 #################################
 
@@ -239,6 +240,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
+MANPAGE = torture/man/gentest.1
 # End BINARY gentest
 #################################
 
@@ -253,6 +255,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
+MANPAGE = torture/man/masktest.1
 # End BINARY masktest
 #################################
 
@@ -268,5 +271,6 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		LIBCMDLINE \
 		RPC
+MANPAGE = torture/man/locktest.1
 # End BINARY locktest
 #################################

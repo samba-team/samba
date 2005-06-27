@@ -25,7 +25,8 @@ my %attribute_types = (
 	"RELEASE_VERSION" => "string",
 	"ENABLE" => "bool",
 	"TARGET_CFLAGS" => "list",
-	"CMD" => "string"
+	"CMD" => "string",
+	"MANPAGE" => "string"
 );
 
 ###########################################################

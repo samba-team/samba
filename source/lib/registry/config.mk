@@ -98,6 +98,7 @@ OBJ_FILES= \
 		lib/registry/tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
+MANPAGE = lib/registry/man/regdiff.1
 # End BINARY regdiff
 ################################################
 
@@ -108,6 +109,7 @@ OBJ_FILES= \
 		lib/registry/tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
+MANPAGE = lib/registry/man/regpatch.1
 # End BINARY regpatch
 ################################################
 
@@ -118,6 +120,7 @@ OBJ_FILES= \
 		lib/registry/tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
+MANPAGE = lib/registry/man/regshell.1
 # End BINARY regshell
 ################################################
 
@@ -128,5 +131,6 @@ OBJ_FILES= \
 		lib/registry/tools/regtree.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG LIBCMDLINE REGISTRY
+MANPAGE = lib/registry/man/regtree.1
 # End BINARY regtree
 ################################################

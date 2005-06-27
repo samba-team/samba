@@ -61,17 +61,15 @@ LOCKDIR = @lockdir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
-PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
-PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" 
-PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
-PATH_FLAGS4 = $(PATH_FLAGS3) -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
-PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
-	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
-PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\"
-PATH_FLAGS7 = $(PATH_FLAGS6) -DSWATDIR=\"$(SWATDIR)\"
-PATH_FLAGS = $(PATH_FLAGS7) $(PASSWD_FLAGS)
+MANDIR = @mandir@
 
+PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
+	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
+	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
+	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\" \
+	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
+	 -DSWATDIR=\"$(SWATDIR)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
+	 -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
 __EOD__
 
 	return $output;
@@ -93,6 +91,8 @@ STLD_FLAGS=-rc
 
 SHLD=@CC@
 SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
+
+XSLTPROC=@XSLTPROC@
 
 __EOD__
 }
@@ -117,7 +117,7 @@ sub _prepare_SUFFIXES($)
 
 	$output = << '__EOD__';
 .SUFFIXES:
-.SUFFIXES: .c .o .h .h.gch .a .so
+.SUFFIXES: .c .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
 
@@ -152,6 +152,38 @@ test-swrap: all
 
 test-noswrap: all
 	./script/tests/selftest.sh `pwd`/prefix-test
+
+__EOD__
+}
+
+sub _prepare_man_rule($)
+{
+	my $suffix = shift;
+
+	return << "__EOD__";
+.$suffix.xml.$suffix:
+	\$(XSLTPROC) -o \$@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl \$<
+
+__EOD__
+}
+
+sub _prepare_manpages($)
+{
+	my $ctx = shift;
+
+	my @mp_list = ();
+
+	foreach (values %$ctx) {
+		if (defined($_->{MANPAGE}) and $_->{MANPAGE} ne "") {
+			push (@mp_list, $_->{MANPAGE});
+		}
+	}
+	
+	my $mp = join(' ', @mp_list);
+	return << "__EOD__";
+MANPAGES = $mp
+
+manpages: \$(MANPAGES)
 
 __EOD__
 }
@@ -534,6 +566,7 @@ realdistclean: distclean removebackup
 	-rm -f include/config.h.in
 	-rm -f include/version.h
 	-rm -f configure
+	-rm -f $(MANPAGES)
 __EOD__
 
 	return $output;
@@ -586,9 +619,10 @@ showlayout:
 	@echo "  libdir:  $(LIBDIR)"
 	@echo "  vardir:  $(VARDIR)"
 	@echo "  privatedir:  $(PRIVATEDIR)"
-	@echo "  piddir:  $(PIDDIR)"
+	@echo "  piddir:   $(PIDDIR)"
 	@echo "  lockdir:  $(LOCKDIR)"
 	@echo "  swatdir:  $(SWATDIR)"
+	@echo "  mandir:   $(MANDIR)"
 
 showflags:
 	@echo "Samba will be compiled with flags:"
@@ -654,6 +688,9 @@ installdat: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
+installman: installdirs
+	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
+
 uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg
 
 uninstallbin:
@@ -667,6 +704,9 @@ uninstallldb:
 
 uninstallreg:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(REG_PROGS)
+
+uninstallman:
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
 # Swig extensions
 
@@ -768,6 +808,13 @@ sub _prepare_makefile_in($$)
 
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
+
+	$output .= _prepare_man_rule("1");
+	$output .= _prepare_man_rule("3");
+	$output .= _prepare_man_rule("5");
+	$output .= _prepare_man_rule("7");
+
+	$output .= _prepare_manpages($CTX);
 
 	$output .= _prepare_target_settings($CTX);
 

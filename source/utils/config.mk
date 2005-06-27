@@ -11,6 +11,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		NDR_ALL \
 		RPC
+MANPAGE = utils/man/ndrdump.1
 # FIXME: ndrdump shouldn't have to depend on RPC...
 # End BINARY ndrdump
 #################################
@@ -26,6 +27,7 @@ REQUIRED_SUBSYSTEMS = \
 		LIBBASIC \
 		LIBSMB \
 		RPC
+MANPAGE = utils/man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
 

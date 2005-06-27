@@ -6,6 +6,7 @@ INIT_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 NOPROTO = YES
+MANPAGE = lib/talloc/talloc.3
 #
 # End SUBSYSTEM LIBTALLOC
 ################################################
