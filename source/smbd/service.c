@@ -604,6 +604,25 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 #endif
 	
+	/* Add veto/hide lists */
+	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
+		set_namearray( &conn->veto_list, lp_veto_files(snum));
+		set_namearray( &conn->hide_list, lp_hide_files(snum));
+		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(snum));
+	}
+	
+	/* Invoke VFS make connection hook - do this before the VFS_STAT call to allow
+	   any filesystems needing user credentials to initialize themselves. */
+
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
+		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		change_to_root_user();
+		yield_connection(conn, lp_servicename(snum));
+		conn_free(conn);
+		*status = NT_STATUS_UNSUCCESSFUL;
+		return NULL;
+	}
+
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
 	   check during individual operations. To match this behaviour
@@ -612,6 +631,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (SMB_VFS_STAT(conn, conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(snum)));
 		change_to_root_user();
+		/* Call VFS disconnect hook */    
+		SMB_VFS_DISCONNECT(conn);
 		yield_connection(conn, lp_servicename(snum));
 		conn_free(conn);
 		*status = NT_STATUS_BAD_NETWORK_NAME;
@@ -646,27 +667,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
 	
-	/* Add veto/hide lists */
-	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray( &conn->veto_list, lp_veto_files(snum));
-		set_namearray( &conn->hide_list, lp_hide_files(snum));
-		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(snum));
-	}
-	
-	/* Invoke VFS make connection hook */
-
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
-		change_to_root_user();
-		yield_connection(conn, lp_servicename(snum));
-		conn_free(conn);
-		*status = NT_STATUS_UNSUCCESSFUL;
-		return NULL;
-	}
-
 	/* we've finished with the user stuff - go back to root */
 	change_to_root_user();
-            
 	return(conn);
 }
 
