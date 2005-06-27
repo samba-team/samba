@@ -3,13 +3,12 @@ Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
 Standards-Version: 3.6.1.0
-Build-Depends: debmake, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0)
+Build-Depends: build-essential, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl
 
 Package: samba4
-Architecture: any
-Depends: samba4-client, samba4-server
-Description: Samba4
- Foobar
+Architecture: all
+Description: Samba4 misc
+ Files common for all programs in Samba
 
 Package: samba4-common
 Architecture: all
@@ -19,6 +18,8 @@ Description: Common samba files
 Package: samba4-client
 Architecture: any
 Depends: ${shlibs:Depends}, 
+Description: Client utilities from Samba4
+ Client utilities for NetBIOS, SMB and RPC.
 
 Package: samba4-testsuite
 Architecture: any
@@ -29,6 +30,7 @@ Description: Testsuite from Samba4
  
 Package: samba4-server
 Architecture: any
+Recommends: samba4-swat
 Depends: ${shlibs:Depends}, samba4-common
 Description: SMB Server
  Contains smbd, the Samba server. 
@@ -51,7 +53,7 @@ Depends: ${shlibs:Depends}
 Description: Tools for viewing and manipulating 
  FIXME
 
-Package: pidl
+Package: libparse-pidl-perl
 Architecture: any
 Depends: perl
 Description: IDL compiler written in Perl
@@ -68,3 +70,9 @@ Architecture: any
 Depends: ${shlibs:Depends}
 Description: Tools for maintaining LDB database files
  FIXME
+
+Package: samba4-swat
+Architecture: all
+Description: Swat data files
+ Data files for SWAT.
+
