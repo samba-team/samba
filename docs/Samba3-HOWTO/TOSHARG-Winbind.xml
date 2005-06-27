@@ -37,12 +37,18 @@
 	<title>Features and Benefits</title>
 
 	<para>
+<indexterm><primary>holy grail</primary></indexterm>
+<indexterm><primary>heterogeneous computing</primary></indexterm>
 	Integration of UNIX and Microsoft Windows NT through a unified logon has
 	been considered a <quote>holy grail</quote> in heterogeneous computing environments for
 	a long time.
 	</para>
 
 	<para>
+<indexterm><primary>interoperability</primary></indexterm>
+<indexterm><primary>domain user</primary></indexterm>
+<indexterm><primary>domain group</primary></indexterm>
+<indexterm><primary>group ownership</primary></indexterm>
 	There is one other facility without which UNIX and Microsoft Windows network
 	interoperability would suffer greatly. It is imperative that there be a
 	mechanism for sharing files across UNIX systems and to be able to assign
@@ -50,6 +56,10 @@
 	</para>
 
 	<para>
+<indexterm><primary>Pluggable Authentication Modules</primary><see>PAM</see></indexterm>
+<indexterm><primary>winbind</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>RPC</primary></indexterm>
 	<emphasis>winbind</emphasis> is a component of the Samba suite of programs that
 	solves the unified logon problem. Winbind uses a UNIX implementation of Microsoft
 	RPC calls, Pluggable Authentication Modules (PAMs), and the name service switch (NSS) to
@@ -64,16 +74,27 @@
 
 	<itemizedlist>
 		<listitem><para>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>NT4 domain</primary></indexterm>
 		Authentication of user credentials (via PAM). This makes it possible to
 		log onto a UNIX/Linux system using user and group accounts from a Windows
 		NT4 (including a Samba domain) or an Active Directory domain.
 		</para></listitem>
 
 		<listitem><para>
+<indexterm><primary>identity resolution</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
 		Identity resolution (via NSS). This is the default when winbind is not used.
 		</para></listitem>
 
 		<listitem><para>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>idmap uid</primary></indexterm>
+<indexterm><primary>idmap gid</primary></indexterm>
+<indexterm><primary>idmap backend</primary></indexterm>
+<indexterm><primary></primary>LDAP</indexterm>
 		Winbind maintains a database called winbind_idmap.tdb in which it stores
 		mappings between UNIX UIDs, GIDs, and NT SIDs. This mapping is used only
 		for users and groups that do not have a local UID/GID. It stores the UID/GID
@@ -87,6 +108,10 @@
 	<note><para>
 	<indexterm><primary>winbindd</primary></indexterm>
 	<indexterm><primary>starting samba</primary><secondary>winbindd</secondary></indexterm>
+<indexterm><primary>/etc/passwd</primary></indexterm>
+<indexterm><primary>/etc/group</primary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
 	If <command>winbindd</command> is not running, smbd (which calls <command>winbindd</command>) will fall back to
 	using purely local information from <filename>/etc/passwd</filename> and <filename>/etc/group</filename> and no dynamic
 	mapping will be used. On an operating system that has beeb enabled with the NSS,
@@ -111,7 +136,10 @@
 	made it difficult to integrate the two systems in a satisfactory 
 	manner.</para>
 	
-	<para>One common solution in use today has been to create 
+	<para>
+<indexterm><primary>synchronization problems</primary></indexterm>
+<indexterm><primary>passwords</primary></indexterm>
+	One common solution in use today has been to create 
 	identically named user accounts on both the UNIX and Windows systems 
 	and use the Samba suite of programs to provide file and print services 
 	between the two. This solution is far from perfect, however, because 
@@ -135,7 +163,10 @@
 	</itemizedlist>
 
 
-	<para>Ideally, a prospective solution to the unified logon problem 
+	<para>
+<indexterm><primary>unified logon</primary></indexterm>
+<indexterm><primary>duplication of information</primary></indexterm>
+	Ideally, a prospective solution to the unified logon problem 
 	would satisfy all the above components without duplication of 
 	information on the UNIX machines and without creating additional 
 	tasks for the system administrator when maintaining users and 
@@ -148,14 +179,24 @@
 <sect1>
 	<title>What Winbind Provides</title>
 
-	<para>Winbind unifies UNIX and Windows NT account management by 
+	<para>
+<indexterm><primary>Windows account management</primary></indexterm>
+<indexterm><primary>UNIX users</primary></indexterm>
+<indexterm><primary>UNIX groups</primary></indexterm>
+<indexterm><primary>NT domain</primary></indexterm>
+	Winbind unifies UNIX and Windows NT account management by 
 	allowing a UNIX box to become a full member of an NT domain. Once 
 	this is done, the UNIX box will see NT users and groups as if 
 	they were <quote>native</quote> UNIX users and groups, allowing the NT domain 
 	to be used in much the same manner that NIS+ is used within 
 	UNIX-only environments.</para>
 	
-	<para>The end result is that whenever a
+	<para>
+<indexterm><primary>Winbind hooks</primary></indexterm>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>redirection</primary></indexterm>
+	The end result is that whenever a
 	program on the UNIX machine asks the operating system to look up 
 	a user or group name, the query will be resolved by asking the 
 	NT domain controller for the specified domain to do the lookup.
@@ -164,19 +205,26 @@
 	redirection to the NT domain controller is completely 
 	transparent.</para>
 	
-	<para>Users on the UNIX machine can then use NT user and group 
+	<para>
+<indexterm><primary>user and group</primary></indexterm>
+<indexterm><primary>domain user</primary></indexterm>
+	Users on the UNIX machine can then use NT user and group 
 	names as they would <quote>native</quote> UNIX names. They can chown files 
 	so they are owned by NT domain users or even login to the 
 	UNIX machine and run a UNIX X-Window session as a domain user.</para>
 	
-	<para>The only obvious indication that Winbind is being used is 
+	<para>
+<indexterm><primary>domain controller</primary></indexterm>
+	The only obvious indication that Winbind is being used is 
 	that user and group names take the form <constant>DOMAIN\user</constant> and 
 	<constant>DOMAIN\group</constant>. This is necessary because it allows Winbind to determine 
 	that redirection to a domain controller is wanted for a particular 
 	lookup and which trusted domain is being referenced.</para>
 	
-	<para>Additionally, Winbind provides an authentication service 
-	that hooks into the PAM system 
+	<para>
+<indexterm><primary>PAM-enabled</primary></indexterm>
+<indexterm><primary>domain controller</primary></indexterm>
+	Additionally, Winbind provides an authentication service that hooks into the PAM system 
 	to provide authentication via an NT domain to any PAM-enabled 
 	applications. This capability solves the problem of synchronizing 
 	passwords between systems, since all passwords are stored in a single 
@@ -185,7 +233,9 @@
 	<sect2>
 		<title>Target Uses</title>
 		
-		<para>Winbind is targeted at organizations that have an 
+		<para>
+<indexterm><primary>infrastructure</primary></indexterm>
+		Winbind is targeted at organizations that have an 
 		existing NT-based domain infrastructure into which they wish 
 		to put UNIX workstations or servers. Winbind will allow these 
 		organizations to deploy UNIX workstations without having to 
@@ -193,7 +243,10 @@
 		simplifies the administrative overhead of deploying UNIX 
 		workstations into an NT-based organization.</para>
 		
-		<para>Another interesting way in which we expect Winbind to 
+		<para>
+<indexterm><primary>Appliances</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+		Another interesting way in which we expect Winbind to 
 		be used is as a central part of UNIX-based appliances. Appliances 
 		that provide file and print services to Microsoft-based networks 
 		will be able to use Winbind to provide seamless integration of 
@@ -204,6 +257,7 @@
 	<title>Handling of Foreign SIDs</title>
 
 	<para>
+<indexterm><primary>foreign SID</primary></indexterm>
 	The term <emphasis>foreign SID</emphasis> is often met with the reaction that it
 	is not relevant to a particular environment. The following documents an interchange
 	that took place on the Samba mailing list. It is a good example of the confusion
@@ -211,17 +265,22 @@
 	</para>
 
 	<para>
+<indexterm><primary>local domain</primary></indexterm>
 	Fact: Winbind is needed to handle users who use workstations that are NOT part 
 	of the local domain.
 	</para>
 
 	<para>
+<indexterm><primary>PDC</primary></indexterm>
 	Response: <quote>Why? I've used Samba with workstations that are not part of my domains
 	lots of times without using winbind. I though winbind was for using Samba as a member server
 	in a domain controlled by another Samba/Windows PDC.</quote>
 	</para>
 
 	<para>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>foreign user</primary></indexterm>
 	If the Samba server will be accessed from a domain other than the local Samba domain, or
 	if there will be access from machines that are not local domain members, winbind will
 	permit the allocation of UIDs and GIDs from the assigned pool that will keep the identity
@@ -229,8 +288,12 @@
 	</para>
 
 	<para>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>domain member</primary></indexterm>
+<indexterm><primary>domain non-member</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
 	This means that winbind is eminently useful in cases where a single
-	Samba PDC on a local network is combined with both domain member and non-domain member workstations.
+	Samba PDC on a local network is combined with both domain member and domain non-member workstations.
 	If winbind is not used, the user george on a Windows workstation that is not a domain
 	member will be able to access the files of a user called george in the account database
 	of the Samba server that is acting as a PDC. When winbind is used, the default condition
@@ -247,7 +310,12 @@
 <sect1>
 	<title>How Winbind Works</title>
 	
-	<para>The Winbind system is designed around a client/server 
+	<para>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>UNIX domain socket</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
+	The Winbind system is designed around a client/server 
 	architecture. A long-running <command>winbindd</command> daemon 
 	listens on a UNIX domain socket waiting for requests
 	to arrive. These requests are generated by the NSS and PAM 
@@ -259,7 +327,13 @@
 	<sect2>
 		<title>Microsoft Remote Procedure Calls</title>
 		
-		<para>Over the last few years, efforts have been underway 
+		<para>
+<indexterm><primary>Microsoft Remote Procedure Call</primary><see>MSRPC</see></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>remote management</primary></indexterm>
+<indexterm><primary>user authentication</primary></indexterm>
+<indexterm><primary>print spooling</primary></indexterm>
+		Over the last few years, efforts have been underway 
 		by various Samba Team members to decode various aspects of 
 		the Microsoft Remote Procedure Call (MSRPC) system. This 
 		system is used for most network-related operations between 
@@ -269,7 +343,11 @@
 		functionality in Samba, it has also yielded a body of code that 
 		can be used for other purposes.</para>
 		
-		<para>Winbind uses various MSRPC calls to enumerate domain users 
+		<para>
+<indexterm><primary>MSRPC</primary></indexterm>
+<indexterm><primary>enumerate domain users</primary></indexterm>
+<indexterm><primary>enumerate domain groups</primary></indexterm>
+		Winbind uses various MSRPC calls to enumerate domain users 
 		and groups and to obtain detailed information about individual 
 		users or groups. Other MSRPC calls can be used to authenticate 
 		NT domain users and to change user passwords. By directly querying 
@@ -281,21 +359,26 @@
 		<title>Microsoft Active Directory Services</title>
 
 		<para>
-                Since late 2001, Samba has gained the ability to
-                interact with Microsoft Windows 2000 using its <quote>native
-                mode</quote> protocols rather than the NT4 RPC services.
-                Using LDAP and Kerberos, a domain member running
-                Winbind can enumerate users and groups in exactly the
-                same way as a Windows 200x client would, and in so doing
-                provide a much more efficient and effective Winbind implementation. 
-                </para>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>Kerberos</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>native mode</primary></indexterm>
+		Since late 2001, Samba has gained the ability to interact with Microsoft Windows 2000 using its <quote>native
+		mode</quote> protocols rather than the NT4 RPC services.  Using LDAP and Kerberos, a domain member running
+		Winbind can enumerate users and groups in exactly the same way as a Windows 200x client would, and in so doing
+		provide a much more efficient and effective Winbind implementation. 
+		</para>
 	</sect2>
 	
 	<sect2>
 		<title>Name Service Switch</title>
 		
-		<para>The NSS is a feature that is 
-		present in many UNIX operating systems. It allows system 
+		<para>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>networked workstation</primary></indexterm>
+<indexterm><primary>NIS</primary></indexterm>
+<indexterm><primary>DNS</primary></indexterm>
+		The NSS is a feature that is present in many UNIX operating systems. It allows system 
 		information such as hostnames, mail aliases, and user information 
 		to be resolved from different sources. For example, a standalone 
 		UNIX workstation may resolve system information from a series of 
@@ -304,7 +387,13 @@
 		and then consult an NIS database for user information or a DNS server 
 		for hostname information.</para>
 		
-		<para>The NSS application programming interface allows Winbind 
+		<para>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>MSRPC</primary></indexterm>
+<indexterm><primary>trusted domain</primary></indexterm>
+<indexterm><primary>local users</primary></indexterm>
+<indexterm><primary>local groups</primary></indexterm>
+		The NSS application programming interface allows Winbind 
 		to present itself as a source of system information when 
 		resolving UNIX usernames and groups. Winbind uses this interface 
 		and information obtained from a Windows NT server using MSRPC 
@@ -314,21 +403,25 @@
 		an NT domain plus any trusted domain as though they were local 
 		users and groups.</para>
 		
-		<para>The primary control file for NSS is 
-		<filename>/etc/nsswitch.conf</filename>. 
+		<para>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+<indexterm><primary>passwd</primary></indexterm>
+		The primary control file for NSS is <filename>/etc/nsswitch.conf</filename>. 
 		When a UNIX application makes a request to do a lookup, 
 		the C library looks in <filename>/etc/nsswitch.conf</filename> 
 		for a line that matches the service type being requested; for 
 		example, the <quote>passwd</quote> service type is used when user or group names 
 		are looked up. This config line specifies which implementations 
 		of that service should be tried and in what order. If the passwd 
-		config line is:</para>
-
-		<para><screen>
-		passwd: files example
-		</screen></para>
-
-		<para>then the C library will first load a module called 
+		config line is:
+<screen>
+passwd: files example
+</screen>
+<indexterm><primary>/lib/libnss_files.so</primary></indexterm>
+<indexterm><primary>/lib/libnss_example.so</primary></indexterm>
+<indexterm><primary>resolver functions</primary></indexterm>
+		then the C library will first load a module called 
 		<filename>/lib/libnss_files.so</filename> followed by
 		the module <filename>/lib/libnss_example.so</filename>. The 
 		C library will dynamically load each of these modules in turn 
@@ -336,7 +429,11 @@
 		the request. Once the request is resolved, the C library returns the
 		result to the application.</para>
 		
-		<para>This NSS interface provides an easy way for Winbind 
+		<para>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>libnss_winbind.so</primary></indexterm>
+<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+		This NSS interface provides an easy way for Winbind 
 		to hook into the operating system. All that needs to be done 
 		is to put <filename>libnss_winbind.so</filename> in <filename>/lib/</filename> 
 		then add <quote>winbind</quote> into <filename>/etc/nsswitch.conf</filename> at 
@@ -347,8 +444,12 @@
 	<sect2>
 		<title>Pluggable Authentication Modules</title>
 		
-		<para>PAMs provide 
-		a system for abstracting authentication and authorization 
+		<para>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>authentication methods</primary></indexterm>
+<indexterm><primary>authorization</primary></indexterm>
+<indexterm><primary>NIS database</primary></indexterm>
+		PAMs provide a system for abstracting authentication and authorization 
 		technologies. With a PAM module, it is possible to specify different 
 		authentication methods for different system applications without 
 		having to recompile these applications. PAM is also useful
@@ -357,7 +458,13 @@
 		stored in the local password file but only allow users resolved from 
 		an NIS database to log in over the network.</para>
 		
-		<para>Winbind uses the authentication management and password 
+		<para>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>authentication management</primary></indexterm>
+<indexterm><primary>password management</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+		Winbind uses the authentication management and password 
 		management PAM interface to integrate Windows NT users into a 
 		UNIX system. This allows Windows NT users to log in to a UNIX 
 		machine and be authenticated against a suitable PDC.
@@ -365,7 +472,12 @@
 		this change take effect directly on the PDC.
 		</para>
 		
-		<para>PAM is configured by providing control files in the directory 
+		<para>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>/etc/pam.d/</primary></indexterm>
+<indexterm><primary>pam_winbind.so</primary></indexterm>
+<indexterm><primary>/lib/security/</primary></indexterm>
+		PAM is configured by providing control files in the directory 
 		<filename>/etc/pam.d/</filename> for each of the services that 
 		require authentication. When an authentication request is made 
 		by an application, the PAM code in the C library looks up this
@@ -383,7 +495,11 @@
 	<sect2>
 		<title>User and Group ID Allocation</title>
 		
-		<para>When a user or group is created under Windows NT/200x, 
+		<para>
+<indexterm><primary>RID</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>UNIX ID</primary></indexterm>
+		When a user or group is created under Windows NT/200x, 
 		it is allocated a numerical relative identifier (RID). This is 
 		slightly different from UNIX, which has a range of numbers that are 
 		used to identify users and the same range used to identify 
@@ -396,7 +512,12 @@
 		time, Winbind will have mapped all Windows NT users and groups
 		to UNIX user IDs and group IDs.</para>
 
-		<para>The results of this mapping are stored persistently in 
+		<para>
+<indexterm><primary>ID mapping database</primary></indexterm>
+<indexterm><primary>tdb</primary></indexterm>
+<indexterm><primary>UNIX ID</primary></indexterm>
+<indexterm><primary>RID</primary></indexterm>
+		The results of this mapping are stored persistently in 
 		an ID mapping database held in a tdb database. This ensures that 
 		RIDs are mapped to UNIX IDs in a consistent way.</para>
 	</sect2>
@@ -407,7 +528,11 @@
 
 		<para>
 <indexterm><primary>SAM</primary></indexterm>
-			An active system can generate a lot of user and group 
+<indexterm><primary>caching scheme</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+			An active directory system can generate a lot of user and group 
 		name lookups. To reduce the network cost of these lookups, Winbind 
 		uses a caching scheme based on the SAM sequence number supplied 
 		by NT domain controllers. User or group information returned 
@@ -430,6 +555,9 @@
 <title>Introduction</title>
 
 <para>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>authentication control</primary></indexterm>
 This section describes the procedures used to get Winbind up and 
 running. Winbind is capable of providing access 
 and authentication control for Windows Domain users through an NT 
