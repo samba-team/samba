@@ -634,6 +634,7 @@ static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 		/* Save the server smb signing state. */
 		sign_state = srv_oplock_set_signing(False);
 
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(), outbuf))
 			exit_server("oplock_break_level2: send_smb failed.");
 
@@ -677,7 +678,9 @@ static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, BOOL local_request)
 {
 	char *inbuf = NULL;
+	char *saved_inbuf = NULL;
 	char *outbuf = NULL;
+	char *saved_outbuf = NULL;
 	files_struct *fsp = NULL;
 	time_t start_time;
 	BOOL shutdown_server = False;
@@ -740,14 +743,15 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * messages crossing on the wire.
 	 */
 
-	if((inbuf = (char *)SMB_MALLOC(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
+	if((inbuf = NewInBuffer(&saved_inbuf))==NULL) {
 		DEBUG(0,("oplock_break: malloc fail for input buffer.\n"));
 		return False;
 	}
 
-	if((outbuf = (char *)SMB_MALLOC(BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN))==NULL) {
+	if((outbuf = NewOutBuffer(&saved_outbuf))==NULL) {
 		DEBUG(0,("oplock_break: malloc fail for output buffer.\n"));
-		SAFE_FREE(inbuf);
+		set_InBuffer(saved_inbuf);
+		free_InBuffer(inbuf);
 		return False;
 	}
 
@@ -778,6 +782,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Save the server smb signing state. */
 	sign_state = srv_oplock_set_signing(False);
 
+	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(), outbuf)) {
 		srv_oplock_set_signing(sign_state);
 		exit_server("oplock_break: send_smb failed.");
@@ -823,11 +828,16 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * From Charles Hoch <hoch@exemplary.com>. If the break processing
 	 * code closes the file (as it often does), then the fsp pointer here
 	 * points to free()'d memory. We *must* revalidate fsp each time
-	 * around the loop.
+	 * around the loop. With async I/O, write calls may steal the global InBuffer,
+	 * so ensure we're using the correct one each time around the loop.
 	 */
 
 	while((fsp = initial_break_processing(dev, inode, file_id)) &&
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+
+		inbuf = get_InBuffer();
+		outbuf = get_OutBuffer();
+
 		if(receive_smb(smbd_server_fd(),inbuf, timeout) == False) {
 			/*
 			 * Die if we got an error.
@@ -899,9 +909,13 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Restore the chain fnum. */
 	file_chain_restore();
 
+	/* Restore the global In/Out buffers. */
+	set_InBuffer(saved_inbuf);
+	set_OutBuffer(saved_outbuf);
+
 	/* Free the buffers we've been using to recurse. */
-	SAFE_FREE(inbuf);
-	SAFE_FREE(outbuf);
+	free_InBuffer(inbuf);
+	free_OutBuffer(outbuf);
 
 	/* We need this in case a readraw crossed on the wire. */
 	if(global_oplock_break)

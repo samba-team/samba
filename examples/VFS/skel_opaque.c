@@ -487,6 +487,41 @@ static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,in
 	return -1;
 }
 
+static int skel_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_read(NULL, fsp, aiocb);
+}
+
+static int skel_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_write(NULL, fsp, aiocb);
+}
+
+static ssize_t skel_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_return(NULL, fsp, aiocb);
+}
+
+static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_cancel(NULL, fsp, fd, aiocb);
+}
+
+static int skel_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_error(NULL, fsp, aiocb);
+}
+
+static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	return vfswrap_aio_fsync(NULL, fsp, op, aiocb);
+}
+
+static int skel_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
+{
+	return vfswrap_aioi_suspend(NULL, fsp, aiocb, n, ts);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] = {
@@ -589,6 +624,15 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_OPAQUE},
+
+	/* AIO operations. */
+	{SMB_VFS_OP(skel_aio_read),			SMB_VFS_OP_AIO_READ,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_write),			SMB_VFS_OP_AIO_WRITE,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_return),			SMB_VFS_OP_AIO_RETURN,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_cancel),			SMB_VFS_OP_AIO_CANCEL,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_error),			SMB_VFS_OP_AIO_ERROR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_fsync),			SMB_VFS_OP_AIO_FSYNC,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_suspend),			SMB_VFS_OP_AIO_SUSPEND,			SMB_VFS_LAYER_OPAQUE},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };

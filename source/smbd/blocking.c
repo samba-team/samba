@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern char *OutBuffer;
-
 /****************************************************************************
  This is the structure to queue to implement blocking locks.
  notify. It consists of the requesting SMB and the expiry time.
@@ -175,7 +173,7 @@ static void send_blocking_reply(char *outbuf, int outsize)
 
 static void reply_lockingX_success(blocking_lock_record *blr)
 {
-	char *outbuf = OutBuffer;
+	char *outbuf = get_OutBuffer();
 	int bufsize = BUFFER_SIZE;
 	char *inbuf = blr->inbuf;
 	int outsize = 0;
@@ -204,7 +202,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 
 static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS status)
 {
-	char *outbuf = OutBuffer;
+	char *outbuf = get_OutBuffer();
 	char *inbuf = blr->inbuf;
 	construct_reply_common(inbuf, outbuf);
 
@@ -295,7 +293,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
 
 static BOOL process_lockread(blocking_lock_record *blr)
 {
-	char *outbuf = OutBuffer;
+	char *outbuf = get_OutBuffer();
 	char *inbuf = blr->inbuf;
 	ssize_t nread = -1;
 	char *data, *p;
@@ -367,7 +365,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 
 static BOOL process_lock(blocking_lock_record *blr)
 {
-	char *outbuf = OutBuffer;
+	char *outbuf = get_OutBuffer();
 	char *inbuf = blr->inbuf;
 	int outsize;
 	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;

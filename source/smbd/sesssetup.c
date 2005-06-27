@@ -96,6 +96,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 
 	set_message_end(outbuf,p);
 
+	show_msg(outbuf);
 	return send_smb(smbd_server_fd(),outbuf);
 }
 

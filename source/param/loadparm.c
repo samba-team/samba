@@ -360,6 +360,7 @@ typedef struct
 	char *fstype;
 	char **szVfsObjects;
 	char *szMSDfsProxy;
+	char *szAioWriteBehind;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iMaxReportedPrintJobs;
@@ -437,6 +438,8 @@ typedef struct
 	BOOL bEASupport;
 	BOOL bAclCheckPermissions;
 	int iallocation_roundup_size;
+	int iAioReadSize;
+	int iAioWriteSize;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -488,6 +491,7 @@ static service sDefault = {
 	NULL,			/* fstype */
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
+	NULL,			/* szAioWriteBehind */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
 	0,			/* iMaxReportedPrintJobs */
@@ -565,6 +569,8 @@ static service sDefault = {
 	False,			/* bEASupport */
 	True,			/* bAclCheckPermissions */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
+	0,			/* iAioReadSize */
+	0,			/* iAioWriteSize */
 	
 	NULL,			/* Parametric options */
 
@@ -914,6 +920,9 @@ static struct parm_struct parm_table[] = {
 	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
 
 	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio read size", P_INTEGER, P_LOCAL, &sDefault.iAioReadSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write size", P_INTEGER, P_LOCAL, &sDefault.iAioWriteSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write behind", P_STRING, P_LOCAL, &sDefault.szAioWriteBehind, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -1914,6 +1923,7 @@ FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
+FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
@@ -1987,6 +1997,8 @@ FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
+FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize);
+FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
