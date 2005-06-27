@@ -86,7 +86,16 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	/* yes, this is ugly. We don't know in advance how many bytes the length
 	   of a tag will take, so we assumed 1 byte. If we were wrong then we 
 	   need to correct our mistake */
-	if (len > 255) {
+	if (len > 0xFFFF) {
+		data->data[nesting->start] = 0x83;
+		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return False;
+		if (!asn1_write_uint8(data, 0)) return False;
+		memmove(data->data+nesting->start+4, data->data+nesting->start+1, len);
+		data->data[nesting->start+1] = (len>>16) & 0xFF;
+		data->data[nesting->start+2] = (len>>8) & 0xFF;
+		data->data[nesting->start+3] = len&0xff;
+	} else if (len > 255) {
 		data->data[nesting->start] = 0x82;
 		if (!asn1_write_uint8(data, 0)) return False;
 		if (!asn1_write_uint8(data, 0)) return False;
