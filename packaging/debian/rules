@@ -12,6 +12,7 @@ configure:
 	cd $(SOURCEPATH) && ./autogen.sh
 	cd $(SOURCEPATH) && ./configure --with-fhs \
 		--prefix=/usr \
+		--mandir=/usr/share/man \
 		--enable-shared \
 		--enable-static \
 		--sysconfdir=/etc \
@@ -43,6 +44,7 @@ binary-indep: build install
 	dh_testroot -i
 	dh_install -i --sourcedir=debian/tmp
 	dh_installdocs -i
+	dh_installman -i
 	dh_installchangelogs -i
 	dh_compress -i
 	dh_fixperms -i
@@ -59,12 +61,18 @@ install: build
 	dh_clean -k
 	dh_installdirs
 	$(MAKE) -C $(SOURCEPATH) install DESTDIR=$(CURDIR)/debian/tmp
-	cp debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
+	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
+	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
+	cp $(CURDIR)/debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
+	cp $(CURDIR)/../source/build/pidl/pidl.pl $(CURDIR)/debian/tmp/usr/bin/pidl
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/perl5/Parse/Pidl
+	cp $(CURDIR)/../source/build/pidl/*.pm $(CURDIR)/debian/tmp/usr/share/perl5/Parse/Pidl
 
 binary-arch: build install
 	dh_testdir -a
 	dh_testroot -a
 	dh_install -a --sourcedir=debian/tmp
+	dh_installchangelogs -a
 	dh_installdocs -a
 	dh_installman -a
 	dh_strip -a

@@ -653,18 +653,21 @@ LDB_PROGS = 	bin/ldbadd \
 REG_PROGS = 	bin/regpatch \
 		bin/regshell \
 		bin/regtree \
-		bin/regpatch \
 		bin/regdiff
 
-install: showlayout installbin installtorture installldb installreg installdat installswat
+GTK_PROGS = bin/gregedit \
+		bin/gwsam \
+		bin/gepdump
+
+install: showlayout installbin installtorture installldb installreg installdat installswat installgtk
 
 # DESTDIR is used here to prevent packagers wasting their time
-# duplicating the Makefile. Remove it and you will have the privelege
-# of package each samba release for muliple versions of multiple
+# duplicating the Makefile. Remove it and you will have the privilege
+# of package each samba release for multiple versions of multiple
 # distributions and operating systems, or at least supplying patches
 # to all the packaging files required for this, prior to committing
 # the removal of DESTDIR. Do not remove it even though you think it
-# is not used
+# is not used.
 
 installdirs:
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls
@@ -682,6 +685,9 @@ installldb: all installdirs
 installreg: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(REG_PROGS)
 
+installgtk: all installdirs
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(GTK_PROGS)
+
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
@@ -691,7 +697,7 @@ installswat: installdirs
 installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
-uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg
+uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg uninstallgtk
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
@@ -704,6 +710,9 @@ uninstallldb:
 
 uninstallreg:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(REG_PROGS)
+
+uninstallgtk:
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(GTK_PROGS)
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)

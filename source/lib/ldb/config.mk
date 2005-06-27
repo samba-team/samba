@@ -74,7 +74,7 @@ ADD_OBJ_FILES = \
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC LDBSAMBA
 NOPROTO = YES
-MANPAGE = lib/ldb/man/man3/ldb.3
+MANPAGE = lib/ldb/man/ldb.3
 #
 # End SUBSYSTEM LIBLDB
 ################################################
@@ -115,7 +115,7 @@ OBJ_FILES = \
 		lib/ldb/tools/ldbadd.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/man1/ldbadd.1
+MANPAGE = lib/ldb/man/ldbadd.1
 # End BINARY ldbadd
 ################################################
 
@@ -126,7 +126,7 @@ OBJ_FILES= \
 		lib/ldb/tools/ldbdel.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/man1/ldbdel.1
+MANPAGE = lib/ldb/man/ldbdel.1
 # End BINARY ldbdel
 ################################################
 
@@ -137,7 +137,7 @@ OBJ_FILES= \
 		lib/ldb/tools/ldbmodify.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/man1/ldbmodify.1
+MANPAGE = lib/ldb/man/ldbmodify.1
 # End BINARY ldbmodify
 ################################################
 
@@ -148,7 +148,7 @@ OBJ_FILES= \
 		lib/ldb/tools/ldbsearch.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE 
-MANPAGE = lib/ldb/man/man1/ldbsearch.1
+MANPAGE = lib/ldb/man/ldbsearch.1
 # End BINARY ldbsearch
 ################################################
 
@@ -159,7 +159,7 @@ OBJ_FILES= \
 		lib/ldb/tools/ldbedit.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/man1/ldbedit.1
+MANPAGE = lib/ldb/man/ldbedit.1
 # End BINARY ldbedit
 ################################################
 
@@ -170,7 +170,7 @@ OBJ_FILES= \
 		lib/ldb/tools/ldbrename.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
-MANPAGE = lib/ldb/man/man1/ldbrename.1
+MANPAGE = lib/ldb/man/ldbrename.1
 # End BINARY ldbrename
 ################################################
 

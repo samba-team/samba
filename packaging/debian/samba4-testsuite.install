@@ -3,5 +3,3 @@ usr/bin/ndrdump
 usr/bin/gentest
 usr/bin/locktest
 usr/bin/masktest
-usr/share/man/man1/smbtorture.1
-usr/share/man/man1/ndrdump.1

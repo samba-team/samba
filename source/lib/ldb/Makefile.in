@@ -112,7 +112,7 @@ bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
 %.html: %.xml
 	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
-manpages: $(patsubst %.xml,%,$(wildcard man/*/*.xml))
+manpages: $(patsubst %.xml,%,$(wildcard man/*.xml))
 
 clean:
 	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
