@@ -700,7 +700,7 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
+AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
 ## These fail to compile on IRIX so just check for their presence
@@ -879,6 +879,20 @@ AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
 	samba_cv_sig_atomic_t=yes,samba_cv_sig_atomic_t=no)])
 if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
+fi
+
+AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <time.h>
+#include <aio.h>],[struct timespec ts;],
+	samba_cv_struct_timespec=yes,samba_cv_struct_timespec=no)])
+if test x"$samba_cv_struct_timespec" = x"yes"; then
+   AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
 fi
 
 # stupid headers have the functions but no declaration. grrrr.
@@ -4050,6 +4064,57 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
   AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
   AC_MSG_RESULT(no)
 )
+
+#################################################
+# check for AIO support
+
+AC_MSG_CHECKING(whether to support asynchronous io)
+AC_ARG_WITH(aio-support,
+[  --with-aio-support      Include asynchronous io support (default=no)],
+[ case "$withval" in
+  yes)
+
+	case "$host_os" in
+	*)
+		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
+		AC_CACHE_CHECK([for asynchronous io support],samba_cv_HAVE_AIO,[
+		aio_LIBS=$LIBS
+		LIBS="$LIBS -lrt"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <aio.h>],
+[ struct aiocb a; return aio_read(&a);],
+samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
+		LIBS=$aio_LIBS])
+		AC_CACHE_CHECK([for 64-bit asynchronous io support],samba_cv_HAVE_AIO64,[
+		aio_LIBS=$LIBS
+		LIBS="$LIBS -lrt"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <aio.h>],
+[ struct aiocb64 a; return aio_read64(&a);],
+samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
+		LIBS=$aio_LIBS])
+		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
+			AC_DEFINE(HAVE_AIOCB64,1,[Whether 64 bit aio is available])
+			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			LIBS="$LIBS -lrt"
+		elif test x"$samba_cv_HAVE_AIO" = x"yes"; then
+			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			LIBS="$LIBS -lrt"
+		fi
+            ;;
+        esac
+        ;;
+  *)
+    AC_MSG_RESULT(no)
+    AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support is available])
+    ;;
+  esac ],
+  AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
+  AC_MSG_RESULT(no)
+)
+
+AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
+AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 
 #################################################
 # check for sendfile support
