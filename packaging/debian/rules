@@ -3,7 +3,7 @@
 # Made with the aid of debmake, by Christoph Lameter,
 # based on the sample debian/rules file for GNU hello by Ian Jackson.
 
-SOURCEPATH=../../source
+SOURCEPATH=../source
 
 package=samba4
 
@@ -27,18 +27,21 @@ configure:
 
 build: configure
 	dh_testdir
-	cd $(SOURCEPATH) && $(MAKE) proto all
+	$(MAKE) -C $(SOURCEPATH) proto 
+	-$(MAKE) -C $(SOURCEPATH) pch
+	$(MAKE) -C $(SOURCEPATH) all
 	touch $@
 
 clean:
 	dh_testdir
 	dh_clean
 	rm -f build
-	-cd $(SOURCEPATH) && $(MAKE) clean
+	-$(MAKE) -C $(SOURCEPATH) clean
 
 binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
+	dh_install -i --sourcedir=debian/tmp
 	dh_installdocs -i
 	dh_installchangelogs -i
 	dh_compress -i
@@ -55,11 +58,13 @@ binary-indep: build install
 install: build
 	dh_clean -k
 	dh_installdirs
-	$(MAKE) -C $(SOURCEPATH) install DESTDIR=`pwd`/../packaging/debian/tmp
+	$(MAKE) -C $(SOURCEPATH) install DESTDIR=$(CURDIR)/debian/tmp
+	cp debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
 
 binary-arch: build install
 	dh_testdir -a
 	dh_testroot -a
+	dh_install -a --sourcedir=debian/tmp
 	dh_installdocs -a
 	dh_installman -a
 	dh_strip -a
