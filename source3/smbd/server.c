@@ -30,7 +30,6 @@ int last_message = -1;
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
-extern char *last_inbuf;
 extern struct auth_context *negprot_global_auth_context;
 extern pstring user_socket_options;
 extern SIG_ATOMIC_T got_sig_term;
@@ -635,6 +634,7 @@ void exit_server(const char *reason)
 
 	if (!reason) {   
 		int oldlevel = DEBUGLEVEL;
+		char *last_inbuf = get_InBuffer();
 		DEBUGLEVEL = 10;
 		DEBUG(0,("Last message was %s\n",smb_fn_name(last_message)));
 		if (last_inbuf)
@@ -950,6 +950,9 @@ void build_options(BOOL screen);
 	/* Setup change notify */
 	if (!init_change_notify())
 		exit(1);
+
+	/* Setup aio signal handler. */
+	initialize_async_io_handler();
 
 	/* re-initialise the timezone */
 	TimeInit();

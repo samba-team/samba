@@ -1052,3 +1052,38 @@ int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp
 {
 	return sys_fsetxattr(fd, name, value, size, flags);
 }
+
+int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_read(aiocb);
+}
+
+int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_write(aiocb);
+}
+
+int vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_return(aiocb);
+}
+
+int vfswrap_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_cancel(fd, aiocb);
+}
+
+int vfswrap_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_error(aiocb);
+}
+
+int vfswrap_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_fsync(op, aiocb);
+}
+
+int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout)
+{
+	return sys_aio_suspend(aiocb, n, timeout);
+}

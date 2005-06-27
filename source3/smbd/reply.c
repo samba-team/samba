@@ -2575,13 +2575,10 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
-#if 0
-	/* Enable when the AIO code is moved over. JRA. */
 	if (schedule_aio_read_and_X(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
 		return -1;
 	}
-#endif
 
 	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
@@ -2952,15 +2949,11 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 		nwritten = 0;
 	} else {
 
-#if 0
-		/* Enable when AIO code is moved over. JRA. */
-
 		if (schedule_aio_write_and_X(conn, inbuf, outbuf, length, bufsize,
 					fsp,data,startpos,numtowrite)) {
 			END_PROFILE(SMBwriteX);
 			return -1;
 		}
-#endif
 
 		nwritten = write_file(fsp,data,startpos,numtowrite);
 	}
