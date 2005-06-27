@@ -74,12 +74,16 @@ the Samba web site.
 </para>
 
 </partintro>
+
+	<?latex \cleardoublepage ?>
+
 	<xi:include href="SBE-SimpleOfficeServer.xml"/>
 	<xi:include href="SBE-TheSmallOffice.xml"/>
 	<xi:include href="SBE-SecureOfficeServer.xml"/>
 	<xi:include href="SBE-500UserNetwork.xml"/>
 	<xi:include href="SBE-MakingHappyUsers.xml"/>
 	<xi:include href="SBE-2000UserNetwork.xml"/>
+
 </part>
 
 <part id="DMSMig">
