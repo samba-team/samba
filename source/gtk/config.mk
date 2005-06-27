@@ -17,6 +17,7 @@ REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC EXT_LIB_gtk RPC_NDR_SAMR
 [BINARY::gregedit]
 OBJ_FILES = gtk/tools/gregedit.o
 REQUIRED_SUBSYSTEMS = CONFIG LIBCMDLINE REGISTRY GTKSMB
+MANPAGE = gtk/man/gregedit.1
 # End BINARY gregedit
 ################################################
 
