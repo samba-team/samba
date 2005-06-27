@@ -11,13 +11,12 @@
 		</authorgroup>
 		<pubdate>June, 2005</pubdate>
 	</bookinfo>
+
 	<?latex \clearpage ?>
-	<?latex \setcounter{page}{5} ?>
+	<?latex \setcounter{page}{7} ?>
 
 	<xi:include href="SBE-inside-cover.xml"/>
 	<xi:include href="SBE-acknowledgements.xml"/>
-	<xi:include href="SBE-foreword.xml"/>
-	<xi:include href="SBE-preface.xml"/>
 
 	<?latex \cleardoublepage ?>
 
@@ -30,6 +29,11 @@
 	<?latex \cleardoublepage ?>
 
 	<lot/>
+
+	<?latex \cleardoublepage ?>
+
+	<xi:include href="SBE-foreword.xml"/>
+	<xi:include href="SBE-preface.xml"/>
 
 	<!-- Chapters -->
 
