@@ -14,19 +14,15 @@
 	<pubdate><?latex \today ?></pubdate>
 </bookinfo>
 
-	<?latex \setcounter{page}{5} ?>
+	<?latex \setcounter{page}{7} ?>
+
+	<xi:include href="TOSHARG-inside-cover.xml"/>
+
+	<?latex \cleardoublepage ?>
 
 	<xi:include href="../Samba3-HOWTO-attributions.xml">
 		<xi:fallback/>
 	</xi:include>
-
-	<?latex \cleardoublepage ?>
-
-	<xi:include href="TOSHARG-preface.xml"/>
-
-	<?latex \cleardoublepage ?>
-
-	<xi:include href="TOSHARG-foreword-cargill.xml"/>
 
 	<?latex \cleardoublepage ?>
 
@@ -35,9 +31,21 @@
 
 	<?latex \cleardoublepage ?>
 
+	<?latex \listofexamples ?>
+
+	<?latex \cleardoublepage ?>
+
 	<lot/>
 
+	<xi:include href="TOSHARG-foreword-cargill.xml"/>
+
+	<?latex \cleardoublepage ?>
+
+	<xi:include href="TOSHARG-preface.xml"/>
+
 	<xi:include href="TOSHARG-IntroSMB.xml"/>
+
+	<?latex \cleardoublepage ?>
 
 <!-- Chapters -->
 <part id="introduction">
@@ -54,6 +62,8 @@ PLEASE read this.
 </para>
 
 </partintro>
+
+	<?latex \cleardoublepage ?>
 
 	<xi:include href="TOSHARG-Install.xml"/>
 	<xi:include href="TOSHARG-FastStart.xml"/>
