@@ -72,7 +72,6 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 iface->bcast_address, lp_dgram_port(), nt_errstr(status)));
-		talloc_free(iface);
 		return status;
 	}
 	
@@ -87,7 +86,6 @@ NTSTATUS nbtd_dgram_setup(struct nbtd_interface *iface, const char *bind_address
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
 			 bind_address, lp_dgram_port(), nt_errstr(status)));
-		talloc_free(iface);
 		return status;
 	}
 	dgram_set_incoming_handler(iface->dgmsock, dgram_request_handler, iface);
