@@ -1876,7 +1876,7 @@ static int smb_full_audit_aio_read(struct vfs_handle_struct *handle, struct file
 	return result;
 }
 
-static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
@@ -1887,7 +1887,7 @@ static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct fil
 	return result;
 }
 
-static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
@@ -1898,7 +1898,7 @@ static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struc
 	return result;
 }
 
-static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
@@ -1909,7 +1909,7 @@ static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct fi
 	return result;
 }
 
-static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
@@ -1920,7 +1920,7 @@ static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct fil
 	return result;
 }
 
-static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
+static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
@@ -1931,7 +1931,7 @@ static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct fil
 	return result;
 }
 
-static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n. const struct timespec *ts);
+static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
 {
 	int result;
 

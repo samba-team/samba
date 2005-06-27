@@ -827,6 +827,11 @@ extern int errno;
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
+#ifdef SOCKET_WRAPPER
+#define SOCKET_WRAPPER_REPLACE
+#include "include/socket_wrapper.h"
+#endif
+
 /* Our own pstrings and fstrings */
 #include "pstring.h"
 

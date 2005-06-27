@@ -56,9 +56,9 @@
 /* Changed to version 9 to include the get_shadow_data call. --metze */
 /* Changed to version 10 to include pread/pwrite calls. */
 /* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
-/* Changed to version 12 to add mask and attributes to opendir(). JRA */
-/* Changed to version 13 to include aio calls. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 13
+/* Changed to version 12 to add mask and attributes to opendir(). JRA 
+   Also include aio calls. JRA. */
+#define SMB_VFS_INTERFACE_VERSION 12
 
 
 /* to bug old modules which are trying to compile with the old functions */
