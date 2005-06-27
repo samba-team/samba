@@ -24,7 +24,33 @@
 #ifndef _WINBIND_NSS_SOLARIS_H
 #define _WINBIND_NSS_SOLARIS_H
 
+/* Solaris has a broken nss_common header file containing C++ reserved names. */
+#ifndef __cplusplus
+#undef class
+#undef private
+#undef public
+#undef protected
+#undef template
+#undef this
+#undef new
+#undef delete
+#undef friend
+#endif
+
 #include <nss_common.h>
+
+#ifndef __cplusplus
+#define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define this #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define new #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define delete #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define friend #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#endif
+
 #include <nss_dbdefs.h>
 #include <nsswitch.h>
 
