@@ -571,7 +571,12 @@ well for Samba services.
 	<emphasis>Why should I do this?</emphasis>
 	</para>
 	
-	<para>This allows the Samba administrator to rely on the 
+	<para>
+<indexterm><primary>Samba administrator</primary></indexterm>
+<indexterm><primary>authentication mechanisms</primary></indexterm>
+<indexterm><primary>domain members</primary></indexterm>
+<indexterm><primary>accounts</primary></indexterm>
+	This allows the Samba administrator to rely on the 
 	authentication mechanisms on the Windows NT/200x PDC for the authentication 
 	of domain members. Windows NT/200x users no longer need to have separate 
 	accounts on the Samba server.
@@ -584,6 +589,8 @@ well for Samba services.
 	</para>
 	
 	<para>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>Windows NT/200x</primary></indexterm>
 	This document is designed for system administrators. If you are 
 	implementing Samba on a file server and wish to (fairly easily) 
 	integrate existing Windows NT/200x users from your PDC onto the
@@ -598,12 +605,18 @@ well for Samba services.
 <title>Requirements</title>
 
 <para>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>back up</primary></indexterm>
+<indexterm><primary>boot disk`</primary></indexterm>
 If you have a Samba configuration file that you are currently using, <emphasis>BACK IT UP!</emphasis>
 If your system already uses PAM, <emphasis>back up the <filename>/etc/pam.d</filename> directory
 contents!</emphasis> If you haven't already made a boot disk, <emphasis>MAKE ONE NOW!</emphasis>
 </para>
 
 <para>
+<indexterm><primary>PAM configuration</primary></indexterm>
+<indexterm><primary>/etc/pam.d</primary></indexterm>
+<indexterm><primary>single-user mode</primary></indexterm>
 Messing with the PAM configuration files can make it nearly impossible to log in to your machine. That's
 why you want to be able to boot back into your machine in single-user mode and restore your
 <filename>/etc/pam.d</filename> to the original state it was in if you get frustrated with the
@@ -611,12 +624,18 @@ way things are going.
 </para>
 
 <para>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>daemon</primary></indexterm>
 The latest version of Samba-3 includes a functioning winbindd daemon. Please refer to the <ulink
 url="http://samba.org/">main Samba Web page</ulink>, or better yet, your closest Samba mirror site for
 instructions on downloading the source code.
 </para>
 
 <para>
+<indexterm><primary>domain users</primary></indexterm>
+<indexterm><primary>shares and files</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>development libraries</primary></indexterm>
 To allow domain users the ability to access Samba shares and files, as well as potentially other services
 provided by your Samba machine, PAM must be set up properly on your
 machine. In order to compile the Winbind modules, you should have at least the PAM development libraries installed
@@ -628,6 +647,11 @@ on your system. Please refer the PAM Web site <ulink url="http://www.kernel.org/
 <title>Testing Things Out</title>
 
 <para>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>nmbd</primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>/etc/pam.d</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
 Before starting, it is probably best to kill off all the Samba-related daemons running on your server.
 Kill off all &smbd;, &nmbd;, and &winbindd; processes that may be running. To use PAM,
 make sure that you have the standard PAM package that supplies the <filename>/etc/pam.d</filename>
@@ -641,6 +665,10 @@ needed to compile PAM-aware applications.
 <title>Configure <filename>nsswitch.conf</filename> and the Winbind Libraries on Linux and Solaris</title>
 
 <para>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>pam-devel</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
 PAM is a standard component of most current generation UNIX/Linux systems. Unfortunately, few systems install
 the <filename>pam-devel</filename> libraries that are needed to build PAM-enabled Samba. Additionally, Samba-3
 may auto-install the Winbind files into their correct locations on your system, so before you get too far down
@@ -654,6 +682,7 @@ The libraries needed to run the &winbindd; daemon through nsswitch need to be co
 </para>
 
 <para>
+<indexterm><primary>libnss_winbind.so</primary></indexterm>
 <screen>
 &rootprompt;<userinput>cp ../samba/source/nsswitch/libnss_winbind.so /lib</userinput>
 </screen>
@@ -667,39 +696,43 @@ I also found it necessary to make the following symbolic link:
 &rootprompt; <userinput>ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</userinput>
 </para>
 
-<para>And, in the case of Sun Solaris:</para>
+<para>And, in the case of Sun Solaris:
+<indexterm><primary>nss_winbind.so.1</primary></indexterm>
 <screen>
 &rootprompt;<userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</userinput>
 &rootprompt;<userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</userinput>
 &rootprompt;<userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.2</userinput>
 </screen>
+</para>
 
 <para>
-Now, as root, you need to edit <filename>/etc/nsswitch.conf</filename> to 
+<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+As root, edit <filename>/etc/nsswitch.conf</filename> to 
 allow user and group entries to be visible from the &winbindd;
 daemon. My <filename>/etc/nsswitch.conf</filename> file looked like 
 this after editing:
-</para>
-
-<para><programlisting>
-	passwd:     files winbind
-	shadow:     files 
-	group:      files winbind
+<programlisting>
+passwd:     files winbind
+shadow:     files 
+group:      files winbind
 </programlisting></para>
 
 <para>	
+<indexterm><primary></primary></indexterm>
+<indexterm><primary></primary></indexterm>
+<indexterm><primary></primary></indexterm>
 The libraries needed by the <command>winbindd</command> daemon will be automatically 
 entered into the <command>ldconfig</command> cache the next time 
 your system reboots, but it is faster (and you do not need to reboot) if you do it manually:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>/sbin/ldconfig -v | grep winbind</userinput>
+</screen>
+This makes <filename>libnss_winbind</filename> available to winbindd and reports the current
+search path that is used by the dynamic link loader.
 </para>
 
 <para>
-This makes <filename>libnss_winbind</filename> available to winbindd 
-and echos back a check to you.
+The dynamic link-loader managment interface 
 </para>
 
 </sect3>
