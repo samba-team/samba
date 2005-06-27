@@ -4,7 +4,7 @@ use strict;
 use Socket;
 use Getopt::Long;
 
-my $opt_hostname = `hostname`;
+my $opt_hostname = `hostname | cut -d. -f1`;
 chomp $opt_hostname;
 my $opt_hostip;
 my $opt_realm;
