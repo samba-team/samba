@@ -443,9 +443,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 {
 	WERROR			status = WERR_BADFILE;
 	fstring 		name;
-	const char              *value_ascii = "";
-	fstring                 value;
-	int                     value_length;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE		*val = NULL;
 	REGVAL_CTR		regvals;
@@ -463,89 +460,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
 	regval_ctr_init( &regvals );
-
-	/* FIXME!!! Move these to a dynmanic lookup in the reg_fetch_values() */
-	/* couple of hard coded registry values */
-	
-	if ( strequal(name, "RefusePasswordChange") ) {
-		uint32 dwValue;
-
-		if ( (val = SMB_MALLOC_P(REGISTRY_VALUE)) == NULL ) {
-			DEBUG(0,("_reg_info: malloc() failed!\n"));
-			return WERR_NOMEM;
-		}
-
-		if (!account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
-			dwValue = 0;
-		regval_ctr_addvalue(&regvals, "RefusePasswordChange", 
-				    REG_DWORD,
-				    (const char*)&dwValue, sizeof(dwValue));
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
- 	
-		status = WERR_OK;
-	
-		goto out;
-	}
-
-	if ( strequal(name, REGSTR_PRODUCTTYPE) ) {
-		/* This makes the server look like a member server to clients */
-		/* which tells clients that we have our own local user and    */
-		/* group databases and helps with ACL support.                */
-		
-		switch (lp_server_role()) {
-			case ROLE_DOMAIN_PDC:
-			case ROLE_DOMAIN_BDC:
-				value_ascii = REG_PT_LANMANNT;
-				break;
-			case ROLE_STANDALONE:
-				value_ascii = REG_PT_SERVERNT;
-				break;
-			case ROLE_DOMAIN_MEMBER:
-				value_ascii = REG_PT_WINNT;
-				break;
-		}
-		
-		value_length = push_ucs2(value, value, value_ascii, sizeof(value), 
-			STR_TERMINATE|STR_NOALIGN);
-		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ, value, value_length);
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
-		
-		status = WERR_OK;
-		
-		goto out;
-	}
-	
-	/* "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters"  */
-	
-	if ( strequal( name, "Hostname") ) {
-		char   *hname;
-
-		hname = myhostname();
-		value_length = push_ucs2( value, value, hname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
-		regval_ctr_addvalue( &regvals, "Hostname",REG_SZ, value, value_length );
-
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
- 	
-		status = WERR_OK;
-	
-		goto out;
-	}
-
-	if ( strequal( name, "Domain") ) {
-		fstring mydomainname;
-	
-		get_mydnsdomname( mydomainname );		
-		value_length = push_ucs2( value, value, mydomainname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
-		regval_ctr_addvalue( &regvals, "Domain", REG_SZ, value, value_length );
-
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
- 	
-		status = WERR_OK;
-	
-		goto out;
-	}
-	
-	/* else fall back to actually looking up the value */
 	
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
 	{
@@ -559,8 +473,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 		free_registry_value( val );
 	}
 
-  
-out:
 	init_reg_r_query_value(q_u->ptr_buf, r_u, val, status);
 	
 	regval_ctr_destroy( &regvals );
@@ -880,7 +792,7 @@ static int validate_reg_filename( pstring fname )
 }
 
 /*******************************************************************
- Note: topkeypaty is the *full* path that this *key will be 
+ Note: topkeypat is the *full* path that this *key will be 
  loaded into (including the name of the key)
  ********************************************************************/
 
@@ -1478,8 +1390,6 @@ WERROR _reg_get_key_sec(pipes_struct *p, REG_Q_GET_KEY_SEC  *q_u, REG_R_GET_KEY_
 	
 	if ( !(key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
 		return WERR_ACCESS_DENIED;
-		
-	
 		
 	return WERR_ACCESS_DENIED;
 }
