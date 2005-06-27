@@ -12,8 +12,7 @@ Description: Samba4
  Foobar
 
 Package: samba4-common
-Architecture: any
-Depends: ${shlibs:Depends}
+Architecture: all
 Description: Common samba files
  Files common for all programs in Samba
 
