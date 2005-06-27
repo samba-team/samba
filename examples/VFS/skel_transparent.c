@@ -220,12 +220,12 @@ static BOOL skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int 
 	return SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
 }
 
-static BOOL skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
+static int skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
 	return SMB_VFS_NEXT_SYMLINK(handle, conn, oldpath, newpath);
 }
 
-static BOOL skel_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+static int skel_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
 {
 	return SMB_VFS_NEXT_READLINK(handle, conn, path, buf, bufsiz);
 }

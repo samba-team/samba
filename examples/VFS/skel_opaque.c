@@ -221,12 +221,12 @@ static BOOL skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int 
 	return vfswrap_lock(NULL, fsp, fd, op, offset, count, type);
 }
 
-static BOOL skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
+static int skel_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
 	return vfswrap_symlink(NULL, conn, oldpath, newpath);
 }
 
-static BOOL skel_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+static int skel_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
 {
 	return vfswrap_readlink(NULL, conn, path, buf, bufsiz);
 }
