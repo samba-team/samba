@@ -1846,3 +1846,161 @@ uint32 unix_dev_minor(SMB_DEV_T dev)
         return (uint32)(dev & 0xff);
 #endif
 }
+
+#if defined(WITH_AIO)
+
+/*******************************************************************
+ An aio_read wrapper that will deal with 64-bit sizes.
+********************************************************************/
+                                                                                                                                           
+int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_READ64)
+        return aio_read64(aiocb);
+#elif defined(HAVE_AIO_READ)
+        return aio_read(aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_write wrapper that will deal with 64-bit sizes.
+********************************************************************/
+                                                                                                                                           
+int sys_aio_write(SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_WRITE64)
+        return aio_write64(aiocb);
+#elif defined(HAVE_AIO_WRITE)
+        return aio_write(aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_return wrapper that will deal with 64-bit sizes.
+********************************************************************/
+                                                                                                                                           
+ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_RETURN64)
+        return aio_return64(aiocb);
+#elif defined(HAVE_AIO_RETURN)
+        return aio_return(aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_cancel wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_CANCEL64)
+        return aio_cancel64(fd, aiocb);
+#elif defined(HAVE_AIO_CANCEL)
+        return aio_cancel(fd, aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_error wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_ERROR64)
+        return aio_error64(aiocb);
+#elif defined(HAVE_AIO_ERROR)
+        return aio_error(aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_fsync wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_FSYNC64)
+        return aio_fsync64(op, aiocb);
+#elif defined(HAVE_AIO_FSYNC)
+        return aio_fsync64(op, aiocb);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
+ An aio_fsync wrapper that will deal with 64-bit sizes.
+********************************************************************/
+
+int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_SUSPEND64)
+        return aio_suspend64(cblist, n, timeout);
+#elif defined(HAVE_AIO_FSYNC)
+        return aio_suspend(cblist, n, timeout);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+#else /* !WITH_AIO */
+
+int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_write(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif /* WITH_AIO */

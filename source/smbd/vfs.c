@@ -145,7 +145,16 @@ static struct vfs_ops default_vfs = {
 		vfswrap_fremovexattr,
 		vfswrap_setxattr,
 		vfswrap_lsetxattr,
-		vfswrap_fsetxattr
+		vfswrap_fsetxattr,
+
+		/* AIO operations. */
+		vfswrap_aio_read,
+		vfswrap_aio_write,
+		vfswrap_aio_return,
+		vfswrap_aio_cancel,
+		vfswrap_aio_error,
+		vfswrap_aio_fsync,
+		vfswrap_aio_suspend
 	}
 };
 
@@ -277,20 +286,20 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	DLIST_ADD(conn->vfs_handles, handle);
 
  	for(i=0; ops[i].op != NULL; i++) {
- 	  DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
- 	  if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
- 	    /* Check whether this operation was already made opaque by different module */
- 	    if(((void**)&conn->vfs_opaque.ops)[ops[i].type] == ((void**)&default_vfs.ops)[ops[i].type]) {
- 	      /* No, it isn't overloaded yet. Overload. */
- 	      DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
- 	      ((void**)&conn->vfs_opaque.ops)[ops[i].type] = ops[i].op;
- 	      ((vfs_handle_struct **)&conn->vfs_opaque.handles)[ops[i].type] = handle;
- 	    }
- 	  }
- 	  /* Change current VFS disposition*/
- 	  DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
- 	  ((void**)&conn->vfs.ops)[ops[i].type] = ops[i].op;
- 	  ((vfs_handle_struct **)&conn->vfs.handles)[ops[i].type] = handle;
+		DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
+		if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
+			/* Check whether this operation was already made opaque by different module */
+			if(((void**)&conn->vfs_opaque.ops)[ops[i].type] == ((void**)&default_vfs.ops)[ops[i].type]) {
+				/* No, it isn't overloaded yet. Overload. */
+				DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
+				((void**)&conn->vfs_opaque.ops)[ops[i].type] = ops[i].op;
+				((vfs_handle_struct **)&conn->vfs_opaque.handles)[ops[i].type] = handle;
+			}
+		}
+		/* Change current VFS disposition*/
+		DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
+		((void**)&conn->vfs.ops)[ops[i].type] = ops[i].op;
+		((vfs_handle_struct **)&conn->vfs.handles)[ops[i].type] = handle;
 	}
 
 	SAFE_FREE(module_name);

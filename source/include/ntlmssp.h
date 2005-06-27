@@ -123,6 +123,7 @@ typedef struct ntlmssp_state
 	 * from the DATA_BLOB chal on this structure.
 	 *
 	 * @param ntlmssp_state This structure
+	 * @param challenge 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
 	 * @param challange 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
 	 *
 	 */

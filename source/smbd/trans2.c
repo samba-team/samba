@@ -591,6 +591,7 @@ static int send_trans2_replies(char *outbuf,
 	/* If there genuinely are no parameters or data to send just send the empty packet */
 
 	if(params_to_send == 0 && data_to_send == 0) {
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("send_trans2_replies: send_smb failed.");
 		return 0;
@@ -685,6 +686,7 @@ static int send_trans2_replies(char *outbuf,
 			params_to_send, data_to_send, paramsize, datasize));
 
 		/* Send the packet */
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("send_trans2_replies: send_smb failed.");
 
@@ -4912,6 +4914,7 @@ int reply_trans2(connection_struct *conn,
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		srv_signing_trans_stop();
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_trans2: send_smb failed.");
 

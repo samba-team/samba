@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    VFS structures and parameters
-   Copyright (C) Jeremy Allison                         1999-2004
+   Copyright (C) Jeremy Allison                         1999-2005
    Copyright (C) Tim Potter				1999
    Copyright (C) Alexander Bokovoy			2002
    Copyright (C) Stefan (metze) Metzmacher		2003
@@ -56,11 +56,12 @@
 /* Changed to version 9 to include the get_shadow_data call. --metze */
 /* Changed to version 10 to include pread/pwrite calls. */
 /* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
-/* Changed to version 12 to add mask and attributes to opendir(). JRA */
+/* Changed to version 12 to add mask and attributes to opendir(). JRA 
+   Also include aio calls. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 12
 
 
-/* to bug old modules witch are trying to compile with the old functions */
+/* to bug old modules which are trying to compile with the old functions */
 #define vfs_init __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore(void) { __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore };
 #define lp_parm_string __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string { \
   __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string };
@@ -191,6 +192,15 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LSETXATTR,
 	SMB_VFS_OP_FSETXATTR,
 
+	/* aio operations */
+	SMB_VFS_OP_AIO_READ,
+	SMB_VFS_OP_AIO_WRITE,
+	SMB_VFS_OP_AIO_RETURN,
+	SMB_VFS_OP_AIO_CANCEL,
+	SMB_VFS_OP_AIO_ERROR,
+	SMB_VFS_OP_AIO_FSYNC,
+	SMB_VFS_OP_AIO_SUSPEND,
+
 	/* This should always be last enum value */
 	
 	SMB_VFS_OP_LAST
@@ -302,6 +312,15 @@ struct vfs_ops {
 		int (*lsetxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
 
+		/* aio operations */
+		int (*aio_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_write)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		ssize_t (*aio_return)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_error)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
+
 	} ops;
 
 	struct vfs_handles_pointers {
@@ -405,6 +424,14 @@ struct vfs_ops {
 		struct vfs_handle_struct *lsetxattr;
 		struct vfs_handle_struct *fsetxattr;
 
+		/* aio operations */
+		struct vfs_handle_struct *aio_read;
+		struct vfs_handle_struct *aio_write;
+		struct vfs_handle_struct *aio_return;
+		struct vfs_handle_struct *aio_cancel;
+		struct vfs_handle_struct *aio_error;
+		struct vfs_handle_struct *aio_fsync;
+		struct vfs_handle_struct *aio_suspend;
 	} handles;
 };
 

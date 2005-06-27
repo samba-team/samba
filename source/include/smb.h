@@ -442,6 +442,7 @@ typedef struct files_struct {
 	BOOL is_directory;
 	BOOL is_stat;
 	BOOL directory_delete_on_close;
+	BOOL aio_write_behind;
 	char *fsp_name;
  	FAKE_FILE_HANDLE *fake_file_handle;
 } files_struct;
@@ -541,6 +542,7 @@ typedef struct connection_struct
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
+	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
 
 } connection_struct;
 
