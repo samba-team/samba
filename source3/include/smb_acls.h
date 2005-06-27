@@ -257,11 +257,11 @@ struct new_acl_entry{
 #define SMB_ACL_OTHER				4
 #define SMB_ACL_MASK				5
 
-typedef struct SMB_ACL_T {
+typedef struct SMB_ACL_T_ {
 	int dummy;
 } *SMB_ACL_T;
 
-typedef struct SMB_ACL_ENTRY_T {
+typedef struct SMB_ACL_ENTRY_T_ {
 	int dummy;
 } *SMB_ACL_ENTRY_T;
 
