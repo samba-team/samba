@@ -20,6 +20,7 @@
 
 */
 
+#define DBGC_CLASS DBGC_MSDFS
 #include "includes.h"
 
 extern uint32 global_client_caps;
@@ -576,7 +577,9 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 	requestedpathlen = rpcstr_push(uni_requestedpath, pathname, -1,
 				       STR_TERMINATE);
 
-	dump_data(10, (const char *) uni_requestedpath,requestedpathlen);
+	if (DEBUGLVL(10)) {
+	    dump_data(0, (const char *) uni_requestedpath,requestedpathlen);
+	}
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
 
@@ -671,7 +674,9 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 
 	reqpathlen = rpcstr_push(uni_reqpath, pathname, -1, STR_TERMINATE);
 	
-	dump_data(10, (char *) uni_reqpath,reqpathlen);
+	if (DEBUGLVL(10)) {
+	    dump_data(0, (char *) uni_reqpath,reqpathlen);
+	}
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
 	uni_reqpathoffset2 = uni_reqpathoffset1 + reqpathlen;
@@ -797,8 +802,11 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
 		return -1;
 	}
       
-	DEBUG(10,("DFS Referral pdata:\n"));
-	dump_data(10,*ppdata,reply_size);
+	if (DEBUGLVL(10)) {
+	    DEBUGADD(0,("DFS Referral pdata:\n"));
+	    dump_data(0,*ppdata,reply_size);
+	}
+
 	return reply_size;
 }
 
@@ -937,29 +945,30 @@ BOOL remove_msdfs_link(struct junction_map* jucn)
 	return ret;
 }
 
-static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
+static int form_junctions(int snum, struct junction_map* jucn, int jn_remain)
 {
-	int cnt = *jn_count;
+	int cnt = 0;
 	DIR *dirp;
 	char* dname;
 	pstring connect_path;
 	char* service_name = lp_servicename(snum);
-	connection_struct conns;
-	connection_struct *conn = &conns;
+	connection_struct conn;
 	struct referral *ref = NULL;
-	BOOL ret = False;
  
+	if (jn_remain <= 0)
+	    return(0);
+
 	pstrcpy(connect_path,lp_pathname(snum));
 
 	if(*connect_path == '\0')
-		return False;
+		return 0;
 
 	/*
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	if (!create_conn_struct(conn, snum, connect_path))
-		return False;
+	if (!create_conn_struct(&conn, snum, connect_path))
+		return 0;
 
 	/* form a junction for the msdfs root - convention 
 	   DO NOT REMOVE THIS: NT clients will not work with us
@@ -979,22 +988,25 @@ static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 	ref->ttl = REFERRAL_TTL;
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
-		*jn_count = ++cnt;
-		ret = True;
 		goto out;
 	}
 		
 	slprintf(ref->alternate_path, sizeof(pstring)-1,
 		 "\\\\%s\\%s", get_local_machine_name(), service_name);
 	cnt++;
-	
+
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, ".", NULL, 0);
+	dirp = SMB_VFS_OPENDIR(&conn, ".", NULL, 0);
 	if(!dirp)
 		goto out;
 
-	while((dname = vfs_readdirname(conn, dirp)) != NULL) {
-		if (is_msdfs_link(conn, dname, &(jucn[cnt].referral_list),
+	while ((dname = vfs_readdirname(&conn, dirp)) != NULL) {
+		if (cnt >= jn_remain) {
+			SMB_VFS_CLOSEDIR(&conn,dirp);
+			DEBUG(2, ("ran out of MSDFS junction slots"));
+			goto out;
+		}
+		if (is_msdfs_link(&conn, dname, &(jucn[cnt].referral_list),
 				  &(jucn[cnt].referral_count), NULL)) {
 			pstrcpy(jucn[cnt].service_name, service_name);
 			pstrcpy(jucn[cnt].volume_name, dname);
@@ -1002,14 +1014,13 @@ static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 		}
 	}
 	
-	SMB_VFS_CLOSEDIR(conn,dirp);
-	*jn_count = cnt;
+	SMB_VFS_CLOSEDIR(&conn,dirp);
 out:
-	talloc_destroy(conn->mem_ctx);
-	return ret;
+	conn_free(&conn);
+	return cnt;
 }
 
-int enum_msdfs_links(struct junction_map* jucn)
+int enum_msdfs_links(struct junction_map* jucn, int jn_max)
 {
 	int i=0;
 	int jn_count = 0;
@@ -1017,9 +1028,9 @@ int enum_msdfs_links(struct junction_map* jucn)
 	if(!lp_host_msdfs())
 		return 0;
 
-	for(i=0;i < lp_numservices();i++) {
+	for(i=0;i < lp_numservices() && (jn_max - jn_count) > 0;i++) {
 		if(lp_msdfs_root(i)) 
-			form_junctions(i,jucn,&jn_count);
+			jn_count += form_junctions(i,jucn,jn_max - jn_count);
 	}
 	return jn_count;
 }

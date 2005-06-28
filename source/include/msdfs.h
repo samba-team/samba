@@ -36,6 +36,7 @@
 
 /* Maximum number of referrals for each Dfs volume */
 #define MAX_REFERRAL_COUNT   256
+#define MAX_MSDFS_JUNCTIONS 256
 
 typedef struct _client_referral {
 	uint32 proximity;
