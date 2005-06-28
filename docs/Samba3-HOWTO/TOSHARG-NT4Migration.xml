@@ -373,13 +373,13 @@ being contemplated.
 	<colspec align="justify" colwidth="1*"/>
 	<colspec align="justify" colwidth="1*"/>
 	<thead>
-	<row><entry>Simple</entry><entry>Upgraded</entry><entry>Redesign</entry></row>
+	<row><entry>Simple Install</entry><entry>Upgrad Decisions</entry><entry>Redesign Decisions</entry></row>
 	</thead>
 	<tbody>
 	<row>
 	<entry><para>Make use of minimal OS specific features</para></entry>
 	<entry><para>Translate NT4 features to new host OS features</para></entry>
-	<entry><para>Decide: (John, decide what???????)</para></entry>
+	<entry><para>Improve on NT4 functionality, enhance management capabilities</para></entry>
 	</row>
 	<row>
 	<entry><para>Move all accounts from NT4 into Samba-3</para></entry>
